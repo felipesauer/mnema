@@ -7,7 +7,7 @@
  * in the record"*, and the file the verb prints says the same thing in its own words:
  * `mnema brief | diff - AGENTS.md` is the ONLY thing that can tell a stale copy from a live
  * one, and it means that only if the bytes move when the record moves and at no other time.
- * Three doc-comments state it — `presentation/brief.ts`, `copilot/src/context/brief.ts`, and
+ * Three doc-comments state it — `presentation/brief.ts`, `context/src/context/brief.ts`, and
  * the wiring's help above.
  *
  * AND NOTHING GUARDED IT. Measured by mutation, in the delivery that added this file: the
@@ -23,7 +23,7 @@
  * THE FIRST GUARD WAS THE IMPORT, AND THE IMPORT IS NOT THE ONLY DOOR. That is the premise
  * this file was written on — *"a layer reaches the world through a module of the runtime, so
  * match the specifier and the door is shut"* — and it is FALSE, measured the same way it was
- * arrived at: with `process.cwd()` and `Date.now()` planted in `copilot/src/context/brief.ts`,
+ * arrived at: with `process.cwd()` and `Date.now()` planted in `context/src/context/brief.ts`,
  * the suite came back 4698 of 4698 GREEN and `pnpm lint` green with it. `process`, `Date`,
  * `Math.random` and `globalThis` are already in scope; a clock needs no `import` at all, and
  * the very doc-comment above names *"a `cwd`"* as a failure this net catches. It did not.
@@ -78,13 +78,13 @@ const PACKAGES = join(dirname(fileURLToPath(import.meta.url)), '..', '..');
  * The layers that may hold NOTHING of this machine: the derivation package whole, and the
  * module that turns its answer into the document's bytes.
  *
- * The `code` side is one FILE and the `copilot` side is a package, and the asymmetry is the
- * point rather than an oversight. Everything in `copilot` answers over caches a caller
+ * The `code` side is one FILE and the `context` side is a package, and the asymmetry is the
+ * point rather than an oversight. Everything in `context` answers over caches a caller
  * opened, so the rule is the package's; in `code` the disk is what the package is FOR, and
  * only the printer of this one document owes the property.
  */
 const PURE: readonly { readonly what: string; readonly root: string }[] = [
-  { what: '@mnema/copilot', root: join(PACKAGES, 'copilot', 'src') },
+  { what: '@mnema/context', root: join(PACKAGES, 'context', 'src') },
   { what: 'the document’s printer', root: join(PACKAGES, 'code', 'src', 'presentation') },
 ];
 
@@ -385,7 +385,7 @@ function reachOf(
     const [, name, subpath] = /^((?:@[^/]+\/)?[^/]+)(\/.+)?$/.exec(spec) ?? [];
     if (name === undefined) return undefined;
     if (name.startsWith('@mnema/')) {
-      for (const dir of ['chain', 'core', 'copilot', 'code']) {
+      for (const dir of ['chain', 'core', 'context', 'code']) {
         const manifest = read(join(root, dir, 'package.json'));
         if (manifest === undefined || JSON.parse(manifest).name !== name) continue;
         const built = entryIn(manifest, `.${subpath ?? ''}`);
@@ -604,7 +604,7 @@ describe('the bytes of the document move when the record moves, and at no other 
     const walked = PURE.flatMap((layer) => sourceFiles(layer.root));
     expect(walked.length).toBeGreaterThan(30);
     expect(walked.map((path) => path.split(sep).join('/'))).toContain(
-      join(PACKAGES, 'copilot', 'src', 'context', 'brief.ts').split(sep).join('/'),
+      join(PACKAGES, 'context', 'src', 'context', 'brief.ts').split(sep).join('/'),
     );
     expect(walked.map((path) => path.split(sep).join('/'))).toContain(
       join(PACKAGES, 'code', 'src', 'presentation', 'brief.ts').split(sep).join('/'),
@@ -631,7 +631,7 @@ describe('the bytes of the document move when the record moves, and at no other 
 
   it('accuses the global that needs no import — the mutation that went green', () => {
     // THE SECOND NET'S TEETH, and the input is the mutation that falsified this file's own
-    // premise: both of these, planted in `copilot/src/context/brief.ts`, left the suite at
+    // premise: both of these, planted in `context/src/context/brief.ts`, left the suite at
     // 4698 of 4698 green while the import net was the only one here.
     expect(globalsOf('const root = process.cwd();')).toEqual(['process']);
     expect(globalsOf('const at = Date.now();')).toEqual(['Date.now']);
@@ -689,7 +689,7 @@ describe('the bytes of the document move when the record moves, and at no other 
     // `core` touch the world, derived from `core`'s own source rather than from a list that
     // rots". That is {@link reachOf}: nothing in this file names an export, and the answer for
     // each comes off the workspace's source. It reaches past `core` because the door does:
-    // the printer imports `@mnema/chain`, `@mnema/copilot` and four modules of its own package
+    // the printer imports `@mnema/chain`, `@mnema/context` and four modules of its own package
     // from outside `presentation/`, and each is the same door with another name.
     const { accused, unread } = reachedThroughAnImport();
     expect(unread, 'RULER BROKEN: an import led somewhere this net cannot read').toEqual([]);
@@ -800,7 +800,7 @@ describe('the bytes of the document move when the record moves, and at no other 
     //     annotation, because a name is a use wherever it stands as an identifier. So is a
     //     local that shadows a top-level name. All three ACCUSE; none clears.
     //   - A VALUE THAT ARRIVES AT RUNTIME is not followed: a callback, or a handle a caller
-    //     opened — `copilot` answers over caches somebody else opened, by design, and a method
+    //     opened — `context` answers over caches somebody else opened, by design, and a method
     //     called on one is invisible here.
     //   - `import()` at runtime, `require` (the second net's), `export default` and a
     //     destructured declaration are not read. The last two cannot slip through: a name that

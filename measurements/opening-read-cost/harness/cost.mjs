@@ -40,9 +40,9 @@ const REPO = new URL('../../../', import.meta.url).pathname;
 const { ProjectionCache, resolveTrees, chainRootForScope } = await import(
   join(REPO, 'packages/core/dist/index.js')
 );
-const { bootstrap } = await import(join(REPO, 'packages/copilot/dist/index.js'));
+const { bootstrap } = await import(join(REPO, 'packages/context/dist/index.js'));
 const { unreadKinds } = await import(
-  join(REPO, 'packages/copilot/dist/context/unread.js')
+  join(REPO, 'packages/context/dist/context/unread.js')
 );
 const chain = await import(join(REPO, 'packages/chain/dist/index.js'));
 const { openTreeForWriting } = await import(join(REPO, 'packages/core/dist/write.js'));

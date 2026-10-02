@@ -23,7 +23,7 @@
  * second one, read as a rule this project never made.
  */
 
-import type { PushedRule, RulesAtPath } from '@mnema/copilot';
+import type { PushedRule, RulesAtPath } from '@mnema/context';
 import { oneLine } from './one-line.js';
 import { DERIVED_FROM } from './provenance.js';
 import { recordFramingBlock } from './record-framing.js';

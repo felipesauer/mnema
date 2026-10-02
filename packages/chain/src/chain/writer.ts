@@ -50,14 +50,7 @@
  * is BORN at the first append ({@link ChainWriter.ensureBorn}), not when it is opened.
  */
 
-import {
-  appendFileSync,
-  existsSync,
-  mkdirSync,
-  statSync,
-  truncateSync,
-  writeFileSync,
-} from 'node:fs';
+import { existsSync, mkdirSync, statSync, truncateSync, writeFileSync } from 'node:fs';
 import { dirname } from 'node:path';
 
 import type { CatalogEvent } from '../events/catalog.js';
@@ -69,6 +62,7 @@ import {
   serializeCheckpoint,
   signCheckpoint,
 } from './checkpoint.js';
+import { appendDurably } from './durable.js';
 import { type Entry, sealEntry, serializeEntry } from './entry.js';
 import type { WrittenEvent } from './hash.js';
 import type { KeyPair } from './keys.js';
@@ -200,6 +194,13 @@ export class ChainWriter {
    */
   private born = false;
 
+  /**
+   * Whether this writer is inside {@link underTailLock} right now. It is what lets an act run
+   * through {@link exclusively} append through the public doors without taking a lock it
+   * already holds — see {@link underTailLock}.
+   */
+  private holding = false;
+
   private readonly maxSegmentBytes: number;
   private readonly maxUnsignedEvents: number;
 
@@ -274,28 +275,66 @@ export class ChainWriter {
    * There is one of these rather than three because the rule — "read the end and
    * append to it as one indivisible act" — is one rule, and a rule with three
    * readings is the shape that produces the divergence nobody notices. The public
-   * doors ({@link append}, {@link appendAll}, {@link checkpoint}) are thin wrappers
-   * that do nothing but call this; their bodies moved into `*Locked` siblings, which
-   * may be called ONLY from inside it. That split is also what keeps the lock
-   * non-reentrant: {@link capUnsignedWindow} signs through {@link signLocked}, never
-   * through the public {@link checkpoint}, so an append that crosses the ceiling does
-   * not try to take a lock it is already holding.
+   * doors ({@link append}, {@link appendAll}, {@link checkpoint}, {@link exclusively})
+   * are thin wrappers that do nothing but call this; the bodies of the first three
+   * live in `*Locked` siblings, which may be called ONLY from inside it.
+   * {@link capUnsignedWindow} signs through {@link signLocked}, never through the
+   * public {@link checkpoint}, for the reason it always did: it is already inside.
+   *
+   * THIS SAID THE SPLIT "is also what keeps the lock non-reentrant", and the lock file
+   * still is — a second writer of this tail, in this process or another, waits. What
+   * changed is that THIS WRITER may now ask again while it holds it: an act run through
+   * {@link exclusively} decides on the record and then appends through the public
+   * doors, so the second ask runs the act at once, under the hold it is already in,
+   * instead of waiting two seconds on its own lock and refusing
+   * (`tail-lock.test.ts`, *an exclusive act appends through the public doors*).
    *
    * The mark is written AFTER the act and only if it returned. An act that threw may
    * have left the files in a state this writer's fields do not describe, so leaving
    * the mark stale is the conservative answer: the next act sees "moved" and recovers.
    */
   private underTailLock<T>(act: () => T): T {
+    // Already held by this writer: the outer hold resynced on the way in and writes the
+    // mark on the way out, so the inner act only runs.
+    if (this.holding) return act();
     // No options: the writer takes the lock's own budgets. They are not a knob this
     // class forwards, because nothing in the product would have a reason to differ
     // from them, and an option no caller sets is the defect this workspace already
     // has a name for.
     return withTailLock(tailLockPath(this.layout, this.tailId), () => {
-      this.resyncIfMoved();
-      const result = act();
-      this.mark = this.readMark();
-      return result;
+      this.holding = true;
+      try {
+        this.resyncIfMoved();
+        const result = act();
+        this.mark = this.readMark();
+        return result;
+      } finally {
+        this.holding = false;
+      }
     });
+  }
+
+  /**
+   * Runs `act` with this tail's lock held, and lets it append through this writer's own
+   * doors while it holds it.
+   *
+   * It is for an operation whose append DEPENDS ON WHAT IT READ: a move judged against the
+   * state a decision is in, a label numbered from how many decisions there are, a founding
+   * decided from whether the record already holds one. Read outside the lock and appended
+   * inside it, two sessions of one installation both read the same state and both append —
+   * measured on the built binary, `decision move accept` and `… reject` run together both
+   * exited 0 in 19 of 20 rounds, and two concurrent `decision record` minted the same
+   * `ADR-<n>` in 10 of 10. Read inside it, the second reads what the first appended.
+   *
+   * The act's own reading of the record is the caller's business; this offers only the
+   * hold. It is not a transaction: an act that appends twice and then throws leaves both
+   * appends on the tail, as two calls of {@link append} would.
+   *
+   * @throws {TailBusyError} if another process holds the tail past the wait budget.
+   * Nothing of `act` has run.
+   */
+  exclusively<T>(act: () => T): T {
+    return this.underTailLock(act);
   }
 
   /**
@@ -479,7 +518,7 @@ export class ChainWriter {
     });
     const line = `${serializeEntry(entry)}\n`;
     const path = segmentPath(this.layout, this.tailId, this.segment);
-    appendFileSync(path, line, 'utf-8');
+    appendDurably(path, line);
 
     this.head = entry.link.hash;
     this.nextSeq += 1;
@@ -543,7 +582,7 @@ export class ChainWriter {
       seq += 1;
     }
     const path = segmentPath(this.layout, this.tailId, this.segment);
-    appendFileSync(path, lines, 'utf-8');
+    appendDurably(path, lines);
 
     this.head = prev;
     this.nextSeq = seq;
@@ -650,7 +689,7 @@ export class ChainWriter {
     });
     const path = checkpointsPath(this.layout, this.tailId);
     ensureDir(path);
-    appendFileSync(path, `${serializeCheckpoint(checkpoint)}\n`, 'utf-8');
+    appendDurably(path, `${serializeCheckpoint(checkpoint)}\n`);
     // Advanced only after the checkpoint reached the file, so a failed append
     // leaves the buffer intact and a retry signs the same range again.
     this.lastCheckpointedSeq = toSeq;

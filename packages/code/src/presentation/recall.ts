@@ -62,7 +62,7 @@
  * heading in it would read as a kind this record does not keep.
  */
 
-import type { PertinentSearch, RecordHit, RecordSearch } from '@mnema/copilot';
+import type { PertinentSearch, RecordHit, RecordSearch } from '@mnema/context';
 import { detectSecrets, excerptOf } from '@mnema/core';
 import { oneLine } from '../one-line.js';
 import { recordFraming } from '../record-framing.js';

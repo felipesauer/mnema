@@ -15,7 +15,7 @@
  * still unpainted for exactly that reason. A workflow state is a POSITION IN A CYCLE, and
  * the transition table gives each position a structurally different set of exits, which
  * is what makes "what does a reader do about this" answerable at all. The domain derives
- * that answer from the table — `core`'s `disposition.ts` for a task, `copilot`'s
+ * that answer from the table — `core`'s `disposition.ts` for a task, `context`'s
  * `decisions.ts` and `skills.ts` for the other two — and this module only says how each
  * answer reads.
  *
@@ -25,7 +25,7 @@
  * module that owns their reads, and a surface that painted them would be a surface
  * RE-DERIVING a meaning it cannot ask for*. Half of that is why this module is still
  * shaped the way it is — nothing here re-derives anything — and the other half was
- * simply false. The meaning CAN be asked for: `copilot` exports `skillDisposition` and
+ * simply false. The meaning CAN be asked for: `context` exports `skillDisposition` and
  * now `decisionDisposition`, held on that package's surface on purpose so asking stays
  * cheaper than copying (`no-classification-table-reaches-the-surface.test.ts`). What was
  * missing was never a classification; it was the CALL. Measured before the call existed:
@@ -51,7 +51,7 @@
  * vocabulary: one meaning per hue, whichever call site sets it (see `styled.ts`).
  */
 
-import { type Disposition, decisionDisposition, skillDisposition } from '@mnema/copilot';
+import { type Disposition, decisionDisposition, skillDisposition } from '@mnema/context';
 import {
   isDecisionState,
   isSkillState,

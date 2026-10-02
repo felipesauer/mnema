@@ -12,7 +12,7 @@
  * a person waits for stays the declaration (see `wiring/verb.ts`).
  */
 
-import type { ReferenceDirection } from '@mnema/copilot';
+import type { ReferenceDirection } from '@mnema/context';
 
 /** The directions a walk may take, as the surface accepts them. */
 export const REFERENCE_DIRECTIONS: readonly ReferenceDirection[] = ['both', 'out', 'in'];

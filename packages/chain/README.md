@@ -39,6 +39,7 @@ any secret at verify time:
 | Threat | Covered by |
 |---|---|
 | **Accidental corruption** — a truncated write, a flipped byte | The hash chain — keyless, always on. |
+| **A write lost to a power cut** — an event reported as written that never reached the disk | Every entry and every checkpoint is synced to the disk (`fsync`) before the write returns, and so is the directory of a file the write created (`durable.test.ts`). It costs about 10 ms per write, measured on an NVMe disk with other work on it. The files written once beside the record — a key's public half in the tree, a tail's proof, the local key root — are not synced. |
 | **An edit made *without* the signing key** | Ed25519 checkpoints over a content-recomputed root. Editing content and re-chaining the keyless hashes is still caught, because the signed root folds the actual event bytes. |
 | **An outside audit with only what was committed** — no secrets | The public key is committed by fingerprint; verification re-derives that fingerprint from the key it loads, so swapping the committed key for another is caught. |
 | **An edit made *with* the signing key** | **Not covered by local crypto, and covered by T3 when a record is stamped.** A key holder can rewrite and re-sign, and everything local verifies. What they cannot produce is an attestation dated before they started: `witness.ts` stores an OpenTimestamps proof over a checkpoint's digest and the Bitcoin block header it lands in, and `verify` reads both offline. This row used to say the seam was one *this package leaves open, never a guarantee it fakes* — it is closed for a record somebody stamped, and exactly as open as it ever was for one nobody did. See FORMAT.md §8. |
@@ -292,4 +293,4 @@ and not in the **social** one (same author, same repository).
 
 ## License
 
-See the repository root.
+Apache-2.0. See `LICENSE` and `NOTICE`, which this package carries.

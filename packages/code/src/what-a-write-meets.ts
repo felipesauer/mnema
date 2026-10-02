@@ -23,7 +23,7 @@
  * before it answers the host, so a record that cannot be written refuses nobody.
  */
 
-import { channelIsOn, type RulesAtPath, type ScopedCache } from '@mnema/copilot';
+import { channelIsOn, type RulesAtPath, type ScopedCache } from '@mnema/context';
 import { whatAWriteAsks } from './edit-asks-a-person.js';
 import { editRefusesNotice } from './edit-refuses-a-write.js';
 import { readRefusesAWriteAt } from './governed-tree.js';

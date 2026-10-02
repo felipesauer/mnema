@@ -15,7 +15,7 @@
 // that, `refuses-a-write` made the pair a set of three, and `ADDRESS_RELATIONS` is the
 // set itself, so a reader asks whether a label carries an address without spelling out
 // any of them. They are the chain's constants and
-// are re-exported here for one reason — the copilot may not name `@mnema/chain` (its
+// are re-exported here for one reason — the context package may not name `@mnema/chain` (its
 // boundary test bans the specifier, because that package holds writers), and a reader
 // that typed a literal instead would be the second place a label lives.
 //
@@ -110,6 +110,11 @@ export {
   listDecisions,
   listDecisionsByState,
 } from './projections/decision-store.js';
+export {
+  type DivergentKind,
+  type DivergentMove,
+  divergentMoves,
+} from './projections/divergent-moves.js';
 export {
   type HandoffProjection,
   type LinkEdge,

@@ -6,7 +6,7 @@
  * 187 prefixes this workspace builds under. `.github/what-the-suite-left-behind/sweep.mjs` is
  * what covers the other 186, and it can only do that from outside the suite: a before/after
  * listing of `tmpdir()` taken while workers are alive attributes one worker's sandbox to
- * another's call, measured red in six of six runs of the copilot package.
+ * another's call, measured red in six of six runs of the context package package.
  *
  * SO THE PROPERTY THAT MATTERS HERE IS THE REFUSAL. The sweep is right exactly when it speaks
  * only with the suite stopped, and the cases below pin both halves of that: it refuses when a
@@ -150,13 +150,13 @@ describe('the sweep names what appeared and nothing else', () => {
 
   it('reads only the family, and covers every prefix in it', () => {
     // The 187 prefixes are one family. A sweep keyed on any single one of them would be the
-    // copilot case again with a different name, and one that read everything would report the
+    // context case again with a different name, and one that read everything would report the
     // 72.920 entries this machine's /tmp holds for other projects.
     plant(`${THE_FAMILY}core-fixture`);
-    plant(`${THE_FAMILY}copilot-abc`);
+    plant(`${THE_FAMILY}context-abc`);
     plant('some-other-project-xyz');
     expect(sandboxesUnder(sandbox)).toEqual([
-      `${THE_FAMILY}copilot-abc`,
+      `${THE_FAMILY}context-abc`,
       `${THE_FAMILY}core-fixture`,
     ]);
   });

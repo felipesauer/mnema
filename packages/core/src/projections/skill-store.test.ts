@@ -163,7 +163,7 @@ describe('skill-store — what the table answers', () => {
 
   it('answers an id nothing projected with null, while the table holds others', () => {
     materializeSkills(db, threeOutOfOrder().values());
-    // toBeNull exactly: the copilot's fall-through across trees is `if (skill === null)
+    // toBeNull exactly: the context package's fall-through across trees is `if (skill === null)
     // continue`, so undefined and a throw are both wrong answers.
     expect(getSkill(db, 'sk-nowhere')).toBeNull();
     expect(getSkill(db, 'sk-b')?.id).toBe('sk-b');

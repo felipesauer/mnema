@@ -4,7 +4,7 @@
  * The pure fold ({@link projectSkills}) produces skill state; this module writes
  * it into the `skills` table and reads it back. It is the simplest of the
  * workflow stores — a skill has no relational columns — mirroring the task store
- * with a `body` and a state index for the by-state queries the copilot leans on
+ * with a `body` and a state index for the by-state queries the context package leans on
  * (the `adopted` skills are the live patterns; `proposed`/`reviewed` are the
  * curation backlog).
  *

@@ -7,18 +7,23 @@
  */
 
 import { spawnSync } from 'node:child_process';
-import { mkdtempSync, readdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
+import { once } from 'node:events';
+import { existsSync, mkdtempSync, readdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join, relative } from 'node:path';
+import { Worker } from 'node:worker_threads';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { ensureBackupKey } from './backup.js';
-import { deriveAnchor, generateKeyPair } from './keys.js';
+import { deriveAnchor, generateKeyPair, privateKeyToPem, publicKeyToPem } from './keys.js';
 import {
   ensureKeyRootIgnored,
   listAnchoredFingerprints,
+  listPrivateKeyFingerprints,
   loadOrCreateKeyPair,
+  persistKeyPair,
   writeAnchor,
 } from './keystore.js';
+import { keyRootLockPath, keysDir, privateKeyPath, publicKeyPath } from './layout.js';
 
 let home: string;
 /** A key root inside a home that is itself a repository — the dotfiles case. */
@@ -100,5 +105,76 @@ describe('listAnchoredFingerprints — which keys have settled whom they speak f
 
   it('is empty for a tree with no keys directory — or no tree at all', () => {
     expect(listAnchoredFingerprints({ root: join(home, 'nothing-here') })).toEqual([]);
+  });
+});
+
+/**
+ * Two first writes in a new home make ONE key.
+ *
+ * Not a race, for the reason `tail-lock.test.ts` gives: what the race produces is a state, and
+ * the case plants it — a process that found no key arriving at the mint while another process
+ * holds the key root's lock and mints. The other process is a thread here: it holds the lock
+ * (a record naming this live process, so nobody breaks it), writes its key the way the product
+ * does, and lets go. Rounds with two processes released at one instant are a measurement, not
+ * a case, and live with the delivery that measured them.
+ */
+describe('the first key of a machine is minted once', () => {
+  it('a mint that found no key, arriving while another process mints, adopts that key', async () => {
+    const layout = { root: keyRoot };
+    ensureKeyRootIgnored(layout);
+    const lock = keyRootLockPath(layout);
+    writeFileSync(lock, `${process.pid} ${Date.now()}\n`);
+    const theirs = generateKeyPair();
+    const other = new Worker(
+      "const { mkdirSync, writeFileSync, renameSync, unlinkSync } = require('node:fs');" +
+        "const { workerData: w } = require('node:worker_threads');" +
+        'setTimeout(() => {' +
+        '  mkdirSync(w.keys, { recursive: true });' +
+        '  writeFileSync(w.pub, w.publicPem);' +
+        "  writeFileSync(w.priv + '.aside', w.privatePem, { mode: 0o600 });" +
+        "  renameSync(w.priv + '.aside', w.priv);" +
+        '  unlinkSync(w.lock);' +
+        '}, 150);',
+      {
+        eval: true,
+        workerData: {
+          keys: keysDir(layout),
+          pub: publicKeyPath(layout, theirs.fingerprint),
+          priv: privateKeyPath(layout, theirs.fingerprint),
+          publicPem: publicKeyToPem(theirs.publicKey),
+          privatePem: privateKeyToPem(theirs.privateKey),
+          lock,
+        },
+      },
+    );
+    const ours = loadOrCreateKeyPair(layout);
+    await once(other, 'exit');
+    expect(ours.fingerprint).toBe(theirs.fingerprint);
+    expect(listPrivateKeyFingerprints(layout)).toEqual([theirs.fingerprint]);
+    expect(existsSync(lock)).toBe(false);
+  });
+
+  it('a key root that holds a key is read without the lock', () => {
+    // A lock nobody will ever release, held by a live process: a read that took it would wait
+    // the whole budget out and refuse. The lock is paid once per machine, not once per write.
+    const layout = { root: keyRoot };
+    const mine = loadOrCreateKeyPair(layout);
+    writeFileSync(keyRootLockPath(layout), `${process.pid} ${Date.now()}\n`);
+    const started = Date.now();
+    expect(loadOrCreateKeyPair(layout).fingerprint).toBe(mine.fingerprint);
+    expect(Date.now() - started).toBeLessThan(1_000);
+  });
+
+  it('writes the private half aside and names it whole — no aside is left, and none is a key', () => {
+    const layout = { root: keyRoot };
+    const pair = generateKeyPair();
+    persistKeyPair(layout, pair);
+    expect(readdirSync(keysDir(layout)).sort()).toEqual(
+      [`${pair.fingerprint}.key`, `${pair.fingerprint}.pub`].sort(),
+    );
+    // What a reader finds while another process is writing: the aside, under a name a listing
+    // of keys does not take for one.
+    writeFileSync(join(keysDir(layout), `${pair.fingerprint}.key.4242.writing`), '');
+    expect(listPrivateKeyFingerprints(layout)).toEqual([pair.fingerprint]);
   });
 });

@@ -32,7 +32,7 @@
  * this surface's own.
  */
 
-import type { AddressedRule, GoverningRules } from '@mnema/copilot';
+import type { AddressedRule, GoverningRules } from '@mnema/context';
 import { oneLine } from '../one-line.js';
 import { fact, subjectLine } from './detail.js';
 import { asId, asScope, itemLine } from './items.js';

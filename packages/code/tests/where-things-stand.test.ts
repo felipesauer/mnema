@@ -1,7 +1,7 @@
 /**
  * WHERE THINGS STAND — the opening read, and the proof that there is only one of it.
  *
- * The derivation was never in question: `@mnema/copilot`'s `bootstrap` closes the table
+ * The derivation was never in question: `@mnema/context`'s `bootstrap` closes the table
  * of what a record can be waiting on (`ARCHITECTURE.md` §1.3), and it is proved against
  * the transition tables in its own package. What this file is about is the DOOR. Until
  * `mnema status` existed, that derivation had one caller — the MCP server — so an agent
@@ -32,7 +32,7 @@
  *
  * WHAT THIS FILE DOES NOT DO is assert the derivation. Which decision governs, what
  * counts as awaiting a judgement, how the lists are ordered and where they are cut are
- * `copilot`'s (`bootstrap.test.ts`), and a copy of those assertions here would be a
+ * `context`'s (`bootstrap.test.ts`), and a copy of those assertions here would be a
  * second reading of the same rule — the thing the guards below exist to prevent.
  */
 
@@ -619,7 +619,7 @@ describe('the two surfaces answer with one derivation', () => {
 /** Every production file of the workspace, keyed by its path from `packages/`. */
 function production(): { path: string; code: string }[] {
   const found: { path: string; code: string }[] = [];
-  for (const directory of ['chain', 'core', 'copilot', 'code']) {
+  for (const directory of ['chain', 'core', 'context', 'code']) {
     const src = join(PACKAGES, directory, 'src');
     for (const path of sourceFiles(src)) {
       found.push({
@@ -639,7 +639,7 @@ function production(): { path: string; code: string }[] {
  *
  * A door that calls `bootstrap` reaches none of these directly; a door that decided to
  * assemble the answer for itself reaches most of them. That is the discriminant, and it
- * is not "imports from copilot".
+ * is not "imports from context".
  *
  * THAT PARAGRAPH SAID `brief` REACHES TWO OF THEM AND IT REACHES FOUR NOW. The document
  * grew the two counts of what is recorded here and AWAITING A JUDGEMENT — the number
@@ -683,7 +683,7 @@ function halvesReached(code: string): number {
   return halvesOf(code).length;
 }
 
-/** Every production file that CALLS the copilot's `bootstrap`, by path. */
+/** Every production file that CALLS the context package's `bootstrap`, by path. */
 function callsBootstrap(files: readonly { path: string; code: string }[]): string[] {
   return files
     .filter((file) => /\bbootstrap\s*\(/.test(file.code))
@@ -706,7 +706,7 @@ describe('one derivation, and the doors that serve it', () => {
     // The enumeration's own non-vacuity: a directory that stopped resolving would empty
     // both nets and pass in silence.
     expect(FILES.length).toBeGreaterThan(150);
-    expect(FILES.map((file) => file.path)).toContain('copilot/src/context/bootstrap.ts');
+    expect(FILES.map((file) => file.path)).toContain('context/src/context/bootstrap.ts');
     expect(FILES.map((file) => file.path)).toContain('code/src/commands/status.ts');
   });
 
@@ -717,7 +717,7 @@ describe('one derivation, and the doors that serve it', () => {
     expect(callsBootstrap(FILES)).toEqual([
       'code/src/commands/status.ts',
       'code/src/mcp/tools.ts',
-      'copilot/src/context/bootstrap.ts',
+      'context/src/context/bootstrap.ts',
     ]);
   });
 
@@ -726,10 +726,10 @@ describe('one derivation, and the doors that serve it', () => {
     // new, but by assembling it. Two files cross the count now, and the second is
     // reconciled by NAME rather than excused by a number.
     expect(composesTheOpening(FILES)).toEqual([
-      'copilot/src/context/bootstrap.ts',
-      'copilot/src/context/brief.ts',
+      'context/src/context/bootstrap.ts',
+      'context/src/context/brief.ts',
     ]);
-    const brief = FILES.find((file) => file.path === 'copilot/src/context/brief.ts')?.code ?? '';
+    const brief = FILES.find((file) => file.path === 'context/src/context/brief.ts')?.code ?? '';
     // WHICH four, exactly. The assertion this replaces was `toBe(2)`, and it would have
     // gone on passing over a brief that had traded `decisionsInForce` for `liveWork` —
     // a count cannot tell one half from another, which is the whole failure it existed
@@ -766,7 +766,7 @@ describe('one derivation, and the doors that serve it', () => {
         path: 'code/src/commands/other.ts',
         code: codeOnly('/** calls bootstrap( ) */ const a=1;'),
       },
-      { path: 'copilot/src/context/brief.ts', code: 'adoptedSkills(c); decisionsInForce(c);' },
+      { path: 'context/src/context/brief.ts', code: 'adoptedSkills(c); decisionsInForce(c);' },
     ];
     expect(callsBootstrap(innocent)).toEqual([]);
     expect(composesTheOpening(innocent)).toEqual([]);

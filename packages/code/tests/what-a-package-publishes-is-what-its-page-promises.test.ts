@@ -21,7 +21,7 @@
  * verifier out of an extracted tarball — with nothing else beside it — because a list of
  * filenames proves the files are present and not that they are enough.
  *
- * `@mnema/core` and `@mnema/copilot` carry `dist/` and no more. They are published because
+ * `@mnema/core` and `@mnema/context` carry `dist/` and no more. They are published because
  * `@mnema/code` depends on them and a `workspace:*` that does not resolve is an install that
  * fails, not because anybody should read them. Their pages say so.
  *
@@ -32,9 +32,9 @@
  *     `EUNSUPPORTEDPROTOCOL`; `pnpm pack` rewrites each one to the concrete version. A guard
  *     that measured `npm pack` would be measuring an artifact nobody can install.
  *   - `tar` AND NOT THE PACKER'S OWN `--json`, because the report is not the tarball.
- *     Measured on `@mnema/copilot`: `pnpm pack --json` listed 107 files and the tarball held
+ *     Measured on `@mnema/context`: `pnpm pack --json` listed 107 files and the tarball held
  *     108. The extra one is `LICENSE`, which pnpm copies from the workspace root — so the one
- *     file that makes `"license": "MIT"` more than a word in a manifest is exactly the file
+ *     file that makes `"license": "Apache-2.0"` more than a word in a manifest is exactly the file
  *     neither report mentions. A guard reading the report would have sworn it was absent.
  *
  * WHAT IT DOES NOT CHECK. Whether a publish would be ACCEPTED: that needs the registry, an
@@ -45,7 +45,7 @@
  * declared debt: every package shipped `dist/**.js.map` and `dist/**.d.ts.map` whose
  * `sources` named `../src/*.ts` with no `sourcesContent`, so in an installed tree, where
  * `src/` does not travel, they resolved to nothing. Measured on 30/09/2026 out of the
- * tarballs: 76 such maps in `@mnema/chain`, 134 in `@mnema/core`, 52 in `@mnema/copilot` and
+ * tarballs: 76 such maps in `@mnema/chain`, 134 in `@mnema/core`, 52 in `@mnema/context` and
  * 380 in `@mnema/code`. The choice was between shipping `src/` and embedding the source in
  * the maps, and it was made for the second. `tsconfig.base.json` now sets `inlineSources`,
  * which the compiler honours for the maps of the emitted JavaScript and NOT for declaration
@@ -145,7 +145,7 @@ describe('the workspace knows which packages it publishes', () => {
     expect(ALL.map((m) => m.name).sort()).toEqual([
       '@mnema/chain',
       '@mnema/code',
-      '@mnema/copilot',
+      '@mnema/context',
       '@mnema/core',
     ]);
     expect(PUBLISHABLE.map((m) => m.name).sort()).toEqual(ALL.map((m) => m.name).sort());
@@ -244,18 +244,56 @@ describe('nothing travels that is a fact about this machine', () => {
   });
 });
 
+/**
+ * What is wrong with the licence a set of packages declares and ships: a manifest that does
+ * not say Apache-2.0, and a tarball without the `LICENSE` or the `NOTICE`. A function and not
+ * inline assertions so the case below can hand it a fixture with ONE defect and watch it
+ * name that one.
+ */
+function licenceDefects(
+  manifests: readonly Pick<Manifest, 'name' | 'license'>[],
+  packed: ReadonlyMap<string, readonly string[]>,
+): string[] {
+  const declared = manifests
+    .filter((m) => m.license !== 'Apache-2.0')
+    .map((m) => `${m.name}: declares ${m.license ?? 'no licence'}`);
+  const shipped = [...packed].flatMap(([name, files]) =>
+    ['LICENSE', 'NOTICE']
+      .filter((file) => !files.includes(file))
+      .map((file) => `${name}: ${file} does not travel`),
+  );
+  return [...declared, ...shipped];
+}
+
 describe('every package carries the licence its manifest claims', () => {
-  it('declares one, and ships the text of it', () => {
-    // `"license": "MIT"` in a manifest is a word; the file is the grant. It travels because
-    // pnpm copies the workspace root's `LICENSE` into each package — which npm does not do,
-    // and which neither packer's `--json` report mentions. This case is the only thing in
-    // this workspace that would notice if that stopped happening.
-    const undeclared = PUBLISHABLE.filter((m) => m.license !== 'MIT').map((m) => m.where);
-    expect(undeclared).toEqual([]);
-    const missing = [...PACKED]
-      .filter(([, files]) => !files.includes('LICENSE'))
-      .map(([name]) => name);
-    expect(missing).toEqual([]);
+  it('declares one, and ships the text of it and the notice', () => {
+    // `"license": "Apache-2.0"` in a manifest is a word; the file is the grant. LICENSE travels
+    // because pnpm copies the workspace root's into each package, which npm does not do and
+    // which neither packer's `--json` report mentions. NOTICE is not copied by anybody, so
+    // each package carries its own and `files` names it; the Apache License asks that a
+    // NOTICE which exists travels with the work. This case is the only thing in this
+    // workspace that would notice if either stopped happening.
+    expect(licenceDefects(PUBLISHABLE, PACKED)).toEqual([]);
+  });
+
+  it('ships the root text, byte for byte, and not a copy that drifted', () => {
+    // The copies of NOTICE are one file said once per package; the guard is that each equals
+    // the root's. LICENSE is the official Apache-2.0 text, not edited.
+    const root = (name: string) => readFileSync(join(ROOT, name), 'utf-8');
+    expect(root('LICENSE')).toContain(
+      'Apache License\n                           Version 2.0, January 2004',
+    );
+    expect(root('NOTICE')).toContain('Copyright 2026 Felipe Sauer');
+    const drifted = [...TARBALLS].flatMap(([name, tarball]) =>
+      ['LICENSE', 'NOTICE']
+        .filter(
+          (file) =>
+            execFileSync('tar', ['-xOzf', tarball, `package/${file}`], { encoding: 'utf-8' }) !==
+            root(file),
+        )
+        .map((file) => `${name}: ${file}`),
+    );
+    expect(drifted).toEqual([]);
   });
 });
 
@@ -413,6 +451,7 @@ describe('the second reader runs out of what the package publishes', () => {
     expect(readdirSync(unpacked).sort()).toEqual([
       'FORMAT.md',
       'LICENSE',
+      'NOTICE',
       'README.md',
       'canonical-vectors.json',
       'dist',
@@ -510,9 +549,19 @@ describe('the guard is not vacuous', () => {
     expect(mapsWithoutTheirSource('m', ['dist/index.js.map'], filled, source)).toEqual([]);
   });
 
-  it('reddens when the licence text stops travelling', () => {
-    const without = carried('@mnema/chain').filter((path) => path !== 'LICENSE');
-    expect(without.includes('LICENSE')).toBe(false);
-    expect(carried('@mnema/chain').includes('LICENSE')).toBe(true);
+  it('reddens on a missing NOTICE, a missing LICENSE and a manifest that says MIT, each alone', () => {
+    const good = [{ name: 'p', license: 'Apache-2.0' }];
+    const all = ['LICENSE', 'NOTICE', 'package.json'];
+    const packed = (files: readonly string[]) => new Map([['p', files]]);
+    expect(licenceDefects(good, packed(all))).toEqual([]);
+    expect(licenceDefects(good, packed(all.filter((f) => f !== 'NOTICE')))).toEqual([
+      'p: NOTICE does not travel',
+    ]);
+    expect(licenceDefects(good, packed(all.filter((f) => f !== 'LICENSE')))).toEqual([
+      'p: LICENSE does not travel',
+    ]);
+    expect(licenceDefects([{ name: 'p', license: 'MIT' }], packed(all))).toEqual([
+      'p: declares MIT',
+    ]);
   });
 });

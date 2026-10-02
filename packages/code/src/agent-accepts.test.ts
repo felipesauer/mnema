@@ -1,4 +1,4 @@
-import type { ScopedCache } from '@mnema/copilot';
+import type { ScopedCache } from '@mnema/context';
 import { describe, expect, it } from 'vitest';
 import { AGENT_ACCEPTS_IS_OFF, acceptedByAnAgent, agentMayAccept } from './agent-accepts.js';
 

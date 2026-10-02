@@ -5,7 +5,7 @@
  *
  * The MCP surface hands the same answer back as structure, because its consumer is a
  * machine; here the consumer is a person, so it is lines. Nothing is derived on the way:
- * every item, every count and every order comes from `@mnema/copilot`'s `bootstrap`
+ * every item, every count and every order comes from `@mnema/context`'s `bootstrap`
  * exactly as it arrived, and what this module decides is only how each reads.
  *
  * THAT SENTENCE WAS ABOUT ONE SOURCE AND THERE ARE TWO NOW, and the rule it states is
@@ -23,7 +23,7 @@
  * NAMES, NEVER BODIES, and that is the derivation's rule kept rather than a layout
  * choice. A pattern appears as its name and a decision as its title and `ADR-<n>`
  * label; neither body is here, and `mnema show <id>` is the second read that serves one
- * (see `copilot/src/context/bootstrap.ts`). A work item carries no move list for the
+ * (see `context/src/context/bootstrap.ts`). A work item carries no move list for the
  * same reason — `mnema next-actions <id>` is its second read.
  *
  * A CUT SAYS IT WAS CUT. Three of the four lists are capped by the derivation and carry
@@ -64,7 +64,7 @@
  * classification of every value this module puts on a line, reconciled against the source.
  */
 
-import type { AwaitingJudgement, Bootstrap } from '@mnema/copilot';
+import type { AwaitingJudgement, Bootstrap } from '@mnema/context';
 import { oneLine } from '../one-line.js';
 import type { DecisionsOutside, UnimportedBase } from '../outside-the-record.js';
 import { fact } from './detail.js';
@@ -216,7 +216,7 @@ export function toImport(directory: string, documents: number): string {
  * section is about kinds nothing here looks at, so an empty one has no fact behind it:
  * printing `Nothing else recorded.` over a record with no memories would be this
  * surface asserting something it never asked. The derivation returns the field only
- * when there is something in it (`copilot`'s `unread.ts`), and this follows it.
+ * when there is something in it (`context`'s `unread.ts`), and this follows it.
  *
  * MEASURED, and it is why the section exists: over a record holding three memories
  * and nothing else, the four sections above printed four sentences of "nothing", with
@@ -269,7 +269,7 @@ function sessionLines(render: Render, status: Bootstrap): string[] {
  * this paragraph rather than a tidy-up. The list used to mean "has a legal move", and
  * under that rule a completed task was on it forever — `reopen` is legal from `DONE`
  * — which is how a person reading `5 actionable task(s)` on a terminal found one of
- * them marked `(DONE)`. The derivation now asks the disposition (see `copilot`'s
+ * them marked `(DONE)`. The derivation now asks the disposition (see `context`'s
  * `tasks.ts`), and a word that promises "there is an action available here" would
  * still be true of the task this list correctly leaves out. `live` is what the filter
  * actually says.

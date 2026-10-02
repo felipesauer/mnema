@@ -477,7 +477,7 @@ export const NAMES_THAT_NEED_MORE: Readonly<
     times: 1,
     why: 'the help that says what each line of the listing is for, naming the verb the id is for',
   },
-  'packages/copilot/src/intelligence/pattern-moves.ts: mnema show': {
+  'packages/context/src/intelligence/pattern-moves.ts: mnema show': {
     times: 1,
     why: 'names the read a person uses, in the sentence about what nothing records',
   },

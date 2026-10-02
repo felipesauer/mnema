@@ -2,7 +2,7 @@
  * The event type the intelligence derivations read — the SAME cataloged event
  * the chain proves, named here without ever importing the chain.
  *
- * The intelligence layer is unlike the rest of the copilot: it does not read the
+ * The intelligence layer is unlike the rest of the context package: it does not read the
  * ProjectionCache (the current STATE), it reads the raw event stream. timeline,
  * accountability and antipatterns are all about the SEQUENCE of facts — who
  * authorized what, in what order, how often a thing recurred — and the
@@ -12,7 +12,7 @@
  * (`who`/`which`/`at`/`kind`/`subject`) and its typed payload.
  *
  * The type is DERIVED from `orderedEvents`' return, not imported by name: the
- * copilot's boundary forbids naming the chain package directly (where the
+ * context's boundary forbids naming the chain package directly (where the
  * cataloged-event union lives), and the core does not re-export that type by
  * name. Deriving it from the one read function the core DOES export gives the
  * exact discriminated union — every arm, every payload — with no new dependency

@@ -1,8 +1,8 @@
 /**
  * EVERY SANDBOX MADE UNDER `tmpdir()` IS REMOVED BY THE NAME THAT WAS MADE.
  *
- * WHERE THIS COMES FROM. `packages/copilot/tests/support/chain.ts` made a sandbox with
- * `mkdtempSync(join(tmpdir(), 'mnema-copilot-'))` and nothing in that file removed anything.
+ * WHERE THIS COMES FROM. `packages/context/tests/support/chain.ts` made a sandbox with
+ * `mkdtempSync(join(tmpdir(), 'mnema-context-'))` and nothing in that file removed anything.
  * Measured on 21/08/2026: **296 directories per suite run**, **47.237** of them left in `/tmp`,
  * the newest one from the run that counted them. Three days of that had gone unnoticed because
  * a leaked directory costs nothing anybody looks at.
@@ -48,7 +48,7 @@
  * is clean today proves the rule silent, not right.
  *
  * IT ALSO USED TO READ ITS OWN PROSE AS CODE, and that is how the paragraph above got into the
- * corpus. The header quoted `mkdtempSync(join(tmpdir(), 'mnema-copilot-'))` and the sentence about
+ * corpus. The header quoted `mkdtempSync(join(tmpdir(), 'mnema-context-'))` and the sentence about
  * the fifteen callers quoted `rmSync(bench.root, …)`, so this file listed ITSELF among the files
  * that make a sandbox under `tmpdir()` — and passed, because the second quotation excused the
  * first. Rewording one sentence would have turned the guard red against itself. It reads
@@ -60,7 +60,7 @@
  * WHAT THIS STILL DOES NOT COVER. It reads one file at a time, so a name that leaves as a field
  * is cleared by any `rmSync(<anything>.<that field>)` in the same file, and a sandbox created in
  * one file and removed in another is not followed at all. The path across files is watched where
- * the path is known — `packages/copilot/tests/the-bench-leaves-nothing-behind.test.ts` names the
+ * the path is known — `packages/context/tests/the-bench-leaves-nothing-behind.test.ts` names the
  * directory `makeBench` created and asks the filesystem whether it went — and, for the 187
  * prefixes this corpus builds under, by `.github/what-the-suite-left-behind/`, which sweeps the
  * real `/tmp` with the suite stopped at both ends. Neither is this case, and neither is free:

@@ -23,7 +23,7 @@
  *     serves such a body to a caller that names it, so it can be RULED on. Serving a
  *     candidate to whoever asked to judge it and publishing a candidate as a standard
  *     are two different acts, which is why {@link EXPORTED} is a second table beside
- *     the copilot's `BODY_SERVED` rather than a reading of it.
+ *     the context package's `BODY_SERVED` rather than a reading of it.
  *   - a CLOSED one was ruled on, and exporting it re-introduces a retired way of
  *     working wearing the same face as a live one. `deprecated` is the sharp half:
  *     it WAS adopted, so every other trace of it looks like an adoption.
@@ -31,7 +31,7 @@
  * sentence the refusal says.
  *
  * THE RULE IS OVER THE DISPOSITION AND NOT OVER THE FIVE STATES, so a sixth state
- * cannot slip through: `SKILL_DISPOSITION` in `@mnema/copilot` is total over the
+ * cannot slip through: `SKILL_DISPOSITION` in `@mnema/context` is total over the
  * machine, so a state added tomorrow does not compile until it is classified, and
  * {@link EXPORTED} is total over the three dispositions, so a fourth disposition does
  * not compile until it has an answer here. The classification is ASKED
@@ -50,7 +50,7 @@
  * The anchor comes from the LAST transition, which is the act that put the pattern in
  * the state it is being exported in — by construction, not by matching a word: the
  * projection reads state off the last transition's `to`, so the last transition IS the
- * adoption of an adopted pattern. It is read through the copilot's `timeline`, the
+ * adoption of an adopted pattern. It is read through the context package's `timeline`, the
  * reading that already answers "what happened to this entity", rather than through a
  * second walk of the same index.
  *
@@ -71,7 +71,7 @@ import {
   type ScopedCache,
   skillDisposition,
   timeline,
-} from '@mnema/copilot';
+} from '@mnema/context';
 import { type DiscoveryEnv, isSkillState, resolveTrees } from '@mnema/core';
 import {
   agentSkillFile,
@@ -92,7 +92,7 @@ import {
  * Whether a pattern in each disposition leaves the record as a file — the ONE place
  * that decision is written.
  *
- * A table and not a predicate for the reason the copilot's `BODY_SERVED` is one: a
+ * A table and not a predicate for the reason the context package's `BODY_SERVED` is one: a
  * fourth disposition does not compile until it has an answer here, where a condition
  * naming the one it exports would silently refuse a disposition it had never heard of.
  * The two tables differ in exactly one row (`awaiting-judgement`), which is the whole
@@ -334,7 +334,7 @@ function noDescription(fromTheCaller: boolean): SkillExportRefused {
  * The identity that put this pattern in the state it is in: the `who` of its LAST
  * transition, or `undefined` when the history holds none.
  *
- * It reads the copilot's `timeline`, whose entries come back in the union's proven
+ * It reads the context package's `timeline`, whose entries come back in the union's proven
  * order — so the last transition in the list is the last transition there was, and
  * nothing here re-sorts by `at`, which would move a fact whenever a clock stepped back.
  */

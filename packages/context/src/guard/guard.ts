@@ -4,11 +4,11 @@
  *
  * The core's {@link gate} is already a pure function that decides whether a
  * transition is authorized and returns a typed verdict. guard exposes that
- * verdict as a read-only CONSULTATION from the copilot layer: a caller asks
+ * verdict as a read-only CONSULTATION from the context package layer: a caller asks
  * "would this move be allowed, and if not, why?" and gets the answer back as
  * data, having written nothing. It is deliberately a thin pass-through — the
  * whole point is that the authorization rule lives in ONE place (the gate), and
- * the copilot never re-implements or relaxes it.
+ * the context package never re-implements or relaxes it.
  *
  * WHAT THIS IS NOT. This is not a guard that INTERCEPTS an action before it
  * happens — that belongs to the surface, where there is an actual action to

@@ -28,7 +28,7 @@ import { tmpdir } from 'node:os';
 import { join, relative } from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 import { type CatalogEvent, catalogUpcasters } from '@mnema/chain';
-import type { RulesAtPath } from '@mnema/copilot';
+import type { RulesAtPath } from '@mnema/context';
 import { type DiscoveryEnv, orderedEvents, resolveTrees } from '@mnema/core';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { type CliIo, run } from '../src/cli.js';
@@ -506,7 +506,7 @@ describe('one derivation answers both relations', () => {
     // that agreed with what happened to them. So both entry points are one-liners over
     // `inForceUnder`, and a third question cannot be answered by a third copy.
     const source = readFileSync(
-      join(REPO, 'packages', 'copilot', 'src', 'intelligence', 'governance.ts'),
+      join(REPO, 'packages', 'context', 'src', 'intelligence', 'governance.ts'),
       'utf-8',
     );
     for (const entry of ['rulesInForceAt', 'asksForAPersonAt', 'refusesAWriteAt']) {

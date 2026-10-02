@@ -79,7 +79,7 @@
  *     `transcripts.ts` 2 (1), `switches.ts` 4 (3). The last figure REPLACES a premise
  *     this file used to state: `switches.ts` turned exactly 1 red and that one was this
  *     file's own backstop, because no behaviour case anywhere named `channelStates`.
- *     `copilot/src/context/switches.test.ts` falsified it — it asks the fold with two
+ *     `context/src/context/switches.test.ts` falsified it — it asks the fold with two
  *     trees and in both source orders — and all four are now held by their own answers
  *     rather than three of them.
  *   - An instant read through a computed key (`a[field]`) is invisible to the check
@@ -166,30 +166,30 @@ const THE_ORDERINGS: readonly Rostered[] = [
   { file: 'code/src/commands/usage.ts', by: 'byStartedDesc', means: NEWEST },
   { file: 'code/src/repl/complete.ts', by: 'theOrder', means: OTHER },
   { file: 'code/src/transcripts.ts', by: 'oldestSessionFirst', means: OLDEST },
-  { file: 'copilot/src/context/bootstrap.ts', by: 'byUpdatedDesc', means: NEWEST },
-  { file: 'copilot/src/context/bootstrap.ts', by: 'byUpdatedDesc', means: NEWEST },
-  { file: 'copilot/src/context/decisions.ts', by: 'bySettledDesc', means: NEWEST },
-  { file: 'copilot/src/context/focus.ts', by: 'byStartedDesc', means: NEWEST },
-  { file: 'copilot/src/context/focus.ts', by: 'byStartedDesc', means: NEWEST },
-  { file: 'copilot/src/context/search.ts', by: 'byTarget', means: OTHER },
+  { file: 'context/src/context/bootstrap.ts', by: 'byUpdatedDesc', means: NEWEST },
+  { file: 'context/src/context/bootstrap.ts', by: 'byUpdatedDesc', means: NEWEST },
+  { file: 'context/src/context/decisions.ts', by: 'bySettledDesc', means: NEWEST },
+  { file: 'context/src/context/focus.ts', by: 'byStartedDesc', means: NEWEST },
+  { file: 'context/src/context/focus.ts', by: 'byStartedDesc', means: NEWEST },
+  { file: 'context/src/context/search.ts', by: 'byTarget', means: OTHER },
   {
-    file: 'copilot/src/context/search.ts',
+    file: 'context/src/context/search.ts',
     by: 'byTheRecordsOwnOrder',
     means: NEWEST,
     via: 'compareSearchHits',
   },
-  { file: 'copilot/src/context/skills.ts', by: 'byNameThenId', means: OTHER },
-  { file: 'copilot/src/context/switches.ts', by: 'earliestSwitchOffFirst', means: OLDEST },
-  { file: 'copilot/src/intelligence/accountability.ts', by: 'byCountThenWhich', means: OTHER },
-  { file: 'copilot/src/intelligence/accountability.ts', by: 'byTotalThenWho', means: OTHER },
-  { file: 'copilot/src/intelligence/accountability.ts', by: 'projectlessLast', means: OTHER },
-  { file: 'copilot/src/intelligence/antipatterns.ts', by: 'projectlessLast', means: OTHER },
-  { file: 'copilot/src/intelligence/exposure.ts', by: 'compare', means: OTHER },
-  { file: 'copilot/src/intelligence/exposure.ts', by: 'oldestFirst', means: OLDEST },
-  { file: 'copilot/src/intelligence/exposure.ts', by: 'projectlessLast', means: OTHER },
-  { file: 'copilot/src/intelligence/governance.ts', by: 'bySpecificity', means: OTHER },
-  { file: 'copilot/src/intelligence/provenance.ts', by: 'byNameThenId', means: OTHER },
-  { file: 'copilot/src/intelligence/references.ts', by: 'byInstantThenEnds', means: OLDEST },
+  { file: 'context/src/context/skills.ts', by: 'byNameThenId', means: OTHER },
+  { file: 'context/src/context/switches.ts', by: 'earliestSwitchOffFirst', means: OLDEST },
+  { file: 'context/src/intelligence/accountability.ts', by: 'byCountThenWhich', means: OTHER },
+  { file: 'context/src/intelligence/accountability.ts', by: 'byTotalThenWho', means: OTHER },
+  { file: 'context/src/intelligence/accountability.ts', by: 'projectlessLast', means: OTHER },
+  { file: 'context/src/intelligence/antipatterns.ts', by: 'projectlessLast', means: OTHER },
+  { file: 'context/src/intelligence/exposure.ts', by: 'compare', means: OTHER },
+  { file: 'context/src/intelligence/exposure.ts', by: 'oldestFirst', means: OLDEST },
+  { file: 'context/src/intelligence/exposure.ts', by: 'projectlessLast', means: OTHER },
+  { file: 'context/src/intelligence/governance.ts', by: 'bySpecificity', means: OTHER },
+  { file: 'context/src/intelligence/provenance.ts', by: 'byNameThenId', means: OTHER },
+  { file: 'context/src/intelligence/references.ts', by: 'byInstantThenEnds', means: OLDEST },
 ];
 
 /**
@@ -562,9 +562,9 @@ describe('one rule for newest first', () => {
     // the tightening reached past what it was for.
     expect(oldest.map((each) => each.file).sort()).toEqual([
       'code/src/transcripts.ts',
-      'copilot/src/context/switches.ts',
-      'copilot/src/intelligence/exposure.ts',
-      'copilot/src/intelligence/references.ts',
+      'context/src/context/switches.ts',
+      'context/src/intelligence/exposure.ts',
+      'context/src/intelligence/references.ts',
     ]);
     for (const each of oldest) {
       expect(bodyOf(CODE.get(each.file) as string, each.by), asKey(each.file, each.by)).not.toBe(

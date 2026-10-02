@@ -26,7 +26,7 @@
 
 import { dirname } from 'node:path';
 import { catalogUpcasters } from '@mnema/chain';
-import type { AddressReach } from '@mnema/copilot';
+import type { AddressReach } from '@mnema/context';
 import {
   chainRootForScope,
   type DiscoveryEnv,

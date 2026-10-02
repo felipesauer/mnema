@@ -41,7 +41,7 @@ import { cpSync, mkdirSync, mkdtempSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { basename, join } from 'node:path';
 import { catalogUpcasters } from '@mnema/chain';
-import { governingRules, rulesInForceAt } from '@mnema/copilot';
+import { governingRules, rulesInForceAt } from '@mnema/context';
 import { type DiscoveryEnv, PROJECT_DIR, ProjectionCache } from '@mnema/core';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { runBrief } from '../src/commands/brief.js';
@@ -217,7 +217,7 @@ describe('an address names a rule a reader can open, or it is not a rule that go
 
   it('leaves the derivation one function, asked by every reading', () => {
     // The rule is applied at one site and the readings ask it. This drives the
-    // copilot's own entry points directly, so a fifth surface added tomorrow gets the
+    // context's own entry points directly, so a fifth surface added tomorrow gets the
     // same answer without a line of its own — and a surface that grew a walk of its own
     // would answer differently here than the reading above.
     addressPublicly(aRule('A private rule', 'private'), 'src');

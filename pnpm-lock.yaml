@@ -31,9 +31,9 @@ importers:
       '@mnema/chain':
         specifier: workspace:*
         version: link:../chain
-      '@mnema/copilot':
+      '@mnema/context':
         specifier: workspace:*
-        version: link:../copilot
+        version: link:../context
       '@mnema/core':
         specifier: workspace:*
         version: link:../core
@@ -60,7 +60,7 @@ importers:
         specifier: ^19.3.0
         version: 19.3.0
 
-  packages/copilot:
+  packages/context:
     dependencies:
       '@mnema/core':
         specifier: workspace:*

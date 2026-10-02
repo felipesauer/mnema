@@ -51,7 +51,7 @@ const REPO = fileURLToPath(new URL('../../../../', import.meta.url));
  */
 const PRODUCT_REFERENCES: readonly (readonly [string, RegExp])[] = [
   ['the npm scope', /@mnema\//],
-  ['a path into the product source', /packages\/(?:chain|core|code|copilot)\/src/],
+  ['a path into the product source', /packages\/(?:chain|core|code|context)\/src/],
   ['a compiled product path', /packages\/[a-z]+\/dist/],
   ['a TypeScript module', /\b[\w./-]+\.ts\b/],
   ['an import of the product', /\b(?:import|from)\s+mnema(?!verify)\b/],

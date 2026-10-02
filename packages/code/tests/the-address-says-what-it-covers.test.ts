@@ -330,11 +330,11 @@ describe('one place decides which relations carry an address', () => {
    * type can hold this: the domain is an open string by design (a relation is never a
    * closed enum in this product), which is exactly why the guard is structural.
    */
-  it('walks in the copilot exactly the relations the constant names', async () => {
+  it('walks in the context package exactly the relations the constant names', async () => {
     const { readFileSync } = await import('node:fs');
     const { fileURLToPath } = await import('node:url');
     const source = readFileSync(
-      fileURLToPath(new URL('../../copilot/src/intelligence/governance.ts', import.meta.url)),
+      fileURLToPath(new URL('../../context/src/intelligence/governance.ts', import.meta.url)),
       'utf-8',
     );
     const walked = [...source.matchAll(/addressesUnder\([^)]*?,\s*([A-Z_]+),/gs)].map((m) => m[1]);

@@ -3,7 +3,7 @@ import { fileURLToPath } from 'node:url';
 import { describe, expect, it } from 'vitest';
 
 /**
- * The copilot is a READ-only layer. It reads the proven record (the core's
+ * The context package is a READ-only layer. It reads the proven record (the core's
  * projections and its gate) and composes context from it — it never emits an
  * event, never writes state, never decides a fact. That is the whole reason it
  * is a package of its own and not folded into the core: the compiler and this
@@ -22,20 +22,20 @@ import { describe, expect, it } from 'vitest';
  *   2. `@mnema/chain` DIRECTLY — the chain is reachable transitively (it is the
  *      core's dependency), and it holds writers the `/write` ban does not cover:
  *      the raw builders, `openChainForWriting`, and `writeAnchor`/`persistKeyPair`
- *      which write to disk WITHOUT going through `.append`. The copilot reaches
+ *      which write to disk WITHOUT going through `.append`. The context package reaches
  *      every chain TYPE it needs through the core's re-exports, so its source
  *      never names `@mnema/chain` at all. (Test support under `tests/` may — it
  *      builds fixture chains — and is not scanned here, which walks `src/` only.)
  * The `.append(` guard below is a third, independent net for a writer obtained
  * some other way (passed in as a parameter, say).
  */
-describe('@mnema/copilot boundaries', () => {
+describe('@mnema/context boundaries', () => {
   const manifest = JSON.parse(
     readFileSync(fileURLToPath(new URL('../package.json', import.meta.url)), 'utf-8'),
   ) as { dependencies?: Record<string, string>; devDependencies?: Record<string, string> };
 
   it('depends at runtime on the core alone (a layer above the domain)', () => {
-    // The dependency direction is copilot → core → chain. The copilot reaches
+    // The dependency direction is context → core → chain. The context package reaches
     // chain types transitively through the core; declaring the chain as a
     // RUNTIME dependency would let it reach past the domain to the raw
     // writer/builders. (The chain appears in devDependencies only, so the test
@@ -45,7 +45,7 @@ describe('@mnema/copilot boundaries', () => {
   });
 
   it('never imports a writing surface (@mnema/core/write, nor @mnema/chain directly)', () => {
-    // The rule that makes read-only future-proof: the copilot source may name
+    // The rule that makes read-only future-proof: the context package source may name
     // neither writing surface. `@mnema/core/write` holds the core's write
     // operations; `@mnema/chain` (reachable transitively) holds the raw builders,
     // `openChainForWriting`, and the disk-writing `writeAnchor`/`persistKeyPair`

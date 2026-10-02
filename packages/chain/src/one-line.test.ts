@@ -7,7 +7,7 @@
  * several of those are DECLARED, loaded by commander before it has routed a word. So
  * whatever this module imports, every invocation of every verb pays for, including
  * `mnema --version`, which reads nothing. While the rule lived beside a framing that
- * asks `@mnema/copilot` what a pattern's state means, that price was one package, and it
+ * asks `@mnema/context` what a pattern's state means, that price was one package, and it
  * was paid twice by two slices that discovered it only when the floor guard went red: a
  * refusal site and a reading's phrase, both fixed with an import inside a branch rather
  * than at the cause.
@@ -137,7 +137,7 @@ describe('the rule of the line needs nothing', () => {
 
     // And the other direction: the module's doc is full of the word, and prose is not a
     // load. Both comment shapes, because the doc uses one and the code uses the other.
-    const doc = `/**${LF} * A static import would put the copilot on the floor.${LF} */`;
+    const doc = `/**${LF} * A static import would put the context package on the floor.${LF} */`;
     expect(reaches(doc)).toEqual([]);
     expect(reaches("// import { oneLine } from './x.js';")).toEqual([]);
     // The stripper does not eat code that follows a comment, which is how it would pass

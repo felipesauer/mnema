@@ -281,6 +281,28 @@ describe('the lock a writer holds while it appends', () => {
     expect(existsSync(tailLockPath({ root }, w.tail))).toBe(false);
   });
 
+  it('an exclusive act appends through the public doors, under the one hold it is in', () => {
+    const w = founded();
+    const lock = tailLockPath({ root }, w.tail);
+    const holder: string[] = [];
+    const appended = w.exclusively(() => {
+      holder.push(readFileSync(lock, 'utf-8'));
+      // Each of these asks for the lock this writer already holds: without the writer's own
+      // hold to answer them they would wait out DEFAULT_WAIT_MS on this live pid and refuse.
+      const one = w.append(task(w, 'inside-1'));
+      const two = w.appendAll([task(w, 'inside-2'), task(w, 'inside-3')]);
+      w.checkpoint();
+      holder.push(readFileSync(lock, 'utf-8'));
+      return [one, ...two].map((e) => e.link.seq);
+    });
+    // One hold for the whole act — the same record before and after the appends inside it.
+    expect(holder[0]).toBe(holder[1]);
+    expect(holder[0]).toContain(String(process.pid));
+    expect(appended).toEqual([1, 2, 3]);
+    expect(existsSync(lock)).toBe(false);
+    expect(verify(root, upcasters)).toMatchObject({ ok: true });
+  });
+
   it('runs the act with the lock held, and gives it back', () => {
     const path = join(root, 'locks', 'probe.lock');
     let heldInside = false;

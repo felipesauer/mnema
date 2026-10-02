@@ -3,7 +3,7 @@
  *
  * Everything here changes the record: it appends an event through a gate, or
  * opens the writer that does. It is a subpath of its own so a read-only consumer
- * (the copilot) can depend on `@mnema/core` for projections and the gate WITHOUT
+ * (the context package) can depend on `@mnema/core` for projections and the gate WITHOUT
  * being able to name a single writer — the separation is structural, enforced by
  * the module graph, not by a hand-maintained denylist. A new write operation
  * added here is caught by that boundary automatically, because it is born on the
@@ -98,6 +98,13 @@ export type {
   NotAReasonErr,
   UnreadableEventErr,
 } from './workflow/append.js';
+// Deciding on the record and appending what was decided, as one act against every other
+// session of this installation: what a write that reads before it appends goes through.
+export {
+  type Judged,
+  onTheRecordAsItStands,
+  type RecordAndWriter,
+} from './workflow/as-the-record-stands.js';
 export {
   type AnchorContext,
   type AnchorDecision,

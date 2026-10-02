@@ -146,11 +146,14 @@ const CORE_SRC = join(HERE, '..', 'core', 'src');
 const CODE_SRC = join(HERE, 'src');
 
 /**
- * How many core functions reach an append. Pinned so a broken scan fails loudly. 32 until the
+ * How many core functions reach an append. Pinned so a broken scan fails loudly.
+ *
+ * 33 since the founding is decided under the tail's lock: `ensureFounded` hands the half that
+ * may found to `foundUnderTheLock`, which is where the founding's append now is. 35 since the
  * refusal of a write arrived: `recordChannelRefused`, and the one body it shares with
  * `recordChannelAsked` (`recordRuleAtPath`).
  */
-const CORE_OPERATIONS_THAT_APPEND = 34;
+const CORE_OPERATIONS_THAT_APPEND = 35;
 
 /** How many paths of the shipped surface reach one of them. */
 const SURFACE_WRITE_PATHS = 34;

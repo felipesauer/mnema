@@ -45,7 +45,7 @@
  */
 
 import type { UpcasterRegistry } from '@mnema/chain';
-import { decisionDisposition } from '@mnema/copilot';
+import { decisionDisposition } from '@mnema/context';
 import { isDecisionState, orderedEvents, projectDecisions, projectSkills } from '@mnema/core';
 import { oneLine } from './one-line.js';
 

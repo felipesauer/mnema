@@ -276,9 +276,9 @@ describe('a record whose bodies DO fit one read', () => {
 
 describe('the budget is written in ONE place', () => {
   /**
-   * The rule is one function in `@mnema/copilot`, and the number it weighs against is
+   * The rule is one function in `@mnema/context`, and the number it weighs against is
    * one constant beside it. A second copy anywhere in production is the shape this
-   * accuses: two ceilings drift, and the surface would frame a cut the copilot did
+   * accuses: two ceilings drift, and the surface would frame a cut the context package did
    * not make (or fail to frame one it did).
    *
    * The discriminant is the NUMBER as it is written — `20 * 1024` — and not the
@@ -288,7 +288,7 @@ describe('the budget is written in ONE place', () => {
 
   function productionFiles(): { path: string; text: string }[] {
     const found: { path: string; text: string }[] = [];
-    for (const pkg of ['chain', 'core', 'copilot', 'code']) {
+    for (const pkg of ['chain', 'core', 'context', 'code']) {
       for (const file of sourceFiles(join(PACKAGES, pkg, 'src'))) {
         // CODE, with the comments and the string literals blanked: the number is
         // written in prose in more than one place on purpose (it is the reason the
@@ -306,7 +306,7 @@ describe('the budget is written in ONE place', () => {
   it('reads the whole of production, so the sweep below is not empty', () => {
     const files = productionFiles();
     expect(files.length).toBeGreaterThan(150);
-    expect(files.map((f) => f.path)).toContain(join('copilot', 'src', 'context', 'skills.ts'));
+    expect(files.map((f) => f.path)).toContain(join('context', 'src', 'context', 'skills.ts'));
   });
 
   it('holds the number once, where the rule that weighs it lives', () => {
@@ -314,7 +314,7 @@ describe('the budget is written in ONE place', () => {
       productionFiles()
         .filter((file) => BUDGET_LITERAL.test(file.text))
         .map((file) => file.path),
-    ).toEqual([join('copilot', 'src', 'context', 'skills.ts')]);
+    ).toEqual([join('context', 'src', 'context', 'skills.ts')]);
   });
 
   it('accuses a second copy — on input of its own', () => {

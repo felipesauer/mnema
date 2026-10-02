@@ -29,7 +29,7 @@
  * bounded reads as everything there is.
  */
 
-import type { ReferenceGraph } from '@mnema/copilot';
+import type { ReferenceGraph } from '@mnema/context';
 import { oneLine } from '../one-line.js';
 import { fact, subjectLine } from './detail.js';
 import { asScope, itemLine } from './items.js';

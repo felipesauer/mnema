@@ -32,13 +32,13 @@
  * neither — but it does have to SAY so, which is what the empty report's second line
  * does: a denominator beside an empty list otherwise reads as ground covered.
  *
- * Read-only: it reads the present trees' tails and folds them with the copilot's
+ * Read-only: it reads the present trees' tails and folds them with the context package's
  * pure `exposure`. No cache, no writer, no key, no actor. With no project it
  * refuses `NO_PROJECT`, like the other intelligence reads.
  */
 
 import { catalogUpcasters } from '@mnema/chain';
-import { type Exposure, exposure } from '@mnema/copilot';
+import { type Exposure, exposure } from '@mnema/context';
 import { type DiscoveryEnv, resolveTrees } from '@mnema/core';
 import { scopedEvents } from '../intelligence-source.js';
 

@@ -259,7 +259,7 @@ function scrub(lines: readonly string[]): string {
   // change to the product behind it and nothing a reader can act on.
   //
   // MATCHED ON THE SHAPE OF THE NAME rather than on the two that exist. Both are measured
-  // against the ASKER's clock (`@mnema/copilot`, `context/focus.ts`), which is exactly what
+  // against the ASKER's clock (`@mnema/context`, `context/focus.ts`), which is exactly what
   // makes them unpinnable, and the pair is that file's to grow — a list written here would be
   // a second idea of which numbers move. The sign is kept in the pattern because one of them
   // is allowed to be negative: two clocks disagreeing is a fact, and a scrub that missed the

@@ -141,7 +141,7 @@ describe('what this repository publishes cites only what this repository publish
         'packages/code/src/transcripts.ts',
         'packages/code/src/tree-sources.ts',
         'packages/code/src/wiring/index.ts',
-        'packages/copilot/src/context/unread.ts',
+        'packages/context/src/context/unread.ts',
         'plugin/hooks/session-start.mjs',
       ]),
     );

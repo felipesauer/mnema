@@ -70,6 +70,7 @@ export function registerAntipatterns(program: Command, wiring: Wiring): Declared
         deprecatedSkills,
         skillCandidates,
         labelCollisions,
+        divergentMoves,
       } = result.patterns;
       const moves = result.moves;
       io.out(render(statement('reopened tasks', String(reopenedTasks.length))));
@@ -135,6 +136,19 @@ export function registerAntipatterns(program: Command, wiring: Wiring): Declared
             statement(
               onOneLine`label naming more than one rule (${collision.adr})`,
               collision.ids.map((id) => onOneLine`${id}`).join(', '),
+            ),
+          ),
+        );
+      }
+      for (const divergent of divergentMoves) {
+        // Two moves of one subject out of one state — two machines that did not see each
+        // other. The id, the state and each move's `to` are read out of the record, so all
+        // of them are collapsed like the label above; the line says the moves and picks none.
+        io.out(
+          render(
+            statement(
+              onOneLine`moved twice out of one state (${divergent.kind} ${divergent.from})`,
+              onOneLine`${divergent.entityId}: ${divergent.to.join(', ')}`,
             ),
           ),
         );

@@ -48,7 +48,7 @@
  */
 
 import { spawnSync } from 'node:child_process';
-import type { ScopedCache } from '@mnema/copilot';
+import type { ScopedCache } from '@mnema/context';
 import { PROJECT_DIR, type TaskState, wordsOf } from '@mnema/core';
 
 /** What the session touches, as words — and where the words came from, counted. */

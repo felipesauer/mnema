@@ -41,7 +41,7 @@
  * record inside a read of one record, paid for on every open.
  */
 
-import type { RecordBody } from '@mnema/copilot';
+import type { RecordBody } from '@mnema/context';
 import type { DecisionActor, TransitionProof } from '@mnema/core';
 import { type AnchorForms, anchorText } from '../anchors.js';
 import { A_PERSON, neutralized, oneLine } from '../one-line.js';

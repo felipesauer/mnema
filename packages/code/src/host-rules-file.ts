@@ -47,7 +47,7 @@ only when the output says what it adds:
  * never in it — a file a host reads cannot hold a write.
  */
 
-import type { PushedRule } from '@mnema/copilot';
+import type { PushedRule } from '@mnema/context';
 import type { Scope } from '@mnema/core';
 import { ruleLine } from './edit-rules-push.js';
 import type { RulesFileHost } from './host-names.js';

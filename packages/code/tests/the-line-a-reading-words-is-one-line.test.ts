@@ -143,7 +143,7 @@ function copyQuoted(source: string, at: number, keep: (text: string) => void): n
  * listed for the reason this whole file exists. The eleven that import nothing but each
  * other are the primitives and the renderers: they shape what a caller hands them and
  * decide nothing about where it came from, so the question belongs to their callers.
- * The day one of them reaches for `@mnema/copilot` it joins the thirteen, its values
+ * The day one of them reaches for `@mnema/context` it joins the thirteen, its values
  * become sites, and the classification below stops being total.
  *
  * IT WAS *ANY IMPORT THAT IS NOT `./`* AND THAT IS NOT WHAT IT MEANS. The record arrives from a
@@ -571,6 +571,18 @@ const CLASSIFIED: Readonly<Record<string, { verdict: Verdict; why: string }>> = 
   'brief.ts «- \\`{}\\` — {}» ids #1': {
     verdict: 'composed',
     why: 'the ids that share it, each one already collapsed in the template above',
+  },
+  'brief.ts «- \\`{}\\` left {} to {}» oneLine(move.entityId) #1': {
+    verdict: 'collapsed',
+    why: 'the id of a rule two machines moved apart, read out of the record',
+  },
+  'brief.ts «- \\`{}\\` left {} to {}» oneLine(move.from) #1': {
+    verdict: 'collapsed',
+    why: 'the state that rule left twice — a transition’s `from`, read out of the record',
+  },
+  "brief.ts «- \\`{}\\` left {} to {}» oneLine(move.to.join(', then ')) #1": {
+    verdict: 'collapsed',
+    why: 'each move’s `to`, read out of the record and collapsed as one joined value',
   },
 
   // --- exported.ts: the file a pattern leaves in ---------------------------------
@@ -1708,8 +1720,8 @@ describe('every value this layer puts on a line is classified', () => {
     // 251 until the renderer began making an actor's control bytes visible and joined the
     // composers with its two template values; then 253 until the rules in force began saying who
     // accepted them (`brief.ts`, `record.ts`); 294 until `mnema rules` printed the four numbers
-    // of the relation that refuses a write.
-    expect(FOUND.sites.length).toBe(298);
+    // of the relation that refuses a write; 301 with the three the trunk added meanwhile.
+    expect(FOUND.sites.length).toBe(301);
   });
 
   it('reads the verdict off the source rather than believing the table', () => {
@@ -1730,10 +1742,10 @@ describe('every value this layer puts on a line is classified', () => {
     // No arm of the case above may be empty, or that much of it is vacuous.
     const verdicts = Object.values(CLASSIFIED).map((said) => said.verdict);
     const count = (verdict: Verdict): number => verdicts.filter((said) => said === verdict).length;
-    expect(count('collapsed')).toBe(68);
+    expect(count('collapsed')).toBe(71);
     expect(count('minted')).toBe(168);
     expect(count('composed')).toBe(62);
-    expect(FOUND.sites.filter((site) => /\boneLine\b/.test(site.expression))).toHaveLength(68);
+    expect(FOUND.sites.filter((site) => /\boneLine\b/.test(site.expression))).toHaveLength(71);
   });
 
   it('every reason says where the value comes from', () => {

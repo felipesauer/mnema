@@ -122,11 +122,11 @@ export const PUBLISHED_EXAMPLES: readonly PublishedExample[] = [
     whyPreamble: 'The same: the page carries both roots, so its block stands alone.',
   },
   {
-    pkg: 'copilot',
-    specifier: '@mnema/copilot',
-    readme: 'packages/copilot/README.md',
-    test: 'packages/copilot/tests/readme-example.test.ts',
-    specifiers: { '@mnema/copilot': '../src/index.js' },
+    pkg: 'context',
+    specifier: '@mnema/context',
+    readme: 'packages/context/README.md',
+    test: 'packages/context/tests/readme-example.test.ts',
+    specifiers: { '@mnema/context': '../src/index.js' },
     elided: [],
     whyElided:
       'Nothing is elided: this package only READS, and the state its example reads over is elided by the page itself, in the prose above the block ("given a rebuilt cache over your chain").',

@@ -3675,7 +3675,7 @@ describe('MCP — what enters the record', () => {
 
   it('serves `unread` over the wire when the record holds what no list is about', async () => {
     // THE LINK, in the shape `mcp-flag-reaches-the-server.test.ts` uses: not that the
-    // derivation is right (that is `copilot`'s), but that the field the description
+    // derivation is right (that is `context`'s), but that the field the description
     // above promises actually ARRIVES in the payload an agent parses — and that it is
     // absent when there is nothing to declare, which is what keeps five empty lists
     // over an empty record honest.

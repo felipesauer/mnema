@@ -53,9 +53,13 @@ Requires Node ≥ 22.12.0; the packages are ESM-only.
   Its tarball carries the format's specification (`FORMAT.md`), the published canonical
   vectors and event schema, and a second verifier written from that document in
   standard-library Python, importing nothing of the product.
-- **`@mnema/core` and `@mnema/copilot`**, released because `@mnema/code` depends on them: the
+- **`@mnema/core` and `@mnema/context`**, released because `@mnema/code` depends on them: the
   work domain (the gate, the projections, identity) and the read-only derivations that turn
   the record into the context an agent is handed.
+- **The read-only package is `@mnema/context`.** It was called the copilot layer while it was built,
+  and the name collided with GitHub Copilot, so it is renamed before its first release.
+- **Licensed under Apache-2.0 alone, with a `NOTICE`.** The whole repository and every package
+  carry the Apache License 2.0 and a `NOTICE` that credits the author; each tarball ships both.
 - **Source maps that carry their source.** Every map a package ships holds the text of the
   files it names, so a debugger in an installed tree can open them.
 

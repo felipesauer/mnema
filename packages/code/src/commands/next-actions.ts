@@ -6,7 +6,7 @@
  * state and returning the transitions that leave it — each a real move the gate
  * would authorize, so the suggestion never disagrees with what the gate accepts.
  * Read-only in the strict sense: it opens the cache, rebuilds, and calls the
- * copilot's PURE `nextActionsForTask`; no writer, no event, no key.
+ * context's PURE `nextActionsForTask`; no writer, no event, no key.
  *
  * It needs no actor — the answer is a property of the task's state and the
  * workflow, not of who is asking. It DOES need the task's home tree: a task is
@@ -17,7 +17,7 @@
  */
 
 import { catalogUpcasters } from '@mnema/chain';
-import { type NextAction, nextActionsForTask } from '@mnema/copilot';
+import { type NextAction, nextActionsForTask } from '@mnema/context';
 import { chainRootForScope, type DiscoveryEnv, locateEntityScope, resolveTrees } from '@mnema/core';
 import {
   linkBreaksOf,
@@ -59,7 +59,7 @@ export type NextActionsRefused =
 
 /**
  * Reports the legal next moves for the task with `id`. Locates the tree the task
- * was born in, opens that tree's cache, rebuilds, and returns the copilot's
+ * was born in, opens that tree's cache, rebuilds, and returns the context package's
  * `nextActionsForTask`. An empty list means the task exists but is terminal — no
  * move leaves its state. `UNKNOWN_TASK` means no visible tree holds it (it never
  * existed here, or its tail is truncated below the birth). With no project at all
