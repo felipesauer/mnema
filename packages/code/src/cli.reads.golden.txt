@@ -285,6 +285,10 @@ $ mnema brief
 | does, the write waits until a person decides, and the rule that asked is named by
 | its id in what comes back. Nothing waits for a file none of them asks about.
 |
+| 0 of them refuse a WRITE at an address: where one
+| does, the write does not happen, and the rule that refused is named by its id in
+| what comes back. Nothing is refused for a file none of them refuses.
+|
 | A decision made here enters this record with `record_decision`, awaiting a judgement.
 |
 | ## Decisions in force (0)
@@ -1464,7 +1468,7 @@ $ mnema status --actor <anchor> --json
 |       "title": "Keep the runbook in the record",
 |       "acceptance": {
 |         "by": "<anchor-short>",
-|         "unconfirmed": true
+|         "unconfirmed": false
 |       }
 |     }
 |   ],
@@ -1652,6 +1656,10 @@ $ mnema brief
 | does, the write waits until a person decides, and the rule that asked is named by
 | its id in what comes back. Nothing waits for a file none of them asks about.
 |
+| 0 of them refuse a WRITE at an address: where one
+| does, the write does not happen, and the rule that refused is named by its id in
+| what comes back. Nothing is refused for a file none of them refuses.
+|
 | A decision made here enters this record with `record_decision`, awaiting a judgement.
 |
 | ## Decisions in force (1)
@@ -1659,12 +1667,11 @@ $ mnema brief
 | Each was accepted, and none of them superseded. For the argument behind one, ask
 | `read_record` for its id.
 | Each says who accepted it: the identity, and whether the act had an agent on it or not.
-| 1 of them was accepted by an identity marked unconfirmed: it has accepted only decisions it recorded itself, and no other identity has accepted any of them. That is who has looked, not a verdict on the rule.
 |
 | 1 more decision is recorded here and awaiting a judgement, and it is not below.
 | Nothing waiting governs anything yet; ask `bootstrap` for what is waiting.
 |
-| - **ADR-1 — Keep the runbook in the record** · `<decision-runbook>` · accepted by <anchor-short> (a person; unconfirmed)
+| - **ADR-1 — Keep the runbook in the record** · `<decision-runbook>` · accepted by <anchor-short> (a person)
 |
 | ## Patterns adopted (1)
 |

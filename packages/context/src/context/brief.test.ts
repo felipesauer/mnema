@@ -37,6 +37,14 @@ import { brief } from './brief.js';
  * spellings are the same string is the surface's own case to make
  * (`code/tests/the-switch-is-a-fact.test.ts`).
  */
+/** A rule without the mark that needs somebody to ask — it is read over the trees a reading is handed. */
+const unmarked = <T extends { acceptance?: { unconfirmed: boolean } }>(item: T): T => ({
+  ...item,
+  ...(item.acceptance !== undefined
+    ? { acceptance: { ...item.acceptance, unconfirmed: false } }
+    : {}),
+});
+
 const CHANNELS = {
   editPush: 'edit-rules-push',
   asksAPerson: 'edit-asks-a-person',
@@ -136,8 +144,8 @@ describe('brief — everything that governs the work here', () => {
           adr: 'ADR-dec-1',
           title: 'Hand-rolled big-integer arithmetic',
           // WHO RULED IT: the one identity this bench has, which recorded the decision and
-          // accepted it itself and has never been ruled with — so it is unconfirmed.
-          acceptance: { by: expect.stringMatching(/^mnid:[0-9a-f]{8}$/), unconfirmed: true },
+          // accepted it itself, and it is the record's only identity — so there is nobody to confirm with and it is not marked.
+          acceptance: { by: expect.stringMatching(/^mnid:[0-9a-f]{8}$/), unconfirmed: false },
         },
       ],
       skills: [{ id: 'sk-1', name: 'One slice per PR' }],
@@ -504,7 +512,13 @@ describe('brief — everything that governs the work here', () => {
     ]);
     const ids = (items: readonly { id: string }[]): string[] => items.map((i) => i.id).sort();
     // Every rule of the document is a rule the agent may see…
-    for (const rule of composed.decisions) expect(opening.decisions).toContainEqual(rule);
+    // EXCEPT FOR THE MARK THAT NEEDS SOMEBODY TO ASK. `unconfirmed` is read over the trees each
+    // reading is handed, and this opening context was handed a second identity (the machine's
+    // own tree) that the committed document was not — so the same rule may be marked in one
+    // and not the other, and what is compared is the rule without it.
+    for (const rule of composed.decisions) {
+      expect(opening.decisions.map(unmarked)).toContainEqual(unmarked(rule));
+    }
     for (const pattern of composed.skills) expect(opening.skills).toContainEqual(pattern);
     // …and the converse fails, by exactly the rule that does not travel.
     expect(ids(opening.decisions)).toEqual(['dec-machine', 'dec-team']);
@@ -562,7 +576,9 @@ describe('brief — everything that governs the work here', () => {
     // and disagreed on a label would still fail.
     const travelled = opening.decisions.filter((d) => !privately.includes(d.id));
     expect(travelled.length).toBeGreaterThan(0);
-    for (const rule of travelled) expect(composed.decisions).toContainEqual(rule);
+    for (const rule of travelled) {
+      expect(composed.decisions.map(unmarked)).toContainEqual(unmarked(rule));
+    }
     // The other half: not one of the private rules is here.
     expect(composed.decisions.map((d) => d.id).filter((id) => privately.includes(id))).toEqual([]);
   });
