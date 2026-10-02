@@ -42,6 +42,6 @@ something that capture measured.
 ## "I know this project, I do not need to look at what is decided."
 
 `measurements/p1/results/2026-08-21-full/report.md` (the section "The agent asked, and this is the
-first time in three rounds that it did"): `mcp_asked` was false in every cell of the first two
+first time in three rounds that it did"): mcp_asked was false in every cell of the first two
 rounds (20 of 20 and 40 of 40) and true in 2 of 80 in the third, both on one task that already
 conformed. `plugin/README.md` opens on the same number.

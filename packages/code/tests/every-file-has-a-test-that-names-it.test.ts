@@ -876,6 +876,7 @@ const CLAUSES_PER_FILE: Readonly<Record<string, number>> = {
   'packages/code/tests/every-public-value-has-a-caller.test.ts': 6,
   'packages/code/tests/every-readme-says-what-it-does-not.test.ts': 5,
   'packages/code/tests/every-sandbox-is-removed-where-it-was-made.test.ts': 6,
+  'packages/code/tests/every-skill-the-plugin-ships-is-what-it-says.test.ts': 11,
   'packages/code/tests/every-tool-says-if-it-writes.test.ts': 15,
   'packages/code/tests/every-verb-says-if-it-writes.test.ts': 14,
   'packages/code/tests/every-write-signs-what-it-wrote.test.ts': 30,
