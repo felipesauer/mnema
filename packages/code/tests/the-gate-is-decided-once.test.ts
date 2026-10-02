@@ -41,12 +41,20 @@ describe('the gate is decided once', () => {
     // called either directly is red here by its path.
     expect(callersOf('readAsksForAPersonAt')).toEqual(['packages/code/src/edit-asks-a-person.ts']);
     expect(callersOf('editAsksNotice')).toEqual(['packages/code/src/edit-asks-a-person.ts']);
+    // And the refusal's, one grade up: only the module that decides what a write meets reads
+    // which rules refuse and composes what a refusal says.
+    expect(callersOf('readRefusesAWriteAt')).toEqual(['packages/code/src/what-a-write-meets.ts']);
+    expect(callersOf('editRefusesNotice')).toEqual(['packages/code/src/what-a-write-meets.ts']);
   });
 
   it('is asked by every door, and by nothing else', () => {
+    // THREE CALLERS WHILE THE DOORS MOVE. `whatAWriteMeets` decides both grades, refusal over
+    // asking, and calls this for the asking; the two doors still call this directly until each
+    // answers a refusal too, and then they call `whatAWriteMeets` instead and leave this list.
     expect(callersOf('whatAWriteAsks')).toEqual([
       'packages/code/src/commands/before-a-write.ts',
       'packages/code/src/mcp/tools.ts',
+      'packages/code/src/what-a-write-meets.ts',
     ]);
   });
 });

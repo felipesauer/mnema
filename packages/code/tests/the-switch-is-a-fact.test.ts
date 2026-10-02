@@ -61,9 +61,12 @@ import {
   EDIT_PUSH_CHANNEL,
   NOT_SWITCHABLE,
   RECALL_CHANNEL,
+  REFUSES_A_WRITE_CHANNEL,
   SWITCHABLE_CHANNELS,
   WHAT_STOPS,
 } from '../src/record-framing.js';
+import { withScopedCaches } from '../src/tree-sources.js';
+import { whatAWriteMeets } from '../src/what-a-write-meets.js';
 
 /** The repository root: `packages/code/tests/` is three levels under it. */
 const REPO = fileURLToPath(new URL('../../../', import.meta.url));
@@ -125,6 +128,14 @@ async function ruleAskingAt(title: string, path: string): Promise<string> {
   const id = idIn(await did('decision', 'record', title, `why ${title}`));
   await did('decision', 'move', 'accept', id, '--note', 'agreed');
   await did('link', id, path, '--rel', 'asks-for-a-person');
+  return id;
+}
+
+/** Records a rule in force and links it as REFUSING A WRITE at a path. */
+async function ruleRefusingAt(title: string, path: string): Promise<string> {
+  const id = idIn(await did('decision', 'record', title, `why ${title}`));
+  await did('decision', 'move', 'accept', id, '--note', 'agreed');
+  await did('link', id, path, '--rel', 'refuses-a-write');
   return id;
 }
 
@@ -360,6 +371,21 @@ const HONOURED: Readonly<
       await ruleAskingAt('Nobody touches billing alone', 'src/billing');
     },
     speaks: async () => asked(connect(), 'src/billing/invoice.ts') !== undefined,
+  },
+  [REFUSES_A_WRITE_CHANNEL]: {
+    // THE REFUSAL, driven through the one function every host's hook asks what a write meets
+    // (`what-a-write-meets.ts`), over the trees the process-hook door assembles. "Speaks" is a
+    // refusal — a refusal switched off falls to whatever else the path meets, here nothing.
+    setUp: async () => {
+      await ruleRefusingAt('Nobody writes billing by hand', 'src/billing');
+    },
+    speaks: async () =>
+      withScopedCaches(
+        resolveTrees(repo, env),
+        (sources) =>
+          whatAWriteMeets(sources, { paths: ['src/billing/invoice.ts'], root: repo, from: repo })
+            ?.grade === 'refuse',
+      ),
   },
   [AGENT_ACCEPTS_CHANNEL]: {
     // A GATE ON AN AGENT'S ACT, driven the way the act is made: a fresh proposal each time

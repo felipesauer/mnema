@@ -437,6 +437,10 @@ export const NAMES_THAT_NEED_MORE: Readonly<
     times: 1,
     why: 'the verb named in the sentence about reading decision files; its block has the line',
   },
+  'packages/code/src/edit-refuses-a-write.ts: mnema show': {
+    times: 1,
+    why: 'the read named in the sentence a refusal ends with when several rules refuse, beside the id each rule line carries; with one rule the same sentence hands `mnema show <id>` over whole',
+  },
   'packages/code/src/wiring/decision.ts: mnema decision record': {
     times: 1,
     why: 'names the verb a move’s `--alternatives` belongs to, and says the rest of the line in words',
@@ -561,7 +565,7 @@ export const HANDED_OVER: Readonly<
   // over (`agent-accepts.ts`: the read, the person's accept, and the switch in both positions).
   // line 40 until the plugin told a session which program answered that question (`hand-over.mjs`).
   // name 50 until the hook copy of the opening document named `mnema decision import` (`presentation/brief.ts`).
-  source: { line: 46, name: 51, flag: 3, unwritten: 3 },
+  source: { line: 47, name: 52, flag: 3, unwritten: 3 },
 };
 
 // ---------------------------------------------------------------------------
