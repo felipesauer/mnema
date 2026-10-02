@@ -81,6 +81,8 @@
  * the reason {@link HookSaid.ask} is a string and not a boolean.
  */
 
+import { neutralized } from '../one-line.js';
+
 /**
  * The hook event a reply answers, echoed back because the host compares it.
  *
@@ -175,7 +177,13 @@ const ASK: Escalation = 'ask';
  * built the JSON itself is a caller that can spell a field the host silently ignores.
  */
 export function hookReply(event: HookEvent, said: HookSaid): HookReply {
-  const { context, ask } = said;
+  // NEUTRALIZED HERE AND NOT ONLY WHEN THE REPLY IS SENT, because this reply is JSON the host
+  // PARSES: a control byte the serializer escapes comes out of the host's parser as the raw
+  // byte again, in the context a model reads. Escaping the serialized text would leave the
+  // decoded one exactly as it was. `neutralizes-control-bytes-everywhere.test.ts` decodes
+  // the reply and reads what the host would hand the model.
+  const context = said.context === undefined ? undefined : neutralized(said.context);
+  const ask = said.ask === undefined ? undefined : neutralized(said.ask);
   if (context !== undefined && ask !== undefined) {
     return {
       hookSpecificOutput: {

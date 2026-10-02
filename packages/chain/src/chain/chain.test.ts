@@ -19,7 +19,7 @@ import {
   taskCreated,
   taskTransitioned,
 } from '../events/build.js';
-import { canonicalStringify } from '../events/canonical.js';
+import { type CanonicalValue, canonicalStringify } from '../events/canonical.js';
 import { catalogUpcasters } from '../events/registry.js';
 import { openChainForWriting, signerAt, verify } from './chain.js';
 import { checkpointHash, serializeCheckpoint, signCheckpoint } from './checkpoint.js';
@@ -474,7 +474,12 @@ describe('chain — T4 (anonymous verify with only committed material)', () => {
       entry.link.hash = entryHash({ event: written, tail, seq: entry.link.seq, prev });
       prev = entry.link.hash;
     }
-    writeFileSync(seg, `${entries.map((e) => JSON.stringify(e)).join('\n')}\n`);
+    // Written CANONICALLY, as a forger who wants the line read has to: a line in any other
+    // spelling is refused at the parse and would never reach the binding check this is about.
+    writeFileSync(
+      seg,
+      `${entries.map((e) => canonicalStringify(e as unknown as CanonicalValue)).join('\n')}\n`,
+    );
     openChain(root).checkpoint(); // honest key re-signs the forged range
 
     const result = verify(root);
@@ -526,8 +531,8 @@ describe('chain — deletion and rollback', () => {
   });
 });
 
-describe('chain — checkpoint chaining defends signed history from a dropped trailing checkpoint', () => {
-  it('flags a chain break when a trailing checkpoint (and its signed events) are removed', () => {
+describe('chain — checkpoint chaining catches a dropped EARLIER checkpoint, and not an aligned cut', () => {
+  it('reads a cut that took the last checkpoint WITH its events as an honest shorter chain', () => {
     // Two checkpoints: 0..3 and 4..7. An adversary truncates the tail to 0..3
     // and deletes the second checkpoint, trying to pass off the shorter chain
     // as honest. The first checkpoint alone would verify — but the writer's

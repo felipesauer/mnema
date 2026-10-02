@@ -508,6 +508,34 @@ const MUTATIONS = [
     productBreaks: 'ok',
   },
   {
+    // THE THREE RE-SPELLINGS, one row each: a line whose value is untouched — so every hash and
+    // signature still closes — written with a space, with its keys in another order, or with
+    // its text decomposed. Section 4 refuses each, and the product does too since it began to
+    // compare the line with its canonical bytes (`both-readers-read-the-same-bytes.test.ts`).
+    name: 'whitespace-in-a-signed-line',
+    refusals: 1,
+    section: '4',
+    says: 'not the canonical serialization of what it holds',
+    productLayer: 'T1',
+    productBreaks: 'ok',
+  },
+  {
+    name: 'key-order-in-a-signed-line',
+    refusals: 1,
+    section: '4',
+    says: 'not the canonical serialization of what it holds',
+    productLayer: 'T1',
+    productBreaks: 'ok',
+  },
+  {
+    name: 'decomposed-text-in-a-signed-line',
+    refusals: 1,
+    section: '4',
+    says: 'not the canonical serialization of what it holds',
+    productLayer: 'T1',
+    productBreaks: 'ok',
+  },
+  {
     name: 'reordered-lines',
     refusals: 6,
     section: '3',

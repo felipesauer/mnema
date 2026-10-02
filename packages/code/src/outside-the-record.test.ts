@@ -30,10 +30,13 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { adrFileNames, type DiscoveryEnv, resolveTrees } from '@mnema/core';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
+import { runBrief } from './commands/brief.js';
 import { runDecisionImport } from './commands/decision-import.js';
 import { runInit } from './commands/init.js';
 import { runLink } from './commands/link.js';
 import { basesNeverImported, decisionsOutsideTheRecord } from './outside-the-record.js';
+import { briefDocument, briefWithin } from './presentation/brief.js';
+import { HOOK_TEXT_CEILING } from './presentation/within-a-hook.js';
 import { withScopedCaches } from './tree-sources.js';
 
 let sandbox: string;
@@ -366,5 +369,65 @@ describe('which conventional decision bases this checkout holds that the record 
     // And `adrFileNames` is the one function both readings ask, so the two agree on what a
     // document is: the drift reading counts the same file the same way.
     expect(adrFileNames(join(repo, 'docs', 'adr'))).toEqual(['0001-no-why.md']);
+  });
+});
+
+describe('what the copy of the opening document a hook carries says about them', () => {
+  /** The opening document, the way the hook asks for it and the way a file is written. */
+  function opening(repo: string, env: DiscoveryEnv): { hook: string[]; file: string[] } {
+    const asHook = runBrief({ cwd: repo, env }, { outside: true });
+    const asFile = runBrief({ cwd: repo, env });
+    if (!asHook.ok || !asFile.ok) throw new Error('no brief');
+    // The file's reading never reads the disk: the field is absent, not empty.
+    expect(asFile.outside).toBeUndefined();
+    return {
+      hook: briefWithin(asHook.brief, HOOK_TEXT_CEILING, asHook.outside),
+      file: briefDocument(asFile.brief),
+    };
+  }
+
+  it('counts the documents with no decision here — drift and arrival — and names the import', () => {
+    const { repo, env } = setup();
+    adr(repo, 'docs/decisions/0001-utc.md', 'Use UTC everywhere');
+    adr(repo, 'docs/decisions/0002-ids.md', 'Mint ids as uuidv7');
+    runDecisionImport({ cwd: repo, env }, { from: 'docs/decisions', write: true });
+    // Five documents and two of them imported: three outside a base the record names, and two
+    // in a conventional base it never read. The count is the five that are NOT in, never seven.
+    adr(repo, 'docs/decisions/0003-zones.md', 'Store zones as IANA names');
+    adr(repo, 'docs/decisions/0004-retry.md', 'Retry three times');
+    adr(repo, 'docs/decisions/0005-cents.md', 'Keep money as integer cents');
+    adr(repo, 'docs/adr/0001-queue.md', 'One queue per tenant');
+    adr(repo, 'docs/adr/0002-logs.md', 'Structured logs only');
+    const { hook, file } = opening(repo, env);
+    expect(hook.slice(file.length)).toEqual([
+      '',
+      'Not in the record: 5 decision documents in this checkout, by file name, with no decision derived from them here.',
+      '- docs/decisions (3) — mnema decision import docs/decisions',
+      '- docs/adr (2) — mnema decision import docs/adr',
+      '`mnema decision import <dir>` prints what it would propose from a directory and writes nothing; with `--write` it records each one as `proposed`, for a person to accept.',
+    ]);
+    // Everything before it is the file, byte for byte: the paragraph is ADDED, and only to the
+    // copy a hook carries — the file a person commits carries no count of a disk.
+    expect(hook.slice(0, file.length)).toEqual(file);
+    expect(file.join('\n')).not.toContain('Not in the record');
+  });
+
+  it('says nothing in a repository with no decision documents', () => {
+    const { repo, env } = setup();
+    const { hook, file } = opening(repo, env);
+    expect(hook).toEqual(file);
+  });
+
+  it('writes nothing to count them', () => {
+    const { repo, env } = setup();
+    adr(repo, 'docs/adr/0001-queue.md', 'One queue per tenant');
+    const before = runBrief({ cwd: repo, env });
+    opening(repo, env);
+    opening(repo, env);
+    const after = runBrief({ cwd: repo, env });
+    // Read twice and still nothing proposed: the count is a reading, never an import.
+    expect(after).toEqual(before);
+    expect(outside(repo, env)).toEqual([]);
+    expect(neverImported(repo, env)).toEqual([{ directory: 'docs/adr', documents: 1 }]);
   });
 });

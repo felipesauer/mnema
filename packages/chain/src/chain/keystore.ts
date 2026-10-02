@@ -36,7 +36,15 @@ import {
   writeFileSync,
   writeSync,
 } from 'node:fs';
-
+import { CodedError } from './coded-error.js';
+import {
+  isProtected,
+  KeyPassphraseWrongError,
+  protectPem,
+  readPrivateKeyPair,
+  replaceKeyFile,
+  unprotectPem,
+} from './key-protection.js';
 import {
   deriveAnchor,
   fingerprintOf,
@@ -44,7 +52,6 @@ import {
   type KeyObject,
   type KeyPair,
   type PublicHalf,
-  privateKeyFromPem,
   privateKeyToPem,
   publicKeyFromPem,
   publicKeyToPem,
@@ -52,6 +59,7 @@ import {
 import {
   ANCHOR_SUFFIX,
   anchorPath,
+  backupDir,
   type ChainLayout,
   gitignorePath,
   installationIdPath,
@@ -107,7 +115,7 @@ export function loadOrCreateKeyPair(layout: ChainLayout): KeyPair {
  * machine's first key. Minting is milliseconds, so reaching it means the holder stopped, not
  * that it is slow — the reasoning of the tail's own lock, whose budget this is.
  */
-export class KeyRootBusyError extends Error {
+export class KeyRootBusyError extends CodedError {
   readonly code = 'KEY_ROOT_BUSY';
 
   constructor(
@@ -145,13 +153,33 @@ export function listPrivateKeyFingerprints(layout: ChainLayout): string[] {
 }
 
 /** Finds a local key pair (a public key whose matching private key is present). */
+/**
+ * The fingerprint of the key this machine signs with, WITHOUT opening it — or `null` when it holds
+ * none (a signer would be minted).
+ *
+ * It is the file's own name, the same one {@link findLocalKeyPair} trusts, so the two cannot
+ * disagree about which key is the machine's. It exists for the questions that need to know WHO
+ * signs and never sign: the anchor a session writes as, a refusal that names it. With a
+ * passphrase on the key, answering those by opening the key would make "who am I" a question that
+ * needs the passphrase — and a server that could not even open its session, so every tool would
+ * answer with a bare error instead of the refusal that names the passphrase.
+ */
+export function localKeyFingerprint(layout: ChainLayout): string | null {
+  for (const fingerprint of listPrivateKeyFingerprints(layout)) {
+    if (existsSync(publicKeyPath(layout, fingerprint))) return fingerprint;
+  }
+  return null;
+}
+
 function findLocalKeyPair(layout: ChainLayout): KeyPair | null {
   for (const fingerprint of listPrivateKeyFingerprints(layout)) {
     const pubPath = publicKeyPath(layout, fingerprint);
     if (!existsSync(pubPath)) continue;
-    const privateKey = privateKeyFromPem(
-      readFileSync(privateKeyPath(layout, fingerprint), 'utf-8'),
-    );
+    // OPENED WITH THE PASSPHRASE WHEN THE KEY HAS ONE, and a key that cannot be opened THROWS. It
+    // must not be skipped: `loadOrCreateKeyPair` mints a new key when this finds none, and a
+    // machine whose only key is protected would then found a second identity on its next write.
+    const path = privateKeyPath(layout, fingerprint);
+    const { privateKey } = readPrivateKeyPair(path, readFileSync(path, 'utf-8'));
     const publicKey = publicKeyFromPem(readFileSync(pubPath, 'utf-8'));
     return { privateKey, publicKey, fingerprint };
   }
@@ -164,7 +192,14 @@ function findLocalKeyPair(layout: ChainLayout): KeyPair | null {
  * backup key's is: an operation that INSTALLS a key has to be able to tell the
  * person where their key now lives.
  */
-export function persistKeyPair(layout: ChainLayout, keyPair: KeyPair): string {
+export function persistKeyPair(
+  layout: ChainLayout,
+  keyPair: KeyPair,
+  // Given, the file is written PROTECTED (`key-protection.ts`). The two callers that have one are
+  // a restore of a key that was protected where it came from, and nothing else: a key is created
+  // in the clear, and `mnema key protect` is what changes that, on purpose.
+  options: { readonly passphrase?: string } = {},
+): string {
   ensureKeyRootIgnored(layout);
   mkdirSync(keysDir(layout), { recursive: true });
   writeFileSync(publicKeyPath(layout, keyPair.fingerprint), publicKeyToPem(keyPair.publicKey), {
@@ -174,10 +209,76 @@ export function persistKeyPair(layout: ChainLayout, keyPair: KeyPair): string {
   // Written aside and renamed into place, so a reader that lists `.key` names never finds one
   // created and not yet written: the name appears with the whole key behind it. The aside's
   // name does not end in `.key`, so a listing never takes it for one.
+  const pem = privateKeyToPem(keyPair.privateKey);
   const aside = `${privatePath}.${process.pid}.writing`;
-  writeFileSync(aside, privateKeyToPem(keyPair.privateKey), { encoding: 'utf-8', mode: 0o600 });
+  writeFileSync(
+    aside,
+    options.passphrase === undefined ? pem : protectPem(pem, options.passphrase),
+    {
+      encoding: 'utf-8',
+      mode: 0o600,
+    },
+  );
   renameSync(aside, privatePath);
   return privatePath;
+}
+
+/**
+ * Every private key file under a key root: this machine's keys, and the cold backup `init`
+ * made. Both are key material at rest, and both are what a passphrase is for.
+ */
+export function listPrivateKeyFiles(layout: ChainLayout): string[] {
+  const files: string[] = [];
+  for (const dir of [keysDir(layout), backupDir(layout)]) {
+    if (!existsSync(dir)) continue;
+    for (const name of readdirSync(dir).sort()) {
+      if (name.endsWith(PRIVATE_KEY_SUFFIX)) files.push(`${dir}/${name}`);
+    }
+  }
+  return files;
+}
+
+/** One key file `mnema key protect` or `unprotect` looked at, and whether it changed it. */
+export interface KeyFileChange {
+  readonly path: string;
+  readonly changed: boolean;
+}
+
+/**
+ * Encrypts every private key file under the key root with `passphrase`, in place and atomically.
+ * A file already protected is left as it is — even one protected with ANOTHER passphrase, which
+ * this does not open: changing a passphrase is `unprotect` and then `protect`, so that it is
+ * never done by accident.
+ */
+export function protectPrivateKeys(layout: ChainLayout, passphrase: string): KeyFileChange[] {
+  return listPrivateKeyFiles(layout).map((path) => {
+    const text = readFileSync(path, 'utf-8');
+    if (isProtected(text)) return { path, changed: false };
+    replaceKeyFile(path, protectPem(text, passphrase));
+    return { path, changed: true };
+  });
+}
+
+/**
+ * Writes every protected key file under the key root back in the clear, opening each with
+ * `passphrase`. Every file is opened BEFORE any is written, so a wrong passphrase leaves all of
+ * them as they were rather than the first few decrypted.
+ *
+ * @throws {KeyPassphraseWrongError} for the first file the passphrase does not open.
+ */
+export function unprotectPrivateKeys(layout: ChainLayout, passphrase: string): KeyFileChange[] {
+  const opened = listPrivateKeyFiles(layout).map((path) => {
+    const text = readFileSync(path, 'utf-8');
+    if (!isProtected(text)) return { path, pem: undefined };
+    const pem = unprotectPem(text, passphrase);
+    if (pem === undefined) throw new KeyPassphraseWrongError(path);
+    return { path, pem };
+  });
+  return opened.map(({ path, pem }) => {
+    if (pem === undefined) return { path, changed: false };
+    replaceKeyFile(path, pem);
+    return { path, changed: true };
+  });
 }
 
 /**
@@ -330,7 +431,7 @@ export const INSTALLATION_ID_POLL_MS = 5;
  * refuses to guess, because guessing is the fork {@link loadOrCreateInstallationId} exists
  * to prevent.
  */
-export class UnwrittenInstallationIdError extends Error {
+export class UnwrittenInstallationIdError extends CodedError {
   readonly code = 'UNWRITTEN_INSTALLATION_ID';
 
   constructor(
@@ -353,7 +454,7 @@ export class UnwrittenInstallationIdError extends Error {
  * place it points to. There is nobody to wait for, so the refusal comes at once, and it says
  * where the link points, which is what a person needs to see before removing it.
  */
-export class DanglingInstallationIdError extends Error {
+export class DanglingInstallationIdError extends CodedError {
   readonly code = 'DANGLING_INSTALLATION_ID';
 
   constructor(
@@ -376,7 +477,7 @@ export class DanglingInstallationIdError extends Error {
  * filesystem answers the two questions differently — neither is a state this machine resolves by
  * guessing, for the reason {@link UnwrittenInstallationIdError} gives.
  */
-export class UnsettledInstallationIdError extends Error {
+export class UnsettledInstallationIdError extends CodedError {
   readonly code = 'UNSETTLED_INSTALLATION_ID';
 
   constructor(

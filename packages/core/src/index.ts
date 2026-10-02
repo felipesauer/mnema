@@ -99,6 +99,7 @@ export type { ChannelSwitchProjection } from './projections/channel.js';
 export {
   type AdrCollision,
   adrCollisions,
+  type DecisionActor,
   type DecisionProjection,
   projectDecisions,
 } from './projections/decision.js';
@@ -215,6 +216,9 @@ export {
   type PassedOverTree,
   PRIVATE_DIR,
   PROJECT_DIR,
+  type PrivateTreeVisibility,
+  PrivateTreeVisibleError,
+  privateTreeVisibility,
   type ResolvedTrees,
   type RoutedKind,
   replayingBirthProbe,

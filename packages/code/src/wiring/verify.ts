@@ -54,6 +54,7 @@ import type {
 } from '@mnema/chain';
 import type { Command } from 'commander';
 import type { TreeReport, WorkspaceDone } from '../commands/verify.js';
+import type { SinceReading } from '../commands/verify-since.js';
 import { oneLine } from '../one-line.js';
 import { fact } from '../presentation/detail.js';
 import type { Line, Severity } from '../presentation/line.js';
@@ -92,7 +93,8 @@ const LEVEL_MEANS: Readonly<Record<LevelRequirement, string>> = {
   signed:
     'also fail unless every event is covered by a verified signature — every write here ' +
     'signs what it wrote, so it passes whenever nothing is mid-write, and what it catches ' +
-    'is a record whose checkpoints were removed or did not verify',
+    'is checkpoints that did not verify or were taken out from under the events they ' +
+    'signed — not a cut that took the newest events with their checkpoint',
   witnessed:
     'also fail unless an external witness dates the record — `mnema witness stamp` asks ' +
     'for one, and it passes once a Bitcoin block carries it, never while it is pending',
@@ -289,6 +291,22 @@ function noRecordAtNamedPaths(dirs: readonly string[]): string {
 }
 
 /**
+ * What a verdict owes about a private tree git would stage — the chain is whole, and the
+ * working tree is about to publish it.
+ *
+ * Said by `verify` and not by a refusal alone because a refusal only meets the person who
+ * WRITES: a private record already on disk, in a project whose committed `.gitignore` lost its
+ * line, is exposed to every `git add` whether or not anybody writes again. The paths come from
+ * the file system, so they go through the tag.
+ */
+function privateTreeVisible(
+  named: string,
+  seen: { readonly path: string; readonly gitignore: string },
+): string {
+  return onOneLine`note [private tree] ${named}: git would stage ${seen.path} — no rule ignores it, so the next \`git add\` would commit what this machine keeps to itself. ${seen.gitignore} is where its \`/private/\` line belongs`;
+}
+
+/**
  * WHY THE EXIT IS NON-ZERO WHEN NOTHING SAYS SO — one sentence, for the caller's
  * minimum over a record that has no break in it.
  *
@@ -386,6 +404,14 @@ export function registerVerify(program: Command, wiring: Wiring): Declared {
       ),
     )
     .option(
+      '--since <rev>',
+      'also fail unless the committed record is the one <rev> held, grown at the end: ' +
+        'every file it held under tails/ and keys/ is still here, and every segment and ' +
+        'checkpoints.jsonl still begins with the bytes it held. Catches what no --require ' +
+        'can — a cut that took events with their checkpoint, a record founded again, a ' +
+        'rewrite signed again. Reads git, never the network, so <rev> must be in this clone',
+    )
+    .option(
       '--json',
       'emit the verdict as JSON instead of prose — the whole reading, per tree, plus ' +
         'what NO --require value answers. The exit code is unchanged: this changes the ' +
@@ -397,6 +423,7 @@ export function registerVerify(program: Command, wiring: Wiring): Declared {
         global?: boolean;
         workspace?: string[];
         allowNoRecord?: boolean;
+        since?: string;
         json?: boolean;
       }) => {
         // Loaded when the verb runs, never while the program is declared: an eager
@@ -407,6 +434,14 @@ export function registerVerify(program: Command, wiring: Wiring): Declared {
         if (requirement === INVALID_REQUIREMENT) return;
         const global = opts.global === true;
         const allowWithoutRecord = opts.allowNoRecord === true;
+        if (opts.workspace !== undefined && opts.since !== undefined) {
+          reportUsage(
+            wiring,
+            '`--since` rules on the project you stand in, and `--workspace` names others',
+            'Run `mnema verify --since <rev>` inside each project.',
+          );
+          return;
+        }
         if (opts.workspace !== undefined) {
           const set = runVerifyWorkspace({
             ...here(),
@@ -445,11 +480,29 @@ export function registerVerify(program: Command, wiring: Wiring): Declared {
           reportRefusal(wiring, { reason: 'NO_PROJECT' });
           return;
         }
+        // The comparison with a base, only when one was named: without `--since` nothing
+        // here runs, and the verdict and its exit are the ones a bare `verify` gives.
+        const compared =
+          opts.since === undefined
+            ? undefined
+            : (await import('../commands/verify-since.js')).sinceBase({
+                recordRoot: (result.trees[0] as TreeReport).root,
+                rev: opts.since,
+              });
+        const grewOnly =
+          compared === undefined || (compared.kind === 'read' && compared.findings.length === 0);
         if (opts.json === true) {
-          reportAsJson(wiring, result, result.requirementMet, NOT_ANSWERED_BY_ANY_REQUIREMENT);
+          reportAsJson(
+            wiring,
+            compared === undefined ? result : { ...result, since: compared },
+            result.requirementMet && grewOnly,
+            NOT_ANSWERED_BY_ANY_REQUIREMENT,
+          );
           return;
         }
         for (const tree of result.trees) report(io, render, tree);
+        if (compared !== undefined) reportSince(io, render, compared);
+        if (!grewOnly && result.requirementMet) io.fail();
         if (!result.requirementMet) {
           // A break already said why the exit is non-zero — the FAILED headline and
           // the issues under it. What needs a line of its own is the exit that comes
@@ -477,6 +530,43 @@ export function registerVerify(program: Command, wiring: Wiring): Declared {
       },
     );
   return readsTheRecord(verify);
+}
+
+/**
+ * WHAT `--since` FOUND, one line per file and a line that says what was compared.
+ *
+ * A file that is gone or no longer begins with its old bytes goes to stderr, where the
+ * evidence for a failure goes on this surface; the line that says the record only grew
+ * goes to stdout, like a census note. A refusal — no git, no such commit — is a failure
+ * too: the caller asked for a comparison and none was made, and a gate that passed over
+ * that would be the no-op `--workspace` was once.
+ */
+function reportSince(io: CliIo, render: Render, since: SinceReading): void {
+  if (since.kind === 'refused') {
+    io.err(render(fact(onOneLine`since ${since.rev}: not compared — ${since.why}`)));
+    return;
+  }
+  const at = `since ${since.rev} (${since.commit.slice(0, 12)})`;
+  for (const finding of since.findings) {
+    io.err(
+      render(
+        fact(
+          finding.what === 'gone'
+            ? onOneLine`${at}: gone — ${finding.file} was in the record there and is not here`
+            : onOneLine`${at}: rewritten — ${finding.file} no longer begins with the bytes it held there`,
+        ),
+      ),
+    );
+  }
+  if (since.findings.length === 0) {
+    io.out(
+      render(
+        fact(
+          onOneLine`${at}: the record only grew — ${String(since.held)} file(s) it held are here, and every segment and checkpoint file begins with its bytes`,
+        ),
+      ),
+    );
+  }
 }
 
 /**
@@ -636,6 +726,12 @@ function report(io: CliIo, render: Render, tree: TreeReport, where = ''): void {
         ),
       ),
     );
+  }
+  // What the chain cannot know about its own tree: that git would take it. On stderr, with the
+  // evidence, and not a break — the verdict above is about the record, and the exit is not
+  // moved by a fact about a working tree.
+  if (tree.visibleToGit !== undefined) {
+    io.err(render(fact(privateTreeVisible(named, tree.visibleToGit))));
   }
 }
 

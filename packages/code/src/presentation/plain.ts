@@ -41,6 +41,7 @@
  * strip the escapes, and you have the plain line, exactly (`folded.test.ts`).
  */
 
+import { neutralized } from '../one-line.js';
 import type { Line, Part, Role } from './line.js';
 import type { Render } from './render.js';
 import { widthOfText } from './width.js';
@@ -153,10 +154,18 @@ const PRECEDED_BY: { readonly [R in Role]: string } = {
  * for the roles this refuses to invent).
  */
 export function renderWith(paint: (part: Part) => string): Render {
+  // THE TEXT OF A PART IS NEUTRALIZED HERE, BEFORE IT IS PAINTED, because this is the one
+  // place every part of every line passes and the painting adds bytes that ARE controls:
+  // neutralizing after would escape the product's own bold and colour, and neutralizing
+  // anywhere earlier would be a rule each builder has to remember. A part is text an actor
+  // wrote or a word of ours; the second is unchanged by it. `neutralizes-control-bytes-
+  // everywhere.test.ts` asks it of a part holding every control byte.
+  const clean = (part: Part): Part => ({ ...part, text: neutralized(part.text) });
   return (line) => {
     let text = indentOf(line.indent);
     for (const [index, part] of line.parts.entries()) {
-      text += index === 0 ? paint(part) : `${PRECEDED_BY[part.role]}${paint(part)}`;
+      const painted = paint(clean(part));
+      text += index === 0 ? painted : `${PRECEDED_BY[part.role]}${painted}`;
     }
     return text;
   };

@@ -104,9 +104,13 @@ export function statusReport(
   actor: string,
   outside: readonly DecisionsOutside[],
   neverImported: readonly UnimportedBase[],
+  asThisMachine = false,
 ): string[] {
   return [
     `${actor} — where things stand.`,
+    ...(asThisMachine
+      ? [render(fact('The identity this machine writes as in this project.'))]
+      : []),
     ...sessionLines(render, status),
     '',
     ...workLines(render, status),
@@ -152,10 +156,7 @@ function neverImportedLines(neverImported: readonly UnimportedBase[]): string[] 
   return [
     '',
     'Never imported:',
-    ...neverImported.map(
-      (base) =>
-        `  ${oneLine(base.directory)} (${base.documents}) — mnema decision import ${oneLine(base.directory)}`,
-    ),
+    ...neverImported.map((base) => `  ${toImport(base.directory, base.documents)}`),
   ];
 }
 
@@ -191,11 +192,18 @@ function outsideLines(outside: readonly DecisionsOutside[]): string[] {
   return [
     '',
     'Not in the record:',
-    ...outside.map(
-      (base) =>
-        `  ${oneLine(base.directory)} (${base.outside}) — mnema decision import ${oneLine(base.directory)}`,
-    ),
+    ...outside.map((base) => `  ${toImport(base.directory, base.outside)}`),
   ];
+}
+
+/**
+ * One base and its count, and the command that reaches it: `docs/decisions (4) — mnema decision
+ * import docs/decisions`. The one spelling of that fact, for both sections above and for the
+ * paragraph the opening document's hook copy carries (`presentation/brief.ts`), so two surfaces
+ * telling a reader about the same files cannot word them two ways.
+ */
+export function toImport(directory: string, documents: number): string {
+  return `${oneLine(directory)} (${documents}) — mnema decision import ${oneLine(directory)}`;
 }
 
 /**

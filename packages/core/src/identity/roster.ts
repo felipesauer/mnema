@@ -84,7 +84,9 @@ export type EnrollRequestErrorCode =
    */
   | 'NOT_A_REASON'
   /** Never earned today either: an enrollment carries no title. Here for the same reason. */
-  | 'NOT_A_TITLE';
+  | 'NOT_A_TITLE'
+  /** Never earned today either: an enrollment names no reference a caller typed. */
+  | 'NOT_A_REFERENCE';
 
 /** The enrollment was refused; nothing was written. */
 export interface EnrollRequestErr {
@@ -237,7 +239,9 @@ export type RevokeMemberErrorCode =
    * Never earned today: a revocation carries no title. It is here because the door's refusal is
    * one type (`AppendRefusal`), forwarded as it comes.
    */
-  | 'NOT_A_TITLE';
+  | 'NOT_A_TITLE'
+  /** Never earned today either: an enrollment names no reference a caller typed. */
+  | 'NOT_A_REFERENCE';
 
 /** The revocation was refused; nothing was written. */
 export interface RevokeMemberErr {

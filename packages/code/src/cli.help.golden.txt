@@ -15,6 +15,10 @@ $ mnema
 !                                         Style never changes what a line says.
 !                                         (choices: "auto", "always", "never",
 !                                         default: "auto")
+!   --identify                            print this program’s package name and
+!                                         version — how the mnema plugin tells
+!                                         this `mnema` from another program of the
+!                                         same name on the PATH
 !   -h, --help                            display help for command
 !
 ! Commands:
@@ -61,6 +65,8 @@ $ mnema
 !                                         (NDJSON, envelope only — never a body)
 !   refs [options] <id>                   show what an entity is connected to
 !                                         across the trees
+!   diagram <subject> [id]                print a state machine, or an entity’s
+!                                         history or connections, as mermaid
 !   rules [options] <path>                show which recorded rules govern a path,
 !                                         and which address nothing
 !   rules-file [options]                  print the rules addressed at a file as
@@ -84,7 +90,8 @@ $ mnema
 !   witness [options]                     ask an outside witness to date this
 !                                         record, and read where that stands
 !   switch                                turn off, or back on, what mnema hands
-!                                         to a model unasked
+!                                         to a model unasked, and whether an agent
+!                                         may accept a decision
 !   verify [options]                      verify this project's record — its
 !                                         committed tree and its private one
 !   mcp [options]                         run the mnema MCP server over stdio (for
@@ -113,6 +120,10 @@ $ mnema --help
 |                                         Style never changes what a line says.
 |                                         (choices: "auto", "always", "never",
 |                                         default: "auto")
+|   --identify                            print this program’s package name and
+|                                         version — how the mnema plugin tells
+|                                         this `mnema` from another program of the
+|                                         same name on the PATH
 |   -h, --help                            display help for command
 |
 | Commands:
@@ -159,6 +170,8 @@ $ mnema --help
 |                                         (NDJSON, envelope only — never a body)
 |   refs [options] <id>                   show what an entity is connected to
 |                                         across the trees
+|   diagram <subject> [id]                print a state machine, or an entity’s
+|                                         history or connections, as mermaid
 |   rules [options] <path>                show which recorded rules govern a path,
 |                                         and which address nothing
 |   rules-file [options]                  print the rules addressed at a file as
@@ -182,7 +195,8 @@ $ mnema --help
 |   witness [options]                     ask an outside witness to date this
 |                                         record, and read where that stands
 |   switch                                turn off, or back on, what mnema hands
-|                                         to a model unasked
+|                                         to a model unasked, and whether an agent
+|                                         may accept a decision
 |   verify [options]                      verify this project's record — its
 |                                         committed tree and its private one
 |   mcp [options]                         run the mnema MCP server over stdio (for
@@ -251,7 +265,7 @@ $ mnema decision --help
 |
 | Commands:
 |   record [options] <title> <rationale>   record a decision in the current project
-|   move [options] <action> <id>           accept or reject a decision (follows the decision; takes no --scope)
+|   move [options] <action> <id...>        accept or reject a decision (follows the decision; takes no --scope)
 |   supersede [options] <old-id> <new-id>  supersede a decision with a later one (follows the decision; takes no --scope)
 |   import [options] <dir>                 propose the decisions already written in this repository’s decision files
 |   help [command]                         display help for command
@@ -452,7 +466,8 @@ $ mnema status --help
 | Options:
 |   --actor <id>  the identity whose session to report — the `mnid:…` from `mnema
 |                 accountability`, or the short form the reads print (any prefix
-|                 that names one identity here)
+|                 that names one identity here). Omitted, it is the identity this
+|                 machine writes as in this project, and the report says so.
 |   --json        emit the faithful opening context as JSON
 |   -h, --help    display help for command
 
@@ -647,6 +662,27 @@ $ mnema refs --help
 |   --json             emit the faithful graph as JSON
 |   -h, --help         display help for command
 
+### mnema diagram --help
+$ mnema diagram --help
+| Usage: mnema diagram [options] <subject> [id]
+|
+| print a state machine, or an entity’s history or connections, as mermaid
+|
+| Arguments:
+|   subject     what to draw (decision, skill, task, timeline, refs)
+|   id          the entity id, for `timeline` and `refs`
+|
+| Options:
+|   -h, --help  display help for command
+|
+| It prints mermaid text to stdout and writes nothing — GitHub and most editors draw it:
+|   mnema diagram decision                 the states a decision moves through
+|   mnema diagram task > task-states.md    the redirection is yours
+|   mnema diagram timeline <id>            one entity’s events, in order
+|   mnema diagram refs <id>                what one entity is connected to
+| The three state machines are read from the tables the gate enforces, so a state
+| added there appears here. Text from the record is written so it cannot end a label.
+
 ### mnema rules --help
 $ mnema rules --help
 | Usage: mnema rules [options] <path>
@@ -731,10 +767,12 @@ $ mnema brief --help
 | The mnema plugin hands this document to a Claude Code session with no file at all,
 | with `--hook`: past what a hook carries, the host would replace the whole text with a
 | file path, so there the rules stop at a whole one and the document says how many it
-| left out. Without the flag nothing is cut.
+| left out. Without the flag nothing is cut. With it the copy also counts, last, the
+| decision documents in this checkout the record has no decision for, as
+| `mnema status` does — a fact about one disk, so the file never carries it.
 |
-| The output holds no clock, no session and no path, so the same record always
-| prints the same bytes and a difference is a difference in the record.
+| Without `--hook` the output holds no clock, no session and no path, so the same
+| record always prints the same bytes and a difference is a difference in the record.
 | It carries this project’s COMMITTED record — what a clone gets. A decision or a
 | pattern recorded with `--scope private`, or in your global tree, governs your own
 | work and is not in this file, which is written to be committed.
@@ -818,6 +856,10 @@ $ mnema key --help
 |                                   identity (run this on a member)
 |   revoke [options] <fingerprint>  retire a key from this identity, from this
 |                                   point forward
+|   protect                         encrypt this machine's private keys at rest
+|                                   with the passphrase in MNEMA_KEY_PASSPHRASE
+|   unprotect                       write this machine's private keys back in the
+|                                   clear (needs MNEMA_KEY_PASSPHRASE)
 |   help [command]                  display help for command
 
 ### mnema tail --help
@@ -861,7 +903,8 @@ $ mnema witness --help
 $ mnema switch --help
 | Usage: mnema switch [options] [command]
 |
-| turn off, or back on, what mnema hands to a model unasked
+| turn off, or back on, what mnema hands to a model unasked, and whether an agent
+| may accept a decision
 |
 | Options:
 |   -h, --help               display help for command
@@ -910,11 +953,21 @@ $ mnema verify --help
 |                          (also fail unless every event is covered by a verified
 |                          signature — every write here signs what it wrote, so it
 |                          passes whenever nothing is mid-write, and what it
-|                          catches is a record whose checkpoints were removed or
-|                          did not verify), witnessed (also fail unless an
-|                          external witness dates the record — `mnema witness
-|                          stamp` asks for one, and it passes once a Bitcoin block
-|                          carries it, never while it is pending)
+|                          catches is checkpoints that did not verify or were
+|                          taken out from under the events they signed — not a cut
+|                          that took the newest events with their checkpoint),
+|                          witnessed (also fail unless an external witness dates
+|                          the record — `mnema witness stamp` asks for one, and it
+|                          passes once a Bitcoin block carries it, never while it
+|                          is pending)
+|   --since <rev>          also fail unless the committed record is the one <rev>
+|                          held, grown at the end: every file it held under tails/
+|                          and keys/ is still here, and every segment and
+|                          checkpoints.jsonl still begins with the bytes it held.
+|                          Catches what no --require can — a cut that took events
+|                          with their checkpoint, a record founded again, a
+|                          rewrite signed again. Reads git, never the network, so
+|                          <rev> must be in this clone
 |   --json                 emit the verdict as JSON instead of prose — the whole
 |                          reading, per tree, plus what NO --require value
 |                          answers. The exit code is unchanged: this changes the
@@ -1080,13 +1133,14 @@ $ mnema decision record --help
 
 ### mnema decision move --help
 $ mnema decision move --help
-| Usage: mnema decision move [options] <action> <id>
+| Usage: mnema decision move [options] <action> <id...>
 |
 | accept or reject a decision (follows the decision; takes no --scope)
 |
 | Arguments:
 |   action         the transition (accept, reject)
-|   id             the decision id (the value shown when it was recorded)
+|   id             the decision id (the value shown when it was recorded) —
+|                  several, to move each one with the same verdict and note
 |
 | Options:
 |   --note <text>  why this verdict (required by accept, reject)
@@ -1166,6 +1220,11 @@ $ mnema decision import --help
 | is proposed — including one that is no decision at all: an index page or a
 | roadmap wears the same shape, and no fact of the document separates them. That
 | is why nothing is accepted on your behalf. Nothing here calls a model.
+|
+| The reason is what the file’s own decision section says (MADR’s “Chosen option, because”,
+| Nygard’s `## Decision`). A list of every option (MADR’s `## Considered Options`) is recorded
+| WITHOUT the option the file chose; when the file does not say which it chose, none is
+| recorded as turned down, and the plan says so.
 |
 | What recording means here:
 |   Permanent — mnema is append-only and nothing deletes a fact. A public record
@@ -1347,6 +1406,25 @@ $ mnema key revoke --help
 |   and reported back, but what mnema does not recognize is written verbatim.
 |   Each text field holds at most 65536 bytes; a longer one is refused.
 
+### mnema key protect --help
+$ mnema key protect --help
+| Usage: mnema key protect [options]
+|
+| encrypt this machine's private keys at rest with the passphrase in
+| MNEMA_KEY_PASSPHRASE
+|
+| Options:
+|   -h, --help  display help for command
+
+### mnema key unprotect --help
+$ mnema key unprotect --help
+| Usage: mnema key unprotect [options]
+|
+| write this machine's private keys back in the clear (needs MNEMA_KEY_PASSPHRASE)
+|
+| Options:
+|   -h, --help  display help for command
+
 ### mnema tail list --help
 $ mnema tail list --help
 | Usage: mnema tail list [options]
@@ -1465,7 +1543,7 @@ $ mnema switch off --help
 |
 | Arguments:
 |   channel          the channel to switch (brief-document, recall-document,
-|                    edit-rules-push, edit-asks-a-person)
+|                    edit-rules-push, edit-asks-a-person, agent-accepts)
 |
 | Options:
 |   --reason <text>  why (recorded in the fact; never required)
@@ -1497,7 +1575,7 @@ $ mnema switch on --help
 |
 | Arguments:
 |   channel          the channel to switch (brief-document, recall-document,
-|                    edit-rules-push, edit-asks-a-person)
+|                    edit-rules-push, edit-asks-a-person, agent-accepts)
 |
 | Options:
 |   --reason <text>  why (recorded in the fact; never required)

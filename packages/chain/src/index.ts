@@ -31,6 +31,7 @@ export {
   signCheckpoint,
   verifyCheckpoint,
 } from './chain/checkpoint.js';
+export { CodedError } from './chain/coded-error.js';
 export {
   type IdentityIssue,
   type IdentityResolution,
@@ -54,6 +55,15 @@ export {
   writtenAsStored,
 } from './chain/hash.js';
 export {
+  isProtected,
+  KEY_PASSPHRASE_VARIABLE,
+  KeyIsProtectedError,
+  KeyPassphraseWrongError,
+  NoPassphraseToProtectWithError,
+  passphraseFromEnvironment,
+  readPrivateKeyPair,
+} from './chain/key-protection.js';
+export {
   ANCHOR_PREFIX,
   deriveAnchor,
   fingerprintOf,
@@ -69,14 +79,22 @@ export {
 export {
   type ChainSigner,
   committedPublicKey,
+  DanglingInstallationIdError,
+  type KeyFileChange,
   KeyRootBusyError,
   listAnchoredFingerprints,
+  listPrivateKeyFiles,
   listPrivateKeyFingerprints,
   loadOrCreateInstallationId,
   loadOrCreateKeyPair,
+  localKeyFingerprint,
   materializePublicKey,
   persistKeyPair,
+  protectPrivateKeys,
   readAnchor,
+  UnsettledInstallationIdError,
+  UnwrittenInstallationIdError,
+  unprotectPrivateKeys,
   writeAnchor,
 } from './chain/keystore.js';
 export {

@@ -100,6 +100,12 @@ export interface ImportedProposal {
   readonly title: string;
   /** Whether the document named what it turned down. */
   readonly alternatives: boolean;
+  /**
+   * Whether the document lists its options without saying which it chose, so none was
+   * recorded as turned down: the list holds the winner too, and nothing in the file tells it
+   * from the losers.
+   */
+  readonly optionsUnclear: boolean;
   /** The status the FILE states, verbatim; absent when it states none. */
   readonly status?: string;
   /** The minted id — present only once it was actually written. */
@@ -244,6 +250,7 @@ function proposed(document: ScannedDecision): ImportedProposal {
     path: document.path,
     title: document.title,
     alternatives: document.alternatives !== undefined,
+    optionsUnclear: document.optionsUnclear === true,
     ...(document.status !== undefined ? { status: document.status } : {}),
   };
 }

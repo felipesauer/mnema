@@ -368,6 +368,9 @@ export function brief(sources: readonly ScopedCache[], channels: BriefChannels):
   const decisions = decisionsInForce(travels);
   const skills = adoptedSkills(travels);
   return {
+    // Each rule carries WHO RULED IT (see {@link Acceptance}), from `decisionsInForce`: the
+    // document hands these over as rules, and one with no author is one whose standing nobody
+    // can check. The same field rides the opening context, so the two cannot disagree about it.
     decisions: decisions.map((decision) => withOrigin(travels, decision)),
     // The body is dropped by MAPPING, not by typing: a `ServedSkill` satisfies
     // `SkillRef`, so assigning the list straight across would compile and carry

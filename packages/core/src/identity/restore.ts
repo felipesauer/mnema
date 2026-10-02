@@ -40,10 +40,13 @@
 
 import { readFileSync } from 'node:fs';
 import {
+  CodedError,
+  isProtected,
   type KeyPair,
-  keyPairFromPrivatePem,
   listPrivateKeyFingerprints,
+  passphraseFromEnvironment,
   persistKeyPair,
+  readPrivateKeyPair,
   type UpcasterRegistry,
   writeAnchor,
 } from '@mnema/chain';
@@ -155,7 +158,16 @@ export function restoreKey(input: RestoreInput): RestoreOk | RestoreErr {
   if (!found.ok) return found;
 
   writeAnchor({ root: input.tree }, keyPair.fingerprint, found.anchor);
-  const installedAt = persistKeyPair(keyRoot, keyPair);
+  // A copy that was protected is installed protected, with the passphrase it was just opened by:
+  // restoring a key must not be the way a protected one ends up in the clear.
+  const passphrase = isProtectedCopy(input.privateKeyPath)
+    ? passphraseFromEnvironment()
+    : undefined;
+  const installedAt = persistKeyPair(
+    keyRoot,
+    keyPair,
+    passphrase === undefined ? {} : { passphrase },
+  );
 
   return {
     ok: true,
@@ -168,9 +180,27 @@ export function restoreKey(input: RestoreInput): RestoreOk | RestoreErr {
 
 /** The key pair a PEM file holds, or null when it is not a readable private key. */
 function readKeyPair(path: string): KeyPair | null {
+  let text: string;
   try {
-    return keyPairFromPrivatePem(readFileSync(path, 'utf-8'));
+    text = readFileSync(path, 'utf-8');
   } catch {
     return null;
+  }
+  try {
+    return readPrivateKeyPair(path, text);
+  } catch (error) {
+    // A protected key that cannot be opened is a refusal with its own words — the copy IS a
+    // private key, and the way on is the passphrase — and not "could not be read as one".
+    if (error instanceof CodedError) throw error;
+    return null;
+  }
+}
+
+/** Whether the copy at `path` is a protected key, so the restored one is installed the same way. */
+function isProtectedCopy(path: string): boolean {
+  try {
+    return isProtected(readFileSync(path, 'utf-8'));
+  } catch {
+    return false;
   }
 }

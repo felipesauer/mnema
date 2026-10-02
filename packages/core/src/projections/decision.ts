@@ -58,6 +58,20 @@ import type { CatalogEvent } from '@mnema/chain';
 import { proofOf, type TransitionProof } from './proof.js';
 
 /** Current projected state of one decision. */
+/**
+ * WHO DID A THING TO A DECISION, as the event that did it says: the identity that authorized it
+ * and, when one executed it, the agent.
+ *
+ * `who` is the machine's identity (an anchor), the same for a person typing at a prompt and for
+ * the agent that person lets drive the machine; `which` is what tells them apart, and it is
+ * ABSENT for an act with no agent on its envelope. Nothing here decides what that means to a
+ * reader: the projection keeps the two facts and the readings word them.
+ */
+export interface DecisionActor {
+  readonly who: string;
+  readonly which?: string;
+}
+
 export interface DecisionProjection {
   /** The decision's id (the event subject). */
   readonly id: string;
@@ -87,6 +101,19 @@ export interface DecisionProjection {
    * move and not the last one.
    */
   readonly proof?: readonly TransitionProof[];
+  /**
+   * Who recorded it — the actor of the `decision.recorded` event. Present for every decision
+   * the chain gave a birth event to; absent only for a projection built from a transition
+   * with no birth in the stream, which is a decision that does not project at all.
+   */
+  readonly recordedBy?: DecisionActor;
+  /**
+   * Who ruled it ACCEPTED — the actor of the transition that reached `accepted`, the latest if
+   * more than one did. Absent for a decision that was never accepted. It is NOT cleared by a
+   * later move (a superseded decision was accepted, and the record says by whom): whether it
+   * still governs is the state's to say, and who ruled is the event's.
+   */
+  readonly acceptedBy?: DecisionActor;
 }
 
 /** A collision of the `adr` label: one label held by two or more decisions. */
@@ -109,6 +136,8 @@ interface DecisionAccumulator {
   createdAt?: string;
   updatedAt?: string;
   proof?: TransitionProof[];
+  recordedBy?: DecisionActor;
+  acceptedBy?: DecisionActor;
 }
 
 /**
@@ -140,10 +169,12 @@ export function projectDecisions(events: readonly CatalogEvent[]): Map<string, D
         entry.alternatives = event.payload.alternatives;
       }
       entry.createdAt = event.at;
+      entry.recordedBy = actorOf(event);
     } else if (event.kind === 'decision.transitioned') {
       const entry = getOrInit(acc, event.subject);
       entry.state = event.payload.to;
       entry.updatedAt = event.at;
+      if (event.payload.to === ACCEPTED) entry.acceptedBy = actorOf(event);
       const said = proofOf(event);
       if (said !== undefined) {
         entry.proof ??= [];
@@ -184,6 +215,8 @@ export function projectDecisions(events: readonly CatalogEvent[]): Map<string, D
       updatedAt: entry.updatedAt,
     };
     if (entry.proof !== undefined) projection.proof = entry.proof;
+    if (entry.recordedBy !== undefined) projection.recordedBy = entry.recordedBy;
+    if (entry.acceptedBy !== undefined) projection.acceptedBy = entry.acceptedBy;
     if (entry.alternatives !== undefined) projection.alternatives = entry.alternatives;
     if (entry.supersededBy !== undefined) projection.supersededBy = entry.supersededBy;
     if (entry.supersedes !== undefined) projection.supersedes = entry.supersedes;
@@ -229,6 +262,16 @@ export function adrCollisions(decisions: Iterable<DecisionProjection>): AdrColli
 }
 
 /** Local helper: build the readonly projection through a mutable shape. */
+/** The state a decision is ruled in force by. The words of the workflow live in `states.ts`. */
+const ACCEPTED = 'accepted';
+
+function actorOf(event: {
+  readonly who: string;
+  readonly which?: string | undefined;
+}): DecisionActor {
+  return { who: event.who, ...(event.which !== undefined ? { which: event.which } : {}) };
+}
+
 type Mutable<T> = { -readonly [K in keyof T]: T[K] };
 
 function getOrInit(acc: Map<string, DecisionAccumulator>, id: string): DecisionAccumulator {

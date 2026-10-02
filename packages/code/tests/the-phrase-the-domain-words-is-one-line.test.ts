@@ -653,6 +653,36 @@ const CLASSIFIED: Readonly<Record<string, { verdict: Verdict; why: string }>> = 
       verdict: 'collapsed',
       why: 'a state read out of the record, the reading under the lock',
     },
+  '@mnema/core a-reason-states-something.ts «the {} "{}" has no letter and no digit in it, so it names nothing: » field #1':
+    { verdict: 'minted', why: 'the name of a title field, one of the rows `TITLES` holds' },
+  '@mnema/core a-reason-states-something.ts «the {} "{}" has no letter and no digit in it, so it names nothing: » oneLine(value) #1':
+    {
+      verdict: 'collapsed',
+      why: 'the punctuation a caller typed as a title, from the argv or a tool argument',
+    },
+  '@mnema/core a-reason-states-something.ts «write the {} in words» field #1': {
+    verdict: 'minted',
+    why: 'the name of a title field, one of the rows `TITLES` holds',
+  },
+  '@mnema/core a-reason-states-something.ts «the {} "{}" is the marker a recipe prints where the value goes, » field #1':
+    {
+      verdict: 'minted',
+      why: 'the name of a reference field, one of the rows `REFERENCES` holds',
+    },
+  '@mnema/core a-reason-states-something.ts «the {} "{}" is the marker a recipe prints where the value goes, » oneLine(value.trim()) #1':
+    {
+      verdict: 'collapsed',
+      why: 'the marker a caller pasted as a reference, from the argv or a tool argument',
+    },
+  '@mnema/core a-reason-states-something.ts «not the value: write the {} in its place» field #1': {
+    verdict: 'minted',
+    why: 'the name of a reference field, one of the rows `REFERENCES` holds',
+  },
+  '@mnema/core workflow/append.ts «{}. The fact was NOT recorded — a record is permanent, and a reference is what every later reading looks it up by.» unreferenced #1':
+    {
+      verdict: 'composed',
+      why: 'the reference refusal `a-reason-states-something.ts` words, whose two values are sites there',
+    },
   '@mnema/core workflow/append.ts «{}. The fact was NOT recorded — a record is permanent, and its why is the part a later reader reads.» unstated #1':
     {
       verdict: 'composed',
@@ -749,10 +779,11 @@ const CLASSIFIED: Readonly<Record<string, { verdict: Verdict; why: string }>> = 
       verdict: 'composed',
       why: 'the reading `witness.ts` composed — every value in it is a site of its own below',
     },
-  '@mnema/chain chain/verify.ts «external witness (T3): covered — {}» witness.detail #1': {
-    verdict: 'composed',
-    why: 'the same reading, in the state that reaches the record’s top rung',
-  },
+  '@mnema/chain chain/verify.ts «external witness (T3): covered — {} (the work of its block header was checked here, not its place in the Bitcoin chain)» witness.detail #1':
+    {
+      verdict: 'composed',
+      why: 'the same reading, in the state that reaches the record’s top rung',
+    },
   '@mnema/chain chain/verify.ts «external witness (T3): not covered — {}» witness.detail #1': {
     verdict: 'composed',
     why: 'the same reading, in the state every record is in until somebody asks for a witness',
@@ -1394,9 +1425,9 @@ describe('every value the domain puts in a sentence is classified', () => {
     // are equal. The scale is stated, and so is what the HANDOFF said — twenty-three
     // sites, twelve in `core` and eleven in `chain` — because it counted sentences
     // written at a `message:` or a `detail:` directly, and a value is not a sentence.
-    expect(SITES.length).toBe(156);
+    expect(SITES.length).toBe(163);
     expect(FOUND[0]?.sites.length).toBe(48);
-    expect(FOUND[1]?.sites.length).toBe(108);
+    expect(FOUND[1]?.sites.length).toBe(115);
     expect(FOUND.flatMap((layer) => layer.wording).length).toBeGreaterThan(15);
   });
 
@@ -1446,11 +1477,11 @@ describe('every value the domain puts in a sentence is classified', () => {
     // No arm of the case above may be empty, or that much of it is vacuous.
     const verdicts = Object.values(CLASSIFIED).map((said) => said.verdict);
     const count = (verdict: Verdict): number => verdicts.filter((said) => said === verdict).length;
-    expect(count('collapsed')).toBe(94);
-    expect(count('minted')).toBe(41);
-    expect(count('composed')).toBe(21);
+    expect(count('collapsed')).toBe(96);
+    expect(count('minted')).toBe(45);
+    expect(count('composed')).toBe(22);
     expect(SITES.filter((site) => new RegExp(`\\b${DOOR}\\b`).test(site.expression))).toHaveLength(
-      94,
+      96,
     );
   });
 
@@ -1523,9 +1554,16 @@ describe('the rule has one door and it is below both packages', () => {
   it('is re-exported by both packages and written out by neither', () => {
     // `core` and `code` each keep the address their own modules import, and each of
     // them is one line of plumbing to the package below. A copy would be a second rule.
-    for (const at of ['../../core/src/one-line.ts', '../src/one-line.ts']) {
+    // The command line's address carries the second function of the same module, the one
+    // that makes a control byte visible (`neutralized`), because the rule of the line is
+    // applied to a part of a line by the renderers and to a paragraph by `show`.
+    const addresses = {
+      '../../core/src/one-line.ts': "export { oneLine } from '@mnema/chain/one-line';",
+      '../src/one-line.ts': "export { neutralized, oneLine } from '@mnema/chain/one-line';",
+    };
+    for (const [at, line] of Object.entries(addresses)) {
       const source = readFileSync(fileURLToPath(new URL(at, import.meta.url)), 'utf-8');
-      expect(source, at).toContain("export { oneLine } from '@mnema/chain/one-line';");
+      expect(source, at).toContain(line);
       expect(A_COLLAPSE.test(source), at).toBe(false);
     }
   });

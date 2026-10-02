@@ -19,7 +19,9 @@
  * the notes) and two copies of one rule are the shape that drifts. Every outcome that is not
  * a document is silence and exit 0 — no project here, no `mnema` on the PATH, a record that
  * will not read — and asserted in `packages/code/tests/the-record-arrives-unasked.test.ts`
- * ("says nothing at all where there is no project").
+ * ("says nothing at all where there is no project"). Save one, which this handler alone says: a
+ * `mnema` on the PATH that is another program is not run, and the session is told which program
+ * answered (`hand-over.mjs`, `whoAnswers`) — exit 0 still, and a fact rather than an error.
  *
  * THE REASON UNDER THAT USED TO BE WIDER THAN THE MEASUREMENT IT CAME FROM, and it is
  * narrowed rather than dropped. It read: *"A hook is not a place to diagnose: the
@@ -100,7 +102,7 @@ try {
   // Imported INSIDE the guard, so that even a plugin directory missing its sibling module
   // is a session opened with nothing added rather than a hook error in front of a person.
   const { reply, whatTheVerbSays, whereTheSessionIs } = await import('./hand-over.mjs');
-  const document = whatTheVerbSays('brief', whereTheSessionIs());
+  const document = whatTheVerbSays('brief', whereTheSessionIs(), { namesAStranger: true });
   if (document !== null) process.stdout.write(reply(HOOK_EVENT, document));
 } catch {
   // Silence, deliberately and with nothing to add: the one thing this handler must

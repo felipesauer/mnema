@@ -66,7 +66,7 @@ describe('tail proof', () => {
   it('rejects malformed stored lines', () => {
     expect(() => parseTailProof('{not json')).toThrow(TailProofParseError);
     expect(() => parseTailProof('{"scheme":"mnema-tail/1"}')).toThrow(/missing string "tail"/);
-    expect(() => parseTailProof('{"scheme":"other","tail":"t","signerFp":"f","sig":"a"}')).toThrow(
+    expect(() => parseTailProof('{"scheme":"other","sig":"a","signerFp":"f","tail":"t"}')).toThrow(
       /unknown tail-proof scheme/,
     );
   });
