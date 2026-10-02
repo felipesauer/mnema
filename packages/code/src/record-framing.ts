@@ -169,7 +169,8 @@ export type ModelChannel =
   | 'host-rules-file'
   | 'agent-accepts'
   | 'session-tally'
-  | 'edit-first-write-gate';
+  | 'edit-first-write-gate'
+  | 'user-corrections';
 
 /** The channels that carry a declaration — the ones {@link SUBJECT_OF} answers for. */
 export type FramedChannel =
@@ -293,6 +294,9 @@ export const PUSHED_BY_TOOL: { readonly [tool: string]: readonly FramedChannel[]
 export const UNFRAMED_CHANNELS: {
   readonly [K in Exclude<ModelChannel, FramedChannel>]: string;
 } = {
+  'user-corrections':
+    'what it carries is a count the product made and the ids of the proposals it recorded — no ' +
+    'sentence of the person’s and no record text — so there is nobody’s words to say whose they are',
   'session-tally':
     'what it carries is two counts the product made — files the session’s own tool calls wrote, ' +
     'and decisions recorded since it opened — and no record text, so there is nobody’s words to ' +
@@ -324,7 +328,8 @@ export type SwitchableChannel =
   | 'edit-asks-a-person'
   | 'agent-accepts'
   | 'session-tally'
-  | 'edit-first-write-gate';
+  | 'edit-first-write-gate'
+  | 'user-corrections';
 
 /**
  * The two switchable channels, each named once, so no consumer spells one.
@@ -420,7 +425,21 @@ export const FIRST_WRITE_GATE_CHANNEL: CountedChannel = 'edit-first-write-gate';
  * The switchable channels that begin OFF — every other begins on. Read by every consumer that asks
  * where a channel stands, so "off until switched on" is one list and not a default repeated.
  */
-export const STARTS_OFF: readonly SwitchableChannel[] = ['edit-first-write-gate'];
+export const STARTS_OFF: readonly SwitchableChannel[] = [
+  'edit-first-write-gate',
+  'user-corrections',
+];
+
+/**
+ * The channel that reads what a PERSON typed into a session and records the corrections as
+ * `proposed` decisions — off until somebody switches it on.
+ *
+ * IT STARTS OFF BECAUSE IT IS THE ONE READER OF THIS PRODUCT THAT READS A TRANSCRIPT'S WORDS. The
+ * rest of what reads a transcript reads its shape (`what-the-session-did.ts`), and a conversation is
+ * private: whatever a person pasted into it is in there. What it records is quoted from the person's
+ * own sentence, so it goes to the tree that stays on this machine and never to the one a clone gets.
+ */
+export const USER_CORRECTIONS_CHANNEL: SwitchableChannel = 'user-corrections';
 
 /**
  * The switchable channels whose service the record COUNTS — the ones that append a
@@ -460,6 +479,10 @@ export const NOT_COUNTED_AS_SERVED: {
   'recall-document':
     'the notes are printed by `mnema recall`, a read that writes nothing, for the reason the ' +
     'document is not counted',
+  'user-corrections':
+    'each proposal it records is itself the recorded fact — a decision awaiting a judgement, ' +
+    'with its own event and its own actor — so a second fact saying the channel served would ' +
+    'repeat it',
   'session-tally':
     'the line is printed by `mnema tally`, which reads the transcript and the record and ' +
     'writes nothing — no event, no key, no run — so a count of what a session did never moves the ' +
@@ -508,6 +531,10 @@ export const WHAT_STOPS: { readonly [K in SwitchableChannel]: string } = {
     'write is refused once, with the rules in the reason, and the same write repeated goes ' +
     'through. Off until switched on; it holds in Claude Code, where the server remembers the ' +
     'session',
+  'user-corrections':
+    'the proposals recorded from what a person typed into a session: with it on, a `Stop` hook ' +
+    'reads the transcript, and each time the person corrected the agent a decision is recorded ' +
+    'as proposed in this machine’s private tree. Off until switched on',
   'session-tally':
     'the line a session’s `Stop` and `PreCompact` hooks print: how many files its own tool calls ' +
     'wrote and how many decisions were recorded since it opened',

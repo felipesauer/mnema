@@ -269,6 +269,10 @@ const INVOCATION: Readonly<Record<string, Invocation>> = {
   // the verb answers `{}`, and what it counts is held with a transcript through the plugin's
   // command (`a-session-says-what-it-wrote.test.ts`).
   tally: { argv: () => ['tally'] },
+  // The same, for the verb that WRITES when a host feeds it: in process it has no payload, answers
+  // `{}` and records nothing. What it records is held with a transcript through the binary and the
+  // plugin's command (`a-correction-becomes-a-proposal.test.ts`), and in the signing sweep.
+  corrections: { argv: () => ['corrections'] },
   verify: { argv: () => ['verify'] },
   repl: CANNOT_BE_EXERCISED,
   completion: { argv: () => ['completion', 'bash'] },
@@ -296,6 +300,10 @@ const RECORDS_NOTHING: Readonly<Record<string, string>> = {
   'before-a-write':
     'answers a payload a host hands it on the standard input, and in process there is none — ' +
     'its asking is exercised with a payload through the binary',
+  corrections:
+    'answers a payload a host hands it on the standard input, and in process there is none — ' +
+    'what it records is exercised with a transcript through the binary, and only once the channel ' +
+    'that starts off is switched on',
   // AND THE ONE THAT WRITES SOMETHING THIS INSTRUMENT CANNOT SEE. `witness` appends no
   // event and touches no key: it writes an ATTESTATION beside the checkpoints, which
   // changes what `verify` rules on and reaches neither of the two things counted here.
@@ -550,7 +558,7 @@ describe('every verb says if it writes', () => {
     expect(Object.keys(INVOCATION).sort()).toEqual([...EFFECT_BY_VERB.keys()].sort());
   });
 
-  it('counts fifteen writes and twenty-four reads over the whole surface', () => {
+  it('counts sixteen writes and twenty-four reads over the whole surface', () => {
     // The count in the report, asserted rather than trusted, and the total against the
     // list: a verb that stopped being registered would otherwise leave both halves
     // looking healthy.
@@ -565,6 +573,7 @@ describe('every verb says if it writes', () => {
       'link',
       'run',
       'before-a-write',
+      'corrections',
       'key',
       'tail',
       'witness',

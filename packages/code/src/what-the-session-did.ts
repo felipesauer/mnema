@@ -2,7 +2,9 @@
  * What one session of the host did, read off its own transcript: which files its tool calls
  * wrote, and when it opened.
  *
- * IT READS THE SHAPE OF A LINE AND NEVER A MESSAGE'S WORDS. The answer is a set of paths the
+ * IT READS THE SHAPE OF A LINE AND NEVER A MESSAGE'S WORDS — with ONE function that does, said where
+ * it stands ({@link whatThePersonSaid}), and used by the one reader that is switched off until a
+ * person switches it on. The answer is a set of paths the
  * session's tool calls named, an instant, and whether the last response wrote anything — a
  * line that is not an assistant's tool call is passed over without being looked into. This is
  * the limit `transcripts.ts` keeps for token counts, with one difference that is stated
@@ -112,4 +114,55 @@ function isAPrompt(line: Record<string, unknown>): boolean {
     content.some((block) => asObject(block)?.type === 'text') &&
     !content.some((block) => asObject(block)?.type === 'tool_result')
   );
+}
+
+/** One thing a person typed into a session, and where it is. */
+export interface WhatThePersonSaid {
+  /** The line of the transcript it is on, counted from 1 — what a finding cites. */
+  readonly line: number;
+  /** The host's own id for the line, when it wrote one. */
+  readonly uuid: string | undefined;
+  /** The session the line belongs to, as the host wrote it. */
+  readonly session: string | undefined;
+  /** The words, as the person typed them. */
+  readonly text: string;
+}
+
+/**
+ * Every prompt a person typed in the transcript at `path`, in order — the one place this module
+ * reads WORDS and not the shape of a line, and it is why it is a function of its own.
+ *
+ * IT RETURNS PROSE, and the caller is `user-corrections.ts`, which quotes at most one sentence of
+ * a prompt into a record that stays on this machine. Nothing else reads it, and nothing prints it:
+ * a transcript is the whole conversation, including whatever a person pasted into it.
+ */
+export function whatThePersonSaid(path: string): readonly WhatThePersonSaid[] {
+  const said: WhatThePersonSaid[] = [];
+  let lines = 0;
+  forEachLine(path, (line) => {
+    lines += 1;
+    const read = parsed(line);
+    if (read === undefined || read.type !== 'user' || !isAPrompt(read)) return true;
+    const content = asObject(read.message)?.content;
+    const text =
+      typeof content === 'string'
+        ? content
+        : Array.isArray(content)
+          ? content
+              .map((block) => asObject(block))
+              .flatMap((block) =>
+                block?.type === 'text' && typeof block.text === 'string' ? [block.text] : [],
+              )
+              .join('\n')
+          : '';
+    if (text.trim() === '') return true;
+    said.push({
+      line: lines,
+      uuid: typeof read.uuid === 'string' ? read.uuid : undefined,
+      session: typeof read.sessionId === 'string' ? read.sessionId : undefined,
+      text,
+    });
+    return true;
+  });
+  return said;
 }

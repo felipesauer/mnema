@@ -281,6 +281,7 @@ describe('what `channel.served` counts, said by the table the type makes total',
       'brief-document',
       'recall-document',
       'session-tally',
+      'user-corrections',
     ]);
   });
 
@@ -293,7 +294,10 @@ describe('what `channel.served` counts, said by the table the type makes total',
     const WRITES_THE_FACT_ITSELF = 'is itself the recorded fact';
     for (const [channel, why] of Object.entries(NOT_COUNTED_AS_SERVED)) {
       expect(why.length, channel).toBeGreaterThan(40);
-      const reason = channel === 'agent-accepts' ? WRITES_THE_FACT_ITSELF : 'writes nothing';
+      const reason =
+        channel === 'agent-accepts' || channel === 'user-corrections'
+          ? WRITES_THE_FACT_ITSELF
+          : 'writes nothing';
       expect(why, channel).toContain(reason);
     }
   });
@@ -407,6 +411,7 @@ describe('every handler that pushes declares the channel it carries', () => {
     // tool's is (`edit-asks-a-person.ts`), under the same channel.
     expect(named).toEqual([
       'edit-asks-a-person.mjs:edit-asks-a-person',
+      'session-corrections.mjs:user-corrections',
       'session-recall.mjs:recall-document',
       'session-start.mjs:brief-document',
       'session-tally.mjs:session-tally',
@@ -455,6 +460,7 @@ describe('every handler that pushes declares the channel it carries', () => {
       'SessionStart:command:session-start.mjs',
       'SessionStart:command:session-recall.mjs',
       'Stop:command:session-tally.mjs',
+      'Stop:command:session-corrections.mjs',
       'PreCompact:command:session-tally.mjs',
       'PreToolUse:mcp_tool:rules_before_an_edit:edit-rules-push+edit-asks-a-person+edit-first-write-gate',
       'PreToolUse:command:edit-asks-a-person.mjs',

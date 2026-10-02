@@ -219,6 +219,7 @@ import { registerAntipatterns } from './antipatterns.js';
 import { registerBeforeAWrite } from './before-a-write.js';
 import { registerBrief } from './brief.js';
 import { registerCompletion } from './completion.js';
+import { registerCorrections } from './corrections.js';
 import { registerDecision } from './decision.js';
 import { registerDiagram } from './diagram.js';
 import { registerExport } from './export.js';
@@ -288,6 +289,7 @@ export const VERBS: readonly Verb[] = [
   registerRecall,
   registerBeforeAWrite,
   registerTally,
+  registerCorrections,
   registerKey,
   registerTail,
   registerWitness,

@@ -554,7 +554,10 @@ export const HANDED_OVER: Readonly<
   // (`mnema tally`, twice) and the switch that stops it (`mnema switch off session-tally`).
   // line 37 and name 73 until the plugin page named the switch that turns the first-write hold on
   // (`mnema switch on edit-first-write-gate`, a line) and the listing that says it is off (`mnema switch`).
-  span: { line: 38, name: 74, flag: 1, unwritten: 0 },
+  // line 38 and name 74 until the two pages named the verb that records corrections
+  // (`mnema corrections`, and `mnema switch` in the row that says it starts off) and the switch that
+  // turns it on (`mnema switch on user-corrections`, a line on each page).
+  span: { line: 40, name: 77, flag: 1, unwritten: 0 },
   // name 18 until the page that says where the key lives named `mnema key protect` in a line of
   // its own.
   // line 35 until the same page showed that question in a block of its own.
@@ -570,7 +573,9 @@ export const HANDED_OVER: Readonly<
   // `mnema verify` as the reading that rules on it (`record-integrity.ts`).
   // line 46 until the verb's own help named the switch that stops it, `mnema switch off
   // session-tally` (`wiring/tally.ts`).
-  source: { line: 47, name: 53, flag: 3, unwritten: 3 },
+  // line 47 until the help of the verb that records corrections named the switch that turns it on,
+  // `mnema switch on user-corrections` (`wiring/corrections.ts`).
+  source: { line: 48, name: 53, flag: 3, unwritten: 3 },
 };
 
 // ---------------------------------------------------------------------------

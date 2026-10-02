@@ -194,6 +194,12 @@ const GATE_HOOK = 'edit-asks-a-person.mjs';
  * `a-session-says-what-it-wrote.test.ts`.
  */
 const TALLY_HOOK = 'session-tally.mjs';
+/**
+ * The handler that records, at `Stop` and only where `user-corrections` was switched on, the places a
+ * person corrected the agent as proposals. Off by default: in these projects it is tried and answers
+ * `{}`; what it records is `a-correction-becomes-a-proposal.test.ts`.
+ */
+const CORRECTIONS_HOOK = 'session-corrections.mjs';
 
 /**
  * The command line each declared handler runs — what the recording shim must see it try.
@@ -211,6 +217,7 @@ const VERB_OF: Readonly<Record<string, string>> = {
   [DOCUMENT_HOOK]: 'brief --hook',
   [NOTES_HOOK]: 'recall --hook',
   [TALLY_HOOK]: 'tally',
+  [CORRECTIONS_HOOK]: 'corrections',
   [GATE_HOOK]: 'before-a-write --host vscode',
 };
 
@@ -223,7 +230,9 @@ const ASKED_FIRST = '--identify';
 /** Every command line a handler runs, in order — the question first, where it asks one. */
 function callsOf(handler: string): string[] {
   const verb = VERB_OF[handler] as string;
-  return handler === GATE_HOOK || handler === TALLY_HOOK ? [verb] : [ASKED_FIRST, verb];
+  return handler === GATE_HOOK || handler === TALLY_HOOK || handler === CORRECTIONS_HOOK
+    ? [verb]
+    : [ASKED_FIRST, verb];
 }
 
 /**
@@ -235,7 +244,7 @@ function callsOf(handler: string): string[] {
 function stdinOf(command: string, at: string): string {
   // The tally is handed a `Stop` that names a transcript there is none of: it is tried, and a
   // transcript it cannot read is a note on the second stream and no byte on the first.
-  if (handlerOf(command) === TALLY_HOOK) {
+  if (handlerOf(command) === TALLY_HOOK || handlerOf(command) === CORRECTIONS_HOOK) {
     return JSON.stringify({
       hook_event_name: 'Stop',
       transcript_path: join(at, 'no-such-transcript.jsonl'),
@@ -502,6 +511,7 @@ describe('the record arrives unasked', () => {
       DOCUMENT_HOOK,
       NOTES_HOOK,
       TALLY_HOOK,
+      CORRECTIONS_HOOK,
       TALLY_HOOK,
       GATE_HOOK,
     ]);
@@ -1121,6 +1131,7 @@ describe('the record arrives unasked', () => {
       'brief --hook',
       'recall --hook',
       'tally',
+      'corrections',
       'before-a-write --host vscode',
     ]);
     expect([...reached]).toEqual(Object.values(VERB_OF));
@@ -1135,6 +1146,7 @@ describe('the record arrives unasked', () => {
       'brief --hook: reads',
       'recall --hook: reads',
       'tally: reads',
+      'corrections: mutates',
       'before-a-write --host vscode: mutates',
     ]);
   });
@@ -1213,6 +1225,7 @@ describe('the record arrives unasked', () => {
       'command:/hooks/session-start.mjs',
       'command:/hooks/session-recall.mjs',
       'command:/hooks/session-tally.mjs',
+      'command:/hooks/session-corrections.mjs',
       'command:/hooks/session-tally.mjs',
       'mcp_tool:rules_before_an_edit',
       'command:/hooks/edit-asks-a-person.mjs',

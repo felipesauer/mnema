@@ -135,15 +135,15 @@ afterEach(() => {
 });
 
 describe('the channel starts off, and says so', () => {
-  it('is the one channel that begins off, and the listing says nobody switched it on', async () => {
-    expect(STARTS_OFF).toEqual([GATE]);
+  it('is one of the channels that begin off, and the listing says nobody switched it on', async () => {
+    expect(STARTS_OFF).toEqual([GATE, 'user-corrections']);
     const listed = (await did('switch')).split('\n').find((line) => line.includes(GATE)) ?? '';
     expect(listed).toContain(' off ');
     expect(listed).toContain('off until switched on, and nobody has');
     // Every other channel is still on, with no attribution beside it.
     const others = (await did('switch'))
       .split('\n')
-      .filter((line) => /^ {2}[a-z]/.test(line) && !line.includes(GATE));
+      .filter((line) => /^ {2}[a-z]/.test(line) && !STARTS_OFF.some((name) => line.includes(name)));
     expect(others.length).toBeGreaterThan(4);
     for (const line of others) expect(line, line).toMatch(/^ {2}\S+ +on /);
   });

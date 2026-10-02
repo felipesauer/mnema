@@ -12,7 +12,7 @@
 function __mnema_commands --description 'the subcommands one level of the tree offers'
     switch "$argv[1]"
         case ''
-            echo 'init task decision skill memory observe handoff link run status focus resume next-actions guard search show timeline accountability antipatterns exposure export refs diagram rules rules-file skills usage brief recall before-a-write tally key tail witness switch verify mcp repl completion help'
+            echo 'init task decision skill memory observe handoff link run status focus resume next-actions guard search show timeline accountability antipatterns exposure export refs diagram rules rules-file skills usage brief recall before-a-write tally corrections key tail witness switch verify mcp repl completion help'
         case 'task'
             echo 'create move help'
         case 'decision'
@@ -93,6 +93,7 @@ complete -c mnema -f -n '__mnema_at ""' -a 'brief' -d 'print what governs the wo
 complete -c mnema -f -n '__mnema_at ""' -a 'recall' -d 'print the notes recorded here as markdown, near ones first, for an agent to read'
 complete -c mnema -f -n '__mnema_at ""' -a 'before-a-write' -d 'answer a host’s hook before a file is written: ask for a person where a rule asks'
 complete -c mnema -f -n '__mnema_at ""' -a 'tally' -d 'answer a host’s Stop or PreCompact hook with what the session wrote and recorded'
+complete -c mnema -f -n '__mnema_at ""' -a 'corrections' -d 'record what a person corrected in a session as proposed decisions, for a Stop hook'
 complete -c mnema -f -n '__mnema_at ""' -a 'key' -d 'manage this machine\'s signing keys'
 complete -c mnema -f -n '__mnema_at ""' -a 'tail' -d 'authorize a cut in the record\'s own tails'
 complete -c mnema -f -n '__mnema_at ""' -a 'witness' -d 'ask an outside witness to date this record, and read where that stands'
@@ -469,6 +470,12 @@ complete -c mnema -f -n '__mnema_at "tally"' -s V -l version
 complete -c mnema -f -n '__mnema_at "tally"' -l color -x -a 'auto always never'
 complete -c mnema -f -n '__mnema_at "tally"' -l identify
 
+# mnema corrections
+complete -c mnema -f -n '__mnema_at "corrections"' -s h -l help
+complete -c mnema -f -n '__mnema_at "corrections"' -s V -l version
+complete -c mnema -f -n '__mnema_at "corrections"' -l color -x -a 'auto always never'
+complete -c mnema -f -n '__mnema_at "corrections"' -l identify
+
 # mnema key
 complete -c mnema -f -n '__mnema_at "key"' -a 'restore' -d 'restore this machine\'s identity from a copy of a key\'s private half'
 complete -c mnema -f -n '__mnema_at "key"' -a 'request' -d 'ask to bring this machine into an identity (run this on the joining machine)'
@@ -586,7 +593,7 @@ complete -c mnema -f -n '__mnema_at "switch off"' -s h -l help
 complete -c mnema -f -n '__mnema_at "switch off"' -s V -l version
 complete -c mnema -f -n '__mnema_at "switch off"' -l color -x -a 'auto always never'
 complete -c mnema -f -n '__mnema_at "switch off"' -l identify
-complete -c mnema -f -n '__mnema_at "switch off"' -a 'brief-document recall-document edit-rules-push edit-asks-a-person agent-accepts edit-first-write-gate session-tally'
+complete -c mnema -f -n '__mnema_at "switch off"' -a 'brief-document recall-document edit-rules-push edit-asks-a-person agent-accepts edit-first-write-gate user-corrections session-tally'
 
 # mnema switch on
 complete -c mnema -f -n '__mnema_at "switch on"' -l reason -r
@@ -596,7 +603,7 @@ complete -c mnema -f -n '__mnema_at "switch on"' -s h -l help
 complete -c mnema -f -n '__mnema_at "switch on"' -s V -l version
 complete -c mnema -f -n '__mnema_at "switch on"' -l color -x -a 'auto always never'
 complete -c mnema -f -n '__mnema_at "switch on"' -l identify
-complete -c mnema -f -n '__mnema_at "switch on"' -a 'brief-document recall-document edit-rules-push edit-asks-a-person agent-accepts edit-first-write-gate session-tally'
+complete -c mnema -f -n '__mnema_at "switch on"' -a 'brief-document recall-document edit-rules-push edit-asks-a-person agent-accepts edit-first-write-gate user-corrections session-tally'
 
 # mnema verify
 complete -c mnema -f -n '__mnema_at "verify"' -l global

@@ -51,6 +51,7 @@ import { type CatalogEvent, catalogUpcasters } from '@mnema/chain';
 import { type DiscoveryEnv, orderedEvents, resolveTrees } from '@mnema/core';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { type CliIo, run } from '../src/cli.js';
+import { runCorrections } from '../src/commands/corrections.js';
 import { runSessionTally } from '../src/commands/tally.js';
 import { buildMcpServer } from '../src/mcp/server.js';
 import { openSession, type Session } from '../src/mcp/session.js';
@@ -66,6 +67,7 @@ import {
   SESSION_TALLY_CHANNEL,
   STARTS_OFF,
   SWITCHABLE_CHANNELS,
+  USER_CORRECTIONS_CHANNEL,
   WHAT_STOPS,
 } from '../src/record-framing.js';
 
@@ -384,6 +386,32 @@ const HONOURED: Readonly<
         hookSpecificOutput?: { permissionDecision?: string };
       };
       return reply.hookSpecificOutput?.permissionDecision === 'deny';
+    },
+  },
+  [USER_CORRECTIONS_CHANNEL]: {
+    // A READER THAT WRITES, driven the way a host drives it: a `Stop` naming a transcript in which the
+    // person corrected the agent. It starts off, so the case switches it on first; and each call is
+    // a transcript of a session of its own, because a correction already recorded is not recorded
+    // again, which would read as the switch holding. "Speaks" is a proposal being recorded.
+    setUp: async () => {
+      await did('switch', 'on', USER_CORRECTIONS_CHANNEL);
+    },
+    speaks: async () => {
+      const transcript = join(sandbox, 'corrected.jsonl');
+      writeFileSync(
+        transcript,
+        `${JSON.stringify({
+          type: 'user',
+          sessionId: `session-${Math.random()}`,
+          origin: { kind: 'human' },
+          message: { role: 'user', content: 'No, use pnpm instead of npm.' },
+        })}\n`,
+      );
+      const done = runCorrections(
+        { cwd: repo, env },
+        { payload: JSON.stringify({ hook_event_name: 'Stop', transcript_path: transcript }) },
+      );
+      return 'systemMessage' in done.reply;
     },
   },
   [SESSION_TALLY_CHANNEL]: {
