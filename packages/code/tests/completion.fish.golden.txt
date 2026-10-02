@@ -102,12 +102,14 @@ complete -c mnema -f -n '__mnema_at ""' -a 'completion' -d 'print the tab-comple
 complete -c mnema -f -n '__mnema_at ""' -a 'help' -d 'display help for command'
 complete -c mnema -f -n '__mnema_at ""' -s V -l version
 complete -c mnema -f -n '__mnema_at ""' -l color -x -a 'auto always never'
+complete -c mnema -f -n '__mnema_at ""' -l identify
 complete -c mnema -f -n '__mnema_at ""' -s h -l help
 
 # mnema init
 complete -c mnema -f -n '__mnema_at "init"' -s h -l help
 complete -c mnema -f -n '__mnema_at "init"' -s V -l version
 complete -c mnema -f -n '__mnema_at "init"' -l color -x -a 'auto always never'
+complete -c mnema -f -n '__mnema_at "init"' -l identify
 
 # mnema task
 complete -c mnema -f -n '__mnema_at "task"' -a 'create' -d 'create a task in the current project'
@@ -118,6 +120,7 @@ complete -c mnema -f -n '__mnema_at "task"' -l which -r
 complete -c mnema -f -n '__mnema_at "task"' -s h -l help
 complete -c mnema -f -n '__mnema_at "task"' -s V -l version
 complete -c mnema -f -n '__mnema_at "task"' -l color -x -a 'auto always never'
+complete -c mnema -f -n '__mnema_at "task"' -l identify
 
 # mnema task create
 complete -c mnema -f -n '__mnema_at "task create"' -l scope -x -a 'public private global'
@@ -125,6 +128,7 @@ complete -c mnema -f -n '__mnema_at "task create"' -l which -r
 complete -c mnema -f -n '__mnema_at "task create"' -s h -l help
 complete -c mnema -f -n '__mnema_at "task create"' -s V -l version
 complete -c mnema -f -n '__mnema_at "task create"' -l color -x -a 'auto always never'
+complete -c mnema -f -n '__mnema_at "task create"' -l identify
 
 # mnema task move
 complete -c mnema -f -n '__mnema_at "task move"' -l reason -r
@@ -134,6 +138,7 @@ complete -c mnema -f -n '__mnema_at "task move"' -s h -l help
 complete -c mnema -f -n '__mnema_at "task move"' -l which -r
 complete -c mnema -f -n '__mnema_at "task move"' -s V -l version
 complete -c mnema -f -n '__mnema_at "task move"' -l color -x -a 'auto always never'
+complete -c mnema -f -n '__mnema_at "task move"' -l identify
 complete -c mnema -f -n '__mnema_at "task move"' -a 'submit start block unblock submit_review request_changes approve complete cancel reopen'
 
 # mnema decision
@@ -148,6 +153,7 @@ complete -c mnema -f -n '__mnema_at "decision"' -l which -r
 complete -c mnema -f -n '__mnema_at "decision"' -s h -l help
 complete -c mnema -f -n '__mnema_at "decision"' -s V -l version
 complete -c mnema -f -n '__mnema_at "decision"' -l color -x -a 'auto always never'
+complete -c mnema -f -n '__mnema_at "decision"' -l identify
 
 # mnema decision record
 complete -c mnema -f -n '__mnema_at "decision record"' -l alternatives -r
@@ -156,6 +162,7 @@ complete -c mnema -f -n '__mnema_at "decision record"' -l which -r
 complete -c mnema -f -n '__mnema_at "decision record"' -s h -l help
 complete -c mnema -f -n '__mnema_at "decision record"' -s V -l version
 complete -c mnema -f -n '__mnema_at "decision record"' -l color -x -a 'auto always never'
+complete -c mnema -f -n '__mnema_at "decision record"' -l identify
 
 # mnema decision move
 complete -c mnema -f -n '__mnema_at "decision move"' -l note -r
@@ -163,6 +170,7 @@ complete -c mnema -f -n '__mnema_at "decision move"' -s h -l help
 complete -c mnema -f -n '__mnema_at "decision move"' -l which -r
 complete -c mnema -f -n '__mnema_at "decision move"' -s V -l version
 complete -c mnema -f -n '__mnema_at "decision move"' -l color -x -a 'auto always never'
+complete -c mnema -f -n '__mnema_at "decision move"' -l identify
 complete -c mnema -f -n '__mnema_at "decision move"' -a 'accept reject'
 
 # mnema decision supersede
@@ -171,6 +179,7 @@ complete -c mnema -f -n '__mnema_at "decision supersede"' -s h -l help
 complete -c mnema -f -n '__mnema_at "decision supersede"' -l which -r
 complete -c mnema -f -n '__mnema_at "decision supersede"' -s V -l version
 complete -c mnema -f -n '__mnema_at "decision supersede"' -l color -x -a 'auto always never'
+complete -c mnema -f -n '__mnema_at "decision supersede"' -l identify
 
 # mnema decision import
 complete -c mnema -f -n '__mnema_at "decision import"' -l write
@@ -179,6 +188,7 @@ complete -c mnema -f -n '__mnema_at "decision import"' -l which -r
 complete -c mnema -f -n '__mnema_at "decision import"' -s h -l help
 complete -c mnema -f -n '__mnema_at "decision import"' -s V -l version
 complete -c mnema -f -n '__mnema_at "decision import"' -l color -x -a 'auto always never'
+complete -c mnema -f -n '__mnema_at "decision import"' -l identify
 
 # mnema skill
 complete -c mnema -f -n '__mnema_at "skill"' -a 'create' -d 'propose a reusable skill in the current project'
@@ -191,6 +201,7 @@ complete -c mnema -f -n '__mnema_at "skill"' -l which -r
 complete -c mnema -f -n '__mnema_at "skill"' -s h -l help
 complete -c mnema -f -n '__mnema_at "skill"' -s V -l version
 complete -c mnema -f -n '__mnema_at "skill"' -l color -x -a 'auto always never'
+complete -c mnema -f -n '__mnema_at "skill"' -l identify
 
 # mnema skill create
 complete -c mnema -f -n '__mnema_at "skill create"' -l body -r
@@ -199,6 +210,7 @@ complete -c mnema -f -n '__mnema_at "skill create"' -l which -r
 complete -c mnema -f -n '__mnema_at "skill create"' -s h -l help
 complete -c mnema -f -n '__mnema_at "skill create"' -s V -l version
 complete -c mnema -f -n '__mnema_at "skill create"' -l color -x -a 'auto always never'
+complete -c mnema -f -n '__mnema_at "skill create"' -l identify
 
 # mnema skill move
 complete -c mnema -f -n '__mnema_at "skill move"' -l note -r
@@ -207,6 +219,7 @@ complete -c mnema -f -n '__mnema_at "skill move"' -s h -l help
 complete -c mnema -f -n '__mnema_at "skill move"' -l which -r
 complete -c mnema -f -n '__mnema_at "skill move"' -s V -l version
 complete -c mnema -f -n '__mnema_at "skill move"' -l color -x -a 'auto always never'
+complete -c mnema -f -n '__mnema_at "skill move"' -l identify
 complete -c mnema -f -n '__mnema_at "skill move"' -a 'review adopt reject deprecate'
 
 # mnema skill export
@@ -215,6 +228,7 @@ complete -c mnema -f -n '__mnema_at "skill export"' -l description -r
 complete -c mnema -f -n '__mnema_at "skill export"' -s h -l help
 complete -c mnema -f -n '__mnema_at "skill export"' -s V -l version
 complete -c mnema -f -n '__mnema_at "skill export"' -l color -x -a 'auto always never'
+complete -c mnema -f -n '__mnema_at "skill export"' -l identify
 
 # mnema memory
 complete -c mnema -f -n '__mnema_at "memory"' -l scope -x -a 'public private global'
@@ -222,6 +236,7 @@ complete -c mnema -f -n '__mnema_at "memory"' -l which -r
 complete -c mnema -f -n '__mnema_at "memory"' -s h -l help
 complete -c mnema -f -n '__mnema_at "memory"' -s V -l version
 complete -c mnema -f -n '__mnema_at "memory"' -l color -x -a 'auto always never'
+complete -c mnema -f -n '__mnema_at "memory"' -l identify
 
 # mnema observe
 complete -c mnema -f -n '__mnema_at "observe"' -l topic -r
@@ -231,6 +246,7 @@ complete -c mnema -f -n '__mnema_at "observe"' -l which -r
 complete -c mnema -f -n '__mnema_at "observe"' -s h -l help
 complete -c mnema -f -n '__mnema_at "observe"' -s V -l version
 complete -c mnema -f -n '__mnema_at "observe"' -l color -x -a 'auto always never'
+complete -c mnema -f -n '__mnema_at "observe"' -l identify
 
 # mnema handoff
 complete -c mnema -f -n '__mnema_at "handoff"' -l scope -x -a 'public private global'
@@ -238,6 +254,7 @@ complete -c mnema -f -n '__mnema_at "handoff"' -l which -r
 complete -c mnema -f -n '__mnema_at "handoff"' -s h -l help
 complete -c mnema -f -n '__mnema_at "handoff"' -s V -l version
 complete -c mnema -f -n '__mnema_at "handoff"' -l color -x -a 'auto always never'
+complete -c mnema -f -n '__mnema_at "handoff"' -l identify
 
 # mnema link
 complete -c mnema -f -n '__mnema_at "link"' -l rel -r
@@ -246,6 +263,7 @@ complete -c mnema -f -n '__mnema_at "link"' -l which -r
 complete -c mnema -f -n '__mnema_at "link"' -s h -l help
 complete -c mnema -f -n '__mnema_at "link"' -s V -l version
 complete -c mnema -f -n '__mnema_at "link"' -l color -x -a 'auto always never'
+complete -c mnema -f -n '__mnema_at "link"' -l identify
 
 # mnema run
 complete -c mnema -f -n '__mnema_at "run"' -a 'start' -d 'open a session for an agent (facts written in it are pinned to it)'
@@ -254,6 +272,7 @@ complete -c mnema -f -n '__mnema_at "run"' -a 'help' -d 'display help for comman
 complete -c mnema -f -n '__mnema_at "run"' -s h -l help
 complete -c mnema -f -n '__mnema_at "run"' -s V -l version
 complete -c mnema -f -n '__mnema_at "run"' -l color -x -a 'auto always never'
+complete -c mnema -f -n '__mnema_at "run"' -l identify
 
 # mnema run start
 complete -c mnema -f -n '__mnema_at "run start"' -l which -r
@@ -261,6 +280,7 @@ complete -c mnema -f -n '__mnema_at "run start"' -l goal -r
 complete -c mnema -f -n '__mnema_at "run start"' -s h -l help
 complete -c mnema -f -n '__mnema_at "run start"' -s V -l version
 complete -c mnema -f -n '__mnema_at "run start"' -l color -x -a 'auto always never'
+complete -c mnema -f -n '__mnema_at "run start"' -l identify
 
 # mnema run end
 complete -c mnema -f -n '__mnema_at "run end"' -l which -r
@@ -268,6 +288,7 @@ complete -c mnema -f -n '__mnema_at "run end"' -l outcome -r
 complete -c mnema -f -n '__mnema_at "run end"' -s h -l help
 complete -c mnema -f -n '__mnema_at "run end"' -s V -l version
 complete -c mnema -f -n '__mnema_at "run end"' -l color -x -a 'auto always never'
+complete -c mnema -f -n '__mnema_at "run end"' -l identify
 
 # mnema status
 complete -c mnema -f -n '__mnema_at "status"' -l actor -r
@@ -275,6 +296,7 @@ complete -c mnema -f -n '__mnema_at "status"' -l json
 complete -c mnema -f -n '__mnema_at "status"' -s h -l help
 complete -c mnema -f -n '__mnema_at "status"' -s V -l version
 complete -c mnema -f -n '__mnema_at "status"' -l color -x -a 'auto always never'
+complete -c mnema -f -n '__mnema_at "status"' -l identify
 
 # mnema focus
 complete -c mnema -f -n '__mnema_at "focus"' -l actor -r
@@ -282,6 +304,7 @@ complete -c mnema -f -n '__mnema_at "focus"' -l json
 complete -c mnema -f -n '__mnema_at "focus"' -s h -l help
 complete -c mnema -f -n '__mnema_at "focus"' -s V -l version
 complete -c mnema -f -n '__mnema_at "focus"' -l color -x -a 'auto always never'
+complete -c mnema -f -n '__mnema_at "focus"' -l identify
 
 # mnema resume
 complete -c mnema -f -n '__mnema_at "resume"' -l actor -r
@@ -289,12 +312,14 @@ complete -c mnema -f -n '__mnema_at "resume"' -l json
 complete -c mnema -f -n '__mnema_at "resume"' -s h -l help
 complete -c mnema -f -n '__mnema_at "resume"' -s V -l version
 complete -c mnema -f -n '__mnema_at "resume"' -l color -x -a 'auto always never'
+complete -c mnema -f -n '__mnema_at "resume"' -l identify
 
 # mnema next-actions
 complete -c mnema -f -n '__mnema_at "next-actions"' -l json
 complete -c mnema -f -n '__mnema_at "next-actions"' -s h -l help
 complete -c mnema -f -n '__mnema_at "next-actions"' -s V -l version
 complete -c mnema -f -n '__mnema_at "next-actions"' -l color -x -a 'auto always never'
+complete -c mnema -f -n '__mnema_at "next-actions"' -l identify
 
 # mnema guard
 complete -c mnema -f -n '__mnema_at "guard"' -l actor -r
@@ -306,6 +331,7 @@ complete -c mnema -f -n '__mnema_at "guard"' -l json
 complete -c mnema -f -n '__mnema_at "guard"' -s h -l help
 complete -c mnema -f -n '__mnema_at "guard"' -s V -l version
 complete -c mnema -f -n '__mnema_at "guard"' -l color -x -a 'auto always never'
+complete -c mnema -f -n '__mnema_at "guard"' -l identify
 complete -c mnema -f -n '__mnema_at "guard"' -a 'submit start block unblock submit_review request_changes approve complete cancel reopen'
 
 # mnema search
@@ -319,18 +345,21 @@ complete -c mnema -f -n '__mnema_at "search"' -l json
 complete -c mnema -f -n '__mnema_at "search"' -s h -l help
 complete -c mnema -f -n '__mnema_at "search"' -s V -l version
 complete -c mnema -f -n '__mnema_at "search"' -l color -x -a 'auto always never'
+complete -c mnema -f -n '__mnema_at "search"' -l identify
 
 # mnema show
 complete -c mnema -f -n '__mnema_at "show"' -l json
 complete -c mnema -f -n '__mnema_at "show"' -s h -l help
 complete -c mnema -f -n '__mnema_at "show"' -s V -l version
 complete -c mnema -f -n '__mnema_at "show"' -l color -x -a 'auto always never'
+complete -c mnema -f -n '__mnema_at "show"' -l identify
 
 # mnema timeline
 complete -c mnema -f -n '__mnema_at "timeline"' -l json
 complete -c mnema -f -n '__mnema_at "timeline"' -s h -l help
 complete -c mnema -f -n '__mnema_at "timeline"' -s V -l version
 complete -c mnema -f -n '__mnema_at "timeline"' -l color -x -a 'auto always never'
+complete -c mnema -f -n '__mnema_at "timeline"' -l identify
 
 # mnema accountability
 complete -c mnema -f -n '__mnema_at "accountability"' -l from -r
@@ -341,18 +370,21 @@ complete -c mnema -f -n '__mnema_at "accountability"' -l json
 complete -c mnema -f -n '__mnema_at "accountability"' -s h -l help
 complete -c mnema -f -n '__mnema_at "accountability"' -s V -l version
 complete -c mnema -f -n '__mnema_at "accountability"' -l color -x -a 'auto always never'
+complete -c mnema -f -n '__mnema_at "accountability"' -l identify
 
 # mnema antipatterns
 complete -c mnema -f -n '__mnema_at "antipatterns"' -l json
 complete -c mnema -f -n '__mnema_at "antipatterns"' -s h -l help
 complete -c mnema -f -n '__mnema_at "antipatterns"' -s V -l version
 complete -c mnema -f -n '__mnema_at "antipatterns"' -l color -x -a 'auto always never'
+complete -c mnema -f -n '__mnema_at "antipatterns"' -l identify
 
 # mnema exposure
 complete -c mnema -f -n '__mnema_at "exposure"' -l json
 complete -c mnema -f -n '__mnema_at "exposure"' -s h -l help
 complete -c mnema -f -n '__mnema_at "exposure"' -s V -l version
 complete -c mnema -f -n '__mnema_at "exposure"' -l color -x -a 'auto always never'
+complete -c mnema -f -n '__mnema_at "exposure"' -l identify
 
 # mnema export
 complete -c mnema -f -n '__mnema_at "export"' -l from -r
@@ -363,6 +395,7 @@ complete -c mnema -f -n '__mnema_at "export"' -l global
 complete -c mnema -f -n '__mnema_at "export"' -s h -l help
 complete -c mnema -f -n '__mnema_at "export"' -s V -l version
 complete -c mnema -f -n '__mnema_at "export"' -l color -x -a 'auto always never'
+complete -c mnema -f -n '__mnema_at "export"' -l identify
 
 # mnema refs
 complete -c mnema -f -n '__mnema_at "refs"' -l direction -x -a 'both out in'
@@ -371,47 +404,55 @@ complete -c mnema -f -n '__mnema_at "refs"' -l json
 complete -c mnema -f -n '__mnema_at "refs"' -s h -l help
 complete -c mnema -f -n '__mnema_at "refs"' -s V -l version
 complete -c mnema -f -n '__mnema_at "refs"' -l color -x -a 'auto always never'
+complete -c mnema -f -n '__mnema_at "refs"' -l identify
 
 # mnema rules
 complete -c mnema -f -n '__mnema_at "rules"' -l json
 complete -c mnema -f -n '__mnema_at "rules"' -s h -l help
 complete -c mnema -f -n '__mnema_at "rules"' -s V -l version
 complete -c mnema -f -n '__mnema_at "rules"' -l color -x -a 'auto always never'
+complete -c mnema -f -n '__mnema_at "rules"' -l identify
 
 # mnema rules-file
 complete -c mnema -f -n '__mnema_at "rules-file"' -l host -x -a 'vscode cursor'
 complete -c mnema -f -n '__mnema_at "rules-file"' -s h -l help
 complete -c mnema -f -n '__mnema_at "rules-file"' -s V -l version
 complete -c mnema -f -n '__mnema_at "rules-file"' -l color -x -a 'auto always never'
+complete -c mnema -f -n '__mnema_at "rules-file"' -l identify
 
 # mnema skills
 complete -c mnema -f -n '__mnema_at "skills"' -l json
 complete -c mnema -f -n '__mnema_at "skills"' -s h -l help
 complete -c mnema -f -n '__mnema_at "skills"' -s V -l version
 complete -c mnema -f -n '__mnema_at "skills"' -l color -x -a 'auto always never'
+complete -c mnema -f -n '__mnema_at "skills"' -l identify
 
 # mnema usage
 complete -c mnema -f -n '__mnema_at "usage"' -s h -l help
 complete -c mnema -f -n '__mnema_at "usage"' -s V -l version
 complete -c mnema -f -n '__mnema_at "usage"' -l color -x -a 'auto always never'
+complete -c mnema -f -n '__mnema_at "usage"' -l identify
 
 # mnema brief
 complete -c mnema -f -n '__mnema_at "brief"' -l hook
 complete -c mnema -f -n '__mnema_at "brief"' -s h -l help
 complete -c mnema -f -n '__mnema_at "brief"' -s V -l version
 complete -c mnema -f -n '__mnema_at "brief"' -l color -x -a 'auto always never'
+complete -c mnema -f -n '__mnema_at "brief"' -l identify
 
 # mnema recall
 complete -c mnema -f -n '__mnema_at "recall"' -l hook
 complete -c mnema -f -n '__mnema_at "recall"' -s h -l help
 complete -c mnema -f -n '__mnema_at "recall"' -s V -l version
 complete -c mnema -f -n '__mnema_at "recall"' -l color -x -a 'auto always never'
+complete -c mnema -f -n '__mnema_at "recall"' -l identify
 
 # mnema before-a-write
 complete -c mnema -f -n '__mnema_at "before-a-write"' -l host -x -a 'vscode'
 complete -c mnema -f -n '__mnema_at "before-a-write"' -s h -l help
 complete -c mnema -f -n '__mnema_at "before-a-write"' -s V -l version
 complete -c mnema -f -n '__mnema_at "before-a-write"' -l color -x -a 'auto always never'
+complete -c mnema -f -n '__mnema_at "before-a-write"' -l identify
 
 # mnema key
 complete -c mnema -f -n '__mnema_at "key"' -a 'restore' -d 'restore this machine\'s identity from a copy of a key\'s private half'
@@ -424,11 +465,13 @@ complete -c mnema -f -n '__mnema_at "key"' -a 'help' -d 'display help for comman
 complete -c mnema -f -n '__mnema_at "key"' -s h -l help
 complete -c mnema -f -n '__mnema_at "key"' -s V -l version
 complete -c mnema -f -n '__mnema_at "key"' -l color -x -a 'auto always never'
+complete -c mnema -f -n '__mnema_at "key"' -l identify
 
 # mnema key restore
 complete -c mnema -f -n '__mnema_at "key restore"' -s h -l help
 complete -c mnema -f -n '__mnema_at "key restore"' -s V -l version
 complete -c mnema -f -n '__mnema_at "key restore"' -l color -x -a 'auto always never'
+complete -c mnema -f -n '__mnema_at "key restore"' -l identify
 
 # mnema key request
 complete -c mnema -f -n '__mnema_at "key request"' -l anchor -r
@@ -436,27 +479,32 @@ complete -c mnema -f -n '__mnema_at "key request"' -l key -r
 complete -c mnema -f -n '__mnema_at "key request"' -s h -l help
 complete -c mnema -f -n '__mnema_at "key request"' -s V -l version
 complete -c mnema -f -n '__mnema_at "key request"' -l color -x -a 'auto always never'
+complete -c mnema -f -n '__mnema_at "key request"' -l identify
 
 # mnema key enroll
 complete -c mnema -f -n '__mnema_at "key enroll"' -s h -l help
 complete -c mnema -f -n '__mnema_at "key enroll"' -s V -l version
 complete -c mnema -f -n '__mnema_at "key enroll"' -l color -x -a 'auto always never'
+complete -c mnema -f -n '__mnema_at "key enroll"' -l identify
 
 # mnema key revoke
 complete -c mnema -f -n '__mnema_at "key revoke"' -l reason -r
 complete -c mnema -f -n '__mnema_at "key revoke"' -s h -l help
 complete -c mnema -f -n '__mnema_at "key revoke"' -s V -l version
 complete -c mnema -f -n '__mnema_at "key revoke"' -l color -x -a 'auto always never'
+complete -c mnema -f -n '__mnema_at "key revoke"' -l identify
 
 # mnema key protect
 complete -c mnema -f -n '__mnema_at "key protect"' -s h -l help
 complete -c mnema -f -n '__mnema_at "key protect"' -s V -l version
 complete -c mnema -f -n '__mnema_at "key protect"' -l color -x -a 'auto always never'
+complete -c mnema -f -n '__mnema_at "key protect"' -l identify
 
 # mnema key unprotect
 complete -c mnema -f -n '__mnema_at "key unprotect"' -s h -l help
 complete -c mnema -f -n '__mnema_at "key unprotect"' -s V -l version
 complete -c mnema -f -n '__mnema_at "key unprotect"' -l color -x -a 'auto always never'
+complete -c mnema -f -n '__mnema_at "key unprotect"' -l identify
 
 # mnema tail
 complete -c mnema -f -n '__mnema_at "tail"' -a 'list' -d 'list the tails that hold events here — the ones a cut can name — with the id `prune` takes'
@@ -465,11 +513,13 @@ complete -c mnema -f -n '__mnema_at "tail"' -a 'help' -d 'display help for comma
 complete -c mnema -f -n '__mnema_at "tail"' -s h -l help
 complete -c mnema -f -n '__mnema_at "tail"' -s V -l version
 complete -c mnema -f -n '__mnema_at "tail"' -l color -x -a 'auto always never'
+complete -c mnema -f -n '__mnema_at "tail"' -l identify
 
 # mnema tail list
 complete -c mnema -f -n '__mnema_at "tail list"' -s h -l help
 complete -c mnema -f -n '__mnema_at "tail list"' -s V -l version
 complete -c mnema -f -n '__mnema_at "tail list"' -l color -x -a 'auto always never'
+complete -c mnema -f -n '__mnema_at "tail list"' -l identify
 
 # mnema tail prune
 complete -c mnema -f -n '__mnema_at "tail prune"' -l reason -r
@@ -477,6 +527,7 @@ complete -c mnema -f -n '__mnema_at "tail prune"' -l which -r
 complete -c mnema -f -n '__mnema_at "tail prune"' -s h -l help
 complete -c mnema -f -n '__mnema_at "tail prune"' -s V -l version
 complete -c mnema -f -n '__mnema_at "tail prune"' -l color -x -a 'auto always never'
+complete -c mnema -f -n '__mnema_at "tail prune"' -l identify
 
 # mnema witness
 complete -c mnema -f -n '__mnema_at "witness"' -a 'stamp' -d 'ask an outside witness to date each tail\'s last checkpoint (T3)'
@@ -486,6 +537,7 @@ complete -c mnema -f -n '__mnema_at "witness"' -l json
 complete -c mnema -f -n '__mnema_at "witness"' -s h -l help
 complete -c mnema -f -n '__mnema_at "witness"' -s V -l version
 complete -c mnema -f -n '__mnema_at "witness"' -l color -x -a 'auto always never'
+complete -c mnema -f -n '__mnema_at "witness"' -l identify
 
 # mnema witness stamp
 complete -c mnema -f -n '__mnema_at "witness stamp"' -l calendar -r
@@ -493,6 +545,7 @@ complete -c mnema -f -n '__mnema_at "witness stamp"' -l global
 complete -c mnema -f -n '__mnema_at "witness stamp"' -s h -l help
 complete -c mnema -f -n '__mnema_at "witness stamp"' -s V -l version
 complete -c mnema -f -n '__mnema_at "witness stamp"' -l color -x -a 'auto always never'
+complete -c mnema -f -n '__mnema_at "witness stamp"' -l identify
 
 # mnema witness upgrade
 complete -c mnema -f -n '__mnema_at "witness upgrade"' -l blocks -r
@@ -500,6 +553,7 @@ complete -c mnema -f -n '__mnema_at "witness upgrade"' -l global
 complete -c mnema -f -n '__mnema_at "witness upgrade"' -s h -l help
 complete -c mnema -f -n '__mnema_at "witness upgrade"' -s V -l version
 complete -c mnema -f -n '__mnema_at "witness upgrade"' -l color -x -a 'auto always never'
+complete -c mnema -f -n '__mnema_at "witness upgrade"' -l identify
 
 # mnema switch
 complete -c mnema -f -n '__mnema_at "switch"' -a 'off' -d 'stop a channel handing the record to a model unasked'
@@ -507,6 +561,7 @@ complete -c mnema -f -n '__mnema_at "switch"' -a 'on' -d 'let a channel hand the
 complete -c mnema -f -n '__mnema_at "switch"' -s h -l help
 complete -c mnema -f -n '__mnema_at "switch"' -s V -l version
 complete -c mnema -f -n '__mnema_at "switch"' -l color -x -a 'auto always never'
+complete -c mnema -f -n '__mnema_at "switch"' -l identify
 
 # mnema switch off
 complete -c mnema -f -n '__mnema_at "switch off"' -l reason -r
@@ -515,6 +570,7 @@ complete -c mnema -f -n '__mnema_at "switch off"' -l which -r
 complete -c mnema -f -n '__mnema_at "switch off"' -s h -l help
 complete -c mnema -f -n '__mnema_at "switch off"' -s V -l version
 complete -c mnema -f -n '__mnema_at "switch off"' -l color -x -a 'auto always never'
+complete -c mnema -f -n '__mnema_at "switch off"' -l identify
 complete -c mnema -f -n '__mnema_at "switch off"' -a 'brief-document recall-document edit-rules-push edit-asks-a-person agent-accepts'
 
 # mnema switch on
@@ -524,6 +580,7 @@ complete -c mnema -f -n '__mnema_at "switch on"' -l which -r
 complete -c mnema -f -n '__mnema_at "switch on"' -s h -l help
 complete -c mnema -f -n '__mnema_at "switch on"' -s V -l version
 complete -c mnema -f -n '__mnema_at "switch on"' -l color -x -a 'auto always never'
+complete -c mnema -f -n '__mnema_at "switch on"' -l identify
 complete -c mnema -f -n '__mnema_at "switch on"' -a 'brief-document recall-document edit-rules-push edit-asks-a-person agent-accepts'
 
 # mnema verify
@@ -535,20 +592,24 @@ complete -c mnema -f -n '__mnema_at "verify"' -l json
 complete -c mnema -f -n '__mnema_at "verify"' -s h -l help
 complete -c mnema -f -n '__mnema_at "verify"' -s V -l version
 complete -c mnema -f -n '__mnema_at "verify"' -l color -x -a 'auto always never'
+complete -c mnema -f -n '__mnema_at "verify"' -l identify
 
 # mnema mcp
 complete -c mnema -f -n '__mnema_at "mcp"' -l project -r
 complete -c mnema -f -n '__mnema_at "mcp"' -s h -l help
 complete -c mnema -f -n '__mnema_at "mcp"' -s V -l version
 complete -c mnema -f -n '__mnema_at "mcp"' -l color -x -a 'auto always never'
+complete -c mnema -f -n '__mnema_at "mcp"' -l identify
 
 # mnema repl
 complete -c mnema -f -n '__mnema_at "repl"' -s h -l help
 complete -c mnema -f -n '__mnema_at "repl"' -s V -l version
 complete -c mnema -f -n '__mnema_at "repl"' -l color -x -a 'auto always never'
+complete -c mnema -f -n '__mnema_at "repl"' -l identify
 
 # mnema completion
 complete -c mnema -f -n '__mnema_at "completion"' -s h -l help
 complete -c mnema -f -n '__mnema_at "completion"' -s V -l version
 complete -c mnema -f -n '__mnema_at "completion"' -l color -x -a 'auto always never'
+complete -c mnema -f -n '__mnema_at "completion"' -l identify
 complete -c mnema -f -n '__mnema_at "completion"' -a 'bash zsh fish'

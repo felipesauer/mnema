@@ -334,6 +334,13 @@ export function mirrorOf(real: Command): Command {
     if (option.mandatory) copied.makeOptionMandatory();
     if (option.defaultValue !== undefined) copied.default(option.defaultValue);
     copy.addOption(copied);
+    // ANSWERED LIKE THE VERSION: the program answers `--identify` from a listener of its own and
+    // ends with exit 0 before any verb (`cli.ts`), which no declaration can be read back as.
+    if (option.attributeName() === 'identify') {
+      copy.on('option:identify', () => {
+        throw new CommanderError(0, 'mnema.identify', '');
+      });
+    }
   }
   if (actsOnItsOwn(real)) copy.action(() => {});
   for (const child of real.commands) copy.addCommand(mirrorOf(child));
@@ -523,21 +530,32 @@ export const NAMES_THAT_NEED_MORE: Readonly<
  * looks like where a person checks the hook: the verb answers that `mnema brief` does not take
  * `--hook`, and the session is handed what `mnema brief` prints — two names in one span, looked
  * at (63 → 65 names).
+ *
+ * THE FIRST USE NOW SAYS WHAT COMES NEXT, and that moved rows of the source, each looked at. `init`
+ * ends by naming the verb to type, `mnema decision record <title> <rationale>` (a line), and the one
+ * that shows where things stand, `mnema status` (a name), and, when the directory is not the root of
+ * the repository, `mnema init` to run there (a name); `status` without an identity says to run `mnema
+ * init` (a name); and a supersede by a proposal names the accept that would put the successor in
+ * force, `mnema decision move accept <id> --note "<why>"` (a line) — 34 → 36 lines, 46 → 49 names.
  */
 export const HANDED_OVER: Readonly<
   Record<Handed['from'], Readonly<Record<Reading['kind'], number>>>
 > = {
   // name 66 until the page about where the key lives named the verbs that protect it, and the
   // ones that stay unprotected without it (`key protect`, `key unprotect`, `verify`).
-  span: { line: 34, name: 69, flag: 1, unwritten: 0 },
+  // line 34 until the plugin page named `mnema --identify`, the question its hooks ask first.
+  span: { line: 35, name: 69, flag: 1, unwritten: 0 },
   // name 18 until the page that says where the key lives named `mnema key protect` in a line of
   // its own.
-  block: { line: 35, name: 19, flag: 0, unwritten: 0 },
+  // line 35 until the same page showed that question in a block of its own.
+  block: { line: 36, name: 19, flag: 0, unwritten: 0 },
   // 46 until the refusal an agent's `accept` gets, with the switch off, began naming the command a
   // person accepts with (`agent-accepts.ts`).
   // line 34 until the sentences an agent's accept is answered with began handing whole lines
   // over (`agent-accepts.ts`: the read, the person's accept, and the switch in both positions).
-  source: { line: 38, name: 47, flag: 3, unwritten: 3 },
+  // line 40 until the plugin told a session which program answered that question (`hand-over.mjs`).
+  // name 50 until the hook copy of the opening document named `mnema decision import` (`presentation/brief.ts`).
+  source: { line: 41, name: 51, flag: 3, unwritten: 3 },
 };
 
 // ---------------------------------------------------------------------------

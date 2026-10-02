@@ -15,6 +15,10 @@ $ mnema
 !                                         Style never changes what a line says.
 !                                         (choices: "auto", "always", "never",
 !                                         default: "auto")
+!   --identify                            print this program’s package name and
+!                                         version — how the mnema plugin tells
+!                                         this `mnema` from another program of the
+!                                         same name on the PATH
 !   -h, --help                            display help for command
 !
 ! Commands:
@@ -114,6 +118,10 @@ $ mnema --help
 |                                         Style never changes what a line says.
 |                                         (choices: "auto", "always", "never",
 |                                         default: "auto")
+|   --identify                            print this program’s package name and
+|                                         version — how the mnema plugin tells
+|                                         this `mnema` from another program of the
+|                                         same name on the PATH
 |   -h, --help                            display help for command
 |
 | Commands:
@@ -253,7 +261,7 @@ $ mnema decision --help
 |
 | Commands:
 |   record [options] <title> <rationale>   record a decision in the current project
-|   move [options] <action> <id>           accept or reject a decision (follows the decision; takes no --scope)
+|   move [options] <action> <id...>        accept or reject a decision (follows the decision; takes no --scope)
 |   supersede [options] <old-id> <new-id>  supersede a decision with a later one (follows the decision; takes no --scope)
 |   import [options] <dir>                 propose the decisions already written in this repository’s decision files
 |   help [command]                         display help for command
@@ -454,7 +462,8 @@ $ mnema status --help
 | Options:
 |   --actor <id>  the identity whose session to report — the `mnid:…` from `mnema
 |                 accountability`, or the short form the reads print (any prefix
-|                 that names one identity here)
+|                 that names one identity here). Omitted, it is the identity this
+|                 machine writes as in this project, and the report says so.
 |   --json        emit the faithful opening context as JSON
 |   -h, --help    display help for command
 
@@ -733,10 +742,12 @@ $ mnema brief --help
 | The mnema plugin hands this document to a Claude Code session with no file at all,
 | with `--hook`: past what a hook carries, the host would replace the whole text with a
 | file path, so there the rules stop at a whole one and the document says how many it
-| left out. Without the flag nothing is cut.
+| left out. Without the flag nothing is cut. With it the copy also counts, last, the
+| decision documents in this checkout the record has no decision for, as
+| `mnema status` does — a fact about one disk, so the file never carries it.
 |
-| The output holds no clock, no session and no path, so the same record always
-| prints the same bytes and a difference is a difference in the record.
+| Without `--hook` the output holds no clock, no session and no path, so the same
+| record always prints the same bytes and a difference is a difference in the record.
 | It carries this project’s COMMITTED record — what a clone gets. A decision or a
 | pattern recorded with `--scope private`, or in your global tree, governs your own
 | work and is not in this file, which is written to be committed.
@@ -1087,13 +1098,14 @@ $ mnema decision record --help
 
 ### mnema decision move --help
 $ mnema decision move --help
-| Usage: mnema decision move [options] <action> <id>
+| Usage: mnema decision move [options] <action> <id...>
 |
 | accept or reject a decision (follows the decision; takes no --scope)
 |
 | Arguments:
 |   action         the transition (accept, reject)
-|   id             the decision id (the value shown when it was recorded)
+|   id             the decision id (the value shown when it was recorded) —
+|                  several, to move each one with the same verdict and note
 |
 | Options:
 |   --note <text>  why this verdict (required by accept, reject)
@@ -1173,6 +1185,11 @@ $ mnema decision import --help
 | is proposed — including one that is no decision at all: an index page or a
 | roadmap wears the same shape, and no fact of the document separates them. That
 | is why nothing is accepted on your behalf. Nothing here calls a model.
+|
+| The reason is what the file’s own decision section says (MADR’s “Chosen option, because”,
+| Nygard’s `## Decision`). A list of every option (MADR’s `## Considered Options`) is recorded
+| WITHOUT the option the file chose; when the file does not say which it chose, none is
+| recorded as turned down, and the plan says so.
 |
 | What recording means here:
 |   Permanent — mnema is append-only and nothing deletes a fact. A public record

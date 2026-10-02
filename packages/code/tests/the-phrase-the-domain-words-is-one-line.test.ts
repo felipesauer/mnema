@@ -628,6 +628,36 @@ const CLASSIFIED: Readonly<Record<string, { verdict: Verdict; why: string }>> = 
     verdict: 'minted',
     why: 'the name of a title field, one of the rows `TITLES` holds',
   },
+  '@mnema/core a-reason-states-something.ts «the {} "{}" has no letter and no digit in it, so it names nothing: » field #1':
+    { verdict: 'minted', why: 'the name of a title field, one of the rows `TITLES` holds' },
+  '@mnema/core a-reason-states-something.ts «the {} "{}" has no letter and no digit in it, so it names nothing: » oneLine(value) #1':
+    {
+      verdict: 'collapsed',
+      why: 'the punctuation a caller typed as a title, from the argv or a tool argument',
+    },
+  '@mnema/core a-reason-states-something.ts «write the {} in words» field #1': {
+    verdict: 'minted',
+    why: 'the name of a title field, one of the rows `TITLES` holds',
+  },
+  '@mnema/core a-reason-states-something.ts «the {} "{}" is the marker a recipe prints where the value goes, » field #1':
+    {
+      verdict: 'minted',
+      why: 'the name of a reference field, one of the rows `REFERENCES` holds',
+    },
+  '@mnema/core a-reason-states-something.ts «the {} "{}" is the marker a recipe prints where the value goes, » oneLine(value.trim()) #1':
+    {
+      verdict: 'collapsed',
+      why: 'the marker a caller pasted as a reference, from the argv or a tool argument',
+    },
+  '@mnema/core a-reason-states-something.ts «not the value: write the {} in its place» field #1': {
+    verdict: 'minted',
+    why: 'the name of a reference field, one of the rows `REFERENCES` holds',
+  },
+  '@mnema/core workflow/append.ts «{}. The fact was NOT recorded — a record is permanent, and a reference is what every later reading looks it up by.» unreferenced #1':
+    {
+      verdict: 'composed',
+      why: 'the reference refusal `a-reason-states-something.ts` words, whose two values are sites there',
+    },
   '@mnema/core workflow/append.ts «{}. The fact was NOT recorded — a record is permanent, and its why is the part a later reader reads.» unstated #1':
     {
       verdict: 'composed',
@@ -1369,9 +1399,9 @@ describe('every value the domain puts in a sentence is classified', () => {
     // are equal. The scale is stated, and so is what the HANDOFF said — twenty-three
     // sites, twelve in `core` and eleven in `chain` — because it counted sentences
     // written at a `message:` or a `detail:` directly, and a value is not a sentence.
-    expect(SITES.length).toBe(151);
+    expect(SITES.length).toBe(158);
     expect(FOUND[0]?.sites.length).toBe(48);
-    expect(FOUND[1]?.sites.length).toBe(103);
+    expect(FOUND[1]?.sites.length).toBe(110);
     expect(FOUND.flatMap((layer) => layer.wording).length).toBeGreaterThan(15);
   });
 
@@ -1421,11 +1451,11 @@ describe('every value the domain puts in a sentence is classified', () => {
     // No arm of the case above may be empty, or that much of it is vacuous.
     const verdicts = Object.values(CLASSIFIED).map((said) => said.verdict);
     const count = (verdict: Verdict): number => verdicts.filter((said) => said === verdict).length;
-    expect(count('collapsed')).toBe(90);
-    expect(count('minted')).toBe(40);
-    expect(count('composed')).toBe(21);
+    expect(count('collapsed')).toBe(92);
+    expect(count('minted')).toBe(44);
+    expect(count('composed')).toBe(22);
     expect(SITES.filter((site) => new RegExp(`\\b${DOOR}\\b`).test(site.expression))).toHaveLength(
-      90,
+      92,
     );
   });
 

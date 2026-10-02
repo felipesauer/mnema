@@ -196,7 +196,7 @@ export const NOT_CHECKED: Readonly<Record<string, string>> = {
   THE_SHELL_IS_NOT_OURS:
     'Redirections, pipes and substitutions. The `>` in `mnema brief > MNEMA.md` belongs to the shell; the verb never learns there was a file. That hazard is ruled on by `the-recipe-says-what-it-overwrites.test.ts`, which requires every publisher of that recipe to say the file is replaced whole.',
   RUNNING_IS_NOT_READING:
-    'Whether a line would SUCCEED. `mnema init` founds a tree, `mnema brief > MNEMA.md` truncates a file, `pnpm add -g` reaches the network. Execution would need a sandbox with its own `HOME` and `XDG_DATA_HOME`, because the global tree lives under `$XDG_DATA_HOME/mnema/global` and `mktemp -d` alone does not isolate it. Nothing here runs anything.',
+    'Whether a line would SUCCEED. `mnema init` founds a tree, `mnema brief > MNEMA.md` truncates a file, `pnpm add -g` reaches the network. Execution would need a sandbox with its own `HOME` (or `MNEMA_HOME`), because the global tree and the keys live under `~/.mnema` and `mktemp -d` alone does not isolate them. (This said `XDG_DATA_HOME`, and the data directory stopped following it: the variable no longer moves anything.) Nothing here runs anything.',
   THE_OUTPUT_IS_A_SECOND_RULE:
     'The `#>` lines that show what a command prints. They are comments to the shell and they are dropped here. Whether the product really says those words is a different rule, and `cli.golden.test.ts` holds the bytes of every `--help` page against a committed transcript.',
   PROSE_IS_NOT_A_BLOCK:
@@ -216,7 +216,7 @@ export const NOT_CHECKED: Readonly<Record<string, string>> = {
 export const PAGES: Readonly<Record<string, number>> = {
   'README.md': 4,
   'packages/code/README.md': 45,
-  'plugin/README.md': 5,
+  'plugin/README.md': 6,
 };
 
 // ---------------------------------------------------------------------------

@@ -658,7 +658,8 @@ beforeAll(async () => {
     '# ADR-001 — Keep the runbook where the work is\n\n' +
       '- **Status:** Accepted\n\n' +
       '## Context\n\na wiki page nobody owns goes stale\n\n' +
-      '## Considered Options\n\na shared spreadsheet: it has no history\n',
+      '## Considered Options\n\n* the runbook next to the code\n* a shared spreadsheet: it has no history\n\n' +
+      '## Decision Outcome\n\nChosen option: "the runbook next to the code", because it is reviewed with the change.\n',
     'utf-8',
   );
   writeFileSync(

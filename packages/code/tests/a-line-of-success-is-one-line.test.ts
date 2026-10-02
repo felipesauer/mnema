@@ -266,6 +266,11 @@ const CLASSIFIED: Readonly<Record<string, { verdict: Verdict; why: string }>> = 
     verdict: 'minted',
     why: 'two counts this reading computed',
   },
+  'decision.ts «Moved {} of {}; the rest were refused above and nothing was written for them.» #1':
+    {
+      verdict: 'minted',
+      why: 'two counts of this run: how many ids moved and how many were typed',
+    },
   'decision.ts «Recorded decision {} ({})» #1': {
     verdict: 'minted',
     why: 'an `ADR-<n>` and a uuid, both minted by the write that just landed',
@@ -628,7 +633,7 @@ describe('every line this wiring words is classified', () => {
     // of their own (`key-file.ts`), which collapses its values where it words them, and the
     // `witness` act's "No tail holds events" moved into `presentation/tails.ts`.
     // 69 until `key protect` and `unprotect` began printing which files they changed.
-    expect(FOUND.sites.length).toBe(73);
+    expect(FOUND.sites.length).toBe(74);
   });
 
   it('reads the verdict off the source rather than believing the table', () => {
@@ -649,7 +654,7 @@ describe('every line this wiring words is classified', () => {
     // Neither arm of the case above may be empty, or half of it is vacuous.
     const verdicts = Object.values(CLASSIFIED).map((said) => said.verdict);
     expect(verdicts.filter((verdict) => verdict === 'collapsed').length).toBe(34);
-    expect(verdicts.filter((verdict) => verdict === 'minted').length).toBe(39);
+    expect(verdicts.filter((verdict) => verdict === 'minted').length).toBe(40);
     expect(FOUND.sites.filter((site) => site.tagged).length).toBe(34);
   });
 

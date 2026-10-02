@@ -684,7 +684,12 @@ describe('mnema CLI — decision, end to end', () => {
     const s = capture();
     await run(['decision', 'supersede', oldId, newId, '--reason', 'a better way'], s.io);
     expect(s.failed()).toBe(false);
-    expect(s.out.join('\n')).toBe(`Decision ADR-1 (${oldId}) → superseded`);
+    // The successor is still `proposed` here, and the move says so (the second line); the
+    // successor being accepted first is the case `the-first-use-says-what-it-did.test.ts` holds.
+    expect(s.out.join('\n')).toBe(
+      `Decision ADR-1 (${oldId}) → superseded\n` +
+        `  ADR-2 (${newId}) is still proposed, so nothing is in force on this subject until a person accepts it: mnema decision move accept ${newId} --note "<why>"`,
+    );
 
     const root = resolveTrees(repo, {
       home: join(sandbox, 'home'),

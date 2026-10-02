@@ -138,7 +138,11 @@ import {
   type ScopedTree,
   scopedEventsOf,
 } from '../intelligence-source.js';
-import { movedDisplay } from '../moved-record.js';
+import {
+  movedDisplay,
+  successorOnlyForASupersede,
+  supersedeLeavesNothingInForce,
+} from '../moved-record.js';
 import { oneLine } from '../one-line.js';
 import {
   ASKS_A_PERSON_CHANNEL,
@@ -250,6 +254,8 @@ export type DecisionTransitionResult =
       readonly adr: string;
       /** The state the decision is now in, resolved by the gate. */
       readonly to: string;
+      /** On a supersede whose successor is still `proposed`: nothing is in force until accepted. */
+      readonly notice?: string;
       /**
        * Present when an AGENT ruled it accepted: the agent's name. The reply says so (see
        * `agent-accepts.ts`), because the person working with the agent is told through the
@@ -777,6 +783,9 @@ export function runDecisionTransition(
     };
   }
 
+  const unread = successorOnlyForASupersede(input.action, input.by);
+  if (unread !== undefined) return { ok: false, code: 'UNREAD_FIELD', message: unread };
+
   // AN AGENT'S ACCEPT IS FREE UNLESS THE SWITCH IS OFF (`agent-accepts.ts`): asked before the
   // run is opened and anything is written, so a refusal leaves the record as it found it.
   // Every call through this server is an agent's, whose name is the session's.
@@ -825,11 +834,16 @@ export function runDecisionTransition(
   // it through the one function both surfaces resolve a moved display with, fallback
   // included.
   const adr = movedDisplay('decision', located.home.chainRoot, input.id, upcasters);
+  const notice =
+    input.action === 'supersede' && input.by !== undefined
+      ? supersedeLeavesNothingInForce(located.home.chainRoot, input.by, upcasters)
+      : undefined;
   return {
     ok: true,
     id: input.id,
     adr,
     to: moved.to,
+    ...(notice !== undefined ? { notice } : {}),
     ...(input.action === 'accept' && session.which !== undefined
       ? { acceptedByAgent: session.which }
       : {}),

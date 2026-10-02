@@ -1138,7 +1138,7 @@ function registerTools(tool: ToolRegistrar, ensureSession: () => Promise<Session
         `Move an existing decision to a new state. ${DECISION_VERDICTS} a proposed ` +
         'decision (each needs a note); supersede a proposed or accepted decision ' +
         'with a later one — supersede needs the successor decision id in `by` and ' +
-        `a reason. \`by\` applies ONLY to supersede; ${DECISION_VERDICTS} ignore it. ` +
+        `a reason. \`by\` applies ONLY to supersede; ${DECISION_VERDICTS} REFUSE it. ` +
         'An illegal move or missing proof is refused with the gate’s reason. The ' +
         'decision is looked for in EVERY project of this workspace and the move lands ' +
         'in the project that holds it — the id decides, so no `project` is taken. An ' +
@@ -1155,7 +1155,9 @@ function registerTools(tool: ToolRegistrar, ensureSession: () => Promise<Session
         by: z
           .string()
           .optional()
-          .describe('The successor decision id — required by supersede, ignored otherwise.'),
+          .describe(
+            'The successor decision id — required by supersede, refused with any other action.',
+          ),
         note: proofField('Why this verdict', 'decision', 'note'),
         reason: proofField('Why it is being replaced', 'decision', 'reason'),
       },
@@ -1175,6 +1177,7 @@ function registerTools(tool: ToolRegistrar, ensureSession: () => Promise<Session
       return moved(active, movedLine('decision', result.adr, result.id, result.to), result, {
         after:
           result.acceptedByAgent === undefined ? [] : [acceptedByAnAgent(result.acceptedByAgent)],
+        ...(result.notice !== undefined ? { notice: result.notice } : {}),
       });
     },
   );
@@ -2065,14 +2068,22 @@ function moved(
   session: Session,
   line: string,
   result: Replacement,
-  // What a particular move owes beyond the acknowledgement: today the one sentence an
-  // acceptance by an agent says about itself. A parameter, as `recorded`'s is, so no other
-  // move's reply gains a slot it can never fill.
-  extra: { readonly after?: readonly string[] } = {},
+  // What a particular move owes beyond the acknowledgement: the one sentence an acceptance by
+  // an agent says about itself, right after the line, and the notice a supersede whose successor
+  // is still proposed ends with. A parameter, as `recorded`'s is, so no other move's reply gains
+  // a slot it can never fill.
+  extra: { readonly after?: readonly string[]; readonly notice?: string } = {},
 ): { readonly content: { readonly type: 'text'; readonly text: string }[] } {
   return replied(
     session,
-    [[line, ...(extra.after ?? []), ...replacementNotice(result.replaced)].join('\n')],
+    [
+      [
+        line,
+        ...(extra.after ?? []),
+        ...replacementNotice(result.replaced),
+        ...(extra.notice !== undefined ? [extra.notice] : []),
+      ].join('\n'),
+    ],
     { wrote: true },
   );
 }

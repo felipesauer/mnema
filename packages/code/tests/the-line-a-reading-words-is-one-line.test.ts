@@ -678,6 +678,15 @@ const CLASSIFIED: Readonly<Record<string, { verdict: Verdict; why: string }>> = 
       verdict: 'composed',
       why: 'where the words came from, worded by `whereTheWordsCameFrom` out of counts and constants — never the words, which are paths and a branch somebody named',
     },
+  'brief.ts «- {}» toImport(base.directory, base.documents) #1': {
+    verdict: 'composed',
+    why: 'a base with documents the record has none for, worded by `status.ts`’s `toImport` — the hook copy’s bullet is that one spelling',
+  },
+  "brief.ts «Not in the record: {} in this checkout, by file name, with no decision derived from them here.» counted(total, 'decision document', 'decision documents') #1":
+    {
+      verdict: 'composed',
+      why: 'how many documents are outside the record, worded by `counted` out of a sum of counts and two nouns of this module',
+    },
   "recall.ts «{} changed in the working tree» counted(touched.changed, 'file') #1": {
     verdict: 'composed',
     why: 'how many files changed, worded by `counted` out of a count and a noun of this module',
@@ -819,6 +828,10 @@ const CLASSIFIED: Readonly<Record<string, { verdict: Verdict; why: string }>> = 
   'occurrence.ts itemLine(oneLine(entry.kind)) #1': {
     verdict: 'collapsed',
     why: 'the event kind of a history entry, as the catalog spells it',
+  },
+  'occurrence.ts itemLine(...theMove(entry.event)) #1': {
+    verdict: 'composed',
+    why: 'where a move moved to, composed by `theMove` below — the same column the arriving line carries, empty for an event that is not a move',
   },
   'occurrence.ts «[{}]» oneLine(entry.role) #1': {
     verdict: 'collapsed',
@@ -1120,29 +1133,25 @@ const CLASSIFIED: Readonly<Record<string, { verdict: Verdict; why: string }>> = 
     verdict: 'minted',
     why: 'the same word again, as the flag that reaches it — a kind is what `--kind` takes',
   },
-  'status.ts «  {} ({}) — mnema decision import {}» oneLine(base.directory) #1': {
+  'status.ts «{} ({}) — mnema decision import {}» oneLine(directory) #1': {
     verdict: 'collapsed',
-    why: 'the directory a `derived-from` edge names — a path somebody’s command line sent into the record, and an open relation anybody may write, so a break in it would forge a second line under this heading',
+    why: 'the directory a `derived-from` edge names, or one of the five conventional ones — a path somebody’s command line sent into the record, and an open relation anybody may write, so a break in it would forge a second line under the heading; a literal of this package is collapsed too, because the field is one field and a rule that held for one source of it and not the other would be two rules',
   },
-  'status.ts «  {} ({}) — mnema decision import {}» base.outside #1': {
+  'status.ts «{} ({}) — mnema decision import {}» documents #1': {
     verdict: 'minted',
     why: 'how many documents of that base the record has no decision for — a count this reading made over the file names',
   },
-  'status.ts «  {} ({}) — mnema decision import {}» oneLine(base.directory) #2': {
+  'status.ts «{} ({}) — mnema decision import {}» oneLine(directory) #2': {
     verdict: 'collapsed',
     why: 'the same path again, as the argument the verb takes — collapsed a second time because it is a second site of the same value, which is the rule this layer applies per FIELD',
   },
-  'status.ts «  {} ({}) — mnema decision import {}» base.documents #1': {
-    verdict: 'minted',
-    why: 'how many decision documents a conventional base holds — a count this reading made over the file names, under the ARRIVAL heading rather than the drift one',
+  'status.ts «  {}» toImport(base.directory, base.outside) #1': {
+    verdict: 'composed',
+    why: 'a base under the drift heading, worded by `toImport` — the one spelling of a base, its count and the command, shared with the opening document’s hook copy',
   },
-  'status.ts «  {} ({}) — mnema decision import {}» oneLine(base.directory) #3': {
-    verdict: 'collapsed',
-    why: 'one of the five conventional directories, a literal of this package — collapsed anyway, because the field is the same field and a rule that held for the value read from the record and not for the value read from a list would be two rules',
-  },
-  'status.ts «  {} ({}) — mnema decision import {}» oneLine(base.directory) #4': {
-    verdict: 'collapsed',
-    why: 'the same path again, as the argument the verb takes — the fourth site of one field, for the third site’s reason',
+  'status.ts «  {}» toImport(base.directory, base.documents) #1': {
+    verdict: 'composed',
+    why: 'a base under the arrival heading, worded by the same `toImport`',
   },
   'status.ts «{} of {}» shown #1': { verdict: 'minted', why: 'how many a list shows — a count' },
   'status.ts «{} of {}» total #1': { verdict: 'minted', why: 'how many there are — a count' },
@@ -1321,6 +1330,14 @@ const CLASSIFIED: Readonly<Record<string, { verdict: Verdict; why: string }>> = 
   'occurrence.ts itemLine(oneLine(event.kind)) #1': {
     verdict: 'collapsed',
     why: 'the event kind: closed today, and collapsed because the rule is the line’s',
+  },
+  'occurrence.ts itemLine(...theMove(event)) #1': {
+    verdict: 'composed',
+    why: 'where a move moved to, composed by `theMove` — one function for this line and the history’s, so the two cannot spell one event two ways',
+  },
+  'occurrence.ts «→ {}» oneLine(to) #1': {
+    verdict: 'collapsed',
+    why: 'the state the gate resolved a move to — a closed word of the workflow, collapsed because the rule is the line’s',
   },
   'occurrence.ts asWhen(oneLine(event.at)) #1': {
     verdict: 'collapsed',
@@ -1587,7 +1604,7 @@ describe('every value this layer puts on a line is classified', () => {
     // 251 until the renderer began making an actor's control bytes visible and joined the
     // composers with its two template values; then 253 until the rules in force began saying who
     // accepted them (`brief.ts`, `record.ts`).
-    expect(FOUND.sites.length).toBe(268);
+    expect(FOUND.sites.length).toBe(272);
   });
 
   it('reads the verdict off the source rather than believing the table', () => {
@@ -1608,10 +1625,10 @@ describe('every value this layer puts on a line is classified', () => {
     // No arm of the case above may be empty, or that much of it is vacuous.
     const verdicts = Object.values(CLASSIFIED).map((said) => said.verdict);
     const count = (verdict: Verdict): number => verdicts.filter((said) => said === verdict).length;
-    expect(count('collapsed')).toBe(68);
-    expect(count('minted')).toBe(149);
-    expect(count('composed')).toBe(51);
-    expect(FOUND.sites.filter((site) => /\boneLine\b/.test(site.expression))).toHaveLength(68);
+    expect(count('collapsed')).toBe(67);
+    expect(count('minted')).toBe(148);
+    expect(count('composed')).toBe(57);
+    expect(FOUND.sites.filter((site) => /\boneLine\b/.test(site.expression))).toHaveLength(67);
   });
 
   it('every reason says where the value comes from', () => {
