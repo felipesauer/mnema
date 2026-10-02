@@ -19,7 +19,7 @@
  * says each line IS the canonical serialization of what it holds, the second reader refused
  * every such line while this product verified it, and nothing this product writes produces
  * one — so the two readers disagreed about bytes no honest writer of the format makes.
- * `parseStoredJson` itself stays tolerant, for the two documents that are not lines of the
+ * `parseStoredJson` itself stays tolerant, for the three documents that are not lines of the
  * record (see `both-readers-read-the-same-bytes.test.ts`, which names them).
  */
 
