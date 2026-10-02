@@ -36,7 +36,12 @@ import {
 import type { ChannelSwitchProjection } from './channel.js';
 import { getChannelSwitch, listChannelSwitches } from './channel-store.js';
 import { type AdrCollision, adrCollisions, type DecisionProjection } from './decision.js';
-import { getDecision, listDecisions, listDecisionsByState } from './decision-store.js';
+import {
+  countDecisions,
+  getDecision,
+  listDecisions,
+  listDecisionsByState,
+} from './decision-store.js';
 import type { DivergentMove } from './divergent-moves.js';
 import type {
   HandoffProjection,
@@ -570,6 +575,11 @@ export class ProjectionCache {
   /** Reads one decision by id, or null if it is not projected. */
   getDecision(id: string): DecisionProjection | null {
     return getDecision(this.db, id);
+  }
+
+  /** How many decisions are projected. */
+  countDecisions(): number {
+    return countDecisions(this.db);
   }
 
   /** Lists all projected decisions, ordered by id. */

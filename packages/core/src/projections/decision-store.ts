@@ -75,6 +75,11 @@ export function materializeDecisions(
   }
 }
 
+/** How many decisions are projected — the count the next `ADR-<n>` is numbered from. */
+export function countDecisions(db: SqliteDatabase): number {
+  return (db.prepare('SELECT COUNT(*) AS n FROM decisions').get() as { n: number }).n;
+}
+
 /** Reads one decision by id, or null if it is not projected. */
 export function getDecision(db: SqliteDatabase, id: string): DecisionProjection | null {
   const row = db.prepare('SELECT * FROM decisions WHERE id = ?').get(id) as DecisionRow | undefined;

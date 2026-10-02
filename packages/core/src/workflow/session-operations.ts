@@ -70,7 +70,6 @@ import {
 import { resolveExecutingAgent, type SelfAuthorizedErr } from '../identity/authority.js';
 import { canonicalId, mintId } from '../identity/id.js';
 import { oneLine } from '../one-line.js';
-import { orderedEvents } from '../projections/order.js';
 import { projectRuns } from '../projections/run.js';
 import { type AppendRefusal, appendEvent } from './append.js';
 import {
@@ -82,6 +81,7 @@ import {
 import { systemClock } from './clock.js';
 import { authorizingAnchor, ensureFounded } from './identity-operations.js';
 import type { WriteContext } from './operations.js';
+import { standing } from './read-the-record.js';
 
 /** A run was opened: the `run.started` fact was appended. */
 export interface StartRunOk extends ScreenedWrite {
@@ -277,7 +277,7 @@ export function endRun(ctx: WriteContext, input: EndRunInput): EndRunOk | EndRun
   const id = canonicalId(input.run);
   return onTheRecordAsItStands(
     ctx,
-    () => projectRuns(orderedEvents(ctx.layout, ctx.upcasters)),
+    () => standing(ctx, [id], (cache, one) => cache.getRun(one)),
     (runs, earlier): Judged<EndRunOk | EndRunError> => {
       const current = id === undefined ? undefined : runs.get(id);
       if (id === undefined || current === undefined) {
