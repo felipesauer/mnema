@@ -27,7 +27,7 @@
  */
 
 import { canonicalBytes, canonicalStringify } from '../events/canonical.js';
-import { parseStoredJson } from '../events/stored-json.js';
+import { parseCanonicalLine } from '../events/stored-json.js';
 import { type KeyObject, type KeyPair, sign, verify } from './keys.js';
 
 /**
@@ -118,7 +118,7 @@ export function serializeTailProof(proof: TailProof): string {
 export function parseTailProof(line: string): TailProof {
   let raw: Record<string, unknown>;
   try {
-    raw = parseStoredJson(line) as Record<string, unknown>;
+    raw = parseCanonicalLine(line) as Record<string, unknown>;
   } catch (error) {
     throw new TailProofParseError((error as Error).message);
   }

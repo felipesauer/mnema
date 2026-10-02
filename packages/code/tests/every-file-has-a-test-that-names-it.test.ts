@@ -714,7 +714,7 @@ const CLAUSES_PER_FILE: Readonly<Record<string, number>> = {
   'packages/chain/src/boundaries.test.ts': 3,
   'packages/chain/src/chain/backup.test.ts': 8,
   'packages/chain/src/chain/bitcoin.test.ts': 3,
-  'packages/chain/src/chain/both-readers-read-the-same-bytes.test.ts': 12,
+  'packages/chain/src/chain/both-readers-read-the-same-bytes.test.ts': 13,
   'packages/chain/src/chain/chain.test.ts': 18,
   'packages/chain/src/chain/enrollment.test.ts': 13,
   'packages/chain/src/chain/format-on-disk.test.ts': 8,

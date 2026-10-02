@@ -969,7 +969,9 @@ function verifyTailOwnership(
   }
   let proof: ReturnType<typeof parseTailProof>;
   try {
-    proof = parseTailProof(readFileSync(path, 'utf-8'));
+    // The file is one canonical line and the newline that ends it, which is not part of
+    // the line: the second reader strips it the same way before it compares bytes.
+    proof = parseTailProof(readFileSync(path, 'utf-8').replace(/\n+$/, ''));
   } catch (error) {
     push(
       `tail ${oneLine(tail)} has a malformed ownership proof: ${oneLine((error as Error).message)}`,
