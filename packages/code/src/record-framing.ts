@@ -166,6 +166,7 @@ export type ModelChannel =
   | 'exported-skill'
   | 'edit-rules-push'
   | 'edit-asks-a-person'
+  | 'edit-refuses-a-write'
   | 'host-rules-file'
   | 'agent-accepts';
 
@@ -176,6 +177,7 @@ export type FramedChannel =
   | 'recall-document'
   | 'edit-rules-push'
   | 'edit-asks-a-person'
+  | 'edit-refuses-a-write'
   | 'host-rules-file';
 
 /**
@@ -207,6 +209,9 @@ const SUBJECT_OF: { readonly [K in FramedChannel]: ServedSubject } = {
   // same record saying the same kind of thing — what differs is that this one stops
   // somebody, and what a text says about ITSELF does not change with how hard it lands.
   'edit-asks-a-person': 'rules',
+  // THE REFUSAL, framed for the gate's reason: its text is the reason the host hands the agent
+  // whose write did not happen, so it is record text in front of a model, and it says whose.
+  'edit-refuses-a-write': 'rules',
   // A FILE IN ANOTHER HOST'S RULE FORMAT (`mnema rules-file`), and it is framed where the
   // exported skill is not: that one is a recorded body byte for byte, whose provenance rides
   // in the format's own metadata; this one is text this product COMPOSES out of the record —
@@ -311,6 +316,7 @@ export type SwitchableChannel =
   | 'recall-document'
   | 'edit-rules-push'
   | 'edit-asks-a-person'
+  | 'edit-refuses-a-write'
   | 'agent-accepts';
 
 /**
@@ -362,6 +368,20 @@ export const EDIT_PUSH_CHANNEL: CountedChannel = 'edit-rules-push';
 export const ASKS_A_PERSON_CHANNEL: CountedChannel = 'edit-asks-a-person';
 
 /**
+ * The channel that REFUSES a write where a rule of the record refuses one — the strongest
+ * thing this product does to somebody else's work, and therefore the one whose switch matters
+ * most.
+ *
+ * ITS OWN SWITCH AND NOT A READING OF {@link ASKS_A_PERSON_CHANNEL}, for the gate's reason one
+ * step further. A refusal leaves nobody a way through at the host: no person is asked, so no
+ * person can say yes. This switch is the way out of a refusal somebody inherited with a clone,
+ * and a single switch for both grades would make whoever needed out of the refusal give up the
+ * pause for a person as well. It is read BEFORE a refusal is decided, by the one function that
+ * decides what a write meets (`what-a-write-meets.ts`), so no door can refuse past it.
+ */
+export const REFUSES_A_WRITE_CHANNEL: SwitchableChannel = 'edit-refuses-a-write';
+
+/**
  * The channel that lets an AGENT rule a decision in force: ON by default, because an agent
  * accepting a decision is free — with the record keeping who, the person told, and a switch for
  * whoever wants it off.
@@ -392,6 +412,10 @@ export const AGENT_ACCEPTS_CHANNEL: SwitchableChannel = 'agent-accepts';
  * `channel.served` says nothing about whether the opening texts arrived; it says that no edit
  * of that run was handed a rule, or that the push was off, or that the hook never ran.
  *
+ * THE THIRD CHANNEL THAT ACTS AT AN EDIT IS NOT HERE, and that is the same decision from the
+ * other side: a refusal is discrete, and each one is appended as its own `channel.refused`
+ * before the host is answered, so the refusal IS the fact of the channel having spoken.
+ *
  * A union here, and the table below total over what it leaves out, so a channel added to
  * {@link SwitchableChannel} does not build until somebody says which side it is on.
  */
@@ -418,6 +442,10 @@ export const NOT_COUNTED_AS_SERVED: {
     'the sentence it hands an agent is the reply to a call that is itself the recorded fact ' +
     '(the acceptance, whose actor is on its envelope) or is refused and records nothing, so ' +
     'a second fact saying it was served would repeat the first',
+  'edit-refuses-a-write':
+    'each refusal it hands a host is itself the recorded fact — one `channel.refused` per ' +
+    'rule, appended before the reply, or no refusal at all — so a second fact saying the ' +
+    'channel was served would repeat the first',
 };
 
 /**
@@ -449,6 +477,9 @@ export const WHAT_STOPS: { readonly [K in SwitchableChannel]: string } = {
   'edit-asks-a-person':
     'the pause before a file is written where the record asks that a person look ' +
     'first — the rules go on arriving, and nothing stops',
+  'edit-refuses-a-write':
+    'the refusal of a write where a rule of the record refuses one — such a write goes ' +
+    'through, the rules go on arriving, and a rule that asks for a person still asks',
   'agent-accepts':
     'an agent ruling a decision in force: with it off, an agent’s `accept` is refused and ' +
     'only a person at the command line can accept — a proposed decision waits, and nothing ' +

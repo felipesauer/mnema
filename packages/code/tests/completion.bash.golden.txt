@@ -172,10 +172,10 @@ _mnema_values() {
     'switch:--color') echo 'auto always never' ;;
     'switch off:--scope') echo 'public private global' ;;
     'switch off:--color') echo 'auto always never' ;;
-    'switch off:') echo 'brief-document recall-document edit-rules-push edit-asks-a-person agent-accepts' ;;
+    'switch off:') echo 'brief-document recall-document edit-rules-push edit-asks-a-person edit-refuses-a-write agent-accepts' ;;
     'switch on:--scope') echo 'public private global' ;;
     'switch on:--color') echo 'auto always never' ;;
-    'switch on:') echo 'brief-document recall-document edit-rules-push edit-asks-a-person agent-accepts' ;;
+    'switch on:') echo 'brief-document recall-document edit-rules-push edit-asks-a-person edit-refuses-a-write agent-accepts' ;;
     'verify:--require') echo 'chained signed witnessed' ;;
     'verify:--color') echo 'auto always never' ;;
     'mcp:--color') echo 'auto always never' ;;

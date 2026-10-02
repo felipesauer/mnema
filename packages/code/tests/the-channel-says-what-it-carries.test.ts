@@ -279,6 +279,7 @@ describe('what `channel.served` counts, said by the table the type makes total',
     expect(Object.keys(NOT_COUNTED_AS_SERVED).sort()).toEqual([
       'agent-accepts',
       'brief-document',
+      'edit-refuses-a-write',
       'recall-document',
     ]);
   });
@@ -287,12 +288,14 @@ describe('what `channel.served` counts, said by the table the type makes total',
     // TWO KINDS OF REASON, and the table used to hold one. The two texts a session opens with are
     // reads, and a read writes nothing. `agent-accepts` is not a read: what it says is the reply
     // to a write that IS the fact (the acceptance, with its actor on the envelope) or is refused
-    // and records nothing, so counting its service would write the same fact twice. A channel
-    // that is neither is not allowed to borrow either sentence.
+    // and records nothing, so counting its service would write the same fact twice. The refusal
+    // of a write is the second of that kind: each refusal is its own `channel.refused`. A
+    // channel that is neither is not allowed to borrow either sentence.
     const WRITES_THE_FACT_ITSELF = 'is itself the recorded fact';
+    const ITS_OWN_FACT = ['agent-accepts', 'edit-refuses-a-write'];
     for (const [channel, why] of Object.entries(NOT_COUNTED_AS_SERVED)) {
       expect(why.length, channel).toBeGreaterThan(40);
-      const reason = channel === 'agent-accepts' ? WRITES_THE_FACT_ITSELF : 'writes nothing';
+      const reason = ITS_OWN_FACT.includes(channel) ? WRITES_THE_FACT_ITSELF : 'writes nothing';
       expect(why, channel).toContain(reason);
     }
   });
