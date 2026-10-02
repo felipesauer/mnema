@@ -61,6 +61,8 @@ export {
   KeyPassphraseWrongError,
   NoPassphraseToProtectWithError,
   passphraseFromEnvironment,
+  passphraseToOpen,
+  passphraseToProtectWith,
   readPrivateKeyPair,
 } from './chain/key-protection.js';
 export {
