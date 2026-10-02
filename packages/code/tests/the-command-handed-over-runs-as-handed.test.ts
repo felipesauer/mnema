@@ -552,7 +552,9 @@ export const HANDED_OVER: Readonly<
   // line 34 until the plugin page named `mnema --identify`, the question its hooks ask first.
   // line 36 and name 71 until the two pages named the command the Stop and PreCompact hooks run
   // (`mnema tally`, twice) and the switch that stops it (`mnema switch off session-tally`).
-  span: { line: 37, name: 73, flag: 1, unwritten: 0 },
+  // line 37 and name 73 until the plugin page named the switch that turns the first-write hold on
+  // (`mnema switch on edit-first-write-gate`, a line) and the listing that says it is off (`mnema switch`).
+  span: { line: 38, name: 74, flag: 1, unwritten: 0 },
   // name 18 until the page that says where the key lives named `mnema key protect` in a line of
   // its own.
   // line 35 until the same page showed that question in a block of its own.

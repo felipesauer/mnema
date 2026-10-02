@@ -456,7 +456,7 @@ describe('every handler that pushes declares the channel it carries', () => {
       'SessionStart:command:session-recall.mjs',
       'Stop:command:session-tally.mjs',
       'PreCompact:command:session-tally.mjs',
-      'PreToolUse:mcp_tool:rules_before_an_edit:edit-rules-push+edit-asks-a-person',
+      'PreToolUse:mcp_tool:rules_before_an_edit:edit-rules-push+edit-asks-a-person+edit-first-write-gate',
       'PreToolUse:command:edit-asks-a-person.mjs',
     ]);
   });

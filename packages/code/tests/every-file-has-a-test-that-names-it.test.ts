@@ -946,6 +946,7 @@ const CLAUSES_PER_FILE: Readonly<Record<string, number>> = {
   'packages/code/tests/the-feed-leaves-the-bodies-behind.test.ts': 7,
   'packages/code/tests/the-first-record-a-page-shows-is-the-one-printed.test.ts': 8,
   'packages/code/tests/the-first-use-says-what-it-did.test.ts': 10,
+  'packages/code/tests/the-first-write-is-held-once.test.ts': 12,
   'packages/code/tests/the-flags-reach-the-import.test.ts': 7,
   'packages/code/tests/the-floor-is-the-declaration.test.ts': 6,
   'packages/code/tests/the-floor-is-where-the-name-is-drawn.test.ts': 24,

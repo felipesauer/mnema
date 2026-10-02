@@ -40,7 +40,7 @@
 
 import type { Command } from 'commander';
 import { fact } from '../presentation/detail.js';
-import { AGENT_ACCEPTS_CHANNEL, SWITCHABLE_CHANNELS } from '../record-framing.js';
+import { AGENT_ACCEPTS_CHANNEL, STARTS_OFF, SWITCHABLE_CHANNELS } from '../record-framing.js';
 import { RECORD_CONTRACT_HELP } from '../recorded-content.js';
 import { here } from './context.js';
 import { enumeratedArgument, scopeOption } from './enumerated.js';
@@ -174,7 +174,9 @@ function position(group: Command, wiring: Wiring, word: 'off' | 'on', descriptio
             result.effective.on
               ? ofAnAct
                 ? `${result.channel} is now ON: an agent may accept a decision, as it did before.`
-                : `${result.channel} is now ON: it hands the record over as it did before.`
+                : (STARTS_OFF as readonly string[]).includes(result.channel)
+                  ? `${result.channel} is now ON: it was off until this switch, and it now acts where a rule addresses a file.`
+                  : `${result.channel} is now ON: it hands the record over as it did before.`
               : ofAnAct
                 ? `${result.channel} is now OFF: an agent's accept is refused. The switch that decides it was made by ${anchorText(result.anchors, result.effective.by ?? '')} at ${result.effective.at ?? ''}.`
                 : `${result.channel} is now OFF: nothing of it reaches a model. The switch that decides it was made by ${anchorText(result.anchors, result.effective.by ?? '')} at ${result.effective.at ?? ''}.`,

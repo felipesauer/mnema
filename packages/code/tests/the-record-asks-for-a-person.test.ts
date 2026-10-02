@@ -311,7 +311,8 @@ describe('the reply cannot express any decision but asking', () => {
     expect(Object.keys(reply)).toEqual(['hookSpecificOutput']);
     // No `updatedInput` and no `updatedToolOutput`: rewriting the input of a tool is this
     // product producing the artifact, and that is refused permanently rather than deferred.
-    // No second decision value either: `deny` and `allow` are unrepresentable in the type.
+    // No `allow`, and `deny` only for the hold a person switched on: with it off, as here, the
+    // reply is `ask` or nothing.
     expect(Object.keys(reply['hookSpecificOutput'] as object).sort()).toEqual([
       'hookEventName',
       'permissionDecision',
@@ -356,10 +357,14 @@ describe('the reply cannot express any decision but asking', () => {
     // Every string literal of the module, so a value smuggled into a template or an object
     // is found the same way a bare one is.
     const literals = [...source.matchAll(/'([^'\n]*)'/g)].map((match) => match[1]);
-    for (const refused of ['deny', 'allow', 'defer', 'escalate']) {
+    for (const refused of ['allow', 'defer', 'escalate']) {
       expect(literals, `hook-reply.ts spells ${refused}`).not.toContain(refused);
     }
     expect(literals).toContain('ask');
+    // `deny` IS THE ONE VALUE ADDED, for the once-only hold on a first write
+    // (`the-first-write-is-held-once.test.ts`), and it is spelled where `ask` is: in a named
+    // constant and the union it is typed by, so a third spelling anywhere in the module is red here.
+    expect(literals.filter((one) => one === 'deny')).toHaveLength(2);
   });
 });
 

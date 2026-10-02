@@ -60,9 +60,11 @@ import {
   ASKS_A_PERSON_CHANNEL,
   DOCUMENT_CHANNEL,
   EDIT_PUSH_CHANNEL,
+  FIRST_WRITE_GATE_CHANNEL,
   NOT_SWITCHABLE,
   RECALL_CHANNEL,
   SESSION_TALLY_CHANNEL,
+  STARTS_OFF,
   SWITCHABLE_CHANNELS,
   WHAT_STOPS,
 } from '../src/record-framing.js';
@@ -299,8 +301,12 @@ describe('nothing arrives switched off', () => {
   it('says every channel is on over a record that has never been switched', async () => {
     const listed = await did('switch');
     expect(listed.out[0]).toContain(`${SWITCHABLE_CHANNELS.length} channel(s)`);
+    // EXCEPT THE ONE THAT STARTS OFF: nothing arrives unasked, and what refuses a write is on only
+    // where somebody switched it on (`STARTS_OFF`, `the-first-write-is-held-once.test.ts`).
     for (const channel of SWITCHABLE_CHANNELS) {
-      expect(await standsAt(channel)).toBe('on');
+      expect(await standsAt(channel), channel).toBe(
+        (STARTS_OFF as readonly string[]).includes(channel) ? 'off' : 'on',
+      );
     }
     // And there is no birth event and no seeded row: the absence of a switch IS the on.
     expect(switchesIn('public')).toHaveLength(0);
@@ -362,6 +368,23 @@ const HONOURED: Readonly<
       await ruleAskingAt('Nobody touches billing alone', 'src/billing');
     },
     speaks: async () => asked(connect(), 'src/billing/invoice.ts') !== undefined,
+  },
+  [FIRST_WRITE_GATE_CHANNEL]: {
+    // THE HOLD ON A FIRST WRITE, driven by a rule that GOVERNS (not one that asks, which would let
+    // the other gate answer) and by a connection of its own each time, since a path is held once
+    // per connection. It starts off, so the case switches it on before it asks whether it speaks.
+    setUp: async () => {
+      await ruleAddressedAt('Round money at the boundary', 'src/billing');
+      await did('switch', 'on', FIRST_WRITE_GATE_CHANNEL);
+    },
+    speaks: async () => {
+      const result = runRulesBeforeAnEditTool(connect(), { path: 'src/billing/invoice.ts' });
+      if (!result.ok) throw new Error('unreachable');
+      const reply = JSON.parse(JSON.stringify(result.value)) as {
+        hookSpecificOutput?: { permissionDecision?: string };
+      };
+      return reply.hookSpecificOutput?.permissionDecision === 'deny';
+    },
   },
   [SESSION_TALLY_CHANNEL]: {
     // A COUNT AT THE END OF A RESPONSE, driven the way a host drives it: the payload of a `Stop`

@@ -1565,7 +1565,7 @@ $ mnema switch off --help
 | Arguments:
 |   channel          the channel to switch (brief-document, recall-document,
 |                    edit-rules-push, edit-asks-a-person, agent-accepts,
-|                    session-tally)
+|                    edit-first-write-gate, session-tally)
 |
 | Options:
 |   --reason <text>  why (recorded in the fact; never required)
@@ -1598,7 +1598,7 @@ $ mnema switch on --help
 | Arguments:
 |   channel          the channel to switch (brief-document, recall-document,
 |                    edit-rules-push, edit-asks-a-person, agent-accepts,
-|                    session-tally)
+|                    edit-first-write-gate, session-tally)
 |
 | Options:
 |   --reason <text>  why (recorded in the fact; never required)
