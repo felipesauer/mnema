@@ -148,11 +148,15 @@ export async function theDeviceWasTheSizeAskedFor(
  * green on a quiet machine — and a page drawn for it is CORRECT, because the terminal really was
  * that shape. A caller dragging the corner of a window produces the same thing.
  *
- * SO THE ORDER IS THE HEIGHT FIRST, AND IT IS CHOSEN. It means the intermediate size is already
- * at the FINAL height, so no frame between the two calls is taller than the screen the session
- * is about to be on — which is what makes *writes no frame taller than the screen it is on*
- * measurable at all (`tests/the-screen-is-ours.test.ts`). Setting the width first would put the
- * old height on the new width and hand that case a forty-row frame to accuse the console with.
+ * THE ORDER IS THE HEIGHT FIRST, AND NO ORDER MAKES A SHRINK ALONG BOTH AXES MEASURABLE FRAME BY
+ * FRAME. Either one leaves the size in between larger than the final one along one axis — the
+ * height first keeps the old width, the width first keeps the old height — so a case that holds
+ * every frame of such a shrink to the FINAL size accuses the page drawn for the size in between.
+ * One did: *writes no frame taller than the screen it is on* shrank both axes, and under load it
+ * was red on a frame 120 columns wide that had been written while the device said 120. So a case
+ * that reads every frame shrinks ONE axis per resize: the call that sets the other has nothing
+ * to change, the device says nothing about a size that did not change, and the only screens the
+ * session is on are sizes the case named (`tests/the-screen-is-ours.test.ts`).
  *
  * AND WHAT IT COSTS IS PAID BY THE READER. The intermediate keeps the width it is LEAVING, so
  * the last frame at a width can belong to a size nobody asked for; a case that reads the page at
