@@ -39,6 +39,7 @@ import { fileURLToPath } from 'node:url';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 
 import {
+  channelRefused,
   enrollmentMessage,
   identityFounded,
   keyEnrolled,
@@ -439,5 +440,110 @@ describe('the two readers agree on records the product itself wrote — enrolmen
         .issues.map((i) => i.detail)
         .join('\n'),
     ).toContain('re-adds');
+  });
+});
+
+/**
+ * THE NEWEST KIND, READ BY BOTH. `channel.refused` reached the second reader the only way a
+ * kind can: as a row of `event-schema.json` and a row of the vectors. Nothing in the Python was
+ * edited for it, which is the claim worth testing — that a stranger's reader, handed the two
+ * published artifacts, accepts the kind exactly where the product does and refuses it exactly
+ * where the product does.
+ */
+describe('the two readers agree on records the product itself wrote — a refusal', () => {
+  const RULE = '019f81f8-e400-7006-8000-000000000006';
+
+  function refusal(
+    anchor: string,
+    signer: KeyPair,
+    when: number,
+    payload: Record<string, unknown> = { rule: RULE, path: 'src/ledger/posting.ts' },
+    v = 1,
+  ): CatalogEvent {
+    const built = channelRefused(
+      {
+        at: at(when),
+        who: anchor,
+        signerFp: signer.fingerprint,
+        subject: 'edit-refuses-a-write',
+        which: 'claude',
+      },
+      { rule: RULE, path: 'src/ledger/posting.ts' },
+    );
+    return { ...built, v, payload } as unknown as CatalogEvent;
+  }
+
+  it('a signed refusal and one above the checkpoint: green on both', () => {
+    // One inside the checkpoint (byte identity under the signature) and one in the residual
+    // window, where the only thing standing between a forger and the record is the per-kind
+    // rebuild of section 4.1 — the path a kind unknown to the schema would fail on.
+    const kp = generateKeyPair();
+    commitPublicKey(kp);
+    const anchor = deriveAnchor(kp.fingerprint);
+    writeTail(
+      `${kp.fingerprint}-i1`,
+      [founding(kp), refusal(anchor, kp, 2), refusal(anchor, kp, 3)],
+      kp,
+      { residual: 1 },
+    );
+
+    const { productOk, verdict, refused } = bothReaders();
+    expect(refused, 'the second reader refuses an honest channel.refused').toEqual([]);
+    expect(productOk).toBe(true);
+    expect(verdict).toBe('VERIFIED');
+  });
+
+  it('a refusal with a forged payload field, above the checkpoint: refused by both', () => {
+    const kp = generateKeyPair();
+    commitPublicKey(kp);
+    const anchor = deriveAnchor(kp.fingerprint);
+    writeTail(
+      `${kp.fingerprint}-i1`,
+      [
+        founding(kp),
+        refusal(anchor, kp, 2, { rule: RULE, path: 'src/ledger/posting.ts', grade: 'ask' }),
+      ],
+      kp,
+      { residual: 1 },
+    );
+
+    const { productOk, verdict, refused } = bothReaders();
+    expect(productOk).toBe(false);
+    expect(verdict).toBe('REFUSED');
+    expect(refused.join('\n')).toContain('grade');
+  });
+
+  it('a refusal that cites no rule, above the checkpoint: refused by both', () => {
+    const kp = generateKeyPair();
+    commitPublicKey(kp);
+    const anchor = deriveAnchor(kp.fingerprint);
+    writeTail(
+      `${kp.fingerprint}-i1`,
+      [founding(kp), refusal(anchor, kp, 2, { rule: '', path: 'src/ledger/posting.ts' })],
+      kp,
+      { residual: 1 },
+    );
+
+    const { productOk, verdict, refused } = bothReaders();
+    expect(productOk).toBe(false);
+    expect(verdict).toBe('REFUSED');
+    expect(refused.join('\n')).toContain('rule');
+  });
+
+  it('a refusal at a version no row declares: refused by both — what an older reader does', () => {
+    // A reader meeting a (kind, v) its table does not hold refuses the line rather than guess
+    // (section 4.1). It is the same thing a reader from BEFORE this kind does with a
+    // `channel.refused` v1, which is why a version ahead is the case that stands for it here.
+    const kp = generateKeyPair();
+    commitPublicKey(kp);
+    const anchor = deriveAnchor(kp.fingerprint);
+    writeTail(`${kp.fingerprint}-i1`, [founding(kp), refusal(anchor, kp, 2, undefined, 2)], kp, {
+      residual: 1,
+    });
+
+    const { productOk, verdict, refused } = bothReaders();
+    expect(productOk).toBe(false);
+    expect(verdict).toBe('REFUSED');
+    expect(refused.join('\n')).toContain('channel.refused');
   });
 });

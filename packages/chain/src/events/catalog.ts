@@ -842,10 +842,11 @@ export interface ChannelServedV1 extends Envelope {
  * live. The rule travels in the payload, where the reference index resolves it exactly as
  * it resolves a link's target.
  *
- * A DIFFERENT GRADE WILL BE A DIFFERENT KIND, not a field on this one. Refusing outright
- * is a different power over somebody else's work, and a payload that carried "which
- * grade" would be a payload whose meaning depends on a value — the shape this catalog
- * avoids everywhere else. It waits on its own tie and will arrive as its own fact.
+ * A DIFFERENT GRADE IS A DIFFERENT KIND, not a field on this one. Refusing outright is a
+ * different power over somebody else's work, and a payload that carried "which grade" would
+ * be a payload whose meaning depends on a value — the shape this catalog avoids everywhere
+ * else. This sentence said the refusal "waits on its own tie and will arrive as its own
+ * fact"; it arrived, as {@link ChannelRefusedV1}, and this kind did not change.
  */
 export interface ChannelAskedV1 extends Envelope {
   readonly kind: 'channel.asked';
@@ -855,6 +856,40 @@ export interface ChannelAskedV1 extends Envelope {
     /** The id of the rule that asked — what the charge cites. Never optional. */
     readonly rule: string;
     /** The path the asking was about, as the product compared it. */
+    readonly path: string;
+  };
+}
+
+/**
+ * A channel of this product REFUSED A WRITE — the strongest thing it does to somebody
+ * else's work: the file was not written, and no person was asked.
+ *
+ * WHAT IT RECORDS: a rule of the record, linked to a path under the relation that refuses a
+ * write, was in force when a file under that path was about to be written; the product
+ * carried the refusal to the host, and the host did not write it. One fact per refusal and
+ * per rule, for the reason an asking is one per rule: a charge cites the rule that caused
+ * it, and a fact whose citation was a set would half-cite the day one of them is
+ * superseded.
+ *
+ * IT IS A KIND OF ITS OWN AND NOT A GRADE ON {@link ChannelAskedV1}, which said so before it
+ * existed: a payload carrying "which grade" would be a payload whose meaning depends on a
+ * value. So the two powers are two kinds with the same shape, and a reader auditing what
+ * the record refused asks for this kind and nothing else. `channel.asked` is unchanged.
+ *
+ * ITS SUBJECT IS THE CHANNEL, and the rule travels in the payload, for the reasons the
+ * asking gives: the refusal belongs to the surface that refused, beside the switch that can
+ * silence it, and the reference index resolves the rule exactly as it resolves a link's
+ * target. Both fields are required — a refusal that cannot name what caused it is the
+ * product having a preference.
+ */
+export interface ChannelRefusedV1 extends Envelope {
+  readonly kind: 'channel.refused';
+  readonly v: 1;
+  /** Subject is the CHANNEL that refused. */
+  readonly payload: {
+    /** The id of the rule that refused — what the refusal cites. Never optional. */
+    readonly rule: string;
+    /** The path the refusal was about, as the product compared it. */
     readonly path: string;
   };
 }
@@ -884,7 +919,8 @@ export type CatalogEvent =
   | TailPrunedV1
   | ChannelSwitchedV1
   | ChannelServedV1
-  | ChannelAskedV1;
+  | ChannelAskedV1
+  | ChannelRefusedV1;
 
 /** The `kind` discriminators present in the catalog. */
 export type EventKind = CatalogEvent['kind'];
@@ -914,4 +950,5 @@ export const LATEST_VERSION: { readonly [K in EventKind]: number } = {
   'channel.switched': 1,
   'channel.served': 1,
   'channel.asked': 1,
+  'channel.refused': 1,
 };

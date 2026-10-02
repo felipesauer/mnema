@@ -145,8 +145,12 @@ const HERE = join(import.meta.dirname, '..');
 const CORE_SRC = join(HERE, '..', 'core', 'src');
 const CODE_SRC = join(HERE, 'src');
 
-/** How many core functions reach an append. Pinned so a broken scan fails loudly. */
-const CORE_OPERATIONS_THAT_APPEND = 32;
+/**
+ * How many core functions reach an append. Pinned so a broken scan fails loudly. 32 until the
+ * refusal of a write arrived: `recordChannelRefused`, and the one body it shares with
+ * `recordChannelAsked` (`recordRuleAtPath`).
+ */
+const CORE_OPERATIONS_THAT_APPEND = 34;
 
 /** How many paths of the shipped surface reach one of them. */
 const SURFACE_WRITE_PATHS = 34;

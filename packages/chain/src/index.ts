@@ -188,6 +188,7 @@ export {
 export {
   BIRTH_ACTION,
   channelAsked,
+  channelRefused,
   channelServed,
   channelSwitched,
   decisionBirth,
@@ -223,6 +224,7 @@ export {
   ASKS_FOR_A_PERSON_RELATION,
   type CatalogEvent,
   type ChannelAskedV1,
+  type ChannelRefusedV1,
   type ChannelServedV1,
   type ChannelSwitchedV1,
   DERIVED_FROM_RELATION,
