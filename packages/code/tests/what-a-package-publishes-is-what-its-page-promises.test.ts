@@ -244,6 +244,27 @@ describe('nothing travels that is a fact about this machine', () => {
   });
 });
 
+/**
+ * What is wrong with the licence a set of packages declares and ships: a manifest that does
+ * not say Apache-2.0, and a tarball without the `LICENSE` or the `NOTICE`. A function and not
+ * inline assertions so the case below can hand it a fixture with ONE defect and watch it
+ * name that one.
+ */
+function licenceDefects(
+  manifests: readonly Pick<Manifest, 'name' | 'license'>[],
+  packed: ReadonlyMap<string, readonly string[]>,
+): string[] {
+  const declared = manifests
+    .filter((m) => m.license !== 'Apache-2.0')
+    .map((m) => `${m.name}: declares ${m.license ?? 'no licence'}`);
+  const shipped = [...packed].flatMap(([name, files]) =>
+    ['LICENSE', 'NOTICE']
+      .filter((file) => !files.includes(file))
+      .map((file) => `${name}: ${file} does not travel`),
+  );
+  return [...declared, ...shipped];
+}
+
 describe('every package carries the licence its manifest claims', () => {
   it('declares one, and ships the text of it and the notice', () => {
     // `"license": "Apache-2.0"` in a manifest is a word; the file is the grant. LICENSE travels
@@ -252,12 +273,7 @@ describe('every package carries the licence its manifest claims', () => {
     // each package carries its own and `files` names it; the Apache License asks that a
     // NOTICE which exists travels with the work. This case is the only thing in this
     // workspace that would notice if either stopped happening.
-    const undeclared = PUBLISHABLE.filter((m) => m.license !== 'Apache-2.0').map((m) => m.where);
-    expect(undeclared).toEqual([]);
-    const missing = [...PACKED]
-      .filter(([, files]) => !files.includes('LICENSE') || !files.includes('NOTICE'))
-      .map(([name]) => name);
-    expect(missing).toEqual([]);
+    expect(licenceDefects(PUBLISHABLE, PACKED)).toEqual([]);
   });
 
   it('ships the root text, byte for byte, and not a copy that drifted', () => {
@@ -533,11 +549,19 @@ describe('the guard is not vacuous', () => {
     expect(mapsWithoutTheirSource('m', ['dist/index.js.map'], filled, source)).toEqual([]);
   });
 
-  it('reddens when the licence text or the notice stops travelling', () => {
-    for (const file of ['LICENSE', 'NOTICE']) {
-      const without = carried('@mnema/chain').filter((path) => path !== file);
-      expect(without.includes(file)).toBe(false);
-      expect(carried('@mnema/chain').includes(file)).toBe(true);
-    }
+  it('reddens on a missing NOTICE, a missing LICENSE and a manifest that says MIT, each alone', () => {
+    const good = [{ name: 'p', license: 'Apache-2.0' }];
+    const all = ['LICENSE', 'NOTICE', 'package.json'];
+    const packed = (files: readonly string[]) => new Map([['p', files]]);
+    expect(licenceDefects(good, packed(all))).toEqual([]);
+    expect(licenceDefects(good, packed(all.filter((f) => f !== 'NOTICE')))).toEqual([
+      'p: NOTICE does not travel',
+    ]);
+    expect(licenceDefects(good, packed(all.filter((f) => f !== 'LICENSE')))).toEqual([
+      'p: LICENSE does not travel',
+    ]);
+    expect(licenceDefects([{ name: 'p', license: 'MIT' }], packed(all))).toEqual([
+      'p: declares MIT',
+    ]);
   });
 });
