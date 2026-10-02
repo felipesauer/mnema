@@ -192,9 +192,14 @@ const SHAPES: { readonly [K in SecretClass]: RegExp } = {
   // would otherwise match nothing at all, and losing the header too is strictly
   // worse than losing only the body. What that costs is stated as a limit rather
   // than hidden — an unclosed block leaves its body in the text.
+  //
+  // TWO FRAMINGS, ONE CLASS. The product's own protected key file (`MNEMA PROTECTED KEY`, the
+  // private key encrypted under a passphrase) is a private key in the one way that matters
+  // here: its text, pasted into a record, is a key file in the record, and a record cannot be
+  // edited. It did not match the first framing alone, which names a `PRIVATE KEY`.
   'private-key-block': new RegExp(
-    '-----BEGIN (?:[A-Z ]+ )?PRIVATE KEY-----' +
-      String.raw`(?:[\s\S]{0,${PEM_BODY_SPAN}}?-----END (?:[A-Z ]+ )?PRIVATE KEY-----)?`,
+    String.raw`-----BEGIN (?:(?:[A-Z ]+ )?PRIVATE KEY|MNEMA PROTECTED KEY)-----` +
+      String.raw`(?:[\s\S]{0,${PEM_BODY_SPAN}}?-----END (?:(?:[A-Z ]+ )?PRIVATE KEY|MNEMA PROTECTED KEY)-----)?`,
     'g',
   ),
   // The password half of `scheme://user:PASSWORD@host`, and only that half: the

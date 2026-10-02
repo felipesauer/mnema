@@ -112,6 +112,16 @@ describe('scrubSecrets — the value is absent from the output', () => {
     expect(scrubbed.text).toBe('the key is:\n<SECRET:private-key-block>\ndone');
   });
 
+  it('takes this product’s own protected key file out of a record, body and all', () => {
+    // The file `mnema key protect` writes is the private key under a passphrase, framed
+    // `MNEMA PROTECTED KEY` — not a `PRIVATE KEY` — and it was not a thing the detector saw.
+    const body = 'eyJ2IjoxLCJrZGYiOiJzY3J5cHQiLCJzYWx0IjoiYWJjZGVmZ2hpamtsbW5vcCJ9AAAAAAAAAAAA';
+    const text = `kept:\n-----BEGIN MNEMA PROTECTED KEY-----\n${body}\n-----END MNEMA PROTECTED KEY-----\ndone`;
+    const scrubbed = scrubSecrets(text);
+    expect(scrubbed.text).not.toContain(body);
+    expect(scrubbed.text).toBe('kept:\n<SECRET:private-key-block>\ndone');
+  });
+
   it('spans a real key of the largest size anyone uses', () => {
     // The span the block pattern follows is bounded (an unbounded lazy scan before
     // a literal terminator is quadratic in a field packed with headers), and the
