@@ -26,6 +26,8 @@ describe('collectLine', () => {
     expect(collectLine(typing('abc', 0x7f, 'd', 0x0d))).toBe('abd');
     expect(collectLine(typing('a', 'é', 0x7f, 'b', 0x0d))).toBe('ab');
     expect(collectLine(typing('日本', 0x7f, 0x0d))).toBe('日');
+    // Half a character typed and taken back leaves what came before it.
+    expect(collectLine(typing('x', 0xc3, 0x7f, 'b', 0x0d))).toBe('xb');
   });
 
   it('abandons on ^C, and says nothing was typed at an end of input with nothing before it', () => {
