@@ -129,7 +129,7 @@ function declaredHooks(): { readonly event: string; readonly hook: Record<string
  *
  * All four packages and not just this one: a second copy of the declaration is a defect
  * wherever it is written, and a walk that stopped at the package which happens to emit
- * it today would be green over a copy in `core`, `chain` or `copilot` — which is the
+ * it today would be green over a copy in `core`, `chain` or `context` — which is the
  * scope this walk used to have, and the hole a mutation found.
  */
 function everySource(): { readonly path: string; readonly text: string }[] {
@@ -188,7 +188,7 @@ describe('one declaration, and one place that decides it', () => {
         .map((file) => /^packages\/([^/]+)\//.exec(file.path.slice(REPO.length))?.[1])
         .filter((name): name is string => name !== undefined),
     );
-    expect(packages).toEqual(new Set(['chain', 'code', 'copilot', 'core']));
+    expect(packages).toEqual(new Set(['chain', 'code', 'context', 'core']));
   });
 
   it('reaches every framed channel through that one module', () => {

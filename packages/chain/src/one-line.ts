@@ -23,10 +23,10 @@
  *
  * IT COST TWO SLICES BEFORE IT COST A MODULE. While the rule lived beside the framing
  * the MCP surface puts around a served pattern, a module that wanted it took an edge
- * into `@mnema/copilot` to get it. `wiring/no-such-record.ts` words the refusal a verb
+ * into `@mnema/context` to get it. `wiring/no-such-record.ts` words the refusal a verb
  * prints for an id it did not find, and it is reached from eight sites in files
  * commander loads before it has routed a word; a static import there would have put the
- * copilot on the floor of `mnema --version`, so the rule arrived inside the branch that
+ * context on the floor of `mnema --version`, so the rule arrived inside the branch that
  * refuses. `presentation/runs.ts` words the phrase `focus` and `resume` print, and
  * collapsing the goal in it made those two verbs load that module inside the action for
  * the same reason. Both times the shape guard (`the-floor-is-the-declaration.test.ts`)

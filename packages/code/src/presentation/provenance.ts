@@ -27,7 +27,7 @@
  * line (see {@link oneLine}).
  */
 
-import type { PatternProvenance } from '@mnema/copilot';
+import type { PatternProvenance } from '@mnema/context';
 import { A_PERSON, oneLine } from '../one-line.js';
 import { consultedLine } from './consultation.js';
 import { asId, asScope, column, itemLine } from './items.js';

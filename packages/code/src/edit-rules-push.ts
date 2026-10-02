@@ -129,7 +129,7 @@
  * this project never made, in a text that arrives while code is being written.
  */
 
-import type { PushedRule, RulesAtPath } from '@mnema/copilot';
+import type { PushedRule, RulesAtPath } from '@mnema/context';
 import { oneLine } from './one-line.js';
 import {
   fitWhole,

@@ -261,4 +261,4 @@ cannot come to stop different writes.
 
 ## License
 
-MIT, with the rest of [mnema](https://github.com/felipesauer/mnema).
+Apache-2.0, with the rest of [mnema](https://github.com/felipesauer/mnema).

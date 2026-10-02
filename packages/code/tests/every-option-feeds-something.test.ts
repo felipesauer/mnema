@@ -180,7 +180,7 @@ function bodyBrace(code: string, from: number): number {
 /** Every function of every package's `src`, by name — tests excluded. */
 function productionBodies(): Map<string, Body[]> {
   const found = new Map<string, Body[]>();
-  for (const directory of ['chain', 'code', 'copilot', 'core']) {
+  for (const directory of ['chain', 'code', 'context', 'core']) {
     for (const path of sourceFiles(join(PACKAGES, directory, 'src'))) {
       const code = codeOnly(readFileSync(path, 'utf-8'));
       for (const head of [FUNCTION_HEAD, ARROW_HEAD]) {

@@ -40,7 +40,7 @@
  * read "adopted by a person", which is the framing asserting an adoption that never
  * happened. So the line carries the state instead, and one sentence after the list
  * says what a non-adopted body is. The words are the surface's; WHICH bodies are
- * served, and what a state means, are asked of `@mnema/copilot`
+ * served, and what a state means, are asked of `@mnema/context`
  * (`skillDisposition`) rather than decided again here.
  *
  * The provenance is ONE FACT, never a case. Who proposed it, whether both ends are
@@ -56,12 +56,12 @@
  *
  * THE RULE OF THE LINE IS NOT HERE, AND IT USED TO BE. Every field of a provenance line
  * goes through `oneLine`, which is a rule about a string that twenty-two modules of this
- * surface want — and this module reaches `@mnema/copilot`, so wanting the rule meant
+ * surface want — and this module reaches `@mnema/context`, so wanting the rule meant
  * taking that edge. It lives in `one-line.ts` now, which imports nothing and is guarded
  * for importing nothing, for the reason that file states.
  */
 
-import { type ServedSkill, type SkillCatalogue, skillDisposition } from '@mnema/copilot';
+import { type ServedSkill, type SkillCatalogue, skillDisposition } from '@mnema/context';
 import { A_PERSON, oneLine } from './one-line.js';
 import { recordFramingBlock } from './record-framing.js';
 
@@ -159,7 +159,7 @@ function onlyTheNames(count: number, bytes: number): string {
  * shape for saying something ABOUT the answer.
  *
  * The last sentence appears only when a served pattern is not in force, and the
- * question is asked of the copilot's own classification rather than by comparing the
+ * question is asked of the context package's own classification rather than by comparing the
  * state against a word written here: two places deciding what `adopted` means is how
  * a framing comes to say the opposite of the read it frames.
  */
@@ -186,7 +186,7 @@ export function patternsFraming(catalogue: SkillCatalogue): string[] {
  *
  * The `state` is the ONE field on this line that needs no {@link oneLine}: it is the
  * workflow's own vocabulary and not text an actor wrote (`ServedSkill.state` is the
- * closed union, narrowed by the copilot before a body is served), so there is no
+ * closed union, narrowed by the context package before a body is served), so there is no
  * break in it to forge a second line with. The name and the adopter both are, and
  * both go through it.
  */

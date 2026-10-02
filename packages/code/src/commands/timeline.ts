@@ -10,7 +10,7 @@
  * crosses the public/private/global boundary and the read must too.
  *
  * Read-only in the strict sense: it opens a cache per tree, rebuilds it in
- * memory, and calls the copilot's pure `timeline`. No writer is opened, no key
+ * memory, and calls the context package's pure `timeline`. No writer is opened, no key
  * is minted — so it needs no `--actor` (the story is a property of the record,
  * not of who asks).
  *
@@ -22,7 +22,7 @@
  * context and guard reads do.
  */
 
-import { type TimelineEntry, timeline } from '@mnema/copilot';
+import { type TimelineEntry, timeline } from '@mnema/context';
 import { type DiscoveryEnv, resolveTrees } from '@mnema/core';
 import { type AnchorForms, anchorForms } from '../anchors.js';
 import {

@@ -14,7 +14,7 @@
  * attestation. The reason for the envelope is `mnema exposure`'s: the product refuses to
  * print a value that looks like a credential even to the person standing in front of the
  * record, and a feed carrying bodies would push exactly that off the machine and into an
- * index. `@mnema/copilot`'s `audit-feed.ts` holds the argument in full and enforces it in
+ * index. `@mnema/context`'s `audit-feed.ts` holds the argument in full and enforces it in
  * the type it reads.
  *
  * IT SENDS NOTHING ANYWHERE. The feed goes to standard output and stops there. Whoever
@@ -40,7 +40,7 @@
  */
 
 import { catalogUpcasters } from '@mnema/chain';
-import { type AuditEvent, auditFeed } from '@mnema/copilot';
+import { type AuditEvent, auditFeed } from '@mnema/context';
 import { type AuthorshipFilter, type DiscoveryEnv, resolveTrees, type Scope } from '@mnema/core';
 import { resolveAnchorInRecord } from '../anchors.js';
 import { recordTrees, scopedEventsOf } from '../intelligence-source.js';

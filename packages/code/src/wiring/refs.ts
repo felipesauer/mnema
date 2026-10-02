@@ -9,7 +9,7 @@
  * ever authored as unresolved rather than dropping it.
  */
 
-import { REFERENCE_DEFAULT_DEPTH, REFERENCE_MAX_DEPTH } from '@mnema/copilot';
+import { REFERENCE_DEFAULT_DEPTH, REFERENCE_MAX_DEPTH } from '@mnema/context';
 import type { Command } from 'commander';
 import { REFERENCE_DIRECTIONS } from '../reference-directions.js';
 import { here } from './context.js';

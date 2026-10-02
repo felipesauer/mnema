@@ -7,7 +7,7 @@
  * who with their count); the nested byKind/byWhich is in --json. Beside each
  * author, both forms carry where and when its identity was founded beside
  * others — the account's own `foundedBeside`, the field the agent's account
- * carries too, from the one selection in the copilot's fold.
+ * carries too, from the one selection in the context package's fold.
  */
 
 import type { Command } from 'commander';

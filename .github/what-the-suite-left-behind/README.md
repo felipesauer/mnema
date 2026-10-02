@@ -8,7 +8,7 @@ Two things already ask about this, and neither can ask it of the machine:
 
 - `packages/code/tests/every-sandbox-is-removed-where-it-was-made.test.ts` reads source and
   follows the created name to the removal that reaches it. It answers what a **file says**;
-- `packages/copilot/tests/the-bench-leaves-nothing-behind.test.ts` names the directory `makeBench`
+- `packages/context/tests/the-bench-leaves-nothing-behind.test.ts` names the directory `makeBench`
   created and asks the filesystem whether it went. It answers for **one** prefix of the 187, and
   only because that helper hands back a root the sandbox can be derived from.
 
@@ -19,7 +19,7 @@ This covers the other 186, from outside the suite.
 The obvious test — list the temp directory before a call and after it, and require exactly one new
 entry — was written, shipped, and measured being a race. Vitest runs several files at once and
 every one of them builds under this same family, so another worker's sandbox appearing inside the
-window is attributed to this call: **six of six** runs of the copilot package alone went red, and
+window is attributed to this call: **six of six** runs of the context package package alone went red, and
 **two of three** full-suite runs.
 
 **The race is the window, not the diff.** Two listings taken while workers are alive can disagree

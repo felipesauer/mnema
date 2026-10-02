@@ -204,7 +204,7 @@
       }
     },
     {
-      "file": "packages/copilot/tests/the-bench-leaves-nothing-behind.test.ts",
+      "file": "packages/context/tests/the-bench-leaves-nothing-behind.test.ts",
       "titles": [
         "the bench leaves nothing behind",
         "makes a directory under the machine’s temp, and this case can name it"

@@ -15,7 +15,7 @@
  */
 
 import { decisionTransitioned } from '@mnema/chain';
-import type { Brief, ChannelState } from '@mnema/copilot';
+import type { Brief, ChannelState } from '@mnema/context';
 import type { DivergentMove } from '@mnema/core';
 import { describe, expect, it } from 'vitest';
 import { briefDocument, briefWithin } from './brief.js';

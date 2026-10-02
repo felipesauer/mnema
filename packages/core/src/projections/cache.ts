@@ -398,7 +398,7 @@ export class ProjectionCache {
    * A cache is opened over one chain root, which is exactly the unit an
    * `ADR-<n>` is numbered in, so this asks the question at the only scope where
    * it has an answer. Its reader is the brief's composition (`brief` in
-   * @mnema/copilot), which serves the label into a committed document and so has
+   * @mnema/context), which serves the label into a committed document and so has
    * to say when a label there names two rules.
    *
    * It reports EVERY decision of the chain, whatever state it is in: a label is

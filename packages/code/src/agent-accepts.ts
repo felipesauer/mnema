@@ -22,7 +22,7 @@
  * agent ran is a fact about the machine this product cannot see, and it does not pretend to.
  */
 
-import { channelStates, type ScopedCache } from '@mnema/copilot';
+import { channelStates, type ScopedCache } from '@mnema/context';
 import type { DecisionAction } from '@mnema/core';
 import { oneLine } from './one-line.js';
 import { AGENT_ACCEPTS_CHANNEL } from './record-framing.js';

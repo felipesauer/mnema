@@ -6,7 +6,7 @@
  * SAME action and id and simulates exactly what a move would decide, having
  * written nothing. Read-only in the strict sense the boundary means it: it opens
  * the projection cache, rebuilds, reads the task's current state, and calls the
- * copilot's PURE `guard` (which delegates to the core's gate) — no writer, no
+ * context's PURE `guard` (which delegates to the core's gate) — no writer, no
  * event, no key minted. The verdict is the gate's own, so a guard that says
  * ALLOWED and a `task move` that succeeds can never drift: they consult the same
  * function on the same inputs.
@@ -44,7 +44,7 @@
  */
 
 import { catalogUpcasters, type TransitionFields } from '@mnema/chain';
-import { type GateResult, guard } from '@mnema/copilot';
+import { type GateResult, guard } from '@mnema/context';
 import { chainRootForScope, type DiscoveryEnv, locateEntityScope, resolveTrees } from '@mnema/core';
 import { resolveAnchorInRecord } from '../anchors.js';
 import {
@@ -103,7 +103,7 @@ export type GuardRefused =
 /**
  * Simulates the gate for a move on the task with `id` and returns its verdict
  * unchanged. Locates the task's home tree, opens that tree's cache, rebuilds,
- * reads the task's current state as the `from`, and calls the copilot's pure
+ * reads the task's current state as the `from`, and calls the context package's pure
  * `guard`. An ALLOWED verdict names the state the move would reach; a REFUSED one
  * carries the gate's own code and message (ILLEGAL_TRANSITION, MISSING_PROOF,
  * WHO_IS_WHICH, …) — the same answer a real `task move` would give. Read-only:

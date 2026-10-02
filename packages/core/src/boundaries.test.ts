@@ -4,21 +4,21 @@ import { fileURLToPath } from 'node:url';
 import { describe, expect, it } from 'vitest';
 
 /**
- * The core is the domain, and the dependency direction is copilot -> core -> chain and
+ * The core is the domain, and the dependency direction is context -> core -> chain and
  * code -> core: the surfaces above read the core, the core knows nothing of them. A core
- * that imported `@mnema/copilot` or `@mnema/code` would make the layer under the
+ * that imported `@mnema/context` or `@mnema/code` would make the layer under the
  * product depend on the product, and the cycle would resolve at test time through the
  * workspace without anything turning red.
  *
  * Three doors are shut, because each one lets the import in without the other two
- * noticing: a bare specifier (`@mnema/copilot`, `@mnema/code`, and any subpath of
+ * noticing: a bare specifier (`@mnema/context`, `@mnema/code`, and any subpath of
  * either), a RELATIVE specifier that climbs out of this package into a sibling's
  * directory, and a manifest that declares either as a dependency of any kind. Tests
  * under this package are read too: a test that reaches up is the same arrow pointing the
  * wrong way, and a `devDependency` is how it would be declared.
  */
 const PACKAGE = resolve(fileURLToPath(new URL('..', import.meta.url)));
-const ABOVE = ['@mnema/copilot', '@mnema/code'] as const;
+const ABOVE = ['@mnema/context', '@mnema/code'] as const;
 /** This file spells every forbidden import as a sample, so the walk reads everything BUT it. */
 const SELF = fileURLToPath(import.meta.url);
 
@@ -69,7 +69,7 @@ describe('@mnema/core boundaries', () => {
     expect(declared).toEqual([]);
   });
 
-  it('imports neither @mnema/copilot nor @mnema/code, by name or by a path that climbs out', () => {
+  it('imports neither @mnema/context nor @mnema/code, by name or by a path that climbs out', () => {
     const files = sourceFiles(PACKAGE);
     // A walk that found nothing would pass for the wrong reason.
     expect(files.length).toBeGreaterThan(50);
@@ -85,11 +85,11 @@ describe('@mnema/core boundaries', () => {
   it('recognizes each way of pointing above, or the walk above proves nothing', () => {
     const from = `${PACKAGE}/src/workflow/x.ts`;
     for (const spec of [
-      '@mnema/copilot',
+      '@mnema/context',
       '@mnema/code',
-      '@mnema/copilot/context',
+      '@mnema/context/context',
       '@mnema/code/dist/cli.js',
-      '../../../copilot/src/index.js',
+      '../../../context/src/index.js',
       '../../../code/src/cli.js',
     ]) {
       expect(pointsAbove(spec, from), spec).toBe(true);
@@ -106,13 +106,13 @@ describe('@mnema/core boundaries', () => {
     expect(
       specifiers(
         [
-          "import { a } from '@mnema/copilot';",
+          "import { a } from '@mnema/context';",
           "export * from '@mnema/code';",
           "import '@mnema/code/x';",
-          "const m = await import('@mnema/copilot');",
+          "const m = await import('@mnema/context');",
           "const r = require('@mnema/code');",
         ].join('\n'),
       ),
-    ).toEqual(['@mnema/copilot', '@mnema/code', '@mnema/code/x', '@mnema/copilot', '@mnema/code']);
+    ).toEqual(['@mnema/context', '@mnema/code', '@mnema/code/x', '@mnema/context', '@mnema/code']);
   });
 });

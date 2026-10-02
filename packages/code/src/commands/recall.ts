@@ -42,7 +42,7 @@
  */
 
 import { dirname } from 'node:path';
-import { type PertinentSearch, pertinentFirst } from '@mnema/copilot';
+import { type PertinentSearch, pertinentFirst } from '@mnema/context';
 import { type DiscoveryEnv, resolveTrees } from '@mnema/core';
 import { RECALL_CHANNEL } from '../record-framing.js';
 import {

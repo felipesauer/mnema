@@ -166,7 +166,7 @@ export function resolveImport(
  * THE COST IS A COMMENT INSIDE A CLAUSE, and it is written here, once. This paragraph used
  * to declare that cost as a BLOCK comment and then say none existed; the second half was
  * read as being about comments in clauses, and about those it is false. What falsified it
- * is `copilot/src/index.ts:26`, an `export type {` carrying three LINE comments among the
+ * is `context/src/index.ts:26`, an `export type {` carrying three LINE comments among the
  * names, with slashes, apostrophes and em-dashes on their way to `} from '@mnema/core'`.
  * The grammar above admits none of that, so the statement is not matched wrong — it is not
  * matched at all: handed that file this returns twenty-four clauses and `@mnema/core` is

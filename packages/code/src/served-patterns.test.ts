@@ -1,4 +1,4 @@
-import type { ServedSkill, SkillCatalogue } from '@mnema/copilot';
+import type { ServedSkill, SkillCatalogue } from '@mnema/context';
 import { describe, expect, it } from 'vitest';
 import { A_PERSON } from './one-line.js';
 import { patternsFraming, SERVED_PATTERN_CONTRACT } from './served-patterns.js';
@@ -25,7 +25,7 @@ const candidate = (name: string, state: 'proposed' | 'reviewed' = 'proposed'): S
 });
 
 /**
- * The catalogue arm a caller under budget gets — the bodies, exactly as the copilot
+ * The catalogue arm a caller under budget gets — the bodies, exactly as the context package
  * hands them over. Written as the product writes that arm, so a field growing on it is
  * a change these cases have to see.
  */
@@ -192,7 +192,7 @@ describe('patternsFraming — what the surface says about a pattern it serves', 
 describe('patternsFraming — what it says when only the NAMES fit', () => {
   /**
    * The arm a caller over budget gets. `withheldBytes` is written LARGER than the
-   * budget on purpose: the copilot answers this arm only when the bodies went over
+   * budget on purpose: the context package answers this arm only when the bodies went over
    * it, so a fixture with a small number here would be a world the product cannot
    * produce. The number is the one this delivery measured — 40 patterns of the
    * market's median size.

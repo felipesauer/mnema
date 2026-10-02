@@ -52,7 +52,7 @@
  */
 
 import type { ChainLayout, UpcasterRegistry } from '@mnema/chain';
-import type { ProjectEvents, RecordEvents, ScopedEvents } from '@mnema/copilot';
+import type { ProjectEvents, RecordEvents, ScopedEvents } from '@mnema/context';
 import {
   chainRootForScope,
   orderedEvents,

@@ -113,7 +113,7 @@
  * argument, and it is in it now.
  */
 
-import type { Acceptance, AdrCollision, Brief, ChannelState } from '@mnema/copilot';
+import type { Acceptance, AdrCollision, Brief, ChannelState } from '@mnema/context';
 import type { DivergentMove } from '@mnema/core';
 import type { BriefDone } from '../commands/brief.js';
 import { A_PERSON, oneLine } from '../one-line.js';
@@ -655,7 +655,7 @@ function whatAwaitsAJudgement(awaiting: number, words: WaitingWords): string[] {
  * The whole document, as lines — the committed governance the composition handed over,
  * ready to be redirected into the file an agent host reads. It prints what it is given
  * and counts what it prints; which trees that came from is settled before it (see
- * `brief` in @mnema/copilot).
+ * `brief` in @mnema/context).
  */
 export function briefDocument(governance: Brief): string[] {
   return composed(governance, rulesIn(governance));

@@ -15,7 +15,7 @@
  * It needs NO `--actor`: what matches is a property of the record, not of who is
  * asking (the same reason `timeline` and `next-actions` take none). Read-only in
  * the strict sense — it opens a cache per tree, rebuilds it in memory, and calls
- * the copilot's pure `searchRecords`; no writer, no key, no event.
+ * the context package's pure `searchRecords`; no writer, no key, no event.
  *
  * It does NOT refuse outside a project, and that is the one place it parts from
  * the intelligence reads. Those audit a PROJECT's record; this searches the
@@ -23,7 +23,7 @@
  * a person's own notes, which are a legitimate thing to search from anywhere.
  */
 
-import { type RecordQuery, type RecordSearch, searchRecords } from '@mnema/copilot';
+import { type RecordQuery, type RecordSearch, searchRecords } from '@mnema/context';
 import {
   chainRootForScope,
   type DiscoveryEnv,

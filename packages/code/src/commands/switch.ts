@@ -33,7 +33,7 @@
  */
 
 import { catalogUpcasters } from '@mnema/chain';
-import { type ChannelState, channelStates } from '@mnema/copilot';
+import { type ChannelState, channelStates } from '@mnema/context';
 import {
   chainRootForScope,
   type DiscoveryEnv,

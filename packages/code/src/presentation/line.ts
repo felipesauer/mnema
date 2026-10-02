@@ -119,7 +119,7 @@
  * a POSITION IN A CYCLE, and the transition table gives each position a structurally
  * different set of exits, so the product's sixteen states across three machines collapse
  * to six DISPOSITIONS and those to three hues (see `state.ts`, and `core`'s
- * `disposition.ts` and `copilot`'s `decisions.ts` and `skills.ts` for the derivations).
+ * `disposition.ts` and `context`'s `decisions.ts` and `skills.ts` for the derivations).
  * One hue per value was never the alternative.
  *
  * AND THE TREE IS A ROLE NOW, WHICH THE SENTENCE ABOVE SAID IT WOULD NEVER BE: *a tree

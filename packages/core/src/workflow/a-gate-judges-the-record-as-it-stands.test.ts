@@ -27,7 +27,7 @@ const GATES = ['gate', 'decisionGate', 'skillGate'] as const;
  * the reason holds.
  */
 const EXEMPT: Readonly<Record<string, string>> = {
-  'packages/copilot/tests/support/chain.ts':
+  'packages/context/tests/support/chain.ts':
     'a fixture builder: one process writing a tree it made, that no other session opens',
 };
 

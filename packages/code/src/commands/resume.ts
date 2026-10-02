@@ -2,7 +2,7 @@
  * `mnema resume --actor <id>` — where an actor left off: their latest run.
  *
  * The sibling of `focus`, and the same read-only shape: open a projection cache over
- * every tree of the project, rebuild, and hand them to the copilot's PURE `resume`
+ * every tree of the project, rebuild, and hand them to the context package's PURE `resume`
  * derivation. It opens no writer, emits no event, mints no key. The
  * actor is a required flag for the same reason `focus` requires it — the record
  * has no "current actor", an invocation of this CLI has no session `who`, and
@@ -26,7 +26,7 @@
  * the record knows, which decide how short the actor may be written.
  */
 
-import { type Resume, resume } from '@mnema/copilot';
+import { type Resume, resume } from '@mnema/context';
 import { type Clock, type DiscoveryEnv, resolveTrees, systemClock } from '@mnema/core';
 import { type AnchorForms, anchorForms, resolveTypedAnchor } from '../anchors.js';
 import {
@@ -75,7 +75,7 @@ export type ResumeRefused =
 
 /**
  * Derives where the actor left off over every tree of the current project.
- * Opens a cache per visible tree, rebuilds them, and returns the copilot's
+ * Opens a cache per visible tree, rebuilds them, and returns the context package's
  * `resume` for the given actor — their latest run (open or ended) plus their
  * focus. Read-only: no writer, no event. With no project found it refuses
  * `NO_PROJECT`; an actor that names no identity here is refused too, rather than

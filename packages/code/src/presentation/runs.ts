@@ -9,7 +9,7 @@
  * and the second one to change would be the one nobody noticed.
  */
 
-import type { Resume } from '@mnema/copilot';
+import type { Resume } from '@mnema/context';
 import type { WrittenInRun } from '@mnema/core';
 import { oneLine } from '../one-line.js';
 import { fact } from './detail.js';
