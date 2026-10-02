@@ -57,6 +57,8 @@ Requires Node ≥ 22.12.0; the packages are ESM-only.
   the record into the context an agent is handed.
 - **The read-only package is `@mnema/context`.** It was called the copilot layer while it was built,
   and the name collided with GitHub Copilot, so it is renamed before its first release.
+- **Licensed under Apache-2.0 alone, with a `NOTICE`.** The whole repository and every package
+  carry the Apache License 2.0 and a `NOTICE` that credits the author; each tarball ships both.
 - **Source maps that carry their source.** Every map a package ships holds the text of the
   files it names, so a debugger in an installed tree can open them.
 

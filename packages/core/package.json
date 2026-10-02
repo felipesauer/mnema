@@ -3,7 +3,7 @@
   "version": "0.1.0",
   "description": "The mnema work domain: the gate over the SHAPE of a change, projections, identity, and queries. Depends on @mnema/chain.",
   "author": "Felipe Sauer (https://github.com/felipesauer)",
-  "license": "MIT",
+  "license": "Apache-2.0",
   "type": "module",
   "exports": {
     ".": {
@@ -19,7 +19,8 @@
   "main": "./dist/index.js",
   "files": [
     "dist/",
-    "!dist/.tsbuildinfo"
+    "!dist/.tsbuildinfo",
+    "NOTICE"
   ],
   "homepage": "https://github.com/felipesauer/mnema",
   "repository": {

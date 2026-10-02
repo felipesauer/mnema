@@ -415,4 +415,4 @@ published install takes. To change the code, start with [`CONTRIBUTING.md`](CONT
 
 ## License
 
-MIT. See [`LICENSE`](LICENSE).
+Apache-2.0. See [`LICENSE`](LICENSE) and [`NOTICE`](NOTICE).

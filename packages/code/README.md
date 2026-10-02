@@ -1316,4 +1316,4 @@ gates in `@mnema/core`; to audit the proof itself, read `@mnema/chain`.
 
 ## License
 
-MIT. See the repository root.
+Apache-2.0. See `LICENSE` and `NOTICE`, which this package carries.

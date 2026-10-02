@@ -4,7 +4,7 @@
   "private": true,
   "description": "Workspace for the mnema packages. @mnema/code is the one to install; @mnema/chain, @mnema/core and @mnema/context are what it is built from, and each is released in its own right so the proof engine stays separable.",
   "author": "Felipe Sauer (https://github.com/felipesauer)",
-  "license": "MIT",
+  "license": "Apache-2.0",
   "type": "module",
   "homepage": "https://github.com/felipesauer/mnema",
   "repository": {

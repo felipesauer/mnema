@@ -34,7 +34,7 @@
  *   - `tar` AND NOT THE PACKER'S OWN `--json`, because the report is not the tarball.
  *     Measured on `@mnema/context`: `pnpm pack --json` listed 107 files and the tarball held
  *     108. The extra one is `LICENSE`, which pnpm copies from the workspace root — so the one
- *     file that makes `"license": "MIT"` more than a word in a manifest is exactly the file
+ *     file that makes `"license": "Apache-2.0"` more than a word in a manifest is exactly the file
  *     neither report mentions. A guard reading the report would have sworn it was absent.
  *
  * WHAT IT DOES NOT CHECK. Whether a publish would be ACCEPTED: that needs the registry, an
@@ -245,17 +245,39 @@ describe('nothing travels that is a fact about this machine', () => {
 });
 
 describe('every package carries the licence its manifest claims', () => {
-  it('declares one, and ships the text of it', () => {
-    // `"license": "MIT"` in a manifest is a word; the file is the grant. It travels because
-    // pnpm copies the workspace root's `LICENSE` into each package — which npm does not do,
-    // and which neither packer's `--json` report mentions. This case is the only thing in
-    // this workspace that would notice if that stopped happening.
-    const undeclared = PUBLISHABLE.filter((m) => m.license !== 'MIT').map((m) => m.where);
+  it('declares one, and ships the text of it and the notice', () => {
+    // `"license": "Apache-2.0"` in a manifest is a word; the file is the grant. LICENSE travels
+    // because pnpm copies the workspace root's into each package, which npm does not do and
+    // which neither packer's `--json` report mentions. NOTICE is not copied by anybody, so
+    // each package carries its own and `files` names it; the Apache License asks that a
+    // NOTICE which exists travels with the work. This case is the only thing in this
+    // workspace that would notice if either stopped happening.
+    const undeclared = PUBLISHABLE.filter((m) => m.license !== 'Apache-2.0').map((m) => m.where);
     expect(undeclared).toEqual([]);
     const missing = [...PACKED]
-      .filter(([, files]) => !files.includes('LICENSE'))
+      .filter(([, files]) => !files.includes('LICENSE') || !files.includes('NOTICE'))
       .map(([name]) => name);
     expect(missing).toEqual([]);
+  });
+
+  it('ships the root text, byte for byte, and not a copy that drifted', () => {
+    // The copies of NOTICE are one file said once per package; the guard is that each equals
+    // the root's. LICENSE is the official Apache-2.0 text, not edited.
+    const root = (name: string) => readFileSync(join(ROOT, name), 'utf-8');
+    expect(root('LICENSE')).toContain(
+      'Apache License\n                           Version 2.0, January 2004',
+    );
+    expect(root('NOTICE')).toContain('Copyright 2026 Felipe Sauer');
+    const drifted = [...TARBALLS].flatMap(([name, tarball]) =>
+      ['LICENSE', 'NOTICE']
+        .filter(
+          (file) =>
+            execFileSync('tar', ['-xOzf', tarball, `package/${file}`], { encoding: 'utf-8' }) !==
+            root(file),
+        )
+        .map((file) => `${name}: ${file}`),
+    );
+    expect(drifted).toEqual([]);
   });
 });
 
@@ -413,6 +435,7 @@ describe('the second reader runs out of what the package publishes', () => {
     expect(readdirSync(unpacked).sort()).toEqual([
       'FORMAT.md',
       'LICENSE',
+      'NOTICE',
       'README.md',
       'canonical-vectors.json',
       'dist',
@@ -510,9 +533,11 @@ describe('the guard is not vacuous', () => {
     expect(mapsWithoutTheirSource('m', ['dist/index.js.map'], filled, source)).toEqual([]);
   });
 
-  it('reddens when the licence text stops travelling', () => {
-    const without = carried('@mnema/chain').filter((path) => path !== 'LICENSE');
-    expect(without.includes('LICENSE')).toBe(false);
-    expect(carried('@mnema/chain').includes('LICENSE')).toBe(true);
+  it('reddens when the licence text or the notice stops travelling', () => {
+    for (const file of ['LICENSE', 'NOTICE']) {
+      const without = carried('@mnema/chain').filter((path) => path !== file);
+      expect(without.includes(file)).toBe(false);
+      expect(carried('@mnema/chain').includes(file)).toBe(true);
+    }
   });
 });

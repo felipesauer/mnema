@@ -254,4 +254,4 @@ writes.
 
 ## License
 
-See the repository root.
+Apache-2.0. See `LICENSE` and `NOTICE`, which this package carries.
