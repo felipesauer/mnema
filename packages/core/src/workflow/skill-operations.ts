@@ -43,6 +43,12 @@ import { oneLine } from '../one-line.js';
 import { orderedEvents } from '../projections/order.js';
 import { projectSkills, type SkillProjection } from '../projections/skill.js';
 import { type AppendRefusal, appendEvent, appendEvents } from './append.js';
+import {
+  type Judged,
+  onTheRecordAsItStands,
+  type StateMovedErr,
+  stateMoved,
+} from './as-the-record-stands.js';
 import { type Clock, systemClock } from './clock.js';
 import { authorizingAnchor, ensureFounded } from './identity-operations.js';
 import { type SkillGateErr, skillGate } from './skill-gate.js';
@@ -65,7 +71,9 @@ export type SkillWriteError =
   /** A read would not have accepted the event (see {@link appendEvent}). */
   | AppendRefusal
   /** The skill acted on does not exist (no `skill.created` for this id). */
-  | { readonly ok: false; readonly code: 'UNKNOWN_SKILL'; readonly message: string };
+  | { readonly ok: false; readonly code: 'UNKNOWN_SKILL'; readonly message: string }
+  /** Another write moved the skill between the reading this move was judged on and its append. */
+  | StateMovedErr;
 
 /** A skill was created: both birth events were appended, in order. */
 export interface SkillCreateOk extends ScreenedWrite {
@@ -300,7 +308,8 @@ export function deprecateSkill(
 
 /**
  * The shared transition path: read the current state from the chain, run the
- * gate, and append only if it authorized the move. `to` and `action` both come
+ * gate, and append only if it authorized the move — under the tail's lock, against
+ * the state the record is in at that moment ({@link onTheRecordAsItStands}). `to` and `action` both come
  * from the gate's verdict, never from the caller's assertion.
  *
  * The proof is screened ahead of the gate for the reason the task's is: the gate
@@ -323,66 +332,85 @@ function transition(
   // Canonicalize the subject id (NFC, the chain's stored form) so the lookup
   // keys on the same string the projection does.
   const id = canonicalId(input.id);
-  const skills = projectedSkills(ctx);
-  const current = id === undefined ? undefined : skills.get(id);
-  if (id === undefined || current === undefined) {
-    return {
-      ok: false,
-      code: 'UNKNOWN_SKILL',
-      message: `skill "${oneLine(input.id)}" does not exist`,
-    };
-  }
+  return onTheRecordAsItStands(
+    ctx,
+    () => projectedSkills(ctx),
+    (skills, earlier): Judged<SkillTransitionOk | SkillWriteError> => {
+      const current = id === undefined ? undefined : skills.get(id);
+      if (id === undefined || current === undefined) {
+        return {
+          refuse: {
+            ok: false,
+            code: 'UNKNOWN_SKILL',
+            message: `skill "${oneLine(input.id)}" does not exist`,
+          },
+        };
+      }
 
-  // `who` is this installation's authorizing anchor, never supplied.
-  const who = authorizingAnchor(ctx);
+      // Judged again under the tail's lock because something landed since the first
+      // reading: a skill that moved in between is told as that, not as the gate's verdict
+      // on a state the caller never saw (see `onTheRecordAsItStands`).
+      const was = earlier?.get(id)?.state;
+      if (was !== undefined && was !== current.state) {
+        return { refuse: stateMoved('skill', id, action, was, current.state) };
+      }
 
-  // Resolved before the gate, and the RESOLVED value is both what the gate judges
-  // and what the envelope records — `which` is free text and goes through the same
-  // door as the proof, so screening it and then recording something else would be
-  // the very mismatch the resolution exists to prevent.
-  const agent = resolveExecutingAgent(who, input.which);
-  if (!agent.ok) return agent;
-  const which = agent.which;
+      // `who` is this installation's authorizing anchor, never supplied.
+      const who = authorizingAnchor(ctx);
 
-  const verdict = skillGate({
-    from: current.state,
-    action,
-    ...(proof !== undefined ? { fields: proof.fields } : {}),
-    who,
-    ...(which !== undefined ? { which } : {}),
-  });
-  if (!verdict.ok) return verdict;
+      // Resolved before the gate, and the RESOLVED value is both what the gate judges
+      // and what the envelope records — `which` is free text and goes through the same
+      // door as the proof, so screening it and then recording something else would be
+      // the very mismatch the resolution exists to prevent.
+      const agent = resolveExecutingAgent(who, input.which);
+      if (!agent.ok) return { refuse: agent };
+      const which = agent.which;
 
-  // Found this installation's anchor before the transition, so its signer is a
-  // key valid for its anchor at verify.
-  // Once founded it appends nothing, and refuses an anchor that no longer counts
-  // this key (see `ensureFounded`).
-  ensureFounded(ctx);
-  const at = (ctx.clock ?? systemClock)();
-  const event = skillTransitioned(
-    {
-      at,
-      who,
-      signerFp: ctx.writer.signerFingerprint,
-      subject: id,
-      ...(which !== undefined ? { which } : {}),
-      ...(pinned.fields.run !== undefined ? { run: pinned.fields.run } : {}),
-    },
-    {
-      from: current.state,
-      to: verdict.to,
-      action: verdict.action,
-      ...(verdict.fields !== undefined ? { fields: verdict.fields } : {}),
+      const verdict = skillGate({
+        from: current.state,
+        action,
+        ...(proof !== undefined ? { fields: proof.fields } : {}),
+        who,
+        ...(which !== undefined ? { which } : {}),
+      });
+      if (!verdict.ok) return { refuse: verdict };
+
+      return {
+        write: () => {
+          // Found this installation's anchor before the transition, so its signer is a
+          // key valid for its anchor at verify.
+          // Once founded it appends nothing, and refuses an anchor that no longer counts
+          // this key (see `ensureFounded`).
+          ensureFounded(ctx);
+          const at = (ctx.clock ?? systemClock)();
+          const event = skillTransitioned(
+            {
+              at,
+              who,
+              signerFp: ctx.writer.signerFingerprint,
+              subject: id,
+              ...(which !== undefined ? { which } : {}),
+              ...(pinned.fields.run !== undefined ? { run: pinned.fields.run } : {}),
+            },
+            {
+              from: current.state,
+              to: verdict.to,
+              action: verdict.action,
+              ...(verdict.fields !== undefined ? { fields: verdict.fields } : {}),
+            },
+          );
+          const appended = appendEvent(ctx.writer, event);
+          if (!appended.ok) return appended;
+          return {
+            ok: true,
+            to: verdict.to,
+            entry: appended.entry,
+            ...screened([...(proof?.replaced ?? []), ...pinned.replaced, ...agent.replaced]),
+          };
+        },
+      };
     },
   );
-  const appended = appendEvent(ctx.writer, event);
-  if (!appended.ok) return appended;
-  return {
-    ok: true,
-    to: verdict.to,
-    entry: appended.entry,
-    ...screened([...(proof?.replaced ?? []), ...pinned.replaced, ...agent.replaced]),
-  };
 }
 
 /**

@@ -273,16 +273,21 @@ export type RecordedAnchor =
  * founding it finds there, so nothing is founded twice (*dies after its founding
  * landed and before its anchor*, in the same file).
  *
- * WHAT THIS ORDER DOES NOT CLOSE, AND WIDENS: two processes of this installation
- * making their first write together. Each finds no anchor, each decides to found,
- * and the tail gets two foundings of one anchor by its own key. The record takes the
- * second as the copy it is — `verify` adds a key to a set that already holds it, and
- * `identitiesFoundedBeside` counts the anchor once (`founded-beside.test.ts`,
- * *counts an anchor founded twice once*) — but it is a second event, and with the
- * anchor recorded after the append the moment in which it can happen is longer:
- * measured with two processes started on a barrier, from under 1 ms apart before
- * this order to about 3 ms after it. Closing it needs the decision taken under the
- * tail's lock, which the writer does not offer.
+ * TWO PROCESSES OF THIS INSTALLATION MAKING THEIR FIRST WRITE TOGETHER. This said the
+ * order above "does not close, and widens" that case: each found no anchor, each decided
+ * to found, and the tail got two foundings of one anchor by its own key — measured with
+ * two processes started on a barrier, from under 1 ms apart before this order to about
+ * 3 ms after it, and 8 to 14 of 30 pairs of `mnema memory` on the binary. "Closing it
+ * needs the decision taken under the tail's lock, which the writer does not offer." The
+ * writer offers it now (`ChainWriter.exclusively`), and the path that founds takes it:
+ * the anchor is asked again under the lock, decided there, founded and recorded there,
+ * so the second process finds the first one's anchor, or — if the first died between its
+ * founding and its anchor — the founding itself, and adopts it
+ * (`the-second-move-sees-the-first.test.ts`, *a second session that decided to found
+ * finds the first one's founding under the lock*). The record still takes a second
+ * founding as the copy it is — `verify` adds a key to a set that already holds it, and
+ * `identitiesFoundedBeside` counts the anchor once (`founded-beside.test.ts`, *counts an
+ * anchor founded twice once*) — which is what a record written before this keeps.
  *
  * Two paths reach a recorded anchor, and only one of them founds. A key the
  * record already proves a member ADOPTS that identity — it must not found,
@@ -303,6 +308,22 @@ export type RecordedAnchor =
  * Returns the anchor this installation serves either way.
  */
 export function ensureFounded(ctx: WriteContext): string {
+  const recorded = recordedAnchorOf(ctx);
+  if (recorded !== undefined) {
+    if (!recorded.counted) throw recorded.refusal;
+    return recorded.anchor;
+  }
+  // Only the path that may FOUND takes the lock: the recorded anchor above answers every
+  // write after the first without holding anybody up.
+  return ctx.writer.exclusively(() => foundUnderTheLock(ctx));
+}
+
+/**
+ * The half of {@link ensureFounded} that decides whether to found, run under the tail's
+ * lock: asked again there, because another session of this installation may have founded
+ * between the first question and the lock.
+ */
+function foundUnderTheLock(ctx: WriteContext): string {
   const recorded = recordedAnchorOf(ctx);
   if (recorded !== undefined) {
     if (!recorded.counted) throw recorded.refusal;

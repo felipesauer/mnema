@@ -13,7 +13,10 @@
  *      slip when a concurrent decision merges ahead of it, silently
  *      re-pointing a citation. Two clones may mint the same label offline; that
  *      is a label collision (the ids stay unique), detected by the projection,
- *      not prevented here.
+ *      not prevented here. Two sessions of ONE installation could mint it too —
+ *      every time, measured: 10 of 10 concurrent pairs — because the count was
+ *      read outside the tail's lock; it is checked under it now
+ *      ({@link onTheRecordAsItStands}), so those number in sequence.
  *
  *   2. THE SUPERSEDE EXISTENCE CHECK. The pure gate judges the supersede's
  *      SHAPE (a `by` is present and is not the subject); whether the subject
@@ -45,6 +48,12 @@ import { oneLine } from '../one-line.js';
 import { type DecisionProjection, projectDecisions } from '../projections/decision.js';
 import { orderedEvents } from '../projections/order.js';
 import { type AppendRefusal, appendEvent, appendEvents } from './append.js';
+import {
+  type Judged,
+  onTheRecordAsItStands,
+  type StateMovedErr,
+  stateMoved,
+} from './as-the-record-stands.js';
 import { type Clock, systemClock } from './clock.js';
 import { type DecisionGateErr, decisionGate } from './decision-gate.js';
 import { INITIAL_DECISION_STATE } from './decision-states.js';
@@ -73,7 +82,9 @@ export type DecisionWriteError =
    */
   | { readonly ok: false; readonly code: 'UNKNOWN_DECISION'; readonly message: string }
   /** A supersede named a successor `by` that does not exist (a dangling link). */
-  | { readonly ok: false; readonly code: 'UNKNOWN_BY'; readonly message: string };
+  | { readonly ok: false; readonly code: 'UNKNOWN_BY'; readonly message: string }
+  /** Another write moved the decision between the reading this move was judged on and its append. */
+  | StateMovedErr;
 
 /** A decision was recorded: both birth events were appended, in order. */
 export interface RecordOk extends ScreenedWrite {
@@ -181,45 +192,54 @@ export function recordDecision(
   // number consistent with what the chain actually proves at this moment. Unlike
   // the id, the label can collide between offline clones (both mint `ADR-7`);
   // that is a legibility clash the projection surfaces, never a merge (the ids
-  // stay distinct).
-  const decisions = projectedDecisions(ctx);
-  const adr = `ADR-${decisions.size + 1}`;
-
-  // Found this installation's anchor before the birth pair, so both events'
-  // signer is a key valid for its anchor at verify.
-  // Once founded it appends nothing, and refuses an anchor that no longer counts
-  // this key (see `ensureFounded`).
-  ensureFounded(ctx);
-  const at = (ctx.clock ?? systemClock)();
-  const birth = decisionBirth(
-    {
-      at,
-      who,
-      signerFp: ctx.writer.signerFingerprint,
-      subject: id,
-      ...(which !== undefined ? { which } : {}),
-      ...(text.fields.run !== undefined ? { run: text.fields.run } : {}),
-    },
-    {
-      title: text.fields.title,
-      rationale: text.fields.rationale,
-      adr,
-      initial: INITIAL_DECISION_STATE,
-      // The SCREENED value, and omitted when the caller gave none: absence in,
-      // absence out, so a decision with no alternative records no key for one.
-      ...(text.fields.alternatives !== undefined ? { alternatives: text.fields.alternatives } : {}),
-    },
+  // stay distinct). Between two sessions of this installation it cannot: the count
+  // the label is minted from is the one the tail's lock vouches for.
+  return onTheRecordAsItStands(
+    ctx,
+    () => projectedDecisions(ctx),
+    (decisions) => ({
+      write: (): RecordOk | DecisionWriteError => {
+        const adr = `ADR-${decisions.size + 1}`;
+        // Found this installation's anchor before the birth pair, so both events'
+        // signer is a key valid for its anchor at verify.
+        // Once founded it appends nothing, and refuses an anchor that no longer counts
+        // this key (see `ensureFounded`).
+        ensureFounded(ctx);
+        const at = (ctx.clock ?? systemClock)();
+        const birth = decisionBirth(
+          {
+            at,
+            who,
+            signerFp: ctx.writer.signerFingerprint,
+            subject: id,
+            ...(which !== undefined ? { which } : {}),
+            ...(text.fields.run !== undefined ? { run: text.fields.run } : {}),
+          },
+          {
+            title: text.fields.title,
+            rationale: text.fields.rationale,
+            adr,
+            initial: INITIAL_DECISION_STATE,
+            // The SCREENED value, and omitted when the caller gave none: absence in,
+            // absence out, so a decision with no alternative records no key for one.
+            ...(text.fields.alternatives !== undefined
+              ? { alternatives: text.fields.alternatives }
+              : {}),
+          },
+        );
+        const appended = appendEvents(ctx.writer, birth);
+        if (!appended.ok) return appended;
+        const [e1, e2] = appended.entries as [Entry, Entry];
+        return {
+          ok: true,
+          id,
+          adr,
+          entries: [e1, e2],
+          ...screened([...text.replaced, ...agent.replaced]),
+        };
+      },
+    }),
   );
-  const appended = appendEvents(ctx.writer, birth);
-  if (!appended.ok) return appended;
-  const [e1, e2] = appended.entries as [Entry, Entry];
-  return {
-    ok: true,
-    id,
-    adr,
-    entries: [e1, e2],
-    ...screened([...text.replaced, ...agent.replaced]),
-  };
 }
 
 /** Accepts a proposed decision (requires a note). */
@@ -255,7 +275,8 @@ export function supersedeDecision(
 /**
  * The shared transition path: read the current state from the chain, run the
  * gate, and for a supersede also verify the successor exists, then append only
- * if everything passed. `to`, `action`, and the recorded `by` all come from the
+ * if everything passed — under the tail's lock, against the state the record is
+ * in at that moment ({@link onTheRecordAsItStands}). `to`, `action`, and the recorded `by` all come from the
  * gate's verdict, never from the caller's assertion.
  *
  * The proof is screened ahead of the gate for the reason the task's is: the gate
@@ -280,84 +301,106 @@ function transition(
   // Canonicalize the subject id (NFC, the chain's stored form) so the lookup
   // keys on the same string the projection does.
   const id = canonicalId(input.id);
-  const decisions = projectedDecisions(ctx);
-  const current = id === undefined ? undefined : decisions.get(id);
-  if (id === undefined || current === undefined) {
-    return {
-      ok: false,
-      code: 'UNKNOWN_DECISION',
-      message: `decision "${oneLine(input.id)}" does not exist`,
-    };
-  }
+  return onTheRecordAsItStands(
+    ctx,
+    () => projectedDecisions(ctx),
+    (decisions, earlier): Judged<DecisionTransitionOk | DecisionWriteError> => {
+      const current = id === undefined ? undefined : decisions.get(id);
+      if (id === undefined || current === undefined) {
+        return {
+          refuse: {
+            ok: false,
+            code: 'UNKNOWN_DECISION',
+            message: `decision "${oneLine(input.id)}" does not exist`,
+          },
+        };
+      }
 
-  // `who` is this installation's authorizing anchor, never supplied.
-  const who = authorizingAnchor(ctx);
+      // Judged again under the tail's lock because something landed since the first
+      // reading: if it was THIS decision that moved, the move the caller asked for was
+      // asked of a state it is no longer in, and that is what they are told — not the
+      // gate's verdict on a state they never saw.
+      const was = earlier?.get(id)?.state;
+      if (was !== undefined && was !== current.state) {
+        return { refuse: stateMoved('decision', id, action, was, current.state) };
+      }
 
-  // Resolved before the gate, and the RESOLVED value is both what the gate judges
-  // and what the envelope records — `which` is free text and goes through the same
-  // door as the proof, so screening it and then recording something else would be
-  // the very mismatch the resolution exists to prevent.
-  const agent = resolveExecutingAgent(who, input.which);
-  if (!agent.ok) return agent;
-  const which = agent.which;
+      // `who` is this installation's authorizing anchor, never supplied.
+      const who = authorizingAnchor(ctx);
 
-  const verdict = decisionGate({
-    from: current.state,
-    action,
-    ...(proof !== undefined ? { fields: proof.fields } : {}),
-    ...(by !== undefined ? { by } : {}),
-    subject: id,
-    who,
-    ...(which !== undefined ? { which } : {}),
-  });
-  if (!verdict.ok) return verdict;
+      // Resolved before the gate, and the RESOLVED value is both what the gate judges
+      // and what the envelope records — `which` is free text and goes through the same
+      // door as the proof, so screening it and then recording something else would be
+      // the very mismatch the resolution exists to prevent.
+      const agent = resolveExecutingAgent(who, input.which);
+      if (!agent.ok) return { refuse: agent };
+      const which = agent.which;
 
-  // Existence of the successor is a stream fact the pure gate cannot see. Check
-  // it against the SAME projected view the state came from. `verdict.by` is in
-  // the chain's canonical id form, so the lookup key matches both the
-  // successor's own record subject and the `by` this event will record — no
-  // composition variant can split them.
-  if (verdict.action === 'supersede' && verdict.by !== undefined) {
-    if (!decisions.has(verdict.by)) {
+      const verdict = decisionGate({
+        from: current.state,
+        action,
+        ...(proof !== undefined ? { fields: proof.fields } : {}),
+        ...(by !== undefined ? { by } : {}),
+        subject: id,
+        who,
+        ...(which !== undefined ? { which } : {}),
+      });
+      if (!verdict.ok) return { refuse: verdict };
+
+      // Existence of the successor is a stream fact the pure gate cannot see. Check
+      // it against the SAME projected view the state came from. `verdict.by` is in
+      // the chain's canonical id form, so the lookup key matches both the
+      // successor's own record subject and the `by` this event will record — no
+      // composition variant can split them.
+      if (verdict.action === 'supersede' && verdict.by !== undefined) {
+        if (!decisions.has(verdict.by)) {
+          return {
+            refuse: {
+              ok: false,
+              code: 'UNKNOWN_BY',
+              message: `supersede names a successor "${oneLine(verdict.by)}" that does not exist`,
+            },
+          };
+        }
+      }
+
       return {
-        ok: false,
-        code: 'UNKNOWN_BY',
-        message: `supersede names a successor "${oneLine(verdict.by)}" that does not exist`,
+        write: () => {
+          // Found this installation's anchor before its first fact, so the transition's
+          // signer is a key valid for its anchor at verify.
+          // Once founded it appends nothing, and refuses an anchor that no longer counts
+          // this key (see `ensureFounded`).
+          ensureFounded(ctx);
+          const at = (ctx.clock ?? systemClock)();
+          const event = decisionTransitioned(
+            {
+              at,
+              who,
+              signerFp: ctx.writer.signerFingerprint,
+              subject: id,
+              ...(which !== undefined ? { which } : {}),
+              ...(pinned.fields.run !== undefined ? { run: pinned.fields.run } : {}),
+            },
+            {
+              from: current.state,
+              to: verdict.to,
+              action: verdict.action,
+              ...(verdict.by !== undefined ? { by: verdict.by } : {}),
+              ...(verdict.fields !== undefined ? { fields: verdict.fields } : {}),
+            },
+          );
+          const appended = appendEvent(ctx.writer, event);
+          if (!appended.ok) return appended;
+          return {
+            ok: true,
+            to: verdict.to,
+            entry: appended.entry,
+            ...screened([...(proof?.replaced ?? []), ...pinned.replaced, ...agent.replaced]),
+          };
+        },
       };
-    }
-  }
-
-  // Found this installation's anchor before its first fact, so the transition's
-  // signer is a key valid for its anchor at verify.
-  // Once founded it appends nothing, and refuses an anchor that no longer counts
-  // this key (see `ensureFounded`).
-  ensureFounded(ctx);
-  const at = (ctx.clock ?? systemClock)();
-  const event = decisionTransitioned(
-    {
-      at,
-      who,
-      signerFp: ctx.writer.signerFingerprint,
-      subject: id,
-      ...(which !== undefined ? { which } : {}),
-      ...(pinned.fields.run !== undefined ? { run: pinned.fields.run } : {}),
-    },
-    {
-      from: current.state,
-      to: verdict.to,
-      action: verdict.action,
-      ...(verdict.by !== undefined ? { by: verdict.by } : {}),
-      ...(verdict.fields !== undefined ? { fields: verdict.fields } : {}),
     },
   );
-  const appended = appendEvent(ctx.writer, event);
-  if (!appended.ok) return appended;
-  return {
-    ok: true,
-    to: verdict.to,
-    entry: appended.entry,
-    ...screened([...(proof?.replaced ?? []), ...pinned.replaced, ...agent.replaced]),
-  };
 }
 
 /**

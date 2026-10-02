@@ -12,7 +12,7 @@
 
 _mnema_commands() {
   case "$1" in
-    '') echo 'init task decision skill memory observe handoff link run status focus resume next-actions guard search show timeline accountability antipatterns exposure export refs rules rules-file skills usage brief recall before-a-write key tail witness switch verify mcp repl completion help' ;;
+    '') echo 'init task decision skill memory observe handoff link run status focus resume next-actions guard search show timeline accountability antipatterns exposure export refs diagram rules rules-file skills usage brief recall before-a-write key tail witness switch verify mcp repl completion help' ;;
     'task') echo 'create move help' ;;
     'decision') echo 'record move supersede import help' ;;
     'skill') echo 'create move export help' ;;
@@ -49,6 +49,7 @@ _mnema_described() {
       'exposure:show which records hold something shaped like a credential (never the value)' \
       'export:emit the record as an OCSF audit feed (NDJSON, envelope only — never a body)' \
       'refs:show what an entity is connected to across the trees' \
+      'diagram:print a state machine, or an entity’s history or connections, as mermaid' \
       'rules:show which recorded rules govern a path, and which address nothing' \
       'rules-file:print the rules addressed at a file as another host’s rules file, and why the rest are not' \
       'skills:show where each pattern came from (who proposed it, who adopted it)' \
@@ -141,6 +142,7 @@ _mnema_flags() {
     'exposure') echo '--json -h --help -V --version --color --identify' ;;
     'export') echo '--from --to --who --which --global -h --help -V --version --color --identify' ;;
     'refs') echo '--direction --depth --json -h --help -V --version --color --identify' ;;
+    'diagram') echo '-h --help -V --version --color --identify' ;;
     'rules') echo '--json -h --help -V --version --color --identify' ;;
     'rules-file') echo '--host -h --help -V --version --color --identify' ;;
     'skills') echo '--json -h --help -V --version --color --identify' ;;
@@ -164,7 +166,7 @@ _mnema_flags() {
     'switch') echo '-h --help -V --version --color --identify' ;;
     'switch off') echo '--reason --scope --which -h --help -V --version --color --identify' ;;
     'switch on') echo '--reason --scope --which -h --help -V --version --color --identify' ;;
-    'verify') echo '--global --workspace --allow-no-record --require --json -h --help -V --version --color --identify' ;;
+    'verify') echo '--global --workspace --allow-no-record --require --since --json -h --help -V --version --color --identify' ;;
     'mcp') echo '--project -h --help -V --version --color --identify' ;;
     'repl') echo '-h --help -V --version --color --identify' ;;
     'completion') echo '-h --help -V --version --color --identify' ;;
@@ -225,6 +227,8 @@ _mnema_values() {
     'export:--color') echo 'auto always never' ;;
     'refs:--direction') echo 'both out in' ;;
     'refs:--color') echo 'auto always never' ;;
+    'diagram:--color') echo 'auto always never' ;;
+    'diagram:') echo 'decision skill task timeline refs' ;;
     'rules:--color') echo 'auto always never' ;;
     'rules-file:--host') echo 'vscode cursor' ;;
     'rules-file:--color') echo 'auto always never' ;;

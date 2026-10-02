@@ -164,6 +164,22 @@ const RETIRED_CLAIMS: readonly { phrase: string; why: string }[] = [
     phrase: 'nothing can be silently altered',
     why: 'false for removal: a tail deleted together with its key reads as a record that never held anything',
   },
+  {
+    phrase: 'trailing checkpoint cannot be dropped',
+    why: 'false for an aligned cut: the newest events taken WITH their checkpoint leave a shorter chain that verifies, exit 0 under --require=signed, in both readers',
+  },
+  {
+    phrase: 'cannot hide the signed history',
+    why: 'the same aligned cut: nothing in the record remembers the longer head the dropped checkpoint signed',
+  },
+  {
+    phrase: 'whose checkpoints were removed',
+    why: '--require=signed catches checkpoints taken from under events that stayed; with the events gone too it passes',
+  },
+  {
+    phrase: 'witness covers omission',
+    why: 'the witness this product wires in dates a checkpoint and keeps no copy; what covers omission is the history a git remote keeps',
+  },
 ];
 
 /**
@@ -206,11 +222,26 @@ function trackedText(): { file: string; text: string }[] {
   return found;
 }
 
+/**
+ * The text as prose reads it: lowercased, and every line break joined back into the sentence
+ * it broke — with the leader a doc-comment, a line comment, a shell comment or a quote puts
+ * at the start of the next line. A clause wrapped at column 80 is the same clause, and the
+ * sweep USED TO MISS IT: it compared raw text, so a retired sentence that happened to wrap
+ * between two of its words escaped (measured: `cannot hide the signed history` sat across two
+ * lines of a `//` comment in the chain's verifier).
+ */
+function asProse(text: string): string {
+  return text
+    .toLowerCase()
+    .replace(/[ \t]*\r?\n[ \t]*(?:\*(?!\*)|\/\/|#(?![#>])|>)?[ \t]*/g, ' ')
+    .replace(/[ \t]+/g, ' ');
+}
+
 /** Every (file, clause) pair a corpus holds, lowercased so a capitalised headline cannot hide. */
 function sweep(corpus: readonly { file: string; text: string }[]): string[] {
   const hits: string[] = [];
   for (const { file, text } of corpus) {
-    const lower = text.toLowerCase();
+    const lower = asProse(text);
     for (const { phrase } of RETIRED_CLAIMS) {
       if (lower.includes(phrase.toLowerCase())) hits.push(`${file} :: ${phrase}`);
     }
@@ -228,6 +259,19 @@ describe('no door still says the retired sentence', () => {
     }));
     expect(sweep(corpus)).toEqual(
       RETIRED_CLAIMS.map(({ phrase }, at) => `control-${at}.md :: ${phrase}`).sort(),
+    );
+  });
+
+  it('the sweep FIRES on a clause wrapped across lines, under every comment leader', () => {
+    const [first, ...rest] = 'cannot hide the signed history'.split(' ');
+    const wrapped = (leader: string) =>
+      `${leader}a dropped checkpoint ${first}\n${leader}${rest.join(' ')} it covered\n`;
+    const corpus = ['', ' * ', '    // ', '# ', '> '].map((leader, at) => ({
+      file: `wrapped-${at}.txt`,
+      text: wrapped(leader),
+    }));
+    expect(sweep(corpus)).toEqual(
+      corpus.map(({ file }) => `${file} :: cannot hide the signed history`).sort(),
     );
   });
 

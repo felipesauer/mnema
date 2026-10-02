@@ -26,6 +26,7 @@ import type { ChannelSwitchProjection } from './channel.js';
 import { getChannelSwitch, listChannelSwitches } from './channel-store.js';
 import { type AdrCollision, adrCollisions, type DecisionProjection } from './decision.js';
 import { getDecision, listDecisions, listDecisionsByState } from './decision-store.js';
+import { type DivergentMove, divergentMoves } from './divergent-moves.js';
 import { tablesFedBy } from './fed-by.js';
 import type {
   HandoffProjection,
@@ -553,6 +554,18 @@ export class ProjectionCache {
    */
   foundedBeside(): FoundedBeside[] {
     return identitiesFoundedBeside(this.order);
+  }
+
+  /**
+   * Every decision, skill and task of this tree that two machines moved out of one state
+   * without seeing each other ({@link divergentMoves}) — asked of the order this cache already
+   * holds, for the reason {@link foundedBeside} is: a walk over events in memory, where the
+   * same answer read off the disk is a second replay.
+   *
+   * It answers as the cache stands, like every read of it.
+   */
+  divergentMoves(): DivergentMove[] {
+    return divergentMoves(this.order);
   }
 
   /**

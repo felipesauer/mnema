@@ -54,7 +54,13 @@
  * two records nobody cites together.
  */
 
-import { type AdrCollision, adrCollisions, projectDecisions } from '@mnema/core';
+import {
+  type AdrCollision,
+  adrCollisions,
+  type DivergentMove,
+  divergentMoves,
+  projectDecisions,
+} from '@mnema/core';
 import type { CatalogEvent } from './events.js';
 
 /** How many times an entity underwent a counted transition, with the evidence. */
@@ -106,6 +112,16 @@ export interface Antipatterns {
    * chains, and merging them would name four ids as if any two of them competed.
    */
   readonly labelCollisions: readonly AdrCollision[];
+  /**
+   * Decisions, skills and tasks that left one state more than once, each with every move out
+   * of it — two moves that did not see each other, which is what two machines moving one
+   * subject offline leave (`divergentMoves` in @mnema/core says why the same `from` twice is
+   * enough for decisions and skills, and why tasks, whose machine has a cycle, are read by the
+   * record's order instead — this said tasks were not read at all). Like a label collision it
+   * is stated, not judged: both moves are signed facts, the projection keeps the last one, and
+   * nothing here picks between them.
+   */
+  readonly divergentMoves: readonly DivergentMove[];
 }
 
 /** One record read two ways: as a whole, and as the chains it is made of. */
@@ -150,7 +166,7 @@ export interface WorkspaceAntipatterns {
    * machine-global tree. Projects in the order the caller handed them over, the
    * projectless entry last.
    *
-   * A record with nothing recurring is still HERE, with four empty lists. An entry
+   * A record with nothing recurring is still HERE, with every list empty. An entry
    * missing from the list would be indistinguishable from a record the read never
    * opened.
    */
@@ -186,6 +202,7 @@ export function antipatterns(record: RecordEvents): Antipatterns {
     deprecatedSkills: deprecates,
     skillCandidates: reopens.filter((f) => f.count >= 2),
     labelCollisions: collisionsPerChain(record.chains),
+    divergentMoves: divergentMoves(record.events),
   };
 }
 

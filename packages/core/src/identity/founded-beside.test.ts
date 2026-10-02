@@ -11,6 +11,7 @@ import { join } from 'node:path';
 import {
   catalogUpcasters,
   enrollmentMessage,
+  identityFounded,
   materializePublicKey,
   openChainForWriting,
   sign,
@@ -142,36 +143,27 @@ describe('identitiesFoundedBeside — read off the record', () => {
     };
     const one = session();
     const two = session();
-    // They write together, so each decides before the other has written anything: the whole of
-    // the second one's first write runs at the first write the first one makes after deciding —
-    // its founding, or its anchor wherever the anchor goes first. Which one comes first is the
-    // order `ensureFounded` keeps, and this reading owes the same answer under either.
-    let raced = false;
-    const firstWrites = new Set(['append', 'recordAnchor']);
-    const racing = new Proxy(one.ctx.writer, {
-      get(target, prop, receiver) {
-        const value = Reflect.get(target, prop, receiver) as unknown;
-        if (typeof value !== 'function') return value;
-        if (typeof prop === 'string' && firstWrites.has(prop)) {
-          return (...args: unknown[]) => {
-            if (!raced) {
-              raced = true;
-              writes(two, 'session two');
-            }
-            return (value as (...given: unknown[]) => unknown).apply(target, args);
-          };
-        }
-        return value.bind(target);
-      },
-    });
-    writes({ ctx: { ...one.ctx, writer: racing } }, 'session one');
+    // THIS CASE RAN THE RACE ITSELF: the whole of the second session's first write ran inside
+    // the first write the first one made after deciding, and both founded. The founding is
+    // decided under the tail's lock now (`ensureFounded`), so that interleaving waits on the
+    // lock instead of founding — and a record written before the change still holds the copy.
+    // So the copy is PLANTED, with the builder and the key a session of B uses, which is the
+    // record that version of the product left: B founded, then founded again.
+    writes(one, 'session one');
+    const anchorB = ensureFounded(one.ctx);
+    two.ctx.writer.append(
+      identityFounded(
+        { at: clock(), who: anchorB, signerFp: two.fingerprint, subject: anchorB },
+        { foundingFp: two.fingerprint },
+      ),
+    );
+    writes(two, 'session two');
 
     const events = orderedEvents({ root: tree }, upcasters);
     const ofB = events.filter(
       (e) => e.kind === 'identity.founded' && e.payload.foundingFp === one.fingerprint,
     );
     // Non-vacuity: the record really holds the anchor twice, by the key it derives from.
-    expect(raced).toBe(true);
     expect(ofB).toHaveLength(2);
     expect(new Set(ofB.map((e) => e.subject)).size).toBe(1);
 

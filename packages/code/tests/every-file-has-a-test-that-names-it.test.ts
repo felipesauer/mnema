@@ -424,6 +424,10 @@ const UNWITNESSED: Readonly<Record<string, Debt>> = {
     reached: 'nobody imports it',
     why: 'The decision group, three subcommands and two private printers; cli-e2e reads its lines to prove the decision workflow, the import plan survives as committed golden bytes, and the import flags are driven on the binary.',
   },
+  'packages/code/src/wiring/diagram.ts': {
+    reached: 'nobody imports it',
+    why: "The diagram verb's declaration and its two usage refusals; a-picture-of-the-record.test.ts drives the verb through the program and asserts the diagrams it prints, never a value this file returns.",
+  },
   'packages/code/src/wiring/export.ts': {
     reached: 'nobody imports it',
     why: "The only read with no --json and no summary; the feed test driving it is about context's OCSF mapping, and this verb appears in no golden and its adapter has no test of its own.",
@@ -604,7 +608,7 @@ const UNWITNESSED: Readonly<Record<string, Debt>> = {
  * reading, so nothing can fall in two.
  */
 const THE_SHAPE_OF_WHAT_IS_LEFT: Readonly<Record<string, number>> = {
-  wiring: 34,
+  wiring: 35,
   presentation: 11,
   projections: 4,
   completion: 4,
@@ -706,9 +710,10 @@ const CLAUSES_PER_FILE: Readonly<Record<string, number>> = {
   'packages/chain/src/boundaries.test.ts': 3,
   'packages/chain/src/chain/backup.test.ts': 8,
   'packages/chain/src/chain/bitcoin.test.ts': 3,
-  'packages/chain/src/chain/both-readers-read-the-same-bytes.test.ts': 12,
+  'packages/chain/src/chain/both-readers-read-the-same-bytes.test.ts': 13,
   'packages/chain/src/chain/chain.test.ts': 18,
   'packages/chain/src/chain/coded-error.test.ts': 4,
+  'packages/chain/src/chain/durable.test.ts': 10,
   'packages/chain/src/chain/enrollment.test.ts': 13,
   'packages/chain/src/chain/format-on-disk.test.ts': 8,
   'packages/chain/src/chain/freshness.test.ts': 6,
@@ -718,7 +723,7 @@ const CLAUSES_PER_FILE: Readonly<Record<string, number>> = {
   'packages/chain/src/chain/key-protection.test.ts': 8,
   'packages/chain/src/chain/keyroot.test.ts': 11,
   'packages/chain/src/chain/keys.test.ts': 3,
-  'packages/chain/src/chain/keystore.test.ts': 8,
+  'packages/chain/src/chain/keystore.test.ts': 11,
   'packages/chain/src/chain/level.test.ts': 2,
   'packages/chain/src/chain/lines.test.ts': 5,
   'packages/chain/src/chain/ots.test.ts': 3,
@@ -768,6 +773,7 @@ const CLAUSES_PER_FILE: Readonly<Record<string, number>> = {
   'packages/code/src/commands/accountability.test.ts': 9,
   'packages/code/src/commands/antipatterns.test.ts': 13,
   'packages/code/src/commands/brief.test.ts': 15,
+  'packages/code/src/commands/decision-import-twice-at-once.test.ts': 8,
   'packages/code/src/commands/decision-import.test.ts': 8,
   'packages/code/src/commands/decision-transition.test.ts': 10,
   'packages/code/src/commands/decision.test.ts': 8,
@@ -789,6 +795,7 @@ const CLAUSES_PER_FILE: Readonly<Record<string, number>> = {
   'packages/code/src/commands/run-end.test.ts': 9,
   'packages/code/src/commands/run-start.test.ts': 8,
   'packages/code/src/commands/search.test.ts': 15,
+  'packages/code/src/commands/show-says-a-move-made-apart.test.ts': 10,
   'packages/code/src/commands/skill-export.test.ts': 11,
   'packages/code/src/commands/skill-transition.test.ts': 10,
   'packages/code/src/commands/skill.test.ts': 8,
@@ -798,6 +805,7 @@ const CLAUSES_PER_FILE: Readonly<Record<string, number>> = {
   'packages/code/src/commands/task.test.ts': 8,
   'packages/code/src/commands/timeline.test.ts': 12,
   'packages/code/src/commands/usage.test.ts': 10,
+  'packages/code/src/commands/verify-since.test.ts': 7,
   'packages/code/src/commands/verify.test.ts': 8,
   'packages/code/src/commands/witness-stamp-judges-each-tree-once.test.ts': 9,
   'packages/code/src/commands/witness.test.ts': 11,
@@ -811,7 +819,7 @@ const CLAUSES_PER_FILE: Readonly<Record<string, number>> = {
   'packages/code/src/one-voice-for-a-no.test.ts': 11,
   'packages/code/src/outside-the-record.test.ts': 13,
   'packages/code/src/pinned-run.test.ts': 9,
-  'packages/code/src/presentation/brief.test.ts': 4,
+  'packages/code/src/presentation/brief.test.ts': 6,
   'packages/code/src/presentation/folded.test.ts': 15,
   'packages/code/src/presentation/forms.test.ts': 6,
   'packages/code/src/presentation/one-line-per-item.test.ts': 10,
@@ -842,6 +850,7 @@ const CLAUSES_PER_FILE: Readonly<Record<string, number>> = {
   'packages/code/tests/a-marker-is-not-a-reason.test.ts': 7,
   'packages/code/tests/a-marker-is-not-a-title.test.ts': 7,
   'packages/code/tests/a-palette-for-the-words.test.ts': 24,
+  'packages/code/tests/a-picture-of-the-record.test.ts': 8,
   'packages/code/tests/a-private-write-asks-git.test.ts': 11,
   'packages/code/tests/a-read-asked-again-draws-what-changed.test.ts': 16,
   'packages/code/tests/a-refusal-is-one-line.test.ts': 7,
@@ -924,6 +933,7 @@ const CLAUSES_PER_FILE: Readonly<Record<string, number>> = {
   'packages/code/tests/the-ceiling-belongs-to-the-case.test.ts': 5,
   'packages/code/tests/the-channel-says-what-it-carries.test.ts': 8,
   'packages/code/tests/the-checkout-a-key-left.test.ts': 14,
+  'packages/code/tests/the-ci-recipe-catches-what-verify-cannot.test.ts': 8,
   'packages/code/tests/the-citation-that-arrives-opens.test.ts': 11,
   'packages/code/tests/the-command-handed-over-runs-as-handed.test.ts': 10,
   'packages/code/tests/the-console-on-ink.test.ts': 22,
@@ -1068,6 +1078,7 @@ const CLAUSES_PER_FILE: Readonly<Record<string, number>> = {
   'packages/core/src/identity/id.test.ts': 3,
   'packages/core/src/identity/restore.test.ts': 11,
   'packages/core/src/identity/roster.test.ts': 13,
+  'packages/core/src/identity/the-roster-sees-the-other-session.test.ts': 11,
   'packages/core/src/identity/who.test.ts': 2,
   'packages/core/src/index.test.ts': 2,
   'packages/core/src/knowledge/end-to-end.test.ts': 11,
@@ -1076,6 +1087,7 @@ const CLAUSES_PER_FILE: Readonly<Record<string, number>> = {
   'packages/core/src/projections/advance.test.ts': 19,
   'packages/core/src/projections/cache.test.ts': 7,
   'packages/core/src/projections/decision.test.ts': 3,
+  'packages/core/src/projections/divergent-moves.test.ts': 14,
   'packages/core/src/projections/knowledge.test.ts': 4,
   'packages/core/src/projections/newest-first.test.ts': 3,
   'packages/core/src/projections/one-window-three-readings.test.ts': 8,
@@ -1094,8 +1106,10 @@ const CLAUSES_PER_FILE: Readonly<Record<string, number>> = {
   'packages/core/src/topology/private-tree.test.ts': 8,
   'packages/core/src/topology/resolve.test.ts': 5,
   'packages/core/src/topology/routing.test.ts': 11,
+  'packages/core/src/workflow/a-gate-judges-the-record-as-it-stands.test.ts': 4,
   'packages/core/src/workflow/a-stale-anchor-writes-nothing.test.ts': 19,
   'packages/core/src/workflow/adoption.test.ts': 12,
+  'packages/core/src/workflow/as-the-record-stands.test.ts': 6,
   'packages/core/src/workflow/decision-gate.test.ts': 5,
   'packages/core/src/workflow/decision-operations.test.ts': 9,
   'packages/core/src/workflow/decision-states.test.ts': 2,
@@ -1112,6 +1126,7 @@ const CLAUSES_PER_FILE: Readonly<Record<string, number>> = {
   'packages/core/src/workflow/skill-transitions.test.ts': 3,
   'packages/core/src/workflow/states.test.ts': 2,
   'packages/core/src/workflow/the-anchor-follows-the-founding.test.ts': 12,
+  'packages/core/src/workflow/the-second-move-sees-the-first.test.ts': 14,
   'packages/core/src/workflow/transitions.test.ts': 3,
   'packages/core/tests/integration/cross-entity.test.ts': 13,
   'packages/core/tests/integration/enrollment-e2e.test.ts': 8,
@@ -1132,6 +1147,7 @@ const PRODUCTION_FILES: readonly string[] = [
   'packages/chain/src/chain/chain.ts',
   'packages/chain/src/chain/checkpoint.ts',
   'packages/chain/src/chain/coded-error.ts',
+  'packages/chain/src/chain/durable.ts',
   'packages/chain/src/chain/enrollment.ts',
   'packages/chain/src/chain/entry.ts',
   'packages/chain/src/chain/freshness.ts',
@@ -1218,6 +1234,7 @@ const PRODUCTION_FILES: readonly string[] = [
   'packages/code/src/commands/task.ts',
   'packages/code/src/commands/timeline.ts',
   'packages/code/src/commands/usage.ts',
+  'packages/code/src/commands/verify-since.ts',
   'packages/code/src/commands/verify.ts',
   'packages/code/src/commands/witness.ts',
   'packages/code/src/completion/bash.ts',
@@ -1257,6 +1274,7 @@ const PRODUCTION_FILES: readonly string[] = [
   'packages/code/src/presentation/brief.ts',
   'packages/code/src/presentation/consultation.ts',
   'packages/code/src/presentation/detail.ts',
+  'packages/code/src/presentation/diagram.ts',
   'packages/code/src/presentation/echo.ts',
   'packages/code/src/presentation/exported.ts',
   'packages/code/src/presentation/exposure.ts',
@@ -1326,6 +1344,7 @@ const PRODUCTION_FILES: readonly string[] = [
   'packages/code/src/wiring/completion.ts',
   'packages/code/src/wiring/context.ts',
   'packages/code/src/wiring/decision.ts',
+  'packages/code/src/wiring/diagram.ts',
   'packages/code/src/wiring/enumerated.ts',
   'packages/code/src/wiring/export.ts',
   'packages/code/src/wiring/exposure.ts',
@@ -1421,6 +1440,7 @@ const PRODUCTION_FILES: readonly string[] = [
   'packages/core/src/projections/channel.ts',
   'packages/core/src/projections/decision-store.ts',
   'packages/core/src/projections/decision.ts',
+  'packages/core/src/projections/divergent-moves.ts',
   'packages/core/src/projections/fed-by.ts',
   'packages/core/src/projections/knowledge-store.ts',
   'packages/core/src/projections/knowledge.ts',
@@ -1443,6 +1463,7 @@ const PRODUCTION_FILES: readonly string[] = [
   'packages/core/src/topology/resolve.ts',
   'packages/core/src/topology/routing.ts',
   'packages/core/src/workflow/append.ts',
+  'packages/core/src/workflow/as-the-record-stands.ts',
   'packages/core/src/workflow/channel-operations.ts',
   'packages/core/src/workflow/clock.ts',
   'packages/core/src/workflow/decision-gate.ts',
@@ -1511,8 +1532,8 @@ describe('every file has a test that names it', () => {
     );
     // 73 until `chain/src/one-line.test.ts` began calling the functions it is about.
     // 72 until `mcp/hook-reply.test.ts` began calling the function it is about.
-    expect(found.size).toBe(71);
-    expect(byReach('nobody imports it')).toBe(71);
+    expect(found.size).toBe(72);
+    expect(byReach('nobody imports it')).toBe(72);
     expect(byReach('imported, and no assertion observes it')).toBe(0);
   });
 
@@ -1534,7 +1555,7 @@ describe('every file has a test that names it', () => {
     // Announced in the header and, until now, kept by hand. A shared excuse is how a table
     // like this turns into a rubber stamp, and a row drained to a stub is how it starts.
     const reasons = Object.values(UNWITNESSED).map((one) => one.why);
-    expect(reasons).toHaveLength(71);
+    expect(reasons).toHaveLength(72);
     expect(new Set(reasons).size).toBe(reasons.length);
     // The shortest reason standing is 156 characters; the floor is under it and well over
     // anything that could be written without saying what reaches that file.

@@ -65,6 +65,8 @@ $ mnema
 !                                         (NDJSON, envelope only — never a body)
 !   refs [options] <id>                   show what an entity is connected to
 !                                         across the trees
+!   diagram <subject> [id]                print a state machine, or an entity’s
+!                                         history or connections, as mermaid
 !   rules [options] <path>                show which recorded rules govern a path,
 !                                         and which address nothing
 !   rules-file [options]                  print the rules addressed at a file as
@@ -168,6 +170,8 @@ $ mnema --help
 |                                         (NDJSON, envelope only — never a body)
 |   refs [options] <id>                   show what an entity is connected to
 |                                         across the trees
+|   diagram <subject> [id]                print a state machine, or an entity’s
+|                                         history or connections, as mermaid
 |   rules [options] <path>                show which recorded rules govern a path,
 |                                         and which address nothing
 |   rules-file [options]                  print the rules addressed at a file as
@@ -658,6 +662,27 @@ $ mnema refs --help
 |   --json             emit the faithful graph as JSON
 |   -h, --help         display help for command
 
+### mnema diagram --help
+$ mnema diagram --help
+| Usage: mnema diagram [options] <subject> [id]
+|
+| print a state machine, or an entity’s history or connections, as mermaid
+|
+| Arguments:
+|   subject     what to draw (decision, skill, task, timeline, refs)
+|   id          the entity id, for `timeline` and `refs`
+|
+| Options:
+|   -h, --help  display help for command
+|
+| It prints mermaid text to stdout and writes nothing — GitHub and most editors draw it:
+|   mnema diagram decision                 the states a decision moves through
+|   mnema diagram task > task-states.md    the redirection is yours
+|   mnema diagram timeline <id>            one entity’s events, in order
+|   mnema diagram refs <id>                what one entity is connected to
+| The three state machines are read from the tables the gate enforces, so a state
+| added there appears here. Text from the record is written so it cannot end a label.
+
 ### mnema rules --help
 $ mnema rules --help
 | Usage: mnema rules [options] <path>
@@ -928,11 +953,21 @@ $ mnema verify --help
 |                          (also fail unless every event is covered by a verified
 |                          signature — every write here signs what it wrote, so it
 |                          passes whenever nothing is mid-write, and what it
-|                          catches is a record whose checkpoints were removed or
-|                          did not verify), witnessed (also fail unless an
-|                          external witness dates the record — `mnema witness
-|                          stamp` asks for one, and it passes once a Bitcoin block
-|                          carries it, never while it is pending)
+|                          catches is checkpoints that did not verify or were
+|                          taken out from under the events they signed — not a cut
+|                          that took the newest events with their checkpoint),
+|                          witnessed (also fail unless an external witness dates
+|                          the record — `mnema witness stamp` asks for one, and it
+|                          passes once a Bitcoin block carries it, never while it
+|                          is pending)
+|   --since <rev>          also fail unless the committed record is the one <rev>
+|                          held, grown at the end: every file it held under tails/
+|                          and keys/ is still here, and every segment and
+|                          checkpoints.jsonl still begins with the bytes it held.
+|                          Catches what no --require can — a cut that took events
+|                          with their checkpoint, a record founded again, a
+|                          rewrite signed again. Reads git, never the network, so
+|                          <rev> must be in this clone
 |   --json                 emit the verdict as JSON instead of prose — the whole
 |                          reading, per tree, plus what NO --require value
 |                          answers. The exit code is unchanged: this changes the

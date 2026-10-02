@@ -41,6 +41,11 @@ export interface FoundedBeside {
  * produced by the product's own writers in `founded-beside.test.ts`, *counts an anchor founded
  * twice once*. The second founding is by the key the anchor derives from: the same identity
  * arriving twice, not a second one, which is why it counts once here.
+ *
+ * THAT RACE IS CLOSED FOR WHAT IS WRITTEN FROM NOW ON: `ensureFounded` decides to found under the
+ * tail's lock, so the second session finds the first one's founding there and adopts it. A record
+ * written before keeps its copy, and this reading still counts it once — which is why the case
+ * now plants the copy instead of racing for it.
  */
 export function identitiesFoundedBeside(events: Iterable<CatalogEvent>): FoundedBeside[] {
   const founded: string[] = [];

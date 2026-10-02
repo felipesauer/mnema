@@ -628,6 +628,31 @@ const CLASSIFIED: Readonly<Record<string, { verdict: Verdict; why: string }>> = 
     verdict: 'minted',
     why: 'the name of a title field, one of the rows `TITLES` holds',
   },
+  '@mnema/core workflow/as-the-record-stands.ts «{} "{}" was {} when this {} was asked and is {} now: » noun #1':
+    {
+      verdict: 'minted',
+      why: 'the kind of subject, one of four words the operations that call it pass',
+    },
+  '@mnema/core workflow/as-the-record-stands.ts «{} "{}" was {} when this {} was asked and is {} now: » oneLine(id) #1':
+    {
+      verdict: 'collapsed',
+      why: 'the id the caller named, from the argv or a tool argument, canonicalized',
+    },
+  '@mnema/core workflow/as-the-record-stands.ts «{} "{}" was {} when this {} was asked and is {} now: » oneLine(was) #1':
+    {
+      verdict: 'collapsed',
+      why: 'a state read out of the record, the first reading',
+    },
+  '@mnema/core workflow/as-the-record-stands.ts «{} "{}" was {} when this {} was asked and is {} now: » oneLine(asked) #1':
+    {
+      verdict: 'collapsed',
+      why: 'the move asked — for a task, the caller’s own word, read before the gate judged it',
+    },
+  '@mnema/core workflow/as-the-record-stands.ts «{} "{}" was {} when this {} was asked and is {} now: » oneLine(now) #1':
+    {
+      verdict: 'collapsed',
+      why: 'a state read out of the record, the reading under the lock',
+    },
   '@mnema/core a-reason-states-something.ts «the {} "{}" has no letter and no digit in it, so it names nothing: » field #1':
     { verdict: 'minted', why: 'the name of a title field, one of the rows `TITLES` holds' },
   '@mnema/core a-reason-states-something.ts «the {} "{}" has no letter and no digit in it, so it names nothing: » oneLine(value) #1':
@@ -754,10 +779,11 @@ const CLASSIFIED: Readonly<Record<string, { verdict: Verdict; why: string }>> = 
       verdict: 'composed',
       why: 'the reading `witness.ts` composed — every value in it is a site of its own below',
     },
-  '@mnema/chain chain/verify.ts «external witness (T3): covered — {}» witness.detail #1': {
-    verdict: 'composed',
-    why: 'the same reading, in the state that reaches the record’s top rung',
-  },
+  '@mnema/chain chain/verify.ts «external witness (T3): covered — {} (the work of its block header was checked here, not its place in the Bitcoin chain)» witness.detail #1':
+    {
+      verdict: 'composed',
+      why: 'the same reading, in the state that reaches the record’s top rung',
+    },
   '@mnema/chain chain/verify.ts «external witness (T3): not covered — {}» witness.detail #1': {
     verdict: 'composed',
     why: 'the same reading, in the state every record is in until somebody asks for a witness',
@@ -1399,9 +1425,9 @@ describe('every value the domain puts in a sentence is classified', () => {
     // are equal. The scale is stated, and so is what the HANDOFF said — twenty-three
     // sites, twelve in `core` and eleven in `chain` — because it counted sentences
     // written at a `message:` or a `detail:` directly, and a value is not a sentence.
-    expect(SITES.length).toBe(158);
+    expect(SITES.length).toBe(163);
     expect(FOUND[0]?.sites.length).toBe(48);
-    expect(FOUND[1]?.sites.length).toBe(110);
+    expect(FOUND[1]?.sites.length).toBe(115);
     expect(FOUND.flatMap((layer) => layer.wording).length).toBeGreaterThan(15);
   });
 
@@ -1451,11 +1477,11 @@ describe('every value the domain puts in a sentence is classified', () => {
     // No arm of the case above may be empty, or that much of it is vacuous.
     const verdicts = Object.values(CLASSIFIED).map((said) => said.verdict);
     const count = (verdict: Verdict): number => verdicts.filter((said) => said === verdict).length;
-    expect(count('collapsed')).toBe(92);
-    expect(count('minted')).toBe(44);
+    expect(count('collapsed')).toBe(96);
+    expect(count('minted')).toBe(45);
     expect(count('composed')).toBe(22);
     expect(SITES.filter((site) => new RegExp(`\\b${DOOR}\\b`).test(site.expression))).toHaveLength(
-      92,
+      96,
     );
   });
 

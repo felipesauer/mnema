@@ -141,9 +141,10 @@ export function protectPem(pem: string, passphrase: string): string {
  * The PEM inside a protected key file, or `undefined` when the passphrase does not open it or the
  * file is not what it says it is. The two are one answer on purpose: a wrong passphrase and a
  * damaged file are both "this cannot be opened with that", and a caller that could tell them
- * apart could be asked to. The wrapper's JSON is read by the same strict reader as a stored line
- * of the record, so a body with a key written twice is refused as a damaged file rather than
- * opened with whichever value came last.
+ * apart could be asked to. The wrapper's JSON is read by `parseStoredJson`, which refuses a
+ * duplicate key but not a re-spelling (it is not a line of the record, and a changed value fails
+ * the authentication), so a body with a key written twice is refused as a damaged file rather
+ * than opened with whichever value came last.
  */
 export function unprotectPem(text: string, passphrase: string): string | undefined {
   try {

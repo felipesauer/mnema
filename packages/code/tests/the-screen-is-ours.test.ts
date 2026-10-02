@@ -1060,8 +1060,9 @@ describe('a window the caller resizes is a frame drawn at the new size', () => {
     // costs more than that at both ({@link THREE_REGIONS}). What this case is about is the three
     // regions surviving a resize, so the sequence is sizes that HAVE three regions — the
     // narrowing and the widening are what it asserts, and a size with the opening on the roll is
-    // the subject of `the-opening-fits-the-height.test.ts` instead. The transition to eighty by
-    // twenty-four is still driven, in the case under this one, where what is read is the frames.
+    // the subject of `the-opening-fits-the-height.test.ts` instead. A shrink down to the floor is
+    // still driven, one axis at a time, in the two cases under this one, where what is read is the
+    // frames.
     //
     // AND THE LAST TWO ARE THE SAME WIDTH AT TWO HEIGHTS, which is the one thing here chosen
     // rather than inherited. A page is located by the width it was drawn at, and a width is not
@@ -1147,70 +1148,103 @@ describe('a window the caller resizes is a frame drawn at the new size', () => {
     //
     // NOTHING ON THE SETTLED PAGE SHOWS IT. The corrected frame redraws every row from the top,
     // so a case that reads the page after the size settles is answered *correct* either way; what
-    // sees it is a case that reads the FRAMES. That is why this one counts rows in the stream
-    // rather than looking at a screen.
-    //
-    // THE SLICE IS TAKEN BEFORE THE RESIZE, which is the one way an index is honest here: it is
-    // the boundary of a step that had already SETTLED, so nothing the resize caused can be in
-    // front of it. Everything after it is the resize's own frames and the frames of a session
-    // that only ever got shorter — so a boundary that drifts can only add correct frames, never
-    // hide a wrong one.
-    const ran = await inPty({
-      columns: 120,
-      rows: 55,
-      steps: [
-        opens,
-        submits(says(0)),
-        // AND THE STEP WAITS FOR THE SIZE, not for a frame. It waited for a frame, and a frame
-        // names nothing about a size: setting a window size is two calls, so the device is
-        // 120 columns at the new height before it is 80 ({@link resizedTo}), the console draws that intermediate
-        // page, and *a frame arrived since this step began* is answered by it. The step then
-        // ended, the end of the input was typed, and the session left WITHOUT EVER DRAWING AT
-        // EIGHTY — measured under load: *no frame in this stream was drawn 80 columns wide, so
-        // there is no settled page to read at that size*, which was true and was the case's own
-        // doing. It is the rule this suite already carries — a step waits for what it CAUSED —
-        // at the last resize step that had not been given it (`support/screen.ts`, {@link drewAt}).
-        {
-          resize: { columns: THE_FLOOR.columns, rows: THE_FLOOR.rows },
-          until: drewAt(THE_FLOOR.columns),
-          what: 'was made shorter',
-        },
-        leaves,
-      ],
+    // sees it is a case that reads the FRAMES ({@link noFrameOutgrewTheShrink}).
+    await noFrameOutgrewTheShrink({ columns: THREE_REGIONS.columns, rows: 55 }, THREE_REGIONS);
+  }, 240_000);
+
+  it('writes no frame wider than the screen it is on, not even a transient one', async () => {
+    // THE OTHER AXIS OF THE SAME QUESTION, and a case of its own rather than a second assertion
+    // on the one above: a frame composed at the width the terminal had BEFORE a shrink is wider
+    // than the screen it is written onto, which the terminal folds, and a count of rows never sees
+    // it. It shrinks only the width, for the reason {@link noFrameOutgrewTheShrink} gives.
+    await noFrameOutgrewTheShrink(THREE_REGIONS, {
+      columns: THE_FLOOR.columns,
+      rows: THE_FLOOR.rows,
     });
-    const after = ran.bytes.slice(ran.at[1] as number);
-    // EVERY FRAME, CUT ON THE BOUNDARY THE LIBRARY WRITES, and each one measured in the rows it
-    // puts on the page.
-    const frames = rowsOfTheFrames(after);
-    expect(
-      frames.length,
-      'the resize drew no frame at all, so nothing was measured',
-    ).toBeGreaterThan(0);
-    expect(
-      Math.max(...frames),
-      `a frame of ${Math.max(...frames)} rows was written onto a ${THE_FLOOR.rows}-row screen`,
-    ).toBeLessThanOrEqual(THE_FLOOR.rows);
-    // AND NONE OF THEM IS WIDER THAN THE SCREEN EITHER. The height above is what an old frame
-    // written onto a shorter screen scrolls; this is what one composed at the old WIDTH does, which
-    // the terminal folds, and which a count of rows never sees. Measured on the build this case was
-    // added to, under a load of 23 to 36 on sixteen cores, 108 resizes: every frame of every one
-    // was exactly the new size in both axes, and so was the page after each of them.
-    const widest = widestRowOfTheFrames(after);
-    expect(
-      widest.length,
-      'the resize drew no frame at all, so nothing was measured',
-    ).toBeGreaterThan(0);
-    expect(
-      Math.max(...widest),
-      `a frame ${Math.max(...widest)} columns wide was written onto a ${THE_FLOOR.columns}-column screen`,
-    ).toBeLessThanOrEqual(THE_FLOOR.columns);
-    // AND THE PAGE IS WHOLE AFTERWARDS, which is what the frames above are for.
-    const settled = theSettledScreen(ran.bytes, THE_FLOOR.columns, THE_FLOOR.rows);
-    expect(firstDrawnRow(settled), 'the top region left the screen').toBe(0);
-    fillsTheScreen(settled, THE_FLOOR.rows, 'the page after a shrink');
-    theHistorySurvived(ran, 'a session made shorter');
   }, 240_000);
 });
+
+/**
+ * A SHRINK ALONG ONE AXIS, AND EVERY FRAME AFTER IT HELD TO THE SCREEN IT WAS WRITTEN ONTO — in
+ * both axes, because a frame that fits the height and not the width is still a frame the screen
+ * cannot hold.
+ *
+ * ONE AXIS, BECAUSE THEN THE DEVICE IS ONLY EVER TWO SIZES. A size is set in two calls, the height
+ * and then the width (`support/pty.ts`, {@link resizedTo}), so a shrink along both axes passes
+ * through the OLD width at the NEW height — and the console draws that page whenever it is
+ * scheduled between the two calls, correctly, because the terminal really was that shape. These
+ * two cases were one, shrinking 120×55 to 80×42 and holding every frame to the final size, and
+ * that accused the page drawn for the size in between. Measured with the case pinned to one core
+ * beside two busy loops: red 16 times in 40, *a frame 120 columns wide was written onto a
+ * 80-column screen*; with the console reporting the size it read off the device at the moment of
+ * each write, every red was a run where it had been told 120×42 and wrote that frame while the
+ * device still said 120×42, before and after the write, and every green a run where it was told
+ * only 80×42. No order of the two calls helps: either one leaves the size in between larger than
+ * the final one along one axis.
+ *
+ * Shrunk along one axis, the call that sets the other has nothing to change, and the device says
+ * nothing about a size that did not change — so the only screens the session is ever on are the
+ * one it opened on and the one the case asked for, and *the screen it is on* is a size the case
+ * names rather than one it has to guess at.
+ *
+ * THE SLICE IS TAKEN BEFORE THE RESIZE, which is the one way an index is honest here: it is the
+ * boundary of a step that had already SETTLED, so nothing the resize caused can be in front of it.
+ * Everything after it is the resize's own frames and the frames of a session that only ever got
+ * smaller — so a boundary that drifts can only add correct frames, never hide a wrong one.
+ */
+async function noFrameOutgrewTheShrink(
+  from: { readonly columns: number; readonly rows: number },
+  to: { readonly columns: number; readonly rows: number },
+): Promise<void> {
+  const shrunk = `${from.columns}x${from.rows} to ${to.columns}x${to.rows}`;
+  const ran = await inPty({
+    columns: from.columns,
+    rows: from.rows,
+    steps: [
+      opens,
+      submits(says(0)),
+      // AND THE STEP WAITS FOR THE SIZE, not for a frame: a frame names nothing about a size, and
+      // a step that ended on one could leave before the console ever drew at the size asked for
+      // (`support/screen.ts`, {@link drewAt}). The width alone does not name the size when only
+      // the height moved, so the wait is for a frame at both.
+      {
+        resize: to,
+        until: (bytes, since) =>
+          drewAt(to.columns)(bytes, since) && rowsOfTheFrames(bytes.slice(since)).includes(to.rows),
+        what: `was shrunk from ${shrunk}`,
+      },
+      leaves,
+    ],
+  });
+  const after = ran.bytes.slice(ran.at[1] as number);
+  // EVERY FRAME, CUT ON THE BOUNDARY THE LIBRARY WRITES, and each one measured in the rows it
+  // puts on the page and in the columns of its widest row.
+  const frames = rowsOfTheFrames(after);
+  expect(
+    frames.length,
+    `${shrunk}: the resize drew no frame at all, so nothing was measured`,
+  ).toBeGreaterThan(0);
+  expect(
+    Math.max(...frames),
+    `${shrunk}: a frame of ${Math.max(...frames)} rows was written onto a ${to.rows}-row screen`,
+  ).toBeLessThanOrEqual(to.rows);
+  const widest = widestRowOfTheFrames(after);
+  // AND THE WIDTHS ARE COUNTED AS WELL AS THE ROWS: the largest of nothing is minus infinity,
+  // which is no wider than any screen, so an empty list would pass the assertion under it silently.
+  expect(
+    widest.length,
+    `${shrunk}: no frame's width was measured, so nothing was held to the screen`,
+  ).toBeGreaterThan(0);
+  expect(
+    Math.max(...widest),
+    `${shrunk}: a frame ${Math.max(...widest)} columns wide was written onto a ${to.columns}-column screen`,
+  ).toBeLessThanOrEqual(to.columns);
+  // AND THE PAGE IS WHOLE AFTERWARDS, which is what the frames above are for.
+  const settled = theSettledScreen(ran.bytes, to.columns, to.rows);
+  expect(firstDrawnRow(settled), `${shrunk}: the top region left the screen`).toBe(0);
+  fillsTheScreen(settled, to.rows, `${shrunk}: the page after a shrink`);
+  theHistorySurvived(ran, `a session shrunk from ${shrunk}`);
+}
 
 // ---------------------------------------------------------------------------
 // The way out

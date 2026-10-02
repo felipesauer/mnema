@@ -145,8 +145,13 @@ const HERE = join(import.meta.dirname, '..');
 const CORE_SRC = join(HERE, '..', 'core', 'src');
 const CODE_SRC = join(HERE, 'src');
 
-/** How many core functions reach an append. Pinned so a broken scan fails loudly. */
-const CORE_OPERATIONS_THAT_APPEND = 32;
+/**
+ * How many core functions reach an append. Pinned so a broken scan fails loudly.
+ *
+ * 33 since the founding is decided under the tail's lock: `ensureFounded` hands the half that
+ * may found to `foundUnderTheLock`, which is where the founding's append now is.
+ */
+const CORE_OPERATIONS_THAT_APPEND = 33;
 
 /** How many paths of the shipped surface reach one of them. */
 const SURFACE_WRITE_PATHS = 34;

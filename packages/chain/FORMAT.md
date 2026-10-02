@@ -196,7 +196,18 @@ Each line of a segment is the **canonical** serialization (§1) of:
 The line carries the event **as it was written**, so the bytes on disk are the
 bytes the entry hash was taken over; re-serializing an entry read back from a line
 reproduces that line byte for byte
-(`packages/chain/src/chain/format-on-disk.test.ts`). A genesis link is a `null`
+(`packages/chain/src/chain/format-on-disk.test.ts`). A line that is NOT that
+serialization of the value it holds — a space after a colon, the keys in another
+order, its text in another Unicode composition, a letter written as an escape, a
+carriage return left by a checkout that rewrote line endings — is refused, even though
+its value recomputes every hash and signature: the bytes on disk are then not the
+bytes the proof was taken over. The same holds for a checkpoint line and the tail
+proof, and both readers refuse each of them
+(`packages/chain/src/chain/both-readers-read-the-same-bytes.test.ts`). A stored block
+header that is not canonical is not read either, so the attestation it would have
+checked is not counted; the product drops that one line and the second reader the
+whole sidecar, which is a difference in what is left uncheckable, not in what is
+accepted. A genesis link is a `null`
 `prev`, never an empty string, and the top-level keys are `event` and `link` with
 no insignificant whitespace between them — the same file holds both.
 

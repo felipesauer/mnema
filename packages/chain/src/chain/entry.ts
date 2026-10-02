@@ -22,7 +22,7 @@
 import { type CanonicalValue, canonicalStringify } from '../events/canonical.js';
 import type { CatalogEvent } from '../events/catalog.js';
 import { parseEvent } from '../events/parse.js';
-import { parseStoredJson } from '../events/stored-json.js';
+import { parseCanonicalLine } from '../events/stored-json.js';
 import type { UpcasterRegistry } from '../events/upcaster.js';
 import { oneLine } from '../one-line.js';
 import { entryHash, type WrittenEvent, writtenAsBuilt, writtenAsStored } from './hash.js';
@@ -111,7 +111,7 @@ export function serializeEntry(entry: Entry): string {
 export function parseEntry(line: string, upcasters: UpcasterRegistry): Entry {
   let raw: unknown;
   try {
-    raw = parseStoredJson(line);
+    raw = parseCanonicalLine(line);
   } catch (error) {
     throw new EntryParseError((error as Error).message);
   }
@@ -126,8 +126,10 @@ export function parseEntry(line: string, upcasters: UpcasterRegistry): Entry {
   // Sound by construction: `JSON.parse` only ever yields strings, finite
   // numbers, booleans, null, arrays, and plain objects — the closed set
   // CanonicalValue names. Whether it can be canonicalized at all (a lone
-  // surrogate cannot) is decided when a proof actually asks for the bytes,
-  // exactly as it was before, so an unencodable line fails the same way.
+  // surrogate cannot) USED TO BE decided here only when a proof first asked
+  // for the bytes. `parseCanonicalLine` now serializes every line it reads to
+  // compare it with the stored bytes, so a line with no canonical bytes is
+  // refused above, at the parse, like any other line that is not canonical.
   const written = writtenAsStored(obj.event as CanonicalValue);
   let event: CatalogEvent;
   try {

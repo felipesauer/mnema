@@ -109,6 +109,11 @@ export {
   listDecisionsByState,
 } from './projections/decision-store.js';
 export {
+  type DivergentKind,
+  type DivergentMove,
+  divergentMoves,
+} from './projections/divergent-moves.js';
+export {
   type HandoffProjection,
   type LinkEdge,
   type MemoryProjection,

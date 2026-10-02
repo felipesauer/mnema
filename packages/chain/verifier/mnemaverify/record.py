@@ -528,8 +528,21 @@ def _check_witness(
                 "8", "no .blocks sidecar, so the attestation cannot be checked offline", where,
             )
             continue
-        with open(blocks_path, "rb") as handle:
-            headers = bitcoin.read_blocks_sidecar(handle.read())
+        # A sidecar this reader refuses - a line that is not canonical, a duplicate key - used
+        # to escape as a traceback, so the verifier printed no verdict at all over a record
+        # whose chain it had already checked. The sidecar is not part of the chain: refusing
+        # it leaves the attestation uncheckable offline, which is what a missing one says.
+        try:
+            with open(blocks_path, "rb") as handle:
+                headers = bitcoin.read_blocks_sidecar(handle.read())
+        except Refusal as refusal:
+            report.unchecked(
+                "8",
+                f"the .blocks sidecar was refused ({refusal.what}), so the attestation cannot "
+                "be checked offline",
+                where,
+            )
+            continue
 
         used: set[int] = set()
         for attestation in proof.confirmed:

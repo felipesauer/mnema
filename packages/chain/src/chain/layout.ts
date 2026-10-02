@@ -133,6 +133,16 @@ export function tailLockPath(layout: ChainLayout, tailId: string): string {
 }
 
 /**
+ * The lock a key root is minted under: two processes that both find no key there take it in
+ * turn, and the second finds the key the first made (`loadOrCreateKeyPair`). At the key root's
+ * top, so taking it makes no directory, and the key root's own `.gitignore` keeps it out of git;
+ * it exists only while a key is being minted.
+ */
+export function keyRootLockPath(keyRoot: ChainLayout): string {
+  return join(keyRoot.root, 'key-root.lock');
+}
+
+/**
  * Where a tail's external witnesses live — one directory, beside the checkpoints
  * they are about.
  *

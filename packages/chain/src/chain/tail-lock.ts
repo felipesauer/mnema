@@ -83,6 +83,16 @@ import { sleepSync } from './sleep.js';
  * something is genuinely wrong rather than merely busy: that is what makes the
  * refusal worth printing instead of waiting longer.
  *
+ * THAT HEADROOM NO LONGER HOLDS FOR EVERY HOLDER. A move judged on the record now
+ * decides under this lock (`ChainWriter.exclusively`, and `onTheRecordAsItStands` in
+ * the core), and one that finds the chain moved since it read re-reads the whole
+ * record while holding it: 0.10 s at 10 thousand events, 0.36 s at 30 thousand, 1.35 s
+ * at 100 thousand. Three sessions moving at once can then leave the third waiting past
+ * this budget — measured on the binary, three moves of three decisions at once: 1 of 3
+ * tries at 50 thousand events, 3 of 3 at 75 and at 100 thousand, none at 30. The
+ * number is unchanged here, because changing it is one of the answers to that cost and
+ * the choice among them is not this file's.
+ *
  * It is also short enough for the refusal to have a TEST that runs in the suite
  * rather than a comment claiming it would fire. A budget a guard cannot afford to
  * wait out is a budget nothing checks.
