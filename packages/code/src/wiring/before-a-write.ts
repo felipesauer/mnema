@@ -26,9 +26,7 @@ export function registerBeforeAWrite(program: Command, wiring: Wiring): Declared
   const { io, render } = wiring;
   const verb = program
     .command('before-a-write')
-    .description(
-      'answer a host’s hook before a file is written: refuse where a rule refuses, ask for a person where a rule asks',
-    )
+    .description('answer a host’s hook before a file is written: refuse or ask where a rule says')
     .addOption(
       enumeratedOption(
         '--host <host>',

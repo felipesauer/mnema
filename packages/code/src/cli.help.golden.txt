@@ -82,8 +82,7 @@ $ mnema
 !                                         markdown, near ones first, for an agent
 !                                         to read
 !   before-a-write [options]              answer a host’s hook before a file is
-!                                         written: refuse where a rule refuses,
-!                                         ask for a person where a rule asks
+!                                         written: refuse or ask where a rule says
 !   key                                   manage this machine's signing keys
 !   tail                                  authorize a cut in the record's own
 !                                         tails
@@ -187,8 +186,7 @@ $ mnema --help
 |                                         markdown, near ones first, for an agent
 |                                         to read
 |   before-a-write [options]              answer a host’s hook before a file is
-|                                         written: refuse where a rule refuses,
-|                                         ask for a person where a rule asks
+|                                         written: refuse or ask where a rule says
 |   key                                   manage this machine's signing keys
 |   tail                                  authorize a cut in the record's own
 |                                         tails
@@ -823,8 +821,7 @@ $ mnema recall --help
 $ mnema before-a-write --help
 | Usage: mnema before-a-write [options]
 |
-| answer a host’s hook before a file is written: refuse where a rule refuses, ask
-| for a person where a rule asks
+| answer a host’s hook before a file is written: refuse or ask where a rule says
 |
 | Options:
 |   --host <host>  the host whose hook runs this, and whose payload arrives on

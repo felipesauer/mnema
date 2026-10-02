@@ -37,6 +37,10 @@ import { openSession, type Session } from '../src/mcp/session.js';
 import { runGoverningRulesTool, runRulesBeforeAnEditTool } from '../src/mcp/tools.js';
 import { tellsWhatToDo } from '../src/record-framing.js';
 
+/** The clause that says who accepted a rule — held where the lines say it, ignored where they are not about it. */
+const bare = (line: string | undefined): string | undefined =>
+  line?.replace(/ · accepted by mnid:[0-9a-f]{8} \(a person\)$/, '');
+
 /** The repository root: `packages/code/tests/` is three levels under it. */
 const REPO = fileURLToPath(new URL('../../../', import.meta.url));
 
@@ -226,7 +230,7 @@ describe('the reply asks for a person, and only when the record does', () => {
     );
     // Then the rule: what it says, the address that asked, and the id. The id lives on this
     // line — a charge that could not name the fact that caused it would not be a charge.
-    expect(lines[2]).toBe(
+    expect(bare(lines[2])).toBe(
       `“Nobody touches billing alone” — asks for a person at src/billing · ${rule}`,
     );
     expect(lines).toHaveLength(3);
@@ -296,7 +300,7 @@ describe('the reply asks for a person, and only when the record does', () => {
     const lines = (said.reason ?? '').split('\n');
     // ONE LINE PER RULE, and the most specific first: the rule that speaks to this file is
     // the one a reader reads before deciding.
-    expect(lines.slice(2)).toEqual([
+    expect(lines.slice(2).map(bare)).toEqual([
       `“Billing especially” — asks for a person at src/billing · ${narrow}`,
       `“Nobody touches source alone” — asks for a person at src · ${broad}`,
     ]);

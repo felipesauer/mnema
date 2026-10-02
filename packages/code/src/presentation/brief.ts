@@ -398,8 +398,7 @@ function whatRefusesAWrite(refusing: number, gate: ChannelState): string[] {
 
 /** What happens at an edit while the refusal is on, wrapped at the column of the paragraphs above. */
 const REFUSES_AT_AN_EDIT = [
-  'does, the write does not happen, and the rule that refused is named by its id in',
-  'what comes back. Nothing is refused for a file none of them refuses.',
+  'does, the write does not happen, and the rule is named by its id in what comes back.',
 ];
 
 /** What it says while the refusal is switched OFF, naming who and when as the gate's line does. */

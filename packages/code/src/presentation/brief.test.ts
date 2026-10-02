@@ -275,12 +275,12 @@ describe('the brief costs one line per rule', () => {
     // taken that decision with nobody looking. So the next line added here is red, and the
     // conversation that red forces is the one this bound has always existed for.
     //
-    // 46 SINCE THE REFUSAL OF A WRITE: the document says how many rules refuse one, in a paragraph
-    // of its own (three lines and a blank), because a refusal leaves nobody a way through at the
+    // 45 SINCE THE REFUSAL OF A WRITE: the document says how many rules refuse one, in a paragraph
+    // of its own (two lines and a blank), because a refusal leaves nobody a way through at the
     // host and is the one thing a reader must be told before it happens. The specification of
     // that delivery took the decision to raise the bound; it did not come from this test.
-    expect(none).toBe(46);
-    expect(none).toBeLessThanOrEqual(46);
+    expect(none).toBe(45);
+    expect(none).toBeLessThanOrEqual(45);
   });
 
   it('grows by one line per rule however many sources the rule names', () => {

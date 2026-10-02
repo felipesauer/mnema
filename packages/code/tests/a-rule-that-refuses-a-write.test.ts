@@ -38,6 +38,7 @@ import { HOOK_HOSTS, type HookHost } from '../src/host-names.js';
 import { hookReply } from '../src/mcp/hook-reply.js';
 import { openSession } from '../src/mcp/session.js';
 import { runGoverningRulesTool, runRulesBeforeAnEditTool } from '../src/mcp/tools.js';
+import { acceptedBy } from '../src/presentation/accepted-by.js';
 
 const REPO = fileURLToPath(new URL('../../../', import.meta.url));
 const CLI = join(REPO, 'packages', 'code', 'dist', 'cli.js');
@@ -334,6 +335,8 @@ describe('the document a session opens with', () => {
   });
 });
 
+// `presentation/accepted-by.ts` is the one place the clause is worded; what it says is held here
+// where the lines that carry it are.
 describe('who accepted the rule, said where a rule is handed over', () => {
   const BY = /accepted by mnid:[0-9a-f]{8} \(a person\)/;
 
@@ -348,6 +351,17 @@ describe('who accepted the rule, said where a rule is handed over', () => {
     ];
     expect(pushed).toContain(governing);
     expect(pushed).toMatch(BY);
+  });
+
+  it('words the clause once: a person, an agent, and the mark that needs somebody to ask', () => {
+    expect(acceptedBy({ by: 'mnid:ab12cd34', unconfirmed: false })).toBe(
+      'accepted by mnid:ab12cd34 (a person)',
+    );
+    expect(acceptedBy({ by: 'mnid:ab12cd34', agent: 'claude-code', unconfirmed: true })).toBe(
+      'accepted by mnid:ab12cd34 (agent claude-code; unconfirmed)',
+    );
+    // The record's own words are collapsed to one line, so a break cannot start a second rule.
+    expect(acceptedBy({ by: 'mnid:a\nb', unconfirmed: false })).not.toContain('\n');
   });
 
   it('says it in what governing_rules answers, by the same reading', () => {

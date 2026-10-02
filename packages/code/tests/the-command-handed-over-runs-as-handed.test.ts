@@ -554,18 +554,21 @@ export const HANDED_OVER: Readonly<
   // name 66 until the page about where the key lives named the verbs that protect it, and the
   // ones that stay unprotected without it (`key protect`, `key unprotect`, `verify`).
   // line 34 until the plugin page named `mnema --identify`, the question its hooks ask first.
-  span: { line: 36, name: 71, flag: 1, unwritten: 0 },
+  // line 36, name 71 until the page said `mnema key protect` asks for the passphrase.
+  span: { line: 37, name: 72, flag: 1, unwritten: 0 },
   // name 18 until the page that says where the key lives named `mnema key protect` in a line of
   // its own.
   // line 35 until the same page showed that question in a block of its own.
-  block: { line: 37, name: 19, flag: 0, unwritten: 0 },
+  // name 19 until the page said `mnema key protect` asks for the passphrase at a terminal.
+  block: { line: 37, name: 20, flag: 0, unwritten: 0 },
   // 46 until the refusal an agent's `accept` gets, with the switch off, began naming the command a
   // person accepts with (`agent-accepts.ts`).
   // line 34 until the sentences an agent's accept is answered with began handing whole lines
   // over (`agent-accepts.ts`: the read, the person's accept, and the switch in both positions).
   // line 40 until the plugin told a session which program answered that question (`hand-over.mjs`).
   // name 50 until the hook copy of the opening document named `mnema decision import` (`presentation/brief.ts`).
-  source: { line: 47, name: 52, flag: 3, unwritten: 3 },
+  // name 52 until `before-a-write`'s help named the switch of the refusal beside the asking's.
+  source: { line: 47, name: 53, flag: 3, unwritten: 3 },
 };
 
 // ---------------------------------------------------------------------------

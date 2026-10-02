@@ -58,6 +58,10 @@ import { withScopedCaches } from '../src/tree-sources.js';
 import { whatAWriteMeets } from '../src/what-a-write-meets.js';
 import { sourceFiles } from './support/reading-source.js';
 
+/** The clause that says who accepted a rule — held where the lines say it, ignored where they are not about it. */
+const bare = (line: string | undefined): string | undefined =>
+  line?.replace(/ · accepted by mnid:[0-9a-f]{8} \(a person\)$/, '');
+
 /** The file whose own number is not the number the record will freeze. */
 const GATEWAY = 'ADR-008-the-gateway-is-idempotent.md';
 /** What that file says, so a case can prove it opened THAT one and not another. */
@@ -288,7 +292,7 @@ describe('a rule that arrives unasked carries a path that opens', () => {
     await addressAt(rules.get(LEDGER) as string, 'src/ledger', 'governs');
 
     const collate = pushed('src/collate/fold.ts').context ?? '';
-    expect(collate.split('\n')[2]).toBe(
+    expect(bare(collate.split('\n')[2])).toBe(
       `“The gateway is idempotent” — governs src/collate · ${rules.get(GATEWAY) ?? ''} · ${DERIVED_FROM} docs/adr/${GATEWAY}`,
     );
     // THIS CHANNEL PRINTS NO LABEL AT ALL, so before this the uuid was the whole of what a
@@ -315,7 +319,7 @@ describe('a rule that arrives unasked carries a path that opens', () => {
     await addressAt(rules.get(LEDGER) as string, 'src/ledger', 'asks-for-a-person');
 
     const collate = pushed('src/collate/fold.ts').ask ?? '';
-    expect(collate.split('\n')[2]).toBe(
+    expect(bare(collate.split('\n')[2])).toBe(
       `“The gateway is idempotent” — asks for a person at src/collate · ${rules.get(GATEWAY) ?? ''} · ${DERIVED_FROM} docs/adr/${GATEWAY}`,
     );
     expect(opened(provenancesIn(collate)[0] as string)).toContain(GATEWAY_BODY);
@@ -345,10 +349,10 @@ describe('what the channels say when the record asserts no provenance', () => {
     expect(text).toContain(`- **ADR-1 — Queues are at-least-once** · \`${rule}\``);
     expect(text).not.toContain(DERIVED_FROM);
     const { context, ask } = pushed('src/collate/fold.ts');
-    expect((context ?? '').split('\n')[2]).toBe(
+    expect(bare((context ?? '').split('\n')[2])).toBe(
       `“Queues are at-least-once” — governs src/collate · ${rule}`,
     );
-    expect((ask ?? '').split('\n')[2]).toBe(
+    expect(bare((ask ?? '').split('\n')[2])).toBe(
       `“Queues are at-least-once” — asks for a person at src/collate · ${rule}`,
     );
   });
