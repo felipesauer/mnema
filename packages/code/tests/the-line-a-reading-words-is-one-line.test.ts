@@ -1299,6 +1299,94 @@ const CLASSIFIED: Readonly<Record<string, { verdict: Verdict; why: string }>> = 
   },
 
   // --- exported.ts: the file a pattern leaves in ---------------------------------
+  'diagram.ts «    [*] --> {}: {}» initial #1': {
+    verdict: 'minted',
+    why: 'the birth state of a workflow — a word of the closed state table',
+  },
+  'diagram.ts «    [*] --> {}: {}» entities(BORN[workflow]) #1': {
+    verdict: 'minted',
+    why: 'what a workflow’s birth is called — a constant written in this module, written as entities like every label',
+  },
+  'diagram.ts «    n0([{}])» quoted(id) #1': {
+    verdict: 'composed',
+    why: 'the id a caller typed, as the head of a timeline — `quoted` collapses it and writes the entities, the one door of this module',
+  },
+  'diagram.ts «    n{} --> n{}» at #1': {
+    verdict: 'minted',
+    why: 'the position of an event in a chain — a count this diagram made',
+  },
+  'diagram.ts «    n{} --> n{}» at + 1 #1': {
+    verdict: 'minted',
+    why: 'the position of the next event — a count this diagram made',
+  },
+  'diagram.ts «    n{}[{}]» at + 1 #1': {
+    verdict: 'minted',
+    why: 'the node name of an event — a count this diagram made, never a word of the record',
+  },
+  'diagram.ts «    n{}[{}]» quoted(describe(entry)) #1': {
+    verdict: 'composed',
+    why: 'an event’s line — when, kind, role, who and what it said, handed to `quoted`',
+  },
+  "diagram.ts «    {} --> {}: {}» entities([move.action, ...owed].join(' · ')) #1": {
+    verdict: 'minted',
+    why: 'a move’s action and the words of what it owes — rows of a closed transition table, written as entities',
+  },
+  'diagram.ts «    {} --> {}: {}» move.from #1': {
+    verdict: 'minted',
+    why: 'a state of the closed transition table',
+  },
+  'diagram.ts «    {} --> {}: {}» move.to #1': {
+    verdict: 'minted',
+    why: 'a state of the closed transition table',
+  },
+  'diagram.ts «    {} -->|{}| {}» nameOf(link.from) #1': {
+    verdict: 'minted',
+    why: 'the node name of an edge’s near end — a count this diagram made',
+  },
+  'diagram.ts «    {} -->|{}| {}» nameOf(link.to) #1': {
+    verdict: 'minted',
+    why: 'the node name of an edge’s far end — a count this diagram made',
+  },
+  'diagram.ts «    {} -->|{}| {}» quoted(edge) #1': {
+    verdict: 'composed',
+    why: 'an edge’s role and relation, handed to `quoted`; the relation is open text the record takes verbatim',
+  },
+  'diagram.ts «    {}[{}]» nameOf(id) #1': {
+    verdict: 'minted',
+    why: 'the node name of an entity — a count this diagram made',
+  },
+  'diagram.ts «    {}[{}]» quoted(`${id}${said}`) #1': {
+    verdict: 'composed',
+    why: 'an entity’s id and what the walk said of it, handed to `quoted`',
+  },
+  'diagram.ts « ({})» node.kind #1': {
+    verdict: 'minted',
+    why: 'the kind the search resolved an entity to — a word of the closed vocabulary',
+  },
+  'diagram.ts «"{}"» entities(oneLine(text)) #1': {
+    verdict: 'collapsed',
+    why: 'THE DOOR: every label of a record’s text is collapsed to one line here, then stripped of control characters and written as entities, so nothing in a label can end it',
+  },
+  'diagram.ts «#{};» char.codePointAt(0) #1': {
+    verdict: 'minted',
+    why: 'the number of a character the door wrote as an entity — a number, built from the character',
+  },
+  'diagram.ts «<{}>» proof #1': {
+    verdict: 'minted',
+    why: 'a proof field with no sentence of its own — a word of the closed set of proof fields',
+  },
+  'diagram.ts «n{}» names.size #1': {
+    verdict: 'minted',
+    why: 'the next node name — a count this diagram made',
+  },
+  'diagram.ts «{}:{}» link.rel #1': {
+    verdict: 'composed',
+    why: 'the relation an edge was recorded with, open text — it goes into `edge`, which `quoted` takes',
+  },
+  'diagram.ts «{}:{}» link.role #1': {
+    verdict: 'minted',
+    why: 'one of the three roles the walk chose',
+  },
   'exported.ts aside(NOTHING_RECORDED) #1': {
     verdict: 'minted',
     why: 'this module’s own sentence about what the export did not write',
@@ -1593,8 +1681,8 @@ describe('every value this layer puts on a line is classified', () => {
     // values are the start of a memory and an observation's topic, both typed by somebody.
     // The thirtieth is `within-a-hook.ts`, MACHINERY: it words nothing and receives no record —
     // it measures what the two opening texts print for a hook, and cuts them at a whole item.
-    expect(FOUND.composers.length + FOUND.machinery.length).toBe(30);
-    expect(FOUND.composers.length).toBe(18);
+    expect(FOUND.composers.length + FOUND.machinery.length).toBe(31);
+    expect(FOUND.composers.length).toBe(19);
     expect(FOUND.machinery).toContain('items.ts');
     expect(FOUND.machinery).toContain('line.ts');
     expect(FOUND.machinery).toContain('width.ts');
@@ -1604,7 +1692,7 @@ describe('every value this layer puts on a line is classified', () => {
     // 251 until the renderer began making an actor's control bytes visible and joined the
     // composers with its two template values; then 253 until the rules in force began saying who
     // accepted them (`brief.ts`, `record.ts`).
-    expect(FOUND.sites.length).toBe(272);
+    expect(FOUND.sites.length).toBe(294);
   });
 
   it('reads the verdict off the source rather than believing the table', () => {
@@ -1625,10 +1713,10 @@ describe('every value this layer puts on a line is classified', () => {
     // No arm of the case above may be empty, or that much of it is vacuous.
     const verdicts = Object.values(CLASSIFIED).map((said) => said.verdict);
     const count = (verdict: Verdict): number => verdicts.filter((said) => said === verdict).length;
-    expect(count('collapsed')).toBe(67);
-    expect(count('minted')).toBe(148);
-    expect(count('composed')).toBe(57);
-    expect(FOUND.sites.filter((site) => /\boneLine\b/.test(site.expression))).toHaveLength(67);
+    expect(count('collapsed')).toBe(68);
+    expect(count('minted')).toBe(164);
+    expect(count('composed')).toBe(62);
+    expect(FOUND.sites.filter((site) => /\boneLine\b/.test(site.expression))).toHaveLength(68);
   });
 
   it('every reason says where the value comes from', () => {

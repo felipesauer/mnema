@@ -68,6 +68,10 @@ a new decision that supersedes the old one, never an edit of it. Every move carr
 what it owes — a note to accept, a reason to supersede — and a move the gate does
 not allow is refused with a typed reason, the same on the command line and over MCP.
 
+That diagram is the output of `mnema diagram decision`, read from the gate's own table;
+`skill` and `task` print theirs, and `timeline <id>` and `refs <id>` draw one entity's
+history and connections. It is mermaid text on stdout, and it writes nothing.
+
 **It hands the record to the agent before the agent writes.** With the Claude Code
 plugin, a session opens with the decisions in force, the adopted patterns and the
 notes recorded for the project, the ones near the files it touches first, before the

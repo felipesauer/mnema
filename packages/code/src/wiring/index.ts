@@ -220,6 +220,7 @@ import { registerBeforeAWrite } from './before-a-write.js';
 import { registerBrief } from './brief.js';
 import { registerCompletion } from './completion.js';
 import { registerDecision } from './decision.js';
+import { registerDiagram } from './diagram.js';
 import { registerExport } from './export.js';
 import { registerExposure } from './exposure.js';
 import { registerFocus } from './focus.js';
@@ -277,6 +278,7 @@ export const VERBS: readonly Verb[] = [
   registerExposure,
   registerExport,
   registerReferences,
+  registerDiagram,
   registerRules,
   registerRulesFile,
   registerSkills,
