@@ -377,11 +377,11 @@ const EAGER_EXTERNAL: Readonly<Record<string, string>> = {
   'env.ts node:os':
     '`homedir()` and `userInfo()`, for the discovery environment every verb is handed. A builtin, and ' +
     'the one the entry cannot defer: the environment is resolved before a verb runs.',
-  'presentation/width.ts string-width':
-    'a line is as wide as the COLUMNS it takes, and the authority on that is a table ' +
-    'this product does not keep. The floor reaches it because the wiring composes help ' +
-    'and refusals with the same measurement the report uses — one reading of width, or ' +
-    'the surface and the frame around it disagree.',
+  'presentation/width.ts node:module':
+    '`createRequire`, which is how the width authority (`string-width`) is loaded WHEN A TEXT ' +
+    'NEEDS IT instead of at module scope: the package is 25.4 ms of the floor and `--version` ' +
+    'never measures a line. A builtin the loader has already brought in. Measured with the ' +
+    'floor before and after in `measurements/the-record-at-scale/`.',
 };
 
 /**

@@ -18,6 +18,7 @@
  */
 
 import {
+  appendFileSync,
   chmodSync,
   existsSync,
   mkdirSync,
@@ -403,6 +404,11 @@ describe('a cache that cannot be vouched for is replaced, never trusted', () => 
   it('a directory that cannot be written: the cache lives in memory and answers the same', () => {
     const ctx = writing();
     aRecord(ctx);
+    // The writes above read through the kept projection, so it exists already: the case is the
+    // directory that cannot be written when there is none yet.
+    for (const suffix of ['', '-wal', '-shm']) {
+      rmSync(`${projectionCachePath({ root })}${suffix}`, { force: true });
+    }
     mkdirSync(join(root, 'locks'), { recursive: true });
     chmodSync(join(root, 'locks'), 0o555);
     try {
@@ -486,5 +492,42 @@ describe('what a named path still means', () => {
       ProjectionCache.open(root, { upcasters, dbPath: join(root, 'no', 'such', '\0', 'db') }),
     ).toThrow();
     expect(IN_MEMORY).toBe(':memory:');
+  });
+});
+
+describe('linkBreaksAsOfNow names every tail that broke', () => {
+  it('two tails whose last entry was appended a second time are both named, and a clean chain names none', () => {
+    // It named the first break of the first broken tail, and a record whose two tails both broke
+    // after the last reading answered with one of them.
+    const ctx = writing();
+    aRecord(ctx);
+    const colleague = mkdtempSync(join(tmpdir(), 'mnema-persisted-two-'));
+    try {
+      const other = openChainForWriting(root, { keyRoot: colleague });
+      const later: WriteContext = {
+        writer: other,
+        layout: { root },
+        upcasters,
+        clock: () => new Date(Date.now() + 60_000).toISOString(),
+      };
+      landed(captureMemory(later, { content: 'from the second tail' }));
+      other.checkpoint();
+
+      const cache = persisted();
+      cache.refresh();
+      expect(cache.linkBreaksAsOfNow(), 'a chain that chains').toEqual([]);
+
+      for (const tail of [ctx.writer.tailId, other.tailId]) {
+        const file = join(tailDir({ root }, tail), '000001.jsonl');
+        const lines = readFileSync(file, 'utf-8').trimEnd().split('\n');
+        appendFileSync(file, `${lines[lines.length - 1] as string}\n`);
+      }
+      const named = cache.linkBreaksAsOfNow();
+      expect(named.map((broke) => broke.tail).sort()).toEqual(
+        [ctx.writer.tailId, other.tailId].sort(),
+      );
+    } finally {
+      rmSync(colleague, { recursive: true, force: true });
+    }
   });
 });

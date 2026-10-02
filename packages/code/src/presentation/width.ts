@@ -50,7 +50,25 @@
  * counts again.
  */
 
-import stringWidth from 'string-width';
+import { createRequire } from 'node:module';
+
+/**
+ * THE AUTHORITY IS LOADED WHEN A TEXT NEEDS IT AND NOT BEFORE. It was a static import, and the
+ * module it names is 25.4 ms of the floor every verb pays — measured against the build that had
+ * not yet imported it (`tests/the-floor-is-the-declaration.test.ts`) — for the sake of lines no
+ * verb has measured yet: `--version` and the help of a verb that prints no wide glyph never ask.
+ * `widthOfText` is synchronous and its callers are too, so the load is a `require` of the
+ * ESM-only package, which Node 22.12 and later answer synchronously; the answer it gives is the
+ * one the import gave, and `width.test.ts` asks it the same corpus.
+ */
+let authority: ((text: string) => number) | undefined;
+
+function stringWidth(text: string): number {
+  authority ??= (
+    createRequire(import.meta.url)('string-width') as { default: (text: string) => number }
+  ).default;
+  return authority(text);
+}
 
 /** One escape byte, written as an escape so no control byte enters a source file. */
 const ESC = '\u001b';
