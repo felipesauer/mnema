@@ -113,6 +113,8 @@ const ANSWERS_ANYWAY: Readonly<Record<string, string>> = {
   'witness upgrade': 'the same: with no tail waiting on an attestation there is nothing to refuse',
   'before-a-write':
     'a host runs it on every tool call of a session, and outside a project it answers `{}` — the silence a host reads — because that session is not the product’s to speak into',
+  tally:
+    'a host runs it at every Stop of a session, and outside a project it answers `{}` — the same silence — because that session is not the product’s to speak into',
 };
 
 /**

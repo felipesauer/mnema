@@ -75,7 +75,7 @@ identically, because they are the same call.
   The same record always prints the same bytes, which is what makes
   `mnema brief | diff - MNEMA.md` a staleness check.
 - **A plugin for Claude Code**, in [`plugin/`](../../plugin/), that stops the delivery
-  from depending on somebody remembering to regenerate a file. It declares four hooks and
+  from depending on somebody remembering to regenerate a file. It declares six hooks and
   the MCP server below, in one installation. As a session opens, one hook runs `mnema
   brief` and hands over the document, and another runs `mnema recall` and hands over the
   **notes** — the memories and observations recorded for the project, from every tree
@@ -92,11 +92,18 @@ identically, because they are the same call.
   your own record asks it to — the plugin's page says how. The fourth is that same pause for a
   host whose hooks are processes: VS Code's agent runs it as `mnema before-a-write --host vscode`
   before a write, and it asks, and records, exactly where the third would; Claude Code and
-  Cursor never run it. All four are **silent** where there is no project, so a
+  Cursor never run it. The fifth and sixth are one command, `mnema tally`, run at `Stop` and
+  before a conversation is compacted: when the session's own tool calls wrote a file (at
+  `Stop`, in the last response), it prints one line saying how many files they wrote and how
+  many decisions were recorded in the project since the session opened, counted off the
+  transcript the host names and off the record — no model is called and nothing is
+  recorded. The line goes out as the reply's `systemMessage`; which host shows it was not
+  measured. `mnema switch off session-tally` stops it. All six are **silent** where there is no project, so a
   machine that installs this and opens a session somewhere else sees nothing. Asserted in
   `tests/the-record-arrives-unasked.test.ts`, `tests/the-rule-reaches-the-writing.test.ts`
-  and `tests/the-record-asks-for-a-person.test.ts`, and the fourth in
-  `tests/a-host-that-runs-commands-asks-for-a-person.test.ts`; the plugin's own page states what
+  and `tests/the-record-asks-for-a-person.test.ts`, the fourth in
+  `tests/a-host-that-runs-commands-asks-for-a-person.test.ts`, and the fifth and sixth in
+  `tests/a-session-says-what-it-wrote.test.ts`; the plugin's own page states what
   it carries and what it leaves behind. VS Code's agent and Cursor's command-line agent read
   the same plugin: the two opening hooks run in both, the rules at each edit are Claude Code's,
   and the pause for a person reaches VS Code too and not Cursor's agent, which runs the hook

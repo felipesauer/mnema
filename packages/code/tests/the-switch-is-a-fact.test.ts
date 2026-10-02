@@ -43,7 +43,7 @@
  * (`measurements/mcp-tool-channel/`).
  */
 
-import { mkdirSync, mkdtempSync, readFileSync, rmSync } from 'node:fs';
+import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
@@ -51,6 +51,7 @@ import { type CatalogEvent, catalogUpcasters } from '@mnema/chain';
 import { type DiscoveryEnv, orderedEvents, resolveTrees } from '@mnema/core';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { type CliIo, run } from '../src/cli.js';
+import { runSessionTally } from '../src/commands/tally.js';
 import { buildMcpServer } from '../src/mcp/server.js';
 import { openSession, type Session } from '../src/mcp/session.js';
 import { runDecisionTransition, runRulesBeforeAnEditTool } from '../src/mcp/tools.js';
@@ -61,6 +62,7 @@ import {
   EDIT_PUSH_CHANNEL,
   NOT_SWITCHABLE,
   RECALL_CHANNEL,
+  SESSION_TALLY_CHANNEL,
   SWITCHABLE_CHANNELS,
   WHAT_STOPS,
 } from '../src/record-framing.js';
@@ -360,6 +362,36 @@ const HONOURED: Readonly<
       await ruleAskingAt('Nobody touches billing alone', 'src/billing');
     },
     speaks: async () => asked(connect(), 'src/billing/invoice.ts') !== undefined,
+  },
+  [SESSION_TALLY_CHANNEL]: {
+    // A COUNT AT THE END OF A RESPONSE, driven the way a host drives it: the payload of a `Stop`
+    // naming a transcript whose last response wrote a file. "Speaks" is the reply carrying a line.
+    setUp: async () => {},
+    speaks: async () => {
+      const transcript = join(sandbox, 'session.jsonl');
+      writeFileSync(
+        transcript,
+        `${JSON.stringify({
+          type: 'assistant',
+          timestamp: '2020-01-01T00:00:00.000Z',
+          message: {
+            role: 'assistant',
+            content: [
+              {
+                type: 'tool_use',
+                name: 'Write',
+                input: { file_path: join(repo, 'src', 'billing', 'invoice.ts') },
+              },
+            ],
+          },
+        })}\n`,
+      );
+      const done = runSessionTally(
+        { cwd: repo, env },
+        { payload: JSON.stringify({ hook_event_name: 'Stop', transcript_path: transcript }) },
+      );
+      return 'systemMessage' in done.reply;
+    },
   },
   [AGENT_ACCEPTS_CHANNEL]: {
     // A GATE ON AN AGENT'S ACT, driven the way the act is made: a fresh proposal each time

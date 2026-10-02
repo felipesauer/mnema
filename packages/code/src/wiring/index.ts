@@ -247,6 +247,7 @@ import { registerSkills } from './skills.js';
 import { registerStatus } from './status.js';
 import { registerSwitch } from './switch.js';
 import { registerTail } from './tail.js';
+import { registerTally } from './tally.js';
 import { registerTask } from './task.js';
 import { registerTimeline } from './timeline.js';
 import { registerUsage } from './usage.js';
@@ -286,6 +287,7 @@ export const VERBS: readonly Verb[] = [
   registerBrief,
   registerRecall,
   registerBeforeAWrite,
+  registerTally,
   registerKey,
   registerTail,
   registerWitness,

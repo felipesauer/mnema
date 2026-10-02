@@ -265,6 +265,10 @@ const INVOCATION: Readonly<Record<string, Invocation>> = {
   usage: { argv: () => ['usage'] },
   brief: { argv: () => ['brief'] },
   recall: { argv: () => ['recall'] },
+  // A HOST FEEDS IT, like `before-a-write`, and in process there is no standard input to hand it:
+  // the verb answers `{}`, and what it counts is held with a transcript through the plugin's
+  // command (`a-session-says-what-it-wrote.test.ts`).
+  tally: { argv: () => ['tally'] },
   verify: { argv: () => ['verify'] },
   repl: CANNOT_BE_EXERCISED,
   completion: { argv: () => ['completion', 'bash'] },
@@ -546,7 +550,7 @@ describe('every verb says if it writes', () => {
     expect(Object.keys(INVOCATION).sort()).toEqual([...EFFECT_BY_VERB.keys()].sort());
   });
 
-  it('counts fifteen writes and twenty-three reads over the whole surface', () => {
+  it('counts fifteen writes and twenty-four reads over the whole surface', () => {
     // The count in the report, asserted rather than trusted, and the total against the
     // list: a verb that stopped being registered would otherwise leave both halves
     // looking healthy.
@@ -588,6 +592,7 @@ describe('every verb says if it writes', () => {
       'usage',
       'brief',
       'recall',
+      'tally',
       'verify',
       'repl',
       'completion',

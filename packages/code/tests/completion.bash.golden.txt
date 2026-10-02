@@ -10,7 +10,7 @@
 
 _mnema_commands() {
   case "$1" in
-    '') echo 'init task decision skill memory observe handoff link run status focus resume next-actions guard search show timeline accountability antipatterns exposure export refs diagram rules rules-file skills usage brief recall before-a-write key tail witness switch verify mcp repl completion help' ;;
+    '') echo 'init task decision skill memory observe handoff link run status focus resume next-actions guard search show timeline accountability antipatterns exposure export refs diagram rules rules-file skills usage brief recall before-a-write tally key tail witness switch verify mcp repl completion help' ;;
     'task') echo 'create move help' ;;
     'decision') echo 'record move supersede import help' ;;
     'skill') echo 'create move export help' ;;
@@ -67,6 +67,7 @@ _mnema_flags() {
     'brief') echo '--hook -h --help -V --version --color --identify' ;;
     'recall') echo '--hook -h --help -V --version --color --identify' ;;
     'before-a-write') echo '--host -h --help -V --version --color --identify' ;;
+    'tally') echo '-h --help -V --version --color --identify' ;;
     'key') echo '-h --help -V --version --color --identify' ;;
     'key restore') echo '-h --help -V --version --color --identify' ;;
     'key request') echo '--anchor --key -h --help -V --version --color --identify' ;;
@@ -156,6 +157,7 @@ _mnema_values() {
     'recall:--color') echo 'auto always never' ;;
     'before-a-write:--host') echo 'vscode' ;;
     'before-a-write:--color') echo 'auto always never' ;;
+    'tally:--color') echo 'auto always never' ;;
     'key:--color') echo 'auto always never' ;;
     'key restore:--color') echo 'auto always never' ;;
     'key request:--color') echo 'auto always never' ;;
@@ -172,10 +174,10 @@ _mnema_values() {
     'switch:--color') echo 'auto always never' ;;
     'switch off:--scope') echo 'public private global' ;;
     'switch off:--color') echo 'auto always never' ;;
-    'switch off:') echo 'brief-document recall-document edit-rules-push edit-asks-a-person agent-accepts' ;;
+    'switch off:') echo 'brief-document recall-document edit-rules-push edit-asks-a-person agent-accepts session-tally' ;;
     'switch on:--scope') echo 'public private global' ;;
     'switch on:--color') echo 'auto always never' ;;
-    'switch on:') echo 'brief-document recall-document edit-rules-push edit-asks-a-person agent-accepts' ;;
+    'switch on:') echo 'brief-document recall-document edit-rules-push edit-asks-a-person agent-accepts session-tally' ;;
     'verify:--require') echo 'chained signed witnessed' ;;
     'verify:--color') echo 'auto always never' ;;
     'mcp:--color') echo 'auto always never' ;;

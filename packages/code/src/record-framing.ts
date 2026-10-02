@@ -167,7 +167,8 @@ export type ModelChannel =
   | 'edit-rules-push'
   | 'edit-asks-a-person'
   | 'host-rules-file'
-  | 'agent-accepts';
+  | 'agent-accepts'
+  | 'session-tally';
 
 /** The channels that carry a declaration — the ones {@link SUBJECT_OF} answers for. */
 export type FramedChannel =
@@ -286,6 +287,10 @@ export const PUSHED_BY_TOOL: { readonly [tool: string]: readonly FramedChannel[]
 export const UNFRAMED_CHANNELS: {
   readonly [K in Exclude<ModelChannel, FramedChannel>]: string;
 } = {
+  'session-tally':
+    'what it carries is two counts the product made — files the session’s own tool calls wrote, ' +
+    'and decisions recorded since it opened — and no record text, so there is nobody’s words to ' +
+    'say whose they are',
   'agent-accepts':
     'what it carries is the product’s own sentence about an act the agent just made or was turned ' +
     'away from — that its acceptance was recorded as an agent’s, or that the switch is off — and ' +
@@ -311,7 +316,8 @@ export type SwitchableChannel =
   | 'recall-document'
   | 'edit-rules-push'
   | 'edit-asks-a-person'
-  | 'agent-accepts';
+  | 'agent-accepts'
+  | 'session-tally';
 
 /**
  * The two switchable channels, each named once, so no consumer spells one.
@@ -380,6 +386,18 @@ export const ASKS_A_PERSON_CHANNEL: CountedChannel = 'edit-asks-a-person';
 export const AGENT_ACCEPTS_CHANNEL: SwitchableChannel = 'agent-accepts';
 
 /**
+ * The channel that says, as a response ends and before a conversation is compacted, how many
+ * files the session's own tool calls wrote and how many decisions were recorded since it opened.
+ *
+ * A FACT AND NOT AN ORDER, in the voice the other hooks keep: it counts, and it says what it
+ * counted. It is read from what the host and the record already hold — the transcript the host
+ * names and the decisions the trees carry — and it calls no model. Its own switch, because the
+ * person who wants the rules at an edit does not necessarily want a line after every response
+ * that wrote a file.
+ */
+export const SESSION_TALLY_CHANNEL: SwitchableChannel = 'session-tally';
+
+/**
  * The switchable channels whose service the record COUNTS — the ones that append a
  * `channel.served` when they speak, once per run.
  *
@@ -414,6 +432,10 @@ export const NOT_COUNTED_AS_SERVED: {
   'recall-document':
     'the notes are printed by `mnema recall`, a read that writes nothing, for the reason the ' +
     'document is not counted',
+  'session-tally':
+    'the line is printed by `mnema tally`, which reads the transcript and the record and ' +
+    'writes nothing — no event, no key, no run — so a count of what a session did never moves the ' +
+    'record it counts',
   'agent-accepts':
     'the sentence it hands an agent is the reply to a call that is itself the recorded fact ' +
     '(the acceptance, whose actor is on its envelope) or is refused and records nothing, so ' +
@@ -453,6 +475,9 @@ export const WHAT_STOPS: { readonly [K in SwitchableChannel]: string } = {
     'an agent ruling a decision in force: with it off, an agent’s `accept` is refused and ' +
     'only a person at the command line can accept — a proposed decision waits, and nothing ' +
     'else changes',
+  'session-tally':
+    'the line a session’s `Stop` and `PreCompact` hooks print: how many files its own tool calls ' +
+    'wrote and how many decisions were recorded since it opened',
 };
 
 /**

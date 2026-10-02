@@ -484,16 +484,16 @@ describe('the generated script is a file its shell can read', () => {
       expect(offered('bash', path), `mnema ${path}`).not.toEqual([]);
     }
     // And it filters by what has been typed, which is the whole point of a Tab. `ta`
-    // answers with BOTH verbs that start with it, which is what a filter is: it used to
-    // name one because there was only one, and a case that asserted the narrowing rather
-    // than the filtering would have gone red at the arrival of an unrelated verb.
+    // answers with EVERY verb that starts with it, which is what a filter is: it used to
+    // name one because there was only one, then two, and a case that asserted the narrowing
+    // rather than the filtering would have gone red at the arrival of each unrelated verb.
     const asked = drivenBash(SCRIPT.bash, [
       ['ta'],
       ['tai'],
       ['task', 'mo'],
       ['task', 'move', '--n'],
     ]);
-    expect(asked.get('ta')).toEqual(['task', 'tail']);
+    expect(asked.get('ta')).toEqual(['task', 'tally', 'tail']);
     expect(asked.get('tai')).toEqual(['tail']);
     expect(asked.get('task mo')).toEqual(['move']);
     expect(asked.get('task move --n')).toEqual(['--note']);

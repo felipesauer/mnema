@@ -280,6 +280,7 @@ describe('what `channel.served` counts, said by the table the type makes total',
       'agent-accepts',
       'brief-document',
       'recall-document',
+      'session-tally',
     ]);
   });
 
@@ -388,9 +389,12 @@ describe('every handler that pushes declares the channel it carries', () => {
       const declared = DECLARES_MODEL_CHANNEL.exec(source);
       expect(declared, `${file} writes to a model and names no channel`).not.toBeNull();
       const channel = declared?.[1] ?? '';
-      expect(FRAMED_CHANNELS as readonly string[], `${file} names an unknown channel`).toContain(
-        channel,
-      );
+      // A channel is known when it carries a declaration (it is framed) or when the table that
+      // says why it carries none names it — a count has no record text to say whose it is.
+      expect(
+        [...FRAMED_CHANNELS, ...Object.keys(UNFRAMED_CHANNELS)] as readonly string[],
+        `${file} names an unknown channel`,
+      ).toContain(channel);
       named.push(`${file}:${channel}`);
     }
     // And at least one handler WAS asked. Without this the case is green on a plugin
@@ -405,6 +409,7 @@ describe('every handler that pushes declares the channel it carries', () => {
       'edit-asks-a-person.mjs:edit-asks-a-person',
       'session-recall.mjs:recall-document',
       'session-start.mjs:brief-document',
+      'session-tally.mjs:session-tally',
     ]);
     expect(handlers()).toContain('hand-over.mjs');
   });
@@ -449,6 +454,8 @@ describe('every handler that pushes declares the channel it carries', () => {
     expect(ruled).toEqual([
       'SessionStart:command:session-start.mjs',
       'SessionStart:command:session-recall.mjs',
+      'Stop:command:session-tally.mjs',
+      'PreCompact:command:session-tally.mjs',
       'PreToolUse:mcp_tool:rules_before_an_edit:edit-rules-push+edit-asks-a-person',
       'PreToolUse:command:edit-asks-a-person.mjs',
     ]);

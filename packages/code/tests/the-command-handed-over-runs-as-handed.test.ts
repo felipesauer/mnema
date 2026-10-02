@@ -550,7 +550,9 @@ export const HANDED_OVER: Readonly<
   // name 66 until the page about where the key lives named the verbs that protect it, and the
   // ones that stay unprotected without it (`key protect`, `key unprotect`, `verify`).
   // line 34 until the plugin page named `mnema --identify`, the question its hooks ask first.
-  span: { line: 36, name: 71, flag: 1, unwritten: 0 },
+  // line 36 and name 71 until the two pages named the command the Stop and PreCompact hooks run
+  // (`mnema tally`, twice) and the switch that stops it (`mnema switch off session-tally`).
+  span: { line: 37, name: 73, flag: 1, unwritten: 0 },
   // name 18 until the page that says where the key lives named `mnema key protect` in a line of
   // its own.
   // line 35 until the same page showed that question in a block of its own.
@@ -561,7 +563,12 @@ export const HANDED_OVER: Readonly<
   // over (`agent-accepts.ts`: the read, the person's accept, and the switch in both positions).
   // line 40 until the plugin told a session which program answered that question (`hand-over.mjs`).
   // name 50 until the hook copy of the opening document named `mnema decision import` (`presentation/brief.ts`).
-  source: { line: 46, name: 51, flag: 3, unwritten: 3 },
+  // name 51 until the table that says why the record does not count the tally's service named
+  // `mnema tally` (`record-framing.ts`), and the table of what owes no notice about the chain named
+  // `mnema verify` as the reading that rules on it (`record-integrity.ts`).
+  // line 46 until the verb's own help named the switch that stops it, `mnema switch off
+  // session-tally` (`wiring/tally.ts`).
+  source: { line: 47, name: 53, flag: 3, unwritten: 3 },
 };
 
 // ---------------------------------------------------------------------------

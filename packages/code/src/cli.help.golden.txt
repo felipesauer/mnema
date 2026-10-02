@@ -84,6 +84,8 @@ $ mnema
 !   before-a-write [options]              answer a host’s hook before a file is
 !                                         written: ask for a person where a rule
 !                                         asks
+!   tally                                 answer a host’s Stop or PreCompact hook
+!                                         with what the session wrote and recorded
 !   key                                   manage this machine's signing keys
 !   tail                                  authorize a cut in the record's own
 !                                         tails
@@ -189,6 +191,8 @@ $ mnema --help
 |   before-a-write [options]              answer a host’s hook before a file is
 |                                         written: ask for a person where a rule
 |                                         asks
+|   tally                                 answer a host’s Stop or PreCompact hook
+|                                         with what the session wrote and recorded
 |   key                                   manage this machine's signing keys
 |   tail                                  authorize a cut in the record's own
 |                                         tails
@@ -837,6 +841,23 @@ $ mnema before-a-write --help
 |   `asks-for-a-person` addresses a path the write touches, and then `ask`, citing the
 |   rules. Each asking is recorded as a fact before the reply is printed. The gate can be
 |   switched off with `mnema switch off edit-asks-a-person`.
+
+### mnema tally --help
+$ mnema tally --help
+| Usage: mnema tally [options]
+|
+| answer a host’s Stop or PreCompact hook with what the session wrote and recorded
+|
+| Options:
+|   -h, --help  display help for command
+|
+| What it reads and what it prints:
+|   The JSON a host hands a hook on stdin, with the transcript it names. On stdout, the reply
+|   the host reads: a `systemMessage` saying how many files this session’s own tool calls
+|   wrote and how many decisions were recorded in this project since it opened, or {} when
+|   the hook is not Stop or PreCompact, the session wrote no file (at Stop: no file in the
+|   last response), there is no project here, or the transcript cannot be read.
+|   It reads, and writes nothing. It can be switched off with `mnema switch off session-tally`.
 
 ### mnema key --help
 $ mnema key --help
@@ -1543,7 +1564,8 @@ $ mnema switch off --help
 |
 | Arguments:
 |   channel          the channel to switch (brief-document, recall-document,
-|                    edit-rules-push, edit-asks-a-person, agent-accepts)
+|                    edit-rules-push, edit-asks-a-person, agent-accepts,
+|                    session-tally)
 |
 | Options:
 |   --reason <text>  why (recorded in the fact; never required)
@@ -1575,7 +1597,8 @@ $ mnema switch on --help
 |
 | Arguments:
 |   channel          the channel to switch (brief-document, recall-document,
-|                    edit-rules-push, edit-asks-a-person, agent-accepts)
+|                    edit-rules-push, edit-asks-a-person, agent-accepts,
+|                    session-tally)
 |
 | Options:
 |   --reason <text>  why (recorded in the fact; never required)
