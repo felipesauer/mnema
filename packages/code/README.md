@@ -45,7 +45,7 @@ identically, because they are the same call.
   adopted patterns, the decisions in force, and what is still waiting on somebody to
   rule on it), what is in flight (`focus`), where you left off (`resume`), what the
   workflow allows next (`next-actions`), and whether a move would be allowed at all
-  (`guard`, a dry run that writes nothing).
+  (`guard`, a dry run that records nothing).
 - **Audit reads** — an entity's history across trees (`timeline`), what it is
   connected to (`refs`), who authorized what (`accountability`), recurring
   shapes like reopens and supersessions (`antipatterns`), and where each adopted
@@ -872,7 +872,7 @@ sentence in a `CLAUDE.md` naming another file is read only if the agent chooses 
 that file; the line `@MNEMA.md` is an import, and brings the file in with it.
 
 **The redirection replaces the whole of the file it names.** That is the shell's doing
-and not this verb's — `brief` writes nothing and never learns there was a file — so the
+and not this verb's — `brief` records nothing and never learns there was a file — so the
 example below names a file nothing else claims. Where your host's own file exists it is
 somebody's own method, and this document would replace every word of it: keep theirs,
 and let one line in it bring the file below in.
@@ -1315,9 +1315,18 @@ key really signed.
 <repo>/.mnema/              the project record — commit this, the team shares it
   tails/<id>/witness/       external attestations over this tail's checkpoints (T3)
   private/                  gitignored: this machine, this project only
+  locks/                    gitignored: writers' locks, and the projection a read keeps
 ~/.mnema/global/            this machine, across every project
 ~/.mnema/identity/          the signing key — referenced, never copied into a chain
 ```
+
+A read keeps what it built in `locks/projection.db` of each tree it read, so the next
+read takes only what was appended since instead of building it again. It is derived and
+never the record: deleting it changes no answer and costs the next read one rebuild, it
+sits where the tree's own `.gitignore` already looks away, and a clone never carries it.
+A read of a tree nobody has written to creates nothing, and where the file cannot be
+had — a read-only directory, a damaged file — the read builds it in memory and answers
+the same.
 
 `~/.mnema` is this machine's data directory, whatever `$XDG_DATA_HOME` says.
 `MNEMA_HOME` moves it: set to an absolute path, the key root and the global tree live

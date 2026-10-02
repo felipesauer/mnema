@@ -83,9 +83,10 @@
  *     the shape the paragraph above refuses, so it was not built.
  *
  *     THE SIXTH IS REAL AND IS NAMED WHERE IT LIVES: `CacheOptions.dbPath`, public on
- *     `@mnema/core`, read at `core/src/projections/cache.ts:106`, and set by no
- *     production caller — all six `ProjectionCache.open` sites pass `upcasters`
- *     alone. It is not dead: it is the seam `cache.test.ts` and `advance.test.ts`
+ *     `@mnema/core`, read in `core/src/projections/cache.ts`, and set by no
+ *     production caller — the production sites pass `upcasters` alone, and the command
+ *     line's pass `persist: true` beside it, which is the option that DOES have a caller.
+ *     It is not dead: it is the seam `cache.test.ts` and `advance.test.ts`
  *     prove persistence across a close and re-open through. Its own doc now says so,
  *     which is what a one-instance class gets instead of a guard.
  *

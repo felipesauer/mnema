@@ -10,6 +10,7 @@
 import type { SqliteDatabase } from '../db/sqlite.js';
 import type { DecisionProjection } from './decision.js';
 import { proofColumn, proofFromColumn } from './proof.js';
+import { verb } from './upsert.js';
 
 /** The `decisions` row shape as stored. */
 interface DecisionRow {
@@ -54,13 +55,19 @@ interface DecisionParams {
  * Inserts the given decision projections. Called during a rebuild after the
  * table has been recreated empty, so every decision is a fresh insert. The
  * caller owns the surrounding transaction.
+ *
+ * `replacing` is for the one caller that does NOT start from an empty table: an advance
+ * writes the rows an arrival changed over the rows that were there, and a row that is already
+ * there is then the thing being replaced. A rebuild passes nothing, and keeps the failure that
+ * says its table was not emptied.
  */
 export function materializeDecisions(
   db: SqliteDatabase,
   decisions: Iterable<DecisionProjection>,
+  replacing = false,
 ): void {
   const insert = db.prepare(
-    `INSERT INTO decisions (id, adr, title, rationale, alternatives, state, superseded_by, supersedes, created_at, updated_at, proof, recorded_who, recorded_which, accepted_who, accepted_which)
+    `${verb(replacing)} INTO decisions (id, adr, title, rationale, alternatives, state, superseded_by, supersedes, created_at, updated_at, proof, recorded_who, recorded_which, accepted_who, accepted_which)
      VALUES (@id, @adr, @title, @rationale, @alternatives, @state, @supersededBy, @supersedes, @createdAt, @updatedAt, @proof, @recordedWho, @recordedWhich, @acceptedWho, @acceptedWhich)`,
   );
   for (const decision of decisions) {

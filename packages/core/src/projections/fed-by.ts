@@ -7,9 +7,9 @@
  * else. So a table no arrival feeds is IDENTICAL whether it is folded from the
  * order before the arrival or the order after it — that is the whole theorem this
  * table stands on, and it is what keeps the invariant next door intact
- * (`rebuild.ts`: every projection folds the same ordered stream once). Nothing
- * here computes a projection a second way; it decides which materializations a
- * given arrival makes necessary.
+ * (`advance.ts` writes what a replay (`rebuild.ts`) would have written, from the
+ * accumulators the replay left). Nothing here computes a projection a second way; it
+ * decides which materializations a given arrival makes necessary.
  *
  * TWO ENTRIES ARE IN EVERY ROW, and both were measured rather than assumed:
  *
@@ -59,36 +59,46 @@ import type { ProjectionTable } from '../db/schema.js';
  * row, so the two universal readers are visible in the table rather than
  * remembered by whoever edits it.
  */
-const EVERY_KIND_FEEDS = ['refs', 'runs'] as const satisfies readonly ProjectionTable[];
+const EVERY_KIND_FEEDS = [
+  'refs',
+  'runs',
+  'fold_state',
+] as const satisfies readonly ProjectionTable[];
 
 /**
  * The tables the searchable entities feed: their own, plus the full-text index,
  * which is materialized from those five folds and not from the stream
  * (`search-store.ts`).
  */
-const SEARCHED = 'record_search' satisfies ProjectionTable;
+const SEARCHED = ['record_search', 'search_rows'] as const satisfies readonly ProjectionTable[];
+
+/** The tables a move of an entity feeds beyond its own: the reading of moves that diverged. */
+const MOVED = ['divergences'] as const satisfies readonly ProjectionTable[];
+
+/** The tables a fact about who belongs to an identity feeds: the facts themselves. */
+const MEMBERSHIP = ['membership_facts'] as const satisfies readonly ProjectionTable[];
 
 /** What each kind feeds, beyond {@link EVERY_KIND_FEEDS}, which every row carries. */
 export const FED_BY_KIND: { readonly [K in EventKind]: readonly ProjectionTable[] } = {
   // A run's own two facts feed the run table, which every kind already feeds.
   'run.started': [...EVERY_KIND_FEEDS],
   'run.ended': [...EVERY_KIND_FEEDS],
-  'task.created': [...EVERY_KIND_FEEDS, 'tasks', SEARCHED],
-  'task.transitioned': [...EVERY_KIND_FEEDS, 'tasks', SEARCHED],
-  'decision.recorded': [...EVERY_KIND_FEEDS, 'decisions', SEARCHED],
-  'decision.transitioned': [...EVERY_KIND_FEEDS, 'decisions', SEARCHED],
+  'task.created': [...EVERY_KIND_FEEDS, 'tasks', ...SEARCHED],
+  'task.transitioned': [...EVERY_KIND_FEEDS, 'tasks', ...SEARCHED, ...MOVED],
+  'decision.recorded': [...EVERY_KIND_FEEDS, 'decisions', ...SEARCHED],
+  'decision.transitioned': [...EVERY_KIND_FEEDS, 'decisions', ...SEARCHED, ...MOVED],
   // Identity and the roster are projected by nothing: they are read from the tree's
   // own identity files and its roster, never from this cache. The reference index
   // still holds them, which is how an audit accounts for who enrolled whom.
-  'identity.founded': [...EVERY_KIND_FEEDS],
-  'key.enrolled': [...EVERY_KIND_FEEDS],
-  'key.revoked': [...EVERY_KIND_FEEDS],
-  'memory.captured': [...EVERY_KIND_FEEDS, 'memories', SEARCHED],
-  'observation.recorded': [...EVERY_KIND_FEEDS, 'observations', SEARCHED],
+  'identity.founded': [...EVERY_KIND_FEEDS, ...MEMBERSHIP],
+  'key.enrolled': [...EVERY_KIND_FEEDS, ...MEMBERSHIP],
+  'key.revoked': [...EVERY_KIND_FEEDS, ...MEMBERSHIP],
+  'memory.captured': [...EVERY_KIND_FEEDS, 'memories', ...SEARCHED],
+  'observation.recorded': [...EVERY_KIND_FEEDS, 'observations', ...SEARCHED],
   'handoff.recorded': [...EVERY_KIND_FEEDS, 'handoffs'],
   'knowledge.linked': [...EVERY_KIND_FEEDS, 'links'],
-  'skill.created': [...EVERY_KIND_FEEDS, 'skills', SEARCHED],
-  'skill.transitioned': [...EVERY_KIND_FEEDS, 'skills', SEARCHED],
+  'skill.created': [...EVERY_KIND_FEEDS, 'skills', ...SEARCHED],
+  'skill.transitioned': [...EVERY_KIND_FEEDS, 'skills', ...SEARCHED, ...MOVED],
   // A consultation is a skill fact that the skill projection does not read: it moves
   // no state and changes no row. What holds it is the reference index, which is
   // where "this pattern was used by that run" is answered from.

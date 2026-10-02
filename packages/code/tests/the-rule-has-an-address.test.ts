@@ -42,6 +42,7 @@ import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { type CliIo, run } from '../src/cli.js';
 import { openSession, type Session } from '../src/mcp/session.js';
 import { runGoverningRulesTool } from '../src/mcp/tools.js';
+import { isTheDerivedCache } from './support/the-cache-is-not-the-record.js';
 
 /**
  * The gate's four numbers, which every case in this file must read as zero.
@@ -150,6 +151,8 @@ function digest(dir: string): string {
       a.name.localeCompare(b.name),
     )) {
       const full = join(current, entry.name);
+      // The cache a read leaves is derived and is not what this digest is about.
+      if (isTheDerivedCache(full)) continue;
       if (entry.isDirectory()) {
         hash.update(`D:${relative(dir, full)}\n`);
         walk(full);

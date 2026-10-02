@@ -102,6 +102,7 @@ export {
   type ChainLayout,
   gitignorePath,
   privateKeyPath,
+  projectionCachePath,
   publicKeyPath,
   tailDir,
 } from './chain/layout.js';

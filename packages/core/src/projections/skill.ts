@@ -30,6 +30,7 @@
  */
 
 import type { CatalogEvent } from '@mnema/chain';
+import { type AccumulatorFold, accumulate, jsonEncoding } from './accumulate.js';
 import { proofOf, type TransitionProof } from './proof.js';
 
 /** The state whose transition marks a pattern as live — the one adoption. */
@@ -82,7 +83,7 @@ export interface SkillProjection {
 }
 
 /** Mutable accumulator; existence and state are tracked separately, then joined. */
-interface SkillAccumulator {
+export interface SkillAccumulator {
   name?: string;
   body?: string;
   state?: string;
@@ -94,7 +95,7 @@ interface SkillAccumulator {
 }
 
 /**
- * Folds ordered events into a map of skill id → projection. A skill is projected
+ * The skill fold. A skill is projected
  * only when it has BOTH a `skill.created` (existence) and at least one
  * transition (state) — birth emits the two together, so an intact chain always
  * has both; the guard matters only for a truncated tail.
@@ -104,18 +105,18 @@ interface SkillAccumulator {
  * reached `adopted` adopted it. Nothing is derived from the workflow table — the
  * fold recognizes the adoption by the literal `to`, exactly as it reads state.
  */
-export function projectSkills(events: readonly CatalogEvent[]): Map<string, SkillProjection> {
-  const acc = new Map<string, SkillAccumulator>();
-
-  for (const event of events) {
+export const skillFold: AccumulatorFold<SkillAccumulator, SkillProjection> = {
+  name: 'skills',
+  create: () => ({}),
+  step(of, event) {
     if (event.kind === 'skill.created') {
-      const entry = getOrInit(acc, event.subject);
+      const entry = of(event.subject);
       entry.name = event.payload.name;
       entry.body = event.payload.body;
       entry.createdAt = event.at;
       if (event.which !== undefined) entry.proposedBy = event.which;
     } else if (event.kind === 'skill.transitioned') {
-      const entry = getOrInit(acc, event.subject);
+      const entry = of(event.subject);
       entry.state = event.payload.to;
       entry.updatedAt = event.at;
       const said = proofOf(event);
@@ -128,10 +129,8 @@ export function projectSkills(events: readonly CatalogEvent[]): Map<string, Skil
           event.which === undefined ? { at: event.at } : { at: event.at, by: event.which };
       }
     }
-  }
-
-  const result = new Map<string, SkillProjection>();
-  for (const [id, entry] of acc) {
+  },
+  finish(id, entry) {
     // Existence needs the record; state needs a transition. A subject missing
     // either is not a complete skill and is not projected — never given a
     // fabricated state.
@@ -142,7 +141,7 @@ export function projectSkills(events: readonly CatalogEvent[]): Map<string, Skil
       entry.createdAt === undefined ||
       entry.updatedAt === undefined
     ) {
-      continue;
+      return undefined;
     }
     const projection: Mutable<SkillProjection> = {
       id,
@@ -157,19 +156,14 @@ export function projectSkills(events: readonly CatalogEvent[]): Map<string, Skil
     if (entry.proof !== undefined) projection.proof = entry.proof;
     if (entry.proposedBy !== undefined) projection.proposedBy = entry.proposedBy;
     if (entry.adoption !== undefined) projection.adoption = entry.adoption;
-    result.set(id, projection);
-  }
-  return result;
+    return projection;
+  },
+  ...jsonEncoding<SkillAccumulator>(),
+};
+
+/** Folds ordered events into a map of skill id → projection ({@link skillFold}, over the whole stream). */
+export function projectSkills(events: readonly CatalogEvent[]): Map<string, SkillProjection> {
+  return accumulate(skillFold, events).projections;
 }
 
-/** Local helper: build the readonly projection through a mutable shape. */
 type Mutable<T> = { -readonly [K in keyof T]: T[K] };
-
-function getOrInit(acc: Map<string, SkillAccumulator>, id: string): SkillAccumulator {
-  let entry = acc.get(id);
-  if (entry === undefined) {
-    entry = {};
-    acc.set(id, entry);
-  }
-  return entry;
-}

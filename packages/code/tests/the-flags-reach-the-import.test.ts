@@ -41,6 +41,7 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
+import { isTheDerivedCache } from './support/the-cache-is-not-the-record.js';
 
 /** The built binary — what a person runs. */
 const CLI = fileURLToPath(new URL('../dist/cli.js', import.meta.url));
@@ -132,6 +133,8 @@ function onDisk(): string[] {
   const walk = (dir: string): void => {
     for (const name of readdirSync(dir).sort()) {
       const path = join(dir, name);
+      // The cache a read leaves is derived and is not what this snapshot is about.
+      if (isTheDerivedCache(path)) continue;
       const shown = path.slice(sandbox.length + 1);
       if (statSync(path).isDirectory()) {
         out.push(`D ${shown}`);

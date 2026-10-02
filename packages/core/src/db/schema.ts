@@ -5,7 +5,10 @@
  * changes, the schema is an implementation detail, not a durable contract.
  * There is no version table and no upgrade path: the tables are created if
  * absent, and a shape change is a drop-and-replay, not a migration. Adding a
- * column means editing the CREATE below and rebuilding.
+ * column means editing the CREATE below and rebuilding. A cache kept on disk
+ * finds out that its shape is not this code's from the stamp it carries
+ * (`cache_meta`, `projections/cache-meta.ts`), which is a digest of the code and
+ * this schema — so there is still no number to remember to bump.
  *
  * Every table here is a PROJECTION of events. It holds current state for fast
  * relational queries; the events remain the source of truth in the chain.
@@ -36,6 +39,13 @@ export const PROJECTION_TABLES = [
   // Where each of the product's own switches stands: one row per channel that was
   // ever switched, and no row at all for one that never was.
   'channel_switches',
+  // What a cache needs in order to be brought forward over what arrived without
+  // reading the record again — each is derived like every table above, and each is
+  // dropped and rebuilt with them. See the notes on the tables below.
+  'fold_state',
+  'search_rows',
+  'membership_facts',
+  'divergences',
 ] as const;
 
 /**
@@ -364,6 +374,60 @@ CREATE TABLE IF NOT EXISTS channel_switches (
   -- switch is never refused for want of prose, so it is not the empty string.
   reason      TEXT
 ) STRICT;
+
+-- THE FOUR TABLES BELOW ARE NOT WHAT A READER ASKS FOR. They are what lets a cache that
+-- already holds a record take only what ARRIVED next, instead of folding it all again, so
+-- they exist for one reader: the advance (advance.ts). Each is a projection like the rest —
+-- derived, dropped and replayed with them, never authored.
+
+-- The accumulator of every entity the entity folds hold (tasks, runs, decisions, skills),
+-- as the fold left it: an entity whose birth has not been seen is an accumulator and not a
+-- row of its own table, and a transition that arrives before its birth (two tails, one
+-- entity) has to find it. JSON, written and read by the fold that owns the name.
+CREATE TABLE IF NOT EXISTS fold_state (
+  fold TEXT NOT NULL,
+  key  TEXT NOT NULL,
+  acc  TEXT NOT NULL,
+  PRIMARY KEY (fold, key)
+) STRICT, WITHOUT ROWID;
+
+-- Which full-text row is which entity's. A full-text table cannot be searched by an
+-- UNINDEXED column without reading all of it, so replacing the one row an arrival changed
+-- needs its rowid to hand. The key is (kind, id) and not the id, because nothing but a
+-- convention keeps two kinds from sharing one.
+CREATE TABLE IF NOT EXISTS search_rows (
+  kind TEXT NOT NULL,
+  id   TEXT NOT NULL,
+  rid  INTEGER NOT NULL,
+  PRIMARY KEY (kind, id)
+) STRICT, WITHOUT ROWID;
+
+-- The facts about who belongs to an identity (founded, enrolled, revoked), as the events
+-- themselves, in the record's order. They are the whole input of the two readings that ask
+-- the order about them — which identities were founded beside others, and which keys count
+-- for an anchor — and they are a handful in any record, where the order they were picked
+-- from is the whole of it.
+CREATE TABLE IF NOT EXISTS membership_facts (
+  ord   INTEGER PRIMARY KEY NOT NULL,
+  event TEXT NOT NULL
+) STRICT;
+
+-- The moves of an entity that two machines made out of one state without seeing each
+-- other, as the reading names them (DivergentMove[], JSON). A row only for an entity that
+-- HAS one, which is rare, so reading them all is reading a handful.
+CREATE TABLE IF NOT EXISTS divergences (
+  entity TEXT PRIMARY KEY NOT NULL,
+  moves  TEXT NOT NULL
+) STRICT;
+
+-- What the cache says about itself: the product's stamp it was built under, how far into
+-- the chain it reached (the frontier), the tails that did not chain, and a counter that
+-- moves with every change so a process that wrote can tell that another one did too. It is
+-- not a projection and is never dropped by a rebuild — a rebuild rewrites it.
+CREATE TABLE IF NOT EXISTS cache_meta (
+  key   TEXT PRIMARY KEY NOT NULL,
+  value TEXT NOT NULL
+) STRICT;
 `;
 
 /** Creates the projection tables if they are absent. Idempotent. */
@@ -382,10 +446,8 @@ export function ensureSchema(db: SqliteDatabase): void {
  * reverse of creation), never the caller's, so a subset cannot be dropped in an
  * order the schema does not allow.
  */
-export function dropProjections(db: SqliteDatabase, tables?: ReadonlySet<ProjectionTable>): void {
+export function dropProjections(db: SqliteDatabase): void {
   for (let i = PROJECTION_TABLES.length - 1; i >= 0; i -= 1) {
-    const table = PROJECTION_TABLES[i] as ProjectionTable;
-    if (tables !== undefined && !tables.has(table)) continue;
-    db.exec(`DROP TABLE IF EXISTS ${table};`);
+    db.exec(`DROP TABLE IF EXISTS ${PROJECTION_TABLES[i] as ProjectionTable};`);
   }
 }

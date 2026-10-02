@@ -11,23 +11,33 @@
  */
 
 import {
-  type CatalogEvent,
   type ChainLayout,
   catalogUpcasters,
   type EventKind,
   type LinkBreak,
+  listTails,
+  projectionCachePath,
   type UpcasterRegistry,
 } from '@mnema/chain';
-import { ensureSchema } from '../db/schema.js';
+import { dropProjections, ensureSchema } from '../db/schema.js';
 import { IN_MEMORY, openDatabase, type SqliteDatabase } from '../db/sqlite.js';
 import { type FoundedBeside, identitiesFoundedBeside } from '../identity/founded-beside.js';
 import { rosterIn, rosterOf } from '../identity/membership.js';
+import { advance } from './advance.js';
+import {
+  type CacheMeta,
+  productStamp,
+  readGeneration,
+  readMeta,
+  sealedFingerprints,
+  sealedSegmentsHold,
+  writeMeta,
+} from './cache-meta.js';
 import type { ChannelSwitchProjection } from './channel.js';
 import { getChannelSwitch, listChannelSwitches } from './channel-store.js';
 import { type AdrCollision, adrCollisions, type DecisionProjection } from './decision.js';
 import { getDecision, listDecisions, listDecisionsByState } from './decision-store.js';
-import { type DivergentMove, divergentMoves } from './divergent-moves.js';
-import { tablesFedBy } from './fed-by.js';
+import type { DivergentMove } from './divergent-moves.js';
 import type {
   HandoffProjection,
   LinkEdge,
@@ -45,7 +55,7 @@ import {
   listObservationsAbout,
 } from './knowledge-store.js';
 import { type ChainFrontier, chainArrivals, chainReplay } from './order.js';
-import { advance, rebuild } from './rebuild.js';
+import { rebuild } from './rebuild.js';
 import {
   type AuthorshipFilter,
   type AuthorshipTally,
@@ -72,61 +82,91 @@ import {
 } from './search-store.js';
 import type { SkillProjection } from './skill.js';
 import { getSkill, listSkills, listSkillsByState } from './skill-store.js';
+import { readDivergences, readMembership } from './state-store.js';
 import type { TaskProjection } from './task.js';
 import { getTask, listTasks, listTasksByState } from './task-store.js';
+
+/** How many times a refresh reads the arrivals again because another process advanced the file first. */
+const MAX_REFRESH_ATTEMPTS = 3;
+
+/** A database that lives for the process, with the schema in it. */
+function openMemory(): SqliteDatabase {
+  const db = openDatabase(IN_MEMORY);
+  ensureSchema(db);
+  return db;
+}
 
 /** Options for opening a cache. */
 export interface CacheOptions {
   /**
-   * Where to store the SQLite file. Defaults to in-memory — a cache that lives
-   * only for the process, rebuilt on open.
+   * Where to store the SQLite file, named outright. Defaults to in-memory — a cache that
+   * lives only for the process, rebuilt on open — unless {@link persist} says otherwise.
    *
-   * NO PRODUCTION CALLER SETS IT, and that is a fact rather than a gap waiting to
-   * be filled. This said "a persistent path arrives with the surfaces that need a
-   * warm cache across runs"; the surface arrived and chose otherwise. The MCP
-   * session holds a cache warm for the length of the session
-   * (`code/src/mcp/cache-registry.ts`) and opens it with `upcasters` alone, as does
-   * every production site that opens a cache — a warm cache IN the process turned
-   * out to be what that surface needed, and a file on disk would add an
-   * invalidation nobody has to do today.
+   * A path named here is the CALLER'S and is used as given: a file that cannot be opened is
+   * an error, where {@link persist} falls back to memory. It is what the tests that open a
+   * path, close it, open it again and assert the tables survived are written against
+   * (`cache.test.ts`, `advance.test.ts`).
    *
-   * THE SENTENCE ABOVE USED TO SAY "all six `ProjectionCache.open` sites in the
-   * workspace" AND THE SIX WERE PAID FOR. Three of them opened a cache and never
-   * closed it, so `code/src/tree-sources.ts` took the pairing over and `code` now
-   * opens one in two places, guarded by
-   * `code/tests/the-record-is-opened-and-closed-together.test.ts`. The count is gone
-   * rather than corrected: it was a number about another package, in a doc-comment
-   * that cannot be red when it goes stale, and it went stale the first time anything
-   * moved. What holds is the claim it was evidence FOR — no production caller sets
-   * this option — and that one is asserted where the callers live.
-   *
-   * WHAT IT IS FOR, then, is the property no in-memory cache can demonstrate:
-   * `cache.test.ts` and `advance.test.ts` open a path, close it, open it again and
-   * assert the tables survived. That is a real capability of this class and the
-   * option is how it is reached, so it stays — named here rather than left looking
-   * like plumbing somebody forgot to connect, which is the shape this workspace has
-   * paid for four times.
+   * THIS SAID "NO PRODUCTION CALLER SETS IT, and that is a fact rather than a gap waiting to
+   * be filled", for a warm cache the MCP session holds in the process and a file that "would
+   * add an invalidation nobody has to do today". The second half is what stopped being true:
+   * measured at 100 thousand events, a command line that rebuilds in memory on every read
+   * pays 3.3 s and 548 MB for a question a warm cache answers in a millisecond, and the two
+   * hooks that open a session are such reads (`measurements/the-record-at-scale/`). The
+   * invalidation is done now — see {@link persist} — and the production caller is the one
+   * option that does it, not this one.
    */
   readonly dbPath?: string;
+  /**
+   * Keep the cache in the tree it is built from (`projectionCachePath`), so that the next
+   * process to open it takes only what was appended since — the command line, whose every
+   * read used to build the whole projection and throw it away.
+   *
+   * It is a cache and never the record, and four things say so in code rather than in prose:
+   *
+   *   - what is in it is brought forward by {@link refresh} only when the chain's own
+   *     reading says the new events FOLLOW what the cache covers (`chainArrivals`); any other
+   *     change — a tail removed or cut, a fact stamped before something covered — replays;
+   *   - it carries the stamp of the code that wrote it, and a stamp that is not this code's
+   *     replays (`cache-meta.ts`);
+   *   - a sealed segment whose size or modification time is not what the cache recorded
+   *     replays, so a rewrite of what was already read is not served in silence;
+   *   - a file that cannot be had — the directory is read-only, the database is corrupt, a
+   *     writer held it past the wait — is not an error: the cache lives in memory for this
+   *     process and answers the same, slower. DELETING IT CHANGES NO ANSWER.
+   *
+   * What it does not promise is what a reading that resumes can never promise: that bytes the
+   * last reading already accepted were not edited since. `cache-meta.ts` says where the line
+   * is, and `verify` is what rules past it.
+   */
+  readonly persist?: boolean;
   /** Upcaster registry for reading the chain; defaults to the catalog's. */
   readonly upcasters?: UpcasterRegistry;
 }
 
+/** A SQLite failure — a busy file, a corrupt one, a full disk — as opposed to one of the chain's. */
+function isSqliteFailure(error: unknown): boolean {
+  const code = (error as { code?: unknown } | null)?.code;
+  return typeof code === 'string' && code.startsWith('SQLITE_');
+}
+
 export class ProjectionCache {
   /**
-   * The order the tables were last built from, and how far into the chain it
-   * reached. Retained because reading the chain is a third of what a rebuild costs
-   * and the order is the whole input to every fold: holding it is what lets
-   * {@link refresh} bring the cache forward without asking the disk for anything
-   * but what arrived.
+   * How far into the chain the tables reach, and with it everything {@link refresh} needs in
+   * order to take only what arrived: the byte each tail was read to and the hash it ended on.
+   * Undefined until the tables have been built (or loaded from a file that was), which is the
+   * state {@link refresh} reads as "there is nothing to bring forward".
    *
-   * Undefined until the first replay, which is the state {@link refresh} reads as
-   * "there is nothing to bring forward".
+   * THE ORDER IS NOT HELD. It used to be, retained so that a refresh could fold it all again,
+   * and it was the whole of what a session cost in memory (1.0 GB at 100 thousand events) and
+   * of what a refresh cost in time (0.65-0.73 s for one arrival). The folds are brought
+   * forward from the accumulators in the tables now (`advance.ts`), and the three readings
+   * that asked the order about itself read tables of their own (`membership_facts`,
+   * `divergences`).
    */
-  private order: readonly CatalogEvent[] = [];
   private frontier: ChainFrontier | undefined;
   /**
-   * The tails of this tree that do not chain, as of the last replay.
+   * The tails of this tree that do not chain, as of the last replay or advance.
    *
    * It is held HERE rather than asked for on demand because it is a by-product of the
    * reading that already happened — asking again would mean reading the chain a second
@@ -165,48 +205,78 @@ export class ProjectionCache {
    * already accepted and will not read again. Rewriting the past under a live session
    * is invisible here for as long as that session stays up, and a connection that opens
    * afterwards replays and is told. That is a limit with a measurement, not a silence:
-   * `order.test.ts` holds both halves.
+   * `order.test.ts` holds both halves. (A cache kept on disk narrows it: the sealed
+   * segments' fingerprints are checked when one is loaded, so a connection that opens
+   * after a rewrite of a sealed segment is still told — `cache-meta.ts`.)
    *
    * AND IT REACHES ONLY THE SURFACE THAT READS — which was true of this field and is no
    * longer true of the class. It said *"a write does not refresh anything, so a connection
    * that writes without reading after the break is told nothing until its next read"*. The
    * write still refreshes nothing, and that is deliberate: a catch-up per write costs what
-   * a reader pays once and grows with the record. What changed is that a write no longer
+   * a reader pays once and grows with the history. What changed is that a write no longer
    * has to read this field to be answered — {@link linkBreaksAsOfNow} asks the chain
    * without advancing anything, at a price flat in the history, and
    * `code/tests/the-write-says-what-it-landed-on.test.ts` holds the new end-to-end.
    */
   private breaks: readonly LinkBreak[] = [];
+  /**
+   * The generation of the cache file this instance last agreed with. A file other processes
+   * write moves it, and an instance that finds the file ahead of it takes the frontier the
+   * file carries rather than the one it remembers.
+   */
+  private generation = -1;
 
   private constructor(
-    private readonly db: SqliteDatabase,
+    private db: SqliteDatabase,
     private readonly layout: ChainLayout,
     private readonly upcasters: UpcasterRegistry,
+    /** Whether the database is a file other processes share — false for memory, and after a fallback to it. */
+    private persisted: boolean,
   ) {}
 
   /**
    * Opens a cache over the chain rooted at `chainRoot`. Ensures the schema
-   * exists but does NOT rebuild — call {@link rebuild} to populate from the
-   * chain (an in-memory cache is empty until then).
+   * exists but does NOT rebuild — call {@link refresh} to bring it to the chain (taking
+   * what a file already holds when {@link CacheOptions.persist} is set), or {@link rebuild}
+   * to replay it whole. An in-memory cache is empty until then.
    */
   static open(chainRoot: string, options: CacheOptions = {}): ProjectionCache {
-    const db = openDatabase(options.dbPath ?? IN_MEMORY);
-    ensureSchema(db);
-    const cache = new ProjectionCache(
-      db,
-      { root: chainRoot },
-      options.upcasters ?? catalogUpcasters(),
-    );
-    return cache;
+    const layout: ChainLayout = { root: chainRoot };
+    const upcasters = options.upcasters ?? catalogUpcasters();
+    // A tree nobody has written to has nothing to keep, and a read must not be what creates its
+    // directories: persisting waits for the first tail.
+    const keeps = options.persist === true && listTails(layout).length > 0;
+    const path = options.dbPath ?? (keeps ? projectionCachePath(layout) : IN_MEMORY);
+    if (path === IN_MEMORY) {
+      return new ProjectionCache(openMemory(), layout, upcasters, false);
+    }
+    // A named path is the caller's and fails loudly; the one this class chose is a cache and
+    // gives way to memory — see {@link CacheOptions.persist}.
+    if (options.dbPath !== undefined) {
+      const db = openDatabase(path);
+      ensureSchema(db);
+      return new ProjectionCache(db, layout, upcasters, true);
+    }
+    try {
+      const db = openDatabase(path);
+      try {
+        ensureSchema(db);
+      } catch (error) {
+        // A file whose tables this code cannot create over is a file of another shape: it is
+        // a cache, so it is dropped and made again rather than reported.
+        if (!isSqliteFailure(error)) throw error;
+        dropProjections(db);
+        ensureSchema(db);
+      }
+      return new ProjectionCache(db, layout, upcasters, true);
+    } catch {
+      return new ProjectionCache(openMemory(), layout, upcasters, false);
+    }
   }
 
   /** Drops the cache and replays it from the chain. Safe to call any time. */
   rebuild(): void {
-    const replay = chainReplay(this.layout, this.upcasters);
-    rebuild(this.db, replay.events);
-    this.order = replay.events;
-    this.frontier = replay.frontier;
-    this.breaks = replay.linkBreaks;
+    this.guarded(() => this.replay());
   }
 
   /**
@@ -260,22 +330,29 @@ export class ProjectionCache {
    *     checkpoints and witnesses are `verify`'s.
    *   - A break BELOW this cache's frontier — bytes a previous reading already took — is
    *     outside it, for the same reason it is outside {@link refresh}.
-   *   - Among the arrivals it names the FIRST break of the FIRST tail that has one, where
-   *     a full replay names one per tail. A chain that changed in a way no suffix
-   *     describes — a tail removed, a tail cut, a fact arriving stamped before something
-   *     already covered — is not a break at all and answers as this cache already stood.
+   *   - A chain that changed in a way no suffix describes — a tail removed, a tail cut, a
+   *     fact arriving stamped before something already covered — is not a break at all and
+   *     answers as this cache already stood.
    *
-   * It leaves this cache exactly as it found it: the tables, the order and the frontier
-   * are untouched, so the next {@link refresh} does the same work it would have done.
+   * IT NAMES THE BREAK OF EVERY BROKEN TAIL AMONG THE ARRIVALS, one per tail, as a full
+   * replay does. It named the first break of the first broken tail, which a record whose two
+   * tails both broke after the last reading answered with one of them; the remaining tails
+   * are read only once one has broken, so a chain that chains costs what it cost
+   * (`order.test.ts` holds both halves).
+   *
+   * It leaves this cache exactly as it found it: the tables and the frontier are
+   * untouched, so the next {@link refresh} does the same work it would have done.
    */
   linkBreaksAsOfNow(): readonly LinkBreak[] {
+    this.agree();
     if (this.frontier === undefined) return this.breaks;
     const arrived = chainArrivals(this.layout, this.upcasters, this.frontier);
     if (arrived.suffix || arrived.why !== 'AN_ARRIVAL_DOES_NOT_CHAIN') return this.breaks;
     // One break per tail, which is what a full reading reports: a tail this cache already
     // knows is broken does not gain a second line for a later break on the same tail.
-    if (this.breaks.some((known) => known.tail === arrived.broke.tail)) return this.breaks;
-    return [...this.breaks, arrived.broke];
+    const knownTails = new Set(this.breaks.map((known) => known.tail));
+    const fresh = arrived.broken.filter((broke) => !knownTails.has(broke.tail));
+    return fresh.length === 0 ? this.breaks : [...this.breaks, ...fresh];
   }
 
   /**
@@ -285,25 +362,25 @@ export class ProjectionCache {
    * It is the question every write asks before it appends (`ensureFounded`, in the write
    * operations): does the identity this checkout recorded still count its key? A replay answers it
    * at a price linear in the record, and a session asks it on every write, so the session asks
-   * HERE: the order this cache retained is the order a replay would read, and what arrived since is
-   * read the way {@link linkBreaksAsOfNow} reads it — one `readdir` per tail and the entries past
-   * each boundary — and folded behind it by the roster's own fold (`rosterIn`, the one
-   * `rosterOf` runs over a replay). The arrivals are taken only as a SUFFIX, which is the merge's
-   * own comparison: where they are not one (a tail gone or cut, a fact stamped before something
-   * already covered, a link that does not follow), the order in hand is no longer a prefix of the
-   * record's, and this replays the record whole — without rebuilding the cache, which it leaves
-   * exactly as it found it.
+   * HERE: the membership facts this cache holds are what a replay would have read of the record,
+   * and what arrived since is read the way {@link linkBreaksAsOfNow} reads it — one `readdir` per
+   * tail and the entries past each boundary — and folded behind them by the roster's own fold
+   * (`rosterIn`, the one `rosterOf` runs over a replay). The arrivals are taken only as a SUFFIX,
+   * which is the merge's own comparison: where they are not one (a tail gone or cut, a fact
+   * stamped before something already covered, a link that does not follow), the facts in hand are
+   * no longer a prefix of the record's, and this replays the record whole — without rebuilding the
+   * cache, which it leaves exactly as it found it.
    *
-   * NOT the tables. Reading a projection would be reading what the last catch-up knew, and a
-   * write gated on that is the stale cache this module is careful never to be; nothing here is
-   * read from the database.
+   * NOT the entity tables. Reading a projection would be reading what the last catch-up knew, and
+   * a write gated on that is the stale cache this module is careful never to be.
    */
   rosterAsOfNow(anchor: string): Set<string> {
     const tree = this.layout.root;
+    this.agree();
     if (this.frontier === undefined) return rosterOf({ tree, upcasters: this.upcasters }, anchor);
     const arrived = chainArrivals(this.layout, this.upcasters, this.frontier);
     if (!arrived.suffix) return rosterOf({ tree, upcasters: this.upcasters }, anchor);
-    return rosterIn([...this.order, ...arrived.events], tree, anchor);
+    return rosterIn([...readMembership(this.db), ...arrived.events], tree, anchor);
   }
 
   /**
@@ -311,38 +388,153 @@ export class ProjectionCache {
    * sound — and it is the call a reader wants, not {@link rebuild}.
    *
    * A chain that only GREW since the last replay is brought forward from what
-   * arrived: the arrivals are read (their own entries, not the chain), appended to
-   * the order already in hand, folded, and written into the tables those arrivals
-   * actually feed. A chain that changed any other way — a tail pruned, a tail gone,
-   * a fact arriving stamped before something already covered — cannot be described
-   * as a suffix, and this replays the whole thing.
+   * arrived: the arrivals are read (their own entries, not the chain), folded from the
+   * accumulators the tables hold, and written into the rows they touch. A chain that
+   * changed any other way — a tail pruned, a tail gone, a fact arriving stamped before
+   * something already covered — cannot be described as a suffix, and this replays the whole
+   * thing. So does a file that was built by other code, or whose sealed segments are not the
+   * ones it saw ({@link CacheOptions.persist}).
    *
    * It is not a cheaper rebuild, it is the same result by a shorter route: the
-   * tables it leaves behind are byte-identical to the ones a full replay would have
-   * written, which is asserted for one event of every kind in the catalog
-   * (`advance.test.ts`). Nothing here decides what a projection CONTAINS.
+   * tables it leaves behind are the ones a full replay would have written, which is asserted
+   * for one event of every kind in the catalog (`advance.test.ts`). Nothing here decides what
+   * a projection CONTAINS.
+   *
+   * THE COST IS THE ARRIVALS' AND NOT THE RECORD'S. Measured at 10, 30 and 100 thousand
+   * events with one arrival, the version that folded the whole order again cost 0.056, 0.17
+   * and 0.65 s; this one is flat (`measurements/the-record-at-scale/`).
    */
   refresh(): void {
-    if (this.frontier === undefined) {
-      this.rebuild();
+    this.guarded(() => {
+      // A file another process advanced while this one waited is not a file to advance over a
+      // stale picture of: the arrivals are read against the frontier the FILE carries, and if
+      // it moves between the reading and the write, the reading is done again.
+      for (let attempt = 0; attempt < MAX_REFRESH_ATTEMPTS; attempt += 1) {
+        this.agree();
+        if (this.frontier === undefined) {
+          this.replay();
+          return;
+        }
+        const arrived = chainArrivals(this.layout, this.upcasters, this.frontier);
+        if (!arrived.suffix) {
+          this.replay();
+          return;
+        }
+        if (arrived.events.length === 0) return;
+        const from = this.frontier.events;
+        const expected = this.generation;
+        const moved = this.db.transaction(() => {
+          if (readGeneration(this.db) !== expected) return false;
+          advance(this.db, arrived.events, from);
+          this.store(arrived.frontier, this.breaks, expected + 1);
+          return true;
+        });
+        if (moved.immediate()) {
+          this.frontier = arrived.frontier;
+          this.generation = expected + 1;
+          return;
+        }
+      }
+      // Another process kept winning the file: say so by replaying, which is correct whoever wins.
+      this.replay();
+    });
+  }
+
+  /** Replays the chain whole into the tables — the one place a rebuild is written. */
+  private replay(): void {
+    const replay = chainReplay(this.layout, this.upcasters);
+    const write = this.db.transaction(() => {
+      const generation = readGeneration(this.db) + 1;
+      rebuild(this.db, replay.events);
+      this.store(replay.frontier, replay.linkBreaks, generation);
+      return generation;
+    });
+    this.generation = write.immediate();
+    this.frontier = replay.frontier;
+    this.breaks = replay.linkBreaks;
+  }
+
+  /** Writes what the cache says about itself, in the transaction that changed the tables. */
+  private store(frontier: ChainFrontier, breaks: readonly LinkBreak[], generation: number): void {
+    const meta: CacheMeta = {
+      stamp: productStamp(),
+      generation,
+      frontier,
+      breaks,
+      sealed: this.persisted ? sealedFingerprints(frontier) : {},
+    };
+    writeMeta(this.db, meta);
+  }
+
+  /**
+   * Takes the frontier the database carries when it is not the one this instance remembers —
+   * the first time a file is opened, and every time another process has written since — and
+   * leaves the frontier undefined when what the file carries is not a cache of THIS code over
+   * THESE segments, which {@link refresh} reads as "replay".
+   */
+  private agree(): void {
+    if (this.frontier !== undefined) {
+      // A database only this process writes needs no asking, and a file other processes write
+      // is asked one number before it is read whole.
+      if (!this.persisted) return;
+      if (this.guardedRead(() => readGeneration(this.db)) === this.generation) return;
+    }
+    const meta = this.guardedRead(() => readMeta(this.db));
+    if (meta === undefined) {
+      this.frontier = undefined;
+      this.breaks = [];
+      this.generation = -1;
       return;
     }
-    const arrived = chainArrivals(this.layout, this.upcasters, this.frontier);
-    if (!arrived.suffix) {
-      this.rebuild();
+    if (meta.generation === this.generation && this.frontier !== undefined) return;
+    this.generation = meta.generation;
+    if (meta.stamp !== productStamp() || (this.persisted && !sealedSegmentsHold(meta.sealed))) {
+      this.frontier = undefined;
+      this.breaks = [];
       return;
     }
-    if (arrived.events.length === 0) return;
-    const order = [...this.order, ...arrived.events];
-    advance(
-      this.db,
-      order,
-      arrived.events,
-      this.order.length,
-      tablesFedBy(arrived.events.map((event) => event.kind)),
-    );
-    this.order = order;
-    this.frontier = arrived.frontier;
+    this.frontier = meta.frontier;
+    this.breaks = meta.breaks;
+  }
+
+  /**
+   * Runs a step over the database, and if the DATABASE fails it — a file another process holds
+   * past the wait, a corrupt one, a full disk — leaves the file and goes on in memory: the
+   * cache is rebuilt there from the chain, and the answer is the same. A failure of the CHAIN
+   * (a line that does not parse) is not the database's and goes up as it always did.
+   */
+  private guarded(step: () => void): void {
+    try {
+      step();
+    } catch (error) {
+      if (!this.persisted || !isSqliteFailure(error)) throw error;
+      this.degrade();
+      step();
+    }
+  }
+
+  private guardedRead<T>(read: () => T): T | undefined {
+    try {
+      return read();
+    } catch (error) {
+      if (!this.persisted || !isSqliteFailure(error)) throw error;
+      this.degrade();
+      return undefined;
+    }
+  }
+
+  /** Gives up the file for this process: a fresh in-memory database, known to hold nothing. */
+  private degrade(): void {
+    try {
+      this.db.close();
+    } catch {
+      // A handle that will not close is one nothing more is asked of.
+    }
+    this.db = openMemory();
+    this.persisted = false;
+    this.frontier = undefined;
+    this.breaks = [];
+    this.generation = -1;
   }
 
   /** Reads one task by id, or null if it is not projected. */
@@ -536,36 +728,35 @@ export class ProjectionCache {
 
   /**
    * Every identity founded in this tree after others already were, in record order — the
-   * reading `identitiesFoundedBeside` gives, asked of the order this cache already holds.
+   * reading `identitiesFoundedBeside` gives, asked of the membership facts this cache keeps
+   * (`membership_facts`: the foundings, enrolments and revocations of the record, in its order).
    *
-   * FROM THE ORDER AND NOT FROM THE CHAIN, and that is the whole of what it costs. The same
-   * answer read off the disk is a second replay per tree, which is what kept it out of the
-   * agent's account; the order a replay built is in hand here (see {@link order}), and a
-   * founding is one event kind in it. A walk over events already in memory, no table and no
-   * query, so nothing another read of this cache pays moves.
-   *
-   * MEASURED, ALONE AND BESIDE WHAT ITS CALLER ALREADY PAYS: 2.8 µs over a 602-event tree and
-   * 16–19 µs over 6,002 — about 3 µs per thousand events — where the authorship tally the same
-   * account runs costs 181 µs and 1.7–2.0 ms over the same two trees. Two runs of the walk in a
-   * row tie within 0.8 µs, which is the ruler those numbers are read against.
+   * THIS SAID IT WAS ASKED OF "THE ORDER THIS CACHE ALREADY HOLDS", a walk over events in
+   * memory at 2.8 µs over 602 events and 16-19 µs over 6,002. The premise was that the cache
+   * holds the order, and it does not any more: holding it was 1.0 GB at 100 thousand events and
+   * the whole cost of bringing a cache forward (see {@link frontier}). What the reading needs
+   * of the order is the foundings, and the cache keeps those — a handful of rows in any record
+   * — so the answer is the same walk over them. The figures above were of the walk over the
+   * order and are not claimed of this one.
    *
    * It answers as the cache stands: a reader that wants the chain as it is now brings the
    * cache forward first, as every read of it does.
    */
   foundedBeside(): FoundedBeside[] {
-    return identitiesFoundedBeside(this.order);
+    return identitiesFoundedBeside(readMembership(this.db));
   }
 
   /**
    * Every decision, skill and task of this tree that two machines moved out of one state
-   * without seeing each other ({@link divergentMoves}) — asked of the order this cache already
-   * holds, for the reason {@link foundedBeside} is: a walk over events in memory, where the
-   * same answer read off the disk is a second replay.
+   * without seeing each other (`divergentMoves`) — asked of the rows this cache keeps for the
+   * entities that have one, which an advance maintains one entity at a time. The same answer
+   * read off the disk is a second replay, and over the order it was a walk the cache no longer
+   * holds the order for (see {@link foundedBeside}).
    *
    * It answers as the cache stands, like every read of it.
    */
   divergentMoves(): DivergentMove[] {
-    return divergentMoves(this.order);
+    return readDivergences(this.db);
   }
 
   /**

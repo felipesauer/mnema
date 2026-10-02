@@ -601,6 +601,14 @@ const NOT_TRACEABLE: Readonly<Record<string, string>> = {
     "commander's own, from `.version(VERSION)`: it is answered by the parser before " +
     'any action is reached, so the reader is not in this workspace at all — what IS ' +
     'ours is the string, pinned in `cli.golden.test.ts`',
+  'mnema search --from <iso>':
+    'its reader is `window.ts`, reached through `ProjectionCache.search` and `searchRecord`: a METHOD ' +
+    'call, which this name-based walk cannot follow, so the trace ends at `searchRecords`, one hop short ' +
+    'of it. IT WAS CLEARED BEFORE BY TWO READS THAT HAVE NOTHING TO DO WITH THE WINDOW — measured, the ' +
+    'sites were `from` in `divergentMoves` (a transition’s `from`) and in `applyOtsOp` — reached through ' +
+    'the replay the command line made on every read, which a read that takes only what arrived no longer ' +
+    'calls. The window does narrow the answer, held by `commands/search.test.ts`, ' +
+    '`narrows by kind, state, scope and a time window`, over `from: 2999…`',
   'mnema --identify':
     'declared on the program and answered by a listener of its own in `cli.ts`, before any ' +
     'action is reached, as `--version` is — the answer is `version.ts`’s `IDENTITY`, and its ' +

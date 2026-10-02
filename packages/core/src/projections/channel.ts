@@ -61,15 +61,21 @@ export function projectChannelSwitches(
 ): Map<string, ChannelSwitchProjection> {
   const result = new Map<string, ChannelSwitchProjection>();
   for (const event of events) {
-    if (event.kind !== 'channel.switched') continue;
-    result.set(event.subject, {
-      channel: event.subject,
-      on: event.payload.on,
-      who: event.who,
-      ...(event.which !== undefined ? { which: event.which } : {}),
-      switchedAt: event.at,
-      ...(event.payload.reason !== undefined ? { reason: event.payload.reason } : {}),
-    });
+    const switched = switchOf(event);
+    if (switched !== undefined) result.set(switched.channel, switched);
   }
   return result;
+}
+
+/** The switch one event is, or undefined for any other kind — the fold's rule, one event at a time. */
+export function switchOf(event: CatalogEvent): ChannelSwitchProjection | undefined {
+  if (event.kind !== 'channel.switched') return undefined;
+  return {
+    channel: event.subject,
+    on: event.payload.on,
+    who: event.who,
+    ...(event.which !== undefined ? { which: event.which } : {}),
+    switchedAt: event.at,
+    ...(event.payload.reason !== undefined ? { reason: event.payload.reason } : {}),
+  };
 }
