@@ -917,6 +917,14 @@ $ mnema verify --help
 |                          the record — `mnema witness stamp` asks for one, and it
 |                          passes once a Bitcoin block carries it, never while it
 |                          is pending)
+|   --since <rev>          also fail unless the committed record is the one <rev>
+|                          held, grown at the end: every file it held under tails/
+|                          and keys/ is still here, and every segment and
+|                          checkpoints.jsonl still begins with the bytes it held.
+|                          Catches what no --require can — a cut that took events
+|                          with their checkpoint, a record founded again, a
+|                          rewrite signed again. Reads git, never the network, so
+|                          <rev> must be in this clone
 |   --json                 emit the verdict as JSON instead of prose — the whole
 |                          reading, per tree, plus what NO --require value
 |                          answers. The exit code is unchanged: this changes the

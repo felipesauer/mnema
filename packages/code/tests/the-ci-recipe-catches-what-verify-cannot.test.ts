@@ -261,14 +261,14 @@ describe('the CI recipe the page publishes', () => {
   });
 
   it.each([
-    ['the newest events cut with their checkpoint', alignedCut, 0, 'rewritten since'],
-    ['every tail deleted with every key', tailsAndKeysDeleted, 1, 'gone since'],
-    ['the record erased and founded again', refounded, 0, 'gone since'],
+    ['the newest events cut with their checkpoint', alignedCut, 0, ': rewritten — '],
+    ['every tail deleted with every key', tailsAndKeysDeleted, 1, ': gone — '],
+    ['the record erased and founded again', refounded, 0, ': gone — '],
     [
       'the middle rewritten and signed again by the key holder',
       rewrittenBySigner,
       0,
-      'rewritten since',
+      ': rewritten — ',
     ],
   ] as const)('catches %s', (name, change, signedExit, says) => {
     const dir = changed(name.replace(/\W+/g, '-'), change);
@@ -277,7 +277,34 @@ describe('the CI recipe the page publishes', () => {
     expect(mnema(dir, 'verify', '--require=signed').status, name).toBe(signedExit);
     const said = recipe(dir);
     expect(said.status, said.out).not.toBe(0);
-    if (signedExit === 0) expect(said.out).toContain(says);
+    expect(said.out).toContain(says);
+  });
+
+  it('fails, saying why, when the base is not in the clone — a comparison that was not made is not a pass', () => {
+    const said = mnema(base, 'verify', '--since', 'no-such-revision');
+    expect(said.status).not.toBe(0);
+    expect(said.out).toContain('since no-such-revision: not compared — no commit by that name');
+  });
+
+  it('carries what it compared in --json, and leaves a verdict it was not asked for unchanged', () => {
+    const asked = mnema(base, 'verify', '--json', '--since', baseCommit);
+    expect(asked.status, asked.out).toBe(0);
+    const since = (
+      JSON.parse(asked.out) as { since: { kind: string; findings: unknown[]; held: number } }
+    ).since;
+    expect(since.kind).toBe('read');
+    expect(since.findings).toEqual([]);
+    expect(since.held).toBeGreaterThan(0);
+    // Without the flag the reading has no such field, and the exit is the bare one.
+    const bare = mnema(base, 'verify', '--json');
+    expect(bare.status).toBe(0);
+    expect('since' in (JSON.parse(bare.out) as object)).toBe(false);
+  });
+
+  it('refuses --since beside --workspace rather than ruling on one of them silently', () => {
+    const said = mnema(base, 'verify', '--since', baseCommit, '--workspace', base);
+    expect(said.status).not.toBe(0);
+    expect(said.out).toContain('`--since` rules on the project you stand in');
   });
 
   it('reads the block from the page, or reports that it could not', () => {

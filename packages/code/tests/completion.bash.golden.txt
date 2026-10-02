@@ -80,7 +80,7 @@ _mnema_flags() {
     'switch') echo '-h --help -V --version --color' ;;
     'switch off') echo '--reason --scope --which -h --help -V --version --color' ;;
     'switch on') echo '--reason --scope --which -h --help -V --version --color' ;;
-    'verify') echo '--global --workspace --allow-no-record --require --json -h --help -V --version --color' ;;
+    'verify') echo '--global --workspace --allow-no-record --require --since --json -h --help -V --version --color' ;;
     'mcp') echo '--project -h --help -V --version --color' ;;
     'repl') echo '-h --help -V --version --color' ;;
     'completion') echo '-h --help -V --version --color' ;;

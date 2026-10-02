@@ -326,29 +326,24 @@ under `--require=signed`: the newest events cut together with their checkpoint, 
 record erased and founded again, and a key holder rewriting the middle and signing it
 again. A fourth — every tail deleted with every key — exits 0 under the default. Each
 leaves a record honest in every byte, and each changes files that the commit the change
-started from already held. So the gate that catches them asks git: every file of
-the record at the base commit must still be there, and every segment and
-`checkpoints.jsonl` must still begin with exactly the bytes it held there — a record only
-ever grows at the end. `BASE` is the commit the change is measured against (the target
-branch of a pull request, fetched in full):
+started from already held. So `--since <rev>` asks git: every file of the committed
+record at `<rev>` must still be on disk, and every segment and `checkpoints.jsonl` must
+still begin with exactly the bytes it held there — a record only ever grows at the end. It
+reads git and never the network, and changes nothing when it is not asked for. In CI,
+`BASE` is the commit the change is measured against — the target branch of a pull
+request, fetched (a shallow checkout holds no base, and `--since` says so and fails):
 
 <!-- BEGIN ci-recipe -->
 ```sh
-mnema verify --require=signed &&
-git ls-tree -r --name-only "$BASE" -- .mnema/tails .mnema/keys | while IFS= read -r f; do
-  git cat-file -e "HEAD:$f" 2>/dev/null || { echo "gone since $BASE: $f"; exit 1; }
-  case "$f" in
-    */checkpoints.jsonl | */[0-9][0-9][0-9][0-9][0-9][0-9].jsonl)
-      held=$(git cat-file -s "$BASE:$f")
-      [ "$(git cat-file blob "HEAD:$f" | head -c "$held" | git hash-object --stdin)" = \
-        "$(git rev-parse "$BASE:$f")" ] || { echo "rewritten since $BASE: $f"; exit 1; } ;;
-  esac
-done
+mnema verify --require=signed --since "$BASE"
 ```
 <!-- END ci-recipe -->
 
 It fails on a cut you authorized with `mnema tail prune` too, and that is the point of it:
-the change that removes a tail is the one change a reviewer has to look at.
+the change that removes a tail is the one change a reviewer has to look at. It rules on
+the committed tree only (the private one never travels), and it trusts the base: a
+history rewritten on the remote moves the base with it, which is what a protected branch
+on the git host is for.
 
 ### Bold, dim, and what a pipe gets
 

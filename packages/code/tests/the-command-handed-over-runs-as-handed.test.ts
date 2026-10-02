@@ -526,14 +526,16 @@ export const NAMES_THAT_NEED_MORE: Readonly<
  *
  * THE PAGES THAT SAY WHAT A GREEN `verify` DOES NOT PROVE name two verbs more in prose — the
  * witness that dates a record and the cut the CI recipe fails on by design — and the recipe
- * itself is one block line more (66 → 68 names in spans, 35 → 36 lines in blocks).
+ * itself is one block line more (66 → 68 names in spans, 35 → 36 lines in blocks); and
+ * `verify --since` beside `--workspace` hands over the line to run in each project instead
+ * (34 → 35 lines in the source).
  */
 export const HANDED_OVER: Readonly<
   Record<Handed['from'], Readonly<Record<Reading['kind'], number>>>
 > = {
   span: { line: 34, name: 68, flag: 1, unwritten: 0 },
   block: { line: 36, name: 18, flag: 0, unwritten: 0 },
-  source: { line: 34, name: 46, flag: 3, unwritten: 3 },
+  source: { line: 35, name: 46, flag: 3, unwritten: 3 },
 };
 
 // ---------------------------------------------------------------------------

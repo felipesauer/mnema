@@ -525,6 +525,23 @@ const CLASSIFIED: Readonly<Record<string, { verdict: Verdict; why: string }>> = 
     verdict: 'collapsed',
     why: 'the chain’s finding, and the TAIL it is about — a directory name, chosen on disk',
   },
+  'verify.ts «since {}: not compared — {}» #1': {
+    verdict: 'collapsed',
+    why: 'the revision exactly as the caller typed it, and why git could not answer',
+  },
+  'verify.ts «{}: gone — {} was in the record there and is not here» #1': {
+    verdict: 'collapsed',
+    why: 'the revision as typed, and a PATH git listed — a file name, chosen on disk',
+  },
+  'verify.ts «{}: rewritten — {} no longer begins with the bytes it held there» #1': {
+    verdict: 'collapsed',
+    why: 'the revision as typed, and a path git listed',
+  },
+  'verify.ts «{}: the record only grew — {} file(s) it held are here, and every segment and checkpoint file begins with its bytes» #1':
+    {
+      verdict: 'collapsed',
+      why: 'the revision as typed; the count is the product’s, collapsed with it',
+    },
 };
 
 // ---------------------------------------------------------------------------
@@ -610,7 +627,9 @@ describe('every line this wiring words is classified', () => {
     // Seventy-three until the three that said where the key file is moved into one function
     // of their own (`key-file.ts`), which collapses its values where it words them, and the
     // `witness` act's "No tail holds events" moved into `presentation/tails.ts`.
-    expect(FOUND.sites.length).toBe(69);
+    // Seventy-three again since `verify --since` says what it compared, in four lines that
+    // carry the revision a caller typed.
+    expect(FOUND.sites.length).toBe(73);
   });
 
   it('reads the verdict off the source rather than believing the table', () => {
@@ -630,9 +649,9 @@ describe('every line this wiring words is classified', () => {
   it('found sites of both kinds, and the scanner sees a tag when there is one', () => {
     // Neither arm of the case above may be empty, or half of it is vacuous.
     const verdicts = Object.values(CLASSIFIED).map((said) => said.verdict);
-    expect(verdicts.filter((verdict) => verdict === 'collapsed').length).toBe(33);
+    expect(verdicts.filter((verdict) => verdict === 'collapsed').length).toBe(37);
     expect(verdicts.filter((verdict) => verdict === 'minted').length).toBe(36);
-    expect(FOUND.sites.filter((site) => site.tagged).length).toBe(33);
+    expect(FOUND.sites.filter((site) => site.tagged).length).toBe(37);
   });
 
   it('every reason says where the value comes from', () => {
@@ -784,6 +803,15 @@ const UNREACHABLE: Readonly<Record<string, string>> = {
   'timeline.ts «{} — {} event(s):» #1': 'reached in two steps — see the case below',
   'verify.ts «census [{}] {} {}: {}» #1':
     'needs a committed key with no tail on disk, which is file surgery and not an argv',
+  'verify.ts «since {}: not compared — {}» #1':
+    'needs `--since` in a project; driven through the binary, with a revision the clone ' +
+    'does not hold, in `the-ci-recipe-catches-what-verify-cannot.test.ts`',
+  'verify.ts «{}: gone — {} was in the record there and is not here» #1':
+    'needs a git repository whose base commit held a file the disk lost — the same file',
+  'verify.ts «{}: rewritten — {} no longer begins with the bytes it held there» #1':
+    'needs a base commit and a segment cut or rewritten after it — the same file',
+  'verify.ts «{}: the record only grew — {} file(s) it held are here, and every segment and checkpoint file begins with its bytes» #1':
+    'needs a base commit and a record that grew after it — the same file',
   'verify.ts «issue [{}] {} {}: {}» #1':
     'needs a fabricated tail DIRECTORY — driven, with the chain’s half of the same line, ' +
     'in `the-phrase-the-domain-words-is-one-line.test.ts`',
