@@ -37,7 +37,7 @@ import { asksAPerson, pathsOfAWrite } from '../src/host-hook.js';
 import { HOOK_HOSTS, type HookHost } from '../src/host-names.js';
 import { hookReply } from '../src/mcp/hook-reply.js';
 import { openSession } from '../src/mcp/session.js';
-import { runRulesBeforeAnEditTool } from '../src/mcp/tools.js';
+import { runGoverningRulesTool, runRulesBeforeAnEditTool } from '../src/mcp/tools.js';
 
 const REPO = fileURLToPath(new URL('../../../', import.meta.url));
 const CLI = join(REPO, 'packages', 'code', 'dist', 'cli.js');
@@ -331,6 +331,34 @@ describe('the document a session opens with', () => {
     const off = await did('brief');
     expect(off).toContain('NONE of them refuses now');
     expect(off).toContain('edit-refuses-a-write was switched off by');
+  });
+});
+
+describe('who accepted the rule, said where a rule is handed over', () => {
+  const BY = /accepted by mnid:[0-9a-f]{8} \(a person\)/;
+
+  it('says it on the line a refusal, an asking and an informing push carry', async () => {
+    const refusal = decided(tool('src/billing/invoice.ts')).reason ?? '';
+    expect(refusal).toMatch(BY);
+    const asked = decided(tool('src/other/refund.ts')).reason ?? '';
+    expect(asked).toMatch(BY);
+    await did('switch', 'off', 'edit-refuses-a-write');
+    const pushed = (tool('src/billing/invoice.ts')['hookSpecificOutput'] as Record<string, string>)[
+      'additionalContext'
+    ];
+    expect(pushed).toContain(governing);
+    expect(pushed).toMatch(BY);
+  });
+
+  it('says it in what governing_rules answers, by the same reading', () => {
+    const session = openSession({
+      clientName: 'agent-alpha',
+      roots: [pathToFileURL(repo).href],
+      env,
+    });
+    const answered = JSON.stringify(runGoverningRulesTool(session, { path: 'src/billing/x.ts' }));
+    expect(answered).toMatch(/"acceptance":\{"by":"mnid:[0-9a-f]{8}"/);
+    expect(answered).toContain('"unconfirmed":false');
   });
 });
 

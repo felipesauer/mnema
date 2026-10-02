@@ -437,6 +437,28 @@ const CLASSIFIED: Readonly<Record<string, { verdict: Verdict; why: string }>> = 
       verdict: 'minted',
       why: 'one of two words written in this module, chosen by the count beside it — nothing from the record reaches it',
     },
+  'brief.ts «{} of them {} a WRITE at an address: where one» refusing #1': {
+    verdict: 'minted',
+    why: 'the count of rules in force linked under the refusing relation — a number this product counted',
+  },
+  "brief.ts «{} of them {} a WRITE at an address: where one» refusing === 1 ? 'refuses' : 'refuse' #1":
+    {
+      verdict: 'minted',
+      why: 'this module’s own verb, chosen by the count',
+    },
+  'brief.ts «{} was switched off by {} at» oneLine(gate.channel) #2': {
+    verdict: 'collapsed',
+    why: 'the channel a switch names — a subject somebody’s command line sent, in the paragraph about the refusal',
+  },
+  "brief.ts «{} was switched off by {} at» oneLine(gate.by ?? '') #2": {
+    verdict: 'collapsed',
+    why: 'the anchor that switched the refusal off — out of the record, and not on a bullet, so a break here forges a claim about it',
+  },
+  "brief.ts «{}. Run \\`mnema switch\\` for where every switch stands.» oneLine(gate.at ?? '') #2":
+    {
+      verdict: 'collapsed',
+      why: 'the instant a switch records — written by whoever ran it, in the paragraph about the refusal',
+    },
   'brief.ts «{} was switched off by {} at» oneLine(gate.channel) #1': {
     verdict: 'collapsed',
     why: 'the channel a switch names — a subject somebody’s command line sent, in the middle of the paragraph about the gate',
@@ -516,19 +538,19 @@ const CLASSIFIED: Readonly<Record<string, { verdict: Verdict; why: string }>> = 
     verdict: 'composed',
     why: 'the clause itself, joined with its separator; its parts are classified where acceptedBy builds them',
   },
-  'brief.ts «accepted by {} ({}{})» oneLine(acceptance.by) #1': {
+  'accepted-by.ts «accepted by {} ({}{})» oneLine(acceptance.by) #1': {
     verdict: 'collapsed',
     why: 'the identity that accepted — an anchor read out of the envelope of the accepting event, shortened',
   },
-  'brief.ts «accepted by {} ({}{})» act #1': {
+  'accepted-by.ts «accepted by {} ({}{})» act #1': {
     verdict: 'composed',
     why: 'either this surface’s word for an act with no agent, or the agent clause below, whose name is collapsed',
   },
-  'brief.ts «accepted by {} ({}{})» mark #1': {
+  'accepted-by.ts «accepted by {} ({}{})» mark #1': {
     verdict: 'minted',
     why: 'this module’s own word for an identity that nobody else has ruled with, or nothing',
   },
-  'brief.ts «agent {}» oneLine(acceptance.agent) #1': {
+  'accepted-by.ts «agent {}» oneLine(acceptance.agent) #1': {
     verdict: 'collapsed',
     why: 'the agent’s name as the accepting event carries it, text whoever opened that session wrote',
   },
@@ -1709,8 +1731,8 @@ describe('every value this layer puts on a line is classified', () => {
     // values are the start of a memory and an observation's topic, both typed by somebody.
     // The thirtieth is `within-a-hook.ts`, MACHINERY: it words nothing and receives no record —
     // it measures what the two opening texts print for a hook, and cuts them at a whole item.
-    expect(FOUND.composers.length + FOUND.machinery.length).toBe(31);
-    expect(FOUND.composers.length).toBe(19);
+    expect(FOUND.composers.length + FOUND.machinery.length).toBe(32);
+    expect(FOUND.composers.length).toBe(20);
     expect(FOUND.machinery).toContain('items.ts');
     expect(FOUND.machinery).toContain('line.ts');
     expect(FOUND.machinery).toContain('width.ts');
@@ -1720,8 +1742,8 @@ describe('every value this layer puts on a line is classified', () => {
     // 251 until the renderer began making an actor's control bytes visible and joined the
     // composers with its two template values; then 253 until the rules in force began saying who
     // accepted them (`brief.ts`, `record.ts`); 294 until `mnema rules` printed the four numbers
-    // of the relation that refuses a write; 301 with the three the trunk added meanwhile.
-    expect(FOUND.sites.length).toBe(301);
+    // of the relation that refuses a write; 301 with the three the trunk added meanwhile; 306 once the document counts the rules that refuse a write.
+    expect(FOUND.sites.length).toBe(306);
   });
 
   it('reads the verdict off the source rather than believing the table', () => {
@@ -1742,10 +1764,10 @@ describe('every value this layer puts on a line is classified', () => {
     // No arm of the case above may be empty, or that much of it is vacuous.
     const verdicts = Object.values(CLASSIFIED).map((said) => said.verdict);
     const count = (verdict: Verdict): number => verdicts.filter((said) => said === verdict).length;
-    expect(count('collapsed')).toBe(71);
-    expect(count('minted')).toBe(168);
+    expect(count('collapsed')).toBe(74);
+    expect(count('minted')).toBe(170);
     expect(count('composed')).toBe(62);
-    expect(FOUND.sites.filter((site) => /\boneLine\b/.test(site.expression))).toHaveLength(71);
+    expect(FOUND.sites.filter((site) => /\boneLine\b/.test(site.expression))).toHaveLength(74);
   });
 
   it('every reason says where the value comes from', () => {

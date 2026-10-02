@@ -116,9 +116,10 @@
 import type { Acceptance, AdrCollision, Brief, ChannelState } from '@mnema/context';
 import type { DivergentMove } from '@mnema/core';
 import type { BriefDone } from '../commands/brief.js';
-import { A_PERSON, oneLine } from '../one-line.js';
+import { oneLine } from '../one-line.js';
 import { DERIVED_FROM } from '../provenance.js';
 import { recordFraming } from '../record-framing.js';
+import { acceptedBy } from './accepted-by.js';
 import { toImport } from './status.js';
 import { fitWhole, HOOK_CEILING_IN_WORDS } from './within-a-hook.js';
 
@@ -936,13 +937,6 @@ function rule(
   const from = (origin ?? []).map((target) => ` · ${DERIVED_FROM} \`${oneLine(target)}\``).join('');
   const by = acceptance === undefined ? '' : ` · ${acceptedBy(acceptance)}`;
   return `- **${oneLine(name)}** · \`${oneLine(id)}\`${from}${by}`;
-}
-
-/** `accepted by mnid:ab12cd34 (a person)`, `(agent claude-code; unconfirmed)`. */
-function acceptedBy(acceptance: Acceptance): string {
-  const act = acceptance.agent === undefined ? A_PERSON : `agent ${oneLine(acceptance.agent)}`;
-  const mark = acceptance.unconfirmed ? '; unconfirmed' : '';
-  return `accepted by ${oneLine(acceptance.by)} (${act}${mark})`;
 }
 
 /**

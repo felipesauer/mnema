@@ -25,6 +25,7 @@
 
 import type { PushedRule, RulesAtPath } from '@mnema/context';
 import { oneLine } from './one-line.js';
+import { acceptedBy } from './presentation/accepted-by.js';
 import { DERIVED_FROM } from './provenance.js';
 import { recordFramingBlock } from './record-framing.js';
 
@@ -90,5 +91,6 @@ function refuseLine(rule: PushedRule): string {
   const from = (rule.origin ?? [])
     .map((target) => ` · ${DERIVED_FROM} ${oneLine(target)}`)
     .join('');
-  return `“${oneLine(rule.name)}” — refuses a write at ${oneLine(rule.address)} · ${oneLine(rule.id)}${from}`;
+  const by = rule.acceptance === undefined ? '' : ` · ${acceptedBy(rule.acceptance)}`;
+  return `“${oneLine(rule.name)}” — refuses a write at ${oneLine(rule.address)} · ${oneLine(rule.id)}${from}${by}`;
 }
