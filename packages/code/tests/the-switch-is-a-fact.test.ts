@@ -29,7 +29,7 @@
  *   - THE HONESTY. A silence that means "switched off" says so where a silence can be paid
  *     for once: the document a session opens with. Without this half the slice would open a
  *     hole rather than close one — three different silences in one channel.
- *   - THE DEFAULT. Nothing arrives switched off, and there is no birth event to make it so.
+ *   - THE DEFAULT. No channel arrives switched off except the two that start off, and there is no birth event to make it so.
  *
  * WHAT IS TOTAL AND WHAT IS A LIST. The set of switchable channels is derived from the union
  * of channels this surface pushes (`record-framing.ts`), and {@link HONOURED} is reconciled

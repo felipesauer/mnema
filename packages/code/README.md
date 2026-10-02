@@ -1067,7 +1067,7 @@ committed record says on, because two trees share no order — an event's instan
 on the machine that wrote it — so "the most recent switch across the trees" is not a
 comparison this product is entitled to make. The listing says which switch decides.
 
-Nothing arrives switched off, and there is no `mnema switch` tool on the **MCP server**.
+No channel arrives switched off except the two that start off, and there is no `mnema switch` tool on the **MCP server**.
 Anyone who can write to the record can append any fact, so this is not a claim about what is
 possible; it is a claim about which doors are open. An agent that could switch off what
 governs its own work through the door built for agents would be an agent that opts out of

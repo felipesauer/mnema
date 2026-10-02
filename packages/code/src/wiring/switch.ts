@@ -40,7 +40,12 @@
 
 import type { Command } from 'commander';
 import { fact } from '../presentation/detail.js';
-import { AGENT_ACCEPTS_CHANNEL, STARTS_OFF, SWITCHABLE_CHANNELS } from '../record-framing.js';
+import {
+  AGENT_ACCEPTS_CHANNEL,
+  STARTS_OFF,
+  SWITCHABLE_CHANNELS,
+  USER_CORRECTIONS_CHANNEL,
+} from '../record-framing.js';
 import { RECORD_CONTRACT_HELP } from '../recorded-content.js';
 import { here } from './context.js';
 import { enumeratedArgument, scopeOption } from './enumerated.js';
@@ -84,7 +89,7 @@ export function registerSwitch(program: Command, wiring: Wiring): Declared {
         '  What it carries is what stops arriving when it is off.',
         '  An off switch says who made it and when, and whether a clone of this',
         '  repository holds it — a switch recorded privately governs only this machine.',
-        '  Nothing arrives switched off: a channel with no switch is on.',
+        '  A channel with no switch is on, except edit-first-write-gate and user-corrections, which are off until switched on.',
       ].join('\n'),
     )
     .action(async () => {
@@ -175,7 +180,9 @@ function position(group: Command, wiring: Wiring, word: 'off' | 'on', descriptio
               ? ofAnAct
                 ? `${result.channel} is now ON: an agent may accept a decision, as it did before.`
                 : (STARTS_OFF as readonly string[]).includes(result.channel)
-                  ? `${result.channel} is now ON: it was off until this switch, and it now acts where a rule addresses a file.`
+                  ? result.channel === USER_CORRECTIONS_CHANNEL
+                    ? `${result.channel} is now ON: it was off until this switch, and it now records a person's corrections as proposed decisions in this machine's private tree.`
+                    : `${result.channel} is now ON: it was off until this switch, and it now acts where a rule addresses a file.`
                   : `${result.channel} is now ON: it hands the record over as it did before.`
               : ofAnAct
                 ? `${result.channel} is now OFF: an agent's accept is refused. The switch that decides it was made by ${anchorText(result.anchors, result.effective.by ?? '')} at ${result.effective.at ?? ''}.`

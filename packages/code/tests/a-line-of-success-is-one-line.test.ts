@@ -371,6 +371,11 @@ const CLASSIFIED: Readonly<Record<string, { verdict: Verdict; why: string }>> = 
       verdict: 'minted',
       why: 'the closed channel, read back off the write',
     },
+  "switch.ts «{} is now ON: it was off until this switch, and it now records a person's corrections as proposed decisions in this machine's private tree.» #1":
+    {
+      verdict: 'minted',
+      why: 'the user-corrections channel, read back off the write',
+    },
   'switch.ts «{} is now ON: an agent may accept a decision, as it did before.» #1': {
     verdict: 'minted',
     why: 'the closed channel, read back off the write',
@@ -667,7 +672,8 @@ describe('every line this wiring words is classified', () => {
     // carry the revision a caller typed.
     // 69 until `key protect` and `unprotect` began printing which files they changed.
     // 80 until the channel that starts off said what it does once it is switched on.
-    expect(FOUND.sites.length).toBe(81);
+    // 81 until user-corrections got its own message.
+    expect(FOUND.sites.length).toBe(82);
   });
 
   it('reads the verdict off the source rather than believing the table', () => {
@@ -688,7 +694,7 @@ describe('every line this wiring words is classified', () => {
     // Neither arm of the case above may be empty, or half of it is vacuous.
     const verdicts = Object.values(CLASSIFIED).map((said) => said.verdict);
     expect(verdicts.filter((verdict) => verdict === 'collapsed').length).toBe(40);
-    expect(verdicts.filter((verdict) => verdict === 'minted').length).toBe(41);
+    expect(verdicts.filter((verdict) => verdict === 'minted').length).toBe(42);
     expect(FOUND.sites.filter((site) => site.tagged).length).toBe(40);
   });
 
