@@ -46,8 +46,8 @@
  *
  * IT IS IMPORTED STATICALLY, AT EVERY SITE, AND THAT IS THE SECOND ANSWER THIS FILE HAS
  * GIVEN. It used to be loaded inside the action, for the reason `no-such-record.ts` used
- * to be: this module reached `served-patterns.ts`, which reaches `@mnema/copilot`, so a
- * static import would have put a second declared edge to the copilot in the floor of
+ * to be: this module reached `served-patterns.ts`, which reaches `@mnema/context`, so a
+ * static import would have put a second declared edge to the context package in the floor of
  * every invocation of every verb — and the argument for admitting it would have been "it
  * is free, because `wiring/refs.ts` already pays", which is the ratchet
  * `tests/the-floor-is-the-declaration.test.ts` exists to refuse. That was a curative at

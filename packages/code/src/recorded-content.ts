@@ -34,7 +34,7 @@
  */
 
 import { RECOMMENDED_LINK_RELATIONS } from '@mnema/chain';
-import type { AddressReach } from '@mnema/copilot';
+import type { AddressReach } from '@mnema/context';
 import type { Scope, SecretClass } from '@mnema/core';
 import { FIELD_BYTE_LIMIT, secretPlaceholder } from '@mnema/core';
 

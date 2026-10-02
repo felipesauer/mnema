@@ -445,7 +445,7 @@ const SURFACE_FLOOR: Readonly<Record<string, number>> = {
   // verb has been routed may not pay for the proof engine to get it.
   '@mnema/chain/one-line': 1,
   '@mnema/code': 0,
-  '@mnema/copilot': 20,
+  '@mnema/context': 20,
   '@mnema/core': 90,
   '@mnema/core/write': 25,
 };
@@ -609,7 +609,7 @@ describe('every public value has a caller', () => {
     // alive. The imports decide instead.
     const source = "import { REFERENCE_ROLES } from '@mnema/core';\nconst r = REFERENCE_ROLES;";
     expect(importedNames(source).get('@mnema/core')?.has('REFERENCE_ROLES')).toBe(true);
-    expect(importedNames(source).get('@mnema/copilot')).toBeUndefined();
+    expect(importedNames(source).get('@mnema/context')).toBeUndefined();
     // A commented-out import is not an import.
     expect(importedNames("// import { x } from '@mnema/core';").size).toBe(0);
     expect(importedNames(" * import { x } from '@mnema/core';").size).toBe(0);

@@ -15,7 +15,7 @@
  * each title as written (see {@link oneLine}).
  */
 
-import type { RecordSearch } from '@mnema/copilot';
+import type { RecordSearch } from '@mnema/context';
 import { SEARCH_KINDS } from '@mnema/core';
 import { oneLine } from '../one-line.js';
 import { asId, asScope, asWhen, itemLine } from './items.js';

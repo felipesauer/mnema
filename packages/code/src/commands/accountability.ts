@@ -11,14 +11,14 @@
  * (or filters that exclude everything) yields a zero account, not an error.
  *
  * Read-only: it opens a cache per tree, rebuilds it in memory, and sums the
- * grouped counts the copilot's pure `accountability` composes. No writer, no
+ * grouped counts the context package's pure `accountability` composes. No writer, no
  * key. It needs no `--actor` — the `--who`/`--which` here are aggregation
  * FILTERS (which author, which agent to count), not the identity of the asker.
  * With no project at all it refuses `NO_PROJECT`, the same refusal the other
  * intelligence reads give.
  */
 
-import { type Accountability, type AccountabilityFilter, accountability } from '@mnema/copilot';
+import { type Accountability, type AccountabilityFilter, accountability } from '@mnema/context';
 import { type DiscoveryEnv, resolveTrees } from '@mnema/core';
 import { type AnchorForms, anchorForms, resolveTypedAnchor } from '../anchors.js';
 import {
@@ -47,7 +47,7 @@ export interface AccountabilityDone {
    * second key; the account says which identity, where and when, and the person reading it
    * knows which of the two it was. It is the same reading the write says at the moment it
    * founds (`a-new-identity.ts`), asked of the whole record — and the same field the agent's
-   * account carries, from the one selection in the copilot's fold.
+   * account carries, from the one selection in the context package's fold.
    */
   readonly account: Accountability;
   /** How each identity this record knows is written for a person. */

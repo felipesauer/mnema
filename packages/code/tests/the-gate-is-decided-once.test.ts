@@ -28,7 +28,7 @@ const PACKAGES = join(REPO, 'packages');
  */
 function callersOf(name: string): string[] {
   const call = new RegExp(`(?<!function\\s+)\\b${name}\\s*\\(`);
-  return ['chain', 'core', 'copilot', 'code']
+  return ['chain', 'core', 'context', 'code']
     .flatMap((pkg) => sourceFiles(join(PACKAGES, pkg, 'src')))
     .filter((file) => call.test(codeOnly(readFileSync(file, 'utf-8'))))
     .map((file) => relative(REPO, file))

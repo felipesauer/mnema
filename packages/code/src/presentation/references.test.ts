@@ -10,7 +10,7 @@
  * nesting still there, or the nesting gone with nothing saying which list is which.
  */
 
-import type { ReferenceGraph } from '@mnema/copilot';
+import type { ReferenceGraph } from '@mnema/context';
 import { describe, expect, it } from 'vitest';
 import { renderPlain } from './plain.js';
 import { referenceReport } from './references.js';

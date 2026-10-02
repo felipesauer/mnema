@@ -27,7 +27,7 @@
 import { mkdirSync, mkdtempSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
-import type { Brief, PatternProvenance, RecordSearch } from '@mnema/copilot';
+import type { Brief, PatternProvenance, RecordSearch } from '@mnema/context';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { type CliIo, run } from '../cli.js';
 import { briefDocument } from './brief.js';

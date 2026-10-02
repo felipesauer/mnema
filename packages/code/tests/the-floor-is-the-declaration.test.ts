@@ -217,7 +217,7 @@ const DOMAIN = [
   '@mnema/chain/one-line',
   '@mnema/core',
   '@mnema/core/write',
-  '@mnema/copilot',
+  '@mnema/context',
 ];
 
 /**
@@ -306,7 +306,7 @@ const EAGER_DOMAIN: Readonly<Record<string, string>> = {
     'and never a trim of our own — a second reading of blank would disagree with the ' +
     'one that decides what the chain records. THIS is the edge that holds the floor: ' +
     'it is the only one that needs behaviour rather than a constant.',
-  'wiring/refs.ts @mnema/copilot': '`--depth` states its default and its cap in its help.',
+  'wiring/refs.ts @mnema/context': '`--depth` states its default and its cap in its help.',
   'wiring/search.ts @mnema/core': '`--limit` states its default and its cap in its help.',
   'vocabulary.ts @mnema/chain':
     '`--require` lists the three levels, so the chain’s own tuple of them is read while ' +
@@ -580,7 +580,7 @@ describe('the floor is the declaration', () => {
 
   it('reaches the domain only where the declaration needs it', () => {
     // One assertion, both directions: a new eager import of the chain, the core or
-    // the copilot lands in `reached` until somebody writes down why it cannot wait,
+    // the context package lands in `reached` until somebody writes down why it cannot wait,
     // and an edge that goes away lands in `stale` until its entry is deleted.
     expect(reconcile(DOMAIN_EDGES, Object.keys(EAGER_DOMAIN))).toEqual({ reached: [], stale: [] });
     // And the SIZE, so the number this file's own doc states cannot drift from the
@@ -677,7 +677,7 @@ describe('the floor is the declaration', () => {
     expect(loads("import type { InitResult } from '../commands/init.js';")).toEqual([]);
     expect(loads("import type Thing from '../commands/init.js';")).toEqual([]);
     expect(loads("import { type TreeReport } from '../commands/verify.js';")).toEqual([]);
-    expect(loads("export type { Brief } from '@mnema/copilot';")).toEqual([]);
+    expect(loads("export type { Brief } from '@mnema/context';")).toEqual([]);
     // The whole point: a load inside an action is not a load at module scope.
     expect(loads("      const { runTask } = await import('../commands/task.js');")).toEqual([]);
     // And prose that mentions one is not one.

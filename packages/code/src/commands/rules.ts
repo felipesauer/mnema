@@ -27,12 +27,12 @@
  * Like the other intelligence reads it refuses `NO_PROJECT` outside a project —
  * an address is relative to a project root, so outside one there is no root to be
  * relative to. Read-only in the strict sense: a cache per tree rebuilt in memory,
- * the copilot's pure derivation, and one `existsSync` per address. No writer, no
+ * the context package's pure derivation, and one `existsSync` per address. No writer, no
  * key, no event — so no `--actor`.
  */
 
 import { dirname } from 'node:path';
-import type { GoverningRules } from '@mnema/copilot';
+import type { GoverningRules } from '@mnema/context';
 import { type DiscoveryEnv, resolveTrees } from '@mnema/core';
 import { readGoverningRules } from '../governed-tree.js';
 import {

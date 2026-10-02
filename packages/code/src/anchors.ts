@@ -24,7 +24,7 @@
  * material.
  */
 
-import { knownAnchors, type ScopedCache } from '@mnema/copilot';
+import { knownAnchors, type ScopedCache } from '@mnema/context';
 import {
   type AnchorResolution,
   type ResolvedTrees,

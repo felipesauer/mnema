@@ -56,7 +56,7 @@
  * open the trees that are left, and the other three still stop.
  */
 
-import { consultationsByRun, type RecordBody, readRecord } from '@mnema/copilot';
+import { consultationsByRun, type RecordBody, readRecord } from '@mnema/context';
 import { type DiscoveryEnv, resolveTrees, type Scope } from '@mnema/core';
 import { type AnchorForms, anchorForms, NO_ANCHORS } from '../anchors.js';
 import {

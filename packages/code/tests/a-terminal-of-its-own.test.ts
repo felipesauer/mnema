@@ -408,7 +408,7 @@ describe('what answers a Tab reaches for no door onto the disk', () => {
   const DOORS: readonly { readonly why: string; readonly term: RegExp }[] = [
     { why: 'the filesystem is a door onto the record', term: /['"]node:fs['"]/ },
     { why: 'so is a read of one', term: /readFileSync|readdirSync|openSync|existsSync/ },
-    { why: 'and so is anything that resolves a tree', term: /tree-sources|@mnema\/copilot/ },
+    { why: 'and so is anything that resolves a tree', term: /tree-sources|@mnema\/context/ },
     { why: 'and the chain is the door the record is really behind', term: /@mnema\/chain/ },
   ];
 

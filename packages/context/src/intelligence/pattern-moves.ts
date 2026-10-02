@@ -55,7 +55,7 @@
  * absence of the accusing sentence from it, a person driving the real CLI
  * (`run start` → `show` → `skill move`) and coming back NOT OBSERVABLE, and a digest of
  * the sandbox proving the reading wrote nothing. That suite reaches this module as
- * `@mnema/copilot` and drives the CLI through a subprocess, which is a reach and not a
+ * `@mnema/context` and drives the CLI through a subprocess, which is a reach and not a
  * reading of this source; `pattern-moves.test.ts` beside it asks the function directly,
  * over a chain a bench writes, and its subject is the border between the two silences.
  */

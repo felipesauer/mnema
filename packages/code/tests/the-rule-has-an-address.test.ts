@@ -457,7 +457,7 @@ describe('one place assembles a governs read', () => {
    * project IS; either would make a number depend on which surface asked. So
    * `governed-tree.ts` assembles them and every caller goes through that.
    *
-   * THE LIST IS READ OFF THE COPILOT'S SOURCE, and that is the repair rather than a
+   * THE LIST IS READ OFF THE CONTEXT PACKAGE'S SOURCE, and that is the repair rather than a
    * detail. It used to be a literal pair — `governingRules` and `rulesInForceAt` —
    * with a comment saying a third derivation "is a gap somebody has to notice". A
    * third one shipped (`asksForAPersonAt`, the gate), nobody noticed, and this case
@@ -472,7 +472,7 @@ describe('one place assembles a governs read', () => {
    * push the explanations out of the files that owe them.
    */
   const governance = fileURLToPath(
-    new URL('../../copilot/src/intelligence/governance.ts', import.meta.url),
+    new URL('../../context/src/intelligence/governance.ts', import.meta.url),
   );
 
   /** Every exported derivation of that module that takes an injected question. */
@@ -508,14 +508,14 @@ describe('one place assembles a governs read', () => {
     };
     walk(src);
     expect(naming.sort()).toEqual(['governed-tree.ts']);
-    // And every one of them IS exported from the copilot's barrel, so the walk cannot
+    // And every one of them IS exported from the context package's barrel, so the walk cannot
     // be green over a name no surface could have reached in the first place.
-    const copilot = readFileSync(
-      fileURLToPath(new URL('../../copilot/src/index.ts', import.meta.url)),
+    const context = readFileSync(
+      fileURLToPath(new URL('../../context/src/index.ts', import.meta.url)),
       'utf-8',
     );
     for (const derivation of derivations) {
-      expect(copilot, derivation).toContain(`  ${derivation},`);
+      expect(context, derivation).toContain(`  ${derivation},`);
     }
     // Every derivation is called there, and each exactly once: a second call site
     // inside the assembly is a second question being built.

@@ -49,7 +49,7 @@
  * rule this project never made, in the text explaining why somebody's work stopped.
  */
 
-import type { PushedRule, RulesAtPath, ScopedCache } from '@mnema/copilot';
+import type { PushedRule, RulesAtPath, ScopedCache } from '@mnema/context';
 import { type GovernedRead, readAsksForAPersonAt } from './governed-tree.js';
 import { oneLine } from './one-line.js';
 import { DERIVED_FROM } from './provenance.js';

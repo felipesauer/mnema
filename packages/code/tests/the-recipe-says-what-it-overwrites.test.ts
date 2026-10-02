@@ -48,7 +48,7 @@
  * is the hole this guard has, and `init`'s block was in it until this line was written.
  */
 
-import type { Brief } from '@mnema/copilot';
+import type { Brief } from '@mnema/context';
 import { describe, expect, it } from 'vitest';
 import { buildProgram, type CliIo } from '../src/cli.js';
 import { briefDocument } from '../src/presentation/brief.js';

@@ -31,7 +31,7 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 import { ensureTree } from '@mnema/chain';
-import type { Brief, ChannelState } from '@mnema/copilot';
+import type { Brief, ChannelState } from '@mnema/context';
 import { type DiscoveryEnv, PROJECT_DIR } from '@mnema/core';
 import { Client } from '@modelcontextprotocol/sdk/client/index.js';
 import { InMemoryTransport } from '@modelcontextprotocol/sdk/inMemory.js';
@@ -232,7 +232,7 @@ describe('no text a reader is handed says the rules arrive before the write', ()
     'README.md',
     'plugin/README.md',
     'packages/code/README.md',
-    'packages/copilot/README.md',
+    'packages/context/README.md',
     'packages/core/README.md',
     'packages/chain/README.md',
   ])('on %s', (page) => {

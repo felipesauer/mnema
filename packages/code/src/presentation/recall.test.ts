@@ -6,7 +6,7 @@
  * own `derived` flag (a memory's line is an excerpt; an observation's is its topic).
  */
 
-import type { PertinentSearch, RecordHit } from '@mnema/copilot';
+import type { PertinentSearch, RecordHit } from '@mnema/context';
 import { detectSecrets, excerptOf, SEARCH_DEFAULT_LIMIT } from '@mnema/core';
 import { describe, expect, it } from 'vitest';
 import { recordFraming, tellsWhatToDo } from '../record-framing.js';

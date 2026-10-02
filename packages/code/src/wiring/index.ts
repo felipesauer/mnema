@@ -29,7 +29,7 @@
  * The four CONTEXT reads — `status`, `focus`, `resume`, `next-actions`. Like
  * init/verify they are top-level verbs (heterogeneous shapes, not an
  * interchangeable resource family), and unlike every write above they are strictly
- * READ-ONLY: each opens the projection cache, rebuilds, and calls a PURE copilot
+ * READ-ONLY: each opens the projection cache, rebuilds, and calls a PURE context
  * derivation — no writer, no event, no key minted. `--json` emits the faithful
  * object (the agent's stable contract); without it, a lean human summary (one
  * line per item).
@@ -70,7 +70,7 @@
  * most fold the union, while `exposure` and `export` keep the trees APART and label what
  * they report, because a fact that is committed and clones to every machine and a fact
  * that is on one disk are the same finding in two situations. Strictly READ-ONLY: each
- * reads the present trees' tails and folds them with a PURE copilot derivation — no
+ * reads the present trees' tails and folds them with a PURE context derivation — no
  * cache rebuilt to disk, no writer, no key. So none takes `--actor` (the answer
  * is a property of the record, not of who asks); accountability's and `export`'s
  * `--who`/`--which` are FILTERS over who already acted, not the asker's identity.

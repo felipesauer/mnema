@@ -143,7 +143,7 @@ function copyQuoted(source: string, at: number, keep: (text: string) => void): n
  * listed for the reason this whole file exists. The eleven that import nothing but each
  * other are the primitives and the renderers: they shape what a caller hands them and
  * decide nothing about where it came from, so the question belongs to their callers.
- * The day one of them reaches for `@mnema/copilot` it joins the thirteen, its values
+ * The day one of them reaches for `@mnema/context` it joins the thirteen, its values
  * become sites, and the classification below stops being total.
  *
  * IT WAS *ANY IMPORT THAT IS NOT `./`* AND THAT IS NOT WHAT IT MEANS. The record arrives from a

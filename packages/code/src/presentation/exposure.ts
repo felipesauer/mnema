@@ -19,7 +19,7 @@
  * the same reason.
  */
 
-import type { Exposure } from '@mnema/copilot';
+import type { Exposure } from '@mnema/context';
 import { fact } from './detail.js';
 import { asId, asScope, asWhen, itemLine } from './items.js';
 import type { Render } from './render.js';

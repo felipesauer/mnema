@@ -2,7 +2,7 @@
  * `mnema status [--actor <id>]` — where things stand: the opening read, on the surface a
  * person uses.
  *
- * IT DERIVES NOTHING OF THE OPENING CONTEXT. That context is `@mnema/copilot`'s
+ * IT DERIVES NOTHING OF THE OPENING CONTEXT. That context is `@mnema/context`'s
  * `bootstrap`, and this adapter opens a projection cache over every tree of the project,
  * rebuilds it, resolves the actor and forwards — the same shape `focus` and `resume`
  * have, and the same strictness: no writer, no event, no key minted. The agent-facing
@@ -14,7 +14,7 @@
  * THAT SENTENCE READ "IT DERIVES NOTHING", FLAT, AND ONE FIELD FALSIFIED IT. This answer
  * carries a second fact now, and it is not the derivation's: which decision bases of this
  * CHECKOUT hold documents the record has no decision for ({@link StatusDone.outside}). It
- * reads the disk, which `@mnema/copilot` never does, and it is deliberately OUTSIDE the
+ * reads the disk, which `@mnema/context` never does, and it is deliberately OUTSIDE the
  * `status` object rather than inside it — the equality those two doors promise each other
  * is about the record, and a count of files in one working tree is not a fact about the
  * record. `--json` therefore still serves the derivation and only the derivation. The
@@ -50,7 +50,7 @@
 
 import { dirname } from 'node:path';
 import { catalogUpcasters, listPrivateKeyFingerprints } from '@mnema/chain';
-import { type Bootstrap, bootstrap } from '@mnema/copilot';
+import { type Bootstrap, bootstrap } from '@mnema/context';
 import {
   type Clock,
   chainRootForScope,

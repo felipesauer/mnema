@@ -4,7 +4,7 @@
 share of the whole read, and how both behave as the record grows.
 
 `bootstrap` gained a field that says which kinds of record it does not look at, and how
-many of each the record holds (`copilot/src/context/unread.ts`). The module it was added
+many of each the record holds (`context/src/context/unread.ts`). The module it was added
 to is documented almost entirely about not spending, so the addition owed a number rather
 than the word "cheap".
 

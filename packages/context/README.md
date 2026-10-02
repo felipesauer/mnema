@@ -1,4 +1,4 @@
-# @mnema/copilot
+# @mnema/context
 
 The layer of [mnema](https://github.com/felipesauer/mnema) that guides an agent
 by reading the proof: read-only derivations that turn the recorded work into the
@@ -128,7 +128,7 @@ layer makes no proof of its own; being clear about that is the point.
 ## Install
 
 ```sh
-npm i @mnema/copilot
+npm i @mnema/context
 ```
 
 **It is released because `@mnema/code` depends on it, not because you should install
@@ -145,7 +145,7 @@ to know what this one holds and what it proves.
 Requires Node ≥ 22.12.0. The package is ESM-only.
 
 Whether the command above resolves is a fact about the registry rather than about this
-page: `npm view @mnema/copilot version` answers it in one line.
+page: `npm view @mnema/context version` answers it in one line.
 
 ## Usage
 
@@ -161,7 +161,7 @@ import {
   guard,
   nextActionsForTask,
   readRecord,
-} from '@mnema/copilot';
+} from '@mnema/context';
 
 // Where did I leave off, what can I do next, by what patterns, and what is settled?
 // `asOf` is the clock the ages are measured against; `sessionRuns` are the runs

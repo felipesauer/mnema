@@ -14,7 +14,7 @@
  * it.
  */
 
-import type { Brief, ChannelState } from '@mnema/copilot';
+import type { Brief, ChannelState } from '@mnema/context';
 import { describe, expect, it } from 'vitest';
 import { briefDocument, briefWithin } from './brief.js';
 import { HOOK_TEXT_CEILING, printedLength } from './within-a-hook.js';

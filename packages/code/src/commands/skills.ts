@@ -26,12 +26,12 @@
  * own conventions, which are a legitimate thing to audit from anywhere.
  *
  * Read-only in the strict sense: a cache per visible tree, rebuilt in memory, and
- * the copilot's pure `patternProvenance`. No writer, no key, no event — so no
+ * the context package's pure `patternProvenance`. No writer, no key, no event — so no
  * `--actor`, and no consultation recorded (serving a body records one; auditing a
  * provenance is not serving it, and this read never touches a body at all).
  */
 
-import { consultationsByRun, type PatternProvenance, patternProvenance } from '@mnema/copilot';
+import { consultationsByRun, type PatternProvenance, patternProvenance } from '@mnema/context';
 import { type DiscoveryEnv, resolveTrees } from '@mnema/core';
 import {
   linkBreaksOf,

@@ -38,7 +38,7 @@
  *
  * It is a COUNT PER KIND and not a list of the facts, and that is a divergence from
  * the naming convention the opening context states for its own lists (names and ids,
- * cut, with the total beside the cut — see `copilot`'s `bootstrap.ts`). The reason is
+ * cut, with the total beside the cut — see `context`'s `bootstrap.ts`). The reason is
  * the ceiling: those lists are over entities, which a record holds without limit, so
  * they are cut and the cut declares itself; this one is over the event CATALOG, which
  * is a closed union, so its length is bounded by the number of kinds whatever the run

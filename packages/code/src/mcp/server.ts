@@ -78,7 +78,7 @@
  */
 
 import { CodedError } from '@mnema/chain';
-import { REFERENCE_DEFAULT_DEPTH, REFERENCE_MAX_DEPTH } from '@mnema/copilot';
+import { REFERENCE_DEFAULT_DEPTH, REFERENCE_MAX_DEPTH } from '@mnema/context';
 import {
   canonicalIdentity,
   DECISION_ACTIONS,
@@ -2120,7 +2120,7 @@ function moved(
  *
  * It travels as its OWN content block, never merged into the JSON: the payload stays
  * byte-identical to what a caller parsed before this sentence existed, and the
- * derivation stays the copilot's — a note about the connection has no business
+ * derivation stays the context package's — a note about the connection has no business
  * inside a shape the domain defines.
  *
  * `also` carries any further sentences a particular read adds — they follow the
@@ -2336,7 +2336,7 @@ function withRunState(
  * tell that something is wrong and unable to fix it.
  *
  * It travels as its own content block for the same reason the run-state note does:
- * the payload is the copilot's shape, and where a session landed is a fact about
+ * the payload is the context package's shape, and where a session landed is a fact about
  * this connection rather than about the record it derives from.
  */
 function whereThisSessionIs(session: Session): string {

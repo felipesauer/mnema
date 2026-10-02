@@ -1,12 +1,12 @@
 /**
- * @mnema/copilot — the layer that guides an agent by reading the proof.
+ * @mnema/context — the layer that guides an agent by reading the proof.
  *
  * The core proves what happened; this layer reads that record and composes it
  * into the context an agent needs — where a person left off, what they may do
  * next, whether a move is allowed. It is a layer ABOVE the domain: it depends on
  * @mnema/core (its projections and its gate) and never the other way around.
  *
- * The one rule that defines it: the copilot only READS and COMPOSES. It never
+ * The one rule that defines it: the context package only READS and COMPOSES. It never
  * emits an event, never writes state, never decides a fact. Everything here is a
  * derivation — a view of what the chain already proves — so if two clones ever
  * disagreed about it, the chain decides. A thing that would need to be recorded
@@ -15,7 +15,7 @@
  * own suite the moment it imports anything that writes.
  */
 
-// The core's own types, re-exported so a consumer of @mnema/copilot can build a
+// The core's own types, re-exported so a consumer of @mnema/context can build a
 // guard request and read its verdict, or read a timeline entry's `role`, or a
 // skill's adoption, without reaching into @mnema/core directly. The guard's
 // request and verdict are the gate's own (no new type), and the reference

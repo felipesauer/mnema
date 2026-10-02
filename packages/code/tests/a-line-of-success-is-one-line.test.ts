@@ -870,7 +870,7 @@ describe('WHAT_IS_NOT_CLOSED', () => {
   it('no longer names the twin reading, because the twin was closed', () => {
     // THIS CASE USED TO BE THE DEBT AND IT IS THE CORRECTION OF ITS OWN SHAPE. It said
     // `status` printed a run's goal raw and that it *cannot* collapse it "without a
-    // static import that would put the copilot's edge on the floor of every invocation"
+    // static import that would put the context package's edge on the floor of every invocation"
     // — which was wrong twice. `status.ts` already imports the rule of the line, and it
     // is loaded inside the action, so the floor was never the question; and the fix was
     // never `status`'s to make. The collapse belongs in `lastRunPhrase`, where the phrase

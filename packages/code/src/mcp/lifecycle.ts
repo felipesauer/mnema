@@ -30,7 +30,7 @@
  * AND THE READER IS NOT LEFT WITH IT, which is the half this note used to delegate
  * without naming a delegate. A run left open is not an answer that has gone wrong: the
  * readings report it as open AND say how long it has been so, how long since it last
- * recorded anything, and what was written inside it — `copilot`'s `focus` sorts them
+ * recorded anything, and what was written inside it — `context`'s `focus` sorts them
  * newest first and prunes and ranks nothing, `code/src/wiring/focus.ts` prints one line
  * per run with those durations on it, and `tests/mcp-session-close.test.ts` ("what an
  * open run says about itself") holds all of it. A run somebody abandoned in July shows

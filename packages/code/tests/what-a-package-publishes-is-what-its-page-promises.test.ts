@@ -21,7 +21,7 @@
  * verifier out of an extracted tarball — with nothing else beside it — because a list of
  * filenames proves the files are present and not that they are enough.
  *
- * `@mnema/core` and `@mnema/copilot` carry `dist/` and no more. They are published because
+ * `@mnema/core` and `@mnema/context` carry `dist/` and no more. They are published because
  * `@mnema/code` depends on them and a `workspace:*` that does not resolve is an install that
  * fails, not because anybody should read them. Their pages say so.
  *
@@ -32,7 +32,7 @@
  *     `EUNSUPPORTEDPROTOCOL`; `pnpm pack` rewrites each one to the concrete version. A guard
  *     that measured `npm pack` would be measuring an artifact nobody can install.
  *   - `tar` AND NOT THE PACKER'S OWN `--json`, because the report is not the tarball.
- *     Measured on `@mnema/copilot`: `pnpm pack --json` listed 107 files and the tarball held
+ *     Measured on `@mnema/context`: `pnpm pack --json` listed 107 files and the tarball held
  *     108. The extra one is `LICENSE`, which pnpm copies from the workspace root — so the one
  *     file that makes `"license": "MIT"` more than a word in a manifest is exactly the file
  *     neither report mentions. A guard reading the report would have sworn it was absent.
@@ -45,7 +45,7 @@
  * declared debt: every package shipped `dist/**.js.map` and `dist/**.d.ts.map` whose
  * `sources` named `../src/*.ts` with no `sourcesContent`, so in an installed tree, where
  * `src/` does not travel, they resolved to nothing. Measured on 30/09/2026 out of the
- * tarballs: 76 such maps in `@mnema/chain`, 134 in `@mnema/core`, 52 in `@mnema/copilot` and
+ * tarballs: 76 such maps in `@mnema/chain`, 134 in `@mnema/core`, 52 in `@mnema/context` and
  * 380 in `@mnema/code`. The choice was between shipping `src/` and embedding the source in
  * the maps, and it was made for the second. `tsconfig.base.json` now sets `inlineSources`,
  * which the compiler honours for the maps of the emitted JavaScript and NOT for declaration
@@ -145,7 +145,7 @@ describe('the workspace knows which packages it publishes', () => {
     expect(ALL.map((m) => m.name).sort()).toEqual([
       '@mnema/chain',
       '@mnema/code',
-      '@mnema/copilot',
+      '@mnema/context',
       '@mnema/core',
     ]);
     expect(PUBLISHABLE.map((m) => m.name).sort()).toEqual(ALL.map((m) => m.name).sort());

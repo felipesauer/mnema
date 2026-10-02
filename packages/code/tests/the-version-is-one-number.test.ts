@@ -93,7 +93,7 @@ describe('the manifests this workspace ships agree on one version', () => {
       'package.json',
       'packages/chain/package.json',
       'packages/code/package.json',
-      'packages/copilot/package.json',
+      'packages/context/package.json',
       'packages/core/package.json',
       'plugin/.claude-plugin/plugin.json',
     ]);

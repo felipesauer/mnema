@@ -184,7 +184,7 @@ pnpm add -g @mnema/code
 ```
 
 It puts the `mnema` binary on your `PATH`. Requires Node ≥ 22.12.0; the package is
-ESM-only. It brings `@mnema/chain`, `@mnema/core` and `@mnema/copilot` with it — they
+ESM-only. It brings `@mnema/chain`, `@mnema/core` and `@mnema/context` with it — they
 are released alongside it because a dependency that is not on the registry is an
 install that fails.
 
@@ -371,7 +371,7 @@ same word on every row of a reading is a column a reader has to look past, and t
 weight off it is what makes the title beside it the subject of the line. It also used to say the colour was a task's alone, which was
 true of the code and never of the rule. Asserted end to end in
 `a-state-is-a-position.test.ts`, and the derivations from the tables of moves in `core`'s
-`disposition.test.ts` and `copilot`'s.
+`disposition.test.ts` and `context`'s.
 
 A count is still not coloured: three reopened tasks may be a team learning something, and
 this tool does not decide that for you.

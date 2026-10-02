@@ -249,7 +249,7 @@ CREATE TABLE IF NOT EXISTS skills (
 ) STRICT;
 
 -- Speeds the by-state queries: the 'adopted' skills are the live patterns the
--- copilot surfaces; 'proposed'/'reviewed' are the curation backlog.
+-- context surfaces; 'proposed'/'reviewed' are the curation backlog.
 CREATE INDEX IF NOT EXISTS idx_skills_state ON skills (state);
 
 -- The full-text index over the record: ONE row per searchable entity, holding

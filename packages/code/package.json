@@ -47,7 +47,7 @@
   },
   "dependencies": {
     "@mnema/chain": "workspace:*",
-    "@mnema/copilot": "workspace:*",
+    "@mnema/context": "workspace:*",
     "@mnema/core": "workspace:*",
     "@modelcontextprotocol/sdk": "^1.30.1",
     "commander": "^15.0.0",

@@ -14,7 +14,7 @@
 // "the ONE relation label" and named `governs` alone; `asks-for-a-person` falsified
 // that, and `ADDRESS_RELATIONS` is the pair itself, so a reader asks whether a label
 // carries an address without spelling out either. They are the chain's constants and
-// are re-exported here for one reason — the copilot may not name `@mnema/chain` (its
+// are re-exported here for one reason — the context package may not name `@mnema/chain` (its
 // boundary test bans the specifier, because that package holds writers), and a reader
 // that typed a literal instead would be the second place a label lives.
 //

@@ -298,7 +298,7 @@ describe('no manifest sells the gate as more than it is', () => {
       'package.json',
       'packages/chain/package.json',
       'packages/code/package.json',
-      'packages/copilot/package.json',
+      'packages/context/package.json',
       'packages/core/package.json',
       'plugin/.claude-plugin/plugin.json',
     ]);
@@ -416,7 +416,7 @@ describe('every manifest points home at the same place', () => {
     // IT WAS THREE, AND THE GUARD IS WHAT SAID SO. The comment above this describe block
     // predicted exactly this — "a list typed here is a list that stays at three while a
     // fourth manifest is added with a home of its own" — and it came true three at once when
-    // `@mnema/chain`, `@mnema/core` and `@mnema/copilot` stopped being private. A package on
+    // `@mnema/chain`, `@mnema/core` and `@mnema/context` stopped being private. A package on
     // the registry whose page has no link home is the first thing a reader cannot click, so
     // the three took a `homepage` when they took a `publishConfig`, and this is the case that
     // made somebody look.
@@ -428,7 +428,7 @@ describe('every manifest points home at the same place', () => {
       'package.json',
       'packages/chain/package.json',
       'packages/code/package.json',
-      'packages/copilot/package.json',
+      'packages/context/package.json',
       'packages/core/package.json',
       'plugin/.claude-plugin/plugin.json',
     ]);

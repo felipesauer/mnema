@@ -34,7 +34,7 @@
  * already in hand — which is why it lives beside the shapes rather than in a verb of its
  * own opening the tails a second time.
  *
- * Read-only: it reads the present trees' tails and folds them with the copilot's
+ * Read-only: it reads the present trees' tails and folds them with the context package's
  * pure `antipatterns`. No cache, no writer, no key, and no actor (the shapes are
  * a property of the record). A shape-free record yields empty lists, not an
  * error. With no project at all it refuses `NO_PROJECT`, the same refusal the
@@ -47,7 +47,7 @@ import {
   antipatterns,
   type PatternMoveWitness,
   patternMoveWitness,
-} from '@mnema/copilot';
+} from '@mnema/context';
 import { type DiscoveryEnv, resolveTrees } from '@mnema/core';
 import { recordEvents } from '../intelligence-source.js';
 
