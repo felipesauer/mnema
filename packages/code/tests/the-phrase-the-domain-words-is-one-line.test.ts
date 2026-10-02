@@ -724,10 +724,11 @@ const CLASSIFIED: Readonly<Record<string, { verdict: Verdict; why: string }>> = 
       verdict: 'composed',
       why: 'the reading `witness.ts` composed — every value in it is a site of its own below',
     },
-  '@mnema/chain chain/verify.ts «external witness (T3): covered — {}» witness.detail #1': {
-    verdict: 'composed',
-    why: 'the same reading, in the state that reaches the record’s top rung',
-  },
+  '@mnema/chain chain/verify.ts «external witness (T3): covered — {} (the work of its block header was checked here, not its place in the Bitcoin chain)» witness.detail #1':
+    {
+      verdict: 'composed',
+      why: 'the same reading, in the state that reaches the record’s top rung',
+    },
   '@mnema/chain chain/verify.ts «external witness (T3): not covered — {}» witness.detail #1': {
     verdict: 'composed',
     why: 'the same reading, in the state every record is in until somebody asks for a witness',

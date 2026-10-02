@@ -531,8 +531,8 @@ describe('chain — deletion and rollback', () => {
   });
 });
 
-describe('chain — checkpoint chaining defends signed history from a dropped trailing checkpoint', () => {
-  it('flags a chain break when a trailing checkpoint (and its signed events) are removed', () => {
+describe('chain — checkpoint chaining catches a dropped EARLIER checkpoint, and not an aligned cut', () => {
+  it('reads a cut that took the last checkpoint WITH its events as an honest shorter chain', () => {
     // Two checkpoints: 0..3 and 4..7. An adversary truncates the tail to 0..3
     // and deletes the second checkpoint, trying to pass off the shorter chain
     // as honest. The first checkpoint alone would verify — but the writer's

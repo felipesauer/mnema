@@ -403,8 +403,8 @@ export const NAMES_THAT_NEED_MORE: Readonly<
   Record<string, { readonly times: number; readonly why: string }>
 > = {
   'packages/code/README.md: mnema tail prune': {
-    times: 2,
-    why: 'the verb named in prose, as the one that cuts a tail; its own section hands the line over',
+    times: 3,
+    why: 'the verb named in prose, as the one that cuts a tail (and, beside the CI recipe, as the cut that recipe fails on by design); its own section hands the line over',
   },
   'packages/code/README.md: mnema key restore': {
     times: 1,
@@ -523,12 +523,16 @@ export const NAMES_THAT_NEED_MORE: Readonly<
  * looks like where a person checks the hook: the verb answers that `mnema brief` does not take
  * `--hook`, and the session is handed what `mnema brief` prints — two names in one span, looked
  * at (63 → 65 names).
+ *
+ * THE PAGES THAT SAY WHAT A GREEN `verify` DOES NOT PROVE name two verbs more in prose — the
+ * witness that dates a record and the cut the CI recipe fails on by design — and the recipe
+ * itself is one block line more (66 → 68 names in spans, 35 → 36 lines in blocks).
  */
 export const HANDED_OVER: Readonly<
   Record<Handed['from'], Readonly<Record<Reading['kind'], number>>>
 > = {
-  span: { line: 34, name: 66, flag: 1, unwritten: 0 },
-  block: { line: 35, name: 18, flag: 0, unwritten: 0 },
+  span: { line: 34, name: 68, flag: 1, unwritten: 0 },
+  block: { line: 36, name: 18, flag: 0, unwritten: 0 },
   source: { line: 34, name: 46, flag: 3, unwritten: 3 },
 };
 

@@ -163,7 +163,7 @@ export const LEVEL_REQUIREMENTS = ['chained', 'signed', 'witnessed'] as const;
  *
  *   - a tail removed together with its key is not reported AT ALL. That record reads
  *     `0 tail(s); no events yet`, indistinguishable from a fresh one, and only a
- *     history outside the record — a git log, an external witness — can testify to
+ *     history outside the record — the one a git remote keeps — can testify to
  *     what was taken out.
  *   - a removed tail whose committed key REMAINS is reported, and is not a break: the
  *     keys are crossed against the tails on disk and the count comes out as a census
