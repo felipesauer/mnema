@@ -185,7 +185,10 @@ describe('the folded line is the line, broken', () => {
     // eighty, and these three numbers are what say it does not.
     const moved = (columns: number): number =>
       corpus.filter((line) => foldedAt(columns, renderPlain)(line) !== renderPlain(line)).length;
-    expect([moved(24), moved(40), moved(80)]).toEqual([26, 12, 2]);
+    // [26, 14, 2], and it was [26, 12, 2]: two lines of the corpus carry an actor's escape, which
+    // used to be zero columns wide and is now six visible ones (`\\u001b`), so they fold at
+    // forty where they did not. The premise was that an actor's escape costs no width.
+    expect([moved(24), moved(40), moved(80)]).toEqual([26, 14, 2]);
     // And at a width nothing in the corpus reaches, nothing moves at all.
     expect(moved(NOTHING_EXCEEDS)).toBe(0);
   });

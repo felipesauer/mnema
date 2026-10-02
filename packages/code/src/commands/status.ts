@@ -1,5 +1,5 @@
 /**
- * `mnema status --actor <id>` — where things stand: the opening read, on the surface a
+ * `mnema status [--actor <id>]` — where things stand: the opening read, on the surface a
  * person uses.
  *
  * IT DERIVES NOTHING OF THE OPENING CONTEXT. That context is `@mnema/copilot`'s
@@ -49,8 +49,17 @@
  */
 
 import { dirname } from 'node:path';
+import { catalogUpcasters, listPrivateKeyFingerprints } from '@mnema/chain';
 import { type Bootstrap, bootstrap } from '@mnema/copilot';
-import { type Clock, type DiscoveryEnv, resolveTrees, systemClock } from '@mnema/core';
+import {
+  type Clock,
+  chainRootForScope,
+  type DiscoveryEnv,
+  type ResolvedTrees,
+  resolveTrees,
+  systemClock,
+} from '@mnema/core';
+import { authorizingAnchor, recordedAnchorOf, signerFor } from '@mnema/core/write';
 import { type AnchorForms, anchorForms, resolveTypedAnchor } from '../anchors.js';
 import {
   basesNeverImported,
@@ -79,6 +88,12 @@ export interface StatusContext {
 /** Where things stand, over the trees that were read. */
 export interface StatusDone {
   readonly ok: true;
+  /**
+   * True when no `--actor` was given and the report is of the identity THIS MACHINE writes as
+   * in this project — the surface says so, because an answer about somebody the caller did not
+   * name is an answer that has to say whom it is about.
+   */
+  readonly asThisMachine: boolean;
   /** The derivation's result — the whole opening context, unaltered. */
   readonly status: Bootstrap;
   /** How each identity this record knows is written for a person. */
@@ -134,9 +149,27 @@ export type StatusRefused =
  * `NO_PROJECT`; an actor that names no identity here is refused rather than answered
  * about.
  */
+/**
+ * The identity THIS MACHINE writes as in this project, or undefined when the machine has no key.
+ *
+ * It asks what `mnema init` asks to say who writes here (`recordedAnchorOf`, else
+ * `authorizingAnchor`), and it is a READ: a machine with no private key of its own is answered
+ * `undefined` BEFORE a signer is asked for, because asking a signer for a machine without a key
+ * mints one — and a verb that only reports must not found somebody to report on.
+ */
+function thisMachinesAnchor(trees: ResolvedTrees): string | undefined {
+  if (listPrivateKeyFingerprints({ root: trees.keyRoot }).length < 1) return undefined;
+  const asked = {
+    writer: signerFor(trees, 'public'),
+    layout: { root: chainRootForScope(trees, 'public') as string },
+    upcasters: catalogUpcasters(),
+  };
+  return recordedAnchorOf(asked)?.anchor ?? authorizingAnchor(asked);
+}
+
 export function runStatus(
   ctx: StatusContext,
-  input: { actor: string },
+  input: { actor?: string },
 ): StatusDone | StatusRefused {
   const trees = resolveTrees(ctx.cwd, ctx.env);
   // The committed tree, for the reason the other context reads give: it is where a
@@ -146,12 +179,29 @@ export function runStatus(
   }
   return withScopedCaches(trees, (sources) => {
     const anchors = anchorForms(sources);
-    const actor = resolveTypedAnchor(input.actor, anchors);
-    if (!actor.ok) {
-      return { ok: false, reason: 'REFUSED', code: actor.code, message: actor.message };
+    let anchor: string;
+    if (input.actor !== undefined) {
+      const actor = resolveTypedAnchor(input.actor, anchors);
+      if (!actor.ok) {
+        return { ok: false, reason: 'REFUSED', code: actor.code, message: actor.message };
+      }
+      anchor = actor.anchor;
+    } else {
+      const mine = thisMachinesAnchor(trees);
+      if (mine === undefined) {
+        return {
+          ok: false,
+          reason: 'REFUSED',
+          code: 'NO_IDENTITY',
+          message:
+            'this machine has no key of its own, so there is no identity to report as: run `mnema init`, or say whose report with --actor <id>',
+        };
+      }
+      anchor = mine;
     }
     return {
       ok: true,
+      asThisMachine: input.actor === undefined,
       anchors,
       linkBreaks: linkBreaksOf(sources, THE_READING_THAT_OPENED_THESE),
       // Read from the DISK, unlike everything else here, and read over every tree: a
@@ -166,7 +216,7 @@ export function runStatus(
       // and the answer stays the actor's latest — which is the right one for a person
       // asking from the command line about work an agent did.
       status: bootstrap(caches(sources), {
-        actor: actor.anchor,
+        actor: anchor,
         asOf: (ctx.clock ?? systemClock)(),
         sessionRuns: [],
       }),

@@ -22,6 +22,9 @@
  * without spawning a process or writing to the real streams.
  */
 
+// FIRST, and it must stay first: below the Node floor this says so and exits before any import
+// below it loads the native addon (`node-floor.ts` carries the argument and the test that holds it).
+import './node-floor.js';
 import { realpathSync } from 'node:fs';
 import { pathToFileURL } from 'node:url';
 import { IdentityUnavailableError, resolveTrees } from '@mnema/core';
@@ -29,18 +32,19 @@ import { Command, CommanderError, Option } from 'commander';
 import { fact } from './presentation/detail.js';
 import type { Render } from './presentation/render.js';
 import { PRODUCT_PROMISE } from './promise.js';
-import { VERSION } from './version.js';
+import { IDENTITY, VERSION } from './version.js';
 import {
   COLOR_HELP,
   COLOR_WHENS,
   type ColorWhen,
+  paintsAtAll,
   type RenderingAt,
   rendererAtEachWidth,
   rendererFor,
 } from './wiring/color.js';
 import { here } from './wiring/context.js';
 import { registerVerbs } from './wiring/index.js';
-import { type CliIo, processIo } from './wiring/io.js';
+import { type CliIo, neutralizing, processIo } from './wiring/io.js';
 import { MCP_VERB } from './wiring/mcp.js';
 import { speakUsageErrors } from './wiring/misuse.js';
 import { refusalSentence, reportIdentityRefusal } from './wiring/report.js';
@@ -100,6 +104,11 @@ export interface BuiltProgram {
   readonly verbs: readonly Declared[];
 }
 
+/** What `mnema --help` says about `--identify`. */
+const IDENTIFY_HELP =
+  'print this program’s package name and version — how the mnema plugin tells this `mnema` ' +
+  'from another program of the same name on the PATH';
+
 /**
  * Builds the configured `mnema` program. `io` defaults to the real streams.
  *
@@ -120,10 +129,12 @@ export interface BuiltProgram {
  * own, which is what every other caller does.
  */
 export function buildProgram(
-  io: CliIo = processIo,
+  given: CliIo = processIo,
   typed: readonly string[] = [],
   render?: Render,
 ): BuiltProgram {
+  // The port every line leaves by, with the control bytes of recorded text made visible.
+  const io = neutralizing(given, () => paintsAtAll(resolved));
   const program = new Command();
   program
     .name('mnema')
@@ -134,6 +145,15 @@ export function buildProgram(
     // that is not one of the three, which makes a typo a usage error this file already
     // turns into an honest exit rather than a silent fall back to the default.
     .addOption(new Option('--color <when>', COLOR_HELP).choices([...COLOR_WHENS]).default('auto'))
+    // A QUESTION FROM THE PLUGIN, answered on the floor like `--version`: the plugin asks it
+    // before it runs a verb, to tell this `mnema` from another program of the same name first on
+    // the PATH (`version.ts`, {@link IDENTITY}). Thrown as commander throws for `--version`, so
+    // {@link parseWith} reads a clean zero exit and the verb is never reached.
+    .addOption(new Option('--identify', IDENTIFY_HELP))
+    .on('option:identify', () => {
+      io.out(IDENTITY);
+      throw new CommanderError(0, 'mnema.identify', IDENTITY);
+    })
     // Throw instead of calling process.exit, so the whole program can be driven
     // in a test — {@link run} turns the thrown CommanderError into an exit code.
     .exitOverride()

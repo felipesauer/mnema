@@ -226,9 +226,12 @@ describe('a label that names two rules', () => {
       name: 'decision_transition',
       arguments: { id: localId, action: 'accept', note: 'my own habit' },
     });
-    expect(textOf(first)).toBe(`Decision ADR-1 (${travelsId}) → accepted`);
-    expect(textOf(second)).toBe(`Decision ADR-1 (${localId}) → accepted`);
-    expect(textOf(first)).not.toBe(textOf(second));
+    // The echo is the first line; an acceptance by an agent adds a sentence about itself after it.
+    const echo = (reply: Parameters<typeof textOf>[0]): string =>
+      textOf(reply).split('\n')[0] ?? '';
+    expect(echo(first)).toBe(`Decision ADR-1 (${travelsId}) → accepted`);
+    expect(echo(second)).toBe(`Decision ADR-1 (${localId}) → accepted`);
+    expect(echo(first)).not.toBe(echo(second));
 
     // The id an agent reads off the line is the one `read_record` answers to.
     const read = await client.callTool({ name: 'read_record', arguments: { id: localId } });
@@ -329,8 +332,13 @@ describe('the three echoes, each naming a record a reader can find', () => {
     ] as const;
 
     for (const [reply, id, reads] of replies) {
-      const line = textOf(reply);
-      expect(line.split('\n')).toHaveLength(1);
+      // THE ECHO IS ONE LINE, and what may follow it is the one sentence an acceptance by an agent
+      // says about itself — the product's own words, never a second line a record could forge.
+      const [line = '', ...after] = textOf(reply).split('\n');
+      expect(
+        after.every((one) => one.startsWith('This acceptance is recorded as made by an agent')),
+        after.join(' / '),
+      ).toBe(true);
       expect(line).toContain(`(${id})`);
       // FINDABLE: the value the line printed, handed to the read that answers about
       // that kind, comes back about the record that moved.

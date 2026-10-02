@@ -61,6 +61,7 @@ import {
   type FramedChannel,
   recordFraming,
 } from '../src/record-framing.js';
+import { IDENTITY } from '../src/version.js';
 import { held } from './support/the-record-held.js';
 
 /** The repository root: `packages/code/tests/` is three levels under it. */
@@ -204,6 +205,18 @@ const VERB_OF: Readonly<Record<string, string>> = {
   [NOTES_HOOK]: 'recall --hook',
   [GATE_HOOK]: 'before-a-write --host vscode',
 };
+
+/**
+ * What the two opening handlers ask the `mnema` on the PATH before they run their verb: which
+ * program it is (`plugin/hooks/hand-over.mjs`, `whoAnswers`). The gate does not ask.
+ */
+const ASKED_FIRST = '--identify';
+
+/** Every command line a handler runs, in order — the question first, where it asks one. */
+function callsOf(handler: string): string[] {
+  const verb = VERB_OF[handler] as string;
+  return handler === GATE_HOOK ? [verb] : [ASKED_FIRST, verb];
+}
 
 /**
  * What the host hands each handler on stdin. The opening handlers read nothing; the gate reads
@@ -464,7 +477,7 @@ describe('the record arrives unasked', () => {
       expect(ran.status, command).toBe(0);
       // And it was TRIED. Without this line the case is green on a handler that runs
       // nothing at all, which is the shape a broken command path has.
-      expect(ran.mnema, command).toEqual([VERB_OF[handlerOf(command)]]);
+      expect(ran.mnema, command).toEqual(callsOf(handlerOf(command)));
     }
     // Every handler, which is what "every command" has to mean now — the gate included, whose
     // verb answers `{}` outside a project and whose handler writes no byte for it.
@@ -492,7 +505,7 @@ describe('the record arrives unasked', () => {
       expect(ran.status).toBe(0);
       // And it was TRIED, which is what separates "the channel is off" from "the handler
       // never ran the verb".
-      expect(ran.mnema).toEqual([VERB_OF[DOCUMENT_HOOK]]);
+      expect(ran.mnema).toEqual(callsOf(DOCUMENT_HOOK));
     } finally {
       cli('switch', 'on', 'brief-document');
     }
@@ -515,7 +528,7 @@ describe('the record arrives unasked', () => {
       expect(ran.out).toBe('');
       expect(ran.err).toBe('');
       expect(ran.status).toBe(0);
-      expect(ran.mnema).toEqual([VERB_OF[NOTES_HOOK]]);
+      expect(ran.mnema).toEqual(callsOf(NOTES_HOOK));
       // The other channel is untouched by this switch.
       expect(runHook(document, project).out).toContain(COMMITTED_TITLE);
     } finally {
@@ -638,7 +651,7 @@ describe('the record arrives unasked', () => {
 
     const ran = runHook(hookRunning(DOCUMENT_HOOK), crowded);
     expect(ran.status).toBe(0);
-    expect(ran.mnema).toEqual(['brief --hook']);
+    expect(ran.mnema).toEqual([ASKED_FIRST, 'brief --hook']);
     const context = (JSON.parse(ran.out) as { hookSpecificOutput: { additionalContext: string } })
       .hookSpecificOutput.additionalContext;
     expect(context.length).toBeLessThanOrEqual(HOOK_TEXT_CEILING);
@@ -690,7 +703,7 @@ describe('the record arrives unasked', () => {
     // twenty long ones carried the notes past what a hook carries; it is now cut by the index's
     // own rule for a memory's line (`excerptOf`), from the one place that rule lives.
     const ran = runHook(hookRunning(NOTES_HOOK), crowded);
-    expect(ran.mnema).toEqual(['recall --hook']);
+    expect(ran.mnema).toEqual([ASKED_FIRST, 'recall --hook']);
     const context = (JSON.parse(ran.out) as { hookSpecificOutput: { additionalContext: string } })
       .hookSpecificOutput.additionalContext;
     expect(LONG_TOPIC.length).toBeGreaterThan(excerptOf(LONG_TOPIC).length);
@@ -723,6 +736,8 @@ describe('the record arrives unasked', () => {
       shim,
       [
         '#!/bin/sh',
+        // It answers the question as this product, so what is planted is a refusal of the VERB.
+        `if [ "$1" = "${ASKED_FIRST}" ]; then printf '%s\\n' '${IDENTITY}'; exit 0; fi`,
         "printf 'a document of sorts\n'",
         "printf 'and then a refusal\n' >&2",
         'exit 2',
@@ -751,6 +766,7 @@ describe('the record arrives unasked', () => {
       shim,
       [
         '#!/bin/sh',
+        `if [ "$1" = "${ASKED_FIRST}" ]; then printf '%s\\n' '${IDENTITY}'; exit 0; fi`,
         "printf 'a document of sorts\n'",
         "printf 'and something to say\n' >&2",
         'exit 0',
@@ -825,11 +841,113 @@ describe('the record arrives unasked', () => {
         // with the flag and once without — the second only because the first named it.
         expect(said).toBe(cliAt(project, verb));
         expect(readFileSync(recordingTo, 'utf-8').split('\n').filter(Boolean)).toEqual([
+          ASKED_FIRST,
           `${verb} --hook`,
           verb,
         ]);
       }
     }
+  });
+
+  it('names a program of the same name to the session instead of running it', () => {
+    // MEASURED BEFORE IT WAS WRITTEN, with Claude Code 2.1.281: a program called `mnema` placed
+    // before the real one on the PATH was run at all three points the plugin declares, and the
+    // session opened without the record and without a word. The plant is that program: it
+    // records what it was asked and answers nothing — the probe's own stand-in — and then one
+    // that answers the question with something else, the way another tool's version would.
+    const stranger = join(sandbox, 'stranger');
+    mkdirSync(stranger, { recursive: true });
+    const shim = join(stranger, 'mnema');
+    for (const [answer, exit, heard] of [
+      ['', 0, 'printed nothing and exited 0'],
+      ['mnema 0.13.0', 0, 'answered "mnema 0.13.0" and exited 0'],
+      [
+        "error: unknown option '--identify'",
+        1,
+        'answered "error: unknown option \'--identify\'" and exited 1',
+      ],
+    ] as const) {
+      writeFileSync(
+        shim,
+        [
+          '#!/bin/sh',
+          'printf \'%s\\n\' "$*" >> "$MNEMA_CALLS"',
+          ...(answer === '' ? [] : [`printf '%s\\n' "${answer}" >&${exit === 0 ? 1 : 2}`]),
+          `exit ${exit}`,
+          '',
+        ].join('\n'),
+      );
+      chmodSync(shim, 0o755);
+      const told = (file: string, tag: string) => {
+        const recordingTo = join(sandbox, `calls-stranger-${tag}-${exit}-${answer.length}.txt`);
+        const ran = spawnSync('sh', ['-c', hookRunning(file)], {
+          cwd: project,
+          env: {
+            ...hostEnv(recordingTo),
+            CLAUDE_PROJECT_DIR: project,
+            PATH: `${stranger}:${process.env.PATH ?? ''}`,
+          },
+          encoding: 'utf-8',
+        });
+        expect(ran.status).toBe(0);
+        expect(ran.stderr ?? '').toBe('');
+        // ASKED, AND NOT RUN: the question is the only thing that program was handed.
+        expect(readFileSync(recordingTo, 'utf-8').split('\n').filter(Boolean)).toEqual([
+          ASKED_FIRST,
+        ]);
+        return ran.stdout ?? '';
+      };
+      const said = (
+        JSON.parse(told(DOCUMENT_HOOK, 'document')) as {
+          hookSpecificOutput: { additionalContext: string };
+        }
+      ).hookSpecificOutput.additionalContext;
+      expect(said).toContain('The mnema plugin did not run the program named mnema first');
+      expect(said).toContain(`it is not ${IDENTITY.split(' ')[0]}`);
+      expect(said).toContain(`it ${heard}.`);
+      expect(said).toContain('`which -a mnema`');
+      expect(said).not.toContain(COMMITTED_TITLE);
+      // The notes handler asks too, and is silent: a session is told once.
+      expect(told(NOTES_HOOK, 'notes')).toBe('');
+    }
+  });
+
+  it('runs a build older than the question as it ran before', () => {
+    // A `mnema` of this product built before `--identify` refuses it in the product's own words
+    // for an option it does not take — measured on a v1 build of 16/09 — and is not a stranger:
+    // the verb is run, and the flag fallback above still serves a build that is older than both.
+    const older = join(sandbox, 'older-than-the-question');
+    mkdirSync(older, { recursive: true });
+    const shim = join(older, 'mnema');
+    writeFileSync(
+      shim,
+      [
+        '#!/bin/sh',
+        'printf \'%s\\n\' "$*" >> "$MNEMA_CALLS"',
+        `if [ "$1" = "${ASKED_FIRST}" ]; then printf '%s\\n' 'mnema does not take "${ASKED_FIRST}".' '  mnema [options] [command]' >&2; exit 1; fi`,
+        `exec "${process.execPath}" "${CLI}" "$@"`,
+        '',
+      ].join('\n'),
+    );
+    chmodSync(shim, 0o755);
+    const recordingTo = join(sandbox, 'calls-older-than-the-question.txt');
+    const ran = spawnSync('sh', ['-c', hookRunning(DOCUMENT_HOOK)], {
+      cwd: project,
+      env: {
+        ...hostEnv(recordingTo),
+        CLAUDE_PROJECT_DIR: project,
+        PATH: `${older}:${process.env.PATH ?? ''}`,
+      },
+      encoding: 'utf-8',
+    });
+    const said = (
+      JSON.parse(ran.stdout as string) as { hookSpecificOutput: { additionalContext: string } }
+    ).hookSpecificOutput.additionalContext;
+    expect(said).toBe(cliAt(project, 'brief', '--hook'));
+    expect(readFileSync(recordingTo, 'utf-8').split('\n').filter(Boolean)).toEqual([
+      ASKED_FIRST,
+      'brief --hook',
+    ]);
   });
 
   it('carries the committed record by name — not the private tree, and not the bodies', () => {
@@ -907,7 +1025,7 @@ describe('the record arrives unasked', () => {
     expect(ran.out).toBe('');
     expect(ran.err).toBe('');
     expect(ran.status).toBe(0);
-    expect(ran.mnema).toEqual([VERB_OF[NOTES_HOOK]]);
+    expect(ran.mnema).toEqual(callsOf(NOTES_HOOK));
     // Non-vacuity: the DOCUMENT of the same project does arrive, so the silence above is
     // the notes channel's and not a project the handlers cannot read. (Its one decision is
     // proposed, so the document counts it rather than naming it — it is the document's
@@ -972,6 +1090,10 @@ describe('the record arrives unasked', () => {
     for (const command of declaredCommands()) {
       for (const line of runHook(command, project).mnema) reached.add(line);
     }
+    // The question the opening handlers ask first is not a verb: it reads nothing and is
+    // answered before any verb is reached (`version.ts`, `IDENTITY`).
+    expect([...reached][0]).toBe(ASKED_FIRST);
+    reached.delete(ASKED_FIRST);
     expect([...reached]).toEqual(['brief --hook', 'recall --hook', 'before-a-write --host vscode']);
     expect([...reached]).toEqual(Object.values(VERB_OF));
 

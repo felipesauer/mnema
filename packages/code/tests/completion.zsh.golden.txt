@@ -17,7 +17,7 @@ _mnema_commands() {
     'decision') echo 'record move supersede import help' ;;
     'skill') echo 'create move export help' ;;
     'run') echo 'start end help' ;;
-    'key') echo 'restore request enroll revoke help' ;;
+    'key') echo 'restore request enroll revoke protect unprotect help' ;;
     'tail') echo 'list prune help' ;;
     'witness') echo 'stamp upgrade' ;;
     'switch') echo 'off on' ;;
@@ -60,7 +60,7 @@ _mnema_described() {
       'key:manage this machine'\''s signing keys' \
       'tail:authorize a cut in the record'\''s own tails' \
       'witness:ask an outside witness to date this record, and read where that stands' \
-      'switch:turn off, or back on, what mnema hands to a model unasked' \
+      'switch:turn off, or back on, what mnema hands to a model unasked, and whether an agent may accept a decision' \
       'verify:verify this project'\''s record — its committed tree and its private one' \
       'mcp:run the mnema MCP server over stdio (for an agent host)' \
       'repl:open an interactive session that reads this project' \
@@ -90,6 +90,8 @@ _mnema_described() {
       'request:ask to bring this machine into an identity (run this on the joining machine)' \
       'enroll:vouch for a requesting key so it joins this identity (run this on a member)' \
       'revoke:retire a key from this identity, from this point forward' \
+      'protect:encrypt this machine'\''s private keys at rest with the passphrase in MNEMA_KEY_PASSPHRASE' \
+      'unprotect:write this machine'\''s private keys back in the clear (needs MNEMA_KEY_PASSPHRASE)' \
       'help:display help for command' ;;
     'tail') printf '%s\n' \
       'list:list the tails that hold events here — the ones a cut can name — with the id `prune` takes' \
@@ -106,66 +108,68 @@ _mnema_described() {
 
 _mnema_flags() {
   case "$1" in
-    '') echo '-V --version --color -h --help' ;;
-    'init') echo '-h --help -V --version --color' ;;
-    'task') echo '--scope --which -h --help -V --version --color' ;;
-    'task create') echo '--scope --which -h --help -V --version --color' ;;
-    'task move') echo '--reason --note --feedback -h --help --which -V --version --color' ;;
-    'decision') echo '--alternatives --scope --which -h --help -V --version --color' ;;
-    'decision record') echo '--alternatives --scope --which -h --help -V --version --color' ;;
-    'decision move') echo '--note -h --help --which -V --version --color' ;;
-    'decision supersede') echo '--reason -h --help --which -V --version --color' ;;
-    'decision import') echo '--write --scope --which -h --help -V --version --color' ;;
-    'skill') echo '--body --scope --which -h --help -V --version --color' ;;
-    'skill create') echo '--body --scope --which -h --help -V --version --color' ;;
-    'skill move') echo '--note --reason -h --help --which -V --version --color' ;;
-    'skill export') echo '--out --description -h --help -V --version --color' ;;
-    'memory') echo '--scope --which -h --help -V --version --color' ;;
-    'observe') echo '--topic --text --scope --which -h --help -V --version --color' ;;
-    'handoff') echo '--scope --which -h --help -V --version --color' ;;
-    'link') echo '--rel --scope --which -h --help -V --version --color' ;;
-    'run') echo '-h --help -V --version --color' ;;
-    'run start') echo '--which --goal -h --help -V --version --color' ;;
-    'run end') echo '--which --outcome -h --help -V --version --color' ;;
-    'status') echo '--actor --json -h --help -V --version --color' ;;
-    'focus') echo '--actor --json -h --help -V --version --color' ;;
-    'resume') echo '--actor --json -h --help -V --version --color' ;;
-    'next-actions') echo '--json -h --help -V --version --color' ;;
-    'guard') echo '--actor --reason --note --feedback --which --json -h --help -V --version --color' ;;
-    'search') echo '--kind --scope --state --from --to --limit --json -h --help -V --version --color' ;;
-    'show') echo '--json -h --help -V --version --color' ;;
-    'timeline') echo '--json -h --help -V --version --color' ;;
-    'accountability') echo '--from --to --who --which --json -h --help -V --version --color' ;;
-    'antipatterns') echo '--json -h --help -V --version --color' ;;
-    'exposure') echo '--json -h --help -V --version --color' ;;
-    'export') echo '--from --to --who --which --global -h --help -V --version --color' ;;
-    'refs') echo '--direction --depth --json -h --help -V --version --color' ;;
-    'diagram') echo '-h --help -V --version --color' ;;
-    'rules') echo '--json -h --help -V --version --color' ;;
-    'rules-file') echo '--host -h --help -V --version --color' ;;
-    'skills') echo '--json -h --help -V --version --color' ;;
-    'usage') echo '-h --help -V --version --color' ;;
-    'brief') echo '--hook -h --help -V --version --color' ;;
-    'recall') echo '--hook -h --help -V --version --color' ;;
-    'before-a-write') echo '--host -h --help -V --version --color' ;;
-    'key') echo '-h --help -V --version --color' ;;
-    'key restore') echo '-h --help -V --version --color' ;;
-    'key request') echo '--anchor --key -h --help -V --version --color' ;;
-    'key enroll') echo '-h --help -V --version --color' ;;
-    'key revoke') echo '--reason -h --help -V --version --color' ;;
-    'tail') echo '-h --help -V --version --color' ;;
-    'tail list') echo '-h --help -V --version --color' ;;
-    'tail prune') echo '--reason --which -h --help -V --version --color' ;;
-    'witness') echo '--global --json -h --help -V --version --color' ;;
-    'witness stamp') echo '--calendar --global -h --help -V --version --color' ;;
-    'witness upgrade') echo '--blocks --global -h --help -V --version --color' ;;
-    'switch') echo '-h --help -V --version --color' ;;
-    'switch off') echo '--reason --scope --which -h --help -V --version --color' ;;
-    'switch on') echo '--reason --scope --which -h --help -V --version --color' ;;
-    'verify') echo '--global --workspace --allow-no-record --require --json -h --help -V --version --color' ;;
-    'mcp') echo '--project -h --help -V --version --color' ;;
-    'repl') echo '-h --help -V --version --color' ;;
-    'completion') echo '-h --help -V --version --color' ;;
+    '') echo '-V --version --color --identify -h --help' ;;
+    'init') echo '-h --help -V --version --color --identify' ;;
+    'task') echo '--scope --which -h --help -V --version --color --identify' ;;
+    'task create') echo '--scope --which -h --help -V --version --color --identify' ;;
+    'task move') echo '--reason --note --feedback -h --help --which -V --version --color --identify' ;;
+    'decision') echo '--alternatives --scope --which -h --help -V --version --color --identify' ;;
+    'decision record') echo '--alternatives --scope --which -h --help -V --version --color --identify' ;;
+    'decision move') echo '--note -h --help --which -V --version --color --identify' ;;
+    'decision supersede') echo '--reason -h --help --which -V --version --color --identify' ;;
+    'decision import') echo '--write --scope --which -h --help -V --version --color --identify' ;;
+    'skill') echo '--body --scope --which -h --help -V --version --color --identify' ;;
+    'skill create') echo '--body --scope --which -h --help -V --version --color --identify' ;;
+    'skill move') echo '--note --reason -h --help --which -V --version --color --identify' ;;
+    'skill export') echo '--out --description -h --help -V --version --color --identify' ;;
+    'memory') echo '--scope --which -h --help -V --version --color --identify' ;;
+    'observe') echo '--topic --text --scope --which -h --help -V --version --color --identify' ;;
+    'handoff') echo '--scope --which -h --help -V --version --color --identify' ;;
+    'link') echo '--rel --scope --which -h --help -V --version --color --identify' ;;
+    'run') echo '-h --help -V --version --color --identify' ;;
+    'run start') echo '--which --goal -h --help -V --version --color --identify' ;;
+    'run end') echo '--which --outcome -h --help -V --version --color --identify' ;;
+    'status') echo '--actor --json -h --help -V --version --color --identify' ;;
+    'focus') echo '--actor --json -h --help -V --version --color --identify' ;;
+    'resume') echo '--actor --json -h --help -V --version --color --identify' ;;
+    'next-actions') echo '--json -h --help -V --version --color --identify' ;;
+    'guard') echo '--actor --reason --note --feedback --which --json -h --help -V --version --color --identify' ;;
+    'search') echo '--kind --scope --state --from --to --limit --json -h --help -V --version --color --identify' ;;
+    'show') echo '--json -h --help -V --version --color --identify' ;;
+    'timeline') echo '--json -h --help -V --version --color --identify' ;;
+    'accountability') echo '--from --to --who --which --json -h --help -V --version --color --identify' ;;
+    'antipatterns') echo '--json -h --help -V --version --color --identify' ;;
+    'exposure') echo '--json -h --help -V --version --color --identify' ;;
+    'export') echo '--from --to --who --which --global -h --help -V --version --color --identify' ;;
+    'refs') echo '--direction --depth --json -h --help -V --version --color --identify' ;;
+    'diagram') echo '-h --help -V --version --color --identify' ;;
+    'rules') echo '--json -h --help -V --version --color --identify' ;;
+    'rules-file') echo '--host -h --help -V --version --color --identify' ;;
+    'skills') echo '--json -h --help -V --version --color --identify' ;;
+    'usage') echo '-h --help -V --version --color --identify' ;;
+    'brief') echo '--hook -h --help -V --version --color --identify' ;;
+    'recall') echo '--hook -h --help -V --version --color --identify' ;;
+    'before-a-write') echo '--host -h --help -V --version --color --identify' ;;
+    'key') echo '-h --help -V --version --color --identify' ;;
+    'key restore') echo '-h --help -V --version --color --identify' ;;
+    'key request') echo '--anchor --key -h --help -V --version --color --identify' ;;
+    'key enroll') echo '-h --help -V --version --color --identify' ;;
+    'key revoke') echo '--reason -h --help -V --version --color --identify' ;;
+    'key protect') echo '-h --help -V --version --color --identify' ;;
+    'key unprotect') echo '-h --help -V --version --color --identify' ;;
+    'tail') echo '-h --help -V --version --color --identify' ;;
+    'tail list') echo '-h --help -V --version --color --identify' ;;
+    'tail prune') echo '--reason --which -h --help -V --version --color --identify' ;;
+    'witness') echo '--global --json -h --help -V --version --color --identify' ;;
+    'witness stamp') echo '--calendar --global -h --help -V --version --color --identify' ;;
+    'witness upgrade') echo '--blocks --global -h --help -V --version --color --identify' ;;
+    'switch') echo '-h --help -V --version --color --identify' ;;
+    'switch off') echo '--reason --scope --which -h --help -V --version --color --identify' ;;
+    'switch on') echo '--reason --scope --which -h --help -V --version --color --identify' ;;
+    'verify') echo '--global --workspace --allow-no-record --require --json -h --help -V --version --color --identify' ;;
+    'mcp') echo '--project -h --help -V --version --color --identify' ;;
+    'repl') echo '-h --help -V --version --color --identify' ;;
+    'completion') echo '-h --help -V --version --color --identify' ;;
   esac
 }
 
@@ -239,6 +243,8 @@ _mnema_values() {
     'key request:--color') echo 'auto always never' ;;
     'key enroll:--color') echo 'auto always never' ;;
     'key revoke:--color') echo 'auto always never' ;;
+    'key protect:--color') echo 'auto always never' ;;
+    'key unprotect:--color') echo 'auto always never' ;;
     'tail:--color') echo 'auto always never' ;;
     'tail list:--color') echo 'auto always never' ;;
     'tail prune:--color') echo 'auto always never' ;;
@@ -248,10 +254,10 @@ _mnema_values() {
     'switch:--color') echo 'auto always never' ;;
     'switch off:--scope') echo 'public private global' ;;
     'switch off:--color') echo 'auto always never' ;;
-    'switch off:') echo 'brief-document recall-document edit-rules-push edit-asks-a-person' ;;
+    'switch off:') echo 'brief-document recall-document edit-rules-push edit-asks-a-person agent-accepts' ;;
     'switch on:--scope') echo 'public private global' ;;
     'switch on:--color') echo 'auto always never' ;;
-    'switch on:') echo 'brief-document recall-document edit-rules-push edit-asks-a-person' ;;
+    'switch on:') echo 'brief-document recall-document edit-rules-push edit-asks-a-person agent-accepts' ;;
     'verify:--require') echo 'chained signed witnessed' ;;
     'verify:--color') echo 'auto always never' ;;
     'mcp:--color') echo 'auto always never' ;;

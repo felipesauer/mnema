@@ -31,6 +31,11 @@ export {
   treesSearched,
 } from './locate.js';
 export {
+  type PrivateTreeVisibility,
+  PrivateTreeVisibleError,
+  privateTreeVisibility,
+} from './private-tree.js';
+export {
   type Discovery,
   type DiscoveryEnv,
   discover,

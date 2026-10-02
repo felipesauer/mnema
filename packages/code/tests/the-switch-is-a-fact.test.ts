@@ -53,8 +53,9 @@ import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { type CliIo, run } from '../src/cli.js';
 import { buildMcpServer } from '../src/mcp/server.js';
 import { openSession, type Session } from '../src/mcp/session.js';
-import { runRulesBeforeAnEditTool } from '../src/mcp/tools.js';
+import { runDecisionTransition, runRulesBeforeAnEditTool } from '../src/mcp/tools.js';
 import {
+  AGENT_ACCEPTS_CHANNEL,
   ASKS_A_PERSON_CHANNEL,
   DOCUMENT_CHANNEL,
   EDIT_PUSH_CHANNEL,
@@ -359,6 +360,21 @@ const HONOURED: Readonly<
       await ruleAskingAt('Nobody touches billing alone', 'src/billing');
     },
     speaks: async () => asked(connect(), 'src/billing/invoice.ts') !== undefined,
+  },
+  [AGENT_ACCEPTS_CHANNEL]: {
+    // A GATE ON AN AGENT'S ACT, driven the way the act is made: a fresh proposal each time
+    // (an accepted decision cannot be accepted again, which would read as the switch holding)
+    // and the agent's `accept` through the server's own tool. "Speaks" is the accept landing.
+    setUp: async () => {},
+    speaks: async () => {
+      const id = idIn(await did('decision', 'record', `A call ${Math.random()}`, 'because'));
+      const moved = runDecisionTransition(connect(), {
+        id,
+        action: 'accept',
+        note: 'the agent agrees',
+      });
+      return moved.ok;
+    },
   },
 };
 

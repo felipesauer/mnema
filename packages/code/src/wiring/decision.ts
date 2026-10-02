@@ -18,6 +18,7 @@ import type { ScanRefusalCode } from '@mnema/core';
 import type { Command } from 'commander';
 import type { runDecisionImport } from '../commands/decision-import.js';
 import type { runDecisionTransition } from '../commands/decision-transition.js';
+import { fact } from '../presentation/detail.js';
 import { RECORD_CONTRACT_HELP, replacementNotice } from '../recorded-content.js';
 import { here } from './context.js';
 import {
@@ -139,7 +140,10 @@ export function registerDecision(program: Command, wiring: Wiring): Declared {
       `${DECISION_MOVE_ACTIONS.join(' or ')} a decision (follows the decision; takes no --scope)`,
     )
     .addArgument(enumeratedArgument('<action>', 'the transition', DECISION_MOVE_ACTIONS))
-    .argument('<id>', 'the decision id (the value shown when it was recorded)')
+    .argument(
+      '<id...>',
+      'the decision id (the value shown when it was recorded) — several, to move each one with the same verdict and note',
+    )
     .option(
       '--note <text>',
       `why this verdict (required by ${listed(actionsRequiring('decision', 'note'))})`,
@@ -150,7 +154,7 @@ export function registerDecision(program: Command, wiring: Wiring): Declared {
     takes: ['--which'],
     refuses: { '--scope': A_MOVE_FOLLOWS_THE_DECISION, '--alternatives': TURNED_DOWN_AT_BIRTH },
   });
-  decisionMove.action(async (action: string, id: string, opts: { note?: string }) => {
+  decisionMove.action(async (action: string, ids: string[], opts: { note?: string }) => {
     const given = await fromTheGroup<{ which?: string }>(decisionMove, wiring);
     if (given === REFUSED) return;
     const { runDecisionTransition } = await import('../commands/decision-transition.js');
@@ -159,14 +163,32 @@ export function registerDecision(program: Command, wiring: Wiring): Declared {
       io.fail();
       return;
     }
-    const result = runDecisionTransition(here(), {
-      id,
-      action,
-      proof: { ...(opts.note !== undefined ? { note: opts.note } : {}) },
-      ...(given.which !== undefined ? { which: given.which } : {}),
-      ...(run !== undefined ? { run } : {}),
-    });
-    await reportDecisionMove(result, id, wiring);
+    // ONE FACT PER ID, signed on its own, in the order typed: a verdict on a hundred imported
+    // proposals is a hundred judgements and the record keeps them as a hundred — the command is
+    // the only thing that is one. Each id is moved or refused on its own account, and a refusal
+    // does not stop the ones after it (an append-only record cannot take the ones before it
+    // back, so stopping would only leave the rest undone for no reason the person gave).
+    let moved = 0;
+    for (const id of ids) {
+      const result = runDecisionTransition(here(), {
+        id,
+        action,
+        proof: { ...(opts.note !== undefined ? { note: opts.note } : {}) },
+        ...(given.which !== undefined ? { which: given.which } : {}),
+        ...(run !== undefined ? { run } : {}),
+      });
+      await reportDecisionMove(result, id, wiring);
+      if (result.ok) moved += 1;
+    }
+    if (ids.length > 1 && moved < ids.length) {
+      io.err(
+        render(
+          fact(
+            `Moved ${moved} of ${ids.length}; the rest were refused above and nothing was written for them.`,
+          ),
+        ),
+      );
+    }
   });
 
   // `decision supersede <old-id> <new-id> --reason` — supersede as its own verb.
@@ -203,7 +225,7 @@ export function registerDecision(program: Command, wiring: Wiring): Declared {
       ...(given.which !== undefined ? { which: given.which } : {}),
       ...(run !== undefined ? { run } : {}),
     });
-    await reportDecisionMove(result, oldId, wiring);
+    await reportDecisionMove(result, oldId, wiring, newId);
   });
   // `decision import <dir>` — propose the decisions this repository already wrote.
   //
@@ -267,7 +289,11 @@ export function registerDecision(program: Command, wiring: Wiring): Declared {
         'MADR shape. A file this cannot read that way is refused by name. A file it CAN\n' +
         'is proposed — including one that is no decision at all: an index page or a\n' +
         'roadmap wears the same shape, and no fact of the document separates them. That\n' +
-        'is why nothing is accepted on your behalf. Nothing here calls a model.',
+        'is why nothing is accepted on your behalf. Nothing here calls a model.\n\n' +
+        'The reason is what the file’s own decision section says (MADR’s “Chosen option, because”,\n' +
+        'Nygard’s `## Decision`). A list of every option (MADR’s `## Considered Options`) is recorded\n' +
+        'WITHOUT the option the file chose; when the file does not say which it chose, none is\n' +
+        'recorded as turned down, and the plan says so.',
     )
     .addHelpText('after', RECORD_CONTRACT_HELP);
   takesFromItsGroup(decisionImport, {
@@ -306,6 +332,9 @@ export function registerDecision(program: Command, wiring: Wiring): Declared {
       // moment on this surface to be silent about.
       for (const line of linkBreakNotice(result.linkBreaks)) io.err(render(line));
       writeLines(io, importLines(result));
+      // A run the door stopped partway is a run that did NOT do what it was asked: the lines
+      // above say where, and the exit says it to whatever is driving this from a script.
+      if (result.stopped !== undefined) io.fail();
       return;
     }
     reportRefusal(wiring, result, {
@@ -342,14 +371,38 @@ async function reportDecisionMove(
   result: ReturnType<typeof runDecisionTransition>,
   id: string,
   to: Reporter,
+  successor?: string,
 ): Promise<void> {
   if (result.ok) {
     const { movedLine } = await import('../moved-record.js');
     to.io.out(movedLine('decision', result.adr, result.id, result.to));
+    if (result.notice !== undefined) to.io.out(to.render(fact(result.notice)));
+    if (result.acceptedByAgent !== undefined) {
+      const { acceptedByAnAgent } = await import('../agent-accepts.js');
+      to.io.out(to.render(fact(acceptedByAnAgent(result.acceptedByAgent))));
+    }
     reportReplacement(result, to.io);
     return;
   }
   reportRefusal(to, result, { UNKNOWN_DECISION: noSuchRecord('decision', id) });
+  if (result.reason === 'UNKNOWN_DECISION') await sayIfALabel(to, id);
+  // The successor of a supersede is an address too, and the label every write printed for it is
+  // refused like the first one (`UNKNOWN_BY`, the dangling successor): the same hint, the same
+  // function.
+  if (result.reason === 'REFUSED' && result.code === 'UNKNOWN_BY' && successor !== undefined) {
+    await sayIfALabel(to, successor);
+  }
+}
+
+/**
+ * After a refusal to find the decision `id`: when what was typed is the `ADR-<n>` label a write
+ * printed, say so and name the id (or the ids, when more than one tree numbered the same label).
+ * The bare refusal is already out; this is the half that tells a person what to type instead.
+ */
+async function sayIfALabel(to: Reporter, id: string): Promise<void> {
+  const { labelAsAddress } = await import('../label-as-address.js');
+  const sentence = labelAsAddress(here(), id);
+  if (sentence !== undefined) to.io.err(to.render(fact(sentence)));
 }
 
 /**
@@ -381,6 +434,9 @@ function importLines(
       `from ${proposal.path}`,
       ...(proposal.status !== undefined ? [`the file says "${proposal.status}"`] : []),
       ...(proposal.alternatives ? ['names what it turned down'] : []),
+      ...(proposal.optionsUnclear
+        ? ['lists its options but not which was chosen, so none is recorded as turned down']
+        : []),
     ];
     lines.push(`      ${notes.join(' · ')}`);
     // In the words every write says it, under the proposal it is about. This was a second

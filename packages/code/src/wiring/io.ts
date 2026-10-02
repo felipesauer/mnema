@@ -11,6 +11,15 @@
  * none, and the wiring here is what puts them on a stream.
  */
 
+import { neutralized } from '../one-line.js';
+import { PAINTING } from '../presentation/styled.js';
+
+/** Every sequence the painted renderer writes, as one pattern — built from its constants. */
+const OUR_PAINT = new RegExp(
+  PAINTING.map((sequence) => sequence.replace(/[\\[\].*+?^${}()|]/g, '\\$&')).join('|'),
+  'g',
+);
+
 /** Where the CLI writes, and how it signals failure — injected for testing. */
 export interface CliIo {
   readonly out: (line: string) => void;
@@ -24,6 +33,52 @@ export interface CliIo {
    * (it did: the suite hung on the first run of that verb in process).
    */
   readonly input?: () => Promise<string>;
+}
+
+/**
+ * The port with every control byte of a line made visible before it is written — the last
+ * sink of the one rule, for the lines the renderers never saw.
+ *
+ * THE RENDERERS NEUTRALIZE THE PARTS OF A LINE (`presentation/plain.ts`) and the rule of
+ * the line neutralizes what it collapses, and neither reaches a line that was never a `Line`: a
+ * record's body printed verbatim, a header above a list, a JSON document, a sentence a
+ * wiring file joined with a template literal. Those reach this port as strings, and a rule
+ * that had to be remembered at each of them would be the rule that is missed at the next
+ * one. So it is applied here too, once, at the only door the surface writes through —
+ * `buildProgram` wraps the port it is given, which is why a test that drives the program
+ * in process meets the same rule the binary does.
+ *
+ * WHAT PASSES UNCHANGED, and only when this invocation paints: the few sequences `styled.ts`
+ * writes for bold, dim and colour. In a pipe, a file or a CI log — where the painting is off
+ * and a sequence could only be an attack — nothing passes, and the port is strict. On a
+ * terminal, a sequence in an unrendered string that spells the same bytes as the painting
+ * passes too; that is the one residue, and it is cosmetic (a colour on a word), where every
+ * sequence that moves the cursor, clears the screen, sets a title or opens a link is
+ * escaped. The parts of a rendered line never reach it: the renderer neutralized their text
+ * BEFORE painting it.
+ */
+export function neutralizing(port: CliIo, paints: () => boolean): CliIo {
+  return {
+    ...port,
+    out: (line) => port.out(printable(line, paints())),
+    err: (line) => port.err(printable(line, paints())),
+  };
+}
+
+/**
+ * `line`, with each control byte escaped — except, when this invocation paints, the
+ * sequences this product paints with. Asked per write because the answer is the renderer's,
+ * which is resolved after the port is wrapped.
+ */
+function printable(line: string, painted: boolean): string {
+  if (!painted) return neutralized(line);
+  let out = '';
+  let from = 0;
+  for (const painting of line.matchAll(OUR_PAINT)) {
+    out += neutralized(line.slice(from, painting.index)) + painting[0];
+    from = painting.index + painting[0].length;
+  }
+  return out + neutralized(line.slice(from));
 }
 
 /** The real streams, and a non-zero exit code on failure. */

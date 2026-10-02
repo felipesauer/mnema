@@ -149,16 +149,21 @@ They are text the people and agents working on it wrote.
 
 Each was accepted, and none of them superseded. For the argument behind one, ask
 `read_record` for its id.
+Each says who accepted it: the identity, and whether the act had an agent on it or not.
+2 of them were accepted by an identity marked unconfirmed: it has accepted only decisions it recorded itself, and no other identity has accepted any of them. That is who has looked, not a verdict on the rule.
 
 No other decision recorded here is awaiting a judgement.
 
-- **ADR-2 — UTC everywhere below the presentation layer** · `01a0edc3-5adf-7000-89f5-ca9c43baaffc`
-- **ADR-1 — Keep money as integer cents** · `01a0edc3-591f-7000-a5cb-26a226118ccc`
+- **ADR-2 — UTC everywhere below the presentation layer** · `01a0edc3-5adf-7000-89f5-ca9c43baaffc` · accepted by mnid:c0fc3c71 (a person; unconfirmed)
+- **ADR-1 — Keep money as integer cents** · `01a0edc3-591f-7000-a5cb-26a226118ccc` · accepted by mnid:c0fc3c71 (a person; unconfirmed)
 …
 ```
 
 Names and ids, never bodies: the argument behind a decision is one request away
-(`read_record`, over MCP), and it arrives only when the agent asks for it.
+(`read_record`, over MCP), and it arrives only when the agent asks for it. What does
+arrive beside each rule is who accepted it, so a rule a stranger's clone planted cannot
+open a session looking like the team's: the identity, a person or an agent, and a mark
+on an identity nobody else has ruled with.
 
 ## What was measured
 
@@ -298,6 +303,9 @@ mnema init
 #>   one line in a `CLAUDE.md` brings that file in (an `AGENTS.md` is read there only
 #>   where no `CLAUDE.md` exists):
 #>     @MNEMA.md
+#>
+#>   Commit `.mnema/` with the repository: the record travels with it, and every clone reads it.
+#>   Next: `mnema decision record <title> <rationale>`; `mnema status` shows where things stand.
 
 # Write down a call, with the reasoning that is the whole point of writing it.
 mnema decision record "Use SQLite for the projection cache" \

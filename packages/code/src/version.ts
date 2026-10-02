@@ -33,3 +33,22 @@
 
 /** The version this build of the product reports, wherever it is asked. */
 export const VERSION = '0.1.0';
+
+/**
+ * The name this product answers `mnema --identify` with, before its version — the package it is
+ * installed as.
+ *
+ * WHY A PROGRAM NEEDS TO SAY WHICH ONE IT IS. The plugin runs whatever `mnema` the PATH finds
+ * first, and a program of the same name placed earlier is run in its stead: measured with
+ * Claude Code 2.1.281, the host started such a program at all three points the plugin declares
+ * (`brief --hook`, `recall --hook`, `mcp`), the session opened without the record, and nothing
+ * said so. The version alone does not tell a program apart — any tool prints a number — so the
+ * answer carries the name as well, and the name is the package's: a scoped name on the registry
+ * belongs to one publisher. `plugin/hooks/hand-over.mjs` asks before it runs a verb, and
+ * `the-record-arrives-unasked.test.ts` holds that this answer and the plugin's expectation agree
+ * and that a program which answers otherwise is named to the session instead of being run.
+ */
+export const PRODUCT_NAME = '@mnema/code';
+
+/** The whole answer to `mnema --identify`: the name, then the version. */
+export const IDENTITY = `${PRODUCT_NAME} ${VERSION}`;

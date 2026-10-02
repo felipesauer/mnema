@@ -84,9 +84,9 @@ export interface ResolvedTrees {
   readonly projectPublic?: string;
   /** `<repo>/.mnema/private` — gitignored, this machine. Absent outside a project. */
   readonly projectPrivate?: string;
-  /** `<data>/mnema/global` — this machine, across all projects. Always present. */
+  /** `~/.mnema/global` (under `$MNEMA_HOME` when set) — this machine, across all projects. Always present. */
   readonly global: string;
-  /** `<data>/mnema/identity` — the key root the three trees reference. Always present. */
+  /** `~/.mnema/identity` (under `$MNEMA_HOME` when set) — the key root the three trees reference. Always present. */
   readonly keyRoot: string;
 }
 

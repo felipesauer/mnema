@@ -75,6 +75,7 @@ import {
   type DecisionState,
   newestFirst,
   type ProjectionCache,
+  shortenAnchors,
 } from '@mnema/core';
 import { type Disposition, statesMeaning } from './disposition.js';
 
@@ -139,6 +140,43 @@ const AWAITING_JUDGEMENT = statesMeaning(
 );
 
 /** A decision in force, named but not spelled out — what an index is made of. */
+/**
+ * WHO RULED A DECISION IN FORCE, as the record says it — and whether anybody else has looked.
+ *
+ * The brief a session opens with hands over the decisions in force as rules, and a rule is
+ * only as trustworthy as whoever made it one. Measured on the shipped binary: a second clone
+ * with a key and an identity of its own recorded a decision whose title was an instruction to
+ * a model, accepted it itself, and after the pull it was the ONLY rule in force in the
+ * victim's brief, with nothing to say who had put it there. The facts to say it were all in
+ * the chain — the actor of the accepting event is on its envelope — and the document did not
+ * carry them.
+ *
+ * `by` is the identity (shortened, see below) and `agent`
+ * is the executor when the accepting act had one: ABSENT means a person, at the command line,
+ * with no agent on the envelope. Whether that is true of the human in front of the machine is
+ * a fact about the machine this module cannot see, which is why it says what the envelope
+ * says and nothing more.
+ *
+ * `unconfirmed` is the one derived bit. An identity is UNCONFIRMED when everything it accepted
+ * it had recorded itself AND no decision it recorded was accepted by anybody else: it has only
+ * ever spoken to itself, and no second identity has ruled with it either way. It is a fact
+ * about the record's shape, computed over the trees handed in, and it is not a judgement of
+ * the decision — a solo project's every rule is unconfirmed, truthfully, and the first rule
+ * one identity accepts that another recorded (or another accepts of its) ends it.
+ */
+export interface Acceptance {
+  /**
+   * The identity that accepted, in the short form the record's other readings print it in
+   * (`mnid:` and as many hex characters as tell the identities of THESE trees apart). Short
+   * because it rides on every rule of a document a model reads, and a whole anchor is
+   * seventy-one characters a model has no use for; unique among the trees handed in because it
+   * is shortened over their identities, so two clones of one repository print the same bytes.
+   */
+  readonly by: string;
+  readonly agent?: string;
+  readonly unconfirmed: boolean;
+}
+
 export interface DecisionRef {
   /** The decision's id — the key that asks `readRecord` for the rationale. */
   readonly id: string;
@@ -161,6 +199,12 @@ export interface DecisionRef {
   readonly adr: string;
   /** The decision's title — DISPLAY, and the trigger a reader recognizes. */
   readonly title: string;
+  /**
+   * Who ruled it in force (see {@link Acceptance}). Present for every decision in force that the
+   * record shows an accepting event for, which is every one a record this product wrote holds;
+   * absent for a projection the cache built from a transition it holds no actor for.
+   */
+  readonly acceptance?: Acceptance;
 }
 
 /**
@@ -198,7 +242,8 @@ export function decisionsInForce(caches: readonly ProjectionCache[]): DecisionRe
   for (const cache of caches) {
     for (const state of IN_FORCE) all.push(...cache.listDecisionsByState(state));
   }
-  return all.sort(bySettledDesc).map(toRef);
+  const ruled = acceptances(caches);
+  return all.sort(bySettledDesc).map((decision) => toRef(decision, ruled.get(decision.id)));
 }
 
 /**
@@ -269,8 +314,49 @@ export function decisionsAwaitingJudgement(
   return pending;
 }
 
-function toRef(decision: DecisionProjection): DecisionRef {
-  return { id: decision.id, adr: decision.adr, title: decision.title };
+/**
+ * The acceptance of every decision in `caches` that has one, by decision id.
+ *
+ * Computed over EVERY decision of the caches handed in, in any state, because whether an
+ * identity has been ruled with is a question about the whole record and not about the rules
+ * currently in force: a decision that was accepted and later superseded still counts as one
+ * identity having looked at another's.
+ */
+export function acceptances(caches: readonly ProjectionCache[]): Map<string, Acceptance> {
+  const all: DecisionProjection[] = [];
+  for (const cache of caches) all.push(...cache.listDecisions());
+
+  const confirmed = new Set<string>();
+  for (const decision of all) {
+    const recorder = decision.recordedBy?.who;
+    const acceptor = decision.acceptedBy?.who;
+    if (recorder === undefined || acceptor === undefined || recorder === acceptor) continue;
+    // Two identities, one decision: each has been ruled with by the other.
+    confirmed.add(recorder);
+    confirmed.add(acceptor);
+  }
+
+  const labels = shortenAnchors(caches.flatMap((cache) => cache.authors()));
+  const result = new Map<string, Acceptance>();
+  for (const decision of all) {
+    const accepted = decision.acceptedBy;
+    if (accepted === undefined) continue;
+    result.set(decision.id, {
+      by: labels.get(accepted.who) ?? accepted.who,
+      ...(accepted.which !== undefined ? { agent: accepted.which } : {}),
+      unconfirmed: !confirmed.has(accepted.who),
+    });
+  }
+  return result;
+}
+
+function toRef(decision: DecisionProjection, acceptance: Acceptance | undefined): DecisionRef {
+  return {
+    id: decision.id,
+    adr: decision.adr,
+    title: decision.title,
+    ...(acceptance !== undefined ? { acceptance } : {}),
+  };
 }
 
 /** Most recently settled first, by the core's {@link newestFirst}. */

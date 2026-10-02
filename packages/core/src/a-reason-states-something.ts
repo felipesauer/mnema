@@ -24,9 +24,26 @@
  * `mnema decision record "<title>" "<rationale>"` recorded a decision named `<title>`, and a
  * decision file whose heading was `# <title>` was imported as one. {@link TITLES} is where each
  * kind keeps the one short line that names a record, and {@link titleRefusal} asks
- * {@link isMarker} of it, the same function. Only the marker: a title is not asked whether it
- * states something here, so `***` as a title is still recorded (the reader of decision files
- * refuses that one on its own, `NO_TITLE`).
+ * {@link isMarker} of it, the same function.
+ *
+ * AND A TITLE OF PUNCTUATION IS NO TITLE EITHER. This said *"only the marker: a title is not asked
+ * whether it states something here, so `***` as a title is still recorded (the reader of decision
+ * files refuses that one on its own, `NO_TITLE`)"* — and that was the same two-doors defect the
+ * paragraph above tells of for the why, one field over: the reader refused `# ***` as `NO_TITLE`
+ * while `mnema decision record '***' '…'` recorded a decision named `***`, permanently, and every
+ * citation of it (`ADR-3 — ***`) read as nothing. {@link titleRefusal} asks
+ * {@link statesSomething} of a title now, the function the reader asks, so a title with no letter
+ * and no digit is refused at the door the reader refuses it at.
+ *
+ * AND A MARKER IS NO REFERENCE. The fields a reading looks up by exact string — a link's subject,
+ * target and relation, the entity an observation is about, the agents of a handoff, a run's
+ * agent — are not a line a person writes (that is {@link TITLES}) and not a why, and a recipe
+ * pastes a marker into them all the same: `mnema link <id> <path> --rel governs` recorded an
+ * edge from the entity `<id>`, and `--rel '<rel>'` recorded a relation nothing can ever ask for.
+ * {@link REFERENCES} is where each kind keeps them and {@link referenceRefusal} asks
+ * {@link isMarker} of each, again the same function. Only the marker is asked: a reference is a
+ * string a caller owns (`src/**`, a path with a bracket in it), and what it holds is not a
+ * judgment this door makes.
  *
  * WHAT IT DOES NOT JUDGE is whether the words are a GOOD reason. `n/a` states something. A
  * person rules on prose; this rules only that there is some, and that it is not the blank a
@@ -85,20 +102,32 @@ export function reasonRefusal(
 }
 
 /**
- * The refusal a title earns, or undefined when it is not a marker. `field` is the name the kind
+ * The refusal a title earns, or undefined when it names something. `field` is the name the kind
  * gives it (`title`, `name`, `topic`), so the sentence names the value they typed and what goes
- * in its place.
+ * in its place. A marker is refused as a marker; a text with no letter and no digit in it
+ * (`***`, `---`) is refused as naming nothing — the question the reader of decision files asks of
+ * a heading, by the same function.
  */
 export function titleRefusal(
   field: string,
   value: unknown,
 ): { readonly message: string } | undefined {
-  if (typeof value !== 'string' || !isMarker(value)) return undefined;
-  return {
-    message:
-      `the ${field} "${oneLine(value.trim())}" is the marker a recipe prints where the words go, ` +
-      `not the words: write the ${field} in its place`,
-  };
+  if (typeof value !== 'string' || value.trim().length < 1) return undefined;
+  if (isMarker(value)) {
+    return {
+      message:
+        `the ${field} "${oneLine(value.trim())}" is the marker a recipe prints where the words go, ` +
+        `not the words: write the ${field} in its place`,
+    };
+  }
+  if (!statesSomething(value)) {
+    return {
+      message:
+        `the ${field} "${oneLine(value)}" has no letter and no digit in it, so it names nothing: ` +
+        `write the ${field} in words`,
+    };
+  }
+  return undefined;
 }
 
 /** The proof fields of a transition that carry a why (a pull request url and links do not). */
@@ -209,6 +238,82 @@ export function unfilledTitle(event: CatalogEvent): string | undefined {
   const payload = event.payload as Readonly<Record<string, unknown>>;
   for (const site of TITLES[event.kind] as readonly string[]) {
     const refused = titleRefusal(site, payload[site]);
+    if (refused !== undefined) return refused.message;
+  }
+  return undefined;
+}
+
+/** The kinds whose envelope `subject` is a caller's reference, nothing proved against the record. */
+type ReferenceSubject<K extends EventKind> = K extends
+  | 'handoff.recorded'
+  | 'knowledge.linked'
+  | 'skill.consulted'
+  | 'channel.switched'
+  | 'channel.served'
+  | 'channel.asked'
+  ? 'subject'
+  : never;
+
+/** One site that holds a reference of kind `K`: a text field of its payload, or its subject. */
+type ReferenceSite<K extends EventKind> = TextField<K> | ReferenceSubject<K>;
+
+/**
+ * Which part of each kind is a REFERENCE — a string a caller hands in that a later reading
+ * looks up by exact match — the fields {@link referenceRefusal} is asked of on the way in.
+ *
+ * The cut is `content/fields.ts`'s: the payload fields it classifies as names and that are not a
+ * title ({@link TITLES}), plus the subject of the four kinds it calls "the caller's REFERENCE,
+ * unproved". A subject minted here or proved against the record cannot hold a marker, so it is
+ * not listed; a channel's name is a reference the surface checks and this package cannot.
+ *
+ * TOTAL BY TYPE, like {@link REASONS} and {@link TITLES}: a kind added to the catalog does not
+ * compile until it has a row here, even an empty one.
+ */
+export const REFERENCES: { readonly [K in EventKind]: readonly ReferenceSite<K>[] } = {
+  'run.started': ['agent'],
+  'run.ended': [],
+  'task.created': [],
+  'task.transitioned': [],
+  'decision.recorded': [],
+  'decision.transitioned': [],
+  'identity.founded': [],
+  'key.enrolled': [],
+  'key.revoked': [],
+  'memory.captured': [],
+  'observation.recorded': ['about'],
+  'handoff.recorded': ['subject', 'fromAgent', 'toAgent'],
+  'knowledge.linked': ['subject', 'target', 'rel'],
+  'skill.created': [],
+  'skill.transitioned': [],
+  'skill.consulted': ['subject'],
+  'tail.pruned': [],
+  'channel.switched': ['subject'],
+  'channel.served': ['subject'],
+  'channel.asked': ['subject'],
+};
+
+/**
+ * The refusal a reference earns when it is a marker, or undefined. `field` is what the surface
+ * calls the value (`target`, `rel`, `about`), so the sentence names what they typed.
+ */
+export function referenceRefusal(
+  field: string,
+  value: unknown,
+): { readonly message: string } | undefined {
+  if (typeof value !== 'string' || !isMarker(value)) return undefined;
+  return {
+    message:
+      `the ${field} "${oneLine(value.trim())}" is the marker a recipe prints where the value goes, ` +
+      `not the value: write the ${field} in its place`,
+  };
+}
+
+/** The refusal the first reference of `event` that is a marker earns, or undefined. */
+export function unfilledReference(event: CatalogEvent): string | undefined {
+  const payload = event.payload as Readonly<Record<string, unknown>>;
+  const envelope = event as unknown as Readonly<Record<string, unknown>>;
+  for (const site of REFERENCES[event.kind] as readonly string[]) {
+    const refused = referenceRefusal(site, site === 'subject' ? envelope.subject : payload[site]);
     if (refused !== undefined) return refused.message;
   }
   return undefined;

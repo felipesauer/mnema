@@ -587,7 +587,7 @@ function feedNothing(): string[] {
 /**
  * The options this cannot trace, each with the reason — reconciled in both directions.
  *
- * TWO ENTRIES, AND BOTH ARE THE PROGRAM'S OWN. Neither hangs on a verb, so neither has
+ * THREE ENTRIES, AND ALL ARE THE PROGRAM'S OWN (`--identify` is the third). None hangs on a verb, so none has
  * an action for the trace to start from — and the walk finding them is the point: they
  * are options a caller can type, and a table that quietly skipped them would be a table
  * about a surface smaller than the one that exists.
@@ -601,6 +601,10 @@ const NOT_TRACEABLE: Readonly<Record<string, string>> = {
     "commander's own, from `.version(VERSION)`: it is answered by the parser before " +
     'any action is reached, so the reader is not in this workspace at all — what IS ' +
     'ours is the string, pinned in `cli.golden.test.ts`',
+  'mnema --identify':
+    'declared on the program and answered by a listener of its own in `cli.ts`, before any ' +
+    'action is reached, as `--version` is — the answer is `version.ts`’s `IDENTITY`, and its ' +
+    'reader is the plugin (`plugin/hooks/hand-over.mjs`), held by `the-record-arrives-unasked.test.ts`',
 };
 
 /** What a declaration table tolerates, and what it does not — both ways at once. */

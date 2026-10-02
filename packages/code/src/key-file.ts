@@ -12,6 +12,13 @@
  *
  * ONE FUNCTION, FOUR CALLERS, so the sentence cannot be worded two ways; `key-file.test.ts`
  * holds the two readings, and the callers are found by the phrase.
+ *
+ * THE AGENT'S SERVER IS THE FIFTH READER AND IT GETS ANOTHER SENTENCE ({@link
+ * keyFileLineForAModel}). The sentence above is for somebody who is going to type
+ * `mnema key restore "<the key file>"`, and it carries the absolute path of a file in a home
+ * directory — which, in a reply to an agent, is a path that leaves the machine for a provider.
+ * A model cannot restore a key and has no use for where it lives; what it can do is tell the
+ * person which file to look for, and a name and a variable say that.
  */
 
 import { oneLine } from './one-line.js';
@@ -28,4 +35,21 @@ export function keyFileLine(keyFile: string, mnemaHome: string | undefined): str
       : 'under ~/.mnema, since MNEMA_HOME is not set — a key kept under another directory ' +
         'signs when MNEMA_HOME names that directory';
   return `this machine keeps the key file at ${oneLine(keyFile)}, ${where}`;
+}
+
+/**
+ * The same fact for a reader that is a MODEL: which key file, and under what — no absolute path.
+ *
+ * `fingerprint` is the file's name without its extension and `mnemaHome` is read as above. The
+ * path of a key file names the person's home directory and the layout of their machine, and
+ * nothing a model does with this sentence needs either: the person it relays this to has the
+ * variable, or the default, and the fingerprint is how they find the file. `the-checkout-a-key-
+ * left.test.ts` holds that the reply names the file and carries no path.
+ */
+export function keyFileLineForAModel(fingerprint: string, mnemaHome: string | undefined): string {
+  const where =
+    mnemaHome !== undefined && mnemaHome !== ''
+      ? 'under the directory MNEMA_HOME names'
+      : 'under ~/.mnema, since MNEMA_HOME is not set';
+  return `this machine keeps the key file ${oneLine(fingerprint)}.key in identity/keys ${where}`;
 }
