@@ -87,16 +87,20 @@ export function writtenAsBuilt(event: CatalogEvent): WrittenEvent {
  * rebuilt it. Re-canonicalizing that value reproduces the bytes the writer
  * hashed, whatever version the line was written under.
  *
- * Re-canonicalizing rather than slicing the raw line is deliberate, and is the
- * property canonical.ts was built for: key order, whitespace, and Unicode
- * composition can all be changed by an honest reformat or a merge without
- * changing the fact, and the canonical form is what both sides agree on. What it
- * does NOT forgive is content: a field the writer never wrote, or one whose value
- * was edited, canonicalizes to different bytes and the recomputation says so. A
- * key written TWICE is content too, and the one kind the recomputation cannot see
- * (`JSON.parse` keeps the last, which is the signed value), so it is refused before
- * this is ever reached, by `parseStoredJson`
- * (`both-readers-read-the-same-bytes.test.ts`).
+ * THIS USED TO FORGIVE A REFORMATTED LINE, and said why: key order, whitespace and
+ * Unicode composition could be changed by an honest reformat or a merge without
+ * changing the fact, so re-canonicalizing the value let such a line verify. That
+ * premise fell on two facts: `FORMAT.md` section 4 says the line IS the canonical
+ * serialization, and the second reader refused every reformatted line this product
+ * verified — while nothing this product writes ever produces one. So a line that is
+ * not canonical is refused before this is reached, at the parse, by
+ * `parseCanonicalLine`, and so is a key written TWICE, which the recomputation alone
+ * could not see (`JSON.parse` keeps the last, which is the signed value). Both are
+ * held by `both-readers-read-the-same-bytes.test.ts`. Re-canonicalizing here is now
+ * the same bytes as the event's slice of the line, and stays the way the bytes are
+ * recovered because it needs no second reading of where the event starts and ends.
+ * What it never forgave is content: a field the writer never wrote, or one whose
+ * value was edited, canonicalizes to different bytes and the recomputation says so.
  */
 export function writtenAsStored(value: CanonicalValue): WrittenEvent {
   return { value } as WrittenEvent;

@@ -212,12 +212,13 @@ verdict names the **level** it reached rather than saying yes or no.
 | **Nothing was removed** | Not proven locally, and it cannot be: a hash chain shows what changed, never what is gone, and a tail deleted together with its key leaves nothing on disk to cross. Committing the record to a git remote is what preserves the files a deletion would take. |
 | **The record is who it says it is** | No. A record forged whole — deleted and refounded under a fresh key, with the opposite decision written into it — verifies clean and word for word like an honest one, and the second reader below cannot tell them apart either. What would distinguish them is not in the record for any reader to find. |
 | **The record is as old as it says** | Only where somebody asked for it. `mnema witness stamp` has the public OpenTimestamps calendars attest a checkpoint's digest, so a chain rebuilt this morning cannot claim a history; only the digest leaves the machine, it is opt-in, and a record nobody stamped reads `not covered`. |
-| **A green `verify` means the record is honest** | It means nothing *verifiable* is broken. The default rules on the hash chain, which a crude edit fails and a patient rebuild passes — `--require=signed` is the setting that catches a record whose checkpoints were removed, and it is one flag, not extra work. |
+| **A green `verify` means the record is honest** | It means nothing *verifiable* is broken. The default rules on the hash chain, which a crude edit fails and a patient rebuild passes — `--require=signed` catches checkpoints taken out from under the events they signed, and it is one flag, not extra work. It does not catch a cut that took the newest events together with their checkpoint: what is left is a shorter record honest in every byte, and only a copy from before the cut — the history a git remote keeps — shows it was longer. |
 | **The gate protects what is recorded** | It protects the *shape* of a change, not its contents, and it is not access control. Anyone who can run the command line writes as this machine's identity. |
 | **Secrets stay out** | Only the ones mnema recognizes by their format. A value in a known shape never reaches the chain; a proprietary token or a password written out in prose does, and nothing deletes a fact afterwards. It reduces the damage; it does not make the record safe to paste secrets into. |
 
-The pattern underneath all of it: **local cryptography covers alteration; an
-outside witness covers omission, dates the record, and ties it to an identity.**
+The pattern underneath all of it: **local cryptography covers alteration; the
+history a git remote keeps covers omission and gives the signing key a history
+someone else can check; `mnema witness` dates the record.**
 [`packages/code/README.md`](packages/code/README.md) carries the long form of this
 table, claim by claim.
 

@@ -708,6 +708,12 @@ def refounded_record(root: str) -> tuple[bool, str]:
     both readers have to AGREE on it rather than one of them guessing at a history it
     cannot see.
     """
+    anchor = _refound(root, "the record was erased and begun again")
+    return True, f"the record erased and a new identity {anchor[:16]}... founded in its place"
+
+
+def _refound(root: str, content: str) -> str:
+    """Erase the record and found a new one under RFC 8032's key; return its anchor."""
     fingerprint, pem = _unenrolled_public()
     anchor = "mnid:" + hashlib.sha256(fingerprint.encode("ascii")).hexdigest()
     tail = f"{fingerprint}-{'ab' * 16}"
@@ -730,7 +736,7 @@ def refounded_record(root: str) -> tuple[bool, str]:
         event(
             "memory.captured",
             "01a02d24-730d-7000-988d-ac7784b4a4a3",
-            {"content": "the record was erased and begun again"},
+            {"content": content},
         ),
     ]
     lines: list[bytes] = []
@@ -761,7 +767,7 @@ def refounded_record(root: str) -> tuple[bool, str]:
     proof = {"scheme": TAILPROOF_SCHEME, "signerFp": fingerprint, "tail": tail}
     proof["sig"] = sign(UNENROLLED_SECRET, signed_message(proof, TAILPROOF_KEYS)).hex()
     _write_lines(os.path.join(tail_dir, "tailproof.json"), [canonical_bytes(proof)])
-    return True, f"the record erased and a new identity {anchor[:16]}... founded in its place"
+    return anchor
 
 
 def tail_proof_removed(root: str) -> tuple[bool, str]:
@@ -776,6 +782,67 @@ def tail_proof_removed(root: str) -> tuple[bool, str]:
         return False, "there is no tailproof.json to remove"
     os.remove(path)
     return True, "tailproof.json removed"
+
+
+def _respelled(root: str, respell, what: str) -> tuple[bool, str]:
+    """One signed event line (seq 2) re-spelled by `respell`, its VALUE left exactly as it was.
+
+    Section 4: each line of a segment IS the canonical serialization of what it holds, so the
+    bytes on disk are the bytes the entry hash was taken over. A line re-spelled without
+    changing its value still recomputes every hash and every signature - which is exactly why
+    reading the value back is not enough, and both readers compare the line with the bytes.
+    """
+    path = _segment(root)
+    lines = _read_lines(path)
+    at = min(2, len(lines) - 1)
+    before = lines[at]
+    lines[at] = respell(before)
+    if canonical_bytes(strict_loads(lines[at].decode("utf-8"))) != canonical_bytes(
+        strict_loads(before.decode("utf-8"))
+    ):
+        return False, "the re-spelling changed the value of the line, which is not this mutation"
+    return _rewrite(path, lines), f"{what}, on line {at + 1}"
+
+
+def whitespace_in_a_signed_line(root: str) -> tuple[bool, str]:
+    """A space after the first colon: the JSON a pretty-printer or a merge tool writes."""
+    return _respelled(
+        root, lambda line: line.replace(b'{"event":{', b'{"event": {', 1), "one space after a colon"
+    )
+
+
+def key_order_in_a_signed_line(root: str) -> tuple[bool, str]:
+    """The line's two keys swapped, `link` before `event`, every byte of each value unchanged."""
+
+    def swapped(line: bytes) -> bytes:
+        value = strict_loads(line.decode("utf-8"))
+        return (
+            b'{"link":' + canonical_bytes(value["link"]) + b',"event":' + canonical_bytes(value["event"]) + b"}"
+        )
+
+    return _respelled(root, swapped, "the keys event and link written in the other order")
+
+
+def decomposed_text_in_a_signed_line(root: str) -> tuple[bool, str]:
+    """A signed line whose text is spelled in NFD - the same characters, other bytes.
+
+    The frozen records hold no character with two compositions, so this builds its own
+    signed record first (the refounding's, under RFC 8032's key, with a memory that reads
+    "café" composed) and then re-spells that one line decomposed. The record before the
+    re-spelling is honest and both readers verify it; what they have to refuse is the line.
+    """
+    import unicodedata
+
+    _refound(root, "a decision about the caf\u00e9 on the corner")
+    path = _segment(root)
+    lines = _read_lines(path)
+    at = 1
+    before = lines[at]
+    text = before.decode("utf-8")
+    lines[at] = unicodedata.normalize("NFD", text).encode("utf-8")
+    if lines[at] == before:
+        return False, "the line holds no character with a decomposed form"
+    return _rewrite(path, lines), f"the text of line {at + 1} written in NFD"
 
 
 def _flip_payload(payload: object) -> object:
@@ -815,6 +882,9 @@ MUTATIONS = {
     "reordered-lines": reordered_lines,
     "refounded-record": refounded_record,
     "tail-proof-removed": tail_proof_removed,
+    "whitespace-in-a-signed-line": whitespace_in_a_signed_line,
+    "key-order-in-a-signed-line": key_order_in_a_signed_line,
+    "decomposed-text-in-a-signed-line": decomposed_text_in_a_signed_line,
 }
 
 

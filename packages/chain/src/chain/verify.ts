@@ -181,8 +181,9 @@ export type CensusNote = KeyWithoutTailNote | BackupKeyNote | PartialFinalLineNo
  * event (an empty tail directory is not versioned by git, so a clone sees the key
  * alone), or a merge that copied the key but not the tail. The guilty one: a tail
  * removed to hide its events. And it is blind to a tail deleted together WITH its
- * key: with nothing left on disk to cross, only an external witness (a git history)
- * can testify to what was removed.
+ * key: with nothing left on disk to cross, only a copy of the record from before — the
+ * history a git remote keeps — can testify to what was removed; `mnema witness` dates
+ * a checkpoint and does not keep one.
  *
  * ONE OF THE THREE CAN NOW BE ANSWERED. A cut made through a waiver leaves a signed
  * `tail.pruned` in the record — written while the tail was still there, so its head
@@ -828,9 +829,13 @@ function verifyCheckpoints(
       });
       continue;
     }
-    // Checkpoint chain: each checkpoint links to the previous one's hash. A
-    // dropped trailing checkpoint therefore cannot hide the signed history it
-    // covered — the surviving run no longer matches what the next one linked.
+    // Checkpoint chain: each checkpoint links to the previous one's hash, so an
+    // EARLIER checkpoint dropped under a later one breaks here. This said the
+    // LAST one could not be dropped to hide what it covered either; that is false
+    // when its events go with it — the survivors close and nothing remembers the
+    // longer head (`aligned-cut`, `both-readers-read-the-same-bytes.test.ts`). The
+    // last checkpoint dropped ALONE leaves its events above every checkpoint, which
+    // the level reports and `--require=signed` refuses.
     if (checkpoint.prev !== expectedPrev) {
       issues.push({
         tail,
@@ -969,7 +974,9 @@ function verifyTailOwnership(
   }
   let proof: ReturnType<typeof parseTailProof>;
   try {
-    proof = parseTailProof(readFileSync(path, 'utf-8'));
+    // The file is one canonical line and the newline that ends it, which is not part of
+    // the line: the second reader strips it the same way before it compares bytes.
+    proof = parseTailProof(readFileSync(path, 'utf-8').replace(/\n+$/, ''));
   } catch (error) {
     push(
       `tail ${oneLine(tail)} has a malformed ownership proof: ${oneLine((error as Error).message)}`,
@@ -1065,7 +1072,11 @@ function witnessClause(witness: ChainWitness): string {
   const said: Readonly<Record<WitnessStatus, string>> = {
     'not-covered': `external witness (T3): not covered — ${witness.detail}`,
     pending: `external witness (T3): PENDING, which is not coverage — ${witness.detail}`,
-    covered: `external witness (T3): covered — ${witness.detail}`,
+    // What `covered` checked is said in the same breath, because offline it is less than
+    // the word reads: the header did the work it declares and the proof folds to its
+    // merkle root, and nothing here asked whether that header is in the Bitcoin chain
+    // (FORMAT.md section 8). `--require=witnessed` rests on exactly this.
+    covered: `external witness (T3): covered — ${witness.detail} (the work of its block header was checked here, not its place in the Bitcoin chain)`,
   };
   return said[witness.status];
 }

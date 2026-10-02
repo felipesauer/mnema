@@ -12,10 +12,18 @@
  * one. So it is refused here, at the one function every stored line is read through,
  * the way the second reader refuses it in `canonical.py`'s `strict_loads`.
  *
- * What this does NOT refuse is the reformatting the written form forgives: key order,
- * whitespace and Unicode composition (see `writtenAsStored` in the chain's hash module).
- * That tolerance is a decision of its own and is left as it was.
+ * A LINE OF THE RECORD IS ALSO REFUSED WHEN IT IS NOT CANONICAL, by {@link parseCanonicalLine}.
+ * This comment used to end by saying the product forgave key order, whitespace and Unicode
+ * composition on a stored line, as an honest reformat, and that the tolerance was a decision
+ * left as it was. The decision was taken the other way (01/10/2026): `FORMAT.md` section 4
+ * says each line IS the canonical serialization of what it holds, the second reader refused
+ * every such line while this product verified it, and nothing this product writes produces
+ * one — so the two readers disagreed about bytes no honest writer of the format makes.
+ * `parseStoredJson` itself stays tolerant, for the three documents that are not lines of the
+ * record (see `both-readers-read-the-same-bytes.test.ts`, which names them).
  */
+
+import { type CanonicalValue, canonicalStringify } from './canonical.js';
 
 /** A stored line that cannot be read as JSON the format accepts; `message` says why. */
 export class StoredJsonError extends Error {
@@ -99,6 +107,42 @@ export function parseStoredJson(text: string): unknown {
       duplicate.length > KEY_SHOWN ? `${duplicate.slice(0, KEY_SHOWN)}...` : duplicate,
     );
     throw new StoredJsonError(`a duplicate object key on the line: ${shown}`);
+  }
+  return parsed;
+}
+
+/**
+ * Parses one LINE OF THE RECORD — an entry, a checkpoint, a tail proof, a stored block
+ * header — refusing a duplicate key (as {@link parseStoredJson} does) AND a line that is not
+ * the canonical serialization (`FORMAT.md` section 1) of the value it holds: whitespace, key
+ * order, Unicode composition, an escape or a number spelled another way. The bytes on disk
+ * are then the bytes every hash and signature was taken over, which is what section 4
+ * promises and what the second reader checks (`is_canonical_line` in its `canonical.py`).
+ *
+ * A value with no canonical bytes at all — a lone surrogate — is refused here too, with the
+ * canonicalizer's own words, rather than later when a proof first asks for the bytes.
+ *
+ * IT COSTS ONE SERIALIZATION PER LINE READ, and that is not free: measured on 01/10/2026,
+ * `verify` over a tail of 10,001 events went from 303 ms to 400 ms (median of six, order
+ * alternated; the same build against itself tied at 302-303 ms), about 10 µs a line. The
+ * event's bytes are serialized again when its hash is recomputed, so a reading could reuse
+ * these instead; that is not done. Throws {@link StoredJsonError}, whose message is
+ * already the whole sentence.
+ */
+export function parseCanonicalLine(text: string): unknown {
+  const parsed = parseStoredJson(text);
+  let canonical: string;
+  try {
+    // Sound by construction: `JSON.parse` yields only the closed set CanonicalValue names.
+    canonical = canonicalStringify(parsed as CanonicalValue);
+  } catch (error) {
+    throw new StoredJsonError(`a value the format has no bytes for: ${(error as Error).message}`);
+  }
+  if (canonical !== text) {
+    throw new StoredJsonError(
+      'not the canonical serialization of what it holds (whitespace, key order, Unicode ' +
+        'composition or spelling differ), so these are not the bytes the proof was taken over',
+    );
   }
   return parsed;
 }

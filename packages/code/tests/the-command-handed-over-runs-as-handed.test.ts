@@ -410,8 +410,8 @@ export const NAMES_THAT_NEED_MORE: Readonly<
   Record<string, { readonly times: number; readonly why: string }>
 > = {
   'packages/code/README.md: mnema tail prune': {
-    times: 2,
-    why: 'the verb named in prose, as the one that cuts a tail; its own section hands the line over',
+    times: 3,
+    why: 'the verb named in prose, as the one that cuts a tail (and, beside the CI recipe, as the cut that recipe fails on by design); its own section hands the line over',
   },
   'packages/code/README.md: mnema key restore': {
     times: 1,
@@ -531,6 +531,12 @@ export const NAMES_THAT_NEED_MORE: Readonly<
  * `--hook`, and the session is handed what `mnema brief` prints — two names in one span, looked
  * at (63 → 65 names).
  *
+ * THE PAGES THAT SAY WHAT A GREEN `verify` DOES NOT PROVE name two verbs more in prose — the
+ * witness that dates a record and the cut the CI recipe fails on by design — and the recipe
+ * itself is one block line more (66 → 68 names in spans, 35 → 36 lines in blocks); and
+ * `verify --since` beside `--workspace` hands over the line to run in each project instead
+ * (34 → 35 lines in the source).
+ *
  * THE FIRST USE NOW SAYS WHAT COMES NEXT, and that moved rows of the source, each looked at. `init`
  * ends by naming the verb to type, `mnema decision record <title> <rationale>` (a line), and the one
  * that shows where things stand, `mnema status` (a name), and, when the directory is not the root of
@@ -544,18 +550,18 @@ export const HANDED_OVER: Readonly<
   // name 66 until the page about where the key lives named the verbs that protect it, and the
   // ones that stay unprotected without it (`key protect`, `key unprotect`, `verify`).
   // line 34 until the plugin page named `mnema --identify`, the question its hooks ask first.
-  span: { line: 36, name: 69, flag: 1, unwritten: 0 },
+  span: { line: 36, name: 71, flag: 1, unwritten: 0 },
   // name 18 until the page that says where the key lives named `mnema key protect` in a line of
   // its own.
   // line 35 until the same page showed that question in a block of its own.
-  block: { line: 36, name: 19, flag: 0, unwritten: 0 },
+  block: { line: 37, name: 19, flag: 0, unwritten: 0 },
   // 46 until the refusal an agent's `accept` gets, with the switch off, began naming the command a
   // person accepts with (`agent-accepts.ts`).
   // line 34 until the sentences an agent's accept is answered with began handing whole lines
   // over (`agent-accepts.ts`: the read, the person's accept, and the switch in both positions).
   // line 40 until the plugin told a session which program answered that question (`hand-over.mjs`).
   // name 50 until the hook copy of the opening document named `mnema decision import` (`presentation/brief.ts`).
-  source: { line: 45, name: 51, flag: 3, unwritten: 3 },
+  source: { line: 46, name: 51, flag: 3, unwritten: 3 },
 };
 
 // ---------------------------------------------------------------------------

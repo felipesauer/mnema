@@ -21,19 +21,30 @@
  *
  * Checkpoints CHAIN: each one signs the hash of the previous checkpoint's
  * signed message (`prev`, null for the first). This makes the run of
- * checkpoints itself tamper-evident — a trailing checkpoint cannot be dropped
- * to hide signed history, because the surviving checkpoints no longer reach the
- * head the last one attested. (Events appended ABOVE the last checkpoint carry
- * only the hash chain and can still be truncated by a keyless party; that is
- * the declared residual window, reported honestly by the verifier — and the same
- * residual T3 reports against the checkpoint an outside witness dated, see
- * `witnessOfTail` in witness.ts.)
+ * checkpoints itself tamper-evident in ONE direction: dropping an EARLIER
+ * checkpoint while keeping a later one breaks the link, and dropping the LAST
+ * one while the events it covered stay leaves those events above every
+ * checkpoint, where `--require=signed` refuses them.
+ *
+ * THIS USED TO PROMISE MORE: that the last checkpoint could not be dropped to
+ * hide the history it signed at all, because the survivors would no longer reach
+ * the head it attested. The premise was that something remembers that head, and
+ * nothing in the record does. Measured on the binary: cut the newest events AND
+ * the checkpoint that covered them, together, and what is left is a shorter chain
+ * whose every link and signature close — `verified (T1/T2/T4); all events are
+ * signature-covered`, exit 0 under `--require=signed`, and the second reader says
+ * VERIFIED too (`aligned-cut` in `both-readers-read-the-same-bytes.test.ts`). Only
+ * a copy of the record from before the cut can show it, such as the history a git
+ * remote keeps. Events appended ABOVE the
+ * last checkpoint carry only the hash chain and can be truncated by a keyless
+ * party; that residual is reported by the verifier, and T3 reports the same one
+ * against the checkpoint an outside witness dated (`witnessOfTail` in witness.ts).
  */
 
 import { createHash } from 'node:crypto';
 
 import { canonicalBytes, canonicalStringify } from '../events/canonical.js';
-import { parseStoredJson } from '../events/stored-json.js';
+import { parseCanonicalLine } from '../events/stored-json.js';
 import { contentRoot, type WrittenEvent } from './hash.js';
 import type { KeyPair } from './keys.js';
 import { type KeyObject, sign, verify } from './keys.js';
@@ -170,7 +181,7 @@ export function serializeCheckpoint(checkpoint: Checkpoint): string {
 
 /** Parses a stored checkpoint line. */
 export function parseCheckpoint(line: string): Checkpoint {
-  const raw = parseStoredJson(line) as Record<string, unknown>;
+  const raw = parseCanonicalLine(line) as Record<string, unknown>;
   const requireString = (key: string): string => {
     const value = raw[key];
     if (typeof value !== 'string' || value.length === 0) {

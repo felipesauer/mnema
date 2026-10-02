@@ -31,7 +31,8 @@ Requires Node ≥ 22.12.0; the packages are ESM-only.
   verifying.
 - **`mnema verify`**, which needs no private key and no network, names the level it reached
   instead of answering yes or no, and exits non-zero on a broken record, so it drops into CI.
-  `--require=signed` is the setting that catches a record whose checkpoints were removed.
+  `--require=signed` catches checkpoints taken out from under the events they signed; a cut
+  that took the newest events with their checkpoint reads as a shorter honest record.
 - **An outside witness, opt-in.** `mnema witness stamp` has the public OpenTimestamps
   calendars attest a checkpoint's digest, so a record rebuilt later cannot claim a history.
   Only the digest leaves the machine.

@@ -271,8 +271,9 @@ describe('the six probes, as the verdict answers them now', () => {
     expect(said.summary).not.toContain('verified (T1/T2/T4)');
     expect(said.summary).toContain('local integrity verified (T1 only) — no signature was checked');
     // The honest residual: the default exit stays 0 (there is no break to point at —
-    // that is the gap an external witness closes), and the caller who cannot live
-    // with that says `--require=signed` and gets a non-zero exit.
+    // that is the gap a copy from before the edit closes, such as a git remote), and
+    // the caller who cannot live with that says `--require=signed` and gets a non-zero
+    // exit.
     expect(said.failed).toBe(false);
     expect((await verify('--require=signed')).failed).toBe(true);
   });

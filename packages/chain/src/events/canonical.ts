@@ -38,9 +38,14 @@ export function canonicalStringify(value: CanonicalValue): string {
 
 /**
  * Canonical bytes: the UTF-8 encoding of {@link canonicalStringify}. This is
- * the input to the hash chain and the signed checkpoint — never the raw
- * `.jsonl` line, whose whitespace and key order a reformat or merge can change
- * without changing the fact.
+ * the input to the hash chain and the signed checkpoint.
+ *
+ * THIS USED TO ADD *never the raw `.jsonl` line, whose whitespace and key order a
+ * reformat or merge can change without changing the fact* — a reading in which a
+ * reformatted line still verified. It does not any more: a stored line that is not
+ * exactly these bytes is refused at the parse (`parseCanonicalLine` in
+ * `stored-json.ts`), as `FORMAT.md` section 4 and the second reader already said, so
+ * the raw line and these bytes are the same bytes on every line that reads.
  */
 export function canonicalBytes(value: CanonicalValue): Uint8Array {
   return new TextEncoder().encode(canonicalStringify(value));
@@ -66,10 +71,11 @@ function encode(value: CanonicalValue): string {
 
 function encodeString(value: string): string {
   // Two strings that render identically but differ in Unicode composition
-  // (NFC "é" = U+00E9 vs NFD "e"+U+0301) are byte-distinct, so an honest
-  // renormalizing reformat of the stored line would fork the bytes and read as
-  // tampered — and a homograph gives an adversary free bits in the signed
-  // fact. Normalizing to NFC first, the same class of guard as -0, means "same
+  // (NFC "é" = U+00E9 vs NFD "e"+U+0301) are byte-distinct, so the same text
+  // typed by two tools would fork the bytes — and a homograph gives an adversary
+  // free bits in the signed fact. (A STORED line in the other composition is not
+  // re-normalized into reading: it is refused as not canonical, by
+  // `parseCanonicalLine`.) Normalizing to NFC first, the same class of guard as -0, means "same
   // text" always yields "same bytes".
   const normalized = value.normalize('NFC');
   // A lone (unpaired) surrogate is not valid Unicode text; different tools

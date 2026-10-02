@@ -158,10 +158,11 @@ verbatim. The surfaces never upgrade a verdict into a stronger claim.
 | **An exported audit feed is the record** | It is a **projection** of it, and it is not the proof. `mnema export` emits one OCSF Entity Management event per line for a SIEM, and it carries the **envelope only** — when, which operation, who authorized it, which agent executed it, in which session, over which entity, signed by which key. **No payload of any kind leaves**: not a memory's text, not a decision's rationale, not an observation's body. The reason is the row below — the record holds credentials mnema does not recognize, and a feed carrying bodies would push them off this machine into somebody's search index, permanently. A line that is **altered in transit is not detectable by the SIEM**: the signature in the record covers mnema's own canonical bytes, not this projection, so nothing here is an attestation and OCSF's `record_integrity` profile is deliberately **not** used. What each line does carry is enough to find the fact back in the record — the subject, the original instant, and the tree — so the answer to *is this line real* is a question you ask `mnema show` and `mnema verify`, never the index. Nothing in mnema ever reads a feed back, and the verb **sends nothing anywhere**: it writes to standard output and whoever forwards it decides the rest. |
 | **Credentials stay out of the record** | Only the ones mnema *recognizes*, and only where the value does not read as a name you chose. A value in a known format — a cloud key, an API token, a PEM private key, a password inside a URL — never reaches the chain, and which of two things happens depends on the field. In a **body** (a memory's text, a decision's reasoning, a note) it is replaced with a typed placeholder and the reply names what was replaced: the fact survives the redaction. In a **name** — a title, a skill's name, an agent, a run, either end of a link — the whole write is **refused** and nothing is recorded, because a name with a placeholder in it is not that thing redacted, it is a different thing under its id, permanently. A proprietary token, a password written out in prose, a base64 blob: those are written verbatim, and nothing deletes a fact afterwards. It reduces the damage; it does not make the record safe to paste secrets into. |
 
-The honest summary: **local cryptography covers alteration; an external witness
-covers omission, dates the record, and ties it to an identity.** This paragraph
-used to say no such witness was wired in. One is now — `mnema witness` — and it
-does exactly one of those three things:
+The honest summary: **local cryptography covers alteration; the history a git
+remote keeps covers omission and gives the signing key a history someone else can
+check; an outside witness dates the record.** This summary used to hand all three
+to "an external witness", and the list below it said that the one this product wires
+in — `mnema witness` — does exactly one of them. It does:
 
 - **It dates.** `mnema witness stamp` asks the public OpenTimestamps calendars to
   attest the digest of a checkpoint's signed message; `mnema witness upgrade` goes
@@ -249,6 +250,11 @@ mnema verify
 #> public: local integrity verified (T1/T2/T4); 1 tail(s); all events are signature-covered; …
 #>   census [backup-key] public …: the backup key this machine registered for mnid:c0fc3c71… — …
 #> private: no record here — nothing has been written to this tree on this machine, …
+# On any OTHER machine — a clone, a CI runner — that same key reads
+# `census [key-without-tail]` instead, by design: which key is a backup is known only
+# to the machine that made it, and the record will not say so until the key's role is
+# part of the format (see "what neither value answers", below). It is a note every
+# honest clone of a record `mnema init` made carries; another one is a tail to look for.
 
 # Auditing several projects? Name them, and get ONE verdict over all of them.
 mnema verify --workspace ~/work/api ~/work/web
@@ -284,7 +290,9 @@ exit codes are asserted side by side in
 **What "broken" means is the caller's to declare.** `--require=signed` also fails
 when any event of any tree it covered is not covered by a verified signature — every
 write here signs what it wrote, so it passes whenever nothing is mid-write, and what it
-catches is a record whose checkpoints were removed or did not verify. `--require=witnessed` also
+catches is checkpoints that did not verify or were taken out from under the events
+they signed. A cut that took the newest events WITH their checkpoint is not caught:
+what is left is a shorter record honest in every byte. `--require=witnessed` also
 fails when no external witness dates the record (`mnema witness stamp` asks for one;
 it passes once a Bitcoin block carries it, and never while it is pending). Asking
 costs nothing: `--require` is a comparison of levels, not extra work.
@@ -312,8 +320,32 @@ used would have left a tail that is not there. The record does not say which key
 backup, so on any other machine the same key reads as a committed key without a tail.
 A tail removed *together with its key* is not reported at all — that record reads
 `0 tail(s); no events yet`, indistinguishable from a fresh one, and only a history
-outside this record (a git log, an external witness) can testify to what was taken
+outside this record (the one a git remote keeps) can testify to what was taken
 out. No value of `--require` closes that; it changes which forgery goes green.
+
+**What closes it in CI is the history git already keeps.** Three records exit 0 even
+under `--require=signed`: the newest events cut together with their checkpoint, the
+record erased and founded again, and a key holder rewriting the middle and signing it
+again. A fourth — every tail deleted with every key — exits 0 under the default. Each
+leaves a record honest in every byte, and each changes files that the commit the change
+started from already held. So `--since <rev>` asks git: every file of the committed
+record at `<rev>` must still be on disk, and every segment and `checkpoints.jsonl` must
+still begin with exactly the bytes it held there — a record only ever grows at the end. It
+reads git and never the network, and changes nothing when it is not asked for. In CI,
+`BASE` is the commit the change is measured against — the target branch of a pull
+request, fetched (a shallow checkout holds no base, and `--since` says so and fails):
+
+<!-- BEGIN ci-recipe -->
+```sh
+mnema verify --require=signed --since "$BASE"
+```
+<!-- END ci-recipe -->
+
+It fails on a cut you authorized with `mnema tail prune` too, and that is the point of it:
+the change that removes a tail is the one change a reviewer has to look at. It rules on
+the committed tree only (the private one never travels), and it trusts the base: a
+history rewritten on the remote moves the base with it, which is what a protected branch
+on the git host is for.
 
 ### Bold, dim, and what a pipe gets
 
@@ -1236,7 +1268,13 @@ mnema witness upgrade
 mnema verify --require=witnessed
 #> public: local integrity verified (T1/T2/T4) and witnessed (T3); 1 tail(s); all events are
 #> signature-covered; external witness (T3): covered — Bitcoin block 963688 at 2026-08-23T06:03:01.000Z
+#> (the work of its block header was checked here, not its place in the Bitcoin chain)
 ```
+
+**What `covered` checked offline is said in the verdict itself**: the block header did
+the work it declares and the proof folds to it. Whether that header is in the Bitcoin
+chain is not asked here — that needs a node or an explorer — so `--require=witnessed`
+passing means the attestation is arithmetic that closes, not that a block was looked up.
 
 A checkpoint normally has **several** confirmed attestations — three calendars land in
 three blocks, and this record's proof reaches 963688, 963689 and 963690. The one a verdict

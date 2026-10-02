@@ -166,7 +166,7 @@ _mnema_flags() {
     'switch') echo '-h --help -V --version --color --identify' ;;
     'switch off') echo '--reason --scope --which -h --help -V --version --color --identify' ;;
     'switch on') echo '--reason --scope --which -h --help -V --version --color --identify' ;;
-    'verify') echo '--global --workspace --allow-no-record --require --json -h --help -V --version --color --identify' ;;
+    'verify') echo '--global --workspace --allow-no-record --require --since --json -h --help -V --version --color --identify' ;;
     'mcp') echo '--project -h --help -V --version --color --identify' ;;
     'repl') echo '-h --help -V --version --color --identify' ;;
     'completion') echo '-h --help -V --version --color --identify' ;;
