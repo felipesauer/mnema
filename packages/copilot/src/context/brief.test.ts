@@ -138,6 +138,7 @@ describe('brief — everything that governs the work here', () => {
       ],
       skills: [{ id: 'sk-1', name: 'One slice per PR' }],
       collisions: [],
+      divergent: [],
       addressed: 0,
       asking: 0,
       // Nothing is waiting: the one decision and the one pattern of this record were both
@@ -305,6 +306,8 @@ describe('brief — everything that governs the work here', () => {
       'collisions',
       'decisions',
       'decisionsAwaiting',
+      // Rules moved apart, never tasks: `printedDivergences` keeps only what is printed.
+      'divergent',
       'editPush',
       'skills',
       'skillsAwaiting',
@@ -584,6 +587,38 @@ describe('brief — everything that governs the work here', () => {
     expect(composed.collisions).toEqual([{ adr: 'ADR-1', ids: ['dec-clone', 'dec-here'] }]);
   });
 
+  it('declares a printed decision two machines moved apart, and stays quiet about one it does not print', () => {
+    // Each decision was born here and moved on a clone that had pulled it while `proposed`;
+    // the clone's tail holds only its own moves, as a clone's does. `dec-apart` was rejected
+    // on the clone before it was accepted here, so the merged order leaves it accepted — in
+    // force, printed, and in force only because of that order: the document owes its reader
+    // the other move. `dec-out` was rejected on both: moved apart too, and not printed, so it
+    // is the audit's answer and not this file's.
+    const here = bench();
+    const clone = bench();
+    accept(here, 'dec-apart', 'Use SQLite');
+    reject(here, 'dec-out', 'Use Postgres');
+    moveDecisionAt(
+      clone,
+      'dec-apart',
+      '2026-01-01T00:00:00.500Z',
+      'proposed',
+      'rejected',
+      'reject',
+    );
+    moveDecisionAt(clone, 'dec-out', '2026-01-01T00:01:00.000Z', 'proposed', 'rejected', 'reject');
+    mergeTailInto(here, clone);
+
+    const composed = brief([tree(here, 'public')], CHANNELS);
+    expect(composed.decisions.map((d) => d.id)).toEqual(['dec-apart']);
+    expect(composed.divergent).toHaveLength(1);
+    expect(composed.divergent[0]).toMatchObject({
+      kind: 'decision',
+      entityId: 'dec-apart',
+      from: 'proposed',
+    });
+  });
+
   it('names the holder that is NOT in force, and stays quiet about a label it does not print', () => {
     // Both halves of the filter, over one record, because they pull opposite ways.
     //
@@ -641,6 +676,7 @@ describe('brief — everything that governs the work here', () => {
       decisions: [],
       skills: [],
       collisions: [],
+      divergent: [],
       addressed: 0,
       asking: 0,
       decisionsAwaiting: 0,
@@ -652,6 +688,7 @@ describe('brief — everything that governs the work here', () => {
       decisions: [],
       skills: [],
       collisions: [],
+      divergent: [],
       addressed: 0,
       asking: 0,
       decisionsAwaiting: 0,
@@ -669,6 +706,7 @@ describe('brief — everything that governs the work here', () => {
       decisions: [],
       skills: [],
       collisions: [],
+      divergent: [],
       addressed: 0,
       asking: 0,
       decisionsAwaiting: 0,

@@ -330,6 +330,7 @@ describe('mnema brief (what governs the work here)', () => {
         decisions: [],
         skills: [],
         collisions: [],
+        divergent: [],
         addressed: 0,
         asking: 0,
         // Nothing waiting either, and the document says so in words: a project where

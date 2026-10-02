@@ -56,8 +56,8 @@
  * open the trees that are left, and the other three still stop.
  */
 
-import { consultationsByRun, type RecordBody, readRecord } from '@mnema/copilot';
-import { type DiscoveryEnv, resolveTrees, type Scope } from '@mnema/core';
+import { consultationsByRun, type RecordBody, readRecord, type ScopedCache } from '@mnema/copilot';
+import { type DiscoveryEnv, type DivergentMove, resolveTrees, type Scope } from '@mnema/core';
 import { type AnchorForms, anchorForms, NO_ANCHORS } from '../anchors.js';
 import {
   linkBreaksOf,
@@ -93,6 +93,14 @@ export interface ShowDone {
    * says so.
    */
   readonly linkBreaks: readonly ScopedLinkBreak[];
+  /**
+   * The moves of this record out of one state that did not see each other — what two machines
+   * moving one decision, pattern or task apart leave, and what a projection hides by keeping
+   * the last `to` ({@link DivergentMove}). Empty for every record moved in one line, and for a
+   * memory or an observation, which have no states. Read from the tree that holds the record,
+   * whose order the read already built, so it costs no second replay.
+   */
+  readonly divergent: readonly DivergentMove[];
 }
 
 /** No visible tree holds a record with this id. */
@@ -117,10 +125,14 @@ export function runShow(ctx: ShowContext, input: { id: string }): ShowDone | Sho
   const trees = resolveTrees(ctx.cwd, ctx.env);
   return withOpenedCaches(trees, (open, opened) => {
     let found: RecordBody | null = null;
+    let holder: ScopedCache | undefined;
     let next = 0;
     for (; next < SCOPES.length && found === null; next++) {
       const source = open(SCOPES[next] as Scope);
-      if (source !== undefined) found = readRecord([source], input.id);
+      if (source !== undefined) {
+        found = readRecord([source], input.id);
+        holder = source;
+      }
     }
     if (found === null) {
       return {
@@ -128,6 +140,8 @@ export function runShow(ctx: ShowContext, input: { id: string }): ShowDone | Sho
         reason: trees.projectPublic === undefined ? 'NO_PROJECT' : 'UNKNOWN_RECORD',
       };
     }
+    const id = found.id;
+    const divergent = (holder?.cache.divergentMoves() ?? []).filter((move) => move.entityId === id);
     // A DECISION NAMES WHO RECORDED AND WHO RULED IT, so it prints identities and reads the
     // shortening from the tree it came off — the tree that holds the events naming them.
     if (found.kind !== 'memory' && found.kind !== 'skill') {
@@ -141,6 +155,7 @@ export function runShow(ctx: ShowContext, input: { id: string }): ShowDone | Sho
         record: found,
         anchors,
         linkBreaks: linkBreaksOf(opened, THE_READING_THAT_OPENED_THESE),
+        divergent,
       };
     }
     // The two kinds whose answer is about the whole record and not about one tree.
@@ -150,6 +165,7 @@ export function runShow(ctx: ShowContext, input: { id: string }): ShowDone | Sho
       record: found,
       anchors: anchorForms(opened),
       linkBreaks: linkBreaksOf(opened, THE_READING_THAT_OPENED_THESE),
+      divergent,
       ...(found.kind === 'skill'
         ? { consultations: consultationsByRun(opened).get(found.id) ?? 0 }
         : {}),

@@ -9,6 +9,7 @@ import {
   deprecateSkill,
   makeBench,
   mergeTailInto,
+  moveDecision,
   moveTask,
   supersedeDecision,
 } from '../../tests/support/chain.js';
@@ -132,6 +133,7 @@ describe('antipatterns — recurring shapes with their evidence', () => {
       deprecatedSkills: [],
       skillCandidates: [],
       labelCollisions: [],
+      divergentMoves: [],
     });
   });
 });
@@ -289,5 +291,48 @@ describe('antipatterns — one record at a time, never added together', () => {
 
   it('reads an empty workspace without complaint', () => {
     expect(antipatternsByProject([])).toEqual({ byProject: [] });
+  });
+});
+
+describe('antipatterns — a decision two machines moved out of one state', () => {
+  let benches: Bench[] = [];
+  afterEach(() => {
+    for (const b of benches) rmSync(b.root, { recursive: true, force: true });
+    benches = [];
+  });
+  function bench(): Bench {
+    const b = makeBench();
+    benches.push(b);
+    return b;
+  }
+
+  it('says the decision and both moves, and picks neither', () => {
+    // Two machines, each moving the decision from the `proposed` it could see; the tails
+    // meet afterwards. Neither move was refused — nothing could see the other.
+    const here = bench();
+    const clone = bench();
+    birthDecision(here, 'dec', 'Round the tax over the total');
+    moveDecision(here, 'dec', 'proposed', 'accepted', 'accept');
+    moveDecision(clone, 'dec', 'proposed', 'rejected', 'reject');
+    mergeTailInto(here, clone);
+
+    const merged = here.events();
+    const { divergentMoves } = antipatterns({ events: merged, chains: [merged] });
+    expect(divergentMoves).toHaveLength(1);
+    expect(divergentMoves[0]).toMatchObject({
+      kind: 'decision',
+      entityId: 'dec',
+      from: 'proposed',
+    });
+    expect(divergentMoves[0]?.evidence).toHaveLength(2);
+  });
+
+  it('says nothing about a decision that left each state once', () => {
+    const here = bench();
+    birthDecision(here, 'dec', 'Round the tax over the total');
+    moveDecision(here, 'dec', 'proposed', 'accepted', 'accept');
+    birthDecision(here, 'dec-2', 'Round the tax per line');
+    supersedeDecision(here, 'dec', 'dec-2');
+    expect(antipatterns(record(here)).divergentMoves).toEqual([]);
   });
 });

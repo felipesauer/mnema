@@ -218,7 +218,14 @@ function countedVerification(root: string) {
 }
 
 describe('what a verification costs', () => {
-  it('grows with the record, not with the record times its checkpoints', () => {
+  // THE TIMEOUT IS THE WRITER'S, NOT THE VERIFIER'S. The two records are about 600 acts written
+  // through the product's own writer, an entry and a checkpoint each, and since every append is
+  // synced to the disk before it returns (`durable.ts`) that is about 1,200 syncs: measured
+  // alone, 10.8 s for the case where the default ceiling is 5 s. What the case asserts is how
+  // many reads a verification makes, which no clock enters.
+  it('grows with the record, not with the record times its checkpoints', {
+    timeout: 60_000,
+  }, () => {
     const small = twoMachines(60);
     const large = twoMachines(240);
     const atSmall = countedVerification(small.root);

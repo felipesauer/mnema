@@ -14,7 +14,9 @@
  * it.
  */
 
+import { decisionTransitioned } from '@mnema/chain';
 import type { Brief, ChannelState } from '@mnema/copilot';
+import type { DivergentMove } from '@mnema/core';
 import { describe, expect, it } from 'vitest';
 import { briefDocument, briefWithin } from './brief.js';
 import { HOOK_TEXT_CEILING, printedLength } from './within-a-hook.js';
@@ -32,6 +34,7 @@ function governance(over: Partial<Brief> = {}): Brief {
     decisions: [],
     skills: [],
     collisions: [],
+    divergent: [],
     addressed: 0,
     asking: 0,
     // Nothing waiting by default, so every case that is not about the waiting paragraph
@@ -534,6 +537,49 @@ describe('the brief says what is recorded here and awaiting a judgement', () => 
     // And the pointer is not repeated under the second heading — that read answers for
     // both, and a line here would be paid for on every prompt to say it twice.
     expect(text.split('`bootstrap`')).toHaveLength(2);
+  });
+});
+
+describe('the brief declares a rule two machines moved apart', () => {
+  const rules = { decisions: [decision(1, 'Use SQLite'), decision(2)] };
+  /** One move of decision 1 out of `proposed`, as the record holds it. */
+  const move = (to: string, action: string) =>
+    decisionTransitioned(
+      {
+        at: '2026-10-01T00:00:00.000Z',
+        who: 'mnid:0000000000000000000000000000000000000000000000000000000000000000',
+        signerFp: '0'.repeat(64),
+        subject: decision(1).id,
+      },
+      { from: 'proposed', to, action, fields: { note: `${action}ed` } },
+    );
+  const apart: DivergentMove = {
+    kind: 'decision',
+    entityId: decision(1).id,
+    from: 'proposed',
+    evidence: [move('rejected', 'reject'), move('accepted', 'accept')],
+    to: ['rejected', 'accepted'],
+  };
+
+  it('adds NOTHING when no printed rule was moved apart', () => {
+    expect(briefDocument(governance({ ...rules, divergent: [] }))).toEqual(
+      briefDocument(governance(rules)),
+    );
+  });
+
+  it('names the rule, the state it left and every move, above the bullets and not shaped like one', () => {
+    const lines = briefDocument(governance({ ...rules, divergent: [apart] }));
+    expect(lines).toContain(
+      '- `0198f3c1-7a2e-7b41-9c05-3d8e6f2a1b01` left proposed to rejected, then accepted',
+    );
+    const declared = lines.findIndex((line) => line.includes('moved out of one state'));
+    const firstRule = lines.findIndex((line) => line.startsWith('- **'));
+    expect(declared).toBeGreaterThanOrEqual(0);
+    expect(firstRule).toBeGreaterThan(declared);
+    expect(lines.filter((line) => line.startsWith('- **'))).toHaveLength(2);
+    expect(printed(governance({ ...rules, divergent: [apart] }))).toContain(
+      '## Decisions in force (2)',
+    );
   });
 });
 

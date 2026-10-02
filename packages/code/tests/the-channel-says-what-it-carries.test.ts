@@ -226,6 +226,7 @@ describe('one declaration, and one place that decides it', () => {
       decisions: [],
       skills: [],
       collisions: [],
+      divergent: [],
       addressed: 0,
       asking: 0,
       editPush: { channel: 'edit-rules-push', on: true },

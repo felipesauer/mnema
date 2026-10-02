@@ -70,6 +70,7 @@ const BUILT_WITH: Readonly<Record<string, readonly unknown[]>> = {
   IdentityUnavailableError: ['UNKNOWN_ANCHOR', 'the record names no identity for this key'],
   KeyIsProtectedError: ['/keys/abc.key'],
   KeyPassphraseWrongError: ['/keys/abc.key'],
+  KeyRootBusyError: ['/tmp/x.lock', 4242],
   NoPassphraseToProtectWithError: [],
   PrivateTreeVisibleError: [
     { state: 'visible', path: '.mnema/private', gitignore: '.mnema/.gitignore' },

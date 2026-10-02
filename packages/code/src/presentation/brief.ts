@@ -114,6 +114,7 @@
  */
 
 import type { Acceptance, AdrCollision, Brief, ChannelState } from '@mnema/copilot';
+import type { DivergentMove } from '@mnema/core';
 import type { BriefDone } from '../commands/brief.js';
 import { A_PERSON, oneLine } from '../one-line.js';
 import { DERIVED_FROM } from '../provenance.js';
@@ -537,6 +538,12 @@ const NO_DECISIONS = [
  * worth is that it does not get edited. The product's move for "we changed our mind"
  * is a new decision, never a rewrite of an old one.
  */
+const MOVED_APART = [
+  'One of the rules below was moved out of one state more than once, by moves made apart',
+  'that did not see each other. Each move is a signed fact, and nothing re-judges either: this',
+  'file prints the state the last of them in the record leaves. Read both before relying on it:',
+];
+
 const LABEL_NAMES_TWO = [
   'One of the labels below is answered to by more than one rule. An `ADR-<n>` is',
   'numbered within a single chain and frozen when the rule was recorded, so two people',
@@ -783,6 +790,7 @@ function composed(governance: Brief, shown: number): string[] {
             ...WHERE_THE_RATIONALE_IS,
             ...whoRuled(governance.decisions),
             ...ambiguousLabels(governance.collisions),
+            ...movedApart(governance.divergent, 'decision'),
           ],
       whatAwaitsAJudgement(governance.decisionsAwaiting, DECISIONS_WAITING),
       decisions.map((decision) =>
@@ -798,7 +806,9 @@ function composed(governance: Brief, shown: number): string[] {
     ...section(
       'Patterns adopted',
       skills.length,
-      governance.skills.length === 0 ? NO_PATTERNS : WHERE_THE_PATTERN_IS,
+      governance.skills.length === 0
+        ? NO_PATTERNS
+        : [...WHERE_THE_PATTERN_IS, ...movedApart(governance.divergent, 'skill')],
       whatAwaitsAJudgement(governance.skillsAwaiting, PATTERNS_WAITING),
       skills.map((skill) => rule(skill.name, skill.id, skill.origin)),
     ),
@@ -918,6 +928,23 @@ function acceptedBy(acceptance: Acceptance): string {
 function ambiguousLabels(collisions: readonly AdrCollision[]): string[] {
   if (collisions.length === 0) return [];
   return ['', ...LABEL_NAMES_TWO, '', ...collisions.map(ambiguous)];
+}
+
+/**
+ * The declaration about rules moved apart, and nothing at all when none was — the same
+ * doctrine as {@link ambiguousLabels}: the ordinary case adds no byte, and the lines it does
+ * add go under the heading, above the bullets, in a shape that does not open with `- **`.
+ */
+function movedApart(divergent: readonly DivergentMove[], kind: 'decision' | 'skill'): string[] {
+  const these = divergent.filter((move) => move.kind === kind);
+  if (these.length === 0) return [];
+  return ['', ...MOVED_APART, '', ...these.map(apart)];
+}
+
+/** One rule moved apart, as a bullet: its id, the state it left, and every move out of it. */
+function apart(move: DivergentMove): string {
+  // The moves' states are collapsed as one joined value, the way a rule's composed name is.
+  return `- \`${oneLine(move.entityId)}\` left ${oneLine(move.from)} to ${oneLine(move.to.join(', then '))}`;
 }
 
 /**

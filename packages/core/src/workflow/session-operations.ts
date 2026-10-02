@@ -73,6 +73,12 @@ import { oneLine } from '../one-line.js';
 import { orderedEvents } from '../projections/order.js';
 import { projectRuns } from '../projections/run.js';
 import { type AppendRefusal, appendEvent } from './append.js';
+import {
+  type Judged,
+  onTheRecordAsItStands,
+  type StateMovedErr,
+  stateMoved,
+} from './as-the-record-stands.js';
 import { systemClock } from './clock.js';
 import { authorizingAnchor, ensureFounded } from './identity-operations.js';
 import type { WriteContext } from './operations.js';
@@ -131,7 +137,9 @@ export type EndRunError =
   /** No `run.started` for this id — there is no session to close. */
   | { readonly ok: false; readonly code: 'UNKNOWN_RUN'; readonly message: string }
   /** The run already has a `run.ended` — closing it again would be an orphan fact. */
-  | { readonly ok: false; readonly code: 'ALREADY_ENDED'; readonly message: string };
+  | { readonly ok: false; readonly code: 'ALREADY_ENDED'; readonly message: string }
+  /** Another close landed between the reading this one was judged on and its append. */
+  | StateMovedErr;
 
 /** What the caller asks to open a run. */
 export interface StartRunInput {
@@ -267,64 +275,82 @@ export function endRun(ctx: WriteContext, input: EndRunInput): EndRunOk | EndRun
   // Key on the chain's canonical id form so the lookup matches the projection's
   // stored subject; a composition variant of the id cannot false-miss.
   const id = canonicalId(input.run);
-  const runs = projectRuns(orderedEvents(ctx.layout, ctx.upcasters));
-  const current = id === undefined ? undefined : runs.get(id);
-  if (id === undefined || current === undefined) {
-    return {
-      ok: false,
-      code: 'UNKNOWN_RUN',
-      message: `run "${oneLine(input.run)}" does not exist`,
-    };
-  }
-  if (!current.open) {
-    return {
-      ok: false,
-      code: 'ALREADY_ENDED',
-      message: `run "${oneLine(input.run)}" is already ended`,
-    };
-  }
+  return onTheRecordAsItStands(
+    ctx,
+    () => projectRuns(orderedEvents(ctx.layout, ctx.upcasters)),
+    (runs, earlier): Judged<EndRunOk | EndRunError> => {
+      const current = id === undefined ? undefined : runs.get(id);
+      if (id === undefined || current === undefined) {
+        return {
+          refuse: {
+            ok: false,
+            code: 'UNKNOWN_RUN',
+            message: `run "${oneLine(input.run)}" does not exist`,
+          },
+        };
+      }
+      if (!current.open) {
+        // Open at the first reading and ended at the second: another close landed in
+        // between, and that is what the caller is told (see `onTheRecordAsItStands`).
+        if (earlier?.get(id)?.open === true) {
+          return { refuse: stateMoved('run', id, 'close', 'open', 'ended') };
+        }
+        return {
+          refuse: {
+            ok: false,
+            code: 'ALREADY_ENDED',
+            message: `run "${oneLine(input.run)}" is already ended`,
+          },
+        };
+      }
 
-  const who = authorizingAnchor(ctx);
+      const who = authorizingAnchor(ctx);
 
-  // The agent that is CLOSING, through the door the birth and the other eleven
-  // writes go through — screened, canonicalized and compared in one call, so the
-  // string checked against `who` is the string the envelope stores. Not screened
-  // by the block above: unlike the birth's agent, this value reaches no payload,
-  // so passing it through a second cleaner would be two doors on one field.
-  const agent = resolveExecutingAgent(who, input.which);
-  if (!agent.ok) return agent;
-  const which = agent.which;
+      // The agent that is CLOSING, through the door the birth and the other eleven
+      // writes go through — screened, canonicalized and compared in one call, so the
+      // string checked against `who` is the string the envelope stores. Not screened
+      // by the block above: unlike the birth's agent, this value reaches no payload,
+      // so passing it through a second cleaner would be two doors on one field.
+      const agent = resolveExecutingAgent(who, input.which);
+      if (!agent.ok) return { refuse: agent };
+      const which = agent.which;
 
-  // Found this installation's anchor before the fact, so the close is signed by
-  // a key valid for its anchor at verify.
-  // Once founded it appends nothing, and refuses an anchor that no longer counts
-  // this key (see `ensureFounded`).
-  ensureFounded(ctx);
-  const at = (ctx.clock ?? systemClock)();
-  const appended = appendEvent(
-    ctx.writer,
-    runEnded(
-      {
-        at,
-        who,
-        signerFp: ctx.writer.signerFingerprint,
-        subject: id,
-        // The agent that closed the session, in the uniform slot every other event
-        // uses — so a read credits the close to whoever did it, the way it credits
-        // every other fact. Omitted only if it does not canonicalize to an identity.
-        ...(which !== undefined ? { which } : {}),
-        // No `run` on the envelope: the subject already IS the run being closed.
-      },
-      { ...(text.fields.outcome !== undefined ? { outcome: text.fields.outcome } : {}) },
-    ),
+      return {
+        write: () => {
+          // Found this installation's anchor before the fact, so the close is signed by
+          // a key valid for its anchor at verify.
+          // Once founded it appends nothing, and refuses an anchor that no longer counts
+          // this key (see `ensureFounded`).
+          ensureFounded(ctx);
+          const at = (ctx.clock ?? systemClock)();
+          const appended = appendEvent(
+            ctx.writer,
+            runEnded(
+              {
+                at,
+                who,
+                signerFp: ctx.writer.signerFingerprint,
+                subject: id,
+                // The agent that closed the session, in the uniform slot every other event
+                // uses — so a read credits the close to whoever did it, the way it credits
+                // every other fact. Omitted only if it does not canonicalize to an identity.
+                ...(which !== undefined ? { which } : {}),
+                // No `run` on the envelope: the subject already IS the run being closed.
+              },
+              { ...(text.fields.outcome !== undefined ? { outcome: text.fields.outcome } : {}) },
+            ),
+          );
+          if (!appended.ok) return appended;
+          // The agent AS RECORDED, and both reports merged — the screen above saw the
+          // outcome, the resolution saw the agent, and a caller echoing either has to be
+          // told what came out of it.
+          return {
+            ok: true,
+            ...(which !== undefined ? { agent: which } : {}),
+            ...screened([...text.replaced, ...agent.replaced]),
+          };
+        },
+      };
+    },
   );
-  if (!appended.ok) return appended;
-  // The agent AS RECORDED, and both reports merged — the screen above saw the
-  // outcome, the resolution saw the agent, and a caller echoing either has to be
-  // told what came out of it.
-  return {
-    ok: true,
-    ...(which !== undefined ? { agent: which } : {}),
-    ...screened([...text.replaced, ...agent.replaced]),
-  };
 }

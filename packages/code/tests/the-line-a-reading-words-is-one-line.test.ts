@@ -572,6 +572,18 @@ const CLASSIFIED: Readonly<Record<string, { verdict: Verdict; why: string }>> = 
     verdict: 'composed',
     why: 'the ids that share it, each one already collapsed in the template above',
   },
+  'brief.ts «- \\`{}\\` left {} to {}» oneLine(move.entityId) #1': {
+    verdict: 'collapsed',
+    why: 'the id of a rule two machines moved apart, read out of the record',
+  },
+  'brief.ts «- \\`{}\\` left {} to {}» oneLine(move.from) #1': {
+    verdict: 'collapsed',
+    why: 'the state that rule left twice — a transition’s `from`, read out of the record',
+  },
+  "brief.ts «- \\`{}\\` left {} to {}» oneLine(move.to.join(', then ')) #1": {
+    verdict: 'collapsed',
+    why: 'each move’s `to`, read out of the record and collapsed as one joined value',
+  },
 
   // --- exported.ts: the file a pattern leaves in ---------------------------------
   'exported.ts «Exported skill "{}" to {}» done.name #1': {
@@ -1692,7 +1704,7 @@ describe('every value this layer puts on a line is classified', () => {
     // 251 until the renderer began making an actor's control bytes visible and joined the
     // composers with its two template values; then 253 until the rules in force began saying who
     // accepted them (`brief.ts`, `record.ts`).
-    expect(FOUND.sites.length).toBe(294);
+    expect(FOUND.sites.length).toBe(297);
   });
 
   it('reads the verdict off the source rather than believing the table', () => {
@@ -1713,10 +1725,10 @@ describe('every value this layer puts on a line is classified', () => {
     // No arm of the case above may be empty, or that much of it is vacuous.
     const verdicts = Object.values(CLASSIFIED).map((said) => said.verdict);
     const count = (verdict: Verdict): number => verdicts.filter((said) => said === verdict).length;
-    expect(count('collapsed')).toBe(68);
+    expect(count('collapsed')).toBe(71);
     expect(count('minted')).toBe(164);
     expect(count('composed')).toBe(62);
-    expect(FOUND.sites.filter((site) => /\boneLine\b/.test(site.expression))).toHaveLength(68);
+    expect(FOUND.sites.filter((site) => /\boneLine\b/.test(site.expression))).toHaveLength(71);
   });
 
   it('every reason says where the value comes from', () => {
