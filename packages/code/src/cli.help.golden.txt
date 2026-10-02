@@ -84,7 +84,8 @@ $ mnema
 !   witness [options]                     ask an outside witness to date this
 !                                         record, and read where that stands
 !   switch                                turn off, or back on, what mnema hands
-!                                         to a model unasked
+!                                         to a model unasked, and whether an agent
+!                                         may accept a decision
 !   verify [options]                      verify this project's record — its
 !                                         committed tree and its private one
 !   mcp [options]                         run the mnema MCP server over stdio (for
@@ -182,7 +183,8 @@ $ mnema --help
 |   witness [options]                     ask an outside witness to date this
 |                                         record, and read where that stands
 |   switch                                turn off, or back on, what mnema hands
-|                                         to a model unasked
+|                                         to a model unasked, and whether an agent
+|                                         may accept a decision
 |   verify [options]                      verify this project's record — its
 |                                         committed tree and its private one
 |   mcp [options]                         run the mnema MCP server over stdio (for
@@ -818,6 +820,10 @@ $ mnema key --help
 |                                   identity (run this on a member)
 |   revoke [options] <fingerprint>  retire a key from this identity, from this
 |                                   point forward
+|   protect                         encrypt this machine's private keys at rest
+|                                   with the passphrase in MNEMA_KEY_PASSPHRASE
+|   unprotect                       write this machine's private keys back in the
+|                                   clear (needs MNEMA_KEY_PASSPHRASE)
 |   help [command]                  display help for command
 
 ### mnema tail --help
@@ -861,7 +867,8 @@ $ mnema witness --help
 $ mnema switch --help
 | Usage: mnema switch [options] [command]
 |
-| turn off, or back on, what mnema hands to a model unasked
+| turn off, or back on, what mnema hands to a model unasked, and whether an agent
+| may accept a decision
 |
 | Options:
 |   -h, --help               display help for command
@@ -1347,6 +1354,25 @@ $ mnema key revoke --help
 |   and reported back, but what mnema does not recognize is written verbatim.
 |   Each text field holds at most 65536 bytes; a longer one is refused.
 
+### mnema key protect --help
+$ mnema key protect --help
+| Usage: mnema key protect [options]
+|
+| encrypt this machine's private keys at rest with the passphrase in
+| MNEMA_KEY_PASSPHRASE
+|
+| Options:
+|   -h, --help  display help for command
+
+### mnema key unprotect --help
+$ mnema key unprotect --help
+| Usage: mnema key unprotect [options]
+|
+| write this machine's private keys back in the clear (needs MNEMA_KEY_PASSPHRASE)
+|
+| Options:
+|   -h, --help  display help for command
+
 ### mnema tail list --help
 $ mnema tail list --help
 | Usage: mnema tail list [options]
@@ -1465,7 +1491,7 @@ $ mnema switch off --help
 |
 | Arguments:
 |   channel          the channel to switch (brief-document, recall-document,
-|                    edit-rules-push, edit-asks-a-person)
+|                    edit-rules-push, edit-asks-a-person, agent-accepts)
 |
 | Options:
 |   --reason <text>  why (recorded in the fact; never required)
@@ -1497,7 +1523,7 @@ $ mnema switch on --help
 |
 | Arguments:
 |   channel          the channel to switch (brief-document, recall-document,
-|                    edit-rules-push, edit-asks-a-person)
+|                    edit-rules-push, edit-asks-a-person, agent-accepts)
 |
 | Options:
 |   --reason <text>  why (recorded in the fact; never required)

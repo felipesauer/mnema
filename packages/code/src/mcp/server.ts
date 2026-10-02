@@ -77,7 +77,7 @@
  * server side never fires it.
  */
 
-import { privateKeyPath, TailBusyError } from '@mnema/chain';
+import { CodedError } from '@mnema/chain';
 import { REFERENCE_DEFAULT_DEPTH, REFERENCE_MAX_DEPTH } from '@mnema/copilot';
 import {
   canonicalIdentity,
@@ -97,11 +97,17 @@ import {
   type ToolAnnotations,
 } from '@modelcontextprotocol/sdk/types.js';
 import { z } from 'zod';
-import { keyFileLine } from '../key-file.js';
+import { acceptedByAnAgent } from '../agent-accepts.js';
+import { keyFileLineForAModel } from '../key-file.js';
 import { movedLine } from '../moved-record.js';
 import { passedOverSentences } from '../not-a-project.js';
-import { oneLine } from '../one-line.js';
-import { type Declared, mutatesTheRecord, readsTheRecord } from '../record-effect.js';
+import { neutralized, oneLine } from '../one-line.js';
+import {
+  type Declared,
+  mutatesTheRecord,
+  type RecordEffect,
+  readsTheRecord,
+} from '../record-effect.js';
 import { linkBreakBlock, linkBreakBlockOnWrite } from '../record-integrity.js';
 import {
   type Landed,
@@ -704,7 +710,7 @@ function declaringInto(
     server.registerTool(
       what.act,
       { ...config, annotations: hintsOf(what) },
-      answeringThrownRefusals(handle, ensureSession),
+      answeringThrownRefusals(handle, ensureSession, what.effect),
     );
   };
 }
@@ -763,7 +769,17 @@ function hintsOf(what: DeclaredTool): ToolAnnotations {
  * `handle`, with the refusals thrown below every write answered through {@link refused} — the
  * door every other refusal leaves by — instead of by the SDK.
  *
- * TWO CLASSES, AND BOTH ARE REFUSALS RATHER THAN DEFECTS:
+ * A REFUSAL IS WHAT CARRIES A CODE, NOT WHAT IS ON A LIST. This door used to know two classes by
+ * name (`IdentityUnavailableError`, `TailBusyError`), and the three that refuse an installation
+ * id — thrown for the same reason, from the same depth, with a `code` of their own — went out as
+ * the SDK's bare message: no `Refused (CODE)`, none of what the session owed. Measured over
+ * stdio, with an id file left empty by a stopped process. They share a base now
+ * (`CodedError`, from the chain) and the door asks the one question, so a class added next year
+ * is a refusal the day it extends it.
+ * `every-chain-refusal-is-a-refusal.test.ts` finds the classes by the `code` they carry and
+ * calls every tool with each.
+ *
+ * What each does, so the reply says what is true of it:
  *   - A key the record gives no honest identity THROWS rather than returns
  *     (`IdentityUnavailableError`, from the core), because the decision sits below every write
  *     and there is no honest way on. The one that most needs its code is the checkout whose
@@ -771,39 +787,46 @@ function hintsOf(what: DeclaredTool): ToolAnnotations {
  *     this machine's key file — so the reply says where that file is, which the session can and
  *     the core cannot (the key root is read where a writer opens).
  *     `the-checkout-a-key-left.test.ts` asks it over stdio.
- *   - A tail another process holds past the lock's budget (`TailBusyError`, from the chain). A
- *     write opens its run before the operation decides (`ensureRun`), so the call that meets a
- *     busy tail may already have founded an identity and opened a run on the way in; answered
- *     by the SDK, the throw went out as its bare message, and the founding sentence and the
- *     replacement report the session owed waited for a next reply a closing connection never
- *     makes. `the-busy-tail-is-a-refusal.test.ts` asks it.
- * The tools never caught either, so the SDK answered with the bare message: no `Refused (CODE)`,
- * and none of what the session owed. Any other throw is the SDK's to answer, as before, and a
- * session that could not open at all has nothing to answer from, so its throw goes out as it
- * came.
+ *   - A tail another process holds past the lock's budget (`TailBusyError`). A write opens its
+ *     run before the operation decides (`ensureRun`), so the call that meets a busy tail may
+ *     already have founded an identity and opened a run on the way in; answered by the SDK, the
+ *     throw went out as its bare message, and the founding sentence and the replacement report
+ *     the session owed waited for a next reply a closing connection never makes.
+ *     `the-busy-tail-is-a-refusal.test.ts` asks it.
+ * ON A TOOL THAT WRITES THE REPLY SAYS SO. *The fact was NOT recorded* is the sentence the
+ * append door gives every refusal it returns, and a refusal thrown before the append is the
+ * same fact for a caller: whatever it was about to record, it did not. Said in those words, so
+ * an agent reading both cannot take one for a lesser failure. A read has no fact to disown.
+ * Any other throw is the SDK's to answer, as before, and a session that could not open at all
+ * has nothing to answer from, so its throw goes out as it came.
  */
-function answeringThrownRefusals<Input extends ZodRawShapeCompat | undefined>(
+export function answeringThrownRefusals<Input extends ZodRawShapeCompat | undefined>(
   handle: ToolCallback<Input>,
   ensureSession: () => Promise<Session>,
+  effect: RecordEffect,
 ): ToolCallback<Input> {
   const called = handle as (...args: unknown[]) => unknown;
   return (async (...args: unknown[]) => {
     try {
       return await called(...args);
     } catch (error) {
-      if (error instanceof TailBusyError) {
-        return refused(await ensureSession(), { code: error.code, message: error.message });
-      }
-      if (!(error instanceof IdentityUnavailableError)) throw error;
+      if (!(error instanceof CodedError)) throw error;
       const session = await ensureSession();
       const keyFile =
-        error.restores === undefined
-          ? ''
-          : ` — ${keyFileLine(privateKeyPath({ root: session.trees.keyRoot }, error.restores), session.env.mnemaHome)}`;
-      return refused(session, { code: error.code, message: `${error.message}${keyFile}` });
+        error instanceof IdentityUnavailableError && error.restores !== undefined
+          ? ` — ${keyFileLineForAModel(error.restores, session.env.mnemaHome)}`
+          : '';
+      const unrecorded = effect === 'mutates' ? ` ${NOT_RECORDED}` : '';
+      return refused(session, {
+        code: error.code,
+        message: `${error.message}${keyFile}${unrecorded}`,
+      });
     }
   }) as ToolCallback<Input>;
 }
+
+/** What a refusal thrown below a write owes the caller, in the append door's own words. */
+const NOT_RECORDED = 'The fact was NOT recorded.';
 
 /**
  * Registers the tools. Each is a thin wrapper: it ensures the session, calls the
@@ -1118,7 +1141,10 @@ function registerTools(tool: ToolRegistrar, ensureSession: () => Promise<Session
         `a reason. \`by\` applies ONLY to supersede; ${DECISION_VERDICTS} ignore it. ` +
         'An illegal move or missing proof is refused with the gate’s reason. The ' +
         'decision is looked for in EVERY project of this workspace and the move lands ' +
-        'in the project that holds it — the id decides, so no `project` is taken.' +
+        'in the project that holds it — the id decides, so no `project` is taken. An ' +
+        'acceptance made through this tool is recorded as an agent’s, says so in the ' +
+        'reply, and is marked as such wherever the decision is read. The switch ' +
+        '`agent-accepts` turns it off, and then an accept is refused.' +
         RECORD_CONTRACT,
       inputSchema: {
         id: z.string().min(1).describe('The decision id to move.'),
@@ -1146,7 +1172,10 @@ function registerTools(tool: ToolRegistrar, ensureSession: () => Promise<Session
       if (!result.ok) {
         return refused(active, result);
       }
-      return moved(active, movedLine('decision', result.adr, result.id, result.to), result);
+      return moved(active, movedLine('decision', result.adr, result.id, result.to), result, {
+        after:
+          result.acceptedByAgent === undefined ? [] : [acceptedByAnAgent(result.acceptedByAgent)],
+      });
     },
   );
 
@@ -1755,7 +1784,7 @@ function registerTools(tool: ToolRegistrar, ensureSession: () => Promise<Session
       // paid for on every edit of every session. It is listed in
       // `TOOLS_SERVING_NO_RECORD_CONTENT` with that reason, and `governing_rules` — the same
       // answer asked for rather than pushed — does carry it.
-      return { content: [{ type: 'text' as const, text: JSON.stringify(result.value) }] };
+      return { content: [block(JSON.stringify(result.value))] };
     },
   );
 
@@ -2036,10 +2065,16 @@ function moved(
   session: Session,
   line: string,
   result: Replacement,
+  // What a particular move owes beyond the acknowledgement: today the one sentence an
+  // acceptance by an agent says about itself. A parameter, as `recorded`'s is, so no other
+  // move's reply gains a slot it can never fill.
+  extra: { readonly after?: readonly string[] } = {},
 ): { readonly content: { readonly type: 'text'; readonly text: string }[] } {
-  return replied(session, [[line, ...replacementNotice(result.replaced)].join('\n')], {
-    wrote: true,
-  });
+  return replied(
+    session,
+    [[line, ...(extra.after ?? []), ...replacementNotice(result.replaced)].join('\n')],
+    { wrote: true },
+  );
 }
 
 /**
@@ -2181,11 +2216,23 @@ function replied(
       // the edit hook's facts — which no tool's own reply acknowledges (`ReplacementsOwed`).
       ...session.replacementsOwed.take(),
       ...after,
-    ].map((text) => ({
-      type: 'text' as const,
-      text,
-    })),
+    ].map(block),
   };
+}
+
+/**
+ * One text block of a reply — the single place this server makes one, and the place the
+ * control bytes of recorded text are made visible.
+ *
+ * A model's transport is not a terminal, but the same bytes are commands to the next
+ * thing that renders what the model says back (an ANSI sequence in a title the model quotes
+ * is a sequence in a pane), and to a log of the exchange. Every reply leaves through
+ * {@link replied}, {@link refused} or the hook reply, and all three build their blocks
+ * here, so a tool added later cannot answer in raw bytes without writing its own block —
+ * which `tests/neutralizes-control-bytes-everywhere.test.ts` reads the source for.
+ */
+function block(text: string): { readonly type: 'text'; readonly text: string } {
+  return { type: 'text' as const, text: neutralized(text) };
 }
 
 /**
@@ -2236,7 +2283,7 @@ function refused(
       `Refused (${refusal.code}): ${refusal.message}`,
       ...session.founding.take(),
       ...session.replacementsOwed.take(),
-    ].map((text) => ({ type: 'text' as const, text })),
+    ].map(block),
   };
 }
 

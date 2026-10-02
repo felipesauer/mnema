@@ -22,7 +22,7 @@ function __mnema_commands --description 'the subcommands one level of the tree o
         case 'run'
             echo 'start end help'
         case 'key'
-            echo 'restore request enroll revoke help'
+            echo 'restore request enroll revoke protect unprotect help'
         case 'tail'
             echo 'list prune help'
         case 'witness'
@@ -94,7 +94,7 @@ complete -c mnema -f -n '__mnema_at ""' -a 'before-a-write' -d 'answer a host’
 complete -c mnema -f -n '__mnema_at ""' -a 'key' -d 'manage this machine\'s signing keys'
 complete -c mnema -f -n '__mnema_at ""' -a 'tail' -d 'authorize a cut in the record\'s own tails'
 complete -c mnema -f -n '__mnema_at ""' -a 'witness' -d 'ask an outside witness to date this record, and read where that stands'
-complete -c mnema -f -n '__mnema_at ""' -a 'switch' -d 'turn off, or back on, what mnema hands to a model unasked'
+complete -c mnema -f -n '__mnema_at ""' -a 'switch' -d 'turn off, or back on, what mnema hands to a model unasked, and whether an agent may accept a decision'
 complete -c mnema -f -n '__mnema_at ""' -a 'verify' -d 'verify this project\'s record — its committed tree and its private one'
 complete -c mnema -f -n '__mnema_at ""' -a 'mcp' -d 'run the mnema MCP server over stdio (for an agent host)'
 complete -c mnema -f -n '__mnema_at ""' -a 'repl' -d 'open an interactive session that reads this project'
@@ -418,6 +418,8 @@ complete -c mnema -f -n '__mnema_at "key"' -a 'restore' -d 'restore this machine
 complete -c mnema -f -n '__mnema_at "key"' -a 'request' -d 'ask to bring this machine into an identity (run this on the joining machine)'
 complete -c mnema -f -n '__mnema_at "key"' -a 'enroll' -d 'vouch for a requesting key so it joins this identity (run this on a member)'
 complete -c mnema -f -n '__mnema_at "key"' -a 'revoke' -d 'retire a key from this identity, from this point forward'
+complete -c mnema -f -n '__mnema_at "key"' -a 'protect' -d 'encrypt this machine\'s private keys at rest with the passphrase in MNEMA_KEY_PASSPHRASE'
+complete -c mnema -f -n '__mnema_at "key"' -a 'unprotect' -d 'write this machine\'s private keys back in the clear (needs MNEMA_KEY_PASSPHRASE)'
 complete -c mnema -f -n '__mnema_at "key"' -a 'help' -d 'display help for command'
 complete -c mnema -f -n '__mnema_at "key"' -s h -l help
 complete -c mnema -f -n '__mnema_at "key"' -s V -l version
@@ -445,6 +447,16 @@ complete -c mnema -f -n '__mnema_at "key revoke"' -l reason -r
 complete -c mnema -f -n '__mnema_at "key revoke"' -s h -l help
 complete -c mnema -f -n '__mnema_at "key revoke"' -s V -l version
 complete -c mnema -f -n '__mnema_at "key revoke"' -l color -x -a 'auto always never'
+
+# mnema key protect
+complete -c mnema -f -n '__mnema_at "key protect"' -s h -l help
+complete -c mnema -f -n '__mnema_at "key protect"' -s V -l version
+complete -c mnema -f -n '__mnema_at "key protect"' -l color -x -a 'auto always never'
+
+# mnema key unprotect
+complete -c mnema -f -n '__mnema_at "key unprotect"' -s h -l help
+complete -c mnema -f -n '__mnema_at "key unprotect"' -s V -l version
+complete -c mnema -f -n '__mnema_at "key unprotect"' -l color -x -a 'auto always never'
 
 # mnema tail
 complete -c mnema -f -n '__mnema_at "tail"' -a 'list' -d 'list the tails that hold events here — the ones a cut can name — with the id `prune` takes'
@@ -503,7 +515,7 @@ complete -c mnema -f -n '__mnema_at "switch off"' -l which -r
 complete -c mnema -f -n '__mnema_at "switch off"' -s h -l help
 complete -c mnema -f -n '__mnema_at "switch off"' -s V -l version
 complete -c mnema -f -n '__mnema_at "switch off"' -l color -x -a 'auto always never'
-complete -c mnema -f -n '__mnema_at "switch off"' -a 'brief-document recall-document edit-rules-push edit-asks-a-person'
+complete -c mnema -f -n '__mnema_at "switch off"' -a 'brief-document recall-document edit-rules-push edit-asks-a-person agent-accepts'
 
 # mnema switch on
 complete -c mnema -f -n '__mnema_at "switch on"' -l reason -r
@@ -512,7 +524,7 @@ complete -c mnema -f -n '__mnema_at "switch on"' -l which -r
 complete -c mnema -f -n '__mnema_at "switch on"' -s h -l help
 complete -c mnema -f -n '__mnema_at "switch on"' -s V -l version
 complete -c mnema -f -n '__mnema_at "switch on"' -l color -x -a 'auto always never'
-complete -c mnema -f -n '__mnema_at "switch on"' -a 'brief-document recall-document edit-rules-push edit-asks-a-person'
+complete -c mnema -f -n '__mnema_at "switch on"' -a 'brief-document recall-document edit-rules-push edit-asks-a-person agent-accepts'
 
 # mnema verify
 complete -c mnema -f -n '__mnema_at "verify"' -l global

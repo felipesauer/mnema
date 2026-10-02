@@ -34,15 +34,16 @@
 import { readFileSync } from 'node:fs';
 import {
   ANCHOR_PREFIX,
+  CodedError,
   enrollmentMessage,
   fingerprintOf,
   type KeyPair,
-  keyPairFromPrivatePem,
   listPrivateKeyFingerprints,
   loadOrCreateKeyPair,
   type PublicHalf,
   publicKeyFromPem,
   publicKeyToPem,
+  readPrivateKeyPair,
   sign,
 } from '@mnema/chain';
 import { oneLine } from '../one-line.js';
@@ -230,9 +231,18 @@ export function requestEnrollment(input: RequestInput): RequestOk | RequestErr {
 
 /** The key pair a PEM file holds, or null when it is not a readable private key. */
 function readKeyPair(path: string): KeyPair | null {
+  let text: string;
   try {
-    return keyPairFromPrivatePem(readFileSync(path, 'utf-8'));
+    text = readFileSync(path, 'utf-8');
   } catch {
+    return null;
+  }
+  try {
+    return readPrivateKeyPair(path, text);
+  } catch (error) {
+    // A key that is protected and cannot be opened is a REFUSAL with its own words, not "not a
+    // private key": the file is one, and the way on is the passphrase.
+    if (error instanceof CodedError) throw error;
     return null;
   }
 }

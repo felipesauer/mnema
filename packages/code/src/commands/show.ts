@@ -128,7 +128,10 @@ export function runShow(ctx: ShowContext, input: { id: string }): ShowDone | Sho
         reason: trees.projectPublic === undefined ? 'NO_PROJECT' : 'UNKNOWN_RECORD',
       };
     }
+    // A DECISION NAMES WHO RECORDED AND WHO RULED IT, so it prints identities and reads the
+    // shortening from the tree it came off — the tree that holds the events naming them.
     if (found.kind !== 'memory' && found.kind !== 'skill') {
+      const anchors = found.kind === 'decision' ? anchorForms(opened) : NO_ANCHORS;
       // OVER THE TREES THIS READ ACTUALLY OPENED, which here is fewer than all of them:
       // this verb stops at the first tree holding the id. That is the right answer and
       // not a shortfall — the notice is about the record the answer came off, and a tail
@@ -136,7 +139,7 @@ export function runShow(ctx: ShowContext, input: { id: string }): ShowDone | Sho
       return {
         ok: true,
         record: found,
-        anchors: NO_ANCHORS,
+        anchors,
         linkBreaks: linkBreaksOf(opened, THE_READING_THAT_OPENED_THESE),
       };
     }

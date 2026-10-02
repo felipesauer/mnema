@@ -17,6 +17,7 @@ import {
   type ChainSigner,
   loadOrCreateInstallationId,
   loadOrCreateKeyPair,
+  localKeyFingerprint,
   signerOf,
 } from './keystore.js';
 import type { ChainLayout } from './layout.js';
@@ -83,8 +84,11 @@ export function openChainForWriting(chainRoot: string, options: OpenOptions): Ch
  * person's directory, never the chain's.
  */
 export function signerAt(chainRoot: string, options: { readonly keyRoot: string }): ChainSigner {
-  const keyPair = loadOrCreateKeyPair({ root: options.keyRoot });
-  return signerOf({ root: chainRoot }, keyPair.fingerprint);
+  // WHO SIGNS, WITHOUT OPENING THE KEY: a protected key would otherwise make this question need
+  // the passphrase. The key is opened where it signs, at the writer.
+  const keyRoot = { root: options.keyRoot };
+  const fingerprint = localKeyFingerprint(keyRoot) ?? loadOrCreateKeyPair(keyRoot).fingerprint;
+  return signerOf({ root: chainRoot }, fingerprint);
 }
 
 /**

@@ -187,11 +187,17 @@ describe('the styled line is the plain line, wrapped', () => {
     expect(painted.length).toBe(27);
   });
 
-  it('leaves what an actor wrote alone, escape and all', () => {
-    // Not scrubbed, not honoured, not doubled: a field's own escape is part of the
-    // text, so it appears once in both renderings and the stripping does not see it.
+  it('makes what an actor wrote visible, rather than leaving it alone', () => {
+    // THE PREMISE THIS CASE HELD WAS THE OPPOSITE: "not scrubbed, not honoured, not doubled — a
+    // field's own escape is part of the text, so it appears once in both renderings." It was
+    // written when the escape was thought harmless to print. Measured on the binary, a title
+    // holding a clear-screen and a title-setting sequence came out of `search` and `brief`
+    // as the sequences, which a terminal ran. The renderer now writes an actor's control bytes
+    // as the escape the record holds (`\\u001b`), in both renderings alike, and only the
+    // product's own painting is a sequence on the wire.
     const line = fact(`a fact holding ${ACTOR_ESCAPE} of its own`);
-    expect(renderStyled(line)).toContain(ACTOR_ESCAPE);
+    expect(renderStyled(line)).not.toContain(ACTOR_ESCAPE);
+    expect(renderStyled(line)).toContain('\\u001b[36m');
     expect(stripped(renderStyled(line))).toBe(renderPlain(line));
   });
 

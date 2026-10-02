@@ -237,6 +237,11 @@ export function linkBreakBlockOnWrite(breaks: readonly ScopedLinkBreak[]): reado
  * read, and a name would have to be matched back to a file by a second rule.
  */
 export const SERVES_NO_RECORD_CONTENT: { readonly [path: string]: string } = {
+  'commands/decision-transition.ts':
+    'a move is a write, answered by the move; the one thing it reads first is where the ' +
+    '`agent-accepts` switch stands, to turn an agent’s accept away, and it serves nothing of ' +
+    'the record to anybody — a notice about the chain would be said to a caller who asked to ' +
+    'change it, and the reads that follow (`show`, `brief`) carry it',
   'commands/before-a-write.ts':
     'a host runs it before a write and reads one field of its reply — the reason a person ' +
     'decides on — so a notice about the chain has nowhere to land; the same session opens ' +

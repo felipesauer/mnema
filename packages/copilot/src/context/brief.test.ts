@@ -126,7 +126,16 @@ describe('brief — everything that governs the work here', () => {
     accept(b, 'dec-1', 'Hand-rolled big-integer arithmetic');
     adopt(b, 'sk-1', 'One slice per PR');
     expect(brief([tree(b, 'public')], CHANNELS)).toEqual({
-      decisions: [{ id: 'dec-1', adr: 'ADR-dec-1', title: 'Hand-rolled big-integer arithmetic' }],
+      decisions: [
+        {
+          id: 'dec-1',
+          adr: 'ADR-dec-1',
+          title: 'Hand-rolled big-integer arithmetic',
+          // WHO RULED IT: the one identity this bench has, which recorded the decision and
+          // accepted it itself and has never been ruled with — so it is unconfirmed.
+          acceptance: { by: expect.stringMatching(/^mnid:[0-9a-f]{8}$/), unconfirmed: true },
+        },
+      ],
       skills: [{ id: 'sk-1', name: 'One slice per PR' }],
       collisions: [],
       addressed: 0,
@@ -380,7 +389,18 @@ describe('brief — everything that governs the work here', () => {
     adopt(b, 'sk-1', 'A pattern with a body');
     capture(b, 'mem-1', 'a memory that is not governance');
     const composed = brief([tree(b, 'public')], CHANNELS);
-    expect(Object.keys(composed.decisions[0] ?? {}).sort()).toEqual(['adr', 'id', 'title']);
+    expect(Object.keys(composed.decisions[0] ?? {}).sort()).toEqual([
+      'acceptance',
+      'adr',
+      'id',
+      'title',
+    ]);
+    // The acceptance is WHO, not WHY: an identity, whether an agent executed the act, and one
+    // derived bit. Neither the note it was accepted with nor the rationale rides along.
+    expect(Object.keys(composed.decisions[0]?.acceptance ?? {}).sort()).toEqual([
+      'by',
+      'unconfirmed',
+    ]);
     expect(Object.keys(composed.skills[0] ?? {}).sort()).toEqual(['id', 'name']);
     // The fixture's own text, not the field names: the bench writes `why <title>`
     // for a rationale and `body of <name>` for a body.

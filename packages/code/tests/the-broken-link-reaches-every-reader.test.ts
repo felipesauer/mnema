@@ -355,9 +355,11 @@ describe('the MCP composes no payload of its own', () => {
     const handRolled = server
       .split('\n')
       .map((line, at) => ({ line: line.trim(), at: at + 1 }))
-      .filter((row) => row.line.startsWith('return { content: [{'))
+      .filter((row) => row.line.startsWith('return { content: ['))
       .filter((row) => !row.line.includes('Refused ('));
-    // ONE, and it is `rules_before_an_edit` — the hook reply, excused with its reason.
+    // ONE, and it is `rules_before_an_edit` — the hook reply, excused with its reason. The form
+    // is matched up to the bracket and not up to the brace: the block it holds is made by
+    // `block`, which neutralizes the bytes, and the brace this used to match was a literal.
     expect(handRolled.map((row) => row.at)).toHaveLength(
       Object.keys(TOOLS_SERVING_NO_RECORD_CONTENT).length,
     );

@@ -25,6 +25,10 @@ interface DecisionRow {
   readonly updated_at: string;
   /** What each move said, JSON-encoded — null when no move said anything. */
   readonly proof: string | null;
+  readonly recorded_who: string | null;
+  readonly recorded_which: string | null;
+  readonly accepted_who: string | null;
+  readonly accepted_which: string | null;
 }
 
 /** The bound-parameter shape: every column present, optionals as null. */
@@ -40,6 +44,10 @@ interface DecisionParams {
   readonly createdAt: string;
   readonly updatedAt: string;
   readonly proof: string | null;
+  readonly recordedWho: string | null;
+  readonly recordedWhich: string | null;
+  readonly acceptedWho: string | null;
+  readonly acceptedWhich: string | null;
 }
 
 /**
@@ -52,8 +60,8 @@ export function materializeDecisions(
   decisions: Iterable<DecisionProjection>,
 ): void {
   const insert = db.prepare(
-    `INSERT INTO decisions (id, adr, title, rationale, alternatives, state, superseded_by, supersedes, created_at, updated_at, proof)
-     VALUES (@id, @adr, @title, @rationale, @alternatives, @state, @supersededBy, @supersedes, @createdAt, @updatedAt, @proof)`,
+    `INSERT INTO decisions (id, adr, title, rationale, alternatives, state, superseded_by, supersedes, created_at, updated_at, proof, recorded_who, recorded_which, accepted_who, accepted_which)
+     VALUES (@id, @adr, @title, @rationale, @alternatives, @state, @supersededBy, @supersedes, @createdAt, @updatedAt, @proof, @recordedWho, @recordedWhich, @acceptedWho, @acceptedWhich)`,
   );
   for (const decision of decisions) {
     insert.run(toParams(decision));
@@ -94,6 +102,10 @@ function toParams(decision: DecisionProjection): DecisionParams {
     createdAt: decision.createdAt,
     updatedAt: decision.updatedAt,
     proof: proofColumn(decision.proof),
+    recordedWho: decision.recordedBy?.who ?? null,
+    recordedWhich: decision.recordedBy?.which ?? null,
+    acceptedWho: decision.acceptedBy?.who ?? null,
+    acceptedWhich: decision.acceptedBy?.which ?? null,
   };
 }
 
@@ -114,6 +126,18 @@ function toProjection(row: DecisionRow): DecisionProjection {
   if (row.supersedes !== null) projection.supersedes = row.supersedes;
   const said = proofFromColumn(row.proof);
   if (said.proof !== undefined) projection.proof = said.proof;
+  if (row.recorded_who !== null) {
+    projection.recordedBy = {
+      who: row.recorded_who,
+      ...(row.recorded_which !== null ? { which: row.recorded_which } : {}),
+    };
+  }
+  if (row.accepted_who !== null) {
+    projection.acceptedBy = {
+      who: row.accepted_who,
+      ...(row.accepted_which !== null ? { which: row.accepted_which } : {}),
+    };
+  }
   return projection;
 }
 
