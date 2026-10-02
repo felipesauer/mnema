@@ -1175,7 +1175,7 @@ describe('a window the caller resizes is a frame drawn at the new size', () => {
  * scheduled between the two calls, correctly, because the terminal really was that shape. These
  * two cases were one, shrinking 120×55 to 80×42 and holding every frame to the final size, and
  * that accused the page drawn for the size in between. Measured with the case pinned to one core
- * beside two busy loops: red 10 times in 20, *a frame 120 columns wide was written onto a
+ * beside two busy loops: red 16 times in 40, *a frame 120 columns wide was written onto a
  * 80-column screen*; with the console reporting the size it read off the device at the moment of
  * each write, every red was a run where it had been told 120×42 and wrote that frame while the
  * device still said 120×42, before and after the write, and every green a run where it was told
@@ -1229,6 +1229,12 @@ async function noFrameOutgrewTheShrink(
     `${shrunk}: a frame of ${Math.max(...frames)} rows was written onto a ${to.rows}-row screen`,
   ).toBeLessThanOrEqual(to.rows);
   const widest = widestRowOfTheFrames(after);
+  // AND THE WIDTHS ARE COUNTED AS WELL AS THE ROWS: the largest of nothing is minus infinity,
+  // which is no wider than any screen, so an empty list would pass the assertion under it silently.
+  expect(
+    widest.length,
+    `${shrunk}: no frame's width was measured, so nothing was held to the screen`,
+  ).toBeGreaterThan(0);
   expect(
     Math.max(...widest),
     `${shrunk}: a frame ${Math.max(...widest)} columns wide was written onto a ${to.columns}-column screen`,
