@@ -79,7 +79,6 @@ import {
   type RecordSearch,
   type ReferenceGraph,
   type Resume,
-  type RulesAtPath,
   readRecord,
   references,
   resume,
@@ -117,6 +116,7 @@ import {
   deprecateSkill,
   linkKnowledge,
   recordChannelAsked,
+  recordChannelRefused,
   recordChannelServed,
   recordConsultation,
   recordDecision,
@@ -129,7 +129,6 @@ import {
   transitionTask,
 } from '@mnema/core/write';
 import { agentMayAccept } from '../agent-accepts.js';
-import { whatAWriteAsks } from '../edit-asks-a-person.js';
 import { editRulesNotice, editRulesTold } from '../edit-rules-push.js';
 import { reachOfAddress, readGoverningRules, readRulesInForceAt } from '../governed-tree.js';
 import {
@@ -148,6 +147,7 @@ import {
   ASKS_A_PERSON_CHANNEL,
   type CountedChannel,
   EDIT_PUSH_CHANNEL,
+  REFUSES_A_WRITE_CHANNEL,
 } from '../record-framing.js';
 import type { ScopedLinkBreak } from '../record-integrity.js';
 import { forwardReplacement, type Landed, type Replacement } from '../recorded-content.js';
@@ -156,6 +156,7 @@ import {
   THE_CHAIN_AS_IT_STANDS_NOW,
   THE_READING_THAT_OPENED_THESE,
 } from '../tree-sources.js';
+import { type WriteVerdict, whatAWriteMeets } from '../what-a-write-meets.js';
 import { type HookEvent, type HookReply, hookReply } from './hook-reply.js';
 import {
   type EntityLocation,
@@ -2125,8 +2126,10 @@ export function runGoverningRulesTool(
  * grade this tool shipped with and it is false now: when the record holds a rule that asks
  * for a PERSON at the path, this reply carries `permissionDecision: "ask"`, the host stops
  * the write, and two kinds of fact are appended. What survives of the old sentence is the
- * part the type still holds — no `updatedInput`, no `deny`, no `allow`, none of them
- * representable ({@link HookReply}).
+ * part the type still holds — no `updatedInput`, no `allow`, none of them representable
+ * ({@link HookReply}). `deny` was in that list and is not any more: where a rule REFUSES a write
+ * at the path the reply carries `permissionDecision: "deny"` and the reason, and the push of the
+ * rules beside the write is not made, because there is no write for it to ride beside.
  *
  * WHAT IT WRITES, AND IN WHICH ORDER, which is the one rule here that a reader must not
  * have to infer. Two facts, both under the CHANNEL as subject:
@@ -2136,7 +2139,9 @@ export function runGoverningRulesTool(
  *     HERE AND NOWHERE ELSE, so it counts what is pushed at an edit and nothing more: the two
  *     texts a session opens with are reads and leave no fact (`CountedChannel`, in
  *     `record-framing.ts`, is the type that holds the line).
- *   - `channel.asked`, once per asking, citing the rule and the path.
+ *   - `channel.asked`, once per asking, citing the rule and the path — or `channel.refused`, once
+ *     per rule that refuses, in the place of both of the above: a refusal is the fact itself, so
+ *     it records no service.
  * The ASKING IS APPENDED BEFORE THE REPLY IS COMPOSED. A charge outside the record is the
  * product acting outside its own record, so if the fact cannot be written the reply carries
  * no charge — the write failing means nobody is stopped, which is the only direction a
@@ -2147,9 +2152,9 @@ export function runGoverningRulesTool(
  * than "nothing governs this file" is a decision with a number behind it, and it is
  * written where the text is composed (`edit-rules-push.ts`).
  *
- * TWO SWITCHES, ASKED BEFORE ANY WORK. Every channel this product pushes unasked can be
- * switched off with the switching recorded, and this tool pushes TWO of them — the text and
- * the gate — so it asks about both before the path is resolved. Both off, the reply is `{}`
+ * THREE SWITCHES, ASKED BEFORE ANY WORK. Every channel this product pushes unasked can be
+ * switched off with the switching recorded, and this tool pushes THREE of them — the text,
+ * the gate and the refusal — so it asks about all of them before the path is resolved. All off, the reply is `{}`
  * and the derivation never runs: it is the term that scales with the whole record on every
  * call, and a channel somebody turned off must not keep paying it. They are separate
  * switches because asking overrides every permission mode this host has, `bypassPermissions`
@@ -2173,21 +2178,39 @@ export function runRulesBeforeAnEditTool(
   const refused = requireProject(session);
   if (refused !== undefined) return refused;
   const caches = workspaceCaches(session);
-  // BOTH SWITCHES ARE ASKED FIRST, before the path is even resolved, and the order is the
+  // THE SWITCHES ARE ASKED FIRST, before the path is even resolved, and the order is the
   // whole cost argument. Each is one indexed lookup per tree over a projection the session
   // keeps warm (measured flat at 0.04 ms, `measurements/switch-cost/`); the derivations
-  // behind the two notices are the terms that scale with the record (0.79-0.83 ms on a
+  // behind the notices are the terms that scale with the record (0.79-0.83 ms on a
   // realistic one, 3.2-4.3 ms on a large one), so a channel that was switched off must not
-  // keep paying its derivation on every edit of every session. With both off nothing else
+  // keep paying its derivation on every edit of every session. With all off nothing else
   // runs at all.
   const pushing = channelIsOn(caches, EDIT_PUSH_CHANNEL);
   const asking = channelIsOn(caches, ASKS_A_PERSON_CHANNEL);
-  if (!pushing && !asking) return { ok: true, value: hookReply(PRE_TOOL_USE, {}) };
+  const refusing = channelIsOn(caches, REFUSES_A_WRITE_CHANNEL);
+  if (!pushing && !asking && !refusing) return { ok: true, value: hookReply(PRE_TOOL_USE, {}) };
 
   // The same two lines `runGoverningRulesTool` stands on: a project session carries its
   // directory, and a server has no working directory of its own to resolve against.
   const root = session.project ?? '';
   const read = { path: input.path, root, from: root };
+
+  // WHAT THE WRITE MEETS IS DECIDED WHERE THE OTHER DOORS DECIDE IT (`whatAWriteMeets`), and a
+  // REFUSAL ENDS THE CALL: the fact is appended first, then the reply is `deny` and the reason,
+  // and nothing else is pushed — there is no write for the rules to ride beside, and no service
+  // to count, because each `channel.refused` is the refusal itself. A refusal whose fact cannot
+  // be written refuses nobody, and the call goes on as if nothing had refused: the edit goes
+  // through, which is the only direction a failure here may fall.
+  const met =
+    asking || refusing
+      ? whatAWriteMeets(caches, { paths: [input.path], root, from: root })
+      : undefined;
+  if (met?.grade === 'refuse' && recordWhatItMet(session, met).ok) {
+    // What the write founded rides in the reason, the one field of the reply that reaches a model.
+    const founded = [...session.founding.take(), ...session.replacementsOwed.take()];
+    const refusal = [met.reason, ...founded].join('\n\n');
+    return { ok: true, value: hookReply(PRE_TOOL_USE, { refuse: refusal }) };
+  }
   const rulesAt = pushing ? readRulesInForceAt(caches, read) : undefined;
   const context = rulesAt === undefined ? undefined : editRulesNotice(rulesAt);
 
@@ -2195,10 +2218,10 @@ export function runRulesBeforeAnEditTool(
   // is composed, and only then is the fact appended — because the fact cites what the text
   // cites, and appending first would mean recording an accusation whose wording could still
   // fail to compose. Then the reply: the charge rides only if the append landed. What asks
-  // is decided where the other door decides it too (`whatAWriteAsks`).
-  const gate = asking ? whatAWriteAsks(caches, read) : undefined;
-  const ask = gate?.notice;
-  const charged = gate === undefined ? { ok: true as const } : recordAskings(session, gate.asked);
+  // is decided where the other doors decide it too (`whatAWriteMeets`).
+  const gate = met?.grade === 'ask' ? met : undefined;
+  const ask = gate?.reason;
+  const charged = gate === undefined ? { ok: true as const } : recordWhatItMet(session, gate);
   // A RECORD THAT CANNOT BE WRITTEN CHARGES NOTHING, and the silence is not this line's to
   // explain: the tool still answers `ok` with whatever text it had, so the edit goes
   // through and nobody's afternoon is spent on a refusal that was never recorded. What says
@@ -2229,12 +2252,15 @@ export function runRulesBeforeAnEditTool(
 }
 
 /**
- * Appends one `channel.asked` per rule that asked — the facts a charge is made of.
+ * Appends one `channel.asked` per rule that asked — or one `channel.refused` per rule that
+ * refused — the facts a charge is made of.
  *
  * ONE PER RULE AND NOT ONE PER ASKING, which is the reading of the tie that the axis
  * settles: a charge cites the rule that caused it, and two rules asking about one file are
  * two facts each naming its own. A single fact with a list would make a charge whose
- * citation is a set, and superseding one of them would leave a fact that half-cites.
+ * citation is a set, and superseding one of them would leave a fact that half-cites. A refusal
+ * is the same shape one grade up, so the two share this body and differ in the kind and the
+ * channel they name.
  *
  * They share one write context and one checkpoint: they are one act of asking, and signing
  * once is cheaper than signing each — the same arrangement the consultations have.
@@ -2245,25 +2271,31 @@ export function runRulesBeforeAnEditTool(
  * treats as non-blocking anyway, at the cost of a diagnostic nobody reads in a channel that
  * must never make somebody's session worse.
  */
-function recordAskings(session: Session, at: RulesAtPath): { readonly ok: boolean } {
-  const route = routeWrite(session, 'channel.asked', {});
+function recordWhatItMet(session: Session, met: WriteVerdict): { readonly ok: boolean } {
+  const refusing = met.grade === 'refuse';
+  const kind = refusing ? 'channel.refused' : 'channel.asked';
+  const route = routeWrite(session, kind, {});
   if (!route.ok) return { ok: false };
   const { ctx, run } = openWrite(session, route.scope);
+  const record = refusing ? recordChannelRefused : recordChannelAsked;
+  const channel = refusing ? REFUSES_A_WRITE_CHANNEL : ASKS_A_PERSON_CHANNEL;
   let appended = 0;
-  for (const rule of at.rules) {
-    const done = recordChannelAsked(ctx, {
-      channel: ASKS_A_PERSON_CHANNEL,
-      rule: rule.id,
-      path: at.relative ?? at.path,
-      which: session.which,
-      run,
-    });
-    if (!done.ok) {
-      if (appended > 0) ctx.writer.checkpoint();
-      return { ok: false };
+  for (const at of met.at) {
+    for (const rule of at.rules) {
+      const done = record(ctx, {
+        channel,
+        rule: rule.id,
+        path: at.relative ?? at.path,
+        which: session.which,
+        run,
+      });
+      if (!done.ok) {
+        if (appended > 0) ctx.writer.checkpoint();
+        return { ok: false };
+      }
+      session.replacementsOwed.add(done.replaced);
+      appended += 1;
     }
-    session.replacementsOwed.add(done.replaced);
-    appended += 1;
   }
   ctx.writer.checkpoint();
   return { ok: true };

@@ -1,5 +1,5 @@
 {
-  "description": "Hands the project's committed record to the session as it opens: the decisions in force and the adopted patterns, by name — and, beside it, the memories and observations recorded for the project, from every tree this machine holds, the ones that share a word with what the session touches first. At each edit, hands over the rules of the record addressed at that path, beside the result of that write — and where a rule of that record asks for it, pauses the write until a person decides, citing the rule — in Claude Code through a call into the server, and in VS Code, whose hooks are processes, through a command of its own that Claude Code and Cursor never match. Every one of those is recorded as a fact of the chain. Each can be switched off with `mnema switch`, which records that it was.",
+  "description": "Hands the project's committed record to the session as it opens: the decisions in force and the adopted patterns, by name — and, beside it, the memories and observations recorded for the project, from every tree this machine holds, the ones that share a word with what the session touches first. At each edit, hands over the rules of the record addressed at that path, beside the result of that write — and where a rule of that record asks for it, pauses the write until a person decides, and where a rule refuses it, does not let the write happen, citing the rule either way — in Claude Code through a call into the server, and in VS Code and Cursor, whose hooks are processes, through a command each: VS Code's that Claude Code and Cursor never match, and Cursor's, which runs only where Cursor says it is the host and refuses alone, since its agent does not pause a write for a person. Every one of those is recorded as a fact of the chain. Each can be switched off with `mnema switch`, which records that it was.",
   "hooks": {
     "SessionStart": [
       {
@@ -26,6 +26,16 @@
             "server": "plugin:mnema:mnema",
             "tool": "rules_before_an_edit",
             "input": { "path": "${tool_input.file_path}" },
+            "timeout": 15
+          }
+        ]
+      },
+      {
+        "matcher": "Write|Edit|NotebookEdit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "[ -n \"$CURSOR_VERSION\" ] && node \"${CLAUDE_PLUGIN_ROOT}/hooks/edit-refuses-a-write.mjs\"; exit 0",
             "timeout": 15
           }
         ]

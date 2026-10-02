@@ -42,22 +42,26 @@
  *     host's own enum: a wrong value here does not cost the charge, it costs the
  *     injection that already worked.
  *
- * ## The two grades it can carry, and what stays unrepresentable
- *
- * `additionalContext` — the agent sees the rule, beside the result of the write that fired
- * the hook — and `permissionDecision: "ask"` — a PERSON decides before the file is
- * written. Nothing else. Not `deny`, not `allow`, not `updatedInput`, not
- * `updatedToolOutput`.
- *
- * `deny` waits, and by ORDER rather than by nerve: refusing outright is a different power
- * over somebody else's work, and its own tie has not been settled. `allow` is worse than
- * useless — this product saying *you may write* is this product taking responsibility for
- * work that is not its own. `updatedInput` is refused permanently: a product that rewrites
- * the input of a tool is a product writing the artifact, and a record of what happened
- * stops being one. The type is what keeps all four refusals from being paragraphs: there
- * is no field to set, and no second value to pass.
- *
- * ## What asking actually does to a session, measured
+ * ## The three things it can carry, and what stays unrepresentable
+
+`additionalContext` — the agent sees the rule, beside the result of the write that fired
+the hook — `permissionDecision: "ask"` — a PERSON decides before the file is written — and
+`permissionDecision: "deny"` — the write does not happen, and the reason is what the agent
+reads. Nothing else. Not `allow`, not `updatedInput`, not `updatedToolOutput`.
+
+`deny` was the one that waited, by ORDER rather than by nerve: refusing outright is a
+different power over somebody else's work, and its tie had not been settled. It is settled
+now, and the settlement is the shape of {@link HookSaid}: a refusal is a field of its own,
+carries the rule's citation as the only way to say it, and cannot be set beside an asking —
+the two grades are one decision (`what-a-write-meets.ts`), so a reply that carried both is a
+reply two readings of the record produced. `allow` is worse than useless — this product
+saying *you may write* is this product taking responsibility for work that is not its own.
+`updatedInput` is refused permanently: a product that rewrites the input of a tool is a
+product writing the artifact, and a record of what happened stops being one. The type is what
+keeps those refusals from being paragraphs: there is no field to set, and no other value to
+pass.
+
+## What asking actually does to a session, measured
  *
  * `ask` REACHES THE PERMISSION SYSTEM AND OVERRIDES EVERY MODE, including a session
  * started `--permission-mode bypassPermissions`. There is no host-side way around it, and
@@ -95,15 +99,16 @@ import { neutralized } from '../one-line.js';
 export type HookEvent = 'PreToolUse';
 
 /**
- * The one permission decision this server can express.
+ * The permission decisions this server can express: hold the write for a person, or not let
+ * it happen.
  *
- * A union of one, for exactly the reason {@link HookEvent} is: the host's own field takes
- * four values, three of which this product either refuses permanently or has not earned
- * yet, and a type that admitted them would leave those refusals as prose in a comment.
- * Widening this is how the second grade of force would arrive, so widening it is a slice
- * with a tie behind it rather than an edit.
+ * A union of two, for exactly the reason {@link HookEvent} is a union of one: the host's own
+ * field takes four values, two of which this product refuses permanently, and a type that
+ * admitted them would leave those refusals as prose in a comment. `deny` joined `ask` the day
+ * the record gained a relation that refuses a write; a third value is a slice with a tie
+ * behind it rather than an edit.
  */
-export type Escalation = 'ask';
+export type Escalation = 'ask' | 'deny';
 
 /**
  * What a reply has to say — either grade, both, or neither.
@@ -113,18 +118,30 @@ export type Escalation = 'ask';
  * path with neither carries nothing. All four combinations were run against the host and
  * all four behave as this shape implies.
  */
-export interface HookSaid {
-  /** The record's text to put in front of the model, or nothing to put there. */
-  readonly context?: string;
-  /**
-   * Why a person is being asked — and asking IS this field, which is the whole reason
-   * there is no boolean beside it. Under the axis's first tie a charge cites the rule
-   * that caused it, so a charge with nothing to say is not a quieter charge, it is the
-   * product having a preference. Making the reason the only way to ask means the citation
-   * cannot be forgotten at a call site: there is no argument that asks without it.
-   */
-  readonly ask?: string;
-}
+export type HookSaid =
+  | {
+      /** The record's text to put in front of the model, or nothing to put there. */
+      readonly context?: string;
+      /**
+       * Why a person is being asked — and asking IS this field, which is the whole reason
+       * there is no boolean beside it. Under the axis's first tie a charge cites the rule
+       * that caused it, so a charge with nothing to say is not a quieter charge, it is the
+       * product having a preference. Making the reason the only way to ask means the citation
+       * cannot be forgotten at a call site: there is no argument that asks without it.
+       */
+      readonly ask?: string;
+      readonly refuse?: never;
+    }
+  | {
+      readonly context?: string;
+      readonly ask?: never;
+      /**
+       * Why the write does not happen — and refusing IS this field, for the asking's reason:
+       * the reason cites the rule, so a refusal without one has no spelling. It cannot be set
+       * with {@link ask}: a write that is refused is not asked about.
+       */
+      readonly refuse: string;
+    };
 
 /**
  * The reply the host reads.
@@ -165,6 +182,9 @@ export interface HookReply {
  */
 const ASK: Escalation = 'ask';
 
+/** The value the field carries when the write is refused — named once, for {@link ASK}'s reason. */
+const DENY: Escalation = 'deny';
+
 /**
  * The reply for what a channel has to say, or the empty reply when it has nothing.
  *
@@ -172,7 +192,7 @@ const ASK: Escalation = 'ask';
  * is the surface's business and JSON is this module's: the one thing that must not be
  * spread across two files is which fields the host reads.
  *
- * The four arms are the four measured cases, in one place, so the mapping from "what we
+ * The arms are the measured cases (context, ask, refuse, and context beside either), in one place, so the mapping from "what we
  * have to say" to "what the host reads" is not re-derived by a caller. A caller that
  * built the JSON itself is a caller that can spell a field the host silently ignores.
  */
@@ -183,25 +203,19 @@ export function hookReply(event: HookEvent, said: HookSaid): HookReply {
   // decoded one exactly as it was. `neutralizes-control-bytes-everywhere.test.ts` decodes
   // the reply and reads what the host would hand the model.
   const context = said.context === undefined ? undefined : neutralized(said.context);
-  const ask = said.ask === undefined ? undefined : neutralized(said.ask);
-  if (context !== undefined && ask !== undefined) {
+  const decision =
+    said.refuse !== undefined
+      ? { permissionDecision: DENY, permissionDecisionReason: neutralized(said.refuse) }
+      : said.ask !== undefined
+        ? { permissionDecision: ASK, permissionDecisionReason: neutralized(said.ask) }
+        : undefined;
+  if (context !== undefined && decision !== undefined) {
     return {
-      hookSpecificOutput: {
-        hookEventName: event,
-        additionalContext: context,
-        permissionDecision: ASK,
-        permissionDecisionReason: ask,
-      },
+      hookSpecificOutput: { hookEventName: event, additionalContext: context, ...decision },
     };
   }
-  if (ask !== undefined) {
-    return {
-      hookSpecificOutput: {
-        hookEventName: event,
-        permissionDecision: ASK,
-        permissionDecisionReason: ask,
-      },
-    };
+  if (decision !== undefined) {
+    return { hookSpecificOutput: { hookEventName: event, ...decision } };
   }
   if (context !== undefined) {
     return { hookSpecificOutput: { hookEventName: event, additionalContext: context } };

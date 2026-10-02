@@ -1,10 +1,11 @@
 /**
  * The gate is decided in one place, and every door to it passes through that place.
  *
- * Two doors ask whether a write waits for a person: the MCP tool Claude Code's hook calls
- * (`rules_before_an_edit`) and the verb VS Code's hook runs (`mnema before-a-write`). Each answers
- * in its own host's shape, and that is all each may do on its own: which rules ask at a path, and
- * the text that says so, are `whatAWriteAsks` (`edit-asks-a-person.ts`). A door that reached the
+ * Two doors ask what a write meets: the MCP tool Claude Code's hook calls
+ * (`rules_before_an_edit`) and the verb the hooks of VS Code and of Cursor run (`mnema
+ * before-a-write`). Each answers in its own host's shape, and that is all each may do on its
+ * own: which rules refuse or ask at a path, and the text that says so, are `whatAWriteMeets`
+ * (`what-a-write-meets.ts`), over `whatAWriteAsks` (`edit-asks-a-person.ts`) for the asking. A door that reached the
  * derivation or composed the notice itself would be a second reading of the rule — the shape in
  * which one host stops somebody and another does not, for the same file.
  *
@@ -48,13 +49,14 @@ describe('the gate is decided once', () => {
   });
 
   it('is asked by every door, and by nothing else', () => {
-    // THREE CALLERS WHILE THE DOORS MOVE. `whatAWriteMeets` decides both grades, refusal over
-    // asking, and calls this for the asking; the two doors still call this directly until each
-    // answers a refusal too, and then they call `whatAWriteMeets` instead and leave this list.
-    expect(callersOf('whatAWriteAsks')).toEqual([
+    // ONE CALLER, since every door answers a refusal too. `whatAWriteMeets` decides both grades,
+    // refusal over asking, and calls this for the asking; a door that called it directly would
+    // ask about a write a rule refuses.
+    expect(callersOf('whatAWriteAsks')).toEqual(['packages/code/src/what-a-write-meets.ts']);
+    // And the doors are the ones that decide what a write meets: the MCP tool and the command.
+    expect(callersOf('whatAWriteMeets')).toEqual([
       'packages/code/src/commands/before-a-write.ts',
       'packages/code/src/mcp/tools.ts',
-      'packages/code/src/what-a-write-meets.ts',
     ]);
   });
 });

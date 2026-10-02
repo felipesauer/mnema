@@ -1184,6 +1184,7 @@ describe('the record arrives unasked', () => {
       'command:/hooks/session-start.mjs',
       'command:/hooks/session-recall.mjs',
       'mcp_tool:rules_before_an_edit',
+      'command:/hooks/edit-refuses-a-write.mjs',
       'command:/hooks/edit-asks-a-person.mjs',
     ]);
 

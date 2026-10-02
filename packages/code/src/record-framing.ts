@@ -249,7 +249,7 @@ export const FRAMED_CHANNELS = Object.keys(SUBJECT_OF) as readonly FramedChannel
  * declaration runs identically and leaves every guard green. A declaration a reader can
  * delete without anything noticing is a comment, which is exactly what it must not be.
  */
-export const DECLARES_MODEL_CHANNEL = /^export const MODEL_CHANNEL = '([a-z-]+)';$/m;
+export const DECLARES_MODEL_CHANNEL = /^export const MODEL_CHANNEL = '([a-z-]+(?:\+[a-z-]+)*)';$/m;
 
 /**
  * How a hook that is NOT a process names the channel it carries: by the MCP tool it
@@ -277,7 +277,13 @@ export const PUSHED_BY_TOOL: { readonly [tool: string]: readonly FramedChannel[]
   // the information. A reader looking for what a tool pushes now gets every channel it
   // can push, so a channel added behind an existing tool cannot hide from the guard by
   // sharing a key.
-  rules_before_an_edit: ['edit-rules-push', 'edit-asks-a-person'],
+  //
+  // AND THREE NOW. The tool also answers `deny`, with the reason of a rule that refuses the write
+  // (`edit-refuses-a-write`). It is pushed by the tool — the reason is framed text a model reads —
+  // and it is NOT counted in `channel.served`: this table says what a tool pushes, that type
+  // (`CountedChannel`) says what is recorded as served, and a refusal is its own fact, so the two
+  // are no longer the same list and the guard that held them equal now holds the difference.
+  rules_before_an_edit: ['edit-rules-push', 'edit-asks-a-person', 'edit-refuses-a-write'],
 };
 
 /**

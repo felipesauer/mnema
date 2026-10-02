@@ -19,7 +19,7 @@
  *   - `permissionDecision: "escalate"` — the spelling the plan for this channel used — is
  *     not a value this host has. It fails the schema, and the failure DISCARDS THE WHOLE
  *     REPLY, injection included, non-blockingly and where the product cannot see it. That
- *     is why {@link Escalation} is a union of one.
+ *     is why {@link Escalation} is a union of two: the values this product means.
  */
 
 import { createHash } from 'node:crypto';
@@ -311,7 +311,8 @@ describe('the reply cannot express any decision but asking', () => {
     expect(Object.keys(reply)).toEqual(['hookSpecificOutput']);
     // No `updatedInput` and no `updatedToolOutput`: rewriting the input of a tool is this
     // product producing the artifact, and that is refused permanently rather than deferred.
-    // No second decision value either: `deny` and `allow` are unrepresentable in the type.
+    // No second decision value either: `allow` is unrepresentable in the type, and `deny`
+    // is the refusal's alone (`a-rule-that-refuses-a-write.test.ts`).
     expect(Object.keys(reply['hookSpecificOutput'] as object).sort()).toEqual([
       'hookEventName',
       'permissionDecision',
@@ -356,10 +357,15 @@ describe('the reply cannot express any decision but asking', () => {
     // Every string literal of the module, so a value smuggled into a template or an object
     // is found the same way a bare one is.
     const literals = [...source.matchAll(/'([^'\n]*)'/g)].map((match) => match[1]);
-    for (const refused of ['deny', 'allow', 'defer', 'escalate']) {
+    for (const refused of ['allow', 'defer', 'escalate']) {
       expect(literals, `hook-reply.ts spells ${refused}`).not.toContain(refused);
     }
-    expect(literals).toContain('ask');
+    // The two the host reads and this product means: asking, and the refusal that is its own
+    // relation's. Each is spelled once, as a literal typed `Escalation`.
+    expect(literals.filter((one) => one === 'ask' || one === 'deny').sort()).toEqual([
+      'ask',
+      'deny',
+    ]);
   });
 });
 

@@ -276,7 +276,16 @@ describe('what `channel.served` counts, said by the table the type makes total',
     // recorded as served — that half is the compiler's. What this holds is that the table
     // naming the rest agrees with what a hook actually pushes through its tool.
     const counted = SWITCHABLE_CHANNELS.filter((channel) => !(channel in NOT_COUNTED_AS_SERVED));
-    expect([...counted].sort()).toEqual([...(PUSHED_BY_TOOL.rules_before_an_edit ?? [])].sort());
+    // THESE WERE ONE LIST AND ARE TWO, and the test said so by equality until the refusal came:
+    // "counted as served" was "pushed by the tool". A refusal is pushed by the tool — its reason
+    // is framed text a model reads — and is not counted, because each `channel.refused` is the
+    // refusal itself and a service fact beside it would repeat it. So what is counted is what the
+    // tool pushes MINUS the channel that is its own fact, and both halves are held.
+    const pushed = PUSHED_BY_TOOL.rules_before_an_edit ?? [];
+    expect([...counted].sort()).toEqual(
+      pushed.filter((one) => one !== 'edit-refuses-a-write').sort(),
+    );
+    expect(pushed).toContain('edit-refuses-a-write');
     expect(Object.keys(NOT_COUNTED_AS_SERVED).sort()).toEqual([
       'agent-accepts',
       'brief-document',
@@ -392,9 +401,13 @@ describe('every handler that pushes declares the channel it carries', () => {
       const declared = DECLARES_MODEL_CHANNEL.exec(source);
       expect(declared, `${file} writes to a model and names no channel`).not.toBeNull();
       const channel = declared?.[1] ?? '';
-      expect(FRAMED_CHANNELS as readonly string[], `${file} names an unknown channel`).toContain(
-        channel,
-      );
+      // A handler may carry more than one channel, joined by `+`: the reason the gate's command
+      // hands back is the asking's or the refusal's, whichever the write met.
+      for (const one of channel.split('+')) {
+        expect(FRAMED_CHANNELS as readonly string[], `${file} names an unknown channel`).toContain(
+          one,
+        );
+      }
       named.push(`${file}:${channel}`);
     }
     // And at least one handler WAS asked. Without this the case is green on a plugin
@@ -405,8 +418,10 @@ describe('every handler that pushes declares the channel it carries', () => {
     // channel it does not carry. AND A THIRD, the gate as VS Code runs it: a process that
     // hands back what `mnema before-a-write` answers, whose reason is framed where the MCP
     // tool's is (`edit-asks-a-person.ts`), under the same channel.
+    // AND A FOURTH, Cursor's: the same verb with that host's name, which can only refuse.
     expect(named).toEqual([
-      'edit-asks-a-person.mjs:edit-asks-a-person',
+      'edit-asks-a-person.mjs:edit-asks-a-person+edit-refuses-a-write',
+      'edit-refuses-a-write.mjs:edit-refuses-a-write',
       'session-recall.mjs:recall-document',
       'session-start.mjs:brief-document',
     ]);
@@ -453,7 +468,8 @@ describe('every handler that pushes declares the channel it carries', () => {
     expect(ruled).toEqual([
       'SessionStart:command:session-start.mjs',
       'SessionStart:command:session-recall.mjs',
-      'PreToolUse:mcp_tool:rules_before_an_edit:edit-rules-push+edit-asks-a-person',
+      'PreToolUse:mcp_tool:rules_before_an_edit:edit-rules-push+edit-asks-a-person+edit-refuses-a-write',
+      'PreToolUse:command:edit-refuses-a-write.mjs',
       'PreToolUse:command:edit-asks-a-person.mjs',
     ]);
   });
@@ -478,6 +494,11 @@ describe('every handler that pushes declares the channel it carries', () => {
     // matched the words anywhere left the guard green over a handler declaring nothing.
     const live = "export const MODEL_CHANNEL = 'brief-document';";
     expect(DECLARES_MODEL_CHANNEL.exec(live)?.[1]).toBe('brief-document');
+    expect(
+      DECLARES_MODEL_CHANNEL.exec(
+        "export const MODEL_CHANNEL = 'edit-asks-a-person+edit-refuses-a-write';",
+      )?.[1],
+    ).toBe('edit-asks-a-person+edit-refuses-a-write');
     expect(DECLARES_MODEL_CHANNEL.test(`// ${live}`)).toBe(false);
     expect(DECLARES_MODEL_CHANNEL.test(` * ${live}`)).toBe(false);
     expect(
