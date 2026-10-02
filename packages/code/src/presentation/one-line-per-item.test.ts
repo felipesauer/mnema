@@ -127,11 +127,13 @@ describe('the brief prints one line per rule', () => {
     divergent: [],
     addressed: 0,
     asking: 0,
+    refusing: 0,
     // Nothing switched either channel, which is the composition's answer for a record with
     // no switch in it — and it is what makes the ordinary cases below measure the document
     // this file has always measured.
     editPush: { channel: 'edit-rules-push', on: true },
     asksAPerson: { channel: 'edit-asks-a-person', on: true },
+    refusesAWrite: { channel: 'edit-refuses-a-write', on: true },
     ...over,
   });
   const decision = (over: Partial<Brief['decisions'][number]> = {}) => ({
@@ -199,6 +201,7 @@ describe('the brief prints one line per rule', () => {
     })),
     addressed: brief.addressed,
     asking: brief.asking,
+    refusing: brief.refusing,
     editPush: plainState(brief.editPush),
     // THE GATE'S STATE IS CARRIED THE SAME WAY, and it is a second channel rather than a
     // second rule: the paragraph about it names an anchor and an instant out of the record
@@ -206,6 +209,7 @@ describe('the brief prints one line per rule', () => {
     // break in the gate's own fields would be measured against a document with no gate
     // paragraph in it.
     asksAPerson: plainState(brief.asksAPerson),
+    refusesAWrite: plainState(brief.refusesAWrite),
   });
 
   /** As many break-free targets as the case had, or no field at all when it had none. */

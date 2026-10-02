@@ -187,6 +187,13 @@ const NOTES_HOOK = 'session-recall.mjs';
  * `a-host-that-runs-commands-asks-for-a-person.test.ts`.
  */
 const GATE_HOOK = 'edit-asks-a-person.mjs';
+/**
+ * The same verb for Cursor's agent, which can only refuse: its command starts only where the host
+ * says it is Cursor, so this suite says so (`CURSOR_VERSION`) for it and for nobody else.
+ */
+const CURSOR_HOOK = 'edit-refuses-a-write.mjs';
+/** The handlers that gate a write, and so are handed one and do not ask which program is first. */
+const GATES: readonly string[] = [GATE_HOOK, CURSOR_HOOK];
 
 /**
  * The command line each declared handler runs — what the recording shim must see it try.
@@ -203,6 +210,7 @@ const GATE_HOOK = 'edit-asks-a-person.mjs';
 const VERB_OF: Readonly<Record<string, string>> = {
   [DOCUMENT_HOOK]: 'brief --hook',
   [NOTES_HOOK]: 'recall --hook',
+  [CURSOR_HOOK]: 'before-a-write --host cursor',
   [GATE_HOOK]: 'before-a-write --host vscode',
 };
 
@@ -215,7 +223,7 @@ const ASKED_FIRST = '--identify';
 /** Every command line a handler runs, in order — the question first, where it asks one. */
 function callsOf(handler: string): string[] {
   const verb = VERB_OF[handler] as string;
-  return handler === GATE_HOOK ? [verb] : [ASKED_FIRST, verb];
+  return GATES.includes(handler) ? [verb] : [ASKED_FIRST, verb];
 }
 
 /**
@@ -225,7 +233,14 @@ function callsOf(handler: string): string[] {
  * asks about, so the gate is tried, derives nothing, and writes nothing.
  */
 function stdinOf(command: string, at: string): string {
-  if (handlerOf(command) !== GATE_HOOK) return '';
+  if (!GATES.includes(handlerOf(command))) return '';
+  if (handlerOf(command) === CURSOR_HOOK) {
+    return JSON.stringify({
+      hook_event_name: 'preToolUse',
+      tool_name: 'Write',
+      tool_input: { file_path: join(at, 'src', 'unasked.ts'), content: 'export {};\n' },
+    });
+  }
   return JSON.stringify({
     hook_event_name: 'PreToolUse',
     tool_name: 'create_file',
@@ -325,7 +340,11 @@ function runHook(command: string, at: string): Ran {
   const ran = spawnSync('sh', ['-c', command], {
     input: stdinOf(command, at),
     cwd: at,
-    env: { ...hostEnv(recordingTo), CLAUDE_PROJECT_DIR: at },
+    env: {
+      ...hostEnv(recordingTo),
+      CLAUDE_PROJECT_DIR: at,
+      ...(handlerOf(command) === CURSOR_HOOK ? { CURSOR_VERSION: '2026.09.18' } : {}),
+    },
     encoding: 'utf-8',
   });
   const seen = existsSync(recordingTo) ? readFileSync(recordingTo, 'utf-8') : '';
@@ -481,7 +500,7 @@ describe('the record arrives unasked', () => {
     }
     // Every handler, which is what "every command" has to mean now — the gate included, whose
     // verb answers `{}` outside a project and whose handler writes no byte for it.
-    expect(commands.map(handlerOf)).toEqual([DOCUMENT_HOOK, NOTES_HOOK, GATE_HOOK]);
+    expect(commands.map(handlerOf)).toEqual([DOCUMENT_HOOK, NOTES_HOOK, CURSOR_HOOK, GATE_HOOK]);
   });
 
   it('says nothing at all when the document channel is switched OFF', () => {
@@ -1094,7 +1113,12 @@ describe('the record arrives unasked', () => {
     // answered before any verb is reached (`version.ts`, `IDENTITY`).
     expect([...reached][0]).toBe(ASKED_FIRST);
     reached.delete(ASKED_FIRST);
-    expect([...reached]).toEqual(['brief --hook', 'recall --hook', 'before-a-write --host vscode']);
+    expect([...reached]).toEqual([
+      'brief --hook',
+      'recall --hook',
+      'before-a-write --host cursor',
+      'before-a-write --host vscode',
+    ]);
     expect([...reached]).toEqual(Object.values(VERB_OF));
 
     // And each is on the side the PRODUCT declares it on. Read off the same declaration the
@@ -1106,6 +1130,7 @@ describe('the record arrives unasked', () => {
     expect([...reached].map((line) => `${line}: ${sideOf(line)}`)).toEqual([
       'brief --hook: reads',
       'recall --hook: reads',
+      'before-a-write --host cursor: mutates',
       'before-a-write --host vscode: mutates',
     ]);
   });

@@ -380,6 +380,37 @@ function whatAsksForAPerson(asking: number, gate: ChannelState): string[] {
 }
 
 /**
+ * The paragraph about the REFUSAL: how many of these rules do not let a write happen, and
+ * whether the thing that would refuse is on.
+ *
+ * ITS OWN PARAGRAPH, for the asking's reason one grade up: a refusal leaves nobody a way
+ * through at the host, so it is the fact a reader most needs to have been told before it
+ * happens. It prints at zero, says what the record does and never what to do about it, and
+ * names the rule by its id, which is what makes the refusal answerable.
+ */
+function whatRefusesAWrite(refusing: number, gate: ChannelState): string[] {
+  return [
+    `${refusing} of them ${refusing === 1 ? 'refuses' : 'refuse'} a WRITE at an address: where one`,
+    ...(gate.on ? REFUSES_AT_AN_EDIT : refusalSwitchedOff(gate)),
+  ];
+}
+
+/** What happens at an edit while the refusal is on, wrapped at the column of the paragraphs above. */
+const REFUSES_AT_AN_EDIT = [
+  'does, the write does not happen, and the rule that refused is named by its id in',
+  'what comes back. Nothing is refused for a file none of them refuses.',
+];
+
+/** What it says while the refusal is switched OFF, naming who and when as the gate's line does. */
+function refusalSwitchedOff(gate: ChannelState): string[] {
+  return [
+    'did, the write would not happen. NONE of them refuses now:',
+    `${oneLine(gate.channel)} was switched off by ${oneLine(gate.by ?? '')} at`,
+    `${oneLine(gate.at ?? '')}. Run \`mnema switch\` for where every switch stands.`,
+  ];
+}
+
+/**
  * What happens at an edit while the gate is on.
  *
  * Hand-wrapped at the column the paragraph above is wrapped at, for the reason that one is:
@@ -778,6 +809,8 @@ function composed(governance: Brief, shown: number): string[] {
     ...whatHasAnAddress(governance.addressed, governance.editPush),
     '',
     ...whatAsksForAPerson(governance.asking, governance.asksAPerson),
+    '',
+    ...whatRefusesAWrite(governance.refusing, governance.refusesAWrite),
     '',
     ...HOW_A_DECISION_ENTERS,
     '',

@@ -323,6 +323,17 @@ describe('the MCP tool Claude Code’s hook calls', () => {
   });
 });
 
+describe('the document a session opens with', () => {
+  it('counts the rules that refuse a write, and says so when the refusal is switched off', async () => {
+    // One of the four rules in force refuses (it is linked at two addresses, and counts once).
+    expect(await did('brief')).toContain('1 of them refuses a WRITE at an address: where one');
+    await did('switch', 'off', 'edit-refuses-a-write', '--reason', 'porting');
+    const off = await did('brief');
+    expect(off).toContain('NONE of them refuses now');
+    expect(off).toContain('edit-refuses-a-write was switched off by');
+  });
+});
+
 describe('the reply a refusal is spelled with', () => {
   it('carries `deny` and the reason, and no field that would let the write through or rewrite it', () => {
     expect(hookReply('PreToolUse', { refuse: 'because' })).toEqual({

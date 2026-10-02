@@ -1006,7 +1006,8 @@ Three things arrive without anybody asking: the document a session opens with, t
 beside it, and the rules handed over as a file is written. Each can be switched off, and
 the switching is **recorded** — because turning something off is legitimate and turning it
 off in silence is not. The list also holds two gates that hand nothing over: the pause
-before a write where a rule asks for a person, and `agent-accepts`, which is **on** — an
+before a write where a rule asks for a person, the refusal of a write where a rule refuses one
+(`edit-refuses-a-write`), and `agent-accepts`, which is **on** — an
 agent may accept a decision, freely, and the record keeps which agent did, the reply says
 so, and the document a session opens with marks the rule. Switching it off makes an agent's
 accept a refusal; a person's still lands.

@@ -37,7 +37,11 @@ import { brief } from './brief.js';
  * spellings are the same string is the surface's own case to make
  * (`code/tests/the-switch-is-a-fact.test.ts`).
  */
-const CHANNELS = { editPush: 'edit-rules-push', asksAPerson: 'edit-asks-a-person' };
+const CHANNELS = {
+  editPush: 'edit-rules-push',
+  asksAPerson: 'edit-asks-a-person',
+  refusesAWrite: 'edit-refuses-a-write',
+};
 
 /**
  * Every fixture reaches its state through the move the workflow defines, from the
@@ -141,6 +145,7 @@ describe('brief — everything that governs the work here', () => {
       divergent: [],
       addressed: 0,
       asking: 0,
+      refusing: 0,
       // Nothing is waiting: the one decision and the one pattern of this record were both
       // carried all the way to in force, so the counts that make the headings legible are
       // zero — a legitimate value the document says in words.
@@ -150,6 +155,7 @@ describe('brief — everything that governs the work here', () => {
       // attribution at all, because there is no switch to attribute them to.
       editPush: { channel: CHANNELS.editPush, on: true },
       asksAPerson: { channel: CHANNELS.asksAPerson, on: true },
+      refusesAWrite: { channel: CHANNELS.refusesAWrite, on: true },
     });
   });
 
@@ -309,6 +315,8 @@ describe('brief — everything that governs the work here', () => {
       // Rules moved apart, never tasks: `printedDivergences` keeps only what is printed.
       'divergent',
       'editPush',
+      'refusesAWrite',
+      'refusing',
       'skills',
       'skillsAwaiting',
     ]);
@@ -679,10 +687,12 @@ describe('brief — everything that governs the work here', () => {
       divergent: [],
       addressed: 0,
       asking: 0,
+      refusing: 0,
       decisionsAwaiting: 0,
       skillsAwaiting: 0,
       editPush: { channel: CHANNELS.editPush, on: true },
       asksAPerson: { channel: CHANNELS.asksAPerson, on: true },
+      refusesAWrite: { channel: CHANNELS.refusesAWrite, on: true },
     });
     expect(brief([], CHANNELS)).toEqual({
       decisions: [],
@@ -691,10 +701,12 @@ describe('brief — everything that governs the work here', () => {
       divergent: [],
       addressed: 0,
       asking: 0,
+      refusing: 0,
       decisionsAwaiting: 0,
       skillsAwaiting: 0,
       editPush: { channel: CHANNELS.editPush, on: true },
       asksAPerson: { channel: CHANNELS.asksAPerson, on: true },
+      refusesAWrite: { channel: CHANNELS.refusesAWrite, on: true },
     });
     // And a caller holding nothing but trees that do not travel gets the same honest
     // empty rather than their contents: an empty document over a record that HAS rules
@@ -709,10 +721,12 @@ describe('brief — everything that governs the work here', () => {
       divergent: [],
       addressed: 0,
       asking: 0,
+      refusing: 0,
       decisionsAwaiting: 0,
       skillsAwaiting: 0,
       editPush: { channel: CHANNELS.editPush, on: true },
       asksAPerson: { channel: CHANNELS.asksAPerson, on: true },
+      refusesAWrite: { channel: CHANNELS.refusesAWrite, on: true },
     });
   });
 });

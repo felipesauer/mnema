@@ -134,10 +134,12 @@ function documentWith(editPush: ChannelState, asksAPerson: ChannelState): string
     divergent: [],
     addressed: 1,
     asking: 0,
+    refusing: 0,
     decisionsAwaiting: 0,
     skillsAwaiting: 0,
     editPush,
     asksAPerson,
+    refusesAWrite: { channel: 'edit-refuses-a-write', on: true },
   };
   return briefDocument(brief).join('\n');
 }
