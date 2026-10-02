@@ -189,7 +189,7 @@ describe('every package page words its honest guarantee as a proof', () => {
       'README.md',
       'packages/chain/README.md',
       'packages/code/README.md',
-      'packages/copilot/README.md',
+      'packages/context/README.md',
       'packages/core/README.md',
     ]);
   });

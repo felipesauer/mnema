@@ -92,7 +92,7 @@ const LAYOUT: readonly number[] = [0x09, 0x0a, 0x0d];
  *
  * IT WAS ALREADY WRITTEN DOWN, AND ONLY IN PROSE. The construction is one idiom — a NUL joining
  * the parts of a composite map key — and it is written at four places in three files. Product
- * code writes it as an escape and says why, at `copilot/src/intelligence/references.ts:248`:
+ * code writes it as an escape and says why, at `context/src/intelligence/references.ts:248`:
  * "written as an escape and not as a raw byte, so that an editor shows it". The bench harness
  * writes it as an escape twice, at `measurements/p1/harness/run.mjs:269` and `:271`. And
  * `code/tests/support/witnessing.ts:531` wrote it RAW — one byte, inside the instrument of the
@@ -139,7 +139,7 @@ describe('a paragraph carries its own weight, without a glyph to carry it', () =
     // over none of what is published.
     const reached = READ.map((file) => file.where);
     expect(reached.length, 'the workspace came back with almost nothing').toBeGreaterThan(400);
-    for (const pkg of ['chain', 'code', 'copilot', 'core']) {
+    for (const pkg of ['chain', 'code', 'context', 'core']) {
       expect(
         reached.filter((where) => where.startsWith(`packages/${pkg}/src/`)).length,
         `the source of @mnema/${pkg} was not read`,

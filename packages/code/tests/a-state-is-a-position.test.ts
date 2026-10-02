@@ -9,14 +9,14 @@
  * state is a POSITION IN A CYCLE, and the transition table gives each position a
  * structurally different set of exits, which is what makes "is there anything to do about
  * this" answerable from the machine instead of from taste. Sixteen states, six
- * dispositions (`core`'s `disposition.ts` for tasks, `copilot`'s `decisions.ts` and
+ * dispositions (`core`'s `disposition.ts` for tasks, `context`'s `decisions.ts` and
  * `skills.ts` for the other two), three hues (`presentation/state.ts`).
  *
  * THIS FILE USED TO SAY IT ANSWERED FOR THE TASK MACHINE ONLY, and held a case pinning
  * a decision and a pattern PLAIN, with the reason that *their machines answer a different
  * question, each keeps its own classification off its package's surface, and a surface
  * that painted them would be re-deriving a meaning it cannot ask for*. The classification
- * part was always true and is untouched; the conclusion was not. `copilot` publishes
+ * part was always true and is untouched; the conclusion was not. `context` publishes
  * `skillDisposition` and now `decisionDisposition` for exactly this kind of consumer, so
  * the surface ASKS and re-derives nothing. What the old case pinned was not a rule but a
  * gap, measured on screen: `(DONE)` green and `(BLOCKED)` red beside `(proposed)`,
@@ -57,7 +57,7 @@ import { mkdirSync, mkdtempSync, readdirSync, readFileSync, rmSync } from 'node:
 import { tmpdir } from 'node:os';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { decisionDisposition, skillDisposition } from '@mnema/copilot';
+import { decisionDisposition, skillDisposition } from '@mnema/context';
 import {
   DECISION_STATES,
   type DecisionState,

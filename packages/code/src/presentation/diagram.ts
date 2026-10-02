@@ -18,7 +18,7 @@
  * Node names are the diagram's own (`n0`, `n1`…), never a word the record supplied.
  */
 
-import type { ReferenceGraph, TimelineEntry } from '@mnema/copilot';
+import type { ReferenceGraph, TimelineEntry } from '@mnema/context';
 import {
   DECISION_TRANSITIONS,
   INITIAL_DECISION_STATE,

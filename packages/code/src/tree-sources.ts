@@ -20,7 +20,7 @@
 
 import type { UpcasterRegistry } from '@mnema/chain';
 import { catalogUpcasters } from '@mnema/chain';
-import type { ScopedCache } from '@mnema/copilot';
+import type { ScopedCache } from '@mnema/context';
 import { chainRootForScope, ProjectionCache, type ResolvedTrees, type Scope } from '@mnema/core';
 import type { ScopedLinkBreak } from './record-integrity.js';
 

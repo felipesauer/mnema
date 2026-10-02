@@ -37,7 +37,7 @@
  * IT IS A CLASSIFICATION AND NOT A SECOND VOCABULARY OF POSITIONS. The five names say
  * what a reader does — nothing here is a state, nothing here is storable, and no event
  * ever carries one. The decision and skill machines have their own classification, in
- * their own words, in the module that owns their reads (`copilot`): they answer "does
+ * their own words, in the module that owns their reads (`context`): they answer "does
  * this govern", which a task does not have, while a task answers "can this move", which
  * they do not. One vocabulary over three machines would have to be the union of both
  * questions, and every reader of it would then meet values that cannot occur.
@@ -50,7 +50,7 @@
  * asked "where is this record", and the two words the unions share (`awaiting-judgement`,
  * `closed`) get one row each precisely because the mapping is one reading of one rule.
  * Nothing there re-derives what a state means; it asks — `taskDisposition` here,
- * `decisionDisposition` and `skillDisposition` in `copilot` — which is the distinction
+ * `decisionDisposition` and `skillDisposition` in `context` — which is the distinction
  * this paragraph is about.
  *
  * {@link TASK_DISPOSITION} is exported so the claims above are CHECKABLE against the

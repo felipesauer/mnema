@@ -10,7 +10,7 @@
  * the opening read, not the document a session opens with — so the only way to find out
  * was to run the import and look, which is exactly the gesture nobody remembered.
  *
- * IT IS A READING OF THE DISK, WHICH IS WHY IT IS HERE AND NOT IN `@mnema/copilot`.
+ * IT IS A READING OF THE DISK, WHICH IS WHY IT IS HERE AND NOT IN `@mnema/context`.
  * That package derives over caches and touches no filesystem, and `bootstrap` — its
  * opening context — is served byte for byte to the agent surface and to `mnema status
  * --json`. A count of files in one checkout inside that answer would put a fact about
@@ -67,7 +67,7 @@
  */
 
 import { join } from 'node:path';
-import type { ScopedCache } from '@mnema/copilot';
+import type { ScopedCache } from '@mnema/context';
 import { adrFileNames, DERIVED_FROM_RELATION } from '@mnema/core';
 
 /** One decision base, and how many of its documents the record has no decision for. */

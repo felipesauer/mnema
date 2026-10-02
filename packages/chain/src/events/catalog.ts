@@ -449,7 +449,7 @@ export interface KnowledgeLinkedV1 extends Envelope {
  * file" and a writer's help text that suggests the label must be the SAME
  * string, and a string typed twice is two strings that can come to differ. It is
  * the single site (see `RECOMMENDED_LINK_RELATIONS` below, which is built from
- * it, and the copilot's governance reading, which imports it).
+ * it, and the context package's governance reading, which imports it).
  *
  * Naming it here does not make the catalog aware of paths: `target` stays an
  * unverified caller's string, and a link under this label whose path names

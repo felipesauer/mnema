@@ -73,7 +73,7 @@ refused.
 ## the branch that moves with load
 
 *Question.* The whole-suite branch coverage has read 88.38 and 88.36 on the same content. Which
-branch in `copilot/src/intelligence` is it?
+branch in `context/src/intelligence` is it?
 
 *Instrument.* Four whole-suite coverage runs of the same commit (`origin/main-v1`), lcov kept
 per run, under whatever load the machine carries (recorded at the start of each); the `BRDA`

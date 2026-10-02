@@ -39,7 +39,7 @@
  * That one is still loaded when a verb RUNS, because it reads the record it echoes and
  * so reaches `@mnema/core`. This one is not, and it used to be loaded later still —
  * inside the branch that REFUSES, at all eight sites — because `served-patterns.ts`
- * reaches `@mnema/copilot`, so a static import would have put the copilot's own edge on
+ * reaches `@mnema/context`, so a static import would have put the context package's own edge on
  * the floor of every invocation of every verb (the shape guard in
  * `tests/the-floor-is-the-declaration.test.ts` is what said so). The rule of the line
  * lives in `one-line.ts` now and imports nothing, so this module imports nothing but

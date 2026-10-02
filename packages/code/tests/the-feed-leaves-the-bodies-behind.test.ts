@@ -1,7 +1,7 @@
 /**
  * `mnema export` over a REAL record, driven through the real entry.
  *
- * The copilot's own suite proves the mapping carries no body over a fixture of every
+ * The context package's own suite proves the mapping carries no body over a fixture of every
  * kind. This is the other half, and it is the half that answers for the PRODUCT: the
  * record is written by the actual write verbs, through the actual content door, and the
  * feed is read off the actual command line. A mapping that is clean over a fixture and a

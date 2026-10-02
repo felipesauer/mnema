@@ -134,7 +134,7 @@ function position(group: Command, wiring: Wiring, word: 'off' | 'on', descriptio
       const { linkBreakNotice } = await import('./integrity.js');
       const { runSwitch } = await import('../commands/switch.js');
       // Loaded HERE and not at the top, like every other verb of this directory: the module
-      // reaches the copilot, so a static import would put that edge on the floor of every
+      // reaches the context package, so a static import would put that edge on the floor of every
       // invocation of every verb (`tests/the-floor-is-the-declaration.test.ts`).
       const { anchorText } = await import('../anchors.js');
       const scope = parseScope(opts.scope, wiring);

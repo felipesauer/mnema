@@ -1227,10 +1227,10 @@ function declaredBy(name: string): string[] {
 describe('the layout lives on the surface and the layers below cannot see it', () => {
   it('is declared by the product and by no package under it', () => {
     // The whole argument for taking the library at all: it is a dependency of the
-    // SURFACE. The chain has none of its own, the core and the copilot are the domain,
+    // SURFACE. The chain has none of its own, the core and the context package are the domain,
     // and a package that could import a terminal layout is a package whose boundary is
     // about something other than what it is for.
-    for (const layer of ['chain', 'core', 'copilot']) {
+    for (const layer of ['chain', 'core', 'context']) {
       for (const part of LAYOUT) expect(declaredBy(layer), `${layer}/${part}`).not.toContain(part);
       for (const file of sourcesOf(join(PACKAGES, layer, 'src'))) {
         const source = readFileSync(file, 'utf-8');

@@ -87,7 +87,7 @@ export function registerDiagram(program: Command, wiring: Wiring): Declared {
         );
         return;
       }
-      const { REFERENCE_DEFAULT_DEPTH } = await import('@mnema/copilot');
+      const { REFERENCE_DEFAULT_DEPTH } = await import('@mnema/context');
       const { runReferences } = await import('../commands/references.js');
       const result = runReferences(here(), { id, depth: REFERENCE_DEFAULT_DEPTH });
       if (!result.ok) {

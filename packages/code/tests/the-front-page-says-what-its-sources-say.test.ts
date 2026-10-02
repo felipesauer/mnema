@@ -13,7 +13,7 @@
  *     is red, and so is a report the page stopped citing.
  *   - THE DECISION'S STATES. `## Three things it does` draws the workflow a decision moves through,
  *     and that workflow is the gate's table (`DECISION_TRANSITIONS`) with the proof each move owes.
- *     The state a decision is born into and the one in force are the core's and the copilot's
+ *     The state a decision is born into and the one in force are the core's and the context package's
  *     answers, asked here rather than assumed.
  *   - TWO COUNTS THE PAGE HAD CARRIED FOR A WHILE, and one of them had gone wrong: the plugin's row
  *     said *"two hooks"* after the notes arrived beside the opening document and made them three.
@@ -27,7 +27,7 @@
 
 import { execFileSync } from 'node:child_process';
 import { join } from 'node:path';
-import { decisionDisposition } from '@mnema/copilot';
+import { decisionDisposition } from '@mnema/context';
 import { DECISION_STATES, DECISION_TRANSITIONS, INITIAL_DECISION_STATE } from '@mnema/core';
 import { describe, expect, it } from 'vitest';
 import { ROOT, read } from './support/published-examples.js';

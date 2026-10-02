@@ -33,7 +33,7 @@
 
 import { dirname } from 'node:path';
 import { catalogUpcasters } from '@mnema/chain';
-import { channelIsOn } from '@mnema/copilot';
+import { channelIsOn } from '@mnema/context';
 import { chainRootForScope, type DiscoveryEnv, resolveScope, resolveTrees } from '@mnema/core';
 import { openTreeForWriting, recordChannelAsked, recordChannelServed } from '@mnema/core/write';
 import { anchorsBefore, foundingsSince, treesOf } from '../a-new-identity.js';

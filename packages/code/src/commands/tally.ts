@@ -28,7 +28,7 @@
  * every hook reply may carry, and which host shows it, to whom, was not measured.
  */
 
-import { channelIsOn } from '@mnema/copilot';
+import { channelIsOn } from '@mnema/context';
 import { type DiscoveryEnv, resolveTrees } from '@mnema/core';
 import { SESSION_TALLY_CHANNEL } from '../record-framing.js';
 import { withScopedCaches } from '../tree-sources.js';

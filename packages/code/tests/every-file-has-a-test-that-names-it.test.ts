@@ -262,10 +262,10 @@ const LED_NOWHERE: Readonly<Record<string, string>> = {
     "The chain package's barrel, named by the case that runs its README example from inside src/. Excluded by the same glob as the two below, and reached by the shortest specifier of the three because this package keeps its cases beside its sources rather than under tests/.",
   'packages/core/tests/readme-example.test.ts -> ../src/index.js':
     "The core package's barrel, named by the case that runs its README example. It is the third file to reach a barrel and the second to reach THIS one, and it is listed separately from the case that sits inside src/ because the two land on the same file through different specifiers — a row is about the specifier, not about the module it fails to reach.",
-  'packages/copilot/tests/readme-example.test.ts -> ../src/index.js':
-    "The copilot package's barrel. This one DOES exist under packages/, and is unresolvable for the other reason entirely: the coverage gate excludes a package's src/index.ts from what it measures, PRODUCTION implements that exclusion, and so the barrel is in no corpus for a specifier to land in.",
+  'packages/context/tests/readme-example.test.ts -> ../src/index.js':
+    "The context package's barrel. This one DOES exist under packages/, and is unresolvable for the other reason entirely: the coverage gate excludes a package's src/index.ts from what it measures, PRODUCTION implements that exclusion, and so the barrel is in no corpus for a specifier to land in.",
   'packages/core/src/index.test.ts -> ./index.js':
-    "The core package's barrel, named by the case that sits next to it. Excluded by the same glob as the copilot barrel, and worth its own row because the two are reached differently: this one is imported from inside src/, where a test file lives beside the source it names.",
+    "The core package's barrel, named by the case that sits next to it. Excluded by the same glob as the context package barrel, and worth its own row because the two are reached differently: this one is imported from inside src/, where a test file lives beside the source it names.",
 };
 
 // ---------------------------------------------------------------------------
@@ -430,7 +430,7 @@ const UNWITNESSED: Readonly<Record<string, Debt>> = {
   },
   'packages/code/src/wiring/export.ts': {
     reached: 'nobody imports it',
-    why: "The only read with no --json and no summary; the feed test driving it is about copilot's OCSF mapping, and this verb appears in no golden and its adapter has no test of its own.",
+    why: "The only read with no --json and no summary; the feed test driving it is about context's OCSF mapping, and this verb appears in no golden and its adapter has no test of its own.",
   },
   'packages/code/src/wiring/exposure.ts': {
     reached: 'nobody imports it',
@@ -518,7 +518,7 @@ const UNWITNESSED: Readonly<Record<string, Debt>> = {
   },
   'packages/code/src/wiring/status.ts': {
     reached: 'nobody imports it',
-    why: "The `status` declaration; where-things-stand drives it only to prove the CLI's --json equals the MCP bootstrap payload and that copilot's derivation has a single door.",
+    why: "The `status` declaration; where-things-stand drives it only to prove the CLI's --json equals the MCP bootstrap payload and that context's derivation has a single door.",
   },
   'packages/code/src/wiring/switch.ts': {
     reached: 'nobody imports it',
@@ -544,11 +544,11 @@ const UNWITNESSED: Readonly<Record<string, Debt>> = {
     reached: 'nobody imports it',
     why: 'Declares the `witness` group and prints its outcomes; one suite proves --calendar reaches `stamp` and --global the bare reading, another runs both acts over the global tail on the binary — each reads --global off the group now, where it used to reach nothing — and no golden ever invokes the verb.',
   },
-  'packages/copilot/src/intelligence/events.ts': {
+  'packages/context/src/intelligence/events.ts': {
     reached: 'nobody imports it',
     why: 'CatalogEvent and EventKind, two aliases computed from orderedEvents across a package boundary: nothing of it survives compilation, so the two tests naming it borrow a vocabulary and never a value.',
   },
-  'packages/copilot/src/sources.ts': {
+  'packages/context/src/sources.ts': {
     reached: 'nobody imports it',
     why: 'The ScopedCache port, an interface and nothing besides: nine tests name it, sources.test.ts among them, and each uses it only to type a fake that some intelligence module is then asked about.',
   },
@@ -574,7 +574,7 @@ const UNWITNESSED: Readonly<Record<string, Debt>> = {
   },
   'packages/core/src/projections/knowledge-store.ts': {
     reached: 'nobody imports it',
-    why: 'cache.test.ts reaches its four knowledge tables only through ProjectionCache, and listLinksByRelation is exercised only by copilot tests that load @mnema/core from dist.',
+    why: 'cache.test.ts reaches its four knowledge tables only through ProjectionCache, and listLinksByRelation is exercised only by context tests that load @mnema/core from dist.',
   },
   'packages/core/src/topology/index.ts': {
     reached: 'nobody imports it',
@@ -713,6 +713,7 @@ const CLAUSES_PER_FILE: Readonly<Record<string, number>> = {
   'packages/chain/src/chain/both-readers-read-the-same-bytes.test.ts': 13,
   'packages/chain/src/chain/chain.test.ts': 18,
   'packages/chain/src/chain/coded-error.test.ts': 4,
+  'packages/chain/src/chain/durable.test.ts': 10,
   'packages/chain/src/chain/enrollment.test.ts': 13,
   'packages/chain/src/chain/format-on-disk.test.ts': 8,
   'packages/chain/src/chain/freshness.test.ts': 6,
@@ -722,7 +723,7 @@ const CLAUSES_PER_FILE: Readonly<Record<string, number>> = {
   'packages/chain/src/chain/key-protection.test.ts': 8,
   'packages/chain/src/chain/keyroot.test.ts': 11,
   'packages/chain/src/chain/keys.test.ts': 3,
-  'packages/chain/src/chain/keystore.test.ts': 8,
+  'packages/chain/src/chain/keystore.test.ts': 11,
   'packages/chain/src/chain/level.test.ts': 2,
   'packages/chain/src/chain/lines.test.ts': 5,
   'packages/chain/src/chain/ots.test.ts': 3,
@@ -772,6 +773,7 @@ const CLAUSES_PER_FILE: Readonly<Record<string, number>> = {
   'packages/code/src/commands/accountability.test.ts': 9,
   'packages/code/src/commands/antipatterns.test.ts': 13,
   'packages/code/src/commands/brief.test.ts': 15,
+  'packages/code/src/commands/decision-import-twice-at-once.test.ts': 8,
   'packages/code/src/commands/decision-import.test.ts': 8,
   'packages/code/src/commands/decision-transition.test.ts': 10,
   'packages/code/src/commands/decision.test.ts': 8,
@@ -793,6 +795,7 @@ const CLAUSES_PER_FILE: Readonly<Record<string, number>> = {
   'packages/code/src/commands/run-end.test.ts': 9,
   'packages/code/src/commands/run-start.test.ts': 8,
   'packages/code/src/commands/search.test.ts': 15,
+  'packages/code/src/commands/show-says-a-move-made-apart.test.ts': 10,
   'packages/code/src/commands/skill-export.test.ts': 11,
   'packages/code/src/commands/skill-transition.test.ts': 10,
   'packages/code/src/commands/skill.test.ts': 8,
@@ -816,7 +819,7 @@ const CLAUSES_PER_FILE: Readonly<Record<string, number>> = {
   'packages/code/src/one-voice-for-a-no.test.ts': 11,
   'packages/code/src/outside-the-record.test.ts': 13,
   'packages/code/src/pinned-run.test.ts': 9,
-  'packages/code/src/presentation/brief.test.ts': 4,
+  'packages/code/src/presentation/brief.test.ts': 6,
   'packages/code/src/presentation/folded.test.ts': 15,
   'packages/code/src/presentation/forms.test.ts': 6,
   'packages/code/src/presentation/one-line-per-item.test.ts': 10,
@@ -1033,35 +1036,35 @@ const CLAUSES_PER_FILE: Readonly<Record<string, number>> = {
   'packages/code/tests/what-the-record-can-witness.test.ts': 10,
   'packages/code/tests/what-the-suite-left-behind.test.ts': 7,
   'packages/code/tests/where-things-stand.test.ts': 11,
-  'packages/copilot/src/boundaries.test.ts': 3,
-  'packages/copilot/src/context/bootstrap.test.ts': 6,
-  'packages/copilot/src/context/brief.test.ts': 7,
-  'packages/copilot/src/context/decisions.test.ts': 5,
-  'packages/copilot/src/context/disposition.test.ts': 5,
-  'packages/copilot/src/context/focus.test.ts': 4,
-  'packages/copilot/src/context/next-action.test.ts': 4,
-  'packages/copilot/src/context/search.test.ts': 5,
-  'packages/copilot/src/context/skills.test.ts': 6,
-  'packages/copilot/src/context/switches.test.ts': 6,
-  'packages/copilot/src/context/tasks.test.ts': 6,
-  'packages/copilot/src/context/unread.test.ts': 6,
-  'packages/copilot/src/guard/guard.test.ts': 4,
-  'packages/copilot/src/intelligence/accountability.test.ts': 9,
-  'packages/copilot/src/intelligence/antipatterns.test.ts': 5,
-  'packages/copilot/src/intelligence/audit-feed.test.ts': 4,
-  'packages/copilot/src/intelligence/consultation.test.ts': 5,
-  'packages/copilot/src/intelligence/exposure.test.ts': 3,
-  'packages/copilot/src/intelligence/governance.test.ts': 6,
-  'packages/copilot/src/intelligence/identities.test.ts': 5,
-  'packages/copilot/src/intelligence/pattern-moves.test.ts': 4,
-  'packages/copilot/src/intelligence/provenance.test.ts': 5,
-  'packages/copilot/src/intelligence/reach.test.ts': 2,
-  'packages/copilot/src/intelligence/references.test.ts': 6,
-  'packages/copilot/src/intelligence/timeline.test.ts': 7,
-  'packages/copilot/src/sources.test.ts': 12,
-  'packages/copilot/tests/readme-example.test.ts': 4,
-  'packages/copilot/tests/support/chain.ts': 7,
-  'packages/copilot/tests/the-bench-leaves-nothing-behind.test.ts': 5,
+  'packages/context/src/boundaries.test.ts': 3,
+  'packages/context/src/context/bootstrap.test.ts': 6,
+  'packages/context/src/context/brief.test.ts': 7,
+  'packages/context/src/context/decisions.test.ts': 5,
+  'packages/context/src/context/disposition.test.ts': 5,
+  'packages/context/src/context/focus.test.ts': 4,
+  'packages/context/src/context/next-action.test.ts': 4,
+  'packages/context/src/context/search.test.ts': 5,
+  'packages/context/src/context/skills.test.ts': 6,
+  'packages/context/src/context/switches.test.ts': 6,
+  'packages/context/src/context/tasks.test.ts': 6,
+  'packages/context/src/context/unread.test.ts': 6,
+  'packages/context/src/guard/guard.test.ts': 4,
+  'packages/context/src/intelligence/accountability.test.ts': 9,
+  'packages/context/src/intelligence/antipatterns.test.ts': 5,
+  'packages/context/src/intelligence/audit-feed.test.ts': 4,
+  'packages/context/src/intelligence/consultation.test.ts': 5,
+  'packages/context/src/intelligence/exposure.test.ts': 3,
+  'packages/context/src/intelligence/governance.test.ts': 6,
+  'packages/context/src/intelligence/identities.test.ts': 5,
+  'packages/context/src/intelligence/pattern-moves.test.ts': 4,
+  'packages/context/src/intelligence/provenance.test.ts': 5,
+  'packages/context/src/intelligence/reach.test.ts': 2,
+  'packages/context/src/intelligence/references.test.ts': 6,
+  'packages/context/src/intelligence/timeline.test.ts': 7,
+  'packages/context/src/sources.test.ts': 12,
+  'packages/context/tests/readme-example.test.ts': 4,
+  'packages/context/tests/support/chain.ts': 7,
+  'packages/context/tests/the-bench-leaves-nothing-behind.test.ts': 5,
   'packages/core/src/a-reason-states-something.test.ts': 20,
   'packages/core/src/adr/published-templates.test.ts': 2,
   'packages/core/src/adr/read.test.ts': 3,
@@ -1079,6 +1082,7 @@ const CLAUSES_PER_FILE: Readonly<Record<string, number>> = {
   'packages/core/src/identity/id.test.ts': 3,
   'packages/core/src/identity/restore.test.ts': 11,
   'packages/core/src/identity/roster.test.ts': 13,
+  'packages/core/src/identity/the-roster-sees-the-other-session.test.ts': 11,
   'packages/core/src/identity/who.test.ts': 2,
   'packages/core/src/index.test.ts': 2,
   'packages/core/src/knowledge/end-to-end.test.ts': 11,
@@ -1087,6 +1091,7 @@ const CLAUSES_PER_FILE: Readonly<Record<string, number>> = {
   'packages/core/src/projections/advance.test.ts': 19,
   'packages/core/src/projections/cache.test.ts': 7,
   'packages/core/src/projections/decision.test.ts': 3,
+  'packages/core/src/projections/divergent-moves.test.ts': 14,
   'packages/core/src/projections/knowledge.test.ts': 4,
   'packages/core/src/projections/newest-first.test.ts': 3,
   'packages/core/src/projections/one-window-three-readings.test.ts': 8,
@@ -1105,8 +1110,10 @@ const CLAUSES_PER_FILE: Readonly<Record<string, number>> = {
   'packages/core/src/topology/private-tree.test.ts': 8,
   'packages/core/src/topology/resolve.test.ts': 5,
   'packages/core/src/topology/routing.test.ts': 11,
+  'packages/core/src/workflow/a-gate-judges-the-record-as-it-stands.test.ts': 4,
   'packages/core/src/workflow/a-stale-anchor-writes-nothing.test.ts': 19,
   'packages/core/src/workflow/adoption.test.ts': 12,
+  'packages/core/src/workflow/as-the-record-stands.test.ts': 6,
   'packages/core/src/workflow/decision-gate.test.ts': 5,
   'packages/core/src/workflow/decision-operations.test.ts': 9,
   'packages/core/src/workflow/decision-states.test.ts': 2,
@@ -1123,6 +1130,7 @@ const CLAUSES_PER_FILE: Readonly<Record<string, number>> = {
   'packages/core/src/workflow/skill-transitions.test.ts': 3,
   'packages/core/src/workflow/states.test.ts': 2,
   'packages/core/src/workflow/the-anchor-follows-the-founding.test.ts': 12,
+  'packages/core/src/workflow/the-second-move-sees-the-first.test.ts': 14,
   'packages/core/src/workflow/transitions.test.ts': 3,
   'packages/core/tests/integration/cross-entity.test.ts': 13,
   'packages/core/tests/integration/enrollment-e2e.test.ts': 8,
@@ -1143,6 +1151,7 @@ const PRODUCTION_FILES: readonly string[] = [
   'packages/chain/src/chain/chain.ts',
   'packages/chain/src/chain/checkpoint.ts',
   'packages/chain/src/chain/coded-error.ts',
+  'packages/chain/src/chain/durable.ts',
   'packages/chain/src/chain/enrollment.ts',
   'packages/chain/src/chain/entry.ts',
   'packages/chain/src/chain/freshness.ts',
@@ -1390,31 +1399,31 @@ const PRODUCTION_FILES: readonly string[] = [
   'packages/code/src/wiring/verify.ts',
   'packages/code/src/wiring/witness.ts',
   'packages/code/src/wiring/written-before.ts',
-  'packages/copilot/src/context/bootstrap.ts',
-  'packages/copilot/src/context/brief.ts',
-  'packages/copilot/src/context/decisions.ts',
-  'packages/copilot/src/context/disposition.ts',
-  'packages/copilot/src/context/focus.ts',
-  'packages/copilot/src/context/next-action.ts',
-  'packages/copilot/src/context/search.ts',
-  'packages/copilot/src/context/skills.ts',
-  'packages/copilot/src/context/switches.ts',
-  'packages/copilot/src/context/tasks.ts',
-  'packages/copilot/src/context/unread.ts',
-  'packages/copilot/src/guard/guard.ts',
-  'packages/copilot/src/intelligence/accountability.ts',
-  'packages/copilot/src/intelligence/antipatterns.ts',
-  'packages/copilot/src/intelligence/audit-feed.ts',
-  'packages/copilot/src/intelligence/consultation.ts',
-  'packages/copilot/src/intelligence/events.ts',
-  'packages/copilot/src/intelligence/exposure.ts',
-  'packages/copilot/src/intelligence/governance.ts',
-  'packages/copilot/src/intelligence/identities.ts',
-  'packages/copilot/src/intelligence/pattern-moves.ts',
-  'packages/copilot/src/intelligence/provenance.ts',
-  'packages/copilot/src/intelligence/references.ts',
-  'packages/copilot/src/intelligence/timeline.ts',
-  'packages/copilot/src/sources.ts',
+  'packages/context/src/context/bootstrap.ts',
+  'packages/context/src/context/brief.ts',
+  'packages/context/src/context/decisions.ts',
+  'packages/context/src/context/disposition.ts',
+  'packages/context/src/context/focus.ts',
+  'packages/context/src/context/next-action.ts',
+  'packages/context/src/context/search.ts',
+  'packages/context/src/context/skills.ts',
+  'packages/context/src/context/switches.ts',
+  'packages/context/src/context/tasks.ts',
+  'packages/context/src/context/unread.ts',
+  'packages/context/src/guard/guard.ts',
+  'packages/context/src/intelligence/accountability.ts',
+  'packages/context/src/intelligence/antipatterns.ts',
+  'packages/context/src/intelligence/audit-feed.ts',
+  'packages/context/src/intelligence/consultation.ts',
+  'packages/context/src/intelligence/events.ts',
+  'packages/context/src/intelligence/exposure.ts',
+  'packages/context/src/intelligence/governance.ts',
+  'packages/context/src/intelligence/identities.ts',
+  'packages/context/src/intelligence/pattern-moves.ts',
+  'packages/context/src/intelligence/provenance.ts',
+  'packages/context/src/intelligence/references.ts',
+  'packages/context/src/intelligence/timeline.ts',
+  'packages/context/src/sources.ts',
   'packages/core/src/a-reason-states-something.ts',
   'packages/core/src/adr/read.ts',
   'packages/core/src/adr/scan.ts',
@@ -1441,6 +1450,7 @@ const PRODUCTION_FILES: readonly string[] = [
   'packages/core/src/projections/channel.ts',
   'packages/core/src/projections/decision-store.ts',
   'packages/core/src/projections/decision.ts',
+  'packages/core/src/projections/divergent-moves.ts',
   'packages/core/src/projections/fed-by.ts',
   'packages/core/src/projections/knowledge-store.ts',
   'packages/core/src/projections/knowledge.ts',
@@ -1463,6 +1473,7 @@ const PRODUCTION_FILES: readonly string[] = [
   'packages/core/src/topology/resolve.ts',
   'packages/core/src/topology/routing.ts',
   'packages/core/src/workflow/append.ts',
+  'packages/core/src/workflow/as-the-record-stands.ts',
   'packages/core/src/workflow/channel-operations.ts',
   'packages/core/src/workflow/clock.ts',
   'packages/core/src/workflow/decision-gate.ts',
@@ -1583,7 +1594,7 @@ describe('every file has a test that names it', () => {
 
   it('names a package with no src/ instead of dying while it collects', () => {
     expect(WITHOUT_SOURCE).toEqual([]);
-    expect(READABLE).toEqual(['chain', 'code', 'copilot', 'core']);
+    expect(READABLE).toEqual(['chain', 'code', 'context', 'core']);
   });
 
   it('cannot be dissolved by the ledger that describes it', () => {
@@ -2198,8 +2209,8 @@ describe('the scanner’s parts, each on input of its own', () => {
       importClauses("export type {\n  A,\n} from './x.js';\n").map((one) => one.specifier),
     ).toEqual(['./x.js']);
     // And it is written today, in the one place under `packages/` that holds it: the
-    // copilot barrel, whose `export type {` carries three line comments among the names.
-    const barrel = readFileSync(join(PACKAGES, 'copilot', 'src', 'index.ts'), 'utf-8');
+    // context barrel, whose `export type {` carries three line comments among the names.
+    const barrel = readFileSync(join(PACKAGES, 'context', 'src', 'index.ts'), 'utf-8');
     expect(importClauses(barrel).map((one) => one.specifier)).not.toContain('@mnema/core');
     // Non-vacuity for that one: the import really is there to be missed.
     expect(barrel).toContain("} from '@mnema/core';");
@@ -2210,7 +2221,7 @@ describe('the scanner’s parts, each on input of its own', () => {
       TEST_TREE.filter((one) => !one.path.includes('/tests/') && !isTestFile(one.path)),
       'a file that is not test code reached the only corpus whose clauses are read',
     ).toEqual([]);
-    expect(TEST_TREE.map((one) => one.path)).not.toContain('packages/copilot/src/index.ts');
+    expect(TEST_TREE.map((one) => one.path)).not.toContain('packages/context/src/index.ts');
   });
 
   it('separates a case from a helper by the only thing that distinguishes them', () => {

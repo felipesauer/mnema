@@ -55,7 +55,7 @@ function everyTypeScriptFile(directory: string): string[] {
 
 /** Every `.ts` of every package, tests included, by repo-relative path. */
 function everySource(): string[] {
-  return ['chain', 'code', 'copilot', 'core']
+  return ['chain', 'code', 'context', 'core']
     .flatMap((pkg) => [join(PACKAGES, pkg, 'src'), join(PACKAGES, pkg, 'tests')])
     .flatMap((root) => {
       try {

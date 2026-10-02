@@ -3,7 +3,7 @@
   "version": "0.1.0",
   "description": "The mnema proof engine: typed event catalog, per-tail hash chain, Ed25519 checkpoints, and verification. Zero runtime dependencies.",
   "author": "Felipe Sauer (https://github.com/felipesauer)",
-  "license": "MIT",
+  "license": "Apache-2.0",
   "type": "module",
   "exports": {
     ".": {
@@ -24,7 +24,8 @@
     "!verifier/**/__pycache__",
     "FORMAT.md",
     "canonical-vectors.json",
-    "event-schema.json"
+    "event-schema.json",
+    "NOTICE"
   ],
   "homepage": "https://github.com/felipesauer/mnema",
   "repository": {

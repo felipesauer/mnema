@@ -12,7 +12,7 @@
  * send them looking for a list that does not exist.
  */
 
-import type { ScopedCache } from '@mnema/copilot';
+import type { ScopedCache } from '@mnema/context';
 import { describe, expect, it } from 'vitest';
 import { anchorForms, anchorText, NO_ANCHORS, resolveTypedAnchor } from './anchors.js';
 

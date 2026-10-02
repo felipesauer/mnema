@@ -31,6 +31,7 @@ import {
   readdirSync,
   readFileSync,
   readlinkSync,
+  renameSync,
   rmSync,
   writeFileSync,
   writeSync,
@@ -62,24 +63,72 @@ import {
   type ChainLayout,
   gitignorePath,
   installationIdPath,
+  keyRootLockPath,
   keysDir,
   privateKeyPath,
   publicKeyPath,
 } from './layout.js';
 import { sleepSync } from './sleep.js';
+import { TailBusyError, withTailLock } from './tail-lock.js';
 
 /**
  * Loads this machine's key pair, generating and persisting one if none exists.
  * A machine is identified by having BOTH a private and a public key on disk; if
  * only the public keys of OTHER machines are present, a new pair is minted.
+ *
+ * TWO FIRST WRITES IN A NEW HOME MADE TWO KEYS. Both processes found no key, both minted
+ * one, and the machine came out of it with two identities — measured on the binary, two
+ * writes launched together in a clone, under a HOME that had no key yet, left two keys in
+ * 8 to 13 of 30 rounds; and which of the two a later write spoke as was the order
+ * {@link listPrivateKeyFingerprints} lists them in. The tail's lock cannot see this race: a
+ * tail is named after the key, so two keys take two locks. So the mint is decided under a
+ * lock of the key root's own ({@link keyRootLockPath}): the first process to find no key
+ * takes it and mints; the second waits, asks again, and adopts the key the first made. A
+ * key root that already holds a key is read without the lock, as before — the lock is paid
+ * once per machine. And the private half lands under its name whole
+ * ({@link persistKeyPair}), so the read without the lock never finds a key half written.
+ * `keystore.test.ts` holds both, with the mint released in two processes at one instant.
+ *
+ * @throws {KeyRootBusyError} if another process held the key root's lock past the budget.
  */
 export function loadOrCreateKeyPair(layout: ChainLayout): KeyPair {
   const existing = findLocalKeyPair(layout);
   if (existing !== null) return existing;
+  ensureKeyRootIgnored(layout);
+  try {
+    return withTailLock(keyRootLockPath(layout), () => {
+      // Asked again under the lock: the process that held it before this one may have minted.
+      const minted = findLocalKeyPair(layout);
+      if (minted !== null) return minted;
+      const keyPair = generateKeyPair();
+      persistKeyPair(layout, keyPair);
+      return keyPair;
+    });
+  } catch (error) {
+    if (error instanceof TailBusyError) throw new KeyRootBusyError(error.tailLock, error.heldBy);
+    throw error;
+  }
+}
 
-  const keyPair = generateKeyPair();
-  persistKeyPair(layout, keyPair);
-  return keyPair;
+/**
+ * A key root another process held past the lock's budget while this one wanted to mint the
+ * machine's first key. Minting is milliseconds, so reaching it means the holder stopped, not
+ * that it is slow — the reasoning of the tail's own lock, whose budget this is.
+ */
+export class KeyRootBusyError extends CodedError {
+  readonly code = 'KEY_ROOT_BUSY';
+
+  constructor(
+    readonly lock: string,
+    readonly heldBy: number | undefined,
+  ) {
+    const holder = heldBy === undefined ? 'another process' : `process ${heldBy}`;
+    super(
+      `this machine's key is being made by ${holder}, which did not finish in time. Nothing was ` +
+        `written. If no mnema process is running, remove the lock and write again. Lock: ${lock}`,
+    );
+    this.name = 'KeyRootBusyError';
+  }
 }
 
 const PRIVATE_KEY_SUFFIX = '.key';
@@ -157,15 +206,20 @@ export function persistKeyPair(
     encoding: 'utf-8',
   });
   const privatePath = privateKeyPath(layout, keyPair.fingerprint);
+  // Written aside and renamed into place, so a reader that lists `.key` names never finds one
+  // created and not yet written: the name appears with the whole key behind it. The aside's
+  // name does not end in `.key`, so a listing never takes it for one.
   const pem = privateKeyToPem(keyPair.privateKey);
+  const aside = `${privatePath}.${process.pid}.writing`;
   writeFileSync(
-    privatePath,
+    aside,
     options.passphrase === undefined ? pem : protectPem(pem, options.passphrase),
     {
       encoding: 'utf-8',
       mode: 0o600,
     },
   );
+  renameSync(aside, privatePath);
   return privatePath;
 }
 

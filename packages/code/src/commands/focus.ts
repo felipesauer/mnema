@@ -3,7 +3,7 @@
  *
  * One of the four CONTEXT reads on the surface, and the first one written — a different
  * shape from every command before it. A read opens the projection cache over the project
- * tree, rebuilds it, and hands it to the copilot's PURE derivation — that is all.
+ * tree, rebuilds it, and hands it to the context package's PURE derivation — that is all.
  * It opens NO writer, emits no event, mints no key: it is read-only in the strict
  * sense the boundary and `verify` mean it. The derivation is the logic; the
  * adapter only resolves the tree and forwards the actor.
@@ -43,7 +43,7 @@
  * team's tree.
  */
 
-import { type Focus, focus } from '@mnema/copilot';
+import { type Focus, focus } from '@mnema/context';
 import { type Clock, type DiscoveryEnv, resolveTrees, systemClock } from '@mnema/core';
 import { type AnchorForms, anchorForms, resolveTypedAnchor } from '../anchors.js';
 import {
@@ -96,7 +96,7 @@ export type FocusRefused =
 
 /**
  * Derives the actor's focus over every tree of the current project. Opens a cache
- * per visible tree, rebuilds them from the chain, and returns the copilot's `focus`
+ * per visible tree, rebuilds them from the chain, and returns the context package's `focus`
  * for the given actor — the runs they have open, wherever this project keeps them.
  * Read-only: no writer, no event. With no project found from the cwd it refuses
  * `NO_PROJECT`.

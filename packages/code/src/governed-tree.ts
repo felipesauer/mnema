@@ -16,7 +16,7 @@
  *
  * FOURTH DERIVATION, AND IT WALKS RATHER THAN PROBES. {@link reachOfAddress} answers the
  * question the other three do not: how much of the working tree an address covers, at the
- * moment somebody records one. Its walk is injected into the copilot exactly as the probe
+ * moment somebody records one. Its walk is injected into the context package exactly as the probe
  * is, and it is assembled here for the same reason and one more — what counts as a file
  * of the project is a JUDGEMENT ({@link NOT_HAND_WRITTEN}), and a judgement made twice is
  * two bases for one fraction. The two write surfaces both come through it.
@@ -41,7 +41,7 @@ import {
   rulesInForceAt,
   type ScopedCache,
   type WalkOutcome,
-} from '@mnema/copilot';
+} from '@mnema/context';
 import { ADDRESS_RELATIONS } from '@mnema/core';
 
 /**

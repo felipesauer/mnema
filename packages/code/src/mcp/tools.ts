@@ -94,7 +94,7 @@ import {
   type WorkspaceAntipatterns,
   type WorkspaceExposure,
   workspaceExposure,
-} from '@mnema/copilot';
+} from '@mnema/context';
 import {
   chainRootForScope,
   DECISION_ACTIONS,
@@ -999,7 +999,7 @@ function skillProofToFields(input: {
  * `bootstrap` — the opening context for the session's actor.
  *
  * Takes the session's caches over EVERY tree of its project and composes the
- * copilot's `bootstrap` derivation for the machine's anchor (`who`): where the actor
+ * context's `bootstrap` derivation for the machine's anchor (`who`): where the actor
  * left off, the NAMES of the live work, the NAMES of the adopted patterns, and
  * the NAMES of the decisions in force. Read-only — it opens no writer and emits no
  * event.
@@ -1335,7 +1335,7 @@ function sessionCaches(session: Session): ProjectionCache[] {
 /** The patterns served, or a typed refusal when one was asked for by id. */
 export type SkillsResult =
   /**
-   * The catalogue the copilot decided ({@link SkillCatalogue}), verbatim: `served`
+   * The catalogue the context package decided ({@link SkillCatalogue}), verbatim: `served`
    * says whether the `skills` on it carry their bodies or are the NAMES of patterns
    * whose bodies did not fit one read. A caller reads the arm rather than the shape
    * of the items — which is also what makes a consumer that assumed bodies fail
@@ -1365,7 +1365,7 @@ export type SkillsResult =
  * name and the ones awaiting a judgement by name, and this is where either body comes
  * from once a name turns out to matter.
  *
- * THE CEILING IS THE COPILOT'S, and it is asked here for the reason the disposition
+ * THE CEILING IS THE CONTEXT PACKAGE'S, and it is asked here for the reason the disposition
  * is asked here: the sentence that frames names is this surface's, the decision that
  * they are what fits is not. The premise the paragraph above used to state — every
  * adopted body, however many there are — was falsified by measuring it: 40 patterns
@@ -1373,7 +1373,7 @@ export type SkillsResult =
  * window, and recorded 40 consultations against a reader that had named none of them.
  *
  * WHAT IS SERVED IS DECIDED BY DISPOSITION, and not here — `lookupServedSkill`
- * classifies (`SKILL_DISPOSITION` in `@mnema/copilot`), this adapter serves what it
+ * classifies (`SKILL_DISPOSITION` in `@mnema/context`), this adapter serves what it
  * gets back. Two places deciding which states are live is the shape that produces a
  * refusal disagreeing with the list beside it.
  *
@@ -1599,7 +1599,7 @@ function recordConsultations(
 /**
  * `focus` — the session actor's open runs (what they are touching now).
  *
- * The read mold applied to the copilot's `focus`: take the session's cache over
+ * The read mold applied to the context package's `focus`: take the session's cache over
  * its resolved tree and derive for the session's `who`. Read-only — no writer,
  * no event. The actor is the session's anchor (never a client-supplied value),
  * so the result carries only the machine's OWN open runs.
@@ -1611,7 +1611,7 @@ export function runFocusTool(session: Session): Focus {
 /**
  * `resume` — where the session actor left off: their latest run plus focus.
  *
- * The read mold applied to the copilot's `resume`. Read-only. Like `focus`, the
+ * The read mold applied to the context package's `resume`. Read-only. Like `focus`, the
  * actor is the session's `who`, so the latest run reported is the machine's own —
  * open OR already ended, the "where was I" anchor.
  */
@@ -1639,7 +1639,7 @@ export type NextActionsResult =
  *
  * Keyed by an ENTITY, not the actor: it locates the task's home tree
  * ({@link locateEntity}) — a task lives in exactly one tree of the workspace — takes
- * THAT tree's cache, and returns the copilot's `nextActionsForTask`. Read-only. An id
+ * THAT tree's cache, and returns the context package's `nextActionsForTask`. Read-only. An id
  * no tree of the workspace holds is refused `UNKNOWN_TASK` (returned as data so the
  * server shapes it into a tool error, never thrown); an existing terminal task yields
  * an empty list — "no legal moves", not "no such task".
@@ -1692,7 +1692,7 @@ export type GuardResult =
  * `guard` — a DRY-RUN of the workflow gate: "would this move be allowed on this
  * task, and if not, why?" — the MCP counterpart of `mnema guard`. Read-only: it
  * locates the task's home tree ({@link locateEntity}), takes THAT tree's cache, reads
- * the task's current state as the `from`, and calls the copilot's pure
+ * the task's current state as the `from`, and calls the context package's pure
  * {@link guardWithFocus} — no writer, no event. The verdict is the gate's own, the
  * SAME function `task_transition` consults, over the SAME locate, so a guard that
  * says ALLOWED and a move that succeeds can never drift — including for a task in
@@ -1799,7 +1799,7 @@ export type SearchToolResult =
  * whole record was shut out. No per-project quota — declared, not resolved.
  *
  * Read-only in the strict sense: it asks the session's warm caches and composes
- * the copilot's pure `searchRecords`. No writer, no event — including for a
+ * the context package's pure `searchRecords`. No writer, no event — including for a
  * skill, whose NAME may appear here. Only serving a skill's BODY is a
  * consultation worth recording, and that has its own tool.
  */
@@ -1986,7 +1986,7 @@ function requireProject(
  * subject, plus the events that refer to it (an observation `about` it, a link
  * whose `target` is it, a supersede whose successor it is), which may live in a
  * different tree AND in a different project. Read-only: it asks the session's warm
- * caches and composes the copilot's pure `timeline`, opening no writer. An id no
+ * caches and composes the context package's pure `timeline`, opening no writer. An id no
  * event touches yields an empty history (a valid answer, not a refusal); with no
  * project it refuses `NO_PROJECT`.
  *
@@ -2028,7 +2028,7 @@ export type ReferencesToolResult = IntelligenceResult<ReferenceGraph>;
  * depth cut says so — which is a promise the union makes harder to keep and not
  * easier: a graph that fitted inside the cap over one project can be cut by it over
  * three, and the cut has to keep declaring itself. Read-only: the session's warm
- * caches and the copilot's pure `references`; with no project it refuses `NO_PROJECT`.
+ * caches and the context package's pure `references`; with no project it refuses `NO_PROJECT`.
  */
 export function runReferencesTool(
   session: Session,
@@ -2078,7 +2078,7 @@ export type GoverningRulesToolResult = IntelligenceResult<GoverningRules>;
  * arbitrary cwd"; the one host measured without workspace roots starts it at the
  * workspace root, and the cascade now finds the project from it for such a client —
  * which still does not make it where an agent's `src/...` is relative to.) Read-only:
- * the session's warm caches, the copilot's pure derivation, and one
+ * the session's warm caches, the context package's pure derivation, and one
  * `existsSync` per address. With no project it refuses `NO_PROJECT`.
  */
 export function runGoverningRulesTool(
@@ -2385,14 +2385,14 @@ const PRE_TOOL_USE: HookEvent = 'PreToolUse';
  * mark the command line's account prints. This read had none of it, for one reason the command
  * line did not have: reading it off the disk was a second replay per tree on every call, into a
  * session that keeps its caches warm precisely not to replay. It is read off the order those
- * caches already hold (`ProjectionCache.foundedBeside`), inside the copilot's one fold — so the
+ * caches already hold (`ProjectionCache.foundedBeside`), inside the context package's one fold — so the
  * agent, the summary line and `--json` are served by one selection. What it adds to a warm call,
  * measured with the arms alternated: over 602 events nothing the base-against-base ruler can
  * see (±0.007 ms against a ruler of 0.006–0.04 ms, on a 0.35 ms call); over 6,002 events
  * +0.07–0.11 ms on a 1.95 ms call, against a ruler of 0.10 ms — and the walk alone, which is
  * the whole of the added work, is 16–19 µs there.
  *
- * Read-only: the session's warm caches and the copilot's pure
+ * Read-only: the session's warm caches and the context package's pure
  * `accountabilityByProject`. With no project it refuses `NO_PROJECT`.
  */
 export function runAccountabilityTool(
@@ -2466,7 +2466,7 @@ export function runExposureTool(session: Session): ExposureToolResult {
  * concrete — a pattern is distilled by the person doing the work that kept reopening,
  * so a candidate list that pooled three projects would point them at somebody else's.
  *
- * Read-only: it reads the tails and folds them with the copilot's pure
+ * Read-only: it reads the tails and folds them with the context package's pure
  * `antipatternsByProject`. With no project it refuses `NO_PROJECT`.
  */
 export function runAntipatternsTool(session: Session): AntipatternsToolResult {

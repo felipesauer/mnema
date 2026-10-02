@@ -26,6 +26,7 @@ import type { ChannelSwitchProjection } from './channel.js';
 import { getChannelSwitch, listChannelSwitches } from './channel-store.js';
 import { type AdrCollision, adrCollisions, type DecisionProjection } from './decision.js';
 import { getDecision, listDecisions, listDecisionsByState } from './decision-store.js';
+import { type DivergentMove, divergentMoves } from './divergent-moves.js';
 import { tablesFedBy } from './fed-by.js';
 import type {
   HandoffProjection,
@@ -397,7 +398,7 @@ export class ProjectionCache {
    * A cache is opened over one chain root, which is exactly the unit an
    * `ADR-<n>` is numbered in, so this asks the question at the only scope where
    * it has an answer. Its reader is the brief's composition (`brief` in
-   * @mnema/copilot), which serves the label into a committed document and so has
+   * @mnema/context), which serves the label into a committed document and so has
    * to say when a label there names two rules.
    *
    * It reports EVERY decision of the chain, whatever state it is in: a label is
@@ -553,6 +554,18 @@ export class ProjectionCache {
    */
   foundedBeside(): FoundedBeside[] {
     return identitiesFoundedBeside(this.order);
+  }
+
+  /**
+   * Every decision, skill and task of this tree that two machines moved out of one state
+   * without seeing each other ({@link divergentMoves}) — asked of the order this cache already
+   * holds, for the reason {@link foundedBeside} is: a walk over events in memory, where the
+   * same answer read off the disk is a second replay.
+   *
+   * It answers as the cache stands, like every read of it.
+   */
+  divergentMoves(): DivergentMove[] {
+    return divergentMoves(this.order);
   }
 
   /**

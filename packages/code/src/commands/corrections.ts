@@ -25,7 +25,7 @@
  * is a note on the second stream, and nothing reads it to decide.
  */
 
-import { channelIsOn } from '@mnema/copilot';
+import { channelIsOn } from '@mnema/context';
 import { type DiscoveryEnv, resolveTrees } from '@mnema/core';
 import { STARTS_OFF, USER_CORRECTIONS_CHANNEL } from '../record-framing.js';
 import { withScopedCaches } from '../tree-sources.js';

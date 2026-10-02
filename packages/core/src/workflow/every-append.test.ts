@@ -515,6 +515,7 @@ describe('every write refuses what no read could accept', () => {
     decodeKeyRequest: 'parses a request line',
     deferredWrite: 'pairs a signer with a writer it has not opened; the write is the operation’s',
     encodeKeyRequest: 'serializes one',
+    onTheRecordAsItStands: 'holds the lock around a judgement; the write is the caller’s',
     openTreeForWriting: 'opens a writer; the write is the caller’s',
     recordedAnchorOf: 'asks whether the recorded identity still counts the key; appends nothing',
     requestEnrollment: 'produces a request and may mint a key, but appends no event',

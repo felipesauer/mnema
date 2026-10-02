@@ -6,7 +6,7 @@
  * not a hand-mocked cache. This helper writes events through the chain's own
  * builders and topology (so `who` is a real anchor and the tail is signed), then
  * opens and rebuilds a cache over the public tree. It lives in tests/ only; the
- * copilot package itself writes nothing (see boundaries.test.ts).
+ * context package itself writes nothing (see boundaries.test.ts).
  */
 
 import { cpSync, mkdirSync, mkdtempSync, rmSync } from 'node:fs';
@@ -67,7 +67,7 @@ export interface Bench {
  * that would have caught it, and it reads every file in the workspace, not this one.
  */
 export function makeBench(): Bench {
-  const sandbox = mkdtempSync(join(tmpdir(), 'mnema-copilot-'));
+  const sandbox = mkdtempSync(join(tmpdir(), 'mnema-context-'));
   onTestFinished(() => {
     rmSync(sandbox, { recursive: true, force: true });
   });

@@ -50,7 +50,6 @@
  */
 
 import {
-  type CatalogEvent,
   type ChainLayout,
   type ChainSigner,
   type ChainWriter,
@@ -72,6 +71,12 @@ import { oneLine } from '../one-line.js';
 import { orderedEvents } from '../projections/order.js';
 import { projectTasks } from '../projections/task.js';
 import { type AppendRefusal, appendEvent, appendEvents } from './append.js';
+import {
+  type Judged,
+  onTheRecordAsItStands,
+  type StateMovedErr,
+  stateMoved,
+} from './as-the-record-stands.js';
 import { type Clock, systemClock } from './clock.js';
 import { type GateErr, gate } from './gate.js';
 import { authorizingAnchor, ensureFounded } from './identity-operations.js';
@@ -154,7 +159,9 @@ export type WriteError =
   /** A read would not have accepted the event (see {@link appendEvent}). */
   | AppendRefusal
   /** The task does not exist (no `task.created` for this id). */
-  | { readonly ok: false; readonly code: 'UNKNOWN_TASK'; readonly message: string };
+  | { readonly ok: false; readonly code: 'UNKNOWN_TASK'; readonly message: string }
+  /** Another write moved the task between the reading this move was judged on and its append. */
+  | StateMovedErr;
 
 /** A transition was authorized and appended. */
 export interface TransitionOk extends ScreenedWrite {
@@ -200,7 +207,8 @@ export interface CreateInput {
 /**
  * Transitions a task through the gate. Reads the task's current state from the
  * chain, asks the gate whether the move is authorized, and appends the
- * transition ONLY if it is. On refusal nothing is written and the typed reason
+ * transition ONLY if it is — under the tail's lock, against the state the record
+ * is in at that moment ({@link onTheRecordAsItStands}). On refusal nothing is written and the typed reason
  * is returned. `to` is the gate's resolved state, never the caller's assertion.
  *
  * The proof fields are screened BEFORE the gate, not after, and that order is
@@ -235,70 +243,90 @@ export function transitionTask(
   // projection's, and a composition variant of the id cannot false-miss. (The
   // decision operations already do this; the task now agrees.)
   const id = canonicalId(input.id);
-  const current = id === undefined ? undefined : currentState(ctx, id);
-  if (id === undefined || current === undefined) {
-    return {
-      ok: false,
-      code: 'UNKNOWN_TASK',
-      message: `task "${oneLine(input.id)}" does not exist`,
-    };
-  }
+  return onTheRecordAsItStands(
+    ctx,
+    () => projectTasks(orderedEvents(ctx.layout, ctx.upcasters)),
+    (tasks, earlier): Judged<TransitionOk | WriteError> => {
+      const current = id === undefined ? undefined : tasks.get(id)?.state;
+      if (id === undefined || current === undefined) {
+        return {
+          refuse: {
+            ok: false,
+            code: 'UNKNOWN_TASK',
+            message: `task "${oneLine(input.id)}" does not exist`,
+          },
+        };
+      }
 
-  // `who` is this installation's authorizing anchor — its own key's, or the
-  // identity the record proves that key joined — never supplied, so a caller
-  // cannot forge who authorized the move. The gate still checks it against
-  // `which` so an agent cannot pose as the authorizer.
-  const who = authorizingAnchor(ctx);
+      // Judged again under the tail's lock because something landed since the first
+      // reading: a task that moved in between is told as that, not as the gate's verdict
+      // on a state the caller never saw (see `onTheRecordAsItStands`).
+      const was = earlier?.get(id)?.state;
+      if (was !== undefined && was !== current) {
+        return { refuse: stateMoved('task', id, input.action, was, current) };
+      }
 
-  // The agent is resolved BEFORE the gate and the RESOLVED value is what the gate
-  // judges and the envelope records. `which` is free text like any payload field —
-  // and the one on the envelope, stamped on every event of a session — so it goes
-  // through the same door; resolving it here rather than canonicalizing it again
-  // below is what keeps the string that was screened and compared identical to the
-  // string that is stored.
-  const agent = resolveExecutingAgent(who, input.which);
-  if (!agent.ok) return agent;
-  const which = agent.which;
+      // `who` is this installation's authorizing anchor — its own key's, or the
+      // identity the record proves that key joined — never supplied, so a caller
+      // cannot forge who authorized the move. The gate still checks it against
+      // `which` so an agent cannot pose as the authorizer.
+      const who = authorizingAnchor(ctx);
 
-  const verdict = gate({
-    from: current,
-    action: input.action,
-    ...(proof !== undefined ? { fields: proof.fields } : {}),
-    who,
-    ...(which !== undefined ? { which } : {}),
-  });
-  if (!verdict.ok) return verdict;
+      // The agent is resolved BEFORE the gate and the RESOLVED value is what the gate
+      // judges and the envelope records. `which` is free text like any payload field —
+      // and the one on the envelope, stamped on every event of a session — so it goes
+      // through the same door; resolving it here rather than canonicalizing it again
+      // below is what keeps the string that was screened and compared identical to the
+      // string that is stored.
+      const agent = resolveExecutingAgent(who, input.which);
+      if (!agent.ok) return { refuse: agent };
+      const which = agent.which;
 
-  // Found this installation's anchor before its first fact, so the transition's
-  // signer is a key valid for its anchor at verify.
-  // Once founded it appends nothing, and refuses an anchor that no longer counts
-  // this key (see `ensureFounded`).
-  ensureFounded(ctx);
-  const at = (ctx.clock ?? systemClock)();
-  const event = taskTransitioned(
-    {
-      at,
-      who,
-      signerFp: ctx.writer.signerFingerprint,
-      subject: id,
-      ...(which !== undefined ? { which } : {}),
-      ...(pinned.fields.run !== undefined ? { run: pinned.fields.run } : {}),
-    },
-    {
-      from: current,
-      to: verdict.to,
-      action: verdict.action,
-      ...(verdict.fields !== undefined ? { fields: verdict.fields } : {}),
+      const verdict = gate({
+        from: current,
+        action: input.action,
+        ...(proof !== undefined ? { fields: proof.fields } : {}),
+        who,
+        ...(which !== undefined ? { which } : {}),
+      });
+      if (!verdict.ok) return { refuse: verdict };
+
+      return {
+        write: () => {
+          // Found this installation's anchor before its first fact, so the transition's
+          // signer is a key valid for its anchor at verify.
+          // Once founded it appends nothing, and refuses an anchor that no longer counts
+          // this key (see `ensureFounded`).
+          ensureFounded(ctx);
+          const at = (ctx.clock ?? systemClock)();
+          const event = taskTransitioned(
+            {
+              at,
+              who,
+              signerFp: ctx.writer.signerFingerprint,
+              subject: id,
+              ...(which !== undefined ? { which } : {}),
+              ...(pinned.fields.run !== undefined ? { run: pinned.fields.run } : {}),
+            },
+            {
+              from: current,
+              to: verdict.to,
+              action: verdict.action,
+              ...(verdict.fields !== undefined ? { fields: verdict.fields } : {}),
+            },
+          );
+          const appended = appendEvent(ctx.writer, event);
+          if (!appended.ok) return appended;
+          return {
+            ok: true,
+            to: verdict.to,
+            entry: appended.entry,
+            ...screened([...(proof?.replaced ?? []), ...pinned.replaced, ...agent.replaced]),
+          };
+        },
+      };
     },
   );
-  const appended = appendEvent(ctx.writer, event);
-  if (!appended.ok) return appended;
-  return {
-    ok: true,
-    to: verdict.to,
-    entry: appended.entry,
-    ...screened([...(proof?.replaced ?? []), ...pinned.replaced, ...agent.replaced]),
-  };
 }
 
 /**
@@ -357,15 +385,4 @@ export function createTask(ctx: WriteContext, input: CreateInput): CreateOk | Wr
   if (!appended.ok) return appended;
   const [e1, e2] = appended.entries as [Entry, Entry];
   return { ok: true, id, entries: [e1, e2], ...screened([...text.replaced, ...agent.replaced]) };
-}
-
-/**
- * Reads a task's current state from the chain (its projected `to`), or
- * undefined if the task does not exist. This reads the source of truth, not the
- * cache, so a write is always gated against what the chain actually proves.
- */
-function currentState(ctx: WriteContext, id: string): string | undefined {
-  const events: readonly CatalogEvent[] = orderedEvents(ctx.layout, ctx.upcasters);
-  const tasks = projectTasks(events);
-  return tasks.get(id)?.state;
 }

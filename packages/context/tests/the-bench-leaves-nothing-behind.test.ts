@@ -57,7 +57,7 @@ import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { makeBench } from './support/chain.js';
 
 /** The prefix `makeBench` builds under, restated here so a rename of it turns this case red. */
-const A_BENCH_SANDBOX = 'mnema-copilot-';
+const A_BENCH_SANDBOX = 'mnema-context-';
 
 /**
  * The directory `tmpdir()` answers with while the bench is made: this file's own, under the

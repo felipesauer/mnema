@@ -192,7 +192,7 @@ describe('a connection that only reads', () => {
     const project = makeProject('proj');
     const { client } = await connect([pathToFileURL(project).href]);
 
-    // The payload is the copilot's answer, unchanged; the note is its own block.
+    // The payload is the context package's answer, unchanged; the note is its own block.
     const payload = payloadBesideTheNote(await client.callTool({ name: 'focus' }));
     // A bare `openRuns` with no `lastRun` beside it is focus's answer alone.
     expect(payload).toMatchObject({ openRuns: [] });
@@ -520,7 +520,7 @@ describe('the session says how many projects it chose from', () => {
     }
 
     // And it is beside the answer, never inside it: a caller parsing the first block
-    // gets the copilot's shape, byte for byte. The two totals are part of that shape
+    // gets the context package's shape, byte for byte. The two totals are part of that shape
     // — each cut list carries the count that says it was cut — and every key here
     // belongs to the derivation, which is the point: the transport added nothing.
     const payload = JSON.parse(blocks[0]?.text as string) as Record<string, unknown>;

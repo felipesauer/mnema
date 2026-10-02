@@ -353,9 +353,9 @@ function requirementNotMet(
  * raw path where every other one prints this.
  *
  * WHY IT IS A PARAMETER. It was one because it had to be: `oneLine` used to live in
- * `served-patterns.ts`, which reaches `@mnema/copilot`, and this module is DECLARED
+ * `served-patterns.ts`, which reaches `@mnema/context`, and this module is DECLARED
  * eagerly — commander needs every option before it can route a word — so importing it
- * here would have put the copilot on the floor of every invocation of every verb,
+ * here would have put the context package on the floor of every invocation of every verb,
  * including the ones that read nothing. The rule of the line lives in `one-line.ts` now,
  * which imports nothing, so the import above costs what a pure string rule costs. It
  * stays a parameter for the OTHER reason, which was always the stronger one: a reporter

@@ -8,7 +8,7 @@
   },
   "homepage": "https://github.com/felipesauer/mnema",
   "repository": "https://github.com/felipesauer/mnema",
-  "license": "MIT",
+  "license": "Apache-2.0",
   "keywords": ["audit-trail", "append-only", "accountability", "adr", "local-first"],
   "mcpServers": {
     "mnema": {

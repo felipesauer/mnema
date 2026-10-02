@@ -59,14 +59,14 @@
  * and where to look ({@link BriefSwitchedOff}).
  *
  * Read-only in the strict sense: a cache per visible tree, rebuilt in memory, and
- * the copilot's pure `brief`. No writer, no key, no event, no consultation recorded
+ * the context package's pure `brief`. No writer, no key, no event, no consultation recorded
  * (serving a pattern's BODY records one; serving its name is not serving it, and
  * this never touches a body). Switching a channel is a WRITE and lives in its own verb —
  * this one only reads where the switch stands.
  */
 
 import { dirname } from 'node:path';
-import { type Brief, brief, channelIsOn, channelStates } from '@mnema/copilot';
+import { type Brief, brief, channelIsOn, channelStates } from '@mnema/context';
 import { type DiscoveryEnv, resolveTrees } from '@mnema/core';
 import {
   basesNeverImported,
@@ -198,7 +198,7 @@ export function switchedOff(
  * measured wrong: a title recorded `--scope private` reached a document whose recipe
  * is a redirection into a tracked file and a commit, and two chains numbering their own
  * `ADR-<n>` put two different rules under one label. So the composition decides which
- * trees a document carries (see `brief` in @mnema/copilot), and this passes what it
+ * trees a document carries (see `brief` in @mnema/context), and this passes what it
  * opened.
  *
  * All three are still opened and rebuilt, rather than opening the public one alone.

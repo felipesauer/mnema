@@ -27,7 +27,7 @@
  * The premise underneath was that the accessor had ONE consumer, and none of the
  * three does: `skillDisposition` is read by `served-patterns.ts` and
  * `skill-export.ts` besides this surface, `decisionDisposition` by its own module's
- * `statesMeaning` calls, `taskDisposition` by `copilot`'s `tasks.ts`. A surface that
+ * `statesMeaning` calls, `taskDisposition` by `context`'s `tasks.ts`. A surface that
  * stops asking takes A consumer away and never the last one, so the sister guard has
  * nothing to say. The duplication is silent everywhere, not only inside one package.
  *
@@ -262,9 +262,9 @@ const HIDDEN = await declaredHidden();
  * five entries over four modules; the count is written from the table below now.
  */
 const DECLARED_HIDDEN: Readonly<Record<string, readonly string[]>> = {
-  'copilot/src/context/decisions.ts': ['DECISION_DISPOSITION'],
-  'copilot/src/context/skills.ts': ['SKILL_DISPOSITION'],
-  'copilot/src/context/unread.ts': ['SERVED_BY_THE_OPENING'],
+  'context/src/context/decisions.ts': ['DECISION_DISPOSITION'],
+  'context/src/context/skills.ts': ['SKILL_DISPOSITION'],
+  'context/src/context/unread.ts': ['SERVED_BY_THE_OPENING'],
   'core/src/content/fields.ts': ['ENVELOPE_TEXT', 'PAYLOAD_TEXT', 'SUBJECT_TEXT'],
   'core/src/projections/fed-by.ts': ['FED_BY_KIND'],
   'core/src/topology/routing.ts': ['UNROUTED_KINDS'],
@@ -358,8 +358,8 @@ function perStateTables(
  * decision's and a pattern's position came out white beside a painted task's.
  */
 const ASKED_NOT_COPIED: readonly { readonly specifier: string; readonly accessor: string }[] = [
-  { specifier: '@mnema/copilot', accessor: 'decisionDisposition' },
-  { specifier: '@mnema/copilot', accessor: 'skillDisposition' },
+  { specifier: '@mnema/context', accessor: 'decisionDisposition' },
+  { specifier: '@mnema/context', accessor: 'skillDisposition' },
   { specifier: '@mnema/core', accessor: 'taskDisposition' },
 ];
 
@@ -550,26 +550,26 @@ describe('no classification table reaches the surface', () => {
 
     // By name: the ordinary re-export, which is the mutation this guard was written for.
     expect(
-      leaked([{ specifier: '@mnema/copilot', name: 'SKILL_DISPOSITION', value: table }]),
-    ).toEqual(['@mnema/copilot SKILL_DISPOSITION']);
+      leaked([{ specifier: '@mnema/context', name: 'SKILL_DISPOSITION', value: table }]),
+    ).toEqual(['@mnema/context SKILL_DISPOSITION']);
     // By identity: renamed on the way out, so a name check alone would let it through.
-    expect(leaked([{ specifier: '@mnema/copilot', name: 'MEANINGS', value: table }])).toEqual([
-      '@mnema/copilot MEANINGS',
+    expect(leaked([{ specifier: '@mnema/context', name: 'MEANINGS', value: table }])).toEqual([
+      '@mnema/context MEANINGS',
     ]);
     // And not everything is accused: a value that is neither a hidden table nor a
     // per-state one comes through clean, so the nets are filters and not a constant.
-    expect(leaked([{ specifier: '@mnema/copilot', name: 'brief', value: () => 1 }])).toEqual([]);
+    expect(leaked([{ specifier: '@mnema/context', name: 'brief', value: () => 1 }])).toEqual([]);
 
     // By shape: a copy of the rows under a new name is a new object, so name and
     // identity both miss it and only the machine's key set catches it.
     expect(
-      perStateTables([{ specifier: '@mnema/copilot', name: 'MEANINGS', value: { ...table } }]),
-    ).toEqual(['@mnema/copilot MEANINGS (SKILL_STATES)']);
+      perStateTables([{ specifier: '@mnema/context', name: 'MEANINGS', value: { ...table } }]),
+    ).toEqual(['@mnema/context MEANINGS (SKILL_STATES)']);
     // A subset of the states is NOT accused — the declared blind spot, held as a case
     // so it stays a decision rather than becoming a surprise.
     expect(
       perStateTables([
-        { specifier: '@mnema/copilot', name: 'HALF', value: { proposed: 1, reviewed: 1 } },
+        { specifier: '@mnema/context', name: 'HALF', value: { proposed: 1, reviewed: 1 } },
       ]),
     ).toEqual([]);
   });
