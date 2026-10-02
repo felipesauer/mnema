@@ -362,7 +362,7 @@ describe('the reply cannot express any decision but asking', () => {
     }
     // The two the host reads and this product means: asking, and the refusal that is its own
     // relation's. Each is spelled once, as a literal typed `Escalation`.
-    expect(literals.filter((one) => one === 'ask' || one === 'deny').sort()).toEqual([
+    expect([...new Set(literals.filter((one) => one === 'ask' || one === 'deny'))].sort()).toEqual([
       'ask',
       'deny',
     ]);

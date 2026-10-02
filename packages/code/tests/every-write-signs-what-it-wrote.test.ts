@@ -602,7 +602,7 @@ describe('every write path leaves the record fully signed', () => {
         // The gate as a host whose hooks are processes asks for it: reaching the writer takes
         // a rule in force that asks for a person at the path, or the verb answers `{}` and
         // this row passes having driven nothing.
-        at: 'commands/before-a-write.ts:recordAskings',
+        at: 'commands/before-a-write.ts:recordWhatItMet',
         drive: () => {
           void ok(
             'asks-for-a-person',
@@ -616,6 +616,20 @@ describe('every write path leaves the record fully signed', () => {
             }),
           });
           if (!('hookSpecificOutput' in done.reply)) throw new Error('the gate did not ask');
+          // And the other fact it appends, one grade up: a rule that refuses a write at a path
+          // of its own, reached as the host that cannot ask is.
+          void ok(
+            'refuses-a-write',
+            runLink(ctx, { subject: decision, target: 'src/ledger', rel: 'refuses-a-write' }),
+          );
+          const refused = runBeforeAWrite(ctx, {
+            host: 'cursor',
+            payload: JSON.stringify({
+              tool_name: 'Write',
+              tool_input: { file_path: 'src/ledger/entry.ts', content: '' },
+            }),
+          });
+          if (!('hookSpecificOutput' in refused.reply)) throw new Error('the gate did not refuse');
         },
       },
       {
@@ -793,7 +807,7 @@ describe('every write path leaves the record fully signed', () => {
         // (which makes the charge) and one that governs it (which makes the push
         // speak). Without those links the gate answers and writes nothing, and these
         // two rows would pass having driven nothing at all.
-        at: 'mcp/tools.ts:recordAskings',
+        at: 'mcp/tools.ts:recordWhatItMet',
         drive: () => {
           void ok(
             'asks-for-a-person',
@@ -805,6 +819,17 @@ describe('every write path leaves the record fully signed', () => {
           );
           const asked = runRulesBeforeAnEditTool(on(), { path: 'src/billing/invoice.ts' });
           if (!asked.ok) throw new Error('the edit gate refused');
+          // The refusal is the same body one grade up, so the same row drives it.
+          void ok(
+            'refuses-a-write',
+            runLinkKnowledge(on(), {
+              subject: decision,
+              target: 'src/ledger',
+              rel: 'refuses-a-write',
+            }),
+          );
+          const refused = runRulesBeforeAnEditTool(on(), { path: 'src/ledger/entry.ts' });
+          if (!refused.ok) throw new Error('the edit gate errored');
         },
       },
       {

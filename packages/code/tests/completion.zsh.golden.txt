@@ -56,7 +56,7 @@ _mnema_described() {
       'usage:what each run cost, read from this machine'\''s Claude Code transcripts' \
       'brief:print what governs the work here as markdown, for an agent to read' \
       'recall:print the notes recorded here as markdown, near ones first, for an agent to read' \
-      'before-a-write:answer a host’s hook before a file is written: ask for a person where a rule asks' \
+      'before-a-write:answer a host’s hook before a file is written: refuse where a rule refuses, ask for a person where a rule asks' \
       'key:manage this machine'\''s signing keys' \
       'tail:authorize a cut in the record'\''s own tails' \
       'witness:ask an outside witness to date this record, and read where that stands' \
@@ -236,7 +236,7 @@ _mnema_values() {
     'usage:--color') echo 'auto always never' ;;
     'brief:--color') echo 'auto always never' ;;
     'recall:--color') echo 'auto always never' ;;
-    'before-a-write:--host') echo 'vscode' ;;
+    'before-a-write:--host') echo 'vscode cursor' ;;
     'before-a-write:--color') echo 'auto always never' ;;
     'key:--color') echo 'auto always never' ;;
     'key restore:--color') echo 'auto always never' ;;

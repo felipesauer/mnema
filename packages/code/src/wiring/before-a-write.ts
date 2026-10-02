@@ -2,8 +2,9 @@
  * The `mnema before-a-write` wiring: what it declares, and what it prints.
  *
  * `mnema before-a-write --host <host>` reads the payload a host hands a hook before a tool runs,
- * on stdin, and prints the reply that host reads, on stdout — `ask`, citing the rules, when a rule
- * of the record asks for a person at a path the write touches, and `{}` otherwise. It is the
+ * on stdin, and prints the reply that host reads, on stdout — `deny`, citing the rules, when a rule
+ * of the record refuses a write at a path it touches; `ask` when one asks for a person and the
+ * host holds a write for one (Cursor's agent does not); and `{}` otherwise. It is the
  * per-edit gate for a host whose hooks are processes; the command is `commands/before-a-write.ts`.
  *
  * A HOST RUNS IT, NOT A PERSON, and two things follow. It exits 0 on every outcome that is not a
@@ -26,7 +27,7 @@ export function registerBeforeAWrite(program: Command, wiring: Wiring): Declared
   const verb = program
     .command('before-a-write')
     .description(
-      'answer a host’s hook before a file is written: ask for a person where a rule asks',
+      'answer a host’s hook before a file is written: refuse where a rule refuses, ask for a person where a rule asks',
     )
     .addOption(
       enumeratedOption(
@@ -41,10 +42,12 @@ export function registerBeforeAWrite(program: Command, wiring: Wiring): Declared
         '',
         'What it reads and what it prints:',
         '  The JSON a host hands a hook before a tool runs, on stdin. On stdout, the reply the',
-        '  host reads: {} unless a rule of this project linked to a path with',
-        '  `asks-for-a-person` addresses a path the write touches, and then `ask`, citing the',
-        '  rules. Each asking is recorded as a fact before the reply is printed. The gate can be',
-        '  switched off with `mnema switch off edit-asks-a-person`.',
+        '  host reads: {} unless a rule of this project addresses a path the write touches —',
+        '  `deny` where it is linked with `refuses-a-write`, which wins, and `ask` where it is',
+        '  linked with `asks-for-a-person` — citing the rules. For --host cursor only `deny` is',
+        '  answered: that host does not hold a write for a person. Each refusal or asking is',
+        '  recorded as a fact before the reply is printed. They can be switched off with `mnema',
+        '  switch off edit-refuses-a-write` and `mnema switch off edit-asks-a-person`.',
       ].join('\n'),
     )
     .action(async (opts: { host: string }) => {

@@ -154,7 +154,7 @@ _mnema_values() {
     'usage:--color') echo 'auto always never' ;;
     'brief:--color') echo 'auto always never' ;;
     'recall:--color') echo 'auto always never' ;;
-    'before-a-write:--host') echo 'vscode' ;;
+    'before-a-write:--host') echo 'vscode cursor' ;;
     'before-a-write:--color') echo 'auto always never' ;;
     'key:--color') echo 'auto always never' ;;
     'key restore:--color') echo 'auto always never' ;;

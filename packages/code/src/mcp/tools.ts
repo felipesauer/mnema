@@ -2277,18 +2277,18 @@ function recordWhatItMet(session: Session, met: WriteVerdict): { readonly ok: bo
   const route = routeWrite(session, kind, {});
   if (!route.ok) return { ok: false };
   const { ctx, run } = openWrite(session, route.scope);
-  const record = refusing ? recordChannelRefused : recordChannelAsked;
   const channel = refusing ? REFUSES_A_WRITE_CHANNEL : ASKS_A_PERSON_CHANNEL;
   let appended = 0;
   for (const at of met.at) {
     for (const rule of at.rules) {
-      const done = record(ctx, {
+      const input = {
         channel,
         rule: rule.id,
         path: at.relative ?? at.path,
         which: session.which,
         run,
-      });
+      };
+      const done = refusing ? recordChannelRefused(ctx, input) : recordChannelAsked(ctx, input);
       if (!done.ok) {
         if (appended > 0) ctx.writer.checkpoint();
         return { ok: false };

@@ -157,16 +157,16 @@ function recordWhatItMet(
     layout: { root: chainRootForScope(trees, scope) as string },
     upcasters: catalogUpcasters(),
   };
-  const record = refusing ? recordChannelRefused : recordChannelAsked;
   const channel = refusing ? REFUSES_A_WRITE_CHANNEL : ASKS_A_PERSON_CHANNEL;
   for (const at of met.at) {
     for (const rule of at.rules) {
-      const done = record(ctx, {
+      const input = {
         channel,
         rule: rule.id,
         path: at.relative ?? at.path,
         which: host,
-      });
+      };
+      const done = refusing ? recordChannelRefused(ctx, input) : recordChannelAsked(ctx, input);
       if (!done.ok) {
         writer.checkpoint();
         return { ok: false, why: done.message };

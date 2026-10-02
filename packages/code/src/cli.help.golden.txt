@@ -82,8 +82,8 @@ $ mnema
 !                                         markdown, near ones first, for an agent
 !                                         to read
 !   before-a-write [options]              answer a host’s hook before a file is
-!                                         written: ask for a person where a rule
-!                                         asks
+!                                         written: refuse where a rule refuses,
+!                                         ask for a person where a rule asks
 !   key                                   manage this machine's signing keys
 !   tail                                  authorize a cut in the record's own
 !                                         tails
@@ -187,8 +187,8 @@ $ mnema --help
 |                                         markdown, near ones first, for an agent
 |                                         to read
 |   before-a-write [options]              answer a host’s hook before a file is
-|                                         written: ask for a person where a rule
-|                                         asks
+|                                         written: refuse where a rule refuses,
+|                                         ask for a person where a rule asks
 |   key                                   manage this machine's signing keys
 |   tail                                  authorize a cut in the record's own
 |                                         tails
@@ -823,20 +823,22 @@ $ mnema recall --help
 $ mnema before-a-write --help
 | Usage: mnema before-a-write [options]
 |
-| answer a host’s hook before a file is written: ask for a person where a rule
-| asks
+| answer a host’s hook before a file is written: refuse where a rule refuses, ask
+| for a person where a rule asks
 |
 | Options:
 |   --host <host>  the host whose hook runs this, and whose payload arrives on
-|                  stdin: vscode
+|                  stdin: vscode, cursor
 |   -h, --help     display help for command
 |
 | What it reads and what it prints:
 |   The JSON a host hands a hook before a tool runs, on stdin. On stdout, the reply the
-|   host reads: {} unless a rule of this project linked to a path with
-|   `asks-for-a-person` addresses a path the write touches, and then `ask`, citing the
-|   rules. Each asking is recorded as a fact before the reply is printed. The gate can be
-|   switched off with `mnema switch off edit-asks-a-person`.
+|   host reads: {} unless a rule of this project addresses a path the write touches —
+|   `deny` where it is linked with `refuses-a-write`, which wins, and `ask` where it is
+|   linked with `asks-for-a-person` — citing the rules. For --host cursor only `deny` is
+|   answered: that host does not hold a write for a person. Each refusal or asking is
+|   recorded as a fact before the reply is printed. They can be switched off with `mnema
+|   switch off edit-refuses-a-write` and `mnema switch off edit-asks-a-person`.
 
 ### mnema key --help
 $ mnema key --help
