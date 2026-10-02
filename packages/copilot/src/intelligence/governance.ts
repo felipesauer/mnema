@@ -8,10 +8,12 @@
  * is a path, and this reads that graph BACKWARDS — given a path, which rules
  * cover it.
  *
- * ## TWO relations, ONE derivation
+ * ## THREE relations, ONE derivation
  *
  * {@link ASKS_FOR_A_PERSON_RELATION} has the same shape and a different power: it says
- * that under this part of the tree, nobody writes without somebody looking. Everything
+ * that under this part of the tree, nobody writes without somebody looking. And
+ * {@link REFUSES_A_WRITE_RELATION} has it too, with the strongest power of the three: under
+ * this part of the tree, nobody writes while the rule stands. Everything
  * about how an address is normalized, compared, ordered and counted is identical, so it
  * is the same walk with a different label — {@link addressesUnder} — and never a second
  * reading of the same rule. Two readings of an address is how the segment comparison
@@ -107,6 +109,7 @@ import {
   GOVERNS_RELATION,
   type LinkEdge,
   type ProjectionCache,
+  REFUSES_A_WRITE_RELATION,
   type Scope,
   type SearchKind,
 } from '@mnema/core';
@@ -209,6 +212,12 @@ export interface GovernanceCounts {
    * can be looked at.
    */
   readonly asks: AddressCounts;
+  /**
+   * The same four numbers for the relation that REFUSES a write, for the reason the gate's
+   * are here: a refusal whose address went stale refuses nothing, in silence, and only a
+   * number that names it separately can be looked at.
+   */
+  readonly refuses: AddressCounts;
 }
 
 /** The four numbers of ONE relation's addresses around a path. */
@@ -278,7 +287,18 @@ export interface GoverningRules {
    * here and it charges nobody — the charge has always narrowed to what is in force.
    */
   readonly asksUnresolved: readonly AddressedRule[];
-  /** The four numbers, and the other relation's four. */
+  /**
+   * The addresses that REFUSE a write around this path — reported beside the text and the
+   * gate, named for the reason the gate is: a person whose write was refused has to be able
+   * to find the fact that refused it. Whatever state its rule is in travels with it; only
+   * the decision a write meets narrows to what is in force.
+   */
+  readonly refuses: readonly AddressedRule[];
+  /** The refusing addresses that match nothing in the working tree. Same order rule. */
+  readonly refusesStale: readonly AddressedRule[];
+  /** The refusing addresses whose RULE this read cannot reach. Same order rule. */
+  readonly refusesUnresolved: readonly AddressedRule[];
+  /** The four numbers, and each other relation's four. */
   readonly counts: GovernanceCounts;
 }
 
@@ -297,6 +317,7 @@ export function governingRules(
   const asked = relativeSegments(query.path, query.root);
   const governs = addressesUnder(sources, query, GOVERNS_RELATION, asked);
   const asks = addressesUnder(sources, query, ASKS_FOR_A_PERSON_RELATION, asked);
+  const refuses = addressesUnder(sources, query, REFUSES_A_WRITE_RELATION, asked);
 
   return {
     path: query.path,
@@ -307,6 +328,9 @@ export function governingRules(
     asks: ordered(asks.matching),
     asksStale: ordered(asks.stale),
     asksUnresolved: ordered(asks.unresolved),
+    refuses: ordered(refuses.matching),
+    refusesStale: ordered(refuses.stale),
+    refusesUnresolved: ordered(refuses.unresolved),
     counts: {
       matching: governs.matching.length,
       governing: governs.all.length,
@@ -318,6 +342,12 @@ export function governingRules(
         stale: asks.stale.length,
         unresolved: asks.unresolved.length,
       },
+      refuses: {
+        matching: refuses.matching.length,
+        addressed: refuses.all.length,
+        stale: refuses.stale.length,
+        unresolved: refuses.unresolved.length,
+      },
     },
   };
 }
@@ -326,7 +356,7 @@ export function governingRules(
  * Every address of ONE relation in this project's trees, split into what covers the
  * asked path and what covers nothing on disk — the whole walk, done once per relation.
  *
- * It exists so the two relations cannot come to disagree about what an address MEANS.
+ * It exists so the relations cannot come to disagree about what an address MEANS.
  * Normalizing, the segment comparison, the disk probe and the counting are here and
  * nowhere else, so a change to any of them lands on the text that informs and on the
  * gate that stops somebody in the same edit. `all` travels out beside the two lists
@@ -707,6 +737,24 @@ export function asksForAPersonAt(
   query: GovernanceQuery,
 ): RulesAtPath {
   return inForceUnder(sources, query, ASKS_FOR_A_PERSON_RELATION);
+}
+
+/**
+ * The rules of `sources` that REFUSE a write at `query.path` AND are still in force — the
+ * reading a refusal stands on.
+ *
+ * The third question over the same body, and in force for the reason the gate's reading
+ * is, one step harder again: a retired rule refusing a write would stop somebody's work
+ * outright on the authority of something the team set aside, and the refusal would be the
+ * only thing they saw. An empty answer means one thing — no rule in force refuses this
+ * path — and which of the two grades a write meets when both apply is decided by the
+ * caller that asks both questions, once, never here.
+ */
+export function refusesAWriteAt(
+  sources: readonly ScopedCache[],
+  query: GovernanceQuery,
+): RulesAtPath {
+  return inForceUnder(sources, query, REFUSES_A_WRITE_RELATION);
 }
 
 /**

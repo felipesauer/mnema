@@ -12,8 +12,9 @@
 
 // The relation labels a READER has to know by name, and the set of them. It read
 // "the ONE relation label" and named `governs` alone; `asks-for-a-person` falsified
-// that, and `ADDRESS_RELATIONS` is the pair itself, so a reader asks whether a label
-// carries an address without spelling out either. They are the chain's constants and
+// that, `refuses-a-write` made the pair a set of three, and `ADDRESS_RELATIONS` is the
+// set itself, so a reader asks whether a label carries an address without spelling out
+// any of them. They are the chain's constants and
 // are re-exported here for one reason — the copilot may not name `@mnema/chain` (its
 // boundary test bans the specifier, because that package holds writers), and a reader
 // that typed a literal instead would be the second place a label lives.
@@ -29,6 +30,7 @@ export {
   ASKS_FOR_A_PERSON_RELATION,
   DERIVED_FROM_RELATION,
   GOVERNS_RELATION,
+  REFUSES_A_WRITE_RELATION,
 } from '@mnema/chain';
 // Reading a directory of decision documents somebody else already wrote — the
 // market's ADR form, turned into the four things this product records. It is a pure

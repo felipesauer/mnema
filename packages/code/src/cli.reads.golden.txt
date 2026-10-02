@@ -65,6 +65,7 @@ $ mnema rules docs/runbook/rollback.md
 | docs/runbook/rollback.md  ·  in this project
 |   0 govern this path · 0 address this project · 0 address nothing here · 0 name a rule not here
 |   0 ask for a person here · 0 ask in this project · 0 ask about nothing here · 0 name a rule not here
+|   0 refuse a write here · 0 refuse in this project · 0 refuse nothing here · 0 name a rule not here
 $ mnema rules docs/runbook/rollback.md --json
 | {
 |   "path": "<sandbox>/project/docs/runbook/rollback.md",
@@ -75,12 +76,21 @@ $ mnema rules docs/runbook/rollback.md --json
 |   "asks": [],
 |   "asksStale": [],
 |   "asksUnresolved": [],
+|   "refuses": [],
+|   "refusesStale": [],
+|   "refusesUnresolved": [],
 |   "counts": {
 |     "matching": 0,
 |     "governing": 0,
 |     "stale": 0,
 |     "unresolved": 0,
 |     "asks": {
+|       "matching": 0,
+|       "addressed": 0,
+|       "stale": 0,
+|       "unresolved": 0
+|     },
+|     "refuses": {
 |       "matching": 0,
 |       "addressed": 0,
 |       "stale": 0,
@@ -92,10 +102,12 @@ $ mnema rules .
 | .  ·  in this project
 |   0 govern this path · 0 address this project · 0 address nothing here · 0 name a rule not here
 |   0 ask for a person here · 0 ask in this project · 0 ask about nothing here · 0 name a rule not here
+|   0 refuse a write here · 0 refuse in this project · 0 refuse nothing here · 0 name a rule not here
 $ mnema rules /elsewhere/src/app.ts
 | /elsewhere/src/app.ts  ·  outside this project
 |   0 govern this path · 0 address this project · 0 address nothing here · 0 name a rule not here
 |   0 ask for a person here · 0 ask in this project · 0 ask about nothing here · 0 name a rule not here
+|   0 refuse a write here · 0 refuse in this project · 0 refuse nothing here · 0 name a rule not here
 $ mnema exposure
 | Nothing recognizable in 2 record(s).
 |   Read here: this project’s trees and the machine-global tree — no other project.
@@ -668,6 +680,7 @@ $ mnema rules docs/runbook/rollback.md
 | docs/runbook/rollback.md  ·  in this project
 |   1 govern this path · 2 address this project · 1 address nothing here · 0 name a rule not here
 |   0 ask for a person here · 0 ask in this project · 0 ask about nothing here · 0 name a rule not here
+|   0 refuse a write here · 0 refuse in this project · 0 refuse nothing here · 0 name a rule not here
 |
 | governing this path, most specific first (1)
 |   docs/runbook  Keep the runbook in the record (accepted)  <decision-runbook>  [public]
@@ -714,12 +727,21 @@ $ mnema rules docs/runbook/rollback.md --json
 |   "asks": [],
 |   "asksStale": [],
 |   "asksUnresolved": [],
+|   "refuses": [],
+|   "refusesStale": [],
+|   "refusesUnresolved": [],
 |   "counts": {
 |     "matching": 1,
 |     "governing": 2,
 |     "stale": 1,
 |     "unresolved": 0,
 |     "asks": {
+|       "matching": 0,
+|       "addressed": 0,
+|       "stale": 0,
+|       "unresolved": 0
+|     },
+|     "refuses": {
 |       "matching": 0,
 |       "addressed": 0,
 |       "stale": 0,
@@ -731,6 +753,7 @@ $ mnema rules .
 | .  ·  in this project
 |   0 govern this path · 2 address this project · 1 address nothing here · 0 name a rule not here
 |   0 ask for a person here · 0 ask in this project · 0 ask about nothing here · 0 name a rule not here
+|   0 refuse a write here · 0 refuse in this project · 0 refuse nothing here · 0 name a rule not here
 |
 | addressing nothing in the working tree (1)
 |   docs/gone-away  Keep the runbook in the record (accepted)  <decision-runbook>  [public]
@@ -738,6 +761,7 @@ $ mnema rules /elsewhere/src/app.ts
 | /elsewhere/src/app.ts  ·  outside this project
 |   0 govern this path · 2 address this project · 1 address nothing here · 0 name a rule not here
 |   0 ask for a person here · 0 ask in this project · 0 ask about nothing here · 0 name a rule not here
+|   0 refuse a write here · 0 refuse in this project · 0 refuse nothing here · 0 name a rule not here
 |
 | addressing nothing in the working tree (1)
 |   docs/gone-away  Keep the runbook in the record (accepted)  <decision-runbook>  [public]

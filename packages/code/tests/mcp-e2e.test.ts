@@ -3342,6 +3342,7 @@ describe('MCP server — end to end over a real client', () => {
       stale: 1,
       unresolved: 0,
       asks: { matching: 0, addressed: 0, stale: 0, unresolved: 0 },
+      refuses: { matching: 0, addressed: 0, stale: 0, unresolved: 0 },
     });
     expect(governed.stale.map((one) => one.address)).toEqual(['src/long-gone']);
 
@@ -3368,6 +3369,7 @@ describe('MCP server — end to end over a real client', () => {
       stale: 1,
       unresolved: 0,
       asks: { matching: 0, addressed: 0, stale: 0, unresolved: 0 },
+      refuses: { matching: 0, addressed: 0, stale: 0, unresolved: 0 },
     });
   });
 

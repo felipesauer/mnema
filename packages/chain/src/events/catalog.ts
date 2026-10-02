@@ -485,14 +485,41 @@ export const GOVERNS_RELATION = 'governs';
 export const ASKS_FOR_A_PERSON_RELATION = 'asks-for-a-person';
 
 /**
+ * The relation that REFUSES a write: a rule of the record says that under this part of the
+ * working tree, a file is not written at all while the rule stands.
+ *
+ * The same shape as {@link ASKS_FOR_A_PERSON_RELATION} — subject a rule, target a path — and
+ * a THIRD relation rather than a grade carried on the second, which is the decision in it.
+ * Asking and refusing are two powers over somebody else's work, and a link whose meaning
+ * depended on a flag beside it would be a link whose power a reader could only learn by
+ * reading the flag; a relation is the one place a power is already named in this record.
+ * It is also why `asks-for-a-person` did not change: the gates that exist keep the meaning
+ * they were asserted under.
+ *
+ * WHY IT EXISTS AT ALL, when asking already did: one of the hosts this product reaches lets
+ * its agent write the file it was asked to hold (`measurements/hooks-by-host/`), so on that
+ * host a person can only be protected by a refusal. And a refusal is the stronger power, so
+ * where both relations address one path, refusing is what the write meets — decided once,
+ * where the gate is decided.
+ *
+ * IT IS SELF-SUFFICIENT and needs its subject to be a rule IN FORCE, for the reasons the
+ * asking relation gives: a refusal that required a second fact would silently not close
+ * when the second is missing, and a retired rule refusing a write would be the product
+ * stopping work on the authority of something the team set aside. Nothing in the parser
+ * knows this label either, so it costs the catalog no field, no version and no upcaster.
+ */
+export const REFUSES_A_WRITE_RELATION = 'refuses-a-write';
+
+/**
  * The relations whose target is an ADDRESS: a part of the working tree, compared by
  * segments, covering whatever lies under it.
  *
- * There are two, {@link GOVERNS_RELATION} and {@link ASKS_FOR_A_PERSON_RELATION}, and
- * naming them together is what lets a reader ask "does this label carry an address"
- * once instead of spelling out a pair at every place that has to know. Before this
- * constant the pair was written out at each such site, and a third address relation
- * would have had to be remembered at all of them.
+ * There are three, {@link GOVERNS_RELATION}, {@link ASKS_FOR_A_PERSON_RELATION} and
+ * {@link REFUSES_A_WRITE_RELATION}, and naming them together is what lets a reader ask
+ * "does this label carry an address" once instead of spelling out a list at every place
+ * that has to know. Before this constant the pair was written out at each such site, and
+ * the third address relation, when it came, joined here and was answered everywhere by
+ * existing.
  *
  * IT USED TO SAY "THE RELATIONS WHOSE TARGET IS A PATH — THE WHOLE OF THEM", and the
  * decision import falsified that half of it: a proposal read out of somebody else's
@@ -507,10 +534,15 @@ export const ASKS_FOR_A_PERSON_RELATION = 'asks-for-a-person';
  * looks like a path. The provenance is still not a member — and it is now
  * {@link DERIVED_FROM_RELATION}, a name of its own, because three parties spell it.
  *
- * It still says nothing about what each one DOES — one informs, the other stops
- * somebody — because that is the power, and a reader of an address needs the shape.
+ * It still says nothing about what each one DOES — one informs, one stops somebody until
+ * a person looks, one refuses the write — because that is the power, and a reader of an
+ * address needs the shape.
  */
-export const ADDRESS_RELATIONS = [GOVERNS_RELATION, ASKS_FOR_A_PERSON_RELATION] as const;
+export const ADDRESS_RELATIONS = [
+  GOVERNS_RELATION,
+  ASKS_FOR_A_PERSON_RELATION,
+  REFUSES_A_WRITE_RELATION,
+] as const;
 
 /**
  * The recommended relation labels for a {@link KnowledgeLinkedV1}. This is a

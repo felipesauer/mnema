@@ -245,6 +245,7 @@ describe('a path survives the write half the product already had', () => {
       stale: 1,
       unresolved: 0,
       asks: NO_GATE,
+      refuses: NO_GATE,
     });
   });
 });
@@ -290,6 +291,7 @@ describe('the reading answers, and charges nothing', () => {
       stale: 0,
       unresolved: 0,
       asks: NO_GATE,
+      refuses: NO_GATE,
     });
   });
 
@@ -343,6 +345,7 @@ describe('the reading answers, and charges nothing', () => {
       stale: 0,
       unresolved: 0,
       asks: NO_GATE,
+      refuses: NO_GATE,
     });
   });
 
@@ -364,6 +367,7 @@ describe('the reading answers, and charges nothing', () => {
       stale: 1,
       unresolved: 0,
       asks: NO_GATE,
+      refuses: NO_GATE,
     });
     expect(reading.stale.map((one) => one.address)).toEqual(['dangling']);
   });
@@ -382,6 +386,7 @@ describe('the reading answers, and charges nothing', () => {
       stale: 1,
       unresolved: 0,
       asks: NO_GATE,
+      refuses: NO_GATE,
     });
     await page('src/file.ts');
     expect(digest(sandbox)).toBe(before);
@@ -433,6 +438,7 @@ describe('both surfaces answer out of the same derivation', () => {
       stale: 1,
       unresolved: 0,
       asks: NO_GATE,
+      refuses: NO_GATE,
     });
   });
 
@@ -492,6 +498,7 @@ describe('one place assembles a governs read', () => {
         'governingRules',
         'rulesInForceAt',
         'asksForAPersonAt',
+        'refusesAWriteAt',
         'addressReach',
       ]),
     );

@@ -239,6 +239,7 @@ export {
   type MemoryCapturedV1,
   type ObservationRecordedV1,
   RECOMMENDED_LINK_RELATIONS,
+  REFUSES_A_WRITE_RELATION,
   type RunEndedV1,
   type RunStartedV1,
   type SkillConsultedV1,

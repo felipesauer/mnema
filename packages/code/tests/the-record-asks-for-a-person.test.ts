@@ -509,7 +509,7 @@ describe('one derivation answers both relations', () => {
       join(REPO, 'packages', 'copilot', 'src', 'intelligence', 'governance.ts'),
       'utf-8',
     );
-    for (const entry of ['rulesInForceAt', 'asksForAPersonAt']) {
+    for (const entry of ['rulesInForceAt', 'asksForAPersonAt', 'refusesAWriteAt']) {
       const body = source.slice(source.indexOf(`export function ${entry}(`));
       const upToBrace = body.slice(0, body.indexOf('\n}'));
       expect(upToBrace, `${entry} does not route through inForceUnder`).toContain(

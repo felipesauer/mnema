@@ -200,6 +200,9 @@ export {
 // other three take an injected probe, and it is in the same module so that it compares an
 // address by the very prefix the gate is decided by.
 //
+// `refusesAWriteAt` is the gate's twin under the relation that refuses a write: the same
+// body, the same in-force narrowing, a third question rather than a relation argument.
+//
 // `governsInForceEverywhere` is a fifth, and it is the push's own narrowing without the path:
 // every address a rule in force holds, which is what a file written for another host's
 // matcher has to carry (`mnema rules-file`). It routes through the same walk and the same
@@ -218,6 +221,7 @@ export {
   type PushedRule,
   type ReachQuery,
   type RulesAtPath,
+  refusesAWriteAt,
   rulesInForceAt,
   type TreeWalk,
   type WalkOutcome,

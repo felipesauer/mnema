@@ -67,6 +67,15 @@ export function rulesReport(render: Render, governed: GoverningRules): string[] 
           `${counts.asks.unresolved} name a rule not here`,
       ),
     ),
+    // A THIRD LINE, for the third relation and for the second line's reason: "is this file
+    // refused" is its own question, and zero is the answer most often needed.
+    render(
+      fact(
+        `${counts.refuses.matching} refuse a write here · ${counts.refuses.addressed} refuse ` +
+          `in this project · ${counts.refuses.stale} refuse nothing here · ` +
+          `${counts.refuses.unresolved} name a rule not here`,
+      ),
+    ),
   ];
   /**
    * One rule as the columns of a row: where it applies, what it is, its state, its
@@ -111,8 +120,10 @@ export function rulesReport(render: Render, governed: GoverningRules): string[] 
   };
   group('governing this path, most specific first', governed.rules);
   group('asking for a person here, most specific first', governed.asks);
+  group('refusing a write here, most specific first', governed.refuses);
   group('addressing nothing in the working tree', governed.stale);
   group('asking about nothing in the working tree', governed.asksStale);
+  group('refusing nothing in the working tree', governed.refusesStale);
   // THE FOURTH GROUP, and it is the one this read used to fold into the FIRST. An
   // address whose subject resolves in no tree here was printed under "governing this
   // path" with `(unresolved)` where a title goes, and counted in the number beside it:
@@ -121,5 +132,6 @@ export function rulesReport(render: Render, governed: GoverningRules): string[] 
   // reader to read a missing title.
   group('naming a rule no tree here holds', governed.unresolved);
   group('asking on behalf of a rule no tree here holds', governed.asksUnresolved);
+  group('refusing on behalf of a rule no tree here holds', governed.refusesUnresolved);
   return lines;
 }

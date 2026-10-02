@@ -338,8 +338,10 @@ describe('one place decides which relations carry an address', () => {
       'utf-8',
     );
     const walked = [...source.matchAll(/addressesUnder\([^)]*?,\s*([A-Z_]+),/gs)].map((m) => m[1]);
-    expect(new Set(walked)).toEqual(new Set(['GOVERNS_RELATION', 'ASKS_FOR_A_PERSON_RELATION']));
-    expect([...ADDRESS_RELATIONS]).toEqual(['governs', 'asks-for-a-person']);
+    expect(new Set(walked)).toEqual(
+      new Set(['GOVERNS_RELATION', 'ASKS_FOR_A_PERSON_RELATION', 'REFUSES_A_WRITE_RELATION']),
+    );
+    expect([...ADDRESS_RELATIONS]).toEqual(['governs', 'asks-for-a-person', 'refuses-a-write']);
     // And the reach agrees with the constant, member for member — the third place the
     // pair could have drifted.
     for (const rel of ADDRESS_RELATIONS) {

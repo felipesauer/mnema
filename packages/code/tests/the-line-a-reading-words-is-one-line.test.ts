@@ -958,6 +958,22 @@ const CLASSIFIED: Readonly<Record<string, { verdict: Verdict; why: string }>> = 
     verdict: 'minted',
     why: 'how many gate addresses name a rule no tree here holds — a gate counted from an address nobody can read would say a write is watched by a rule a reader cannot open',
   },
+  'rules.ts «{} refuse a write here · {} refuse » counts.refuses.matching #1': {
+    verdict: 'minted',
+    why: 'how many refusing addresses cover the path — a count',
+  },
+  'rules.ts «{} refuse a write here · {} refuse » counts.refuses.addressed #1': {
+    verdict: 'minted',
+    why: 'how many refusing addresses the project’s record holds at all — a count',
+  },
+  'rules.ts «in this project · {} refuse nothing here · » counts.refuses.stale #1': {
+    verdict: 'minted',
+    why: 'how many refusing addresses name nothing in the working tree — a count, and the one that says a refusal stopped closing in silence',
+  },
+  'rules.ts «{} name a rule not here» counts.refuses.unresolved #1': {
+    verdict: 'minted',
+    why: 'how many refusing addresses name a rule no tree here holds — a refusal counted from an address nobody can read would say a write is refused by a rule a reader cannot open',
+  },
   'rules.ts «{} ({})» heading #1': {
     verdict: 'minted',
     why: 'one of this report’s two group headings',
@@ -1691,8 +1707,9 @@ describe('every value this layer puts on a line is classified', () => {
     // 237 until `witness`'s copy of the no-tail sentence became a call of `tails.ts`'s one.
     // 251 until the renderer began making an actor's control bytes visible and joined the
     // composers with its two template values; then 253 until the rules in force began saying who
-    // accepted them (`brief.ts`, `record.ts`).
-    expect(FOUND.sites.length).toBe(294);
+    // accepted them (`brief.ts`, `record.ts`); 294 until `mnema rules` printed the four numbers
+    // of the relation that refuses a write.
+    expect(FOUND.sites.length).toBe(298);
   });
 
   it('reads the verdict off the source rather than believing the table', () => {
@@ -1714,7 +1731,7 @@ describe('every value this layer puts on a line is classified', () => {
     const verdicts = Object.values(CLASSIFIED).map((said) => said.verdict);
     const count = (verdict: Verdict): number => verdicts.filter((said) => said === verdict).length;
     expect(count('collapsed')).toBe(68);
-    expect(count('minted')).toBe(164);
+    expect(count('minted')).toBe(168);
     expect(count('composed')).toBe(62);
     expect(FOUND.sites.filter((site) => /\boneLine\b/.test(site.expression))).toHaveLength(68);
   });
