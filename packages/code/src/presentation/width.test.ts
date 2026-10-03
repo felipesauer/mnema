@@ -43,6 +43,7 @@
  */
 
 import { readFileSync } from 'node:fs';
+import { createRequire } from 'node:module';
 import { describe, expect, it } from 'vitest';
 import { CUT, NOBODY, PICK } from '../repl/palette.js';
 import { SESSION_WORDS, WHAT_EACH_WORD_DOES } from '../session-words.js';
@@ -327,7 +328,8 @@ describe('what has been measured is remembered, and the memory is bounded', () =
     const before = widthOfText(A_CJK_TITLE);
     const held: number[] = [];
     for (let at = 0; at < 9000; at += 1) {
-      widthOfText(`a line nobody has measured before, number ${at}`);
+      // Not ASCII, which is answered without being remembered at all.
+      widthOfText(`a line nobody has measured before · number ${at}`);
       held.push(howManyAreRemembered());
     }
     // IT WAS EMPTIED, or this case is about a map that never reached its ceiling.
@@ -337,5 +339,23 @@ describe('what has been measured is remembered, and the memory is bounded', () =
     // AND THE ANSWERS DID NOT MOVE, on the value the whole delivery is about.
     expect(widthOfText(A_CJK_TITLE)).toBe(before);
     expect(widthOfText(A_CJK_TITLE)).toBe(FOURTEEN);
+  });
+});
+
+describe('printable ASCII is answered without asking the authority', () => {
+  it('agrees with the authority on every printable character and on runs of them', () => {
+    const authority = (
+      createRequire(import.meta.url)('string-width') as { default: (text: string) => number }
+    ).default;
+    const every = Array.from({ length: 0x7e - 0x20 + 1 }, (_, i) => String.fromCharCode(0x20 + i));
+    for (const one of every) expect(widthOfText(one), JSON.stringify(one)).toBe(authority(one));
+    const run = every.join('');
+    expect(widthOfText(run)).toBe(authority(run));
+    expect(widthOfText(run)).toBe(95);
+    expect(widthOfText('')).toBe(0);
+    // The range stops where it says: an escape and a tab are not in it, and the authority
+    // still answers for both.
+    expect(widthOfText('\u001b[1mbold\u001b[22m')).toBe(4);
+    expect(widthOfText('a\tb')).toBe(authority('a\tb'));
   });
 });

@@ -17,6 +17,7 @@
 import type { SqliteDatabase } from '../db/sqlite.js';
 import { proofColumn, proofFromColumn } from './proof.js';
 import type { SkillProjection } from './skill.js';
+import { verb } from './upsert.js';
 
 /** The `skills` row shape as stored. */
 interface SkillRow {
@@ -51,10 +52,19 @@ interface SkillParams {
  * Inserts the given skill projections. Called during a rebuild after the table
  * has been recreated empty, so every skill is a fresh insert. The caller owns
  * the surrounding transaction.
+ *
+ * `replacing` is for the one caller that does NOT start from an empty table: an advance
+ * writes the rows an arrival changed over the rows that were there, and a row that is already
+ * there is then the thing being replaced. A rebuild passes nothing, and keeps the failure that
+ * says its table was not emptied.
  */
-export function materializeSkills(db: SqliteDatabase, skills: Iterable<SkillProjection>): void {
+export function materializeSkills(
+  db: SqliteDatabase,
+  skills: Iterable<SkillProjection>,
+  replacing = false,
+): void {
   const insert = db.prepare(
-    `INSERT INTO skills (id, name, body, state, proposed_by, adopted_at, adopted_by, created_at, updated_at, proof)
+    `${verb(replacing)} INTO skills (id, name, body, state, proposed_by, adopted_at, adopted_by, created_at, updated_at, proof)
      VALUES (@id, @name, @body, @state, @proposedBy, @adoptedAt, @adoptedBy, @createdAt, @updatedAt, @proof)`,
   );
   for (const skill of skills) {

@@ -83,9 +83,10 @@
  *     the shape the paragraph above refuses, so it was not built.
  *
  *     THE SIXTH IS REAL AND IS NAMED WHERE IT LIVES: `CacheOptions.dbPath`, public on
- *     `@mnema/core`, read at `core/src/projections/cache.ts:106`, and set by no
- *     production caller — all six `ProjectionCache.open` sites pass `upcasters`
- *     alone. It is not dead: it is the seam `cache.test.ts` and `advance.test.ts`
+ *     `@mnema/core`, read in `core/src/projections/cache.ts`, and set by no
+ *     production caller — the production sites pass `upcasters` alone, and the command
+ *     line's pass `persist: true` beside it, which is the option that DOES have a caller.
+ *     It is not dead: it is the seam `cache.test.ts` and `advance.test.ts`
  *     prove persistence across a close and re-open through. Its own doc now says so,
  *     which is what a one-instance class gets instead of a guard.
  *
@@ -382,9 +383,14 @@ function unwired(): string[] {
  * allowlist every dead guard ends as: a value that gains a caller has to LEAVE
  * this table or the assertion fails, and so does one that stops being exported.
  *
- * IT IS EMPTY, and that is the strongest state this table has: every value the
- * workspace exports publicly has a production caller. Its last entry was
- * `@mnema/core listProjects` — the reader of a machine-local project index that
+ * IT HOLDS TWO, and they are the same case: the pure folds over the whole record,
+ * `projectTasks` and `projectRuns`. A write used to take its state from them, replaying the
+ * chain on every call; it reads the projection the tree keeps now, so nothing in production
+ * folds the whole record by these two any more. They stay exported because the command's own
+ * tests read the chain by a replay and compare it with what the command says — an oracle that
+ * shares nothing with the kept projection, which is what makes the comparison worth reading.
+ * Empty is the strongest state this table has, and it was empty until then; the entry before
+ * these was `@mnema/core listProjects` — the reader of a machine-local project index that
  * `init` wrote on every founding and nothing ever read, while telling the person it
  * had happened. It was removed rather than wired, because what a read covers comes
  * from the trees the client announces.
@@ -396,7 +402,14 @@ function unwired(): string[] {
  * SYNTHETIC input in both directions. The synthetic entries live in that test, never
  * here: this table stays auto-pruning over the real surface.
  */
-const UNWIRED: Readonly<Record<string, string>> = {};
+const UNWIRED: Readonly<Record<string, string>> = {
+  '@mnema/core projectRuns':
+    'the oracle of the run commands’ own tests: the runs as a replay of the chain says them, ' +
+    'read against what the command reports.',
+  '@mnema/core projectTasks':
+    'the oracle of the task commands’ own tests: the tasks as a replay of the chain says them, ' +
+    'read against what the command reports.',
+};
 
 /** What an exception table tolerates, and what it does not. */
 interface Reconciliation {

@@ -44,7 +44,8 @@
  * exact sequence (`run start` → `show` → `skill move`) and holds the answer to being the
  * third one.
  *
- * Read-only: it opens a cache per tree, rebuilds it in memory, and reads. No
+ * Read-only: it opens a cache per tree, brought forward from the one the tree keeps
+ * (`CacheOptions.persist`), and reads. No
  * writer, no key, no event — so no `--actor`.
  *
  * IT STOPS AT THE HOLDER, unless the record it found is about more than itself.

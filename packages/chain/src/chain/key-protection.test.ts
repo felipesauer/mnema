@@ -15,12 +15,14 @@ import {
 } from './key-protection.js';
 import { generateKeyPair, privateKeyToPem } from './keys.js';
 import {
+  KeyRootBusyError,
   listPrivateKeyFiles,
   loadOrCreateKeyPair,
   persistKeyPair,
   protectPrivateKeys,
   unprotectPrivateKeys,
 } from './keystore.js';
+import { keyRootLockPath } from './layout.js';
 
 let root: string;
 const before = process.env[KEY_PASSPHRASE_VARIABLE];
@@ -132,6 +134,22 @@ describe('a machine’s keys at rest', () => {
     );
     return { layout, pair, backup };
   }
+
+  it('rewrites the key files under the key root’s lock, as a mint does: a holder past the budget is a refusal, and nothing is rewritten', () => {
+    // `protect` and `unprotect` used to rewrite the key files with nothing between them and a
+    // second process, while the lock covered the mint alone.
+    const { layout } = aMachine();
+    const files = listPrivateKeyFiles(layout);
+    const held = files.map((path) => readFileSync(path, 'utf-8'));
+    writeFileSync(keyRootLockPath(layout), `${process.pid} ${Date.now()}\n`);
+    expect(() => protectPrivateKeys(layout, 'a passphrase')).toThrow(KeyRootBusyError);
+    expect(files.map((path) => readFileSync(path, 'utf-8'))).toEqual(held);
+    rmSync(keyRootLockPath(layout));
+    expect(protectPrivateKeys(layout, 'a passphrase').every((one) => one.changed)).toBe(true);
+    writeFileSync(keyRootLockPath(layout), `${process.pid} ${Date.now()}\n`);
+    expect(() => unprotectPrivateKeys(layout, 'a passphrase')).toThrow(KeyRootBusyError);
+    rmSync(keyRootLockPath(layout));
+  }, 30_000);
 
   it('protects the key and its cold backup, and signs with the same key afterwards', () => {
     const { layout, pair } = aMachine();

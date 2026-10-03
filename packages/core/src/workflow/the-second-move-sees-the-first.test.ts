@@ -27,11 +27,9 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import {
   type CatalogEvent,
-  type ChainLayout,
   type ChainWriter,
   catalogUpcasters,
   openChainForWriting,
-  type UpcasterRegistry,
   verify,
 } from '@mnema/chain';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
@@ -56,23 +54,37 @@ const race = vi.hoisted(() => ({
   inOther: false,
 }));
 
-vi.mock('../projections/order.js', async (importOriginal) => {
-  const real = await importOriginal<typeof import('../projections/order.js')>();
+/**
+ * The seam the race is staged at: every reading a gated write takes goes through
+ * `read-the-record.ts`, so the other session's move is run once, right after the next reading was
+ * taken. THIS WAS STAGED INSIDE `orderedEvents`, because the writes replayed the whole chain; they
+ * read the projection the tree keeps now, brought forward to the chain as it stands, and the
+ * reading is the same moment in a different function.
+ */
+vi.mock('./read-the-record.js', async (importOriginal) => {
+  const real = await importOriginal<typeof import('./read-the-record.js')>();
+  const afterTheReading = (): void => {
+    if (!race.inOther) race.reads += 1;
+    const other = race.other;
+    if (other === undefined) return;
+    race.other = undefined;
+    race.inOther = true;
+    try {
+      other();
+    } finally {
+      race.inOther = false;
+    }
+  };
   return {
     ...real,
-    orderedEvents: (layout: ChainLayout, upcasters: UpcasterRegistry): CatalogEvent[] => {
-      if (!race.inOther) race.reads += 1;
-      const reading = real.orderedEvents(layout, upcasters);
-      const other = race.other;
-      if (other !== undefined) {
-        race.other = undefined;
-        race.inOther = true;
-        try {
-          other();
-        } finally {
-          race.inOther = false;
-        }
-      }
+    standing: (...args: Parameters<typeof real.standing>) => {
+      const reading = real.standing(...args);
+      afterTheReading();
+      return reading;
+    },
+    asTheChainIs: (...args: Parameters<typeof real.asTheChainIs>) => {
+      const reading = real.asTheChainIs(...args);
+      afterTheReading();
       return reading;
     },
   };
@@ -251,8 +263,10 @@ describe('what the second reading costs, and when it is paid', () => {
   }
 
   it('reads the record no more than the code before did when nothing landed in between', () => {
-    // The code before: one reading of the decisions, one of the roster.
-    expect(readsOfAnUncontendedAccept()).toBe(2);
+    // The code before counted two replays: one of the decisions, one of the roster. The decisions'
+    // reading is the one staged at this seam (the roster is asked of the identity files and the
+    // tree's own membership facts, not of a write's reading of the record), so it counts one.
+    expect(readsOfAnUncontendedAccept()).toBe(1);
   });
 
   it('reads it once more, under the lock, when another write landed — and goes ahead if that moved something else', () => {

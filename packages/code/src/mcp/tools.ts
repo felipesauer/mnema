@@ -806,7 +806,10 @@ export function runDecisionTransition(
   // the transition is attributed to the agent even when it lands in the public
   // tree — who (the machine) != which (the agent) is preserved on a decision move
   // exactly as it is on a task move.
-  const stamp = { which: session.which, run };
+  // Asked again inside the write, under the tail's lock (`DecisionTransitionInput.refusedWhen`).
+  const refusedWhen = () =>
+    agentMayAccept(workspaceCaches(session), { action: input.action, agent: session.which });
+  const stamp = { which: session.which, run, refusedWhen };
   const moved =
     input.action === 'supersede'
       ? supersedeDecision(ctx, {

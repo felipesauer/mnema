@@ -14,7 +14,8 @@
  *
  * It needs NO `--actor`: what matches is a property of the record, not of who is
  * asking (the same reason `timeline` and `next-actions` take none). Read-only in
- * the strict sense — it opens a cache per tree, rebuilds it in memory, and calls
+ * the strict sense — it opens a cache per tree, brought forward from the one the tree keeps
+ * (`CacheOptions.persist`), and calls
  * the context package's pure `searchRecords`; no writer, no key, no event.
  *
  * It does NOT refuse outside a project, and that is the one place it parts from

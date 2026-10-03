@@ -4,6 +4,7 @@ import { tmpdir } from 'node:os';
 import { join, relative } from 'node:path';
 import type { DiscoveryEnv } from '@mnema/core';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
+import { isTheDerivedCache } from '../../tests/support/the-cache-is-not-the-record.js';
 import { runGuard } from './guard.js';
 import { runInit } from './init.js';
 import { runTask } from './task.js';
@@ -51,6 +52,8 @@ function digest(dir: string): string {
       a.name.localeCompare(b.name),
     )) {
       const full = join(current, entry.name);
+      // The cache a read leaves is derived and is not what this digest is about.
+      if (isTheDerivedCache(full)) continue;
       if (entry.isDirectory()) {
         hash.update(`D:${relative(dir, full)}\n`);
         walk(full);

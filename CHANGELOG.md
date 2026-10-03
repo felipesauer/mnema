@@ -46,6 +46,15 @@ Requires Node ≥ 22.12.0; the packages are ESM-only.
   of the write, and a rule recorded as asking for a person holds the write until one decides.
   Each channel can be switched off, and switching one off is itself a signed fact. VS Code's
   agent and Cursor's command-line agent are handed the opening.
+- **Reads that pay for what arrived, not for the record.** The projection the command line and the
+  hooks read from is kept on disk beside the record, brought forward by the events that landed
+  since the last read, and rebuilt whole whenever it cannot be shown to be a continuation (a
+  sealed segment whose size or modification time changed, the active one whose size changed, a
+  different record, a different build). A rewrite of the active segment that keeps its size is
+  not seen by the projection, and `verify` refuses it. Deleting it changes no answer, only the
+  time. A write numbers, moves and checks who counts from that projection rather than from a
+  replay held under the lock; measured at 100 thousand events, 0 of 27 writes timed out waiting
+  for the lock with the projection warm, and 1 of 18 on the first use.
 - **A console.** `mnema` alone at a terminal asks what you want to do here, and its first
   door opens a session that reads the record and refuses to write. It needs a window at least
   80 columns wide and 42 rows tall.

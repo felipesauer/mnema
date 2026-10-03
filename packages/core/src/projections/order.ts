@@ -262,13 +262,21 @@ export type ChainArrivals =
        * a caller holding one of the other three cannot reach for a break that is not
        * there, and one holding this cannot answer without it.
        *
-       * It is the first break among the ARRIVALS of the first tail that has one, which is
-       * narrower than {@link ChainReplay.linkBreaks} in two ways a reader has to know: a
-       * break below the frontier — bytes a previous reading already accepted — is outside
-       * it, and so is a second broken tail, because this stops at the first. The full
-       * reading is what enumerates.
+       * It is the first break among the ARRIVALS of the first tail that has one, and
+       * {@link broken} is every tail's. It is narrower than {@link ChainReplay.linkBreaks}
+       * in one way a reader has to know: a break below the frontier — bytes a previous
+       * reading already accepted — is outside it.
        */
       readonly broke: LinkBreak;
+      /**
+       * The first break among the arrivals of EVERY tail that has one, in tail order, one
+       * per tail — what a full reading reports of the tails it reads, and what
+       * {@link broke} used to be the only half of. THIS ARM STOPPED AT THE FIRST BROKEN TAIL,
+       * so a tree whose two tails broke after the last reading was told of one of them by
+       * a read that could have named both. The rest of the tails are read only once one has
+       * broken, so a chain that chains pays nothing for it.
+       */
+      readonly broken: readonly LinkBreak[];
     };
 
 /**
@@ -359,11 +367,17 @@ export function chainArrivals(
 
   const streams: TailStream[] = [];
   const reached = new Map(frontier.tails);
+  // The breaks the arrivals carry, and the first reason no suffix describes them: a break is
+  // what every tail is read to find, so reading goes on past it, and a refusal of another kind
+  // is reported only when no tail broke.
+  const broken: LinkBreak[] = [];
+  let refusal: ChainArrivals | undefined;
   for (const tail of tails) {
     const covered = frontier.tails.get(tail);
     const segments = orderedSegments(layout, tail);
     if (covered !== undefined && !startsWith(segments, covered.segments)) {
-      return { suffix: false, why: 'A_TAIL_WAS_CUT' };
+      refusal ??= { suffix: false, why: 'A_TAIL_WAS_CUT' };
+      continue;
     }
     // A tail nothing was read from — one that appeared, or one that was empty when the
     // frontier was taken — contributes all of itself: there is no position to resume
@@ -372,7 +386,10 @@ export function chainArrivals(
       covered === undefined || covered.boundary === undefined
         ? wholeTail(layout, tail, upcasters)
         : readTailSince(layout, tail, upcasters, covered.boundary);
-    if (since === undefined) return { suffix: false, why: 'A_TAIL_WAS_CUT' };
+    if (since === undefined) {
+      refusal ??= { suffix: false, why: 'A_TAIL_WAS_CUT' };
+      continue;
+    }
     const entries = since.arrivals;
     // The arrivals have to run on from where the frontier stopped, by the verifier's own
     // rule and in the verifier's own function ({@link firstLinkBreakFrom}) — the same one
@@ -389,7 +406,10 @@ export function chainArrivals(
       (covered?.lastSeq ?? -1) + 1,
       covered?.lastHash ?? null,
     );
-    if (broke !== undefined) return { suffix: false, why: 'AN_ARRIVAL_DOES_NOT_CHAIN', broke };
+    if (broke !== undefined) {
+      broken.push(broke);
+      continue;
+    }
     const last = entries[entries.length - 1];
     const lastSeq = last === undefined ? (covered?.lastSeq ?? -1) : last.link.seq;
     const lastHash = last === undefined ? (covered?.lastHash ?? null) : last.link.hash;
@@ -408,16 +428,24 @@ export function chainArrivals(
     for (const event of fresh) {
       for (const [other, reach] of frontier.tails) {
         if (other === tail || reach.latestAt === '') continue;
-        if (reach.latestAt > event.at) return { suffix: false, why: 'AN_ARRIVAL_IS_NOT_LATER' };
+        if (reach.latestAt > event.at) {
+          refusal ??= { suffix: false, why: 'AN_ARRIVAL_IS_NOT_LATER' };
+        }
         // The tie the merge breaks on the tail id: an arrival that ties with a covered
         // event of a tail that sorts LATER would be placed before it.
         if (reach.latestAt === event.at && other > tail) {
-          return { suffix: false, why: 'AN_ARRIVAL_IS_NOT_LATER' };
+          refusal ??= { suffix: false, why: 'AN_ARRIVAL_IS_NOT_LATER' };
         }
       }
     }
     streams.push({ key: tail, events: fresh, cursor: 0, tail, lastSeq, lastHash });
   }
+
+  const [firstBreak] = broken;
+  if (firstBreak !== undefined) {
+    return { suffix: false, why: 'AN_ARRIVAL_DOES_NOT_CHAIN', broke: firstBreak, broken };
+  }
+  if (refusal !== undefined) return refusal;
 
   // The SAME merge the whole order goes through, over the arrivals alone. It is the
   // same function and the same keys, which is what makes the result the tail of the
