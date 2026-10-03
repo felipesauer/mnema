@@ -456,7 +456,7 @@ export function registerVerify(program: Command, wiring: Wiring): Declared {
           reportUsage(
             wiring,
             `\`${AGAINST_GITHUB}\` rules on the project you stand in, and \`--workspace\` names others`,
-            `Run \`mnema verify ${AGAINST_GITHUB}\` inside each project.`,
+            'Run `mnema verify --against-github` inside each project.',
           );
           return;
         }

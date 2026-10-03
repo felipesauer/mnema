@@ -97,6 +97,9 @@ export interface GithubReading {
   readonly notCompared: readonly Scope[];
 }
 
+/** A base64 text as bytes. */
+const decodeBase64 = (text: string): Buffer => Buffer.from(text, 'base64');
+
 /**
  * The raw 32-byte Ed25519 keys an account's `.keys` text publishes, as lower-case hex.
  *
@@ -108,7 +111,7 @@ export function ed25519KeysIn(published: string): string[] {
   for (const line of published.split(/\r?\n/)) {
     const [type, blob] = line.trim().split(/\s+/);
     if (type !== 'ssh-ed25519' || blob === undefined) continue;
-    const raw = sshEd25519Blob(Buffer.from(blob, 'base64'));
+    const raw = sshEd25519Blob(decodeBase64(blob));
     if (raw !== undefined) keys.push(raw);
   }
   return keys;

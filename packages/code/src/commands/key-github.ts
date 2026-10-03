@@ -72,6 +72,8 @@ export function runKeyGithub(
   if (!linked.ok) {
     return { ok: false, reason: 'REFUSED', code: linked.code, message: linked.message };
   }
+  // The claim signs its own checkpoint, so this only covers a founding the operation made.
+  writer.checkpoint();
   return {
     ok: true,
     anchor: linked.anchor,
