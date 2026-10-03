@@ -15,7 +15,7 @@ Requires Node ≥ 22.12.0; the packages are ESM-only.
 
 ### Added
 
-- **Decisions inherited from another repository** (`mnema inherit set | update`): a project points,
+- **Decisions inherited from another repository** (the `inherit` verb): a project points,
   in the committed `.mnema/inherit.json`, at a git repository that holds a record and at one commit of
   it. `mnema brief` prints that record's decisions in force in a section of their own, naming the
   repository and the commit; they are read and never signed by the project, and the project's

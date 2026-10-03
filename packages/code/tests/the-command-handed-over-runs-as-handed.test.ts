@@ -576,7 +576,8 @@ export const HANDED_OVER: Readonly<
   // `mnema rules` twice.
   // And four names more for the paragraph that says a note can be taken back: `mnema retract`,
   // and the three reads it names (`mnema search`, `mnema show`, `mnema verify`).
-  span: { line: 46, name: 86, flag: 1, unwritten: 0 },
+  // And one name more for the changelog entry that names `mnema brief` beside the inherited section.
+  span: { line: 46, name: 87, flag: 1, unwritten: 0 },
   // name 18 until the page that says where the key lives named `mnema key protect` in a line of
   // its own.
   // line 35 until the same page showed that question in a block of its own.
@@ -597,7 +598,8 @@ export const HANDED_OVER: Readonly<
   // line 47 until the help of the verb that records corrections named the switch that turns it on,
   // `mnema switch on user-corrections` (`wiring/corrections.ts`).
   // name 53 until `mnema doctor` named the `mnema mcp` a host starts, twice, and `claude mcp add mnema -- mnema mcp`.
-  source: { line: 49, name: 58, flag: 3, unwritten: 3 },
+  // line 50 and name 61 with the verb that points a project at another record (`wiring/inherit.ts`).
+  source: { line: 50, name: 61, flag: 3, unwritten: 3 },
 };
 
 // ---------------------------------------------------------------------------

@@ -12,7 +12,7 @@ import type { InheritPlan, InheritRefused } from '../commands/inherit.js';
 import { here } from './context.js';
 import { writeLines } from './io.js';
 import { reportRefusal } from './report.js';
-import { type Declared, readsTheRecord, type Wiring } from './verb.js';
+import { type Declared, mutatesTheRecord, type Wiring } from './verb.js';
 
 const SAYS: Readonly<Record<InheritRefused['reason'], string>> = {
   NO_PROJECT: 'No mnema project here. Run `mnema init` first.',
@@ -122,5 +122,5 @@ export function registerInherit(program: Command, wiring: Wiring): Declared {
       if (!result.ok) return refuse(wiring, result);
       writeLines(io, planLines(result));
     });
-  return readsTheRecord(group);
+  return mutatesTheRecord(group);
 }
