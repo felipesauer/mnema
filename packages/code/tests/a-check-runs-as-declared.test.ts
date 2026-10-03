@@ -10,7 +10,7 @@ import { mkdtempSync, realpathSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
-import { runOne } from '../src/commands/check.js';
+import { environmentWithoutMnema, runOne } from '../src/commands/check.js';
 
 let sandbox: string;
 let cwd: string;
@@ -89,5 +89,30 @@ describe('runOne', () => {
     );
     expect(outcome.passed).toBe(false);
     expect(outcome.passed ? '' : outcome.failure).toBe('printed more than 16 MiB');
+  });
+
+  it('does not hand the program any MNEMA_* variable, and keeps the rest', () => {
+    const saved = { ...process.env };
+    process.env.MNEMA_HOME = '/somewhere';
+    process.env.MNEMA_KEY_PASSPHRASE = 'secret';
+    try {
+      const outcome = runOne(
+        declared('-e', 'process.stdout.write(JSON.stringify(process.env))'),
+        cwd,
+        10_000,
+      );
+      expect(outcome.passed).toBe(true);
+      const seen = Object.keys(JSON.parse(outcome.output));
+      expect(seen.filter((key) => key.startsWith('MNEMA_'))).toEqual([]);
+      expect(seen).toContain('PATH');
+    } finally {
+      process.env = saved;
+    }
+  });
+
+  it('drops exactly the keys that start with MNEMA_', () => {
+    expect(
+      environmentWithoutMnema({ MNEMA_A: '1', PATH: 'p', XMNEMA_B: '2', mnema_c: '3' }),
+    ).toEqual({ PATH: 'p', XMNEMA_B: '2', mnema_c: '3' });
   });
 });

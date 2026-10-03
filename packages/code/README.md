@@ -719,7 +719,8 @@ mnema key enroll --checker <the line>
 mnema check run --key <the checker's private key file>
 ```
 
-`check run` starts each declared program from the project root with this process's environment,
+`check run` starts each declared program from the project root with this process's environment, minus every
+`MNEMA_*` variable (that narrows what the program is handed, not what it can read from disk),
 stops it after `--timeout` seconds (300 by default) and records it as failed. It writes one
 `check.passed` or `check.failed` per rule, naming the rule and the commit `HEAD` names, with the end
 of what the program printed (at most 4000 characters, control bytes made visible, credentials

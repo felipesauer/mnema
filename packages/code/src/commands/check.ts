@@ -202,6 +202,11 @@ function readKey(path: string): ReturnType<typeof readPrivateKeyPair> | null {
   }
 }
 
+/** This process's environment without any `MNEMA_*` variable: the program is not handed them. */
+export function environmentWithoutMnema(env: NodeJS.ProcessEnv): NodeJS.ProcessEnv {
+  return Object.fromEntries(Object.entries(env).filter(([key]) => !key.startsWith('MNEMA_')));
+}
+
 /**
  * Runs one declared check: the program with its arguments, no shell, in the project root,
  * under the timeout. What it printed on both streams is handed back whole; the core bounds it.
@@ -210,6 +215,7 @@ export function runOne(check: DeclaredCheck, cwd: string, timeoutMs: number): Ch
   const ran = spawnSync(check.command, [...check.args], {
     cwd,
     shell: false,
+    env: environmentWithoutMnema(process.env),
     timeout: timeoutMs,
     killSignal: 'SIGKILL',
     maxBuffer: 16 * 1024 * 1024,
