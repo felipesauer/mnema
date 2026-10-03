@@ -23,6 +23,9 @@ export interface PullRequestAddress {
   readonly token: string;
 }
 
+/** The only author whose comment the Action will replace: the one `GITHUB_TOKEN` writes as. */
+const ACTIONS_BOT = 'github-actions[bot]';
+
 /** Rows per page the API is asked for, its largest. */
 const PAGE = 100;
 
@@ -94,8 +97,16 @@ export function connect(address: PullRequestAddress, fetchIt: Fetch): GitHub {
     async upsertComment(body, onlyIfThere) {
       const comments = await listed(`/issues/${address.number}/comments`);
       const mine = comments.find((row) => {
-        const text = (row as { body?: unknown }).body;
-        return typeof text === 'string' && text.startsWith(MARKER);
+        const { body: text, user } = row as {
+          body?: unknown;
+          user?: { login?: unknown; type?: unknown } | null;
+        };
+        return (
+          typeof text === 'string' &&
+          text.startsWith(MARKER) &&
+          user?.type === 'Bot' &&
+          user.login === ACTIONS_BOT
+        );
       }) as { id?: unknown } | undefined;
       if (mine !== undefined && typeof mine.id === 'number') {
         await call('PATCH', `${base}/issues/comments/${mine.id}`, { body });

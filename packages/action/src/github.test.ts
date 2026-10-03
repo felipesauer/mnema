@@ -26,6 +26,7 @@ function fake(answers: Record<string, unknown>): { fetch: Fetch; calls: Call[] }
   return { fetch: fetchIt, calls };
 }
 
+const bot = { login: 'github-actions[bot]', type: 'Bot' };
 const address = { apiUrl: 'https://api.test/', repository: 'o/r', number: 7, token: 'tok' };
 
 describe('connect', () => {
@@ -69,7 +70,7 @@ describe('connect', () => {
     const { fetch, calls } = fake({
       'GET /issues/7/comments': [
         { id: 1, body: 'someone else' },
-        { id: 2, body: `${MARKER}\nold` },
+        { id: 2, body: `${MARKER}\nold`, user: bot },
       ],
       'PATCH /issues/comments/2': {},
     });
@@ -77,6 +78,23 @@ describe('connect', () => {
     expect(await connect(address, fetch).upsertComment(body, false)).toBe('updated');
     expect(calls.map((c) => c.method)).toEqual(['GET', 'PATCH']);
     expect(calls[1]?.body).toEqual({ body });
+  });
+
+  it('never touches a comment carrying the marker that somebody else wrote', async () => {
+    const { fetch, calls } = fake({
+      'GET /issues/7/comments': [
+        { id: 1, body: `${MARKER}\nforged`, user: { login: 'mallory', type: 'User' } },
+        { id: 2, body: `${MARKER}\nforged`, user: { login: 'github-actions[bot]', type: 'User' } },
+        { id: 3, body: `${MARKER}\nforged` },
+      ],
+      'POST /issues/7/comments': {},
+    });
+    expect(await connect(address, fetch).upsertComment(`${MARKER}\nnew`, false)).toBe('created');
+    expect(calls.map((c) => `${c.method}`)).toEqual(['GET', 'POST']);
+    const left = fake({
+      'GET /issues/7/comments': [{ id: 1, body: MARKER, user: { login: 'm', type: 'User' } }],
+    });
+    expect(await connect(address, left.fetch).upsertComment(MARKER, true)).toBe('left alone');
   });
 
   it('leaves a pull request without a comment alone when asked to refresh only', async () => {
