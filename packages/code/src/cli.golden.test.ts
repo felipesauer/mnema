@@ -362,6 +362,18 @@ async function readEverything(label: string, ids: Record<string, string>): Promi
   await mnema('reads', 'rules', 'docs/runbook/rollback.md', '--json');
   await mnema('reads', 'rules', '.');
   await mnema('reads', 'rules', '/elsewhere/src/app.ts');
+  // THE GIT BRIDGE over a fixture that is not a git work tree: the trailer line is the same
+  // anywhere, and the three readings say there is no git here rather than listing nothing.
+  await mnema('reads', 'trailer', ids.decision ?? 'no-such-id');
+  await mnema('reads', 'trailer', ids.decision ?? 'no-such-id', '--id');
+  await mnema('reads', 'trailer', 'no-such-id');
+  await mnema('reads', 'commits', ids.decision ?? 'no-such-id');
+  await mnema('reads', 'commits', ids.decision ?? 'no-such-id', '--json');
+  await mnema('reads', 'commits', 'no-such-id');
+  await mnema('reads', 'why', 'docs/runbook/rollback.md');
+  await mnema('reads', 'why', 'docs/runbook/rollback.md', '--json');
+  await mnema('reads', 'aging');
+  await mnema('reads', 'aging', '--json');
   await mnema('reads', 'exposure');
   await mnema('reads', 'exposure', '--json');
   await mnema('reads', 'timeline', ids.task ?? 'no-such-id');

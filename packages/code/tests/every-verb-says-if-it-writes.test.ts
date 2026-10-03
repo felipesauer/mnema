@@ -268,6 +268,10 @@ const INVOCATION: Readonly<Record<string, Invocation>> = {
   diagram: { argv: (f) => ['diagram', 'timeline', f.task] },
   rules: { argv: () => ['rules', 'src'] },
   'rules-file': { argv: () => ['rules-file', '--host', 'vscode'] },
+  trailer: { argv: () => ['trailer', 'ADR-1'] },
+  commits: { argv: () => ['commits', 'ADR-1'] },
+  why: { argv: () => ['why', 'src'] },
+  aging: { argv: () => ['aging'] },
   skills: { argv: () => ['skills'] },
   usage: { argv: () => ['usage'] },
   brief: { argv: () => ['brief'] },
@@ -442,6 +446,14 @@ async function fixture(name: string): Promise<Fixture> {
   const created = await mnema(['task', 'create', 'the task the reads are asked about']);
   const id = created.out.join('\n').match(/\(([0-9a-f-]{36})\)/);
   if (id?.[1] === undefined) throw new Error(`fixture: task printed no id: ${created.out}`);
+  // The first decision of a project is ADR-1, which the git-log verbs are asked about.
+  const decided = await mnema([
+    'decision',
+    'record',
+    'a decision the git verbs are asked about',
+    'a rationale',
+  ]);
+  if (decided.failed) throw new Error(`fixture: decision refused: ${decided.out}`);
   const captured = await mnema(['memory', 'a note somebody will take back']);
   const note = captured.out.join('\n').match(/([0-9a-f]{8}-[0-9a-f-]{27})/);
   if (note?.[1] === undefined) throw new Error(`fixture: memory printed no id: ${captured.out}`);
@@ -501,7 +513,7 @@ function offersJson(argv: readonly string[]): boolean {
  * counted as its second form was its first one again ({@link offersJson}). The reading's
  * JSON is `mnema witness --json`, and the row does not run the reading.
  */
-const EXERCISED_IN_BOTH_FORMS = 15;
+const EXERCISED_IN_BOTH_FORMS = 19;
 
 /** Exercises every verb the table names, each in its own project, and measures the record. */
 async function exerciseEverything(): Promise<Exercised[]> {
@@ -570,7 +582,7 @@ describe('every verb says if it writes', () => {
     expect(Object.keys(INVOCATION).sort()).toEqual([...EFFECT_BY_VERB.keys()].sort());
   });
 
-  it('counts seventeen writes and twenty-five reads over the whole surface', () => {
+  it('counts seventeen writes and twenty-nine reads over the whole surface', () => {
     // The count in the report, asserted rather than trusted, and the total against the
     // list: a verb that stopped being registered would otherwise leave both halves
     // looking healthy.
@@ -610,6 +622,10 @@ describe('every verb says if it writes', () => {
       'diagram',
       'rules',
       'rules-file',
+      'trailer',
+      'commits',
+      'why',
+      'aging',
       'skills',
       'usage',
       'brief',
