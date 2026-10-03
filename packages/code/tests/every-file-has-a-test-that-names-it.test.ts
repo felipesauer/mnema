@@ -850,6 +850,7 @@ const CLAUSES_PER_FILE: Readonly<Record<string, number>> = {
   'packages/code/tests/a-line-of-success-is-one-line.test.ts': 7,
   'packages/code/tests/a-marker-is-not-a-reason.test.ts': 7,
   'packages/code/tests/a-marker-is-not-a-title.test.ts': 7,
+  'packages/code/tests/a-measurement-carries-no-one-s-home.test.ts': 6,
   'packages/code/tests/a-palette-for-the-words.test.ts': 24,
   'packages/code/tests/a-picture-of-the-record.test.ts': 8,
   'packages/code/tests/a-private-write-asks-git.test.ts': 11,

@@ -301,7 +301,7 @@ publish one number. It did not happen here, and the column is what says so rathe
 paragraph.
 
 The probe in every line names the tree: *"sha256 of 281 .js file(s) under `packages/*/dist` of
-`/home/felipe/…/round3-run/mnema`"* — the worktree, which is the isolation below stated in the
+`<home>/…/round3-run/mnema`"* — the worktree, which is the isolation below stated in the
 data.
 
 ---
@@ -340,7 +340,7 @@ vendor's own result message, per the `cost_source` in every line.
 
 ## Isolation, and what was proved before a cell ran
 
-**A dedicated worktree, self-contained.** `/home/felipe/…/round3-run/mnema`, detached at
+**A dedicated worktree, self-contained.** `<home>/…/round3-run/mnema`, detached at
 `e085c7b3`, `pnpm install --frozen-lockfile` + `pnpm build`, and **a copy of the workbench
 inside it** — without that copy the harness finds the workspace root by marker from where it
 lives and resolves to the main tree, which is how round 2's first attempt failed. Proved rather
@@ -440,7 +440,7 @@ fixing the bench during the round is fixing the bench against a result.
   with their sandboxes still on disk. Neither was created by this run and neither was killed by
   it: ownership between two sessions is ambiguous, and killing the wrong one corrupts a live
   measurement. They are idle and they did not touch this round.
-- **The contaminated worktree** at `/home/felipe/…/round3/mnema` (257 MB, detached at
+- **The contaminated worktree** at `<home>/…/round3/mnema` (257 MB, detached at
   `e085c7b3`) still carries mutation `h` and was left in place deliberately as the evidence for
   the third attempt's diagnosis. This round used a **new** worktree and did not reuse it.
 
