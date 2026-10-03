@@ -102,7 +102,7 @@ describe('inheriting, as a person types it', () => {
     const first = commit(source);
     expect(mnema(project, homeP, 'init').status).toBe(0);
 
-    const own = linesOf(project);
+    const recordBefore = linesOf(project);
     const shown = mnema(project, homeP, 'inherit', 'set', source);
     expect(shown.status, shown.err).toBe(0);
     expect(shown.out).toContain('+ Postgres in every new service');
@@ -137,8 +137,8 @@ describe('inheriting, as a person types it', () => {
     expect(mnema(project, homeP, 'inherit', 'update', '--write').status).toBe(0);
     expect(mnema(project, homeP, 'brief').out).toContain('Redis for queues');
 
-    // Nothing was signed into the project's record by pointing at another's, or by moving the pointer.
-    expect(linesOf(project)).toEqual(own);
+    // Pointing at another record, and moving the pointer, signed nothing into this project's own.
+    expect(linesOf(project)).toEqual(recordBefore);
     // The project's own verify counts its own record: the inherited one is not in it.
     const verified = mnema(project, homeP, 'verify');
     expect(verified.status, verified.err).toBe(0);
