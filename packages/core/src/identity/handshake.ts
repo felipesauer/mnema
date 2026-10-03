@@ -35,6 +35,7 @@ import { readFileSync } from 'node:fs';
 import {
   ANCHOR_PREFIX,
   CodedError,
+  checkerEnrollmentMessage,
   enrollmentMessage,
   fingerprintOf,
   type KeyPair,
@@ -56,6 +57,13 @@ import { isAnchorId } from './anchor.js';
  */
 const REQUEST_PREFIX = 'mnema-key-request:1:';
 
+/**
+ * The prefix of a request to be enrolled as a CHECKER — a key that signs check results and
+ * nothing else. A prefix of its own, so a person who enrolls a line can tell from the line
+ * which power it asks for, and a door that expects one kind refuses the other.
+ */
+export const CHECKER_REQUEST_PREFIX = 'mnema-checker-request:1:';
+
 /** A joining key's consent to become a member of one anchor. */
 export interface KeyRequest {
   /** The joining key's public half, bound to its own fingerprint. */
@@ -65,12 +73,12 @@ export interface KeyRequest {
 }
 
 /** Renders a request as the single line a person copies between machines. */
-export function encodeKeyRequest(request: KeyRequest): string {
+export function encodeKeyRequest(request: KeyRequest, prefix = REQUEST_PREFIX): string {
   const body = JSON.stringify({
     pub: publicKeyToPem(request.key.publicKey),
     sig: request.reverseSig,
   });
-  return REQUEST_PREFIX + Buffer.from(body, 'utf-8').toString('base64url');
+  return prefix + Buffer.from(body, 'utf-8').toString('base64url');
 }
 
 /**
@@ -83,10 +91,10 @@ export function encodeKeyRequest(request: KeyRequest): string {
  * decided — so the rest of the flow cannot be handed a key under a name that is
  * not its own.
  */
-export function decodeKeyRequest(text: string): KeyRequest | null {
+export function decodeKeyRequest(text: string, prefix = REQUEST_PREFIX): KeyRequest | null {
   const trimmed = text.trim();
-  if (!trimmed.startsWith(REQUEST_PREFIX)) return null;
-  const payload = trimmed.slice(REQUEST_PREFIX.length).replace(/\s+/g, '');
+  if (!trimmed.startsWith(prefix)) return null;
+  const payload = trimmed.slice(prefix.length).replace(/\s+/g, '');
   if (payload.length === 0) return null;
 
   let parsed: unknown;
@@ -122,6 +130,12 @@ export interface RequestInput {
    * would make WHICH key the machine speaks as depend on directory order.
    */
   readonly privateKeyPath?: string;
+  /**
+   * Ask to be enrolled as a CHECKER of the identity `anchor` names — to sign check results
+   * under this key's own anchor, and nothing else — instead of to join it. The consent is
+   * over `check-enroll:<anchor>:<fp>` and the line carries {@link CHECKER_REQUEST_PREFIX}.
+   */
+  readonly asChecker?: boolean;
 }
 
 /** Which key a request speaks for. */
@@ -215,15 +229,20 @@ export function requestEnrollment(input: RequestInput): RequestOk | RequestErr {
     source = 'machine';
   }
 
-  const reverseSig = Buffer.from(
-    sign(enrollmentMessage(input.anchor, keyPair.fingerprint), keyPair.privateKey),
-  ).toString('hex');
+  const asChecker = input.asChecker === true;
+  const message = asChecker
+    ? checkerEnrollmentMessage(input.anchor, keyPair.fingerprint)
+    : enrollmentMessage(input.anchor, keyPair.fingerprint);
+  const reverseSig = Buffer.from(sign(message, keyPair.privateKey)).toString('hex');
 
   return {
     ok: true,
     fingerprint: keyPair.fingerprint,
     anchor: input.anchor,
-    request: encodeKeyRequest({ key: keyPair, reverseSig }),
+    request: encodeKeyRequest(
+      { key: keyPair, reverseSig },
+      asChecker ? CHECKER_REQUEST_PREFIX : REQUEST_PREFIX,
+    ),
     source,
     minted,
   };

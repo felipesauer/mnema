@@ -466,8 +466,8 @@ export const NAMES_THAT_NEED_MORE: Readonly<
     why: 'the help of `key enroll`, naming the verb whose output its argument is',
   },
   'packages/code/src/wiring/key.ts: mnema key enroll': {
-    times: 1,
-    why: 'answers a line typed outside a project, whole, by naming the verb to run inside one',
+    times: 2,
+    why: 'answers a line typed outside a project, whole, by naming the verb to run inside one — once for a member’s request, once for a checker’s, which names the same verb with its flag',
   },
   'packages/code/src/wiring/key.ts: mnema key revoke': {
     times: 1,
@@ -584,14 +584,13 @@ export const HANDED_OVER: Readonly<
   // `mnema rules` twice.
   // And four names more for the paragraph that says a note can be taken back: `mnema retract`,
   // and the three reads it names (`mnema search`, `mnema show`, `mnema verify`).
-  // line 48 until the page said which flag compares the keys that signed with GitHub's, and how an
-  // account is linked (`mnema verify --against-github`, `mnema key github`).
-  span: { line: 48, name: 86, flag: 1, unwritten: 0 },
+  span: { line: 48, name: 91, flag: 1, unwritten: 0 },
   // name 18 until the page that says where the key lives named `mnema key protect` in a line of
   // its own.
   // line 35 until the same page showed that question in a block of its own.
   // name 19 until the page said `mnema key protect` asks for the passphrase at a terminal.
-  block: { line: 37, name: 20, flag: 0, unwritten: 0 },
+  // line 40 and flag 1 once a page showed the commands that declare a check and run it.
+  block: { line: 40, name: 20, flag: 1, unwritten: 0 },
   // 46 until the refusal an agent's `accept` gets, with the switch off, began naming the command a
   // person accepts with (`agent-accepts.ts`).
   // line 34 until the sentences an agent's accept is answered with began handing whole lines
@@ -607,8 +606,9 @@ export const HANDED_OVER: Readonly<
   // line 47 until the help of the verb that records corrections named the switch that turns it on,
   // `mnema switch on user-corrections` (`wiring/corrections.ts`).
   // name 53 until `mnema doctor` named the `mnema mcp` a host starts, twice, and `claude mcp add mnema -- mnema mcp`.
-  // line 53 and name 60 until `key github` and `verify --against-github` handed over each other.
-  source: { line: 53, name: 60, flag: 3, unwritten: 3 },
+  // line 54 and name 62 once a key could be requested and enrolled to sign check results, and the
+  // checks' own help named the verbs that declare and run them.
+  source: { line: 58, name: 64, flag: 3, unwritten: 3 },
 };
 
 // ---------------------------------------------------------------------------

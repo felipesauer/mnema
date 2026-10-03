@@ -25,7 +25,7 @@
  */
 
 import { type DiscoveryEnv, resolveTrees } from '@mnema/core';
-import { deferredWrite, enrollFromRequest } from '@mnema/core/write';
+import { deferredWrite, enrollChecker, enrollFromRequest } from '@mnema/core/write';
 
 /** What the enrollment needs — injected so it is testable. */
 export interface KeyEnrollContext {
@@ -59,6 +59,44 @@ export type KeyEnrollRefused =
       readonly code: string;
       readonly message: string;
     };
+
+/** The key may now sign check results, under its own anchor. */
+export interface CheckerEnrolled {
+  readonly ok: true;
+  /** The checker key's fingerprint. */
+  readonly fingerprint: string;
+  /** The anchor it signs results under — its own. */
+  readonly checker: string;
+  /** The identity that vouched for it — this machine's. */
+  readonly vouchedBy: string;
+  /** True when the record already enrolled it, so nothing was appended. */
+  readonly alreadyChecker: boolean;
+  /** The project tree that recorded it. */
+  readonly root: string;
+}
+
+/**
+ * Enrolls the key a CHECKER request carries — a key that will sign check results and nothing
+ * else — vouched for by this machine's identity, in the project's public tree.
+ */
+export function runCheckerEnroll(
+  ctx: KeyEnrollContext,
+  input: { request: string },
+): CheckerEnrolled | KeyEnrollRefused {
+  const trees = resolveTrees(ctx.cwd, ctx.env);
+  if (trees.projectPublic === undefined) {
+    return { ok: false, reason: 'NO_PROJECT' };
+  }
+  const write = deferredWrite(trees, 'public');
+  const enrolled = enrollChecker(write, { request: input.request });
+  if (!enrolled.ok) {
+    return { ok: false, reason: 'REFUSED', code: enrolled.code, message: enrolled.message };
+  }
+  // The enrolment signs its own checkpoint; this covers a founding it may have appended
+  // alongside, and is a no-op otherwise.
+  write.checkpoint();
+  return { ...enrolled, root: trees.projectPublic };
+}
 
 /**
  * Enrolls the key a request carries into the identity this machine serves in the

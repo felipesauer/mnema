@@ -80,11 +80,18 @@ export function registerKey(program: Command, wiring: Wiring): Declared {
         'record knows also names it; the request is signed over the whole value either way',
     )
     .option('--key <file>', "a private key to speak for instead of this machine's own")
-    .action(async (opts: { anchor: string; key?: string }) => {
+    .option(
+      '--checker',
+      "ask to sign check results only, under this key's own identity, instead of joining " +
+        '(for the machine that runs `mnema check run`, such as a CI runner)',
+    )
+    .action(async (opts: { anchor: string; key?: string; checker?: boolean }) => {
       const { runKeyRequest } = await import('../commands/key-request.js');
+      const asChecker = opts.checker === true;
       const result = runKeyRequest(here(), {
         anchor: opts.anchor,
         ...(opts.key !== undefined ? { privateKeyPath: opts.key } : {}),
+        ...(asChecker ? { asChecker: true } : {}),
       });
       if (!result.ok) {
         reportRefusal(wiring, result);
@@ -98,14 +105,37 @@ export function registerKey(program: Command, wiring: Wiring): Declared {
             `${result.source === 'file' ? ' (read from the file you named, not installed)' : ''}`,
         );
       }
-      io.out(render(fact(`to join ${result.anchor}`)));
+      io.out(
+        render(
+          fact(
+            asChecker
+              ? `to sign check results, vouched for by ${result.anchor}`
+              : `to join ${result.anchor}`,
+          ),
+        ),
+      );
       // The request itself, alone on its line so it can be selected and pasted.
       io.out('');
       io.out(result.request);
       io.out('');
       io.out(render(fact('Hand that line to a machine already in that identity, which runs:')));
-      io.out(render(fact('mnema key enroll <the line>', 2)));
-      io.out(render(fact('It proves consent to join that ONE identity and is not a secret.')));
+      io.out(
+        render(
+          fact(
+            asChecker ? 'mnema key enroll --checker <the line>' : 'mnema key enroll <the line>',
+            2,
+          ),
+        ),
+      );
+      io.out(
+        render(
+          fact(
+            asChecker
+              ? 'It proves consent to check for that ONE identity and is not a secret. The key is.'
+              : 'It proves consent to join that ONE identity and is not a secret.',
+          ),
+        ),
+      );
     });
 
   // `mnema key enroll <request>` — on a machine that is already a member. The
@@ -115,7 +145,34 @@ export function registerKey(program: Command, wiring: Wiring): Declared {
     .command('enroll')
     .description('vouch for a requesting key so it joins this identity (run this on a member)')
     .argument('<request>', 'the line `mnema key request` printed on the joining machine')
-    .action(async (request: string) => {
+    .option(
+      '--checker',
+      'enroll a key that signs check results only (the line `mnema key request --checker --anchor <id>` printed)',
+    )
+    .action(async (request: string, opts: { checker?: boolean }) => {
+      if (opts.checker === true) {
+        const { runCheckerEnroll } = await import('../commands/key-enroll.js');
+        const result = runCheckerEnroll(here(), { request });
+        if (result.ok) {
+          if (result.alreadyChecker) {
+            io.out(`Key ${result.fingerprint} is already a checker — nothing recorded.`);
+            return;
+          }
+          io.out(`Enrolled checker ${result.fingerprint}`);
+          io.out(render(fact(`it signs check results only, as ${result.checker}`)));
+          io.out(render(fact(`vouched for by ${result.vouchedBy}`)));
+          io.out(render(fact(onOneLine`recorded in ${result.root}`)));
+          io.out(
+            render(fact('Commit and share the record: the runner reads it to know it may sign.')),
+          );
+          return;
+        }
+        reportRefusal(wiring, result, {
+          NO_PROJECT:
+            'No mnema project here. Run `mnema key enroll` inside the project to record it.',
+        });
+        return;
+      }
       const { runKeyEnroll } = await import('../commands/key-enroll.js');
       const result = runKeyEnroll(here(), { request });
       if (result.ok) {

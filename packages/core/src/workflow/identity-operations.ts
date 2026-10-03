@@ -39,6 +39,7 @@ import {
   type RegistrationFault,
   type UpcasterRegistry,
 } from '@mnema/chain';
+import { checkersIn } from '../checks/checkers.js';
 import {
   type ScreenedWrite,
   type ScreenRefusal,
@@ -341,6 +342,16 @@ function foundUnderTheLock(ctx: WriteContext): string {
     return decided.anchor;
   }
 
+  // A key enrolled here as a CHECKER signs check results only (FORMAT.md section 6.2): its
+  // founding, and every fact it would then sign, would fail verification. Refused before
+  // anything is appended, with the way on.
+  if (checkersIn(ctx.layout, ctx.upcasters).has(ctx.writer.signerFingerprint)) {
+    throw new IdentityUnavailableError(
+      'A_CHECKER_KEY',
+      `this machine's key ${ctx.writer.signerFingerprint} is enrolled in this record as a ` +
+        'checker, which signs check results only (`mnema check run`) — write from a key of your own',
+    );
+  }
   const at = (ctx.clock ?? systemClock)();
   // Appended straight, with no typed refusal to report, and that is the one place
   // in the core where it is the honest shape: every field of a founding is DERIVED

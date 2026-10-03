@@ -85,6 +85,9 @@ export function registerAccountability(program: Command, wiring: Wiring): Declar
               itemLine([
                 anchorText(result.anchors, account.who),
                 String(account.total),
+                // A machine, said as one: a key that signs check results only. Its facts are
+                // reports a runner made, not acts a person authorized.
+                ...(account.machine ? ['machine (signs check results only)'] : []),
                 ...founded,
               ]),
             ),

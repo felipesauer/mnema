@@ -71,7 +71,7 @@ export interface KeyRequestRefused {
  */
 export function runKeyRequest(
   ctx: KeyRequestContext,
-  input: { anchor: string; privateKeyPath?: string },
+  input: { anchor: string; privateKeyPath?: string; asChecker?: boolean },
 ): KeyRequestMade | KeyRequestRefused {
   const trees = resolveTrees(ctx.cwd, ctx.env);
   // Resolved BEFORE the key root is touched: a value that names no identity must
@@ -83,6 +83,7 @@ export function runKeyRequest(
   const made = requestEnrollment({
     anchor: anchor.anchor,
     keyRoot: trees.keyRoot,
+    ...(input.asChecker === true ? { asChecker: true } : {}),
     ...(input.privateKeyPath !== undefined
       ? { privateKeyPath: resolve(ctx.cwd, input.privateKeyPath) }
       : {}),
