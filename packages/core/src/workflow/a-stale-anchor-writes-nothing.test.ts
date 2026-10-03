@@ -19,6 +19,7 @@ import {
   linkKnowledge,
   recordHandoff,
   recordObservation,
+  retractNote,
 } from '../knowledge/operations.js';
 import { ProjectionCache } from '../projections/cache.js';
 import { chainArrivals, chainReplay, orderedEvents } from '../projections/order.js';
@@ -169,6 +170,7 @@ describe('a checkout the key left writes nothing, through every write of the sur
     const adopted = made(createSkill(member, { name: 'adopted', body: 'b' }), 'skill');
     if (!reviewSkill(member, { id: adopted, fields: { note: 'n' } }).ok) throw new Error('setup');
     if (!adoptSkill(member, { id: adopted, fields: { note: 'n' } }).ok) throw new Error('setup');
+    const note = made(captureMemory(member, { content: 'a note to take back' }), 'memory');
     const run = startRun(member, { agent: 'the member' });
     if (!run.ok) throw new Error('setup: run');
     const joiner = requestEnrollment({ anchor, keyRoot: keyRoot() });
@@ -185,7 +187,17 @@ describe('a checkout the key left writes nothing, through every write of the sur
       left,
       member,
       anchor,
-      fixtures: { task, decisions, proposed, reviewed, adopted, run: run.id, joiner, another },
+      fixtures: {
+        task,
+        decisions,
+        proposed,
+        reviewed,
+        adopted,
+        note,
+        run: run.id,
+        joiner,
+        another,
+      },
     };
   }
 
@@ -283,6 +295,11 @@ describe('a checkout the key left writes nothing, through every write of the sur
       op: 'recordObservation',
       refusedBy: 'the anchor',
       drive: (as) => recordObservation(as, { about: 'x', topic: 'k', text: 't' }),
+    },
+    {
+      op: 'retractNote',
+      refusedBy: 'the anchor',
+      drive: (as, _, s) => retractNote(as, { id: s.fixtures.note, reason: 'it was wrong' }),
     },
     {
       op: 'recordHandoff',

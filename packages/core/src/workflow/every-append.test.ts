@@ -11,6 +11,7 @@ import {
   linkKnowledge,
   recordHandoff,
   recordObservation,
+  retractNote,
 } from '../knowledge/operations.js';
 import { orderedEvents } from '../projections/order.js';
 import * as writeSurface from '../write.js';
@@ -180,6 +181,7 @@ describe('every write refuses what no read could accept', () => {
     let openRun = '';
     let secondKey = '';
     let foreignTail = '';
+    let note = '';
     return [
       {
         op: 'createTask',
@@ -225,6 +227,17 @@ describe('every write refuses what no read could accept', () => {
         field: 'content',
         names: 'payload.content',
         drive: () => captureMemory(ctx, { content: '' }),
+      },
+      {
+        op: 'retractNote',
+        field: 'reason',
+        names: 'payload.reason',
+        prepare: () => {
+          const made = captureMemory(ctx, { content: 'a note to take back' });
+          if (!made.ok) throw new Error('the note to retract could not be captured');
+          note = made.id;
+        },
+        drive: () => retractNote(ctx, { id: note, reason: '' }),
       },
       {
         op: 'recordObservation',

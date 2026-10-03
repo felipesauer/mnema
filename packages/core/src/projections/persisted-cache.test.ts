@@ -42,7 +42,7 @@ import {
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { ensureSchema, PROJECTION_TABLES } from '../db/schema.js';
 import { IN_MEMORY, openDatabase } from '../db/sqlite.js';
-import { captureMemory, recordObservation } from '../knowledge/operations.js';
+import { captureMemory, recordObservation, retractNote } from '../knowledge/operations.js';
 import { switchChannel } from '../workflow/channel-operations.js';
 import { acceptDecision, recordDecision } from '../workflow/decision-operations.js';
 import { createTask, transitionTask, type WriteContext } from '../workflow/operations.js';
@@ -238,6 +238,36 @@ describe('a cache kept in the tree is brought forward, not built again', () => {
     } finally {
       rmSync(colleague, { recursive: true, force: true });
     }
+  });
+
+  it('a note taken back after the cache was read is taken back in the next read, in its row and in the index', () => {
+    const ctx = writing();
+    const task = aRecord(ctx).task;
+    const memory = landed(captureMemory(ctx, { content: 'a memory about marmalade' })).id;
+    const observation = landed(
+      recordObservation(ctx, { about: task, topic: 'jam', text: 'an observation about marmalade' }),
+    ).id;
+    const warm = persisted();
+    warm.refresh();
+    expect(warm.search({ term: 'marmalade' }).total).toBe(2);
+    warm.close();
+
+    landed(retractNote(ctx, { id: memory, reason: 'it was wrong' }));
+    // The second one is captured and taken back inside ONE arrival.
+    const late = landed(captureMemory(ctx, { content: 'a memory about quince' })).id;
+    landed(retractNote(ctx, { id: late, reason: 'wrong too' }));
+    landed(retractNote(ctx, { id: observation, reason: 'also wrong' }));
+    ctx.writer.checkpoint();
+
+    const next = persisted();
+    next.refresh();
+    expect(next.getMemory(memory)?.retracted?.reason).toBe('it was wrong');
+    expect(next.getMemory(late)?.retracted?.reason).toBe('wrong too');
+    expect(next.getObservation(observation)?.retracted?.reason).toBe('also wrong');
+    expect(next.search({ term: 'marmalade' }).total).toBe(0);
+    expect(next.search({ term: 'quince' }).total).toBe(0);
+    expect(rowsOf(projectionCachePath({ root }))).toEqual(rowsOfAReplay());
+    expect(answersOf(next)).toEqual(answersOf(replayed()));
   });
 
   it('refreshed again and again it still equals one replay', () => {

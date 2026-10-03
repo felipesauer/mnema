@@ -243,12 +243,18 @@ export function materializeSearch(db: SqliteDatabase, sources: SearchSources): v
       remember.run(params.kind, params.id, Number(lastInsertRowid));
     },
   };
+  // A NOTE THE RECORD TOOK BACK IS NOT INDEXED: every read that lists or searches the
+  // record — the opening of a session, the search, the counts of what is unread — reads this
+  // index, so leaving it out here is what takes it out of all of them at once. It is still
+  // served by id, from its own table, saying it was retracted.
   for (const memory of sources.memories) {
+    if (memory.retracted !== undefined) continue;
     // The only kind with no title: the content IS the record, so it is the body
     // and the index line is derived from it on the way out.
     insert.run(row('', memory.content, memory.id, 'memory', '', memory.capturedAt));
   }
   for (const observation of sources.observations) {
+    if (observation.retracted !== undefined) continue;
     insert.run(
       row(
         observation.topic,

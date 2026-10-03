@@ -19,7 +19,13 @@ import {
 } from './a-reason-states-something.js';
 import { requestEnrollment } from './identity/handshake.js';
 import { enrollFromRequest, revokeMember } from './identity/roster.js';
-import { linkKnowledge, recordHandoff, recordObservation } from './knowledge/operations.js';
+import {
+  captureMemory,
+  linkKnowledge,
+  recordHandoff,
+  recordObservation,
+  retractNote,
+} from './knowledge/operations.js';
 import { orderedEvents } from './projections/order.js';
 import { switchChannel } from './workflow/channel-operations.js';
 import { decisionGate } from './workflow/decision-gate.js';
@@ -137,6 +143,7 @@ describe('every kind says where its why is, and the door asks it there', () => {
 
   function rows(): readonly Row[] {
     let task = '';
+    let note = '';
     let decision = '';
     let successor = '';
     let skill = '';
@@ -241,6 +248,16 @@ describe('every kind says where its why is, and the door asks it there', () => {
         site: 'reason',
         drive: (said) =>
           switchChannel(ctx, { channel: 'edit-rules-push', on: false, reason: said }),
+      },
+      {
+        kind: 'note.retracted',
+        site: 'reason',
+        prepare: () => {
+          const made = captureMemory(ctx, { content: 'a note to take back' });
+          if (!made.ok) throw new Error('no memory');
+          note = made.id;
+        },
+        drive: (said) => retractNote(ctx, { id: note, reason: said }),
       },
     ];
   }

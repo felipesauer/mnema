@@ -388,11 +388,11 @@ describe('every tool says if it writes', () => {
     expect(served.slice().sort()).toEqual(tools.map((one) => one.act).sort());
     // The number, said out loud, because it is the non-vacuity of the sweep — and
     // because prose in this repository has twice put it at twenty-four.
-    expect(served).toHaveLength(25);
-    expect(tools).toHaveLength(25);
+    expect(served).toHaveLength(26);
+    expect(tools).toHaveLength(26);
   });
 
-  it('counts twelve writes and thirteen reads over the whole surface', () => {
+  it('counts thirteen writes and thirteen reads over the whole surface', () => {
     // The classification itself, asserted rather than trusted. The order is registration
     // order, which is the order an agent meets the tools in `tools/list`.
     const { tools } = buildMcpServer({ env, log: () => undefined });
@@ -401,6 +401,7 @@ describe('every tool says if it writes', () => {
     expect(named('mutates')).toEqual([
       'capture_memory',
       'record_observation',
+      'retract_note',
       'record_handoff',
       'link_knowledge',
       'create_task',
@@ -504,7 +505,14 @@ describe('every tool says if it writes', () => {
     const memory = idIn(await call('capture_memory', { content: 'the ledger rounds twice' }));
 
     // ---- the rest of the writes ----
-    await call('record_observation', { about: task, topic: 'review', text: 'it needs a rollback' });
+    const observation = idIn(
+      await call('record_observation', {
+        about: task,
+        topic: 'review',
+        text: 'it needs a rollback',
+      }),
+    );
+    await call('retract_note', { id: observation, reason: 'the rollback was already there' });
     await call('record_handoff', { task, from: 'agent-alpha', to: 'agent-beta' });
     // The edge that ADDRESSES a rule at a path, which is what gives the hook channel
     // something to say — and therefore something to record.
@@ -585,6 +593,7 @@ describe('every tool says if it writes', () => {
       'record_decision',
       'record_handoff',
       'record_observation',
+      'retract_note',
       'rules_before_an_edit',
       'skill_transition',
       'skills',
