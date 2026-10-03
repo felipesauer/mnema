@@ -98,7 +98,7 @@ export function divergentMoves(events: Iterable<CatalogEvent>): DivergentMove[] 
     if (seen === undefined) out.set(key, { kind, id: event.subject, from, ev: [event] });
     else seen.ev.push(event);
   }
-  return [
+  return sortDivergent([
     ...[...out.values()]
       .filter((m) => m.ev.length > 1)
       .map((m) => ({
@@ -109,7 +109,21 @@ export function divergentMoves(events: Iterable<CatalogEvent>): DivergentMove[] 
         to: m.ev.map(movedTo),
       })),
     ...tasks.divergent().map((m) => ({ ...m, to: m.evidence.map(movedTo) })),
-  ].sort((a, b) => order(a.kind, b.kind) || order(a.entityId, b.entityId) || order(a.from, b.from));
+  ]);
+}
+
+/**
+ * Puts divergent moves in the order they are reported in: by kind, then entity, then the state
+ * they left. It is a property of the CONTENT, which is what lets a cache that keeps the moves one
+ * entity at a time hand them back in the order the whole-record reading gives — and it is ONE
+ * function, so the two cannot come to order them differently.
+ */
+export function sortDivergent(moves: DivergentMove[]): DivergentMove[] {
+  return moves.sort(compareDivergent);
+}
+
+function compareDivergent(a: DivergentMove, b: DivergentMove): number {
+  return order(a.kind, b.kind) || order(a.entityId, b.entityId) || order(a.from, b.from);
 }
 
 /**

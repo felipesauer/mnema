@@ -25,7 +25,8 @@
  * pattern is a capability, and outside a project the global tree holds a person's
  * own conventions, which are a legitimate thing to audit from anywhere.
  *
- * Read-only in the strict sense: a cache per visible tree, rebuilt in memory, and
+ * Read-only in the strict sense: a cache per visible tree, brought forward from the one the tree keeps
+ * (`CacheOptions.persist`), and
  * the context package's pure `patternProvenance`. No writer, no key, no event — so no
  * `--actor`, and no consultation recorded (serving a body records one; auditing a
  * provenance is not serving it, and this read never touches a body at all).

@@ -446,6 +446,12 @@ export interface Session {
    * channel is described rather than hidden.
    */
   readonly held: Set<string>;
+  /**
+   * How many times each rule has been told to the agent as a refusal or an asking on this
+   * connection (`<grade>:<rule id>`), so the same rule said again is shorter (see
+   * `reasonTold`).
+   */
+  readonly told: Map<string, number>;
 }
 
 /**
@@ -534,6 +540,7 @@ export function openSession(input: OpenSessionInput): Session {
     consulted: new Map<string, Set<string>>(),
     served: new Map<string, Set<string>>(),
     held: new Set<string>(),
+    told: new Map<string, number>(),
   };
 }
 

@@ -133,6 +133,22 @@ export function tailLockPath(layout: ChainLayout, tailId: string): string {
 }
 
 /**
+ * Where a tree keeps the projection a reader built from it, so the next reader takes only
+ * what arrived since instead of building it again.
+ *
+ * IT SHARES `locks/` WITH THE WRITERS' LOCKS, and that is a choice of where git already
+ * looks away rather than a claim that it is a lock. Every tree's own `.gitignore` carries
+ * `/locks/` (see `ensureTree`), the tree already has to be writable there for any write to
+ * land, and a directory of its own would need a line in a `.gitignore` the chain never
+ * touches once it exists — which every tree created before this has. It is derived and never
+ * the record: deleting it costs the next reader a rebuild and changes no answer, and a clone
+ * never carries it.
+ */
+export function projectionCachePath(layout: ChainLayout): string {
+  return join(layout.root, 'locks', 'projection.db');
+}
+
+/**
  * The lock a key root is minted under: two processes that both find no key there take it in
  * turn, and the second finds the key the first made (`loadOrCreateKeyPair`). At the key root's
  * top, so taking it makes no directory, and the key root's own `.gitignore` keeps it out of git;

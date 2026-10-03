@@ -58,6 +58,7 @@
  */
 
 import type { CatalogEvent, EventKind } from '@mnema/chain';
+import { type AccumulatorFold, accumulate } from './accumulate.js';
 
 /**
  * One sort of fact written in a run, and how many of it there were.
@@ -137,7 +138,7 @@ export interface RunProjection {
 }
 
 /** Mutable accumulator; existence comes from `started`, closure from `ended`. */
-interface RunAccumulator {
+export interface RunAccumulator {
   agent?: string;
   who?: string;
   goal?: string;
@@ -150,21 +151,21 @@ interface RunAccumulator {
 }
 
 /**
- * Folds ordered events into a map of run id → projection. Only runs that have a
- * `run.started` appear; an ended-only run is dropped rather than invented.
+ * The run fold. Only runs that have a `run.started` appear; an ended-only run is
+ * dropped rather than invented.
  */
-export function projectRuns(events: readonly CatalogEvent[]): Map<string, RunProjection> {
-  const acc = new Map<string, RunAccumulator>();
-
-  for (const event of events) {
+export const runFold: AccumulatorFold<RunAccumulator, RunProjection> = {
+  name: 'runs',
+  create: () => ({ wrote: new Map() }),
+  step(of, event) {
     if (event.kind === 'run.started') {
-      const entry = getOrInit(acc, event.subject);
+      const entry = of(event.subject);
       entry.agent = event.payload.agent;
       entry.who = event.who;
       entry.startedAt = event.at;
       if (event.payload.goal !== undefined) entry.goal = event.payload.goal;
     } else if (event.kind === 'run.ended') {
-      const entry = getOrInit(acc, event.subject);
+      const entry = of(event.subject);
       entry.endedAt = event.at;
       if (event.payload.outcome !== undefined) entry.outcome = event.payload.outcome;
     }
@@ -174,7 +175,7 @@ export function projectRuns(events: readonly CatalogEvent[]): Map<string, RunPro
     // for having no birth, which is the same rule an ended-only subject meets: this
     // projection reports the runs this tree opened, not the runs it was told about.
     if (event.run !== undefined) {
-      const entry = getOrInit(acc, event.run);
+      const entry = of(event.run);
       // MOST RECENT by `at`, not last-seen: the stream is ordered by the interleave
       // across tails, and a run's facts can arrive from more than one of them. Taking
       // whatever came last would let a tail read later hand back an earlier instant.
@@ -186,13 +187,11 @@ export function projectRuns(events: readonly CatalogEvent[]): Map<string, RunPro
       // is bounded whatever the run did, and a list of ids is not.
       entry.wrote.set(event.kind, (entry.wrote.get(event.kind) ?? 0) + 1);
     }
-  }
-
-  const result = new Map<string, RunProjection>();
-  for (const [id, entry] of acc) {
+  },
+  finish(id, entry) {
     // Existence needs the started event; an ended-only subject is dropped.
     if (entry.agent === undefined || entry.who === undefined || entry.startedAt === undefined) {
-      continue;
+      return undefined;
     }
     const projection: Mutable<RunProjection> = {
       id,
@@ -206,33 +205,27 @@ export function projectRuns(events: readonly CatalogEvent[]): Map<string, RunPro
     if (entry.outcome !== undefined) projection.outcome = entry.outcome;
     if (entry.endedAt !== undefined) projection.endedAt = entry.endedAt;
     if (entry.lastFactAt !== undefined) projection.lastFactAt = entry.lastFactAt;
-    result.set(id, projection);
-  }
-  return result;
+    return projection;
+  },
+  // The tally is a Map, which JSON does not carry: it is stored as its entries, in the
+  // order the fold inserted them, so a stored accumulator steps on exactly as the one it
+  // was taken from would have.
+  encode: (acc) => JSON.stringify({ ...acc, wrote: [...acc.wrote] }),
+  decode: (stored) => {
+    const parsed = JSON.parse(stored) as Omit<RunAccumulator, 'wrote'> & {
+      wrote: [EventKind, number][];
+    };
+    return { ...parsed, wrote: new Map(parsed.wrote) };
+  },
+};
+
+/** Folds ordered events into a map of run id → projection ({@link runFold}, over the whole stream). */
+export function projectRuns(events: readonly CatalogEvent[]): Map<string, RunProjection> {
+  return accumulate(runFold, events).projections;
 }
 
-/** Local helper: build the readonly projection through a mutable shape. */
 type Mutable<T> = { -readonly [K in keyof T]: T[K] };
 
-function getOrInit(acc: Map<string, RunAccumulator>, id: string): RunAccumulator {
-  let entry = acc.get(id);
-  if (entry === undefined) {
-    entry = { wrote: new Map() };
-    acc.set(id, entry);
-  }
-  return entry;
-}
-
-/**
- * The tally as the array a caller reads: commonest kind first, ties by the kind's own
- * spelling.
- *
- * The tie-break is what makes this a TOTAL order rather than nearly one, and that
- * matters beyond neatness: the array is stored and compared (`run-store.ts` round-trips
- * it, and `advance.test.ts` asserts an incremental fold writes the same bytes as a full
- * replay), so an order that depended on which kind the stream reached first would make
- * two equal records disagree.
- */
 function orderedWrites(tally: Map<EventKind, number>): readonly WrittenInRun[] {
   return [...tally]
     .map(([kind, count]) => ({ kind, count }))

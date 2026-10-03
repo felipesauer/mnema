@@ -55,6 +55,7 @@
  */
 
 import type { CatalogEvent } from '@mnema/chain';
+import { type AccumulatorFold, accumulate, jsonEncoding } from './accumulate.js';
 import { proofOf, type TransitionProof } from './proof.js';
 
 /** Current projected state of one decision. */
@@ -125,7 +126,7 @@ export interface AdrCollision {
 }
 
 /** Mutable accumulator; existence and state are tracked separately, then joined. */
-interface DecisionAccumulator {
+export interface DecisionAccumulator {
   adr?: string;
   title?: string;
   rationale?: string;
@@ -141,7 +142,7 @@ interface DecisionAccumulator {
 }
 
 /**
- * Folds ordered events into a map of decision id → projection. A decision is
+ * The decision fold. A decision is
  * projected only when it has BOTH a `decision.recorded` (existence) and at
  * least one transition (state) — birth emits the two together, so an intact
  * chain always has both; the guard matters only for a truncated tail.
@@ -153,12 +154,12 @@ interface DecisionAccumulator {
  * a truncated tail is the only way it arrives, and the missing successor is
  * simply not projected).
  */
-export function projectDecisions(events: readonly CatalogEvent[]): Map<string, DecisionProjection> {
-  const acc = new Map<string, DecisionAccumulator>();
-
-  for (const event of events) {
+export const decisionFold: AccumulatorFold<DecisionAccumulator, DecisionProjection> = {
+  name: 'decisions',
+  create: () => ({}),
+  step(of, event) {
     if (event.kind === 'decision.recorded') {
-      const entry = getOrInit(acc, event.subject);
+      const entry = of(event.subject);
       entry.adr = event.payload.adr;
       entry.title = event.payload.title;
       entry.rationale = event.payload.rationale;
@@ -171,7 +172,7 @@ export function projectDecisions(events: readonly CatalogEvent[]): Map<string, D
       entry.createdAt = event.at;
       entry.recordedBy = actorOf(event);
     } else if (event.kind === 'decision.transitioned') {
-      const entry = getOrInit(acc, event.subject);
+      const entry = of(event.subject);
       entry.state = event.payload.to;
       entry.updatedAt = event.at;
       if (event.payload.to === ACCEPTED) entry.acceptedBy = actorOf(event);
@@ -184,13 +185,11 @@ export function projectDecisions(events: readonly CatalogEvent[]): Map<string, D
         // Multi-entity: the subject is superseded BY the successor, and the
         // successor SUPERSEDES the subject. Record the link on both sides.
         entry.supersededBy = event.payload.by;
-        getOrInit(acc, event.payload.by).supersedes = event.subject;
+        of(event.payload.by).supersedes = event.subject;
       }
     }
-  }
-
-  const result = new Map<string, DecisionProjection>();
-  for (const [id, entry] of acc) {
+  },
+  finish(id, entry) {
     // Existence needs the record; state needs a transition. A subject missing
     // either is not a complete decision and is not projected — never given a
     // fabricated state. (An accumulator that only holds `supersedes`, set by a
@@ -203,7 +202,7 @@ export function projectDecisions(events: readonly CatalogEvent[]): Map<string, D
       entry.createdAt === undefined ||
       entry.updatedAt === undefined
     ) {
-      continue;
+      return undefined;
     }
     const projection: Mutable<DecisionProjection> = {
       id,
@@ -220,9 +219,14 @@ export function projectDecisions(events: readonly CatalogEvent[]): Map<string, D
     if (entry.alternatives !== undefined) projection.alternatives = entry.alternatives;
     if (entry.supersededBy !== undefined) projection.supersededBy = entry.supersededBy;
     if (entry.supersedes !== undefined) projection.supersedes = entry.supersedes;
-    result.set(id, projection);
-  }
-  return result;
+    return projection;
+  },
+  ...jsonEncoding<DecisionAccumulator>(),
+};
+
+/** Folds ordered events into a map of decision id → projection ({@link decisionFold}, over the whole stream). */
+export function projectDecisions(events: readonly CatalogEvent[]): Map<string, DecisionProjection> {
+  return accumulate(decisionFold, events).projections;
 }
 
 /**
@@ -273,12 +277,3 @@ function actorOf(event: {
 }
 
 type Mutable<T> = { -readonly [K in keyof T]: T[K] };
-
-function getOrInit(acc: Map<string, DecisionAccumulator>, id: string): DecisionAccumulator {
-  let entry = acc.get(id);
-  if (entry === undefined) {
-    entry = {};
-    acc.set(id, entry);
-  }
-  return entry;
-}

@@ -33,8 +33,6 @@
  * skill, and nobody learns why.
  */
 
-import { oneLine } from './one-line.js';
-
 /** The file every exported skill directory holds — the specification's own name. */
 export const SKILL_FILE = 'SKILL.md';
 
@@ -139,7 +137,7 @@ const SENTENCE_END = /^(.*?[.!?])(?:\s|$)/;
  */
 export function derivedDescription(body: string): string | undefined {
   const paragraph = body.split(PARAGRAPH_BREAK)[0] ?? body;
-  const collapsed = oneLine(paragraph);
+  const collapsed = paragraph.replace(/\s+/g, ' ').trim();
   return specDescription(SENTENCE_END.exec(collapsed)?.[1] ?? collapsed);
 }
 
@@ -165,7 +163,7 @@ export function saysWhen(description: string): boolean {
  * one of them comes to accept what the other refuses.
  *
  * "NOTHING USABLE" IS THE PRODUCT'S OWN READING OF EMPTY, never a second one invented
- * here. `oneLine` collapses what JavaScript calls whitespace and trims, which is what
+ * here. The collapse is what JavaScript calls whitespace to one space, and a trim; it is what
  * `canonicalIdentity` does when it decides whether a `--which` names an agent — and it
  * means a text of only zero-width characters (U+200B and its neighbours are not
  * whitespace to a trim) is a VALUE here, exactly as it is a name there. Invisible, and
@@ -176,7 +174,7 @@ export function saysWhen(description: string): boolean {
  * ceiling can never be a file with half an astral character in it.
  */
 export function specDescription(text: string): string | undefined {
-  const collapsed = oneLine(text);
+  const collapsed = text.replace(/\s+/g, ' ').trim();
   if (collapsed.length === 0) return undefined;
   return [...collapsed].slice(0, DESCRIPTION_LIMIT).join('');
 }

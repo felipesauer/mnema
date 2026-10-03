@@ -26,7 +26,8 @@
  *
  * Like the other intelligence reads it refuses `NO_PROJECT` outside a project —
  * an address is relative to a project root, so outside one there is no root to be
- * relative to. Read-only in the strict sense: a cache per tree rebuilt in memory,
+ * relative to. Read-only in the strict sense: a cache per tree brought forward from the one the tree
+ * keeps (`CacheOptions.persist`),
  * the context package's pure derivation, and one `existsSync` per address. No writer, no
  * key, no event — so no `--actor`.
  */

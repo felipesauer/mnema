@@ -19,6 +19,7 @@
  */
 
 import type { CatalogEvent } from '@mnema/chain';
+import { type AccumulatorFold, accumulate, jsonEncoding } from './accumulate.js';
 import { proofOf, type TransitionProof } from './proof.js';
 
 /** Current projected state of one task. */
@@ -41,7 +42,7 @@ export interface TaskProjection {
 }
 
 /** Mutable accumulator; existence and state are tracked separately, then joined. */
-interface TaskAccumulator {
+export interface TaskAccumulator {
   title?: string;
   createdAt?: string;
   state?: string;
@@ -50,23 +51,23 @@ interface TaskAccumulator {
 }
 
 /**
- * Folds ordered events into a map of task id → projection. A task is projected
- * only when it has BOTH a `task.created` (existence) and at least one
+ * The task fold: how an event moves a task's accumulator, and when one is a task. A task
+ * is projected only when it has BOTH a `task.created` (existence) and at least one
  * transition (state). Birth emits the two together, so an intact chain always
  * has both; the guard matters only for a truncated tail (a created event whose
  * birth transition was not yet written), which is dropped rather than
  * materialized with an invented empty state.
  */
-export function projectTasks(events: readonly CatalogEvent[]): Map<string, TaskProjection> {
-  const acc = new Map<string, TaskAccumulator>();
-
-  for (const event of events) {
+export const taskFold: AccumulatorFold<TaskAccumulator, TaskProjection> = {
+  name: 'tasks',
+  create: () => ({}),
+  step(of, event) {
     if (event.kind === 'task.created') {
-      const entry = getOrInit(acc, event.subject);
+      const entry = of(event.subject);
       entry.title = event.payload.title;
       entry.createdAt = event.at;
     } else if (event.kind === 'task.transitioned') {
-      const entry = getOrInit(acc, event.subject);
+      const entry = of(event.subject);
       entry.state = event.payload.to;
       entry.updatedAt = event.at;
       const said = proofOf(event);
@@ -75,10 +76,8 @@ export function projectTasks(events: readonly CatalogEvent[]): Map<string, TaskP
         entry.proof.push(said);
       }
     }
-  }
-
-  const result = new Map<string, TaskProjection>();
-  for (const [id, entry] of acc) {
+  },
+  finish(id, entry) {
     // Existence needs the created event; state needs a transition. A subject
     // missing either is not a complete task and is not projected — never given
     // a fabricated state.
@@ -88,25 +87,21 @@ export function projectTasks(events: readonly CatalogEvent[]): Map<string, TaskP
       entry.state === undefined ||
       entry.updatedAt === undefined
     ) {
-      continue;
+      return undefined;
     }
-    result.set(id, {
+    return {
       id,
       title: entry.title,
       state: entry.state,
       createdAt: entry.createdAt,
       updatedAt: entry.updatedAt,
       ...(entry.proof !== undefined ? { proof: entry.proof } : {}),
-    });
-  }
-  return result;
-}
+    };
+  },
+  ...jsonEncoding<TaskAccumulator>(),
+};
 
-function getOrInit(acc: Map<string, TaskAccumulator>, id: string): TaskAccumulator {
-  let entry = acc.get(id);
-  if (entry === undefined) {
-    entry = {};
-    acc.set(id, entry);
-  }
-  return entry;
+/** Folds ordered events into a map of task id → projection ({@link taskFold}, over the whole stream). */
+export function projectTasks(events: readonly CatalogEvent[]): Map<string, TaskProjection> {
+  return accumulate(taskFold, events).projections;
 }

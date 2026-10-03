@@ -160,7 +160,7 @@ import {
   THE_CHAIN_AS_IT_STANDS_NOW,
   THE_READING_THAT_OPENED_THESE,
 } from '../tree-sources.js';
-import { type WriteVerdict, whatAWriteMeets } from '../what-a-write-meets.js';
+import { reasonTold, type WriteVerdict, whatAWriteMeets } from '../what-a-write-meets.js';
 import { type HookEvent, type HookReply, hookReply } from './hook-reply.js';
 import {
   type EntityLocation,
@@ -806,7 +806,10 @@ export function runDecisionTransition(
   // the transition is attributed to the agent even when it lands in the public
   // tree — who (the machine) != which (the agent) is preserved on a decision move
   // exactly as it is on a task move.
-  const stamp = { which: session.which, run };
+  // Asked again inside the write, under the tail's lock (`DecisionTransitionInput.refusedWhen`).
+  const refusedWhen = () =>
+    agentMayAccept(workspaceCaches(session), { action: input.action, agent: session.which });
+  const stamp = { which: session.which, run, refusedWhen };
   const moved =
     input.action === 'supersede'
       ? supersedeDecision(ctx, {
@@ -2219,7 +2222,7 @@ export function runRulesBeforeAnEditTool(
   if (met?.grade === 'refuse' && recordWhatItMet(session, met).ok) {
     // What the write founded rides in the reason, the one field of the reply that reaches a model.
     const founded = [...session.founding.take(), ...session.replacementsOwed.take()];
-    const refusal = [met.reason, ...founded].join('\n\n');
+    const refusal = [reasonTold(met, session.told), ...founded].join('\n\n');
     return { ok: true, value: hookReply(PRE_TOOL_USE, { refuse: refusal }) };
   }
   const rulesAt = pushing || holding ? readRulesInForceAt(caches, read) : undefined;
@@ -2231,7 +2234,7 @@ export function runRulesBeforeAnEditTool(
   // fail to compose. Then the reply: the charge rides only if the append landed. What asks
   // is decided where the other doors decide it too (`whatAWriteMeets`).
   const gate = met?.grade === 'ask' ? met : undefined;
-  const ask = gate?.reason;
+  const ask = gate === undefined ? undefined : reasonTold(gate, session.told);
   const charged = gate === undefined ? { ok: true as const } : recordWhatItMet(session, gate);
   // THE FIRST WRITE'S HOLD, and only where nobody is asked already: a person asked is a stop that
   // says more. It is held ONCE per path per connection; the fact that cites each rule is appended

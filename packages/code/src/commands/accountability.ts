@@ -10,7 +10,8 @@
  * optional window and author/agent filter, never a required one. An empty record
  * (or filters that exclude everything) yields a zero account, not an error.
  *
- * Read-only: it opens a cache per tree, rebuilds it in memory, and sums the
+ * Read-only: it opens a cache per tree, brought forward from the one the tree keeps
+ * (`CacheOptions.persist`), and sums the
  * grouped counts the context package's pure `accountability` composes. No writer, no
  * key. It needs no `--actor` — the `--who`/`--which` here are aggregation
  * FILTERS (which author, which agent to count), not the identity of the asker.

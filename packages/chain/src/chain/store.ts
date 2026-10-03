@@ -7,7 +7,7 @@
  * layers the T1/T2/T4 checks on top of what this returns.
  */
 
-import { existsSync, readdirSync, readFileSync } from 'node:fs';
+import { existsSync, readdirSync, readFileSync, statSync } from 'node:fs';
 
 import type { UpcasterRegistry } from '../events/upcaster.js';
 import { type Checkpoint, parseCheckpoint } from './checkpoint.js';
@@ -434,6 +434,15 @@ export function readTailTip(
   return tip.reverse();
 }
 
+/** A file's size, or -1 for one that is not there — a segment that vanished is a cut one. */
+function sizeOf(file: string): number {
+  try {
+    return statSync(file).size;
+  } catch {
+    return -1;
+  }
+}
+
 /** What a resumed reading of a tail found: the arrivals, and where it now stands. */
 export interface TailSince {
   /** The entries past the boundary, in seq order — empty for a tail that did not move. */
@@ -458,6 +467,15 @@ export interface TailSince {
  * rather than edge cases — segments are sealed and append-only, so the only way either
  * happens is that the tail was cut.
  *
+ * THE SECOND HALF WAS PROMISED AND NOT KEPT, which is what a segment put back to what it
+ * was found it. The walk below answers "nothing arrived" the moment it meets a line that
+ * starts before the boundary, and the LAST line of a file that was cut short starts before
+ * it — so a segment shortened below the boundary, the way restoring an earlier copy of it
+ * does, read as a tail that did not move, and a cache that had covered the longer file
+ * went on serving it. The size is asked first now: one `stat`, and a segment holding fewer
+ * bytes than the boundary (less the newline a torn final line may lack) is the cut this
+ * names. `order.test.ts` holds it.
+ *
  * It costs the arrivals and not the tail: the walk is backwards from the end and stops
  * at the boundary, so a tail that did not move reads one chunk.
  */
@@ -470,6 +488,9 @@ export function readTailSince(
   const segments = orderedSegments(layout, tailId);
   const at = segments.indexOf(boundary.segment);
   if (at < 0) return undefined;
+  // One byte of slack for the newline a torn final line may lack: the reading that set the
+  // boundary counted it, and the file never held it.
+  if (sizeOf(boundary.segment) < boundary.bytes - 1) return undefined;
   const arrivals: Entry[] = [];
   let reached: TailBoundary | undefined;
   for (let s = segments.length - 1; s >= at; s -= 1) {

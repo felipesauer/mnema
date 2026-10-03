@@ -31,16 +31,16 @@
  * lock, and judged again against what it says NOW — the only case that pays twice,
  * and only when another write landed in between.
  *
- * WHAT THE SECOND READING COSTS, measured: a move alone costs what it cost before
- * (the same medians at 1, 10, 30 and 100 thousand events), but a move that finds
- * the chain moved holds the lock for a whole replay — 0.10 s at 10 thousand events,
- * 0.36 s at 30 thousand, 1.35 s at 100 thousand, in process — and a third session
- * waiting behind two such holds can run out of the lock's 2 s: measured on the
- * binary, three moves of three different decisions at once refused one of them
- * `TAIL_BUSY` in 1 of 3 tries at 50 thousand events and in 3 of 3 at 75 and at 100
- * thousand (none at 30 thousand), where the code before this let all three through;
- * two at once never ran out. That is the price of this order, and the
- * choice about it is not this file's.
+ * WHAT THE SECOND READING COSTS, and what it cost: it was a whole replay, held under the lock —
+ * 1.35 s at 100 thousand events, and the roster the write checks before it appends was a second
+ * one (2.2 s) — so a third session waiting behind two such holds ran out of the lock's 2 s:
+ * measured on the binary, three moves of three different decisions at once refused
+ * `TAIL_BUSY` in 1 of 3 tries at 50 thousand events and in 3 of 3 at 75 and at 100 thousand.
+ * Both reads come from the projection the tree keeps now (`read-the-record.ts`), so what the
+ * lock is held for is the arrivals and the append: at 100 thousand events, 27 moves in nine
+ * rounds of three refused none on a record that had been read, against 7 of 18 before; on one
+ * nobody had read yet it refused 1 of 18, where the first writer builds the projection once
+ * (`measurements/the-record-at-scale/`).
  *
  * The judgement is handed the earlier reading alongside the new one, so a move
  * whose subject changed under it can say so in words of its own

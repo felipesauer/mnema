@@ -110,9 +110,15 @@ export function oneLine(text: string): string {
   return neutralized(text.replace(/\s+/g, ' ').trim());
 }
 
-/** C0 but for tab and line feed, a CR that is not half of a CRLF, DEL, and C1. */
-// biome-ignore lint/suspicious/noControlCharactersInRegex: matching control characters is this rule
-const CONTROL_BYTES = /[\u0000-\u0008\u000b\u000c\u000e-\u001f\u007f-\u009f]|\r(?!\n)/g;
+/**
+ * C0 but for tab and line feed, a CR that is not half of a CRLF, DEL, and C1 — and the
+ * format characters that draw nothing or reorder what is drawn: zero-width and
+ * joiner marks, the directional marks, embeddings, overrides and isolates, the word
+ * joiner and the byte order mark.
+ */
+const CONTROL_BYTES =
+  // biome-ignore lint/suspicious/noControlCharactersInRegex: matching control characters is this rule
+  /[\u0000-\u0008\u000b\u000c\u000e-\u001f\u007f-\u009f\u061c\u180e\u200b-\u200f\u202a-\u202e\u2060-\u2064\u2066-\u2069\ufeff]|\r(?!\n)/g;
 
 /**
  * Every control byte in `text` made visible as the escape JSON writes for it — the one
@@ -134,10 +140,11 @@ const CONTROL_BYTES = /[\u0000-\u0008\u000b\u000c\u000e-\u001f\u007f-\u009f]|\r(
  *
  * WHAT IT IS NOT: a judgement of what the text says. It looks at bytes, never at words, and
  * a sentence addressed to a model comes out of it unchanged — the framing decides what that
- * sentence is told it is (`record-framing.ts`). It also does not reach the format controls
- * that are not C0 or C1 (a right-to-left override, a zero-width joiner): those change what
- * a reader SEES, not what a terminal DOES, and they are declared as a limit rather than
- * folded in.
+ * sentence is told it is (`record-framing.ts`). The format characters that draw nothing
+ * or reorder what is drawn (a zero-width space, a right-to-left override, an isolate, the
+ * byte order mark) are written the same way: a reader, or a model, sees them as the six
+ * characters they are rather than not seeing them at all. A zero-width joiner inside an
+ * emoji sequence is written too; the text stays readable and nothing is hidden.
  *
  * IDEMPOTENT, and it has to be: the escape it writes holds no control byte, so text that
  * passes through two sinks (a line built by {@link oneLine}, then written by the port) is

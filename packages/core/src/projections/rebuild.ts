@@ -1,7 +1,6 @@
 /**
- * Rebuild: drop the projection cache and replay it from the chain. And ADVANCE:
- * the same replay over an order that only grew, doing the work the growth
- * actually made necessary.
+ * Rebuild: drop the projection cache and replay it from the chain. Its counterpart is
+ * `advance.ts`, which brings a cache forward over what ARRIVED and leaves the rest alone.
  *
  * This is the operation that PROVES the SQLite database is a cache and not a
  * source. Nothing in it is authored directly — every row comes from replaying
@@ -19,34 +18,33 @@
  *
  * ## Why there are two entry points and not two implementations
  *
- * {@link advance} exists because of a measurement, and the measurement said the
- * folds are not the cost. On a realistic record (207 events, 148 KB) a rebuild is
- * 4.8 ms and its nine folds are 0.06 ms of that — 1%. The cost is READING the
- * chain (1.4 ms) and WRITING the rows (2.5 ms, of which the reference index alone
- * is 1.1 ms and the full-text index 0.55 ms), plus 0.9 ms of DDL that is flat in
- * the record. So the only lever worth pulling is not folding less: it is not
- * re-reading a chain the caller already holds in order, and not rewriting rows the
- * arrivals cannot have changed.
+ * The advance exists because of a measurement, and the measurement said the folds are not
+ * the cost. On a realistic record (207 events, 148 KB) a rebuild is 4.8 ms and its nine
+ * folds are 0.06 ms of that — 1%. The cost is READING the chain (1.4 ms) and WRITING the
+ * rows (2.5 ms, of which the reference index alone is 1.1 ms and the full-text index
+ * 0.55 ms), plus 0.9 ms of DDL that is flat in the record. So the lever is not folding
+ * less: it is not re-reading a chain the cache already holds, and not rewriting rows the
+ * arrivals cannot have changed. THAT WAS TRUE OF A RECORD OF 207 EVENTS AND IT STOPPED BEING
+ * TRUE BEFORE 100 THOUSAND: the first version of the advance still folded the whole order
+ * to write the few rows an arrival changed, and a reading of a record that size measured
+ * 0.65-0.73 s for one arrival (`measurements/the-record-at-scale/`), where the fold is the
+ * part that grows. The advance now folds the ARRIVALS alone, from the accumulators this
+ * file leaves behind.
  *
- * Both functions therefore take the ORDER, not the chain, and both fold ALL of it
- * through {@link foldAll} — one fold block, one pass each, over the same ordered
- * stream, exactly as before. What differs is only which materializations run. A
- * projection is a function of the kinds it reads, so a table no arrival feeds is
- * identical either way and rewriting it would buy nothing (`fed-by.ts` holds that
- * table and the two universal readers in it).
- *
- * The one materialization brought forward by APPENDING rather than replacing is the
- * reference index, and it is the same function given a suffix and the position it
- * starts at ({@link materializeReferences}). It is also the expensive one, which is
- * why it is the one that got the treatment.
+ * What keeps the two from being two readings of the record is that they share the rule and
+ * differ only in where the starting point comes from: every entity fold is an
+ * `AccumulatorFold` (`accumulate.ts`), and a rebuild starts each accumulator empty where an
+ * advance starts it from the one stored. `advance.test.ts` drives one event of every kind of
+ * the catalog through both and requires the same rows.
  */
 
 import type { CatalogEvent } from '@mnema/chain';
 import { dropProjections, ensureSchema, type ProjectionTable } from '../db/schema.js';
 import type { SqliteDatabase } from '../db/sqlite.js';
+import { type Accumulated, accumulate } from './accumulate.js';
 import { projectChannelSwitches } from './channel.js';
 import { materializeChannelSwitches } from './channel-store.js';
-import { projectDecisions } from './decision.js';
+import { type DecisionAccumulator, decisionFold } from './decision.js';
 import { materializeDecisions } from './decision-store.js';
 import {
   projectHandoffs,
@@ -61,47 +59,54 @@ import {
   materializeObservations,
 } from './knowledge-store.js';
 import { materializeReferences } from './reference-store.js';
-import { projectRuns } from './run.js';
+import { runFold } from './run.js';
 import { materializeRuns } from './run-store.js';
 import { materializeSearch } from './search-store.js';
-import { projectSkills } from './skill.js';
+import { skillFold } from './skill.js';
 import { materializeSkills } from './skill-store.js';
-import { projectTasks } from './task.js';
+import {
+  materializeDivergences,
+  materializeFoldState,
+  materializeMembership,
+} from './state-store.js';
+import { taskFold } from './task.js';
 import { materializeTasks } from './task-store.js';
 
-/** Every projection of one ordered stream, folded. */
+/** Every projection of one ordered stream, folded — and the accumulators the entity folds left. */
 interface Folded {
-  readonly tasks: ReturnType<typeof projectTasks>;
-  readonly runs: ReturnType<typeof projectRuns>;
-  readonly decisions: ReturnType<typeof projectDecisions>;
+  readonly events: readonly CatalogEvent[];
+  readonly tasks: Accumulated<ReturnType<typeof taskFold.create>, ProjectionOf<typeof taskFold>>;
+  readonly runs: Accumulated<ReturnType<typeof runFold.create>, ProjectionOf<typeof runFold>>;
+  readonly decisions: Accumulated<DecisionAccumulator, ProjectionOf<typeof decisionFold>>;
+  readonly skills: Accumulated<ReturnType<typeof skillFold.create>, ProjectionOf<typeof skillFold>>;
   readonly memories: ReturnType<typeof projectKnowledge>;
   readonly observations: ReturnType<typeof projectObservations>;
   readonly handoffs: ReturnType<typeof projectHandoffs>;
   readonly links: ReturnType<typeof projectLinks>;
-  readonly skills: ReturnType<typeof projectSkills>;
   readonly switches: ReturnType<typeof projectChannelSwitches>;
 }
 
+/** What a fold projects to. */
+type ProjectionOf<F> = F extends { finish(id: string, acc: never): infer P }
+  ? Exclude<P, undefined>
+  : never;
+
 /**
- * Folds every projection from one ordered stream. THE fold block, called by both
- * entry points: every projection folds the same ordered stream once, so they always
- * agree on what the chain says.
- *
- * It folds all nine even when only some will be written, and that is deliberate: the
- * nine together are 1% of a rebuild (0.06 ms on a realistic record), so folding
- * selectively would buy a rounding error and cost a second reading of which fold
- * belongs to which table.
+ * Folds every projection from one ordered stream. THE fold block of a replay: every
+ * projection folds the same ordered stream once, so they always agree on what the chain
+ * says. It folds all of them even when only some will be written — a rebuild writes them all.
  */
 function foldAll(events: readonly CatalogEvent[]): Folded {
   return {
-    tasks: projectTasks(events),
-    runs: projectRuns(events),
-    decisions: projectDecisions(events),
+    events,
+    tasks: accumulate(taskFold, events),
+    runs: accumulate(runFold, events),
+    decisions: accumulate(decisionFold, events),
+    skills: accumulate(skillFold, events),
     memories: projectKnowledge(events),
     observations: projectObservations(events),
     handoffs: projectHandoffs(events),
     links: projectLinks(events),
-    skills: projectSkills(events),
     switches: projectChannelSwitches(events),
   };
 }
@@ -118,13 +123,13 @@ function materialize(
 ): void {
   switch (table) {
     case 'tasks':
-      materializeTasks(db, folded.tasks.values());
+      materializeTasks(db, folded.tasks.projections.values());
       return;
     case 'runs':
-      materializeRuns(db, folded.runs.values());
+      materializeRuns(db, folded.runs.projections.values());
       return;
     case 'decisions':
-      materializeDecisions(db, folded.decisions.values());
+      materializeDecisions(db, folded.decisions.projections.values());
       return;
     case 'memories':
       materializeMemories(db, folded.memories.values());
@@ -139,22 +144,37 @@ function materialize(
       materializeLinks(db, folded.links);
       return;
     case 'skills':
-      materializeSkills(db, folded.skills.values());
-      return;
-    case 'channel_switches':
-      materializeChannelSwitches(db, folded.switches.values());
+      materializeSkills(db, folded.skills.projections.values());
       return;
     case 'record_search':
       // The full-text index is filled from the projections just folded, not from a
       // second pass over the chain: one read, one fold, two views — so the index and
       // the tables cannot come to disagree about what the chain says.
       materializeSearch(db, {
-        tasks: folded.tasks.values(),
-        decisions: folded.decisions.values(),
+        tasks: folded.tasks.projections.values(),
+        decisions: folded.decisions.projections.values(),
         memories: folded.memories.values(),
         observations: folded.observations.values(),
-        skills: folded.skills.values(),
+        skills: folded.skills.projections.values(),
       });
+      return;
+    case 'search_rows':
+      // Written by `materializeSearch`, row by row, as the rows it indexes are inserted.
+      return;
+    case 'channel_switches':
+      materializeChannelSwitches(db, folded.switches.values());
+      return;
+    case 'fold_state':
+      materializeFoldState(db, taskFold, folded.tasks.accumulators);
+      materializeFoldState(db, runFold, folded.runs.accumulators);
+      materializeFoldState(db, decisionFold, folded.decisions.accumulators);
+      materializeFoldState(db, skillFold, folded.skills.accumulators);
+      return;
+    case 'membership_facts':
+      materializeMembership(db, folded.events);
+      return;
+    case 'divergences':
+      materializeDivergences(db, folded.events);
       return;
   }
 }
@@ -176,7 +196,11 @@ const FOLDED_TABLES: readonly Exclude<ProjectionTable, 'refs'>[] = [
   'links',
   'skills',
   'record_search',
+  'search_rows',
   'channel_switches',
+  'fold_state',
+  'membership_facts',
+  'divergences',
 ];
 
 /**
@@ -197,50 +221,6 @@ export function rebuild(db: SqliteDatabase, events: readonly CatalogEvent[]): vo
     // events themselves are its source. Same read, same order — an index built
     // from a second pass could disagree with the tables about both.
     materializeReferences(db, events);
-  });
-  replace();
-}
-
-/**
- * Brings a cache forward over events that were APPENDED to the order it was built
- * from: replaces the tables those events feed, and appends their rows to the
- * reference index.
- *
- * `events` is the whole order INCLUDING the arrivals — the folds read all of it,
- * because a projection is a fold of the stream and not of a window. `arrived` is the
- * suffix of it that is new, and `from` is where that suffix starts, which is exactly
- * the count of events the cache was previously built from.
- *
- * The caller owes two things, and neither is checkable here: that `arrived` really
- * is the tail of `events` (`events.length === from + arrived.length` is asserted,
- * being free; that the CONTENT lines up is established by whoever read the chain),
- * and that the order before `from` is unchanged. {@link chainArrivals} is what
- * establishes both, and its refusals are the cases where this must not be used.
- *
- * `tables` is what the arrivals feed (`tablesFedBy`). One transaction, like a
- * rebuild: a failure rolls back to the cache as it stood.
- */
-export function advance(
-  db: SqliteDatabase,
-  events: readonly CatalogEvent[],
-  arrived: readonly CatalogEvent[],
-  from: number,
-  tables: ReadonlySet<ProjectionTable>,
-): void {
-  if (events.length !== from + arrived.length) {
-    throw new RangeError('advance was given arrivals that are not the tail of the order');
-  }
-  const folded = foldAll(events);
-  const refold = FOLDED_TABLES.filter((table) => tables.has(table));
-  const replace = db.transaction(() => {
-    // Only the fed tables are emptied, and the schema is re-ensured for exactly
-    // those. Every other table keeps the rows it has, which is not an optimization
-    // so much as the theorem: the events that arrived do not appear in their folds,
-    // so replaying them would write the rows that are already there.
-    dropProjections(db, new Set(refold));
-    ensureSchema(db);
-    for (const table of refold) materialize(db, table, folded);
-    if (tables.has('refs')) materializeReferences(db, arrived, from);
   });
   replace();
 }

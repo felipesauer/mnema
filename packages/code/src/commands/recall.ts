@@ -37,7 +37,8 @@
  * ({@link switchedOff}). Both are non-zero exits on stderr, which is what the plugin's
  * handler already treats as silence.
  *
- * Read-only in the strict sense: a cache per visible tree, rebuilt in memory, four index
+ * Read-only in the strict sense — it records nothing: a cache per visible tree, brought forward
+ * from the one the tree keeps (`CacheOptions.persist`), four index
  * queries, and two git reads that take no lock. No writer, no key, no event.
  */
 
