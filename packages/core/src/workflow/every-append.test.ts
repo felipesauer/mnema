@@ -23,7 +23,7 @@ import {
   switchChannel,
 } from './channel-operations.js';
 import { recordDecision } from './decision-operations.js';
-import { enrollKey, ensureFounded, revokeKey } from './identity-operations.js';
+import { enrollKey, ensureFounded, linkAccount, revokeKey } from './identity-operations.js';
 import { createTask, type WriteContext } from './operations.js';
 import { authorizeTailPrune } from './prune-operations.js';
 import { endRun, startRun } from './session-operations.js';
@@ -464,6 +464,12 @@ describe('every write refuses what no read could accept', () => {
         field: 'reason',
         names: 'payload.reason',
         drive: () => revokeKey(ctx, { revokedFp: 'f'.repeat(64), reason: '' }),
+      },
+      {
+        op: 'linkAccount',
+        field: 'account',
+        names: 'payload.account',
+        drive: () => linkAccount(ctx, { account: '' }),
       },
       {
         op: 'enrollKey',

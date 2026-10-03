@@ -285,6 +285,9 @@ export const SUBJECT_TEXT = {
   // DERIVED from the record: the anchor a waiver names is read off the pruned
   // tail's own last event, never handed in. No caller can put anything in it.
   'tail.pruned': 'identifier',
+  // DERIVED: the anchor of the key that signs it, never handed in — an identity names
+  // only its own account.
+  'account.linked': 'identifier',
 } as const satisfies { readonly [K in EventKind]: FieldNature };
 
 /**
@@ -425,6 +428,10 @@ export const PAYLOAD_TEXT = {
     failure: 'body',
     output: 'body',
   },
+  // `service` is the product's own literal (`github`), never a caller's string. `account` is
+  // the caller's, and a NAME: a reading puts it in an address and asks the host for it by
+  // exact string, so a scrubbed one would ask about somebody else.
+  'account.linked': { service: 'identifier', account: 'name' },
 } as const satisfies {
   readonly [K in EventKind]: { readonly [P in PayloadPath<K>]: FieldNature };
 };

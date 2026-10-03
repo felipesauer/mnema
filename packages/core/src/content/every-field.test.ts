@@ -28,7 +28,12 @@ import {
   switchChannel,
 } from '../workflow/channel-operations.js';
 import { recordDecision, supersedeDecision } from '../workflow/decision-operations.js';
-import { enrollKey, foundIdentity, revokeKey } from '../workflow/identity-operations.js';
+import {
+  enrollKey,
+  foundIdentity,
+  linkAccount,
+  revokeKey,
+} from '../workflow/identity-operations.js';
 import { createTask, transitionTask, type WriteContext } from '../workflow/operations.js';
 import { authorizeTailPrune } from '../workflow/prune-operations.js';
 import { endRun, startRun } from '../workflow/session-operations.js';
@@ -262,6 +267,10 @@ const DRIVERS: { readonly [K in EventKind]: Driver } = {
 
   'key.revoked': (ctx, text) =>
     revokeKey(ctx, { revokedFp: 'f'.repeat(64), reason: text('payload.reason') }),
+
+  // The account is the caller's NAME and is driven; the service is the product's literal and
+  // the subject is the signing identity, so the sweep's other half checks both came through.
+  'account.linked': (ctx, text) => linkAccount(ctx, { account: text('payload.account') }),
 
   'memory.captured': (ctx, text) =>
     captureMemory(ctx, {

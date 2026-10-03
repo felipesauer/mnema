@@ -243,6 +243,9 @@ export const PAYLOAD_SCHEMA: { readonly [K in EventKind]: PayloadSchemaOf<K> } =
     failure: 'string',
     output: 'string?',
   },
+  // Both required: a claim of an account that does not say which host, or which account,
+  // names nothing a reader could go and ask.
+  'account.linked': { service: 'string', account: 'string' },
 };
 
 /**

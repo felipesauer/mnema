@@ -457,6 +457,10 @@ export const NAMES_THAT_NEED_MORE: Readonly<
     times: 1,
     why: 'answers a line typed outside a project, whole, by naming the verb to run inside one',
   },
+  'packages/code/src/wiring/key.ts: mnema key github': {
+    times: 1,
+    why: 'answers a line typed outside a project, whole, by naming the verb to run inside one',
+  },
   'packages/code/src/wiring/key.ts: mnema key request': {
     times: 1,
     why: 'the help of `key enroll`, naming the verb whose output its argument is',
@@ -468,6 +472,10 @@ export const NAMES_THAT_NEED_MORE: Readonly<
   'packages/code/src/wiring/key.ts: mnema key revoke': {
     times: 1,
     why: 'answers a line typed outside a project, whole, by naming the verb to run inside one',
+  },
+  'packages/code/src/wiring/verify.ts: mnema key github': {
+    times: 1,
+    why: 'the line saying an identity has no account linked, naming the verb that links one',
   },
   'packages/code/src/wiring/run.ts: mnema run end': {
     times: 1,
@@ -576,7 +584,7 @@ export const HANDED_OVER: Readonly<
   // `mnema rules` twice.
   // And four names more for the paragraph that says a note can be taken back: `mnema retract`,
   // and the three reads it names (`mnema search`, `mnema show`, `mnema verify`).
-  span: { line: 46, name: 91, flag: 1, unwritten: 0 },
+  span: { line: 48, name: 91, flag: 1, unwritten: 0 },
   // name 18 until the page that says where the key lives named `mnema key protect` in a line of
   // its own.
   // line 35 until the same page showed that question in a block of its own.
@@ -600,7 +608,7 @@ export const HANDED_OVER: Readonly<
   // name 53 until `mnema doctor` named the `mnema mcp` a host starts, twice, and `claude mcp add mnema -- mnema mcp`.
   // line 54 and name 62 once a key could be requested and enrolled to sign check results, and the
   // checks' own help named the verbs that declare and run them.
-  source: { line: 54, name: 62, flag: 3, unwritten: 3 },
+  source: { line: 58, name: 64, flag: 3, unwritten: 3 },
 };
 
 // ---------------------------------------------------------------------------
