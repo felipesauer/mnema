@@ -261,6 +261,26 @@ describe('the brief with an inherited record', () => {
   });
 });
 
+describe('what an origin may be', () => {
+  it('refuses a transport helper and an unknown scheme by name, and runs nothing', () => {
+    const project = place('project');
+    const marker = join(sandbox, 'ran');
+    for (const where of [`ext::sh -c "touch ${marker}"`, 'foo://x', 'file:///tmp/x', 'ftp://h/r']) {
+      const refused = runInheritSet(project, { where, write: true });
+      expect(refused, where).toMatchObject({ ok: false, reason: 'UNREACHABLE' });
+      expect(refused.ok ? '' : refused.detail, where).toMatch(/is not read|not read;/);
+    }
+    expect(existsSync(marker)).toBe(false);
+    expect(existsSync(join(project.cwd, '.mnema', 'inherit.json'))).toBe(false);
+  });
+
+  it('still reads a local origin', () => {
+    const { at: source } = origin();
+    const project = place('project');
+    expect(runInheritSet(project, { where: source.cwd })).toMatchObject({ ok: true });
+  });
+});
+
 describe('updating', () => {
   it('shows what changes between the two commits before it moves the pointer', () => {
     const { at: source, first } = origin();

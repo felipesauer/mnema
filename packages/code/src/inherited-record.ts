@@ -118,9 +118,26 @@ function homeOf(trees: ResolvedTrees, where: string): string {
  * the way a file in the repository would read it; a URL is left as it is.
  */
 function sourceOf(where: string, projectRoot: string): string {
-  if (/^[a-z][a-z0-9+.-]*:\/\//i.test(where) || /^[\w.-]+@[\w.-]+:/.test(where)) return where;
+  const scheme = /^([a-z][a-z0-9+.-]*):\/\//i.exec(where)?.[1]?.toLowerCase();
+  if (scheme !== undefined) {
+    if (scheme === 'https' || scheme === 'ssh') return where;
+    throw new GitFailed(`an origin over ${scheme}:// is not read; use https, ssh or a local path`);
+  }
+  if (/^[\w.-]+@[\w.-]+:/.test(where)) return where;
+  // `ext::<command>` and its kin are transport helpers: git would run what follows the `::`.
+  if (where.includes('::')) {
+    throw new GitFailed('an origin written as <helper>::<address> is not read');
+  }
   return resolve(projectRoot, where);
 }
+
+/** Only these transports are spoken, and never one a URL the user did not type could pick. */
+const TRANSPORTS = [
+  'protocol.allow=never',
+  'protocol.https.allow=always',
+  'protocol.ssh.allow=always',
+  'protocol.file.allow=always',
+].flatMap((setting) => ['-c', setting]);
 
 /** A git failure, with the last line git said — the part a person can act on. */
 export class GitFailed extends Error {
@@ -129,13 +146,17 @@ export class GitFailed extends Error {
 
 function git(args: readonly string[], binary = false, timeout = 120_000): Buffer | string {
   try {
-    return execFileSync('git', ['-c', 'gc.auto=0', '-c', 'maintenance.auto=false', ...args], {
-      encoding: binary ? 'buffer' : 'utf8',
-      env: { ...process.env, GIT_TERMINAL_PROMPT: '0' },
-      stdio: ['ignore', 'pipe', 'pipe'],
-      timeout,
-      maxBuffer: 1024 * 1024 * 1024,
-    });
+    return execFileSync(
+      'git',
+      ['-c', 'gc.auto=0', '-c', 'maintenance.auto=false', ...TRANSPORTS, ...args],
+      {
+        encoding: binary ? 'buffer' : 'utf8',
+        env: { ...process.env, GIT_TERMINAL_PROMPT: '0', GIT_PROTOCOL_FROM_USER: '0' },
+        stdio: ['ignore', 'pipe', 'pipe'],
+        timeout,
+        maxBuffer: 1024 * 1024 * 1024,
+      },
+    );
   } catch (error) {
     const stderr = String((error as { stderr?: unknown }).stderr ?? '').trim();
     throw new GitFailed(stderr.split('\n').pop() || (error as Error).message);
