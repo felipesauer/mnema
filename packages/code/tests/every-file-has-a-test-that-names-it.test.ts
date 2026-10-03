@@ -735,6 +735,12 @@ function outOfOrder(lines: readonly string[]): string[] {
  * a count that pins nothing.
  */
 const CLAUSES_PER_FILE: Readonly<Record<string, number>> = {
+  'packages/action/src/comment.test.ts': 2,
+  'packages/action/src/github.test.ts': 3,
+  'packages/action/src/governed.test.ts': 2,
+  'packages/action/src/judge.test.ts': 2,
+  'packages/action/src/record.test.ts': 2,
+  'packages/action/src/run.test.ts': 11,
   'packages/chain/src/boundaries.test.ts': 3,
   'packages/chain/src/chain/backup.test.ts': 8,
   'packages/chain/src/chain/bitcoin.test.ts': 3,
@@ -1197,6 +1203,13 @@ const CLAUSES_PER_FILE: Readonly<Record<string, number>> = {
  * together.
  */
 const PRODUCTION_FILES: readonly string[] = [
+  'packages/action/src/comment.ts',
+  'packages/action/src/github.ts',
+  'packages/action/src/governed.ts',
+  'packages/action/src/judge.ts',
+  'packages/action/src/record.ts',
+  'packages/action/src/run.ts',
+  'packages/action/src/world.ts',
   'packages/chain/src/chain/backup.ts',
   'packages/chain/src/chain/bitcoin.ts',
   'packages/chain/src/chain/chain.ts',
@@ -1672,7 +1685,7 @@ describe('every file has a test that names it', () => {
 
   it('names a package with no src/ instead of dying while it collects', () => {
     expect(WITHOUT_SOURCE).toEqual([]);
-    expect(READABLE).toEqual(['chain', 'code', 'context', 'core']);
+    expect(READABLE).toEqual(['action', 'chain', 'code', 'context', 'core']);
   });
 
   it('cannot be dissolved by the ledger that describes it', () => {

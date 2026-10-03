@@ -138,17 +138,26 @@ const PACKED: ReadonlyMap<string, readonly string[]> = new Map(
 const carried = (name: string): readonly string[] => PACKED.get(name) ?? [];
 
 describe('the workspace knows which packages it publishes', () => {
-  it('finds four, and every one of them is meant to go', () => {
+  it('finds five, and every one but the Action is meant to go', () => {
     // NON-VACUITY of everything below, which is a reduction over this list. Exact rather
     // than a floor: a floor is a number anyone can lower to swallow a package that stopped
-    // being read.
+    // being read. `@mnema/action` is the one that stays: it is `private`, runs from a
+    // checkout and is published nowhere, so it is in the workspace and not in what travels.
     expect(ALL.map((m) => m.name).sort()).toEqual([
+      '@mnema/action',
       '@mnema/chain',
       '@mnema/code',
       '@mnema/context',
       '@mnema/core',
     ]);
-    expect(PUBLISHABLE.map((m) => m.name).sort()).toEqual(ALL.map((m) => m.name).sort());
+    expect(PUBLISHABLE.map((m) => m.name).sort()).toEqual([
+      '@mnema/chain',
+      '@mnema/code',
+      '@mnema/context',
+      '@mnema/core',
+    ]);
+    expect(ALL.filter((m) => m.private === true).map((m) => m.name)).toEqual(['@mnema/action']);
+    expect(ALL.find((m) => m.name === '@mnema/action')?.license).toBe('Apache-2.0');
   });
 
   it('carries no `private` in a manifest that travels', () => {
@@ -274,6 +283,23 @@ describe('every package carries the licence its manifest claims', () => {
     // NOTICE which exists travels with the work. This case is the only thing in this
     // workspace that would notice if either stopped happening.
     expect(licenceDefects(PUBLISHABLE, PACKED)).toEqual([]);
+  });
+
+  it('holds the same licence and notice in a package that is never packed', () => {
+    // `@mnema/action` is `private`, so no tarball is made of it and the cases above never see
+    // it. It is still a directory of this repository that someone reads and copies, so what
+    // the tarballs are held to is asked of its files directly: the manifest says Apache-2.0
+    // and the NOTICE beside it is the root's, byte for byte.
+    const notPacked = ALL.filter((m) => m.private === true);
+    expect(notPacked.map((m) => m.name)).toEqual(['@mnema/action']);
+    const root = readFileSync(join(ROOT, 'NOTICE'), 'utf-8');
+    const defects = notPacked.flatMap((m) => [
+      ...(m.license === 'Apache-2.0' ? [] : [`${m.name}: declares ${m.license ?? 'no licence'}`]),
+      ...(readFileSync(join(m.dir, 'NOTICE'), 'utf-8') === root
+        ? []
+        : [`${m.name}: NOTICE is not the root's`]),
+    ]);
+    expect(defects).toEqual([]);
   });
 
   it('ships the root text, byte for byte, and not a copy that drifted', () => {

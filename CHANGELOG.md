@@ -15,6 +15,11 @@ Requires Node ≥ 22.12.0; the packages are ESM-only.
 
 ### Added
 
+- **A GitHub Action over the record** (`packages/action`, not published): on a pull request it keeps
+  one comment saying which events the pull request adds to the record and which changed files an
+  accepted rule addresses, and fails the check when `mnema verify --require=signed` fails. An
+  optional input also fails it when a rule that asks for a person addresses a changed file and only
+  the author has approved. It reads the record and writes nothing but the comment.
 - **A signed, append-only record in the repository.** Decisions with their reasoning and the
   options turned down, the patterns a team works by, tasks, handoffs, memories and
   observations, as typed facts in `.mnema/`, committed with the code and handed to every

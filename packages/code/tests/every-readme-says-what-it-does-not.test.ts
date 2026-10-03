@@ -187,6 +187,7 @@ describe('every package page words its honest guarantee as a proof', () => {
     // had one.
     expect(pagesThatProve()).toEqual([
       'README.md',
+      'packages/action/README.md',
       'packages/chain/README.md',
       'packages/code/README.md',
       'packages/context/README.md',
