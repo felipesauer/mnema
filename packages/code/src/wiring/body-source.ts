@@ -9,22 +9,16 @@
  * and a pipe end in one, and a typed argument does not.
  */
 
-import { readFileSync } from 'node:fs';
-import type { Option } from 'commander';
-import { Option as CommanderOption } from 'commander';
+import type { Command } from 'commander';
 import { REFUSED } from './from-the-group.js';
 import { reportUsage } from './report.js';
 import type { Wiring } from './verb.js';
 
-/** What the two flags say in `--help`, with the text each one is the door for. */
-export function bodySourceOptions(what: string): readonly Option[] {
-  return [
-    new CommanderOption('--stdin', `read the ${what} from standard input instead of the line`),
-    new CommanderOption(
-      '--body-file <path>',
-      `read the ${what} from this file instead of the line`,
-    ),
-  ];
+/** Declares the two flags on `command`, with the text each one is the door for. */
+export function addBodySourceOptions(command: Command, what: string): void {
+  command
+    .option('--stdin', `read the ${what} from standard input instead of the line`)
+    .option('--body-file <path>', `read the ${what} from this file instead of the line`);
 }
 
 /** The three places a text can come from, as the line gave them. */
@@ -61,6 +55,7 @@ export async function bodyFrom(
     text = wiring.io.input === undefined ? '' : await wiring.io.input();
   } else if (given.bodyFile !== undefined) {
     try {
+      const { readFileSync } = await import('node:fs');
       text = readFileSync(given.bodyFile, 'utf-8');
     } catch (error) {
       const code = (error as NodeJS.ErrnoException).code ?? 'unreadable';

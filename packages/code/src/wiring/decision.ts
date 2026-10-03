@@ -20,7 +20,7 @@ import type { runDecisionImport } from '../commands/decision-import.js';
 import type { runDecisionTransition } from '../commands/decision-transition.js';
 import { fact } from '../presentation/detail.js';
 import { RECORD_CONTRACT_HELP, replacementNotice } from '../recorded-content.js';
-import { bodyFrom, bodySourceOptions } from './body-source.js';
+import { addBodySourceOptions, bodyFrom } from './body-source.js';
 import { here } from './context.js';
 import {
   actionsRequiring,
@@ -77,7 +77,7 @@ export function registerDecision(program: Command, wiring: Wiring): Declared {
     )
     .option('--which <agent>', WHICH_HELP, declaredAgent)
     .addHelpText('after', RECORD_CONTRACT_HELP);
-  for (const option of bodySourceOptions('rationale')) decision.addOption(option);
+  addBodySourceOptions(decision, 'rationale');
 
   // `decision record <title> <rationale>` — the verb the agent's surface calls
   // `record_decision`. The group used to record with the two typed right after its name, and a
@@ -99,7 +99,7 @@ export function registerDecision(program: Command, wiring: Wiring): Declared {
     )
     .option('--which <agent>', WHICH_HELP, declaredAgent)
     .addHelpText('after', RECORD_CONTRACT_HELP);
-  for (const option of bodySourceOptions('rationale')) record.addOption(option);
+  addBodySourceOptions(record, 'rationale');
   createsBy(record);
   record.action(async (title: string, typed: string | undefined) => {
     const given = await fromTheGroup<{
