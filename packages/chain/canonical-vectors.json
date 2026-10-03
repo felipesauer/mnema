@@ -467,6 +467,23 @@
         }
       },
       "sha256": "7c5712d1f6925f7962c4ce793e49c0dc7ff4849b42687f44583eed6c6c9ec945"
+    },
+    {
+      "name": "account.linked (an identity names its GitHub account)",
+      "kind": "account.linked",
+      "event": {
+        "v": 1,
+        "kind": "account.linked",
+        "at": "2026-07-21T00:00:00.000Z",
+        "who": "mnid:1111111111111111111111111111111111111111111111111111111111111111",
+        "signerFp": "2222222222222222222222222222222222222222222222222222222222222222",
+        "subject": "mnid:1111111111111111111111111111111111111111111111111111111111111111",
+        "payload": {
+          "service": "github",
+          "account": "octocat"
+        }
+      },
+      "sha256": "53366b95e0f2f7cd287498f882b07f392ae5baf500f39ab9d10ce232d102c89d"
     }
   ],
   "chain": {
@@ -484,6 +501,6 @@
       "vector": "run.ended",
       "entryHash": "bafbebddd9d5ee75b10bdde626c5e36eed44b37d9fe352b4d98f614fa2647b73"
     },
-    "contentRootOverAllVectors": "c249c2e4203d9d817eed3d006e48fd79b6bf1b9c4911945f15a8a729a078338f"
+    "contentRootOverAllVectors": "fdf65be8195761d4b99778c66f75128dfddf0a36148c2b72b90ed4ef4b0e708e"
   }
 }

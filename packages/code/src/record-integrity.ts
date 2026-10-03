@@ -275,6 +275,10 @@ export const SERVES_NO_RECORD_CONTENT: { readonly [path: string]: string } = {
   'wiring/verify.ts':
     'it words and prints what `commands/verify.ts` ruled and reads no record of its own; ' +
     'a notice here would be the verdict carrying a summary of a line already in it',
+  'commands/verify-github.ts':
+    'it runs after the verdict, over the trees the verdict ruled on, and reads only those whose ' +
+    'verdict was not a break — a tree whose chain does not close is named as not compared ' +
+    'instead, so the notice would be the verdict above it said a second time',
   'repl/following.ts':
     'it reports what somebody ELSE appended since the session opened and rules on nothing ' +
     '— two equal extents mean nothing observable moved, never that the chain is intact. ' +
