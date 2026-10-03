@@ -108,12 +108,19 @@ describe('the description derived from a body', () => {
     // U+200B is not whitespace to a trim, which is why `canonicalIdentity` reads a
     // `--which` of one as naming an agent. One notion of empty, not two.
     const zeroWidth = char(0x200b);
-    // It leaves the product spelled out, as every format character does, and is still a value.
-    expect(derivedDescription(zeroWidth)).toBe('\\u200b');
+    expect(derivedDescription(zeroWidth)).toBe(zeroWidth);
   });
 });
 
 describe('the description a caller gave', () => {
+  it('leaves a joiner or a directional mark exactly as written: the file is the caller’s text', () => {
+    const family = `${char(0x1f468)}${char(0x200d)}${char(0x1f469)}${char(0x200d)}${char(0x1f467)}`;
+    const marked = `right${char(0x200f)}to left`;
+    expect(specDescription(`family ${family}`)).toBe(`family ${family}`);
+    expect(specDescription(marked)).toBe(marked);
+    expect(derivedDescription(`Family ${family}.`)).toContain(family);
+  });
+
   it('goes through the same rule: collapsed, cut, and refused when empty', () => {
     expect(specDescription('  what   it   is  ')).toBe('what it is');
     expect(specDescription('')).toBeUndefined();
