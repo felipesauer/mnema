@@ -51,6 +51,7 @@ import {
 import { anchorsBefore, foundingsSince, treesOf } from '../a-new-identity.js';
 import { asksAPerson, pathsOfAWrite, replyFor } from '../host-hook.js';
 import type { HookHost } from '../host-names.js';
+import type { HookSaid } from '../mcp/hook-reply.js';
 import { ASKS_A_PERSON_CHANNEL, REFUSES_A_WRITE_CHANNEL } from '../record-framing.js';
 import { withScopedCaches } from '../tree-sources.js';
 import { type WriteVerdict, whatAWriteMeets } from '../what-a-write-meets.js';
@@ -104,7 +105,32 @@ export function runBeforeAWrite(
     const tool = String((payload as Record<string, unknown>)['tool_name']);
     return silent([`The ${tool} input named no path this command can read, so nothing was asked.`]);
   }
+  return runBeforeAPath(ctx, {
+    which: input.host,
+    paths,
+    asks: asksAPerson(input.host),
+    reply: (said) => replyFor(input.host, said),
+  });
+}
 
+/**
+ * What a write at `input.paths` meets in this project's record, answered in the reply `input.reply`
+ * shapes — the half of {@link runBeforeAWrite} that does not depend on how a host spells a payload,
+ * so a caller that already holds the paths (a program's own hook) asks the same question and gets
+ * the same facts appended. `which` is the name the facts are recorded under; `asks` is whether the
+ * caller can hold a write for a person (where it cannot, an asking is silence, and nothing is
+ * recorded as if a person had been asked).
+ */
+export function runBeforeAPath(
+  ctx: BeforeAWriteContext,
+  input: {
+    readonly which: string;
+    readonly paths: readonly string[];
+    readonly asks: boolean;
+    readonly reply: (said: HookSaid) => object;
+  },
+): BeforeAWriteDone {
+  const { paths } = input;
   const trees = resolveTrees(ctx.cwd, ctx.env);
   if (trees.projectPublic === undefined) return silent();
   // The project root is the PARENT of its `.mnema/`, the directory every address is written
@@ -115,7 +141,7 @@ export function runBeforeAWrite(
   );
   // WHERE THE HOST DOES NOT ASK, AN ASKING IS NOT ONE: the write would go through, and the
   // record would say a person was asked.
-  if (met === undefined || (met.grade === 'ask' && !asksAPerson(input.host))) return silent();
+  if (met === undefined || (met.grade === 'ask' && !input.asks)) return silent();
 
   // THE ORDER IS THE MCP TOOL'S: the facts are appended, and only then does the reply carry the
   // charge. What the write founded, if it was this key's first in the tree, rides in the reason —
@@ -123,7 +149,7 @@ export function runBeforeAWrite(
   const before = anchorsBefore(treesOf(trees));
   let recorded: { readonly ok: true } | { readonly ok: false; readonly why: string };
   try {
-    recorded = recordWhatItMet(trees, met, input.host);
+    recorded = recordWhatItMet(trees, met, input.which);
   } catch (error) {
     recorded = { ok: false, why: error instanceof Error ? error.message : String(error) };
   }
@@ -135,7 +161,7 @@ export function runBeforeAWrite(
   }
   const reason = [met.reason, ...foundingsSince(before)].join('\n\n');
   const said = met.grade === 'refuse' ? { refuse: reason } : { ask: reason };
-  return { ok: true, reply: replyFor(input.host, said), notes: [] };
+  return { ok: true, reply: input.reply(said), notes: [] };
 }
 
 /**
@@ -147,10 +173,10 @@ export function runBeforeAWrite(
 function recordWhatItMet(
   trees: ReturnType<typeof resolveTrees>,
   met: WriteVerdict,
-  host: HookHost,
+  which: string,
 ): { readonly ok: true } | { readonly ok: false; readonly why: string } {
   const refusing = met.grade === 'refuse';
-  const scope = resolveScope(refusing ? 'channel.refused' : 'channel.asked', { which: host });
+  const scope = resolveScope(refusing ? 'channel.refused' : 'channel.asked', { which });
   const writer = openTreeForWriting(trees, scope);
   const ctx = {
     writer,
@@ -164,7 +190,7 @@ function recordWhatItMet(
         channel,
         rule: rule.id,
         path: at.relative ?? at.path,
-        which: host,
+        which,
       };
       const done = refusing ? recordChannelRefused(ctx, input) : recordChannelAsked(ctx, input);
       if (!done.ok) {
@@ -175,7 +201,7 @@ function recordWhatItMet(
   }
   // A SERVICE FACT THAT DID NOT LAND IS A GAP IN THE EVIDENCE, NOT AN UN-ASKING: the askings are
   // on the chain, so the charge rides — the MCP tool's rule for the same two facts.
-  if (!refusing) recordChannelServed(ctx, { channel: ASKS_A_PERSON_CHANNEL, which: host });
+  if (!refusing) recordChannelServed(ctx, { channel: ASKS_A_PERSON_CHANNEL, which });
   writer.checkpoint();
   return { ok: true };
 }
