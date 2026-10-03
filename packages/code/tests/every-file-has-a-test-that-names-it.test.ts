@@ -958,6 +958,7 @@ const CLAUSES_PER_FILE: Readonly<Record<string, number>> = {
   'packages/code/tests/the-front-page-says-what-its-sources-say.test.ts': 7,
   'packages/code/tests/the-gate-is-decided-once.test.ts': 5,
   'packages/code/tests/the-home-is-not-a-project.test.ts': 14,
+  'packages/code/tests/the-hooks-have-stable-ids.test.ts': 4,
   'packages/code/tests/the-index-names-the-runs-that-exist.test.ts': 4,
   'packages/code/tests/the-init-says-a-write-is-refused.test.ts': 12,
   'packages/code/tests/the-input-has-its-own-place.test.ts': 22,
