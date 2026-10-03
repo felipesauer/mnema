@@ -7,8 +7,8 @@
  * table, so the sentence is worded here once and looks like every other no on the surface.
  */
 
-import { oneLine } from '../one-line.js';
 import { noSuchRecord } from './no-such-record.js';
+import { onOneLine } from './on-one-line.js';
 
 /** The refusals of a decision that was asked for by name. */
 export type NameRefused =
@@ -24,8 +24,6 @@ export function nameRefusals(refusal: NameRefused): Record<string, string> {
   return refusal.reason === 'NO_SUCH_DECISION'
     ? { NO_SUCH_DECISION: noSuchRecord('decision', refusal.typed) }
     : {
-        AMBIGUOUS_LABEL:
-          `${oneLine(refusal.typed)} is carried by ${refusal.ids.length} decisions here ` +
-          `(${refusal.ids.map((id) => oneLine(id)).join(', ')}). Use the id of the one you mean.`,
+        AMBIGUOUS_LABEL: onOneLine`${refusal.typed} is carried by ${refusal.ids.length} decisions here (${refusal.ids.join(', ')}). Use the id of the one you mean.`,
       };
 }

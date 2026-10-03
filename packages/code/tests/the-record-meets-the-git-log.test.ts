@@ -34,6 +34,7 @@ import { runCommits } from '../src/commands/commits.js';
 import { runTrailer } from '../src/commands/trailer.js';
 import { runWhy } from '../src/commands/why.js';
 import { GIT_WITHOUT_MAINTENANCE } from './support/git-without-maintenance.js';
+import { isTheDerivedCache } from './support/the-cache-is-not-the-record.js';
 
 let sandbox: string;
 let repo: string;
@@ -123,7 +124,7 @@ function digest(dir: string): string {
     )) {
       const full = join(current, entry.name);
       if (entry.isDirectory()) walk(full);
-      else {
+      else if (!isTheDerivedCache(full)) {
         hash.update(`${relative(dir, full)}:${statSync(full).size}:`);
         hash.update(readFileSync(full));
       }
