@@ -12,6 +12,12 @@
       "source": "./plugin",
       "description": "Puts the project's committed mnema record into the session's opening context without the agent asking, and connects the mnema MCP server so it can record its own work.",
       "category": "productivity"
+    },
+    {
+      "name": "mnema-server-only",
+      "source": "./plugin-server-only",
+      "description": "Connects the mnema MCP server and runs no hook: the opening context, the notes and the per-edit rules are not handed to the session.",
+      "category": "productivity"
     }
   ]
 }

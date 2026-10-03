@@ -68,8 +68,6 @@ import {
 import { resolveExecutingAgent } from '../identity/authority.js';
 import { canonicalId, mintId } from '../identity/id.js';
 import { oneLine } from '../one-line.js';
-import { orderedEvents } from '../projections/order.js';
-import { projectTasks } from '../projections/task.js';
 import { type AppendRefusal, appendEvent, appendEvents } from './append.js';
 import {
   type Judged,
@@ -80,6 +78,7 @@ import {
 import { type Clock, systemClock } from './clock.js';
 import { type GateErr, gate } from './gate.js';
 import { authorizingAnchor, ensureFounded } from './identity-operations.js';
+import { standing } from './read-the-record.js';
 import { INITIAL_STATE } from './states.js';
 
 /** Shared dependencies for a write: where to read state from and where to append. */
@@ -245,7 +244,7 @@ export function transitionTask(
   const id = canonicalId(input.id);
   return onTheRecordAsItStands(
     ctx,
-    () => projectTasks(orderedEvents(ctx.layout, ctx.upcasters)),
+    () => standing(ctx, [id], (cache, one) => cache.getTask(one)),
     (tasks, earlier): Judged<TransitionOk | WriteError> => {
       const current = id === undefined ? undefined : tasks.get(id)?.state;
       if (id === undefined || current === undefined) {

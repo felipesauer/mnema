@@ -58,7 +58,8 @@
  * rule it already has, and the person who typed the verb is told which switch is holding it
  * and where to look ({@link BriefSwitchedOff}).
  *
- * Read-only in the strict sense: a cache per visible tree, rebuilt in memory, and
+ * Read-only in the strict sense — it records nothing: a cache per visible tree, brought forward from
+ * the one the tree keeps (`CacheOptions.persist`), and
  * the context package's pure `brief`. No writer, no key, no event, no consultation recorded
  * (serving a pattern's BODY records one; serving its name is not serving it, and
  * this never touches a body). Switching a channel is a WRITE and lives in its own verb —

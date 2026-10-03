@@ -99,6 +99,9 @@ $ mnema
 !   switch                                turn off, or back on, what mnema hands
 !                                         to a model unasked, and whether an agent
 !                                         may accept a decision
+!   doctor                                say how mnema is installed on this
+!                                         machine, and what to do about each thing
+!                                         found (writes nothing)
 !   verify [options]                      verify this project's record — its
 !                                         committed tree and its private one
 !   mcp [options]                         run the mnema MCP server over stdio (for
@@ -211,6 +214,9 @@ $ mnema --help
 |   switch                                turn off, or back on, what mnema hands
 |                                         to a model unasked, and whether an agent
 |                                         may accept a decision
+|   doctor                                say how mnema is installed on this
+|                                         machine, and what to do about each thing
+|                                         found (writes nothing)
 |   verify [options]                      verify this project's record — its
 |                                         committed tree and its private one
 |   mcp [options]                         run the mnema MCP server over stdio (for
@@ -275,10 +281,12 @@ $ mnema decision --help
 |   --alternatives <text>                  what was considered and turned down, and why not (optional). A decision is immutable, so this is recorded at birth: an option rejected later is a new decision, or supersedes this one.
 |   --scope <scope>                        where the decision is born: public (team-visible), private (this machine, this project), or global (personal, cross-project). Omitted, a decision lands in the public tree (a declaration about the project).
 |   --which <agent>                        the agent that executed this, when an agent (a script, a CI step) is driving mnema — omit it when you are acting directly. Declared, never assumed; it names the executor. See --scope for where the fact lands. A value that names no agent (an unset variable) is refused, never credited to you.
+|   --stdin                                read the rationale from standard input instead of the line
+|   --body-file <path>                     read the rationale from this file instead of the line
 |   -h, --help                             display help for command
 |
 | Commands:
-|   record [options] <title> <rationale>   record a decision in the current project
+|   record [options] <title> [rationale]   record a decision in the current project
 |   move [options] <action> <id...>        accept or reject a decision (follows the decision; takes no --scope)
 |   supersede [options] <old-id> <new-id>  supersede a decision with a later one (follows the decision; takes no --scope)
 |   import [options] <dir>                 propose the decisions already written in this repository’s decision files
@@ -744,7 +752,8 @@ $ mnema rules-file --help
 | rest are not
 |
 | Options:
-|   --host <host>  the host whose rules-file format to print: vscode, cursor
+|   --host <host>  the host whose rules-file format to print: claude, vscode,
+|                  cursor
 |   -h, --help     display help for command
 
 ### mnema skills --help
@@ -1000,6 +1009,23 @@ $ mnema switch --help
 |   repository holds it — a switch recorded privately governs only this machine.
 |   A channel with no switch is on, except edit-first-write-gate and user-corrections, which are off until switched on.
 
+### mnema doctor --help
+$ mnema doctor --help
+| Usage: mnema doctor [options]
+|
+| say how mnema is installed on this machine, and what to do about each thing
+| found (writes nothing)
+|
+| Options:
+|   -h, --help  display help for command
+|
+| What it looks at, and nothing else:
+|   the `mnema` executables on the PATH and which one is running; Claude Code’s list of
+|   installed plugins; the mnema MCP server declared in .mcp.json, .cursor/mcp.json,
+|   .vscode/mcp.json and ~/.claude.json, the plugin counting as one; and an npm package
+|   named `mnema` installed where the PATH points — the registry is not asked.
+| It writes nothing and exits 0 whatever it finds: each line says what to do.
+
 ### mnema verify --help
 $ mnema verify --help
 | Usage: mnema verify [options]
@@ -1179,13 +1205,14 @@ $ mnema task move --help
 
 ### mnema decision record --help
 $ mnema decision record --help
-| Usage: mnema decision record [options] <title> <rationale>
+| Usage: mnema decision record [options] <title> [rationale]
 |
 | record a decision in the current project
 |
 | Arguments:
 |   title                  the decision title
-|   rationale              why the decision was made
+|   rationale              why the decision was made (or give it with --stdin or
+|                          --body-file)
 |
 | Options:
 |   --alternatives <text>  what was considered and turned down, and why not
@@ -1202,6 +1229,9 @@ $ mnema decision record --help
 |                          executor. See --scope for where the fact lands. A value
 |                          that names no agent (an unset variable) is refused,
 |                          never credited to you.
+|   --stdin                read the rationale from standard input instead of the
+|                          line
+|   --body-file <path>     read the rationale from this file instead of the line
 |   -h, --help             display help for command
 |
 | What recording means here:
@@ -1393,7 +1423,8 @@ $ mnema skill export --help
 |   `description` is REQUIRED by the specification and the record holds none, so it is
 |   derived at export time — the first sentence of the body (or its first paragraph),
 |   collapsed to one line and cut to 1024 characters. `--description` overrides it. No
-|   model is asked for one anywhere.
+|   model is asked for one anywhere. A derived one with no "when", "whenever" or "quando"
+|   in it is exported all the same, with a warning on the second stream.
 |   `name` must already BE a specification name (1–64 of a-z, 0-9 and -, no hyphen at
 |   either end, none doubled) because it has to equal the directory name. A recorded
 |   name that is not one is refused, never rewritten into one.

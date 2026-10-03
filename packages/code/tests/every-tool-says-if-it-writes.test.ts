@@ -99,6 +99,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { buildMcpServer } from '../src/mcp/server.js';
 import type { RecordEffect } from '../src/record-effect.js';
 import { sourceFiles } from './support/reading-source.js';
+import { isTheDerivedCache } from './support/the-cache-is-not-the-record.js';
 import { held } from './support/the-record-held.js';
 
 const REPO = join(dirname(fileURLToPath(import.meta.url)), '..', '..', '..');
@@ -244,7 +245,13 @@ function whatTheCallDid(
     }
   }
   for (const at of after.keys()) if (!before.has(at)) changed.push(at);
-  return { changed: changed.sort(), destroyed: destroyed.sort() };
+  // The derived cache is rewritten by a write that reads from it, and it is not the record: what
+  // `destructiveHint: false` promises is that no fact is lost, and deleting the cache loses none.
+  // It is excused by its shape and no other file is (`support/the-cache-is-not-the-record.ts`).
+  return {
+    changed: changed.sort(),
+    destroyed: destroyed.filter((at) => !isTheDerivedCache(at)).sort(),
+  };
 }
 
 /** The four hints the protocol serves, each of which this file holds to the calls. */

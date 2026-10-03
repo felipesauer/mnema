@@ -17,6 +17,7 @@
 
 import type { SqliteDatabase } from '../db/sqlite.js';
 import type { RunProjection, WrittenInRun } from './run.js';
+import { verb } from './upsert.js';
 
 /** The `runs` row shape as stored. */
 interface RunRow {
@@ -50,10 +51,19 @@ interface RunParams {
  * Inserts the given run projections. Called during a rebuild after the table
  * has been recreated empty, so every run is a fresh insert. The caller owns the
  * surrounding transaction.
+ *
+ * `replacing` is for the one caller that does NOT start from an empty table: an advance
+ * writes the rows an arrival changed over the rows that were there, and a row that is already
+ * there is then the thing being replaced. A rebuild passes nothing, and keeps the failure that
+ * says its table was not emptied.
  */
-export function materializeRuns(db: SqliteDatabase, runs: Iterable<RunProjection>): void {
+export function materializeRuns(
+  db: SqliteDatabase,
+  runs: Iterable<RunProjection>,
+  replacing = false,
+): void {
   const insert = db.prepare(
-    `INSERT INTO runs (id, agent, who, goal, outcome, open, started_at, ended_at, last_fact_at, wrote)
+    `${verb(replacing)} INTO runs (id, agent, who, goal, outcome, open, started_at, ended_at, last_fact_at, wrote)
      VALUES (@id, @agent, @who, @goal, @outcome, @open, @startedAt, @endedAt, @lastFactAt, @wrote)`,
   );
   for (const run of runs) {

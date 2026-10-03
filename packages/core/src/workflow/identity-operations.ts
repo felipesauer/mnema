@@ -48,7 +48,6 @@ import {
   IdentityUnavailableError,
   type Membership,
   membershipIn,
-  rosterOf,
   staleAnchorRefusal,
 } from '../identity/membership.js';
 import { oneLine } from '../one-line.js';
@@ -56,6 +55,7 @@ import { orderedEvents } from '../projections/order.js';
 import { type AppendRefusal, appendEvent } from './append.js';
 import { systemClock } from './clock.js';
 import type { WriteContext } from './operations.js';
+import { rosterAsTheChainIs } from './read-the-record.js';
 
 /**
  * What deciding an anchor reads: the key that would sign, and the tree it would sign in.
@@ -204,7 +204,7 @@ export type AnchorDecision =
  * write was refused `STALE_ANCHOR` (`code/tests/the-init-says-a-write-is-refused.test.ts`).
  *
  * It reads and writes nothing else: the recorded anchor, a roster — the one the caller hands
- * (`WriteContext.roster`), or a replay of the tree — and, on a refusal only, the replays the
+ * (`WriteContext.roster`), or the kept projection brought up to what arrived — and, on a refusal only, the replays the
  * refusal's words take.
  */
 export function recordedAnchorOf(
@@ -214,7 +214,7 @@ export function recordedAnchorOf(
   const anchor = ctx.writer.anchor;
   const fingerprint = ctx.writer.signerFingerprint;
   const query = { tree: ctx.layout.root, upcasters: ctx.upcasters };
-  const counted = ctx.roster?.(anchor) ?? rosterOf(query, anchor);
+  const counted = ctx.roster?.(anchor) ?? rosterAsTheChainIs(ctx, anchor);
   if (counted.has(fingerprint)) return { anchor, counted: true };
   return { anchor, counted: false, refusal: staleAnchorRefusal(query, fingerprint, anchor) };
 }

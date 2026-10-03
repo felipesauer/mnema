@@ -184,11 +184,11 @@ describe('and what it says comes from what the command already declares', () => 
   const cases: readonly (readonly [string, readonly string[], () => readonly string[]])[] = [
     [
       'commander.missingArgument',
-      ['decision', 'record', 'a title'],
+      ['decision', 'record'],
       () => {
         const record = commandNamed('decision', 'record');
-        const rationale = record.registeredArguments.find((arg) => arg.name() === 'rationale');
-        return ['mnema decision record needs <rationale>', rationale?.description ?? ''];
+        const title = record.registeredArguments.find((arg) => arg.name() === 'title');
+        return ['mnema decision record needs <title>', title?.description ?? ''];
       },
     ],
     [
@@ -338,7 +338,7 @@ describe('and what it says comes from what the command already declares', () => 
   it('and the line to type is the one `--help` prints, not a second copy of it', async () => {
     // The other half of "one text": the usage line is composed by commander from the
     // same declarations, so it cannot drift from the Usage: line of the help.
-    const said = await invoke('decision', 'record', 'a title');
+    const said = await invoke('decision', 'record');
     const help = await invoke('decision', 'record', '--help');
     const usage = commandNamed('decision', 'record');
     expect(said.err[1]).toBe(`  ${usage.createHelp().commandUsage(usage)}`);
@@ -541,14 +541,14 @@ describe('`--help` and `--version` are not touched', () => {
 
 describe('the parser’s no is red, and says the same thing with the paint off', () => {
   it('paints the sentence and leaves the line to type alone', async () => {
-    const styled = await invoke('--color=always', 'decision', 'record', 'a title');
+    const styled = await invoke('--color=always', 'decision', 'record');
     expect(styled.err[0]).toContain(RED);
     expect(styled.err[1]).not.toContain('\u001b');
   });
 
   it('loses nothing at all with `--color=never`', async () => {
-    const plain = await invoke('--color=never', 'decision', 'record', 'a title');
-    const styled = await invoke('--color=always', 'decision', 'record', 'a title');
+    const plain = await invoke('--color=never', 'decision', 'record');
+    const styled = await invoke('--color=always', 'decision', 'record');
     // Every word of the painted answer is in the plain one, and the plain one holds
     // no escape byte: the colour is a second copy of what the words already said.
     expect(styled.err.join('|').replace(SGR, '')).toBe(plain.err.join('|'));

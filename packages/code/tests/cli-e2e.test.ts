@@ -50,6 +50,7 @@ import { closeSession, openSession } from '../src/mcp/session.js';
 import { runCreateSkill, runSkillsTool, runSkillTransition } from '../src/mcp/tools.js';
 import { patternsFraming } from '../src/served-patterns.js';
 import { everyCommandOf, pathOf } from '../src/wiring/misuse.js';
+import { isTheDerivedCache } from './support/the-cache-is-not-the-record.js';
 
 let sandbox: string;
 let repo: string;
@@ -102,6 +103,8 @@ function digestOf(dir: string): string {
       a.name.localeCompare(b.name),
     )) {
       const full = join(current, entry.name);
+      // The cache a read leaves is derived and is not what this digest is about.
+      if (isTheDerivedCache(full)) continue;
       if (entry.isDirectory()) {
         hash.update(`D:${full}\n`);
         walk(full);

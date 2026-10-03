@@ -20,6 +20,7 @@ import type { runDecisionImport } from '../commands/decision-import.js';
 import type { runDecisionTransition } from '../commands/decision-transition.js';
 import { fact } from '../presentation/detail.js';
 import { RECORD_CONTRACT_HELP, replacementNotice } from '../recorded-content.js';
+import { addBodySourceOptions } from './body-source.js';
 import { here } from './context.js';
 import {
   actionsRequiring,
@@ -76,6 +77,7 @@ export function registerDecision(program: Command, wiring: Wiring): Declared {
     )
     .option('--which <agent>', WHICH_HELP, declaredAgent)
     .addHelpText('after', RECORD_CONTRACT_HELP);
+  addBodySourceOptions(decision, 'rationale');
 
   // `decision record <title> <rationale>` — the verb the agent's surface calls
   // `record_decision`. The group used to record with the two typed right after its name, and a
@@ -87,7 +89,7 @@ export function registerDecision(program: Command, wiring: Wiring): Declared {
     .command('record')
     .description('record a decision in the current project')
     .argument('<title>', 'the decision title')
-    .argument('<rationale>', 'why the decision was made')
+    .argument('[rationale]', 'why the decision was made (or give it with --stdin or --body-file)')
     .option('--alternatives <text>', ALTERNATIVES_HELP)
     .addOption(
       scopeOption(
@@ -97,13 +99,24 @@ export function registerDecision(program: Command, wiring: Wiring): Declared {
     )
     .option('--which <agent>', WHICH_HELP, declaredAgent)
     .addHelpText('after', RECORD_CONTRACT_HELP);
+  addBodySourceOptions(record, 'rationale');
   createsBy(record);
-  record.action(async (title: string, rationale: string) => {
-    const given = await fromTheGroup<{ alternatives?: string; scope?: string; which?: string }>(
-      record,
-      wiring,
-    );
+  record.action(async (title: string, typed: string | undefined) => {
+    const given = await fromTheGroup<{
+      alternatives?: string;
+      scope?: string;
+      which?: string;
+      stdin?: boolean;
+      bodyFile?: string;
+    }>(record, wiring);
     if (given === REFUSED) return;
+    const { bodyFrom } = await import('./body-source.js');
+    const rationale = await bodyFrom(wiring, 'rationale', 'as an argument', {
+      typed,
+      stdin: given.stdin,
+      bodyFile: given.bodyFile,
+    });
+    if (rationale === REFUSED) return;
     const { runDecision } = await import('../commands/decision.js');
     const scope = parseScope(given.scope, wiring);
     if (scope === INVALID) return;

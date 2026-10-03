@@ -74,10 +74,11 @@ import { createTask, transitionTask, type WriteContext } from '../workflow/opera
 import { authorizeTailPrune } from '../workflow/prune-operations.js';
 import { endRun, startRun } from '../workflow/session-operations.js';
 import { createSkill, recordConsultation, reviewSkill } from '../workflow/skill-operations.js';
+import { advance } from './advance.js';
 import { ProjectionCache } from './cache.js';
 import { tablesFedBy } from './fed-by.js';
 import { chainArrivals, chainReplay } from './order.js';
-import { advance, rebuild } from './rebuild.js';
+import { rebuild } from './rebuild.js';
 
 const upcasters: UpcasterRegistry = catalogUpcasters();
 
@@ -282,7 +283,10 @@ function aSecondTailIn(chainRoot: string): string {
 function dump(db: SqliteDatabase): Record<string, string[]> {
   const tables: Record<string, string[]> = {};
   for (const table of PROJECTION_TABLES) {
-    const rows = db.prepare(`SELECT * FROM ${table}`).all() as unknown[];
+    // The rowid a full-text row was given is where an index was built, not what it holds: a
+    // replay numbers its rows from 1 and an advance numbers the ones it adds after those.
+    const columns = table === 'search_rows' ? 'kind, id' : '*';
+    const rows = db.prepare(`SELECT ${columns} FROM ${table}`).all() as unknown[];
     tables[table] = rows.map((row) => JSON.stringify(row)).sort();
   }
   return tables;
@@ -332,9 +336,7 @@ describe('an arrival brings the cache to exactly where a replay would have put i
         'the arrival holds the kind under test',
       ).toContain(kind);
 
-      const order = [...before.events, ...arrived.events];
-      const arrivedKinds = arrived.events.map((event) => event.kind);
-      advance(advanced, order, arrived.events, before.events.length, tablesFedBy(arrivedKinds));
+      advance(advanced, arrived.events, before.events.length);
 
       // AND AGAIN with THIS KIND'S ROW ALONE, which is what closes the masking the
       // birth pairs would otherwise create. A pair puts two kinds on the chain, so the
@@ -345,7 +347,7 @@ describe('an arrival brings the cache to exactly where a replay would have put i
       // one of them asks for exactly the same tables and no fewer.
       const byThisKindAlone = emptyDb();
       rebuild(byThisKindAlone, before.events);
-      advance(byThisKindAlone, order, arrived.events, before.events.length, tablesFedBy([kind]));
+      advance(byThisKindAlone, arrived.events, before.events.length, tablesFedBy([kind]));
 
       const replayed = emptyDb();
       rebuild(replayed, chainReplay(ctx.layout, upcasters).events);
@@ -363,16 +365,18 @@ describe('an arrival brings the cache to exactly where a replay would have put i
 describe('the tables an arrival does NOT feed are left alone', () => {
   it('a channel fact rewrites the run table and the index, and nothing else', () => {
     // The claim `fed-by.ts` makes about its two universal entries, from the other
-    // side: what a channel fact feeds is exactly `refs` and `runs`. If either were
-    // missing from the row, the case above would go red; if a third table were
-    // listed, this one says so.
-    expect([...tablesFedBy(['channel.asked'])].sort()).toEqual(['refs', 'runs']);
-    expect([...tablesFedBy(['channel.served'])].sort()).toEqual(['refs', 'runs']);
+    // side: what a channel fact feeds is exactly `refs` and `runs`, and `fold_state`, where the
+    // run's accumulator is kept. If any were missing from the row, the case above would go
+    // red; if a fourth table were listed, this one says so.
+    expect([...tablesFedBy(['channel.asked'])].sort()).toEqual(['fold_state', 'refs', 'runs']);
+    expect([...tablesFedBy(['channel.served'])].sort()).toEqual(['fold_state', 'refs', 'runs']);
     // And the union over a run of arrivals is the union, not the last one.
     expect([...tablesFedBy(['channel.asked', 'task.created'])].sort()).toEqual([
+      'fold_state',
       'record_search',
       'refs',
       'runs',
+      'search_rows',
       'tasks',
     ]);
   });
@@ -521,7 +525,7 @@ describe('a chain that changed some other way is replayed whole', () => {
 });
 
 describe('what `advance` refuses to be given', () => {
-  it('arrivals that are not the tail of the order', () => {
+  it('arrivals at a position the cache already covers', () => {
     // A programming error rather than a state of the record, and the guard had NO case
     // until a mutation removed it and left the whole suite green. It earns one: the
     // failure it prevents is the reference index appending at a position that is not
@@ -532,9 +536,7 @@ describe('what `advance` refuses to be given', () => {
     const db = emptyDb();
     try {
       rebuild(db, replay.events);
-      expect(() =>
-        advance(db, replay.events, replay.events.slice(-1), 0, tablesFedBy(['task.created'])),
-      ).toThrow(RangeError);
+      expect(() => advance(db, replay.events.slice(-1), 0)).toThrow(RangeError);
     } finally {
       db.close();
     }

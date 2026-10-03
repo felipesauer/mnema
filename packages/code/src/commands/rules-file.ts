@@ -9,7 +9,8 @@
  * `host-rules-file.ts`; the reading is the push's own (`governsInForceEverywhere`), so a rule in
  * the file is a rule the per-edit push would hand over at a file under its address.
  *
- * A read in the strict sense: caches rebuilt in memory, one `stat` per address, no writer.
+ * A read in the strict sense: caches brought forward from the ones the trees keep
+ * (`CacheOptions.persist`), one `stat` per address, no writer.
  */
 
 import { statSync } from 'node:fs';

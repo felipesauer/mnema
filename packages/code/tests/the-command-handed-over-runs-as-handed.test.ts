@@ -567,9 +567,10 @@ export const HANDED_OVER: Readonly<
   // (`mnema corrections`, and `mnema switch` in the row that says it starts off) and the switch that
   // turns it on (`mnema switch on user-corrections`, a line on each page).
   // And one line and one name more for the page that says a rule can refuse a write.
+  // name 77 until the page named `mnema doctor` and the server-only plugin's `mnema mcp`.
   // And four names more for the paragraph that says a note can be taken back: `mnema retract`,
   // and the three reads it names (`mnema search`, `mnema show`, `mnema verify`).
-  span: { line: 41, name: 82, flag: 1, unwritten: 0 },
+  span: { line: 41, name: 84, flag: 1, unwritten: 0 },
   // name 18 until the page that says where the key lives named `mnema key protect` in a line of
   // its own.
   // line 35 until the same page showed that question in a block of its own.
@@ -589,7 +590,8 @@ export const HANDED_OVER: Readonly<
   // session-tally` (`wiring/tally.ts`).
   // line 47 until the help of the verb that records corrections named the switch that turns it on,
   // `mnema switch on user-corrections` (`wiring/corrections.ts`).
-  source: { line: 49, name: 55, flag: 3, unwritten: 3 },
+  // name 53 until `mnema doctor` named the `mnema mcp` a host starts, twice, and `claude mcp add mnema -- mnema mcp`.
+  source: { line: 49, name: 58, flag: 3, unwritten: 3 },
 };
 
 // ---------------------------------------------------------------------------

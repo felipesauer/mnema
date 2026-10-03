@@ -27,7 +27,6 @@
  */
 
 import {
-  type CatalogEvent,
   type ChainLayout,
   type ChainWriter,
   decisionBirth,
@@ -45,8 +44,6 @@ import {
 import { resolveExecutingAgent } from '../identity/authority.js';
 import { canonicalId, mintId } from '../identity/id.js';
 import { oneLine } from '../one-line.js';
-import { type DecisionProjection, projectDecisions } from '../projections/decision.js';
-import { orderedEvents } from '../projections/order.js';
 import { type AppendRefusal, appendEvent, appendEvents } from './append.js';
 import {
   type Judged,
@@ -58,6 +55,7 @@ import { type Clock, systemClock } from './clock.js';
 import { type DecisionGateErr, decisionGate } from './decision-gate.js';
 import { INITIAL_DECISION_STATE } from './decision-states.js';
 import { authorizingAnchor, ensureFounded } from './identity-operations.js';
+import { asTheChainIs, standing } from './read-the-record.js';
 
 /** Shared dependencies for a write: where to read state from and where to append. */
 export interface DecisionWriteContext {
@@ -84,7 +82,9 @@ export type DecisionWriteError =
   /** A supersede named a successor `by` that does not exist (a dangling link). */
   | { readonly ok: false; readonly code: 'UNKNOWN_BY'; readonly message: string }
   /** Another write moved the decision between the reading this move was judged on and its append. */
-  | StateMovedErr;
+  | StateMovedErr
+  /** What the caller's own precondition refused ({@link DecisionTransitionInput.refusedWhen}). */
+  | { readonly ok: false; readonly code: string; readonly message: string };
 
 /** A decision was recorded: both birth events were appended, in order. */
 export interface RecordOk extends ScreenedWrite {
@@ -133,6 +133,16 @@ export interface DecisionTransitionInput {
   readonly which?: string;
   /** The run this belongs to, if any. */
   readonly run?: string;
+  /**
+   * A precondition of the CALLER'S, asked inside the judgement — at the first reading and, when
+   * the chain moved, again at the second, under the tail's lock — and refused with what it
+   * returns. It is how a rule the surface owns (a switch an agent's acceptance depends on) is
+   * judged against the record as it stands when the move lands, where asking it before the call
+   * left a window in which the switch could be turned off after the answer and before the append.
+   * It is asked first, so its refusal wins over the gate's, as it did when it was asked ahead of
+   * the call.
+   */
+  readonly refusedWhen?: () => { readonly code: string; readonly message: string } | undefined;
 }
 
 /** What the caller asks to supersede: the subject plus its successor `by`. */
@@ -187,16 +197,20 @@ export function recordDecision(
   // exists, so there is no duplicate to refuse. It is canonical by construction.
   const id = mintId();
 
-  // Derive the citable label from the writer's local view and FREEZE it. Reading
-  // the count from the chain (the source of truth), not the cache, keeps the
-  // number consistent with what the chain actually proves at this moment. Unlike
+  // Derive the citable label from the writer's local view and FREEZE it. The count is
+  // read from the projection the tree keeps, brought forward to the chain as it stands
+  // at that moment ({@link asTheChainIs}) — THIS SAID IT WAS READ "FROM THE CHAIN, not the
+  // cache", and the premise was that the only way to be current was to replay the whole
+  // record, which cost about 1 s at 100 thousand events and held the lock for as long when
+  // it had to be read again under it. A cache brought forward over what arrived is the
+  // chain as it stands, and costs the arrivals. Unlike
   // the id, the label can collide between offline clones (both mint `ADR-7`);
   // that is a legibility clash the projection surfaces, never a merge (the ids
   // stay distinct). Between two sessions of this installation it cannot: the count
   // the label is minted from is the one the tail's lock vouches for.
   return onTheRecordAsItStands(
     ctx,
-    () => projectedDecisions(ctx),
+    () => ({ size: asTheChainIs(ctx, (cache) => cache.countDecisions()) }),
     (decisions) => ({
       write: (): RecordOk | DecisionWriteError => {
         const adr = `ADR-${decisions.size + 1}`;
@@ -301,10 +315,13 @@ function transition(
   // Canonicalize the subject id (NFC, the chain's stored form) so the lookup
   // keys on the same string the projection does.
   const id = canonicalId(input.id);
+  const successor = by === undefined ? undefined : canonicalId(by);
   return onTheRecordAsItStands(
     ctx,
-    () => projectedDecisions(ctx),
+    () => standing(ctx, [id, successor], (cache, one) => cache.getDecision(one)),
     (decisions, earlier): Judged<DecisionTransitionOk | DecisionWriteError> => {
+      const vetoed = input.refusedWhen?.();
+      if (vetoed !== undefined) return { refuse: { ok: false, ...vetoed } };
       const current = id === undefined ? undefined : decisions.get(id);
       if (id === undefined || current === undefined) {
         return {
@@ -401,14 +418,4 @@ function transition(
       };
     },
   );
-}
-
-/**
- * Projects the decisions from the chain (the source of truth), not the cache,
- * so both the ADR count and the state/existence checks are gated against what
- * the chain actually proves.
- */
-function projectedDecisions(ctx: DecisionWriteContext): Map<string, DecisionProjection> {
-  const events: readonly CatalogEvent[] = orderedEvents(ctx.layout, ctx.upcasters);
-  return projectDecisions(events);
 }

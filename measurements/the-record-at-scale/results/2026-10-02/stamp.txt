@@ -1,0 +1,8 @@
+date: 2026-10-02
+base: origin/main-v1 at 9e059a2f (built)
+head: the-record-at-scale, built at the commit that reads the roster from the kept projection; the commits after it touch comments, the harness and this directory only
+node: v24.14.0
+machine: AMD Ryzen 7 7735HS with Radeon Graphics, 16 threads, 13 GB; ext4 on NVMe
+load: a developer machine with an editor and a browser open, not otherwise quiet; every cell is base, head, head, base in that order on a private copy of one frozen record, so the two builds share the load
+memory: the whole matrix ran inside one systemd user scope capped at 5 GB, no swap
+records: synthetic, written by make-record.mjs (seed 42) through the product's own builders; verify passes on them; 10000 / 30000 / 100000 events

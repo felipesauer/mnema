@@ -17,6 +17,7 @@ import type {
   NoteRetraction,
   ObservationProjection,
 } from './knowledge.js';
+import { verb } from './upsert.js';
 
 /** The four retraction columns both note tables carry, as stored. */
 interface RetractionColumns {
@@ -75,13 +76,19 @@ interface MemoryRow extends RetractionColumns {
  * Inserts the given memory projections. Called during a rebuild after the table
  * has been recreated empty, so every memory is a fresh insert. The caller owns
  * the surrounding transaction.
+ *
+ * `replacing` is for the one caller that does NOT start from an empty table: an advance
+ * writes the rows an arrival changed over the rows that were there, and a row that is already
+ * there is then the thing being replaced. A rebuild passes nothing, and keeps the failure that
+ * says its table was not emptied.
  */
 export function materializeMemories(
   db: SqliteDatabase,
   memories: Iterable<MemoryProjection>,
+  replacing = false,
 ): void {
   const insert = db.prepare(
-    `INSERT INTO memories (id, content, who, captured_at, retracted_at, retracted_who, retracted_which, retracted_reason)
+    `${verb(replacing)} INTO memories (id, content, who, captured_at, retracted_at, retracted_who, retracted_which, retracted_reason)
      VALUES (@id, @content, @who, @capturedAt, @retractedAt, @retractedWho, @retractedWhich, @retractedReason)`,
   );
   for (const memory of memories) {
@@ -136,9 +143,10 @@ interface ObservationRow extends RetractionColumns {
 export function materializeObservations(
   db: SqliteDatabase,
   observations: Iterable<ObservationProjection>,
+  replacing = false,
 ): void {
   const insert = db.prepare(
-    `INSERT INTO observations (id, about, topic, text, who, recorded_at, retracted_at, retracted_who, retracted_which, retracted_reason)
+    `${verb(replacing)} INTO observations (id, about, topic, text, who, recorded_at, retracted_at, retracted_who, retracted_which, retracted_reason)
      VALUES (@id, @about, @topic, @text, @who, @recordedAt, @retractedAt, @retractedWho, @retractedWhich, @retractedReason)`,
   );
   for (const observation of observations) {
@@ -281,9 +289,13 @@ interface LinkRow {
  * recreated empty. The fold already collapsed duplicate edges, so every row is a
  * fresh insert with no primary-key clash. The caller owns the transaction.
  */
-export function materializeLinks(db: SqliteDatabase, links: Iterable<LinkEdge>): void {
+export function materializeLinks(
+  db: SqliteDatabase,
+  links: Iterable<LinkEdge>,
+  keepingTheFirst = false,
+): void {
   const insert = db.prepare(
-    `INSERT INTO links (subject, target, rel, who, linked_at)
+    `${keepingTheFirst ? 'INSERT OR IGNORE' : 'INSERT'} INTO links (subject, target, rel, who, linked_at)
      VALUES (@subject, @target, @rel, @who, @linkedAt)`,
   );
   for (const link of links) {

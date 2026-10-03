@@ -523,7 +523,7 @@ describe('the refused run is refused everywhere', () => {
     // prefix is commander's help formatter's, and this voice never goes through it.
     const misused: readonly (readonly [string, readonly string[], string])[] = [
       ['task create', ['task', 'create'], 'a required positional given nothing'],
-      ['decision record', ['decision', 'record', 'a title'], 'the SECOND positional given nothing'],
+      ['decision record', ['decision', 'record'], 'the title positional given nothing'],
       ['link', ['link', 'a', 'b', '--rel'], 'a flag that takes a value given none'],
       ['completion', ['completion', 'powershell'], 'a value the declaration’s parser refuses'],
     ];

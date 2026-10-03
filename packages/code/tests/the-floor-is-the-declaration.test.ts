@@ -83,7 +83,15 @@
  */
 
 import { spawnSync } from 'node:child_process';
-import { existsSync, mkdirSync, mkdtempSync, readdirSync, readFileSync, rmSync } from 'node:fs';
+import {
+  existsSync,
+  mkdirSync,
+  mkdtempSync,
+  readdirSync,
+  readFileSync,
+  rmSync,
+  writeFileSync,
+} from 'node:fs';
 import { tmpdir } from 'node:os';
 import { dirname, join, relative, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -377,11 +385,13 @@ const EAGER_EXTERNAL: Readonly<Record<string, string>> = {
   'env.ts node:os':
     '`homedir()` and `userInfo()`, for the discovery environment every verb is handed. A builtin, and ' +
     'the one the entry cannot defer: the environment is resolved before a verb runs.',
-  'presentation/width.ts string-width':
-    'a line is as wide as the COLUMNS it takes, and the authority on that is a table ' +
-    'this product does not keep. The floor reaches it because the wiring composes help ' +
-    'and refusals with the same measurement the report uses — one reading of width, or ' +
-    'the surface and the frame around it disagree.',
+  'presentation/width.ts node:module':
+    '`createRequire`, which is how the width authority (`string-width`) is loaded WHEN A TEXT ' +
+    'NEEDS IT instead of at module scope: the package is 25.4 ms of the floor and `--version` ' +
+    'never measures a line. A builtin the loader has already brought in. Measured with the ' +
+    'floor before and after in `measurements/the-record-at-scale/`: 171.5 ms to 159.3 ms, ' +
+    'median of 60 alternated runs. A text of printable ASCII is answered without the package, ' +
+    'which is what keeps the help of a verb from loading it.',
 };
 
 /**
@@ -463,6 +473,7 @@ const FLOOR_MODULES: readonly string[] = [
   'wiring/accountability.ts',
   'wiring/antipatterns.ts',
   'wiring/before-a-write.ts',
+  'wiring/body-source.ts',
   'wiring/brief.ts',
   'wiring/color.ts',
   'wiring/completion.ts',
@@ -470,6 +481,7 @@ const FLOOR_MODULES: readonly string[] = [
   'wiring/corrections.ts',
   'wiring/decision.ts',
   'wiring/diagram.ts',
+  'wiring/doctor.ts',
   'wiring/enumerated.ts',
   'wiring/exposure.ts',
   'wiring/export.ts',
@@ -763,4 +775,34 @@ describe('a verb that loads its work still answers', () => {
     // writes, and the only one that pays a key being made. 237 ms on a quiet machine and
     // 1006 ms with the suite running at a load of twenty.
   }, 60_000);
+});
+
+describe('the width authority is not on the floor', () => {
+  // The static walk above cannot see this: the package is reached by `createRequire`, which
+  // is a call and not an import, and the call is only as lazy as every caller that reaches
+  // it. A declaration that measured a word while the program was being built — the help of
+  // `repl` aligns its column that way — put the 25 ms back with no import anywhere to show it.
+  // So this watches the process: a hook counts every request for the package and the run is
+  // the one that asks for nothing but the version.
+  it('is not asked for by a run that prints the version', () => {
+    const watching = join(sandbox, 'watch-the-authority.cjs');
+    writeFileSync(
+      watching,
+      [
+        "const Module = require('node:module');",
+        'const load = Module._load;',
+        'Module._load = function (request, ...rest) {',
+        "  if (request === 'string-width') process.stderr.write('ASKED-FOR-THE-AUTHORITY\\n');",
+        '  return load.call(this, request, ...rest);',
+        '};',
+      ].join('\n'),
+    );
+    const done = spawnSync(process.execPath, ['--require', watching, CLI, '--version'], {
+      cwd: sandbox,
+      env: { ...process.env, HOME: home },
+      encoding: 'utf-8',
+    });
+    expect(done.stdout).toMatch(/^\d+\.\d+\.\d+/);
+    expect(done.stderr).not.toContain('ASKED-FOR-THE-AUTHORITY');
+  });
 });

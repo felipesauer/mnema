@@ -49,7 +49,7 @@ export interface NoteRetraction {
  * saying when. Order-independent of the note's own event, so the fold never depends on the
  * capture having been seen first.
  */
-function retractionsOf(events: readonly CatalogEvent[]): Map<string, NoteRetraction> {
+export function retractionsOf(events: readonly CatalogEvent[]): Map<string, NoteRetraction> {
   const found = new Map<string, NoteRetraction>();
   for (const event of events) {
     if (event.kind !== 'note.retracted' || found.has(event.subject)) continue;
@@ -92,18 +92,27 @@ export function projectKnowledge(events: readonly CatalogEvent[]): Map<string, M
   const result = new Map<string, MemoryProjection>();
   const retractions = retractionsOf(events);
   for (const event of events) {
-    if (event.kind === 'memory.captured') {
-      const retracted = retractions.get(event.subject);
-      result.set(event.subject, {
-        id: event.subject,
-        content: event.payload.content,
-        who: event.who,
-        capturedAt: event.at,
-        ...(retracted !== undefined ? { retracted } : {}),
-      });
-    }
+    const memory = memoryOf(event);
+    if (memory === undefined) continue;
+    const retracted = retractions.get(memory.id);
+    result.set(memory.id, retracted !== undefined ? { ...memory, retracted } : memory);
   }
   return result;
+}
+
+/**
+ * The memory one event is, or undefined for any other kind — the fold's whole rule, taken
+ * ONE EVENT AT A TIME so a cache that brings itself forward over what arrived applies the
+ * rule the replay applies and does not restate it.
+ */
+export function memoryOf(event: CatalogEvent): MemoryProjection | undefined {
+  if (event.kind !== 'memory.captured') return undefined;
+  return {
+    id: event.subject,
+    content: event.payload.content,
+    who: event.who,
+    capturedAt: event.at,
+  };
 }
 
 /** An observation, as projected from its one event. */
@@ -139,20 +148,28 @@ export function projectObservations(
   const result = new Map<string, ObservationProjection>();
   const retractions = retractionsOf(events);
   for (const event of events) {
-    if (event.kind === 'observation.recorded') {
-      const retracted = retractions.get(event.subject);
-      result.set(event.subject, {
-        id: event.subject,
-        about: event.payload.about,
-        topic: event.payload.topic,
-        text: event.payload.text,
-        who: event.who,
-        recordedAt: event.at,
-        ...(retracted !== undefined ? { retracted } : {}),
-      });
-    }
+    const observation = observationOf(event);
+    if (observation === undefined) continue;
+    const retracted = retractions.get(observation.id);
+    result.set(
+      observation.id,
+      retracted !== undefined ? { ...observation, retracted } : observation,
+    );
   }
   return result;
+}
+
+/** The observation one event is, or undefined for any other kind — see {@link memoryOf}. */
+export function observationOf(event: CatalogEvent): ObservationProjection | undefined {
+  if (event.kind !== 'observation.recorded') return undefined;
+  return {
+    id: event.subject,
+    about: event.payload.about,
+    topic: event.payload.topic,
+    text: event.payload.text,
+    who: event.who,
+    recordedAt: event.at,
+  };
 }
 
 /** One handoff on a task, as projected from its event. */
@@ -180,20 +197,25 @@ export interface HandoffProjection {
 export function projectHandoffs(events: readonly CatalogEvent[]): Map<string, HandoffProjection[]> {
   const result = new Map<string, HandoffProjection[]>();
   for (const event of events) {
-    if (event.kind === 'handoff.recorded') {
-      const handoff: HandoffProjection = {
-        task: event.subject,
-        fromAgent: event.payload.fromAgent,
-        toAgent: event.payload.toAgent,
-        who: event.who,
-        recordedAt: event.at,
-      };
-      const list = result.get(event.subject);
-      if (list === undefined) result.set(event.subject, [handoff]);
-      else list.push(handoff);
-    }
+    const handoff = handoffOf(event);
+    if (handoff === undefined) continue;
+    const list = result.get(handoff.task);
+    if (list === undefined) result.set(handoff.task, [handoff]);
+    else list.push(handoff);
   }
   return result;
+}
+
+/** The handoff one event is, or undefined for any other kind — see {@link memoryOf}. */
+export function handoffOf(event: CatalogEvent): HandoffProjection | undefined {
+  if (event.kind !== 'handoff.recorded') return undefined;
+  return {
+    task: event.subject,
+    fromAgent: event.payload.fromAgent,
+    toAgent: event.payload.toAgent,
+    who: event.who,
+    recordedAt: event.at,
+  };
 }
 
 /**
@@ -239,19 +261,30 @@ export interface LinkEdge {
 export function projectLinks(events: readonly CatalogEvent[]): LinkEdge[] {
   const seen = new Map<string, LinkEdge>();
   for (const event of events) {
-    if (event.kind === 'knowledge.linked') {
-      const key = edgeKey(event.subject, event.payload.target, event.payload.rel);
-      if (seen.has(key)) continue; // idempotent: a repeated assertion adds nothing.
-      seen.set(key, {
-        subject: event.subject,
-        target: event.payload.target,
-        rel: event.payload.rel,
-        who: event.who,
-        linkedAt: event.at,
-      });
-    }
+    const edge = linkOf(event);
+    if (edge === undefined) continue;
+    const key = edgeKey(edge.subject, edge.target, edge.rel);
+    if (seen.has(key)) continue; // idempotent: a repeated assertion adds nothing.
+    seen.set(key, edge);
   }
   return [...seen.values()];
+}
+
+/**
+ * The edge one event asserts, or undefined for any other kind — see {@link memoryOf}. Whether
+ * the edge is NEW is not its rule: the first assertion of an edge is the one that is kept, and
+ * that is decided by whoever holds the edges already ({@link projectLinks} by a map, a cache by
+ * the key of its table).
+ */
+export function linkOf(event: CatalogEvent): LinkEdge | undefined {
+  if (event.kind !== 'knowledge.linked') return undefined;
+  return {
+    subject: event.subject,
+    target: event.payload.target,
+    rel: event.payload.rel,
+    who: event.who,
+    linkedAt: event.at,
+  };
 }
 
 /**
