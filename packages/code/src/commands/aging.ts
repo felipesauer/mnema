@@ -19,7 +19,7 @@
  */
 
 import { dirname } from 'node:path';
-import { type DiscoveryEnv, resolveTrees } from '@mnema/core';
+import { type DecisionState, type DiscoveryEnv, resolveTrees } from '@mnema/core';
 import { readDecisionFacts } from '../decisions-in-git.js';
 import { commitsSince, inAWorkTree } from '../git-log.js';
 import {
@@ -28,6 +28,9 @@ import {
   THE_READING_THAT_OPENED_THESE,
   withScopedCaches,
 } from '../tree-sources.js';
+
+/** The state of a decision that governs: the one whose acceptance the count starts from. */
+const ACCEPTED: DecisionState = 'accepted';
 
 /** How many commits on its addresses it takes to be listed, when the caller says nothing. */
 export const DEFAULT_MIN_COMMITS = 20;
@@ -76,7 +79,7 @@ export function runAging(
   const root = dirname(trees.projectPublic);
   return withScopedCaches(trees, (sources): AgingDone => {
     const asked = readDecisionFacts(sources, root).filter(
-      (decision) => decision.state === 'accepted' && decision.addresses.length > 0,
+      (decision) => decision.state === ACCEPTED && decision.addresses.length > 0,
     );
     const git = inAWorkTree(root);
     const aged: Aged[] = [];

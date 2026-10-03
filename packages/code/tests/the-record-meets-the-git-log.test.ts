@@ -29,6 +29,10 @@ import { tmpdir } from 'node:os';
 import { join, relative } from 'node:path';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { type CliIo, run } from '../src/cli.js';
+import { runAging } from '../src/commands/aging.js';
+import { runCommits } from '../src/commands/commits.js';
+import { runTrailer } from '../src/commands/trailer.js';
+import { runWhy } from '../src/commands/why.js';
 import { GIT_WITHOUT_MAINTENANCE } from './support/git-without-maintenance.js';
 
 let sandbox: string;
@@ -297,5 +301,38 @@ describe('the reads write nothing, and a place with no git is not a failure', ()
     expect(await ok('aging')).toContain('There is no git work tree here');
     expect(await ok('why', 'src/a.ts')).toContain('There is no git work tree here');
     expect(JSON.parse(await ok('why', 'src/a.ts', '--json'))).toMatchObject({ git: false });
+  });
+});
+
+describe('the readings, called without the command line', () => {
+  it('answer by value what the pages are made of', async () => {
+    const id = await aGovernedProject();
+    const cited = commit('src/a.ts', 'Cited change\n\nMnema-Decision: ADR-1');
+    const ctx = { cwd: repo, env: { home: join(sandbox, 'home') } };
+
+    expect(runTrailer(ctx, { decision: 'ADR-1', byId: false })).toMatchObject({
+      ok: true,
+      line: 'Mnema-Decision: ADR-1',
+    });
+    expect(runTrailer(ctx, { decision: 'ADR-4', byId: false })).toEqual({
+      ok: false,
+      reason: 'NO_SUCH_DECISION',
+      typed: 'ADR-4',
+    });
+    const commits = runCommits(ctx, { decision: id });
+    expect(commits).toMatchObject({ ok: true, git: true, addresses: ['src'] });
+    if (commits.ok) expect(commits.cited.commits.map((one) => one.sha)).toEqual([cited]);
+    const why = runWhy(ctx, { target: 'src/a.ts' });
+    expect(why).toMatchObject({ ok: true, about: 'file', relative: 'src/a.ts', exists: true });
+    expect(runAging(ctx, { minCommits: 1 })).toMatchObject({ ok: true, git: true, looked: 1 });
+    // Outside a project, each refuses with the one reason.
+    const elsewhere = { cwd: sandbox, env: { home: join(sandbox, 'home') } };
+    expect(runCommits(elsewhere, { decision: id })).toEqual({ ok: false, reason: 'NO_PROJECT' });
+    expect(runWhy(elsewhere, { target: 'x' })).toEqual({ ok: false, reason: 'NO_PROJECT' });
+    expect(runAging(elsewhere, { minCommits: 1 })).toEqual({ ok: false, reason: 'NO_PROJECT' });
+    expect(runTrailer(elsewhere, { decision: id, byId: false })).toEqual({
+      ok: false,
+      reason: 'NO_PROJECT',
+    });
   });
 });

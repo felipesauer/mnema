@@ -10,7 +10,7 @@
 
 _mnema_commands() {
   case "$1" in
-    '') echo 'init task decision skill memory observe handoff link run status focus resume next-actions guard search show timeline accountability antipatterns exposure export refs diagram rules rules-file skills usage brief recall before-a-write tally corrections key tail witness switch doctor verify mcp repl completion help' ;;
+    '') echo 'init task decision skill memory observe handoff link run status focus resume next-actions guard search show timeline accountability antipatterns exposure export refs diagram rules rules-file trailer commits why aging skills usage brief recall before-a-write tally corrections key tail witness switch doctor verify mcp repl completion help' ;;
     'task') echo 'create move help' ;;
     'decision') echo 'record move supersede import help' ;;
     'skill') echo 'create move export help' ;;
@@ -62,6 +62,10 @@ _mnema_flags() {
     'diagram') echo '-h --help -V --version --color --identify' ;;
     'rules') echo '--json -h --help -V --version --color --identify' ;;
     'rules-file') echo '--host -h --help -V --version --color --identify' ;;
+    'trailer') echo '--id --json -h --help -V --version --color --identify' ;;
+    'commits') echo '--json -h --help -V --version --color --identify' ;;
+    'why') echo '--json -h --help -V --version --color --identify' ;;
+    'aging') echo '--min-commits --json -h --help -V --version --color --identify' ;;
     'skills') echo '--json -h --help -V --version --color --identify' ;;
     'usage') echo '-h --help -V --version --color --identify' ;;
     'brief') echo '--hook -h --help -V --version --color --identify' ;;
@@ -153,6 +157,10 @@ _mnema_values() {
     'rules:--color') echo 'auto always never' ;;
     'rules-file:--host') echo 'claude vscode cursor' ;;
     'rules-file:--color') echo 'auto always never' ;;
+    'trailer:--color') echo 'auto always never' ;;
+    'commits:--color') echo 'auto always never' ;;
+    'why:--color') echo 'auto always never' ;;
+    'aging:--color') echo 'auto always never' ;;
     'skills:--color') echo 'auto always never' ;;
     'usage:--color') echo 'auto always never' ;;
     'brief:--color') echo 'auto always never' ;;

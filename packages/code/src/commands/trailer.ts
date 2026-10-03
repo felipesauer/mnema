@@ -14,7 +14,12 @@ import { dirname } from 'node:path';
 import { type DiscoveryEnv, resolveTrees } from '@mnema/core';
 import { nameOf, readDecisionFacts } from '../decisions-in-git.js';
 import { TRAILER } from '../git-log.js';
-import { withScopedCaches } from '../tree-sources.js';
+import {
+  linkBreaksOf,
+  type ScopedLinkBreak,
+  THE_READING_THAT_OPENED_THESE,
+  withScopedCaches,
+} from '../tree-sources.js';
 
 /** What the command needs — injected so it is testable. */
 export interface TrailerContext {
@@ -27,6 +32,7 @@ export interface TrailerDone {
   readonly ok: true;
   readonly line: string;
   readonly title: string;
+  readonly linkBreaks: readonly ScopedLinkBreak[];
 }
 
 /** The read was refused before it ran. */
@@ -61,6 +67,11 @@ export function runTrailer(
     // A label two decisions carry cites neither of them, so the id is what is printed then.
     const carriers = all.filter((one) => one.adr === decision.adr).length;
     const value = input.byId || carriers > 1 ? decision.id : decision.adr;
-    return { ok: true, line: `${TRAILER}: ${value}`, title: decision.title };
+    return {
+      ok: true,
+      line: `${TRAILER}: ${value}`,
+      title: decision.title,
+      linkBreaks: linkBreaksOf(sources, THE_READING_THAT_OPENED_THESE),
+    };
   });
 }
