@@ -113,6 +113,14 @@ describe('the description derived from a body', () => {
 });
 
 describe('the description a caller gave', () => {
+  it('leaves a joiner or a directional mark exactly as written: the file is the caller’s text', () => {
+    const family = `${char(0x1f468)}${char(0x200d)}${char(0x1f469)}${char(0x200d)}${char(0x1f467)}`;
+    const marked = `right${char(0x200f)}to left`;
+    expect(specDescription(`family ${family}`)).toBe(`family ${family}`);
+    expect(specDescription(marked)).toBe(marked);
+    expect(derivedDescription(`Family ${family}.`)).toContain(family);
+  });
+
   it('goes through the same rule: collapsed, cut, and refused when empty', () => {
     expect(specDescription('  what   it   is  ')).toBe('what it is');
     expect(specDescription('')).toBeUndefined();

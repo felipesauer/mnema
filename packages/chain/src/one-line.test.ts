@@ -177,4 +177,20 @@ describe('the control bytes of a line are made visible', () => {
     const text = neutralized(JSON.stringify(value, null, 2));
     expect(JSON.parse(text)).toEqual(value);
   });
+
+  it('writes the invisible and the bidirectional format characters as escapes too', () => {
+    const zeroWidth = String.fromCharCode(0x200b);
+    const rlo = String.fromCharCode(0x202e);
+    const isolate = String.fromCharCode(0x2067);
+    const bom = String.fromCharCode(0xfeff);
+    expect(neutralized(`a${zeroWidth}b${rlo}c${isolate}d${bom}`)).toBe(
+      'a\\u200bb\\u202ec\\u2067d\\ufeff',
+    );
+    const once = neutralized(`x${rlo}`);
+    expect(neutralized(once)).toBe(once);
+  });
+
+  it('keeps the letters of a script written right to left', () => {
+    expect(neutralized('\u05e9\u05dc\u05d5\u05dd')).toBe('\u05e9\u05dc\u05d5\u05dd');
+  });
 });
