@@ -29,13 +29,14 @@ function worldWith(
     base?: string;
     hasCommit?: boolean;
     commentFails?: boolean;
+    noRecord?: boolean;
   } = {},
 ): { world: World; seen: Seen } {
   const seen: Seen = { comments: [], asked: [], warnings: [] };
   const world: World = {
     git: {
       hasCommit: () => over.hasCommit ?? true,
-      recordAt: (ref) => [ref === 'HEAD' ? grown : (over.base ?? born)],
+      recordAt: (ref) => (over.noRecord ? [] : [ref === 'HEAD' ? grown : (over.base ?? born)]),
     },
     mnema: {
       verify: () => over.verify ?? { passed: true, said: 'ok' },
@@ -101,6 +102,22 @@ describe('judge', () => {
     await judge(world, pr);
     expect(seen.asked).toHaveLength(MOST_ASKED);
     expect(seen.comments[0]?.body).toContain('5 changed files were not asked about');
+  });
+
+  it('says a repository without a record holds none, refreshes only a comment it wrote, and runs nothing', async () => {
+    const { world, seen } = worldWith({
+      noRecord: true,
+      files: ['src/a.ts'],
+      verify: { passed: false, said: 'x' },
+    });
+    const infos: string[] = [];
+    world.log.info = (line) => infos.push(line);
+    expect(await judge(world, pr)).toEqual({ failed: false, reasons: [] });
+    expect(infos).toContain('::notice::this repository holds no mnema record');
+    expect(seen.asked).toEqual([]);
+    expect(seen.comments).toHaveLength(1);
+    expect(seen.comments[0]?.onlyIfThere).toBe(true);
+    expect(seen.comments[0]?.body).toContain('This repository holds no mnema record.');
   });
 
   it('refuses to compare against a base commit the clone does not hold', async () => {

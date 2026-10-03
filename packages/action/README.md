@@ -104,9 +104,15 @@ token, and `fetch` is a parameter. `world.ts` is `git` and the `mnema` binary as
   is refused by name. It is not on the Marketplace, so it cannot be used from another repository by
   name; its `action.yml` needs the built `dist/` of this package beside it, which `pnpm build`
   produces and the repository does not commit.
-- Titles and names it repeats come from the record and the tree. They are cut at 120 characters,
-  flattened to one line, and have markup, backticks and `@` neutralised before they reach the
-  comment.
+- Titles, names and ids it repeats come from the record and the tree. They are cut at 120
+  characters and flattened to one line; `&`, `<`, `>` and backticks are replaced, `@` is followed by
+  a zero-width space, and each of `\ [ ] ( ) ! * _ | #` is escaped with a backslash, so a link, an
+  image, emphasis, a heading or a table-cell break in them is shown as text.
+- It replaces only a comment that carries its marker and was written by `github-actions[bot]`; a
+  comment with the marker from any other author is left alone and the Action adds its own.
+- When neither the checked-out commit nor the base holds `.mnema/tails`, it logs
+  `this repository holds no mnema record`, refreshes a comment it wrote earlier with that
+  sentence (it adds none), exits 0, and runs neither `verify` nor `rules`.
 
 ## License
 

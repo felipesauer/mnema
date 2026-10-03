@@ -7,7 +7,7 @@
  * comment, through the `GitHub` it is given.
  */
 
-import { renderComment, worthSaying } from './comment.js';
+import { renderComment, renderNoRecord, worthSaying } from './comment.js';
 import type { GitHub } from './github.js';
 import {
   approvedByAnotherPerson,
@@ -57,16 +57,30 @@ const textsOf = (texts: readonly string[]) => texts.flatMap(readEvents);
 export async function judge(world: World, pr: PullRequest): Promise<Verdict> {
   const reasons: string[] = [];
 
-  const verification = world.mnema.verify();
-  if (!verification.passed) reasons.push('the record does not verify as signed');
-
   if (!world.git.hasCommit(pr.baseSha)) {
     throw new Error(
       `the base commit ${pr.baseSha} is not in this clone; check out with fetch-depth: 0 so the record can be compared`,
     );
   }
-  const head = textsOf(world.git.recordAt('HEAD'));
-  const record = whatItDoes(eventsAdded(textsOf(world.git.recordAt(pr.baseSha)), head), head);
+  const headTexts = world.git.recordAt('HEAD');
+  const baseTexts = world.git.recordAt(pr.baseSha);
+  if (headTexts.length === 0 && baseTexts.length === 0) {
+    world.log.info('::notice::this repository holds no mnema record');
+    try {
+      world.log.info(`comment ${await world.github.upsertComment(renderNoRecord(), true)}`);
+    } catch (error) {
+      world.log.warning(
+        `the comment was not written: ${error instanceof Error ? error.message : String(error)}`,
+      );
+    }
+    return { failed: false, reasons };
+  }
+
+  const verification = world.mnema.verify();
+  if (!verification.passed) reasons.push('the record does not verify as signed');
+
+  const head = textsOf(headTexts);
+  const record = whatItDoes(eventsAdded(textsOf(baseTexts), head), head);
 
   const changed = (await world.github.changedFiles()).filter((path) => !path.startsWith('.mnema/'));
   const asked = changed.slice(0, MOST_ASKED);
