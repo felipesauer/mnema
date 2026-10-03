@@ -42,7 +42,7 @@
  */
 
 import type { RecordBody } from '@mnema/context';
-import type { DecisionActor, TransitionProof } from '@mnema/core';
+import type { DecisionActor, NoteRetraction, TransitionProof } from '@mnema/core';
 import { type AnchorForms, anchorText } from '../anchors.js';
 import { A_PERSON, neutralized, oneLine } from '../one-line.js';
 import { DERIVED_FROM } from '../provenance.js';
@@ -142,6 +142,27 @@ function actorText(anchors: AnchorForms, actor: DecisionActor): string {
   return `${oneLine(anchorText(anchors, actor.who))} (${act})`;
 }
 
+/**
+ * What a retracted note says about its retraction, above its body: when, by whom, and why —
+ * nothing when the note stands. The note itself is printed whole below it, because the
+ * retraction took it out of the reads that list notes, not out of the record.
+ */
+function retractionFacts(
+  render: Render,
+  retracted: NoteRetraction | undefined,
+  context: RecordContext,
+): string[] {
+  if (retracted === undefined) return [];
+  return [
+    render(
+      fact(
+        `retracted ${retracted.at} by ${actorText(context.anchors, { who: retracted.who, ...(retracted.which !== undefined ? { which: retracted.which } : {}) })}`,
+      ),
+    ),
+    render(fact(`why: ${oneLine(retracted.reason)}`)),
+  ];
+}
+
 /** The lines one whole record prints for a person. */
 export function recordReport(render: Render, body: RecordBody, context: RecordContext): string[] {
   const lines = [render(subjectLine(`${body.kind} ${body.id}`, body.scope))];
@@ -154,6 +175,7 @@ export function recordReport(render: Render, body: RecordBody, context: RecordCo
           ),
         ),
       );
+      lines.push(...retractionFacts(render, body.record.retracted, context));
       lines.push('');
       lines.push(neutralized(body.record.content));
       break;
@@ -162,6 +184,7 @@ export function recordReport(render: Render, body: RecordBody, context: RecordCo
         render(fact(`about ${oneLine(body.record.about)} · recorded ${body.record.recordedAt}`)),
       );
       lines.push(render(fact(`topic: ${oneLine(body.record.topic)}`)));
+      lines.push(...retractionFacts(render, body.record.retracted, context));
       lines.push('');
       lines.push(neutralized(body.record.text));
       break;

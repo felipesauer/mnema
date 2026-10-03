@@ -27,6 +27,7 @@ export {
   locateEntityScopeWith,
   locateTailScope,
   replayingBirthProbe,
+  replayingRecordProbe,
   tailsHeld,
   treesSearched,
 } from './locate.js';

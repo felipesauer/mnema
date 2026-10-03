@@ -125,6 +125,7 @@ import {
   recordObservation,
   rejectDecision,
   rejectSkill,
+  retractNote,
   reviewSkill,
   supersedeDecision,
   transitionTask,
@@ -168,6 +169,7 @@ import {
   locatedButUnreadable,
   locateEntityAcross,
   notFoundInSessionTrees,
+  type Reach,
   refuseUnlocated,
   type WorkspaceTree,
 } from './locate.js';
@@ -856,6 +858,58 @@ export function runDecisionTransition(
   };
 }
 
+/** A note was retracted, or the retraction was refused. */
+export type RetractNoteResult =
+  | (Replacement &
+      Landed & {
+        readonly ok: true;
+        /** The retracted note's id. */
+        readonly id: string;
+        /** What the note was. */
+        readonly note: 'memory' | 'observation';
+      })
+  | {
+      readonly ok: false;
+      /** `UNKNOWN_NOTE`, `AMBIGUOUS_RECORD`, or the core operation's code. */
+      readonly code: string;
+      readonly message: string;
+    };
+
+/**
+ * Retracts a note — a memory or an observation — in the tree it was written in.
+ *
+ * It follows the NOTE, as a decision's move follows the decision: the walk is the one every
+ * entity-keyed tool asks ({@link locateEntity}), reaching the notes as well, and the write
+ * goes through that tree's own door. A retraction is attributed to the connecting agent
+ * (`which`) and pinned to the run, as every write of this server is; who may retract is
+ * what the record decides for a supersede, which an agent may also carry out. A decision,
+ * a pattern or a task is refused by the core in its own tree, with what to do instead.
+ */
+export function runRetractNote(
+  session: Session,
+  input: { id: string; reason: string },
+): RetractNoteResult {
+  const located = locateEntity(session, input.id, 'records');
+  if (located.outcome !== 'found') return refuseUnlocated(session, 'note', input.id, located);
+  const { ctx, run } = openWrite(session, located.home.scope, located.home.target);
+  const retracted = retractNote(ctx, {
+    id: input.id,
+    reason: input.reason,
+    which: session.which,
+    run,
+  });
+  if (!retracted.ok) return { ok: false, code: retracted.code, message: retracted.message };
+  // Checkpoint so the retraction is fully signed the moment the tool returns.
+  ctx.writer.checkpoint();
+  return {
+    ok: true,
+    id: retracted.id,
+    note: retracted.note,
+    scope: located.home.scope,
+    ...forwardReplacement(retracted),
+  };
+}
+
 /**
  * Builds a decision's proof fields from the args the agent supplied, dropping any
  * absent. Only the two a decision action can require are surfaced: `note`
@@ -1181,8 +1235,8 @@ export function workspaceTrees(session: Session): WorkspaceTree[] {
  * a different answer than the other four: a narrower list is the defect this closed,
  * and a walk of its own is a second rule to keep in step.
  */
-function locateEntity(session: Session, id: string): EntityLocation {
-  return locateEntityAcross(session, workspaceTrees(session), id);
+function locateEntity(session: Session, id: string, reach: Reach = 'entities'): EntityLocation {
+  return locateEntityAcross(session, workspaceTrees(session), id, reach);
 }
 
 /**

@@ -162,6 +162,7 @@ import {
   runRecordObservation,
   runReferencesTool,
   runResumeTool,
+  runRetractNote,
   runRulesBeforeAnEditTool,
   runSearchTool,
   runSkillsTool,
@@ -907,6 +908,34 @@ function registerTools(tool: ToolRegistrar, ensureSession: () => Promise<Session
         return refused(active, result);
       }
       return recorded(active, `Recorded observation ${result.id} about ${about}`, result);
+    },
+  );
+
+  tool(
+    mutatesTheRecord('retract_note'),
+    {
+      title: 'Retract a note',
+      description:
+        'Take back a memory or an observation that turned out to be wrong or stale. The ' +
+        'note is NOT erased: a signed retraction carrying the `reason` is appended, the ' +
+        'note stops being served by the opening read and the search, and reading it by id ' +
+        'still returns it, saying when, by whom and why it was retracted. It follows the ' +
+        'note to the tree it was written in. Only notes are retracted: a decision is ' +
+        'rejected or superseded, a pattern rejected or deprecated. A note already ' +
+        'retracted is refused.' +
+        RECORD_CONTRACT,
+      inputSchema: {
+        id: z.string().min(1).describe('The id of the memory or observation to retract.'),
+        reason: z.string().min(1).describe('Why it is taken back.'),
+      },
+    },
+    async ({ id, reason }) => {
+      const active = await ensureSession();
+      const result = runRetractNote(active, { id, reason });
+      if (!result.ok) {
+        return refused(active, result);
+      }
+      return recorded(active, `Retracted ${result.note} ${result.id}`, result);
     },
   );
 

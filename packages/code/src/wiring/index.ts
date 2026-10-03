@@ -238,6 +238,7 @@ import { registerRecall } from './recall.js';
 import { registerReferences } from './refs.js';
 import { registerRepl } from './repl.js';
 import { registerResume } from './resume.js';
+import { registerRetract } from './retract.js';
 import { registerRules } from './rules.js';
 import { registerRulesFile } from './rules-file.js';
 import { registerRun } from './run.js';
@@ -266,6 +267,7 @@ export const VERBS: readonly Verb[] = [
   registerObserve,
   registerHandoff,
   registerLink,
+  registerRetract,
   registerRun,
   registerStatus,
   registerFocus,

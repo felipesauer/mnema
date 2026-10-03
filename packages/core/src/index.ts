@@ -225,6 +225,7 @@ export {
   type ResolvedTrees,
   type RoutedKind,
   replayingBirthProbe,
+  replayingRecordProbe,
   resolveScope,
   resolveTrees,
   type Scope,
