@@ -994,6 +994,7 @@ const CLAUSES_PER_FILE: Readonly<Record<string, number>> = {
   'packages/code/tests/the-phrase-the-domain-words-is-one-line.test.ts': 8,
   'packages/code/tests/the-plugin-spawns-what-the-package-installs.test.ts': 6,
   'packages/code/tests/the-port-writes-to-the-process.test.ts': 2,
+  'packages/code/tests/the-private-tree-of-another-project-is-not-recalled.test.ts': 6,
   'packages/code/tests/the-product-calls-no-model.test.ts': 5,
   'packages/code/tests/the-prompt-is-painted-where-you-type.test.ts': 15,
   'packages/code/tests/the-proof-answers-a-machine.test.ts': 7,

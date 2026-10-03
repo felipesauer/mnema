@@ -27,6 +27,7 @@ import { channelIsOn, type RulesAtPath, type ScopedCache } from '@mnema/context'
 import { whatAWriteAsks } from './edit-asks-a-person.js';
 import { editRefusesNotice } from './edit-refuses-a-write.js';
 import { readRefusesAWriteAt } from './governed-tree.js';
+import { oneLine } from './one-line.js';
 import { ASKS_A_PERSON_CHANNEL, REFUSES_A_WRITE_CHANNEL } from './record-framing.js';
 
 /** One write, as a hook sees it: every path it touches, and where they are read from. */
@@ -51,6 +52,40 @@ export interface WriteVerdict {
   readonly at: readonly RulesAtPath[];
   /** The reason a host hands the agent: one notice per path, separated by a blank line. */
   readonly reason: string;
+  /** The notices that make up {@link reason}, one per entry of {@link at}, in the same order. */
+  readonly notices: readonly string[];
+}
+
+/** How many times a session hears a rule's notice whole before it is told in one line. */
+export const NOTICES_SAID_WHOLE = 3;
+
+/**
+ * The reason to hand the agent for `met`, with a rule that has already spoken
+ * {@link NOTICES_SAID_WHOLE} times in this session told in one numbered line instead of the
+ * whole notice again. `seen` is the session's count of how often each rule has been told, per
+ * grade, and this call adds to it.
+ *
+ * The rule is that no two refusals of one session are the same
+ * text: the number is the order of the telling, and the line carries only the rule ids and the
+ * path, never recorded prose. A notice is shortened only when EVERY rule behind it has spoken
+ * more than the allowed times, so a rule met for the first time is always said whole.
+ */
+export function reasonTold(met: WriteVerdict, seen: Map<string, number>): string {
+  return met.at
+    .map((at, index) => {
+      const orders = at.rules.map((rule) => {
+        const key = `${met.grade}:${rule.id}`;
+        const order = (seen.get(key) ?? 0) + 1;
+        seen.set(key, order);
+        return order;
+      });
+      const order = Math.min(...orders);
+      if (orders.length === 0 || order <= NOTICES_SAID_WHOLE) return met.notices[index] as string;
+      const verb = met.grade === 'refuse' ? 'refuses' : 'asks for a person';
+      const ids = at.rules.map((rule) => oneLine(rule.id)).join(', ');
+      return `#${order}: ${ids} ${verb} at ${oneLine(at.relative ?? at.path)} again; the notice is the one above.`;
+    })
+    .join('\n\n');
 }
 
 /**
@@ -89,5 +124,6 @@ function verdict(
     grade,
     at: met.map((one) => one.at),
     reason: met.map((one) => one.notice).join('\n\n'),
+    notices: met.map((one) => one.notice),
   };
 }
