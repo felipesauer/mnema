@@ -305,6 +305,31 @@ describe('the MCP tool Claude Code’s hook calls', () => {
     expect(counts()).toEqual({ 'channel.refused': 1, 'channel.asked': 0, 'channel.served': 0 });
   });
 
+  it('puts the refusal over the hold on a first write: denied each time, never held, one fact per refusal', async () => {
+    await did('switch', 'on', 'edit-first-write-gate');
+    const session = openSession({
+      clientName: 'agent-alpha',
+      roots: [pathToFileURL(repo).href],
+      env,
+    });
+    const write = () => {
+      const result = runRulesBeforeAnEditTool(session, { path: 'src/billing/invoice.ts' });
+      if (!result.ok) throw new Error('unreachable');
+      return (JSON.parse(JSON.stringify(result.value)) as Record<string, unknown>)[
+        'hookSpecificOutput'
+      ] as Record<string, string>;
+    };
+    const first = write();
+    expect(first['permissionDecision']).toBe('deny');
+    expect(first['permissionDecisionReason']).toContain(refusing);
+    expect(counts()).toEqual({ 'channel.refused': 1, 'channel.asked': 0, 'channel.served': 0 });
+    // The hold lets a repeated write through; the refusal does not.
+    const second = write();
+    expect(second['permissionDecision']).toBe('deny');
+    expect(second['permissionDecisionReason']).toContain(refusing);
+    expect(counts()).toEqual({ 'channel.refused': 2, 'channel.asked': 0, 'channel.served': 0 });
+  });
+
   it('falls to the rules it pushes when the refusing channel is off, and to nothing when all are', async () => {
     await did('switch', 'off', 'edit-refuses-a-write');
     const specific = tool('src/billing/invoice.ts')['hookSpecificOutput'] as Record<string, string>;
