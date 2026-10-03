@@ -201,6 +201,7 @@ const argued = settled && readRecord(sources, settled.id); // { kind: 'decision'
 const governs = brief(sources, {
   editPush: 'edit-rules-push',
   asksAPerson: 'edit-asks-a-person',
+  refusesAWrite: 'edit-refuses-a-write',
 });
 const rules = governs.decisions.length + governs.skills.length; // 2, and nothing was cut
 

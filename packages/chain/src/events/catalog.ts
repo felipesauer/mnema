@@ -485,14 +485,41 @@ export const GOVERNS_RELATION = 'governs';
 export const ASKS_FOR_A_PERSON_RELATION = 'asks-for-a-person';
 
 /**
+ * The relation that REFUSES a write: a rule of the record says that under this part of the
+ * working tree, a file is not written at all while the rule stands.
+ *
+ * The same shape as {@link ASKS_FOR_A_PERSON_RELATION} — subject a rule, target a path — and
+ * a THIRD relation rather than a grade carried on the second, which is the decision in it.
+ * Asking and refusing are two powers over somebody else's work, and a link whose meaning
+ * depended on a flag beside it would be a link whose power a reader could only learn by
+ * reading the flag; a relation is the one place a power is already named in this record.
+ * It is also why `asks-for-a-person` did not change: the gates that exist keep the meaning
+ * they were asserted under.
+ *
+ * WHY IT EXISTS AT ALL, when asking already did: one of the hosts this product reaches lets
+ * its agent write the file it was asked to hold (`measurements/hooks-by-host/`), so on that
+ * host a person can only be protected by a refusal. And a refusal is the stronger power, so
+ * where both relations address one path, refusing is what the write meets — decided once,
+ * where the gate is decided.
+ *
+ * IT IS SELF-SUFFICIENT and needs its subject to be a rule IN FORCE, for the reasons the
+ * asking relation gives: a refusal that required a second fact would silently not close
+ * when the second is missing, and a retired rule refusing a write would be the product
+ * stopping work on the authority of something the team set aside. Nothing in the parser
+ * knows this label either, so it costs the catalog no field, no version and no upcaster.
+ */
+export const REFUSES_A_WRITE_RELATION = 'refuses-a-write';
+
+/**
  * The relations whose target is an ADDRESS: a part of the working tree, compared by
  * segments, covering whatever lies under it.
  *
- * There are two, {@link GOVERNS_RELATION} and {@link ASKS_FOR_A_PERSON_RELATION}, and
- * naming them together is what lets a reader ask "does this label carry an address"
- * once instead of spelling out a pair at every place that has to know. Before this
- * constant the pair was written out at each such site, and a third address relation
- * would have had to be remembered at all of them.
+ * There are three, {@link GOVERNS_RELATION}, {@link ASKS_FOR_A_PERSON_RELATION} and
+ * {@link REFUSES_A_WRITE_RELATION}, and naming them together is what lets a reader ask
+ * "does this label carry an address" once instead of spelling out a list at every place
+ * that has to know. Before this constant the pair was written out at each such site, and
+ * the third address relation, when it came, joined here and was answered everywhere by
+ * existing.
  *
  * IT USED TO SAY "THE RELATIONS WHOSE TARGET IS A PATH — THE WHOLE OF THEM", and the
  * decision import falsified that half of it: a proposal read out of somebody else's
@@ -507,10 +534,15 @@ export const ASKS_FOR_A_PERSON_RELATION = 'asks-for-a-person';
  * looks like a path. The provenance is still not a member — and it is now
  * {@link DERIVED_FROM_RELATION}, a name of its own, because three parties spell it.
  *
- * It still says nothing about what each one DOES — one informs, the other stops
- * somebody — because that is the power, and a reader of an address needs the shape.
+ * It still says nothing about what each one DOES — one informs, one stops somebody until
+ * a person looks, one refuses the write — because that is the power, and a reader of an
+ * address needs the shape.
  */
-export const ADDRESS_RELATIONS = [GOVERNS_RELATION, ASKS_FOR_A_PERSON_RELATION] as const;
+export const ADDRESS_RELATIONS = [
+  GOVERNS_RELATION,
+  ASKS_FOR_A_PERSON_RELATION,
+  REFUSES_A_WRITE_RELATION,
+] as const;
 
 /**
  * The recommended relation labels for a {@link KnowledgeLinkedV1}. This is a
@@ -810,10 +842,11 @@ export interface ChannelServedV1 extends Envelope {
  * live. The rule travels in the payload, where the reference index resolves it exactly as
  * it resolves a link's target.
  *
- * A DIFFERENT GRADE WILL BE A DIFFERENT KIND, not a field on this one. Refusing outright
- * is a different power over somebody else's work, and a payload that carried "which
- * grade" would be a payload whose meaning depends on a value — the shape this catalog
- * avoids everywhere else. It waits on its own tie and will arrive as its own fact.
+ * A DIFFERENT GRADE IS A DIFFERENT KIND, not a field on this one. Refusing outright is a
+ * different power over somebody else's work, and a payload that carried "which grade" would
+ * be a payload whose meaning depends on a value — the shape this catalog avoids everywhere
+ * else. This sentence said the refusal "waits on its own tie and will arrive as its own
+ * fact"; it arrived, as {@link ChannelRefusedV1}, and this kind did not change.
  */
 export interface ChannelAskedV1 extends Envelope {
   readonly kind: 'channel.asked';
@@ -823,6 +856,40 @@ export interface ChannelAskedV1 extends Envelope {
     /** The id of the rule that asked — what the charge cites. Never optional. */
     readonly rule: string;
     /** The path the asking was about, as the product compared it. */
+    readonly path: string;
+  };
+}
+
+/**
+ * A channel of this product REFUSED A WRITE — the strongest thing it does to somebody
+ * else's work: the file was not written, and no person was asked.
+ *
+ * WHAT IT RECORDS: a rule of the record, linked to a path under the relation that refuses a
+ * write, was in force when a file under that path was about to be written; the product
+ * carried the refusal to the host, and the host did not write it. One fact per refusal and
+ * per rule, for the reason an asking is one per rule: a charge cites the rule that caused
+ * it, and a fact whose citation was a set would half-cite the day one of them is
+ * superseded.
+ *
+ * IT IS A KIND OF ITS OWN AND NOT A GRADE ON {@link ChannelAskedV1}, which said so before it
+ * existed: a payload carrying "which grade" would be a payload whose meaning depends on a
+ * value. So the two powers are two kinds with the same shape, and a reader auditing what
+ * the record refused asks for this kind and nothing else. `channel.asked` is unchanged.
+ *
+ * ITS SUBJECT IS THE CHANNEL, and the rule travels in the payload, for the reasons the
+ * asking gives: the refusal belongs to the surface that refused, beside the switch that can
+ * silence it, and the reference index resolves the rule exactly as it resolves a link's
+ * target. Both fields are required — a refusal that cannot name what caused it is the
+ * product having a preference.
+ */
+export interface ChannelRefusedV1 extends Envelope {
+  readonly kind: 'channel.refused';
+  readonly v: 1;
+  /** Subject is the CHANNEL that refused. */
+  readonly payload: {
+    /** The id of the rule that refused — what the refusal cites. Never optional. */
+    readonly rule: string;
+    /** The path the refusal was about, as the product compared it. */
     readonly path: string;
   };
 }
@@ -852,7 +919,8 @@ export type CatalogEvent =
   | TailPrunedV1
   | ChannelSwitchedV1
   | ChannelServedV1
-  | ChannelAskedV1;
+  | ChannelAskedV1
+  | ChannelRefusedV1;
 
 /** The `kind` discriminators present in the catalog. */
 export type EventKind = CatalogEvent['kind'];
@@ -882,4 +950,5 @@ export const LATEST_VERSION: { readonly [K in EventKind]: number } = {
   'channel.switched': 1,
   'channel.served': 1,
   'channel.asked': 1,
+  'channel.refused': 1,
 };

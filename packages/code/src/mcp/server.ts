@@ -991,7 +991,7 @@ function registerTools(tool: ToolRegistrar, ensureSession: () => Promise<Session
         return refused(active, result);
       }
       // The relation the RECORD holds, not the one the call asked for — plus, on the
-      // two relations that carry an ADDRESS, what that address covers. Not every path
+      // relations that carry an ADDRESS, what that address covers. Not every path
       // target is one: `derived-from` names the file a proposal came out of and there
       // is nothing under it to count. The agent gets
       // the same fact the command line prints, from the same wording, because an agent
@@ -1757,7 +1757,7 @@ function registerTools(tool: ToolRegistrar, ensureSession: () => Promise<Session
         'asking is appended to the record as a fact citing the rule and the path you ' +
         'named, before the reply is composed, and the first service of a session is ' +
         'appended too. For the whole answer — every address whatever its state, whose ' +
-        'file no longer exists, and the counts for both relations — ask ' +
+        'file no longer exists, and the counts for each relation — ask ' +
         '`governing_rules` instead; this one is deliberately thin, because it is paid ' +
         'for on every edit.' +
         RECORD_CONTRACT,

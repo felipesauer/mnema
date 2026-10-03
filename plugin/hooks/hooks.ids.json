@@ -37,9 +37,15 @@
       "index": 0,
       "runs": "rules_before_an_edit"
     },
-    "edit-asks-a-person": {
+    "edit-refuses-a-write": {
       "event": "PreToolUse",
       "group": 1,
+      "index": 0,
+      "runs": "hooks/edit-refuses-a-write.mjs"
+    },
+    "edit-asks-a-person": {
+      "event": "PreToolUse",
+      "group": 2,
       "index": 0,
       "runs": "hooks/edit-asks-a-person.mjs"
     }

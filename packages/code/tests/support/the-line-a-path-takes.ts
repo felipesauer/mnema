@@ -201,6 +201,7 @@ export const THE_ID_MEANT: Readonly<Record<string, keyof Fixture>> = {
  * say out loud. Callers reconcile its keys against the walk.
  */
 export const ALSO_NEEDS: Readonly<Record<string, readonly string[]>> = {
+  'decision record': ['the rationale, typed on the line'],
   'skill create': ['--body', 'the reusable pattern itself'],
   'skill move': ['--note', 'why this verdict'],
   'decision move': ['--note', 'why this verdict'],

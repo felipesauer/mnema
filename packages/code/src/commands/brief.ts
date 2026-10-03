@@ -79,6 +79,7 @@ import {
   ASKS_A_PERSON_CHANNEL,
   DOCUMENT_CHANNEL,
   EDIT_PUSH_CHANNEL,
+  REFUSES_A_WRITE_CHANNEL,
   type SwitchableChannel,
 } from '../record-framing.js';
 import {
@@ -254,6 +255,7 @@ export function runBrief(
       brief: brief(sources, {
         editPush: EDIT_PUSH_CHANNEL,
         asksAPerson: ASKS_A_PERSON_CHANNEL,
+        refusesAWrite: REFUSES_A_WRITE_CHANNEL,
       }),
     };
   });

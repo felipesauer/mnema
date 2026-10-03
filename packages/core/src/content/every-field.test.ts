@@ -19,6 +19,7 @@ import {
 import { orderedEvents } from '../projections/order.js';
 import {
   recordChannelAsked,
+  recordChannelRefused,
   recordChannelServed,
   switchChannel,
 } from '../workflow/channel-operations.js';
@@ -365,6 +366,17 @@ const DRIVERS: { readonly [K in EventKind]: Driver } = {
       // sweep's other half is what checks this came through untouched, and the case that
       // hands it a credential-SHAPED id lives with the channel it belongs to
       // (`code/tests/the-record-asks-for-a-person.test.ts`).
+      rule: A_RULE_ID,
+      path: text('payload.path'),
+      which: text('which'),
+      run: text('run'),
+    }),
+
+  'channel.refused': (ctx, text) =>
+    // The asking's two fields, driven the asking's way: `rule` is an identifier and is NOT
+    // driven (the sweep's other half checks it came through untouched); `path` is.
+    recordChannelRefused(ctx, {
+      channel: text('subject'),
       rule: A_RULE_ID,
       path: text('payload.path'),
       which: text('which'),

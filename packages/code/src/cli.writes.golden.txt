@@ -237,11 +237,12 @@ $ mnema tail prune <backup-key-fingerprint> --reason 'the key that never wrote a
 
 ### switching what the product pushes
 $ mnema switch
-| 8 channel(s), looked in public, private, global:
+| 9 channel(s), looked in public, private, global:
 |   brief-document         on   the document `mnema brief` prints, which a session opens with: the decisions in force and the adopted patterns of the committed record, by name
 |   recall-document        on   the notes `mnema recall` prints, which a session opens with: the memories and observations recorded for this project, from every tree this machine holds for it, the ones near what the session touches first
 |   edit-rules-push        on   the rules addressed at a file, handed over at each edit of it, beside the result of that write
 |   edit-asks-a-person     on   the pause before a file is written where the record asks that a person look first — the rules go on arriving, and nothing stops
+|   edit-refuses-a-write   on   the refusal of a write where a rule of the record refuses one — such a write goes through, the rules go on arriving, and a rule that asks for a person still asks
 |   agent-accepts          on   an agent ruling a decision in force: with it off, an agent’s `accept` is refused and only a person at the command line can accept — a proposed decision waits, and nothing else changes
 |   edit-first-write-gate  off  the hold on the first write of a session to a file a rule addresses: with it on, that write is refused once, with the rules in the reason, and the same write repeated goes through. Off until switched on; it holds in Claude Code, where the server remembers the session  ·  off until switched on, and nobody has
 |   user-corrections       off  the proposals recorded from what a person typed into a session: with it on, a `Stop` hook reads the transcript, and each time the person corrected the agent a decision is recorded as proposed in this machine’s private tree. Off until switched on  ·  off until switched on, and nobody has
@@ -252,11 +253,12 @@ $ mnema switch off edit-rules-push --reason 'noisy while porting'
 |   edit-rules-push is now OFF: nothing of it reaches a model. The switch that decides it was made by <anchor-short> at <at:01>.
 |   Nothing was removed and nothing else stopped: the record still holds what it held, and every read and tool still answers whoever asks. What stops is this product putting it in front of a model unasked.
 $ mnema switch
-| 8 channel(s), looked in public, private, global:
+| 9 channel(s), looked in public, private, global:
 |   brief-document         on   the document `mnema brief` prints, which a session opens with: the decisions in force and the adopted patterns of the committed record, by name
 |   recall-document        on   the notes `mnema recall` prints, which a session opens with: the memories and observations recorded for this project, from every tree this machine holds for it, the ones near what the session touches first
 |   edit-rules-push        off  the rules addressed at a file, handed over at each edit of it, beside the result of that write  ·  switched off by <anchor-short>  <at:01>  — noisy while porting
 |   edit-asks-a-person     on   the pause before a file is written where the record asks that a person look first — the rules go on arriving, and nothing stops
+|   edit-refuses-a-write   on   the refusal of a write where a rule of the record refuses one — such a write goes through, the rules go on arriving, and a rule that asks for a person still asks
 |   agent-accepts          on   an agent ruling a decision in force: with it off, an agent’s `accept` is refused and only a person at the command line can accept — a proposed decision waits, and nothing else changes
 |   edit-first-write-gate  off  the hold on the first write of a session to a file a rule addresses: with it on, that write is refused once, with the rules in the reason, and the same write repeated goes through. Off until switched on; it holds in Claude Code, where the server remembers the session  ·  off until switched on, and nobody has
 |   user-corrections       off  the proposals recorded from what a person typed into a session: with it on, a `Stop` hook reads the transcript, and each time the person corrected the agent a decision is recorded as proposed in this machine’s private tree. Off until switched on  ·  off until switched on, and nobody has
@@ -271,8 +273,7 @@ $ mnema switch off no-such-channel
 
 ### refusals — what the parser turns down
 $ mnema decision record 'A decision with no rationale'
-! mnema decision record needs <rationale>: why the decision was made
-!   mnema decision record [options] <title> <rationale>
+! the rationale is missing.: Give it as an argument, with --stdin, or with --body-file <path>.
 [exit 1]
 $ mnema task create 'A task' 'and one word too many'
 ! mnema task create does not take "and one word too many".
@@ -304,7 +305,7 @@ $ mnema task moveZZZ
 [exit 1]
 $ mnema decision 'Use UTC' 'one clock for every machine'
 ! mnema decision has no command "Use UTC". To record a decision, put `record` before its title.
-!   mnema decision record [options] <title> <rationale>
+!   mnema decision record [options] <title> [rationale]
 [exit 1]
 $ mnema skill 'A pattern' --body 'do it so'
 ! mnema skill has no command "A pattern". To create a skill, put `create` before its name.

@@ -39,6 +39,7 @@
 
 import {
   channelAsked,
+  channelRefused,
   channelServed,
   channelSwitched,
   decisionRecorded,
@@ -119,7 +120,7 @@ const RUN_ID = '019f81f8-e400-7005-8000-000000000005';
 const RULE_ID = '019f81f8-e400-7006-8000-000000000006';
 
 /**
- * The channels the three `channel.*` vectors name.
+ * The channels the four `channel.*` vectors name.
  *
  * They are the product's real channel names, spelled here as literals because
  * this package is the proof engine and knows nothing about the surfaces — the
@@ -130,6 +131,7 @@ const RULE_ID = '019f81f8-e400-7006-8000-000000000006';
 const PUSH_CHANNEL = 'edit-rules-push';
 const DOCUMENT_CHANNEL = 'brief-document';
 const ASKS_CHANNEL = 'edit-asks-a-person';
+const REFUSES_CHANNEL = 'edit-refuses-a-write';
 
 /** The envelope of a fact an agent carried out. */
 const agent = (
@@ -388,6 +390,15 @@ export const CANONICAL_VECTORS: {
       event: channelAsked(agent(ASKS_CHANNEL, RUN_ID), {
         rule: RULE_ID,
         path: 'src/billing/rounding.ts',
+      }),
+    },
+  ],
+  'channel.refused': [
+    {
+      name: 'channel.refused (a rule refused a write, at a path)',
+      event: channelRefused(agent(REFUSES_CHANNEL, RUN_ID), {
+        rule: RULE_ID,
+        path: 'src/ledger/posting.ts',
       }),
     },
   ],

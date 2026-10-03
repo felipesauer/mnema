@@ -166,6 +166,7 @@ export type ModelChannel =
   | 'exported-skill'
   | 'edit-rules-push'
   | 'edit-asks-a-person'
+  | 'edit-refuses-a-write'
   | 'host-rules-file'
   | 'agent-accepts'
   | 'session-tally'
@@ -179,6 +180,7 @@ export type FramedChannel =
   | 'recall-document'
   | 'edit-rules-push'
   | 'edit-asks-a-person'
+  | 'edit-refuses-a-write'
   | 'edit-first-write-gate'
   | 'host-rules-file';
 
@@ -211,6 +213,9 @@ const SUBJECT_OF: { readonly [K in FramedChannel]: ServedSubject } = {
   // same record saying the same kind of thing — what differs is that this one stops
   // somebody, and what a text says about ITSELF does not change with how hard it lands.
   'edit-asks-a-person': 'rules',
+  // THE REFUSAL, framed for the gate's reason: its text is the reason the host hands the agent
+  // whose write did not happen, so it is record text in front of a model, and it says whose.
+  'edit-refuses-a-write': 'rules',
   // A FILE IN ANOTHER HOST'S RULE FORMAT (`mnema rules-file`), and it is framed where the
   // exported skill is not: that one is a recorded body byte for byte, whose provenance rides
   // in the format's own metadata; this one is text this product COMPOSES out of the record —
@@ -252,7 +257,7 @@ export const FRAMED_CHANNELS = Object.keys(SUBJECT_OF) as readonly FramedChannel
  * declaration runs identically and leaves every guard green. A declaration a reader can
  * delete without anything noticing is a comment, which is exactly what it must not be.
  */
-export const DECLARES_MODEL_CHANNEL = /^export const MODEL_CHANNEL = '([a-z-]+)';$/m;
+export const DECLARES_MODEL_CHANNEL = /^export const MODEL_CHANNEL = '([a-z-]+(?:\+[a-z-]+)*)';$/m;
 
 /**
  * How a hook that is NOT a process names the channel it carries: by the MCP tool it
@@ -280,7 +285,18 @@ export const PUSHED_BY_TOOL: { readonly [tool: string]: readonly FramedChannel[]
   // the information. A reader looking for what a tool pushes now gets every channel it
   // can push, so a channel added behind an existing tool cannot hide from the guard by
   // sharing a key.
-  rules_before_an_edit: ['edit-rules-push', 'edit-asks-a-person', 'edit-first-write-gate'],
+  //
+  // AND MORE, LATER. The tool also answers `deny`, with the reason of a rule that refuses the write
+  // (`edit-refuses-a-write`). It is pushed by the tool — the reason is framed text a model reads —
+  // and it is NOT counted in `channel.served`: this table says what a tool pushes, that type
+  // (`CountedChannel`) says what is recorded as served, and a refusal is its own fact, so the two
+  // are no longer the same list and the guard that held them equal now holds the difference.
+  rules_before_an_edit: [
+    'edit-rules-push',
+    'edit-asks-a-person',
+    'edit-first-write-gate',
+    'edit-refuses-a-write',
+  ],
 };
 
 /**
@@ -326,6 +342,7 @@ export type SwitchableChannel =
   | 'recall-document'
   | 'edit-rules-push'
   | 'edit-asks-a-person'
+  | 'edit-refuses-a-write'
   | 'agent-accepts'
   | 'session-tally'
   | 'edit-first-write-gate'
@@ -378,6 +395,20 @@ export const EDIT_PUSH_CHANNEL: CountedChannel = 'edit-rules-push';
  * satisfied in the letter while trapping the person it exists for.
  */
 export const ASKS_A_PERSON_CHANNEL: CountedChannel = 'edit-asks-a-person';
+
+/**
+ * The channel that REFUSES a write where a rule of the record refuses one — the strongest
+ * thing this product does to somebody else's work, and therefore the one whose switch matters
+ * most.
+ *
+ * ITS OWN SWITCH AND NOT A READING OF {@link ASKS_A_PERSON_CHANNEL}, for the gate's reason one
+ * step further. A refusal leaves nobody a way through at the host: no person is asked, so no
+ * person can say yes. This switch is the way out of a refusal somebody inherited with a clone,
+ * and a single switch for both grades would make whoever needed out of the refusal give up the
+ * pause for a person as well. It is read BEFORE a refusal is decided, by the one function that
+ * decides what a write meets (`what-a-write-meets.ts`), so no door can refuse past it.
+ */
+export const REFUSES_A_WRITE_CHANNEL: SwitchableChannel = 'edit-refuses-a-write';
 
 /**
  * The channel that lets an AGENT rule a decision in force: ON by default, because an agent
@@ -445,7 +476,7 @@ export const USER_CORRECTIONS_CHANNEL: SwitchableChannel = 'user-corrections';
  * The switchable channels whose service the record COUNTS — the ones that append a
  * `channel.served` when they speak, once per run.
  *
- * THEY ARE THE TWO THAT PUSH AT EACH EDIT, AND ONLY THOSE, which is what the fact says and all
+ * THEY ARE THE ONES THAT PUSH AT EACH EDIT, AND ONLY THOSE, which is what the fact says and all
  * it says. `channel.served` is written by the tool the per-edit hook calls
  * (`rules_before_an_edit`), because that is the one place something is pushed and something
  * can be appended in the same act. The two texts a session OPENS with are not counted, and
@@ -453,6 +484,10 @@ export const USER_CORRECTIONS_CHANNEL: SwitchableChannel = 'user-corrections';
  * nothing — see {@link NOT_COUNTED_AS_SERVED} for each one's sentence. So a run with no
  * `channel.served` says nothing about whether the opening texts arrived; it says that no edit
  * of that run was handed a rule, or that the push was off, or that the hook never ran.
+ *
+ * THE CHANNEL THAT REFUSES AT AN EDIT IS NOT HERE, and that is the same decision from the
+ * other side: a refusal is discrete, and each one is appended as its own `channel.refused`
+ * before the host is answered, so the refusal IS the fact of the channel having spoken.
  *
  * A union here, and the table below total over what it leaves out, so a channel added to
  * {@link SwitchableChannel} does not build until somebody says which side it is on.
@@ -491,6 +526,10 @@ export const NOT_COUNTED_AS_SERVED: {
     'the sentence it hands an agent is the reply to a call that is itself the recorded fact ' +
     '(the acceptance, whose actor is on its envelope) or is refused and records nothing, so ' +
     'a second fact saying it was served would repeat the first',
+  'edit-refuses-a-write':
+    'each refusal it hands a host is itself the recorded fact — one `channel.refused` per ' +
+    'rule, appended before the reply, or no refusal at all — so a second fact saying the ' +
+    'channel was served would repeat the first',
 };
 
 /**
@@ -522,6 +561,9 @@ export const WHAT_STOPS: { readonly [K in SwitchableChannel]: string } = {
   'edit-asks-a-person':
     'the pause before a file is written where the record asks that a person look ' +
     'first — the rules go on arriving, and nothing stops',
+  'edit-refuses-a-write':
+    'the refusal of a write where a rule of the record refuses one — such a write goes ' +
+    'through, the rules go on arriving, and a rule that asks for a person still asks',
   'agent-accepts':
     'an agent ruling a decision in force: with it off, an agent’s `accept` is refused and ' +
     'only a person at the command line can accept — a proposed decision waits, and nothing ' +

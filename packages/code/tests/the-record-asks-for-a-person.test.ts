@@ -19,7 +19,7 @@
  *   - `permissionDecision: "escalate"` — the spelling the plan for this channel used — is
  *     not a value this host has. It fails the schema, and the failure DISCARDS THE WHOLE
  *     REPLY, injection included, non-blockingly and where the product cannot see it. That
- *     is why {@link Escalation} is a union of one.
+ *     is why {@link Escalation} is a union of two: the values this product means.
  */
 
 import { createHash } from 'node:crypto';
@@ -36,6 +36,10 @@ import { editAsksNotice, ourWordsInAsking } from '../src/edit-asks-a-person.js';
 import { openSession, type Session } from '../src/mcp/session.js';
 import { runGoverningRulesTool, runRulesBeforeAnEditTool } from '../src/mcp/tools.js';
 import { tellsWhatToDo } from '../src/record-framing.js';
+
+/** The clause that says who accepted a rule — held where the lines say it, ignored where they are not about it. */
+const bare = (line: string | undefined): string | undefined =>
+  line?.replace(/ · accepted by mnid:[0-9a-f]{8} \(a person\)$/, '');
 
 /** The repository root: `packages/code/tests/` is three levels under it. */
 const REPO = fileURLToPath(new URL('../../../', import.meta.url));
@@ -226,7 +230,7 @@ describe('the reply asks for a person, and only when the record does', () => {
     );
     // Then the rule: what it says, the address that asked, and the id. The id lives on this
     // line — a charge that could not name the fact that caused it would not be a charge.
-    expect(lines[2]).toBe(
+    expect(bare(lines[2])).toBe(
       `“Nobody touches billing alone” — asks for a person at src/billing · ${rule}`,
     );
     expect(lines).toHaveLength(3);
@@ -296,7 +300,7 @@ describe('the reply asks for a person, and only when the record does', () => {
     const lines = (said.reason ?? '').split('\n');
     // ONE LINE PER RULE, and the most specific first: the rule that speaks to this file is
     // the one a reader reads before deciding.
-    expect(lines.slice(2)).toEqual([
+    expect(lines.slice(2).map(bare)).toEqual([
       `“Billing especially” — asks for a person at src/billing · ${narrow}`,
       `“Nobody touches source alone” — asks for a person at src · ${broad}`,
     ]);
@@ -311,8 +315,9 @@ describe('the reply cannot express any decision but asking', () => {
     expect(Object.keys(reply)).toEqual(['hookSpecificOutput']);
     // No `updatedInput` and no `updatedToolOutput`: rewriting the input of a tool is this
     // product producing the artifact, and that is refused permanently rather than deferred.
-    // No `allow`, and `deny` only for the hold a person switched on: with it off, as here, the
-    // reply is `ask` or nothing.
+    // No `allow`, and `deny` only for what refuses a write: a rule's refusal
+    // (`a-rule-that-refuses-a-write.test.ts`) and the hold a person switched on, which with it off,
+    // as here, leaves the reply `ask` or nothing.
     expect(Object.keys(reply['hookSpecificOutput'] as object).sort()).toEqual([
       'hookEventName',
       'permissionDecision',
@@ -361,9 +366,10 @@ describe('the reply cannot express any decision but asking', () => {
       expect(literals, `hook-reply.ts spells ${refused}`).not.toContain(refused);
     }
     expect(literals).toContain('ask');
-    // `deny` IS THE ONE VALUE ADDED, for the once-only hold on a first write
-    // (`the-first-write-is-held-once.test.ts`), and it is spelled where `ask` is: in a named
-    // constant and the union it is typed by, so a third spelling anywhere in the module is red here.
+    // `deny` IS SPELLED WHERE `ask` IS — a named constant and the union it is typed by — and it has
+    // TWO ORIGINS that share those two spellings: a rule's refusal
+    // (`a-rule-that-refuses-a-write.test.ts`) and the once-only hold on a first write
+    // (`the-first-write-is-held-once.test.ts`). A third spelling anywhere in the module is red here.
     expect(literals.filter((one) => one === 'deny')).toHaveLength(2);
   });
 });
@@ -514,7 +520,7 @@ describe('one derivation answers both relations', () => {
       join(REPO, 'packages', 'context', 'src', 'intelligence', 'governance.ts'),
       'utf-8',
     );
-    for (const entry of ['rulesInForceAt', 'asksForAPersonAt']) {
+    for (const entry of ['rulesInForceAt', 'asksForAPersonAt', 'refusesAWriteAt']) {
       const body = source.slice(source.indexOf(`export function ${entry}(`));
       const upToBrace = body.slice(0, body.indexOf('\n}'));
       expect(upToBrace, `${entry} does not route through inForceUnder`).toContain(

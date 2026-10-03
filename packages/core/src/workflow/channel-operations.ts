@@ -38,7 +38,7 @@
  * carry it.
  */
 
-import { channelAsked, channelServed, channelSwitched } from '@mnema/chain';
+import { channelAsked, channelRefused, channelServed, channelSwitched } from '@mnema/chain';
 import {
   type ScreenedWrite,
   type ScreenRefusal,
@@ -174,6 +174,19 @@ export interface AskedOk extends ScreenedWrite {
   readonly rule: string;
 }
 
+/**
+ * The refusal was recorded: this rule refused a write at this path. The asking's shape, under
+ * its own name, because the two are two powers and a caller holding one must not be able to
+ * pass it off as the other.
+ */
+export interface RefusedOk extends ScreenedWrite {
+  readonly ok: true;
+  /** The channel that refused — the event's subject, as it was recorded. */
+  readonly channel: string;
+  /** The rule the refusal cites, as it was recorded. */
+  readonly rule: string;
+}
+
 /** The refusals either can earn — the ones every fact can, and nothing of their own. */
 export type ChannelFactError = SelfAuthorizedErr | ScreenRefusal | AppendRefusal;
 
@@ -198,6 +211,18 @@ export interface AskedInput extends ServedInput {
    */
   readonly rule: string;
   /** The path the asking was about, as the surface compared it. A caller's string. */
+  readonly path: string;
+}
+
+/**
+ * What the caller records about one refusal: the asking's fields, for the asking's reasons —
+ * the rule is an id the derivation of what is in force produced and is not screened; the path
+ * is a caller's string and is.
+ */
+export interface RefusedInput extends ServedInput {
+  /** The id of the rule that refused. NOT screened, for the reason {@link AskedInput.rule} gives. */
+  readonly rule: string;
+  /** The path the refusal was about, as the surface compared it. A caller's string. */
   readonly path: string;
 }
 
@@ -255,6 +280,34 @@ export function recordChannelAsked(
   ctx: WriteContext,
   input: AskedInput,
 ): AskedOk | ChannelFactError {
+  return recordRuleAtPath(ctx, input, channelAsked);
+}
+
+/**
+ * Records that a channel refused a write: appends the single `channel.refused` whose subject
+ * IS the channel and whose payload cites the rule.
+ *
+ * The asking's door, the asking's screening, and the asking's order — one body under both
+ * ({@link recordRuleAtPath}), so what is screened and what is cited cannot come to differ
+ * between the two powers. Which of them a write meets is not decided here.
+ */
+export function recordChannelRefused(
+  ctx: WriteContext,
+  input: RefusedInput,
+): RefusedOk | ChannelFactError {
+  return recordRuleAtPath(ctx, input, channelRefused);
+}
+
+/**
+ * The one body behind both facts a rule produces at a path: the channel and the path are
+ * screened, the rule is cited as the record produced it, and the event is built by the
+ * kind's own builder.
+ */
+function recordRuleAtPath(
+  ctx: WriteContext,
+  input: AskedInput | RefusedInput,
+  build: typeof channelAsked | typeof channelRefused,
+): (AskedOk & RefusedOk) | ChannelFactError {
   const content = screenContent({
     subject: input.channel,
     path: input.path,
@@ -269,7 +322,7 @@ export function recordChannelAsked(
   ensureFounded(ctx);
   const appended = appendEvent(
     ctx.writer,
-    channelAsked(
+    build(
       {
         at: (ctx.clock ?? systemClock)(),
         who,

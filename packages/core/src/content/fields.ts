@@ -271,6 +271,7 @@ export const SUBJECT_TEXT = {
   // still has no idea which channels exist.
   'channel.served': 'name',
   'channel.asked': 'name',
+  'channel.refused': 'name',
   // DERIVED from the record: the anchor a waiver names is read off the pruned
   // tail's own last event, never handed in. No caller can put anything in it.
   'tail.pruned': 'identifier',
@@ -389,6 +390,9 @@ export const PAYLOAD_TEXT = {
   // redaction. Refusing it would make an automatic hook fail over a file NAME, which
   // trades a fact the record wants for nothing it protects.
   'channel.asked': { rule: 'identifier', path: 'body' },
+  // The asking's two fields, classified for the asking's reasons: the rule is an id the
+  // product resolved and cites, and the path is the circumstance a rule refused in.
+  'channel.refused': { rule: 'identifier', path: 'body' },
 } as const satisfies {
   readonly [K in EventKind]: { readonly [P in PayloadPath<K>]: FieldNature };
 };

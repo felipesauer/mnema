@@ -190,9 +190,10 @@ interface AuditMapping {
  *
  * ## The entries worth arguing with
  *
- * `channel.asked` is the ONE kind at `99 Other`, and it is not a gap in the effort. The
- * fact records that a rule of the record asked a person to look before a file was written
- * and the host stopped — an exercise of authority over somebody else's call. That is not a
+ * `channel.asked` and `channel.refused` are the TWO kinds at `99 Other`, and it is not a gap
+ * in the effort. It said "the ONE kind", and the refusal made it two by the same argument:
+ * each fact records that a rule of the record exercised authority over somebody else's call —
+ * asked a person to look before a file was written, or refused the write. That is not a
  * create, a read, an update or a delete of the channel; Entity Management has no honest
  * verb for it, and forcing it into `Update` would tell a SIEM the channel was modified
  * when nothing about it changed. `99` is what the schema provides for precisely this, and
@@ -289,6 +290,11 @@ export const AUDIT_BY_KIND: { readonly [K in EventKind]: AuditMapping } = {
   },
   'channel.served': { activity: ACTIVITY.read, entityTypeId: ENTITY_OTHER, entityType: 'channel' },
   'channel.asked': { activity: ACTIVITY.other, entityTypeId: ENTITY_OTHER, entityType: 'channel' },
+  'channel.refused': {
+    activity: ACTIVITY.other,
+    entityTypeId: ENTITY_OTHER,
+    entityType: 'channel',
+  },
 };
 
 /** Who is reporting the feed — the producer's own identity, which the record does not hold. */

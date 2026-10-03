@@ -40,6 +40,14 @@
       }
     },
     {
+      "kind": "channel.refused",
+      "v": 1,
+      "payload": {
+        "rule": "string",
+        "path": "string"
+      }
+    },
+    {
       "kind": "channel.served",
       "v": 1,
       "payload": {}

@@ -406,7 +406,7 @@ describe('the plugin command VS Code runs', () => {
   });
 
   it('refuses a host it does not know, rather than reading a payload in the wrong shape', () => {
-    const refused = spawnSync(process.execPath, [CLI, 'before-a-write', '--host', 'cursor'], {
+    const refused = spawnSync(process.execPath, [CLI, 'before-a-write', '--host', 'zed'], {
       cwd: repo,
       input: createFile('src/billing/invoice.ts'),
       encoding: 'utf-8',
@@ -414,7 +414,7 @@ describe('the plugin command VS Code runs', () => {
     });
     expect(refused.status).not.toBe(0);
     expect(refused.stdout).toBe('');
-    expect(refused.stderr).toContain('--host takes one of vscode, not "cursor".');
+    expect(refused.stderr).toContain('--host takes one of vscode, cursor, not "zed".');
     const missing = spawnSync(process.execPath, [CLI, 'before-a-write'], {
       cwd: repo,
       input: '{}',

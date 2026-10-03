@@ -75,7 +75,7 @@ identically, because they are the same call.
   The same record always prints the same bytes, which is what makes
   `mnema brief | diff - MNEMA.md` a staleness check.
 - **A plugin for Claude Code**, in [`plugin/`](../../plugin/), that stops the delivery
-  from depending on somebody remembering to regenerate a file. It declares seven hooks and
+  from depending on somebody remembering to regenerate a file. It declares eight hooks and
   the MCP server below, in one installation. As a session opens, one hook runs `mnema
   brief` and hands over the document, and another runs `mnema recall` and hands over the
   **notes** — the memories and observations recorded for the project, from every tree
@@ -119,7 +119,8 @@ identically, because they are the same call.
   the captures.
 - **A rules file for a host without the plugin** — `mnema rules-file --host vscode` prints the
   committed rules in force whose address is a file, as a `.instructions.md` with an `applyTo`,
-  and `--host cursor` as a `.mdc` with `globs`. A directory is left out, because no list of
+  `--host cursor` as a `.mdc` with `globs`, and `--host claude` as a `.claude/rules/mnema.md` with
+  the `paths` list Claude Code's documentation names (not measured here). A directory is left out, because no list of
   globs was found to match exactly what it governs in either host: VS Code puts `**/` before a
   relative pattern, so `src/billing/**` would also match a `src/billing` anywhere else under the
   folder it reads, and Cursor matches `globs` on its servers, where it could not be measured. So
@@ -623,21 +624,26 @@ those files can sign as your identity, and a copy of the disk — a stolen lapto
 directory, a backup — is a copy of the identity. Nothing in the record protects the key; the
 proof is only that a signature was made by it.
 
-You can put a passphrase on it, and nothing else changes:
+You can put a passphrase on it, and nothing else changes. At a terminal `mnema key protect` asks
+for it, twice and with nothing echoed; the variable does the same where there is no terminal:
 
 ```sh
-export MNEMA_KEY_PASSPHRASE='a long passphrase of your own'
-mnema key protect
+mnema key protect                       # asks twice
+#> New passphrase for the private key:
+#> Again:
 #> Protected 2 of 2 private key file(s)
 #> …
+export MNEMA_KEY_PASSPHRASE='a long passphrase of your own'   # or, with no terminal to ask at
+mnema key protect
 ```
 
 `protect` encrypts the key and its backup in place (scrypt, then AES-256-GCM, written
 atomically with mode `0600`). The signed format is untouched: it is the same key and the same
 signatures, no event or checkpoint says whether a key is protected, and `mnema verify` never
 opens a private key, so a record written with a protected key verifies with no passphrase at all.
-Anything that **signs** needs `MNEMA_KEY_PASSPHRASE` set to the same value — your shell, and the
-environment the host starts an agent's server in. With it missing or wrong a write is refused
+Anything that **signs** needs the same passphrase: at a terminal, `mnema` asks for it once per
+command; where there is no terminal — the environment the host starts an agent's server in, a hook,
+a pipe — it needs `MNEMA_KEY_PASSPHRASE` set to the same value. With it missing or wrong a write is refused
 (`KEY_IS_PROTECTED`, `KEY_PASSPHRASE_WRONG`), nothing is recorded, and no second identity is
 created on the way. `mnema key unprotect` writes the files back in the clear, and a wrong
 passphrase changes none of them.
@@ -645,8 +651,9 @@ passphrase changes none of them.
 What it does **not** do: a process running as you can read the variable from its own environment
 and the opened key from the process that holds it; a keylogger sees the passphrase typed; and a
 short passphrase is a short passphrase. It protects the key at rest, which is what the file in
-the clear did not. The variable is the only way in on purpose — a server and a hook have no
-terminal to ask at — and a lost passphrase is a lost key, the cold backup included if it was
+the clear did not. The prompt appears only where both the input and the error stream are a
+terminal, so a server, a hook or a pipe is never made to wait for a line nobody will type; the
+system keychain is not a source. A lost passphrase is a lost key, the cold backup included if it was
 protected too: keep the passphrase where you keep that copy.
 
 ### Authorizing a cut, which is not the same as making one
@@ -1020,7 +1027,8 @@ Three things arrive without anybody asking: the document a session opens with, t
 beside it, and the rules handed over as a file is written. Each can be switched off, and
 the switching is **recorded** — because turning something off is legitimate and turning it
 off in silence is not. The list also holds two gates that hand nothing over: the pause
-before a write where a rule asks for a person, and `agent-accepts`, which is **on** — an
+before a write where a rule asks for a person, the refusal of a write where a rule refuses one
+(`edit-refuses-a-write`), and `agent-accepts`, which is **on** — an
 agent may accept a decision, freely, and the record keeps which agent did, the reply says
 so, and the document a session opens with marks the rule. Switching it off makes an agent's
 accept a refusal; a person's still lands.
@@ -1229,7 +1237,9 @@ mnema skill export 019faa06-30e1-… --out ./skills
 The body goes out **verbatim**, the `description` is derived (or `--description`)
 and never generated by a model, only an **adopted** pattern is exported, and the
 `metadata` carries the id and the identity that adopted it so the file points back
-at the record it came from. It writes nowhere but `--out` and records nothing —
+at the record it came from. A derived `description` with no "when", "whenever" or "quando" in
+it is exported all the same, and the second stream says the host has no trigger to route by —
+`--description "Use when …"` writes it again. It writes nowhere but `--out` and records nothing —
 and there is no import in the other direction, on purpose: see the table above.
 
 ### Asking somebody outside to date the record

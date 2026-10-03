@@ -224,7 +224,9 @@ describe('an agent may accept, and the trail says it', () => {
     expect(shown).toMatch(/accepted by mnid:[0-9a-f]+ \(agent claude-code\)/);
 
     const brief = mnema(atA, a, 'brief').stdout;
-    expect(BRIEF_RULE('A call').exec(brief)?.[0]).toMatch(/\(agent claude-code; unconfirmed\)/);
+    // The brief of a record with one identity does not mark the rule: nobody to confirm with.
+    expect(BRIEF_RULE('A call').exec(brief)?.[0]).toMatch(/\(agent claude-code\)/);
+    expect(brief).not.toContain('unconfirmed');
     expect(brief).toContain('1 of them was accepted by an agent');
   }, 120_000);
 

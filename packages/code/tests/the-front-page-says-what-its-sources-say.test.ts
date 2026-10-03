@@ -321,7 +321,7 @@ describe('the counts the front page takes from the rest of the repository', () =
       (declared.hooks[event] ?? []).reduce((total, matcher) => total + matcher.hooks.length, 0);
     const all = Object.keys(declared.hooks).reduce((total, event) => total + per(event), 0);
     expect(page).toContain(
-      `The Claude Code plugin: ${inWords(all)} hooks — ${inWords(per('SessionStart'))} as a session opens, ${inWords(per('PreToolUse'))} at each edit (the one Claude Code runs and the one VS Code runs, each skipped by the other), ${inWords(per('Stop'))} at the end of a response, ${inWords(per('PreCompact'))} before a compaction —`,
+      `The Claude Code plugin: ${inWords(all)} hooks — ${inWords(per('SessionStart'))} as a session opens, ${inWords(per('PreToolUse'))} at each edit (the one Claude Code runs, the one VS Code runs and the one Cursor runs, each skipped by the others), ${inWords(per('Stop'))} at the end of a response, ${inWords(per('PreCompact'))} before a compaction —`,
     );
     // NON-VACUITY: the declaration is read, not assumed to be empty.
     expect(all).toBeGreaterThan(1);

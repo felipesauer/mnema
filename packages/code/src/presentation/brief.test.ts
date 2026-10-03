@@ -37,12 +37,14 @@ function governance(over: Partial<Brief> = {}): Brief {
     divergent: [],
     addressed: 0,
     asking: 0,
+    refusing: 0,
     // Nothing waiting by default, so every case that is not about the waiting paragraph
     // reads the skeleton's own sentence — and the cases that ARE about it say a number.
     decisionsAwaiting: 0,
     skillsAwaiting: 0,
     editPush: { channel: 'edit-rules-push', on: true },
     asksAPerson: { channel: 'edit-asks-a-person', on: true },
+    refusesAWrite: { channel: 'edit-refuses-a-write', on: true },
     ...over,
   };
 }
@@ -272,8 +274,13 @@ describe('the brief costs one line per rule', () => {
     // with it: raising it IS the decision, and a delivery that raises its own ceiling has
     // taken that decision with nobody looking. So the next line added here is red, and the
     // conversation that red forces is the one this bound has always existed for.
-    expect(none).toBe(42);
-    expect(none).toBeLessThanOrEqual(42);
+    //
+    // 45 SINCE THE REFUSAL OF A WRITE: the document says how many rules refuse one, in a paragraph
+    // of its own (two lines and a blank), because a refusal leaves nobody a way through at the
+    // host and is the one thing a reader must be told before it happens. The specification of
+    // that delivery took the decision to raise the bound; it did not come from this test.
+    expect(none).toBe(45);
+    expect(none).toBeLessThanOrEqual(45);
   });
 
   it('grows by one line per rule however many sources the rule names', () => {

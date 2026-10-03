@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 /**
  * The gate, in a host whose hooks are processes: where a rule of the project's record asks for a
- * person at a path, the write waits for one.
+ * person at a path, the write waits for one, and where a rule refuses the write, it does not happen.
  *
  * WHICH HOST, AND WHY THIS FILE IS NOT THE PER-EDIT HOOK OF THE HOST THIS PLUGIN WAS WRITTEN
  * FOR. Claude Code runs the per-edit hook as a call into the MCP server (`type: "mcp_tool"` in
@@ -28,11 +28,12 @@
  */
 
 /**
- * WHICH channel of the product's framing this handler carries — the name `record-framing.ts`
- * knows it by. Read from this SOURCE by the channel guard, never imported: importing this module
+ * WHICH channels of the product's framing this handler carries — the names `record-framing.ts`
+ * knows them by, joined by `+`: the reason it hands back is the asking's or the refusal's,
+ * whichever the write met. Read from this SOURCE by the channel guard, never imported: importing this module
  * would run it.
  */
-export const MODEL_CHANNEL = 'edit-asks-a-person';
+export const MODEL_CHANNEL = 'edit-asks-a-person+edit-refuses-a-write';
 
 /** The verb and its flags: the host is declared, never guessed from the payload. */
 const VERB = ['before-a-write', '--host', 'vscode'];

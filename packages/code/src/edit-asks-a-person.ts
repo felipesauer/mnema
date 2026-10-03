@@ -52,6 +52,7 @@
 import type { PushedRule, RulesAtPath, ScopedCache } from '@mnema/context';
 import { type GovernedRead, readAsksForAPersonAt } from './governed-tree.js';
 import { oneLine } from './one-line.js';
+import { acceptedBy } from './presentation/accepted-by.js';
 import { DERIVED_FROM } from './provenance.js';
 import { recordFramingBlock } from './record-framing.js';
 
@@ -59,10 +60,10 @@ import { recordFramingBlock } from './record-framing.js';
  * What a write at one path asks, decided: the rules that ask for a person there, and the text
  * that says so — or `undefined`, the ordinary case, when no rule asks.
  *
- * THIS IS THE ONE PLACE THE GATE IS DECIDED, AND THERE ARE TWO DOORS TO IT. The host that runs
- * a hook as a call into the MCP server asks it through `rules_before_an_edit`
- * (`mcp/tools.ts`); a host whose hooks are processes asks it through `mnema before-a-write`
- * (`commands/before-a-write.ts`). Each door answers in its own host's shape and records the
+ * THIS IS THE ONE PLACE THE ASKING IS DECIDED, AND IT IS REACHED THROUGH ONE OTHER, `whatAWriteMeets`
+ * (`what-a-write-meets.ts`), which puts a refusal over it. The host that runs a hook as a call
+ * into the MCP server asks it through `rules_before_an_edit` (`mcp/tools.ts`); a host whose hooks
+ * are processes asks it through `mnema before-a-write` (`commands/before-a-write.ts`). Each door answers in its own host's shape and records the
  * same facts, but neither decides: a second reading of "which rules ask here" is how a person
  * would be stopped by one host and not by another for the same file, and the difference would
  * be found by whoever it trapped. `the-gate-is-decided-once.test.ts` fails when a surface
@@ -173,5 +174,6 @@ function askLine(rule: PushedRule): string {
   const from = (rule.origin ?? [])
     .map((target) => ` · ${DERIVED_FROM} ${oneLine(target)}`)
     .join('');
-  return `“${oneLine(rule.name)}” — asks for a person at ${oneLine(rule.address)} · ${oneLine(rule.id)}${from}`;
+  const by = rule.acceptance === undefined ? '' : ` · ${acceptedBy(rule.acceptance)}`;
+  return `“${oneLine(rule.name)}” — asks for a person at ${oneLine(rule.address)} · ${oneLine(rule.id)}${from}${by}`;
 }

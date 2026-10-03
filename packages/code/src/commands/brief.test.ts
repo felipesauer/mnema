@@ -336,6 +336,7 @@ describe('mnema brief (what governs the work here)', () => {
         divergent: [],
         addressed: 0,
         asking: 0,
+        refusing: 0,
         // Nothing waiting either, and the document says so in words: a project where
         // nobody has decided anything is not a project where something is pending.
         decisionsAwaiting: 0,
@@ -344,6 +345,7 @@ describe('mnema brief (what governs the work here)', () => {
         // no attribution because there is no switch to attribute them to.
         editPush: { channel: 'edit-rules-push', on: true },
         asksAPerson: { channel: 'edit-asks-a-person', on: true },
+        refusesAWrite: { channel: 'edit-refuses-a-write', on: true },
       },
     });
   });

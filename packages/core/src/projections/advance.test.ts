@@ -63,6 +63,7 @@ import {
 } from '../knowledge/operations.js';
 import {
   recordChannelAsked,
+  recordChannelRefused,
   recordChannelServed,
   switchChannel,
 } from '../workflow/channel-operations.js';
@@ -232,6 +233,16 @@ const ARRIVALS: { readonly [K in EventKind]: Arrival } = {
       landed(
         recordChannelAsked(ctx, {
           channel: 'a-channel-that-asked',
+          rule: '0198f0a1-2b3c-7d4e-8f90-a1b2c3d4e5f6',
+          path: 'packages/core/src/projections/rebuild.ts',
+        }),
+      ),
+  },
+  'channel.refused': {
+    emit: (ctx) =>
+      landed(
+        recordChannelRefused(ctx, {
+          channel: 'a-channel-that-refused',
           rule: '0198f0a1-2b3c-7d4e-8f90-a1b2c3d4e5f6',
           path: 'packages/core/src/projections/rebuild.ts',
         }),

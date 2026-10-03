@@ -1,26 +1,31 @@
 /**
  * What a host whose hooks are PROCESSES hands a hook before a file is written, and how such a
- * host is answered — for the hosts where the record can ask for a person that way.
+ * host is answered — for the hosts where the record can ask for a person or refuse a write
+ * that way.
  *
  * Claude Code runs this product's per-edit hook as a call into the connected MCP server
  * (`type: "mcp_tool"`), and its reply is shaped in `mcp/hook-reply.ts`. The other hosts that read
  * the plugin run only `type: "command"`: a process, handed a JSON payload on stdin, answering on
  * stdout. This module is what the command half knows about each of them, measured against the
- * host installed on the day (`measurements/hooks-by-host/`), and nothing here decides whether a
- * write asks — that is `whatAWriteAsks`, the one site both doors pass through.
+ * host installed on the day (`measurements/hooks-by-host/`), and nothing here decides what a
+ * write meets — that is `whatAWriteMeets`, the one site every door passes through.
  *
- * ## Which hosts, and why only one
+ * ## Which hosts, and what each can be told
  *
- * {@link HookHost} is a union of ONE, `vscode`, and the reason is a measurement rather than a
- * backlog. VS Code 1.137 with Copilot Chat 0.65 runs a plugin's `PreToolUse` command before the
- * tool, and a reply carrying `permissionDecision: "ask"` holds the write for a person (the host's
- * own log: *"requires confirmation (preToolUse hook returned 'ask')"*; the file stayed unwritten).
- * Cursor's command-line agent 2026.09.18 runs the same hook before its write — and IGNORES `ask`:
- * the file was written, from its own hook file and from the plugin alike, while `deny` was
- * honored. A host that does not ask cannot be told to, and recording that it asked would be the
- * fact reading backwards; so Cursor has no member here, and the page says so with the number.
+ * {@link HookHost} is a union of TWO, `vscode` and `cursor`, and the reason is a measurement
+ * rather than a backlog. VS Code 1.137 with Copilot Chat 0.65 runs a plugin's `PreToolUse`
+ * command before the tool, and a reply carrying `permissionDecision: "ask"` holds the write for
+ * a person (the host's own log: *"requires confirmation (preToolUse hook returned 'ask')"*; the
+ * file stayed unwritten); `deny` refuses it. Cursor's command-line agent 2026.09.18 runs the
+ * same hook before its write — and IGNORES `ask`: the file was written, from its own hook file
+ * and from the plugin alike, while `deny` was honored, with the reason as the write's error.
  *
- * ## What the host hands over, and the two shapes that differ from Claude Code's
+ * So the two differ in exactly one thing, and {@link asksAPerson} is the table that says it. A
+ * host that does not ask cannot be told to, and recording that it asked would be the fact
+ * reading backwards: where a write only asks, the Cursor door answers silence and records
+ * nothing. Where a rule refuses, both answer `deny`.
+ *
+## What the host hands over, and the two shapes that differ from Claude Code's
  *
  *   - THE TOOL NAMES ARE THE HOST'S OWN. VS Code's agent writes through `create_file`,
  *     `replace_string_in_file`, `multi_replace_string_in_file`, `insert_edit_into_file`,
@@ -51,6 +56,10 @@ type PathsOf = (input: Readonly<Record<string, unknown>>) => readonly string[];
 /** The one path of a tool that writes one file, under the field the host names it. */
 const filePath: PathsOf = (input) =>
   typeof input['filePath'] === 'string' && input['filePath'] !== '' ? [input['filePath']] : [];
+
+/** The one path of Cursor's write tool, which names its field the way Claude Code does. */
+const snakeFilePath: PathsOf = (input) =>
+  typeof input['file_path'] === 'string' && input['file_path'] !== '' ? [input['file_path']] : [];
 
 /** The files a multi-replace touches: one `filePath` per replacement, each once. */
 const replacements: PathsOf = (input) => {
@@ -100,7 +109,21 @@ const WRITES: { readonly [H in HookHost]: { readonly [tool: string]: PathsOf } }
     multi_replace_string_in_file: replacements,
     apply_patch: patch,
   },
+  // ONE TOOL, THE ONE MEASURED. Cursor's agent has other tools that change a file, and none was
+  // run: a name here is a claim that a hook was handed it, so the table holds `Write` alone and
+  // the page says which are not covered (`measurements/hooks-by-host/`).
+  cursor: { Write: snakeFilePath },
 };
+
+/**
+ * Whether a host holds a write for a person when a hook answers `ask` — the one thing the two
+ * command hosts measured differently. Total over {@link HookHost}, so a host added to the union
+ * does not compile until somebody has said what it does with `ask`.
+ */
+export function asksAPerson(host: HookHost): boolean {
+  const asks: { readonly [H in HookHost]: boolean } = { vscode: true, cursor: false };
+  return asks[host];
+}
 
 /** The tool names a host writes through — what the plugin's filter and matcher name. */
 export function writeToolsOf(host: HookHost): readonly string[] {
@@ -129,13 +152,16 @@ export function pathsOfAWrite(host: HookHost, payload: unknown): readonly string
 /**
  * The reply a host reads, for what the record has to say.
  *
- * VS Code reads the same reply Claude Code does — `hookSpecificOutput`, `permissionDecision`,
+ * VS Code and Cursor read the same reply Claude Code does — `hookSpecificOutput`, `permissionDecision`,
  * `permissionDecisionReason` — measured, so the shape is written once, in `mcp/hook-reply.ts`,
  * and this is the table that says so per host rather than a second spelling of the fields.
  */
 export function replyFor(host: HookHost, said: HookSaid): object {
   const reply: { readonly [H in HookHost]: (said: HookSaid) => object } = {
     vscode: (s) => hookReply('PreToolUse', s),
+    // Cursor read the same nested reply from a Claude Code plugin's hook: the `deny` below it
+    // refused the write and its reason came back as the write's error.
+    cursor: (s) => hookReply('PreToolUse', s),
   };
   return reply[host](said);
 }

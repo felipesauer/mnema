@@ -18,7 +18,8 @@ import {
   CodedError,
   type KeyFileChange,
   NoPassphraseToProtectWithError,
-  passphraseFromEnvironment,
+  passphraseToOpen,
+  passphraseToProtectWith,
   protectPrivateKeys,
   unprotectPrivateKeys,
 } from '@mnema/chain';
@@ -47,7 +48,7 @@ export interface KeyProtectRefused {
 /** Encrypts every private key file under this machine's key root. */
 export function runKeyProtect(ctx: KeyProtectContext): KeyFilesChanged | KeyProtectRefused {
   return refusing(() => {
-    const passphrase = passphraseFromEnvironment();
+    const passphrase = passphraseToProtectWith();
     if (passphrase === undefined) throw new NoPassphraseToProtectWithError();
     return protectPrivateKeys({ root: resolveTrees(ctx.cwd, ctx.env).keyRoot }, passphrase);
   });
@@ -59,7 +60,7 @@ export function runKeyUnprotect(ctx: KeyProtectContext): KeyFilesChanged | KeyPr
     const keyRoot = { root: resolveTrees(ctx.cwd, ctx.env).keyRoot };
     // No passphrase is not an error until a file needs one: an unprotected machine is told that
     // nothing changed, which is also what a second `unprotect` is.
-    return unprotectPrivateKeys(keyRoot, passphraseFromEnvironment() ?? '');
+    return unprotectPrivateKeys(keyRoot, passphraseToOpen(keyRoot.root) ?? '');
   });
 }
 

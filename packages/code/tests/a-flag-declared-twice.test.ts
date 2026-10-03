@@ -196,6 +196,8 @@ const DECLARED_TWICE: Readonly<Record<string, Reading>> = {
   'task create --scope': 'where it was written',
   'task create --which': 'where it was written',
   'decision record --alternatives': 'where it was written',
+  'decision record --body-file': 'where it was written',
+  'decision record --stdin': 'where it was written',
   'decision record --scope': 'where it was written',
   'decision record --which': 'where it was written',
   'skill create --body': 'where it was written',

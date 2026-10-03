@@ -86,10 +86,12 @@ const EMPTY_BRIEF: Brief = {
   divergent: [],
   addressed: 0,
   asking: 0,
+  refusing: 0,
   decisionsAwaiting: 0,
   skillsAwaiting: 0,
   editPush: { channel: 'edit-rules-push', on: true },
   asksAPerson: { channel: 'edit-asks-a-person', on: true },
+  refusesAWrite: { channel: 'edit-refuses-a-write', on: true },
 };
 
 /**

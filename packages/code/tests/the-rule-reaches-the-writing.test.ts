@@ -47,6 +47,10 @@ import { runGoverningRulesTool, runRulesBeforeAnEditTool } from '../src/mcp/tool
 import { HOOK_TEXT_CEILING } from '../src/presentation/within-a-hook.js';
 import { tellsWhatToDo } from '../src/record-framing.js';
 
+/** The clause that says who accepted a rule — held where the lines say it, ignored where they are not about it. */
+const bare = (line: string | undefined): string | undefined =>
+  line?.replace(/ · accepted by mnid:[0-9a-f]{8} \(a person\)$/, '');
+
 /** The repository root: `packages/code/tests/` is three levels under it. */
 const REPO = fileURLToPath(new URL('../../../', import.meta.url));
 
@@ -208,7 +212,9 @@ describe('a rule with an address reaches the file about to be written', () => {
     // Then WHY it arrived: the path, as the record compares it.
     expect(lines[1]).toBe('Addressed at src/collate/fold.ts:');
     // Then the rule, with the id a charge would cite. The id lives on this line.
-    expect(lines[2]).toBe(`“collate with the ICU root locale” — governs src/collate · ${rule}`);
+    expect(bare(lines[2])).toBe(
+      `“collate with the ICU root locale” — governs src/collate · ${rule}`,
+    );
     expect(lines).toHaveLength(3);
   });
 
@@ -219,7 +225,7 @@ describe('a rule with an address reaches the file about to be written', () => {
     await addressAt(narrow, 'src/collate');
 
     const lines = (injected(connect(), 'src/collate/fold.ts') ?? '').split('\n').slice(2);
-    expect(lines).toEqual([
+    expect(lines.map(bare)).toEqual([
       `“collate with the ICU root locale” — governs src/collate · ${narrow}`,
       `“how this repository is laid out” — governs src · ${broad}`,
     ]);
@@ -242,7 +248,7 @@ describe('a rule with an address reaches the file about to be written', () => {
     expect(asked.value.rules[0]?.onDisk).toBe(false);
 
     const lines = (injected(session, 'src/collation/fold.ts') ?? '').split('\n').slice(2);
-    expect(lines).toEqual([
+    expect(lines.map(bare)).toEqual([
       `“how the new collation module is laid out” — governs src/collation · ${rule}`,
     ]);
   });
@@ -306,7 +312,7 @@ describe('what does NOT reach the writing', () => {
 
     const session = connect();
     const lines = (injected(session, 'src/collate/fold.ts') ?? '').split('\n').slice(2);
-    expect(lines).toEqual([
+    expect(lines.map(bare)).toEqual([
       `“collate with the ICU root locale” — governs src/collate · ${replacement}`,
     ]);
     // AND THE RECORD STILL HAS IT. The reading that answers a caller reports the
@@ -387,7 +393,7 @@ describe('the line of a pushed rule is one line', () => {
     await addressAt(rule, address);
     const text = injected(connect(), address) ?? '';
     expect(text.split('\n')).toHaveLength(3);
-    expect(text.split('\n')[2]).toBe(
+    expect(bare(text.split('\n')[2])).toBe(
       `“collate with the ICU root locale” — governs src/co llate — governs src · forged-id · ${rule}`,
     );
   });
