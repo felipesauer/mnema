@@ -108,6 +108,51 @@ $ mnema rules /elsewhere/src/app.ts
 |   0 govern this path · 0 address this project · 0 address nothing here · 0 name a rule not here
 |   0 ask for a person here · 0 ask in this project · 0 ask about nothing here · 0 name a rule not here
 |   0 refuse a write here · 0 refuse in this project · 0 refuse nothing here · 0 name a rule not here
+$ mnema trailer no-such-id
+! No decision no-such-id here.
+[exit 1]
+$ mnema trailer no-such-id --id
+! No decision no-such-id here.
+[exit 1]
+$ mnema trailer no-such-id
+! No decision no-such-id here.
+[exit 1]
+$ mnema commits no-such-id
+! No decision no-such-id here.
+[exit 1]
+$ mnema commits no-such-id --json
+! No decision no-such-id here.
+[exit 1]
+$ mnema commits no-such-id
+! No decision no-such-id here.
+[exit 1]
+$ mnema why docs/runbook/rollback.md
+| docs/runbook/rollback.md  ·  in the working tree
+|   rules in force that address this path: 0
+|   There is no git work tree here, so no commits were read.
+|
+|   Read from git just now; nothing was written to the record.
+$ mnema why docs/runbook/rollback.md --json
+| {
+|   "about": "file",
+|   "relative": "docs/runbook/rollback.md",
+|   "exists": true,
+|   "rules": [],
+|   "git": false,
+|   "shallow": false,
+|   "commits": [],
+|   "more": false
+| }
+$ mnema aging
+| There is no git work tree here, so no commits were read.
+$ mnema aging --json
+| {
+|   "git": false,
+|   "shallow": false,
+|   "minCommits": 20,
+|   "looked": 0,
+|   "aged": []
+| }
 $ mnema exposure
 | Nothing recognizable in 2 record(s).
 |   Read here: this project’s trees and the machine-global tree — no other project.
@@ -781,6 +826,77 @@ $ mnema rules /elsewhere/src/app.ts
 |
 | addressing nothing in the working tree (1)
 |   docs/gone-away  Keep the runbook in the record (accepted)  <decision-runbook>  [public]
+$ mnema trailer <decision-runbook>
+| Mnema-Decision: ADR-1
+$ mnema trailer <decision-runbook> --id
+| Mnema-Decision: <decision-runbook>
+$ mnema trailer no-such-id
+! No decision no-such-id here.
+[exit 1]
+$ mnema commits <decision-runbook>
+| ADR-1  ·  Keep the runbook in the record  ·  accepted
+|   There is no git work tree here, so no commits were read.
+$ mnema commits <decision-runbook> --json
+| {
+|   "decision": {
+|     "id": "<decision-runbook>",
+|     "adr": "ADR-1",
+|     "title": "Keep the runbook in the record",
+|     "state": "accepted"
+|   },
+|   "addresses": [
+|     "docs/gone-away",
+|     "docs/runbook"
+|   ],
+|   "git": false,
+|   "shallow": false,
+|   "cited": {
+|     "commits": [],
+|     "more": false
+|   },
+|   "touching": {
+|     "commits": [],
+|     "more": false
+|   }
+| }
+$ mnema commits no-such-id
+! No decision no-such-id here.
+[exit 1]
+$ mnema why docs/runbook/rollback.md
+| docs/runbook/rollback.md  ·  in the working tree
+|   rules in force that address this path: 1
+|   There is no git work tree here, so no commits were read.
+|
+|   docs/runbook  Keep the runbook in the record  <decision-runbook>
+|
+|   Read from git just now; nothing was written to the record.
+$ mnema why docs/runbook/rollback.md --json
+| {
+|   "about": "file",
+|   "relative": "docs/runbook/rollback.md",
+|   "exists": true,
+|   "rules": [
+|     {
+|       "id": "<decision-runbook>",
+|       "name": "Keep the runbook in the record",
+|       "address": "docs/runbook"
+|     }
+|   ],
+|   "git": false,
+|   "shallow": false,
+|   "commits": [],
+|   "more": false
+| }
+$ mnema aging
+| There is no git work tree here, so no commits were read.
+$ mnema aging --json
+| {
+|   "git": false,
+|   "shallow": false,
+|   "minCommits": 20,
+|   "looked": 1,
+|   "aged": []
+| }
 $ mnema exposure
 | 1 of 48 record(s) hold a credential format:
 |   public  <date:01>  memory.captured  <memory-unscreened>  github-token
