@@ -245,6 +245,29 @@ describe('channelStates — where a switch stands across the trees a caller can 
     ]);
   });
 
+  it('a channel the caller says starts OFF is off until a tree switches it on, and off still wins', () => {
+    const team = bench();
+    const mine = bench();
+    const asked = (...sources: ScopedCache[]) => channelStates(sources, [CHANNEL], [CHANNEL])[0];
+    // Never switched: off, and carrying nothing else — nobody switched it off, so no attribution.
+    expect(asked(source(team), source(mine, 'private'))).toStrictEqual({
+      channel: CHANNEL,
+      on: false,
+    });
+    // Switched on in one tree: on.
+    switchChannel(team, CHANNEL, true, { at: EARLIER, who: EARLIER_ANCHOR });
+    expect(asked(source(team), source(mine, 'private'))?.on).toBe(true);
+    // Off in another tree that cannot be ordered against it: off wins, and names that switch.
+    switchChannel(mine, CHANNEL, false, { at: LATER, who: LATER_ANCHOR });
+    expect(asked(source(team), source(mine, 'private'))).toMatchObject({
+      on: false,
+      by: LATER_ANCHOR,
+    });
+    // And a channel the caller did not name as starting off still starts on.
+    expect(channelStates([source(bench())], [CHANNEL], ['another'])[0]?.on).toBe(true);
+    expect(channelIsOn([source(team)], CHANNEL, [CHANNEL])).toBe(true);
+  });
+
   it('answers nothing at all when no channel was asked about', () => {
     const team = bench();
     switchChannel(team, CHANNEL, false, { at: EARLIER, who: EARLIER_ANCHOR });

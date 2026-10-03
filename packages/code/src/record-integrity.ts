@@ -246,6 +246,14 @@ export const SERVES_NO_RECORD_CONTENT: { readonly [path: string]: string } = {
     'a host runs it before a write and reads one field of its reply — the reason a person ' +
     'decides on — so a notice about the chain has nowhere to land; the same session opens ' +
     'with the document, which says it, and `mnema verify` rules on it',
+  'commands/corrections.ts':
+    'a host runs it at the end of a response and reads one field of its reply — a line of ids — so a ' +
+    'notice about the chain has nowhere to land; what it records goes through `runDecision`, a write ' +
+    'whose own answer is the record, and the same session opens with the document, which says it',
+  'commands/tally.ts':
+    'a host runs it at the end of a response and reads one field of its reply — a line of two ' +
+    'counts — so a notice about the chain has nowhere to land; the same session opens with the ' +
+    'document, which says it, and `mnema verify` rules on it',
   'anchors.ts':
     'it resolves a typed prefix into the anchor the CALLER was handed, and answers ' +
     'nobody: the verbs that use it are themselves on the list that owes the notice, so ' +

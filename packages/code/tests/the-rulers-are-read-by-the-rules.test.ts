@@ -160,8 +160,10 @@ describe('the same globs reach every instrument this repository ships or runs', 
       '.github/why-it-went-red/verdict.mjs',
       'plugin/hooks/edit-asks-a-person.mjs',
       'plugin/hooks/hand-over.mjs',
+      'plugin/hooks/session-corrections.mjs',
       'plugin/hooks/session-recall.mjs',
       'plugin/hooks/session-start.mjs',
+      'plugin/hooks/session-tally.mjs',
     ]);
   });
 });

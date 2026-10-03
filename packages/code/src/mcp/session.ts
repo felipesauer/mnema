@@ -438,6 +438,14 @@ export interface Session {
    * every run here dies with this session.
    */
   readonly served: Map<string, Set<string>>;
+  /**
+   * The paths whose FIRST write this connection has already held (`edit-first-write-gate`), each by
+   * the path the record compared — so the same write, repeated, is let through. In memory and
+   * sufficient for the reason {@link Session.served} is: the connection is the session, so a
+   * server that restarts holds a file's first write again, once, and that is stated where the
+   * channel is described rather than hidden.
+   */
+  readonly held: Set<string>;
 }
 
 /**
@@ -525,6 +533,7 @@ export function openSession(input: OpenSessionInput): Session {
     writesBegun: new Set<string>(),
     consulted: new Map<string, Set<string>>(),
     served: new Map<string, Set<string>>(),
+    held: new Set<string>(),
   };
 }
 

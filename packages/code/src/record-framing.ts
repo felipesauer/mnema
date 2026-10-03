@@ -167,7 +167,10 @@ export type ModelChannel =
   | 'edit-rules-push'
   | 'edit-asks-a-person'
   | 'host-rules-file'
-  | 'agent-accepts';
+  | 'agent-accepts'
+  | 'session-tally'
+  | 'edit-first-write-gate'
+  | 'user-corrections';
 
 /** The channels that carry a declaration — the ones {@link SUBJECT_OF} answers for. */
 export type FramedChannel =
@@ -176,6 +179,7 @@ export type FramedChannel =
   | 'recall-document'
   | 'edit-rules-push'
   | 'edit-asks-a-person'
+  | 'edit-first-write-gate'
   | 'host-rules-file';
 
 /**
@@ -213,6 +217,10 @@ const SUBJECT_OF: { readonly [K in FramedChannel]: ServedSubject } = {
   // names, addresses, ids — for a host to put in front of a model when a file matches, which
   // is the document's case with a narrower set of rules.
   'host-rules-file': 'rules',
+  // THE FIRST WRITE'S HOLD: the rules addressed at a file, handed over BEFORE the first write of a
+  // session to it instead of beside the result of that write. Same record, same subject as the push
+  // at each edit; what differs is when it lands, and that is not the framing's to say.
+  'edit-first-write-gate': 'rules',
 };
 
 /**
@@ -272,7 +280,7 @@ export const PUSHED_BY_TOOL: { readonly [tool: string]: readonly FramedChannel[]
   // the information. A reader looking for what a tool pushes now gets every channel it
   // can push, so a channel added behind an existing tool cannot hide from the guard by
   // sharing a key.
-  rules_before_an_edit: ['edit-rules-push', 'edit-asks-a-person'],
+  rules_before_an_edit: ['edit-rules-push', 'edit-asks-a-person', 'edit-first-write-gate'],
 };
 
 /**
@@ -286,6 +294,13 @@ export const PUSHED_BY_TOOL: { readonly [tool: string]: readonly FramedChannel[]
 export const UNFRAMED_CHANNELS: {
   readonly [K in Exclude<ModelChannel, FramedChannel>]: string;
 } = {
+  'user-corrections':
+    'what it carries is a count the product made and the ids of the proposals it recorded — no ' +
+    'sentence of the person’s and no record text — so there is nobody’s words to say whose they are',
+  'session-tally':
+    'what it carries is two counts the product made — files the session’s own tool calls wrote, ' +
+    'and decisions recorded since it opened — and no record text, so there is nobody’s words to ' +
+    'say whose they are',
   'agent-accepts':
     'what it carries is the product’s own sentence about an act the agent just made or was turned ' +
     'away from — that its acceptance was recorded as an agent’s, or that the switch is off — and ' +
@@ -311,7 +326,10 @@ export type SwitchableChannel =
   | 'recall-document'
   | 'edit-rules-push'
   | 'edit-asks-a-person'
-  | 'agent-accepts';
+  | 'agent-accepts'
+  | 'session-tally'
+  | 'edit-first-write-gate'
+  | 'user-corrections';
 
 /**
  * The two switchable channels, each named once, so no consumer spells one.
@@ -380,6 +398,50 @@ export const ASKS_A_PERSON_CHANNEL: CountedChannel = 'edit-asks-a-person';
 export const AGENT_ACCEPTS_CHANNEL: SwitchableChannel = 'agent-accepts';
 
 /**
+ * The channel that says, as a response ends and before a conversation is compacted, how many
+ * files the session's own tool calls wrote and how many decisions were recorded since it opened.
+ *
+ * A FACT AND NOT AN ORDER, in the voice the other hooks keep: it counts, and it says what it
+ * counted. It is read from what the host and the record already hold — the transcript the host
+ * names and the decisions the trees carry — and it calls no model. Its own switch, because the
+ * person who wants the rules at an edit does not necessarily want a line after every response
+ * that wrote a file.
+ */
+export const SESSION_TALLY_CHANNEL: SwitchableChannel = 'session-tally';
+
+/**
+ * The channel that holds the FIRST write of a session to a file a rule addresses, so that the rules
+ * arrive before the write and not beside its result — and lets the same write, repeated, through.
+ *
+ * OFF UNTIL SOMEBODY SWITCHES IT ON, which is the one channel here that starts that way
+ * ({@link STARTS_OFF}). What it does is hold a write once, which is a power the others do not have
+ * over somebody's work: the push informs, the pause for a person waits for a person, and this one
+ * refuses a write the first time it is attempted. Every other channel is on until switched off;
+ * this one is off until switched on, and the switch is a signed fact like the rest.
+ */
+export const FIRST_WRITE_GATE_CHANNEL: CountedChannel = 'edit-first-write-gate';
+
+/**
+ * The switchable channels that begin OFF — every other begins on. Read by every consumer that asks
+ * where a channel stands, so "off until switched on" is one list and not a default repeated.
+ */
+export const STARTS_OFF: readonly SwitchableChannel[] = [
+  'edit-first-write-gate',
+  'user-corrections',
+];
+
+/**
+ * The channel that reads what a PERSON typed into a session and records the corrections as
+ * `proposed` decisions — off until somebody switches it on.
+ *
+ * IT STARTS OFF BECAUSE IT IS THE ONE READER OF THIS PRODUCT THAT READS A TRANSCRIPT'S WORDS. The
+ * rest of what reads a transcript reads its shape (`what-the-session-did.ts`), and a conversation is
+ * private: whatever a person pasted into it is in there. What it records is quoted from the person's
+ * own sentence, so it goes to the tree that stays on this machine and never to the one a clone gets.
+ */
+export const USER_CORRECTIONS_CHANNEL: SwitchableChannel = 'user-corrections';
+
+/**
  * The switchable channels whose service the record COUNTS — the ones that append a
  * `channel.served` when they speak, once per run.
  *
@@ -395,7 +457,10 @@ export const AGENT_ACCEPTS_CHANNEL: SwitchableChannel = 'agent-accepts';
  * A union here, and the table below total over what it leaves out, so a channel added to
  * {@link SwitchableChannel} does not build until somebody says which side it is on.
  */
-export type CountedChannel = Extract<SwitchableChannel, 'edit-rules-push' | 'edit-asks-a-person'>;
+export type CountedChannel = Extract<
+  SwitchableChannel,
+  'edit-rules-push' | 'edit-asks-a-person' | 'edit-first-write-gate'
+>;
 
 /**
  * Why each switchable channel the record does NOT count is not counted — one sentence each,
@@ -414,6 +479,14 @@ export const NOT_COUNTED_AS_SERVED: {
   'recall-document':
     'the notes are printed by `mnema recall`, a read that writes nothing, for the reason the ' +
     'document is not counted',
+  'user-corrections':
+    'each proposal it records is itself the recorded fact — a decision awaiting a judgement, ' +
+    'with its own event and its own actor — so a second fact saying the channel served would ' +
+    'repeat it',
+  'session-tally':
+    'the line is printed by `mnema tally`, which reads the transcript and the record and ' +
+    'writes nothing — no event, no key, no run — so a count of what a session did never moves the ' +
+    'record it counts',
   'agent-accepts':
     'the sentence it hands an agent is the reply to a call that is itself the recorded fact ' +
     '(the acceptance, whose actor is on its envelope) or is refused and records nothing, so ' +
@@ -453,6 +526,18 @@ export const WHAT_STOPS: { readonly [K in SwitchableChannel]: string } = {
     'an agent ruling a decision in force: with it off, an agent’s `accept` is refused and ' +
     'only a person at the command line can accept — a proposed decision waits, and nothing ' +
     'else changes',
+  'edit-first-write-gate':
+    'the hold on the first write of a session to a file a rule addresses: with it on, that ' +
+    'write is refused once, with the rules in the reason, and the same write repeated goes ' +
+    'through. Off until switched on; it holds in Claude Code, where the server remembers the ' +
+    'session',
+  'user-corrections':
+    'the proposals recorded from what a person typed into a session: with it on, a `Stop` hook ' +
+    'reads the transcript, and each time the person corrected the agent a decision is recorded ' +
+    'as proposed in this machine’s private tree. Off until switched on',
+  'session-tally':
+    'the line a session’s `Stop` and `PreCompact` hooks print: how many files its own tool calls ' +
+    'wrote and how many decisions were recorded since it opened',
 };
 
 /**
