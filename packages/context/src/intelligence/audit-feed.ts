@@ -298,6 +298,21 @@ export const AUDIT_BY_KIND: { readonly [K in EventKind]: AuditMapping } = {
   // `Update` and not `Delete`: a retraction removes nothing — the note's own event stays and
   // is still served by id — it changes what the note is taken to be, as a supersede does.
   'note.retracted': { activity: ACTIVITY.update, entityTypeId: ENTITY_OTHER, entityType: 'note' },
+  // A check declared on a rule changes what the rule carries; its subject is the rule.
+  'check.declared': {
+    activity: ACTIVITY.update,
+    entityTypeId: ENTITY_OTHER,
+    entityType: 'decision',
+  },
+  // An enrolment, of a machine: the subject is the checker's own identity.
+  'checker.enrolled': {
+    activity: ACTIVITY.enroll,
+    entityTypeId: ENTITY_USER,
+    entityType: 'identity',
+  },
+  // A result is a report about the rule, not a change to it.
+  'check.passed': { activity: ACTIVITY.other, entityTypeId: ENTITY_OTHER, entityType: 'decision' },
+  'check.failed': { activity: ACTIVITY.other, entityTypeId: ENTITY_OTHER, entityType: 'decision' },
 };
 
 /** Who is reporting the feed — the producer's own identity, which the record does not hold. */

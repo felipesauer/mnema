@@ -183,6 +183,11 @@ export const REASONS: { readonly [K in EventKind]: readonly ReasonSite<K>[] } = 
   'channel.refused': [],
   // The whole standing of a retraction is its reason: one that says nothing is refused.
   'note.retracted': ['reason'],
+  // A check's program is not a why, and a failure's words are the runner's, not a person's.
+  'check.declared': [],
+  'checker.enrolled': [],
+  'check.passed': [],
+  'check.failed': [],
 };
 
 /** The refusal the first reason of `event` that says nothing earns, or undefined. */
@@ -236,6 +241,10 @@ export const TITLES: { readonly [K in EventKind]: readonly TextField<K>[] } = {
   'channel.asked': [],
   'channel.refused': [],
   'note.retracted': [],
+  'check.declared': [],
+  'checker.enrolled': [],
+  'check.passed': [],
+  'check.failed': [],
 };
 
 /** The refusal the title of `event` earns when it is a marker, or undefined. */
@@ -299,6 +308,10 @@ export const REFERENCES: { readonly [K in EventKind]: readonly ReferenceSite<K>[
   'channel.refused': ['subject'],
   // The note a retraction names is proved against the record before it is written.
   'note.retracted': [],
+  'check.declared': [],
+  'checker.enrolled': [],
+  'check.passed': [],
+  'check.failed': [],
 };
 
 /**
