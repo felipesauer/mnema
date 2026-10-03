@@ -65,6 +65,7 @@ $ mnema rules docs/runbook/rollback.md
 | docs/runbook/rollback.md  ·  in this project
 |   0 govern this path · 0 address this project · 0 address nothing here · 0 name a rule not here
 |   0 ask for a person here · 0 ask in this project · 0 ask about nothing here · 0 name a rule not here
+|   0 refuse a write here · 0 refuse in this project · 0 refuse nothing here · 0 name a rule not here
 $ mnema rules docs/runbook/rollback.md --json
 | {
 |   "path": "<sandbox>/project/docs/runbook/rollback.md",
@@ -75,12 +76,21 @@ $ mnema rules docs/runbook/rollback.md --json
 |   "asks": [],
 |   "asksStale": [],
 |   "asksUnresolved": [],
+|   "refuses": [],
+|   "refusesStale": [],
+|   "refusesUnresolved": [],
 |   "counts": {
 |     "matching": 0,
 |     "governing": 0,
 |     "stale": 0,
 |     "unresolved": 0,
 |     "asks": {
+|       "matching": 0,
+|       "addressed": 0,
+|       "stale": 0,
+|       "unresolved": 0
+|     },
+|     "refuses": {
 |       "matching": 0,
 |       "addressed": 0,
 |       "stale": 0,
@@ -92,10 +102,12 @@ $ mnema rules .
 | .  ·  in this project
 |   0 govern this path · 0 address this project · 0 address nothing here · 0 name a rule not here
 |   0 ask for a person here · 0 ask in this project · 0 ask about nothing here · 0 name a rule not here
+|   0 refuse a write here · 0 refuse in this project · 0 refuse nothing here · 0 name a rule not here
 $ mnema rules /elsewhere/src/app.ts
 | /elsewhere/src/app.ts  ·  outside this project
 |   0 govern this path · 0 address this project · 0 address nothing here · 0 name a rule not here
 |   0 ask for a person here · 0 ask in this project · 0 ask about nothing here · 0 name a rule not here
+|   0 refuse a write here · 0 refuse in this project · 0 refuse nothing here · 0 name a rule not here
 $ mnema exposure
 | Nothing recognizable in 2 record(s).
 |   Read here: this project’s trees and the machine-global tree — no other project.
@@ -273,6 +285,9 @@ $ mnema brief
 | does, the write waits until a person decides, and the rule that asked is named by
 | its id in what comes back. Nothing waits for a file none of them asks about.
 |
+| 0 of them refuse a WRITE at an address: where one
+| does, the write does not happen, and the rule is named by its id in what comes back.
+|
 | A decision made here enters this record with `record_decision`, awaiting a judgement.
 |
 | ## Decisions in force (0)
@@ -294,11 +309,12 @@ $ mnema tail list
 | 1 tail(s) holding events — the ones a cut can name:
 |   <tail-own>  public   2 event(s) through <tail-head-an-empty-project-1>  the tail of <anchor>  ·  no waiver
 $ mnema switch
-| 8 channel(s), looked in public, private, global:
+| 9 channel(s), looked in public, private, global:
 |   brief-document         on   the document `mnema brief` prints, which a session opens with: the decisions in force and the adopted patterns of the committed record, by name
 |   recall-document        on   the notes `mnema recall` prints, which a session opens with: the memories and observations recorded for this project, from every tree this machine holds for it, the ones near what the session touches first
 |   edit-rules-push        on   the rules addressed at a file, handed over at each edit of it, beside the result of that write
 |   edit-asks-a-person     on   the pause before a file is written where the record asks that a person look first — the rules go on arriving, and nothing stops
+|   edit-refuses-a-write   on   the refusal of a write where a rule of the record refuses one — such a write goes through, the rules go on arriving, and a rule that asks for a person still asks
 |   agent-accepts          on   an agent ruling a decision in force: with it off, an agent’s `accept` is refused and only a person at the command line can accept — a proposed decision waits, and nothing else changes
 |   edit-first-write-gate  off  the hold on the first write of a session to a file a rule addresses: with it on, that write is refused once, with the rules in the reason, and the same write repeated goes through. Off until switched on; it holds in Claude Code, where the server remembers the session  ·  off until switched on, and nobody has
 |   user-corrections       off  the proposals recorded from what a person typed into a session: with it on, a `Stop` hook reads the transcript, and each time the person corrected the agent a decision is recorded as proposed in this machine’s private tree. Off until switched on  ·  off until switched on, and nobody has
@@ -672,6 +688,7 @@ $ mnema rules docs/runbook/rollback.md
 | docs/runbook/rollback.md  ·  in this project
 |   1 govern this path · 2 address this project · 1 address nothing here · 0 name a rule not here
 |   0 ask for a person here · 0 ask in this project · 0 ask about nothing here · 0 name a rule not here
+|   0 refuse a write here · 0 refuse in this project · 0 refuse nothing here · 0 name a rule not here
 |
 | governing this path, most specific first (1)
 |   docs/runbook  Keep the runbook in the record (accepted)  <decision-runbook>  [public]
@@ -693,6 +710,10 @@ $ mnema rules docs/runbook/rollback.md --json
 |       "scope": "public",
 |       "name": "Keep the runbook in the record",
 |       "state": "accepted",
+|       "acceptance": {
+|         "by": "<anchor-short>",
+|         "unconfirmed": false
+|       },
 |       "assertedIn": "public",
 |       "who": "<anchor>",
 |       "at": "<at:13>"
@@ -709,6 +730,10 @@ $ mnema rules docs/runbook/rollback.md --json
 |       "scope": "public",
 |       "name": "Keep the runbook in the record",
 |       "state": "accepted",
+|       "acceptance": {
+|         "by": "<anchor-short>",
+|         "unconfirmed": false
+|       },
 |       "assertedIn": "public",
 |       "who": "<anchor>",
 |       "at": "<at:14>"
@@ -718,12 +743,21 @@ $ mnema rules docs/runbook/rollback.md --json
 |   "asks": [],
 |   "asksStale": [],
 |   "asksUnresolved": [],
+|   "refuses": [],
+|   "refusesStale": [],
+|   "refusesUnresolved": [],
 |   "counts": {
 |     "matching": 1,
 |     "governing": 2,
 |     "stale": 1,
 |     "unresolved": 0,
 |     "asks": {
+|       "matching": 0,
+|       "addressed": 0,
+|       "stale": 0,
+|       "unresolved": 0
+|     },
+|     "refuses": {
 |       "matching": 0,
 |       "addressed": 0,
 |       "stale": 0,
@@ -735,6 +769,7 @@ $ mnema rules .
 | .  ·  in this project
 |   0 govern this path · 2 address this project · 1 address nothing here · 0 name a rule not here
 |   0 ask for a person here · 0 ask in this project · 0 ask about nothing here · 0 name a rule not here
+|   0 refuse a write here · 0 refuse in this project · 0 refuse nothing here · 0 name a rule not here
 |
 | addressing nothing in the working tree (1)
 |   docs/gone-away  Keep the runbook in the record (accepted)  <decision-runbook>  [public]
@@ -742,6 +777,7 @@ $ mnema rules /elsewhere/src/app.ts
 | /elsewhere/src/app.ts  ·  outside this project
 |   0 govern this path · 2 address this project · 1 address nothing here · 0 name a rule not here
 |   0 ask for a person here · 0 ask in this project · 0 ask about nothing here · 0 name a rule not here
+|   0 refuse a write here · 0 refuse in this project · 0 refuse nothing here · 0 name a rule not here
 |
 | addressing nothing in the working tree (1)
 |   docs/gone-away  Keep the runbook in the record (accepted)  <decision-runbook>  [public]
@@ -1442,7 +1478,7 @@ $ mnema status --actor <anchor> --json
 |       "title": "Keep the runbook in the record",
 |       "acceptance": {
 |         "by": "<anchor-short>",
-|         "unconfirmed": true
+|         "unconfirmed": false
 |       }
 |     }
 |   ],
@@ -1630,6 +1666,9 @@ $ mnema brief
 | does, the write waits until a person decides, and the rule that asked is named by
 | its id in what comes back. Nothing waits for a file none of them asks about.
 |
+| 0 of them refuse a WRITE at an address: where one
+| does, the write does not happen, and the rule is named by its id in what comes back.
+|
 | A decision made here enters this record with `record_decision`, awaiting a judgement.
 |
 | ## Decisions in force (1)
@@ -1637,12 +1676,11 @@ $ mnema brief
 | Each was accepted, and none of them superseded. For the argument behind one, ask
 | `read_record` for its id.
 | Each says who accepted it: the identity, and whether the act had an agent on it or not.
-| 1 of them was accepted by an identity marked unconfirmed: it has accepted only decisions it recorded itself, and no other identity has accepted any of them. That is who has looked, not a verdict on the rule.
 |
 | 1 more decision is recorded here and awaiting a judgement, and it is not below.
 | Nothing waiting governs anything yet; ask `bootstrap` for what is waiting.
 |
-| - **ADR-1 — Keep the runbook in the record** · `<decision-runbook>` · accepted by <anchor-short> (a person; unconfirmed)
+| - **ADR-1 — Keep the runbook in the record** · `<decision-runbook>` · accepted by <anchor-short> (a person)
 |
 | ## Patterns adopted (1)
 |
@@ -1688,11 +1726,12 @@ $ mnema tail list
 |   <tail-private>  private  8 event(s) through <tail-head-a-populated-project-2>  the tail of <anchor>  ·  no waiver
 |   <tail-global>  global   4 event(s) through <tail-head-a-populated-project-3>  the tail of <anchor>  ·  no waiver
 $ mnema switch
-| 8 channel(s), looked in public, private, global:
+| 9 channel(s), looked in public, private, global:
 |   brief-document         on   the document `mnema brief` prints, which a session opens with: the decisions in force and the adopted patterns of the committed record, by name
 |   recall-document        on   the notes `mnema recall` prints, which a session opens with: the memories and observations recorded for this project, from every tree this machine holds for it, the ones near what the session touches first
 |   edit-rules-push        on   the rules addressed at a file, handed over at each edit of it, beside the result of that write
 |   edit-asks-a-person     on   the pause before a file is written where the record asks that a person look first — the rules go on arriving, and nothing stops
+|   edit-refuses-a-write   on   the refusal of a write where a rule of the record refuses one — such a write goes through, the rules go on arriving, and a rule that asks for a person still asks
 |   agent-accepts          on   an agent ruling a decision in force: with it off, an agent’s `accept` is refused and only a person at the command line can accept — a proposed decision waits, and nothing else changes
 |   edit-first-write-gate  off  the hold on the first write of a session to a file a rule addresses: with it on, that write is refused once, with the rules in the reason, and the same write repeated goes through. Off until switched on; it holds in Claude Code, where the server remembers the session  ·  off until switched on, and nobody has
 |   user-corrections       off  the proposals recorded from what a person typed into a session: with it on, a `Stop` hook reads the transcript, and each time the person corrected the agent a decision is recorded as proposed in this machine’s private tree. Off until switched on  ·  off until switched on, and nobody has

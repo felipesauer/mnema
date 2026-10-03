@@ -101,6 +101,7 @@ export const FED_BY_KIND: { readonly [K in EventKind]: readonly ProjectionTable[
   // the reads that ask what a channel did ask the reference index.
   'channel.served': [...EVERY_KIND_FEEDS],
   'channel.asked': [...EVERY_KIND_FEEDS],
+  'channel.refused': [...EVERY_KIND_FEEDS],
 };
 
 /**

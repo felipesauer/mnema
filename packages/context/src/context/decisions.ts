@@ -161,8 +161,11 @@ const AWAITING_JUDGEMENT = statesMeaning(
  * it had recorded itself AND no decision it recorded was accepted by anybody else: it has only
  * ever spoken to itself, and no second identity has ruled with it either way. It is a fact
  * about the record's shape, computed over the trees handed in, and it is not a judgement of
- * the decision — a solo project's every rule is unconfirmed, truthfully, and the first rule
- * one identity accepts that another recorded (or another accepts of its) ends it.
+ * the decision. IT NEEDS SOMEBODY TO CONFIRM: with one identity in the record there is nobody
+ * to ask, so a solo project's rules are never marked — the label said "unconfirmed" of every
+ * rule there, truthfully and with nobody to act on it, and it is only meaningful once a second
+ * identity is in the trees handed in. From then the first rule one identity accepts that another
+ * recorded (or another accepts of its) ends it.
  */
 export interface Acceptance {
   /**
@@ -336,7 +339,11 @@ export function acceptances(caches: readonly ProjectionCache[]): Map<string, Acc
     confirmed.add(acceptor);
   }
 
-  const labels = shortenAnchors(caches.flatMap((cache) => cache.authors()));
+  const authors = caches.flatMap((cache) => cache.authors());
+  const labels = shortenAnchors(authors);
+  // Nobody to confirm with, when the record holds one identity: the mark is for a record that
+  // has somebody to ask.
+  const somebodyToAsk = new Set(authors).size > 1;
   const result = new Map<string, Acceptance>();
   for (const decision of all) {
     const accepted = decision.acceptedBy;
@@ -344,7 +351,7 @@ export function acceptances(caches: readonly ProjectionCache[]): Map<string, Acc
     result.set(decision.id, {
       by: labels.get(accepted.who) ?? accepted.who,
       ...(accepted.which !== undefined ? { agent: accepted.which } : {}),
-      unconfirmed: !confirmed.has(accepted.who),
+      unconfirmed: somebodyToAsk && !confirmed.has(accepted.who),
     });
   }
   return result;

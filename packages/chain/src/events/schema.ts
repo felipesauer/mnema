@@ -224,6 +224,9 @@ export const PAYLOAD_SCHEMA: { readonly [K in EventKind]: PayloadSchemaOf<K> } =
   // whose whole standing is that it names what caused it, so a charge with an absent
   // or empty citation is a line this reader refuses rather than one it lifts.
   'channel.asked': { rule: 'string', path: 'string' },
+  // The asking's shape, required for the asking's reason: a refusal with an absent or empty
+  // citation is a line this reader refuses rather than one it lifts.
+  'channel.refused': { rule: 'string', path: 'string' },
 };
 
 /**

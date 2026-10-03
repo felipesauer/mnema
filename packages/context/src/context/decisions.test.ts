@@ -49,7 +49,7 @@ describe('decisionsInForce — the calls that govern', () => {
           id: 'dec-1',
           adr: 'ADR-dec-1',
           title: 'Hand-rolled big-integer arithmetic',
-          acceptance: { by: expect.stringMatching(/^mnid:[0-9a-f]{8}$/), unconfirmed: true },
+          acceptance: { by: expect.stringMatching(/^mnid:[0-9a-f]{8}$/), unconfirmed: false },
         },
       ]);
     } finally {
@@ -415,17 +415,36 @@ describe('acceptances — who ruled, and whether another identity has looked', (
     moveDecision(b, id, 'proposed', 'accepted', 'accept', { note: 'agreed' }, actor);
   }
 
-  it('is unconfirmed when an identity accepts only what it recorded itself', () => {
+  it('is not marked unconfirmed when the record holds one identity: nobody to ask', () => {
     const b = bench();
     proposed(b, 'd-1');
     ruled(b, 'd-1');
     const cache = b.cache();
     try {
       const got = acceptances([cache]).get('d-1');
-      expect(got).toEqual({ by: expect.stringMatching(/^mnid:/), unconfirmed: true });
+      expect(got).toEqual({ by: expect.stringMatching(/^mnid:/), unconfirmed: false });
       expect(got).not.toHaveProperty('agent');
     } finally {
       cache.close();
+    }
+  });
+
+  it('is unconfirmed when an identity accepts only what it recorded itself, beside another', () => {
+    // The mark is for a record with somebody to ask: a second identity is in the trees handed
+    // in (it recorded and accepted its own call, and ruled with nobody either).
+    const mine = bench();
+    proposed(mine, 'd-1');
+    ruled(mine, 'd-1');
+    const theirs = bench();
+    proposed(theirs, 'd-2');
+    ruled(theirs, 'd-2');
+    const caches = [mine.cache(), theirs.cache()];
+    try {
+      const got = acceptances(caches);
+      expect(got.get('d-1')).toEqual({ by: expect.stringMatching(/^mnid:/), unconfirmed: true });
+      expect(got.get('d-2')?.unconfirmed).toBe(true);
+    } finally {
+      for (const cache of caches) cache.close();
     }
   });
 

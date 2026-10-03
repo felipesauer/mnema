@@ -91,7 +91,7 @@ complete -c mnema -f -n '__mnema_at ""' -a 'skills' -d 'show where each pattern 
 complete -c mnema -f -n '__mnema_at ""' -a 'usage' -d 'what each run cost, read from this machine\'s Claude Code transcripts'
 complete -c mnema -f -n '__mnema_at ""' -a 'brief' -d 'print what governs the work here as markdown, for an agent to read'
 complete -c mnema -f -n '__mnema_at ""' -a 'recall' -d 'print the notes recorded here as markdown, near ones first, for an agent to read'
-complete -c mnema -f -n '__mnema_at ""' -a 'before-a-write' -d 'answer a host’s hook before a file is written: ask for a person where a rule asks'
+complete -c mnema -f -n '__mnema_at ""' -a 'before-a-write' -d 'answer a host’s hook before a file is written: refuse or ask where a rule says'
 complete -c mnema -f -n '__mnema_at ""' -a 'tally' -d 'answer a host’s Stop or PreCompact hook with what the session wrote and recorded'
 complete -c mnema -f -n '__mnema_at ""' -a 'corrections' -d 'record what a person corrected in a session as proposed decisions, for a Stop hook'
 complete -c mnema -f -n '__mnema_at ""' -a 'key' -d 'manage this machine\'s signing keys'
@@ -463,7 +463,7 @@ complete -c mnema -f -n '__mnema_at "recall"' -l color -x -a 'auto always never'
 complete -c mnema -f -n '__mnema_at "recall"' -l identify
 
 # mnema before-a-write
-complete -c mnema -f -n '__mnema_at "before-a-write"' -l host -x -a 'vscode'
+complete -c mnema -f -n '__mnema_at "before-a-write"' -l host -x -a 'vscode cursor'
 complete -c mnema -f -n '__mnema_at "before-a-write"' -s h -l help
 complete -c mnema -f -n '__mnema_at "before-a-write"' -s V -l version
 complete -c mnema -f -n '__mnema_at "before-a-write"' -l color -x -a 'auto always never'
@@ -598,7 +598,7 @@ complete -c mnema -f -n '__mnema_at "switch off"' -s h -l help
 complete -c mnema -f -n '__mnema_at "switch off"' -s V -l version
 complete -c mnema -f -n '__mnema_at "switch off"' -l color -x -a 'auto always never'
 complete -c mnema -f -n '__mnema_at "switch off"' -l identify
-complete -c mnema -f -n '__mnema_at "switch off"' -a 'brief-document recall-document edit-rules-push edit-asks-a-person agent-accepts edit-first-write-gate user-corrections session-tally'
+complete -c mnema -f -n '__mnema_at "switch off"' -a 'brief-document recall-document edit-rules-push edit-asks-a-person edit-refuses-a-write agent-accepts edit-first-write-gate user-corrections session-tally'
 
 # mnema switch on
 complete -c mnema -f -n '__mnema_at "switch on"' -l reason -r
@@ -608,7 +608,7 @@ complete -c mnema -f -n '__mnema_at "switch on"' -s h -l help
 complete -c mnema -f -n '__mnema_at "switch on"' -s V -l version
 complete -c mnema -f -n '__mnema_at "switch on"' -l color -x -a 'auto always never'
 complete -c mnema -f -n '__mnema_at "switch on"' -l identify
-complete -c mnema -f -n '__mnema_at "switch on"' -a 'brief-document recall-document edit-rules-push edit-asks-a-person agent-accepts edit-first-write-gate user-corrections session-tally'
+complete -c mnema -f -n '__mnema_at "switch on"' -a 'brief-document recall-document edit-rules-push edit-asks-a-person edit-refuses-a-write agent-accepts edit-first-write-gate user-corrections session-tally'
 
 # mnema doctor
 complete -c mnema -f -n '__mnema_at "doctor"' -s h -l help

@@ -10,9 +10,15 @@ import {
   makeBench,
   moveDecision,
   moveSkill,
+  supersedeDecision,
 } from '../../tests/support/chain.js';
 import type { ScopedCache } from '../sources.js';
-import { type GovernanceQuery, governingRules } from './governance.js';
+import {
+  asksForAPersonAt,
+  type GovernanceQuery,
+  governingRules,
+  refusesAWriteAt,
+} from './governance.js';
 
 let benches: Bench[] = [];
 let caches: ProjectionCache[] = [];
@@ -100,6 +106,7 @@ describe('governance — an address is a prefix by segment', () => {
       stale: 0,
       unresolved: 0,
       asks: NO_GATE,
+      refuses: NO_GATE,
     });
   });
 
@@ -163,6 +170,7 @@ describe('governance — four numbers, always', () => {
       stale: 0,
       unresolved: 0,
       asks: NO_GATE,
+      refuses: NO_GATE,
     });
     expect(reading.rules).toEqual([]);
     expect(reading.stale).toEqual([]);
@@ -185,6 +193,7 @@ describe('governance — four numbers, always', () => {
       stale: 1,
       unresolved: 0,
       asks: NO_GATE,
+      refuses: NO_GATE,
     });
     // NAMED, not merely counted — a count of dead addresses is fixed by making the
     // count smaller, and a list is fixed by looking at what it names.
@@ -207,6 +216,7 @@ describe('governance — four numbers, always', () => {
       stale: 1,
       unresolved: 0,
       asks: NO_GATE,
+      refuses: NO_GATE,
     });
     expect(addresses(reading.stale)).toEqual(['src/gone → orphan']);
   });
@@ -226,6 +236,7 @@ describe('governance — four numbers, always', () => {
       stale: 1,
       unresolved: 0,
       asks: NO_GATE,
+      refuses: NO_GATE,
     });
   });
 });
@@ -294,6 +305,7 @@ describe('governance — what it normalizes, and what it does not', () => {
       stale: 1,
       unresolved: 0,
       asks: NO_GATE,
+      refuses: NO_GATE,
     });
     expect(reading.stale[0]?.address).toBeUndefined();
     expect(reading.stale[0]?.recorded).toBe('/somebody/else/src/collate');
@@ -454,5 +466,64 @@ describe('governance — what a rule IS travels with it, and is never judged', (
     expect(rule?.kind).toBe('memory');
     expect(rule?.name).toBeUndefined();
     expect(rule?.state).toBeUndefined();
+  });
+});
+
+describe('governance — the relation that refuses a write is a walk of its own', () => {
+  /** A decision in force, the way the product reaches one: born proposed, then accepted. */
+  function inForce(b: Bench, id: string, title: string): void {
+    birthDecision(b, id, title);
+    moveDecision(b, id, 'proposed', 'accepted', 'accept');
+  }
+
+  it('reports a refusing address apart from the gate and the text, with its own four numbers', () => {
+    const b = bench();
+    inForce(b, 'dec-refuse', 'Nobody writes the ledger');
+    inForce(b, 'dec-ask', 'Somebody looks at billing');
+    link(b, 'dec-refuse', 'src/ledger', 'refuses-a-write');
+    link(b, 'dec-ask', 'src/billing', 'asks-for-a-person');
+    link(b, 'dec-refuse', 'src/ledger-that-moved', 'refuses-a-write');
+
+    const reading = governingRules(
+      [tree(b)],
+      asking('src/ledger/posting.ts', ['src/ledger', 'src/billing']),
+    );
+    expect(addresses(reading.refuses)).toEqual(['src/ledger → dec-refuse']);
+    expect(addresses(reading.refusesStale)).toEqual(['src/ledger-that-moved → dec-refuse']);
+    expect(reading.refusesUnresolved).toEqual([]);
+    // Neither of the other two relations saw it: three labels, three walks.
+    expect(reading.rules).toEqual([]);
+    expect(reading.asks).toEqual([]);
+    expect(reading.counts.refuses).toEqual({ matching: 1, addressed: 2, stale: 1, unresolved: 0 });
+    expect(reading.counts.asks).toEqual({ matching: 0, addressed: 1, stale: 0, unresolved: 0 });
+  });
+
+  it('narrows to the rules in force, so a superseded rule stops refusing', () => {
+    const b = bench();
+    inForce(b, 'dec-old', 'Nobody writes the ledger');
+    inForce(b, 'dec-new', 'The ledger is written by the posting job only');
+    link(b, 'dec-old', 'src/ledger', 'refuses-a-write');
+
+    const before = refusesAWriteAt([tree(b)], asking('src/ledger/posting.ts', ['src/ledger']));
+    expect(before.rules.map((rule) => rule.id)).toEqual(['dec-old']);
+
+    supersedeDecision(b, 'dec-old', 'dec-new');
+    const after = refusesAWriteAt([tree(b)], asking('src/ledger/posting.ts', ['src/ledger']));
+    expect(after.rules).toEqual([]);
+  });
+
+  it('is not answered by the gate, and does not answer for it', () => {
+    // The two powers over a write are two relations: a refusal is not a stronger ask, and
+    // an ask is not a weaker refusal. Which one a write MEETS when both apply is decided by
+    // the caller that asks both questions.
+    const b = bench();
+    inForce(b, 'dec-refuse', 'Nobody writes the ledger');
+    inForce(b, 'dec-ask', 'Somebody looks at the ledger');
+    link(b, 'dec-refuse', 'src/ledger', 'refuses-a-write');
+    link(b, 'dec-ask', 'src/ledger', 'asks-for-a-person');
+
+    const query = asking('src/ledger/posting.ts', ['src/ledger']);
+    expect(refusesAWriteAt([tree(b)], query).rules.map((rule) => rule.id)).toEqual(['dec-refuse']);
+    expect(asksForAPersonAt([tree(b)], query).rules.map((rule) => rule.id)).toEqual(['dec-ask']);
   });
 });

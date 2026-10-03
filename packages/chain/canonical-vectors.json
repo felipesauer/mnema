@@ -430,6 +430,25 @@
         }
       },
       "sha256": "8e1646a9ea1137c99e46d1e290f6943ac6030768c547eb7babf978b81d1fa8cb"
+    },
+    {
+      "name": "channel.refused (a rule refused a write, at a path)",
+      "kind": "channel.refused",
+      "event": {
+        "v": 1,
+        "kind": "channel.refused",
+        "at": "2026-07-21T00:00:00.000Z",
+        "who": "mnid:1111111111111111111111111111111111111111111111111111111111111111",
+        "signerFp": "2222222222222222222222222222222222222222222222222222222222222222",
+        "subject": "edit-refuses-a-write",
+        "which": "claude",
+        "run": "019f81f8-e400-7005-8000-000000000005",
+        "payload": {
+          "rule": "019f81f8-e400-7006-8000-000000000006",
+          "path": "src/ledger/posting.ts"
+        }
+      },
+      "sha256": "971c6db092e496e0f84b5cf3ed3e5c9653335ee9c424639afb09edb9108a3309"
     }
   ],
   "chain": {
@@ -447,6 +466,6 @@
       "vector": "run.ended",
       "entryHash": "bafbebddd9d5ee75b10bdde626c5e36eed44b37d9fe352b4d98f614fa2647b73"
     },
-    "contentRootOverAllVectors": "d9122f5f8e84bdbfd087259b244ce8533c268d7df379fa9e9f7b12cc642352ee"
+    "contentRootOverAllVectors": "a3de448ce47f055b47df2611a27ebecf82fc496f3cdd57e920aa34f8857af81a"
   }
 }

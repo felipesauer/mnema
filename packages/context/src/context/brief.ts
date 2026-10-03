@@ -116,6 +116,7 @@ import {
   type DivergentMove,
   GOVERNS_RELATION,
   type ProjectionCache,
+  REFUSES_A_WRITE_RELATION,
   type Scope,
 } from '@mnema/core';
 import type { ScopedCache } from '../sources.js';
@@ -240,6 +241,12 @@ export interface Brief {
    */
   readonly asking: number;
   /**
+   * How many of the rules below REFUSE A WRITE somewhere — {@link Brief.asking} under the
+   * other relation, for the same reasons: it counts RULES, only those printed, and no
+   * staleness. Zero is the ordinary value, and it is printed.
+   */
+  readonly refusing: number;
+  /**
    * How many decisions of the tree that travels are recorded and AWAITING A JUDGEMENT
    * — proposed, and nothing has ruled on them yet.
    *
@@ -322,6 +329,11 @@ export interface Brief {
    * `mnema switch`, and the document points at it.
    */
   readonly asksAPerson: ChannelState;
+  /**
+   * Where the channel that REFUSES a write stands, read as {@link Brief.asksAPerson} is and for
+   * the same reason: the document says whether the thing that would refuse is on.
+   */
+  readonly refusesAWrite: ChannelState;
 }
 
 /**
@@ -339,6 +351,8 @@ export interface BriefChannels {
   readonly editPush: string;
   /** The channel that stops the write until a person looks. */
   readonly asksAPerson: string;
+  /** The channel that does not let the write happen. */
+  readonly refusesAWrite: string;
 }
 
 /**
@@ -389,6 +403,7 @@ export function brief(sources: readonly ScopedCache[], channels: BriefChannels):
     // vocabulary of channels belongs to the surface that pushes them, and this package has
     // no idea what any of them are.
     asking: countAsking(travels, [...decisions, ...skills]),
+    refusing: countUnder(travels, [...decisions, ...skills], REFUSES_A_WRITE_RELATION),
     // Asked of the COMMITTED sources alone, like the rest: a document that counted the
     // private tree's proposals would move with that tree, and it is compared with `diff`.
     // The two derivations are `bootstrap`'s own, called for their LENGTH — the count and
@@ -429,21 +444,30 @@ function withOrigin<T extends { readonly id: string }>(
 }
 
 /**
- * The two channel states this document carries, read in one call.
+ * The three channel states this document carries, read in one call.
  *
- * Split out so the pair is built ONCE from one reading rather than assembled by two calls a
+ * Split out so the triple is built ONCE from one reading rather than assembled by two calls a
  * later edit could make asymmetric. The order of the array is the order of the names, which
  * is what {@link channelStates} promises, so the indexes are the names' and not a guess.
  */
 function channelPair(
   committed: readonly ScopedCache[],
   channels: BriefChannels,
-): { readonly editPush: ChannelState; readonly asksAPerson: ChannelState } {
-  const [editPush, asksAPerson] = channelStates(committed, [
+): {
+  readonly editPush: ChannelState;
+  readonly asksAPerson: ChannelState;
+  readonly refusesAWrite: ChannelState;
+} {
+  const [editPush, asksAPerson, refusesAWrite] = channelStates(committed, [
     channels.editPush,
     channels.asksAPerson,
+    channels.refusesAWrite,
   ]);
-  return { editPush: editPush as ChannelState, asksAPerson: asksAPerson as ChannelState };
+  return {
+    editPush: editPush as ChannelState,
+    asksAPerson: asksAPerson as ChannelState,
+    refusesAWrite: refusesAWrite as ChannelState,
+  };
 }
 
 /**

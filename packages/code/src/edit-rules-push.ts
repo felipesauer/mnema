@@ -131,6 +131,7 @@
 
 import type { PushedRule, RulesAtPath } from '@mnema/context';
 import { oneLine } from './one-line.js';
+import { acceptedBy } from './presentation/accepted-by.js';
 import {
   fitWhole,
   HOOK_CEILING_IN_WORDS,
@@ -344,5 +345,6 @@ export function ruleLine(rule: PushedRule): string {
   const from = (rule.origin ?? [])
     .map((target) => ` · ${DERIVED_FROM} ${oneLine(target)}`)
     .join('');
-  return `“${oneLine(rule.name)}” — governs ${oneLine(rule.address)} · ${oneLine(rule.id)}${from}`;
+  const by = rule.acceptance === undefined ? '' : ` · ${acceptedBy(rule.acceptance)}`;
+  return `“${oneLine(rule.name)}” — governs ${oneLine(rule.address)} · ${oneLine(rule.id)}${from}${by}`;
 }

@@ -7,15 +7,15 @@
  * the payload it reads, the file format it prints — is loaded only when that verb runs
  * (`tests/the-floor-is-the-declaration.test.ts`). They are different sets because they answer
  * different measurements (`measurements/hooks-by-host/`): a host is in {@link HookHost} when its
- * hook can hold a write for a person, and in {@link RulesFileHost} when it reads rules from a
+ * hook can hold a write for a person or refuse one, and in {@link RulesFileHost} when it reads rules from a
  * file with a glob.
  */
 
 /** A host this product answers as a command hook before a write — see `host-hook.ts`. */
-export type HookHost = 'vscode';
+export type HookHost = 'vscode' | 'cursor';
 
 /** Every {@link HookHost}, as the list `mnema before-a-write --host` enumerates. */
-export const HOOK_HOSTS: readonly HookHost[] = ['vscode'];
+export const HOOK_HOSTS: readonly HookHost[] = ['vscode', 'cursor'];
 
 /** A host this product prints a rules file for — see `host-rules-file.ts`. */
 export type RulesFileHost = 'claude' | 'vscode' | 'cursor';

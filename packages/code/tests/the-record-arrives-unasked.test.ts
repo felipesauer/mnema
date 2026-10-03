@@ -188,6 +188,13 @@ const NOTES_HOOK = 'session-recall.mjs';
  */
 const GATE_HOOK = 'edit-asks-a-person.mjs';
 /**
+ * The same verb for Cursor's agent, which can only refuse: its command starts only where the host
+ * says it is Cursor, so this suite says so (`CURSOR_VERSION`) for it and for nobody else.
+ */
+const CURSOR_HOOK = 'edit-refuses-a-write.mjs';
+/** The handlers that gate a write, and so are handed one and do not ask which program is first. */
+const GATES: readonly string[] = [GATE_HOOK, CURSOR_HOOK];
+/**
  * The handler that says, at `Stop` and before a compaction, how many files the session wrote and how
  * many decisions were recorded since it opened. It is declared under two events and runs the one
  * verb, `mnema tally`, on the payload of either; what it counts is
@@ -218,6 +225,7 @@ const VERB_OF: Readonly<Record<string, string>> = {
   [NOTES_HOOK]: 'recall --hook',
   [TALLY_HOOK]: 'tally',
   [CORRECTIONS_HOOK]: 'corrections',
+  [CURSOR_HOOK]: 'before-a-write --host cursor',
   [GATE_HOOK]: 'before-a-write --host vscode',
 };
 
@@ -230,7 +238,7 @@ const ASKED_FIRST = '--identify';
 /** Every command line a handler runs, in order — the question first, where it asks one. */
 function callsOf(handler: string): string[] {
   const verb = VERB_OF[handler] as string;
-  return handler === GATE_HOOK || handler === TALLY_HOOK || handler === CORRECTIONS_HOOK
+  return GATES.includes(handler) || handler === TALLY_HOOK || handler === CORRECTIONS_HOOK
     ? [verb]
     : [ASKED_FIRST, verb];
 }
@@ -251,7 +259,14 @@ function stdinOf(command: string, at: string): string {
       cwd: at,
     });
   }
-  if (handlerOf(command) !== GATE_HOOK) return '';
+  if (!GATES.includes(handlerOf(command))) return '';
+  if (handlerOf(command) === CURSOR_HOOK) {
+    return JSON.stringify({
+      hook_event_name: 'preToolUse',
+      tool_name: 'Write',
+      tool_input: { file_path: join(at, 'src', 'unasked.ts'), content: 'export {};\n' },
+    });
+  }
   return JSON.stringify({
     hook_event_name: 'PreToolUse',
     tool_name: 'create_file',
@@ -351,7 +366,11 @@ function runHook(command: string, at: string): Ran {
   const ran = spawnSync('sh', ['-c', command], {
     input: stdinOf(command, at),
     cwd: at,
-    env: { ...hostEnv(recordingTo), CLAUDE_PROJECT_DIR: at },
+    env: {
+      ...hostEnv(recordingTo),
+      CLAUDE_PROJECT_DIR: at,
+      ...(handlerOf(command) === CURSOR_HOOK ? { CURSOR_VERSION: '2026.09.18' } : {}),
+    },
     encoding: 'utf-8',
   });
   const seen = existsSync(recordingTo) ? readFileSync(recordingTo, 'utf-8') : '';
@@ -513,6 +532,7 @@ describe('the record arrives unasked', () => {
       TALLY_HOOK,
       CORRECTIONS_HOOK,
       TALLY_HOOK,
+      CURSOR_HOOK,
       GATE_HOOK,
     ]);
   });
@@ -1132,6 +1152,7 @@ describe('the record arrives unasked', () => {
       'recall --hook',
       'tally',
       'corrections',
+      'before-a-write --host cursor',
       'before-a-write --host vscode',
     ]);
     expect([...reached]).toEqual(Object.values(VERB_OF));
@@ -1147,6 +1168,7 @@ describe('the record arrives unasked', () => {
       'recall --hook: reads',
       'tally: reads',
       'corrections: mutates',
+      'before-a-write --host cursor: mutates',
       'before-a-write --host vscode: mutates',
     ]);
   });
@@ -1228,6 +1250,7 @@ describe('the record arrives unasked', () => {
       'command:/hooks/session-corrections.mjs',
       'command:/hooks/session-tally.mjs',
       'mcp_tool:rules_before_an_edit',
+      'command:/hooks/edit-refuses-a-write.mjs',
       'command:/hooks/edit-asks-a-person.mjs',
     ]);
 

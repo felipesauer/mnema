@@ -8,10 +8,12 @@
  * is a path, and this reads that graph BACKWARDS — given a path, which rules
  * cover it.
  *
- * ## TWO relations, ONE derivation
+ * ## THREE relations, ONE derivation
  *
  * {@link ASKS_FOR_A_PERSON_RELATION} has the same shape and a different power: it says
- * that under this part of the tree, nobody writes without somebody looking. Everything
+ * that under this part of the tree, nobody writes without somebody looking. And
+ * {@link REFUSES_A_WRITE_RELATION} has it too, with the strongest power of the three: under
+ * this part of the tree, nobody writes while the rule stands. Everything
  * about how an address is normalized, compared, ordered and counted is identical, so it
  * is the same walk with a different label — {@link addressesUnder} — and never a second
  * reading of the same rule. Two readings of an address is how the segment comparison
@@ -107,10 +109,11 @@ import {
   GOVERNS_RELATION,
   type LinkEdge,
   type ProjectionCache,
+  REFUSES_A_WRITE_RELATION,
   type Scope,
   type SearchKind,
 } from '@mnema/core';
-import { decisionsInForce } from '../context/decisions.js';
+import { type Acceptance, acceptances, decisionsInForce } from '../context/decisions.js';
 import { originOf, type RecordBody, readRecord } from '../context/search.js';
 import { adoptedSkills } from '../context/skills.js';
 import type { ScopedCache } from '../sources.js';
@@ -164,6 +167,13 @@ export interface AddressedRule {
   readonly state?: string;
   /** The tree that holds the rule itself, absent when no tree here holds it. */
   readonly scope?: Scope;
+  /**
+   * Who accepted the rule, when it is a decision that was accepted — the same reading the
+   * opening document gives each rule (`decisionsInForce`), so the three places a rule is told
+   * say who ruled it in one voice. Absent for every other kind, and for a decision nobody has
+   * accepted.
+   */
+  readonly acceptance?: Acceptance;
   /** The tree whose record ASSERTS the address, which may not be the rule's own. */
   readonly assertedIn: Scope;
   /** The identity that authorized the assertion. */
@@ -209,6 +219,12 @@ export interface GovernanceCounts {
    * can be looked at.
    */
   readonly asks: AddressCounts;
+  /**
+   * The same four numbers for the relation that REFUSES a write, for the reason the gate's
+   * are here: a refusal whose address went stale refuses nothing, in silence, and only a
+   * number that names it separately can be looked at.
+   */
+  readonly refuses: AddressCounts;
 }
 
 /** The four numbers of ONE relation's addresses around a path. */
@@ -278,7 +294,18 @@ export interface GoverningRules {
    * here and it charges nobody — the charge has always narrowed to what is in force.
    */
   readonly asksUnresolved: readonly AddressedRule[];
-  /** The four numbers, and the other relation's four. */
+  /**
+   * The addresses that REFUSE a write around this path — reported beside the text and the
+   * gate, named for the reason the gate is: a person whose write was refused has to be able
+   * to find the fact that refused it. Whatever state its rule is in travels with it; only
+   * the decision a write meets narrows to what is in force.
+   */
+  readonly refuses: readonly AddressedRule[];
+  /** The refusing addresses that match nothing in the working tree. Same order rule. */
+  readonly refusesStale: readonly AddressedRule[];
+  /** The refusing addresses whose RULE this read cannot reach. Same order rule. */
+  readonly refusesUnresolved: readonly AddressedRule[];
+  /** The four numbers, and each other relation's four. */
   readonly counts: GovernanceCounts;
 }
 
@@ -297,6 +324,7 @@ export function governingRules(
   const asked = relativeSegments(query.path, query.root);
   const governs = addressesUnder(sources, query, GOVERNS_RELATION, asked);
   const asks = addressesUnder(sources, query, ASKS_FOR_A_PERSON_RELATION, asked);
+  const refuses = addressesUnder(sources, query, REFUSES_A_WRITE_RELATION, asked);
 
   return {
     path: query.path,
@@ -307,6 +335,9 @@ export function governingRules(
     asks: ordered(asks.matching),
     asksStale: ordered(asks.stale),
     asksUnresolved: ordered(asks.unresolved),
+    refuses: ordered(refuses.matching),
+    refusesStale: ordered(refuses.stale),
+    refusesUnresolved: ordered(refuses.unresolved),
     counts: {
       matching: governs.matching.length,
       governing: governs.all.length,
@@ -318,6 +349,12 @@ export function governingRules(
         stale: asks.stale.length,
         unresolved: asks.unresolved.length,
       },
+      refuses: {
+        matching: refuses.matching.length,
+        addressed: refuses.all.length,
+        stale: refuses.stale.length,
+        unresolved: refuses.unresolved.length,
+      },
     },
   };
 }
@@ -326,7 +363,7 @@ export function governingRules(
  * Every address of ONE relation in this project's trees, split into what covers the
  * asked path and what covers nothing on disk — the whole walk, done once per relation.
  *
- * It exists so the two relations cannot come to disagree about what an address MEANS.
+ * It exists so the relations cannot come to disagree about what an address MEANS.
  * Normalizing, the segment comparison, the disk probe and the counting are here and
  * nowhere else, so a change to any of them lands on the text that informs and on the
  * gate that stops somebody in the same edit. `all` travels out beside the two lists
@@ -345,10 +382,12 @@ function addressesUnder(
   readonly unresolved: readonly Addressed[];
 } {
   const found: Addressed[] = [];
+  // ONCE PER WALK, not once per edge: who accepted is read over every decision of the trees.
+  const accepted = acceptances(sources.map((source) => source.cache));
   for (const source of sources) {
     if (!governsThisProject(source, query.root)) continue;
     for (const edge of source.cache.linksByRelation(relation)) {
-      found.push(describe(sources, source, edge, query));
+      found.push(describe(sources, source, edge, query, accepted));
     }
   }
   // THREE DISJOINT CLASSES, and the disjointness is what keeps the numbers from double
@@ -440,6 +479,7 @@ function describe(
   asserted: ScopedCache,
   edge: LinkEdge,
   query: GovernanceQuery,
+  accepted: ReadonlyMap<string, Acceptance>,
 ): Addressed {
   const segments = relativeSegments(edge.target, query.root);
   const record = readRecord(sources, edge.subject);
@@ -456,6 +496,9 @@ function describe(
       onDisk: segments !== null && query.onDisk(posix(segments)),
       ...(record !== null ? { kind: record.kind, scope: record.scope } : {}),
       ...nameAndState(record),
+      ...(accepted.has(edge.subject)
+        ? { acceptance: accepted.get(edge.subject) as Acceptance }
+        : {}),
       assertedIn: asserted.scope,
       who: edge.who,
       at: edge.linkedAt,
@@ -603,6 +646,11 @@ export interface PushedRule {
    */
   readonly travels: boolean;
   /**
+   * Who accepted the rule, when it is a decision that was accepted — the line a push carries says
+   * it as the opening document does, so a rule is not told in one voice here and another there.
+   */
+  readonly acceptance?: Acceptance;
+  /**
    * Where the record says the rule CAME FROM — the target of every `derived-from` edge
    * the rule's own tree asserts about it. Absent when it asserts none, which is the
    * ordinary case for a rule decided here rather than imported.
@@ -710,6 +758,24 @@ export function asksForAPersonAt(
 }
 
 /**
+ * The rules of `sources` that REFUSE a write at `query.path` AND are still in force — the
+ * reading a refusal stands on.
+ *
+ * The third question over the same body, and in force for the reason the gate's reading
+ * is, one step harder again: a retired rule refusing a write would stop somebody's work
+ * outright on the authority of something the team set aside, and the refusal would be the
+ * only thing they saw. An empty answer means one thing — no rule in force refuses this
+ * path — and which of the two grades a write meets when both apply is decided by the
+ * caller that asks both questions, once, never here.
+ */
+export function refusesAWriteAt(
+  sources: readonly ScopedCache[],
+  query: GovernanceQuery,
+): RulesAtPath {
+  return inForceUnder(sources, query, REFUSES_A_WRITE_RELATION);
+}
+
+/**
  * The in-force rules addressed at a path under ONE relation — the single site both
  * readings above route through.
  *
@@ -802,6 +868,7 @@ function inForceOf(
           // not a case, and it prints something true either way.
           address: rule.address ?? rule.recorded,
           travels: rule.scope === TRAVELS_TO_A_CLONE,
+          ...(rule.acceptance !== undefined ? { acceptance: rule.acceptance } : {}),
           // Absent, never empty: a rule decided here has no provenance, and an empty
           // list would give the line a field with nothing in it.
           ...(origin.length > 0 ? { origin } : {}),

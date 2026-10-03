@@ -437,6 +437,10 @@ export const NAMES_THAT_NEED_MORE: Readonly<
     times: 1,
     why: 'the verb named in the sentence about reading decision files; its block has the line',
   },
+  'packages/code/src/edit-refuses-a-write.ts: mnema show': {
+    times: 1,
+    why: 'the read named in the sentence a refusal ends with when several rules refuse, beside the id each rule line carries; with one rule the same sentence hands `mnema show <id>` over whole',
+  },
   'packages/code/src/wiring/decision.ts: mnema decision record': {
     times: 1,
     why: 'names the verb a move’s `--alternatives` belongs to, and says the rest of the line in words',
@@ -550,6 +554,7 @@ export const HANDED_OVER: Readonly<
   // name 66 until the page about where the key lives named the verbs that protect it, and the
   // ones that stay unprotected without it (`key protect`, `key unprotect`, `verify`).
   // line 34 until the plugin page named `mnema --identify`, the question its hooks ask first.
+  // line 36, name 71 until the page said `mnema key protect` asks for the passphrase.
   // line 36 and name 71 until the two pages named the command the Stop and PreCompact hooks run
   // (`mnema tally`, twice) and the switch that stops it (`mnema switch off session-tally`).
   // line 37 and name 73 until the plugin page named the switch that turns the first-write hold on
@@ -557,18 +562,21 @@ export const HANDED_OVER: Readonly<
   // line 38 and name 74 until the two pages named the verb that records corrections
   // (`mnema corrections`, and `mnema switch` in the row that says it starts off) and the switch that
   // turns it on (`mnema switch on user-corrections`, a line on each page).
+  // And one line and one name more for the page that says a rule can refuse a write.
   // name 77 until the page named `mnema doctor` and the server-only plugin's `mnema mcp`.
-  span: { line: 40, name: 79, flag: 1, unwritten: 0 },
+  span: { line: 41, name: 80, flag: 1, unwritten: 0 },
   // name 18 until the page that says where the key lives named `mnema key protect` in a line of
   // its own.
   // line 35 until the same page showed that question in a block of its own.
-  block: { line: 37, name: 19, flag: 0, unwritten: 0 },
+  // name 19 until the page said `mnema key protect` asks for the passphrase at a terminal.
+  block: { line: 37, name: 20, flag: 0, unwritten: 0 },
   // 46 until the refusal an agent's `accept` gets, with the switch off, began naming the command a
   // person accepts with (`agent-accepts.ts`).
   // line 34 until the sentences an agent's accept is answered with began handing whole lines
   // over (`agent-accepts.ts`: the read, the person's accept, and the switch in both positions).
   // line 40 until the plugin told a session which program answered that question (`hand-over.mjs`).
   // name 50 until the hook copy of the opening document named `mnema decision import` (`presentation/brief.ts`).
+  // name 52 until `before-a-write`'s help named the switch of the refusal beside the asking's.
   // name 51 until the table that says why the record does not count the tally's service named
   // `mnema tally` (`record-framing.ts`), and the table of what owes no notice about the chain named
   // `mnema verify` as the reading that rules on it (`record-integrity.ts`).
@@ -577,7 +585,7 @@ export const HANDED_OVER: Readonly<
   // line 47 until the help of the verb that records corrections named the switch that turns it on,
   // `mnema switch on user-corrections` (`wiring/corrections.ts`).
   // name 53 until `mnema doctor` named the `mnema mcp` a host starts, twice, and `claude mcp add mnema -- mnema mcp`.
-  source: { line: 48, name: 56, flag: 3, unwritten: 3 },
+  source: { line: 49, name: 58, flag: 3, unwritten: 3 },
 };
 
 // ---------------------------------------------------------------------------

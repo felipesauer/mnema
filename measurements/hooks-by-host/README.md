@@ -66,8 +66,9 @@ environment a hook saw only the names are kept.
   the binary.
 - **Not in Cursor's command-line agent.** It ignores `ask`, so there is nothing to answer it
   with, and recording that a person was asked when the file was written would be the fact
-  reading backwards. Its `deny` works; refusing outright is a grade this product has not
-  decided the meaning of, and it is not built.
+  reading backwards. Its `deny` works, and from 2 Oct 2026 the product uses it: a rule linked
+  with `refuses-a-write` refuses the write there (§7). A write that only asks goes through
+  there, in silence, with nothing recorded.
 - **The rules at each edit stay Claude Code's.** VS Code would carry a hook's text, inside the
   tool result; the product records that the push served once per session, and a process started
   per write has no session to remember it by.
@@ -172,3 +173,25 @@ for `startup` and again for `resume`, and the request the resumed session sends 
 marker **once**, whether or not `resume` is in the matcher. Nothing doubles, so the matcher was
 not narrowed. Not measured: whether the copy a resumed session holds is the earlier one or the
 new one, which matters only if the record changed in between; VS Code and Cursor.
+
+## 8 · A rule that refuses a write, in each host (2 Oct 2026)
+
+[`results/2026-10-02/refusal.json`](results/2026-10-02/refusal.json): the plugin of this
+repository and the built binary, in the three hosts, with the harness of §1 (no model, no
+account, no network; the `mnema` on the path is a logging shim over the built binary). One
+sandbox project, four writes each: `src/billing` is refused by a rule; `src/ledger` is refused by
+that rule and asked about by another; `src/other` is asked about only; and a path nothing
+addresses.
+
+| write | Claude Code 2.1.281 | VS Code 1.137 | Cursor CLI 2026.09.18 |
+|---|---|---|---|
+| refused | not written; the tool result is an error carrying the reason, which cites the rule; one `channel.refused` | not written (*"Tool execution denied: …"* with the reason, which cites the rule); one `channel.refused` | not written; the write's error is the reason (plus the host's *"Agent note: …"*); one `channel.refused` |
+| refused and asked | the same, citing only the refusing rule; no `channel.asked` | the same | the same |
+| asked only | held for a person; one `channel.asked` and one `channel.served` | held for a person (*"requires confirmation …"*); the same two facts | **written**; the command answered silence; nothing recorded |
+| nothing addresses it | written; nothing recorded | written; nothing recorded | written; nothing recorded |
+
+Cursor's command runs from the plugin's own `hooks.json` under the matcher Claude Code also
+applies, and starts only where `$CURSOR_VERSION` is set; in the case above it was called once per
+write, and in Claude Code it never started a process. What was not measured: Cursor's other
+write tools (only `Write` was handed to a hook), a person's choice in VS Code's confirmation,
+and where Cursor's real backend places a refusal's text.

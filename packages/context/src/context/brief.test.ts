@@ -37,7 +37,19 @@ import { brief } from './brief.js';
  * spellings are the same string is the surface's own case to make
  * (`code/tests/the-switch-is-a-fact.test.ts`).
  */
-const CHANNELS = { editPush: 'edit-rules-push', asksAPerson: 'edit-asks-a-person' };
+/** A rule without the mark that needs somebody to ask — it is read over the trees a reading is handed. */
+const unmarked = <T extends { acceptance?: { unconfirmed: boolean } }>(item: T): T => ({
+  ...item,
+  ...(item.acceptance !== undefined
+    ? { acceptance: { ...item.acceptance, unconfirmed: false } }
+    : {}),
+});
+
+const CHANNELS = {
+  editPush: 'edit-rules-push',
+  asksAPerson: 'edit-asks-a-person',
+  refusesAWrite: 'edit-refuses-a-write',
+};
 
 /**
  * Every fixture reaches its state through the move the workflow defines, from the
@@ -132,8 +144,8 @@ describe('brief — everything that governs the work here', () => {
           adr: 'ADR-dec-1',
           title: 'Hand-rolled big-integer arithmetic',
           // WHO RULED IT: the one identity this bench has, which recorded the decision and
-          // accepted it itself and has never been ruled with — so it is unconfirmed.
-          acceptance: { by: expect.stringMatching(/^mnid:[0-9a-f]{8}$/), unconfirmed: true },
+          // accepted it itself, and it is the record's only identity — so there is nobody to confirm with and it is not marked.
+          acceptance: { by: expect.stringMatching(/^mnid:[0-9a-f]{8}$/), unconfirmed: false },
         },
       ],
       skills: [{ id: 'sk-1', name: 'One slice per PR' }],
@@ -141,6 +153,7 @@ describe('brief — everything that governs the work here', () => {
       divergent: [],
       addressed: 0,
       asking: 0,
+      refusing: 0,
       // Nothing is waiting: the one decision and the one pattern of this record were both
       // carried all the way to in force, so the counts that make the headings legible are
       // zero — a legitimate value the document says in words.
@@ -150,6 +163,7 @@ describe('brief — everything that governs the work here', () => {
       // attribution at all, because there is no switch to attribute them to.
       editPush: { channel: CHANNELS.editPush, on: true },
       asksAPerson: { channel: CHANNELS.asksAPerson, on: true },
+      refusesAWrite: { channel: CHANNELS.refusesAWrite, on: true },
     });
   });
 
@@ -309,6 +323,8 @@ describe('brief — everything that governs the work here', () => {
       // Rules moved apart, never tasks: `printedDivergences` keeps only what is printed.
       'divergent',
       'editPush',
+      'refusesAWrite',
+      'refusing',
       'skills',
       'skillsAwaiting',
     ]);
@@ -496,7 +512,13 @@ describe('brief — everything that governs the work here', () => {
     ]);
     const ids = (items: readonly { id: string }[]): string[] => items.map((i) => i.id).sort();
     // Every rule of the document is a rule the agent may see…
-    for (const rule of composed.decisions) expect(opening.decisions).toContainEqual(rule);
+    // EXCEPT FOR THE MARK THAT NEEDS SOMEBODY TO ASK. `unconfirmed` is read over the trees each
+    // reading is handed, and this opening context was handed a second identity (the machine's
+    // own tree) that the committed document was not — so the same rule may be marked in one
+    // and not the other, and what is compared is the rule without it.
+    for (const rule of composed.decisions) {
+      expect(opening.decisions.map(unmarked)).toContainEqual(unmarked(rule));
+    }
     for (const pattern of composed.skills) expect(opening.skills).toContainEqual(pattern);
     // …and the converse fails, by exactly the rule that does not travel.
     expect(ids(opening.decisions)).toEqual(['dec-machine', 'dec-team']);
@@ -554,7 +576,9 @@ describe('brief — everything that governs the work here', () => {
     // and disagreed on a label would still fail.
     const travelled = opening.decisions.filter((d) => !privately.includes(d.id));
     expect(travelled.length).toBeGreaterThan(0);
-    for (const rule of travelled) expect(composed.decisions).toContainEqual(rule);
+    for (const rule of travelled) {
+      expect(composed.decisions.map(unmarked)).toContainEqual(unmarked(rule));
+    }
     // The other half: not one of the private rules is here.
     expect(composed.decisions.map((d) => d.id).filter((id) => privately.includes(id))).toEqual([]);
   });
@@ -679,10 +703,12 @@ describe('brief — everything that governs the work here', () => {
       divergent: [],
       addressed: 0,
       asking: 0,
+      refusing: 0,
       decisionsAwaiting: 0,
       skillsAwaiting: 0,
       editPush: { channel: CHANNELS.editPush, on: true },
       asksAPerson: { channel: CHANNELS.asksAPerson, on: true },
+      refusesAWrite: { channel: CHANNELS.refusesAWrite, on: true },
     });
     expect(brief([], CHANNELS)).toEqual({
       decisions: [],
@@ -691,10 +717,12 @@ describe('brief — everything that governs the work here', () => {
       divergent: [],
       addressed: 0,
       asking: 0,
+      refusing: 0,
       decisionsAwaiting: 0,
       skillsAwaiting: 0,
       editPush: { channel: CHANNELS.editPush, on: true },
       asksAPerson: { channel: CHANNELS.asksAPerson, on: true },
+      refusesAWrite: { channel: CHANNELS.refusesAWrite, on: true },
     });
     // And a caller holding nothing but trees that do not travel gets the same honest
     // empty rather than their contents: an empty document over a record that HAS rules
@@ -709,10 +737,12 @@ describe('brief — everything that governs the work here', () => {
       divergent: [],
       addressed: 0,
       asking: 0,
+      refusing: 0,
       decisionsAwaiting: 0,
       skillsAwaiting: 0,
       editPush: { channel: CHANNELS.editPush, on: true },
       asksAPerson: { channel: CHANNELS.asksAPerson, on: true },
+      refusesAWrite: { channel: CHANNELS.refusesAWrite, on: true },
     });
   });
 });
