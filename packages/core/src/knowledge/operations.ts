@@ -56,9 +56,11 @@
  */
 
 import {
+  type CatalogEvent,
   handoffRecorded,
   knowledgeLinked,
   memoryCaptured,
+  noteRetracted,
   observationRecorded,
 } from '@mnema/chain';
 import {
@@ -69,7 +71,10 @@ import {
 } from '../content/screen.js';
 import { resolveExecutingAgent, type SelfAuthorizedErr } from '../identity/authority.js';
 import { canonicalId, mintId } from '../identity/id.js';
+import { oneLine } from '../one-line.js';
+import { orderedEvents } from '../projections/order.js';
 import { type AppendRefusal, appendEvent } from '../workflow/append.js';
+import { type Judged, onTheRecordAsItStands } from '../workflow/as-the-record-stands.js';
 import { systemClock } from '../workflow/clock.js';
 import { authorizingAnchor, ensureFounded } from '../workflow/identity-operations.js';
 import type { WriteContext } from '../workflow/operations.js';
@@ -414,4 +419,171 @@ export function linkKnowledge(ctx: WriteContext, input: LinkInput): LinkOk | Fac
     rel: relation.fields.rel,
     ...screened([...relation.replaced, ...agent.replaced]),
   };
+}
+
+/** A note was retracted: the fact was appended. */
+export interface RetractOk extends ScreenedWrite {
+  readonly ok: true;
+  /** The retracted note's id (the event subject), in the record's canonical form. */
+  readonly id: string;
+  /** What the note was: the kind a surface names it by. */
+  readonly note: 'memory' | 'observation';
+}
+
+/** A retraction refused before touching the chain. */
+export type RetractError =
+  | FactError
+  /** This tree holds no record by that id. */
+  | { readonly ok: false; readonly code: 'UNKNOWN_NOTE'; readonly message: string }
+  /** The id names a record with a lifecycle of its own — a decision, a pattern, a task. */
+  | { readonly ok: false; readonly code: 'NOT_A_NOTE'; readonly message: string }
+  /** The record already took this note back. */
+  | { readonly ok: false; readonly code: 'ALREADY_RETRACTED'; readonly message: string };
+
+/** What the caller asks to retract. */
+export interface RetractInput {
+  /** The id of the memory or observation to take back. */
+  readonly id: string;
+  /** Why it is taken back. Required; a reason that says nothing is refused. */
+  readonly reason: string;
+  /** The agent that carried it out, if any. `who` is derived from the writer's key. */
+  readonly which?: string;
+  /** The run this belongs to, if any. */
+  readonly run?: string;
+}
+
+/** What one id names in a tree, as far as a retraction needs to know. */
+type Standing =
+  | { readonly is: 'note'; readonly note: 'memory' | 'observation'; readonly retractedAt?: string }
+  | { readonly is: 'other'; readonly what: 'decision' | 'pattern' | 'task' }
+  | { readonly is: 'nothing' };
+
+/** The birth kinds of the records that are NOT notes, and how a person names each. */
+const NOT_A_NOTE: { readonly [kind: string]: 'decision' | 'pattern' | 'task' } = {
+  'decision.recorded': 'decision',
+  'skill.created': 'pattern',
+  'task.created': 'task',
+};
+
+/** What each record that is not a note does instead of being retracted. */
+const ITS_OWN_LIFECYCLE = {
+  decision: 'reject it, or supersede it with another',
+  pattern: 'reject it, or deprecate it',
+  task: 'move it to the state it is in',
+} as const;
+
+/** Reads what `id` names in this tree's ordered stream. */
+function standingOf(events: readonly CatalogEvent[], id: string): Standing {
+  let note: 'memory' | 'observation' | undefined;
+  let retractedAt: string | undefined;
+  for (const event of events) {
+    if (event.subject !== id) continue;
+    if (event.kind === 'memory.captured') note = 'memory';
+    else if (event.kind === 'observation.recorded') note = 'observation';
+    else if (event.kind === 'note.retracted') retractedAt ??= event.at;
+    else {
+      const what = NOT_A_NOTE[event.kind];
+      if (what !== undefined) return { is: 'other', what };
+    }
+  }
+  if (note === undefined) return { is: 'nothing' };
+  return { is: 'note', note, ...(retractedAt !== undefined ? { retractedAt } : {}) };
+}
+
+/**
+ * Retracts a note — a memory or an observation — by appending one `note.retracted` whose
+ * subject is the note and whose payload is the reason. Nothing is erased: the note's own
+ * event stays, a verifier still sees it, and the read by id still serves it, saying it was
+ * taken back; the reads that LIST notes stop offering it.
+ *
+ * WHO MAY is what the record already decides for a supersede: any writer of this tree, the
+ * fact attributed to its anchor (`who`) and to the agent that carried it out (`which`), with
+ * nothing that ties the act to whoever wrote the note. As with a supersede, it is SAME-TREE:
+ * the note is looked for in the tree this writer owns — a surface opens the note's own tree,
+ * the way a decision's move follows the decision — and a retraction of an id this tree does
+ * not hold is refused rather than recorded dangling.
+ *
+ * Decided under the tail's lock against the record as it stands ({@link
+ * onTheRecordAsItStands}), so two retractions of one note in two sessions append one.
+ */
+export function retractNote(ctx: WriteContext, input: RetractInput): RetractOk | RetractError {
+  // The reason and the pinned run through the door first, as every fact's free text is.
+  const text = screenContent({ reason: input.reason, run: input.run });
+  if (!text.ok) return text;
+
+  const who = authorizingAnchor(ctx);
+  const agent = resolveExecutingAgent(who, input.which);
+  if (!agent.ok) return agent;
+  const which = agent.which;
+
+  const id = canonicalId(input.id);
+  return onTheRecordAsItStands(
+    ctx,
+    () =>
+      id === undefined
+        ? ({ is: 'nothing' } as const)
+        : standingOf(orderedEvents(ctx.layout, ctx.upcasters), id),
+    (standing): Judged<RetractOk | RetractError> => {
+      if (id === undefined || standing.is === 'nothing') {
+        return {
+          refuse: {
+            ok: false,
+            code: 'UNKNOWN_NOTE',
+            message: `no memory or observation "${oneLine(input.id)}" is in this record`,
+          },
+        };
+      }
+      if (standing.is === 'other') {
+        return {
+          refuse: {
+            ok: false,
+            code: 'NOT_A_NOTE',
+            message:
+              `${standing.what} "${oneLine(input.id)}" is not a note: only a memory or an ` +
+              `observation is retracted. A ${standing.what} keeps its own lifecycle — ` +
+              `${ITS_OWN_LIFECYCLE[standing.what]}.`,
+          },
+        };
+      }
+      if (standing.retractedAt !== undefined) {
+        return {
+          refuse: {
+            ok: false,
+            code: 'ALREADY_RETRACTED',
+            message:
+              `${standing.note} "${oneLine(input.id)}" was already retracted at ` +
+              `${oneLine(standing.retractedAt)}. Nothing was appended.`,
+          },
+        };
+      }
+      return {
+        write: () => {
+          ensureFounded(ctx);
+          const at = (ctx.clock ?? systemClock)();
+          const appended = appendEvent(
+            ctx.writer,
+            noteRetracted(
+              {
+                at,
+                who,
+                signerFp: ctx.writer.signerFingerprint,
+                subject: id,
+                ...(which !== undefined ? { which } : {}),
+                ...(text.fields.run !== undefined ? { run: text.fields.run } : {}),
+              },
+              // The screened reason, never `input.reason`.
+              { reason: text.fields.reason },
+            ),
+          );
+          if (!appended.ok) return appended;
+          return {
+            ok: true,
+            id,
+            note: standing.note,
+            ...screened([...text.replaced, ...agent.replaced]),
+          };
+        },
+      };
+    },
+  );
 }

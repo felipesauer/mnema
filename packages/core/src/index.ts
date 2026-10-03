@@ -119,6 +119,7 @@ export {
   type HandoffProjection,
   type LinkEdge,
   type MemoryProjection,
+  type NoteRetraction,
   type ObservationProjection,
   projectHandoffs,
   projectKnowledge,

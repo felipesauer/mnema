@@ -26,6 +26,43 @@
 
 import type { CatalogEvent } from '@mnema/chain';
 
+/**
+ * A note TAKEN BACK — what a `note.retracted` says about the memory or observation it
+ * names: when, by whom, and why. Present on a note's projection only when the record holds
+ * a retraction of it; the note itself is unchanged, which is the point.
+ */
+export interface NoteRetraction {
+  /** `at` of the retraction. */
+  readonly at: string;
+  /** The anchor that took it back (the retraction's `who`). */
+  readonly who: string;
+  /** The agent that carried it out, when one did. */
+  readonly which?: string;
+  /** Why it was taken back. */
+  readonly reason: string;
+}
+
+/**
+ * The retractions in an ordered stream, by the id of the note each names. The FIRST in the
+ * stream's order holds: the operation refuses a second on one tree, and two clones that each
+ * took the same note back offline merge into one note that was taken back — the earlier
+ * saying when. Order-independent of the note's own event, so the fold never depends on the
+ * capture having been seen first.
+ */
+function retractionsOf(events: readonly CatalogEvent[]): Map<string, NoteRetraction> {
+  const found = new Map<string, NoteRetraction>();
+  for (const event of events) {
+    if (event.kind !== 'note.retracted' || found.has(event.subject)) continue;
+    found.set(event.subject, {
+      at: event.at,
+      who: event.who,
+      ...(event.which !== undefined ? { which: event.which } : {}),
+      reason: event.payload.reason,
+    });
+  }
+  return found;
+}
+
 /** A captured memory, as projected from its one event. */
 export interface MemoryProjection {
   /** The memory's id (the event subject). */
@@ -36,6 +73,8 @@ export interface MemoryProjection {
   readonly who: string;
   /** `at` of the capture. */
   readonly capturedAt: string;
+  /** Present when the record took this memory back. */
+  readonly retracted?: NoteRetraction;
 }
 
 /**
@@ -51,13 +90,16 @@ export interface MemoryProjection {
  */
 export function projectKnowledge(events: readonly CatalogEvent[]): Map<string, MemoryProjection> {
   const result = new Map<string, MemoryProjection>();
+  const retractions = retractionsOf(events);
   for (const event of events) {
     if (event.kind === 'memory.captured') {
+      const retracted = retractions.get(event.subject);
       result.set(event.subject, {
         id: event.subject,
         content: event.payload.content,
         who: event.who,
         capturedAt: event.at,
+        ...(retracted !== undefined ? { retracted } : {}),
       });
     }
   }
@@ -78,6 +120,8 @@ export interface ObservationProjection {
   readonly who: string;
   /** `at` of the observation. */
   readonly recordedAt: string;
+  /** Present when the record took this observation back. */
+  readonly retracted?: NoteRetraction;
 }
 
 /**
@@ -93,8 +137,10 @@ export function projectObservations(
   events: readonly CatalogEvent[],
 ): Map<string, ObservationProjection> {
   const result = new Map<string, ObservationProjection>();
+  const retractions = retractionsOf(events);
   for (const event of events) {
     if (event.kind === 'observation.recorded') {
+      const retracted = retractions.get(event.subject);
       result.set(event.subject, {
         id: event.subject,
         about: event.payload.about,
@@ -102,6 +148,7 @@ export function projectObservations(
         text: event.payload.text,
         who: event.who,
         recordedAt: event.at,
+        ...(retracted !== undefined ? { retracted } : {}),
       });
     }
   }

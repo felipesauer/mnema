@@ -102,6 +102,9 @@ export const FED_BY_KIND: { readonly [K in EventKind]: readonly ProjectionTable[
   'channel.served': [...EVERY_KIND_FEEDS],
   'channel.asked': [...EVERY_KIND_FEEDS],
   'channel.refused': [...EVERY_KIND_FEEDS],
+  // A retraction changes the row of the note it names, in whichever of the two note tables
+  // holds it, and takes the note out of the index.
+  'note.retracted': [...EVERY_KIND_FEEDS, 'memories', 'observations', SEARCHED],
 };
 
 /**
