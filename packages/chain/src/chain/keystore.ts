@@ -251,12 +251,35 @@ export interface KeyFileChange {
  * never done by accident.
  */
 export function protectPrivateKeys(layout: ChainLayout, passphrase: string): KeyFileChange[] {
-  return listPrivateKeyFiles(layout).map((path) => {
-    const text = readFileSync(path, 'utf-8');
-    if (isProtected(text)) return { path, changed: false };
-    replaceKeyFile(path, protectPem(text, passphrase));
-    return { path, changed: true };
-  });
+  return underTheKeyRootLock(layout, () =>
+    listPrivateKeyFiles(layout).map((path) => {
+      const text = readFileSync(path, 'utf-8');
+      if (isProtected(text)) return { path, changed: false };
+      replaceKeyFile(path, protectPem(text, passphrase));
+      return { path, changed: true };
+    }),
+  );
+}
+
+/**
+ * Runs a rewrite of the key files under the key root's own lock — the one a mint is made under —
+ * so two of them, or one and a mint, take turns instead of reading the same files and each
+ * replacing what the other already replaced. It used to guard the mint alone, and `protect` and
+ * `unprotect` rewrote the key files with nothing between them and a second process.
+ *
+ * A key root that is not there has nothing to rewrite and no lock to take: taking one would make
+ * the directory.
+ *
+ * @throws {KeyRootBusyError} if another process held the lock past the budget.
+ */
+function underTheKeyRootLock<T>(layout: ChainLayout, rewrite: () => T): T {
+  if (!existsSync(layout.root)) return rewrite();
+  try {
+    return withTailLock(keyRootLockPath(layout), rewrite);
+  } catch (error) {
+    if (error instanceof TailBusyError) throw new KeyRootBusyError(error.tailLock, error.heldBy);
+    throw error;
+  }
 }
 
 /**
@@ -267,17 +290,19 @@ export function protectPrivateKeys(layout: ChainLayout, passphrase: string): Key
  * @throws {KeyPassphraseWrongError} for the first file the passphrase does not open.
  */
 export function unprotectPrivateKeys(layout: ChainLayout, passphrase: string): KeyFileChange[] {
-  const opened = listPrivateKeyFiles(layout).map((path) => {
-    const text = readFileSync(path, 'utf-8');
-    if (!isProtected(text)) return { path, pem: undefined };
-    const pem = unprotectPem(text, passphrase);
-    if (pem === undefined) throw new KeyPassphraseWrongError(path);
-    return { path, pem };
-  });
-  return opened.map(({ path, pem }) => {
-    if (pem === undefined) return { path, changed: false };
-    replaceKeyFile(path, pem);
-    return { path, changed: true };
+  return underTheKeyRootLock(layout, () => {
+    const opened = listPrivateKeyFiles(layout).map((path) => {
+      const text = readFileSync(path, 'utf-8');
+      if (!isProtected(text)) return { path, pem: undefined };
+      const pem = unprotectPem(text, passphrase);
+      if (pem === undefined) throw new KeyPassphraseWrongError(path);
+      return { path, pem };
+    });
+    return opened.map(({ path, pem }) => {
+      if (pem === undefined) return { path, changed: false };
+      replaceKeyFile(path, pem);
+      return { path, changed: true };
+    });
   });
 }
 

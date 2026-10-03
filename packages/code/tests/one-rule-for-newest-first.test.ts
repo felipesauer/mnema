@@ -190,6 +190,10 @@ const THE_ORDERINGS: readonly Rostered[] = [
   { file: 'context/src/intelligence/governance.ts', by: 'bySpecificity', means: OTHER },
   { file: 'context/src/intelligence/provenance.ts', by: 'byNameThenId', means: OTHER },
   { file: 'context/src/intelligence/references.ts', by: 'byInstantThenEnds', means: OLDEST },
+  // By kind, then entity, then the state it left: a property of the content, as the reading
+  // always was. It is named now because it is one function (`sortDivergent`), asked by the
+  // whole-record reading and by the cache that keeps the moves one entity at a time.
+  { file: 'core/src/projections/divergent-moves.ts', by: 'compareDivergent', means: OTHER },
 ];
 
 /**

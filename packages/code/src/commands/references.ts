@@ -14,7 +14,8 @@
  *
  * It reads every visible tree, because an edge lives in the tree its event was
  * written to and its far end may live in another. Read-only in the strict sense:
- * a cache per tree, rebuilt in memory, and the context package's pure `references`. No
+ * a cache per tree, brought forward from the one the tree keeps (`CacheOptions.persist`), and the
+ * context package's pure `references`. No
  * writer, no key, no event — so no `--actor`.
  *
  * Like the other intelligence reads it refuses `NO_PROJECT` outside a project: a

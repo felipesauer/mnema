@@ -4,10 +4,28 @@ import { join } from 'node:path';
 import { catalogUpcasters, decisionBirth, verify } from '@mnema/chain';
 import { type DiscoveryEnv, orderedEvents, projectDecisions, resolveTrees } from '@mnema/core';
 import { openTreeForWriting } from '@mnema/core/write';
-import { afterEach, beforeEach, describe, expect, it } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { runDecision } from './decision.js';
 import { runDecisionTransition } from './decision-transition.js';
 import { runInit } from './init.js';
+import { runSwitch } from './switch.js';
+
+// The first time the switch is asked about, it is answered as it stands and THEN `afterTheFirstAsk`
+// runs, so a test can turn the switch off in the gap between that answer and the append.
+const gap = vi.hoisted(() => ({ afterTheFirstAsk: undefined as (() => void) | undefined }));
+vi.mock('../agent-accepts.js', async (importActual) => {
+  const actual = await importActual<typeof import('../agent-accepts.js')>();
+  return {
+    ...actual,
+    agentMayAccept: (...args: Parameters<typeof actual.agentMayAccept>) => {
+      const answer = actual.agentMayAccept(...args);
+      const run = gap.afterTheFirstAsk;
+      gap.afterTheFirstAsk = undefined;
+      run?.();
+      return answer;
+    },
+  };
+});
 
 let sandbox: string;
 
@@ -350,5 +368,27 @@ describe('mnema decision move / supersede --which — the agent that executed', 
     const root = resolveTrees(repo, env).projectPublic as string;
     expect(agentsOf(root, recorded.id)).toEqual([undefined]);
     expect(stateOf(repo, env, recorded.id)).toBe('proposed');
+  });
+});
+
+describe('an agent’s accept is refused when the switch is turned off after the first answer', () => {
+  it('asks again under the lock, refuses AGENT_ACCEPTS_IS_OFF, and appends nothing', () => {
+    const { repo, env, id } = projectWithDecision();
+    const root = resolveTrees(repo, env).projectPublic as string;
+    const before = orderedEvents({ root }, catalogUpcasters()).length;
+    gap.afterTheFirstAsk = () => {
+      const off = runSwitch({ cwd: repo, env }, { channel: 'agent-accepts', on: false });
+      expect(off.ok).toBe(true);
+    };
+
+    const result = runDecisionTransition(
+      { cwd: repo, env },
+      { id, action: 'accept', proof: { note: 'agreed' }, which: 'claude-code' },
+    );
+
+    expect(result).toMatchObject({ ok: false, reason: 'REFUSED', code: 'AGENT_ACCEPTS_IS_OFF' });
+    expect(stateOf(repo, env, id)).toBe('proposed');
+    // Only the switch itself landed after the decision was recorded.
+    expect(orderedEvents({ root }, catalogUpcasters()).length).toBe(before + 1);
   });
 });

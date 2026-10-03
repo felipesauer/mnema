@@ -14,6 +14,7 @@
 
 import type { SqliteDatabase } from '../db/sqlite.js';
 import type { ChannelSwitchProjection } from './channel.js';
+import { verb } from './upsert.js';
 
 /**
  * The `channel_switches` row shape as stored.
@@ -38,9 +39,10 @@ interface ChannelSwitchRow {
 export function materializeChannelSwitches(
   db: SqliteDatabase,
   switches: Iterable<ChannelSwitchProjection>,
+  replacing = false,
 ): void {
   const insert = db.prepare(
-    `INSERT INTO channel_switches (channel, switched_on, who, which, switched_at, reason)
+    `${verb(replacing)} INTO channel_switches (channel, switched_on, who, which, switched_at, reason)
      VALUES (@channel, @switchedOn, @who, @which, @switchedAt, @reason)`,
   );
   for (const state of switches) {

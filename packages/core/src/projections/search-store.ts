@@ -228,10 +228,21 @@ interface SearchParams {
  * rows it points at: one read of the chain, one fold, two materializations.
  */
 export function materializeSearch(db: SqliteDatabase, sources: SearchSources): void {
-  const insert = db.prepare(
+  const insertRow = db.prepare(
     `INSERT INTO record_search (title, body, id, kind, state, at)
      VALUES (@title, @body, @id, @kind, @state, @at)`,
   );
+  const remember = db.prepare(
+    'INSERT OR REPLACE INTO search_rows (kind, id, rid) VALUES (?, ?, ?)',
+  );
+  // Every row is remembered by the rowid it got, which is what lets a row be replaced
+  // later without reading the whole index to find it ({@link reindexSearch}).
+  const insert = {
+    run(params: SearchParams): void {
+      const { lastInsertRowid } = insertRow.run(params);
+      remember.run(params.kind, params.id, Number(lastInsertRowid));
+    },
+  };
   for (const memory of sources.memories) {
     // The only kind with no title: the content IS the record, so it is the body
     // and the index line is derived from it on the way out.
@@ -291,6 +302,32 @@ export function materializeSearch(db: SqliteDatabase, sources: SearchSources): v
       ),
     );
   }
+}
+
+/**
+ * Replaces the index rows of the entities an arrival touched: each row that was there is
+ * removed by its rowid ({@link materializeSearch} remembered it), and the ones the fold
+ * projects now are inserted by the same function that built the index.
+ *
+ * `touched` names the entities by kind and id, and an entity that is no longer projected —
+ * which an arrival cannot cause, since a projection once complete stays so — would simply
+ * leave no row. The caller owns the transaction.
+ */
+export function reindexSearch(
+  db: SqliteDatabase,
+  touched: Iterable<{ readonly kind: SearchKind; readonly id: string }>,
+  sources: SearchSources,
+): void {
+  const find = db.prepare('SELECT rid FROM search_rows WHERE kind = ? AND id = ?');
+  const dropRow = db.prepare('DELETE FROM record_search WHERE rowid = ?');
+  const forget = db.prepare('DELETE FROM search_rows WHERE kind = ? AND id = ?');
+  for (const { kind, id } of touched) {
+    const row = find.get(kind, id) as { rid: number } | undefined;
+    if (row === undefined) continue;
+    dropRow.run(row.rid);
+    forget.run(kind, id);
+  }
+  materializeSearch(db, sources);
 }
 
 /**

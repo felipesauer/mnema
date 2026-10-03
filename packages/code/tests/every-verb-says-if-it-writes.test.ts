@@ -44,9 +44,13 @@
  * one verb writes nothing by hashing the whole sandbox, and that is the stronger
  * statement. This paragraph said it was "only available to a verb that opens no cache",
  * because "most reads rebuild the projection cache, which writes a file". That premise was
- * false: the projection is held in memory (`CacheOptions.dbPath` has no production caller),
- * and the tools' guard, which does digest its whole sandbox, finds no read that changes a
- * path of it. What stands is the other half: the question this classification answers is
+ * false when it was written — the projection was held in memory — and the tools' guard, which
+ * does digest its whole sandbox, finds no read that changes a path of it. IT IS TRUE OF THE
+ * COMMAND LINE NOW (`CacheOptions.persist`): a read leaves `locks/projection.db`, and the
+ * verbs whose digest covers the whole sandbox excuse that one file by its shape
+ * (`support/the-cache-is-not-the-record.ts`) while
+ * `the-record-is-kept-between-reads.test.ts` holds that it is the only thing a read adds.
+ * What stands is the other half: the question this classification answers is
  * not "does it touch the disk" but "can this reach the record" — an event in a chain, or
  * the key material an identity is — and those two are what is counted here. Whether every
  * VERB also leaves its whole sandbox as it found it has not been measured.
@@ -265,6 +269,7 @@ const INVOCATION: Readonly<Record<string, Invocation>> = {
   usage: { argv: () => ['usage'] },
   brief: { argv: () => ['brief'] },
   recall: { argv: () => ['recall'] },
+  doctor: { argv: () => ['doctor'] },
   // A HOST FEEDS IT, like `before-a-write`, and in process there is no standard input to hand it:
   // the verb answers `{}`, and what it counts is held with a transcript through the plugin's
   // command (`a-session-says-what-it-wrote.test.ts`).
@@ -558,7 +563,7 @@ describe('every verb says if it writes', () => {
     expect(Object.keys(INVOCATION).sort()).toEqual([...EFFECT_BY_VERB.keys()].sort());
   });
 
-  it('counts sixteen writes and twenty-four reads over the whole surface', () => {
+  it('counts sixteen writes and twenty-five reads over the whole surface', () => {
     // The count in the report, asserted rather than trusted, and the total against the
     // list: a verb that stopped being registered would otherwise leave both halves
     // looking healthy.
@@ -602,6 +607,7 @@ describe('every verb says if it writes', () => {
       'brief',
       'recall',
       'tally',
+      'doctor',
       'verify',
       'repl',
       'completion',

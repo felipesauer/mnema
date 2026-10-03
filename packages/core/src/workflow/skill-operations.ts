@@ -21,7 +21,6 @@
  */
 
 import {
-  type CatalogEvent,
   type ChainLayout,
   type ChainWriter,
   type Entry,
@@ -40,8 +39,6 @@ import {
 import { resolveExecutingAgent, type SelfAuthorizedErr } from '../identity/authority.js';
 import { canonicalId, mintId } from '../identity/id.js';
 import { oneLine } from '../one-line.js';
-import { orderedEvents } from '../projections/order.js';
-import { projectSkills, type SkillProjection } from '../projections/skill.js';
 import { type AppendRefusal, appendEvent, appendEvents } from './append.js';
 import {
   type Judged,
@@ -51,6 +48,7 @@ import {
 } from './as-the-record-stands.js';
 import { type Clock, systemClock } from './clock.js';
 import { authorizingAnchor, ensureFounded } from './identity-operations.js';
+import { standing } from './read-the-record.js';
 import { type SkillGateErr, skillGate } from './skill-gate.js';
 import { INITIAL_SKILL_STATE } from './skill-states.js';
 
@@ -334,7 +332,7 @@ function transition(
   const id = canonicalId(input.id);
   return onTheRecordAsItStands(
     ctx,
-    () => projectedSkills(ctx),
+    () => standing(ctx, [id], (cache, one) => cache.getSkill(one)),
     (skills, earlier): Judged<SkillTransitionOk | SkillWriteError> => {
       const current = id === undefined ? undefined : skills.get(id);
       if (id === undefined || current === undefined) {
@@ -411,13 +409,4 @@ function transition(
       };
     },
   );
-}
-
-/**
- * Projects the skills from the chain (the source of truth), not the cache, so
- * the state/existence checks are gated against what the chain actually proves.
- */
-function projectedSkills(ctx: SkillWriteContext): Map<string, SkillProjection> {
-  const events: readonly CatalogEvent[] = orderedEvents(ctx.layout, ctx.upcasters);
-  return projectSkills(events);
 }

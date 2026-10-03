@@ -274,13 +274,31 @@ claude plugin install mnema@mnema
 The plugin connects the MCP server too, so registering the server yourself as well is
 redundant: a session would be offered every tool twice, under two prefixes.
 
+**To have only the server and the command line, with no hook**, install the marketplace's
+other plugin instead of that one:
+
+```sh
+claude plugin install mnema-server-only@mnema
+```
+
+It connects the same `mnema mcp` and runs no hook, so what the plugin's hooks hand over is
+not handed over: the record is not put into the session as it opens, no rule comes beside an
+edit, no pause for a person is asked at one, and no count or correction is taken at the end of
+a response — and its skills are not installed. The agent still has every tool of the server,
+and you still have every command. Do not install both: they declare the same server.
+
 **In VS Code and Cursor**, the server is the same `mnema mcp`, and the plugin is the same
 one. VS Code's agent reads the Claude Code plugin format, and Cursor's command-line agent
 picks up a plugin installed in Claude Code on the same machine; the per-host details — what
 each one runs, the rules at each edit that are Claude Code's alone, and the pause for a person
 that reaches VS Code as well — are in the [plugin's page](plugin/README.md#in-vs-code-and-cursor).
-Without the plugin, `mnema rules-file --host vscode` or `--host cursor` prints the committed rules
+Without the plugin, `mnema rules-file --host claude`, `--host vscode` or `--host cursor` prints the committed rules
 addressed at a file in that host's own rules format, and says which rules it left out and why.
+
+`mnema doctor` says, one line to a finding and with what to do about it, whether a `mnema` is
+on the `PATH` and which one, whether the Claude Code plugin is installed and at what version,
+whether the mnema MCP server is declared more than once, and whether a second `mnema` or an npm
+package of that name is installed. It writes nothing and does not ask the registry.
 
 ## Your first record
 
@@ -312,6 +330,8 @@ mnema decision record "Use SQLite for the projection cache" \
   "It is embedded, it is fast enough at our sizes, and it needs no service."
 #> Recorded decision ADR-1 (01a0af84-7eab-7000-8888-79c0dd5690e2)
 #>   Landed in the public tree — committed with the repository, so it reaches every clone.
+# A long rationale can come from a file (`--body-file why.md`) or a pipe (`--stdin`) instead of
+# the line, which keeps it out of the shell history; from two places at once, it is refused.
 
 # It is in the record now, and a decision enters awaiting a judgement.
 mnema search
@@ -385,6 +405,7 @@ still in the record has not changed since it was signed.
 | [`packages/core`](packages/core/) | The work domain: the gate over the shape of a change, the projections read back out of the chain, identity, and the queries. Released because `@mnema/code` depends on it. |
 | [`packages/context`](packages/context/) | Read-only derivations that turn the proven record into the context an agent is handed. Released because `@mnema/code` depends on it. |
 | [`plugin/`](plugin/) | The Claude Code plugin: eight hooks — two as a session opens, three at each edit (the one Claude Code runs, the one VS Code runs and the one Cursor runs, each skipped by the others), two at the end of a response, one before a compaction — and the MCP server declaration, in one installation. |
+| [`plugin-server-only/`](plugin-server-only/) | The same marketplace's second plugin: the MCP server declaration and nothing else — no hook, no skill — for whoever wants the server and the command line only. |
 | [`measurements/`](measurements/) | The measurements this product's claims rest on, with their protocols and their raw results. |
 
 **All four are released, and only one of them is meant to be installed.** This

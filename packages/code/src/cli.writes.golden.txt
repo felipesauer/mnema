@@ -273,8 +273,7 @@ $ mnema switch off no-such-channel
 
 ### refusals — what the parser turns down
 $ mnema decision record 'A decision with no rationale'
-! mnema decision record needs <rationale>: why the decision was made
-!   mnema decision record [options] <title> <rationale>
+! the rationale is missing.: Give it as an argument, with --stdin, or with --body-file <path>.
 [exit 1]
 $ mnema task create 'A task' 'and one word too many'
 ! mnema task create does not take "and one word too many".
@@ -306,7 +305,7 @@ $ mnema task moveZZZ
 [exit 1]
 $ mnema decision 'Use UTC' 'one clock for every machine'
 ! mnema decision has no command "Use UTC". To record a decision, put `record` before its title.
-!   mnema decision record [options] <title> <rationale>
+!   mnema decision record [options] <title> [rationale]
 [exit 1]
 $ mnema skill 'A pattern' --body 'do it so'
 ! mnema skill has no command "A pattern". To create a skill, put `create` before its name.

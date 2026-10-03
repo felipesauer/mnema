@@ -102,6 +102,8 @@ const ANSWERS_ANYWAY: Readonly<Record<string, string>> = {
   search: 'it searches whatever trees are visible, and the global one is a record',
   skills: 'the patterns it lists are read from every visible tree, global included',
   switch: 'where a channel stands is a question about the trees there are, not about a project',
+  doctor:
+    'it asks the machine how mnema is installed, which is true wherever it is run, and it reads no record',
   'tail list': 'the tails it lists are the ones held here, in whichever trees exist',
   'key request': 'a request to be enrolled is composed from this machine’s key, not from a project',
   diagram:

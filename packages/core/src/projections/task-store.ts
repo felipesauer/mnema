@@ -10,6 +10,7 @@
 import type { SqliteDatabase } from '../db/sqlite.js';
 import { proofColumn, proofFromColumn } from './proof.js';
 import type { TaskProjection } from './task.js';
+import { verb } from './upsert.js';
 
 /** The `tasks` row shape as stored. */
 interface TaskRow {
@@ -26,10 +27,19 @@ interface TaskRow {
  * Inserts the given task projections. Called during a rebuild after the table
  * has been recreated empty, so every task is a fresh insert. The caller owns
  * the surrounding transaction.
+ *
+ * `replacing` is for the one caller that does NOT start from an empty table: an advance
+ * writes the rows an arrival changed over the rows that were there, and a row that is already
+ * there is then the thing being replaced. A rebuild passes nothing, and keeps the failure that
+ * says its table was not emptied.
  */
-export function materializeTasks(db: SqliteDatabase, tasks: Iterable<TaskProjection>): void {
+export function materializeTasks(
+  db: SqliteDatabase,
+  tasks: Iterable<TaskProjection>,
+  replacing = false,
+): void {
   const insert = db.prepare(
-    `INSERT INTO tasks (id, title, state, created_at, updated_at, proof)
+    `${verb(replacing)} INTO tasks (id, title, state, created_at, updated_at, proof)
      VALUES (@id, @title, @state, @createdAt, @updatedAt, @proof)`,
   );
   for (const task of tasks) {

@@ -9,9 +9,15 @@
  * travels and no other: it is handed every tree and drops the rest itself, because
  * which trees a document carries is one rule and belongs in one place. The MCP server
  * keeps those caches warm for a connection; a command is a process that runs once and
- * exits, so it opens them, rebuilds from the chain, reads, and closes — every time.
- * That cost is the command line's, and it is the price of not leaving a derived
- * database behind between runs.
+ * exits, so it opens them, brings them forward, reads, and closes.
+ *
+ * THIS SAID THE COMMAND "REBUILDS FROM THE CHAIN … EVERY TIME", "the price of not leaving a
+ * derived database behind between runs". The premise was that the price was small. It is
+ * linear in the record: 3.3 s and 548 MB for a search over 100 thousand events, and the two
+ * hooks that open a session are such reads. A cache per tree is kept in the tree now
+ * (`CacheOptions.persist`, `locks/projection.db`), the next read takes only what arrived, and
+ * deleting the file changes no answer but the time
+ * (`measurements/the-record-at-scale/`, `tests/the-record-is-kept-between-reads.test.ts`).
  *
  * The order the trees are opened in reaches no answer: every reader over these
  * orders by a property of the CONTENT precisely so the order cannot reshuffle
@@ -34,10 +40,10 @@ export const SCOPES: readonly Scope[] = ['public', 'private', 'global'];
  *
  * Measured: of the six production sites that opened a cache directly, THREE never closed
  * it — `commands/guard.ts`, `commands/next-actions.ts` and `pinned-run.ts` each opened a
- * handle and returned. What that leaks today is a SQLite handle and the tables behind it,
- * in-memory (`CacheOptions.dbPath` has no production caller), in a process that exits a
- * moment later — so the cost measured on the machine is nothing, and the defect is the
- * shape rather than the bill. The day one of those three is called from the MCP server,
+ * handle and returned. What that leaked then was a SQLite handle and the tables behind it,
+ * in memory, in a process that exits a moment later — so the cost measured on the machine
+ * was nothing, and the defect was the shape rather than the bill. (It is a file handle now,
+ * on the cache the tree keeps, and the shape matters the same.) The day one of those three is called from the MCP server,
  * which stays up, it becomes a handle per request; and a reader had no way to tell the
  * three that leaked from the three that did not without reading every one of them.
  *
@@ -59,9 +65,9 @@ export function withCache<T>(
   upcasters: UpcasterRegistry,
   read: (cache: ProjectionCache) => T,
 ): T {
-  const cache = ProjectionCache.open(chainRoot, { upcasters });
+  const cache = ProjectionCache.open(chainRoot, { upcasters, persist: true });
   try {
-    cache.rebuild();
+    cache.refresh();
     return read(cache);
   } finally {
     cache.close();
@@ -88,12 +94,12 @@ export function withOpenedCaches<T>(
     return read((scope) => {
       const root = chainRootForScope(trees, scope);
       if (root === undefined) return undefined;
-      const cache = ProjectionCache.open(root, { upcasters });
-      // Recorded BEFORE the replay, so a rebuild that throws still leaves a handle the
+      const cache = ProjectionCache.open(root, { upcasters, persist: true });
+      // Recorded BEFORE the catch-up, so a reading that throws still leaves a handle the
       // `finally` below can close. The version this replaced pushed it after.
       const source: ScopedCache = { scope, chainRoot: root, cache };
       opened.push(source);
-      cache.rebuild();
+      cache.refresh();
       return source;
     }, opened);
   } finally {

@@ -184,7 +184,14 @@ export function runDecisionTransition(
 
   // The executing agent and the run it belongs to, stamped on whichever op the
   // action routes to — built once so no branch can be the one that forgets them.
+  // Asked again inside the write, under the tail's lock, so a switch turned off after the answer
+  // above and before the append is still seen (`DecisionTransitionInput.refusedWhen`).
+  const stillAllowed = () =>
+    withScopedCaches(trees, (sources) =>
+      agentMayAccept(sources, { action: input.action, agent: input.which }),
+    );
   const stamp = {
+    refusedWhen: stillAllowed,
     ...(input.which !== undefined ? { which: input.which } : {}),
     ...(input.run !== undefined ? { run: input.run } : {}),
   };

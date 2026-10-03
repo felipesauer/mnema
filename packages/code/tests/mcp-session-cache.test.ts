@@ -22,10 +22,11 @@ import { mkdirSync, mkdtempSync, readdirSync, readFileSync, rmSync } from 'node:
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
-import { ensureTree } from '@mnema/chain';
+import { catalogUpcasters, ensureTree } from '@mnema/chain';
 import {
   chainRootForScope,
   type DiscoveryEnv,
+  orderedEvents,
   PROJECT_DIR,
   ProjectionCache,
   resolveTrees,
@@ -33,6 +34,7 @@ import {
 } from '@mnema/core';
 import { createTask } from '@mnema/core/write';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { runSwitch } from '../src/commands/switch.js';
 import { createCacheRegistry } from '../src/mcp/cache-registry.js';
 import { closeSession, openSession, type Session, writeContext } from '../src/mcp/session.js';
 import {
@@ -50,6 +52,23 @@ import {
   runSkillTransition,
   runTaskTransition,
 } from '../src/mcp/tools.js';
+
+// The first time the switch is asked about, it is answered as it stands and THEN `afterTheFirstAsk`
+// runs, so a test can turn the switch off in the gap between that answer and the append.
+const gap = vi.hoisted(() => ({ afterTheFirstAsk: undefined as (() => void) | undefined }));
+vi.mock('../src/agent-accepts.js', async (importActual) => {
+  const actual = await importActual<typeof import('../src/agent-accepts.js')>();
+  return {
+    ...actual,
+    agentMayAccept: (...args: Parameters<typeof actual.agentMayAccept>) => {
+      const answer = actual.agentMayAccept(...args);
+      const run = gap.afterTheFirstAsk;
+      gap.afterTheFirstAsk = undefined;
+      run?.();
+      return answer;
+    },
+  };
+});
 
 let sandbox: string;
 let env: DiscoveryEnv;
@@ -516,5 +535,34 @@ describe('no MCP write reaches a chain without passing the invalidation door', (
         /openTreeForWriting|openChainForWriting/.test(readFileSync(join(mcpDir, f), 'utf-8')),
       );
     expect(offenders).toEqual([]);
+  });
+});
+
+describe('an accept through the door when the switch is turned off after the first answer', () => {
+  it('asks again under the lock, refuses AGENT_ACCEPTS_IS_OFF, and appends nothing', () => {
+    const project = makeProject('proj');
+    const session = openOn(project);
+    const recorded = runRecordDecision(session, { title: 'adopt X', rationale: 'because' });
+    if (!recorded.ok) throw new Error('setup: record refused');
+    const root = rootOf(session, 'public');
+    const before = orderedEvents({ root }, catalogUpcasters()).length;
+    gap.afterTheFirstAsk = () => {
+      const off = runSwitch({ cwd: project, env }, { channel: 'agent-accepts', on: false });
+      expect(off.ok).toBe(true);
+    };
+
+    const moved = runDecisionTransition(session, {
+      id: recorded.id,
+      action: 'accept',
+      note: 'agreed',
+    });
+
+    expect(moved).toMatchObject({ ok: false, code: 'AGENT_ACCEPTS_IS_OFF' });
+    const cache = ProjectionCache.open(root, { upcasters: catalogUpcasters() });
+    cache.refresh();
+    expect(cache.getDecision(recorded.id)?.state).toBe('proposed');
+    cache.close();
+    expect(orderedEvents({ root }, catalogUpcasters()).length).toBe(before + 1);
+    closeSession(session);
   });
 });

@@ -41,6 +41,36 @@ export function openDatabase(path: string): SqliteDatabase {
   db.pragma('synchronous = NORMAL');
   db.pragma('foreign_keys = ON');
   db.pragma(`busy_timeout = ${BUSY_TIMEOUT_MS}`);
+  return rememberingStatements(db);
+}
+
+/** How many distinct statements a handle remembers before it starts over. */
+const REMEMBERED_STATEMENTS = 256;
+
+/**
+ * Makes `prepare` hand back the statement it already compiled for the same text.
+ *
+ * Every keyed read of a projection (`getTask`, `getDecision`, …) prepared its SQL on each call, and
+ * preparing is most of what a keyed lookup costs: a census that resolves every rule of a record
+ * through up to five of them paid it per address, measured in the order of 100 µs each
+ * (`measurements/the-record-at-scale/`). A statement is a compiled plan and holds no result, so
+ * running it again is what running it once was; one that was prepared over a table a rebuild then
+ * dropped is recompiled by SQLite itself on its next run.
+ *
+ * The memory is bounded: the statements this package builds are a fixed set plus the search's
+ * combinations of conditions, and a handle that somehow saw more than the bound starts again.
+ */
+function rememberingStatements(db: SqliteDatabase): SqliteDatabase {
+  const prepare = db.prepare.bind(db) as (sql: string) => ReturnType<SqliteDatabase['prepare']>;
+  const known = new Map<string, ReturnType<SqliteDatabase['prepare']>>();
+  db.prepare = ((sql: string) => {
+    const remembered = known.get(sql);
+    if (remembered !== undefined) return remembered;
+    const statement = prepare(sql);
+    if (known.size >= REMEMBERED_STATEMENTS) known.clear();
+    known.set(sql, statement);
+    return statement;
+  }) as SqliteDatabase['prepare'];
   return db;
 }
 

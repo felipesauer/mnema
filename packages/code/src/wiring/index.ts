@@ -222,6 +222,7 @@ import { registerCompletion } from './completion.js';
 import { registerCorrections } from './corrections.js';
 import { registerDecision } from './decision.js';
 import { registerDiagram } from './diagram.js';
+import { registerDoctor } from './doctor.js';
 import { registerExport } from './export.js';
 import { registerExposure } from './exposure.js';
 import { registerFocus } from './focus.js';
@@ -294,6 +295,7 @@ export const VERBS: readonly Verb[] = [
   registerTail,
   registerWitness,
   registerSwitch,
+  registerDoctor,
   registerVerify,
   registerMcp,
   registerRepl,

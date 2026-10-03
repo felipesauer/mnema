@@ -142,6 +142,17 @@ export function derivedDescription(body: string): string | undefined {
 }
 
 /**
+ * Whether a description says WHEN to use the skill — the one reading this product makes of it,
+ * and a plain one: it holds the word "when" or "whenever", or "quando". The host routes on this
+ * line, and a description that only says what the pattern is gives it nothing to route by.
+ * It reads words and judges nothing else: a description that holds "when" and says nothing
+ * useful passes, and the surface says what it looked for rather than that the text is good.
+ */
+export function saysWhen(description: string): boolean {
+  return /\b(?:when|whenever|quando)\b/i.test(description);
+}
+
+/**
  * `text` as a description the specification accepts: one line, cut to
  * {@link DESCRIPTION_LIMIT} characters — or `undefined` when there is nothing usable
  * in it.

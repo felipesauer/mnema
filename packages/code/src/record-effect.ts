@@ -67,10 +67,15 @@
  *
  * IT IS NOT "TOUCHES DISK". This paragraph used to give a read that touches disk as the
  * first half of why: "most reads open the projection cache and rebuild it, which writes a
- * file". That was false. The projection is held in memory — `CacheOptions.dbPath` has no
- * production caller — and on the MCP every read is measured leaving every file and
- * directory of its sandbox as it found them (`every-tool-says-if-it-writes.test.ts`, the
- * case the protocol's `readOnlyHint` is held to). The other direction is what makes the
+ * file". That was false when it was written: the projection was held in memory, and on the
+ * MCP every read is measured leaving every file and directory of its sandbox as it found them
+ * (`every-tool-says-if-it-writes.test.ts`, the case the protocol's `readOnlyHint` is held to).
+ * IT IS TRUE OF THE COMMAND LINE NOW, AND THE WORDING STANDS BECAUSE IT NEVER WAS ABOUT THE
+ * DISK: a read keeps the projection it built in the tree it read (`CacheOptions.persist`,
+ * `locks/projection.db`) so the next one pays only for what arrived — one derived file that
+ * is not the record, that a clone never carries and that deleting changes no answer of
+ * (`the-record-is-kept-between-reads.test.ts`). A verb that left anything else would still be
+ * accused. The other direction is what makes the
  * wording earn its place, and it is the sharpest case on either surface: the `skills`
  * TOOL serves a pattern's body and records that a run was served it, so a reading that
  * mints a fact belongs on the `mutates` side. Its namesake on the command line,

@@ -20,11 +20,14 @@
  *
  * AND NOTHING ELSE IS COUNTED. This said the cache was left out because "most reads rebuild the
  * projection, which writes a file, so a digest of the whole sandbox would accuse every one of
- * them". The premise was false — the projection is held in memory (`CacheOptions.dbPath` has no
- * production caller) — and the tools' guard digests its whole sandbox beside this reading and
- * finds no read that changes a path of it (`every-tool-says-if-it-writes.test.ts`). What this
- * module answers is still the narrower question — whether something reached the RECORD — and
- * the argument for asking that one is in `every-verb-says-if-it-writes.test.ts`.
+ * them". The premise was false when it was written — the projection was held in memory — and the
+ * tools' guard digests its whole sandbox beside this reading and finds no read that changes a
+ * path of it (`every-tool-says-if-it-writes.test.ts`, the MCP still holds it in memory). IT HAS
+ * BECOME TRUE OF THE COMMAND LINE, which keeps the projection in the tree it read
+ * (`CacheOptions.persist`): the whole-sandbox digests of the verbs now excuse that one file by its
+ * shape (`the-cache-is-not-the-record.ts`) and nothing else. What this module answers is still the
+ * narrower question — whether something reached the RECORD — and the argument for asking that
+ * one is in `every-verb-says-if-it-writes.test.ts`.
  */
 
 import { createHash } from 'node:crypto';

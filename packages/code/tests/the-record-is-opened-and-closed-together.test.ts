@@ -11,10 +11,12 @@
  * session ends.
  *
  * WHAT IT COSTS TODAY, SAID PLAINLY, because a guard whose motivation is inflated is a
- * guard somebody deletes. `CacheOptions.dbPath` has no production caller, so every one of
- * these caches is IN MEMORY: what a missed close leaks is a SQLite handle and the tables
- * behind it, in a command-line process that exits within the second. The measurable bill
- * on this machine is nothing. The defect is that three of six doors had no close and a
+ * guard somebody deletes. When this was written `CacheOptions.dbPath` had no production
+ * caller, so every one of these caches was IN MEMORY: what a missed close leaked was a SQLite
+ * handle and the tables behind it, in a command-line process that exits within the second.
+ * (The command line keeps its caches in the trees now — `CacheOptions.persist` — so what a
+ * missed close leaks is a handle on a file other processes read, which is the same shape with
+ * a worse day.) The measurable bill on this machine was nothing. The defect is that three of six doors had no close and a
  * reader could not tell which three without opening all six — and that the day one of
  * those three is called from the MCP server, which stays up across a session, the same
  * code leaks a handle per request.
