@@ -116,6 +116,7 @@
 import type { Acceptance, AdrCollision, Brief, ChannelState } from '@mnema/context';
 import type { DivergentMove } from '@mnema/core';
 import type { BriefDone } from '../commands/brief.js';
+import type { InheritedReading } from '../inherited-record.js';
 import { oneLine } from '../one-line.js';
 import { DERIVED_FROM } from '../provenance.js';
 import { recordFraming } from '../record-framing.js';
@@ -688,8 +689,8 @@ function whatAwaitsAJudgement(awaiting: number, words: WaitingWords): string[] {
  * and counts what it prints; which trees that came from is settled before it (see
  * `brief` in @mnema/context).
  */
-export function briefDocument(governance: Brief): string[] {
-  return composed(governance, rulesIn(governance));
+export function briefDocument(governance: Brief, inherited?: InheritedReading): string[] {
+  return [...composed(governance, rulesIn(governance)), ...inheritedSection(inherited)];
 }
 
 /**
@@ -719,8 +720,9 @@ export function briefWithin(
   governance: Brief,
   room: number,
   outside: NonNullable<BriefDone['outside']> = { drift: [], arrival: [] },
+  inherited?: InheritedReading,
 ): string[] {
-  const late = notInTheRecord(outside);
+  const late = [...notInTheRecord(outside), ...inheritedSection(inherited)];
   return fitWhole(rulesIn(governance), room, (shown) => [...composed(governance, shown), ...late]);
 }
 
@@ -747,6 +749,65 @@ function notInTheRecord(outside: NonNullable<BriefDone['outside']>): string[] {
     `Not in the record: ${counted(total, 'decision document', 'decision documents')} in this checkout, by file name, with no decision derived from them here.`,
     ...bases.map((base) => `- ${toImport(base.directory, base.documents)}`),
     '`mnema decision import <dir>` prints what it would propose from a directory and writes nothing; with `--write` it records each one as `proposed`, for a person to accept.',
+  ];
+}
+
+/**
+ * What another repository's record says governs, in a section of its own — and nothing at all
+ * where the project inherits nothing, which is every project that has not pointed at one.
+ *
+ * IT IS NEVER FOLDED INTO THE SECTIONS ABOVE, and the heading says whose it is: the origin and
+ * the commit, so a reader sees these rules were read from there and not decided here, and that
+ * the project did not sign them. What it promises is exactly what was done: the record at that
+ * commit was verified and these decisions are the ones in force in it. Pointing at an origin is
+ * trusting it at that commit; the document says that and no more. A record that did not verify,
+ * or that this machine could not read, prints no decision and says which.
+ */
+function inheritedSection(inherited: InheritedReading | undefined): string[] {
+  if (inherited === undefined) return [];
+  if (inherited.state === 'invalid') {
+    return [
+      '',
+      '## Inherited decisions (not read)',
+      '',
+      `${inherited.why}, so nothing is inherited.`,
+    ];
+  }
+  const { origin, commit } = inherited.pointer;
+  const from = `${origin} at commit ${commit}`;
+  if (inherited.state === 'unverified') {
+    return [
+      '',
+      '## Inherited decisions (not read)',
+      '',
+      `This project points at ${from}, and the record there did not verify: ${inherited.why}.`,
+      'None of its decisions is printed.',
+    ];
+  }
+  if (inherited.state === 'unavailable') {
+    return [
+      '',
+      '## Inherited decisions (not read)',
+      '',
+      `This project points at ${from}, and it could not be read here: ${inherited.why}.`,
+      'None of its decisions is printed.',
+    ];
+  }
+  return [
+    '',
+    `## Inherited decisions (${inherited.decisions.length})`,
+    '',
+    `Read from ${from}, verified at that commit. This project did not decide or sign these:`,
+    'it points at that repository and trusts it at that commit, and the labels are that record’s own.',
+    ...(inherited.decisions.length === 0 ? ['', 'No decision is in force there.'] : []),
+    ...(inherited.decisions.length > 0
+      ? [
+          '',
+          ...inherited.decisions.map(
+            (d) => `- ${oneLine(d.title)} (${d.adr} in that record, id ${d.id})`,
+          ),
+        ]
+      : []),
   ];
 }
 
