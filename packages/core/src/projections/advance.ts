@@ -43,9 +43,9 @@ import {
   handoffOf,
   linkOf,
   memoryOf,
+  type NoteRetraction,
   observationOf,
   retractionsOf,
-  type NoteRetraction,
 } from './knowledge.js';
 import {
   getMemory,
