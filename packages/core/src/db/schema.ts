@@ -225,6 +225,12 @@ CREATE TABLE IF NOT EXISTS links (
 -- supersede's two columns give, generalized to an edge set.
 CREATE INDEX IF NOT EXISTS idx_links_target ON links (target);
 
+-- The census of an edit asks for every edge of ONE label — governs, asks-for-a-person — and
+-- the primary key and the target index both start from an endpoint, so without this the answer
+-- scanned the whole table and sorted it. The columns after the label are the order the query
+-- returns, so the index is read in order and nothing is sorted.
+CREATE INDEX IF NOT EXISTS idx_links_rel ON links (rel, target, subject);
+
 CREATE TABLE IF NOT EXISTS skills (
   -- The skill's id (the event subject). One row per skill.
   id         TEXT PRIMARY KEY NOT NULL,

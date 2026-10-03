@@ -40,7 +40,7 @@ import {
   tailDir,
 } from '@mnema/chain';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
-import { PROJECTION_TABLES } from '../db/schema.js';
+import { ensureSchema, PROJECTION_TABLES } from '../db/schema.js';
 import { IN_MEMORY, openDatabase } from '../db/sqlite.js';
 import { captureMemory, recordObservation } from '../knowledge/operations.js';
 import { switchChannel } from '../workflow/channel-operations.js';
@@ -528,6 +528,23 @@ describe('linkBreaksAsOfNow names every tail that broke', () => {
       );
     } finally {
       rmSync(colleague, { recursive: true, force: true });
+    }
+  });
+});
+
+describe('the census asks the links by their label', () => {
+  it('reads one relation through an index rather than scanning every edge', () => {
+    const db = openDatabase(IN_MEMORY);
+    try {
+      ensureSchema(db);
+      const plan = db
+        .prepare('EXPLAIN QUERY PLAN SELECT * FROM links WHERE rel = ? ORDER BY target, subject')
+        .all('governs') as { detail: string }[];
+      const detail = plan.map((step) => step.detail).join(' | ');
+      expect(detail).toContain('USING INDEX idx_links_rel');
+      expect(detail).not.toContain('USE TEMP B-TREE');
+    } finally {
+      db.close();
     }
   });
 });
