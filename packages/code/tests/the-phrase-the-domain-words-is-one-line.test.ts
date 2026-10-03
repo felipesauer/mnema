@@ -628,6 +628,43 @@ const CLASSIFIED: Readonly<Record<string, { verdict: Verdict; why: string }>> = 
     verdict: 'minted',
     why: 'the name of a title field, one of the rows `TITLES` holds',
   },
+  '@mnema/core knowledge/operations.ts «no memory or observation "{}" is in this record» oneLine(input.id) #1':
+    {
+      verdict: 'collapsed',
+      why: 'the id the caller named, from the argv or a tool argument',
+    },
+  '@mnema/core knowledge/operations.ts «{} "{}" is not a note: only a memory or an » standing.what #1':
+    {
+      verdict: 'minted',
+      why: 'what the id names, one of three words the retraction’s own table holds',
+    },
+  '@mnema/core knowledge/operations.ts «{} "{}" is not a note: only a memory or an » oneLine(input.id) #1':
+    {
+      verdict: 'collapsed',
+      why: 'the id the caller named, from the argv or a tool argument',
+    },
+  '@mnema/core knowledge/operations.ts «observation is retracted. A {} keeps its own lifecycle — » standing.what #1':
+    {
+      verdict: 'minted',
+      why: 'the same word, one of three the retraction’s own table holds',
+    },
+  '@mnema/core knowledge/operations.ts «{}.» ITS_OWN_LIFECYCLE[standing.what] #1': {
+    verdict: 'minted',
+    why: 'what that kind does instead, a phrase of the retraction’s own table',
+  },
+  '@mnema/core knowledge/operations.ts «{} "{}" was already retracted at » standing.note #1': {
+    verdict: 'minted',
+    why: 'the kind of the note, `memory` or `observation`, read off its own event',
+  },
+  '@mnema/core knowledge/operations.ts «{} "{}" was already retracted at » oneLine(input.id) #1': {
+    verdict: 'collapsed',
+    why: 'the id the caller named, from the argv or a tool argument',
+  },
+  '@mnema/core knowledge/operations.ts «{}. Nothing was appended.» oneLine(standing.retractedAt) #1':
+    {
+      verdict: 'collapsed',
+      why: 'an instant read out of the record, the earlier retraction’s `at`',
+    },
   '@mnema/core workflow/as-the-record-stands.ts «{} "{}" was {} when this {} was asked and is {} now: » noun #1':
     {
       verdict: 'minted',
@@ -1425,9 +1462,9 @@ describe('every value the domain puts in a sentence is classified', () => {
     // are equal. The scale is stated, and so is what the HANDOFF said — twenty-three
     // sites, twelve in `core` and eleven in `chain` — because it counted sentences
     // written at a `message:` or a `detail:` directly, and a value is not a sentence.
-    expect(SITES.length).toBe(163);
+    expect(SITES.length).toBe(171);
     expect(FOUND[0]?.sites.length).toBe(48);
-    expect(FOUND[1]?.sites.length).toBe(115);
+    expect(FOUND[1]?.sites.length).toBe(123);
     expect(FOUND.flatMap((layer) => layer.wording).length).toBeGreaterThan(15);
   });
 
@@ -1477,11 +1514,11 @@ describe('every value the domain puts in a sentence is classified', () => {
     // No arm of the case above may be empty, or that much of it is vacuous.
     const verdicts = Object.values(CLASSIFIED).map((said) => said.verdict);
     const count = (verdict: Verdict): number => verdicts.filter((said) => said === verdict).length;
-    expect(count('collapsed')).toBe(96);
-    expect(count('minted')).toBe(45);
+    expect(count('collapsed')).toBe(100);
+    expect(count('minted')).toBe(49);
     expect(count('composed')).toBe(22);
     expect(SITES.filter((site) => new RegExp(`\\b${DOOR}\\b`).test(site.expression))).toHaveLength(
-      96,
+      100,
     );
   });
 

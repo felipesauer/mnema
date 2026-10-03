@@ -33,6 +33,7 @@ import { runKeyRevoke } from '../src/commands/key-revoke.js';
 import { runLink } from '../src/commands/link.js';
 import { runMemory } from '../src/commands/memory.js';
 import { runObserve } from '../src/commands/observe.js';
+import { runRetract } from '../src/commands/retract.js';
 import { runRunEnd } from '../src/commands/run-end.js';
 import { runRunStart } from '../src/commands/run-start.js';
 import { runSkill } from '../src/commands/skill.js';
@@ -53,6 +54,7 @@ import {
   runRecordDecision,
   runRecordHandoff,
   runRecordObservation,
+  runRetractNote,
   runRulesBeforeAnEditTool,
   runSkillsTool,
 } from '../src/mcp/tools.js';
@@ -151,12 +153,12 @@ const CODE_SRC = join(HERE, 'src');
  * 33 since the founding is decided under the tail's lock: `ensureFounded` hands the half that
  * may found to `foundUnderTheLock`, which is where the founding's append now is. 35 since the
  * refusal of a write arrived: `recordChannelRefused`, and the one body it shares with
- * `recordChannelAsked` (`recordRuleAtPath`).
+ * `recordChannelAsked` (`recordRuleAtPath`). 36 since a note can be retracted: `retractNote`.
  */
-const CORE_OPERATIONS_THAT_APPEND = 35;
+const CORE_OPERATIONS_THAT_APPEND = 36;
 
 /** How many paths of the shipped surface reach one of them. */
-const SURFACE_WRITE_PATHS = 34;
+const SURFACE_WRITE_PATHS = 36;
 
 /** Every non-test TypeScript file under a source root. */
 function sourceFiles(dir: string): string[] {
@@ -579,6 +581,13 @@ describe('every write path leaves the record fully signed', () => {
           ),
       },
       {
+        at: 'commands/retract.ts:runRetract',
+        drive: () => {
+          const note = ok('memory', runMemory(ctx, { content: 'worth taking back' }));
+          void ok('retract', runRetract(ctx, { id: note.id, reason: 'it turned out wrong' }));
+        },
+      },
+      {
         at: 'commands/handoff.ts:runHandoff',
         drive: () =>
           void ok('handoff', runHandoff(ctx, { task, fromAgent: 'alpha', toAgent: 'beta' })),
@@ -780,6 +789,16 @@ describe('every write path leaves the record fully signed', () => {
             'record_observation',
             runRecordObservation(on(), { about: task, topic: 'review', text: 'needs a rollback' }),
           ),
+      },
+      {
+        at: 'mcp/tools.ts:runRetractNote',
+        drive: () => {
+          const note = ok('capture_memory', runCaptureMemory(on(), { content: 'to take back' }));
+          void ok(
+            'retract_note',
+            runRetractNote(on(), { id: note.id, reason: 'it turned out wrong' }),
+          );
+        },
       },
       {
         at: 'mcp/tools.ts:runRecordHandoff',

@@ -356,6 +356,36 @@ export interface ObservationRecordedV1 extends Envelope {
 }
 
 /**
+ * A NOTE WAS RETRACTED — a memory or an observation taken back out of what the record
+ * serves, by a later fact that says who took it back and why.
+ *
+ * It is the tombstone the memory's own doc promised: "superseded", "revised" or
+ * "obsolete" is never a field on the captured fact, which is immutable, but a LATER fact
+ * a projection respects. Nothing is erased: the note's own event stays where it was, a
+ * verifier still sees it, and the read that opens it by id still serves it, saying it was
+ * retracted. What changes is what the reads that LIST notes offer — the opening of a
+ * session, the search, the counts — which no longer serve it as standing knowledge.
+ *
+ * ITS SUBJECT IS THE NOTE, as a supersede's subject is the superseded decision: the
+ * history of one note is read under its one id. `who` is who took it back, as on every
+ * fact; the payload adds the one thing the envelope does not carry, the REASON — a
+ * retraction that cannot say why is the record forgetting on somebody's preference.
+ *
+ * ONLY NOTES. Decisions and patterns keep their own lifecycle (rejected, superseded,
+ * deprecated), which says more than "taken back" does; a retraction of one is refused at
+ * the door, not recorded.
+ */
+export interface NoteRetractedV1 extends Envelope {
+  readonly kind: 'note.retracted';
+  readonly v: 1;
+  /** Subject is the retracted note's id — a memory's or an observation's. */
+  readonly payload: {
+    /** Why the note was taken back. Never optional, never empty. */
+    readonly reason: string;
+  };
+}
+
+/**
  * A handoff was recorded — a fact that work on a task passed from one agent to
  * another (or restarted with the same agent).
  *
@@ -920,7 +950,8 @@ export type CatalogEvent =
   | ChannelSwitchedV1
   | ChannelServedV1
   | ChannelAskedV1
-  | ChannelRefusedV1;
+  | ChannelRefusedV1
+  | NoteRetractedV1;
 
 /** The `kind` discriminators present in the catalog. */
 export type EventKind = CatalogEvent['kind'];
@@ -951,4 +982,5 @@ export const LATEST_VERSION: { readonly [K in EventKind]: number } = {
   'channel.served': 1,
   'channel.asked': 1,
   'channel.refused': 1,
+  'note.retracted': 1,
 };

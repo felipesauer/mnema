@@ -272,6 +272,9 @@ export const SUBJECT_TEXT = {
   'channel.served': 'name',
   'channel.asked': 'name',
   'channel.refused': 'name',
+  // PROVED against the record: a retraction is written only once the note it names is
+  // found in the tree it lands in, so its subject is a note's minted id.
+  'note.retracted': 'identifier',
   // DERIVED from the record: the anchor a waiver names is read off the pruned
   // tail's own last event, never handed in. No caller can put anything in it.
   'tail.pruned': 'identifier',
@@ -393,6 +396,8 @@ export const PAYLOAD_TEXT = {
   // The asking's two fields, classified for the asking's reasons: the rule is an id the
   // product resolved and cites, and the path is the circumstance a rule refused in.
   'channel.refused': { rule: 'identifier', path: 'body' },
+  // Prose a person or an agent wrote, as every other reason in this table.
+  'note.retracted': { reason: 'body' },
 } as const satisfies {
   readonly [K in EventKind]: { readonly [P in PayloadPath<K>]: FieldNature };
 };

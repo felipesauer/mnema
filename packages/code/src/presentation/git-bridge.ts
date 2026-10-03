@@ -37,7 +37,8 @@ const QUOTE = "'";
 /** A value, already one line, as a shell would take it whole — for a recipe a person pastes. */
 function shellWord(one: string): string {
   if (/^[\w@%+=:,./-]+$/.test(one)) return one;
-  return QUOTE + one.split(QUOTE).join(QUOTE + '\\' + QUOTE + QUOTE) + QUOTE;
+  const inside = one.split(QUOTE).join([QUOTE, '\\', QUOTE, QUOTE].join(''));
+  return [QUOTE, inside, QUOTE].join('');
 }
 
 /** A short hash — enough to find the commit, the full one is in `--json`. */

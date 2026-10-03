@@ -39,8 +39,17 @@ import { materializeChannelSwitches } from './channel-store.js';
 import { decisionFold } from './decision.js';
 import { materializeDecisions } from './decision-store.js';
 import { tablesFedBy } from './fed-by.js';
-import { handoffOf, linkOf, memoryOf, observationOf } from './knowledge.js';
 import {
+  handoffOf,
+  linkOf,
+  memoryOf,
+  type NoteRetraction,
+  observationOf,
+  retractionsOf,
+} from './knowledge.js';
+import {
+  getMemory,
+  getObservation,
   materializeHandoffs,
   materializeLinks,
   materializeMemories,
@@ -108,6 +117,25 @@ function lastOf<P>(
   return [...last.values()];
 }
 
+/**
+ * The notes an arrival changed: the ones it brought, and the ones it took back, each with the
+ * retraction the replay gives it. A note a retraction names but that is neither in the batch
+ * nor a row of the other note table is not this table's, and is left alone.
+ */
+function withRetractions<P extends { readonly id: string; readonly retracted?: NoteRetraction }>(
+  brought: readonly P[],
+  retractions: ReadonlyMap<string, NoteRetraction>,
+  stored: (id: string) => P | null,
+): P[] {
+  const result = new Map(brought.map((note) => [note.id, note]));
+  for (const [id, retracted] of retractions) {
+    const note = result.get(id) ?? stored(id);
+    if (note === null || note === undefined || note.retracted !== undefined) continue;
+    result.set(id, { ...note, retracted });
+  }
+  return [...result.values()];
+}
+
 const TRANSITIONS = ['task.transitioned', 'decision.transitioned', 'skill.transitioned'] as const;
 
 /**
@@ -142,10 +170,24 @@ export function advance(
       : [];
     const skills = fed.has('skills') ? advanceFold(db, skillFold, arrived, materializeSkills) : [];
 
-    const memories = fed.has('memories') ? lastOf(arrived, memoryOf, (memory) => memory.id) : [];
+    // A retraction changes a note that may already be a row, or that arrived in this very
+    // batch: either way the note is projected again with the retraction the replay would
+    // have given it, and written over the row it was.
+    const retractions = retractionsOf(arrived);
+    const memories = fed.has('memories')
+      ? withRetractions(
+          lastOf(arrived, memoryOf, (memory) => memory.id),
+          retractions,
+          (id) => getMemory(db, id),
+        )
+      : [];
     materializeMemories(db, memories, true);
     const observations = fed.has('observations')
-      ? lastOf(arrived, observationOf, (observation) => observation.id)
+      ? withRetractions(
+          lastOf(arrived, observationOf, (observation) => observation.id),
+          retractions,
+          (id) => getObservation(db, id),
+        )
       : [];
     materializeObservations(db, observations, true);
 

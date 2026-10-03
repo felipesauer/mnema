@@ -44,6 +44,8 @@ import {
   identityFounded,
   keyEnrolled,
   keyRevoked,
+  memoryCaptured,
+  noteRetracted,
   taskCreated,
 } from '../events/build.js';
 import { canonicalStringify } from '../events/canonical.js';
@@ -545,5 +547,113 @@ describe('the two readers agree on records the product itself wrote — a refusa
     expect(productOk).toBe(false);
     expect(verdict).toBe('REFUSED');
     expect(refused.join('\n')).toContain('channel.refused');
+  });
+});
+
+/**
+ * A NOTE TAKEN BACK, READ BY BOTH. `note.retracted` reached the second reader the way
+ * `channel.refused` did — a row of `event-schema.json` and a row of the vectors, and no line
+ * of Python — so the claim tested is the same: the stranger's reader accepts the retraction
+ * exactly where the product does, and refuses it exactly where the product does.
+ */
+describe('the two readers agree on records the product itself wrote — a retraction', () => {
+  const MEMORY = '019f81f8-e400-7001-8000-000000000001';
+  const REASON = 'The load turned out to be a key lookup.';
+
+  function memory(anchor: string, signer: KeyPair, when: number): CatalogEvent {
+    return memoryCaptured(
+      { at: at(when), who: anchor, signerFp: signer.fingerprint, subject: MEMORY },
+      { content: 'The cache is SQLite because the load is relational.' },
+    );
+  }
+
+  function retraction(
+    anchor: string,
+    signer: KeyPair,
+    when: number,
+    payload: Record<string, unknown> = { reason: REASON },
+    v = 1,
+  ): CatalogEvent {
+    const built = noteRetracted(
+      { at: at(when), who: anchor, signerFp: signer.fingerprint, subject: MEMORY, which: 'claude' },
+      { reason: REASON },
+    );
+    return { ...built, v, payload } as unknown as CatalogEvent;
+  }
+
+  it('a signed retraction and one above the checkpoint: green on both', () => {
+    // One inside the checkpoint and one in the residual window, where the per-kind rebuild
+    // of section 4.1 is all that stands between a forger and the record.
+    const kp = generateKeyPair();
+    commitPublicKey(kp);
+    const anchor = deriveAnchor(kp.fingerprint);
+    writeTail(
+      `${kp.fingerprint}-i1`,
+      [founding(kp), memory(anchor, kp, 2), retraction(anchor, kp, 3), retraction(anchor, kp, 4)],
+      kp,
+      { residual: 1 },
+    );
+
+    const { productOk, verdict, refused } = bothReaders();
+    expect(refused, 'the second reader refuses an honest note.retracted').toEqual([]);
+    expect(productOk).toBe(true);
+    expect(verdict).toBe('VERIFIED');
+  });
+
+  it('a retraction with a forged payload field, above the checkpoint: refused by both', () => {
+    const kp = generateKeyPair();
+    commitPublicKey(kp);
+    const anchor = deriveAnchor(kp.fingerprint);
+    writeTail(
+      `${kp.fingerprint}-i1`,
+      [
+        founding(kp),
+        memory(anchor, kp, 2),
+        retraction(anchor, kp, 3, { reason: REASON, erase: true }),
+      ],
+      kp,
+      { residual: 1 },
+    );
+
+    const { productOk, verdict, refused } = bothReaders();
+    expect(productOk).toBe(false);
+    expect(verdict).toBe('REFUSED');
+    expect(refused.join('\n')).toContain('erase');
+  });
+
+  it('a retraction that gives no reason, above the checkpoint: refused by both', () => {
+    const kp = generateKeyPair();
+    commitPublicKey(kp);
+    const anchor = deriveAnchor(kp.fingerprint);
+    writeTail(
+      `${kp.fingerprint}-i1`,
+      [founding(kp), memory(anchor, kp, 2), retraction(anchor, kp, 3, { reason: '' })],
+      kp,
+      { residual: 1 },
+    );
+
+    const { productOk, verdict, refused } = bothReaders();
+    expect(productOk).toBe(false);
+    expect(verdict).toBe('REFUSED');
+    expect(refused.join('\n')).toContain('reason');
+  });
+
+  it('a retraction at a version no row declares: refused by both — what an older reader does', () => {
+    // A reader from BEFORE this kind meets a `note.retracted` v1 the way this one meets a v2:
+    // a (kind, v) its table does not hold, refused rather than guessed (section 4.1).
+    const kp = generateKeyPair();
+    commitPublicKey(kp);
+    const anchor = deriveAnchor(kp.fingerprint);
+    writeTail(
+      `${kp.fingerprint}-i1`,
+      [founding(kp), memory(anchor, kp, 2), retraction(anchor, kp, 3, undefined, 2)],
+      kp,
+      { residual: 1 },
+    );
+
+    const { productOk, verdict, refused } = bothReaders();
+    expect(productOk).toBe(false);
+    expect(verdict).toBe('REFUSED');
+    expect(refused.join('\n')).toContain('note.retracted');
   });
 });

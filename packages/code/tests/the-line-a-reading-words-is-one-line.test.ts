@@ -1082,6 +1082,18 @@ const CLASSIFIED: Readonly<Record<string, { verdict: Verdict; why: string }>> = 
     verdict: 'minted',
     why: 'an ISO-8601 instant off the record',
   },
+  'record.ts «retracted {} by {}» retracted.at #1': {
+    verdict: 'minted',
+    why: 'an ISO-8601 instant off the record — when the retraction was written',
+  },
+  'record.ts «retracted {} by {}» actorText(context.anchors, by) #1': {
+    verdict: 'composed',
+    why: 'the actor of the retraction, worded by actorText below: an anchor in its short form, and an act clause whose agent name is collapsed there',
+  },
+  'record.ts «why: {}» oneLine(retracted.reason) #1': {
+    verdict: 'collapsed',
+    why: 'the reason `--reason` gave a retraction — free text, on a fact line of its own',
+  },
   'record.ts «topic: {}» oneLine(body.record.topic) #1': {
     verdict: 'collapsed',
     why: 'the topic `--topic` named — free text, on a fact line of its own',
@@ -2025,8 +2037,8 @@ describe('every value this layer puts on a line is classified', () => {
     // 251 until the renderer began making an actor's control bytes visible and joined the
     // composers with its two template values; then 253 until the rules in force began saying who
     // accepted them (`brief.ts`, `record.ts`); 294 until `mnema rules` printed the four numbers
-    // of the relation that refuses a write; 301 with the three the trunk added meanwhile; 306 once the document counts the rules that refuse a write; 367 with the pages of the git bridge; 374 with its shallow sentence and the recipe aging prints.
-    expect(FOUND.sites.length).toBe(374);
+    // of the relation that refuses a write; 301 with the three the trunk added meanwhile; 306 once the document counts the rules that refuse a write; 367 with the pages of the git bridge; 377 with its shallow sentence and the recipe aging prints.
+    expect(FOUND.sites.length).toBe(377);
   });
 
   it('reads the verdict off the source rather than believing the table', () => {
@@ -2047,10 +2059,10 @@ describe('every value this layer puts on a line is classified', () => {
     // No arm of the case above may be empty, or that much of it is vacuous.
     const verdicts = Object.values(CLASSIFIED).map((said) => said.verdict);
     const count = (verdict: Verdict): number => verdicts.filter((said) => said === verdict).length;
-    expect(count('collapsed')).toBe(98);
-    expect(count('minted')).toBe(212);
-    expect(count('composed')).toBe(64);
-    expect(FOUND.sites.filter((site) => /\boneLine\b/.test(site.expression))).toHaveLength(98);
+    expect(count('collapsed')).toBe(99);
+    expect(count('minted')).toBe(213);
+    expect(count('composed')).toBe(65);
+    expect(FOUND.sites.filter((site) => /\boneLine\b/.test(site.expression))).toHaveLength(99);
   });
 
   it('every reason says where the value comes from', () => {

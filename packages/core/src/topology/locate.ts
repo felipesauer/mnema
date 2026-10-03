@@ -201,6 +201,29 @@ export function replayingBirthProbe(upcasters: UpcasterRegistry): BirthProbe {
 }
 
 /**
+ * The kinds a NOTE is written by — a memory, an observation. Not births in the sense of
+ * {@link BIRTH_KINDS}, which the moves of a workflow entity are located by and which a note
+ * has none of, but the one event that makes each note exist, in exactly one tree.
+ */
+const NOTE_KINDS = new Set<CatalogEvent['kind']>(['memory.captured', 'observation.recorded']);
+
+/**
+ * The probe a RETRACTION is located by: the replaying probe of {@link replayingBirthProbe},
+ * widened to the notes. It answers for a workflow entity too, on purpose: a retraction of a
+ * decision then reaches the decision's own tree and is refused there for not being a note,
+ * which is the refusal that tells the caller what to do instead.
+ */
+export function replayingRecordProbe(upcasters: UpcasterRegistry): BirthProbe {
+  return (chainRoot, id) => {
+    const events = orderedEvents({ root: chainRoot }, upcasters);
+    return events.some(
+      (event) =>
+        (BIRTH_KINDS.has(event.kind) || NOTE_KINDS.has(event.kind)) && event.subject === id,
+    );
+  };
+}
+
+/**
  * Finds the scope of the tree the entity with `id` was born in by replaying each
  * tree's chain — the read with no dependency beyond the chain itself, and the
  * one every surface uses unless it is holding something faster.

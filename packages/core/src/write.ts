@@ -75,8 +75,12 @@ export {
   linkKnowledge,
   type ObservationInput,
   type ObservationOk,
+  type RetractError,
+  type RetractInput,
+  type RetractOk,
   recordHandoff,
   recordObservation,
+  retractNote,
 } from './knowledge/operations.js';
 // Opening the correct tree's chain for writing (scope RESOLUTION stays on the
 // read surface; only opening a writer is a write). The signer of a tree and the

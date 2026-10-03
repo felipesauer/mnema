@@ -155,7 +155,13 @@ CREATE TABLE IF NOT EXISTS memories (
   who         TEXT NOT NULL,
   -- 'at' of the capture. A memory has no state and no updated_at: it is a single
   -- immutable point-in-time fact, never moved.
-  captured_at TEXT NOT NULL
+  captured_at TEXT NOT NULL,
+  -- The note.retracted that took it back, when one did; all four NULL otherwise. The row
+  -- stays, so the read by id still serves it; the reads that LIST notes skip it.
+  retracted_at     TEXT,
+  retracted_who    TEXT,
+  retracted_which  TEXT,
+  retracted_reason TEXT
 ) STRICT;
 
 CREATE INDEX IF NOT EXISTS idx_memories_who ON memories (who);
@@ -173,7 +179,13 @@ CREATE TABLE IF NOT EXISTS observations (
   who         TEXT NOT NULL,
   -- 'at' of the observation. Like a memory, an observation has no state and no
   -- updated_at: it is one immutable point-in-time fact.
-  recorded_at TEXT NOT NULL
+  recorded_at TEXT NOT NULL,
+  -- The note.retracted that took it back, when one did; all four NULL otherwise. The row
+  -- stays, so the read by id still serves it; the reads that LIST notes skip it.
+  retracted_at     TEXT,
+  retracted_who    TEXT,
+  retracted_which  TEXT,
+  retracted_reason TEXT
 ) STRICT;
 
 -- Speeds "the observations about entity X" — the natural query on an observation.
