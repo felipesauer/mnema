@@ -10,6 +10,7 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
+import { GIT_WITHOUT_MAINTENANCE } from '../../code/tests/support/git-without-maintenance.js';
 import { MARKER } from './comment.js';
 import type { Fetch } from './github.js';
 import { main, requestFrom } from './run.js';
@@ -25,7 +26,11 @@ const git = (...args: string[]): string =>
   execFileSync(
     'git',
     ['-c', 'user.name=t', '-c', 'user.email=t@example.com', '-c', 'commit.gpgsign=false', ...args],
-    { cwd: repo, encoding: 'utf-8' },
+    {
+      cwd: repo,
+      encoding: 'utf-8',
+      env: { ...process.env, GIT_CONFIG_GLOBAL: GIT_WITHOUT_MAINTENANCE },
+    },
   ).trim();
 
 const mnema = (...args: string[]): string =>
