@@ -33,6 +33,24 @@ import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { mnemaHooks } from '../../sdk/src/hooks.js';
 import { type MnemaRecord, openRecord } from '../../sdk/src/record.js';
 import type { CliIo } from '../src/cli.js';
+import { runBeforeAPath as beforeAPath } from '../src/commands/before-a-write.js';
+import { runBrief as brief } from '../src/commands/brief.js';
+import { runDecision as decision } from '../src/commands/decision.js';
+import { runDecisionTransition as transition } from '../src/commands/decision-transition.js';
+import { runMemory as memory } from '../src/commands/memory.js';
+import { runRecall as recall } from '../src/commands/recall.js';
+import { runRules as rules } from '../src/commands/rules.js';
+import { runVerify as verify } from '../src/commands/verify.js';
+import {
+  runBeforeAPath as libraryBeforeAPath,
+  runBrief as libraryBrief,
+  runDecision as libraryDecision,
+  runMemory as libraryMemory,
+  runRecall as libraryRecall,
+  runRules as libraryRules,
+  runDecisionTransition as libraryTransition,
+  runVerify as libraryVerify,
+} from '../src/library.js';
 import { buildMcpServer } from '../src/mcp/server.js';
 import { renderPlain } from '../src/presentation/plain.js';
 import { registerVerbs } from '../src/wiring/index.js';
