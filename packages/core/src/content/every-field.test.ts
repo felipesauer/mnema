@@ -15,6 +15,7 @@ import {
   linkKnowledge,
   recordHandoff,
   recordObservation,
+  retractNote,
 } from '../knowledge/operations.js';
 import { orderedEvents } from '../projections/order.js';
 import {
@@ -391,6 +392,18 @@ const DRIVERS: { readonly [K in EventKind]: Driver } = {
       which: text('which'),
       run: text('run'),
     }),
+
+  'note.retracted': (ctx, text) => {
+    // The subject is proved against the record, so it is a memory this driver captures first
+    // and is NOT poisoned; the reason is the one field a caller writes.
+    const note = landed(captureMemory(ctx, { content: 'a note to take back' }));
+    return retractNote(ctx, {
+      id: note.id,
+      reason: text('payload.reason'),
+      which: text('which'),
+      run: text('run'),
+    });
+  },
 };
 
 /**

@@ -51,6 +51,7 @@ import {
   keyRevoked,
   knowledgeLinked,
   memoryCaptured,
+  noteRetracted,
   observationRecorded,
   runEnded,
   runStarted,
@@ -400,6 +401,16 @@ export const CANONICAL_VECTORS: {
       event: channelRefused(agent(REFUSES_CHANNEL, RUN_ID), {
         rule: RULE_ID,
         path: 'src/ledger/posting.ts',
+      }),
+    },
+  ],
+  'note.retracted': [
+    {
+      // Its subject is the memory pinned above: a retraction names the note it takes back
+      // by the note's own id, and carries only why.
+      name: 'note.retracted (a memory taken back, with its reason)',
+      event: noteRetracted(agent(MEMORY_ID, RUN_ID), {
+        reason: 'The load turned out to be a key lookup, not relational.',
       }),
     },
   ],

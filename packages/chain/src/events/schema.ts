@@ -227,6 +227,9 @@ export const PAYLOAD_SCHEMA: { readonly [K in EventKind]: PayloadSchemaOf<K> } =
   // The asking's shape, required for the asking's reason: a refusal with an absent or empty
   // citation is a line this reader refuses rather than one it lifts.
   'channel.refused': { rule: 'string', path: 'string' },
+  // Required for the reason the fact exists: a retraction that cannot say why is a line this
+  // reader refuses rather than one that quietly takes a note out of the reads.
+  'note.retracted': { reason: 'string' },
   // Both required: a claim of an account that does not say which host, or which account,
   // names nothing a reader could go and ask.
   'account.linked': { service: 'string', account: 'string' },

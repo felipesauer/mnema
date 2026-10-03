@@ -136,6 +136,13 @@
       }
     },
     {
+      "kind": "note.retracted",
+      "v": 1,
+      "payload": {
+        "reason": "string"
+      }
+    },
+    {
       "kind": "observation.recorded",
       "v": 1,
       "payload": {

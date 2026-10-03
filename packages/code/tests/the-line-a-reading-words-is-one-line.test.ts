@@ -653,6 +653,289 @@ const CLASSIFIED: Readonly<Record<string, { verdict: Verdict; why: string }>> = 
     why: 'a part already classified where its builder took it, with its control bytes made visible here',
   },
 
+  // --- git-bridge.ts: the pages of commits, why and aging ------------------------
+  'git-bridge.ts asId(oneLine(aged.id)) #1': {
+    verdict: 'collapsed',
+    why: 'a value out of the record or out of git — a title, an id, a label, an address, a commit message or a trailer — collapsed to one line here',
+  },
+  'git-bridge.ts asId(oneLine(rule.id)) #1': {
+    verdict: 'collapsed',
+    why: 'a value out of the record or out of git — a title, an id, a label, an address, a commit message or a trailer — collapsed to one line here',
+  },
+  'git-bridge.ts asId(short(commit.sha)) #1': {
+    verdict: 'minted',
+    why: 'the first ten hex characters of a git object name — git’s own, no newline possible',
+  },
+  'git-bridge.ts asWhen(commit.at) #1': {
+    verdict: 'minted',
+    why: 'git’s own committer date in ISO-8601 (`%cI`) — no newline possible',
+  },
+  'git-bridge.ts aside(READ_NOW) #1': {
+    verdict: 'minted',
+    why: 'this module’s own closing sentence about what the reading did and did not touch',
+  },
+  'git-bridge.ts aside(READ_NOW) #2': {
+    verdict: 'minted',
+    why: 'this module’s own closing sentence about what the reading did and did not touch',
+  },
+  'git-bridge.ts aside(READ_NOW) #3': {
+    verdict: 'minted',
+    why: 'this module’s own closing sentence about what the reading did and did not touch',
+  },
+  'git-bridge.ts fact(NO_GIT) #1': {
+    verdict: 'minted',
+    why: 'this module’s own sentence for a place with no git work tree',
+  },
+  'git-bridge.ts fact(NO_GIT) #2': {
+    verdict: 'minted',
+    why: 'this module’s own sentence for a place with no git work tree',
+  },
+  'git-bridge.ts fact(NO_GIT) #3': {
+    verdict: 'minted',
+    why: 'this module’s own sentence for a place with no git work tree',
+  },
+  "git-bridge.ts fact(done.commit.cites.length === 0 ? 'It carries no Mnema-Decision trailer.' : `It carries ${done.commit.cites.length} Mnema-Decision trailer${done.commit.cites.length === 1 ? '' : 's'}.`) #1":
+    {
+      verdict: 'minted',
+      why: 'one of two words written in this module, chosen by a count or a flag beside it — nothing from the record or git reaches it',
+    },
+  "git-bridge.ts itemLine(...(rule.files !== undefined ? [`${rule.files} changed file${rule.files === 1 ? '' : 's'}`] : [])) #1":
+    {
+      verdict: 'minted',
+      why: 'one of two words written in this module, chosen by a count or a flag beside it — nothing from the record or git reaches it',
+    },
+  'git-bridge.ts fact(SHALLOW) #1': {
+    verdict: 'minted',
+    why: 'this module’s own sentence for a clone that holds only part of the history',
+  },
+  'git-bridge.ts fact(SHALLOW) #2': {
+    verdict: 'minted',
+    why: 'this module’s own sentence for a clone that holds only part of the history',
+  },
+  'git-bridge.ts fact(SHALLOW) #3': {
+    verdict: 'minted',
+    why: 'this module’s own sentence for a clone that holds only part of the history',
+  },
+  'git-bridge.ts fact(SHALLOW) #4': {
+    verdict: 'minted',
+    why: 'this module’s own sentence for a clone that holds only part of the history',
+  },
+  "git-bridge.ts «To redo {}: git rev-list --count --since={} HEAD -- {}» aged.addresses.map((a) => shellWord(oneLine(a === '' ? '.' : a))).join(' ') #1":
+    {
+      verdict: 'collapsed',
+      why: 'a value out of the record or out of git — a title, an id, a label, an address, a commit message or a trailer — collapsed to one line here',
+    },
+  'git-bridge.ts «To redo {}: git rev-list --count --since={} HEAD -- {}» oneLine(aged.adr) #1': {
+    verdict: 'collapsed',
+    why: 'a value out of the record or out of git — a title, an id, a label, an address, a commit message or a trailer — collapsed to one line here',
+  },
+  'git-bridge.ts «To redo {}: git rev-list --count --since={} HEAD -- {}» shellWord(oneLine(aged.acceptedAt)) #1':
+    {
+      verdict: 'collapsed',
+      why: 'a value out of the record or out of git — a title, an id, a label, an address, a commit message or a trailer — collapsed to one line here',
+    },
+  'git-bridge.ts itemLine(oneLine(aged.adr)) #1': {
+    verdict: 'collapsed',
+    why: 'a value out of the record or out of git — a title, an id, a label, an address, a commit message or a trailer — collapsed to one line here',
+  },
+  'git-bridge.ts itemLine(oneLine(aged.title)) #1': {
+    verdict: 'collapsed',
+    why: 'a value out of the record or out of git — a title, an id, a label, an address, a commit message or a trailer — collapsed to one line here',
+  },
+  'git-bridge.ts itemLine(oneLine(commit.subject)) #1': {
+    verdict: 'collapsed',
+    why: 'a value out of the record or out of git — a title, an id, a label, an address, a commit message or a trailer — collapsed to one line here',
+  },
+  "git-bridge.ts itemLine(oneLine(rule.address === '' ? '.' : rule.address)) #1": {
+    verdict: 'collapsed',
+    why: 'a value out of the record or out of git — a title, an id, a label, an address, a commit message or a trailer — collapsed to one line here',
+  },
+  'git-bridge.ts itemLine(oneLine(rule.name)) #1': {
+    verdict: 'collapsed',
+    why: 'a value out of the record or out of git — a title, an id, a label, an address, a commit message or a trailer — collapsed to one line here',
+  },
+  "git-bridge.ts subjectLine(done.exists ? 'in the working tree' : 'not in the working tree') #1": {
+    verdict: 'minted',
+    why: 'one of two words written in this module, chosen by a count or a flag beside it — nothing from the record or git reaches it',
+  },
+  'git-bridge.ts subjectLine(oneLine(decision.adr)) #1': {
+    verdict: 'collapsed',
+    why: 'a value out of the record or out of git — a title, an id, a label, an address, a commit message or a trailer — collapsed to one line here',
+  },
+  'git-bridge.ts subjectLine(oneLine(decision.state)) #1': {
+    verdict: 'collapsed',
+    why: 'a value out of the record or out of git — a title, an id, a label, an address, a commit message or a trailer — collapsed to one line here',
+  },
+  'git-bridge.ts subjectLine(oneLine(decision.title)) #1': {
+    verdict: 'collapsed',
+    why: 'a value out of the record or out of git — a title, an id, a label, an address, a commit message or a trailer — collapsed to one line here',
+  },
+  'git-bridge.ts subjectLine(oneLine(done.commit.subject)) #1': {
+    verdict: 'collapsed',
+    why: 'a value out of the record or out of git — a title, an id, a label, an address, a commit message or a trailer — collapsed to one line here',
+  },
+  "git-bridge.ts subjectLine(oneLine(done.relative ?? 'outside this project')) #1": {
+    verdict: 'collapsed',
+    why: 'a value out of the record or out of git — a title, an id, a label, an address, a commit message or a trailer — collapsed to one line here',
+  },
+  'git-bridge.ts subjectLine(short(done.commit.sha)) #1': {
+    verdict: 'minted',
+    why: 'the first ten hex characters of a git object name — git’s own, no newline possible',
+  },
+  'git-bridge.ts « · commits touching it with a trailer: {}{}» done.commits.length #1': {
+    verdict: 'minted',
+    why: 'a count this reading made, or the threshold the caller gave and the verb validated as an integer',
+  },
+  "git-bridge.ts « · commits touching it with a trailer: {}{}» done.more ? '+' : '' #1": {
+    verdict: 'minted',
+    why: 'one of two words written in this module, chosen by a count or a flag beside it — nothing from the record or git reaches it',
+  },
+  'git-bridge.ts «({}{} file{} read)» done.files #1': {
+    verdict: 'minted',
+    why: 'a count this reading made, or the threshold the caller gave and the verb validated as an integer',
+  },
+  "git-bridge.ts «({}{} file{} read)» done.files === 1 ? '' : 's' #1": {
+    verdict: 'minted',
+    why: 'one of two words written in this module, chosen by a count or a flag beside it — nothing from the record or git reaches it',
+  },
+  "git-bridge.ts «({}{} file{} read)» done.moreFiles ? '+' : '' #1": {
+    verdict: 'minted',
+    why: 'one of two words written in this module, chosen by a count or a flag beside it — nothing from the record or git reaches it',
+  },
+  'git-bridge.ts «It carries {} Mnema-Decision trailer{}.» done.commit.cites.length #1': {
+    verdict: 'minted',
+    why: 'a count this reading made, or the threshold the caller gave and the verb validated as an integer',
+  },
+  "git-bridge.ts «It carries {} Mnema-Decision trailer{}.» done.commit.cites.length === 1 ? '' : 's' #1":
+    {
+      verdict: 'minted',
+      why: 'one of two words written in this module, chosen by a count or a flag beside it — nothing from the record or git reaches it',
+    },
+  'git-bridge.ts «accepted {}» oneLine(aged.acceptedAt) #1': {
+    verdict: 'collapsed',
+    why: 'a value out of the record or out of git — a title, an id, a label, an address, a commit message or a trailer — collapsed to one line here',
+  },
+  'git-bridge.ts «cites {}» citation(cite) #1': {
+    verdict: 'composed',
+    why: 'worded by `citation` in this module, and every value it puts in the phrase is a site of its own (oneLine on each)',
+  },
+  'git-bridge.ts «cites {}» citation(cite) #2': {
+    verdict: 'composed',
+    why: 'worded by `citation` in this module, and every value it puts in the phrase is a site of its own (oneLine on each)',
+  },
+  "git-bridge.ts «commits touching it that cite a decision{}» done.more ? ' (newest first, more not shown)' : '' #1":
+    {
+      verdict: 'minted',
+      why: 'one of two words written in this module, chosen by a count or a flag beside it — nothing from the record or git reaches it',
+    },
+  'git-bridge.ts «listed at {} or more commits on their paths since they were accepted» done.minCommits #1':
+    {
+      verdict: 'minted',
+      why: 'a count this reading made, or the threshold the caller gave and the verb validated as an integer',
+    },
+  'git-bridge.ts «rules in force that address this path: {}» done.rules.length #1': {
+    verdict: 'minted',
+    why: 'a count this reading made, or the threshold the caller gave and the verb validated as an integer',
+  },
+  'git-bridge.ts «rules in force that address what it changed: {} » done.rules.length #1': {
+    verdict: 'minted',
+    why: 'a count this reading made, or the threshold the caller gave and the verb validated as an integer',
+  },
+  'git-bridge.ts «{} (a label {} decisions here carry: {})» cite.ambiguous.length #1': {
+    verdict: 'minted',
+    why: 'a count this reading made, or the threshold the caller gave and the verb validated as an integer',
+  },
+  "git-bridge.ts «{} (a label {} decisions here carry: {})» cite.ambiguous.map((id) => oneLine(id)).join(', ') #1":
+    {
+      verdict: 'collapsed',
+      why: 'a value out of the record or out of git — a title, an id, a label, an address, a commit message or a trailer — collapsed to one line here',
+    },
+  'git-bridge.ts «{} (a label {} decisions here carry: {})» oneLine(cite.value) #1': {
+    verdict: 'collapsed',
+    why: 'a value out of the record or out of git — a title, an id, a label, an address, a commit message or a trailer — collapsed to one line here',
+  },
+  'git-bridge.ts «{} (no decision here by that name)» oneLine(cite.value) #1': {
+    verdict: 'collapsed',
+    why: 'a value out of the record or out of git — a title, an id, a label, an address, a commit message or a trailer — collapsed to one line here',
+  },
+  'git-bridge.ts «{} ({}{})» heading #1': {
+    verdict: 'minted',
+    why: 'the heading each caller passes: a constant written in this module',
+  },
+  'git-bridge.ts «{} ({}{})» page.commits.length #1': {
+    verdict: 'minted',
+    why: 'a count this reading made, or the threshold the caller gave and the verb validated as an integer',
+  },
+  "git-bridge.ts «{} ({}{})» page.more ? ' shown, newest first, more not shown' : '' #1": {
+    verdict: 'minted',
+    why: 'one of two words written in this module, chosen by a count or a flag beside it — nothing from the record or git reaches it',
+  },
+  'git-bridge.ts «{} changed file{}» rule.files #1': {
+    verdict: 'minted',
+    why: 'a count this reading made, or the threshold the caller gave and the verb validated as an integer',
+  },
+  "git-bridge.ts «{} changed file{}» rule.files === 1 ? '' : 's' #1": {
+    verdict: 'minted',
+    why: 'one of two words written in this module, chosen by a count or a flag beside it — nothing from the record or git reaches it',
+  },
+  'git-bridge.ts «{} of {} accepted decision{} with an address» done.aged.length #1': {
+    verdict: 'minted',
+    why: 'a count this reading made, or the threshold the caller gave and the verb validated as an integer',
+  },
+  'git-bridge.ts «{} of {} accepted decision{} with an address» done.looked #1': {
+    verdict: 'minted',
+    why: 'a count this reading made, or the threshold the caller gave and the verb validated as an integer',
+  },
+  "git-bridge.ts «{} of {} accepted decision{} with an address» done.looked === 1 ? '' : 's' #1": {
+    verdict: 'minted',
+    why: 'one of two words written in this module, chosen by a count or a flag beside it — nothing from the record or git reaches it',
+  },
+  "git-bridge.ts «{} of {} commits since touched {}» aged.addresses.map((a) => oneLine(a === '' ? '.' : a)).join(', ') #1":
+    {
+      verdict: 'collapsed',
+      why: 'a value out of the record or out of git — a title, an id, a label, an address, a commit message or a trailer — collapsed to one line here',
+    },
+  'git-bridge.ts «{} of {} commits since touched {}» aged.all #1': {
+    verdict: 'minted',
+    why: 'a count this reading made, or the threshold the caller gave and the verb validated as an integer',
+  },
+  'git-bridge.ts «{} of {} commits since touched {}» aged.touching #1': {
+    verdict: 'minted',
+    why: 'a count this reading made, or the threshold the caller gave and the verb validated as an integer',
+  },
+  'git-bridge.ts «{} {} ({}, {})» oneLine(cite.decision.adr) #1': {
+    verdict: 'collapsed',
+    why: 'a value out of the record or out of git — a title, an id, a label, an address, a commit message or a trailer — collapsed to one line here',
+  },
+  'git-bridge.ts «{} {} ({}, {})» oneLine(cite.decision.id) #1': {
+    verdict: 'collapsed',
+    why: 'a value out of the record or out of git — a title, an id, a label, an address, a commit message or a trailer — collapsed to one line here',
+  },
+  'git-bridge.ts «{} {} ({}, {})» oneLine(cite.decision.state) #1': {
+    verdict: 'collapsed',
+    why: 'a value out of the record or out of git — a title, an id, a label, an address, a commit message or a trailer — collapsed to one line here',
+  },
+  'git-bridge.ts «{} {} ({}, {})» oneLine(cite.decision.title) #1': {
+    verdict: 'collapsed',
+    why: 'a value out of the record or out of git — a title, an id, a label, an address, a commit message or a trailer — collapsed to one line here',
+  },
+  'git-bridge.ts «{}{} cite it by trailer · » done.cited.commits.length #1': {
+    verdict: 'minted',
+    why: 'a count this reading made, or the threshold the caller gave and the verb validated as an integer',
+  },
+  "git-bridge.ts «{}{} cite it by trailer · » done.cited.more ? '+' : '' #1": {
+    verdict: 'minted',
+    why: 'one of two words written in this module, chosen by a count or a flag beside it — nothing from the record or git reaches it',
+  },
+  'git-bridge.ts «{}{} touched a path it addresses» done.touching.commits.length #1': {
+    verdict: 'minted',
+    why: 'a count this reading made, or the threshold the caller gave and the verb validated as an integer',
+  },
+  "git-bridge.ts «{}{} touched a path it addresses» done.touching.more ? '+' : '' #1": {
+    verdict: 'minted',
+    why: 'one of two words written in this module, chosen by a count or a flag beside it — nothing from the record or git reaches it',
+  },
+
   // --- occurrence.ts: one event of the chain -------------------------------------
   'occurrence.ts «{} {}» BY #1': {
     verdict: 'minted',
@@ -798,6 +1081,18 @@ const CLASSIFIED: Readonly<Record<string, { verdict: Verdict; why: string }>> = 
   'record.ts «about {} · recorded {}» body.record.recordedAt #1': {
     verdict: 'minted',
     why: 'an ISO-8601 instant off the record',
+  },
+  'record.ts «retracted {} by {}» retracted.at #1': {
+    verdict: 'minted',
+    why: 'an ISO-8601 instant off the record — when the retraction was written',
+  },
+  'record.ts «retracted {} by {}» actorText(context.anchors, by) #1': {
+    verdict: 'composed',
+    why: 'the actor of the retraction, worded by actorText below: an anchor in its short form, and an act clause whose agent name is collapsed there',
+  },
+  'record.ts «why: {}» oneLine(retracted.reason) #1': {
+    verdict: 'collapsed',
+    why: 'the reason `--reason` gave a retraction — free text, on a fact line of its own',
   },
   'record.ts «topic: {}» oneLine(body.record.topic) #1': {
     verdict: 'collapsed',
@@ -1731,8 +2026,8 @@ describe('every value this layer puts on a line is classified', () => {
     // values are the start of a memory and an observation's topic, both typed by somebody.
     // The thirtieth is `within-a-hook.ts`, MACHINERY: it words nothing and receives no record —
     // it measures what the two opening texts print for a hook, and cuts them at a whole item.
-    expect(FOUND.composers.length + FOUND.machinery.length).toBe(32);
-    expect(FOUND.composers.length).toBe(20);
+    expect(FOUND.composers.length + FOUND.machinery.length).toBe(33);
+    expect(FOUND.composers.length).toBe(21);
     expect(FOUND.machinery).toContain('items.ts');
     expect(FOUND.machinery).toContain('line.ts');
     expect(FOUND.machinery).toContain('width.ts');
@@ -1742,8 +2037,8 @@ describe('every value this layer puts on a line is classified', () => {
     // 251 until the renderer began making an actor's control bytes visible and joined the
     // composers with its two template values; then 253 until the rules in force began saying who
     // accepted them (`brief.ts`, `record.ts`); 294 until `mnema rules` printed the four numbers
-    // of the relation that refuses a write; 301 with the three the trunk added meanwhile; 306 once the document counts the rules that refuse a write.
-    expect(FOUND.sites.length).toBe(306);
+    // of the relation that refuses a write; 301 with the three the trunk added meanwhile; 306 once the document counts the rules that refuse a write; 367 with the pages of the git bridge; 377 with its shallow sentence and the recipe aging prints.
+    expect(FOUND.sites.length).toBe(377);
   });
 
   it('reads the verdict off the source rather than believing the table', () => {
@@ -1764,10 +2059,10 @@ describe('every value this layer puts on a line is classified', () => {
     // No arm of the case above may be empty, or that much of it is vacuous.
     const verdicts = Object.values(CLASSIFIED).map((said) => said.verdict);
     const count = (verdict: Verdict): number => verdicts.filter((said) => said === verdict).length;
-    expect(count('collapsed')).toBe(74);
-    expect(count('minted')).toBe(170);
-    expect(count('composed')).toBe(62);
-    expect(FOUND.sites.filter((site) => /\boneLine\b/.test(site.expression))).toHaveLength(74);
+    expect(count('collapsed')).toBe(99);
+    expect(count('minted')).toBe(213);
+    expect(count('composed')).toBe(65);
+    expect(FOUND.sites.filter((site) => /\boneLine\b/.test(site.expression))).toHaveLength(99);
   });
 
   it('every reason says where the value comes from', () => {

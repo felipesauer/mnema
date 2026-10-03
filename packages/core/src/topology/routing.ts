@@ -191,6 +191,7 @@ export const UNROUTED_KINDS: { readonly [K in Exclude<EventKind, RoutedKind>]: s
   'task.transitioned': 'a move follows the entity it moves, to the tree it was born in',
   'decision.transitioned': 'a move follows the entity it moves, to the tree it was born in',
   'skill.transitioned': 'a move follows the entity it moves, to the tree it was born in',
+  'note.retracted': 'a retraction follows the note it takes back, to the tree it was written in',
   'run.started': 'a run follows the fact it authorizes — it opens in that fact’s own tree',
   'run.ended': 'a run ends in the tree it was opened in, which it carries',
   'identity.founded': 'identity is per-tree: it is founded in whichever tree is first written',

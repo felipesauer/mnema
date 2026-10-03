@@ -60,6 +60,7 @@ import {
   linkKnowledge,
   recordHandoff,
   recordObservation,
+  retractNote,
 } from '../knowledge/operations.js';
 import {
   recordChannelAsked,
@@ -255,6 +256,13 @@ const ARRIVALS: { readonly [K in EventKind]: Arrival } = {
           path: 'packages/core/src/projections/rebuild.ts',
         }),
       ),
+  },
+  // A note already projected, and indexed, taken back by the arrival: its row changes and it
+  // leaves the index, which is the case a stale suffix would get wrong.
+  'note.retracted': {
+    setup: (ctx) => landed(captureMemory(ctx, { content: 'a memory to take back' })).id,
+    emit: (ctx, note) =>
+      landed(retractNote(ctx, { id: note as string, reason: 'it turned out to be wrong' })),
   },
 };
 

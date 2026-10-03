@@ -492,8 +492,8 @@ The top-level keys of an event are the keys `event-schema.json` declares under
 paragraph used to read *"the seven top-level keys of an event are `at`, `kind`,
 `payload`, `signerFp`, `subject`, `v` and `who`"*, and that sentence was false: it
 was the INTERSECTION of the published vectors, and `which` and `run` were carried
-by sixteen and three of those same vectors respectively (seventeen and four of the
-twenty-five published today). What falsified it is that
+by sixteen and three of those same vectors respectively (eighteen and five of the
+twenty-six published today). What falsified it is that
 an independent verifier believed it — it took the intersection, as the sentence
 invited, and **refused an honest event for carrying `which`**, on a record this
 product read as fine (§4.1, gap G25). A required field and an optional one look

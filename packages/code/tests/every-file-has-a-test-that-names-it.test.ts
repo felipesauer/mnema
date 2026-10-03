@@ -408,6 +408,10 @@ const UNWITNESSED: Readonly<Record<string, Debt>> = {
     reached: 'nobody imports it',
     why: "Registration and the one-level author summary; cli-e2e only scrapes this verb's output for a short anchor to prove identity forms, and never reads the counts it prints.",
   },
+  'packages/code/src/wiring/aging.ts': {
+    reached: 'nobody imports it',
+    why: "The aging verb's wiring: parses --min-commits and prints the page; the-record-meets-the-git-log.test.ts drives it through the CLI and asserts the pages and the refusal of a bad count.",
+  },
   'packages/code/src/wiring/antipatterns.ts': {
     reached: 'nobody imports it',
     why: 'Composes the whole antipatterns page, yet the only cases reaching it sit in the brief block and grep it for the label-clash line, leaving its six counts and closing note unread.',
@@ -419,6 +423,10 @@ const UNWITNESSED: Readonly<Record<string, Debt>> = {
   'packages/code/src/wiring/brief.ts': {
     reached: 'nobody imports it',
     why: 'The option-less brief registration and its switched-off sentence; the brief cases all assert the document presentation/brief.ts renders, and the switch test is about the switch.',
+  },
+  'packages/code/src/wiring/commits.ts': {
+    reached: 'nobody imports it',
+    why: "The commits verb's wiring; the-record-meets-the-git-log.test.ts drives it through the CLI and reads its --json and its page.",
   },
   'packages/code/src/wiring/decision.ts': {
     reached: 'nobody imports it',
@@ -472,6 +480,10 @@ const UNWITNESSED: Readonly<Record<string, Debt>> = {
     reached: 'nobody imports it',
     why: "The next-actions verb's human list and --json branch; cli-e2e asserts 'submit → READY' and 'no legal moves', which are the workflow table's answers rather than this file's.",
   },
+  'packages/code/src/wiring/no-such-decision.ts': {
+    reached: 'nobody imports it',
+    why: 'The wording of the refusal for a decision asked by name; a-refusal-is-one-line.test.ts reaches it through commits and the label case rides on the CLI.',
+  },
   'packages/code/src/wiring/no-such-record.ts': {
     reached: 'nobody imports it',
     why: 'The one sentence every verb refuses an unknown id with; a-refusal-is-one-line.test.ts drives its eight call sites through the CLI but compares them to wordings retyped in the test.',
@@ -492,13 +504,17 @@ const UNWITNESSED: Readonly<Record<string, Debt>> = {
     reached: 'nobody imports it',
     why: "The resume verb's wiring and its no-runs branch; cli-e2e runs it to prove the run lifecycle and one identity short-form, and the phrases it checks come from presentation/runs.ts.",
   },
-  'packages/code/src/wiring/rules.ts': {
+  'packages/code/src/wiring/retract.ts': {
     reached: 'nobody imports it',
-    why: "The rules verb's wiring for reading which recorded rules govern a path; the-rule-has-an-address.test.ts drives it only to compare the CLI's answer with the governing_rules tool's.",
+    why: "The retract verb's declaration, its echo and its unknown-id sentence; a-note-can-be-retracted drives it through the CLI and asserts the echo and the event, and the adapter's own values are witnessed through commands/retract.ts.",
   },
   'packages/code/src/wiring/rules-file.ts': {
     reached: 'nobody imports it',
     why: "The rules-file verb's wiring and the lines it says on the second stream; a-rules-file-carries-only-what-becomes-a-glob-exactly.test.ts runs it through the binary for both hosts, with and without a file to print.",
+  },
+  'packages/code/src/wiring/rules.ts': {
+    reached: 'nobody imports it',
+    why: "The rules verb's wiring for reading which recorded rules govern a path; the-rule-has-an-address.test.ts drives it only to compare the CLI's answer with the governing_rules tool's.",
   },
   'packages/code/src/wiring/run.ts': {
     reached: 'nobody imports it',
@@ -540,9 +556,17 @@ const UNWITNESSED: Readonly<Record<string, Debt>> = {
     reached: 'nobody imports it',
     why: 'The `timeline` declaration; cli-e2e runs it twice only to check the read does not fail and prints one anchor form, and the one-line probe drives it to test onOneLine.',
   },
+  'packages/code/src/wiring/trailer.ts': {
+    reached: 'nobody imports it',
+    why: "The trailer verb's wiring; the-record-meets-the-git-log.test.ts drives it through the CLI and reads the one line it prints.",
+  },
   'packages/code/src/wiring/usage.ts': {
     reached: 'nobody imports it',
     why: "Declares `mnema usage` with no options; the cost suites assert the report's numbers and wording, which presentation/usage.ts produces, and its six-line help block sits in no golden.",
+  },
+  'packages/code/src/wiring/why.ts': {
+    reached: 'nobody imports it',
+    why: "The why verb's wiring: tells a path from a commit name and prints the page; the-record-meets-the-git-log.test.ts drives it through the CLI for a file and for a commit.",
   },
   'packages/code/src/wiring/witness.ts': {
     reached: 'nobody imports it',
@@ -612,7 +636,7 @@ const UNWITNESSED: Readonly<Record<string, Debt>> = {
  * reading, so nothing can fall in two.
  */
 const THE_SHAPE_OF_WHAT_IS_LEFT: Readonly<Record<string, number>> = {
-  wiring: 36,
+  wiring: 42,
   presentation: 11,
   projections: 4,
   completion: 4,
@@ -711,6 +735,12 @@ function outOfOrder(lines: readonly string[]): string[] {
  * a count that pins nothing.
  */
 const CLAUSES_PER_FILE: Readonly<Record<string, number>> = {
+  'packages/action/src/comment.test.ts': 2,
+  'packages/action/src/github.test.ts': 3,
+  'packages/action/src/governed.test.ts': 2,
+  'packages/action/src/judge.test.ts': 2,
+  'packages/action/src/record.test.ts': 2,
+  'packages/action/src/run.test.ts': 11,
   'packages/chain/src/boundaries.test.ts': 3,
   'packages/chain/src/chain/backup.test.ts': 8,
   'packages/chain/src/chain/bitcoin.test.ts': 3,
@@ -816,8 +846,10 @@ const CLAUSES_PER_FILE: Readonly<Record<string, number>> = {
   'packages/code/src/commands/witness-stamp-judges-each-tree-once.test.ts': 9,
   'packages/code/src/commands/witness.test.ts': 11,
   'packages/code/src/completion/lookups.test.ts': 8,
+  'packages/code/src/decisions-in-git.test.ts': 2,
   'packages/code/src/env.test.ts': 4,
   'packages/code/src/every-refusal-is-red.test.ts': 7,
+  'packages/code/src/git-log.test.ts': 7,
   'packages/code/src/key-file.test.ts': 2,
   'packages/code/src/mcp/hook-reply.test.ts': 2,
   'packages/code/src/mcp/lifecycle.test.ts': 2,
@@ -828,6 +860,7 @@ const CLAUSES_PER_FILE: Readonly<Record<string, number>> = {
   'packages/code/src/presentation/brief.test.ts': 6,
   'packages/code/src/presentation/folded.test.ts': 15,
   'packages/code/src/presentation/forms.test.ts': 6,
+  'packages/code/src/presentation/git-bridge.test.ts': 6,
   'packages/code/src/presentation/one-line-per-item.test.ts': 10,
   'packages/code/src/presentation/parts.test.ts': 11,
   'packages/code/src/presentation/recall.test.ts': 7,
@@ -858,6 +891,7 @@ const CLAUSES_PER_FILE: Readonly<Record<string, number>> = {
   'packages/code/tests/a-marker-is-not-a-reason.test.ts': 7,
   'packages/code/tests/a-marker-is-not-a-title.test.ts': 7,
   'packages/code/tests/a-measurement-carries-no-one-s-home.test.ts': 5,
+  'packages/code/tests/a-note-can-be-retracted.test.ts': 11,
   'packages/code/tests/a-palette-for-the-words.test.ts': 24,
   'packages/code/tests/a-picture-of-the-record.test.ts': 8,
   'packages/code/tests/a-private-write-asks-git.test.ts': 11,
@@ -892,7 +926,7 @@ const CLAUSES_PER_FILE: Readonly<Record<string, number>> = {
   'packages/code/tests/every-skill-the-plugin-ships-is-what-it-says.test.ts': 11,
   'packages/code/tests/every-tool-says-if-it-writes.test.ts': 16,
   'packages/code/tests/every-verb-says-if-it-writes.test.ts': 14,
-  'packages/code/tests/every-write-signs-what-it-wrote.test.ts': 30,
+  'packages/code/tests/every-write-signs-what-it-wrote.test.ts': 31,
   'packages/code/tests/mcp-audit-across-workspace.test.ts': 12,
   'packages/code/tests/mcp-configured-project.test.ts': 11,
   'packages/code/tests/mcp-context.test.ts': 8,
@@ -1002,6 +1036,7 @@ const CLAUSES_PER_FILE: Readonly<Record<string, number>> = {
   'packages/code/tests/the-record-is-kept-between-reads.test.ts': 7,
   'packages/code/tests/the-record-is-opened-and-closed-together.test.ts': 4,
   'packages/code/tests/the-record-may-have-moved.test.ts': 10,
+  'packages/code/tests/the-record-meets-the-git-log.test.ts': 13,
   'packages/code/tests/the-record-travels.test.ts': 14,
   'packages/code/tests/the-record-you-can-see.test.ts': 17,
   'packages/code/tests/the-recordings-are-what-the-binary-draws.test.ts': 13,
@@ -1103,6 +1138,7 @@ const CLAUSES_PER_FILE: Readonly<Record<string, number>> = {
   'packages/core/src/identity/the-roster-sees-the-other-session.test.ts': 11,
   'packages/core/src/identity/who.test.ts': 2,
   'packages/core/src/index.test.ts': 2,
+  'packages/core/src/knowledge/a-note-can-be-retracted.test.ts': 12,
   'packages/core/src/knowledge/end-to-end.test.ts': 11,
   'packages/core/src/knowledge/link-end-to-end.test.ts': 11,
   'packages/core/src/knowledge/operations.test.ts': 11,
@@ -1170,6 +1206,13 @@ const CLAUSES_PER_FILE: Readonly<Record<string, number>> = {
  * together.
  */
 const PRODUCTION_FILES: readonly string[] = [
+  'packages/action/src/comment.ts',
+  'packages/action/src/github.ts',
+  'packages/action/src/governed.ts',
+  'packages/action/src/judge.ts',
+  'packages/action/src/record.ts',
+  'packages/action/src/run.ts',
+  'packages/action/src/world.ts',
   'packages/chain/src/chain/backup.ts',
   'packages/chain/src/chain/bitcoin.ts',
   'packages/chain/src/chain/chain.ts',
@@ -1221,9 +1264,11 @@ const PRODUCTION_FILES: readonly string[] = [
   'packages/code/src/choice/screen.ts',
   'packages/code/src/cli.ts',
   'packages/code/src/commands/accountability.ts',
+  'packages/code/src/commands/aging.ts',
   'packages/code/src/commands/antipatterns.ts',
   'packages/code/src/commands/before-a-write.ts',
   'packages/code/src/commands/brief.ts',
+  'packages/code/src/commands/commits.ts',
   'packages/code/src/commands/corrections.ts',
   'packages/code/src/commands/decision-import.ts',
   'packages/code/src/commands/decision-transition.ts',
@@ -1248,6 +1293,7 @@ const PRODUCTION_FILES: readonly string[] = [
   'packages/code/src/commands/recall.ts',
   'packages/code/src/commands/references.ts',
   'packages/code/src/commands/resume.ts',
+  'packages/code/src/commands/retract.ts',
   'packages/code/src/commands/rules-file.ts',
   'packages/code/src/commands/rules.ts',
   'packages/code/src/commands/run-end.ts',
@@ -1266,10 +1312,12 @@ const PRODUCTION_FILES: readonly string[] = [
   'packages/code/src/commands/task-transition.ts',
   'packages/code/src/commands/task.ts',
   'packages/code/src/commands/timeline.ts',
+  'packages/code/src/commands/trailer.ts',
   'packages/code/src/commands/usage.ts',
   'packages/code/src/commands/verify-github.ts',
   'packages/code/src/commands/verify-since.ts',
   'packages/code/src/commands/verify.ts',
+  'packages/code/src/commands/why.ts',
   'packages/code/src/commands/witness.ts',
   'packages/code/src/completion/bash.ts',
   'packages/code/src/completion/fish.ts',
@@ -1278,10 +1326,12 @@ const PRODUCTION_FILES: readonly string[] = [
   'packages/code/src/completion/text.ts',
   'packages/code/src/completion/tree.ts',
   'packages/code/src/completion/zsh.ts',
+  'packages/code/src/decisions-in-git.ts',
   'packages/code/src/edit-asks-a-person.ts',
   'packages/code/src/edit-refuses-a-write.ts',
   'packages/code/src/edit-rules-push.ts',
   'packages/code/src/env.ts',
+  'packages/code/src/git-log.ts',
   'packages/code/src/governed-tree.ts',
   'packages/code/src/host-hook.ts',
   'packages/code/src/host-names.ts',
@@ -1315,6 +1365,7 @@ const PRODUCTION_FILES: readonly string[] = [
   'packages/code/src/presentation/exported.ts',
   'packages/code/src/presentation/exposure.ts',
   'packages/code/src/presentation/folded.ts',
+  'packages/code/src/presentation/git-bridge.ts',
   'packages/code/src/presentation/items.ts',
   'packages/code/src/presentation/line.ts',
   'packages/code/src/presentation/occurrence.ts',
@@ -1376,11 +1427,13 @@ const PRODUCTION_FILES: readonly string[] = [
   'packages/code/src/what-the-session-did.ts',
   'packages/code/src/what-the-session-touches.ts',
   'packages/code/src/wiring/accountability.ts',
+  'packages/code/src/wiring/aging.ts',
   'packages/code/src/wiring/antipatterns.ts',
   'packages/code/src/wiring/before-a-write.ts',
   'packages/code/src/wiring/body-source.ts',
   'packages/code/src/wiring/brief.ts',
   'packages/code/src/wiring/color.ts',
+  'packages/code/src/wiring/commits.ts',
   'packages/code/src/wiring/completion.ts',
   'packages/code/src/wiring/context.ts',
   'packages/code/src/wiring/corrections.ts',
@@ -1404,6 +1457,7 @@ const PRODUCTION_FILES: readonly string[] = [
   'packages/code/src/wiring/memory.ts',
   'packages/code/src/wiring/misuse.ts',
   'packages/code/src/wiring/next-actions.ts',
+  'packages/code/src/wiring/no-such-decision.ts',
   'packages/code/src/wiring/no-such-record.ts',
   'packages/code/src/wiring/observe.ts',
   'packages/code/src/wiring/on-one-line.ts',
@@ -1413,6 +1467,7 @@ const PRODUCTION_FILES: readonly string[] = [
   'packages/code/src/wiring/repl.ts',
   'packages/code/src/wiring/report.ts',
   'packages/code/src/wiring/resume.ts',
+  'packages/code/src/wiring/retract.ts',
   'packages/code/src/wiring/rules-file.ts',
   'packages/code/src/wiring/rules.ts',
   'packages/code/src/wiring/run-pin.ts',
@@ -1427,9 +1482,11 @@ const PRODUCTION_FILES: readonly string[] = [
   'packages/code/src/wiring/tally.ts',
   'packages/code/src/wiring/task.ts',
   'packages/code/src/wiring/timeline.ts',
+  'packages/code/src/wiring/trailer.ts',
   'packages/code/src/wiring/usage.ts',
   'packages/code/src/wiring/verb.ts',
   'packages/code/src/wiring/verify.ts',
+  'packages/code/src/wiring/why.ts',
   'packages/code/src/wiring/witness.ts',
   'packages/code/src/wiring/written-before.ts',
   'packages/context/src/context/bootstrap.ts',
@@ -1580,10 +1637,10 @@ describe('every file has a test that names it', () => {
     expect(PRODUCTION.length - found.size).toBe(
       PRODUCTION_FILES.length - Object.keys(UNWITNESSED).length,
     );
-    // 73 until `chain/src/one-line.test.ts` began calling the functions it is about.
+    // 78 with the git bridge's five wiring files; 73 until `chain/src/one-line.test.ts` began calling the functions it is about.
     // 72 until `mcp/hook-reply.test.ts` began calling the function it is about.
-    expect(found.size).toBe(73);
-    expect(byReach('nobody imports it')).toBe(73);
+    expect(found.size).toBe(79);
+    expect(byReach('nobody imports it')).toBe(79);
     expect(byReach('imported, and no assertion observes it')).toBe(0);
   });
 
@@ -1605,7 +1662,7 @@ describe('every file has a test that names it', () => {
     // Announced in the header and, until now, kept by hand. A shared excuse is how a table
     // like this turns into a rubber stamp, and a row drained to a stub is how it starts.
     const reasons = Object.values(UNWITNESSED).map((one) => one.why);
-    expect(reasons).toHaveLength(73);
+    expect(reasons).toHaveLength(79);
     expect(new Set(reasons).size).toBe(reasons.length);
     // The shortest reason standing is 156 characters; the floor is under it and well over
     // anything that could be written without saying what reaches that file.
@@ -1634,7 +1691,7 @@ describe('every file has a test that names it', () => {
 
   it('names a package with no src/ instead of dying while it collects', () => {
     expect(WITHOUT_SOURCE).toEqual([]);
-    expect(READABLE).toEqual(['chain', 'code', 'context', 'core']);
+    expect(READABLE).toEqual(['action', 'chain', 'code', 'context', 'core']);
   });
 
   it('cannot be dissolved by the ledger that describes it', () => {

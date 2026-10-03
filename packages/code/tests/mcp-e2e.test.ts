@@ -2287,6 +2287,7 @@ describe('MCP server — end to end over a real client', () => {
       'record_handoff',
       'record_observation',
       'resume',
+      'retract_note',
       'rules_before_an_edit',
       'search',
       'skill_transition',
@@ -3586,9 +3587,9 @@ describe('MCP — what enters the record', () => {
       expect(description, `${name}: where it lands`).toContain('committed to the repository');
       expect(description, `${name}: the limit of the defense`).toContain('written verbatim');
     }
-    // Non-vacuity: the loop above ran over the eleven writes that DO take content, so a
+    // Non-vacuity: the loop above ran over the twelve writes that DO take content, so a
     // declaration list that came back empty could not leave this case green.
-    expect(writes.filter((one) => !(one in NO_CONTENT_OF_ITS_OWN))).toHaveLength(11);
+    expect(writes.filter((one) => !(one in NO_CONTENT_OF_ITS_OWN))).toHaveLength(12);
     // And the hook's description says what it records, in so many words.
     expect(describes('rules_before_an_edit')).toContain('the path you named');
 

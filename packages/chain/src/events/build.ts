@@ -557,6 +557,20 @@ export function channelRefused(
 }
 
 /**
+ * Builds a `note.retracted` event (subject = the RETRACTED note's id). The reason is
+ * required by the signature; whether the subject names a note of this record, not yet
+ * retracted, is decided where the record is read, not here.
+ */
+export function noteRetracted(envelope: EnvelopeInput, payload: { reason: string }): CatalogEvent {
+  return {
+    v: 1,
+    kind: 'note.retracted',
+    ...envelopeFields(envelope),
+    payload: { reason: payload.reason },
+  };
+}
+
+/**
  * Builds an `account.linked` event (subject = the ANCHOR that names its account).
  *
  * Both fields are required and neither is checked here: which hosts and which account

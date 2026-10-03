@@ -5,6 +5,7 @@
     { "path": "packages/core" },
     { "path": "packages/context" },
     { "path": "packages/code" },
+    { "path": "packages/action" },
     { "path": "tsconfig.rulers.json" }
   ]
 }

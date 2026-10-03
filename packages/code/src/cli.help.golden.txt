@@ -37,6 +37,9 @@ $ mnema
 !                                         current project
 !   link [options] <subject> <target>     link one piece of knowledge to another
 !                                         in the current project
+!   retract [options] <id>                take a memory or an observation back,
+!                                         keeping it in the record (follows the
+!                                         note; takes no --scope)
 !   run                                   open and close the session an agent
 !                                         works inside
 !   status [options]                      show where things stand: the work, what
@@ -72,6 +75,14 @@ $ mnema
 !   rules-file [options]                  print the rules addressed at a file as
 !                                         another host’s rules file, and why the
 !                                         rest are not
+!   trailer [options] <decision>          print the commit trailer that ties a
+!                                         commit to a decision
+!   commits [options] <decision>          show the commits that cite a decision
+!                                         and those that touched what it addresses
+!   why [options] <file|commit>           show under which decisions a file or a
+!                                         commit stands
+!   aging [options]                       show accepted decisions whose addressed
+!                                         paths changed in many commits since
 !   skills [options]                      show where each pattern came from (who
 !                                         proposed it, who adopted it)
 !   usage                                 what each run cost, read from this
@@ -149,6 +160,9 @@ $ mnema --help
 |                                         current project
 |   link [options] <subject> <target>     link one piece of knowledge to another
 |                                         in the current project
+|   retract [options] <id>                take a memory or an observation back,
+|                                         keeping it in the record (follows the
+|                                         note; takes no --scope)
 |   run                                   open and close the session an agent
 |                                         works inside
 |   status [options]                      show where things stand: the work, what
@@ -184,6 +198,14 @@ $ mnema --help
 |   rules-file [options]                  print the rules addressed at a file as
 |                                         another host’s rules file, and why the
 |                                         rest are not
+|   trailer [options] <decision>          print the commit trailer that ties a
+|                                         commit to a decision
+|   commits [options] <decision>          show the commits that cite a decision
+|                                         and those that touched what it addresses
+|   why [options] <file|commit>           show under which decisions a file or a
+|                                         commit stands
+|   aging [options]                       show accepted decisions whose addressed
+|                                         paths changed in many commits since
 |   skills [options]                      show where each pattern came from (who
 |                                         proposed it, who adopted it)
 |   usage                                 what each run cost, read from this
@@ -442,6 +464,32 @@ $ mnema link --help
 |                    directly. Declared, never assumed; it names the executor. See
 |                    --scope for where the fact lands. A value that names no agent
 |                    (an unset variable) is refused, never credited to you.
+|   -h, --help       display help for command
+|
+| What recording means here:
+|   Permanent — mnema is append-only and nothing deletes a fact. A public record
+|   is committed and reaches every machine that clones the repository.
+|   Do not record credentials: a recognized format is replaced with a placeholder
+|   and reported back, but what mnema does not recognize is written verbatim.
+|   Each text field holds at most 65536 bytes; a longer one is refused.
+
+### mnema retract --help
+$ mnema retract --help
+| Usage: mnema retract [options] <id>
+|
+| take a memory or an observation back, keeping it in the record (follows the
+| note; takes no --scope)
+|
+| Arguments:
+|   id               the id of the note to retract
+|
+| Options:
+|   --reason <text>  why it is taken back
+|   --which <agent>  the agent that executed this, when an agent (a script, a CI
+|                    step) is driving mnema — omit it when you are acting
+|                    directly. It names the executor only: a retraction follows
+|                    the note to the tree it was written in. A value that names no
+|                    agent (an unset variable) is refused, never credited to you.
 |   -h, --help       display help for command
 |
 | What recording means here:
@@ -723,6 +771,58 @@ $ mnema rules-file --help
 |   --host <host>  the host whose rules-file format to print: claude, vscode,
 |                  cursor
 |   -h, --help     display help for command
+
+### mnema trailer --help
+$ mnema trailer --help
+| Usage: mnema trailer [options] <decision>
+|
+| print the commit trailer that ties a commit to a decision
+|
+| Arguments:
+|   decision    the decision, by id or by ADR label
+|
+| Options:
+|   --id        carry the id instead of the label
+|   --json      emit the line as JSON
+|   -h, --help  display help for command
+
+### mnema commits --help
+$ mnema commits --help
+| Usage: mnema commits [options] <decision>
+|
+| show the commits that cite a decision and those that touched what it addresses
+|
+| Arguments:
+|   decision    the decision, by id or by ADR label
+|
+| Options:
+|   --json      emit the faithful reading as JSON
+|   -h, --help  display help for command
+
+### mnema why --help
+$ mnema why --help
+| Usage: mnema why [options] <file|commit>
+|
+| show under which decisions a file or a commit stands
+|
+| Arguments:
+|   file|commit  a path (it wins when it exists) or a commit name
+|
+| Options:
+|   --json       emit the faithful reading as JSON
+|   -h, --help   display help for command
+
+### mnema aging --help
+$ mnema aging --help
+| Usage: mnema aging [options]
+|
+| show accepted decisions whose addressed paths changed in many commits since
+|
+| Options:
+|   --min-commits <n>  commits on its paths since acceptance to be listed (default
+|                      20)
+|   --json             emit the faithful reading as JSON
+|   -h, --help         display help for command
 
 ### mnema skills --help
 $ mnema skills --help
