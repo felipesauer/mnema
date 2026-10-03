@@ -457,6 +457,10 @@ export const NAMES_THAT_NEED_MORE: Readonly<
     times: 1,
     why: 'answers a line typed outside a project, whole, by naming the verb to run inside one',
   },
+  'packages/code/src/wiring/key.ts: mnema key github': {
+    times: 1,
+    why: 'answers a line typed outside a project, whole, by naming the verb to run inside one',
+  },
   'packages/code/src/wiring/key.ts: mnema key request': {
     times: 1,
     why: 'the help of `key enroll`, naming the verb whose output its argument is',
@@ -468,6 +472,10 @@ export const NAMES_THAT_NEED_MORE: Readonly<
   'packages/code/src/wiring/key.ts: mnema key revoke': {
     times: 1,
     why: 'answers a line typed outside a project, whole, by naming the verb to run inside one',
+  },
+  'packages/code/src/wiring/verify.ts: mnema key github': {
+    times: 1,
+    why: 'the line saying an identity has no account linked, naming the verb that links one',
   },
   'packages/code/src/wiring/run.ts: mnema run end': {
     times: 1,
@@ -576,7 +584,9 @@ export const HANDED_OVER: Readonly<
   // `mnema rules` twice.
   // And four names more for the paragraph that says a note can be taken back: `mnema retract`,
   // and the three reads it names (`mnema search`, `mnema show`, `mnema verify`).
-  span: { line: 46, name: 86, flag: 1, unwritten: 0 },
+  // line 48 until the page said which flag compares the keys that signed with GitHub's, and how an
+  // account is linked (`mnema verify --against-github`, `mnema key github`).
+  span: { line: 48, name: 86, flag: 1, unwritten: 0 },
   // name 18 until the page that says where the key lives named `mnema key protect` in a line of
   // its own.
   // line 35 until the same page showed that question in a block of its own.
@@ -597,7 +607,8 @@ export const HANDED_OVER: Readonly<
   // line 47 until the help of the verb that records corrections named the switch that turns it on,
   // `mnema switch on user-corrections` (`wiring/corrections.ts`).
   // name 53 until `mnema doctor` named the `mnema mcp` a host starts, twice, and `claude mcp add mnema -- mnema mcp`.
-  source: { line: 49, name: 58, flag: 3, unwritten: 3 },
+  // line 53 and name 60 until `key github` and `verify --against-github` handed over each other.
+  source: { line: 53, name: 60, flag: 3, unwritten: 3 },
 };
 
 // ---------------------------------------------------------------------------

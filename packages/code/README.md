@@ -362,6 +362,22 @@ the committed tree only (the private one never travels), and it trusts the base:
 history rewritten on the remote moves the base with it, which is what a protected branch
 on the git host is for.
 
+**Who signed, where somebody asked.** A record founded again under a fresh key verifies
+like an honest one, because nothing in it says whose key is whose. `mnema key github
+<name>` records a signed claim that this identity is that GitHub account, and `mnema
+verify --against-github` then compares the key each identity signed with against the SSH
+keys the account publishes at `https://github.com/<name>.keys`, by the raw Ed25519 key.
+Per identity it says the account publishes every key it signed with, or says by name
+why not: no account linked, no such account, no Ed25519 key published, a key that is
+not among them, or github.com could not be reached. **What it proves** is that the key
+that signed is one that account publishes *today*. **What it does not prove** is that
+the key was the account's when it signed, since an account adds and drops keys at will,
+and it proves nothing without taking github.com's word for which keys an account has.
+Only a signed claim counts: one in the window above the last checkpoint could have been
+appended with no key at all. It goes to the network only when the flag is given; the
+verdict, the level and the exit are the ones `verify` gives without it, and with no
+network the verdict still stands and each identity reads `could not reach github.com`.
+
 ### Bold, dim, and what a pipe gets
 
 In a terminal, a verdict's label and a heading are **bold**, the half of a statement
@@ -1330,7 +1346,8 @@ asked by this machine*, which is a different fact from *did not answer* and call
 different response. By operator domain and not by exact host, so a proof taken by a
 calendar nobody has heard of yet still completes.
 
-`verify` **never touches a network**. It reads the proof and the header out of the
+`verify` **never touches a network** to read the witness (the one flag that reaches one
+is `--against-github`, and only when it is given). It reads the proof and the header out of the
 record, checks that the proof commits to the checkpoint it proved, that the path folds
 to the merkle root the header carries, and that the header did the work it declares.
 The proof itself is [OpenTimestamps](https://opentimestamps.org)' own file, unaltered,

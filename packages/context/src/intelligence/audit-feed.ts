@@ -298,6 +298,13 @@ export const AUDIT_BY_KIND: { readonly [K in EventKind]: AuditMapping } = {
   // `Update` and not `Delete`: a retraction removes nothing — the note's own event stays and
   // is still served by id — it changes what the note is taken to be, as a supersede does.
   'note.retracted': { activity: ACTIVITY.update, entityTypeId: ENTITY_OTHER, entityType: 'note' },
+  // An identity naming its account on a code host changes what is said ABOUT the user, and
+  // adds or removes no key — an Update of the identity, not an Enroll.
+  'account.linked': {
+    activity: ACTIVITY.update,
+    entityTypeId: ENTITY_USER,
+    entityType: 'identity',
+  },
 };
 
 /** Who is reporting the feed — the producer's own identity, which the record does not hold. */
