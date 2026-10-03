@@ -36,6 +36,23 @@ export function asTheChainIs<T>(ctx: ReadsTheRecord, ask: (cache: ProjectionCach
 }
 
 /**
+ * Who counts for an identity, as the chain has it now — what a write asks before it appends.
+ *
+ * It is asked UNDER THE LOCK, so what it costs is how long every other writer waits: a replay of
+ * the record there held it for 2.2 s at 100 thousand events. This is the kept projection's
+ * membership plus what arrived since ({@link ProjectionCache.rosterAsOfNow}), which is the fold a
+ * replay runs over the same events; with nothing kept it is the replay, as before.
+ */
+export function rosterAsTheChainIs(ctx: ReadsTheRecord, anchor: string): ReadonlySet<string> {
+  const cache = ProjectionCache.open(ctx.layout.root, { upcasters: ctx.upcasters, persist: true });
+  try {
+    return cache.rosterAsOfNow(anchor);
+  } finally {
+    cache.close();
+  }
+}
+
+/**
  * The entities named, as they stand — a map of just those ids, so the reading is a snapshot a
  * later reading can be compared with.
  */
