@@ -43,7 +43,12 @@ import {
 } from '@mnema/core';
 import { openTreeForWriting, switchChannel } from '@mnema/core/write';
 import { type AnchorForms, anchorForms } from '../anchors.js';
-import { SWITCHABLE_CHANNELS, type SwitchableChannel, WHAT_STOPS } from '../record-framing.js';
+import {
+  STARTS_OFF,
+  SWITCHABLE_CHANNELS,
+  type SwitchableChannel,
+  WHAT_STOPS,
+} from '../record-framing.js';
 import { forwardReplacement, type Landed, type Replacement } from '../recorded-content.js';
 import {
   linkBreaksOf,
@@ -113,7 +118,7 @@ export interface SwitchListing {
 export function runSwitchList(ctx: SwitchContext): SwitchListing {
   const trees = resolveTrees(ctx.cwd, ctx.env);
   return withScopedCaches(trees, (sources) => {
-    const states = channelStates(sources, SWITCHABLE_CHANNELS);
+    const states = channelStates(sources, SWITCHABLE_CHANNELS, STARTS_OFF);
     return {
       ok: true,
       rows: SWITCHABLE_CHANNELS.map((channel, at) => ({
@@ -237,7 +242,7 @@ export function runSwitch(
   // off wins between trees that cannot be ordered, so switching one on may change
   // nothing that the next push will see.
   const read = withScopedCaches(trees, (sources) => ({
-    effective: channelStates(sources, [recorded.channel])[0] as ChannelState,
+    effective: channelStates(sources, [recorded.channel], STARTS_OFF)[0] as ChannelState,
     anchors: anchorForms(sources),
     // Read back over the SAME sources the effective state came off: a switch this verb
     // just wrote is only as good as the tail it landed on, and this is the one write on

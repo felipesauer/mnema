@@ -29,7 +29,7 @@
  *   - THE HONESTY. A silence that means "switched off" says so where a silence can be paid
  *     for once: the document a session opens with. Without this half the slice would open a
  *     hole rather than close one — three different silences in one channel.
- *   - THE DEFAULT. Nothing arrives switched off, and there is no birth event to make it so.
+ *   - THE DEFAULT. No channel arrives switched off except the two that start off, and there is no birth event to make it so.
  *
  * WHAT IS TOTAL AND WHAT IS A LIST. The set of switchable channels is derived from the union
  * of channels this surface pushes (`record-framing.ts`), and {@link HONOURED} is reconciled
@@ -43,7 +43,7 @@
  * (`measurements/mcp-tool-channel/`).
  */
 
-import { mkdirSync, mkdtempSync, readFileSync, rmSync } from 'node:fs';
+import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
@@ -51,6 +51,8 @@ import { type CatalogEvent, catalogUpcasters } from '@mnema/chain';
 import { type DiscoveryEnv, orderedEvents, resolveTrees } from '@mnema/core';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { type CliIo, run } from '../src/cli.js';
+import { runCorrections } from '../src/commands/corrections.js';
+import { runSessionTally } from '../src/commands/tally.js';
 import { buildMcpServer } from '../src/mcp/server.js';
 import { openSession, type Session } from '../src/mcp/session.js';
 import { runDecisionTransition, runRulesBeforeAnEditTool } from '../src/mcp/tools.js';
@@ -59,9 +61,13 @@ import {
   ASKS_A_PERSON_CHANNEL,
   DOCUMENT_CHANNEL,
   EDIT_PUSH_CHANNEL,
+  FIRST_WRITE_GATE_CHANNEL,
   NOT_SWITCHABLE,
   RECALL_CHANNEL,
+  SESSION_TALLY_CHANNEL,
+  STARTS_OFF,
   SWITCHABLE_CHANNELS,
+  USER_CORRECTIONS_CHANNEL,
   WHAT_STOPS,
 } from '../src/record-framing.js';
 
@@ -297,8 +303,12 @@ describe('nothing arrives switched off', () => {
   it('says every channel is on over a record that has never been switched', async () => {
     const listed = await did('switch');
     expect(listed.out[0]).toContain(`${SWITCHABLE_CHANNELS.length} channel(s)`);
+    // EXCEPT THE ONE THAT STARTS OFF: nothing arrives unasked, and what refuses a write is on only
+    // where somebody switched it on (`STARTS_OFF`, `the-first-write-is-held-once.test.ts`).
     for (const channel of SWITCHABLE_CHANNELS) {
-      expect(await standsAt(channel)).toBe('on');
+      expect(await standsAt(channel), channel).toBe(
+        (STARTS_OFF as readonly string[]).includes(channel) ? 'off' : 'on',
+      );
     }
     // And there is no birth event and no seeded row: the absence of a switch IS the on.
     expect(switchesIn('public')).toHaveLength(0);
@@ -360,6 +370,79 @@ const HONOURED: Readonly<
       await ruleAskingAt('Nobody touches billing alone', 'src/billing');
     },
     speaks: async () => asked(connect(), 'src/billing/invoice.ts') !== undefined,
+  },
+  [FIRST_WRITE_GATE_CHANNEL]: {
+    // THE HOLD ON A FIRST WRITE, driven by a rule that GOVERNS (not one that asks, which would let
+    // the other gate answer) and by a connection of its own each time, since a path is held once
+    // per connection. It starts off, so the case switches it on before it asks whether it speaks.
+    setUp: async () => {
+      await ruleAddressedAt('Round money at the boundary', 'src/billing');
+      await did('switch', 'on', FIRST_WRITE_GATE_CHANNEL);
+    },
+    speaks: async () => {
+      const result = runRulesBeforeAnEditTool(connect(), { path: 'src/billing/invoice.ts' });
+      if (!result.ok) throw new Error('unreachable');
+      const reply = JSON.parse(JSON.stringify(result.value)) as {
+        hookSpecificOutput?: { permissionDecision?: string };
+      };
+      return reply.hookSpecificOutput?.permissionDecision === 'deny';
+    },
+  },
+  [USER_CORRECTIONS_CHANNEL]: {
+    // A READER THAT WRITES, driven the way a host drives it: a `Stop` naming a transcript in which the
+    // person corrected the agent. It starts off, so the case switches it on first; and each call is
+    // a transcript of a session of its own, because a correction already recorded is not recorded
+    // again, which would read as the switch holding. "Speaks" is a proposal being recorded.
+    setUp: async () => {
+      await did('switch', 'on', USER_CORRECTIONS_CHANNEL);
+    },
+    speaks: async () => {
+      const transcript = join(sandbox, 'corrected.jsonl');
+      writeFileSync(
+        transcript,
+        `${JSON.stringify({
+          type: 'user',
+          sessionId: `session-${Math.random()}`,
+          origin: { kind: 'human' },
+          message: { role: 'user', content: 'No, use pnpm instead of npm.' },
+        })}\n`,
+      );
+      const done = runCorrections(
+        { cwd: repo, env },
+        { payload: JSON.stringify({ hook_event_name: 'Stop', transcript_path: transcript }) },
+      );
+      return 'systemMessage' in done.reply;
+    },
+  },
+  [SESSION_TALLY_CHANNEL]: {
+    // A COUNT AT THE END OF A RESPONSE, driven the way a host drives it: the payload of a `Stop`
+    // naming a transcript whose last response wrote a file. "Speaks" is the reply carrying a line.
+    setUp: async () => {},
+    speaks: async () => {
+      const transcript = join(sandbox, 'session.jsonl');
+      writeFileSync(
+        transcript,
+        `${JSON.stringify({
+          type: 'assistant',
+          timestamp: '2020-01-01T00:00:00.000Z',
+          message: {
+            role: 'assistant',
+            content: [
+              {
+                type: 'tool_use',
+                name: 'Write',
+                input: { file_path: join(repo, 'src', 'billing', 'invoice.ts') },
+              },
+            ],
+          },
+        })}\n`,
+      );
+      const done = runSessionTally(
+        { cwd: repo, env },
+        { payload: JSON.stringify({ hook_event_name: 'Stop', transcript_path: transcript }) },
+      );
+      return 'systemMessage' in done.reply;
+    },
   },
   [AGENT_ACCEPTS_CHANNEL]: {
     // A GATE ON AN AGENT'S ACT, driven the way the act is made: a fresh proposal each time

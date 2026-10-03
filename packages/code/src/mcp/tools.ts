@@ -130,7 +130,7 @@ import {
 } from '@mnema/core/write';
 import { agentMayAccept } from '../agent-accepts.js';
 import { whatAWriteAsks } from '../edit-asks-a-person.js';
-import { editRulesNotice, editRulesTold } from '../edit-rules-push.js';
+import { editRulesNotice, editRulesTold, firstWriteNotice } from '../edit-rules-push.js';
 import { reachOfAddress, readGoverningRules, readRulesInForceAt } from '../governed-tree.js';
 import {
   projectEventsOf,
@@ -148,6 +148,8 @@ import {
   ASKS_A_PERSON_CHANNEL,
   type CountedChannel,
   EDIT_PUSH_CHANNEL,
+  FIRST_WRITE_GATE_CHANNEL,
+  STARTS_OFF,
 } from '../record-framing.js';
 import type { ScopedLinkBreak } from '../record-integrity.js';
 import { forwardReplacement, type Landed, type Replacement } from '../recorded-content.js';
@@ -2185,14 +2187,17 @@ export function runRulesBeforeAnEditTool(
   // runs at all.
   const pushing = channelIsOn(caches, EDIT_PUSH_CHANNEL);
   const asking = channelIsOn(caches, ASKS_A_PERSON_CHANNEL);
-  if (!pushing && !asking) return { ok: true, value: hookReply(PRE_TOOL_USE, {}) };
+  // THE THIRD SWITCH starts OFF (`STARTS_OFF`): the hold on a first write is the one power here
+  // that refuses something, so it is on only where somebody switched it on.
+  const holding = channelIsOn(caches, FIRST_WRITE_GATE_CHANNEL, STARTS_OFF);
+  if (!pushing && !asking && !holding) return { ok: true, value: hookReply(PRE_TOOL_USE, {}) };
 
   // The same two lines `runGoverningRulesTool` stands on: a project session carries its
   // directory, and a server has no working directory of its own to resolve against.
   const root = session.project ?? '';
   const read = { path: input.path, root, from: root };
-  const rulesAt = pushing ? readRulesInForceAt(caches, read) : undefined;
-  const context = rulesAt === undefined ? undefined : editRulesNotice(rulesAt);
+  const rulesAt = pushing || holding ? readRulesInForceAt(caches, read) : undefined;
+  const context = !pushing || rulesAt === undefined ? undefined : editRulesNotice(rulesAt);
 
   // THE GATE, AND ITS WHOLE ORDER OF OPERATIONS. The rules that ask are derived, the text
   // is composed, and only then is the fact appended — because the fact cites what the text
@@ -2201,7 +2206,28 @@ export function runRulesBeforeAnEditTool(
   // is decided where the other door decides it too (`whatAWriteAsks`).
   const gate = asking ? whatAWriteAsks(caches, read) : undefined;
   const ask = gate?.notice;
-  const charged = gate === undefined ? { ok: true as const } : recordAskings(session, gate.asked);
+  const charged =
+    gate === undefined
+      ? { ok: true as const }
+      : recordAskings(session, gate.asked, ASKS_A_PERSON_CHANNEL);
+  // THE FIRST WRITE'S HOLD, and only where nobody is asked already: a person asked is a stop that
+  // says more. It is held ONCE per path per connection; the fact that cites each rule is appended
+  // before the reply carries the refusal, and a record that cannot be written refuses nothing.
+  const heldKey = rulesAt === undefined ? undefined : (rulesAt.relative ?? rulesAt.path);
+  const refusal =
+    holding &&
+    ask === undefined &&
+    rulesAt !== undefined &&
+    heldKey !== undefined &&
+    rulesAt.rules.length > 0 &&
+    !session.held.has(heldKey)
+      ? recordAskings(session, rulesAt, FIRST_WRITE_GATE_CHANNEL)
+      : undefined;
+  const deny =
+    refusal?.ok === true && rulesAt !== undefined && heldKey !== undefined
+      ? firstWriteNotice(rulesAt)
+      : undefined;
+  if (deny !== undefined && heldKey !== undefined) session.held.add(heldKey);
   // A RECORD THAT CANNOT BE WRITTEN CHARGES NOTHING, and the silence is not this line's to
   // explain: the tool still answers `ok` with whatever text it had, so the edit goes
   // through and nobody's afternoon is spent on a refusal that was never recorded. What says
@@ -2210,8 +2236,10 @@ export function runRulesBeforeAnEditTool(
   // channel that was switched off and never for one that had nothing to say. A fact saying
   // a channel served on a call where it said nothing would be the fact reading backwards.
   recordServices(session, [
-    ...(context !== undefined ? [EDIT_PUSH_CHANNEL] : []),
+    // The push said nothing of its own on a held write: its rules are in the refusal.
+    ...(context !== undefined && deny === undefined ? [EDIT_PUSH_CHANNEL] : []),
     ...(charged.ok && ask !== undefined ? [ASKS_A_PERSON_CHANNEL] : []),
+    ...(deny !== undefined ? [FIRST_WRITE_GATE_CHANNEL] : []),
   ]);
   // WHAT THOSE WRITES FOUNDED rides in the text the host hands the agent — the one field of a
   // hook reply that reaches the model; prose beside it would be dropped. It can only be owed on
@@ -2223,10 +2251,13 @@ export function runRulesBeforeAnEditTool(
   const founded = [...session.founding.take(), ...session.replacementsOwed.take()];
   // THEY SHARE THE CEILING with the rules, since the host measures the one string it is
   // handed — which is why the rules and they are joined by one function (`edit-rules-push.ts`).
-  const told = editRulesTold(rulesAt, founded);
+  // On a held write the rules ride in the refusal, so the context is what was founded and nothing
+  // more; the rules would otherwise reach the model twice in one reply.
+  const told = editRulesTold(deny === undefined ? rulesAt : undefined, founded);
   const said = {
     ...(told !== undefined ? { context: told } : {}),
     ...(charged.ok && ask !== undefined ? { ask } : {}),
+    ...(deny !== undefined ? { deny } : {}),
   };
   return { ok: true, value: hookReply(PRE_TOOL_USE, said) };
 }
@@ -2248,14 +2279,18 @@ export function runRulesBeforeAnEditTool(
  * treats as non-blocking anyway, at the cost of a diagnostic nobody reads in a channel that
  * must never make somebody's session worse.
  */
-function recordAskings(session: Session, at: RulesAtPath): { readonly ok: boolean } {
+function recordAskings(
+  session: Session,
+  at: RulesAtPath,
+  channel: CountedChannel,
+): { readonly ok: boolean } {
   const route = routeWrite(session, 'channel.asked', {});
   if (!route.ok) return { ok: false };
   const { ctx, run } = openWrite(session, route.scope);
   let appended = 0;
   for (const rule of at.rules) {
     const done = recordChannelAsked(ctx, {
-      channel: ASKS_A_PERSON_CHANNEL,
+      channel,
       rule: rule.id,
       path: at.relative ?? at.path,
       which: session.which,

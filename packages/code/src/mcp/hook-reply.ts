@@ -42,15 +42,21 @@
  *     host's own enum: a wrong value here does not cost the charge, it costs the
  *     injection that already worked.
  *
- * ## The two grades it can carry, and what stays unrepresentable
+ * ## The grades it can carry, and what stays unrepresentable
  *
  * `additionalContext` — the agent sees the rule, beside the result of the write that fired
- * the hook — and `permissionDecision: "ask"` — a PERSON decides before the file is
- * written. Nothing else. Not `deny`, not `allow`, not `updatedInput`, not
- * `updatedToolOutput`.
+ * the hook — `permissionDecision: "ask"` — a PERSON decides before the file is written — and
+ * `permissionDecision: "deny"`, which exists for ONE channel: the hold on the first write of a
+ * session to a file a rule addresses (`edit-first-write-gate`, off until somebody switches it
+ * on). Nothing else. Not `allow`, not `updatedInput`, not `updatedToolOutput`.
  *
- * `deny` waits, and by ORDER rather than by nerve: refusing outright is a different power
- * over somebody else's work, and its own tie has not been settled. `allow` is worse than
+ * `deny` WAS UNREPRESENTABLE and is the one value added. Refusing outright is a different power
+ * over somebody else's work, so it is carried only for a refusal that happens ONCE and says why —
+ * the write is refused the first time, with the rules in the reason, and the same write repeated is
+ * let through — and only where a person switched that channel on. The host's side of it is
+ * measured (`measurements/hooks-by-host/`: the write refused, the reason handed to the model as an
+ * error). `ask` outranks it when both would be said, since a person is then already asked.
+ * `allow` is worse than
  * useless — this product saying *you may write* is this product taking responsibility for
  * work that is not its own. `updatedInput` is refused permanently: a product that rewrites
  * the input of a tool is a product writing the artifact, and a record of what happened
@@ -95,15 +101,15 @@ import { neutralized } from '../one-line.js';
 export type HookEvent = 'PreToolUse';
 
 /**
- * The one permission decision this server can express.
+ * The permission decisions this server can express: `ask`, and `deny` for the once-only hold on a
+ * first write.
  *
- * A union of one, for exactly the reason {@link HookEvent} is: the host's own field takes
- * four values, three of which this product either refuses permanently or has not earned
- * yet, and a type that admitted them would leave those refusals as prose in a comment.
- * Widening this is how the second grade of force would arrive, so widening it is a slice
- * with a tie behind it rather than an edit.
+ * A closed union, for exactly the reason {@link HookEvent} is: the host's own field takes four
+ * values, two of which this product refuses permanently or has not earned, and a type that
+ * admitted them would leave those refusals as prose in a comment. Widening this is how a grade of
+ * force arrives, so it is a slice with a tie behind it rather than an edit — `deny` is that slice.
  */
-export type Escalation = 'ask';
+export type Escalation = 'ask' | 'deny';
 
 /**
  * What a reply has to say — either grade, both, or neither.
@@ -124,6 +130,12 @@ export interface HookSaid {
    * cannot be forgotten at a call site: there is no argument that asks without it.
    */
   readonly ask?: string;
+  /**
+   * Why a write is refused ONCE — the first write of a session to a file a rule addresses, with
+   * the rules in the reason. Like {@link ask} it is a reason and not a boolean, so the refusal
+   * cannot be made without saying what it is for. When both are given, `ask` is what is said.
+   */
+  readonly deny?: string;
 }
 
 /**
@@ -165,6 +177,9 @@ export interface HookReply {
  */
 const ASK: Escalation = 'ask';
 
+/** The other value, named once for the same reason: the hold on a first write says it. */
+const DENY: Escalation = 'deny';
+
 /**
  * The reply for what a channel has to say, or the empty reply when it has nothing.
  *
@@ -183,23 +198,29 @@ export function hookReply(event: HookEvent, said: HookSaid): HookReply {
   // decoded one exactly as it was. `neutralizes-control-bytes-everywhere.test.ts` decodes
   // the reply and reads what the host would hand the model.
   const context = said.context === undefined ? undefined : neutralized(said.context);
-  const ask = said.ask === undefined ? undefined : neutralized(said.ask);
-  if (context !== undefined && ask !== undefined) {
+  // `ask` OUTRANKS `deny`: where a person is already asked, a once-only refusal would say less.
+  const decision: { readonly value: Escalation; readonly reason: string } | undefined =
+    said.ask !== undefined
+      ? { value: ASK, reason: neutralized(said.ask) }
+      : said.deny !== undefined
+        ? { value: DENY, reason: neutralized(said.deny) }
+        : undefined;
+  if (context !== undefined && decision !== undefined) {
     return {
       hookSpecificOutput: {
         hookEventName: event,
         additionalContext: context,
-        permissionDecision: ASK,
-        permissionDecisionReason: ask,
+        permissionDecision: decision.value,
+        permissionDecisionReason: decision.reason,
       },
     };
   }
-  if (ask !== undefined) {
+  if (decision !== undefined) {
     return {
       hookSpecificOutput: {
         hookEventName: event,
-        permissionDecision: ASK,
-        permissionDecisionReason: ask,
+        permissionDecision: decision.value,
+        permissionDecisionReason: decision.reason,
       },
     };
   }

@@ -84,6 +84,11 @@ $ mnema
 !   before-a-write [options]              answer a host’s hook before a file is
 !                                         written: ask for a person where a rule
 !                                         asks
+!   tally                                 answer a host’s Stop or PreCompact hook
+!                                         with what the session wrote and recorded
+!   corrections                           record what a person corrected in a
+!                                         session as proposed decisions, for a
+!                                         Stop hook
 !   key                                   manage this machine's signing keys
 !   tail                                  authorize a cut in the record's own
 !                                         tails
@@ -189,6 +194,11 @@ $ mnema --help
 |   before-a-write [options]              answer a host’s hook before a file is
 |                                         written: ask for a person where a rule
 |                                         asks
+|   tally                                 answer a host’s Stop or PreCompact hook
+|                                         with what the session wrote and recorded
+|   corrections                           record what a person corrected in a
+|                                         session as proposed decisions, for a
+|                                         Stop hook
 |   key                                   manage this machine's signing keys
 |   tail                                  authorize a cut in the record's own
 |                                         tails
@@ -838,6 +848,45 @@ $ mnema before-a-write --help
 |   rules. Each asking is recorded as a fact before the reply is printed. The gate can be
 |   switched off with `mnema switch off edit-asks-a-person`.
 
+### mnema tally --help
+$ mnema tally --help
+| Usage: mnema tally [options]
+|
+| answer a host’s Stop or PreCompact hook with what the session wrote and recorded
+|
+| Options:
+|   -h, --help  display help for command
+|
+| What it reads and what it prints:
+|   The JSON a host hands a hook on stdin, with the transcript it names. On stdout, the reply
+|   the host reads: a `systemMessage` saying how many files this session’s own tool calls
+|   wrote and how many decisions were recorded in this project since it opened, or {} when
+|   the hook is not Stop or PreCompact, the session wrote no file (at Stop: no file in the
+|   last response), there is no project here, or the transcript cannot be read.
+|   It reads, and writes nothing. It can be switched off with `mnema switch off session-tally`.
+
+### mnema corrections --help
+$ mnema corrections --help
+| Usage: mnema corrections [options]
+|
+| record what a person corrected in a session as proposed decisions, for a Stop
+| hook
+|
+| Options:
+|   -h, --help  display help for command
+|
+| What it reads and what it does:
+|   The JSON a host hands a Stop hook on stdin, with the transcript it names. It finds the
+|   prompts that open by correcting the agent — "no, …", "stop …", "do not …", "that is
+|   wrong", "use … instead", in English and Portuguese — and records each as a proposed
+|   decision in this machine’s private tree, citing the session and the line, at most five
+|   at a time and never the same line twice. No model is called; a match is a guess that a
+|   person accepts or rejects.
+|   On stdout, the reply the host reads: a `systemMessage` saying how many were recorded and
+|   under which labels, or {}.
+|   It does nothing until `mnema switch on user-corrections`, because it reads what a person
+|   typed. With the channel off, or outside a project, it records nothing.
+
 ### mnema key --help
 $ mnema key --help
 | Usage: mnema key [options] [command]
@@ -918,7 +967,7 @@ $ mnema switch --help
 |   What it carries is what stops arriving when it is off.
 |   An off switch says who made it and when, and whether a clone of this
 |   repository holds it — a switch recorded privately governs only this machine.
-|   Nothing arrives switched off: a channel with no switch is on.
+|   A channel with no switch is on, except edit-first-write-gate and user-corrections, which are off until switched on.
 
 ### mnema verify --help
 $ mnema verify --help
@@ -1543,7 +1592,8 @@ $ mnema switch off --help
 |
 | Arguments:
 |   channel          the channel to switch (brief-document, recall-document,
-|                    edit-rules-push, edit-asks-a-person, agent-accepts)
+|                    edit-rules-push, edit-asks-a-person, agent-accepts,
+|                    edit-first-write-gate, user-corrections, session-tally)
 |
 | Options:
 |   --reason <text>  why (recorded in the fact; never required)
@@ -1575,7 +1625,8 @@ $ mnema switch on --help
 |
 | Arguments:
 |   channel          the channel to switch (brief-document, recall-document,
-|                    edit-rules-push, edit-asks-a-person, agent-accepts)
+|                    edit-rules-push, edit-asks-a-person, agent-accepts,
+|                    edit-first-write-gate, user-corrections, session-tally)
 |
 | Options:
 |   --reason <text>  why (recorded in the fact; never required)

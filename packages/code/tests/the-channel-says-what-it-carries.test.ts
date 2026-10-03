@@ -281,6 +281,8 @@ describe('what `channel.served` counts, said by the table the type makes total',
       'agent-accepts',
       'brief-document',
       'recall-document',
+      'session-tally',
+      'user-corrections',
     ]);
   });
 
@@ -293,7 +295,10 @@ describe('what `channel.served` counts, said by the table the type makes total',
     const WRITES_THE_FACT_ITSELF = 'is itself the recorded fact';
     for (const [channel, why] of Object.entries(NOT_COUNTED_AS_SERVED)) {
       expect(why.length, channel).toBeGreaterThan(40);
-      const reason = channel === 'agent-accepts' ? WRITES_THE_FACT_ITSELF : 'writes nothing';
+      const reason =
+        channel === 'agent-accepts' || channel === 'user-corrections'
+          ? WRITES_THE_FACT_ITSELF
+          : 'writes nothing';
       expect(why, channel).toContain(reason);
     }
   });
@@ -389,9 +394,12 @@ describe('every handler that pushes declares the channel it carries', () => {
       const declared = DECLARES_MODEL_CHANNEL.exec(source);
       expect(declared, `${file} writes to a model and names no channel`).not.toBeNull();
       const channel = declared?.[1] ?? '';
-      expect(FRAMED_CHANNELS as readonly string[], `${file} names an unknown channel`).toContain(
-        channel,
-      );
+      // A channel is known when it carries a declaration (it is framed) or when the table that
+      // says why it carries none names it — a count has no record text to say whose it is.
+      expect(
+        [...FRAMED_CHANNELS, ...Object.keys(UNFRAMED_CHANNELS)] as readonly string[],
+        `${file} names an unknown channel`,
+      ).toContain(channel);
       named.push(`${file}:${channel}`);
     }
     // And at least one handler WAS asked. Without this the case is green on a plugin
@@ -404,8 +412,10 @@ describe('every handler that pushes declares the channel it carries', () => {
     // tool's is (`edit-asks-a-person.ts`), under the same channel.
     expect(named).toEqual([
       'edit-asks-a-person.mjs:edit-asks-a-person',
+      'session-corrections.mjs:user-corrections',
       'session-recall.mjs:recall-document',
       'session-start.mjs:brief-document',
+      'session-tally.mjs:session-tally',
     ]);
     expect(handlers()).toContain('hand-over.mjs');
   });
@@ -450,7 +460,10 @@ describe('every handler that pushes declares the channel it carries', () => {
     expect(ruled).toEqual([
       'SessionStart:command:session-start.mjs',
       'SessionStart:command:session-recall.mjs',
-      'PreToolUse:mcp_tool:rules_before_an_edit:edit-rules-push+edit-asks-a-person',
+      'Stop:command:session-tally.mjs',
+      'Stop:command:session-corrections.mjs',
+      'PreCompact:command:session-tally.mjs',
+      'PreToolUse:mcp_tool:rules_before_an_edit:edit-rules-push+edit-asks-a-person+edit-first-write-gate',
       'PreToolUse:command:edit-asks-a-person.mjs',
     ]);
   });
