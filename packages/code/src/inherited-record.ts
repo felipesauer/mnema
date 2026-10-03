@@ -12,8 +12,9 @@
  *    is read, so it is not signed by the project, is not in any tree the project's `verify`
  *    covers, and cannot be confused with a decision the project made.
  *  - It never reaches the network on a read. Only `fetchOrigin` does, and only the two verbs that
- *    point or move the pointer call it — plus the one read that finds the pinned commit missing
- *    from this machine, once, which is what lets a fresh clone have what it points at.
+ *    point or move the pointer call it. The brief reads this machine's copy and, when the pinned
+ *    commit is not there, says so and names `inherit update`: `inherit.json` is committed, so a
+ *    clone of someone else's repository must not make the opening fetch a URL they chose.
  *  - It reads what VERIFIES. The record at the commit is checked with the same `verify` the
  *    project's own is; a record that does not verify there contributes nothing, and the reading
  *    says so ({@link InheritedReading}).
@@ -126,13 +127,13 @@ export class GitFailed extends Error {
   override readonly name = 'GitFailed';
 }
 
-function git(args: readonly string[], binary = false): Buffer | string {
+function git(args: readonly string[], binary = false, timeout = 120_000): Buffer | string {
   try {
     return execFileSync('git', ['-c', 'gc.auto=0', '-c', 'maintenance.auto=false', ...args], {
       encoding: binary ? 'buffer' : 'utf8',
       env: { ...process.env, GIT_TERMINAL_PROMPT: '0' },
       stdio: ['ignore', 'pipe', 'pipe'],
-      timeout: 120_000,
+      timeout,
       maxBuffer: 1024 * 1024 * 1024,
     });
   } catch (error) {
@@ -161,19 +162,26 @@ function holds(repo: string, commit: string): boolean {
   }
 }
 
+/** A fetch is a person waiting at `set` or `update`; long enough for a repository, not for a hang. */
+const FETCH_TIMEOUT_MS = 10_000;
+
 /** Brings the where's heads into the local copy. The only call here that may use the network. */
 function fetchOrigin(repo: string, source: string): void {
-  git([
-    '-C',
-    repo,
-    'fetch',
-    '--quiet',
-    '--no-tags',
-    '--',
-    source,
-    '+HEAD:refs/mnema/head',
-    '+refs/heads/*:refs/mnema/heads/*',
-  ]);
+  git(
+    [
+      '-C',
+      repo,
+      'fetch',
+      '--quiet',
+      '--no-tags',
+      '--',
+      source,
+      '+HEAD:refs/mnema/head',
+      '+refs/heads/*:refs/mnema/heads/*',
+    ],
+    false,
+    FETCH_TIMEOUT_MS,
+  );
 }
 
 /** The `.mnema/` of one commit, extracted once and never changed (a commit does not change). */
@@ -236,33 +244,19 @@ function readRecord(
 /**
  * Reads the record a pointer names, at that commit.
  *
- * `mayFetch` is whether a commit missing from this machine may be asked of the where: a read
- * of the brief says yes once (a fresh clone has nothing yet), and the update's look at the
- * PREVIOUS commit says no (it asks only what it already has).
+ * It reads what this machine already holds and never asks the where for a commit it lacks.
  */
-export function readInherited(
-  trees: ResolvedTrees,
-  pointer: Pointer,
-  mayFetch: boolean,
-): InheritedReading {
-  const projectRoot = dirname(trees.projectPublic as string);
+export function readInherited(trees: ResolvedTrees, pointer: Pointer): InheritedReading {
   const home = homeOf(trees, pointer.where);
   let root: string;
   try {
     const repo = repoOf(home);
-    if (!holds(repo, pointer.commit) && mayFetch) {
-      try {
-        fetchOrigin(repo, sourceOf(pointer.where, projectRoot));
-      } catch (error) {
-        return {
-          state: 'unavailable',
-          pointer,
-          why: `this machine has no copy of that commit and ${pointer.where} could not be reached (${(error as Error).message})`,
-        };
-      }
-    }
     if (!holds(repo, pointer.commit)) {
-      return { state: 'unavailable', pointer, why: 'this machine has no copy of that commit' };
+      return {
+        state: 'unavailable',
+        pointer,
+        why: 'inherited record not fetched yet: run `mnema inherit update`',
+      };
     }
     try {
       root = materialize(home, repo, pointer.commit);
@@ -284,7 +278,7 @@ export function readProjectInherited(trees: ResolvedTrees): InheritedReading | u
   const found = readPointer(trees.projectPublic);
   if (found.state === 'absent') return undefined;
   if (found.state === 'invalid') return found;
-  return readInherited(trees, found.pointer, true);
+  return readInherited(trees, found.pointer);
 }
 
 /** The commit a revision of the where names, after fetching — or why none. */

@@ -72,7 +72,7 @@ function plan(
   const resolved = resolveAtOrigin(trees, where, rev);
   if (!resolved.ok) return { ok: false, reason: resolved.reason, detail: resolved.detail };
   const to: Pointer = { where, commit: resolved.commit };
-  const reading = readInherited(trees, to, false);
+  const reading = readInherited(trees, to);
   if (reading.state !== 'read') {
     return {
       ok: false,
@@ -80,7 +80,7 @@ function plan(
       detail: reading.why,
     };
   }
-  const before = from === undefined ? undefined : readInherited(trees, from, false);
+  const before = from === undefined ? undefined : readInherited(trees, from);
   const old = before?.state === 'read' ? before.decisions : [];
   const ids = new Set(old.map((d) => d.id));
   const now = new Set(reading.decisions.map((d) => d.id));

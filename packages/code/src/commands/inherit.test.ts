@@ -205,6 +205,10 @@ describe('the brief with an inherited record', () => {
     const file = join(tails, segment);
     writeFileSync(file, readFileSync(file, 'utf8').replace('Postgres', 'Mysql'));
     const tampered = commit(source);
+    // `update` would refuse this commit, and the brief does not fetch: bring it in by hand.
+    const copies = join(project.env.home, '.mnema', 'inherited');
+    const [digest] = readdirSync(copies);
+    git(join(copies, digest as string, 'repo.git'), 'fetch', '-q', source.cwd, tampered);
     writeFileSync(
       join(project.cwd, '.mnema', 'inherit.json'),
       JSON.stringify({ origin: source.cwd, commit: tampered }),
@@ -221,6 +225,26 @@ describe('the brief with an inherited record', () => {
     expect(refused).toMatchObject({ ok: false, reason: 'NOT_VERIFIED' });
   });
 
+  it('never goes to the origin: a pinned commit this machine lacks is said, with the verb that fetches it', () => {
+    const { at: source, first } = origin();
+    const project = place('project');
+    writeFileSync(
+      join(project.cwd, '.mnema', 'inherit.json'),
+      JSON.stringify({ origin: source.cwd, commit: first }),
+    );
+    accept(project, 'Use tabs here');
+    // The origin is reachable and holds the commit: a brief that fetched would read it.
+    for (const outside of [false, true]) {
+      const done = runBrief(project, { outside });
+      if (!done.ok) throw new Error('refused');
+      expect(done.inherited?.state).toBe('unavailable');
+      const text = briefDocument(done.brief, done.inherited).join('\n');
+      expect(text).toContain('inherited record not fetched yet: run `mnema inherit update`');
+      expect(text).toContain('Use tabs here');
+      expect(text).not.toContain('Postgres');
+    }
+  });
+
   it('says it when there is no copy and no origin to ask, and the rest still prints', () => {
     const project = place('project');
     accept(project, 'Use tabs here');
@@ -232,7 +256,7 @@ describe('the brief with an inherited record', () => {
     if (!done.ok) throw new Error('refused');
     expect(done.inherited?.state).toBe('unavailable');
     const text = briefDocument(done.brief, done.inherited).join('\n');
-    expect(text).toContain('could not be read here');
+    expect(text).toContain('inherited record not fetched yet');
     expect(text).toContain('Use tabs here');
   });
 });

@@ -83,7 +83,7 @@ export function registerInherit(program: Command, wiring: Wiring): Declared {
       'commit prints none, and the brief says so. Pointing at an origin is trusting it at that',
       'commit; the commit never moves unless `inherit update --write` moves it.',
       'The copy is kept under the mnema home, outside the project. Only `set` and `update`',
-      'use the network; a read of the brief does only to bring in a commit this machine lacks.',
+      'use the network; the brief reads this machine’s copy and says when the commit is not there yet.',
     ].join('\n'),
   );
   group
