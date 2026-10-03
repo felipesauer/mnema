@@ -196,8 +196,6 @@ const REFUSES_SOMETHING_ELSE_FIRST: Readonly<Record<string, string>> = {
   run: THE_PARSER_ANSWERED_FIRST,
   key: THE_PARSER_ANSWERED_FIRST,
   tail: THE_PARSER_ANSWERED_FIRST,
-  'decision record':
-    'the rationale may come from the line, standard input or a file, and the line gave none, which it says before it asks for a project',
   'run end': 'with no id and no MNEMA_RUN there is no session named, which it says first',
   'key protect':
     'with no MNEMA_KEY_PASSPHRASE there is nothing to protect with, which it says first; it needs no project either way',

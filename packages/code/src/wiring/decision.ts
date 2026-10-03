@@ -20,7 +20,7 @@ import type { runDecisionImport } from '../commands/decision-import.js';
 import type { runDecisionTransition } from '../commands/decision-transition.js';
 import { fact } from '../presentation/detail.js';
 import { RECORD_CONTRACT_HELP, replacementNotice } from '../recorded-content.js';
-import { addBodySourceOptions, bodyFrom } from './body-source.js';
+import { addBodySourceOptions } from './body-source.js';
 import { here } from './context.js';
 import {
   actionsRequiring,
@@ -110,6 +110,7 @@ export function registerDecision(program: Command, wiring: Wiring): Declared {
       bodyFile?: string;
     }>(record, wiring);
     if (given === REFUSED) return;
+    const { bodyFrom } = await import('./body-source.js');
     const rationale = await bodyFrom(wiring, 'rationale', 'as an argument', {
       typed,
       stdin: given.stdin,

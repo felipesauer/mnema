@@ -10,7 +10,7 @@
  *     missing or does not read as expected is said, never guessed at);
  *   - is the mnema MCP server declared more than once in the places a host reads it from, the
  *     plugin counting as one declaration — a session is offered every tool once per declaration;
- *   - is there a namesake: a second `mnema` on the `PATH`, or an npm package named `mnema`
+ *   - is there a namesake: a second “mnema” on the `PATH`, or an npm package named “mnema”
  *     installed where this machine's `PATH` points. THE REGISTRY IS NOT ASKED: a package that is
  *     published but not installed here is outside what this can know, and it says so.
  *
@@ -97,7 +97,7 @@ function binaryFindings(ctx: DoctorContext): Finding[] {
         topic: 'binary',
         state: 'attention',
         line:
-          'no `mnema` on the PATH: the plugin and any MCP entry that runs `mnema mcp` cannot start it — ' +
+          'no “mnema” on the PATH: the plugin and any MCP entry that runs `mnema mcp` cannot start it — ' +
           'install it with `npm i -g @mnema/code`, or put the directory of this binary on the PATH.',
       },
     ];
@@ -108,7 +108,7 @@ function binaryFindings(ctx: DoctorContext): Finding[] {
       {
         topic: 'binary',
         state: 'fine',
-        line: `\`mnema\` on the PATH is ${oneLine(first.path)}, and it is the one running now (${ctx.running.version}) — nothing to do.`,
+        line: `“mnema” on the PATH is ${oneLine(first.path)}, and it is the one running now (${ctx.running.version}) — nothing to do.`,
       },
     ];
   }
@@ -117,7 +117,7 @@ function binaryFindings(ctx: DoctorContext): Finding[] {
       topic: 'binary',
       state: 'attention',
       line:
-        `the first \`mnema\` on the PATH is ${oneLine(first.path)}, and the one running now is ${oneLine(running)} ` +
+        `the first “mnema” on the PATH is ${oneLine(first.path)}, and the one running now is ${oneLine(running)} ` +
         `(${ctx.running.version}) — a host that starts \`mnema mcp\` starts the first: put the one you mean first on the PATH.`,
     },
   ];
@@ -131,7 +131,7 @@ function namesakeFindings(ctx: DoctorContext): Finding[] {
   }
   if (distinct.size > 1) {
     found.push(
-      `${distinct.size} different \`mnema\` executables are on the PATH (${[...distinct.values()].map(oneLine).join(', ')}) — keep the one you installed and remove the others, or reorder the PATH.`,
+      `${distinct.size} different “mnema” executables are on the PATH (${[...distinct.values()].map(oneLine).join(', ')}) — keep the one you installed and remove the others, or reorder the PATH.`,
     );
   }
   const roots = new Set<string>([join(ctx.cwd, 'node_modules')]);
@@ -145,7 +145,7 @@ function namesakeFindings(ctx: DoctorContext): Finding[] {
     if (manifest === undefined || manifest.name !== 'mnema') continue;
     const version = typeof manifest.version === 'string' ? ` ${oneLine(manifest.version)}` : '';
     found.push(
-      `an npm package named \`mnema\`${version} is installed in ${oneLine(root)}, and it is not this product, whose package is \`@mnema/code\` — uninstall it if you did not mean to have it.`,
+      `an npm package named “mnema”${version} is installed in ${oneLine(root)}, and it is not this product, whose package is \`@mnema/code\` — uninstall it if you did not mean to have it.`,
     );
   }
   if (found.length === 0) {
@@ -153,7 +153,7 @@ function namesakeFindings(ctx: DoctorContext): Finding[] {
       {
         topic: 'namesake',
         state: 'fine',
-        line: 'no second `mnema` on the PATH and no npm package named `mnema` installed where this machine looks — the registry was not asked, so one that is published and not installed is outside this.',
+        line: 'no second “mnema” on the PATH and no npm package named “mnema” installed where this machine looks — the registry was not asked, so one that is published and not installed is outside this.',
       },
     ];
   }

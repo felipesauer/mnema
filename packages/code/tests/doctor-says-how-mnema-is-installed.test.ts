@@ -86,7 +86,7 @@ afterEach(() => {
 describe('the binary on the PATH', () => {
   it('says there is none, and what to install', () => {
     const lines = said({ path: join(sandbox, 'empty') });
-    expect(lines[0]).toContain('attention binary no `mnema` on the PATH');
+    expect(lines[0]).toContain('attention binary no “mnema” on the PATH');
     expect(lines[0]).toContain('npm i -g @mnema/code');
   });
 
@@ -95,7 +95,7 @@ describe('the binary on the PATH', () => {
     expect(said({ path: mine })[0]).toContain('and it is the one running now (9.9.9)');
     const other = executable(join(sandbox, 'other', 'mnema'));
     const lines = said({ path: [join(sandbox, 'other'), mine].join(delimiter) });
-    expect(lines[0]).toContain(`the first \`mnema\` on the PATH is ${other}`);
+    expect(lines[0]).toContain(`the first “mnema” on the PATH is ${other}`);
     expect(lines[0]).toContain('put the one you mean first on the PATH');
   });
 });
@@ -112,9 +112,9 @@ describe('a namesake', () => {
     mkdirSync(join(sandbox, 'bin'), { recursive: true });
     const lines = said({ path: [path, join(sandbox, 'bin')].join(delimiter) });
     const namesakes = lines.filter((line) => line.startsWith('attention namesake'));
-    expect(namesakes.some((line) => line.includes('2 different `mnema` executables'))).toBe(true);
+    expect(namesakes.some((line) => line.includes('2 different “mnema” executables'))).toBe(true);
     expect(
-      namesakes.some((line) => line.includes('an npm package named `mnema` 3.2.1 is installed')),
+      namesakes.some((line) => line.includes('an npm package named “mnema” 3.2.1 is installed')),
     ).toBe(true);
   });
 

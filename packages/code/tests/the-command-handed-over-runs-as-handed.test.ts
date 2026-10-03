@@ -557,7 +557,8 @@ export const HANDED_OVER: Readonly<
   // line 38 and name 74 until the two pages named the verb that records corrections
   // (`mnema corrections`, and `mnema switch` in the row that says it starts off) and the switch that
   // turns it on (`mnema switch on user-corrections`, a line on each page).
-  span: { line: 40, name: 77, flag: 1, unwritten: 0 },
+  // name 77 until the page named `mnema doctor` and the server-only plugin's `mnema mcp`.
+  span: { line: 40, name: 79, flag: 1, unwritten: 0 },
   // name 18 until the page that says where the key lives named `mnema key protect` in a line of
   // its own.
   // line 35 until the same page showed that question in a block of its own.
@@ -575,7 +576,8 @@ export const HANDED_OVER: Readonly<
   // session-tally` (`wiring/tally.ts`).
   // line 47 until the help of the verb that records corrections named the switch that turns it on,
   // `mnema switch on user-corrections` (`wiring/corrections.ts`).
-  source: { line: 48, name: 53, flag: 3, unwritten: 3 },
+  // name 53 until `mnema doctor` named the `mnema mcp` a host starts, twice, and `claude mcp add mnema -- mnema mcp`.
+  source: { line: 48, name: 56, flag: 3, unwritten: 3 },
 };
 
 // ---------------------------------------------------------------------------

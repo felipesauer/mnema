@@ -282,7 +282,7 @@ export function registerSkill(program: Command, wiring: Wiring): Declared {
     // what to do about the file.
     for (const line of linkBreakNotice(result.linkBreaks)) io.err(render(line));
     writeLines(io, exportReport(render, result));
-    for (const line of exportWarning(render, result)) io.err(line);
+    for (const line of exportWarning(result)) io.err(render(line));
   });
   return mutatesTheRecord(skill);
 }

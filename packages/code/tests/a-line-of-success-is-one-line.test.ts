@@ -275,6 +275,10 @@ const CLASSIFIED: Readonly<Record<string, { verdict: Verdict; why: string }>> = 
     verdict: 'minted',
     why: 'an `ADR-<n>` and a uuid, both minted by the write that just landed',
   },
+  'doctor.ts «{} · {}: {}» #1': {
+    verdict: 'minted',
+    why: 'the state and the topic are words of this verb, and the finding was composed in `commands/doctor.ts` with every path and version it read from the machine closed by `oneLine`',
+  },
   'focus.ts «{} has no open runs.» #1': {
     verdict: 'minted',
     why: 'an anchor: `--actor` is resolved to one before the read runs',
@@ -673,7 +677,8 @@ describe('every line this wiring words is classified', () => {
     // 69 until `key protect` and `unprotect` began printing which files they changed.
     // 80 until the channel that starts off said what it does once it is switched on.
     // 81 until user-corrections got its own message.
-    expect(FOUND.sites.length).toBe(82);
+    // 82 until `doctor` printed a line to a finding.
+    expect(FOUND.sites.length).toBe(83);
   });
 
   it('reads the verdict off the source rather than believing the table', () => {
@@ -694,7 +699,7 @@ describe('every line this wiring words is classified', () => {
     // Neither arm of the case above may be empty, or half of it is vacuous.
     const verdicts = Object.values(CLASSIFIED).map((said) => said.verdict);
     expect(verdicts.filter((verdict) => verdict === 'collapsed').length).toBe(40);
-    expect(verdicts.filter((verdict) => verdict === 'minted').length).toBe(42);
+    expect(verdicts.filter((verdict) => verdict === 'minted').length).toBe(43);
     expect(FOUND.sites.filter((site) => site.tagged).length).toBe(40);
   });
 

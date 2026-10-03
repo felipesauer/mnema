@@ -363,11 +363,7 @@ describe('and what it refuses comes out red, with the words still on the line', 
     ['an unknown record', ['show', 'nope'], 'No record nope here.'],
     ['a bad direction', ['refs', taskId, '--direction', 'sideways'], 'Not a direction: sideways'],
     ['a bad scope', ['task', 'create', 'nothing born', '--scope', 'elsewhere'], 'Invalid --scope'],
-    [
-      'a missing argument',
-      ['decision', 'record', 'a title'],
-      'mnema decision record needs <rationale>',
-    ],
+    ['a missing argument', ['decision', 'record'], 'mnema decision record needs <title>'],
     ['a word that names no verb', ['nope'], 'mnema has no command "nope".'],
   ];
 
