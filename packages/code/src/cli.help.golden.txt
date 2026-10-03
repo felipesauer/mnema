@@ -1369,7 +1369,8 @@ $ mnema skill export --help
 |   `description` is REQUIRED by the specification and the record holds none, so it is
 |   derived at export time — the first sentence of the body (or its first paragraph),
 |   collapsed to one line and cut to 1024 characters. `--description` overrides it. No
-|   model is asked for one anywhere.
+|   model is asked for one anywhere. A derived one with no "when", "whenever" or "quando"
+|   in it is exported all the same, with a warning on the second stream.
 |   `name` must already BE a specification name (1–64 of a-z, 0-9 and -, no hyphen at
 |   either end, none doubled) because it has to equal the directory name. A recorded
 |   name that is not one is refused, never rewritten into one.

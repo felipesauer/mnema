@@ -88,7 +88,8 @@ const SKILL_EXPORT_HELP = [
   '  `description` is REQUIRED by the specification and the record holds none, so it is',
   '  derived at export time — the first sentence of the body (or its first paragraph),',
   '  collapsed to one line and cut to 1024 characters. `--description` overrides it. No',
-  '  model is asked for one anywhere.',
+  '  model is asked for one anywhere. A derived one with no "when", "whenever" or "quando"',
+  '  in it is exported all the same, with a warning on the second stream.',
   '  `name` must already BE a specification name (1–64 of a-z, 0-9 and -, no hyphen at',
   '  either end, none doubled) because it has to equal the directory name. A recorded',
   '  name that is not one is refused, never rewritten into one.',
@@ -265,7 +266,7 @@ export function registerSkill(program: Command, wiring: Wiring): Declared {
     if ((await fromTheGroup(skillExport, wiring)) === REFUSED) return;
     const { linkBreakNotice } = await import('./integrity.js');
     const { runSkillExport } = await import('../commands/skill-export.js');
-    const { exportReport } = await import('../presentation/exported.js');
+    const { exportReport, exportWarning } = await import('../presentation/exported.js');
     const result = runSkillExport(here(), {
       id,
       out: opts.out,
@@ -281,6 +282,7 @@ export function registerSkill(program: Command, wiring: Wiring): Declared {
     // what to do about the file.
     for (const line of linkBreakNotice(result.linkBreaks)) io.err(render(line));
     writeLines(io, exportReport(render, result));
+    for (const line of exportWarning(render, result)) io.err(line);
   });
   return mutatesTheRecord(skill);
 }
