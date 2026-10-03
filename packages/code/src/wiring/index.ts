@@ -218,6 +218,7 @@ import { registerAccountability } from './accountability.js';
 import { registerAntipatterns } from './antipatterns.js';
 import { registerBeforeAWrite } from './before-a-write.js';
 import { registerBrief } from './brief.js';
+import { registerCheck } from './check.js';
 import { registerCompletion } from './completion.js';
 import { registerCorrections } from './corrections.js';
 import { registerDecision } from './decision.js';
@@ -286,6 +287,7 @@ export const VERBS: readonly Verb[] = [
   registerDiagram,
   registerRules,
   registerRulesFile,
+  registerCheck,
   registerSkills,
   registerUsage,
   registerBrief,

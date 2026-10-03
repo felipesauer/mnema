@@ -147,7 +147,8 @@ $ mnema accountability --json
 |           "count": 2
 |         }
 |       ],
-|       "foundedBeside": []
+|       "foundedBeside": [],
+|       "machine": false
 |     }
 |   ]
 | }
@@ -1199,7 +1200,8 @@ $ mnema accountability --json
 |           "count": 1
 |         }
 |       ],
-|       "foundedBeside": []
+|       "foundedBeside": [],
+|       "machine": false
 |     }
 |   ]
 | }
