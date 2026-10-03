@@ -127,7 +127,7 @@ const NAME = '<name>';
 const ACTOR = '<actor>';
 
 /**
- * How each of the eight sites is reached from the command line.
+ * How each of the nine sites is reached from the command line.
  *
  * The KEYS are reconciled against the source; the ARGV cannot be — no walk derives
  * "this refusal is behind `skill export`" from a call inside an action. So the table
@@ -179,6 +179,13 @@ const PROBES: readonly Probe[] = [
   {
     key: 'wiring/decision.ts decision #1',
     argv: ['decision', 'move', 'accept', NAME],
+    says: `No decision ${NAME} here.`,
+  },
+  {
+    // The verbs that read a decision by name (`trailer`, `commits`) word their refusal in
+    // one place; `commits` is the probe.
+    key: 'wiring/no-such-decision.ts decision #1',
+    argv: ['commits', NAME],
     says: `No decision ${NAME} here.`,
   },
 ];
@@ -277,7 +284,7 @@ describe('the sites are the source’s, not this file’s', () => {
     // would be counted and not keyed, and the reconciliation would pass while the site
     // it belongs to went unprobed.
     expect(FOUND.files).toBeGreaterThan(40);
-    expect(FOUND.sites.length).toBe(9);
+    expect(FOUND.sites.length).toBe(10);
     expect(FOUND.calls).toBe(FOUND.sites.length);
   });
 });
