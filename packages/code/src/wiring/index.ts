@@ -226,6 +226,7 @@ import { registerDoctor } from './doctor.js';
 import { registerExport } from './export.js';
 import { registerExposure } from './exposure.js';
 import { registerFocus } from './focus.js';
+import { registerAging, registerCommits, registerTrailer, registerWhy } from './git-bridge.js';
 import { registerGuard } from './guard.js';
 import { registerHandoff } from './handoff.js';
 import { registerInit } from './init.js';
@@ -284,6 +285,10 @@ export const VERBS: readonly Verb[] = [
   registerDiagram,
   registerRules,
   registerRulesFile,
+  registerTrailer,
+  registerCommits,
+  registerWhy,
+  registerAging,
   registerSkills,
   registerUsage,
   registerBrief,
