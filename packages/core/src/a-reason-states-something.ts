@@ -180,6 +180,7 @@ export const REASONS: { readonly [K in EventKind]: readonly ReasonSite<K>[] } = 
   'channel.switched': ['reason'],
   'channel.served': [],
   'channel.asked': [],
+  'channel.refused': [],
 };
 
 /** The refusal the first reason of `event` that says nothing earns, or undefined. */
@@ -231,6 +232,7 @@ export const TITLES: { readonly [K in EventKind]: readonly TextField<K>[] } = {
   'channel.switched': [],
   'channel.served': [],
   'channel.asked': [],
+  'channel.refused': [],
 };
 
 /** The refusal the title of `event` earns when it is a marker, or undefined. */
@@ -251,6 +253,7 @@ type ReferenceSubject<K extends EventKind> = K extends
   | 'channel.switched'
   | 'channel.served'
   | 'channel.asked'
+  | 'channel.refused'
   ? 'subject'
   : never;
 
@@ -290,6 +293,7 @@ export const REFERENCES: { readonly [K in EventKind]: readonly ReferenceSite<K>[
   'channel.switched': ['subject'],
   'channel.served': ['subject'],
   'channel.asked': ['subject'],
+  'channel.refused': ['subject'],
 };
 
 /**

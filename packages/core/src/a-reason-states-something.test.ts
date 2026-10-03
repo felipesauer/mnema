@@ -517,6 +517,7 @@ describe('every kind says where its references are, and the door asks it there',
     'skill.consulted subject',
     'channel.served subject',
     'channel.asked subject',
+    'channel.refused subject',
   ];
 
   it('is total over the catalog, and every site listed has a row here or is served by the surface', () => {
@@ -543,7 +544,12 @@ describe('every kind says where its references are, and the door asks it there',
   }
 
   it('asks the sites no operation here reaches, on the event itself', () => {
-    for (const kind of ['skill.consulted', 'channel.served', 'channel.asked'] as const) {
+    for (const kind of [
+      'skill.consulted',
+      'channel.served',
+      'channel.asked',
+      'channel.refused',
+    ] as const) {
       expect(
         unfilledReference({ kind, subject: '<channel>', payload: {} } as never),
         kind,

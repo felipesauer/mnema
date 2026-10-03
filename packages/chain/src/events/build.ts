@@ -537,6 +537,26 @@ export function channelAsked(
 }
 
 /**
+ * Builds a `channel.refused` event (subject = the CHANNEL that refused a write).
+ *
+ * The same shape as {@link channelAsked} and the same division of labour: both fields are
+ * required and neither is checked here, because whether the id names a rule IN FORCE is
+ * decided where "in force" is decided. What the signature enforces is that a refusal cannot
+ * be built without naming what caused it.
+ */
+export function channelRefused(
+  envelope: EnvelopeInput,
+  payload: { rule: string; path: string },
+): CatalogEvent {
+  return {
+    v: 1,
+    kind: 'channel.refused',
+    ...envelopeFields(envelope),
+    payload: { rule: payload.rule, path: payload.path },
+  };
+}
+
+/**
  * Builds the pair of events a skill's birth always emits, in order: the
  * `skill.created` that proves it exists, then the birth `skill.transitioned`
  * (`from: null`, `action: "create"`) that establishes its initial state. The two

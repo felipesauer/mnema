@@ -56,7 +56,7 @@ _mnema_described() {
       'usage:what each run cost, read from this machine'\''s Claude Code transcripts' \
       'brief:print what governs the work here as markdown, for an agent to read' \
       'recall:print the notes recorded here as markdown, near ones first, for an agent to read' \
-      'before-a-write:answer a host’s hook before a file is written: ask for a person where a rule asks' \
+      'before-a-write:answer a host’s hook before a file is written: refuse or ask where a rule says' \
       'tally:answer a host’s Stop or PreCompact hook with what the session wrote and recorded' \
       'corrections:record what a person corrected in a session as proposed decisions, for a Stop hook' \
       'key:manage this machine'\''s signing keys' \
@@ -240,7 +240,7 @@ _mnema_values() {
     'usage:--color') echo 'auto always never' ;;
     'brief:--color') echo 'auto always never' ;;
     'recall:--color') echo 'auto always never' ;;
-    'before-a-write:--host') echo 'vscode' ;;
+    'before-a-write:--host') echo 'vscode cursor' ;;
     'before-a-write:--color') echo 'auto always never' ;;
     'tally:--color') echo 'auto always never' ;;
     'corrections:--color') echo 'auto always never' ;;
@@ -260,10 +260,10 @@ _mnema_values() {
     'switch:--color') echo 'auto always never' ;;
     'switch off:--scope') echo 'public private global' ;;
     'switch off:--color') echo 'auto always never' ;;
-    'switch off:') echo 'brief-document recall-document edit-rules-push edit-asks-a-person agent-accepts edit-first-write-gate user-corrections session-tally' ;;
+    'switch off:') echo 'brief-document recall-document edit-rules-push edit-asks-a-person edit-refuses-a-write agent-accepts edit-first-write-gate user-corrections session-tally' ;;
     'switch on:--scope') echo 'public private global' ;;
     'switch on:--color') echo 'auto always never' ;;
-    'switch on:') echo 'brief-document recall-document edit-rules-push edit-asks-a-person agent-accepts edit-first-write-gate user-corrections session-tally' ;;
+    'switch on:') echo 'brief-document recall-document edit-rules-push edit-asks-a-person edit-refuses-a-write agent-accepts edit-first-write-gate user-corrections session-tally' ;;
     'verify:--require') echo 'chained signed witnessed' ;;
     'verify:--color') echo 'auto always never' ;;
     'mcp:--color') echo 'auto always never' ;;

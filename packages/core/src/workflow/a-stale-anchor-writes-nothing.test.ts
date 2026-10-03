@@ -23,7 +23,12 @@ import {
 import { ProjectionCache } from '../projections/cache.js';
 import { chainArrivals, chainReplay, orderedEvents } from '../projections/order.js';
 import * as writeSurface from '../write.js';
-import { recordChannelAsked, recordChannelServed, switchChannel } from './channel-operations.js';
+import {
+  recordChannelAsked,
+  recordChannelRefused,
+  recordChannelServed,
+  switchChannel,
+} from './channel-operations.js';
 import {
   acceptDecision,
   recordDecision,
@@ -314,6 +319,12 @@ describe('a checkout the key left writes nothing, through every write of the sur
       refusedBy: 'the anchor',
       drive: (as) =>
         recordChannelAsked(as, { channel: 'edit-asks-a-person', rule: 'r', path: 'src/x.ts' }),
+    },
+    {
+      op: 'recordChannelRefused',
+      refusedBy: 'the anchor',
+      drive: (as) =>
+        recordChannelRefused(as, { channel: 'edit-refuses-a-write', rule: 'r', path: 'src/x.ts' }),
     },
     {
       // A waiver names another installation's tail: each side names the other's.

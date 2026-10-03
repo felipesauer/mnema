@@ -82,8 +82,7 @@ $ mnema
 !                                         markdown, near ones first, for an agent
 !                                         to read
 !   before-a-write [options]              answer a host’s hook before a file is
-!                                         written: ask for a person where a rule
-!                                         asks
+!                                         written: refuse or ask where a rule says
 !   tally                                 answer a host’s Stop or PreCompact hook
 !                                         with what the session wrote and recorded
 !   corrections                           record what a person corrected in a
@@ -192,8 +191,7 @@ $ mnema --help
 |                                         markdown, near ones first, for an agent
 |                                         to read
 |   before-a-write [options]              answer a host’s hook before a file is
-|                                         written: ask for a person where a rule
-|                                         asks
+|                                         written: refuse or ask where a rule says
 |   tally                                 answer a host’s Stop or PreCompact hook
 |                                         with what the session wrote and recorded
 |   corrections                           record what a person corrected in a
@@ -421,12 +419,12 @@ $ mnema link --help
 | Arguments:
 |   subject          the entity that originates the link
 |   target           what it points at: another id, or a path (an address, under
-|                    --rel governs or asks-for-a-person)
+|                    --rel governs, asks-for-a-person or refuses-a-write)
 |
 | Options:
 |   --rel <label>    the relation (recommended: supersedes, relates-to,
-|                    derived-from, contradicts, governs, asks-for-a-person; any
-|                    label is accepted)
+|                    derived-from, contradicts, governs, asks-for-a-person,
+|                    refuses-a-write; any label is accepted)
 |   --scope <scope>  where the link is born: public (team-visible), private (this
 |                    machine, this project), or global (personal, cross-project).
 |                    Omitted, a link lands in the public tree (an assertion about
@@ -833,20 +831,21 @@ $ mnema recall --help
 $ mnema before-a-write --help
 | Usage: mnema before-a-write [options]
 |
-| answer a host’s hook before a file is written: ask for a person where a rule
-| asks
+| answer a host’s hook before a file is written: refuse or ask where a rule says
 |
 | Options:
 |   --host <host>  the host whose hook runs this, and whose payload arrives on
-|                  stdin: vscode
+|                  stdin: vscode, cursor
 |   -h, --help     display help for command
 |
 | What it reads and what it prints:
 |   The JSON a host hands a hook before a tool runs, on stdin. On stdout, the reply the
-|   host reads: {} unless a rule of this project linked to a path with
-|   `asks-for-a-person` addresses a path the write touches, and then `ask`, citing the
-|   rules. Each asking is recorded as a fact before the reply is printed. The gate can be
-|   switched off with `mnema switch off edit-asks-a-person`.
+|   host reads: {} unless a rule of this project addresses a path the write touches —
+|   `deny` where it is linked with `refuses-a-write`, which wins, and `ask` where it is
+|   linked with `asks-for-a-person` — citing the rules. For --host cursor only `deny` is
+|   answered: that host does not hold a write for a person. Each refusal or asking is
+|   recorded as a fact before the reply is printed. They can be switched off with `mnema
+|   switch off edit-refuses-a-write` and `mnema switch off edit-asks-a-person`.
 
 ### mnema tally --help
 $ mnema tally --help
@@ -1592,8 +1591,9 @@ $ mnema switch off --help
 |
 | Arguments:
 |   channel          the channel to switch (brief-document, recall-document,
-|                    edit-rules-push, edit-asks-a-person, agent-accepts,
-|                    edit-first-write-gate, user-corrections, session-tally)
+|                    edit-rules-push, edit-asks-a-person, edit-refuses-a-write,
+|                    agent-accepts, edit-first-write-gate, user-corrections,
+|                    session-tally)
 |
 | Options:
 |   --reason <text>  why (recorded in the fact; never required)
@@ -1625,8 +1625,9 @@ $ mnema switch on --help
 |
 | Arguments:
 |   channel          the channel to switch (brief-document, recall-document,
-|                    edit-rules-push, edit-asks-a-person, agent-accepts,
-|                    edit-first-write-gate, user-corrections, session-tally)
+|                    edit-rules-push, edit-asks-a-person, edit-refuses-a-write,
+|                    agent-accepts, edit-first-write-gate, user-corrections,
+|                    session-tally)
 |
 | Options:
 |   --reason <text>  why (recorded in the fact; never required)

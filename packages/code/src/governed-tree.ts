@@ -9,8 +9,8 @@
  * two ideas of what "the address exists" means, and they would differ silently: the count
  * of stale rules would come back different depending on which surface asked, and neither
  * answer would say so. So the assembly lives here and every caller passes through it. A
- * caller that reached for {@link governingRules}, {@link rulesInForceAt} or
- * {@link asksForAPersonAt} directly is
+ * caller that reached for {@link governingRules}, {@link rulesInForceAt},
+ * {@link asksForAPersonAt} or {@link refusesAWriteAt} directly is
  * what `the-rule-has-an-address.test.ts` refuses ("one place assembles a governs read"),
  * by the symbols rather than by a list of files.
  *
@@ -38,6 +38,7 @@ import {
   governingRules,
   governsInForceEverywhere,
   type RulesAtPath,
+  refusesAWriteAt,
   rulesInForceAt,
   type ScopedCache,
   type WalkOutcome,
@@ -119,6 +120,19 @@ export function readAsksForAPersonAt(
   read: GovernedRead,
 ): RulesAtPath {
   return asksForAPersonAt(sources, asked(read));
+}
+
+/**
+ * The same reading under the relation that REFUSES a write — what a refusal stands on.
+ *
+ * Its own entry point over the same {@link asked}, for the gate's reason: the path a write
+ * was refused against must be the path `mnema rules` reports for it, to the byte.
+ */
+export function readRefusesAWriteAt(
+  sources: readonly ScopedCache[],
+  read: GovernedRead,
+): RulesAtPath {
+  return refusesAWriteAt(sources, asked(read));
 }
 
 /**

@@ -116,9 +116,10 @@
 import type { Acceptance, AdrCollision, Brief, ChannelState } from '@mnema/context';
 import type { DivergentMove } from '@mnema/core';
 import type { BriefDone } from '../commands/brief.js';
-import { A_PERSON, oneLine } from '../one-line.js';
+import { oneLine } from '../one-line.js';
 import { DERIVED_FROM } from '../provenance.js';
 import { recordFraming } from '../record-framing.js';
+import { acceptedBy } from './accepted-by.js';
 import { toImport } from './status.js';
 import { fitWhole, HOOK_CEILING_IN_WORDS } from './within-a-hook.js';
 
@@ -376,6 +377,36 @@ function whatAsksForAPerson(asking: number, gate: ChannelState): string[] {
   return [
     `${asking} of them ${asking === 1 ? 'asks' : 'ask'} for a PERSON at an address: where one`,
     ...(gate.on ? STOPS_AT_AN_EDIT : switchedOffAtTheGate(gate)),
+  ];
+}
+
+/**
+ * The paragraph about the REFUSAL: how many of these rules do not let a write happen, and
+ * whether the thing that would refuse is on.
+ *
+ * ITS OWN PARAGRAPH, for the asking's reason one grade up: a refusal leaves nobody a way
+ * through at the host, so it is the fact a reader most needs to have been told before it
+ * happens. It prints at zero, says what the record does and never what to do about it, and
+ * names the rule by its id, which is what makes the refusal answerable.
+ */
+function whatRefusesAWrite(refusing: number, gate: ChannelState): string[] {
+  return [
+    `${refusing} of them ${refusing === 1 ? 'refuses' : 'refuse'} a WRITE at an address: where one`,
+    ...(gate.on ? REFUSES_AT_AN_EDIT : refusalSwitchedOff(gate)),
+  ];
+}
+
+/** What happens at an edit while the refusal is on, wrapped at the column of the paragraphs above. */
+const REFUSES_AT_AN_EDIT = [
+  'does, the write does not happen, and the rule is named by its id in what comes back.',
+];
+
+/** What it says while the refusal is switched OFF, naming who and when as the gate's line does. */
+function refusalSwitchedOff(gate: ChannelState): string[] {
+  return [
+    'did, the write would not happen. NONE of them refuses now:',
+    `${oneLine(gate.channel)} was switched off by ${oneLine(gate.by ?? '')} at`,
+    `${oneLine(gate.at ?? '')}. Run \`mnema switch\` for where every switch stands.`,
   ];
 }
 
@@ -779,6 +810,8 @@ function composed(governance: Brief, shown: number): string[] {
     '',
     ...whatAsksForAPerson(governance.asking, governance.asksAPerson),
     '',
+    ...whatRefusesAWrite(governance.refusing, governance.refusesAWrite),
+    '',
     ...HOW_A_DECISION_ENTERS,
     '',
     ...section(
@@ -903,13 +936,6 @@ function rule(
   const from = (origin ?? []).map((target) => ` · ${DERIVED_FROM} \`${oneLine(target)}\``).join('');
   const by = acceptance === undefined ? '' : ` · ${acceptedBy(acceptance)}`;
   return `- **${oneLine(name)}** · \`${oneLine(id)}\`${from}${by}`;
-}
-
-/** `accepted by mnid:ab12cd34 (a person)`, `(agent claude-code; unconfirmed)`. */
-function acceptedBy(acceptance: Acceptance): string {
-  const act = acceptance.agent === undefined ? A_PERSON : `agent ${oneLine(acceptance.agent)}`;
-  const mark = acceptance.unconfirmed ? '; unconfirmed' : '';
-  return `accepted by ${oneLine(acceptance.by)} (${act}${mark})`;
 }
 
 /**

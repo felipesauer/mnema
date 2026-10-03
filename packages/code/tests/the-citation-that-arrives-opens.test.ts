@@ -48,13 +48,19 @@ import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
-import type { DiscoveryEnv } from '@mnema/core';
+import { type DiscoveryEnv, resolveTrees } from '@mnema/core';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { type CliIo, run } from '../src/cli.js';
 import { openSession, type Session } from '../src/mcp/session.js';
 import { runRulesBeforeAnEditTool } from '../src/mcp/tools.js';
 import { DERIVED_FROM } from '../src/provenance.js';
+import { withScopedCaches } from '../src/tree-sources.js';
+import { whatAWriteMeets } from '../src/what-a-write-meets.js';
 import { sourceFiles } from './support/reading-source.js';
+
+/** The clause that says who accepted a rule — held where the lines say it, ignored where they are not about it. */
+const bare = (line: string | undefined): string | undefined =>
+  line?.replace(/ · accepted by mnid:[0-9a-f]{8} \(a person\)$/, '');
 
 /** The file whose own number is not the number the record will freeze. */
 const GATEWAY = 'ADR-008-the-gateway-is-idempotent.md';
@@ -286,7 +292,7 @@ describe('a rule that arrives unasked carries a path that opens', () => {
     await addressAt(rules.get(LEDGER) as string, 'src/ledger', 'governs');
 
     const collate = pushed('src/collate/fold.ts').context ?? '';
-    expect(collate.split('\n')[2]).toBe(
+    expect(bare(collate.split('\n')[2])).toBe(
       `“The gateway is idempotent” — governs src/collate · ${rules.get(GATEWAY) ?? ''} · ${DERIVED_FROM} docs/adr/${GATEWAY}`,
     );
     // THIS CHANNEL PRINTS NO LABEL AT ALL, so before this the uuid was the whole of what a
@@ -313,7 +319,7 @@ describe('a rule that arrives unasked carries a path that opens', () => {
     await addressAt(rules.get(LEDGER) as string, 'src/ledger', 'asks-for-a-person');
 
     const collate = pushed('src/collate/fold.ts').ask ?? '';
-    expect(collate.split('\n')[2]).toBe(
+    expect(bare(collate.split('\n')[2])).toBe(
       `“The gateway is idempotent” — asks for a person at src/collate · ${rules.get(GATEWAY) ?? ''} · ${DERIVED_FROM} docs/adr/${GATEWAY}`,
     );
     expect(opened(provenancesIn(collate)[0] as string)).toContain(GATEWAY_BODY);
@@ -343,10 +349,10 @@ describe('what the channels say when the record asserts no provenance', () => {
     expect(text).toContain(`- **ADR-1 — Queues are at-least-once** · \`${rule}\``);
     expect(text).not.toContain(DERIVED_FROM);
     const { context, ask } = pushed('src/collate/fold.ts');
-    expect((context ?? '').split('\n')[2]).toBe(
+    expect(bare((context ?? '').split('\n')[2])).toBe(
       `“Queues are at-least-once” — governs src/collate · ${rule}`,
     );
-    expect((ask ?? '').split('\n')[2]).toBe(
+    expect(bare((ask ?? '').split('\n')[2])).toBe(
       `“Queues are at-least-once” — asks for a person at src/collate · ${rule}`,
     );
   });
@@ -457,10 +463,12 @@ describe('the word a provenance is introduced with has one source', () => {
       (file) => !/from '(?:\.\.?\/)+provenance\.js'/.test(readFileSync(file, 'utf8')),
     );
     expect(without.map((file) => file.slice(SOURCE.length + 1))).toEqual([]);
-    // NOT VACUOUS, in the two ways it could be: the sweep finds the four printers there
-    // are, and it is the four this delivery names.
+    // NOT VACUOUS, in the two ways it could be: the sweep finds the printers there are, and
+    // it is the ones this delivery named — plus the refusal, which arrived after it and
+    // prints a provenance the way the asking does.
     expect(reads.map((file) => file.slice(SOURCE.length + 1)).sort()).toEqual([
       'edit-asks-a-person.ts',
+      'edit-refuses-a-write.ts',
       'edit-rules-push.ts',
       'presentation/brief.ts',
       'presentation/record.ts',
@@ -484,6 +492,17 @@ describe('the word a provenance is introduced with has one source', () => {
     for (const served of [context ?? '', ask ?? '', shown.out.join('\n')]) {
       expect(provenancesIn(served)).toEqual(expected);
     }
+  });
+
+  it('is what the refusal prints too, the fifth, through the decision every hook asks', async () => {
+    const rule = await gatewayRule();
+    await addressAt(rule, 'src/collate', 'refuses-a-write');
+    const refused = withScopedCaches(resolveTrees(repo, env), (sources) =>
+      whatAWriteMeets(sources, { paths: ['src/collate/fold.ts'], root: repo, from: repo }),
+    );
+    expect(refused?.grade).toBe('refuse');
+    expect(provenancesIn(refused?.reason ?? '')).toEqual([`docs/adr/${GATEWAY}`]);
+    expect(opened(provenancesIn(refused?.reason ?? '')[0] as string)).toContain(GATEWAY_BODY);
   });
 });
 

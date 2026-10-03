@@ -385,7 +385,7 @@ describe('bootstrap — the opening context, focused on the actor', () => {
           title: 'Hand-rolled arithmetic',
           // And WHO RULED IT, because the opening context hands the decision over as a rule: the
           // same field the committed document carries, from the same derivation.
-          acceptance: { by: expect.stringMatching(/^mnid:[0-9a-f]{8}$/), unconfirmed: true },
+          acceptance: { by: expect.stringMatching(/^mnid:[0-9a-f]{8}$/), unconfirmed: false },
         },
       ]);
       // Neither half of the body enters the opening context. The fixture writes

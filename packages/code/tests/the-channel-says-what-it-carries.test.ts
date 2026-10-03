@@ -229,8 +229,10 @@ describe('one declaration, and one place that decides it', () => {
       divergent: [],
       addressed: 0,
       asking: 0,
+      refusing: 0,
       editPush: { channel: 'edit-rules-push', on: true },
       asksAPerson: { channel: 'edit-asks-a-person', on: true },
+      refusesAWrite: { channel: 'edit-refuses-a-write', on: true },
     });
     for (const line of recordFraming('brief-document')) expect(document).toContain(line);
 
@@ -276,10 +278,20 @@ describe('what `channel.served` counts, said by the table the type makes total',
     // recorded as served — that half is the compiler's. What this holds is that the table
     // naming the rest agrees with what a hook actually pushes through its tool.
     const counted = SWITCHABLE_CHANNELS.filter((channel) => !(channel in NOT_COUNTED_AS_SERVED));
-    expect([...counted].sort()).toEqual([...(PUSHED_BY_TOOL.rules_before_an_edit ?? [])].sort());
+    // THESE WERE ONE LIST AND ARE TWO, and the test said so by equality until the refusal came:
+    // "counted as served" was "pushed by the tool". A refusal is pushed by the tool — its reason
+    // is framed text a model reads — and is not counted, because each `channel.refused` is the
+    // refusal itself and a service fact beside it would repeat it. So what is counted is what the
+    // tool pushes MINUS the channel that is its own fact, and both halves are held.
+    const pushed = PUSHED_BY_TOOL.rules_before_an_edit ?? [];
+    expect([...counted].sort()).toEqual(
+      pushed.filter((one) => one !== 'edit-refuses-a-write').sort(),
+    );
+    expect(pushed).toContain('edit-refuses-a-write');
     expect(Object.keys(NOT_COUNTED_AS_SERVED).sort()).toEqual([
       'agent-accepts',
       'brief-document',
+      'edit-refuses-a-write',
       'recall-document',
       'session-tally',
       'user-corrections',
@@ -290,13 +302,17 @@ describe('what `channel.served` counts, said by the table the type makes total',
     // TWO KINDS OF REASON, and the table used to hold one. The two texts a session opens with are
     // reads, and a read writes nothing. `agent-accepts` is not a read: what it says is the reply
     // to a write that IS the fact (the acceptance, with its actor on the envelope) or is refused
-    // and records nothing, so counting its service would write the same fact twice. A channel
-    // that is neither is not allowed to borrow either sentence.
+    // and records nothing, so counting its service would write the same fact twice. The refusal
+    // of a write is the second of that kind: each refusal is its own `channel.refused`. A
+    // channel that is neither is not allowed to borrow either sentence.
     const WRITES_THE_FACT_ITSELF = 'is itself the recorded fact';
+    const ITS_OWN_FACT = ['agent-accepts', 'edit-refuses-a-write'];
     for (const [channel, why] of Object.entries(NOT_COUNTED_AS_SERVED)) {
       expect(why.length, channel).toBeGreaterThan(40);
       const reason =
-        channel === 'agent-accepts' || channel === 'user-corrections'
+        channel === 'agent-accepts' ||
+        channel === 'user-corrections' ||
+        ITS_OWN_FACT.includes(channel)
           ? WRITES_THE_FACT_ITSELF
           : 'writes nothing';
       expect(why, channel).toContain(reason);
@@ -394,12 +410,16 @@ describe('every handler that pushes declares the channel it carries', () => {
       const declared = DECLARES_MODEL_CHANNEL.exec(source);
       expect(declared, `${file} writes to a model and names no channel`).not.toBeNull();
       const channel = declared?.[1] ?? '';
-      // A channel is known when it carries a declaration (it is framed) or when the table that
-      // says why it carries none names it — a count has no record text to say whose it is.
-      expect(
-        [...FRAMED_CHANNELS, ...Object.keys(UNFRAMED_CHANNELS)] as readonly string[],
-        `${file} names an unknown channel`,
-      ).toContain(channel);
+      // A handler may carry more than one channel, joined by `+`: the reason the gate's command
+      // hands back is the asking's or the refusal's, whichever the write met. A channel is known
+      // when it carries a declaration (it is framed) or when the table that says why it carries
+      // none names it — a count has no record text to say whose it is.
+      for (const one of channel.split('+')) {
+        expect(
+          [...FRAMED_CHANNELS, ...Object.keys(UNFRAMED_CHANNELS)] as readonly string[],
+          `${file} names an unknown channel`,
+        ).toContain(one);
+      }
       named.push(`${file}:${channel}`);
     }
     // And at least one handler WAS asked. Without this the case is green on a plugin
@@ -410,8 +430,10 @@ describe('every handler that pushes declares the channel it carries', () => {
     // channel it does not carry. AND A THIRD, the gate as VS Code runs it: a process that
     // hands back what `mnema before-a-write` answers, whose reason is framed where the MCP
     // tool's is (`edit-asks-a-person.ts`), under the same channel.
+    // AND A FOURTH, Cursor's: the same verb with that host's name, which can only refuse.
     expect(named).toEqual([
-      'edit-asks-a-person.mjs:edit-asks-a-person',
+      'edit-asks-a-person.mjs:edit-asks-a-person+edit-refuses-a-write',
+      'edit-refuses-a-write.mjs:edit-refuses-a-write',
       'session-corrections.mjs:user-corrections',
       'session-recall.mjs:recall-document',
       'session-start.mjs:brief-document',
@@ -463,7 +485,8 @@ describe('every handler that pushes declares the channel it carries', () => {
       'Stop:command:session-tally.mjs',
       'Stop:command:session-corrections.mjs',
       'PreCompact:command:session-tally.mjs',
-      'PreToolUse:mcp_tool:rules_before_an_edit:edit-rules-push+edit-asks-a-person+edit-first-write-gate',
+      'PreToolUse:mcp_tool:rules_before_an_edit:edit-rules-push+edit-asks-a-person+edit-first-write-gate+edit-refuses-a-write',
+      'PreToolUse:command:edit-refuses-a-write.mjs',
       'PreToolUse:command:edit-asks-a-person.mjs',
     ]);
   });
@@ -488,6 +511,11 @@ describe('every handler that pushes declares the channel it carries', () => {
     // matched the words anywhere left the guard green over a handler declaring nothing.
     const live = "export const MODEL_CHANNEL = 'brief-document';";
     expect(DECLARES_MODEL_CHANNEL.exec(live)?.[1]).toBe('brief-document');
+    expect(
+      DECLARES_MODEL_CHANNEL.exec(
+        "export const MODEL_CHANNEL = 'edit-asks-a-person+edit-refuses-a-write';",
+      )?.[1],
+    ).toBe('edit-asks-a-person+edit-refuses-a-write');
     expect(DECLARES_MODEL_CHANNEL.test(`// ${live}`)).toBe(false);
     expect(DECLARES_MODEL_CHANNEL.test(` * ${live}`)).toBe(false);
     expect(

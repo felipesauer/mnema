@@ -14,7 +14,12 @@ import {
 } from '../knowledge/operations.js';
 import { orderedEvents } from '../projections/order.js';
 import * as writeSurface from '../write.js';
-import { recordChannelAsked, recordChannelServed, switchChannel } from './channel-operations.js';
+import {
+  recordChannelAsked,
+  recordChannelRefused,
+  recordChannelServed,
+  switchChannel,
+} from './channel-operations.js';
 import { recordDecision } from './decision-operations.js';
 import { enrollKey, ensureFounded, revokeKey } from './identity-operations.js';
 import { createTask, type WriteContext } from './operations.js';
@@ -366,6 +371,33 @@ describe('every write refuses what no read could accept', () => {
         drive: () =>
           recordChannelAsked(ctx, {
             channel: 'edit-asks-a-person',
+            rule: '',
+            path: 'src/billing/invoice.ts',
+          }),
+      },
+      {
+        // The refusal shares the asking's body, so each field it refuses is the asking's — and
+        // is held here for the refusal too, since a second fact is a second chance to forget.
+        op: 'recordChannelRefused',
+        field: 'channel',
+        names: 'at subject',
+        drive: () =>
+          recordChannelRefused(ctx, { channel: '', rule: 'r', path: 'src/billing/invoice.ts' }),
+      },
+      {
+        op: 'recordChannelRefused',
+        field: 'path',
+        names: 'payload.path',
+        drive: () =>
+          recordChannelRefused(ctx, { channel: 'edit-refuses-a-write', rule: 'r', path: '' }),
+      },
+      {
+        op: 'recordChannelRefused',
+        field: 'rule',
+        names: 'payload.rule',
+        drive: () =>
+          recordChannelRefused(ctx, {
+            channel: 'edit-refuses-a-write',
             rule: '',
             path: 'src/billing/invoice.ts',
           }),

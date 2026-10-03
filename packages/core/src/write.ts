@@ -138,7 +138,7 @@ export {
 // tool for it, so an agent cannot switch off what governs its own work through the door
 // built for agents.
 //
-// `recordChannelServed` and `recordChannelAsked` are the same subject from the other side:
+// `recordChannelServed`, `recordChannelAsked` and `recordChannelRefused` are the same subject from the other side:
 // what a channel DID, rather than what somebody did to it. They have no verb and no gate
 // either, and their caller is not a person at all — it is the push itself, which is what
 // makes the rule id an asking cites a value that came out of the record. An agent cannot
@@ -170,7 +170,10 @@ export {
   type PruneOk,
   type RecordInput,
   type RecordOk,
+  type RefusedInput,
+  type RefusedOk,
   recordChannelAsked,
+  recordChannelRefused,
   recordChannelServed,
   recordConsultation,
   recordDecision,

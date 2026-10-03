@@ -61,6 +61,8 @@ export {
   KeyPassphraseWrongError,
   NoPassphraseToProtectWithError,
   passphraseFromEnvironment,
+  passphraseToOpen,
+  passphraseToProtectWith,
   readPrivateKeyPair,
 } from './chain/key-protection.js';
 export {
@@ -189,6 +191,7 @@ export {
 export {
   BIRTH_ACTION,
   channelAsked,
+  channelRefused,
   channelServed,
   channelSwitched,
   decisionBirth,
@@ -224,6 +227,7 @@ export {
   ASKS_FOR_A_PERSON_RELATION,
   type CatalogEvent,
   type ChannelAskedV1,
+  type ChannelRefusedV1,
   type ChannelServedV1,
   type ChannelSwitchedV1,
   DERIVED_FROM_RELATION,
@@ -240,6 +244,7 @@ export {
   type MemoryCapturedV1,
   type ObservationRecordedV1,
   RECOMMENDED_LINK_RELATIONS,
+  REFUSES_A_WRITE_RELATION,
   type RunEndedV1,
   type RunStartedV1,
   type SkillConsultedV1,

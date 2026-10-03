@@ -25,11 +25,15 @@
  * opens the files an earlier one wrote. The cipher is AES-256-GCM, so a wrong passphrase and a
  * damaged file are both refused outright rather than decoded to garbage.
  *
- * WHERE THE PASSPHRASE COMES FROM: the `MNEMA_KEY_PASSPHRASE` environment variable, and nowhere
- * else. An agent's server and a hook have no terminal to ask at, and a prompt that worked for a
- * person and hung for them would be the worse design; the variable is also what a person's
- * shell, a keychain helper or a CI secret already knows how to set. It is read when a key is
- * opened, never written anywhere, and a decrypted key is held in memory for the life of the
+ * WHERE THE PASSPHRASE COMES FROM: the `MNEMA_KEY_PASSPHRASE` environment variable, and — for a
+ * person at a terminal — a prompt, with nothing echoed (`terminal-passphrase.ts`). THE FIRST
+ * VERSION HAD THE VARIABLE ALONE, on the ground that an agent's server and a hook have no
+ * terminal to ask at and a prompt that worked for a person and hung for them would be the worse
+ * design. That reasoning holds for the doors that have no terminal and is why they are never
+ * asked: the prompt appears only where the input and the error stream are both a terminal. What
+ * it falsified was the other half — that a person had no better way than to export their
+ * passphrase into the shell — and the system keychain is a later source, not this one. It is
+ * read when a key is opened, never written anywhere, and a decrypted key is held in memory for the life of the
  * process and nowhere else — which is also what keeps a long-lived server from paying the
  * derivation on every write (measured in the delivery's report).
  *
@@ -46,6 +50,7 @@ import { parseStoredJson } from '../events/stored-json.js';
 import { CodedError } from './coded-error.js';
 import type { KeyPair } from './keys.js';
 import { keyPairFromPrivatePem } from './keys.js';
+import { askOnTheTerminal } from './terminal-passphrase.js';
 
 /** The environment variable the passphrase is read from. */
 export const KEY_PASSPHRASE_VARIABLE = 'MNEMA_KEY_PASSPHRASE';
@@ -70,8 +75,9 @@ export class KeyIsProtectedError extends CodedError {
   constructor(readonly path: string) {
     super(
       `the private key at ${path} is protected by a passphrase and ${KEY_PASSPHRASE_VARIABLE} is ` +
-        `not set. Set it to the passphrase the key was protected with — in the environment of the ` +
-        'process that signs, which for an agent is the environment the host started the server in.',
+        `not set, and there is no terminal to ask at. Set it to the passphrase the key was ` +
+        'protected with — in the environment of the process that signs, which for an agent is the ' +
+        'environment the host started the server in — or run the command in a terminal, which asks.',
     );
   }
 }
@@ -83,7 +89,7 @@ export class KeyPassphraseWrongError extends CodedError {
 
   constructor(readonly path: string) {
     super(
-      `${KEY_PASSPHRASE_VARIABLE} does not open the private key at ${path}: the passphrase is ` +
+      `the passphrase given does not open the private key at ${path}: the passphrase is ` +
         'wrong, or the file was changed. Nothing was written.',
     );
   }
@@ -96,8 +102,9 @@ export class NoPassphraseToProtectWithError extends CodedError {
 
   constructor() {
     super(
-      `${KEY_PASSPHRASE_VARIABLE} is not set, or is empty. It is where the passphrase comes from, ` +
-        'for this command and for every later use of the key: set it, then run the command again.',
+      `no passphrase was given: ${KEY_PASSPHRASE_VARIABLE} is not set, or is empty, and there is no ` +
+        'terminal to ask at (or the two answers differed). Set the variable, or run the command in a ' +
+        'terminal, which asks twice; it is the passphrase for every later use of the key.',
     );
   }
 }
@@ -111,6 +118,35 @@ export function isProtected(text: string): boolean {
 export function passphraseFromEnvironment(): string | undefined {
   const given = process.env[KEY_PASSPHRASE_VARIABLE];
   return given === undefined || given === '' ? undefined : given;
+}
+
+/** What was typed at the terminal this process, once: asked for once and then held, like the key. */
+let typed: string | undefined;
+
+/**
+ * The passphrase to OPEN a key with: the environment variable, else — at a terminal — what the
+ * person types, asked once for the life of the process. `undefined` where neither can answer.
+ */
+export function passphraseToOpen(path: string): string | undefined {
+  const given = passphraseFromEnvironment();
+  if (given !== undefined) return given;
+  typed ??= askOnTheTerminal(`Passphrase for the private key at ${path}: `);
+  return typed;
+}
+
+/**
+ * The passphrase to PROTECT keys with: the environment variable, else — at a terminal — what the
+ * person types twice. The second asking is not decoration: a passphrase mistyped once is a key
+ * nobody can open, and a record cannot be edited to forgive it. `undefined` where neither can
+ * answer or the two did not agree.
+ */
+export function passphraseToProtectWith(): string | undefined {
+  const given = passphraseFromEnvironment();
+  if (given !== undefined) return given;
+  const first = askOnTheTerminal('New passphrase for the private key: ');
+  if (first === undefined) return undefined;
+  const again = askOnTheTerminal('Again: ');
+  return again === first ? first : undefined;
 }
 
 /** `pem`, encrypted under `passphrase`, as the text of a key file. */
@@ -199,7 +235,7 @@ const OPENED = new Map<string, { readonly signature: string; readonly pem: strin
  */
 export function readPrivatePem(path: string, text: string): string {
   if (!isProtected(text)) return text;
-  const passphrase = passphraseFromEnvironment();
+  const passphrase = passphraseToOpen(path);
   if (passphrase === undefined) throw new KeyIsProtectedError(path);
   const { size, mtimeMs } = statSync(path);
   const signature = `${size}:${mtimeMs}:${passphrase}`;

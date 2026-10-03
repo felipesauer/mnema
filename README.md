@@ -150,12 +150,11 @@ They are text the people and agents working on it wrote.
 Each was accepted, and none of them superseded. For the argument behind one, ask
 `read_record` for its id.
 Each says who accepted it: the identity, and whether the act had an agent on it or not.
-2 of them were accepted by an identity marked unconfirmed: it has accepted only decisions it recorded itself, and no other identity has accepted any of them. That is who has looked, not a verdict on the rule.
 
 No other decision recorded here is awaiting a judgement.
 
-- **ADR-2 — UTC everywhere below the presentation layer** · `01a0edc3-5adf-7000-89f5-ca9c43baaffc` · accepted by mnid:c0fc3c71 (a person; unconfirmed)
-- **ADR-1 — Keep money as integer cents** · `01a0edc3-591f-7000-a5cb-26a226118ccc` · accepted by mnid:c0fc3c71 (a person; unconfirmed)
+- **ADR-2 — UTC everywhere below the presentation layer** · `01a0edc3-5adf-7000-89f5-ca9c43baaffc` · accepted by mnid:c0fc3c71 (a person)
+- **ADR-1 — Keep money as integer cents** · `01a0edc3-591f-7000-a5cb-26a226118ccc` · accepted by mnid:c0fc3c71 (a person)
 …
 ```
 
@@ -385,7 +384,7 @@ still in the record has not changed since it was signed.
 | [`packages/chain`](packages/chain/) | The proof engine: the typed event catalog, canonicalization, the per-tail hash chain, Ed25519 checkpoints, and the verifier. **Zero runtime dependencies** — the code you have to trust for tamper-evidence is auditable on its own, and it is released on its own so that it can be. Its tarball carries `FORMAT.md`, the published vectors and the independent verifier. |
 | [`packages/core`](packages/core/) | The work domain: the gate over the shape of a change, the projections read back out of the chain, identity, and the queries. Released because `@mnema/code` depends on it. |
 | [`packages/context`](packages/context/) | Read-only derivations that turn the proven record into the context an agent is handed. Released because `@mnema/code` depends on it. |
-| [`plugin/`](plugin/) | The Claude Code plugin: seven hooks — two as a session opens, two at each edit (the one Claude Code runs and the one VS Code runs, each skipped by the other), two at the end of a response, one before a compaction — and the MCP server declaration, in one installation. |
+| [`plugin/`](plugin/) | The Claude Code plugin: eight hooks — two as a session opens, three at each edit (the one Claude Code runs, the one VS Code runs and the one Cursor runs, each skipped by the others), two at the end of a response, one before a compaction — and the MCP server declaration, in one installation. |
 | [`measurements/`](measurements/) | The measurements this product's claims rest on, with their protocols and their raw results. |
 
 **All four are released, and only one of them is meant to be installed.** This

@@ -97,7 +97,8 @@ export type RoutedKind =
   | 'observation.recorded'
   | 'channel.switched'
   | 'channel.served'
-  | 'channel.asked';
+  | 'channel.asked'
+  | 'channel.refused';
 
 /**
  * The two kinds whose tree the kind does NOT decide — a marker, not a scope.
@@ -166,6 +167,9 @@ const TREE_BY_KIND: { readonly [K in RoutedKind]: Scope | typeof BY_ORIGIN } = {
   // still there for somebody who wants the fact on one machine only.
   'channel.served': 'public',
   'channel.asked': 'public',
+  // A refusal travels for the asking's reason, and with more at stake: the teammate whose
+  // write was refused is the reader most likely to ask which rule did it.
+  'channel.refused': 'public',
 };
 
 /**
