@@ -770,17 +770,16 @@ function inheritedSection(inherited: InheritedReading | undefined): string[] {
       '',
       '## Inherited decisions (not read)',
       '',
-      `${inherited.why}, so nothing is inherited.`,
+      `${oneLine(inherited.why)}, so nothing is inherited.`,
     ];
   }
-  const { origin, commit } = inherited.pointer;
-  const from = `${origin} at commit ${commit}`;
+  const from = `${oneLine(inherited.pointer.where)} at commit ${inherited.pointer.commit}`;
   if (inherited.state === 'unverified') {
     return [
       '',
       '## Inherited decisions (not read)',
       '',
-      `This project points at ${from}, and the record there did not verify: ${inherited.why}.`,
+      `This project points at ${from}, and the record there did not verify: ${oneLine(inherited.why)}.`,
       'None of its decisions is printed.',
     ];
   }
@@ -789,7 +788,7 @@ function inheritedSection(inherited: InheritedReading | undefined): string[] {
       '',
       '## Inherited decisions (not read)',
       '',
-      `This project points at ${from}, and it could not be read here: ${inherited.why}.`,
+      `This project points at ${from}, and it could not be read here: ${oneLine(inherited.why)}.`,
       'None of its decisions is printed.',
     ];
   }
@@ -804,7 +803,7 @@ function inheritedSection(inherited: InheritedReading | undefined): string[] {
       ? [
           '',
           ...inherited.decisions.map(
-            (d) => `- ${oneLine(d.title)} (${d.adr} in that record, id ${d.id})`,
+            (d) => `- ${oneLine(d.title)} (${oneLine(d.adr)} in that record, id ${oneLine(d.id)})`,
           ),
         ]
       : []),

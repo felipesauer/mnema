@@ -15,6 +15,13 @@ Requires Node ≥ 22.12.0; the packages are ESM-only.
 
 ### Added
 
+- **Decisions inherited from another repository** (`mnema inherit set | update`): a project points,
+  in the committed `.mnema/inherit.json`, at a git repository that holds a record and at one commit of
+  it. `mnema brief` prints that record's decisions in force in a section of their own, naming the
+  repository and the commit; they are read and never signed by the project, and the project's
+  `verify` does not count them. A record that does not verify at the commit prints none, and the
+  brief says so. Moving the pointer is explicit and shows what changes first; the copy is kept
+  under the mnema home, outside the project. Inheriting is trusting that repository at that commit.
 - **A GitHub Action over the record** (`packages/action`, not published): on a pull request it keeps
   one comment saying which events the pull request adds to the record and which changed files an
   accepted rule addresses, and fails the check when `mnema verify --require=signed` fails. An

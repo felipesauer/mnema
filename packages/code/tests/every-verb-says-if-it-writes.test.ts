@@ -148,12 +148,13 @@ function verbsThat(effect: RecordEffect): string[] {
 /**
  * A verb no invocation can exercise, and why — the marker, so the row still exists.
  *
- * TWO verbs carry it, one on each side of the classification, and the reason is the same
+ * THREE verbs carry it. Two are one on each side of the classification, with the same
  * shape: both serve the surface for the length of a connection instead of doing a piece
  * of work and returning. `mcp` would never come back; `repl` refuses outright without a
  * terminal at both ends, and this harness has neither. The consequence is stated in this
  * file's doc, because a read that is declared and never measured is exactly the gap this
- * file exists to close, and it is closed for `repl` somewhere else.
+ * file exists to close, and it is closed for `repl` somewhere else. The third, `inherit`, needs a
+ * git repository holding a record, which the fixture is not; it is measured over a real one.
  */
 const CANNOT_BE_EXERCISED = Symbol('cannot-be-exercised');
 
@@ -286,6 +287,10 @@ const INVOCATION: Readonly<Record<string, Invocation>> = {
   // plugin's command (`a-correction-becomes-a-proposal.test.ts`), and in the signing sweep.
   corrections: { argv: () => ['corrections'] },
   verify: { argv: () => ['verify'] },
+  // It reads another repository, so the exercise needs one to read: a git repository holding a
+  // record, which this harness's fixture is not. What it does to THIS project's record — nothing —
+  // is measured through the binary, over a real origin, in `a-project-inherits-a-record.test.ts`.
+  inherit: CANNOT_BE_EXERCISED,
   repl: CANNOT_BE_EXERCISED,
   completion: { argv: () => ['completion', 'bash'] },
 };
@@ -582,7 +587,7 @@ describe('every verb says if it writes', () => {
     expect(Object.keys(INVOCATION).sort()).toEqual([...EFFECT_BY_VERB.keys()].sort());
   });
 
-  it('counts seventeen writes and twenty-nine reads over the whole surface', () => {
+  it('counts seventeen writes and thirty reads over the whole surface', () => {
     // The count in the report, asserted rather than trusted, and the total against the
     // list: a verb that stopped being registered would otherwise leave both halves
     // looking healthy.
@@ -631,6 +636,7 @@ describe('every verb says if it writes', () => {
       'brief',
       'recall',
       'tally',
+      'inherit',
       'doctor',
       'verify',
       'repl',

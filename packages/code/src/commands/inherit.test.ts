@@ -21,6 +21,7 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import type { DiscoveryEnv } from '@mnema/core';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
+import { GIT_WITHOUT_MAINTENANCE } from '../../tests/support/git-without-maintenance.js';
 import { briefDocument } from '../presentation/brief.js';
 import { runBrief } from './brief.js';
 import { runDecision } from './decision.js';
@@ -39,14 +40,12 @@ afterEach(() => {
   rmSync(sandbox, { recursive: true, force: true });
 });
 
-const GIT_ENV = {
-  ...process.env,
-  GIT_CONFIG_GLOBAL: '/dev/null',
-  GIT_CONFIG_NOSYSTEM: '1',
-};
-
 function git(cwd: string, ...args: string[]): string {
-  return execFileSync('git', args, { cwd, env: GIT_ENV, encoding: 'utf8' }).trim();
+  return execFileSync('git', args, {
+    cwd,
+    env: { ...process.env, GIT_CONFIG_GLOBAL: GIT_WITHOUT_MAINTENANCE, GIT_CONFIG_NOSYSTEM: '1' },
+    encoding: 'utf8',
+  }).trim();
 }
 
 interface Place {
@@ -109,7 +108,7 @@ describe('pointing a project at another repository', () => {
   it('prints what it would inherit and writes nothing without --write', () => {
     const { at: source, first } = origin();
     const project = place('project');
-    const plan = runInheritSet(project, { origin: source.cwd });
+    const plan = runInheritSet(project, { where: source.cwd });
     expect(plan).toMatchObject({ ok: true, written: false, to: { commit: first } });
     if (!plan.ok) return;
     expect(plan.added.map((d) => d.title)).toEqual(['Postgres in every new service']);
@@ -119,7 +118,7 @@ describe('pointing a project at another repository', () => {
   it('records origin and the full commit in a committed file under --write', () => {
     const { at: source, first } = origin();
     const project = place('project');
-    const plan = runInheritSet(project, { origin: source.cwd, write: true });
+    const plan = runInheritSet(project, { where: source.cwd, write: true });
     expect(plan.ok && plan.written).toBe(true);
     const file = JSON.parse(readFileSync(join(project.cwd, '.mnema', 'inherit.json'), 'utf8'));
     expect(file).toEqual({ origin: source.cwd, commit: first });
@@ -132,8 +131,8 @@ describe('pointing a project at another repository', () => {
   it('refuses a second `set` and sends the person to `update`', () => {
     const { at: source } = origin();
     const project = place('project');
-    runInheritSet(project, { origin: source.cwd, write: true });
-    expect(runInheritSet(project, { origin: source.cwd })).toMatchObject({
+    runInheritSet(project, { where: source.cwd, write: true });
+    expect(runInheritSet(project, { where: source.cwd })).toMatchObject({
       ok: false,
       reason: 'ALREADY_INHERITING',
     });
@@ -142,7 +141,7 @@ describe('pointing a project at another repository', () => {
   it('keeps its copy under the mnema home and nothing in the project but the pointer', () => {
     const { at: source } = origin();
     const project = place('project');
-    runInheritSet(project, { origin: source.cwd, write: true });
+    runInheritSet(project, { where: source.cwd, write: true });
     expect(readdirSync(join(project.env.home, '.mnema', 'inherited')).length).toBe(1);
     expect(readdirSync(project.cwd)).toEqual(['.mnema']);
     expect(existsSync(join(project.cwd, '.mnema', 'inherited'))).toBe(false);
@@ -154,7 +153,7 @@ describe('the brief with an inherited record', () => {
     const { at: source, first } = origin();
     const project = place('project');
     accept(project, 'Use tabs here');
-    runInheritSet(project, { origin: source.cwd, write: true });
+    runInheritSet(project, { where: source.cwd, write: true });
     const done = runBrief(project);
     if (!done.ok) throw new Error('refused');
     expect(done.brief.decisions.map((d) => d.title)).toEqual(['Use tabs here']);
@@ -188,7 +187,7 @@ describe('the brief with an inherited record', () => {
         .reduce((n, t) => n + t.entryCount, 0);
     };
     const before = events();
-    runInheritSet(project, { origin: source.cwd, write: true });
+    runInheritSet(project, { where: source.cwd, write: true });
     expect(titlesOf(project)).toEqual(['Postgres in every new service']);
     expect(events()).toBe(before);
     expect(before).toBeGreaterThan(0);
@@ -197,7 +196,7 @@ describe('the brief with an inherited record', () => {
   it('prints none of a record that does not verify at the pinned commit, and says so', () => {
     const { at: source } = origin();
     const project = place('project');
-    runInheritSet(project, { origin: source.cwd, write: true });
+    runInheritSet(project, { where: source.cwd, write: true });
     // The origin's next commit alters a signed segment in place.
     const tails = join(source.cwd, '.mnema', 'tails');
     const segment = readdirSync(tails, { recursive: true, encoding: 'utf8' }).find((f) =>
@@ -242,7 +241,7 @@ describe('updating', () => {
   it('shows what changes between the two commits before it moves the pointer', () => {
     const { at: source, first } = origin();
     const project = place('project');
-    runInheritSet(project, { origin: source.cwd, write: true });
+    runInheritSet(project, { where: source.cwd, write: true });
     accept(source, 'Redis for queues');
     const second = commit(source);
     const shown = runInheritUpdate(project, {});
@@ -271,7 +270,7 @@ describe('updating', () => {
   it('does not follow the origin on its own: a brief reads the pinned commit', () => {
     const { at: source } = origin();
     const project = place('project');
-    runInheritSet(project, { origin: source.cwd, write: true });
+    runInheritSet(project, { where: source.cwd, write: true });
     accept(source, 'Redis for queues');
     commit(source);
     expect(titlesOf(project)).toEqual(['Postgres in every new service']);
@@ -286,9 +285,10 @@ describe('updating', () => {
 
   it('says an unreachable origin and writes nothing', () => {
     const project = place('project');
-    expect(runInheritSet(project, { origin: join(sandbox, 'nowhere'), write: true })).toMatchObject(
-      { ok: false, reason: 'UNREACHABLE' },
-    );
+    expect(runInheritSet(project, { where: join(sandbox, 'nowhere'), write: true })).toMatchObject({
+      ok: false,
+      reason: 'UNREACHABLE',
+    });
     expect(existsSync(join(project.cwd, '.mnema', 'inherit.json'))).toBe(false);
   });
 });

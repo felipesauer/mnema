@@ -262,7 +262,13 @@ describe('every git a test starts to write a repository', () => {
   });
 
   it('hands every one of its calls the file that turns automatic maintenance off', () => {
-    const bare = startingGit.flatMap((one) => bareCallsIn(one.file, one.source));
+    // A module the product ships is not a test's repository: the race is a remote that a test's
+    // push repacks while a clone copies it, and the one product module that fetches does it into
+    // a cache of its own and turns maintenance off in the call (`-c`, which reaches that side).
+    const shipped = /^packages\/[^/]+\/src\/(?!.*\.test\.ts$)/;
+    const bare = startingGit
+      .filter((one) => !shipped.test(one.file))
+      .flatMap((one) => bareCallsIn(one.file, one.source));
     expect(
       bare,
       'a git that writes a repository, started without GIT_CONFIG_GLOBAL: GIT_WITHOUT_MAINTENANCE',

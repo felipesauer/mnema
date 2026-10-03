@@ -424,6 +424,10 @@ const UNWITNESSED: Readonly<Record<string, Debt>> = {
     reached: 'nobody imports it',
     why: 'The option-less brief registration and its switched-off sentence; the brief cases all assert the document presentation/brief.ts renders, and the switch test is about the switch.',
   },
+  'packages/code/src/wiring/inherit.ts': {
+    reached: 'nobody imports it',
+    why: "The inherit verbs' wiring, which prints the plan and the refusals; a-project-inherits-a-record.test.ts drives it through the binary, and the cases beside the command read what it returns, never what this prints.",
+  },
   'packages/code/src/wiring/commits.ts': {
     reached: 'nobody imports it',
     why: "The commits verb's wiring; the-record-meets-the-git-log.test.ts drives it through the CLI and reads its --json and its page.",
@@ -636,7 +640,7 @@ const UNWITNESSED: Readonly<Record<string, Debt>> = {
  * reading, so nothing can fall in two.
  */
 const THE_SHAPE_OF_WHAT_IS_LEFT: Readonly<Record<string, number>> = {
-  wiring: 42,
+  wiring: 43,
   presentation: 11,
   projections: 4,
   completion: 4,
@@ -816,6 +820,7 @@ const CLAUSES_PER_FILE: Readonly<Record<string, number>> = {
   'packages/code/src/commands/focus.test.ts': 9,
   'packages/code/src/commands/guard.test.ts': 11,
   'packages/code/src/commands/handoff.test.ts': 8,
+  'packages/code/src/commands/inherit.test.ts': 14,
   'packages/code/src/commands/init.test.ts': 8,
   'packages/code/src/commands/key-protect.test.ts': 6,
   'packages/code/src/commands/key-restore.test.ts': 9,
@@ -894,6 +899,7 @@ const CLAUSES_PER_FILE: Readonly<Record<string, number>> = {
   'packages/code/tests/a-palette-for-the-words.test.ts': 24,
   'packages/code/tests/a-picture-of-the-record.test.ts': 8,
   'packages/code/tests/a-private-write-asks-git.test.ts': 11,
+  'packages/code/tests/a-project-inherits-a-record.test.ts': 8,
   'packages/code/tests/a-read-asked-again-draws-what-changed.test.ts': 16,
   'packages/code/tests/a-refusal-is-one-line.test.ts': 7,
   'packages/code/tests/a-refusal-leaves-nothing.test.ts': 13,
@@ -1276,6 +1282,7 @@ const PRODUCTION_FILES: readonly string[] = [
   'packages/code/src/commands/focus.ts',
   'packages/code/src/commands/guard.ts',
   'packages/code/src/commands/handoff.ts',
+  'packages/code/src/commands/inherit.ts',
   'packages/code/src/commands/init.ts',
   'packages/code/src/commands/key-enroll.ts',
   'packages/code/src/commands/key-protect.ts',
@@ -1331,6 +1338,7 @@ const PRODUCTION_FILES: readonly string[] = [
   'packages/code/src/host-hook.ts',
   'packages/code/src/host-names.ts',
   'packages/code/src/host-rules-file.ts',
+  'packages/code/src/inherited-record.ts',
   'packages/code/src/intelligence-source.ts',
   'packages/code/src/key-file.ts',
   'packages/code/src/label-as-address.ts',
@@ -1443,6 +1451,7 @@ const PRODUCTION_FILES: readonly string[] = [
   'packages/code/src/wiring/guard.ts',
   'packages/code/src/wiring/handoff.ts',
   'packages/code/src/wiring/index.ts',
+  'packages/code/src/wiring/inherit.ts',
   'packages/code/src/wiring/init.ts',
   'packages/code/src/wiring/integrity.ts',
   'packages/code/src/wiring/io.ts',
@@ -1633,8 +1642,8 @@ describe('every file has a test that names it', () => {
     );
     // 78 with the git bridge's five wiring files; 73 until `chain/src/one-line.test.ts` began calling the functions it is about.
     // 72 until `mcp/hook-reply.test.ts` began calling the function it is about.
-    expect(found.size).toBe(79);
-    expect(byReach('nobody imports it')).toBe(79);
+    expect(found.size).toBe(80);
+    expect(byReach('nobody imports it')).toBe(80);
     expect(byReach('imported, and no assertion observes it')).toBe(0);
   });
 
@@ -1656,7 +1665,7 @@ describe('every file has a test that names it', () => {
     // Announced in the header and, until now, kept by hand. A shared excuse is how a table
     // like this turns into a rubber stamp, and a row drained to a stub is how it starts.
     const reasons = Object.values(UNWITNESSED).map((one) => one.why);
-    expect(reasons).toHaveLength(79);
+    expect(reasons).toHaveLength(80);
     expect(new Set(reasons).size).toBe(reasons.length);
     // The shortest reason standing is 156 characters; the floor is under it and well over
     // anything that could be written without saying what reaches that file.

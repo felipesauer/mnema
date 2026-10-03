@@ -8,7 +8,7 @@
  * and a verdict over them is a verdict about those bytes.
  *
  * WHAT THIS DOES NOT DO IS AS DELIBERATE AS WHAT IT DOES.
- *  - It never writes to the origin and never into the project's own chain: an inherited decision
+ *  - It never writes to the where and never into the project's own chain: an inherited decision
  *    is read, so it is not signed by the project, is not in any tree the project's `verify`
  *    covers, and cannot be confused with a decision the project made.
  *  - It never reaches the network on a read. Only `fetchOrigin` does, and only the two verbs that
@@ -18,7 +18,7 @@
  *    project's own is; a record that does not verify there contributes nothing, and the reading
  *    says so ({@link InheritedReading}).
  *
- * The copy lives under the mnema data directory (`<data>/inherited/<origin digest>/`), never in
+ * The copy lives under the mnema data directory (`<data>/inherited/<where digest>/`), never in
  * the project's tree: a bare repository fetched into, and one extracted copy of `.mnema/` per
  * commit read. Git is run with an argument array, never through a shell.
  */
@@ -45,11 +45,11 @@ const COMMIT = /^(?:[0-9a-f]{40}|[0-9a-f]{64})$/;
 
 /** What a project inherits from: a repository, and the one commit of it that is read. */
 export interface Pointer {
-  readonly origin: string;
+  readonly where: string;
   readonly commit: string;
 }
 
-/** One inherited decision in force, as the origin's record names it. */
+/** One inherited decision in force, as the where's record names it. */
 export interface InheritedRule {
   readonly id: string;
   readonly adr: string;
@@ -66,7 +66,7 @@ export type PointerRead =
  * What reading the inherited record at its pinned commit came to.
  *
  * Four outcomes and only the first carries decisions: the others each say, in a sentence, why
- * there are none, because an absence nobody explains is read as "the origin has no rules".
+ * there are none, because an absence nobody explains is read as "the where has no rules".
  */
 export type InheritedReading =
   | {
@@ -88,27 +88,27 @@ export function readPointer(projectPublic: string): PointerRead {
   } catch {
     return { state: 'invalid', why: `${POINTER_FILE} is not valid JSON` };
   }
-  const { origin, commit } = (parsed ?? {}) as { origin?: unknown; commit?: unknown };
-  if (typeof origin !== 'string' || origin.length === 0 || origin.startsWith('-')) {
+  const { origin: where, commit } = (parsed ?? {}) as { origin?: unknown; commit?: unknown };
+  if (typeof where !== 'string' || where.length === 0 || where.startsWith('-')) {
     return { state: 'invalid', why: `${POINTER_FILE} has no usable "origin"` };
   }
   if (typeof commit !== 'string' || !COMMIT.test(commit)) {
     return { state: 'invalid', why: `${POINTER_FILE} has no full "commit" hash` };
   }
-  return { state: 'found', pointer: { origin, commit } };
+  return { state: 'found', pointer: { where, commit } };
 }
 
 /** Writes the pointer file — the only file this feature writes into a project. */
 export function writePointer(projectPublic: string, pointer: Pointer): void {
   writeFileSync(
     join(projectPublic, POINTER_FILE),
-    `${JSON.stringify({ origin: pointer.origin, commit: pointer.commit }, null, 2)}\n`,
+    `${JSON.stringify({ origin: pointer.where, commit: pointer.commit }, null, 2)}\n`,
   );
 }
 
-/** Where a project's copies of one origin live: under the data directory, outside the project. */
-function homeOf(trees: ResolvedTrees, origin: string): string {
-  const digest = createHash('sha256').update(origin).digest('hex').slice(0, 16);
+/** Where a project's copies of one where live: under the data directory, outside the project. */
+function homeOf(trees: ResolvedTrees, where: string): string {
+  const digest = createHash('sha256').update(where).digest('hex').slice(0, 16);
   return join(dirname(trees.global), 'inherited', digest);
 }
 
@@ -116,9 +116,9 @@ function homeOf(trees: ResolvedTrees, origin: string): string {
  * What `git` is asked to fetch from. A path written relative is relative to the project's root,
  * the way a file in the repository would read it; a URL is left as it is.
  */
-function sourceOf(origin: string, projectRoot: string): string {
-  if (/^[a-z][a-z0-9+.-]*:\/\//i.test(origin) || /^[\w.-]+@[\w.-]+:/.test(origin)) return origin;
-  return resolve(projectRoot, origin);
+function sourceOf(where: string, projectRoot: string): string {
+  if (/^[a-z][a-z0-9+.-]*:\/\//i.test(where) || /^[\w.-]+@[\w.-]+:/.test(where)) return where;
+  return resolve(projectRoot, where);
 }
 
 /** A git failure, with the last line git said — the part a person can act on. */
@@ -128,7 +128,7 @@ export class GitFailed extends Error {
 
 function git(args: readonly string[], binary = false): Buffer | string {
   try {
-    return execFileSync('git', [...args], {
+    return execFileSync('git', ['-c', 'gc.auto=0', '-c', 'maintenance.auto=false', ...args], {
       encoding: binary ? 'buffer' : 'utf8',
       env: { ...process.env, GIT_TERMINAL_PROMPT: '0' },
       stdio: ['ignore', 'pipe', 'pipe'],
@@ -141,7 +141,7 @@ function git(args: readonly string[], binary = false): Buffer | string {
   }
 }
 
-/** The bare repository the origin is fetched into, created on first use. */
+/** The bare repository the where is fetched into, created on first use. */
 function repoOf(home: string): string {
   const repo = join(home, 'repo.git');
   if (!existsSync(repo)) {
@@ -151,7 +151,7 @@ function repoOf(home: string): string {
   return repo;
 }
 
-/** Whether this machine's copy of the origin holds the commit. */
+/** Whether this machine's copy of the where holds the commit. */
 function holds(repo: string, commit: string): boolean {
   try {
     git(['-C', repo, 'cat-file', '-e', `${commit}^{commit}`]);
@@ -161,7 +161,7 @@ function holds(repo: string, commit: string): boolean {
   }
 }
 
-/** Brings the origin's heads into the local copy. The only call here that may use the network. */
+/** Brings the where's heads into the local copy. The only call here that may use the network. */
 function fetchOrigin(repo: string, source: string): void {
   git([
     '-C',
@@ -236,7 +236,7 @@ function readRecord(
 /**
  * Reads the record a pointer names, at that commit.
  *
- * `mayFetch` is whether a commit missing from this machine may be asked of the origin: a read
+ * `mayFetch` is whether a commit missing from this machine may be asked of the where: a read
  * of the brief says yes once (a fresh clone has nothing yet), and the update's look at the
  * PREVIOUS commit says no (it asks only what it already has).
  */
@@ -246,18 +246,18 @@ export function readInherited(
   mayFetch: boolean,
 ): InheritedReading {
   const projectRoot = dirname(trees.projectPublic as string);
-  const home = homeOf(trees, pointer.origin);
+  const home = homeOf(trees, pointer.where);
   let root: string;
   try {
     const repo = repoOf(home);
     if (!holds(repo, pointer.commit) && mayFetch) {
       try {
-        fetchOrigin(repo, sourceOf(pointer.origin, projectRoot));
+        fetchOrigin(repo, sourceOf(pointer.where, projectRoot));
       } catch (error) {
         return {
           state: 'unavailable',
           pointer,
-          why: `this machine has no copy of that commit and ${pointer.origin} could not be reached (${(error as Error).message})`,
+          why: `this machine has no copy of that commit and ${pointer.where} could not be reached (${(error as Error).message})`,
         };
       }
     }
@@ -287,10 +287,10 @@ export function readProjectInherited(trees: ResolvedTrees): InheritedReading | u
   return readInherited(trees, found.pointer, true);
 }
 
-/** The commit a revision of the origin names, after fetching — or why none. */
+/** The commit a revision of the where names, after fetching — or why none. */
 export function resolveAtOrigin(
   trees: ResolvedTrees,
-  origin: string,
+  where: string,
   rev: string | undefined,
 ):
   | { readonly ok: true; readonly commit: string }
@@ -305,8 +305,8 @@ export function resolveAtOrigin(
   }
   let repo: string;
   try {
-    repo = repoOf(homeOf(trees, origin));
-    fetchOrigin(repo, sourceOf(origin, projectRoot));
+    repo = repoOf(homeOf(trees, where));
+    fetchOrigin(repo, sourceOf(where, projectRoot));
   } catch (error) {
     return { ok: false, reason: 'UNREACHABLE', detail: (error as Error).message };
   }
@@ -324,19 +324,19 @@ export function resolveAtOrigin(
   return {
     ok: false,
     reason: 'NO_SUCH_REVISION',
-    detail: rev === undefined ? `${origin} has no HEAD commit` : `${origin} has no revision ${rev}`,
+    detail: rev === undefined ? `${where} has no HEAD commit` : `${where} has no revision ${rev}`,
   };
 }
 
 /** How many commits lie between two, when this machine holds both. */
 export function commitsBetween(
   trees: ResolvedTrees,
-  origin: string,
+  where: string,
   from: string,
   to: string,
 ): number | undefined {
   try {
-    const repo = repoOf(homeOf(trees, origin));
+    const repo = repoOf(homeOf(trees, where));
     return Number(String(git(['-C', repo, 'rev-list', '--count', `${from}..${to}`])).trim());
   } catch {
     return undefined;

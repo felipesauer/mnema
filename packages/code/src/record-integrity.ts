@@ -237,6 +237,11 @@ export function linkBreakBlockOnWrite(breaks: readonly ScopedLinkBreak[]): reado
  * read, and a name would have to be matched back to a file by a second rule.
  */
 export const SERVES_NO_RECORD_CONTENT: { readonly [path: string]: string } = {
+  'inherited-record.ts':
+    'it opens ANOTHER repository’s record, never this project’s, and only after that record ' +
+    'verified at the commit pointed at: a break there is the answer `unverified`, which the ' +
+    'brief’s section says in words and prints no decision under, so a notice about this ' +
+    'project’s chain has nothing to attach to',
   'commands/decision-transition.ts':
     'a move is a write, answered by the move; the one thing it reads first is where the ' +
     '`agent-accepts` switch stands, to turn an agent’s accept away, and it serves nothing of ' +

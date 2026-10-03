@@ -1,15 +1,15 @@
 /**
  * `mnema inherit` — point this project at another repository's record, at one commit.
  *
- * Two acts, both explicit: `set` names the origin the first time, `update` moves the pointer to
+ * Two acts, both explicit: `set` names the where the first time, `update` moves the pointer to
  * a newer commit. Neither moves anything by itself: each prints what the project would inherit
  * (for `update`, what changes between the commit it has and the one it would have) and writes
  * the pointer only with `--write`, the way `decision import` writes its plan.
  *
  * A record that does not verify at the commit is REFUSED, with or without `--write`: the
- * pointer is how a project says "I trust this origin at this commit", and a commit whose record
+ * pointer is how a project says "I trust this where at this commit", and a commit whose record
  * does not verify is not one the project can be shown the decisions of. Inheriting is trusting
- * the origin at that commit; nothing here makes the origin's decisions the project's own, and
+ * the where at that commit; nothing here makes the where's decisions the project's own, and
  * nothing is written to the project's chain.
  */
 
@@ -63,15 +63,15 @@ type Planned = InheritPlan | InheritRefused;
 
 function plan(
   ctx: InheritContext,
-  origin: string,
+  where: string,
   rev: string | undefined,
   from: Pointer | undefined,
   write: boolean,
 ): Planned {
   const trees = resolveTrees(ctx.cwd, ctx.env);
-  const resolved = resolveAtOrigin(trees, origin, rev);
+  const resolved = resolveAtOrigin(trees, where, rev);
   if (!resolved.ok) return { ok: false, reason: resolved.reason, detail: resolved.detail };
-  const to: Pointer = { origin, commit: resolved.commit };
+  const to: Pointer = { where, commit: resolved.commit };
   const reading = readInherited(trees, to, false);
   if (reading.state !== 'read') {
     return {
@@ -87,7 +87,7 @@ function plan(
   const added = reading.decisions.filter((d) => !ids.has(d.id));
   const removed = old.filter((d) => !now.has(d.id));
   const commits =
-    from === undefined ? undefined : commitsBetween(trees, origin, from.commit, to.commit);
+    from === undefined ? undefined : commitsBetween(trees, where, from.commit, to.commit);
   const changed = from?.commit !== to.commit;
   if (write && changed) writePointer(trees.projectPublic as string, to);
   return {
@@ -102,23 +102,23 @@ function plan(
   };
 }
 
-/** Points the project at an origin, at `at` (the origin's HEAD when omitted). */
+/** Points the project at an where, at `at` (the where's HEAD when omitted). */
 export function runInheritSet(
   ctx: InheritContext,
-  args: { readonly origin: string; readonly at?: string; readonly write?: boolean },
+  args: { readonly where: string; readonly at?: string; readonly write?: boolean },
 ): Planned {
   const trees = resolveTrees(ctx.cwd, ctx.env);
   if (trees.projectPublic === undefined) return { ok: false, reason: 'NO_PROJECT' };
-  if (args.origin.length === 0 || args.origin.startsWith('-')) {
-    return { ok: false, reason: 'UNREACHABLE', detail: `${args.origin} is not an origin` };
+  if (args.where.length === 0 || args.where.startsWith('-')) {
+    return { ok: false, reason: 'UNREACHABLE', detail: `${args.where} is not an origin` };
   }
   if (readPointer(trees.projectPublic).state !== 'absent') {
     return { ok: false, reason: 'ALREADY_INHERITING' };
   }
-  return plan(ctx, args.origin, args.at, undefined, args.write === true);
+  return plan(ctx, args.where, args.at, undefined, args.write === true);
 }
 
-/** Moves the pointer to `to` (the origin's HEAD when omitted), showing what changes first. */
+/** Moves the pointer to `to` (the where's HEAD when omitted), showing what changes first. */
 export function runInheritUpdate(
   ctx: InheritContext,
   args: { readonly to?: string; readonly write?: boolean },
@@ -130,5 +130,5 @@ export function runInheritUpdate(
   if (found.state === 'invalid') {
     return { ok: false, reason: 'POINTER_INVALID', detail: found.why };
   }
-  return plan(ctx, found.pointer.origin, args.to, found.pointer, args.write === true);
+  return plan(ctx, found.pointer.where, args.to, found.pointer, args.write === true);
 }

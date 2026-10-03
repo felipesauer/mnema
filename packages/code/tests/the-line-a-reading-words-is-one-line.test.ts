@@ -607,6 +607,58 @@ const CLASSIFIED: Readonly<Record<string, { verdict: Verdict; why: string }>> = 
     why: 'each move’s `to`, read out of the record and collapsed as one joined value',
   },
 
+  'brief.ts «## Inherited decisions ({})» inherited.decisions.length #1': {
+    verdict: 'minted',
+    why: 'a count of the list printed under the heading, taken from that list',
+  },
+  'brief.ts «- {} ({} in that record, id {})» oneLine(d.title) #1': {
+    verdict: 'collapsed',
+    why: 'the title of a decision in ANOTHER repository’s record, read at a pinned commit',
+  },
+  'brief.ts «- {} ({} in that record, id {})» oneLine(d.adr) #1': {
+    verdict: 'collapsed',
+    why: 'the label that record minted for the decision',
+  },
+  'brief.ts «- {} ({} in that record, id {})» oneLine(d.id) #1': {
+    verdict: 'collapsed',
+    why: 'the id that record minted for the decision',
+  },
+  'brief.ts «Read from {}, verified at that commit. This project did not decide or sign these:» from #1':
+    {
+      verdict: 'composed',
+      why: 'the origin and commit, the first collapsed and the second a full hash, in the template just above',
+    },
+  'brief.ts «This project points at {}, and it could not be read here: {}.» from #1': {
+    verdict: 'composed',
+    why: 'the origin and commit, the first collapsed and the second a full hash, in the template just above',
+  },
+  'brief.ts «This project points at {}, and the record there did not verify: {}.» from #1': {
+    verdict: 'composed',
+    why: 'the origin and commit, the first collapsed and the second a full hash, in the template just above',
+  },
+  'brief.ts «This project points at {}, and it could not be read here: {}.» oneLine(inherited.why) #1':
+    {
+      verdict: 'collapsed',
+      why: 'why an inherited record was not read — a sentence that can carry what git or the verifier said, or a path',
+    },
+  'brief.ts «This project points at {}, and the record there did not verify: {}.» oneLine(inherited.why) #1':
+    {
+      verdict: 'collapsed',
+      why: 'why an inherited record was not read — a sentence that can carry what git or the verifier said, or a path',
+    },
+  'brief.ts «{}, so nothing is inherited.» oneLine(inherited.why) #1': {
+    verdict: 'collapsed',
+    why: 'why an inherited record was not read — a sentence that can carry what git or the verifier said, or a path',
+  },
+  'brief.ts «{} at commit {}» oneLine(inherited.pointer.where) #1': {
+    verdict: 'collapsed',
+    why: 'where the project’s own pointer file says the origin is, which nothing but a person validated',
+  },
+  'brief.ts «{} at commit {}» inherited.pointer.commit #1': {
+    verdict: 'minted',
+    why: 'a full object name: the pointer is read only when it matches 40 or 64 hex digits',
+  },
+
   // --- exported.ts: the file a pattern leaves in ---------------------------------
   'exported.ts «Exported skill "{}" to {}» done.name #1': {
     verdict: 'minted',
@@ -2037,8 +2089,8 @@ describe('every value this layer puts on a line is classified', () => {
     // 251 until the renderer began making an actor's control bytes visible and joined the
     // composers with its two template values; then 253 until the rules in force began saying who
     // accepted them (`brief.ts`, `record.ts`); 294 until `mnema rules` printed the four numbers
-    // of the relation that refuses a write; 301 with the three the trunk added meanwhile; 306 once the document counts the rules that refuse a write; 367 with the pages of the git bridge; 377 with its shallow sentence and the recipe aging prints.
-    expect(FOUND.sites.length).toBe(377);
+    // of the relation that refuses a write; 301 with the three the trunk added meanwhile; 306 once the document counts the rules that refuse a write; 367 with the pages of the git bridge; 377 with its shallow sentence and the recipe aging prints; 389 with the section for an inherited record.
+    expect(FOUND.sites.length).toBe(389);
   });
 
   it('reads the verdict off the source rather than believing the table', () => {
@@ -2059,10 +2111,10 @@ describe('every value this layer puts on a line is classified', () => {
     // No arm of the case above may be empty, or that much of it is vacuous.
     const verdicts = Object.values(CLASSIFIED).map((said) => said.verdict);
     const count = (verdict: Verdict): number => verdicts.filter((said) => said === verdict).length;
-    expect(count('collapsed')).toBe(99);
-    expect(count('minted')).toBe(213);
-    expect(count('composed')).toBe(65);
-    expect(FOUND.sites.filter((site) => /\boneLine\b/.test(site.expression))).toHaveLength(99);
+    expect(count('collapsed')).toBe(106);
+    expect(count('minted')).toBe(215);
+    expect(count('composed')).toBe(68);
+    expect(FOUND.sites.filter((site) => /\boneLine\b/.test(site.expression))).toHaveLength(106);
   });
 
   it('every reason says where the value comes from', () => {
