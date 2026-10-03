@@ -31,7 +31,6 @@ __pycache__/
 
 # Alpha-era local-only artifacts kept out of the reconstruction (referenced
 # from the `main` branch; not part of the rebuilt tree).
-AGENTS.md
 docs-local/
 scripts/
 

@@ -1,5 +1,5 @@
 // Attack 5: append a forged event, correctly hash-chained, signed by a key nobody enrolled.
-const { entryHash, writtenAsStored } = await import('/home/felipe/Documents/Personal/Me/.projects/mnema/packages/chain/dist/chain/hash.js');
+const { entryHash, writtenAsStored } = await import('<projects>/mnema/packages/chain/dist/chain/hash.js');
 const { readFileSync, writeFileSync } = await import('node:fs');
 const [seg, signerFp] = process.argv.slice(2);
 const lines = readFileSync(seg, 'utf-8').split('\n').filter(Boolean).map((l) => JSON.parse(l));

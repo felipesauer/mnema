@@ -1,5 +1,5 @@
 // Attack 2: edit an event's content, then repair every entry hash so T1 links cleanly.
-const { entryHash, writtenAsStored } = await import('/home/felipe/Documents/Personal/Me/.projects/mnema/packages/chain/dist/chain/hash.js');
+const { entryHash, writtenAsStored } = await import('<projects>/mnema/packages/chain/dist/chain/hash.js');
 const { readFileSync, writeFileSync } = await import('node:fs');
 const seg = process.argv[2];
 const raw = readFileSync(seg, 'utf-8').split('\n').filter(Boolean);

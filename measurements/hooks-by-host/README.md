@@ -164,7 +164,17 @@ paths of its home, the git status and the sandbox paths. They were cut because t
 text or this machine's configuration, none of it is sent by mnema, and some of it names a person's
 files. The session was one of four; the other three were not published.
 
-## 7 · A rule that refuses a write, in each host (2 Oct 2026)
+## 7 · Does a resumed session get the opening document twice?
+
+The plugin declares its `SessionStart` hooks with no matcher, so they also run when a session is
+resumed. Measured on Claude Code 2.1.281 the way section 1 describes, with a hook that answers
+with a marker (`resume-probe.mjs`, result in `results/2026-10-02/resume.json`): the hook fires
+for `startup` and again for `resume`, and the request the resumed session sends still holds the
+marker **once**, whether or not `resume` is in the matcher. Nothing doubles, so the matcher was
+not narrowed. Not measured: whether the copy a resumed session holds is the earlier one or the
+new one, which matters only if the record changed in between; VS Code and Cursor.
+
+## 8 · A rule that refuses a write, in each host (2 Oct 2026)
 
 [`results/2026-10-02/refusal.json`](results/2026-10-02/refusal.json): the plugin of this
 repository and the built binary, in the three hosts, with the harness of §1 (no model, no

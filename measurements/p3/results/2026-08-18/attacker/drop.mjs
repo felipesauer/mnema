@@ -1,5 +1,5 @@
 // Attack 3: delete an event from the middle and re-chain seq and hashes.
-const { entryHash, writtenAsStored } = await import('/home/felipe/Documents/Personal/Me/.projects/mnema/packages/chain/dist/chain/hash.js');
+const { entryHash, writtenAsStored } = await import('<projects>/mnema/packages/chain/dist/chain/hash.js');
 const { readFileSync, writeFileSync } = await import('node:fs');
 const seg = process.argv[2];
 const lines = readFileSync(seg, 'utf-8').split('\n').filter(Boolean).map((l) => JSON.parse(l));

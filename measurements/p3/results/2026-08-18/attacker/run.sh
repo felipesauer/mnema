@@ -4,7 +4,7 @@
 set -u
 W=$1; n=$2; shift 2
 export HOME="$W" XDG_DATA_HOME="$W/xdg"
-M="node ${MNEMA_BIN:-/home/felipe/Documents/Personal/Me/.projects/mnema/packages/code/dist/cli.js}"
+M="node ${MNEMA_BIN:-<projects>/mnema/packages/code/dist/cli.js}"
 d="$W/attack-$n"; rm -rf "$d"; cp -r "$W/base" "$d"; cd "$d" || exit 1
 export SEG=$(ls .mnema/tails/*/000001.jsonl) CPS=$(ls .mnema/tails/*/checkpoints.jsonl)
 export TP=$(ls .mnema/tails/*/tailproof.json); export TAIL=$(dirname "$SEG")
