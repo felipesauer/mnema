@@ -9,7 +9,6 @@
 
 import { execFileSync } from 'node:child_process';
 import { readFileSync } from 'node:fs';
-import { userInfo } from 'node:os';
 import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { describe, expect, it } from 'vitest';
@@ -35,8 +34,8 @@ const namesAHome = (text: string, homes: readonly string[]): number[] =>
       A_HOME.test(line) || homes.some((home) => line.includes(home)) ? [i + 1] : [],
     );
 
-/** A runner's own home, when it is a real one: `/` or a one-segment path would match everything. */
-const RUNNER_HOMES: readonly string[] = [process.env.HOME, userInfo().homedir].filter(
+/** The `HOME` this process sees (the suite hands each process one of its own; outside the suite it is the runner's real home), when it is a real path: `/` would match everything. */
+const RUNNER_HOMES: readonly string[] = [process.env.HOME].filter(
   (home): home is string => typeof home === 'string' && home.split('/').length > 2,
 );
 

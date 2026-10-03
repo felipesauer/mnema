@@ -1,7 +1,7 @@
 // Does a SessionStart document reach the model twice in a resumed Claude Code session? No model: a stand-in API on loopback.
 // Usage: node resume-probe.mjs [matcher]   (no matcher = the plugin's own declaration)
 import { spawn } from 'node:child_process';
-import { mkdirSync, mkdtempSync, writeFileSync } from 'node:fs';
+import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { startFakeApi } from '../p1/harness/lib/fake-api.mjs';
@@ -52,4 +52,5 @@ const run = async (extra) => {
 const id = '3f2b1c9e-5a4d-4c1b-9e2a-0d6f7a8b9c10';
 console.log('first', JSON.stringify(await run(['--session-id', id])));
 console.log('resume', JSON.stringify(await run(['--resume', id])));
-console.log('fired', (await import('node:fs')).readFileSync(join(root, 'fired.log'), 'utf8').trim().split('\n').join(','));
+console.log('fired', readFileSync(join(root, 'fired.log'), 'utf8').trim().split('\n').join(','));
+rmSync(root, { recursive: true, force: true });
