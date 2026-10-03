@@ -118,7 +118,6 @@ export {
   establishIdentity,
   type IdentityOk,
   linkAccount,
-  type NotAGithubAccountErr,
   type RecordedAnchor,
   recordedAnchorOf,
   revokeKey,

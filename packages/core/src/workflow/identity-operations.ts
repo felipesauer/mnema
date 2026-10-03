@@ -45,7 +45,7 @@ import {
   screenContent,
   screened,
 } from '../content/screen.js';
-import { GITHUB_SERVICE, githubLoginRefusal } from '../identity/account.js';
+import { GITHUB_SERVICE } from '../identity/account.js';
 import {
   IdentityUnavailableError,
   type Membership,
@@ -570,13 +570,6 @@ export interface AccountLinkOk extends ScreenedWrite {
   readonly account: string;
 }
 
-/** The name is not one GitHub would have issued; nothing was written. */
-export interface NotAGithubAccountErr {
-  readonly ok: false;
-  readonly code: 'NOT_A_GITHUB_ACCOUNT';
-  readonly message: string;
-}
-
 /**
  * Records that THIS machine's identity is a GitHub account: one `account.linked` whose subject
  * and `who` are the identity itself, so an identity only ever names its own account.
@@ -585,13 +578,15 @@ export interface NotAGithubAccountErr {
  * uses it (`verify --against-github`) honours only a signature-covered one, because one in the
  * keyless window above the last checkpoint could be appended by somebody holding no key — naming
  * an account of their own, on which they had published this identity's public key.
+ *
+ * WHICH NAMES ARE GITHUB'S IS THE SURFACE'S TO REFUSE, as which channels exist is for a switch:
+ * the account goes through the content door like every caller's string, and the verb that takes
+ * it, and the reading that puts it in an address, both ask `githubLoginRefusal` first.
  */
 export function linkAccount(
   ctx: WriteContext,
   input: { account: string },
-): AccountLinkOk | NotAGithubAccountErr | ScreenRefusal | AppendRefusal {
-  const refused = githubLoginRefusal(input.account);
-  if (refused !== undefined) return { ok: false, code: 'NOT_A_GITHUB_ACCOUNT', message: refused };
+): AccountLinkOk | ScreenRefusal | AppendRefusal {
   const text = screenContent({ account: input.account });
   if (!text.ok) return text;
 

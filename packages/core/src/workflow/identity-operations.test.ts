@@ -228,10 +228,10 @@ describe('linkAccount — an identity names its GitHub account', () => {
     expect(verdict.fullySigned).toBe(true);
   });
 
-  it('refuses a name GitHub would not have issued, and writes nothing', () => {
+  it('refuses an account name that holds a credential, and writes nothing', () => {
     const tree = openTree('mnema-identity-link-');
-    const refused = linkAccount(tree.ctx, { account: 'octo/cat' });
-    expect(refused).toMatchObject({ ok: false, code: 'NOT_A_GITHUB_ACCOUNT' });
+    const refused = linkAccount(tree.ctx, { account: 'AKIAIOSFODNN7EXAMPLE' });
+    expect(refused).toMatchObject({ ok: false, code: 'NAME_HOLDS_A_SECRET' });
     expect(orderedEvents({ root: tree.root }, upcasters)).toEqual([]);
   });
 });

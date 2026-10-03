@@ -29,7 +29,7 @@ import {
   supersedeDecision,
 } from './workflow/decision-operations.js';
 import { gate } from './workflow/gate.js';
-import { ensureFounded } from './workflow/identity-operations.js';
+import { ensureFounded, linkAccount } from './workflow/identity-operations.js';
 import { createTask, transitionTask, type WriteContext } from './workflow/operations.js';
 import { authorizeTailPrune } from './workflow/prune-operations.js';
 import { startRun } from './workflow/session-operations.js';
@@ -509,6 +509,11 @@ describe('every kind says where its references are, and the door asks it there',
       kind: 'channel.switched',
       site: 'subject',
       drive: (said) => switchChannel(ctx, { channel: said, on: true }),
+    },
+    {
+      kind: 'account.linked',
+      site: 'account',
+      drive: (said) => linkAccount(ctx, { account: said }),
     },
   ];
 
