@@ -225,6 +225,44 @@ describe('compareWithGithub', () => {
     expect(reading.authors[0]?.finding).toMatchObject({ kind: 'compared', account: 'octocat' });
   });
 
+  /** A founded record whose author signed one claim of their own making, checkpointed. */
+  function aRecordWithClaim(subjectOf: (anchor: string) => string, account: string) {
+    const root = tmp('mnema-github-tree-');
+    const writer = openChainForWriting(root, { keyRoot: tmp('mnema-github-keys-') });
+    ensureFounded({ writer, layout: { root }, upcasters: catalogUpcasters() });
+    writer.append(
+      accountLinked(
+        {
+          at: new Date().toISOString(),
+          who: writer.anchor,
+          signerFp: writer.signerFingerprint,
+          subject: subjectOf(writer.anchor),
+        },
+        { service: 'github', account },
+      ),
+    );
+    writer.checkpoint();
+    return root;
+  }
+
+  it('ignores a covered claim whose subject is another identity: an identity names only its own account', async () => {
+    const root = aRecordWithClaim(() => `mnid:${'9'.repeat(64)}`, 'octocat');
+    const fetch = github('');
+    const reading = await compareWithGithub(treesOf(root), { fetch });
+    expect(reading.authors.map((a) => a.finding)).toEqual([{ kind: 'no-account' }]);
+    expect(fetch).not.toHaveBeenCalled();
+  });
+
+  it('refuses a covered claim whose account is no GitHub name, and never asks for it', async () => {
+    const root = aRecordWithClaim((anchor) => anchor, '../octocat');
+    const fetch = github('');
+    const reading = await compareWithGithub(treesOf(root), { fetch });
+    expect(reading.authors.map((a) => a.finding)).toEqual([
+      { kind: 'not-an-account', account: '../octocat' },
+    ]);
+    expect(fetch).not.toHaveBeenCalled();
+  });
+
   it('leaves out a tree whose verdict is a break, and says so', async () => {
     const { root, writer } = aRecord();
     // Rewrite the committed key: the checkpoints no longer verify against it.
