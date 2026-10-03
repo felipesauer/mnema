@@ -139,6 +139,7 @@ $ mnema why docs/runbook/rollback.md --json
 |   "exists": true,
 |   "rules": [],
 |   "git": false,
+|   "shallow": false,
 |   "commits": [],
 |   "more": false
 | }
@@ -147,6 +148,7 @@ $ mnema aging
 $ mnema aging --json
 | {
 |   "git": false,
+|   "shallow": false,
 |   "minCommits": 20,
 |   "looked": 0,
 |   "aged": []
@@ -847,6 +849,7 @@ $ mnema commits <decision-runbook> --json
 |     "docs/runbook"
 |   ],
 |   "git": false,
+|   "shallow": false,
 |   "cited": {
 |     "commits": [],
 |     "more": false
@@ -880,6 +883,7 @@ $ mnema why docs/runbook/rollback.md --json
 |     }
 |   ],
 |   "git": false,
+|   "shallow": false,
 |   "commits": [],
 |   "more": false
 | }
@@ -888,6 +892,7 @@ $ mnema aging
 $ mnema aging --json
 | {
 |   "git": false,
+|   "shallow": false,
 |   "minCommits": 20,
 |   "looked": 1,
 |   "aged": []

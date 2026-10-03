@@ -15,6 +15,7 @@ import {
   commitsWithTrailer,
   filesOf,
   inAWorkTree,
+  isShallow,
   LISTED,
   parseCommits,
   resolveCommit,
@@ -123,5 +124,18 @@ describe('the git log, read for the decisions in it', () => {
 
   it('parses an empty log as no commits', () => {
     expect(parseCommits('')).toEqual([]);
+  });
+});
+
+describe('a shallow clone, told from a whole one', () => {
+  it('is shallow only when the history was cut', () => {
+    git(['init', '-q', '-b', 'main']);
+    commit('a.ts', 'One');
+    commit('b.ts', 'Two');
+    expect(isShallow(repo)).toBe(false);
+    const clone = join(sandbox, 'clone');
+    git(['clone', '-q', '--depth', '1', `file://${repo}`, clone]);
+    expect(isShallow(clone)).toBe(true);
+    expect(isShallow(sandbox)).toBe(false);
   });
 });

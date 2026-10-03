@@ -16,7 +16,7 @@
 import { dirname } from 'node:path';
 import { type DiscoveryEnv, resolveTrees } from '@mnema/core';
 import { cites, type DecisionFacts, nameOf, readDecisionFacts } from '../decisions-in-git.js';
-import { type Commit, commitsTouching, commitsWithTrailer, LISTED } from '../git-log.js';
+import { type Commit, commitsTouching, commitsWithTrailer, isShallow, LISTED } from '../git-log.js';
 import {
   linkBreaksOf,
   type ScopedLinkBreak,
@@ -43,6 +43,8 @@ export interface CommitsDone {
   /** The paths the decision addresses — empty for a decision that is not in force. */
   readonly addresses: readonly string[];
   readonly git: boolean;
+  /** Whether the clone holds only part of the history. */
+  readonly shallow: boolean;
   /** The commits carrying a trailer that cites it. */
   readonly cited: CommitPage;
   /** The commits that touched an address of it. */
@@ -96,6 +98,7 @@ export function runCommits(
       },
       addresses: decision.addresses,
       git: withTrailer !== null && touching !== null,
+      shallow: isShallow(root),
       cited: pageOf(
         (withTrailer ?? []).filter((commit) =>
           commit.cites.some((value) => cites(all, decision, value)),

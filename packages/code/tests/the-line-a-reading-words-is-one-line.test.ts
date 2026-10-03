@@ -704,6 +704,36 @@ const CLASSIFIED: Readonly<Record<string, { verdict: Verdict; why: string }>> = 
       verdict: 'minted',
       why: 'one of two words written in this module, chosen by a count or a flag beside it — nothing from the record or git reaches it',
     },
+  'git-bridge.ts fact(SHALLOW) #1': {
+    verdict: 'minted',
+    why: 'this module’s own sentence for a clone that holds only part of the history',
+  },
+  'git-bridge.ts fact(SHALLOW) #2': {
+    verdict: 'minted',
+    why: 'this module’s own sentence for a clone that holds only part of the history',
+  },
+  'git-bridge.ts fact(SHALLOW) #3': {
+    verdict: 'minted',
+    why: 'this module’s own sentence for a clone that holds only part of the history',
+  },
+  'git-bridge.ts fact(SHALLOW) #4': {
+    verdict: 'minted',
+    why: 'this module’s own sentence for a clone that holds only part of the history',
+  },
+  "git-bridge.ts «To redo {}: git rev-list --count --since={} HEAD -- {}» aged.addresses.map((a) => shellWord(oneLine(a === '' ? '.' : a))).join(' ') #1":
+    {
+      verdict: 'collapsed',
+      why: 'a value out of the record or out of git — a title, an id, a label, an address, a commit message or a trailer — collapsed to one line here',
+    },
+  'git-bridge.ts «To redo {}: git rev-list --count --since={} HEAD -- {}» oneLine(aged.adr) #1': {
+    verdict: 'collapsed',
+    why: 'a value out of the record or out of git — a title, an id, a label, an address, a commit message or a trailer — collapsed to one line here',
+  },
+  'git-bridge.ts «To redo {}: git rev-list --count --since={} HEAD -- {}» shellWord(oneLine(aged.acceptedAt)) #1':
+    {
+      verdict: 'collapsed',
+      why: 'a value out of the record or out of git — a title, an id, a label, an address, a commit message or a trailer — collapsed to one line here',
+    },
   'git-bridge.ts itemLine(oneLine(aged.adr)) #1': {
     verdict: 'collapsed',
     why: 'a value out of the record or out of git — a title, an id, a label, an address, a commit message or a trailer — collapsed to one line here',
@@ -1995,8 +2025,8 @@ describe('every value this layer puts on a line is classified', () => {
     // 251 until the renderer began making an actor's control bytes visible and joined the
     // composers with its two template values; then 253 until the rules in force began saying who
     // accepted them (`brief.ts`, `record.ts`); 294 until `mnema rules` printed the four numbers
-    // of the relation that refuses a write; 301 with the three the trunk added meanwhile; 306 once the document counts the rules that refuse a write; 367 with the pages of the git bridge.
-    expect(FOUND.sites.length).toBe(367);
+    // of the relation that refuses a write; 301 with the three the trunk added meanwhile; 306 once the document counts the rules that refuse a write; 367 with the pages of the git bridge; 374 with its shallow sentence and the recipe aging prints.
+    expect(FOUND.sites.length).toBe(374);
   });
 
   it('reads the verdict off the source rather than believing the table', () => {
@@ -2017,10 +2047,10 @@ describe('every value this layer puts on a line is classified', () => {
     // No arm of the case above may be empty, or that much of it is vacuous.
     const verdicts = Object.values(CLASSIFIED).map((said) => said.verdict);
     const count = (verdict: Verdict): number => verdicts.filter((said) => said === verdict).length;
-    expect(count('collapsed')).toBe(95);
-    expect(count('minted')).toBe(208);
+    expect(count('collapsed')).toBe(98);
+    expect(count('minted')).toBe(212);
     expect(count('composed')).toBe(64);
-    expect(FOUND.sites.filter((site) => /\boneLine\b/.test(site.expression))).toHaveLength(95);
+    expect(FOUND.sites.filter((site) => /\boneLine\b/.test(site.expression))).toHaveLength(98);
   });
 
   it('every reason says where the value comes from', () => {

@@ -66,6 +66,11 @@ export function inAWorkTree(root: string): boolean {
   return git(root, ['rev-parse', '--is-inside-work-tree'])?.trim() === 'true';
 }
 
+/** Whether the history in `root` was cut short (a `--depth` clone) — what is counted is then only what it holds. */
+export function isShallow(root: string): boolean {
+  return git(root, ['rev-parse', '--is-shallow-repository'])?.trim() === 'true';
+}
+
 /** Whether the work tree has a commit to read — a fresh repository has none. */
 function hasCommits(root: string): boolean {
   return git(root, ['rev-parse', '--verify', '--quiet', 'HEAD']) !== null;

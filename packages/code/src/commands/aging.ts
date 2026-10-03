@@ -21,7 +21,7 @@
 import { dirname } from 'node:path';
 import { type DecisionState, type DiscoveryEnv, resolveTrees } from '@mnema/core';
 import { readDecisionFacts } from '../decisions-in-git.js';
-import { commitsSince, inAWorkTree } from '../git-log.js';
+import { commitsSince, inAWorkTree, isShallow } from '../git-log.js';
 import {
   linkBreaksOf,
   type ScopedLinkBreak,
@@ -59,6 +59,8 @@ export interface Aged {
 export interface AgingDone {
   readonly ok: true;
   readonly git: boolean;
+  /** Whether the clone holds only part of the history. */
+  readonly shallow: boolean;
   readonly minCommits: number;
   /** How many accepted decisions with an address were looked at. */
   readonly looked: number;
@@ -102,6 +104,7 @@ export function runAging(
     return {
       ok: true,
       git,
+      shallow: git && isShallow(root),
       minCommits: input.minCommits,
       looked: asked.length,
       aged,

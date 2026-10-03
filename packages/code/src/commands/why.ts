@@ -27,6 +27,7 @@ import {
   commitsWithTrailer,
   filesOf,
   inAWorkTree,
+  isShallow,
   LISTED,
   resolveCommit,
 } from '../git-log.js';
@@ -79,6 +80,8 @@ export interface WhyFile {
   readonly exists: boolean;
   readonly rules: readonly WhyRule[];
   readonly git: boolean;
+  /** Whether the clone holds only part of the history. */
+  readonly shallow: boolean;
   /** Commits that touched it and carry a trailer, newest first. */
   readonly commits: readonly WhyCommit[];
   readonly more: boolean;
@@ -90,6 +93,8 @@ export interface WhyCommitDone {
   readonly ok: true;
   readonly about: 'commit';
   readonly commit: WhyCommit;
+  /** Whether the clone holds only part of the history. */
+  readonly shallow: boolean;
   /** The rules in force addressing something the commit changed. */
   readonly rules: readonly WhyRule[];
   /** How many changed files were asked about, and whether more were left. */
@@ -161,6 +166,7 @@ export function runWhy(
         ok: true,
         about: 'commit',
         commit: describe(all, commit),
+        shallow: isShallow(root),
         rules: [...covered.values()].map((one) => ruleOf(one.rule, one.files)),
         files: changed.files.length,
         moreFiles: changed.more,
@@ -179,6 +185,7 @@ export function runWhy(
       exists,
       rules: at.rules.map((rule) => ruleOf(rule)),
       git: gitHere,
+      shallow: gitHere && isShallow(root),
       commits: listed.slice(0, LISTED).map((one) => describe(all, one)),
       more: listed.length > LISTED,
       linkBreaks,

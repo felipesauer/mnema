@@ -25,8 +25,20 @@ import type { Render } from './render.js';
 /** The sentence for a place with no git work tree. */
 export const NO_GIT = 'There is no git work tree here, so no commits were read.';
 
+/** The sentence for a clone that holds only part of the history: the counts are of that part. */
+export const SHALLOW = 'This is a shallow clone: only the commits it holds were counted.';
+
 /** What every page ends with: the reading is the git's as of now, and nothing was recorded. */
 const READ_NOW = 'Read from git just now; nothing was written to the record.';
+
+/** The one quote a shell reads literally. */
+const QUOTE = "'";
+
+/** A value, already one line, as a shell would take it whole — for a recipe a person pastes. */
+function shellWord(one: string): string {
+  if (/^[\w@%+=:,./-]+$/.test(one)) return one;
+  return QUOTE + one.split(QUOTE).join(QUOTE + '\\' + QUOTE + QUOTE) + QUOTE;
+}
 
 /** A short hash — enough to find the commit, the full one is in `--json`. */
 function short(sha: string): string {
@@ -71,6 +83,7 @@ export function commitsReport(render: Render, done: CommitsDone): string[] {
       render(fact('It addresses no path in force, so only the trailers were read for commits.')),
     );
   }
+  if (done.shallow) lines.push(render(fact(SHALLOW)));
   lines.push(...commitGroup(render, 'citing it', done.cited));
   lines.push(...commitGroup(render, 'touching what it addresses', done.touching));
   lines.push('', render(aside(READ_NOW)));
@@ -134,6 +147,7 @@ export function whyReport(render: Render, done: WhyFile | WhyCommitDone): string
         ),
       ),
     );
+    if (done.shallow) lines.push(render(fact(SHALLOW)));
     if (done.rules.length > 0) lines.push('', ...ruleRows(render, done.rules));
     lines.push('', render(aside(READ_NOW)));
     return lines;
@@ -155,6 +169,7 @@ export function whyReport(render: Render, done: WhyFile | WhyCommitDone): string
     ),
   ];
   if (!done.git) lines.push(render(fact(NO_GIT)));
+  if (done.shallow) lines.push(render(fact(SHALLOW)));
   if (done.rules.length > 0) lines.push('', ...ruleRows(render, done.rules));
   if (done.commits.length > 0) {
     lines.push(
@@ -178,6 +193,7 @@ export function agingReport(render: Render, done: AgingDone): string[] {
       ),
     ),
   ];
+  if (done.shallow) lines.push(render(fact(SHALLOW)));
   if (done.aged.length > 0) lines.push('');
   for (const aged of done.aged) {
     lines.push(
@@ -201,5 +217,14 @@ export function agingReport(render: Render, done: AgingDone): string[] {
       ),
     ),
   );
+  for (const aged of done.aged) {
+    lines.push(
+      render(
+        aside(
+          `To redo ${oneLine(aged.adr)}: git rev-list --count --since=${shellWord(oneLine(aged.acceptedAt))} HEAD -- ${aged.addresses.map((a) => shellWord(oneLine(a === '' ? '.' : a))).join(' ')}`,
+        ),
+      ),
+    );
+  }
   return lines;
 }

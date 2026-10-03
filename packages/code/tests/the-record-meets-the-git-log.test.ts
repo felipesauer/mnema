@@ -281,6 +281,29 @@ describe('aging', () => {
   });
 });
 
+describe('a shallow clone', () => {
+  it('says only the commits it holds were counted, on every page and in the JSON', async () => {
+    git(['init', '-q', '-b', 'main']);
+    for (let i = 0; i < 5; i++) commit(`src/f${i}.ts`, `Change ${i}`);
+    const shallow = join(sandbox, 'shallow');
+    git(['clone', '-q', '--depth', '1', `file://${repo}`, shallow]);
+    process.chdir(shallow);
+    await ok('init');
+    const id = await decide('keep the parser small');
+    await ok('decision', 'move', 'accept', id, '--note', 'agreed');
+    await ok('link', id, 'src', '--rel', 'governs');
+
+    const sentence = 'This is a shallow clone: only the commits it holds were counted.';
+    expect(await ok('commits', id)).toContain(sentence);
+    expect(await ok('why', 'src/f4.ts')).toContain(sentence);
+    expect(await ok('why', 'HEAD')).toContain(sentence);
+    expect(await ok('aging')).toContain(sentence);
+    for (const argv of [['commits', id], ['why', 'src/f4.ts'], ['aging']]) {
+      expect(JSON.parse(await ok(...argv, '--json'))).toMatchObject({ shallow: true });
+    }
+  });
+});
+
 describe('the reads write nothing, and a place with no git is not a failure', () => {
   it('leaves the record byte for byte as it was', async () => {
     const id = await aGovernedProject();

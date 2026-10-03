@@ -18,6 +18,7 @@ const commits: CommitsDone = {
   decision,
   addresses: ['src'],
   git: true,
+  shallow: false,
   cited: { commits: [commit], more: false },
   touching: { commits: [], more: true },
   linkBreaks: [],
@@ -62,6 +63,7 @@ describe('mnema why, as a page', () => {
     exists: true,
     rules: [{ id: 'D1', name: 'keep it small', address: 'src' }],
     git: true,
+    shallow: false,
     commits: [
       {
         sha: commit.sha,
@@ -91,6 +93,7 @@ describe('mnema why, as a page', () => {
       ok: true,
       about: 'commit',
       commit: { sha: commit.sha, at: commit.at, subject: 'Do a', cites: [] },
+      shallow: false,
       rules: [{ id: 'D1', name: 'keep it small', address: 'src', files: 2 }],
       files: 2,
       moreFiles: false,
@@ -108,6 +111,7 @@ describe('mnema aging, as a page', () => {
     ok: true,
     git: true,
     minCommits: 20,
+    shallow: false,
     looked: 3,
     aged: [
       {
@@ -129,6 +133,11 @@ describe('mnema aging, as a page', () => {
     expect(page).toContain('listed at 20 or more commits');
     expect(page).toContain('38 of 140 commits since touched src, docs');
     expect(page).not.toMatch(/obsolete|outdated|stale|wrong/i);
+  });
+
+  it('tells how to redo each number with git', () => {
+    const page = agingReport(renderPlain, aged).join('\n');
+    expect(page).toContain('git rev-list --count --since=2026-01-01T00:00:00Z HEAD -- src docs');
   });
 
   it('says there is no git', () => {
