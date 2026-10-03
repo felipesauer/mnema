@@ -1257,7 +1257,7 @@ describe('the record arrives unasked', () => {
     const marketplace = readJson<Marketplace>(MARKETPLACE);
     expect(marketplace.name ?? '').not.toBe('');
     expect(marketplace.owner?.name ?? '').not.toBe('');
-    expect(marketplace.plugins?.length).toBe(1);
+    expect(marketplace.plugins?.length).toBe(2);
     const listed = marketplace.plugins?.[0];
     expect(listed?.name).toBe(manifest.name);
     expect(listed?.source).toMatch(/^\.\//);

@@ -32,9 +32,11 @@
  * holds only `a-z`, `0-9` and hyphens, and nothing in it can break a line.
  */
 
+import { saysWhen } from '../agent-skill.js';
 import type { DescriptionSource, SkillExportDone } from '../commands/skill-export.js';
 import { oneLine } from '../one-line.js';
 import { aside, fact } from './detail.js';
+import type { Line } from './line.js';
 import type { Render } from './render.js';
 
 /**
@@ -76,5 +78,23 @@ export function exportReport(render: Render, done: SkillExportDone): string[] {
       ),
     ),
     render(aside(NOTHING_RECORDED)),
+  ];
+}
+
+/**
+ * The line said on the second stream when the description DERIVED from the body holds no
+ * "when", "whenever" or "quando" — and nothing otherwise. A description the caller gave is the
+ * caller's, so it is not read. The export has already happened and is not refused: the way out
+ * is `--description`, and the file is the caller's to keep or write again.
+ */
+export function exportWarning(done: SkillExportDone): Line[] {
+  if (done.descriptionFrom !== 'the body' || saysWhen(done.description)) return [];
+  return [
+    fact(
+      'the description derived from the body does not say when to use the skill: it holds no ' +
+        '“when”, “whenever” or “quando”, and the host routes on this line. ' +
+        'Write it again with --description "Use when …" to give the host a trigger.',
+      0,
+    ),
   ];
 }

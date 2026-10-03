@@ -233,6 +233,35 @@ describe('mnema skill export', () => {
     expect(given.out.join('\n')).toContain('as you gave it with --description');
   });
 
+  it('warns, without refusing, when the derived description does not say when to use the skill', async () => {
+    const id = await anAdoptedPattern('stacked-prs');
+    const derived = await mnema('skill', 'export', id, '--out', out);
+    expect(derived.failed).toBe(false);
+    expect(written()).toEqual(['stacked-prs/SKILL.md']);
+    expect(derived.err.join('\n')).toContain(
+      'the description derived from the body does not say when to use the skill',
+    );
+
+    const whenId = await anAdoptedPattern(
+      'when-to-split',
+      'Use when a PR grows past one slice. Then split it.',
+    );
+    const said = await mnema('skill', 'export', whenId, '--out', out);
+    expect(said.failed).toBe(false);
+    expect(said.err.join('\n')).not.toContain('does not say when');
+
+    const given = await mnema(
+      'skill',
+      'export',
+      id,
+      '--out',
+      out,
+      '--description',
+      'Keep one slice per PR.',
+    );
+    expect(given.err.join('\n')).not.toContain('does not say when');
+  });
+
   it('writes nothing to the record: the project sandbox is byte-identical after it', async () => {
     const id = await anAdoptedPattern('stacked-prs');
     // Export once first, so anything a first read builds (the projection cache) is

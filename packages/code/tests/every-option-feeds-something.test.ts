@@ -816,8 +816,8 @@ describe('every option the CLI declares feeds something', () => {
       expect(readsItsOwnCopy(declared?.action ?? '', 'global'), act).toBe(false);
       expect(verdictOf(act, declared?.action ?? '', 'global').read.length, act).toBeGreaterThan(0);
     }
-    // The twelve the tree holds, and no more: an option declared twice anywhere else is new.
-    // Eight are the verbs that create, which declare their group's creation flags.
+    // The fourteen the tree holds, and no more: an option declared twice anywhere else is new.
+    // Ten are the verbs that create, which declare their group's creation flags.
     expect(
       OPTIONS.filter((one) => one.takenBy !== undefined)
         .map((one) => `${one.where} ${one.flags}`)
@@ -826,7 +826,9 @@ describe('every option the CLI declares feeds something', () => {
       'mnema decision import --scope <scope>',
       'mnema decision import --which <agent>',
       'mnema decision record --alternatives <text>',
+      'mnema decision record --body-file <path>',
       'mnema decision record --scope <scope>',
+      'mnema decision record --stdin',
       'mnema decision record --which <agent>',
       'mnema skill create --body <text>',
       'mnema skill create --scope <scope>',

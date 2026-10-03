@@ -265,6 +265,7 @@ const INVOCATION: Readonly<Record<string, Invocation>> = {
   usage: { argv: () => ['usage'] },
   brief: { argv: () => ['brief'] },
   recall: { argv: () => ['recall'] },
+  doctor: { argv: () => ['doctor'] },
   // A HOST FEEDS IT, like `before-a-write`, and in process there is no standard input to hand it:
   // the verb answers `{}`, and what it counts is held with a transcript through the plugin's
   // command (`a-session-says-what-it-wrote.test.ts`).
@@ -558,7 +559,7 @@ describe('every verb says if it writes', () => {
     expect(Object.keys(INVOCATION).sort()).toEqual([...EFFECT_BY_VERB.keys()].sort());
   });
 
-  it('counts sixteen writes and twenty-four reads over the whole surface', () => {
+  it('counts sixteen writes and twenty-five reads over the whole surface', () => {
     // The count in the report, asserted rather than trusted, and the total against the
     // list: a verb that stopped being registered would otherwise leave both halves
     // looking healthy.
@@ -602,6 +603,7 @@ describe('every verb says if it writes', () => {
       'brief',
       'recall',
       'tally',
+      'doctor',
       'verify',
       'repl',
       'completion',

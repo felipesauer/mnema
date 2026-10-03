@@ -332,7 +332,7 @@ describe('no manifest sells the gate as more than it is', () => {
           : [];
       });
 
-  it('finds the manifests that describe themselves — six of them', () => {
+  it('finds the manifests that describe themselves — seven of them', () => {
     // The non-vacuity of the case below, which is otherwise true of an empty list.
     expect(
       described()
@@ -344,6 +344,7 @@ describe('no manifest sells the gate as more than it is', () => {
       'packages/code/package.json',
       'packages/context/package.json',
       'packages/core/package.json',
+      'plugin-server-only/.claude-plugin/plugin.json',
       'plugin/.claude-plugin/plugin.json',
     ]);
   });
@@ -454,7 +455,7 @@ describe('every manifest points home at the same place', () => {
         return typeof parsed.homepage === 'string' ? [{ file, homepage: parsed.homepage }] : [];
       });
 
-  it('finds the manifests that name one, and there are six', () => {
+  it('finds the manifests that name one, and there are seven', () => {
     // The non-vacuity of the case below: a reader that parsed nothing would leave it true.
     //
     // IT WAS THREE, AND THE GUARD IS WHAT SAID SO. The comment above this describe block
@@ -474,6 +475,7 @@ describe('every manifest points home at the same place', () => {
       'packages/code/package.json',
       'packages/context/package.json',
       'packages/core/package.json',
+      'plugin-server-only/.claude-plugin/plugin.json',
       'plugin/.claude-plugin/plugin.json',
     ]);
   });
