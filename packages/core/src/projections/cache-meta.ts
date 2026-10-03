@@ -24,10 +24,12 @@
  *     cache back to a full replay.
  *
  * WHAT THE FINGERPRINTS DO NOT SEE, and the limit is the same one a long-lived session has
- * always had: bytes of a segment that was still being appended to when the cache last read
- * it, rewritten without changing its size or its modification time, or the edit of a
- * sealed segment that restores both. That is tampering, and tampering is `verify`'s: it
- * recomputes every hash and checks every signature, which a read never did.
+ * always had. The ACTIVE segment has only its size checked, since it is still being appended
+ * to and its modification time moves legitimately: bytes of it rewritten to the same size are
+ * not seen. A sealed segment has size and modification time checked: an edit that restores
+ * both is not seen either. The projection is not a tamper detector. Tampering is `verify`'s,
+ * which recomputes every hash and checks every signature, and which never reads the
+ * projection.
  */
 
 import { createHash } from 'node:crypto';
