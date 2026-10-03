@@ -295,6 +295,9 @@ export const AUDIT_BY_KIND: { readonly [K in EventKind]: AuditMapping } = {
     entityTypeId: ENTITY_OTHER,
     entityType: 'channel',
   },
+  // `Update` and not `Delete`: a retraction removes nothing — the note's own event stays and
+  // is still served by id — it changes what the note is taken to be, as a supersede does.
+  'note.retracted': { activity: ACTIVITY.update, entityTypeId: ENTITY_OTHER, entityType: 'note' },
 };
 
 /** Who is reporting the feed — the producer's own identity, which the record does not hold. */
