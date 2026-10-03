@@ -20,4 +20,29 @@ describe('what a host parses out of a hook reply', () => {
   it('says nothing, as ever, when there is nothing to say', () => {
     expect(hookReply('PreToolUse', {})).toEqual({});
   });
+
+  it('refuses once, with its reason and beside its context, and `ask` outranks it', () => {
+    expect(hookReply('PreToolUse', { deny: 'held once' })).toEqual({
+      hookSpecificOutput: {
+        hookEventName: 'PreToolUse',
+        permissionDecision: 'deny',
+        permissionDecisionReason: 'held once',
+      },
+    });
+    expect(hookReply('PreToolUse', { context: 'rules', deny: 'held once' })).toEqual({
+      hookSpecificOutput: {
+        hookEventName: 'PreToolUse',
+        additionalContext: 'rules',
+        permissionDecision: 'deny',
+        permissionDecisionReason: 'held once',
+      },
+    });
+    expect(hookReply('PreToolUse', { ask: 'a person', deny: 'held once' })).toEqual({
+      hookSpecificOutput: {
+        hookEventName: 'PreToolUse',
+        permissionDecision: 'ask',
+        permissionDecisionReason: 'a person',
+      },
+    });
+  });
 });

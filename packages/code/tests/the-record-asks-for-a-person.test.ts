@@ -315,8 +315,9 @@ describe('the reply cannot express any decision but asking', () => {
     expect(Object.keys(reply)).toEqual(['hookSpecificOutput']);
     // No `updatedInput` and no `updatedToolOutput`: rewriting the input of a tool is this
     // product producing the artifact, and that is refused permanently rather than deferred.
-    // No second decision value either: `allow` is unrepresentable in the type, and `deny`
-    // is the refusal's alone (`a-rule-that-refuses-a-write.test.ts`).
+    // No `allow`, and `deny` only for what refuses a write: a rule's refusal
+    // (`a-rule-that-refuses-a-write.test.ts`) and the hold a person switched on, which with it off,
+    // as here, leaves the reply `ask` or nothing.
     expect(Object.keys(reply['hookSpecificOutput'] as object).sort()).toEqual([
       'hookEventName',
       'permissionDecision',
@@ -364,12 +365,12 @@ describe('the reply cannot express any decision but asking', () => {
     for (const refused of ['allow', 'defer', 'escalate']) {
       expect(literals, `hook-reply.ts spells ${refused}`).not.toContain(refused);
     }
-    // The two the host reads and this product means: asking, and the refusal that is its own
-    // relation's. Each is spelled once, as a literal typed `Escalation`.
-    expect([...new Set(literals.filter((one) => one === 'ask' || one === 'deny'))].sort()).toEqual([
-      'ask',
-      'deny',
-    ]);
+    expect(literals).toContain('ask');
+    // `deny` IS SPELLED WHERE `ask` IS — a named constant and the union it is typed by — and it has
+    // TWO ORIGINS that share those two spellings: a rule's refusal
+    // (`a-rule-that-refuses-a-write.test.ts`) and the once-only hold on a first write
+    // (`the-first-write-is-held-once.test.ts`). A third spelling anywhere in the module is red here.
+    expect(literals.filter((one) => one === 'deny')).toHaveLength(2);
   });
 });
 

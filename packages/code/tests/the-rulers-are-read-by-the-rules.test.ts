@@ -161,8 +161,10 @@ describe('the same globs reach every instrument this repository ships or runs', 
       'plugin/hooks/edit-asks-a-person.mjs',
       'plugin/hooks/edit-refuses-a-write.mjs',
       'plugin/hooks/hand-over.mjs',
+      'plugin/hooks/session-corrections.mjs',
       'plugin/hooks/session-recall.mjs',
       'plugin/hooks/session-start.mjs',
+      'plugin/hooks/session-tally.mjs',
     ]);
   });
 });

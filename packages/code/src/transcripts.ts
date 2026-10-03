@@ -57,6 +57,11 @@
  * both carry the same `message.usage`. Measured on one 19.6 MiB transcript: 4013
  * assistant lines for 2143 distinct message ids. Summing per line would have claimed
  * roughly twice the tokens that were actually bought.
+ *
+ * THE LIMIT ABOVE IS THIS MODULE'S, and it is why the line reader at the bottom is exported:
+ * `what-the-session-did.ts` reads the same files for what a session did and what a person said
+ * in it, under a limit of its own, and a second chunked reader there would be a second place
+ * that can split a multi-byte character in the middle.
  */
 
 import { closeSync, type Dirent, openSync, readdirSync, readSync, statSync } from 'node:fs';
@@ -387,7 +392,7 @@ const CHUNK = 1 << 16;
  * each chunk on its own turns that character into two replacement bytes — which would
  * corrupt the very ids this reading groups by.
  */
-function forEachLine(path: string, visit: (line: string) => boolean): void {
+export function forEachLine(path: string, visit: (line: string) => boolean): void {
   let fd: number;
   try {
     fd = openSync(path, 'r');
@@ -417,7 +422,7 @@ function forEachLine(path: string, visit: (line: string) => boolean): void {
 }
 
 /** One line of a transcript, as an object, or `undefined` when it is not one. */
-function parsed(line: string): Record<string, unknown> | undefined {
+export function parsed(line: string): Record<string, unknown> | undefined {
   try {
     return asObject(JSON.parse(line));
   } catch {
@@ -426,7 +431,7 @@ function parsed(line: string): Record<string, unknown> | undefined {
 }
 
 /** A value as an object, or `undefined` — the shape guard every read here goes through. */
-function asObject(value: unknown): Record<string, unknown> | undefined {
+export function asObject(value: unknown): Record<string, unknown> | undefined {
   return typeof value === 'object' && value !== null && !Array.isArray(value)
     ? (value as Record<string, unknown>)
     : undefined;

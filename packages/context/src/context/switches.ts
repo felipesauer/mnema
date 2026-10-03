@@ -100,14 +100,17 @@ const TRAVELS_TO_A_CLONE: Scope = 'public';
  * channel asked about, in the order they were asked.
  *
  * ON is the answer for a channel no tree ever switched, and it is the product's default
- * rather than this function's convention: nothing arrives switched off. A single tree
+ * rather than this function's convention: nothing arrives switched off — except the channels
+ * the caller names in `startsOff`, which stay off until a tree switches them on (the caller
+ * owns the vocabulary, so it owns which channels begin that way). A single tree
  * saying OFF makes it off, for the reason the module note gives.
  */
 export function channelStates(
   sources: readonly ScopedCache[],
   channels: readonly string[],
+  startsOff: readonly string[] = [],
 ): readonly ChannelState[] {
-  return channels.map((channel) => stateOf(sources, channel));
+  return channels.map((channel) => stateOf(sources, channel, startsOff.includes(channel)));
 }
 
 /**
@@ -119,16 +122,24 @@ export function channelStates(
  * consumers is a document whose whole worth is that the same record prints the same
  * bytes.
  */
-function stateOf(sources: readonly ScopedCache[], channel: string): ChannelState {
+function stateOf(
+  sources: readonly ScopedCache[],
+  channel: string,
+  startsOff: boolean,
+): ChannelState {
   const off: { readonly source: ScopedCache; readonly row: ChannelSwitchProjection }[] = [];
+  let switchedOn = false;
   for (const source of sources) {
     const row = source.cache.channelSwitch(channel);
+    if (row?.on === true) switchedOn = true;
     // No row is "never switched here", which says nothing about the other trees; a row
     // whose last switch turned it ON says this tree wants it on, which also says nothing
     // — one tree cannot switch a channel back on for another.
     if (row !== null && !row.on) off.push({ source, row });
   }
-  if (off.length === 0) return { channel, on: true };
+  // A channel that starts OFF is on only where some tree switched it on and none switched it
+  // off — off still wins between trees that cannot be ordered, so the rule is one rule.
+  if (off.length === 0) return { channel, on: startsOff ? switchedOn : true };
   const decided = off.sort(earliestSwitchOffFirst)[0] as {
     readonly source: ScopedCache;
     readonly row: ChannelSwitchProjection;
@@ -181,8 +192,12 @@ function earliestSwitchOffFirst(
  * a channel that decided for itself whether a switch applies is a channel that comes to
  * disagree with the document telling a reader what to expect.
  */
-export function channelIsOn(sources: readonly ScopedCache[], channel: string): boolean {
-  return stateOf(sources, channel).on;
+export function channelIsOn(
+  sources: readonly ScopedCache[],
+  channel: string,
+  startsOff: readonly string[] = [],
+): boolean {
+  return stateOf(sources, channel, startsOff.includes(channel)).on;
 }
 
 /** String order, as a number, so two keys can be tried in sequence. */

@@ -384,7 +384,7 @@ still in the record has not changed since it was signed.
 | [`packages/chain`](packages/chain/) | The proof engine: the typed event catalog, canonicalization, the per-tail hash chain, Ed25519 checkpoints, and the verifier. **Zero runtime dependencies** — the code you have to trust for tamper-evidence is auditable on its own, and it is released on its own so that it can be. Its tarball carries `FORMAT.md`, the published vectors and the independent verifier. |
 | [`packages/core`](packages/core/) | The work domain: the gate over the shape of a change, the projections read back out of the chain, identity, and the queries. Released because `@mnema/code` depends on it. |
 | [`packages/context`](packages/context/) | Read-only derivations that turn the proven record into the context an agent is handed. Released because `@mnema/code` depends on it. |
-| [`plugin/`](plugin/) | The Claude Code plugin: five hooks — two as a session opens, three at each edit — the one Claude Code runs, the one VS Code runs and the one Cursor runs, each skipped by the others — and the MCP server declaration, in one installation. |
+| [`plugin/`](plugin/) | The Claude Code plugin: eight hooks — two as a session opens, three at each edit (the one Claude Code runs, the one VS Code runs and the one Cursor runs, each skipped by the others), two at the end of a response, one before a compaction — and the MCP server declaration, in one installation. |
 | [`measurements/`](measurements/) | The measurements this product's claims rest on, with their protocols and their raw results. |
 
 **All four are released, and only one of them is meant to be installed.** This

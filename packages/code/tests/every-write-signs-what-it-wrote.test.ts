@@ -807,7 +807,7 @@ describe('every write path leaves the record fully signed', () => {
         // (which makes the charge) and one that governs it (which makes the push
         // speak). Without those links the gate answers and writes nothing, and these
         // two rows would pass having driven nothing at all.
-        at: 'mcp/tools.ts:recordWhatItMet',
+        at: 'mcp/tools.ts:recordFacts',
         drive: () => {
           void ok(
             'asks-for-a-person',

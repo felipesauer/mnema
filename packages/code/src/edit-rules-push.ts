@@ -268,6 +268,33 @@ function leftOut(left: number): readonly string[] {
 }
 
 /**
+ * What the hold on a session's first write to a file says before the rules: that it was held,
+ * why, and what the same write does next — three facts, none of them an instruction.
+ */
+function heldSentence(at: RulesAtPath): string {
+  return `The first write to ${oneLine(at.relative ?? at.path)} in this session was held, so that the rules addressed at it arrive before it. The same write, repeated, goes through.`;
+}
+
+/**
+ * The reason a first write is held with, or `undefined` when no rule is addressed at the path.
+ *
+ * THE RULES ARE THE SAME NOTICE the push hands over beside a write (one derivation, one set of
+ * lines), cut to what is left of the host's ceiling after the sentence above — the reason reaches
+ * the model whole or is replaced by a file path, so it is measured the way the push is.
+ */
+export function firstWriteNotice(at: RulesAtPath): string | undefined {
+  if (at.rules.length === 0) return undefined;
+  const held = heldSentence(at);
+  const rules = editRulesNotice(at, HOOK_TEXT_CEILING - held.length - BESIDE.length);
+  return rules === undefined ? undefined : `${held}${BESIDE}${rules}`;
+}
+
+/** The hold's own sentence, for the guard that holds every pushed sentence to stating facts. */
+export function ourWordsInTheHold(at: RulesAtPath): readonly string[] {
+  return [heldSentence(at)];
+}
+
+/**
  * Every line of a notice that this PRODUCT wrote, as opposed to the record.
  *
  * THE LINE BETWEEN THE TWO VOICES, AND IT IS WHY THIS IS EXPORTED. A pushed text says

@@ -51,6 +51,9 @@ const POSITION_WIDTH = 3;
 const ON = 'on';
 const OFF = 'off';
 
+/** What a line says of a channel that starts off and nobody has switched on. */
+const NEVER_SWITCHED_ON = 'off until switched on, and nobody has';
+
 /** What a line says when the off switch is not in the tree that travels. */
 const NOT_COMMITTED = '(not committed to this project)';
 
@@ -94,6 +97,9 @@ function columnsOf(row: SwitchRow, width: number, anchors: AnchorForms): (string
     row.carries,
   ];
   if (row.state.on) return stands;
+  // OFF WITH NOBODY'S NAME ON IT is a channel that starts off and was never switched on: there is
+  // no switch to attribute, and a placeholder where one goes would read as a switch somebody made.
+  if (row.state.by === undefined) return [...stands, '·', NEVER_SWITCHED_ON];
   return [
     ...stands,
     '·',

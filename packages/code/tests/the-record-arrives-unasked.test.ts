@@ -194,6 +194,19 @@ const GATE_HOOK = 'edit-asks-a-person.mjs';
 const CURSOR_HOOK = 'edit-refuses-a-write.mjs';
 /** The handlers that gate a write, and so are handed one and do not ask which program is first. */
 const GATES: readonly string[] = [GATE_HOOK, CURSOR_HOOK];
+/**
+ * The handler that says, at `Stop` and before a compaction, how many files the session wrote and how
+ * many decisions were recorded since it opened. It is declared under two events and runs the one
+ * verb, `mnema tally`, on the payload of either; what it counts is
+ * `a-session-says-what-it-wrote.test.ts`.
+ */
+const TALLY_HOOK = 'session-tally.mjs';
+/**
+ * The handler that records, at `Stop` and only where `user-corrections` was switched on, the places a
+ * person corrected the agent as proposals. Off by default: in these projects it is tried and answers
+ * `{}`; what it records is `a-correction-becomes-a-proposal.test.ts`.
+ */
+const CORRECTIONS_HOOK = 'session-corrections.mjs';
 
 /**
  * The command line each declared handler runs — what the recording shim must see it try.
@@ -210,20 +223,24 @@ const GATES: readonly string[] = [GATE_HOOK, CURSOR_HOOK];
 const VERB_OF: Readonly<Record<string, string>> = {
   [DOCUMENT_HOOK]: 'brief --hook',
   [NOTES_HOOK]: 'recall --hook',
+  [TALLY_HOOK]: 'tally',
+  [CORRECTIONS_HOOK]: 'corrections',
   [CURSOR_HOOK]: 'before-a-write --host cursor',
   [GATE_HOOK]: 'before-a-write --host vscode',
 };
 
 /**
  * What the two opening handlers ask the `mnema` on the PATH before they run their verb: which
- * program it is (`plugin/hooks/hand-over.mjs`, `whoAnswers`). The gate does not ask.
+ * program it is (`plugin/hooks/hand-over.mjs`, `whoAnswers`). The gate and the tally do not ask.
  */
 const ASKED_FIRST = '--identify';
 
 /** Every command line a handler runs, in order — the question first, where it asks one. */
 function callsOf(handler: string): string[] {
   const verb = VERB_OF[handler] as string;
-  return GATES.includes(handler) ? [verb] : [ASKED_FIRST, verb];
+  return GATES.includes(handler) || handler === TALLY_HOOK || handler === CORRECTIONS_HOOK
+    ? [verb]
+    : [ASKED_FIRST, verb];
 }
 
 /**
@@ -233,6 +250,15 @@ function callsOf(handler: string): string[] {
  * asks about, so the gate is tried, derives nothing, and writes nothing.
  */
 function stdinOf(command: string, at: string): string {
+  // The tally is handed a `Stop` that names a transcript there is none of: it is tried, and a
+  // transcript it cannot read is a note on the second stream and no byte on the first.
+  if (handlerOf(command) === TALLY_HOOK || handlerOf(command) === CORRECTIONS_HOOK) {
+    return JSON.stringify({
+      hook_event_name: 'Stop',
+      transcript_path: join(at, 'no-such-transcript.jsonl'),
+      cwd: at,
+    });
+  }
   if (!GATES.includes(handlerOf(command))) return '';
   if (handlerOf(command) === CURSOR_HOOK) {
     return JSON.stringify({
@@ -500,7 +526,15 @@ describe('the record arrives unasked', () => {
     }
     // Every handler, which is what "every command" has to mean now — the gate included, whose
     // verb answers `{}` outside a project and whose handler writes no byte for it.
-    expect(commands.map(handlerOf)).toEqual([DOCUMENT_HOOK, NOTES_HOOK, CURSOR_HOOK, GATE_HOOK]);
+    expect(commands.map(handlerOf)).toEqual([
+      DOCUMENT_HOOK,
+      NOTES_HOOK,
+      TALLY_HOOK,
+      CORRECTIONS_HOOK,
+      TALLY_HOOK,
+      CURSOR_HOOK,
+      GATE_HOOK,
+    ]);
   });
 
   it('says nothing at all when the document channel is switched OFF', () => {
@@ -1103,7 +1137,7 @@ describe('the record arrives unasked', () => {
     // `mcp_tool` gate does in Claude Code. What this case holds now is the set, and which side
     // each is on: the two opening verbs read, the gate is declared as writing, and a fourth verb
     // is a line somebody has to write.
-    expect(declaredEvents()).toEqual(['SessionStart', 'PreToolUse']);
+    expect(declaredEvents()).toEqual(['SessionStart', 'Stop', 'PreCompact', 'PreToolUse']);
 
     const reached = new Set<string>();
     for (const command of declaredCommands()) {
@@ -1116,6 +1150,8 @@ describe('the record arrives unasked', () => {
     expect([...reached]).toEqual([
       'brief --hook',
       'recall --hook',
+      'tally',
+      'corrections',
       'before-a-write --host cursor',
       'before-a-write --host vscode',
     ]);
@@ -1130,6 +1166,8 @@ describe('the record arrives unasked', () => {
     expect([...reached].map((line) => `${line}: ${sideOf(line)}`)).toEqual([
       'brief --hook: reads',
       'recall --hook: reads',
+      'tally: reads',
+      'corrections: mutates',
       'before-a-write --host cursor: mutates',
       'before-a-write --host vscode: mutates',
     ]);
@@ -1208,6 +1246,9 @@ describe('the record arrives unasked', () => {
     expect(validated).toEqual([
       'command:/hooks/session-start.mjs',
       'command:/hooks/session-recall.mjs',
+      'command:/hooks/session-tally.mjs',
+      'command:/hooks/session-corrections.mjs',
+      'command:/hooks/session-tally.mjs',
       'mcp_tool:rules_before_an_edit',
       'command:/hooks/edit-refuses-a-write.mjs',
       'command:/hooks/edit-asks-a-person.mjs',

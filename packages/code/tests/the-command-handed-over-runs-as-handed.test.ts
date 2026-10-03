@@ -555,7 +555,15 @@ export const HANDED_OVER: Readonly<
   // ones that stay unprotected without it (`key protect`, `key unprotect`, `verify`).
   // line 34 until the plugin page named `mnema --identify`, the question its hooks ask first.
   // line 36, name 71 until the page said `mnema key protect` asks for the passphrase.
-  span: { line: 37, name: 72, flag: 1, unwritten: 0 },
+  // line 36 and name 71 until the two pages named the command the Stop and PreCompact hooks run
+  // (`mnema tally`, twice) and the switch that stops it (`mnema switch off session-tally`).
+  // line 37 and name 73 until the plugin page named the switch that turns the first-write hold on
+  // (`mnema switch on edit-first-write-gate`, a line) and the listing that says it is off (`mnema switch`).
+  // line 38 and name 74 until the two pages named the verb that records corrections
+  // (`mnema corrections`, and `mnema switch` in the row that says it starts off) and the switch that
+  // turns it on (`mnema switch on user-corrections`, a line on each page).
+  // And one line and one name more for the page that says a rule can refuse a write.
+  span: { line: 41, name: 78, flag: 1, unwritten: 0 },
   // name 18 until the page that says where the key lives named `mnema key protect` in a line of
   // its own.
   // line 35 until the same page showed that question in a block of its own.
@@ -568,7 +576,14 @@ export const HANDED_OVER: Readonly<
   // line 40 until the plugin told a session which program answered that question (`hand-over.mjs`).
   // name 50 until the hook copy of the opening document named `mnema decision import` (`presentation/brief.ts`).
   // name 52 until `before-a-write`'s help named the switch of the refusal beside the asking's.
-  source: { line: 47, name: 53, flag: 3, unwritten: 3 },
+  // name 51 until the table that says why the record does not count the tally's service named
+  // `mnema tally` (`record-framing.ts`), and the table of what owes no notice about the chain named
+  // `mnema verify` as the reading that rules on it (`record-integrity.ts`).
+  // line 46 until the verb's own help named the switch that stops it, `mnema switch off
+  // session-tally` (`wiring/tally.ts`).
+  // line 47 until the help of the verb that records corrections named the switch that turns it on,
+  // `mnema switch on user-corrections` (`wiring/corrections.ts`).
+  source: { line: 49, name: 55, flag: 3, unwritten: 3 },
 };
 
 // ---------------------------------------------------------------------------

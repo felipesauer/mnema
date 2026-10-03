@@ -75,7 +75,7 @@ identically, because they are the same call.
   The same record always prints the same bytes, which is what makes
   `mnema brief | diff - MNEMA.md` a staleness check.
 - **A plugin for Claude Code**, in [`plugin/`](../../plugin/), that stops the delivery
-  from depending on somebody remembering to regenerate a file. It declares four hooks and
+  from depending on somebody remembering to regenerate a file. It declares seven hooks and
   the MCP server below, in one installation. As a session opens, one hook runs `mnema
   brief` and hands over the document, and another runs `mnema recall` and hands over the
   **notes** — the memories and observations recorded for the project, from every tree
@@ -92,11 +92,25 @@ identically, because they are the same call.
   your own record asks it to — the plugin's page says how. The fourth is that same pause for a
   host whose hooks are processes: VS Code's agent runs it as `mnema before-a-write --host vscode`
   before a write, and it asks, and records, exactly where the third would; Claude Code and
-  Cursor never run it. All four are **silent** where there is no project, so a
+  Cursor never run it. The fifth and sixth are one command, `mnema tally`, run at `Stop` and
+  before a conversation is compacted: when the session's own tool calls wrote a file (at
+  `Stop`, in the last response), it prints one line saying how many files they wrote and how
+  many decisions were recorded in the project since the session opened, counted off the
+  transcript the host names and off the record — no model is called and nothing is
+  recorded. The line goes out as the reply's `systemMessage`; which host shows it was not
+  measured. `mnema switch off session-tally` stops it. The seventh runs `mnema corrections`, also at `Stop`, and is **off until you switch it on**
+  (`mnema switch on user-corrections`): it reads the transcript's own words — the one reader here
+  that does — finds the prompts that open by correcting the agent ("no, …", "stop …", "do not …",
+  "that is wrong", "use … instead", in English and Portuguese), and records each as a `proposed`
+  decision in this machine's private tree, citing the session and the line, at most five at a time
+  and never the same line twice. A match is a pattern and not a judgement, which is why it is
+  proposed. No model is called. All seven are **silent** where there is no project, so a
   machine that installs this and opens a session somewhere else sees nothing. Asserted in
   `tests/the-record-arrives-unasked.test.ts`, `tests/the-rule-reaches-the-writing.test.ts`
-  and `tests/the-record-asks-for-a-person.test.ts`, and the fourth in
-  `tests/a-host-that-runs-commands-asks-for-a-person.test.ts`; the plugin's own page states what
+  and `tests/the-record-asks-for-a-person.test.ts`, the fourth in
+  `tests/a-host-that-runs-commands-asks-for-a-person.test.ts`, the fifth and sixth in
+  `tests/a-session-says-what-it-wrote.test.ts`, and the seventh in
+  `tests/a-correction-becomes-a-proposal.test.ts`; the plugin's own page states what
   it carries and what it leaves behind. VS Code's agent and Cursor's command-line agent read
   the same plugin: the two opening hooks run in both, the rules at each edit are Claude Code's,
   and the pause for a person reaches VS Code too and not Cursor's agent, which runs the hook
@@ -1020,12 +1034,15 @@ accept a refusal; a person's still lands.
 
 ```sh
 mnema switch
-#> 5 channel(s), looked in public, private, global:
-#>   brief-document      on   the document `mnema brief` prints, which a session opens with: …
-#>   recall-document     on   the notes `mnema recall` prints, which a session opens with: …
-#>   edit-rules-push     on   the rules addressed at a file, handed over at each edit of it, …
-#>   edit-asks-a-person  on   the pause before a file is written where the record asks …
-#>   agent-accepts       on   an agent ruling a decision in force: with it off, an agent’s …
+#> 8 channel(s), looked in public, private, global:
+#>   brief-document         on   the document `mnema brief` prints, which a session opens with: …
+#>   recall-document        on   the notes `mnema recall` prints, which a session opens with: …
+#>   edit-rules-push        on   the rules addressed at a file, handed over at each edit of it, …
+#>   edit-asks-a-person     on   the pause before a file is written where the record asks …
+#>   agent-accepts          on   an agent ruling a decision in force: with it off, an agent’s …
+#>   edit-first-write-gate  off  the hold on the first write of a session to a file a rule addresses: … · off until switched on, and nobody has
+#>   user-corrections       off  the proposals recorded from what a person typed into a session: … · off until switched on, and nobody has
+#>   session-tally          on   the line a session’s `Stop` and `PreCompact` hooks print: …
 ```
 
 ```sh
@@ -1057,7 +1074,7 @@ committed record says on, because two trees share no order — an event's instan
 on the machine that wrote it — so "the most recent switch across the trees" is not a
 comparison this product is entitled to make. The listing says which switch decides.
 
-Nothing arrives switched off, and there is no `mnema switch` tool on the **MCP server**.
+No channel arrives switched off except the two that start off, and there is no `mnema switch` tool on the **MCP server**.
 Anyone who can write to the record can append any fact, so this is not a claim about what is
 possible; it is a claim about which doors are open. An agent that could switch off what
 governs its own work through the door built for agents would be an agent that opts out of

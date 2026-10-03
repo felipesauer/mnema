@@ -293,6 +293,8 @@ describe('what `channel.served` counts, said by the table the type makes total',
       'brief-document',
       'edit-refuses-a-write',
       'recall-document',
+      'session-tally',
+      'user-corrections',
     ]);
   });
 
@@ -307,7 +309,12 @@ describe('what `channel.served` counts, said by the table the type makes total',
     const ITS_OWN_FACT = ['agent-accepts', 'edit-refuses-a-write'];
     for (const [channel, why] of Object.entries(NOT_COUNTED_AS_SERVED)) {
       expect(why.length, channel).toBeGreaterThan(40);
-      const reason = ITS_OWN_FACT.includes(channel) ? WRITES_THE_FACT_ITSELF : 'writes nothing';
+      const reason =
+        channel === 'agent-accepts' ||
+        channel === 'user-corrections' ||
+        ITS_OWN_FACT.includes(channel)
+          ? WRITES_THE_FACT_ITSELF
+          : 'writes nothing';
       expect(why, channel).toContain(reason);
     }
   });
@@ -404,11 +411,14 @@ describe('every handler that pushes declares the channel it carries', () => {
       expect(declared, `${file} writes to a model and names no channel`).not.toBeNull();
       const channel = declared?.[1] ?? '';
       // A handler may carry more than one channel, joined by `+`: the reason the gate's command
-      // hands back is the asking's or the refusal's, whichever the write met.
+      // hands back is the asking's or the refusal's, whichever the write met. A channel is known
+      // when it carries a declaration (it is framed) or when the table that says why it carries
+      // none names it — a count has no record text to say whose it is.
       for (const one of channel.split('+')) {
-        expect(FRAMED_CHANNELS as readonly string[], `${file} names an unknown channel`).toContain(
-          one,
-        );
+        expect(
+          [...FRAMED_CHANNELS, ...Object.keys(UNFRAMED_CHANNELS)] as readonly string[],
+          `${file} names an unknown channel`,
+        ).toContain(one);
       }
       named.push(`${file}:${channel}`);
     }
@@ -424,8 +434,10 @@ describe('every handler that pushes declares the channel it carries', () => {
     expect(named).toEqual([
       'edit-asks-a-person.mjs:edit-asks-a-person+edit-refuses-a-write',
       'edit-refuses-a-write.mjs:edit-refuses-a-write',
+      'session-corrections.mjs:user-corrections',
       'session-recall.mjs:recall-document',
       'session-start.mjs:brief-document',
+      'session-tally.mjs:session-tally',
     ]);
     expect(handlers()).toContain('hand-over.mjs');
   });
@@ -470,7 +482,10 @@ describe('every handler that pushes declares the channel it carries', () => {
     expect(ruled).toEqual([
       'SessionStart:command:session-start.mjs',
       'SessionStart:command:session-recall.mjs',
-      'PreToolUse:mcp_tool:rules_before_an_edit:edit-rules-push+edit-asks-a-person+edit-refuses-a-write',
+      'Stop:command:session-tally.mjs',
+      'Stop:command:session-corrections.mjs',
+      'PreCompact:command:session-tally.mjs',
+      'PreToolUse:mcp_tool:rules_before_an_edit:edit-rules-push+edit-asks-a-person+edit-first-write-gate+edit-refuses-a-write',
       'PreToolUse:command:edit-refuses-a-write.mjs',
       'PreToolUse:command:edit-asks-a-person.mjs',
     ]);

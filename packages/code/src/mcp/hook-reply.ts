@@ -42,26 +42,31 @@
  *     host's own enum: a wrong value here does not cost the charge, it costs the
  *     injection that already worked.
  *
- * ## The three things it can carry, and what stays unrepresentable
-
-`additionalContext` — the agent sees the rule, beside the result of the write that fired
-the hook — `permissionDecision: "ask"` — a PERSON decides before the file is written — and
-`permissionDecision: "deny"` — the write does not happen, and the reason is what the agent
-reads. Nothing else. Not `allow`, not `updatedInput`, not `updatedToolOutput`.
-
-`deny` was the one that waited, by ORDER rather than by nerve: refusing outright is a
-different power over somebody else's work, and its tie had not been settled. It is settled
-now, and the settlement is the shape of {@link HookSaid}: a refusal is a field of its own,
-carries the rule's citation as the only way to say it, and cannot be set beside an asking —
-the two grades are one decision (`what-a-write-meets.ts`), so a reply that carried both is a
-reply two readings of the record produced. `allow` is worse than useless — this product
-saying *you may write* is this product taking responsibility for work that is not its own.
-`updatedInput` is refused permanently: a product that rewrites the input of a tool is a
-product writing the artifact, and a record of what happened stops being one. The type is what
-keeps those refusals from being paragraphs: there is no field to set, and no other value to
-pass.
-
-## What asking actually does to a session, measured
+ * ## The grades it can carry, and what stays unrepresentable
+ *
+ * `additionalContext` — the agent sees the rule, beside the result of the write that fired
+ * the hook — `permissionDecision: "ask"` — a PERSON decides before the file is written — and
+ * `permissionDecision: "deny"` — the write does not happen, and the reason is what the agent
+ * reads. Nothing else. Not `allow`, not `updatedInput`, not `updatedToolOutput`.
+ *
+ * `deny` carries TWO things, and they are two fields of {@link HookSaid} because they are two
+ * powers. `refuse` is a rule's refusal (`refuses-a-write`): the write does not happen, every
+ * time, and it cannot be set beside an asking — the two grades are one decision
+ * (`what-a-write-meets.ts`), so a reply that carried both is a reply two readings of the record
+ * produced. `deny` is the hold on the FIRST write of a session to a file a rule addresses
+ * (`edit-first-write-gate`, off until somebody switches it on): refused once, with the rules in
+ * the reason, and the same write repeated is let through. The host's side of it is measured
+ * (`measurements/hooks-by-host/`: the write refused, the reason handed to the model as an
+ * error). When both a refusal and a hold would be said, the refusal is what is said, and `ask`
+ * outranks the hold, since a person is then already asked.
+ *
+ * `allow` is worse than useless — this product saying *you may write* is this product taking
+ * responsibility for work that is not its own. `updatedInput` is refused permanently: a product
+ * that rewrites the input of a tool is a product writing the artifact, and a record of what
+ * happened stops being one. The type is what keeps those refusals from being paragraphs: there
+ * is no field to set, and no other value to pass.
+ *
+ * ## What asking actually does to a session, measured
  *
  * `ask` REACHES THE PERMISSION SYSTEM AND OVERRIDES EVERY MODE, including a session
  * started `--permission-mode bypassPermissions`. There is no host-side way around it, and
@@ -104,9 +109,9 @@ export type HookEvent = 'PreToolUse';
  *
  * A union of two, for exactly the reason {@link HookEvent} is a union of one: the host's own
  * field takes four values, two of which this product refuses permanently, and a type that
- * admitted them would leave those refusals as prose in a comment. `deny` joined `ask` the day
- * the record gained a relation that refuses a write; a third value is a slice with a tie
- * behind it rather than an edit.
+ * admitted them would leave those refusals as prose in a comment. `deny` joined `ask` twice — for
+ * the record's relation that refuses a write, and for the once-only hold on a first write; a
+ * third value is a slice with a tie behind it rather than an edit.
  */
 export type Escalation = 'ask' | 'deny';
 
@@ -130,11 +135,18 @@ export type HookSaid =
        * cannot be forgotten at a call site: there is no argument that asks without it.
        */
       readonly ask?: string;
+      /**
+       * Why a write is held ONCE — the first write of a session to a file a rule addresses, with
+       * the rules in the reason. Like {@link ask} it is a reason and not a boolean. When both are
+       * given, `ask` is what is said.
+       */
+      readonly deny?: string;
       readonly refuse?: never;
     }
   | {
       readonly context?: string;
       readonly ask?: never;
+      readonly deny?: never;
       /**
        * Why the write does not happen — and refusing IS this field, for the asking's reason:
        * the reason cites the rule, so a refusal without one has no spelling. It cannot be set
@@ -182,7 +194,7 @@ export interface HookReply {
  */
 const ASK: Escalation = 'ask';
 
-/** The value the field carries when the write is refused — named once, for {@link ASK}'s reason. */
+/** The value the field carries when the write is refused or held — named once, for {@link ASK}'s reason. */
 const DENY: Escalation = 'deny';
 
 /**
@@ -203,12 +215,20 @@ export function hookReply(event: HookEvent, said: HookSaid): HookReply {
   // decoded one exactly as it was. `neutralizes-control-bytes-everywhere.test.ts` decodes
   // the reply and reads what the host would hand the model.
   const context = said.context === undefined ? undefined : neutralized(said.context);
+  // A rule's refusal outranks everything; `ask` outranks the hold on a first write, because a
+  // person already asked is a stop that says more.
+  const reasoned = (value: Escalation, reason: string) => ({
+    permissionDecision: value,
+    permissionDecisionReason: neutralized(reason),
+  });
   const decision =
     said.refuse !== undefined
-      ? { permissionDecision: DENY, permissionDecisionReason: neutralized(said.refuse) }
+      ? reasoned(DENY, said.refuse)
       : said.ask !== undefined
-        ? { permissionDecision: ASK, permissionDecisionReason: neutralized(said.ask) }
-        : undefined;
+        ? reasoned(ASK, said.ask)
+        : said.deny !== undefined
+          ? reasoned(DENY, said.deny)
+          : undefined;
   if (context !== undefined && decision !== undefined) {
     return {
       hookSpecificOutput: { hookEventName: event, additionalContext: context, ...decision },

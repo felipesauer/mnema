@@ -12,7 +12,7 @@
 
 _mnema_commands() {
   case "$1" in
-    '') echo 'init task decision skill memory observe handoff link run status focus resume next-actions guard search show timeline accountability antipatterns exposure export refs diagram rules rules-file skills usage brief recall before-a-write key tail witness switch verify mcp repl completion help' ;;
+    '') echo 'init task decision skill memory observe handoff link run status focus resume next-actions guard search show timeline accountability antipatterns exposure export refs diagram rules rules-file skills usage brief recall before-a-write tally corrections key tail witness switch verify mcp repl completion help' ;;
     'task') echo 'create move help' ;;
     'decision') echo 'record move supersede import help' ;;
     'skill') echo 'create move export help' ;;
@@ -57,6 +57,8 @@ _mnema_described() {
       'brief:print what governs the work here as markdown, for an agent to read' \
       'recall:print the notes recorded here as markdown, near ones first, for an agent to read' \
       'before-a-write:answer a host’s hook before a file is written: refuse or ask where a rule says' \
+      'tally:answer a host’s Stop or PreCompact hook with what the session wrote and recorded' \
+      'corrections:record what a person corrected in a session as proposed decisions, for a Stop hook' \
       'key:manage this machine'\''s signing keys' \
       'tail:authorize a cut in the record'\''s own tails' \
       'witness:ask an outside witness to date this record, and read where that stands' \
@@ -150,6 +152,8 @@ _mnema_flags() {
     'brief') echo '--hook -h --help -V --version --color --identify' ;;
     'recall') echo '--hook -h --help -V --version --color --identify' ;;
     'before-a-write') echo '--host -h --help -V --version --color --identify' ;;
+    'tally') echo '-h --help -V --version --color --identify' ;;
+    'corrections') echo '-h --help -V --version --color --identify' ;;
     'key') echo '-h --help -V --version --color --identify' ;;
     'key restore') echo '-h --help -V --version --color --identify' ;;
     'key request') echo '--anchor --key -h --help -V --version --color --identify' ;;
@@ -238,6 +242,8 @@ _mnema_values() {
     'recall:--color') echo 'auto always never' ;;
     'before-a-write:--host') echo 'vscode cursor' ;;
     'before-a-write:--color') echo 'auto always never' ;;
+    'tally:--color') echo 'auto always never' ;;
+    'corrections:--color') echo 'auto always never' ;;
     'key:--color') echo 'auto always never' ;;
     'key restore:--color') echo 'auto always never' ;;
     'key request:--color') echo 'auto always never' ;;
@@ -254,10 +260,10 @@ _mnema_values() {
     'switch:--color') echo 'auto always never' ;;
     'switch off:--scope') echo 'public private global' ;;
     'switch off:--color') echo 'auto always never' ;;
-    'switch off:') echo 'brief-document recall-document edit-rules-push edit-asks-a-person edit-refuses-a-write agent-accepts' ;;
+    'switch off:') echo 'brief-document recall-document edit-rules-push edit-asks-a-person edit-refuses-a-write agent-accepts edit-first-write-gate user-corrections session-tally' ;;
     'switch on:--scope') echo 'public private global' ;;
     'switch on:--color') echo 'auto always never' ;;
-    'switch on:') echo 'brief-document recall-document edit-rules-push edit-asks-a-person edit-refuses-a-write agent-accepts' ;;
+    'switch on:') echo 'brief-document recall-document edit-rules-push edit-asks-a-person edit-refuses-a-write agent-accepts edit-first-write-gate user-corrections session-tally' ;;
     'verify:--require') echo 'chained signed witnessed' ;;
     'verify:--color') echo 'auto always never' ;;
     'mcp:--color') echo 'auto always never' ;;
