@@ -1,6 +1,6 @@
 // Attack 6: generate a real key, forge its enrolment with a VALID reverse signature, sign with it.
-const K = await import('/home/felipe/Documents/Personal/Me/.projects/mnema/packages/chain/dist/chain/keys.js');
-const { entryHash, writtenAsStored } = await import('/home/felipe/Documents/Personal/Me/.projects/mnema/packages/chain/dist/chain/hash.js');
+const K = await import('<projects>/mnema/packages/chain/dist/chain/keys.js');
+const { entryHash, writtenAsStored } = await import('<projects>/mnema/packages/chain/dist/chain/hash.js');
 const { readFileSync, writeFileSync } = await import('node:fs');
 const seg = process.argv[2];
 const lines = readFileSync(seg, 'utf-8').split('\n').filter(Boolean).map((l) => JSON.parse(l));

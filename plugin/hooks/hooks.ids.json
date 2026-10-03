@@ -1,0 +1,47 @@
+{
+  "description": "A stable id for each hook of hooks.json, which the host refuses to carry a key of its own for. Each entry points at one hook by event, group and position, and names what it runs; the-hooks-have-stable-ids reads both files and is red if a hook has no id, an id has no hook, or an id now points at a different hook.",
+  "hooks": {
+    "session-start": {
+      "event": "SessionStart",
+      "group": 0,
+      "index": 0,
+      "runs": "hooks/session-start.mjs"
+    },
+    "session-recall": {
+      "event": "SessionStart",
+      "group": 0,
+      "index": 1,
+      "runs": "hooks/session-recall.mjs"
+    },
+    "session-tally-stop": {
+      "event": "Stop",
+      "group": 0,
+      "index": 0,
+      "runs": "hooks/session-tally.mjs"
+    },
+    "session-corrections": {
+      "event": "Stop",
+      "group": 0,
+      "index": 1,
+      "runs": "hooks/session-corrections.mjs"
+    },
+    "session-tally-precompact": {
+      "event": "PreCompact",
+      "group": 0,
+      "index": 0,
+      "runs": "hooks/session-tally.mjs"
+    },
+    "rules-before-an-edit": {
+      "event": "PreToolUse",
+      "group": 0,
+      "index": 0,
+      "runs": "rules_before_an_edit"
+    },
+    "edit-asks-a-person": {
+      "event": "PreToolUse",
+      "group": 1,
+      "index": 0,
+      "runs": "hooks/edit-asks-a-person.mjs"
+    }
+  }
+}

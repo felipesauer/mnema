@@ -1,6 +1,6 @@
 {
   "what": "how many edits of a session a gate at each address would stop, on this repository",
-  "repository": "/home/felipe/Documents/Personal/Me/.projects/mnema",
+  "repository": "<projects>/mnema",
   "head": "4426c08866413b02a5061f3158fe5d0ee228d8ca",
   "commits_walked": 200,
   "file_touches": 2918,
