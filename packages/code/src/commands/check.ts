@@ -23,7 +23,7 @@ import { mkdtempSync, readFileSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { dirname, join, relative } from 'node:path';
 import { catalogUpcasters, persistKeyPair, readPrivateKeyPair } from '@mnema/chain';
-import { decisionsInForce } from '@mnema/context';
+import { ruleIdsInForce } from '@mnema/context';
 import { type DiscoveryEnv, type ResolvedTrees, resolveTrees } from '@mnema/core';
 import {
   type CheckOutcome,
@@ -135,11 +135,7 @@ export function runCheckRun(
   }
   try {
     const upcasters = catalogUpcasters();
-    const rulesInForce = withCache(
-      publicTree,
-      upcasters,
-      (cache) => new Set(decisionsInForce([cache]).map((rule) => rule.id)),
-    );
+    const rulesInForce = withCache(publicTree, upcasters, (cache) => ruleIdsInForce([cache]));
     const write = deferredWrite(trees, 'public');
     const ran = runRuleChecks(write, {
       commit: at.commit,
@@ -147,6 +143,9 @@ export function runCheckRun(
       run: (check) => runOne(check, projectRoot, input.timeoutMs),
     });
     if (!ran.ok) return { ok: false, reason: 'REFUSED', code: ran.code, message: ran.message };
+    // The results sign their own checkpoint, under the checker's key; this is a no-op unless
+    // the write was opened and left something above it.
+    write.checkpoint();
     return {
       ok: true,
       commit: at.commit,

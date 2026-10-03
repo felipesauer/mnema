@@ -92,6 +92,9 @@ export function runCheckerEnroll(
   if (!enrolled.ok) {
     return { ok: false, reason: 'REFUSED', code: enrolled.code, message: enrolled.message };
   }
+  // The enrolment signs its own checkpoint; this covers a founding it may have appended
+  // alongside, and is a no-op otherwise.
+  write.checkpoint();
   return { ...enrolled, root: trees.projectPublic };
 }
 

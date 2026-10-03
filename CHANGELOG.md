@@ -15,6 +15,17 @@ Requires Node ≥ 22.12.0; the packages are ESM-only.
 
 ### Added
 
+- **A rule can carry its check** (the `check` command): a decision in force names the program that
+  checks it, and a machine with a key of its own records, at a commit, whether the rule held. That
+  key is enrolled by a member of an identity (the `--checker` form of the key request and enroll
+  commands) and signs check results only: `mnema verify` refuses a check result from any other key
+  and any other fact from that key, and `mnema accountability` lists it as a machine. Four new event
+  kinds, read by both verifiers.
+- **A GitHub Action over the record** (`packages/action`, not published): on a pull request it keeps
+  one comment saying which events the pull request adds to the record and which changed files an
+  accepted rule addresses, and fails the check when `mnema verify --require=signed` fails. An
+  optional input also fails it when a rule that asks for a person addresses a changed file and only
+  the author has approved. It reads the record and writes nothing but the comment.
 - **A signed, append-only record in the repository.** Decisions with their reasoning and the
   options turned down, the patterns a team works by, tasks, handoffs, memories and
   observations, as typed facts in `.mnema/`, committed with the code and handed to every

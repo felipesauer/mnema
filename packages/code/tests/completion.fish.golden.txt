@@ -12,7 +12,7 @@
 function __mnema_commands --description 'the subcommands one level of the tree offers'
     switch "$argv[1]"
         case ''
-            echo 'init task decision skill memory observe handoff link retract run status focus resume next-actions guard search show timeline accountability antipatterns exposure export refs diagram rules rules-file check skills usage brief recall before-a-write tally corrections key tail witness switch doctor verify mcp repl completion help'
+            echo 'init task decision skill memory observe handoff link retract run status focus resume next-actions guard search show timeline accountability antipatterns exposure export refs diagram rules rules-file check trailer commits why aging skills usage brief recall before-a-write tally corrections key tail witness switch doctor verify mcp repl completion help'
         case 'task'
             echo 'create move help'
         case 'decision'
@@ -91,6 +91,10 @@ complete -c mnema -f -n '__mnema_at ""' -a 'diagram' -d 'print a state machine, 
 complete -c mnema -f -n '__mnema_at ""' -a 'rules' -d 'show which recorded rules govern a path, and which address nothing'
 complete -c mnema -f -n '__mnema_at ""' -a 'rules-file' -d 'print the rules addressed at a file as another host’s rules file, and why the rest are not'
 complete -c mnema -f -n '__mnema_at ""' -a 'check' -d 'give a rule a program that checks it, and record whether it held at a commit'
+complete -c mnema -f -n '__mnema_at ""' -a 'trailer' -d 'print the commit trailer that ties a commit to a decision'
+complete -c mnema -f -n '__mnema_at ""' -a 'commits' -d 'show the commits that cite a decision and those that touched what it addresses'
+complete -c mnema -f -n '__mnema_at ""' -a 'why' -d 'show under which decisions a file or a commit stands'
+complete -c mnema -f -n '__mnema_at ""' -a 'aging' -d 'show accepted decisions whose addressed paths changed in many commits since'
 complete -c mnema -f -n '__mnema_at ""' -a 'skills' -d 'show where each pattern came from (who proposed it, who adopted it)'
 complete -c mnema -f -n '__mnema_at ""' -a 'usage' -d 'what each run cost, read from this machine\'s Claude Code transcripts'
 complete -c mnema -f -n '__mnema_at ""' -a 'brief' -d 'print what governs the work here as markdown, for an agent to read'
@@ -470,6 +474,36 @@ complete -c mnema -f -n '__mnema_at "check run"' -s h -l help
 complete -c mnema -f -n '__mnema_at "check run"' -s V -l version
 complete -c mnema -f -n '__mnema_at "check run"' -l color -x -a 'auto always never'
 complete -c mnema -f -n '__mnema_at "check run"' -l identify
+
+# mnema trailer
+complete -c mnema -f -n '__mnema_at "trailer"' -l id
+complete -c mnema -f -n '__mnema_at "trailer"' -l json
+complete -c mnema -f -n '__mnema_at "trailer"' -s h -l help
+complete -c mnema -f -n '__mnema_at "trailer"' -s V -l version
+complete -c mnema -f -n '__mnema_at "trailer"' -l color -x -a 'auto always never'
+complete -c mnema -f -n '__mnema_at "trailer"' -l identify
+
+# mnema commits
+complete -c mnema -f -n '__mnema_at "commits"' -l json
+complete -c mnema -f -n '__mnema_at "commits"' -s h -l help
+complete -c mnema -f -n '__mnema_at "commits"' -s V -l version
+complete -c mnema -f -n '__mnema_at "commits"' -l color -x -a 'auto always never'
+complete -c mnema -f -n '__mnema_at "commits"' -l identify
+
+# mnema why
+complete -c mnema -f -n '__mnema_at "why"' -l json
+complete -c mnema -f -n '__mnema_at "why"' -s h -l help
+complete -c mnema -f -n '__mnema_at "why"' -s V -l version
+complete -c mnema -f -n '__mnema_at "why"' -l color -x -a 'auto always never'
+complete -c mnema -f -n '__mnema_at "why"' -l identify
+
+# mnema aging
+complete -c mnema -f -n '__mnema_at "aging"' -l min-commits -r
+complete -c mnema -f -n '__mnema_at "aging"' -l json
+complete -c mnema -f -n '__mnema_at "aging"' -s h -l help
+complete -c mnema -f -n '__mnema_at "aging"' -s V -l version
+complete -c mnema -f -n '__mnema_at "aging"' -l color -x -a 'auto always never'
+complete -c mnema -f -n '__mnema_at "aging"' -l identify
 
 # mnema skills
 complete -c mnema -f -n '__mnema_at "skills"' -l json

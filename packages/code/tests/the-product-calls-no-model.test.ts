@@ -12,7 +12,7 @@
  * rather than being noticed later by whoever wonders why the product needs an API
  * key.
  *
- * THE ALLOWLIST HAS EXACTLY ONE MEMBER, and it is the outside WITNESS: T3 asks a
+ * THE ALLOWLIST HAS TWO MEMBERS, the outside WITNESS and the GitHub Action’s client (see below). The first is: T3 asks a
  * calendar to attest a checkpoint digest, which is the one thing this product does
  * that cannot be done on this machine. What leaves is a digest and nothing else —
  * no id, no title, no body, no count — which is why that one exception is
@@ -74,12 +74,18 @@ const MANIFESTS: readonly string[] = TRACKED.filter(
 );
 
 /**
- * The ONE file allowed to reach the network: the outside witness. See the header.
+ * The files allowed to reach the network: the outside witness (see the header) and the GitHub Action’s client.
  *
  * It is a literal path and not a pattern, so moving the file is a decision somebody
  * makes here rather than a rule that quietly follows it.
  */
-const MAY_REACH_THE_NETWORK: readonly string[] = ['packages/chain/src/chain/witness-request.ts'];
+const MAY_REACH_THE_NETWORK: readonly string[] = [
+  'packages/chain/src/chain/witness-request.ts',
+  // Reaches GitHub's REST API (`api.github.com`) to read a pull request and write one comment;
+  // never a model. Only this file names the global `fetch`; `run.ts` hands it in and nothing
+  // else in the package reaches the network.
+  'packages/action/src/github.ts',
+];
 
 /** Ways to reach the network from JavaScript. */
 const REACHES_THE_NETWORK: readonly (readonly [string, RegExp])[] = [
@@ -184,7 +190,7 @@ describe('the product calls no model', () => {
     expect(code("const u = 'https://api.anthropic.com';")).toMatch(/api\.anthropic\.com/);
   });
 
-  it('reaches the network from ONE file, and that file is the witness', () => {
+  it('reaches the network from the witness and the Action’s client only', () => {
     const reaching: string[] = [];
     for (const where of PRODUCT) {
       const source = code(read(where));
@@ -192,12 +198,8 @@ describe('the product calls no model', () => {
         if (pattern.test(source)) reaching.push(`${where} (${name})`);
       }
     }
-    expect(reaching.map((line) => line.split(' (')[0])).toEqual(
-      reaching.map(() => MAY_REACH_THE_NETWORK[0]),
-    );
-    // And the exception is still USED, so the allowlist is not a leftover entry
-    // protecting a file that stopped needing it.
-    expect(reaching.length).toBeGreaterThan(0);
+    const files = new Set(reaching.map((line) => line.split(' (')[0]));
+    expect([...files].sort()).toEqual([...MAY_REACH_THE_NETWORK].sort());
   });
 
   it('names no model endpoint anywhere in the product', () => {

@@ -77,6 +77,14 @@ $ mnema
 !                                         rest are not
 !   check                                 give a rule a program that checks it,
 !                                         and record whether it held at a commit
+!   trailer [options] <decision>          print the commit trailer that ties a
+!                                         commit to a decision
+!   commits [options] <decision>          show the commits that cite a decision
+!                                         and those that touched what it addresses
+!   why [options] <file|commit>           show under which decisions a file or a
+!                                         commit stands
+!   aging [options]                       show accepted decisions whose addressed
+!                                         paths changed in many commits since
 !   skills [options]                      show where each pattern came from (who
 !                                         proposed it, who adopted it)
 !   usage                                 what each run cost, read from this
@@ -194,6 +202,14 @@ $ mnema --help
 |                                         rest are not
 |   check                                 give a rule a program that checks it,
 |                                         and record whether it held at a commit
+|   trailer [options] <decision>          print the commit trailer that ties a
+|                                         commit to a decision
+|   commits [options] <decision>          show the commits that cite a decision
+|                                         and those that touched what it addresses
+|   why [options] <file|commit>           show under which decisions a file or a
+|                                         commit stands
+|   aging [options]                       show accepted decisions whose addressed
+|                                         paths changed in many commits since
 |   skills [options]                      show where each pattern came from (who
 |                                         proposed it, who adopted it)
 |   usage                                 what each run cost, read from this
@@ -773,6 +789,58 @@ $ mnema check --help
 |   declare [options] <rule> <program> [args...]  declare the program that checks a rule (no shell: the program and its arguments)
 |   run [options]                                 run the check of every rule in force and record each result (run by a checker key, in CI)
 |   help [command]                                display help for command
+
+### mnema trailer --help
+$ mnema trailer --help
+| Usage: mnema trailer [options] <decision>
+|
+| print the commit trailer that ties a commit to a decision
+|
+| Arguments:
+|   decision    the decision, by id or by ADR label
+|
+| Options:
+|   --id        carry the id instead of the label
+|   --json      emit the line as JSON
+|   -h, --help  display help for command
+
+### mnema commits --help
+$ mnema commits --help
+| Usage: mnema commits [options] <decision>
+|
+| show the commits that cite a decision and those that touched what it addresses
+|
+| Arguments:
+|   decision    the decision, by id or by ADR label
+|
+| Options:
+|   --json      emit the faithful reading as JSON
+|   -h, --help  display help for command
+
+### mnema why --help
+$ mnema why --help
+| Usage: mnema why [options] <file|commit>
+|
+| show under which decisions a file or a commit stands
+|
+| Arguments:
+|   file|commit  a path (it wins when it exists) or a commit name
+|
+| Options:
+|   --json       emit the faithful reading as JSON
+|   -h, --help   display help for command
+
+### mnema aging --help
+$ mnema aging --help
+| Usage: mnema aging [options]
+|
+| show accepted decisions whose addressed paths changed in many commits since
+|
+| Options:
+|   --min-commits <n>  commits on its paths since acceptance to be listed (default
+|                      20)
+|   --json             emit the faithful reading as JSON
+|   -h, --help         display help for command
 
 ### mnema skills --help
 $ mnema skills --help

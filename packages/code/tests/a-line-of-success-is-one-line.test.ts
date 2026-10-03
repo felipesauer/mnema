@@ -323,6 +323,51 @@ const CLASSIFIED: Readonly<Record<string, { verdict: Verdict; why: string }>> = 
     verdict: 'minted',
     why: 'a fingerprint decoded from the request, and an anchor',
   },
+  'key.ts «Enrolled checker {}» #1': {
+    verdict: 'minted',
+    why: 'a fingerprint decoded out of the request that was vouched for',
+  },
+  'key.ts «Key {} is already a checker — nothing recorded.» #1': {
+    verdict: 'minted',
+    why: 'a fingerprint decoded from the request',
+  },
+  'key.ts «it signs check results only, as {}» #1': {
+    verdict: 'minted',
+    why: 'the anchor derived from the checker key',
+  },
+  'key.ts «vouched for by {}» #1': {
+    verdict: 'minted',
+    why: 'the anchor of the identity whose member vouched',
+  },
+  'key.ts «to sign check results, vouched for by {}» #1': {
+    verdict: 'minted',
+    why: 'the anchor `--anchor` resolved to',
+  },
+  'key.ts «recorded in {}» #2': {
+    verdict: 'collapsed',
+    why: 'the project root, discovered from the cwd — the same value `init` prints',
+  },
+  'check.ts «Declared the check of {}» #1': {
+    verdict: 'minted',
+    why: 'the id of a decision the write found in the record, or it refused',
+  },
+  'check.ts «passed {}» #1': { verdict: 'minted', why: 'the id of a rule the record holds' },
+  'check.ts «failed {}: {}» #1': {
+    verdict: 'collapsed',
+    why: 'a rule id, and how the program failed — which names the program when it did not start',
+  },
+  'check.ts «{} passed · {} failed at {}» #1': {
+    verdict: 'minted',
+    why: 'two counts and the commit git named, which is hexadecimal',
+  },
+  'check.ts «signed by {}» #1': {
+    verdict: 'minted',
+    why: 'the anchor derived from the checker key',
+  },
+  'check.ts «recorded in {}» #1': {
+    verdict: 'collapsed',
+    why: 'the project root, discovered from the cwd — the same value `init` prints',
+  },
   'key.ts «Enrolled key {}» #1': {
     verdict: 'minted',
     why: 'a fingerprint decoded out of the request that was vouched for',
@@ -682,7 +727,7 @@ describe('every line this wiring words is classified', () => {
     // 80 until the channel that starts off said what it does once it is switched on.
     // 81 until user-corrections got its own message.
     // 82 until `doctor` printed a line to a finding.
-    expect(FOUND.sites.length).toBe(84);
+    expect(FOUND.sites.length).toBe(96);
   });
 
   it('reads the verdict off the source rather than believing the table', () => {
@@ -702,9 +747,9 @@ describe('every line this wiring words is classified', () => {
   it('found sites of both kinds, and the scanner sees a tag when there is one', () => {
     // Neither arm of the case above may be empty, or half of it is vacuous.
     const verdicts = Object.values(CLASSIFIED).map((said) => said.verdict);
-    expect(verdicts.filter((verdict) => verdict === 'collapsed').length).toBe(40);
-    expect(verdicts.filter((verdict) => verdict === 'minted').length).toBe(44);
-    expect(FOUND.sites.filter((site) => site.tagged).length).toBe(40);
+    expect(verdicts.filter((verdict) => verdict === 'collapsed').length).toBe(43);
+    expect(verdicts.filter((verdict) => verdict === 'minted').length).toBe(53);
+    expect(FOUND.sites.filter((site) => site.tagged).length).toBe(43);
   });
 
   it('every reason says where the value comes from', () => {
@@ -852,6 +897,10 @@ const UNREACHABLE: Readonly<Record<string, string>> = {
   'key.ts «private half installed at {}» #1': 'needs a PEM to restore from',
   'key.ts «Your copy at {} was read, not moved — keep it where it is.» #1': 'the same restore',
   'key.ts «recorded in {}» #1': 'needs a request from a second machine',
+  'key.ts «recorded in {}» #2': 'the same request',
+  'check.ts «failed {}: {}» #1':
+    'needs a checker key enrolled in the record, and a program that fails',
+  'check.ts «recorded in {}» #1': 'the same checker run',
   'next-actions.ts «Task {} is terminal — no legal moves.» #1': 'the id must match a task',
   'next-actions.ts «Task {} — {} legal move(s):» #1': 'the id must match a task',
   'resume.ts «{} {}» #1': 'read back from a run this suite opens through `run start`',

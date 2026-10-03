@@ -101,7 +101,14 @@ export function registerCheck(program: Command, wiring: Wiring): Declared {
       );
       for (const one of result.results) {
         io.out(
-          render(fact(one.passed ? `passed ${one.rule}` : `failed ${one.rule}: ${one.failure}`)),
+          render(
+            fact(
+              one.passed
+                ? `passed ${one.rule}`
+                : // The runner's own words, or the program's name in a start error: not ours to trust.
+                  onOneLine`failed ${one.rule}: ${one.failure}`,
+            ),
+          ),
         );
       }
       io.out(render(fact(`signed by ${result.checker}`)));

@@ -84,13 +84,14 @@ const DECLARING: readonly Declared[] = TRACKED.filter(
 });
 
 describe('the manifests this workspace ships agree on one version', () => {
-  it('finds the manifests that declare one, and there are seven', () => {
+  it('finds the manifests that declare one, and there are eight', () => {
     // NON-VACUITY, and it is the case that matters most here: every assertion below is a
     // reduction over this list, so a sweep that found nothing would leave all of them true
     // while checking no file at all. The number is exact rather than a floor, because a
     // floor is a number anyone can lower to swallow a manifest that stopped being read.
     expect(DECLARING.map(({ where }) => where).sort()).toEqual([
       'package.json',
+      'packages/action/package.json',
       'packages/chain/package.json',
       'packages/code/package.json',
       'packages/context/package.json',

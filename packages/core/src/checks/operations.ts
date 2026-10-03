@@ -186,7 +186,7 @@ export function enrollChecker(
       ok: false,
       code: 'MALFORMED_REQUEST',
       message:
-        'that is not a checker request — hand over the whole line `mnema key request --checker` ' +
+        'that is not a checker request — hand over the whole line `mnema key request --checker --anchor <id>` ' +
         'printed on the machine that will run the checks, unedited',
     };
   }
@@ -329,8 +329,8 @@ export function runRuleChecks(
       code: 'NOT_A_CHECKER',
       message:
         `this machine's key ${oneLine(fingerprint)} is not enrolled as a checker in this record — ` +
-        'run `mnema key request --checker <identity>` here, and have a member enroll the line ' +
-        'with `mnema key enroll --checker`',
+        'run `mnema key request --checker --anchor <id>` here, and have a member enroll the line ' +
+        'with `mnema key enroll --checker <the line>`',
     };
   }
 

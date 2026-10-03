@@ -699,6 +699,47 @@ assume it had been handled.
 There is no MCP tool for this, deliberately: a cut is the one write whose consequence
 is destructive, and it is authorized by a person at a shell or not at all.
 
+### A rule that carries its check
+
+A decision in force can name the program that checks it, and a machine of its own can record, at a
+commit, whether the rule held.
+
+```sh
+# A person declares the check. The program and its arguments, one by one — there is no shell, so
+# nothing in them is split, globbed or expanded; an argument that starts with a dash goes after `--`
+# (`mnema check declare <decision-id> node -- -e "process.exit(0)"`).
+mnema check declare <decision-id> node scripts/check-cents.js
+
+# On the machine that will run checks (a CI runner), once: a key of its own, for ONE identity.
+mnema key request --checker --anchor <identity>
+# A member of that identity enrolls the line it printed, and commits the vouch.
+mnema key enroll --checker <the line>
+
+# On the runner, at a clean commit: run the check of every rule in force and record each result.
+mnema check run --key <the checker's private key file>
+```
+
+`check run` starts each declared program from the project root with this process's environment,
+stops it after `--timeout` seconds (300 by default) and records it as failed. It writes one
+`check.passed` or `check.failed` per rule, naming the rule and the commit `HEAD` names, with the end
+of what the program printed (at most 4000 characters, control bytes made visible, credentials
+redacted). It exits non-zero when any check failed. It refuses a tree that has changes outside the
+record or is not at a commit, because a result names a commit. The results are written to the
+working tree, where the caller commits them; nothing here pushes.
+
+**The key can say that a check passed, and nothing else.** A checker key is enrolled by a member
+of an identity, and a key that is already a member of one is refused. `mnema verify` refuses a
+`check.passed` or `check.failed` signed by any other key, and refuses any other fact signed by a
+checker key, so a leaked runner secret cannot decide a rule or write a note. `mnema accountability`
+lists the checker as a machine, apart from the people.
+
+What it does not promise: a result says that a key your team enrolled reported the rule held at that
+commit. It does not say the program ran as it was declared on that machine, and it does not say
+the program checks what its rule says. A declared program runs on the runner, so whoever can commit
+a declaration can make the runner start that program. The Action in `packages/action` reads the
+record and runs `mnema verify`; it does not run `check run`, so today the step above is one of your
+own workflow's.
+
 ### What goes into the record
 
 Every field of text you record passes one door on the way in.

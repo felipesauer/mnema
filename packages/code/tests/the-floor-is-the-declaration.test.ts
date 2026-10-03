@@ -471,11 +471,14 @@ const FLOOR_MODULES: readonly string[] = [
   // The two host lists `--host` enumerates, and nothing a host needs beyond its name.
   'host-names.ts',
   'wiring/accountability.ts',
+  'wiring/aging.ts',
   'wiring/antipatterns.ts',
   'wiring/before-a-write.ts',
   'wiring/body-source.ts',
   'wiring/brief.ts',
+  'wiring/check.ts',
   'wiring/color.ts',
+  'wiring/commits.ts',
   'wiring/completion.ts',
   'wiring/context.ts',
   'wiring/corrections.ts',
@@ -505,6 +508,7 @@ const FLOOR_MODULES: readonly string[] = [
   // of help — and it reaches its command and its presentation only inside the action, so
   // what it adds here is one file of declarations and no adapter.
   'wiring/recall.ts',
+  'wiring/no-such-decision.ts',
   'wiring/on-one-line.ts',
   'wiring/options.ts',
   'wiring/refs.ts',
@@ -526,9 +530,11 @@ const FLOOR_MODULES: readonly string[] = [
   'wiring/tail.ts',
   'wiring/task.ts',
   'wiring/timeline.ts',
+  'wiring/trailer.ts',
   'wiring/usage.ts',
   'wiring/verb.ts',
   'wiring/verify.ts',
+  'wiring/why.ts',
   'wiring/witness.ts',
 ];
 

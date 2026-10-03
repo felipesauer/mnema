@@ -20,6 +20,7 @@ import { type CatalogEvent, catalogUpcasters } from '@mnema/chain';
 import { type DiscoveryEnv, orderedEvents, resolveTrees } from '@mnema/core';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { type CliIo, run } from '../src/cli.js';
+import { GIT_WITHOUT_MAINTENANCE } from './support/git-without-maintenance.js';
 
 let sandbox: string;
 let repo: string;
@@ -58,6 +59,11 @@ function git(...args: string[]): string {
   const ran = spawnSync('git', ['-c', 'user.name=t', '-c', 'user.email=t@t', ...args], {
     cwd: repo,
     encoding: 'utf-8',
+    env: {
+      PATH: process.env.PATH ?? '',
+      HOME: env.home,
+      GIT_CONFIG_GLOBAL: GIT_WITHOUT_MAINTENANCE,
+    },
   });
   if (ran.status !== 0) throw new Error(`git ${args.join(' ')}: ${ran.stderr}`);
   return ran.stdout.trim();
@@ -67,7 +73,9 @@ const events = (): CatalogEvent[] =>
   orderedEvents({ root: resolveTrees(repo, env).projectPublic as string }, catalogUpcasters());
 
 function idIn(said: Said): string {
-  const id = said.out.join('\n').match(/([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})/)?.[1];
+  const id = said.out
+    .join('\n')
+    .match(/([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})/)?.[1];
   if (id === undefined) throw new Error(`setup: no id in ${said.out.join(' / ')}`);
   return id;
 }

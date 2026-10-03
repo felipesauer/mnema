@@ -215,10 +215,12 @@
 
 import type { Command } from 'commander';
 import { registerAccountability } from './accountability.js';
+import { registerAging } from './aging.js';
 import { registerAntipatterns } from './antipatterns.js';
 import { registerBeforeAWrite } from './before-a-write.js';
 import { registerBrief } from './brief.js';
 import { registerCheck } from './check.js';
+import { registerCommits } from './commits.js';
 import { registerCompletion } from './completion.js';
 import { registerCorrections } from './corrections.js';
 import { registerDecision } from './decision.js';
@@ -254,9 +256,11 @@ import { registerTail } from './tail.js';
 import { registerTally } from './tally.js';
 import { registerTask } from './task.js';
 import { registerTimeline } from './timeline.js';
+import { registerTrailer } from './trailer.js';
 import { registerUsage } from './usage.js';
 import type { Declared, Verb, Wiring } from './verb.js';
 import { registerVerify } from './verify.js';
+import { registerWhy } from './why.js';
 import { registerWitness } from './witness.js';
 
 /** Every verb, in the order `mnema --help` lists them. */
@@ -288,6 +292,10 @@ export const VERBS: readonly Verb[] = [
   registerRules,
   registerRulesFile,
   registerCheck,
+  registerTrailer,
+  registerCommits,
+  registerWhy,
+  registerAging,
   registerSkills,
   registerUsage,
   registerBrief,

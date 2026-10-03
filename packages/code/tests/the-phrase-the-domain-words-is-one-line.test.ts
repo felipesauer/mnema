@@ -746,6 +746,66 @@ const CLASSIFIED: Readonly<Record<string, { verdict: Verdict; why: string }>> = 
       verdict: 'collapsed',
       why: 'the identity a stored event claims to speak for, on the same terms as the signer',
     },
+  '@mnema/chain chain/enrollment.ts «{} is signed by {}, a checker key, which signs check results only» oneLine(event.kind) #1':
+    {
+      verdict: 'collapsed',
+      why: 'the kind a stored event claims, read before the role is asked; the catalog names it and nothing here has narrowed it yet',
+    },
+  '@mnema/chain chain/enrollment.ts «{} is signed by {}, a checker key, which signs check results only» oneLine(event.signerFp) #1':
+    {
+      verdict: 'collapsed',
+      why: 'the signer a stored event claims; the catalog requires a non-empty string and nothing more',
+    },
+  '@mnema/chain chain/enrollment.ts «{} is signed by {}, which is not enrolled as a checker at this point» event.kind #1':
+    {
+      verdict: 'minted',
+      why: 'one of the two check-result kinds this branch was entered for, a literal of the catalog',
+    },
+  '@mnema/chain chain/enrollment.ts «{} is signed by {}, which is not enrolled as a checker at this point» oneLine(event.signerFp) #1':
+    {
+      verdict: 'collapsed',
+      why: 'the signer a stored event claims; the catalog requires a non-empty string and nothing more',
+    },
+  '@mnema/chain chain/enrollment.ts «{} who is not the anchor of the checker key that signed it» event.kind #1':
+    {
+      verdict: 'minted',
+      why: 'one of the two check-result kinds this branch was entered for, a literal of the catalog',
+    },
+  '@mnema/core checks/operations.ts «"{}" is not a full commit object name» oneLine(input.commit) #1':
+    {
+      verdict: 'collapsed',
+      why: 'the commit a caller handed the operation, from outside this package',
+    },
+  '@mnema/core checks/operations.ts «no decision "{}" is in this record — a check is declared on a rule» oneLine(input.rule) #1':
+    {
+      verdict: 'collapsed',
+      why: 'the rule id a caller typed, which this record has no decision by',
+    },
+  '@mnema/core checks/operations.ts «that request does not prove the key {} consented to check for » oneLine(fingerprint) #1':
+    {
+      verdict: 'collapsed',
+      why: 'a fingerprint decoded from a request line a person pasted',
+    },
+  '@mnema/core checks/operations.ts «the key {} is a member of an identity in this record — a checker » oneLine(fingerprint) #1':
+    {
+      verdict: 'collapsed',
+      why: 'a fingerprint decoded from a request line a person pasted',
+    },
+  "@mnema/core checks/operations.ts «this machine's key is not currently valid for {}, so a vouch it signed would be rejected» oneLine(anchor) #1":
+    {
+      verdict: 'collapsed',
+      why: 'the anchor this installation serves, read back out of the record',
+    },
+  "@mnema/core checks/operations.ts «this machine's key {} is not enrolled as a checker in this record — » oneLine(fingerprint) #1":
+    {
+      verdict: 'collapsed',
+      why: 'the fingerprint of the key this machine signs with, read from its key root',
+    },
+  '@mnema/core checks/operations.ts «{} — a checker request is made for ONE identity» oneLine(anchor) #1':
+    {
+      verdict: 'collapsed',
+      why: 'the anchor this installation serves, read back out of the record',
+    },
 
   // --- @mnema/chain: the verifier's findings --------------------------------------
   '@mnema/chain chain/verify.ts «tail {} ends in a partial line that was dropped — the mark of a write » oneLine(tail) #1':
@@ -1462,9 +1522,9 @@ describe('every value the domain puts in a sentence is classified', () => {
     // are equal. The scale is stated, and so is what the HANDOFF said — twenty-three
     // sites, twelve in `core` and eleven in `chain` — because it counted sentences
     // written at a `message:` or a `detail:` directly, and a value is not a sentence.
-    expect(SITES.length).toBe(171);
-    expect(FOUND[0]?.sites.length).toBe(48);
-    expect(FOUND[1]?.sites.length).toBe(123);
+    expect(SITES.length).toBe(183);
+    expect(FOUND[0]?.sites.length).toBe(53);
+    expect(FOUND[1]?.sites.length).toBe(130);
     expect(FOUND.flatMap((layer) => layer.wording).length).toBeGreaterThan(15);
   });
 
@@ -1514,11 +1574,11 @@ describe('every value the domain puts in a sentence is classified', () => {
     // No arm of the case above may be empty, or that much of it is vacuous.
     const verdicts = Object.values(CLASSIFIED).map((said) => said.verdict);
     const count = (verdict: Verdict): number => verdicts.filter((said) => said === verdict).length;
-    expect(count('collapsed')).toBe(100);
-    expect(count('minted')).toBe(49);
+    expect(count('collapsed')).toBe(110);
+    expect(count('minted')).toBe(51);
     expect(count('composed')).toBe(22);
     expect(SITES.filter((site) => new RegExp(`\\b${DOOR}\\b`).test(site.expression))).toHaveLength(
-      100,
+      110,
     );
   });
 

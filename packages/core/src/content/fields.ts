@@ -409,12 +409,19 @@ export const PAYLOAD_TEXT = {
   // credential in either refuses the declaration rather than being replaced.
   'check.declared': { command: 'name', args: 'name' },
   'checker.enrolled': { checkerFp: 'identifier', reverseSig: 'identifier' },
-  // What a check printed is a body, scrubbed like any other; the commit is read from git.
-  'check.passed': { commit: 'identifier', command: 'name', args: 'name', output: 'body' },
+  // What a check printed is a body, scrubbed like any other; the commit is read from git. The
+  // program and its arguments are copied from the declaration, which the door already refused
+  // a credential in, so here they are what the record handed back, not what a caller wrote.
+  'check.passed': {
+    commit: 'identifier',
+    command: 'identifier',
+    args: 'identifier',
+    output: 'body',
+  },
   'check.failed': {
     commit: 'identifier',
-    command: 'name',
-    args: 'name',
+    command: 'identifier',
+    args: 'identifier',
     failure: 'body',
     output: 'body',
   },

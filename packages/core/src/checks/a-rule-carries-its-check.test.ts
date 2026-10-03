@@ -17,13 +17,18 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { type CatalogEvent, catalogUpcasters, deriveAnchor, verify } from '@mnema/chain';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
-import { requestEnrollment } from '../identity/handshake.js';
+import {
+  CHECKER_REQUEST_PREFIX,
+  decodeKeyRequest,
+  requestEnrollment,
+} from '../identity/handshake.js';
 import { captureMemory } from '../knowledge/operations.js';
 import { orderedEvents } from '../projections/order.js';
 import { resolveTrees } from '../topology/resolve.js';
 import { chainRootForScope, deferredWrite, openTreeForWriting } from '../topology/routing.js';
 import { acceptDecision, recordDecision } from '../workflow/decision-operations.js';
 import type { WriteContext } from '../workflow/operations.js';
+import { checkersIn, consentsToCheck } from './checkers.js';
 import {
   type DeclaredCheck,
   declareCheck,
@@ -180,6 +185,20 @@ describe('a rule carries its check', () => {
     expect(result.ok ? '' : result.code).toBe('NOT_A_CHECKER');
     expect(ran).toBe(0);
     expect(kinds()).toHaveLength(before);
+  });
+
+  it('names the keys the record enrolls as checkers, and only those whose consent holds', () => {
+    expect(checkersIn({ root }, upcasters).size).toBe(0);
+    const { request, fingerprint } = checkerRequest();
+    const decoded = decodeKeyRequest(request, CHECKER_REQUEST_PREFIX);
+    if (decoded === null) throw new Error('the request did not decode');
+    // The consent is over ONE identity: the same signature is no consent for another.
+    expect(consentsToCheck(decoded.key, personAnchor(), decoded.reverseSig)).toBe(true);
+    expect(consentsToCheck(decoded.key, 'mn-someone-else', decoded.reverseSig)).toBe(false);
+    expect(consentsToCheck(decoded.key, personAnchor(), 'not hex at all')).toBe(false);
+
+    expect(enrollChecker(person, { request }).ok).toBe(true);
+    expect([...checkersIn({ root }, upcasters)]).toEqual([fingerprint]);
   });
 
   it('a member request is refused at the checker door', () => {

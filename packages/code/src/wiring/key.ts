@@ -147,7 +147,7 @@ export function registerKey(program: Command, wiring: Wiring): Declared {
     .argument('<request>', 'the line `mnema key request` printed on the joining machine')
     .option(
       '--checker',
-      'enroll a key that signs check results only (the line `mnema key request --checker` printed)',
+      'enroll a key that signs check results only (the line `mnema key request --checker --anchor <id>` printed)',
     )
     .action(async (request: string, opts: { checker?: boolean }) => {
       if (opts.checker === true) {

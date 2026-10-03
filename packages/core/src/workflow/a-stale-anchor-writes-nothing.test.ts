@@ -11,6 +11,7 @@ import {
   writeAnchor,
 } from '@mnema/chain';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
+import { declareCheck, enrollChecker } from '../checks/operations.js';
 import { requestEnrollment } from '../identity/handshake.js';
 import { IdentityUnavailableError, rosterOf } from '../identity/membership.js';
 import { enrollFromRequest, revokeMember } from '../identity/roster.js';
@@ -175,7 +176,8 @@ describe('a checkout the key left writes nothing, through every write of the sur
     if (!run.ok) throw new Error('setup: run');
     const joiner = requestEnrollment({ anchor, keyRoot: keyRoot() });
     const another = requestEnrollment({ anchor, keyRoot: keyRoot() });
-    if (!joiner.ok || !another.ok) throw new Error('setup: requests');
+    const checking = requestEnrollment({ anchor, keyRoot: keyRoot(), asChecker: true });
+    if (!joiner.ok || !another.ok || !checking.ok) throw new Error('setup: requests');
 
     const retired = revokeMember(member, {
       fingerprint: left.writer.signerFingerprint,
@@ -197,6 +199,7 @@ describe('a checkout the key left writes nothing, through every write of the sur
         run: run.id,
         joiner,
         another,
+        checking,
       },
     };
   }
@@ -374,6 +377,19 @@ describe('a checkout the key left writes nothing, through every write of the sur
       drive: (as) => establishIdentity(as, { keyRoot: keyRoot() }),
     },
     {
+      op: 'declareCheck',
+      refusedBy: 'the anchor',
+      drive: (as, _, s) =>
+        declareCheck(as, { rule: s.fixtures.decisions[0] ?? '', command: 'node' }),
+    },
+    {
+      // A vouch for a checker is signed by the identity's key, so the roster refuses it first.
+      op: 'enrollChecker',
+      refusedBy: 'the roster',
+      drive: (as, _, s) =>
+        enrollChecker(as, { request: s.fixtures.checking.ok ? s.fixtures.checking.request : '' }),
+    },
+    {
       op: 'enrollFromRequest',
       refusedBy: 'the roster',
       drive: (as, _, s) =>
@@ -404,6 +420,8 @@ describe('a checkout the key left writes nothing, through every write of the sur
     openTreeForWriting: 'opens a writer; the write is the caller’s',
     recordedAnchorOf:
       'asks the question every append asks — whether the recorded identity counts the key',
+    runRuleChecks:
+      'signs under the checker’s own anchor, which no identity retires; a key that is not a checker is refused before it appends',
     requestEnrollment: 'produces a request and may mint a key, in the key root',
     restoreKey: 'records an anchor from the record — the way out this refusal names',
     signerFor: 'reads who would sign in a tree',

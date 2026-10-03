@@ -346,7 +346,7 @@ function foundUnderTheLock(ctx: WriteContext): string {
   if (checkersIn(ctx.layout, ctx.upcasters).has(ctx.writer.signerFingerprint)) {
     throw new IdentityUnavailableError(
       'A_CHECKER_KEY',
-      `this machine's key ${oneLine(ctx.writer.signerFingerprint)} is enrolled in this record as a ` +
+      `this machine's key ${ctx.writer.signerFingerprint} is enrolled in this record as a ` +
         'checker, which signs check results only (`mnema check run`) — write from a key of your own',
     );
   }
