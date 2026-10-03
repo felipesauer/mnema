@@ -349,6 +349,53 @@ describe('the MCP tool Claude Code’s hook calls', () => {
   });
 });
 
+describe('the same rule, said again in one session', () => {
+  /** The reason the hook tool hands back for `path`, on `session`, or the empty string. */
+  function reasonOn(session: ReturnType<typeof openSession>, path: string): string {
+    const result = runRulesBeforeAnEditTool(session, { path });
+    if (!result.ok) throw new Error('unreachable');
+    const reply = JSON.parse(JSON.stringify(result.value)) as Record<string, unknown>;
+    return decided(reply).reason ?? '';
+  }
+
+  function sessionHere() {
+    return openSession({ clientName: 'agent-alpha', roots: [pathToFileURL(repo).href], env });
+  }
+
+  it.each([
+    ['refuses', 'src/billing/invoice.ts'],
+    ['asks', 'src/other/refund.ts'],
+  ])('a rule that %s says the whole of it three times, then one numbered line', (_grade, path) => {
+    const session = sessionHere();
+    const said = [1, 2, 3, 4, 5].map(() => reasonOn(session, path));
+    expect(said[0]).not.toBe('');
+    // The first three are the full notice, word for word.
+    expect(said[1]).toBe(said[0]);
+    expect(said[2]).toBe(said[0]);
+    // After that: one line, numbered, naming the path, and no two of them equal.
+    for (const [index, line] of [
+      [3, said[3] as string],
+      [4, said[4] as string],
+    ] as const) {
+      expect(line).toContain(`#${index + 1}`);
+      expect(line).toContain(path);
+      expect(line.includes('\n')).toBe(false);
+      expect(line.length).toBeLessThan((said[0] as string).length / 2);
+    }
+    expect(said[3]).not.toBe(said[4]);
+  });
+
+  it('counts per rule and per session: a rule met for the first time, or a new connection, is whole', () => {
+    const session = sessionHere();
+    const first = reasonOn(session, 'src/billing/invoice.ts');
+    for (let n = 0; n < 4; n += 1) reasonOn(session, 'src/billing/invoice.ts');
+    // A rule this session has not heard from is said whole.
+    expect(reasonOn(session, 'src/other/refund.ts')).toContain('Refunds need finance');
+    // And a session of its own starts from the first.
+    expect(reasonOn(sessionHere(), 'src/billing/invoice.ts')).toBe(first);
+  });
+});
+
 describe('the document a session opens with', () => {
   it('counts the rules that refuse a write, and says so when the refusal is switched off', async () => {
     // One of the four rules in force refuses (it is linked at two addresses, and counts once).
