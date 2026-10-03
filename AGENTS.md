@@ -1,0 +1,50 @@
+# Notes for an agent changing this repository
+
+This is the short list of what an agent gets wrong here first. What the product is lives on
+the [front page](README.md); the full contributor guide is [`CONTRIBUTING.md`](CONTRIBUTING.md).
+
+## Run the gates, in this order, on what you committed
+
+```sh
+pnpm install --frozen-lockfile
+pnpm build
+pnpm lint
+pnpm typecheck
+pnpm test
+```
+
+`pnpm build` comes before `pnpm typecheck` and `pnpm test`: the packages compile against each
+other's built output, so a stale `dist` makes both go green over code that no longer exists.
+When a case is red, keep the output, then run `pnpm why-it-went-red`: it says whether the
+guard caught a defect or the machine was busy.
+
+## Commits and pull requests
+
+- Branch, commit message and pull request in English, descriptive: what changes, as a sentence.
+- Commit with a `users.noreply.github.com` address, not a work or personal one
+  (`git config user.email` shows which you will use).
+- No `Co-Authored-By` trailer and no generated-with footer: the
+  `the-link-cannot-come-back` job fails on them. If an agent wrote the change, say which model,
+  host and version in the field the pull request template asks for.
+- One change per pull request. Add files by path; never `git add -A` or `git add .`.
+
+## Where the tests are
+
+Product tests are in `packages/*/tests/`, named for the behaviour they hold. A new file under
+`packages/*/src` needs a test that asserts about a value it produced, and a new test file needs
+its line in `every-file-has-a-test-that-names-it.test.ts`. The tests are not type-checked:
+assert on a value, never on a type guard. A new guard comes with a case that shows it failing
+on the defect it exists for.
+
+## Writing
+
+A sentence in a README or `--help` says only what the code guarantees, and a claim cites the
+test or measurement that holds it. A sentence that stopped being true is rewritten with the
+reason, not deleted.
+
+## Never commit
+
+Keys, tokens or anything that signs; the contents of a real `~/.mnema` or `.mnema/`; absolute
+paths of a person's machine (`measurements/` is checked for them); build output (`dist/`,
+`node_modules/`, `coverage/`); local assistant state. Run the product against a throwaway
+`HOME`, never your own.
