@@ -97,6 +97,9 @@ $ mnema
 !   switch                                turn off, or back on, what mnema hands
 !                                         to a model unasked, and whether an agent
 !                                         may accept a decision
+!   doctor                                say how mnema is installed on this
+!                                         machine, and what to do about each thing
+!                                         found (writes nothing)
 !   verify [options]                      verify this project's record — its
 !                                         committed tree and its private one
 !   mcp [options]                         run the mnema MCP server over stdio (for
@@ -207,6 +210,9 @@ $ mnema --help
 |   switch                                turn off, or back on, what mnema hands
 |                                         to a model unasked, and whether an agent
 |                                         may accept a decision
+|   doctor                                say how mnema is installed on this
+|                                         machine, and what to do about each thing
+|                                         found (writes nothing)
 |   verify [options]                      verify this project's record — its
 |                                         committed tree and its private one
 |   mcp [options]                         run the mnema MCP server over stdio (for
@@ -971,6 +977,23 @@ $ mnema switch --help
 |   An off switch says who made it and when, and whether a clone of this
 |   repository holds it — a switch recorded privately governs only this machine.
 |   A channel with no switch is on, except edit-first-write-gate and user-corrections, which are off until switched on.
+
+### mnema doctor --help
+$ mnema doctor --help
+| Usage: mnema doctor [options]
+|
+| say how mnema is installed on this machine, and what to do about each thing
+| found (writes nothing)
+|
+| Options:
+|   -h, --help  display help for command
+|
+| What it looks at, and nothing else:
+|   the `mnema` executables on the PATH and which one is running; Claude Code’s list of
+|   installed plugins; the mnema MCP server declared in .mcp.json, .cursor/mcp.json,
+|   .vscode/mcp.json and ~/.claude.json, the plugin counting as one; and an npm package
+|   named `mnema` installed where the PATH points — the registry is not asked.
+| It writes nothing and exits 0 whatever it finds: each line says what to do.
 
 ### mnema verify --help
 $ mnema verify --help

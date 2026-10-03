@@ -296,6 +296,11 @@ that reaches VS Code as well — are in the [plugin's page](plugin/README.md#in-
 Without the plugin, `mnema rules-file --host claude`, `--host vscode` or `--host cursor` prints the committed rules
 addressed at a file in that host's own rules format, and says which rules it left out and why.
 
+`mnema doctor` says, one line to a finding and with what to do about it, whether a `mnema` is
+on the `PATH` and which one, whether the Claude Code plugin is installed and at what version,
+whether the mnema MCP server is declared more than once, and whether a second `mnema` or an npm
+package of that name is installed. It writes nothing and does not ask the registry.
+
 ## Your first record
 
 ```sh

@@ -428,6 +428,10 @@ const UNWITNESSED: Readonly<Record<string, Debt>> = {
     reached: 'nobody imports it',
     why: "The diagram verb's declaration and its two usage refusals; a-picture-of-the-record.test.ts drives the verb through the program and asserts the diagrams it prints, never a value this file returns.",
   },
+  'packages/code/src/wiring/doctor.ts': {
+    reached: 'nobody imports it',
+    why: 'The doctor verb\u2019s declaration and the one line it prints per finding; doctor-says-how-mnema-is-installed.test.ts runs the verb on the binary and asserts the lines, and the findings themselves are asserted on commands/doctor.ts.',
+  },
   'packages/code/src/wiring/export.ts': {
     reached: 'nobody imports it',
     why: "The only read with no --json and no summary; the feed test driving it is about context's OCSF mapping, and this verb appears in no golden and its adapter has no test of its own.",
@@ -608,7 +612,7 @@ const UNWITNESSED: Readonly<Record<string, Debt>> = {
  * reading, so nothing can fall in two.
  */
 const THE_SHAPE_OF_WHAT_IS_LEFT: Readonly<Record<string, number>> = {
-  wiring: 35,
+  wiring: 36,
   presentation: 11,
   projections: 4,
   completion: 4,
@@ -869,6 +873,7 @@ const CLAUSES_PER_FILE: Readonly<Record<string, number>> = {
   'packages/code/tests/a-write-says-what-it-founded.test.ts': 14,
   'packages/code/tests/both-surfaces-one-vocabulary.test.ts': 18,
   'packages/code/tests/cli-e2e.test.ts': 14,
+  'packages/code/tests/doctor-says-how-mnema-is-installed.test.ts': 7,
   'packages/code/tests/every-chain-refusal-is-a-refusal.test.ts': 14,
   'packages/code/tests/every-description-reaches-the-model.test.ts': 12,
   'packages/code/tests/every-file-has-a-test-that-names-it.test.ts': 6,
@@ -1207,6 +1212,7 @@ const PRODUCTION_FILES: readonly string[] = [
   'packages/code/src/commands/decision-import.ts',
   'packages/code/src/commands/decision-transition.ts',
   'packages/code/src/commands/decision.ts',
+  'packages/code/src/commands/doctor.ts',
   'packages/code/src/commands/export.ts',
   'packages/code/src/commands/exposure.ts',
   'packages/code/src/commands/focus.ts',
@@ -1359,6 +1365,7 @@ const PRODUCTION_FILES: readonly string[] = [
   'packages/code/src/wiring/corrections.ts',
   'packages/code/src/wiring/decision.ts',
   'packages/code/src/wiring/diagram.ts',
+  'packages/code/src/wiring/doctor.ts',
   'packages/code/src/wiring/enumerated.ts',
   'packages/code/src/wiring/export.ts',
   'packages/code/src/wiring/exposure.ts',
@@ -1547,8 +1554,8 @@ describe('every file has a test that names it', () => {
     );
     // 73 until `chain/src/one-line.test.ts` began calling the functions it is about.
     // 72 until `mcp/hook-reply.test.ts` began calling the function it is about.
-    expect(found.size).toBe(72);
-    expect(byReach('nobody imports it')).toBe(72);
+    expect(found.size).toBe(73);
+    expect(byReach('nobody imports it')).toBe(73);
     expect(byReach('imported, and no assertion observes it')).toBe(0);
   });
 
@@ -1570,7 +1577,7 @@ describe('every file has a test that names it', () => {
     // Announced in the header and, until now, kept by hand. A shared excuse is how a table
     // like this turns into a rubber stamp, and a row drained to a stub is how it starts.
     const reasons = Object.values(UNWITNESSED).map((one) => one.why);
-    expect(reasons).toHaveLength(72);
+    expect(reasons).toHaveLength(73);
     expect(new Set(reasons).size).toBe(reasons.length);
     // The shortest reason standing is 156 characters; the floor is under it and well over
     // anything that could be written without saying what reaches that file.
