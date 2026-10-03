@@ -77,11 +77,11 @@ describe('the hooks of the plugin carry stable ids', () => {
   });
 
   it('is red for a hook added without an id', () => {
-    const grown = JSON.parse(read('hooks.json')) as { hooks: Record<string, unknown[]> };
-    (grown.hooks.Stop?.[0] as { hooks: unknown[] }).hooks.push({
-      type: 'command',
-      command: 'node "${CLAUDE_PLUGIN_ROOT}/hooks/new.mjs"',
-    });
+    const grown = JSON.parse(read('hooks.json')) as {
+      hooks: Record<string, { hooks: Hook[] }[]>;
+    };
+    const stop = grown.hooks.Stop ?? [];
+    stop[0]?.hooks.push({ command: 'node hooks/new.mjs' });
     expect(reconcile(JSON.stringify(grown), read('hooks.ids.json'))).toEqual([
       'Stop/0/2 has no id',
     ]);
