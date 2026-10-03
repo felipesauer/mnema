@@ -925,6 +925,118 @@ export interface ChannelRefusedV1 extends Envelope {
 }
 
 /**
+ * A RULE CARRIES A CHECK: a command that, run in the project at a commit, says whether the
+ * rule held there.
+ *
+ * Its subject is the RULE — a decision's id — so the history of what checks a rule is read
+ * under the rule's own id, as every other fact about it is. A later declaration on the same
+ * rule replaces the earlier one for whoever runs the checks; neither is erased.
+ *
+ * THE COMMAND IS A PROGRAM AND ITS ARGUMENTS, never a line for a shell. `command` names the
+ * program and `args` are handed to it one by one, so nothing in them is interpreted by
+ * anybody on the way: a `;`, a `$(…)` or a `|` is an argument like any other. What a check
+ * needs a shell for, it says by naming the shell as its program — which is then a choice
+ * the record shows, not one the runner made for it.
+ *
+ * Declaring a check is a person's act, and an ordinary one: it is signed and authorized
+ * like every other fact. Running it is not — see {@link CheckPassedV1}.
+ */
+export interface CheckDeclaredV1 extends Envelope {
+  readonly kind: 'check.declared';
+  readonly v: 1;
+  /** Subject is the rule — the id of the decision the check is for. */
+  readonly payload: {
+    /** The program to run. */
+    readonly command: string;
+    /** Its arguments, one by one. Absent when it takes none. */
+    readonly args?: readonly string[];
+  };
+}
+
+/**
+ * A KEY WAS ENROLLED AS A CHECKER: a key that signs the results of checks, and nothing else.
+ *
+ * It is how a machine — a CI runner, whose key is a secret of the repository — comes to sign
+ * facts in a record whose every other fact a person authorized. It does NOT join anybody's
+ * identity: a checker speaks for itself, under the anchor its own key derives (`subject`),
+ * so an account of who authorized what says a machine ran the check, not the person who
+ * let it.
+ *
+ * `who` is the person who vouches for it and `signerFp` a key valid for that person's anchor
+ * at this point, exactly as a {@link KeyEnrolledV1}'s voucher. `reverseSig` is the checker
+ * key's own consent, over `check-enroll:<who>:<checkerFp>` — a message of its own, so a
+ * request a key made to JOIN an identity cannot be turned into a checker enrolment, and one
+ * made to check cannot be turned into a membership.
+ *
+ * THE ROLE IS THE WHOLE POINT, and the reader enforces it both ways: a `check.passed` or a
+ * `check.failed` is authentic only when signed by a key enrolled as a checker, and ANY other
+ * kind signed by such a key is refused. A leaked runner secret can therefore say a check
+ * passed; it cannot record a decision, enrol a key or found an identity.
+ */
+export interface CheckerEnrolledV1 extends Envelope {
+  readonly kind: 'checker.enrolled';
+  readonly v: 1;
+  /** Subject is the checker's own anchor, derived from `checkerFp`. */
+  readonly payload: {
+    /** The full fingerprint of the key enrolled as a checker. */
+    readonly checkerFp: string;
+    /** `checkerFp`'s hex Ed25519 signature over `check-enroll:<who>:<checkerFp>`. */
+    readonly reverseSig: string;
+  };
+}
+
+/**
+ * A RULE'S CHECK PASSED at one commit: the command declared for it ran there and exited 0.
+ *
+ * Signed by a key enrolled as a checker (see {@link CheckerEnrolledV1}), under that key's own
+ * anchor — `who` is the machine, never a person. Its subject is the rule, and `commit` the
+ * commit the working tree stood at when the command ran, so the fact says "this rule held
+ * HERE", not "this rule holds".
+ *
+ * `command` and `args` are what was run, copied from the declaration in force, so the fact
+ * says what it proves without a reader having to find which declaration stood at the time.
+ * `output` is the tail of what the command printed, bounded and with every control byte
+ * made visible, or absent when it printed nothing.
+ */
+export interface CheckPassedV1 extends Envelope {
+  readonly kind: 'check.passed';
+  readonly v: 1;
+  /** Subject is the rule the check is for. */
+  readonly payload: {
+    /** The commit the check ran at — the full object name. */
+    readonly commit: string;
+    /** The program that ran. */
+    readonly command: string;
+    /** Its arguments, one by one. Absent when it took none. */
+    readonly args?: readonly string[];
+    /** The tail of what it printed, bounded and neutralized. Absent when it printed nothing. */
+    readonly output?: string;
+  };
+}
+
+/**
+ * A RULE'S CHECK FAILED at one commit — the mirror of {@link CheckPassedV1}, with `failure`
+ * saying how: the exit code, the timeout, or why the program could not be started.
+ */
+export interface CheckFailedV1 extends Envelope {
+  readonly kind: 'check.failed';
+  readonly v: 1;
+  /** Subject is the rule the check is for. */
+  readonly payload: {
+    /** The commit the check ran at — the full object name. */
+    readonly commit: string;
+    /** The program that ran, or was meant to. */
+    readonly command: string;
+    /** Its arguments, one by one. Absent when it took none. */
+    readonly args?: readonly string[];
+    /** How it failed: an exit code, a timeout, a program that could not start. */
+    readonly failure: string;
+    /** The tail of what it printed, bounded and neutralized. Absent when it printed nothing. */
+    readonly output?: string;
+  };
+}
+
+/**
  * The catalog: every event the chain may contain. `kind` + `v` together select
  * exactly one arm, so a producer and a consumer can never disagree on a
  * payload shape without the compiler saying so.
@@ -951,7 +1063,11 @@ export type CatalogEvent =
   | ChannelServedV1
   | ChannelAskedV1
   | ChannelRefusedV1
-  | NoteRetractedV1;
+  | NoteRetractedV1
+  | CheckDeclaredV1
+  | CheckerEnrolledV1
+  | CheckPassedV1
+  | CheckFailedV1;
 
 /** The `kind` discriminators present in the catalog. */
 export type EventKind = CatalogEvent['kind'];
@@ -983,4 +1099,8 @@ export const LATEST_VERSION: { readonly [K in EventKind]: number } = {
   'channel.asked': 1,
   'channel.refused': 1,
   'note.retracted': 1,
+  'check.declared': 1,
+  'checker.enrolled': 1,
+  'check.passed': 1,
+  'check.failed': 1,
 };

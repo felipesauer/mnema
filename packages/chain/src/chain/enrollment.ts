@@ -75,7 +75,7 @@
  * or an event's mere absence from `issues`.
  */
 
-import { enrollmentMessage } from '../events/build.js';
+import { checkerEnrollmentMessage, enrollmentMessage } from '../events/build.js';
 import type { CatalogEvent } from '../events/catalog.js';
 import { oneLine } from '../one-line.js';
 import type { Entry } from './entry.js';
@@ -178,9 +178,24 @@ export function resolveIdentity(
     keysOf(anchor).add(fp);
   };
 
+  // The keys enrolled as CHECKERS at this point: they sign check results and nothing else.
+  const checkers = new Set<string>();
+
   for (const { tail, entry } of order) {
     const event = entry.event;
     const seq = entry.link.seq;
+    // The role, both ways. A checker key that signs anything but a check result is refused
+    // before the kind is even looked at — its own founding, an enrolment, a decision — so a
+    // leaked runner secret can say a check passed and nothing more.
+    const isCheckResult = event.kind === 'check.passed' || event.kind === 'check.failed';
+    if (!isCheckResult && checkers.has(event.signerFp)) {
+      issues.push({
+        tail,
+        seq,
+        detail: `${oneLine(event.kind)} is signed by ${oneLine(event.signerFp)}, a checker key, which signs check results only`,
+      });
+      continue;
+    }
     switch (event.kind) {
       case 'identity.founded': {
         // The anchor must derive from the founding key, and the founding key
@@ -268,6 +283,61 @@ export function resolveIdentity(
         coveredRevoked.add(restoreKey(anchor, event.payload.revokedFp));
         break;
       }
+      case 'checker.enrolled': {
+        // A person vouches (`who`, with a key valid for it now) for a key that will sign
+        // check results under its OWN anchor (`subject`), and the key consents to exactly
+        // that over `check-enroll:<who>:<checkerFp>`. It joins nobody's identity.
+        const { checkerFp, reverseSig } = event.payload;
+        if (event.subject !== deriveAnchor(checkerFp)) {
+          issues.push({
+            tail,
+            seq,
+            detail: 'checker.enrolled subject is not the anchor derived from the checker key',
+          });
+          break;
+        }
+        if (!keysOf(event.who).has(event.signerFp)) {
+          issues.push({
+            tail,
+            seq,
+            detail: 'checker.enrolled is signed by a key not valid for its who at this point',
+          });
+          break;
+        }
+        if (
+          !consentOk(keys, checkerEnrollmentMessage(event.who, checkerFp), checkerFp, reverseSig)
+        ) {
+          issues.push({
+            tail,
+            seq,
+            detail: 'checker.enrolled reverse signature does not prove the checker consented',
+          });
+          break;
+        }
+        checkers.add(checkerFp);
+        break;
+      }
+      case 'check.passed':
+      case 'check.failed': {
+        // A check result is authentic only under a key enrolled as a checker at this point,
+        // and only under the anchor that key derives: a machine speaks for itself.
+        if (!checkers.has(event.signerFp)) {
+          issues.push({
+            tail,
+            seq,
+            detail: `${event.kind} is signed by ${oneLine(event.signerFp)}, which is not enrolled as a checker at this point`,
+          });
+          break;
+        }
+        if (event.who !== deriveAnchor(event.signerFp)) {
+          issues.push({
+            tail,
+            seq,
+            detail: `${event.kind} who is not the anchor of the checker key that signed it`,
+          });
+        }
+        break;
+      }
       default: {
         // Every other event is authentic only if its signer is a key valid for
         // its anchor at this point — the single identity rule.
@@ -348,6 +418,19 @@ function reverseSignatureOk(
   newFp: string,
   reverseSig: string,
 ): boolean {
+  return consentOk(keys, enrollmentMessage(anchor, newFp), newFp, reverseSig);
+}
+
+/**
+ * Whether `reverseSig` is the signature of the committed key `fp` names over `message`, with
+ * that key's fingerprint recomputed — the proof of possession both enrolments carry.
+ */
+function consentOk(
+  keys: CommittedKeys,
+  message: Uint8Array,
+  newFp: string,
+  reverseSig: string,
+): boolean {
   const committed = keys(newFp);
   if (committed === null) return false;
   if (committed.fingerprint() !== newFp) return false;
@@ -358,7 +441,7 @@ function reverseSignatureOk(
     return false;
   }
   try {
-    return verifySignature(enrollmentMessage(anchor, newFp), signature, committed.key);
+    return verifySignature(message, signature, committed.key);
   } catch {
     return false;
   }

@@ -187,14 +187,14 @@ describe('the second reader can be run at all', () => {
     const report = JSON.parse(run.stdout) as SecondReading;
     expect(report.verdict, run.stdout).toBe('VERIFIED');
     expect(refusals(report)).toEqual([]);
-    // The 25 rows and the four aggregates, named in the finding so a shrinking vector
+    // The 29 rows and the four aggregates, named in the finding so a shrinking vector
     // set cannot pass quietly.
     const said = report.findings.map((f) => f.what).join('\n');
-    expect(said).toMatch(/25 of 25 published vectors reproduce/);
+    expect(said).toMatch(/29 of 29 published vectors reproduce/);
     expect(said).toMatch(/the fold over an empty range reproduces/);
     expect(said).toMatch(/the entry hash of a genesis entry reproduces/);
     expect(said).toMatch(/the entry hash of a linked entry reproduces/);
-    expect(said).toMatch(/the content root over all 25 vectors reproduces/);
+    expect(said).toMatch(/the content root over all 29 vectors reproduces/);
   });
 });
 

@@ -42,6 +42,10 @@ import {
   channelRefused,
   channelServed,
   channelSwitched,
+  checkDeclared,
+  checkerEnrolled,
+  checkFailed,
+  checkPassed,
   decisionRecorded,
   decisionTransitioned,
   handoffRecorded,
@@ -163,6 +167,22 @@ const person = (
   signerFp: string;
   subject: string;
 } => ({ at: VECTOR_AT, who: VECTOR_WHO, signerFp: VECTOR_SIGNER_FP, subject });
+
+/** The anchor a checker key speaks under in the vectors — its own, never a person's. */
+const VECTOR_CHECKER_WHO = 'mnid:6666666666666666666666666666666666666666666666666666666666666666';
+
+/** The commit a check result names in the vectors: a full object name. */
+const VECTOR_COMMIT = '7777777777777777777777777777777777777777';
+
+/** The envelope of a check result: the checker's own anchor, signed by the checker's key. */
+const checker = (
+  subject: string,
+): { at: string; who: string; signerFp: string; subject: string } => ({
+  at: VECTOR_AT,
+  who: VECTOR_CHECKER_WHO,
+  signerFp: VECTOR_NEW_FP,
+  subject,
+});
 
 /**
  * A representative event per kind, and the ORDER the published artifact lists
@@ -410,6 +430,49 @@ export const CANONICAL_VECTORS: {
       name: 'note.retracted (a memory taken back, with its reason)',
       event: noteRetracted(agent(MEMORY_ID, RUN_ID), {
         reason: 'The load turned out to be a key lookup, not relational.',
+      }),
+    },
+  ],
+  'check.declared': [
+    {
+      // A program and its arguments, one by one: the `;` in the last one is an argument,
+      // never a command separator, which is the reason `args` is a list.
+      name: 'check.declared (a program and its arguments)',
+      event: checkDeclared(person(RULE_ID), {
+        command: 'node',
+        args: ['scripts/check-money-in-cents.js', '--strict', 'a;b'],
+      }),
+    },
+  ],
+  'checker.enrolled': [
+    {
+      // A person vouches; the subject is the checker's own anchor, not the person's.
+      name: 'checker.enrolled (a person vouches for a key that signs check results only)',
+      event: checkerEnrolled(person(VECTOR_CHECKER_WHO), {
+        checkerFp: VECTOR_NEW_FP,
+        reverseSig: 'cd'.repeat(32),
+      }),
+    },
+  ],
+  'check.passed': [
+    {
+      // Signed by the checker, under the checker's own anchor: a machine, not a person.
+      name: 'check.passed (a rule held at a commit, signed by a checker)',
+      event: checkPassed(checker(RULE_ID), {
+        commit: VECTOR_COMMIT,
+        command: 'node',
+        args: ['scripts/check-money-in-cents.js'],
+        output: 'checked 41 files: every amount is an integer of cents',
+      }),
+    },
+  ],
+  'check.failed': [
+    {
+      name: 'check.failed (a rule did not hold at a commit, and how)',
+      event: checkFailed(checker(RULE_ID), {
+        commit: VECTOR_COMMIT,
+        command: 'node',
+        failure: 'exited with code 1',
       }),
     },
   ],

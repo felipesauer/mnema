@@ -467,6 +467,83 @@
         }
       },
       "sha256": "7c5712d1f6925f7962c4ce793e49c0dc7ff4849b42687f44583eed6c6c9ec945"
+    },
+    {
+      "name": "check.declared (a program and its arguments)",
+      "kind": "check.declared",
+      "event": {
+        "v": 1,
+        "kind": "check.declared",
+        "at": "2026-07-21T00:00:00.000Z",
+        "who": "mnid:1111111111111111111111111111111111111111111111111111111111111111",
+        "signerFp": "2222222222222222222222222222222222222222222222222222222222222222",
+        "subject": "019f81f8-e400-7006-8000-000000000006",
+        "payload": {
+          "command": "node",
+          "args": [
+            "scripts/check-money-in-cents.js",
+            "--strict",
+            "a;b"
+          ]
+        }
+      },
+      "sha256": "8d24e90ccbb5b857b137fdb525bdd71115d1daf2903206c91c34cb89f5968922"
+    },
+    {
+      "name": "checker.enrolled (a person vouches for a key that signs check results only)",
+      "kind": "checker.enrolled",
+      "event": {
+        "v": 1,
+        "kind": "checker.enrolled",
+        "at": "2026-07-21T00:00:00.000Z",
+        "who": "mnid:1111111111111111111111111111111111111111111111111111111111111111",
+        "signerFp": "2222222222222222222222222222222222222222222222222222222222222222",
+        "subject": "mnid:6666666666666666666666666666666666666666666666666666666666666666",
+        "payload": {
+          "checkerFp": "3333333333333333333333333333333333333333333333333333333333333333",
+          "reverseSig": "cdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcd"
+        }
+      },
+      "sha256": "62a5bfc12688b55765fef0f542a73ffe3c79bc477804625ade513882565f4bf3"
+    },
+    {
+      "name": "check.passed (a rule held at a commit, signed by a checker)",
+      "kind": "check.passed",
+      "event": {
+        "v": 1,
+        "kind": "check.passed",
+        "at": "2026-07-21T00:00:00.000Z",
+        "who": "mnid:6666666666666666666666666666666666666666666666666666666666666666",
+        "signerFp": "3333333333333333333333333333333333333333333333333333333333333333",
+        "subject": "019f81f8-e400-7006-8000-000000000006",
+        "payload": {
+          "commit": "7777777777777777777777777777777777777777",
+          "command": "node",
+          "args": [
+            "scripts/check-money-in-cents.js"
+          ],
+          "output": "checked 41 files: every amount is an integer of cents"
+        }
+      },
+      "sha256": "a293f09ae624865522e66eaf240df5fac8e44d5e6840817e4bdd8ea9a31af56d"
+    },
+    {
+      "name": "check.failed (a rule did not hold at a commit, and how)",
+      "kind": "check.failed",
+      "event": {
+        "v": 1,
+        "kind": "check.failed",
+        "at": "2026-07-21T00:00:00.000Z",
+        "who": "mnid:6666666666666666666666666666666666666666666666666666666666666666",
+        "signerFp": "3333333333333333333333333333333333333333333333333333333333333333",
+        "subject": "019f81f8-e400-7006-8000-000000000006",
+        "payload": {
+          "commit": "7777777777777777777777777777777777777777",
+          "command": "node",
+          "failure": "exited with code 1"
+        }
+      },
+      "sha256": "80ecaceed5ab0b38150a5f01be28478266d8071136628399c126d99112367f4c"
     }
   ],
   "chain": {
@@ -484,6 +561,6 @@
       "vector": "run.ended",
       "entryHash": "bafbebddd9d5ee75b10bdde626c5e36eed44b37d9fe352b4d98f614fa2647b73"
     },
-    "contentRootOverAllVectors": "c249c2e4203d9d817eed3d006e48fd79b6bf1b9c4911945f15a8a729a078338f"
+    "contentRootOverAllVectors": "d2e3460b1497fb356f571ef11722045887b72677ab65826d2dc7b749164140d3"
   }
 }
