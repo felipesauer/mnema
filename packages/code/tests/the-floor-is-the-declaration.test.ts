@@ -389,7 +389,9 @@ const EAGER_EXTERNAL: Readonly<Record<string, string>> = {
     '`createRequire`, which is how the width authority (`string-width`) is loaded WHEN A TEXT ' +
     'NEEDS IT instead of at module scope: the package is 25.4 ms of the floor and `--version` ' +
     'never measures a line. A builtin the loader has already brought in. Measured with the ' +
-    'floor before and after in `measurements/the-record-at-scale/`.',
+    'floor before and after in `measurements/the-record-at-scale/`: 171.5 ms to 159.3 ms, ' +
+    'median of 60 alternated runs. A text of printable ASCII is answered without the package, ' +
+    'which is what keeps the help of a verb from loading it.',
 };
 
 /**
