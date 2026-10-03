@@ -457,7 +457,7 @@ $ mnema retract --help
 | note; takes no --scope)
 |
 | Arguments:
-|   id               the id of the note to retract, as `mnema show` opens it
+|   id               the id of the note to retract
 |
 | Options:
 |   --reason <text>  why it is taken back

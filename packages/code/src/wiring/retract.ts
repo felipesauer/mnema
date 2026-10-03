@@ -33,7 +33,7 @@ export function registerRetract(program: Command, wiring: Wiring): Declared {
     .description(
       'take a memory or an observation back, keeping it in the record (follows the note; takes no --scope)',
     )
-    .argument('<id>', 'the id of the note to retract, as `mnema show` opens it')
+    .argument('<id>', 'the id of the note to retract')
     .requiredOption('--reason <text>', 'why it is taken back')
     .option('--which <agent>', WHICH_ON_A_RETRACTION, declaredAgent)
     .addHelpText('after', RECORD_CONTRACT_HELP)

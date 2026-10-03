@@ -422,12 +422,16 @@ export const NAMES_THAT_NEED_MORE: Readonly<
     why: 'the verb named in the sentence about what leaves the record as a file',
   },
   'packages/code/README.md: mnema show': {
-    times: 3,
+    times: 4,
     why: 'the read named in sentences about what it serves; its lines are in the reading section',
   },
   'packages/code/README.md: mnema memory': {
     times: 1,
     why: 'a verb named in a list of what a session’s facts are written with',
+  },
+  'packages/code/README.md: mnema retract': {
+    times: 1,
+    why: 'the verb named in a sentence about taking a note back, with the id and the reason it takes',
   },
   'packages/code/README.md: mnema observe': {
     times: 1,
@@ -563,7 +567,9 @@ export const HANDED_OVER: Readonly<
   // (`mnema corrections`, and `mnema switch` in the row that says it starts off) and the switch that
   // turns it on (`mnema switch on user-corrections`, a line on each page).
   // And one line and one name more for the page that says a rule can refuse a write.
-  span: { line: 41, name: 78, flag: 1, unwritten: 0 },
+  // And four names more for the paragraph that says a note can be taken back: `mnema retract`,
+  // and the three reads it names (`mnema search`, `mnema show`, `mnema verify`).
+  span: { line: 41, name: 82, flag: 1, unwritten: 0 },
   // name 18 until the page that says where the key lives named `mnema key protect` in a line of
   // its own.
   // line 35 until the same page showed that question in a block of its own.
