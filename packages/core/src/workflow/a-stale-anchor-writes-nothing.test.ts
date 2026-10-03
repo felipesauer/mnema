@@ -41,6 +41,7 @@ import {
   enrollKey,
   ensureFounded,
   establishIdentity,
+  linkAccount,
   recordedAnchorOf,
   revokeKey,
 } from './identity-operations.js';
@@ -362,6 +363,11 @@ describe('a checkout the key left writes nothing, through every write of the sur
       op: 'revokeKey',
       refusedBy: 'the anchor',
       drive: (as) => revokeKey(as, { revokedFp: 'e'.repeat(64), reason: 'r' }),
+    },
+    {
+      op: 'linkAccount',
+      refusedBy: 'the anchor',
+      drive: (as) => linkAccount(as, { account: 'octocat' }),
     },
     {
       op: 'ensureFounded',

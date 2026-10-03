@@ -1,5 +1,5 @@
 /**
- * THE PRODUCT CALLS NO MODEL, AND ONE FILE IS ALLOWED TO REACH THE NETWORK AT ALL.
+ * THE PRODUCT CALLS NO MODEL, AND THREE FILES ARE ALLOWED TO REACH THE NETWORK AT ALL.
  *
  * WHY THIS IS A GUARD AND NOT A HABIT. This project's second stated refusal is *a
  * fact summarized by a model entering as a recorded entry* — the record is only
@@ -12,10 +12,14 @@
  * rather than being noticed later by whoever wonders why the product needs an API
  * key.
  *
- * THE ALLOWLIST HAS TWO MEMBERS, the outside WITNESS and the GitHub Action’s client (see below). The first is: T3 asks a
- * calendar to attest a checkpoint digest, which is the one thing this product does
- * that cannot be done on this machine. What leaves is a digest and nothing else —
- * no id, no title, no body, no count — which is why that one exception is
+ * THE ALLOWLIST HAS THREE MEMBERS, each a question only somebody else can answer. The
+ * outside WITNESS: T3 asks a calendar to attest a checkpoint digest, and what leaves is
+ * a digest and nothing else — no id, no title, no body, no count. And the comparison
+ * with GITHUB (`verify --against-github`): it asks `github.com/<name>.keys` for the
+ * keys an account publishes, so what leaves is an account name the record already
+ * holds in public, checked against GitHub's own rule before it is put in the address,
+ * to one fixed host, and only when the flag is given. And the GitHub Action's client, which
+ * reads a pull request and writes one comment through GitHub's REST API. That is why each exception is
  * defensible and why the allowlist is by FILE rather than by package.
  *
  * THE NAIVE SWEEP MISSES IT, and that is the reason this file greps what it greps.
@@ -81,6 +85,7 @@ const MANIFESTS: readonly string[] = TRACKED.filter(
  */
 const MAY_REACH_THE_NETWORK: readonly string[] = [
   'packages/chain/src/chain/witness-request.ts',
+  'packages/code/src/commands/verify-github.ts',
   // Reaches GitHub's REST API (`api.github.com`) to read a pull request and write one comment;
   // never a model. Only this file names the global `fetch`; `run.ts` hands it in and nothing
   // else in the package reaches the network.
@@ -194,7 +199,7 @@ describe('the product calls no model', () => {
     expect(code("const u = 'https://api.anthropic.com';")).toMatch(/api\.anthropic\.com/);
   });
 
-  it('reaches the network from the witness and the Action’s client only', () => {
+  it('reaches the network from the allowed files only: the witness, the GitHub comparison and the Action’s client', () => {
     const reaching: string[] = [];
     for (const where of PRODUCT) {
       const source = code(read(where));
@@ -202,8 +207,11 @@ describe('the product calls no model', () => {
         if (pattern.test(source)) reaching.push(`${where} (${name})`);
       }
     }
-    const files = new Set(reaching.map((line) => line.split(' (')[0]));
-    expect([...files].sort()).toEqual([...MAY_REACH_THE_NETWORK].sort());
+    const files = reaching.map((line) => line.split(' (')[0] as string);
+    expect(files.filter((where) => !MAY_REACH_THE_NETWORK.includes(where))).toEqual([]);
+    // And every exception is still USED, so the allowlist is not a leftover entry
+    // protecting a file that stopped needing it.
+    expect([...new Set(files)].sort()).toEqual([...MAY_REACH_THE_NETWORK].sort());
   });
 
   it('names no model endpoint anywhere in the product', () => {

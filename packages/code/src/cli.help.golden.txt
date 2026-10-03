@@ -1015,6 +1015,10 @@ $ mnema key --help
 |                                   (run this on the joining machine)
 |   enroll <request>                vouch for a requesting key so it joins this
 |                                   identity (run this on a member)
+|   github <name>                   record that this identity is a GitHub account,
+|                                   so `mnema verify --against-github` can compare
+|                                   the keys that signed with the keys that
+|                                   account publishes
 |   revoke [options] <fingerprint>  retire a key from this identity, from this
 |                                   point forward
 |   protect                         encrypt this machine's private keys at rest
@@ -1172,6 +1176,14 @@ $ mnema verify --help
 |                          with their checkpoint, a record founded again, a
 |                          rewrite signed again. Reads git, never the network, so
 |                          <rev> must be in this clone
+|   --against-github       also compare the key each identity of this record
+|                          signed with against the SSH keys the GitHub account it
+|                          named (`mnema key github`) publishes at
+|                          github.com/<name>.keys. It proves the account publishes
+|                          that key TODAY — not that it was the account’s when it
+|                          signed — and it takes github.com’s word for it. Goes to
+|                          the network only when given; what it finds is noted per
+|                          identity and never moves the verdict or the exit
 |   --json                 emit the verdict as JSON instead of prose — the whole
 |                          reading, per tree, plus what NO --require value
 |                          answers. The exit code is unchanged: this changes the
@@ -1591,6 +1603,20 @@ $ mnema key enroll --help
 |
 | Arguments:
 |   request     the line `mnema key request` printed on the joining machine
+|
+| Options:
+|   -h, --help  display help for command
+
+### mnema key github --help
+$ mnema key github --help
+| Usage: mnema key github [options] <name>
+|
+| record that this identity is a GitHub account, so `mnema verify
+| --against-github` can compare the keys that signed with the keys that account
+| publishes
+|
+| Arguments:
+|   name        the GitHub account name
 |
 | Options:
 |   -h, --help  display help for command

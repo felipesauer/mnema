@@ -15,7 +15,7 @@ _mnema_commands() {
     'decision') echo 'record move supersede import help' ;;
     'skill') echo 'create move export help' ;;
     'run') echo 'start end help' ;;
-    'key') echo 'restore request enroll revoke protect unprotect help' ;;
+    'key') echo 'restore request enroll github revoke protect unprotect help' ;;
     'tail') echo 'list prune help' ;;
     'witness') echo 'stamp upgrade' ;;
     'switch') echo 'off on' ;;
@@ -79,6 +79,7 @@ _mnema_flags() {
     'key restore') echo '-h --help -V --version --color --identify' ;;
     'key request') echo '--anchor --key -h --help -V --version --color --identify' ;;
     'key enroll') echo '-h --help -V --version --color --identify' ;;
+    'key github') echo '-h --help -V --version --color --identify' ;;
     'key revoke') echo '--reason -h --help -V --version --color --identify' ;;
     'key protect') echo '-h --help -V --version --color --identify' ;;
     'key unprotect') echo '-h --help -V --version --color --identify' ;;
@@ -95,7 +96,7 @@ _mnema_flags() {
     'inherit set') echo '--at --write -h --help -V --version --color --identify' ;;
     'inherit update') echo '--to --write -h --help -V --version --color --identify' ;;
     'doctor') echo '-h --help -V --version --color --identify' ;;
-    'verify') echo '--global --workspace --allow-no-record --require --since --json -h --help -V --version --color --identify' ;;
+    'verify') echo '--global --workspace --allow-no-record --require --since --against-github --json -h --help -V --version --color --identify' ;;
     'mcp') echo '--project -h --help -V --version --color --identify' ;;
     'repl') echo '-h --help -V --version --color --identify' ;;
     'completion') echo '-h --help -V --version --color --identify' ;;
@@ -179,6 +180,7 @@ _mnema_values() {
     'key restore:--color') echo 'auto always never' ;;
     'key request:--color') echo 'auto always never' ;;
     'key enroll:--color') echo 'auto always never' ;;
+    'key github:--color') echo 'auto always never' ;;
     'key revoke:--color') echo 'auto always never' ;;
     'key protect:--color') echo 'auto always never' ;;
     'key unprotect:--color') echo 'auto always never' ;;

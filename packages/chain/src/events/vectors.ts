@@ -38,6 +38,7 @@
  */
 
 import {
+  accountLinked,
   channelAsked,
   channelRefused,
   channelServed,
@@ -411,6 +412,13 @@ export const CANONICAL_VECTORS: {
       event: noteRetracted(agent(MEMORY_ID, RUN_ID), {
         reason: 'The load turned out to be a key lookup, not relational.',
       }),
+    },
+  ],
+  'account.linked': [
+    {
+      // An identity names its own account: the subject is the anchor that signs it.
+      name: 'account.linked (an identity names its GitHub account)',
+      event: accountLinked(person(VECTOR_WHO), { service: 'github', account: 'octocat' }),
     },
   ],
 };

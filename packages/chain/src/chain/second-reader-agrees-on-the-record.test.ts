@@ -69,14 +69,18 @@
  */
 
 import { spawnSync } from 'node:child_process';
-import { appendFileSync, cpSync, mkdtempSync, readdirSync, rmSync } from 'node:fs';
+import { appendFileSync, cpSync, mkdtempSync, readdirSync, readFileSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 
+import { accountLinked, identityFounded } from '../events/build.js';
+import type { CatalogEvent } from '../events/catalog.js';
 import { catalogUpcasters } from '../events/registry.js';
-import { verify } from './chain.js';
+import { openChainForWriting, verify } from './chain.js';
+import { sealEntry, serializeEntry } from './entry.js';
+import { deriveAnchor } from './keys.js';
 
 /** The second reader, and the tool that builds the inputs it has to refuse. */
 const VERIFIER = fileURLToPath(new URL('../../verifier/mnema_verify.py', import.meta.url));
@@ -187,14 +191,14 @@ describe('the second reader can be run at all', () => {
     const report = JSON.parse(run.stdout) as SecondReading;
     expect(report.verdict, run.stdout).toBe('VERIFIED');
     expect(refusals(report)).toEqual([]);
-    // The 25 rows and the four aggregates, named in the finding so a shrinking vector
+    // The 26 rows and the four aggregates, named in the finding so a shrinking vector
     // set cannot pass quietly.
     const said = report.findings.map((f) => f.what).join('\n');
-    expect(said).toMatch(/25 of 25 published vectors reproduce/);
+    expect(said).toMatch(/26 of 26 published vectors reproduce/);
     expect(said).toMatch(/the fold over an empty range reproduces/);
     expect(said).toMatch(/the entry hash of a genesis entry reproduces/);
     expect(said).toMatch(/the entry hash of a linked entry reproduces/);
-    expect(said).toMatch(/the content root over all 25 vectors reproduces/);
+    expect(said).toMatch(/the content root over all 26 vectors reproduces/);
   });
 });
 
@@ -1177,5 +1181,67 @@ describe('what the second reader does NOT check, said by the second reader', () 
     expect(there.gapsLeanedOn).toContain('G02');
     expect(there.gapsLeanedOn).toContain('G03');
     expect(there.gapsLeanedOn).toContain('G10');
+  });
+});
+
+describe('both readers over an identity that names its GitHub account', () => {
+  /** A record whose identity was founded and then named its account, signed. */
+  function linkedRecord(): string {
+    const record = join(root, 'linked');
+    const writer = openChainForWriting(record, { keyRoot: join(root, 'keys') });
+    const fp = writer.signerFingerprint;
+    const anchor = deriveAnchor(fp);
+    const at = '2026-10-03T00:00:00.000Z';
+    const envelope = { at, who: anchor, signerFp: fp, subject: anchor };
+    writer.append(identityFounded(envelope, { foundingFp: fp }));
+    writer.append(accountLinked(envelope, { service: 'github', account: 'octocat' }));
+    writer.checkpoint();
+    return record;
+  }
+
+  it('is accepted by both, fully signed', () => {
+    const record = linkedRecord();
+    const here = verify(record, catalogUpcasters());
+    expect(here.ok).toBe(true);
+    expect(here.fullySigned).toBe(true);
+    const there = secondReading(record);
+    expect(refusals(there)).toEqual([]);
+    expect(there.verdict).toBe('VERIFIED');
+  });
+
+  it('is refused by both when one is appended without the account, and both name the field', () => {
+    const record = linkedRecord();
+    const segment = segmentOf(record);
+    const lines = readFileSync(segment, 'utf-8')
+      .split('\n')
+      .filter((line) => line !== '');
+    const last = JSON.parse(lines[lines.length - 1] as string) as {
+      event: { at: string; who: string; signerFp: string; subject: string };
+      link: { tail: string; seq: number; hash: string };
+    };
+    const { at, who, signerFp, subject } = last.event;
+    const forged = {
+      v: 1,
+      kind: 'account.linked',
+      at,
+      who,
+      signerFp,
+      subject,
+      payload: { service: 'github' },
+    } as unknown as CatalogEvent;
+    const entry = sealEntry({
+      event: forged,
+      tail: last.link.tail,
+      seq: last.link.seq + 1,
+      prev: last.link.hash,
+    });
+    appendFileSync(segment, `${serializeEntry(entry)}\n`);
+
+    const there = secondReading(record);
+    expect(there.verdict).toBe('REFUSED');
+    expect(refusals(there)[0]?.what).toContain('payload.account');
+    const here = verify(record, catalogUpcasters());
+    expect(here.ok).toBe(false);
+    expect(here.issues.map((issue) => issue.detail).join('\n')).toContain('payload.account');
   });
 });

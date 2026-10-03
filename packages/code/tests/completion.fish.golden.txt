@@ -22,7 +22,7 @@ function __mnema_commands --description 'the subcommands one level of the tree o
         case 'run'
             echo 'start end help'
         case 'key'
-            echo 'restore request enroll revoke protect unprotect help'
+            echo 'restore request enroll github revoke protect unprotect help'
         case 'tail'
             echo 'list prune help'
         case 'witness'
@@ -531,6 +531,7 @@ complete -c mnema -f -n '__mnema_at "corrections"' -l identify
 complete -c mnema -f -n '__mnema_at "key"' -a 'restore' -d 'restore this machine\'s identity from a copy of a key\'s private half'
 complete -c mnema -f -n '__mnema_at "key"' -a 'request' -d 'ask to bring this machine into an identity (run this on the joining machine)'
 complete -c mnema -f -n '__mnema_at "key"' -a 'enroll' -d 'vouch for a requesting key so it joins this identity (run this on a member)'
+complete -c mnema -f -n '__mnema_at "key"' -a 'github' -d 'record that this identity is a GitHub account, so `mnema verify --against-github` can compare the keys that signed with the keys that account publishes'
 complete -c mnema -f -n '__mnema_at "key"' -a 'revoke' -d 'retire a key from this identity, from this point forward'
 complete -c mnema -f -n '__mnema_at "key"' -a 'protect' -d 'encrypt this machine\'s private keys at rest with the passphrase in MNEMA_KEY_PASSPHRASE'
 complete -c mnema -f -n '__mnema_at "key"' -a 'unprotect' -d 'write this machine\'s private keys back in the clear (needs MNEMA_KEY_PASSPHRASE)'
@@ -559,6 +560,12 @@ complete -c mnema -f -n '__mnema_at "key enroll"' -s h -l help
 complete -c mnema -f -n '__mnema_at "key enroll"' -s V -l version
 complete -c mnema -f -n '__mnema_at "key enroll"' -l color -x -a 'auto always never'
 complete -c mnema -f -n '__mnema_at "key enroll"' -l identify
+
+# mnema key github
+complete -c mnema -f -n '__mnema_at "key github"' -s h -l help
+complete -c mnema -f -n '__mnema_at "key github"' -s V -l version
+complete -c mnema -f -n '__mnema_at "key github"' -l color -x -a 'auto always never'
+complete -c mnema -f -n '__mnema_at "key github"' -l identify
 
 # mnema key revoke
 complete -c mnema -f -n '__mnema_at "key revoke"' -l reason -r
@@ -693,6 +700,7 @@ complete -c mnema -f -n '__mnema_at "verify"' -l workspace -r
 complete -c mnema -f -n '__mnema_at "verify"' -l allow-no-record
 complete -c mnema -f -n '__mnema_at "verify"' -l require -x -a 'chained signed witnessed'
 complete -c mnema -f -n '__mnema_at "verify"' -l since -r
+complete -c mnema -f -n '__mnema_at "verify"' -l against-github
 complete -c mnema -f -n '__mnema_at "verify"' -l json
 complete -c mnema -f -n '__mnema_at "verify"' -s h -l help
 complete -c mnema -f -n '__mnema_at "verify"' -s V -l version

@@ -414,7 +414,16 @@ const CLASSIFIED: Readonly<Record<string, { verdict: Verdict; why: string }>> = 
     verdict: 'minted',
     why: 'an alias (`<prefix>-<hex>`, derived from the id) and the uuid',
   },
+  'verify.ts «github: the {} tree was not compared — its verdict is a break, so who signed it is not settled» #1':
+    {
+      verdict: 'minted',
+      why: 'the scope of a tree: one of the three names this product gives its trees',
+    },
   // --- lines a value from outside reaches ----------------------------------------
+  'key.ts «Linked {} to github.com/{}» #1': {
+    verdict: 'collapsed',
+    why: 'the anchor, and the account name the caller typed — refused unless GitHub would issue it',
+  },
   'antipatterns.ts «{}» #1': {
     verdict: 'collapsed',
     why: 'entity ids out of the record — the sibling reading collapsed them and this one did not',
@@ -682,7 +691,7 @@ describe('every line this wiring words is classified', () => {
     // 80 until the channel that starts off said what it does once it is switched on.
     // 81 until user-corrections got its own message.
     // 82 until `doctor` printed a line to a finding.
-    expect(FOUND.sites.length).toBe(84);
+    expect(FOUND.sites.length).toBe(86);
   });
 
   it('reads the verdict off the source rather than believing the table', () => {
@@ -702,9 +711,9 @@ describe('every line this wiring words is classified', () => {
   it('found sites of both kinds, and the scanner sees a tag when there is one', () => {
     // Neither arm of the case above may be empty, or half of it is vacuous.
     const verdicts = Object.values(CLASSIFIED).map((said) => said.verdict);
-    expect(verdicts.filter((verdict) => verdict === 'collapsed').length).toBe(40);
-    expect(verdicts.filter((verdict) => verdict === 'minted').length).toBe(44);
-    expect(FOUND.sites.filter((site) => site.tagged).length).toBe(40);
+    expect(verdicts.filter((verdict) => verdict === 'collapsed').length).toBe(41);
+    expect(verdicts.filter((verdict) => verdict === 'minted').length).toBe(45);
+    expect(FOUND.sites.filter((site) => site.tagged).length).toBe(41);
   });
 
   it('every reason says where the value comes from', () => {
@@ -849,6 +858,8 @@ const UNREACHABLE: Readonly<Record<string, string>> = {
     'needs a checkout its key has left — and the values inside the words are the core’s, ' +
     'each collapsed where it is written (`the-phrase-the-domain-words-is-one-line.test.ts`)',
   'key.ts «{} {}» #1': 'a path under this machine’s own key root, which no caller names',
+  'key.ts «Linked {} to github.com/{}» #1':
+    'the name is refused unless GitHub would issue it, and no such name holds a newline',
   'key.ts «private half installed at {}» #1': 'needs a PEM to restore from',
   'key.ts «Your copy at {} was read, not moved — keep it where it is.» #1': 'the same restore',
   'key.ts «recorded in {}» #1': 'needs a request from a second machine',

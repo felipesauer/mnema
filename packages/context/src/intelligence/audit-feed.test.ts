@@ -101,7 +101,7 @@ describe('the audit feed carries the envelope', () => {
     // The map's type already forces a row per kind; what this adds is that no row was
     // filled in with the schema's "we did not look" value. `0` (Unknown) is the answer a
     // half-done mapping produces, and it is exactly the one a SIEM cannot act on.
-    expect(EVERY_KIND).toHaveLength(22);
+    expect(EVERY_KIND).toHaveLength(23);
     for (const kind of EVERY_KIND) {
       expect(AUDIT_BY_KIND[kind].activity.id).not.toBe(0);
       expect(AUDIT_BY_KIND[kind].entityType).not.toBe('');
