@@ -150,6 +150,11 @@ const PROBES: readonly Probe[] = [
     argv: ['next-actions', NAME],
     says: `No task ${NAME} here.`,
   },
+  {
+    key: 'wiring/retract.ts record #1',
+    argv: ['retract', NAME, '--reason', 'a reason to take it back'],
+    says: `No record ${NAME} here.`,
+  },
   { key: 'wiring/show.ts record #1', argv: ['show', NAME], says: `No record ${NAME} here.` },
   {
     key: 'wiring/skill.ts skill #1',
@@ -272,7 +277,7 @@ describe('the sites are the source’s, not this file’s', () => {
     // would be counted and not keyed, and the reconciliation would pass while the site
     // it belongs to went unprobed.
     expect(FOUND.files).toBeGreaterThan(40);
-    expect(FOUND.sites.length).toBe(8);
+    expect(FOUND.sites.length).toBe(9);
     expect(FOUND.calls).toBe(FOUND.sites.length);
   });
 });

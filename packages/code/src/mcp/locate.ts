@@ -105,7 +105,12 @@
  */
 
 import { catalogUpcasters } from '@mnema/chain';
-import { type BirthProbe, canonicalId, replayingBirthProbe } from '@mnema/core';
+import {
+  type BirthProbe,
+  canonicalId,
+  replayingBirthProbe,
+  replayingRecordProbe,
+} from '@mnema/core';
 import type { ScopedTree } from '../intelligence-source.js';
 import { oneLine } from '../one-line.js';
 import type { CacheRegistry } from './cache-registry.js';
@@ -158,6 +163,27 @@ export function cachedBirthProbe(caches: CacheRegistry): BirthProbe {
   };
 }
 
+/**
+ * {@link cachedBirthProbe} widened to the notes — the probe a retraction is located by, and the
+ * projecting half of `replayingRecordProbe` in the core.
+ */
+function cachedRecordProbe(caches: CacheRegistry): BirthProbe {
+  const births = cachedBirthProbe(caches);
+  return (chainRoot, id) => {
+    if (births(chainRoot, id)) return true;
+    const cache = caches.get(chainRoot);
+    return cache.getMemory(id) !== null || cache.getObservation(id) !== null;
+  };
+}
+
+/**
+ * What a walk looks for: the workflow ENTITIES a move follows (the default, and every tool
+ * but one), or every RECORD with an id of its own — the entities and the notes, which is
+ * what a retraction has to find, so that a retraction of a decision is refused in the
+ * decision's own tree for not being a note.
+ */
+export type Reach = 'entities' | 'records';
+
 /** Where the walk found an entity — or why it cannot say. */
 export type EntityLocation =
   | {
@@ -195,14 +221,19 @@ export function locateEntityAcross(
   session: Session,
   trees: readonly WorkspaceTree[],
   id: string,
+  reach: Reach = 'entities',
 ): EntityLocation {
   const canonical = canonicalId(id);
   if (canonical === undefined) return { outcome: 'nowhere' };
 
   const records = recordsOf(trees, session.project);
-  const fromProjections = holdersOf(records, canonical, cachedBirthProbe(session.caches));
+  const [cached, replaying] =
+    reach === 'records'
+      ? [cachedRecordProbe(session.caches), replayingRecordProbe(catalogUpcasters())]
+      : [cachedBirthProbe(session.caches), replayingBirthProbe(catalogUpcasters())];
+  const fromProjections = holdersOf(records, canonical, cached);
   if (fromProjections.length > 0) return settled(fromProjections);
-  return settled(holdersOf(records, canonical, replayingBirthProbe(catalogUpcasters())));
+  return settled(holdersOf(records, canonical, replaying));
 }
 
 /**
@@ -266,8 +297,8 @@ function settled(holders: readonly WorkspaceTree[]): EntityLocation {
   return { outcome: 'several', holders };
 }
 
-/** The three workflow entities a session locates — what a refusal names. */
-export type LocatableKind = 'task' | 'decision' | 'skill';
+/** The three workflow entities a session locates, and the notes a retraction locates — what a refusal names. */
+export type LocatableKind = 'task' | 'decision' | 'skill' | 'note';
 
 /**
  * The code each kind's "no such entity" refusal carries — the vocabulary the tools
@@ -278,6 +309,7 @@ const UNKNOWN_CODE = {
   task: 'UNKNOWN_TASK',
   decision: 'UNKNOWN_DECISION',
   skill: 'UNKNOWN_SKILL',
+  note: 'UNKNOWN_NOTE',
 } as const;
 
 /** `AMBIGUOUS_RECORD` when several records hold the id, else the kind's own code. */

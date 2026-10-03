@@ -492,6 +492,10 @@ const UNWITNESSED: Readonly<Record<string, Debt>> = {
     reached: 'nobody imports it',
     why: "The resume verb's wiring and its no-runs branch; cli-e2e runs it to prove the run lifecycle and one identity short-form, and the phrases it checks come from presentation/runs.ts.",
   },
+  'packages/code/src/wiring/retract.ts': {
+    reached: 'nobody imports it',
+    why: "The retract verb's declaration, its echo and its unknown-id sentence; a-note-can-be-retracted drives it through the CLI and asserts the echo and the event, and the adapter's own values are witnessed through commands/retract.ts.",
+  },
   'packages/code/src/wiring/rules.ts': {
     reached: 'nobody imports it',
     why: "The rules verb's wiring for reading which recorded rules govern a path; the-rule-has-an-address.test.ts drives it only to compare the CLI's answer with the governing_rules tool's.",
@@ -612,7 +616,7 @@ const UNWITNESSED: Readonly<Record<string, Debt>> = {
  * reading, so nothing can fall in two.
  */
 const THE_SHAPE_OF_WHAT_IS_LEFT: Readonly<Record<string, number>> = {
-  wiring: 36,
+  wiring: 37,
   presentation: 11,
   projections: 4,
   completion: 4,
@@ -863,6 +867,7 @@ const CLAUSES_PER_FILE: Readonly<Record<string, number>> = {
   'packages/code/tests/a-marker-is-not-a-reason.test.ts': 7,
   'packages/code/tests/a-marker-is-not-a-title.test.ts': 7,
   'packages/code/tests/a-measurement-carries-no-one-s-home.test.ts': 5,
+  'packages/code/tests/a-note-can-be-retracted.test.ts': 11,
   'packages/code/tests/a-palette-for-the-words.test.ts': 24,
   'packages/code/tests/a-picture-of-the-record.test.ts': 8,
   'packages/code/tests/a-private-write-asks-git.test.ts': 11,
@@ -897,7 +902,7 @@ const CLAUSES_PER_FILE: Readonly<Record<string, number>> = {
   'packages/code/tests/every-skill-the-plugin-ships-is-what-it-says.test.ts': 11,
   'packages/code/tests/every-tool-says-if-it-writes.test.ts': 16,
   'packages/code/tests/every-verb-says-if-it-writes.test.ts': 14,
-  'packages/code/tests/every-write-signs-what-it-wrote.test.ts': 30,
+  'packages/code/tests/every-write-signs-what-it-wrote.test.ts': 31,
   'packages/code/tests/mcp-audit-across-workspace.test.ts': 12,
   'packages/code/tests/mcp-configured-project.test.ts': 11,
   'packages/code/tests/mcp-context.test.ts': 8,
@@ -1106,6 +1111,7 @@ const CLAUSES_PER_FILE: Readonly<Record<string, number>> = {
   'packages/core/src/identity/the-roster-sees-the-other-session.test.ts': 11,
   'packages/core/src/identity/who.test.ts': 2,
   'packages/core/src/index.test.ts': 2,
+  'packages/core/src/knowledge/a-note-can-be-retracted.test.ts': 12,
   'packages/core/src/knowledge/end-to-end.test.ts': 11,
   'packages/core/src/knowledge/link-end-to-end.test.ts': 11,
   'packages/core/src/knowledge/operations.test.ts': 11,
@@ -1257,6 +1263,7 @@ const PRODUCTION_FILES: readonly string[] = [
   'packages/code/src/commands/recall.ts',
   'packages/code/src/commands/references.ts',
   'packages/code/src/commands/resume.ts',
+  'packages/code/src/commands/retract.ts',
   'packages/code/src/commands/rules-file.ts',
   'packages/code/src/commands/rules.ts',
   'packages/code/src/commands/run-end.ts',
@@ -1421,6 +1428,7 @@ const PRODUCTION_FILES: readonly string[] = [
   'packages/code/src/wiring/repl.ts',
   'packages/code/src/wiring/report.ts',
   'packages/code/src/wiring/resume.ts',
+  'packages/code/src/wiring/retract.ts',
   'packages/code/src/wiring/rules-file.ts',
   'packages/code/src/wiring/rules.ts',
   'packages/code/src/wiring/run-pin.ts',
@@ -1589,8 +1597,9 @@ describe('every file has a test that names it', () => {
     );
     // 73 until `chain/src/one-line.test.ts` began calling the functions it is about.
     // 72 until `mcp/hook-reply.test.ts` began calling the function it is about.
-    expect(found.size).toBe(73);
-    expect(byReach('nobody imports it')).toBe(73);
+    // 73 since the retract verb's wiring arrived, driven only end to end like its siblings.
+    expect(found.size).toBe(74);
+    expect(byReach('nobody imports it')).toBe(74);
     expect(byReach('imported, and no assertion observes it')).toBe(0);
   });
 
@@ -1612,7 +1621,7 @@ describe('every file has a test that names it', () => {
     // Announced in the header and, until now, kept by hand. A shared excuse is how a table
     // like this turns into a rubber stamp, and a row drained to a stub is how it starts.
     const reasons = Object.values(UNWITNESSED).map((one) => one.why);
-    expect(reasons).toHaveLength(73);
+    expect(reasons).toHaveLength(74);
     expect(new Set(reasons).size).toBe(reasons.length);
     // The shortest reason standing is 156 characters; the floor is under it and well over
     // anything that could be written without saying what reaches that file.

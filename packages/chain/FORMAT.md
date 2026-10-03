@@ -6,7 +6,7 @@ against their implementation, and get the same digests we do.
 
 **Somebody has.** [`verifier/`](./verifier/) beside this file is a second implementation, in
 Python, written from this document and importing nothing of the product it checks. It
-reproduces the 24 published vectors and the four aggregate digests, and checks the frozen
+reproduces the 25 published vectors and the four aggregate digests, and checks the frozen
 records in the test suite beside the product
 (`packages/chain/src/chain/second-reader-agrees-on-the-record.test.ts`), on honest records
 and on every input the format refuses. The two verdicts differ in two pinned cases. With the
@@ -477,8 +477,8 @@ The top-level keys of an event are the keys `event-schema.json` declares under
 paragraph used to read *"the seven top-level keys of an event are `at`, `kind`,
 `payload`, `signerFp`, `subject`, `v` and `who`"*, and that sentence was false: it
 was the INTERSECTION of the published vectors, and `which` and `run` were carried
-by sixteen and three of those same vectors respectively (seventeen and four of the
-twenty-four published today). What falsified it is that
+by sixteen and three of those same vectors respectively (eighteen and five of the
+twenty-five published today). What falsified it is that
 an independent verifier believed it — it took the intersection, as the sentence
 invited, and **refused an honest event for carrying `which`**, on a record this
 product read as fine (§4.1, gap G25). A required field and an optional one look

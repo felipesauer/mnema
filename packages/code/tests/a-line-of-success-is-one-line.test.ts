@@ -344,6 +344,10 @@ const CLASSIFIED: Readonly<Record<string, { verdict: Verdict; why: string }>> = 
     verdict: 'minted',
     why: 'a uuid this write minted, and the only value on the line',
   },
+  'retract.ts «Retracted {} {}» #1': {
+    verdict: 'minted',
+    why: 'the kind of the note the record holds, and its id in the record’s canonical form',
+  },
   'next-actions.ts «{} → {}{}» #1': {
     verdict: 'minted',
     why: 'the transition table’s own words — an action, a state, the proof it requires',
@@ -678,7 +682,7 @@ describe('every line this wiring words is classified', () => {
     // 80 until the channel that starts off said what it does once it is switched on.
     // 81 until user-corrections got its own message.
     // 82 until `doctor` printed a line to a finding.
-    expect(FOUND.sites.length).toBe(83);
+    expect(FOUND.sites.length).toBe(84);
   });
 
   it('reads the verdict off the source rather than believing the table', () => {
@@ -699,7 +703,7 @@ describe('every line this wiring words is classified', () => {
     // Neither arm of the case above may be empty, or half of it is vacuous.
     const verdicts = Object.values(CLASSIFIED).map((said) => said.verdict);
     expect(verdicts.filter((verdict) => verdict === 'collapsed').length).toBe(40);
-    expect(verdicts.filter((verdict) => verdict === 'minted').length).toBe(43);
+    expect(verdicts.filter((verdict) => verdict === 'minted').length).toBe(44);
     expect(FOUND.sites.filter((site) => site.tagged).length).toBe(40);
   });
 

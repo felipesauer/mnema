@@ -449,6 +449,24 @@
         }
       },
       "sha256": "971c6db092e496e0f84b5cf3ed3e5c9653335ee9c424639afb09edb9108a3309"
+    },
+    {
+      "name": "note.retracted (a memory taken back, with its reason)",
+      "kind": "note.retracted",
+      "event": {
+        "v": 1,
+        "kind": "note.retracted",
+        "at": "2026-07-21T00:00:00.000Z",
+        "who": "mnid:1111111111111111111111111111111111111111111111111111111111111111",
+        "signerFp": "2222222222222222222222222222222222222222222222222222222222222222",
+        "subject": "019f81f8-e400-7001-8000-000000000001",
+        "which": "claude",
+        "run": "019f81f8-e400-7005-8000-000000000005",
+        "payload": {
+          "reason": "The load turned out to be a key lookup, not relational."
+        }
+      },
+      "sha256": "7c5712d1f6925f7962c4ce793e49c0dc7ff4849b42687f44583eed6c6c9ec945"
     }
   ],
   "chain": {
@@ -466,6 +484,6 @@
       "vector": "run.ended",
       "entryHash": "bafbebddd9d5ee75b10bdde626c5e36eed44b37d9fe352b4d98f614fa2647b73"
     },
-    "contentRootOverAllVectors": "a3de448ce47f055b47df2611a27ebecf82fc496f3cdd57e920aa34f8857af81a"
+    "contentRootOverAllVectors": "c249c2e4203d9d817eed3d006e48fd79b6bf1b9c4911945f15a8a729a078338f"
   }
 }

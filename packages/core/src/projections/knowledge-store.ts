@@ -14,12 +14,58 @@ import type {
   HandoffProjection,
   LinkEdge,
   MemoryProjection,
+  NoteRetraction,
   ObservationProjection,
 } from './knowledge.js';
 import { verb } from './upsert.js';
 
+/** The four retraction columns both note tables carry, as stored. */
+interface RetractionColumns {
+  readonly retracted_at: string | null;
+  readonly retracted_who: string | null;
+  readonly retracted_which: string | null;
+  readonly retracted_reason: string | null;
+}
+
+/** The retraction columns' bound parameters: SQL NULL when the note was not taken back. */
+function retractionParams(retracted: NoteRetraction | undefined): {
+  retractedAt: string | null;
+  retractedWho: string | null;
+  retractedWhich: string | null;
+  retractedReason: string | null;
+} {
+  return {
+    retractedAt: retracted?.at ?? null,
+    retractedWho: retracted?.who ?? null,
+    retractedWhich: retracted?.which ?? null,
+    retractedReason: retracted?.reason ?? null,
+  };
+}
+
+/** The retraction a row holds, absent when it holds none. */
+function retractionOf(row: RetractionColumns): { retracted?: NoteRetraction } {
+  if (row.retracted_at === null || row.retracted_who === null || row.retracted_reason === null) {
+    return {};
+  }
+  return {
+    retracted: {
+      at: row.retracted_at,
+      who: row.retracted_who,
+      ...(row.retracted_which !== null ? { which: row.retracted_which } : {}),
+      reason: row.retracted_reason,
+    },
+  };
+}
+
+/**
+ * The one condition every read that LISTS notes carries: a note the record took back is
+ * not offered as standing knowledge. The reads by id do not carry it — they still serve the
+ * note, saying it was retracted.
+ */
+const STANDING = 'retracted_at IS NULL';
+
 /** The `memories` row shape as stored. */
-interface MemoryRow {
+interface MemoryRow extends RetractionColumns {
   readonly id: string;
   readonly content: string;
   readonly who: string;
@@ -42,11 +88,17 @@ export function materializeMemories(
   replacing = false,
 ): void {
   const insert = db.prepare(
-    `${verb(replacing)} INTO memories (id, content, who, captured_at)
-     VALUES (@id, @content, @who, @capturedAt)`,
+    `${verb(replacing)} INTO memories (id, content, who, captured_at, retracted_at, retracted_who, retracted_which, retracted_reason)
+     VALUES (@id, @content, @who, @capturedAt, @retractedAt, @retractedWho, @retractedWhich, @retractedReason)`,
   );
   for (const memory of memories) {
-    insert.run(memory);
+    insert.run({
+      id: memory.id,
+      content: memory.content,
+      who: memory.who,
+      capturedAt: memory.capturedAt,
+      ...retractionParams(memory.retracted),
+    });
   }
 }
 
@@ -56,9 +108,11 @@ export function getMemory(db: SqliteDatabase, id: string): MemoryProjection | nu
   return row === undefined ? null : toProjection(row);
 }
 
-/** Lists all projected memories, ordered by id for a stable result. */
+/** Lists the projected memories still standing (not retracted), ordered by id for a stable result. */
 export function listMemories(db: SqliteDatabase): MemoryProjection[] {
-  const rows = db.prepare('SELECT * FROM memories ORDER BY id').all() as MemoryRow[];
+  const rows = db
+    .prepare(`SELECT * FROM memories WHERE ${STANDING} ORDER BY id`)
+    .all() as MemoryRow[];
   return rows.map(toProjection);
 }
 
@@ -68,11 +122,12 @@ function toProjection(row: MemoryRow): MemoryProjection {
     content: row.content,
     who: row.who,
     capturedAt: row.captured_at,
+    ...retractionOf(row),
   };
 }
 
 /** The `observations` row shape as stored. */
-interface ObservationRow {
+interface ObservationRow extends RetractionColumns {
   readonly id: string;
   readonly about: string;
   readonly topic: string;
@@ -91,11 +146,19 @@ export function materializeObservations(
   replacing = false,
 ): void {
   const insert = db.prepare(
-    `${verb(replacing)} INTO observations (id, about, topic, text, who, recorded_at)
-     VALUES (@id, @about, @topic, @text, @who, @recordedAt)`,
+    `${verb(replacing)} INTO observations (id, about, topic, text, who, recorded_at, retracted_at, retracted_who, retracted_which, retracted_reason)
+     VALUES (@id, @about, @topic, @text, @who, @recordedAt, @retractedAt, @retractedWho, @retractedWhich, @retractedReason)`,
   );
   for (const observation of observations) {
-    insert.run(observation);
+    insert.run({
+      id: observation.id,
+      about: observation.about,
+      topic: observation.topic,
+      text: observation.text,
+      who: observation.who,
+      recordedAt: observation.recordedAt,
+      ...retractionParams(observation.retracted),
+    });
   }
 }
 
@@ -107,10 +170,10 @@ export function getObservation(db: SqliteDatabase, id: string): ObservationProje
   return row === undefined ? null : toObservation(row);
 }
 
-/** Lists observations about the given entity, ordered by time then id. */
+/** Lists the standing (not retracted) observations about the given entity, by time then id. */
 export function listObservationsAbout(db: SqliteDatabase, about: string): ObservationProjection[] {
   const rows = db
-    .prepare('SELECT * FROM observations WHERE about = ? ORDER BY recorded_at, id')
+    .prepare(`SELECT * FROM observations WHERE about = ? AND ${STANDING} ORDER BY recorded_at, id`)
     .all(about) as ObservationRow[];
   return rows.map(toObservation);
 }
@@ -123,6 +186,7 @@ function toObservation(row: ObservationRow): ObservationProjection {
     text: row.text,
     who: row.who,
     recordedAt: row.recorded_at,
+    ...retractionOf(row),
   };
 }
 

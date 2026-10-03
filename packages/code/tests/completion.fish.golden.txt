@@ -12,7 +12,7 @@
 function __mnema_commands --description 'the subcommands one level of the tree offers'
     switch "$argv[1]"
         case ''
-            echo 'init task decision skill memory observe handoff link run status focus resume next-actions guard search show timeline accountability antipatterns exposure export refs diagram rules rules-file skills usage brief recall before-a-write tally corrections key tail witness switch doctor verify mcp repl completion help'
+            echo 'init task decision skill memory observe handoff link retract run status focus resume next-actions guard search show timeline accountability antipatterns exposure export refs diagram rules rules-file skills usage brief recall before-a-write tally corrections key tail witness switch doctor verify mcp repl completion help'
         case 'task'
             echo 'create move help'
         case 'decision'
@@ -70,6 +70,7 @@ complete -c mnema -f -n '__mnema_at ""' -a 'memory' -d 'capture a memory in the 
 complete -c mnema -f -n '__mnema_at ""' -a 'observe' -d 'record an observation about an entity in the current project'
 complete -c mnema -f -n '__mnema_at ""' -a 'handoff' -d 'record a handoff on a task in the current project'
 complete -c mnema -f -n '__mnema_at ""' -a 'link' -d 'link one piece of knowledge to another in the current project'
+complete -c mnema -f -n '__mnema_at ""' -a 'retract' -d 'take a memory or an observation back, keeping it in the record (follows the note; takes no --scope)'
 complete -c mnema -f -n '__mnema_at ""' -a 'run' -d 'open and close the session an agent works inside'
 complete -c mnema -f -n '__mnema_at ""' -a 'status' -d 'show where things stand: the work, what governs, what awaits a ruling'
 complete -c mnema -f -n '__mnema_at ""' -a 'focus' -d 'show an actor\'s open runs (what they are touching now)'
@@ -272,6 +273,14 @@ complete -c mnema -f -n '__mnema_at "link"' -s h -l help
 complete -c mnema -f -n '__mnema_at "link"' -s V -l version
 complete -c mnema -f -n '__mnema_at "link"' -l color -x -a 'auto always never'
 complete -c mnema -f -n '__mnema_at "link"' -l identify
+
+# mnema retract
+complete -c mnema -f -n '__mnema_at "retract"' -l reason -r
+complete -c mnema -f -n '__mnema_at "retract"' -l which -r
+complete -c mnema -f -n '__mnema_at "retract"' -s h -l help
+complete -c mnema -f -n '__mnema_at "retract"' -s V -l version
+complete -c mnema -f -n '__mnema_at "retract"' -l color -x -a 'auto always never'
+complete -c mnema -f -n '__mnema_at "retract"' -l identify
 
 # mnema run
 complete -c mnema -f -n '__mnema_at "run"' -a 'start' -d 'open a session for an agent (facts written in it are pinned to it)'
