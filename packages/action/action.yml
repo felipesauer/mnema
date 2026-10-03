@@ -1,0 +1,12 @@
+name: mnema record
+description: Comment what a pull request does to the mnema record and which changed files a rule governs, and fail the check when the record does not verify as signed.
+inputs:
+  github-token:
+    description: Token used to read the pull request and to write its one comment. The default token is enough with pull-requests write.
+    default: ${{ github.token }}
+  require-approval-for-asks:
+    description: Set to "true" to fail when a changed file is addressed by an accepted asks-for-a-person rule and nobody but the author has approved the pull request. Off by default.
+    default: "false"
+runs:
+  using: node24
+  main: dist/run.js

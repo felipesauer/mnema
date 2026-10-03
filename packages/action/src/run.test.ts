@@ -1,0 +1,219 @@
+/**
+ * The Action against a real repository and the real `mnema` binary, with GitHub replaced by a
+ * table of answers. Nothing here reaches a network, and every `mnema` process runs under the
+ * suite's own HOME.
+ */
+
+import { execFileSync } from 'node:child_process';
+import { mkdirSync, mkdtempSync, readdirSync, rmSync, truncateSync, writeFileSync } from 'node:fs';
+import { tmpdir } from 'node:os';
+import { join } from 'node:path';
+import { fileURLToPath } from 'node:url';
+import { afterEach, beforeEach, describe, expect, it } from 'vitest';
+import { MARKER } from './comment.js';
+import type { Fetch } from './github.js';
+import { main, requestFrom } from './run.js';
+import { theMnemaBinary } from './world.js';
+
+const REPO = fileURLToPath(new URL('../../../', import.meta.url));
+const CLI = join(REPO, 'packages', 'code', 'dist', 'cli.js');
+
+let sandbox: string;
+let repo: string;
+
+const git = (...args: string[]): string =>
+  execFileSync(
+    'git',
+    ['-c', 'user.name=t', '-c', 'user.email=t@example.com', '-c', 'commit.gpgsign=false', ...args],
+    { cwd: repo, encoding: 'utf-8' },
+  ).trim();
+
+const mnema = (...args: string[]): string =>
+  execFileSync(process.execPath, [CLI, ...args], { cwd: repo, encoding: 'utf-8' });
+
+/** The id printed on the first line of `decision record`. */
+const idOf = (said: string): string => /\(([0-9a-f-]{36})\)/.exec(said)?.[1] ?? '';
+
+/** A repository whose base commit holds one accepted rule over `src/billing`. */
+function committedBase(): string {
+  git('init', '-q', '-b', 'main');
+  mkdirSync(join(repo, 'src', 'billing'), { recursive: true });
+  writeFileSync(join(repo, 'src', 'billing', 'invoice.ts'), 'export {};\n');
+  mnema('init');
+  const id = idOf(mnema('decision', 'record', 'Keep money as integer cents', 'Floats drift.'));
+  mnema('decision', 'move', 'accept', id, '--note', 'agreed');
+  mnema('link', id, 'src/billing', '--rel', 'governs');
+  git('add', '.');
+  git('commit', '-q', '-m', 'base');
+  return git('rev-parse', 'HEAD');
+}
+
+/** What the runner would hand the Action for a pull request on top of `baseSha`. */
+function environment(baseSha: string, approval = 'false'): Record<string, string> {
+  const event = join(sandbox, 'event.json');
+  writeFileSync(
+    event,
+    JSON.stringify({ pull_request: { number: 7, base: { sha: baseSha }, user: { login: 'bob' } } }),
+  );
+  return {
+    GITHUB_EVENT_NAME: 'pull_request',
+    GITHUB_EVENT_PATH: event,
+    GITHUB_WORKSPACE: repo,
+    GITHUB_REPOSITORY: 'o/r',
+    GITHUB_API_URL: 'https://api.test',
+    'INPUT_GITHUB-TOKEN': 'tok',
+    'INPUT_REQUIRE-APPROVAL-FOR-ASKS': approval,
+  };
+}
+
+/** GitHub as a table: the changed files, the reviews, and a log of what was written. */
+function github(files: string[], reviews: unknown[] = []) {
+  const written: { method: string; body: string }[] = [];
+  const fetchIt: Fetch = async (url, init) => {
+    const path = url.replace('https://api.test/repos/o/r', '').split('?')[0];
+    const answer = (value: unknown) => ({ ok: true, status: 200, json: async () => value });
+    if (init.method === 'GET' && path === '/pulls/7/files') {
+      return answer(files.map((filename) => ({ filename })));
+    }
+    if (init.method === 'GET' && path === '/pulls/7/reviews') return answer(reviews);
+    if (init.method === 'GET' && path === '/issues/7/comments') return answer([]);
+    written.push({
+      method: init.method,
+      body: (JSON.parse(init.body ?? '{}') as { body: string }).body,
+    });
+    return answer({});
+  };
+  return { fetchIt, written };
+}
+
+beforeEach(() => {
+  sandbox = mkdtempSync(join(tmpdir(), 'mnema-action-'));
+  repo = join(sandbox, 'repo');
+  mkdirSync(repo);
+});
+afterEach(() => rmSync(sandbox, { recursive: true, force: true }));
+
+describe('the Action on a real repository', () => {
+  it('finds the mnema binary of the package it depends on', () => {
+    expect(theMnemaBinary()).toBe(CLI);
+  });
+
+  it('comments what the pull request adds to the record and the file a rule governs, and passes', async () => {
+    const baseSha = committedBase();
+    const second = idOf(mnema('decision', 'record', 'Round half to even', 'Banker rounding.'));
+    writeFileSync(join(repo, 'src', 'billing', 'invoice.ts'), 'export const x = 1;\n');
+    git('add', '.');
+    git('commit', '-q', '-m', 'head');
+
+    const { fetchIt, written } = github(['src/billing/invoice.ts', 'README.md']);
+    const said: string[] = [];
+    const code = await main(environment(baseSha), fetchIt, (line) => said.push(line));
+
+    expect(said).toEqual(['comment created']);
+    expect(code).toBe(0);
+    expect(written).toHaveLength(1);
+    expect(written[0]?.method).toBe('POST');
+    const body = written[0]?.body ?? '';
+    expect(body.startsWith(MARKER)).toBe(true);
+    expect(body).toContain('`decision.recorded` | 1');
+    expect(body).toContain(`- ADR-2 — Round half to even: proposed`);
+    expect(body).toContain('`src/billing/invoice.ts` — governed by Keep money as integer cents');
+    expect(body).not.toContain('README.md');
+    expect(second).not.toBe('');
+  });
+
+  it('fails the check when the record does not verify as signed, and still comments', async () => {
+    const baseSha = committedBase();
+    mnema('decision', 'record', 'Another', 'Why.');
+    const tails = join(repo, '.mnema', 'tails');
+    for (const dir of readdirSync(tails)) truncateSync(join(tails, dir, 'checkpoints.jsonl'), 0);
+    git('add', '.');
+    git('commit', '-q', '-m', 'head');
+
+    const { fetchIt, written } = github([]);
+    const said: string[] = [];
+    const code = await main(environment(baseSha), fetchIt, (line) => said.push(line));
+
+    expect(code).toBe(1);
+    expect(said).toContain('::error::the record does not verify as signed');
+    expect(written[0]?.body).toContain('`verify --require=signed`): failed');
+  });
+
+  it('fails on a rule that asks for a person only when the check is on and nobody else approved', async () => {
+    const baseSha = committedBase();
+    const id = idOf(mnema('decision', 'record', 'Review billing', 'A person looks.'));
+    mnema('decision', 'move', 'accept', id, '--note', 'agreed');
+    mnema('link', id, 'src/billing/invoice.ts', '--rel', 'asks-for-a-person');
+    git('add', '.');
+    git('commit', '-q', '-m', 'head');
+
+    const files = ['src/billing/invoice.ts'];
+    const off = await main(environment(baseSha), github(files).fetchIt, () => {});
+    expect(off).toBe(0);
+
+    const said: string[] = [];
+    const own = [{ user: { login: 'bob' }, state: 'APPROVED' }];
+    const on = await main(environment(baseSha, 'true'), github(files, own).fetchIt, (l) =>
+      said.push(l),
+    );
+    expect(on).toBe(1);
+    expect(said).toContain(
+      '::error::a rule asks for a person and no one but the author has approved',
+    );
+
+    const other = [{ user: { login: 'ana' }, state: 'APPROVED' }];
+    const approved = await main(
+      environment(baseSha, 'true'),
+      github(files, other).fetchIt,
+      () => {},
+    );
+    expect(approved).toBe(0);
+  });
+
+  it('writes nothing to the record and nothing to git', async () => {
+    const baseSha = committedBase();
+    const tip = git('rev-parse', 'HEAD');
+    await main(environment(baseSha), github(['src/billing/invoice.ts']).fetchIt, () => {});
+    expect(git('rev-parse', 'HEAD')).toBe(tip);
+    // git sees no change to a tracked or an untracked file; only what .gitignore leaves out may appear
+    expect(git('status', '--porcelain')).toBe('');
+  });
+});
+
+describe('requestFrom', () => {
+  it('answers only a pull_request event, by name', () => {
+    expect(() => requestFrom({ GITHUB_EVENT_NAME: 'push' }, () => '{}')).toThrow(
+      'this run is a push',
+    );
+  });
+
+  it('says what is missing rather than guessing', () => {
+    const env = { GITHUB_EVENT_NAME: 'pull_request', GITHUB_EVENT_PATH: 'e' };
+    expect(() => requestFrom(env, () => '{}')).toThrow('INPUT_GITHUB-TOKEN is not set');
+    const full = { ...env, GITHUB_REPOSITORY: 'o/r', 'INPUT_GITHUB-TOKEN': 't' };
+    expect(() => requestFrom({ ...full, GITHUB_REPOSITORY: '' }, () => '{}')).toThrow(
+      'GITHUB_REPOSITORY is not set',
+    );
+    expect(() => requestFrom(full, () => '{}')).toThrow('holds no pull request');
+  });
+
+  it('takes the approval input as true or false and nothing else', () => {
+    const event = JSON.stringify({
+      pull_request: { number: 1, base: { sha: 's' }, user: { login: 'u' } },
+    });
+    const env = {
+      GITHUB_EVENT_NAME: 'pull_request',
+      GITHUB_EVENT_PATH: 'e',
+      GITHUB_REPOSITORY: 'o/r',
+      'INPUT_GITHUB-TOKEN': 't',
+    };
+    expect(requestFrom(env, () => event).requireApprovalForAsks).toBe(false);
+    expect(
+      requestFrom({ ...env, 'INPUT_REQUIRE-APPROVAL-FOR-ASKS': ' True ' }, () => event)
+        .requireApprovalForAsks,
+    ).toBe(true);
+    expect(() =>
+      requestFrom({ ...env, 'INPUT_REQUIRE-APPROVAL-FOR-ASKS': 'yes' }, () => event),
+    ).toThrow('takes true or false');
+  });
+});
