@@ -332,7 +332,7 @@ describe('no manifest sells the gate as more than it is', () => {
           : [];
       });
 
-  it('finds the manifests that describe themselves — seven of them', () => {
+  it('finds the manifests that describe themselves — eight of them', () => {
     // The non-vacuity of the case below, which is otherwise true of an empty list.
     expect(
       described()
@@ -340,6 +340,7 @@ describe('no manifest sells the gate as more than it is', () => {
         .sort(),
     ).toEqual([
       'package.json',
+      'packages/action/package.json',
       'packages/chain/package.json',
       'packages/code/package.json',
       'packages/context/package.json',
@@ -455,7 +456,7 @@ describe('every manifest points home at the same place', () => {
         return typeof parsed.homepage === 'string' ? [{ file, homepage: parsed.homepage }] : [];
       });
 
-  it('finds the manifests that name one, and there are seven', () => {
+  it('finds the manifests that name one, and there are eight', () => {
     // The non-vacuity of the case below: a reader that parsed nothing would leave it true.
     //
     // IT WAS THREE, AND THE GUARD IS WHAT SAID SO. The comment above this describe block
@@ -471,6 +472,7 @@ describe('every manifest points home at the same place', () => {
         .sort(),
     ).toEqual([
       'package.json',
+      'packages/action/package.json',
       'packages/chain/package.json',
       'packages/code/package.json',
       'packages/context/package.json',
