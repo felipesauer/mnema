@@ -162,3 +162,13 @@ else — Cursor's own prose and its namespace, the account's rules, this machine
 paths of its home, the git status and the sandbox paths. They were cut because they are Cursor's
 text or this machine's configuration, none of it is sent by mnema, and some of it names a person's
 files. The session was one of four; the other three were not published.
+
+## 7 · Does a resumed session get the opening document twice?
+
+The plugin declares its `SessionStart` hooks with no matcher, so they also run when a session is
+resumed. Measured on Claude Code 2.1.281 the way section 1 describes, with a hook that answers
+with a marker (`resume-probe.mjs`, result in `results/2026-10-02/resume.json`): the hook fires
+for `startup` and again for `resume`, and the request the resumed session sends still holds the
+marker **once**, whether or not `resume` is in the matcher. Nothing doubles, so the matcher was
+not narrowed. Not measured: whether the copy a resumed session holds is the earlier one or the
+new one, which matters only if the record changed in between; VS Code and Cursor.

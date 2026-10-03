@@ -9,7 +9,7 @@
 #
 # It leaves the tree as it found it: the source is restored and the product rebuilt.
 set -u
-ROOT=/home/felipe/Documents/Personal/Me/.projects/mnema
+ROOT=<projects>/mnema
 HERE="$(cd "$(dirname "$0")" && pwd)"
 WORK=$(mktemp -d /tmp/mnema-proof-cost-XXXXXX)
 MOVES=${1:-2000}

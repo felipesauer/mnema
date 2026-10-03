@@ -12,7 +12,7 @@
     "loadavg_1m": 2.79
   },
   "rounds": 15,
-  "binary": "node /home/felipe/Documents/Personal/Me/.projects/mnema/packages/code/dist/cli.js",
+  "binary": "node <projects>/mnema/packages/code/dist/cli.js",
   "node_spawn_floor_ms": {
     "n": 15,
     "min": 19.29,
