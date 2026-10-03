@@ -75,6 +75,8 @@ $ mnema
 !   rules-file [options]                  print the rules addressed at a file as
 !                                         another host’s rules file, and why the
 !                                         rest are not
+!   check                                 give a rule a program that checks it,
+!                                         and record whether it held at a commit
 !   trailer [options] <decision>          print the commit trailer that ties a
 !                                         commit to a decision
 !   commits [options] <decision>          show the commits that cite a decision
@@ -198,6 +200,8 @@ $ mnema --help
 |   rules-file [options]                  print the rules addressed at a file as
 |                                         another host’s rules file, and why the
 |                                         rest are not
+|   check                                 give a rule a program that checks it,
+|                                         and record whether it held at a commit
 |   trailer [options] <decision>          print the commit trailer that ties a
 |                                         commit to a decision
 |   commits [options] <decision>          show the commits that cite a decision
@@ -772,6 +776,20 @@ $ mnema rules-file --help
 |                  cursor
 |   -h, --help     display help for command
 
+### mnema check --help
+$ mnema check --help
+| Usage: mnema check [options] [command]
+|
+| give a rule a program that checks it, and record whether it held at a commit
+|
+| Options:
+|   -h, --help                                    display help for command
+|
+| Commands:
+|   declare [options] <rule> <program> [args...]  declare the program that checks a rule (no shell: the program and its arguments)
+|   run [options]                                 run the check of every rule in force and record each result (run by a checker key, in CI)
+|   help [command]                                display help for command
+
 ### mnema trailer --help
 $ mnema trailer --help
 | Usage: mnema trailer [options] <decision>
@@ -1009,7 +1027,7 @@ $ mnema key --help
 |                                   a key's private half
 |   request [options]               ask to bring this machine into an identity
 |                                   (run this on the joining machine)
-|   enroll <request>                vouch for a requesting key so it joins this
+|   enroll [options] <request>      vouch for a requesting key so it joins this
 |                                   identity (run this on a member)
 |   github <name>                   record that this identity is a GitHub account,
 |                                   so `mnema verify --against-github` can compare
@@ -1540,6 +1558,43 @@ $ mnema run end --help
 |   --outcome <text>  a short note on how the session went
 |   -h, --help        display help for command
 
+### mnema check declare --help
+$ mnema check declare --help
+| Usage: mnema check declare [options] <rule> <program> [args...]
+|
+| declare the program that checks a rule (no shell: the program and its arguments)
+|
+| Arguments:
+|   rule             the id of the decision the check is for
+|   program          the program to run, from the project root
+|   args             its arguments, one by one — put `--` before any that starts
+|                    with a dash
+|
+| Options:
+|   --which <agent>  the agent that executed this, when an agent is driving mnema
+|   -h, --help       display help for command
+|
+| What recording means here:
+|   Permanent — mnema is append-only and nothing deletes a fact. A public record
+|   is committed and reaches every machine that clones the repository.
+|   Do not record credentials: a recognized format is replaced with a placeholder
+|   and reported back, but what mnema does not recognize is written verbatim.
+|   Each text field holds at most 65536 bytes; a longer one is refused.
+
+### mnema check run --help
+$ mnema check run --help
+| Usage: mnema check run [options]
+|
+| run the check of every rule in force and record each result (run by a checker
+| key, in CI)
+|
+| Options:
+|   --key <file>         a checker's private key to sign with, instead of this
+|                        machine's own
+|   --timeout <seconds>  how long one check may run before it is stopped and
+|                        recorded as failed (default 300)
+|   -h, --help           display help for command
+
 ### mnema key restore --help
 $ mnema key restore --help
 | Usage: mnema key restore [options] <file>
@@ -1563,6 +1618,9 @@ $ mnema key request --help
 |                  prefix of one this record knows also names it; the request is
 |                  signed over the whole value either way
 |   --key <file>   a private key to speak for instead of this machine's own
+|   --checker      ask to sign check results only, under this key's own identity,
+|                  instead of joining (for the machine that runs `mnema check
+|                  run`, such as a CI runner)
 |   -h, --help     display help for command
 
 ### mnema key enroll --help
@@ -1575,6 +1633,8 @@ $ mnema key enroll --help
 |   request     the line `mnema key request` printed on the joining machine
 |
 | Options:
+|   --checker   enroll a key that signs check results only (the line `mnema key
+|               request --checker --anchor <id>` printed)
 |   -h, --help  display help for command
 
 ### mnema key github --help

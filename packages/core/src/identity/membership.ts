@@ -83,7 +83,12 @@ export type IdentityRefusalCode =
    * that identity's keys — it was retired from it, or it never was one of them
    * ({@link staleAnchorRefusal}).
    */
-  | 'STALE_ANCHOR';
+  | 'STALE_ANCHOR'
+  /**
+   * The key is enrolled in this tree as a CHECKER: it signs check results under its own anchor
+   * and nothing else, so founding an identity with it would be a fact the record refuses.
+   */
+  | 'A_CHECKER_KEY';
 
 /** The record proves this key belongs to exactly one identity. */
 export interface MembershipProven {

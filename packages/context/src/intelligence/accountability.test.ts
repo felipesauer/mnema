@@ -137,6 +137,7 @@ describe('accountability — who authorized what, which agent executed', () => {
         byKind: [{ kind: 'run.started', count: 2 }],
         byWhich: [{ which: 'claude', count: 2 }],
         foundedBeside: [],
+        machine: false,
       },
     ]);
   });
@@ -232,6 +233,7 @@ function aliceRan(count: number) {
     byKind: [{ kind: 'run.started', count }],
     byWhich: [{ which: 'claude', count }],
     foundedBeside: [],
+    machine: false,
   };
 }
 

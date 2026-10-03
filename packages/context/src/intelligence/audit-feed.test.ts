@@ -101,7 +101,7 @@ describe('the audit feed carries the envelope', () => {
     // The map's type already forces a row per kind; what this adds is that no row was
     // filled in with the schema's "we did not look" value. `0` (Unknown) is the answer a
     // half-done mapping produces, and it is exactly the one a SIEM cannot act on.
-    expect(EVERY_KIND).toHaveLength(23);
+    expect(EVERY_KIND).toHaveLength(27);
     for (const kind of EVERY_KIND) {
       expect(AUDIT_BY_KIND[kind].activity.id).not.toBe(0);
       expect(AUDIT_BY_KIND[kind].entityType).not.toBe('');
@@ -111,9 +111,11 @@ describe('the audit feed carries the envelope', () => {
   it('takes 99 Other for exactly the kinds that have no honest activity', () => {
     // The count the delivery owes an answer to, asserted rather than described. A second
     // kind arriving here was the signal that the class stopped fitting — and the refusal
-    // was argued in the map before this line moved: it is the asking's act, one grade up.
+    // was argued in the map before this line moved: it is the asking's act, one grade up. The
+    // two check results joined for the opposite reason: a result is a report a machine made
+    // ABOUT a rule, and neither creates, updates nor deletes anything.
     const other = EVERY_KIND.filter((kind) => AUDIT_BY_KIND[kind].activity.id === 99);
-    expect(other).toEqual(['channel.asked', 'channel.refused']);
+    expect(other).toEqual(['channel.asked', 'channel.refused', 'check.passed', 'check.failed']);
   });
 
   it('writes activity_name as the schema requires: the caption, or the kind at 99', () => {

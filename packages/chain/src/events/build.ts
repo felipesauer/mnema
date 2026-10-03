@@ -571,6 +571,94 @@ export function noteRetracted(envelope: EnvelopeInput, payload: { reason: string
 }
 
 /**
+ * The consent message a key signs to be enrolled as a CHECKER by the identity `anchor`:
+ * `check-enroll:<anchor>:<checkerFp>`. A message of its own, and not
+ * {@link enrollmentMessage}'s, so a consent to join an identity and a consent to sign check
+ * results cannot be traded for each other.
+ */
+export function checkerEnrollmentMessage(anchor: string, checkerFp: string): Uint8Array {
+  return new TextEncoder().encode(`check-enroll:${anchor}:${checkerFp}`);
+}
+
+/** Copies a list of arguments only when there is one, never writing an empty array. */
+function argsField(args: readonly string[] | undefined): { args?: readonly string[] } {
+  return args !== undefined && args.length > 0 ? { args: [...args] } : {};
+}
+
+/** Builds a `check.declared` event (subject = the rule's id). */
+export function checkDeclared(
+  envelope: EnvelopeInput,
+  payload: { command: string; args?: readonly string[] },
+): CatalogEvent {
+  return {
+    v: 1,
+    kind: 'check.declared',
+    ...envelopeFields(envelope),
+    payload: { command: payload.command, ...argsField(payload.args) },
+  };
+}
+
+/**
+ * Builds a `checker.enrolled` event (subject = the checker's own anchor). `who` is the
+ * vouching identity and `signerFp` one of its keys; `reverseSig` is the checker key's
+ * signature over {@link checkerEnrollmentMessage}.
+ */
+export function checkerEnrolled(
+  envelope: EnvelopeInput,
+  payload: { checkerFp: string; reverseSig: string },
+): CatalogEvent {
+  return {
+    v: 1,
+    kind: 'checker.enrolled',
+    ...envelopeFields(envelope),
+    payload: { checkerFp: payload.checkerFp, reverseSig: payload.reverseSig },
+  };
+}
+
+/** Builds a `check.passed` event (subject = the rule's id; `who` = the checker's anchor). */
+export function checkPassed(
+  envelope: EnvelopeInput,
+  payload: { commit: string; command: string; args?: readonly string[]; output?: string },
+): CatalogEvent {
+  return {
+    v: 1,
+    kind: 'check.passed',
+    ...envelopeFields(envelope),
+    payload: {
+      commit: payload.commit,
+      command: payload.command,
+      ...argsField(payload.args),
+      ...(payload.output !== undefined && payload.output !== '' ? { output: payload.output } : {}),
+    },
+  };
+}
+
+/** Builds a `check.failed` event (subject = the rule's id; `who` = the checker's anchor). */
+export function checkFailed(
+  envelope: EnvelopeInput,
+  payload: {
+    commit: string;
+    command: string;
+    args?: readonly string[];
+    failure: string;
+    output?: string;
+  },
+): CatalogEvent {
+  return {
+    v: 1,
+    kind: 'check.failed',
+    ...envelopeFields(envelope),
+    payload: {
+      commit: payload.commit,
+      command: payload.command,
+      ...argsField(payload.args),
+      failure: payload.failure,
+      ...(payload.output !== undefined && payload.output !== '' ? { output: payload.output } : {}),
+    },
+  };
+}
+
+/**
  * Builds an `account.linked` event (subject = the ANCHOR that names its account).
  *
  * Both fields are required and neither is checked here: which hosts and which account

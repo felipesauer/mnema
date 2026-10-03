@@ -194,6 +194,7 @@ const REFUSES_SOMETHING_ELSE_FIRST: Readonly<Record<string, string>> = {
   decision: THE_PARSER_ANSWERED_FIRST,
   skill: THE_PARSER_ANSWERED_FIRST,
   run: THE_PARSER_ANSWERED_FIRST,
+  check: THE_PARSER_ANSWERED_FIRST,
   key: THE_PARSER_ANSWERED_FIRST,
   tail: THE_PARSER_ANSWERED_FIRST,
   'run end': 'with no id and no MNEMA_RUN there is no session named, which it says first',
