@@ -108,7 +108,8 @@ describe('the description derived from a body', () => {
     // U+200B is not whitespace to a trim, which is why `canonicalIdentity` reads a
     // `--which` of one as naming an agent. One notion of empty, not two.
     const zeroWidth = char(0x200b);
-    expect(derivedDescription(zeroWidth)).toBe(zeroWidth);
+    // It leaves the product spelled out, as every format character does, and is still a value.
+    expect(derivedDescription(zeroWidth)).toBe('\\u200b');
   });
 });
 
