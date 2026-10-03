@@ -557,6 +557,24 @@ export function channelRefused(
 }
 
 /**
+ * Builds an `account.linked` event (subject = the ANCHOR that names its account).
+ *
+ * Both fields are required and neither is checked here: which hosts and which account
+ * names a product accepts is the writer's decision, not the format's.
+ */
+export function accountLinked(
+  envelope: EnvelopeInput,
+  payload: { service: string; account: string },
+): CatalogEvent {
+  return {
+    v: 1,
+    kind: 'account.linked',
+    ...envelopeFields(envelope),
+    payload: { service: payload.service, account: payload.account },
+  };
+}
+
+/**
  * Builds the pair of events a skill's birth always emits, in order: the
  * `skill.created` that proves it exists, then the birth `skill.transitioned`
  * (`from: null`, `action: "create"`) that establishes its initial state. The two

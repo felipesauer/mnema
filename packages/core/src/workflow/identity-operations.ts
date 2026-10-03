@@ -24,6 +24,7 @@
  */
 
 import {
+  accountLinked,
   type BackupKey,
   type CatalogEvent,
   type ChainLayout,
@@ -44,6 +45,7 @@ import {
   screenContent,
   screened,
 } from '../content/screen.js';
+import { GITHUB_SERVICE, githubLoginRefusal } from '../identity/account.js';
 import {
   IdentityUnavailableError,
   type Membership,
@@ -557,6 +559,54 @@ export function revokeKey(
   if (!appended.ok) return appended;
   ctx.writer.checkpoint();
   return { ok: true, anchor, ...screened(text.replaced) };
+}
+
+/** The account was named: this identity now says it is that GitHub account. */
+export interface AccountLinkOk extends ScreenedWrite {
+  readonly ok: true;
+  /** The identity that named it — the fact's subject and its `who`. */
+  readonly anchor: string;
+  /** The account, as it was recorded. */
+  readonly account: string;
+}
+
+/** The name is not one GitHub would have issued; nothing was written. */
+export interface NotAGithubAccountErr {
+  readonly ok: false;
+  readonly code: 'NOT_A_GITHUB_ACCOUNT';
+  readonly message: string;
+}
+
+/**
+ * Records that THIS machine's identity is a GitHub account: one `account.linked` whose subject
+ * and `who` are the identity itself, so an identity only ever names its own account.
+ *
+ * It is a claim, and it is checkpointed at once for the reason a revocation is: the reading that
+ * uses it (`verify --against-github`) honours only a signature-covered one, because one in the
+ * keyless window above the last checkpoint could be appended by somebody holding no key — naming
+ * an account of their own, on which they had published this identity's public key.
+ */
+export function linkAccount(
+  ctx: WriteContext,
+  input: { account: string },
+): AccountLinkOk | NotAGithubAccountErr | ScreenRefusal | AppendRefusal {
+  const refused = githubLoginRefusal(input.account);
+  if (refused !== undefined) return { ok: false, code: 'NOT_A_GITHUB_ACCOUNT', message: refused };
+  const text = screenContent({ account: input.account });
+  if (!text.ok) return text;
+
+  const anchor = ensureFounded(ctx);
+  const at = (ctx.clock ?? systemClock)();
+  const appended = appendEvent(
+    ctx.writer,
+    accountLinked(
+      { at, who: anchor, signerFp: ctx.writer.signerFingerprint, subject: anchor },
+      { service: GITHUB_SERVICE, account: text.fields.account },
+    ),
+  );
+  if (!appended.ok) return appended;
+  ctx.writer.checkpoint();
+  return { ok: true, anchor, account: text.fields.account, ...screened(text.replaced) };
 }
 
 /**

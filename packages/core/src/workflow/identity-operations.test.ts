@@ -34,7 +34,7 @@ import {
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { orderedEvents } from '../projections/order.js';
 import type { Clock } from './clock.js';
-import { establishIdentity, revokeKey } from './identity-operations.js';
+import { establishIdentity, linkAccount, revokeKey } from './identity-operations.js';
 import type { WriteContext } from './operations.js';
 
 const upcasters = catalogUpcasters();
@@ -205,5 +205,33 @@ describe('establishIdentity — a tree is born with the whole identity', () => {
       },
     ]);
     expect(verify(tree.root).ok).toBe(true);
+  });
+});
+
+describe('linkAccount — an identity names its GitHub account', () => {
+  it('records the claim under the identity that signs it, covered by a signature', () => {
+    const tree = openTree('mnema-identity-link-');
+    const linked = linkAccount(tree.ctx, { account: 'octocat' });
+    if (!linked.ok) throw new Error(linked.message);
+
+    const events = orderedEvents({ root: tree.root }, upcasters);
+    const link = events.find((e) => e.kind === 'account.linked');
+    expect(link).toMatchObject({
+      who: tree.writer.anchor,
+      subject: tree.writer.anchor,
+      signerFp: tree.writer.signerFingerprint,
+      payload: { service: 'github', account: 'octocat' },
+    });
+    expect(linked.anchor).toBe(tree.writer.anchor);
+    const verdict = verify(tree.root);
+    expect(verdict.ok).toBe(true);
+    expect(verdict.fullySigned).toBe(true);
+  });
+
+  it('refuses a name GitHub would not have issued, and writes nothing', () => {
+    const tree = openTree('mnema-identity-link-');
+    const refused = linkAccount(tree.ctx, { account: 'octo/cat' });
+    expect(refused).toMatchObject({ ok: false, code: 'NOT_A_GITHUB_ACCOUNT' });
+    expect(orderedEvents({ root: tree.root }, upcasters)).toEqual([]);
   });
 });

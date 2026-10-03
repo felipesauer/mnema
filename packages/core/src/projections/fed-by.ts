@@ -112,6 +112,9 @@ export const FED_BY_KIND: { readonly [K in EventKind]: readonly ProjectionTable[
   'channel.served': [...EVERY_KIND_FEEDS],
   'channel.asked': [...EVERY_KIND_FEEDS],
   'channel.refused': [...EVERY_KIND_FEEDS],
+  // A claim about an identity, read off the chain by the one reading that asks it
+  // (`verify --against-github`), never off this cache.
+  'account.linked': [...EVERY_KIND_FEEDS],
 };
 
 /**

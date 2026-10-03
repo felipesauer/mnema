@@ -106,6 +106,7 @@ export {
   type RecordAndWriter,
 } from './workflow/as-the-record-stands.js';
 export {
+  type AccountLinkOk,
   type AnchorContext,
   type AnchorDecision,
   authorizingAnchor,
@@ -116,6 +117,8 @@ export {
   ensureFounded,
   establishIdentity,
   type IdentityOk,
+  linkAccount,
+  type NotAGithubAccountErr,
   type RecordedAnchor,
   recordedAnchorOf,
   revokeKey,

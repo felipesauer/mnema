@@ -38,6 +38,7 @@
  */
 
 import {
+  accountLinked,
   channelAsked,
   channelRefused,
   channelServed,
@@ -400,6 +401,13 @@ export const CANONICAL_VECTORS: {
         rule: RULE_ID,
         path: 'src/ledger/posting.ts',
       }),
+    },
+  ],
+  'account.linked': [
+    {
+      // An identity names its own account: the subject is the anchor that signs it.
+      name: 'account.linked (an identity names its GitHub account)',
+      event: accountLinked(person(VECTOR_WHO), { service: 'github', account: 'octocat' }),
     },
   ],
 };
