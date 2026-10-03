@@ -153,6 +153,8 @@ complete -c mnema -f -n '__mnema_at "decision"' -a 'help' -d 'display help for c
 complete -c mnema -f -n '__mnema_at "decision"' -l alternatives -r
 complete -c mnema -f -n '__mnema_at "decision"' -l scope -x -a 'public private global'
 complete -c mnema -f -n '__mnema_at "decision"' -l which -r
+complete -c mnema -f -n '__mnema_at "decision"' -l stdin
+complete -c mnema -f -n '__mnema_at "decision"' -l body-file -r
 complete -c mnema -f -n '__mnema_at "decision"' -s h -l help
 complete -c mnema -f -n '__mnema_at "decision"' -s V -l version
 complete -c mnema -f -n '__mnema_at "decision"' -l color -x -a 'auto always never'
@@ -162,6 +164,8 @@ complete -c mnema -f -n '__mnema_at "decision"' -l identify
 complete -c mnema -f -n '__mnema_at "decision record"' -l alternatives -r
 complete -c mnema -f -n '__mnema_at "decision record"' -l scope -x -a 'public private global'
 complete -c mnema -f -n '__mnema_at "decision record"' -l which -r
+complete -c mnema -f -n '__mnema_at "decision record"' -l stdin
+complete -c mnema -f -n '__mnema_at "decision record"' -l body-file -r
 complete -c mnema -f -n '__mnema_at "decision record"' -s h -l help
 complete -c mnema -f -n '__mnema_at "decision record"' -s V -l version
 complete -c mnema -f -n '__mnema_at "decision record"' -l color -x -a 'auto always never'

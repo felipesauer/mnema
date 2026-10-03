@@ -223,7 +223,7 @@ describe('mnema rules-file, as a person runs it', () => {
     expect(cursor.stderr).not.toContain('“**/”');
   });
 
-  it('prints a Claude Code rule with the paths list that host reads, one quoted path to a line', async () => {
+  it('prints a Claude Code rule with the paths list that host reads', async () => {
     await governing('Invoices are immutable', 'src/billing/invoice.ts');
     const printed = cli('rules-file', '--host', 'claude');
     expect(printed.status).toBe(0);

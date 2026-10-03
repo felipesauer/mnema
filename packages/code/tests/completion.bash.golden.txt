@@ -30,8 +30,8 @@ _mnema_flags() {
     'task') echo '--scope --which -h --help -V --version --color --identify' ;;
     'task create') echo '--scope --which -h --help -V --version --color --identify' ;;
     'task move') echo '--reason --note --feedback -h --help --which -V --version --color --identify' ;;
-    'decision') echo '--alternatives --scope --which -h --help -V --version --color --identify' ;;
-    'decision record') echo '--alternatives --scope --which -h --help -V --version --color --identify' ;;
+    'decision') echo '--alternatives --scope --which --stdin --body-file -h --help -V --version --color --identify' ;;
+    'decision record') echo '--alternatives --scope --which --stdin --body-file -h --help -V --version --color --identify' ;;
     'decision move') echo '--note -h --help --which -V --version --color --identify' ;;
     'decision supersede') echo '--reason -h --help --which -V --version --color --identify' ;;
     'decision import') echo '--write --scope --which -h --help -V --version --color --identify' ;;

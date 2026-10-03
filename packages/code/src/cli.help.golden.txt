@@ -271,10 +271,12 @@ $ mnema decision --help
 |   --alternatives <text>                  what was considered and turned down, and why not (optional). A decision is immutable, so this is recorded at birth: an option rejected later is a new decision, or supersedes this one.
 |   --scope <scope>                        where the decision is born: public (team-visible), private (this machine, this project), or global (personal, cross-project). Omitted, a decision lands in the public tree (a declaration about the project).
 |   --which <agent>                        the agent that executed this, when an agent (a script, a CI step) is driving mnema — omit it when you are acting directly. Declared, never assumed; it names the executor. See --scope for where the fact lands. A value that names no agent (an unset variable) is refused, never credited to you.
+|   --stdin                                read the rationale from standard input instead of the line
+|   --body-file <path>                     read the rationale from this file instead of the line
 |   -h, --help                             display help for command
 |
 | Commands:
-|   record [options] <title> <rationale>   record a decision in the current project
+|   record [options] <title> [rationale]   record a decision in the current project
 |   move [options] <action> <id...>        accept or reject a decision (follows the decision; takes no --scope)
 |   supersede [options] <old-id> <new-id>  supersede a decision with a later one (follows the decision; takes no --scope)
 |   import [options] <dir>                 propose the decisions already written in this repository’s decision files
@@ -1149,13 +1151,14 @@ $ mnema task move --help
 
 ### mnema decision record --help
 $ mnema decision record --help
-| Usage: mnema decision record [options] <title> <rationale>
+| Usage: mnema decision record [options] <title> [rationale]
 |
 | record a decision in the current project
 |
 | Arguments:
 |   title                  the decision title
-|   rationale              why the decision was made
+|   rationale              why the decision was made (or give it with --stdin or
+|                          --body-file)
 |
 | Options:
 |   --alternatives <text>  what was considered and turned down, and why not
@@ -1172,6 +1175,9 @@ $ mnema decision record --help
 |                          executor. See --scope for where the fact lands. A value
 |                          that names no agent (an unset variable) is refused,
 |                          never credited to you.
+|   --stdin                read the rationale from standard input instead of the
+|                          line
+|   --body-file <path>     read the rationale from this file instead of the line
 |   -h, --help             display help for command
 |
 | What recording means here:

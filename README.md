@@ -313,6 +313,8 @@ mnema decision record "Use SQLite for the projection cache" \
   "It is embedded, it is fast enough at our sizes, and it needs no service."
 #> Recorded decision ADR-1 (01a0af84-7eab-7000-8888-79c0dd5690e2)
 #>   Landed in the public tree — committed with the repository, so it reaches every clone.
+# A long rationale can come from a file (`--body-file why.md`) or a pipe (`--stdin`) instead of
+# the line, which keeps it out of the shell history; from two places at once, it is refused.
 
 # It is in the record now, and a decision enters awaiting a judgement.
 mnema search
