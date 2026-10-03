@@ -280,7 +280,7 @@ one. VS Code's agent reads the Claude Code plugin format, and Cursor's command-l
 picks up a plugin installed in Claude Code on the same machine; the per-host details — what
 each one runs, the rules at each edit that are Claude Code's alone, and the pause for a person
 that reaches VS Code as well — are in the [plugin's page](plugin/README.md#in-vs-code-and-cursor).
-Without the plugin, `mnema rules-file --host vscode` or `--host cursor` prints the committed rules
+Without the plugin, `mnema rules-file --host claude`, `--host vscode` or `--host cursor` prints the committed rules
 addressed at a file in that host's own rules format, and says which rules it left out and why.
 
 ## Your first record

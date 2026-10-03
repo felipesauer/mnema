@@ -714,7 +714,8 @@ $ mnema rules-file --help
 | rest are not
 |
 | Options:
-|   --host <host>  the host whose rules-file format to print: vscode, cursor
+|   --host <host>  the host whose rules-file format to print: claude, vscode,
+|                  cursor
 |   -h, --help     display help for command
 
 ### mnema skills --help

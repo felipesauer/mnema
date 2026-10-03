@@ -150,7 +150,7 @@ _mnema_values() {
     'diagram:--color') echo 'auto always never' ;;
     'diagram:') echo 'decision skill task timeline refs' ;;
     'rules:--color') echo 'auto always never' ;;
-    'rules-file:--host') echo 'vscode cursor' ;;
+    'rules-file:--host') echo 'claude vscode cursor' ;;
     'rules-file:--color') echo 'auto always never' ;;
     'skills:--color') echo 'auto always never' ;;
     'usage:--color') echo 'auto always never' ;;

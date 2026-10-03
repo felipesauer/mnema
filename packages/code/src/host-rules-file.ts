@@ -5,7 +5,9 @@
  * FOR WHOM. A session with the plugin is handed the rules addressed at a file by the per-edit
  * hook. A host without the plugin reads rules from files of its own: VS Code's agent from
  * `.github/instructions/*.instructions.md`, each with an `applyTo` glob; Cursor from
- * `.cursor/rules/*.mdc`, each with `globs`. This module composes that file's text, and the
+ * `.cursor/rules/*.mdc`, each with `globs`; Claude Code from `.claude/rules/*.md`, each with a `paths`
+ * list — the plugin hands a Claude Code session the same rules at each edit, so that file is for a
+ * session without it. This module composes that file's text, and the
  * command that prints it (`mnema rules-file`) prints; writing it is the person's, the way
  * `mnema brief > MNEMA.md` is.
  *
@@ -55,12 +57,15 @@ import { recordFramingBlock } from './record-framing.js';
 
 /** Where each host reads such a file from, relative to the repository — what the recipe names. */
 export const WHERE_A_HOST_READS: { readonly [H in RulesFileHost]: string } = {
+  claude: '.claude/rules/mnema.md',
   vscode: '.github/instructions/mnema.instructions.md',
   cursor: '.cursor/rules/mnema.mdc',
 };
 
 /** What each host does with the file's pattern, said beside the output — measured or not. */
 export const WHO_MATCHES: { readonly [H in RulesFileHost]: string } = {
+  claude:
+    'Claude Code’s documentation says it loads a rule with a paths list when it reads, writes or edits a file matching one of them; that was not measured here.',
   vscode:
     'VS Code’s agent lists this file to the model with its applyTo and leaves reading it to the model; it does not paste it in (measured on VS Code 1.137 with Copilot Chat 0.65). Where VS Code does match an applyTo — against a file attached to the chat — it puts “**/” before it, so a file of the same name under another directory matches too.',
   cursor: 'Cursor matches the globs of this file on its servers, which was not measured here.',
@@ -128,6 +133,8 @@ function generatedBy(host: RulesFileHost): string {
 function frontmatter(host: RulesFileHost, globs: readonly string[]): readonly string[] {
   const joined = globs.join(',');
   switch (host) {
+    case 'claude':
+      return ['---', 'paths:', ...globs.map((glob) => `  - "${glob}"`), '---'];
     case 'vscode':
       return ['---', `applyTo: "${joined}"`, '---'];
     case 'cursor':

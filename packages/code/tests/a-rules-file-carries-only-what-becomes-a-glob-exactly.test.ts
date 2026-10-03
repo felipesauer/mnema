@@ -223,6 +223,21 @@ describe('mnema rules-file, as a person runs it', () => {
     expect(cursor.stderr).not.toContain('“**/”');
   });
 
+  it('prints a Claude Code rule with the paths list that host reads, one quoted path to a line', async () => {
+    await governing('Invoices are immutable', 'src/billing/invoice.ts');
+    const printed = cli('rules-file', '--host', 'claude');
+    expect(printed.status).toBe(0);
+    expect(printed.stdout.split('\n').slice(0, 4)).toEqual([
+      '---',
+      'paths:',
+      '  - "src/billing/invoice.ts"',
+      '---',
+    ]);
+    expect(printed.stderr).toContain(
+      '.claude/rules/mnema.md: mnema rules-file --host claude > .claude/rules/mnema.md',
+    );
+  });
+
   it('prints no file, and says so, when nothing translates', async () => {
     await governing('Billing is UTC', 'src/billing');
     const printed = cli('rules-file', '--host', 'vscode');
@@ -236,6 +251,6 @@ describe('mnema rules-file, as a person runs it', () => {
   it('refuses a host it has no format for', () => {
     const printed = cli('rules-file', '--host', 'zed');
     expect(printed.status).not.toBe(0);
-    expect(printed.stderr).toContain('--host takes one of vscode, cursor, not "zed".');
+    expect(printed.stderr).toContain('--host takes one of claude, vscode, cursor, not "zed".');
   });
 });

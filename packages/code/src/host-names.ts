@@ -18,7 +18,7 @@ export type HookHost = 'vscode';
 export const HOOK_HOSTS: readonly HookHost[] = ['vscode'];
 
 /** A host this product prints a rules file for — see `host-rules-file.ts`. */
-export type RulesFileHost = 'vscode' | 'cursor';
+export type RulesFileHost = 'claude' | 'vscode' | 'cursor';
 
 /** Every {@link RulesFileHost}, as the list `mnema rules-file --host` enumerates. */
-export const RULES_FILE_HOSTS: readonly RulesFileHost[] = ['vscode', 'cursor'];
+export const RULES_FILE_HOSTS: readonly RulesFileHost[] = ['claude', 'vscode', 'cursor'];

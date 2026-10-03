@@ -119,7 +119,8 @@ identically, because they are the same call.
   the captures.
 - **A rules file for a host without the plugin** — `mnema rules-file --host vscode` prints the
   committed rules in force whose address is a file, as a `.instructions.md` with an `applyTo`,
-  and `--host cursor` as a `.mdc` with `globs`. A directory is left out, because no list of
+  `--host cursor` as a `.mdc` with `globs`, and `--host claude` as a `.claude/rules/mnema.md` with
+  the `paths` list Claude Code's documentation names (not measured here). A directory is left out, because no list of
   globs was found to match exactly what it governs in either host: VS Code puts `**/` before a
   relative pattern, so `src/billing/**` would also match a `src/billing` anywhere else under the
   folder it reads, and Cursor matches `globs` on its servers, where it could not be measured. So
