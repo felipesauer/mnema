@@ -926,7 +926,7 @@ const CLAUSES_PER_FILE: Readonly<Record<string, number>> = {
   'packages/code/tests/every-skill-the-plugin-ships-is-what-it-says.test.ts': 11,
   'packages/code/tests/every-tool-says-if-it-writes.test.ts': 16,
   'packages/code/tests/every-verb-says-if-it-writes.test.ts': 14,
-  'packages/code/tests/every-write-signs-what-it-wrote.test.ts': 31,
+  'packages/code/tests/every-write-signs-what-it-wrote.test.ts': 32,
   'packages/code/tests/mcp-audit-across-workspace.test.ts': 12,
   'packages/code/tests/mcp-configured-project.test.ts': 11,
   'packages/code/tests/mcp-context.test.ts': 8,
