@@ -116,8 +116,8 @@ export function oneLine(text: string): string {
  * joiner marks, the directional marks, embeddings, overrides and isolates, the word
  * joiner and the byte order mark.
  */
-// biome-ignore lint/suspicious/noControlCharactersInRegex: matching control characters is this rule
 const CONTROL_BYTES =
+  // biome-ignore lint/suspicious/noControlCharactersInRegex: matching control characters is this rule
   /[\u0000-\u0008\u000b\u000c\u000e-\u001f\u007f-\u009f\u061c\u180e\u200b-\u200f\u202a-\u202e\u2060-\u2064\u2066-\u2069\ufeff]|\r(?!\n)/g;
 
 /**
