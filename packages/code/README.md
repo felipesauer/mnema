@@ -1020,6 +1020,14 @@ credential in a recognized format is handed over as the fact that the note exist
 as its text. Where nothing is noted it prints **nothing**, and a session there is handed
 nothing. It is never a file to commit: it carries what was kept on this machine.
 
+**A note that turned out wrong can be taken back, and is not erased.** `mnema retract`
+(the `retract_note` tool, for an agent) takes the note's id and a `--reason`, and appends
+a signed fact saying who took it back and why, in the tree the note was written in. The
+note leaves this list and `mnema search`; `mnema show` still prints it whole, with the
+retraction above it, and `mnema verify` still sees both facts. Only memories and
+observations are retracted: a decision is rejected or superseded, and a pattern rejected or
+deprecated, each by its own move.
+
 ### Switching off what mnema hands to a model
 
 Three things arrive without anybody asking: the document a session opens with, the notes
@@ -1085,7 +1093,7 @@ the record.
 Point an agent host at the `mcp` subcommand; it speaks JSON-RPC over stdio. **If you
 installed the Claude Code plugin, it already does this** — the plugin declares this same
 server, and registering it here as well offers every tool twice, under
-`mcp__mnema__*` and `mcp__plugin_mnema_mnema__*`, fifty names for twenty-five tools to an
+`mcp__mnema__*` and `mcp__plugin_mnema_mnema__*`, fifty-two names for twenty-six tools to an
 agent that chooses by name, and hands the session the server's instructions twice. One of
 the two is enough.
 

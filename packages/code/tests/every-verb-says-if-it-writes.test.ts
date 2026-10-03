@@ -172,6 +172,8 @@ interface Fixture {
    * directories in) costs one write here and keeps this interface total.
    */
   readonly foreignTail: string;
+  /** A memory the fixture captured — the note `retract` takes back. */
+  readonly note: string;
 }
 
 /** How one verb is exercised: the line it is invoked with, and where it is typed. */
@@ -220,6 +222,7 @@ const INVOCATION: Readonly<Record<string, Invocation>> = {
   },
   handoff: { argv: (f) => ['handoff', f.task, 'agent-alpha', 'agent-beta'] },
   link: { argv: (f) => ['link', f.task, f.task, '--rel', 'relates-to'] },
+  retract: { argv: (f) => ['retract', f.note, '--reason', 'it turned out to be wrong'] },
   run: { argv: () => ['run', 'start', '--which', 'agent-alpha'] },
   key: { argv: (f) => ['key', 'revoke', f.backupKey, '--reason', 'it left this machine'] },
   tail: {
@@ -434,7 +437,11 @@ async function fixture(name: string): Promise<Fixture> {
   const created = await mnema(['task', 'create', 'the task the reads are asked about']);
   const id = created.out.join('\n').match(/\(([0-9a-f-]{36})\)/);
   if (id?.[1] === undefined) throw new Error(`fixture: task printed no id: ${created.out}`);
+  const captured = await mnema(['memory', 'a note somebody will take back']);
+  const note = captured.out.join('\n').match(/([0-9a-f]{8}-[0-9a-f-]{27})/);
+  if (note?.[1] === undefined) throw new Error(`fixture: memory printed no id: ${captured.out}`);
   return {
+    note: note[1],
     anchor: identity.trim().slice('identity:'.length).trim(),
     task: id[1],
     backupKey: basename(backup.slice(backup.indexOf(AT) + AT.length).trim(), '.key'),
@@ -558,7 +565,7 @@ describe('every verb says if it writes', () => {
     expect(Object.keys(INVOCATION).sort()).toEqual([...EFFECT_BY_VERB.keys()].sort());
   });
 
-  it('counts sixteen writes and twenty-four reads over the whole surface', () => {
+  it('counts seventeen writes and twenty-four reads over the whole surface', () => {
     // The count in the report, asserted rather than trusted, and the total against the
     // list: a verb that stopped being registered would otherwise leave both halves
     // looking healthy.
@@ -571,6 +578,7 @@ describe('every verb says if it writes', () => {
       'observe',
       'handoff',
       'link',
+      'retract',
       'run',
       'before-a-write',
       'corrections',
@@ -629,6 +637,7 @@ describe('every verb says if it writes', () => {
       'link',
       'memory',
       'observe',
+      'retract',
       'run',
       'skill',
       'switch',

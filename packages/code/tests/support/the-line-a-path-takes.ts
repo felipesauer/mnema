@@ -123,6 +123,8 @@ export interface Fixture {
   readonly foreignTail: string;
   /** A directory of decision files, inside the project, for `decision import`. */
   readonly decisionFiles: string;
+  /** A memory, for `retract`. */
+  readonly note: string;
 }
 
 /** The values a path is given where no project is founded — placeholders, and legible ones. */
@@ -134,6 +136,7 @@ export const NOTHING_FOUNDED: Fixture = {
   skill: '00000000-0000-7000-8000-000000000000',
   foreignTail: 'no-such-tail',
   decisionFiles: 'adr',
+  note: '00000000-0000-7000-8000-000000000000',
 };
 
 /**
@@ -185,6 +188,7 @@ export const THE_ID_MEANT: Readonly<Record<string, keyof Fixture>> = {
   'decision move': 'decision',
   'skill move': 'skill',
   'skill export': 'skill',
+  retract: 'note',
 };
 
 /**

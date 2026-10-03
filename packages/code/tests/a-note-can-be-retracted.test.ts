@@ -18,6 +18,7 @@ import { type CatalogEvent, catalogUpcasters } from '@mnema/chain';
 import { type DiscoveryEnv, orderedEvents, resolveTrees } from '@mnema/core';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { type CliIo, run } from '../src/cli.js';
+import { runRetract } from '../src/commands/retract.js';
 import { openSession, type Session } from '../src/mcp/session.js';
 import {
   runCaptureMemory,
@@ -157,6 +158,21 @@ describe('mnema retract', () => {
     expect(again.failed).toBe(true);
     expect(again.err.join('\n')).toContain('ALREADY_RETRACTED');
     expect(retractions('public')).toHaveLength(1);
+  });
+});
+
+describe('the retract adapter', () => {
+  it('answers what it retracted, where, and refuses what it cannot find', async () => {
+    const taken = idIn(await did('memory', WRONG));
+    expect(runRetract({ cwd: repo, env }, { id: taken, reason: WHY })).toEqual({
+      ok: true,
+      id: taken,
+      note: 'memory',
+      scope: 'public',
+    });
+    expect(
+      runRetract({ cwd: repo, env }, { id: '019f81f8-e400-7001-8000-0000000000ff', reason: WHY }),
+    ).toEqual({ ok: false, reason: 'UNKNOWN_NOTE' });
   });
 });
 

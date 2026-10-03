@@ -925,7 +925,7 @@ function registerTools(tool: ToolRegistrar, ensureSession: () => Promise<Session
         'retracted is refused.' +
         RECORD_CONTRACT,
       inputSchema: {
-        id: z.string().min(1).describe('The id of the memory or observation to retract.'),
+        id: z.string().min(1).describe('The id of the note to retract, as `read_record` opens it.'),
         reason: z.string().min(1).describe('Why it is taken back.'),
       },
     },

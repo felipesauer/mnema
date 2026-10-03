@@ -45,10 +45,11 @@ export interface NoteRetracted extends Replacement, Landed {
 /** The retraction was refused. */
 export type RetractRefused =
   /**
-   * No visible tree holds a record by this id. There is no `NO_PROJECT` here: the
-   * machine-global tree is always visible, and a note can live in it.
+   * No visible tree holds a record by this id — `UNKNOWN_NOTE` inside a project, and
+   * `NO_PROJECT` outside one, where the machine-global tree was looked in and held nothing
+   * by that id either: the rule `show` answers by.
    */
-  | { readonly ok: false; readonly reason: 'UNKNOWN_NOTE' }
+  | { readonly ok: false; readonly reason: 'UNKNOWN_NOTE' | 'NO_PROJECT' }
   /** The core refused: not a note, already retracted, a reason that says nothing, … */
   | {
       readonly ok: false;
@@ -65,7 +66,9 @@ export function runRetract(
   const upcasters = catalogUpcasters();
   const trees = resolveTrees(ctx.cwd, ctx.env);
   const scope = locateEntityScopeWith(trees, input.id, replayingRecordProbe(upcasters));
-  if (scope === undefined) return { ok: false, reason: 'UNKNOWN_NOTE' };
+  if (scope === undefined) {
+    return { ok: false, reason: trees.projectPublic === undefined ? 'NO_PROJECT' : 'UNKNOWN_NOTE' };
+  }
 
   const writer = openTreeForWriting(trees, scope);
   const retracted = retractNote(

@@ -318,6 +318,12 @@ async function fixture(name: string): Promise<Fixture> {
       join(sandbox, name, 'other-machine'),
     ),
     decisionFiles,
+    note: await (async (): Promise<string> => {
+      const made = await mnema(['memory', 'a note the lines take back']);
+      const found = made.out.join('\n').match(/([0-9a-f]{8}-[0-9a-f-]{27})/);
+      if (found?.[1] === undefined) throw new Error(`fixture: memory printed no id: ${made.out}`);
+      return found[1];
+    })(),
   };
 }
 
@@ -392,7 +398,7 @@ describe('the refused run is refused everywhere', () => {
 
     // The derivation itself, both ways: this is the list the rule was applied to, and a
     // path that starts stamping a run has to arrive in it before anything can be said to
-    // have checked it. FIFTEEN paths from FOURTEEN written sites — `switch off` and
+    // have checked it. SIXTEEN paths from FIFTEEN written sites — `switch off` and
     // `switch on` are one site, declared once by a function that hangs both.
     const asks = measured.filter((one) => one.asked).map((one) => one.path);
     expect([...asks].sort()).toEqual([
@@ -404,6 +410,7 @@ describe('the refused run is refused everywhere', () => {
       'link',
       'memory',
       'observe',
+      'retract',
       'skill create',
       'skill move',
       'switch off',
@@ -496,7 +503,7 @@ describe('the refused run is refused everywhere', () => {
     // The pair covered the whole derived set, so no site's "wrote nothing" rests on a line
     // that could not have written anything in the first place.
     expect([...bothHalvesSeen].sort()).toEqual([...asks].map((one) => one.path).sort());
-    expect(bothHalvesSeen.length).toBe(15);
+    expect(bothHalvesSeen.length).toBe(16);
   }, 300_000);
 
   it('tells the parser’s three answers from a verb’s own, and names what the literal missed', async () => {

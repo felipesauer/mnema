@@ -153,12 +153,12 @@ function retractionFacts(
   context: RecordContext,
 ): string[] {
   if (retracted === undefined) return [];
+  const by: DecisionActor = {
+    who: retracted.who,
+    ...(retracted.which !== undefined ? { which: retracted.which } : {}),
+  };
   return [
-    render(
-      fact(
-        `retracted ${retracted.at} by ${actorText(context.anchors, { who: retracted.who, ...(retracted.which !== undefined ? { which: retracted.which } : {}) })}`,
-      ),
-    ),
+    render(fact(`retracted ${retracted.at} by ${actorText(context.anchors, by)}`)),
     render(fact(`why: ${oneLine(retracted.reason)}`)),
   ];
 }
