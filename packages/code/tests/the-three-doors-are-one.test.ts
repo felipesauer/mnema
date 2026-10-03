@@ -567,6 +567,48 @@ describe('the hook before a write', () => {
   });
 });
 
+describe('the hook at the start of a session', () => {
+  const signal = { signal: new AbortController().signal };
+
+  it('hands over the document the plugin hands over, and nothing from outside a project', async () => {
+    const cli = founded('cli');
+    const id = /\(([0-9a-f-]{36})\)/.exec(
+      cli.mnema('decision', 'record', 'keep the api versioned', 'clients pin to it').out,
+    )?.[1];
+    expect(cli.mnema('decision', 'move', 'accept', id as string, '--note', 'agreed').status).toBe(
+      0,
+    );
+    const printed = cli.mnema('brief', '--hook').out.replace(/\n$/, '');
+    expect(printed).toContain('keep the api versioned');
+    const hooks = mnemaHooks({ cwd: cli.repo, env: { home: cli.home } });
+    expect(hooks.SessionStart[0]?.matcher).toBeUndefined();
+    const reply = await hooks.SessionStart[0]?.hooks[0]?.({ cwd: cli.repo }, undefined, signal);
+    expect(reply).toEqual({
+      hookSpecificOutput: { hookEventName: 'SessionStart', additionalContext: printed },
+    });
+
+    const away = founded('sdk', false);
+    const none = mnemaHooks({ cwd: away.repo, env: { home: away.home } });
+    expect(await none.SessionStart[0]?.hooks[0]?.({ cwd: away.repo }, undefined, signal)).toEqual(
+      {},
+    );
+    expect(
+      await none.PreToolUse[0]?.hooks[0]?.(
+        { cwd: away.repo, tool_name: 'Write', tool_input: { file_path: join(away.repo, 'a.txt') } },
+        undefined,
+        signal,
+      ),
+    ).toEqual({});
+    expect(
+      await none.PreToolUse[0]?.hooks[0]?.(
+        { cwd: away.repo, tool_name: 'Write', tool_input: {} },
+        undefined,
+        signal,
+      ),
+    ).toEqual({});
+  });
+});
+
 // ---------------------------------------------------------------------------
 // Nothing is on one door alone
 // ---------------------------------------------------------------------------
