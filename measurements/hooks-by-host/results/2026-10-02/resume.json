@@ -1,0 +1,11 @@
+{
+  "host": "Claude Code 2.1.281",
+  "at": "2026-10-02",
+  "question": "Does a SessionStart document reach the model twice in a resumed session?",
+  "method": "The real binary under an emptied environment and a sandbox home, against a stand-in for the model API on loopback (no model called). The SessionStart hook is one program that records the `source` it was handed and answers with additionalContext holding a marker. A first session is run with --session-id, then resumed with --resume; the markers are counted in the messages of the request the resumed session sends. Run by resume-probe.mjs, with and without a `startup|clear|compact` matcher.",
+  "cases": [
+    { "matcher": "none (as the plugin declares it)", "sources_the_hook_fired_for": ["startup", "resume"], "messages_in_resumed_request": 5, "copies_of_the_document_in_it": 1 },
+    { "matcher": "startup|clear|compact", "sources_the_hook_fired_for": ["startup"], "messages_in_resumed_request": 5, "copies_of_the_document_in_it": 1 }
+  ],
+  "finding": "The hook does fire again on resume, and the resumed request still carries the document once, with or without `resume` in the matcher. The matcher was left as it is."
+}
