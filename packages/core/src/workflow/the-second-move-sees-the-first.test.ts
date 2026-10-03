@@ -27,11 +27,9 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import {
   type CatalogEvent,
-  type ChainLayout,
   type ChainWriter,
   catalogUpcasters,
   openChainForWriting,
-  type UpcasterRegistry,
   verify,
 } from '@mnema/chain';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';

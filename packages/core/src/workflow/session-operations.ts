@@ -70,7 +70,6 @@ import {
 import { resolveExecutingAgent, type SelfAuthorizedErr } from '../identity/authority.js';
 import { canonicalId, mintId } from '../identity/id.js';
 import { oneLine } from '../one-line.js';
-import { projectRuns } from '../projections/run.js';
 import { type AppendRefusal, appendEvent } from './append.js';
 import {
   type Judged,
