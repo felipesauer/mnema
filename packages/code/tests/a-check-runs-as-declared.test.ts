@@ -12,14 +12,16 @@ import { join } from 'node:path';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { runOne } from '../src/commands/check.js';
 
+let sandbox: string;
 let cwd: string;
 
 beforeAll(() => {
-  cwd = realpathSync(mkdtempSync(join(tmpdir(), 'mnema-run-one-')));
+  sandbox = mkdtempSync(join(tmpdir(), 'mnema-run-one-'));
+  cwd = realpathSync(sandbox);
 });
 
 afterAll(() => {
-  rmSync(cwd, { recursive: true, force: true });
+  rmSync(sandbox, { recursive: true, force: true });
 });
 
 const declared = (...args: string[]) => ({ rule: 'r', command: process.execPath, args });

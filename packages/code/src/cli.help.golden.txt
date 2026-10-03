@@ -1622,7 +1622,7 @@ $ mnema key enroll --help
 |
 | Options:
 |   --checker   enroll a key that signs check results only (the line `mnema key
-|               request --checker` printed)
+|               request --checker --anchor <id>` printed)
 |   -h, --help  display help for command
 
 ### mnema key revoke --help
