@@ -169,6 +169,11 @@ const MEASURED = new Map<string, number>();
  * authority said about it the first time (see {@link A_CEILING} for the cost that bought it).
  */
 export function widthOfText(text: string): number {
+  // Printable ASCII is one column a character — the authority's own first answer, with the same
+  // range — and answering it here is what keeps the package from being loaded by a text that
+  // never needed it: the words a verb's help is aligned with are measured while the program is
+  // BUILT, and they are all this.
+  if (ONLY_PRINTABLE_ASCII.test(text)) return text.length;
   const known = MEASURED.get(text);
   if (known !== undefined) return known;
   const width = stringWidth(text);

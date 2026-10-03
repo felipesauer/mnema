@@ -83,7 +83,15 @@
  */
 
 import { spawnSync } from 'node:child_process';
-import { existsSync, mkdirSync, mkdtempSync, readdirSync, readFileSync, rmSync } from 'node:fs';
+import {
+  existsSync,
+  mkdirSync,
+  mkdtempSync,
+  readdirSync,
+  readFileSync,
+  rmSync,
+  writeFileSync,
+} from 'node:fs';
 import { tmpdir } from 'node:os';
 import { dirname, join, relative, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -762,4 +770,34 @@ describe('a verb that loads its work still answers', () => {
     // writes, and the only one that pays a key being made. 237 ms on a quiet machine and
     // 1006 ms with the suite running at a load of twenty.
   }, 60_000);
+});
+
+describe('the width authority is not on the floor', () => {
+  // The static walk above cannot see this: the package is reached by `createRequire`, which
+  // is a call and not an import, and the call is only as lazy as every caller that reaches
+  // it. A declaration that measured a word while the program was being built — the help of
+  // `repl` aligns its column that way — put the 25 ms back with no import anywhere to show it.
+  // So this watches the process: a hook counts every request for the package and the run is
+  // the one that asks for nothing but the version.
+  it('is not asked for by a run that prints the version', () => {
+    const watching = join(sandbox, 'watch-the-authority.cjs');
+    writeFileSync(
+      watching,
+      [
+        "const Module = require('node:module');",
+        'const load = Module._load;',
+        'Module._load = function (request, ...rest) {',
+        "  if (request === 'string-width') process.stderr.write('ASKED-FOR-THE-AUTHORITY\\n');",
+        '  return load.call(this, request, ...rest);',
+        '};',
+      ].join('\n'),
+    );
+    const done = spawnSync(process.execPath, ['--require', watching, CLI, '--version'], {
+      cwd: sandbox,
+      env: { ...process.env, HOME: home },
+      encoding: 'utf-8',
+    });
+    expect(done.stdout).toMatch(/^\d+\.\d+\.\d+/);
+    expect(done.stderr).not.toContain('ASKED-FOR-THE-AUTHORITY');
+  });
 });
