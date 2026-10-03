@@ -92,7 +92,28 @@ describe('worthSaying', () => {
 
 describe('plain', () => {
   it('makes text from the record safe to print on a pull request', () => {
-    expect(plain('a\n  b <!-- x --> `c` @octocat')).toBe("a b &lt;!-- x --&gt; 'c' @​octocat");
+    expect(plain('a\n  b <!-- x --> `c` @octocat')).toBe("a b &lt;\\!-- x --&gt; 'c' @​octocat");
     expect(plain('x'.repeat(500))).toHaveLength(121);
+  });
+
+  it('neutralises the characters that make links, images, tables and headings', () => {
+    const link = plain('[x](javascript:alert(1))');
+    expect(link).toBe('\\[x\\]\\(javascript:alert\\(1\\)\\)');
+    expect(plain('![](https://e/p.png)')).toBe('\\!\\[\\]\\(https://e/p.png\\)');
+    expect(plain('a|b')).toBe('a\\|b');
+    expect(plain('# *a* _b_ \\')).toBe('\\# \\*a\\* \\_b\\_ \\\\');
+  });
+
+  it('keeps a pipe in a kind or a rule id inside its table cell and line', () => {
+    const body = renderComment({
+      ...busy,
+      record: { ...busy.record, byKind: [['a|b', 1]] },
+      governed: [
+        { path: 'p.ts', governs: [{ id: '[x](javascript:alert(1))' }], asks: [], refuses: [] },
+      ],
+    });
+    expect(body).toContain('| `a\\|b` | 1 |');
+    expect(body).toContain('`\\[x\\]\\(javascript:alert\\(1\\)\\)`');
+    expect(body).not.toContain('[x](javascript');
   });
 });

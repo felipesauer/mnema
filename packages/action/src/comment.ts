@@ -38,7 +38,8 @@ const MOST_REPEATED = 120;
 /**
  * Text that came out of the record or the tree, made safe to print on a pull request: one line,
  * no markup that opens a tag or a comment, no `@` that would notify somebody, no backtick that
- * would end the code span it sits in, and cut at a length.
+ * would end the code span it sits in, no Markdown link, image, emphasis, heading or table-cell
+ * character left unescaped, and cut at a length.
  */
 export function plain(text: string): string {
   const one = text.replace(/\s+/g, ' ').trim();
@@ -48,11 +49,12 @@ export function plain(text: string): string {
     .replace(/</g, '&lt;')
     .replace(/>/g, '&gt;')
     .replace(/`/g, "'")
-    .replace(/@/g, '@\u200b');
+    .replace(/@/g, '@\u200b')
+    .replace(/[\\[\]()!*_|#]/g, '\\$&');
 }
 
 const rule = (hit: RuleHit): string =>
-  hit.name === undefined ? `\`${hit.id}\`` : `${plain(hit.name)} (\`${hit.id}\`)`;
+  hit.name === undefined ? `\`${plain(hit.id)}\`` : `${plain(hit.name)} (\`${plain(hit.id)}\`)`;
 
 function decisionLine(decision: DecisionMoved): string {
   const label = plain(decision.adr ?? decision.id);
@@ -69,6 +71,10 @@ function governedLines(file: GovernedFile): string[] {
     ...by('a write is refused by', file.refuses),
   ];
 }
+
+/** The comment body when the repository holds no record at all. */
+export const renderNoRecord = (): string =>
+  `${MARKER}\n### mnema — this pull request and the record\n\nThis repository holds no mnema record.\n`;
 
 /** The comment body. */
 export function renderComment(report: Report): string {
