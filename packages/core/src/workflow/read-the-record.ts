@@ -15,7 +15,9 @@
  * same, slower.
  */
 
-import type { ChainLayout, UpcasterRegistry } from '@mnema/chain';
+import { existsSync } from 'node:fs';
+import { type ChainLayout, projectionCachePath, type UpcasterRegistry } from '@mnema/chain';
+import { rosterOf } from '../identity/membership.js';
 import { ProjectionCache } from '../projections/cache.js';
 
 /** Where a write reads from. */
@@ -44,6 +46,13 @@ export function asTheChainIs<T>(ctx: ReadsTheRecord, ask: (cache: ProjectionCach
  * replay runs over the same events; with nothing kept it is the replay, as before.
  */
 export function rosterAsTheChainIs(ctx: ReadsTheRecord, anchor: string): ReadonlySet<string> {
+  // A projection that is not there is not made for this: the question is asked by `init` and by
+  // every first write too, and a tree they leave has to be the one they found. With none kept it
+  // is the replay, as before — the first reading that keeps one (`asTheChainIs`) is the one that
+  // makes the next of these cheap.
+  if (!existsSync(projectionCachePath(ctx.layout))) {
+    return rosterOf({ tree: ctx.layout.root, upcasters: ctx.upcasters }, anchor);
+  }
   const cache = ProjectionCache.open(ctx.layout.root, { upcasters: ctx.upcasters, persist: true });
   try {
     return cache.rosterAsOfNow(anchor);

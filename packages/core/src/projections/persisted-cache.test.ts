@@ -153,12 +153,13 @@ function rowsOf(path: string): Record<string, string[]> {
 
 /** The rows a replay writes into an in-memory database, for the same chain. */
 function rowsOfAReplay(): Record<string, string[]> {
-  const memory = join(mkdtempSync(join(tmpdir(), 'mnema-persisted-replay-')), 'replay.db');
+  const scratch = mkdtempSync(join(tmpdir(), 'mnema-persisted-replay-'));
+  const memory = join(scratch, 'replay.db');
   const cache = ProjectionCache.open(root, { upcasters, dbPath: memory });
   cache.rebuild();
   cache.close();
   const rows = rowsOf(memory);
-  rmSync(join(memory, '..'), { recursive: true, force: true });
+  rmSync(scratch, { recursive: true, force: true });
   return rows;
 }
 

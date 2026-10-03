@@ -383,9 +383,14 @@ function unwired(): string[] {
  * allowlist every dead guard ends as: a value that gains a caller has to LEAVE
  * this table or the assertion fails, and so does one that stops being exported.
  *
- * IT IS EMPTY, and that is the strongest state this table has: every value the
- * workspace exports publicly has a production caller. Its last entry was
- * `@mnema/core listProjects` — the reader of a machine-local project index that
+ * IT HOLDS TWO, and they are the same case: the pure folds over the whole record,
+ * `projectTasks` and `projectRuns`. A write used to take its state from them, replaying the
+ * chain on every call; it reads the projection the tree keeps now, so nothing in production
+ * folds the whole record by these two any more. They stay exported because the command's own
+ * tests read the chain by a replay and compare it with what the command says — an oracle that
+ * shares nothing with the kept projection, which is what makes the comparison worth reading.
+ * Empty is the strongest state this table has, and it was empty until then; the entry before
+ * these was `@mnema/core listProjects` — the reader of a machine-local project index that
  * `init` wrote on every founding and nothing ever read, while telling the person it
  * had happened. It was removed rather than wired, because what a read covers comes
  * from the trees the client announces.
@@ -397,7 +402,14 @@ function unwired(): string[] {
  * SYNTHETIC input in both directions. The synthetic entries live in that test, never
  * here: this table stays auto-pruning over the real surface.
  */
-const UNWIRED: Readonly<Record<string, string>> = {};
+const UNWIRED: Readonly<Record<string, string>> = {
+  '@mnema/core projectRuns':
+    'the oracle of the run commands’ own tests: the runs as a replay of the chain says them, ' +
+    'read against what the command reports.',
+  '@mnema/core projectTasks':
+    'the oracle of the task commands’ own tests: the tasks as a replay of the chain says them, ' +
+    'read against what the command reports.',
+};
 
 /** What an exception table tolerates, and what it does not. */
 interface Reconciliation {

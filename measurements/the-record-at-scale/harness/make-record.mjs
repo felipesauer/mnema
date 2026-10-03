@@ -5,7 +5,7 @@
 // usage: GEN_WT=<built checkout> node make-record.mjs <projectDir> <keyRoot> <targetEvents> <seed> [tree]
 //   tree: "public" (default) writes <projectDir>/.mnema; "private" writes <projectDir>/.mnema/private
 //
-// WHAT IT WRITES, and why each choice is the product's and not mine (A13):
+// WHAT IT WRITES, and why each choice is the product's and not the harness's:
 //   - every event comes from a builder of @mnema/chain (decisionBirth, taskBirth, …);
 //   - every state and action is picked from the product's own tables
 //     (DECISION_TRANSITIONS, TRANSITIONS, SKILL_TRANSITIONS, the INITIAL_* states), and a

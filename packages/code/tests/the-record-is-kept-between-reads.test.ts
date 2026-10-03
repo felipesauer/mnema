@@ -107,6 +107,9 @@ function deleteTheCache(): void {
 describe('a read keeps the projection in the tree', () => {
   it('and that file is the only thing it adds', () => {
     aProject();
+    // A numbered decision keeps the projection too (a write reads from it), so the file the setup
+    // left is taken away: what is asked here is what a READ adds to a tree that has none.
+    deleteTheCache();
     const before = pathsUnder(sandbox);
     ok('search', 'cache');
     const added = pathsUnder(sandbox).filter((path) => !before.includes(path));
