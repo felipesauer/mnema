@@ -190,6 +190,7 @@ export {
   type WriterOptions,
 } from './chain/writer.js';
 export {
+  accountLinked,
   BIRTH_ACTION,
   channelAsked,
   channelRefused,
@@ -230,6 +231,7 @@ export {
   canonicalStringify,
 } from './events/canonical.js';
 export {
+  type AccountLinkedV1,
   ADDRESS_RELATIONS,
   ASKS_FOR_A_PERSON_RELATION,
   type CatalogEvent,

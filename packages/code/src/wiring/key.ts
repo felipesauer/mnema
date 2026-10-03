@@ -194,6 +194,40 @@ export function registerKey(program: Command, wiring: Wiring): Declared {
       });
     });
 
+  // `mnema key github <name>` — this identity names its GitHub account. A signed claim and
+  // nothing else: no network is asked here; `verify --against-github` asks github.com later.
+  key
+    .command('github')
+    .description(
+      'record that this identity is a GitHub account, so `mnema verify --against-github` ' +
+        'can compare the keys that signed with the keys that account publishes',
+    )
+    .argument('<name>', 'the GitHub account name')
+    .action(async (name: string) => {
+      const { runKeyGithub } = await import('../commands/key-github.js');
+      const result = runKeyGithub(here(), { account: name });
+      if (result.ok) {
+        io.out(onOneLine`Linked ${result.anchor} to github.com/${result.account}`);
+        reportReplacement(result, io);
+        io.out(
+          render(
+            fact(
+              'A claim, signed: `mnema verify --against-github` compares it with the keys the ' +
+                'account publishes.',
+            ),
+          ),
+        );
+        io.out(
+          render(fact('Commit and share the record: a claim others cannot read says nothing.')),
+        );
+        return;
+      }
+      reportRefusal(wiring, result, {
+        NO_PROJECT:
+          'No mnema project here. Run `mnema key github` inside the project to record it.',
+      });
+    });
+
   // `mnema key revoke <fingerprint> --reason <text>` — retire a key. The
   // fingerprint is a positional (the subject); the reason is a required flag, as
   // every other verb that demands its evidence does. It is the full fingerprint,

@@ -54,6 +54,7 @@ import type {
 } from '@mnema/chain';
 import type { Command } from 'commander';
 import type { TreeReport, WorkspaceDone } from '../commands/verify.js';
+import type { GithubAuthor, GithubReading } from '../commands/verify-github.js';
 import type { SinceReading } from '../commands/verify-since.js';
 import { oneLine } from '../one-line.js';
 import { fact } from '../presentation/detail.js';
@@ -412,6 +413,14 @@ export function registerVerify(program: Command, wiring: Wiring): Declared {
         'rewrite signed again. Reads git, never the network, so <rev> must be in this clone',
     )
     .option(
+      AGAINST_GITHUB,
+      'also compare the key each identity of this record signed with against the SSH keys ' +
+        'the GitHub account it named (`mnema key github`) publishes at github.com/<name>.keys. ' +
+        'It proves the account publishes that key TODAY — not that it was the account’s when it ' +
+        'signed — and it takes github.com’s word for it. Goes to the network only when given; ' +
+        'what it finds is noted per identity and never moves the verdict or the exit',
+    )
+    .option(
       '--json',
       'emit the verdict as JSON instead of prose — the whole reading, per tree, plus ' +
         'what NO --require value answers. The exit code is unchanged: this changes the ' +
@@ -424,6 +433,7 @@ export function registerVerify(program: Command, wiring: Wiring): Declared {
         workspace?: string[];
         allowNoRecord?: boolean;
         since?: string;
+        againstGithub?: boolean;
         json?: boolean;
       }) => {
         // Loaded when the verb runs, never while the program is declared: an eager
@@ -439,6 +449,14 @@ export function registerVerify(program: Command, wiring: Wiring): Declared {
             wiring,
             '`--since` rules on the project you stand in, and `--workspace` names others',
             'Run `mnema verify --since <rev>` inside each project.',
+          );
+          return;
+        }
+        if (opts.workspace !== undefined && opts.againstGithub === true) {
+          reportUsage(
+            wiring,
+            `\`${AGAINST_GITHUB}\` rules on the project you stand in, and \`--workspace\` names others`,
+            'Run `mnema verify --against-github` inside each project.',
           );
           return;
         }
@@ -491,10 +509,20 @@ export function registerVerify(program: Command, wiring: Wiring): Declared {
               });
         const grewOnly =
           compared === undefined || (compared.kind === 'read' && compared.findings.length === 0);
+        // The comparison with GitHub, only when asked: without the flag the module is not even
+        // loaded, so nothing here can reach the network. Its answer is notes, never the exit.
+        const asksGithub = opts.againstGithub === true;
+        const github = asksGithub
+          ? await (await import('../commands/verify-github.js')).compareWithGithub(result.trees)
+          : undefined;
         if (opts.json === true) {
           reportAsJson(
             wiring,
-            compared === undefined ? result : { ...result, since: compared },
+            {
+              ...result,
+              ...(compared === undefined ? {} : { since: compared }),
+              ...(github === undefined ? {} : { github }),
+            },
             result.requirementMet && grewOnly,
             NOT_ANSWERED_BY_ANY_REQUIREMENT,
           );
@@ -502,6 +530,7 @@ export function registerVerify(program: Command, wiring: Wiring): Declared {
         }
         for (const tree of result.trees) report(io, render, tree);
         if (compared !== undefined) reportSince(io, render, compared);
+        if (github !== undefined) reportGithub(io, render, github);
         if (!grewOnly && result.requirementMet) io.fail();
         if (!result.requirementMet) {
           // A break already said why the exit is non-zero — the FAILED headline and
@@ -566,6 +595,67 @@ function reportSince(io: CliIo, render: Render, since: SinceReading): void {
         ),
       ),
     );
+  }
+}
+
+/** The flag that asks for the comparison with the keys GitHub accounts publish. */
+const AGAINST_GITHUB = '--against-github';
+
+/**
+ * WHAT THE COMPARISON WITH GITHUB FOUND — one line per identity, then the line that says what
+ * the comparison proves and what it does not.
+ *
+ * Every line goes to stdout, the covered and the not covered alike: none of them is a failure of
+ * the verification, which is the verdict above them and is unchanged. A tree left out because it
+ * failed is said too, so an empty list never reads as "nobody signed".
+ */
+function reportGithub(io: CliIo, render: Render, reading: GithubReading): void {
+  for (const scope of reading.notCompared) {
+    io.out(
+      render(
+        fact(
+          `github: the ${scope} tree was not compared — its verdict is a break, so who signed it is not settled`,
+        ),
+      ),
+    );
+  }
+  for (const author of reading.authors) io.out(render(fact(githubLine(author))));
+  if (reading.authors.length > 0) {
+    io.out(
+      render(
+        fact(
+          'github: this says an account publishes the key TODAY; not that the key was that ' +
+            'account’s when it signed, and only on github.com’s word',
+        ),
+      ),
+    );
+  }
+}
+
+/** The one line about one identity. */
+function githubLine(author: GithubAuthor): string {
+  const who = `github: ${author.anchor}`;
+  const finding = author.finding;
+  if (finding.kind === 'no-account') {
+    return `${who} — not covered: no GitHub account is linked to this identity (\`mnema key github <name>\` links one)`;
+  }
+  const at = onOneLine`github.com/${finding.account}`;
+  switch (finding.kind) {
+    case 'not-an-account':
+      return `${who} — not covered: ${at} is not a GitHub account name, so it was not asked`;
+    case 'no-such-account':
+      return `${who} — not covered: github.com has no account ${oneLine(finding.account)}`;
+    case 'no-ed25519-key':
+      return `${who} — not covered: ${at} publishes no Ed25519 key`;
+    case 'unreachable':
+      return `${who} — could not reach github.com for ${at}: ${oneLine(finding.detail)}`;
+    case 'compared': {
+      if (finding.unpublished.length === 0) {
+        return `${who} is ${at} — every key it signed with (${String(finding.published.length)}) is one that account publishes`;
+      }
+      const short = finding.unpublished.map((fp) => fp.slice(0, 12)).join(', ');
+      return `${who} — not covered: ${String(finding.unpublished.length)} of its ${String(author.keys.length)} key(s) (${short}) are not among the keys ${at} publishes`;
+    }
   }
 }
 

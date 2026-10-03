@@ -30,6 +30,7 @@ import { runDecisionTransition } from '../src/commands/decision-transition.js';
 import { runHandoff } from '../src/commands/handoff.js';
 import { runInit } from '../src/commands/init.js';
 import { runCheckerEnroll, runKeyEnroll } from '../src/commands/key-enroll.js';
+import { runKeyGithub } from '../src/commands/key-github.js';
 import { runKeyRequest } from '../src/commands/key-request.js';
 import { runKeyRevoke } from '../src/commands/key-revoke.js';
 import { runLink } from '../src/commands/link.js';
@@ -157,12 +158,12 @@ const CODE_SRC = join(HERE, 'src');
  * may found to `foundUnderTheLock`, which is where the founding's append now is. 35 since the
  * refusal of a write arrived: `recordChannelRefused`, and the one body it shares with
  * `recordChannelAsked` (`recordRuleAtPath`). 36 since a note can be retracted: `retractNote`. 39 since a rule can carry a check: `declareCheck`,
- * `enrollChecker` and `runRuleChecks`.
+ * `enrollChecker` and `runRuleChecks`. 40 since an identity can name its account: `linkAccount`.
  */
-const CORE_OPERATIONS_THAT_APPEND = 39;
+const CORE_OPERATIONS_THAT_APPEND = 40;
 
 /** How many paths of the shipped surface reach one of them. */
-const SURFACE_WRITE_PATHS = 39;
+const SURFACE_WRITE_PATHS = 40;
 
 /** Every non-test TypeScript file under a source root. */
 function sourceFiles(dir: string): string[] {
@@ -721,6 +722,10 @@ describe('every write path leaves the record fully signed', () => {
             'key revoke',
             runKeyRevoke(ctx, { fingerprint: backupKey, reason: 'it left this machine' }),
           ),
+      },
+      {
+        at: 'commands/key-github.ts:runKeyGithub',
+        drive: () => void ok('key github', runKeyGithub(ctx, { account: 'octocat' })),
       },
       {
         at: 'commands/tail-prune.ts:runTailPrune',

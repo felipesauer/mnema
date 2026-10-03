@@ -72,7 +72,12 @@ import {
   switchChannel,
 } from '../workflow/channel-operations.js';
 import { acceptDecision, recordDecision } from '../workflow/decision-operations.js';
-import { enrollKey, foundIdentity, revokeKey } from '../workflow/identity-operations.js';
+import {
+  enrollKey,
+  foundIdentity,
+  linkAccount,
+  revokeKey,
+} from '../workflow/identity-operations.js';
 import { createTask, transitionTask, type WriteContext } from '../workflow/operations.js';
 import { authorizeTailPrune } from '../workflow/prune-operations.js';
 import { endRun, startRun } from '../workflow/session-operations.js';
@@ -181,6 +186,9 @@ const ARRIVALS: { readonly [K in EventKind]: Arrival } = {
   },
   'key.revoked': {
     emit: (ctx) => landed(revokeKey(ctx, { revokedFp: 'f'.repeat(64), reason: 'retired' })),
+  },
+  'account.linked': {
+    emit: (ctx) => landed(linkAccount(ctx, { account: 'octocat' })),
   },
   'memory.captured': {
     emit: (ctx) => landed(captureMemory(ctx, { content: 'a memory that arrived' })),

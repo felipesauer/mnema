@@ -313,6 +313,13 @@ export const AUDIT_BY_KIND: { readonly [K in EventKind]: AuditMapping } = {
   // A result is a report about the rule, not a change to it.
   'check.passed': { activity: ACTIVITY.other, entityTypeId: ENTITY_OTHER, entityType: 'decision' },
   'check.failed': { activity: ACTIVITY.other, entityTypeId: ENTITY_OTHER, entityType: 'decision' },
+  // An identity naming its account on a code host changes what is said ABOUT the user, and
+  // adds or removes no key — an Update of the identity, not an Enroll.
+  'account.linked': {
+    activity: ACTIVITY.update,
+    entityTypeId: ENTITY_USER,
+    entityType: 'identity',
+  },
 };
 
 /** Who is reporting the feed — the producer's own identity, which the record does not hold. */

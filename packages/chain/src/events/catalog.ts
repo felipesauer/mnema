@@ -1037,6 +1037,34 @@ export interface CheckFailedV1 extends Envelope {
 }
 
 /**
+ * An identity named an account it holds on a code host — today, `github`.
+ *
+ * WHAT IT IS: a CLAIM, signed by a key of the identity it names, and nothing more. It
+ * proves that a member key of that identity said "my account there is this one"; it does
+ * not prove the host agrees. Whether it does is a separate reading, asked for explicitly
+ * and made against the host at the time of the reading — the account's published keys
+ * compared with the keys the identity signed with. The record holds the name, never the
+ * answer, because the answer is the host's and changes when the account changes its keys.
+ *
+ * Subject is the anchor, and `who == subject`: an identity names its own account, never
+ * another's. A reader honours only that shape. It is outside the enrolment fold — it adds
+ * and removes no key — so a reader of the format authenticates it by the rule every other
+ * event is authenticated by, and nothing else. A later one for the same service replaces
+ * an earlier one, in the order the record is merged in.
+ */
+export interface AccountLinkedV1 extends Envelope {
+  readonly kind: 'account.linked';
+  readonly v: 1;
+  /** Subject is the anchor that names the account. */
+  readonly payload: {
+    /** Which host the account is on. `github` is the one this product writes and reads. */
+    readonly service: string;
+    /** The account's name on that host. */
+    readonly account: string;
+  };
+}
+
+/**
  * The catalog: every event the chain may contain. `kind` + `v` together select
  * exactly one arm, so a producer and a consumer can never disagree on a
  * payload shape without the compiler saying so.
@@ -1067,7 +1095,8 @@ export type CatalogEvent =
   | CheckDeclaredV1
   | CheckerEnrolledV1
   | CheckPassedV1
-  | CheckFailedV1;
+  | CheckFailedV1
+  | AccountLinkedV1;
 
 /** The `kind` discriminators present in the catalog. */
 export type EventKind = CatalogEvent['kind'];
@@ -1103,4 +1132,5 @@ export const LATEST_VERSION: { readonly [K in EventKind]: number } = {
   'checker.enrolled': 1,
   'check.passed': 1,
   'check.failed': 1,
+  'account.linked': 1,
 };

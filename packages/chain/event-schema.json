@@ -32,6 +32,14 @@
   },
   "contracts": [
     {
+      "kind": "account.linked",
+      "v": 1,
+      "payload": {
+        "service": "string",
+        "account": "string"
+      }
+    },
+    {
       "kind": "channel.asked",
       "v": 1,
       "payload": {
