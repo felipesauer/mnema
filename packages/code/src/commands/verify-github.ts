@@ -213,7 +213,7 @@ export async function compareWithGithub(
     }
   }
 
-  links.sort((a, b) => compare(a.at, b.at) || compare(a.tail, b.tail) || a.seq - b.seq);
+  links.sort(byMergedOrder);
   const accountOf = new Map<string, string>();
   for (const link of links) accountOf.set(link.anchor, link.account);
 
@@ -228,9 +228,9 @@ export async function compareWithGithub(
   };
 
   const read = [...authors.entries()]
-    .sort(([a], [b]) => compare(a, b))
+    .sort(([a], [b]) => byCodeUnit(a, b))
     .map(async ([anchor, keys]): Promise<GithubAuthor> => {
-      const fingerprints = [...keys.keys()].sort(compare);
+      const fingerprints = [...keys.keys()].sort(byCodeUnit);
       const account = accountOf.get(anchor);
       return {
         anchor,
@@ -299,6 +299,15 @@ function committedRaw(layout: { readonly root: string }, fingerprint: string): s
   }
 }
 
-function compare(a: string, b: string): number {
+/** Two strings by code unit — the order ids and fingerprints are listed in. */
+function byCodeUnit(a: string, b: string): number {
   return a < b ? -1 : a > b ? 1 : 0;
+}
+
+/**
+ * The order the record is merged in across tails, OLDEST first: the instant, then the tail id,
+ * then `seq` — so the last link of an identity is the one that stands.
+ */
+function byMergedOrder(a: Link, b: Link): number {
+  return byCodeUnit(a.at, b.at) || byCodeUnit(a.tail, b.tail) || a.seq - b.seq;
 }

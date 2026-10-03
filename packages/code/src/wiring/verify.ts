@@ -511,10 +511,10 @@ export function registerVerify(program: Command, wiring: Wiring): Declared {
           compared === undefined || (compared.kind === 'read' && compared.findings.length === 0);
         // The comparison with GitHub, only when asked: without the flag the module is not even
         // loaded, so nothing here can reach the network. Its answer is notes, never the exit.
-        const github =
-          opts.againstGithub === true
-            ? await (await import('../commands/verify-github.js')).compareWithGithub(result.trees)
-            : undefined;
+        const asksGithub = opts.againstGithub === true;
+        const github = asksGithub
+          ? await (await import('../commands/verify-github.js')).compareWithGithub(result.trees)
+          : undefined;
         if (opts.json === true) {
           reportAsJson(
             wiring,

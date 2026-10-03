@@ -11,7 +11,7 @@ import { GITHUB_SERVICE, githubLoginRefusal } from './account.js';
 
 describe('githubLoginRefusal', () => {
   it('accepts the names GitHub accepts', () => {
-    for (const login of ['octocat', 'felipesauer', 'a', 'a-b', 'A1-b2-C3', 'x'.repeat(39)]) {
+    for (const login of ['octocat', 'felipesauer', 'a', 'a-b', 'mona-lisa-42', 'x'.repeat(39)]) {
       expect(githubLoginRefusal(login), login).toBeUndefined();
     }
   });

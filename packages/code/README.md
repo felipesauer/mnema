@@ -1338,7 +1338,8 @@ asked by this machine*, which is a different fact from *did not answer* and call
 different response. By operator domain and not by exact host, so a proof taken by a
 calendar nobody has heard of yet still completes.
 
-`verify` **never touches a network**. It reads the proof and the header out of the
+`verify` **never touches a network** to read the witness (the one flag that reaches one
+is `--against-github`, and only when it is given). It reads the proof and the header out of the
 record, checks that the proof commits to the checkpoint it proved, that the path folds
 to the merkle root the header carries, and that the header did the work it declares.
 The proof itself is [OpenTimestamps](https://opentimestamps.org)' own file, unaltered,

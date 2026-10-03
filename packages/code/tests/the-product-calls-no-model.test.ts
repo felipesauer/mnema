@@ -1,5 +1,5 @@
 /**
- * THE PRODUCT CALLS NO MODEL, AND ONE FILE IS ALLOWED TO REACH THE NETWORK AT ALL.
+ * THE PRODUCT CALLS NO MODEL, AND TWO FILES ARE ALLOWED TO REACH THE NETWORK AT ALL.
  *
  * WHY THIS IS A GUARD AND NOT A HABIT. This project's second stated refusal is *a
  * fact summarized by a model entering as a recorded entry* — the record is only
@@ -12,10 +12,13 @@
  * rather than being noticed later by whoever wonders why the product needs an API
  * key.
  *
- * THE ALLOWLIST HAS EXACTLY ONE MEMBER, and it is the outside WITNESS: T3 asks a
- * calendar to attest a checkpoint digest, which is the one thing this product does
- * that cannot be done on this machine. What leaves is a digest and nothing else —
- * no id, no title, no body, no count — which is why that one exception is
+ * THE ALLOWLIST HAS TWO MEMBERS, each a question only somebody else can answer. The
+ * outside WITNESS: T3 asks a calendar to attest a checkpoint digest, and what leaves is
+ * a digest and nothing else — no id, no title, no body, no count. And the comparison
+ * with GITHUB (`verify --against-github`): it asks `github.com/<name>.keys` for the
+ * keys an account publishes, so what leaves is an account name the record already
+ * holds in public, checked against GitHub's own rule before it is put in the address,
+ * to one fixed host, and only when the flag is given. That is why each exception is
  * defensible and why the allowlist is by FILE rather than by package.
  *
  * THE NAIVE SWEEP MISSES IT, and that is the reason this file greps what it greps.
@@ -79,7 +82,10 @@ const MANIFESTS: readonly string[] = TRACKED.filter(
  * It is a literal path and not a pattern, so moving the file is a decision somebody
  * makes here rather than a rule that quietly follows it.
  */
-const MAY_REACH_THE_NETWORK: readonly string[] = ['packages/chain/src/chain/witness-request.ts'];
+const MAY_REACH_THE_NETWORK: readonly string[] = [
+  'packages/chain/src/chain/witness-request.ts',
+  'packages/code/src/commands/verify-github.ts',
+];
 
 /** Ways to reach the network from JavaScript. */
 const REACHES_THE_NETWORK: readonly (readonly [string, RegExp])[] = [
@@ -184,7 +190,7 @@ describe('the product calls no model', () => {
     expect(code("const u = 'https://api.anthropic.com';")).toMatch(/api\.anthropic\.com/);
   });
 
-  it('reaches the network from ONE file, and that file is the witness', () => {
+  it('reaches the network from the allowed files only: the witness and the GitHub comparison', () => {
     const reaching: string[] = [];
     for (const where of PRODUCT) {
       const source = code(read(where));
@@ -192,12 +198,11 @@ describe('the product calls no model', () => {
         if (pattern.test(source)) reaching.push(`${where} (${name})`);
       }
     }
-    expect(reaching.map((line) => line.split(' (')[0])).toEqual(
-      reaching.map(() => MAY_REACH_THE_NETWORK[0]),
-    );
-    // And the exception is still USED, so the allowlist is not a leftover entry
+    const files = reaching.map((line) => line.split(' (')[0] as string);
+    expect(files.filter((where) => !MAY_REACH_THE_NETWORK.includes(where))).toEqual([]);
+    // And every exception is still USED, so the allowlist is not a leftover entry
     // protecting a file that stopped needing it.
-    expect(reaching.length).toBeGreaterThan(0);
+    expect([...new Set(files)].sort()).toEqual([...MAY_REACH_THE_NETWORK].sort());
   });
 
   it('names no model endpoint anywhere in the product', () => {
