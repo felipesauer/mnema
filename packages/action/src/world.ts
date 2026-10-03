@@ -63,7 +63,7 @@ export function worldAt(cwd: string, github: World['github'], log: World['log'])
         const ran = mnema(['rules', '--json', '--', path]);
         if (ran.error !== undefined || ran.status !== 0) {
           throw new Error(
-            `mnema rules failed for ${path}: ${ran.error?.message ?? ran.stderr.trim()}`,
+            `reading the rules for ${path} failed: ${ran.error?.message ?? ran.stderr.trim()}`,
           );
         }
         return JSON.parse(ran.stdout) as unknown;

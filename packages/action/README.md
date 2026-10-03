@@ -70,7 +70,7 @@ The action runs on `node24`.
 ## How it is built
 
 The part worth testing has no network in it. `record.ts` reads `.mnema/tails/*.jsonl` and says
-which events a pull request added; `governed.ts` reads the answer of `mnema rules --json` and the
+which events a pull request added; `governed.ts` reads the answer of `mnema rules <path> --json` and the
 pull request's reviews; `comment.ts` turns a report into text; `judge.ts` is one run, with the
 repository, `mnema` and GitHub handed in. GitHub is reached in `github.ts` over `fetch` with the
 token, and `fetch` is a parameter. `world.ts` is `git` and the `mnema` binary as child processes;

@@ -8,7 +8,7 @@
 
 import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
-import { connect, type Fetch } from './github.js';
+import { connect, type Fetch, platformFetch } from './github.js';
 import { judge } from './judge.js';
 import { worldAt } from './world.js';
 
@@ -95,7 +95,5 @@ export async function main(env: Env, fetchIt: Fetch, say: (line: string) => void
 }
 
 if (process.argv[1] === fileURLToPath(import.meta.url)) {
-  process.exitCode = await main(process.env, fetch as unknown as Fetch, (line) =>
-    console.log(line),
-  );
+  process.exitCode = await main(process.env, platformFetch, (line) => console.log(line));
 }

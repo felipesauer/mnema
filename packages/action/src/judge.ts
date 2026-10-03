@@ -59,7 +59,7 @@ export async function judge(world: World, pr: PullRequest): Promise<Verdict> {
 
   if (!world.git.hasCommit(pr.baseSha)) {
     throw new Error(
-      `the base commit ${pr.baseSha} is not in this clone; check out with fetch-depth: 0 so the record can be compared`,
+      `the base commit ${pr.baseSha} is not in this clone; check out the whole history so the record can be compared`,
     );
   }
   const headTexts = world.git.recordAt('HEAD');

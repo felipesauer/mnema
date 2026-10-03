@@ -3,9 +3,13 @@
  * ask for one.
  *
  * The addressing itself is `mnema rules <path> --json`; this module reads that answer and decides
- * nothing about paths. "In force" is the state the record gives the rule: an accepted decision.
- * A proposed, rejected or superseded one is on the table or off it, and governs nothing.
+ * nothing about paths. "In force" is what the record's own classification says of the rule's
+ * state, asked of `decisionDisposition` and never restated here: a decision that is not in force
+ * is on the table or off it, and governs nothing.
  */
+
+import { decisionDisposition } from '@mnema/context';
+import { isDecisionState } from '@mnema/core';
 
 /** One rule that addresses a file. */
 export interface RuleHit {
@@ -41,7 +45,13 @@ function inForce(list: unknown): RuleHit[] {
   for (const item of list as unknown[]) {
     if (typeof item !== 'object' || item === null) continue;
     const { rule, name, kind, state } = item as Record<string, unknown>;
-    if (typeof rule !== 'string' || kind !== 'decision' || state !== 'accepted') continue;
+    if (typeof rule !== 'string' || kind !== 'decision') continue;
+    if (
+      typeof state !== 'string' ||
+      !isDecisionState(state) ||
+      decisionDisposition(state) !== 'in-force'
+    )
+      continue;
     hits.push({ id: rule, name: typeof name === 'string' ? name : undefined });
   }
   return hits;

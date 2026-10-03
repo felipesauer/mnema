@@ -122,7 +122,7 @@ describe('judge', () => {
 
   it('refuses to compare against a base commit the clone does not hold', async () => {
     const { world } = worldWith({ hasCommit: false });
-    await expect(judge(world, pr)).rejects.toThrow('fetch-depth: 0');
+    await expect(judge(world, pr)).rejects.toThrow('check out the whole history');
   });
 
   describe('the approval check, when switched on', () => {

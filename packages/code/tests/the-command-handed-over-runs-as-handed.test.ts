@@ -409,6 +409,10 @@ export const NOT_CHECKED: Readonly<Record<string, string>> = {
 export const NAMES_THAT_NEED_MORE: Readonly<
   Record<string, { readonly times: number; readonly why: string }>
 > = {
+  'packages/action/README.md: mnema rules': {
+    times: 2,
+    why: 'the read named in prose, as what the Action asks about each changed file; the same page hands the whole line over, with its path and `--json`',
+  },
   'packages/code/README.md: mnema tail prune': {
     times: 3,
     why: 'the verb named in prose, as the one that cuts a tail (and, beside the CI recipe, as the cut that recipe fails on by design); its own section hands the line over',
@@ -564,7 +568,9 @@ export const HANDED_OVER: Readonly<
   // turns it on (`mnema switch on user-corrections`, a line on each page).
   // And one line and one name more for the page that says a rule can refuse a write.
   // name 77 until the page named `mnema doctor` and the server-only plugin's `mnema mcp`.
-  span: { line: 41, name: 80, flag: 1, unwritten: 0 },
+  // line 41 and name 80 until the Action's page was added: it hands over its workflow, and names
+  // `mnema rules` twice.
+  span: { line: 46, name: 82, flag: 1, unwritten: 0 },
   // name 18 until the page that says where the key lives named `mnema key protect` in a line of
   // its own.
   // line 35 until the same page showed that question in a block of its own.

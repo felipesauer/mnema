@@ -29,6 +29,12 @@ importers:
       '@mnema/code':
         specifier: workspace:*
         version: link:../code
+      '@mnema/context':
+        specifier: workspace:*
+        version: link:../context
+      '@mnema/core':
+        specifier: workspace:*
+        version: link:../core
 
   packages/chain: {}
 

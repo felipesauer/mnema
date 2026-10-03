@@ -14,6 +14,9 @@ export type Fetch = (
   init: { method: string; headers: Record<string, string>; body?: string },
 ) => Promise<{ ok: boolean; status: number; json(): Promise<unknown> }>;
 
+/** The platform's own, the one place this package names the global; `run.ts` only hands it in. */
+export const platformFetch = fetch as unknown as Fetch;
+
 /** Where a pull request is, and the credentials to read and comment on it. */
 export interface PullRequestAddress {
   readonly apiUrl: string;

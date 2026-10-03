@@ -18,6 +18,8 @@
     "node": ">=22.12.0"
   },
   "dependencies": {
-    "@mnema/code": "workspace:*"
+    "@mnema/code": "workspace:*",
+    "@mnema/context": "workspace:*",
+    "@mnema/core": "workspace:*"
   }
 }
