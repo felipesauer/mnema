@@ -14,6 +14,10 @@
  * import from @mnema/core on every line, which proves that edge a hundred times
  * over.
  *
+ * ONE SUBPATH EXISTS BESIDE THIS ENTRY, `library` (`library.ts`), and it is there for the private
+ * `@mnema/sdk`, which calls the commands' own functions through it. It carries no stability
+ * promise and no operation of its own.
+ *
  * Whether the package should keep a library entry at all is a question about the
  * PUBLISHED shape (`main`, `types`, `exports` in its manifest), so the manifest is
  * left as it is and this file stays where those fields point.

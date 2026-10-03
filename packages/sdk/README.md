@@ -15,9 +15,9 @@ write is attributed to, the way `--which` is on the command line. Each method is
 
 | Method | The verb it is |
 |---|---|
-| `recordDecision({ title, rationale, alternatives?, scope? })` | `mnema decision record` |
-| `acceptDecision({ id, note })`, `rejectDecision({ id, note })` | `mnema decision move accept` and `reject` |
-| `addNote({ content, scope? })` | `mnema memory` |
+| `recordDecision({ title, rationale, alternatives?, scope? })` | `decision record` |
+| `acceptDecision({ id, note })`, `rejectDecision({ id, note })` | `decision move`, with `accept` and `reject` |
+| `addNote({ content, scope? })` | `memory` |
 | `brief()` | `mnema brief`: the document, as a string |
 | `recall()` | `mnema recall`: the notes a session would be handed |
 | `rulesFor(path)` | `mnema rules <path>`: which recorded rules govern the path |
@@ -31,7 +31,7 @@ A refusal comes back as a value with the code the command line prints (`ok: fals
 - **`SessionStart`** hands the session the document `mnema brief --hook` prints, as
   `additionalContext`. Where there is no project, the channel is switched off or the record does
   not read, it answers `{}`.
-- **`PreToolUse`**, on `Write`, `Edit` and `NotebookEdit`, asks what `mnema before-a-write` asks:
+- **`PreToolUse`**, on `Write`, `Edit` and `NotebookEdit`, asks what the `before-a-write` verb asks:
   `deny` citing the rule where a rule of the record refuses a write at the path, `ask` where one
   asks for a person, `{}` otherwise. Each refusal or asking is recorded as a fact before the answer
   is given.

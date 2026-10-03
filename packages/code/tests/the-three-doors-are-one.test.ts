@@ -30,12 +30,12 @@ import { InMemoryTransport } from '@modelcontextprotocol/sdk/inMemory.js';
 import { ListRootsRequestSchema } from '@modelcontextprotocol/sdk/types.js';
 import { Command } from 'commander';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
-import { type MnemaRecord, mnemaHooks, openRecord } from '../../sdk/src/index.js';
+import { mnemaHooks } from '../../sdk/src/hooks.js';
+import { type MnemaRecord, openRecord } from '../../sdk/src/record.js';
 import type { CliIo } from '../src/cli.js';
 import { buildMcpServer } from '../src/mcp/server.js';
 import { renderPlain } from '../src/presentation/plain.js';
 import { registerVerbs } from '../src/wiring/index.js';
-import { noSuchRecord } from '../src/wiring/no-such-record.js';
 import { NO_PROJECT } from '../src/wiring/report.js';
 import type { PinnedRun } from '../src/wiring/run-pin.js';
 
@@ -76,7 +76,7 @@ function codeIn(text: string): string | undefined {
   const coded = /Refused \(([A-Z_]+)\)/.exec(text)?.[1];
   if (coded !== undefined) return coded;
   if (text.includes(NO_PROJECT)) return 'NO_PROJECT';
-  if (text.includes(noSuchRecord('decision', 'no-such-decision'))) return 'UNKNOWN_DECISION';
+  if (text.includes('No decision no-such-decision here.')) return 'UNKNOWN_DECISION';
   return undefined;
 }
 
@@ -440,6 +440,19 @@ async function through(
   }
   return { said, held: eventsOf(door) };
 }
+
+describe('the library door calls the command line’s own functions', () => {
+  it('is the very function, not a copy of it', () => {
+    expect(libraryDecision).toBe(decision);
+    expect(libraryTransition).toBe(transition);
+    expect(libraryMemory).toBe(memory);
+    expect(libraryBrief).toBe(brief);
+    expect(libraryRecall).toBe(recall);
+    expect(libraryRules).toBe(rules);
+    expect(libraryVerify).toBe(verify);
+    expect(libraryBeforeAPath).toBe(beforeAPath);
+  });
+});
 
 describe('the same input through the three doors', () => {
   for (const scenario of SCENARIOS) {
