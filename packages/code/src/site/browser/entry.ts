@@ -12,7 +12,7 @@
  */
 
 import { catalogUpcasters, verifyChain } from '@mnema/chain';
-import { Buffer } from './buffer.js';
+import { fromBase64 } from './buffer.js';
 import { mount } from './fs.js';
 
 /** The verdict as the page shows it: the chain's words, unchanged. */
@@ -36,7 +36,7 @@ const ROOT = '/record';
 export function verifyRecord(files: Readonly<Record<string, string>>): RecordVerdict {
   const mounted = new Map<string, Uint8Array>();
   for (const [path, base64] of Object.entries(files)) {
-    mounted.set(`${ROOT}/${path}`, Buffer.from(base64, 'base64'));
+    mounted.set(`${ROOT}/${path}`, fromBase64(base64));
   }
   mount(mounted);
   const result = verifyChain({ root: ROOT }, catalogUpcasters());

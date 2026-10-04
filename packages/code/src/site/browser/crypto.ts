@@ -12,7 +12,7 @@
  * names exist so the bundle links, and each one refuses when called.
  */
 
-import { Buffer } from './buffer.js';
+import { Buffer, copyOf, fromBase64, fromHex } from './buffer.js';
 
 type Bytes = Uint8Array;
 
@@ -389,7 +389,7 @@ class Hash {
       all.set(part, at);
       at += part.length;
     }
-    const out = Buffer.from(sha256(all));
+    const out = copyOf(sha256(all));
     return encoding === 'hex' ? out.toString('hex') : out;
   }
 }
@@ -411,7 +411,7 @@ export class KeyObject {
   export(options: { type: 'spki'; format: 'der' }): Buffer;
   export(options: { type: 'spki'; format: 'pem' }): string;
   export(options: { type: 'spki'; format: 'der' | 'pem' }): Buffer | string {
-    const der = Buffer.concat([Buffer.from(SPKI_ED25519_PREFIX, 'hex'), Buffer.from(this.raw)]);
+    const der = Buffer.concat([fromHex(SPKI_ED25519_PREFIX), copyOf(this.raw)]);
     if (options.format === 'der') return der;
     const body = der.toString('base64').replace(/(.{64})/g, '$1\n');
     return `-----BEGIN PUBLIC KEY-----\n${body.replace(/\n$/, '')}\n-----END PUBLIC KEY-----\n`;
@@ -421,7 +421,7 @@ export class KeyObject {
 export function createPublicKey(pem: string): KeyObject {
   const match = /-----BEGIN PUBLIC KEY-----([^-]+)-----END PUBLIC KEY-----/.exec(pem);
   if (match === null) throw new Error('not a PEM public key');
-  const der = Buffer.from((match[1] as string).replace(/\s+/g, ''), 'base64');
+  const der = fromBase64((match[1] as string).replace(/\s+/g, ''));
   if (der.length !== 44 || der.toString('hex', 0, 12) !== SPKI_ED25519_PREFIX) {
     throw new Error('not an Ed25519 public key');
   }

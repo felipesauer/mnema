@@ -68,7 +68,7 @@ class Bytes extends Uint8Array {
 
 export type Buffer = Bytes;
 
-function fromHex(source: string): Bytes {
+export function fromHex(source: string): Bytes {
   if (source.length % 2 !== 0 || /[^0-9a-fA-F]/.test(source)) {
     // Node's own `hex` decoding stops at the first bad pair; the verifier only ever hands it
     // hex the record wrote, so refuse rather than guess what stopping would mean.
@@ -81,14 +81,14 @@ function fromHex(source: string): Bytes {
   return out;
 }
 
-function fromBase64(source: string): Bytes {
+export function fromBase64(source: string): Bytes {
   const binary = atob(source);
   const out = new Bytes(binary.length);
   for (let i = 0; i < binary.length; i++) out[i] = binary.charCodeAt(i);
   return out;
 }
 
-function copyOf(bytes: ArrayLike<number>): Bytes {
+export function copyOf(bytes: ArrayLike<number>): Bytes {
   const out = new Bytes(bytes.length);
   out.set(bytes);
   return out;

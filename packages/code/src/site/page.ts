@@ -23,7 +23,7 @@ import { createHash } from 'node:crypto';
 export interface DecisionMove {
   readonly at: string;
   readonly action: string;
-  readonly from: string | null;
+  readonly before: string | null;
   readonly to: string;
   readonly who: string;
   readonly which?: string;
@@ -102,7 +102,7 @@ function decisionHtml(d: SiteDecision): string {
     .map(
       (move) =>
         `<li><time>${escapeHtml(move.at)}</time> ${escapeHtml(move.action)}` +
-        ` (${escapeHtml(move.from ?? 'new')} → ${escapeHtml(move.to)}) by ${actor(move.who, move.which)}` +
+        ` (${escapeHtml(move.before ?? 'new')} → ${escapeHtml(move.to)}) by ${actor(move.who, move.which)}` +
         (move.said === undefined ? '' : `<pre>${escapeHtml(move.said)}</pre>`) +
         '</li>',
     )

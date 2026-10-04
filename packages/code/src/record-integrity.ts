@@ -289,6 +289,10 @@ export const SERVES_NO_RECORD_CONTENT: { readonly [path: string]: string } = {
     'it runs after the verdict, over the trees the verdict ruled on, and reads only those whose ' +
     'verdict was not a break — a tree whose chain does not close is named as not compared ' +
     'instead, so the notice would be the verdict above it said a second time',
+  'site/browser/entry.ts':
+    'it IS the verdict, run in a page: it hands the chain\u2019s own sentence and every issue and ' +
+    'census note to the page unchanged, so a notice about the chain would be that verdict ' +
+    'carrying a summary of a line already in it',
   'repl/following.ts':
     'it reports what somebody ELSE appended since the session opened and rules on nothing ' +
     '— two equal extents mean nothing observable moved, never that the chain is intact. ' +

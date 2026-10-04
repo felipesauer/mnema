@@ -8,7 +8,7 @@
  * something else.
  */
 
-import { Buffer } from './buffer.js';
+import { type Buffer, copyOf } from './buffer.js';
 
 const files = new Map<string, Buffer>();
 const directories = new Set<string>(['/']);
@@ -22,7 +22,7 @@ export function mount(contents: ReadonlyMap<string, Uint8Array>): void {
   directories.add('/');
   descriptors.clear();
   for (const [path, bytes] of contents) {
-    files.set(path, Buffer.from(bytes));
+    files.set(path, copyOf(bytes));
     for (let cut = path.lastIndexOf('/'); cut > 0; cut = path.lastIndexOf('/', cut - 1)) {
       directories.add(path.slice(0, cut));
     }
@@ -69,7 +69,7 @@ export function readFileSync(path: string, encoding: 'utf-8' | 'utf8'): string;
 export function readFileSync(path: string, encoding?: 'utf-8' | 'utf8'): Buffer | string {
   const bytes = files.get(path);
   if (bytes === undefined) throw missing(path);
-  return encoding === undefined ? Buffer.from(bytes) : bytes.toString('utf-8');
+  return encoding === undefined ? copyOf(bytes) : bytes.toString('utf-8');
 }
 
 export function statSync(path: string): { size: number; isDirectory(): boolean } {

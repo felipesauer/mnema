@@ -421,6 +421,14 @@ export const NAMES_THAT_NEED_MORE: Readonly<
     times: 1,
     why: 'the verb named in the table row; the same row hands the whole restore over as a line',
   },
+  'README.md: mnema site': {
+    times: 1,
+    why: 'the verb named in a sentence about what wrote the lists on the page; the section hands the line over, with its --out',
+  },
+  'packages/code/README.md: mnema site': {
+    times: 1,
+    why: 'the verb named in the table row about the page\u2019s verdict; the bullet above it hands the line over, with its --out',
+  },
   'packages/code/README.md: mnema skill export': {
     times: 1,
     why: 'the verb named in the sentence about what leaves the record as a file',
@@ -587,13 +595,16 @@ export const HANDED_OVER: Readonly<
   // And one name more for the changelog entry that names `mnema brief` beside the inherited section.
   // line 48 until the page said which flag compares the keys that signed with GitHub's, and how an
   // account is linked (`mnema verify --against-github`, `mnema key github`).
-  span: { line: 48, name: 92, flag: 1, unwritten: 0 },
+  // line 49 and name 99 for the section and the table row that hand over `mnema site --out` and name
+  // the verb and what it checks (`mnema verify`, `mnema site`) in prose, twice over on two pages.
+  span: { line: 49, name: 99, flag: 1, unwritten: 0 },
   // name 18 until the page that says where the key lives named `mnema key protect` in a line of
   // its own.
   // line 35 until the same page showed that question in a block of its own.
   // name 19 until the page said `mnema key protect` asks for the passphrase at a terminal.
   // line 40 and flag 1 once a page showed the commands that declare a check and run it.
-  block: { line: 40, name: 20, flag: 1, unwritten: 0 },
+  // line 41 for the block that writes the page.
+  block: { line: 41, name: 20, flag: 1, unwritten: 0 },
   // 46 until the refusal an agent's `accept` gets, with the switch off, began naming the command a
   // person accepts with (`agent-accepts.ts`).
   // line 34 until the sentences an agent's accept is answered with began handing whole lines
@@ -613,7 +624,8 @@ export const HANDED_OVER: Readonly<
   // And one line and four names more for the verb that points a project at another record (`wiring/inherit.ts`).
   // line 54 and name 62 once a key could be requested and enrolled to sign check results, and the
   // checks' own help named the verbs that declare and run them.
-  source: { line: 59, name: 68, flag: 3, unwritten: 3 },
+  // line 60 and name 72 for the verb's own help: its example, and the names it mentions.
+  source: { line: 60, name: 72, flag: 3, unwritten: 3 },
 };
 
 // ---------------------------------------------------------------------------

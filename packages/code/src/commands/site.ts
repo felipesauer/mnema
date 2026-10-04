@@ -19,7 +19,7 @@
 
 import { existsSync, mkdirSync, readdirSync, readFileSync, statSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
-import { catalogUpcasters, transitionProse } from '@mnema/chain';
+import { catalogUpcasters, transitionProse, verify } from '@mnema/chain';
 import { decisionDisposition } from '@mnema/context';
 import {
   type DecisionState,
@@ -49,6 +49,12 @@ export interface SiteDone {
   readonly events: number;
   /** How many of the record's files the page carries for its own verification. */
   readonly files: number;
+  /**
+   * What the chain says of the public tree, so a person about to publish a record that does not
+   * verify is told here and not only by the page: the page says it to its readers, and the
+   * person who ran the verb is the one who can still decide.
+   */
+  readonly verdict: { readonly ok: boolean; readonly summary: string };
 }
 
 /** Nothing was written. */
@@ -122,7 +128,7 @@ function decisionsOf(publicRoot: string): SiteDecision[] {
     list.push({
       at: event.at,
       action: event.payload.action,
-      from: event.payload.from,
+      before: event.payload.from,
       to: event.payload.to,
       who: event.who,
       ...(event.which !== undefined ? { which: event.which } : {}),
@@ -130,23 +136,21 @@ function decisionsOf(publicRoot: string): SiteDecision[] {
     });
     moves.set(event.subject, list);
   }
-  return [...projectDecisions(events).values()]
-    .sort((a, b) => (a.createdAt < b.createdAt ? -1 : a.createdAt > b.createdAt ? 1 : 0))
-    .map((d) => ({
-      id: d.id,
-      adr: d.adr,
-      title: d.title,
-      rationale: d.rationale,
-      ...(d.alternatives !== undefined ? { alternatives: d.alternatives } : {}),
-      state: d.state,
-      inForce: decisionDisposition(d.state as DecisionState) === 'in-force',
-      ...(d.supersedes !== undefined ? { supersedes: d.supersedes } : {}),
-      ...(d.supersededBy !== undefined ? { supersededBy: d.supersededBy } : {}),
-      createdAt: d.createdAt,
-      ...(d.recordedBy !== undefined ? { recordedBy: d.recordedBy } : {}),
-      ...(d.acceptedBy !== undefined ? { acceptedBy: d.acceptedBy } : {}),
-      moves: moves.get(d.id) ?? [],
-    }));
+  return [...projectDecisions(events).values()].map((d) => ({
+    id: d.id,
+    adr: d.adr,
+    title: d.title,
+    rationale: d.rationale,
+    ...(d.alternatives !== undefined ? { alternatives: d.alternatives } : {}),
+    state: d.state,
+    inForce: decisionDisposition(d.state as DecisionState) === 'in-force',
+    ...(d.supersedes !== undefined ? { supersedes: d.supersedes } : {}),
+    ...(d.supersededBy !== undefined ? { supersededBy: d.supersededBy } : {}),
+    createdAt: d.createdAt,
+    ...(d.recordedBy !== undefined ? { recordedBy: d.recordedBy } : {}),
+    ...(d.acceptedBy !== undefined ? { acceptedBy: d.acceptedBy } : {}),
+    moves: moves.get(d.id) ?? [],
+  }));
 }
 
 /** Writes `<out>/index.html` from the project's public tree. */
@@ -173,6 +177,7 @@ export function runSite(ctx: SiteContext, input: { readonly out: string }): Site
     };
   }
   const tails = tailsOf(publicRoot, files);
+  const ruled = verify(publicRoot, catalogUpcasters());
   if (existsSync(input.out) && !statSync(input.out).isDirectory()) {
     return {
       ok: false,
@@ -190,5 +195,6 @@ export function runSite(ctx: SiteContext, input: { readonly out: string }): Site
     inForce: decisions.filter((d) => d.inForce).length,
     events: tails.reduce((n, tail) => n + tail.events, 0),
     files: Object.keys(files).length,
+    verdict: { ok: ruled.ok, summary: ruled.summary },
   };
 }

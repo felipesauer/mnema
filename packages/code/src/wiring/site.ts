@@ -65,6 +65,16 @@ export function registerSite(program: Command, wiring: Wiring): Declared {
         ),
         render(fact('only the committed public tree is in the page')),
       ]);
+      if (!result.verdict.ok) {
+        io.err(
+          render(
+            fact(
+              `this record does not verify: ${result.verdict.summary} — the page says so to its readers; run \`mnema verify\``,
+              0,
+            ),
+          ),
+        );
+      }
     });
   return readsTheRecord(site);
 }

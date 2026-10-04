@@ -158,6 +158,24 @@ describe('mnema site', () => {
     expect(page.match(/<script/g)).toHaveLength(2);
   });
 
+  it('tells the person who ran it when the record does not verify, and still writes the page', () => {
+    runInit({ cwd: repo, env });
+    decide('Keep money in integer cents', 'public', 'accept');
+    const honest = runSite({ cwd: repo, env }, { out: join(sandbox, 'honest') });
+    expect(honest.ok && honest.verdict.ok).toBe(true);
+
+    const tails = join(repo, '.mnema', 'tails');
+    const segment = join(tails, readdirSync(tails)[0] as string, '000001.jsonl');
+    writeFileSync(
+      segment,
+      readFileSync(segment, 'utf-8').replace('Keep money in integer cents', 'Keep money in floats'),
+    );
+    const broken = runSite({ cwd: repo, env }, { out: join(sandbox, 'broken') });
+    expect(broken.ok && broken.verdict.ok).toBe(false);
+    expect(broken.ok && broken.verdict.summary).toContain('local integrity FAILED');
+    expect(pageOf(join(sandbox, 'broken'))).toContain('Keep money in floats');
+  });
+
   it('is the same bytes when asked twice of the same record', () => {
     runInit({ cwd: repo, env });
     decide('Keep money in integer cents', 'public', 'accept');

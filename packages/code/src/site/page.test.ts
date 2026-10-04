@@ -49,7 +49,7 @@ describe('the page', () => {
           recordedBy: { who: '<who>', which: '<which>' },
           acceptedBy: { who: '<acc>' },
           moves: [
-            { at: '<at>', action: '<act>', from: null, to: '<to>', who: '<mw>', said: '<said>' },
+            { at: '<at>', action: '<act>', before: null, to: '<to>', who: '<mw>', said: '<said>' },
           ],
         }),
       ]),
