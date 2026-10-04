@@ -250,7 +250,7 @@ export function registerDecision(program: Command, wiring: Wiring): Declared {
     });
     await reportDecisionMove(result, oldId, wiring, newId);
   });
-  // `decision import <dir>` — propose the decisions this repository already wrote.
+  // `decision import <source>` — propose the decisions this repository already wrote.
   //
   // It is a SUBCOMMAND of `decision` and not a top-level verb because what it
   // produces is decisions, and the group for that kind already exists; a top-level
