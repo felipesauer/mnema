@@ -169,7 +169,9 @@ describe('every gap in the registry says which kind of hole it is', () => {
     expect(holes.sort()).toEqual([...unresolved].sort());
     // And neither side is empty, or the equality above would hold over nothing.
     expect(unresolved.length).toBeGreaterThan(0);
-    expect(counts.unresolved).toBe(standings['reader-limit'] + standings['record-finding']);
+    expect(counts.unresolved).toBe(
+      (standings['reader-limit'] ?? 0) + (standings['record-finding'] ?? 0),
+    );
     expect(standings['reader-limit']).toBeGreaterThan(0);
     expect(standings['record-finding']).toBeGreaterThan(0);
   });

@@ -332,7 +332,21 @@ describe('a line that is not the canonical serialization of its value is refused
  * fold — three findings naming a cut and an edit the record does not contain, over what was
  * one duplicate key.
  */
-const AGREEMENTS = [
+type Agreement =
+  | { readonly name: string; readonly verdict: 'accepted' }
+  | {
+      readonly name: string;
+      readonly verdict: 'refused';
+      readonly product: { readonly layer: string; readonly says: string };
+      readonly second: {
+        readonly section: string;
+        readonly says: string;
+        readonly where: string;
+        readonly refusals: number;
+      };
+    };
+
+const AGREEMENTS: readonly Agreement[] = [
   {
     name: 'duplicate-key-in-a-signed-line',
     verdict: 'refused',

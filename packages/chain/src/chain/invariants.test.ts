@@ -109,7 +109,7 @@ function writeManyTails(specs: readonly TailSpec[]): number {
         openChainForWriting(tailRoot, {
           keyRoot: tailRoot,
           maxUnsignedEvents: spec.every,
-          maxSegmentBytes: spec.maxSegmentBytes,
+          ...(spec.maxSegmentBytes === undefined ? {} : { maxSegmentBytes: spec.maxSegmentBytes }),
         }),
       );
       for (let i = 0; i < spec.count; i += 1) {

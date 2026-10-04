@@ -15,7 +15,7 @@ import { describe, expect, it } from 'vitest';
 import { taskBirth, taskTransitioned } from './build.js';
 import type { CatalogEvent } from './catalog.js';
 
-const env = { at: '2026-07-21T00:00:00.000Z', who: 'felipe', subject: 't-1' };
+const env = { at: '2026-07-21T00:00:00.000Z', who: 'felipe', signerFp: 'fp-1', subject: 't-1' };
 
 /**
  * The reader's whole rule, in isolation: existence from a `task.created`, state
