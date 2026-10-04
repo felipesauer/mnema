@@ -1,0 +1,89 @@
+{
+  "name": "@mnema/vscode",
+  "displayName": "mnema",
+  "publisher": "felipesauer",
+  "version": "0.1.0",
+  "private": true,
+  "description": "A VS Code extension for the person who reviews the mnema record: the rules in force over the open file, the decisions waiting for a judgment, and where the record verifies. It reads and writes only through the mnema command line and is not published.",
+  "author": "Felipe Sauer (https://github.com/felipesauer)",
+  "license": "Apache-2.0",
+  "type": "module",
+  "homepage": "https://github.com/felipesauer/mnema",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/felipesauer/mnema.git"
+  },
+  "bugs": {
+    "url": "https://github.com/felipesauer/mnema/issues"
+  },
+  "engines": {
+    "node": ">=22.12.0",
+    "vscode": "^1.90.0"
+  },
+  "dependencies": {
+    "@mnema/context": "workspace:*",
+    "@mnema/core": "workspace:*"
+  },
+  "main": "./extension.cjs",
+  "activationEvents": [
+    "workspaceContains:.mnema"
+  ],
+  "contributes": {
+    "configuration": {
+      "title": "mnema",
+      "properties": {
+        "mnema.command": {
+          "type": "string",
+          "default": "mnema",
+          "description": "The mnema executable the extension runs. It is started directly, with an argument array, never through a shell."
+        }
+      }
+    },
+    "views": {
+      "explorer": [
+        {
+          "id": "mnema.proposed",
+          "name": "mnema: awaiting judgment",
+          "when": "workspaceFolderCount > 0"
+        }
+      ]
+    },
+    "commands": [
+      {
+        "command": "mnema.accept",
+        "title": "mnema: Accept decision"
+      },
+      {
+        "command": "mnema.reject",
+        "title": "mnema: Reject decision"
+      },
+      {
+        "command": "mnema.refresh",
+        "title": "mnema: Refresh"
+      },
+      {
+        "command": "mnema.showRules",
+        "title": "mnema: Show the rules over this file"
+      }
+    ],
+    "menus": {
+      "view/item/context": [
+        {
+          "command": "mnema.accept",
+          "when": "view == mnema.proposed",
+          "group": "inline@1"
+        },
+        {
+          "command": "mnema.reject",
+          "when": "view == mnema.proposed",
+          "group": "inline@2"
+        }
+      ]
+    }
+  },
+  "files": [
+    "dist/",
+    "extension.cjs",
+    "NOTICE"
+  ]
+}

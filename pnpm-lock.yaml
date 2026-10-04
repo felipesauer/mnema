@@ -95,6 +95,15 @@ importers:
         specifier: ^9.6.0
         version: 9.6.0
 
+  packages/vscode:
+    dependencies:
+      '@mnema/context':
+        specifier: workspace:*
+        version: link:../context
+      '@mnema/core':
+        specifier: workspace:*
+        version: link:../core
+
 packages:
 
   '@alcalzone/ansi-tokenize@0.3.0':

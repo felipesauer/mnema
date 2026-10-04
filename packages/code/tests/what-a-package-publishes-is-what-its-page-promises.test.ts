@@ -138,7 +138,7 @@ const PACKED: ReadonlyMap<string, readonly string[]> = new Map(
 const carried = (name: string): readonly string[] => PACKED.get(name) ?? [];
 
 describe('the workspace knows which packages it publishes', () => {
-  it('finds five, and every one but the Action is meant to go', () => {
+  it('finds six, and every one but the Action and the editor extension is meant to go', () => {
     // NON-VACUITY of everything below, which is a reduction over this list. Exact rather
     // than a floor: a floor is a number anyone can lower to swallow a package that stopped
     // being read. `@mnema/action` is the one that stays: it is `private`, runs from a
@@ -149,6 +149,7 @@ describe('the workspace knows which packages it publishes', () => {
       '@mnema/code',
       '@mnema/context',
       '@mnema/core',
+      '@mnema/vscode',
     ]);
     expect(PUBLISHABLE.map((m) => m.name).sort()).toEqual([
       '@mnema/chain',
@@ -156,8 +157,13 @@ describe('the workspace knows which packages it publishes', () => {
       '@mnema/context',
       '@mnema/core',
     ]);
-    expect(ALL.filter((m) => m.private === true).map((m) => m.name)).toEqual(['@mnema/action']);
+    expect(
+      ALL.filter((m) => m.private === true)
+        .map((m) => m.name)
+        .sort(),
+    ).toEqual(['@mnema/action', '@mnema/vscode']);
     expect(ALL.find((m) => m.name === '@mnema/action')?.license).toBe('Apache-2.0');
+    expect(ALL.find((m) => m.name === '@mnema/vscode')?.license).toBe('Apache-2.0');
   });
 
   it('carries no `private` in a manifest that travels', () => {
@@ -291,7 +297,7 @@ describe('every package carries the licence its manifest claims', () => {
     // the tarballs are held to is asked of its files directly: the manifest says Apache-2.0
     // and the NOTICE beside it is the root's, byte for byte.
     const notPacked = ALL.filter((m) => m.private === true);
-    expect(notPacked.map((m) => m.name)).toEqual(['@mnema/action']);
+    expect(notPacked.map((m) => m.name).sort()).toEqual(['@mnema/action', '@mnema/vscode']);
     const root = readFileSync(join(ROOT, 'NOTICE'), 'utf-8');
     const defects = notPacked.flatMap((m) => [
       ...(m.license === 'Apache-2.0' ? [] : [`${m.name}: declares ${m.license ?? 'no licence'}`]),
