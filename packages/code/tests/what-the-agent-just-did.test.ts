@@ -60,6 +60,7 @@ import { here } from '../src/wiring/context.js';
 import { REPL_VERB } from '../src/wiring/repl.js';
 import { DEFAULT_REQUIREMENT } from '../src/wiring/verify.js';
 import { ENDS_THE_INPUT, ESC } from './support/console.js';
+import { lastIndexWhere } from './support/last-index-where.js';
 import { type Fixture, inPty, opensAConsole, type Ran, type Step } from './support/pty.js';
 import { screenOf } from './support/screen.js';
 
@@ -104,37 +105,6 @@ const THE_VERDICT = 'local integrity verified';
  */
 const COLUMNS = 140;
 const ROWS = THE_FLOOR.rows;
-
-/** What the layout library writes when it takes the caller's history with the page. */
-const _ERASES_THE_HISTORY = '\u001b[3J';
-
-/**
- * WHAT THE OPENING ALWAYS SAYS, whatever the terminal is like — and therefore how many times the
- * library has written the page again out of everything it keeps.
- *
- * It is the signature of the path on which the library gives up on redrawing PART of the screen:
- * that path replays what it holds, and nothing else on any path does.
- */
-const _THE_OPENING = 'a session over this project';
-
-/**
- * THE SHORTEST TERMINAL ON WHICH THE LAYOUT STILL REDRAWS PART OF THE PAGE, in rows.
- *
- * Measured rather than chosen, and BRACKETED by the case that uses it: at this height the
- * library redraws the rows it owns, and one row below it gives up and redraws the whole page.
- * It is where the region a session redraws — the row being typed and the hint under it —
- * stops fitting under the viewport. `a-page-that-opens-clean.test.ts` is where the boundary
- * itself is pinned, in both directions and at several widths.
- *
- * IT WAS BRACKETED BY THE ERASE — *at this height the erase never appears, and one row below it
- * does* — and the erase no longer appears at either. What the library asks for is translated on the
- * way out (`src/repl/page.ts`, `theEraseAsAScroll`), so the bracket is read off the library's own
- * REPLAY of what it keeps instead, which is the other thing it does on that path.
- */
-const _SHORTEST_THAT_REDRAWS_IN_PART = 2;
-
-/** The width the boundary is measured at: one with room for the hint on a single row. */
-const _WIDE_ENOUGH_FOR_THE_HINT = 100;
 
 // ---------------------------------------------------------------------------
 // The fixture
@@ -483,8 +453,8 @@ const LEVEL_MARK = '◉';
  */
 function shapeOfTheInput(bytes: string): readonly string[] {
   const rows = screenOf(bytes, COLUMNS, ROWS).rows.map((row) => row.trimEnd());
-  const badge = rows.findLastIndex((row) => row.includes(LEVEL_MARK));
-  const last = rows.findLastIndex((row) => row.length > 0);
+  const badge = lastIndexWhere(rows, (row) => row.includes(LEVEL_MARK));
+  const last = lastIndexWhere(rows, (row) => row.length > 0);
   expect(badge, 'no row of the screen was the badge').toBeGreaterThanOrEqual(0);
   // The row being typed is inside what is measured, or the measurement is of some other
   // part of the page.
@@ -496,7 +466,7 @@ function shapeOfTheInput(bytes: string): readonly string[] {
 /** The row the badge is on, as a reader sees it — the corner, trimmed. */
 function theCorner(bytes: string): string {
   const rows = screenOf(bytes, COLUMNS, ROWS).rows.map((row) => row.trimEnd());
-  const at = rows.findLastIndex((row) => row.includes(LEVEL_MARK));
+  const at = lastIndexWhere(rows, (row) => row.includes(LEVEL_MARK));
   expect(at, 'no row of the screen was the badge').toBeGreaterThanOrEqual(0);
   return (rows[at] as string).trim();
 }
@@ -574,7 +544,7 @@ describe('an occurrence is one line, whatever the record holds', () => {
   const BREAKERS = ['\n', '\r', '\r\n', ' ', ' '];
 
   /** One event, with whatever a case puts in it. */
-  const event = (over: Partial<CatalogEvent>): CatalogEvent =>
+  const event = (over: Partial<Omit<CatalogEvent, 'kind'>> & { kind?: string }): CatalogEvent =>
     ({
       kind: 'task.created',
       v: 1,
@@ -596,7 +566,7 @@ describe('an occurrence is one line, whatever the record holds', () => {
         event({ which: `an-agent${breaker}  a forged occurrence` }),
         event({ subject: `the-id${breaker}  another forged one` }),
         event({ at: `2026-08-09T10:00:00.000Z${breaker}  and another` }),
-        event({ kind: `task.created${breaker}  and one more` } as Partial<CatalogEvent>),
+        event({ kind: `task.created${breaker}  and one more` }),
       ]) {
         const printed = renderPlain(occurrenceLine(forged)).split('\n');
         expect(printed, JSON.stringify(breaker)).toHaveLength(1);

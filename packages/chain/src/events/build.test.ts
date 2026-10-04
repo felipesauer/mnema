@@ -73,6 +73,7 @@ describe('event builders', () => {
 
   it('produce canonicalization-safe events even when built with explicit undefined optionals', () => {
     // Passing `goal: undefined` explicitly must still yield an omitted key.
+    // @ts-expect-error the type refuses an explicit `undefined`; a caller outside the type system can still send one
     const event = runStarted({ ...env, which: undefined }, { agent: 'a', goal: undefined });
     expect(Object.keys(event)).not.toContain('which');
     expect(Object.keys(event.payload)).not.toContain('goal');
@@ -105,6 +106,7 @@ describe('event builders', () => {
       from: 'in-progress',
       to: 'done',
       action: 'complete',
+      // @ts-expect-error the type refuses an explicit `undefined`; a caller outside the type system can still send one
       fields: { note: 'shipped', pr_url: undefined, reason: undefined },
     });
     if (event.kind === 'task.transitioned') {

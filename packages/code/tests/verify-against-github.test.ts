@@ -113,7 +113,7 @@ describe('mnema verify --against-github', () => {
     expect(linked.failed()).toBe(false);
     expect(linked.out[0]).toMatch(/^Linked mnid:[0-9a-f]{64} to github\.com\/octocat$/);
     const line = publishedLine();
-    const fetch = vi.fn(async () => new Response(`${line}\n`, { status: 200 }));
+    const fetch = vi.fn(async (_url: string) => new Response(`${line}\n`, { status: 200 }));
     vi.stubGlobal('fetch', fetch);
 
     const v = await cli(['verify', '--against-github']);

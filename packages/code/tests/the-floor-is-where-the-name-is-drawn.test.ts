@@ -299,7 +299,7 @@ describe('the floor is the height the whole name is drawn at', () => {
 // ---------------------------------------------------------------------------
 
 /** How many rows of a page are a row of the list, found by what a row of the list LOOKS like. */
-function listRowsOn(screen: Screen, words: readonly string[]): readonly string[] {
+function listRowsOn(screen: Pick<Screen, 'rows'>, words: readonly string[]): readonly string[] {
   return screen.rows.filter((row) => {
     const shown = row.trimStart();
     const said = shown.startsWith(PICK) ? shown.slice(PICK.length).trimStart() : shown;
@@ -439,7 +439,7 @@ describe('the word in the list carries the accent, and the description does not'
       withColour.bytes.slice(0, withColour.at[1] as number),
       columns,
       rows,
-    ).rows.find((line) => listRowsOn({ rows: [line] } as Screen, words).length === 1);
+    ).rows.find((line) => listRowsOn({ rows: [line] }, words).length === 1);
     expect(row, 'no row of the list is on the page').toBeDefined();
     expect(row as string, 'the page carries the escapes rather than the glyphs').not.toContain(ESC);
     // AND NOTHING PAINTED SURVIVES `NO_COLOR` ANYWHERE ON THAT PAGE, which is the standing rule

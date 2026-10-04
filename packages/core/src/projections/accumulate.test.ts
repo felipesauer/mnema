@@ -26,7 +26,7 @@ const env = (subject: string, at: string) => ({
 const created = (id: string, at: string): CatalogEvent =>
   ({
     kind: 'task.created',
-    version: 1,
+    v: 1,
     ...env(id, at),
     payload: { title: `task ${id}` },
   }) as CatalogEvent;
@@ -34,7 +34,7 @@ const created = (id: string, at: string): CatalogEvent =>
 const moved = (id: string, at: string, to: string): CatalogEvent =>
   ({
     kind: 'task.transitioned',
-    version: 1,
+    v: 1,
     ...env(id, at),
     payload: { from: null, to, action: 'birth' },
   }) as CatalogEvent;

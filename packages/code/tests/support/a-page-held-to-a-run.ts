@@ -133,7 +133,7 @@ export function blockUnder(page: string, section: string): readonly Step[] {
   if (start < 0) throw new Error(`${page} carries "${section}" and no block under it`);
   // The block is the run of fenced lines with no line between them: the next fence on the
   // page is another block, and its first line does not follow this one's last.
-  const fenced: typeof lines = [];
+  const fenced: (typeof lines)[number][] = [];
   for (const line of lines.slice(start)) {
     const previous = fenced.at(-1);
     if (line.fence === null || (previous !== undefined && line.at !== previous.at + 1)) break;

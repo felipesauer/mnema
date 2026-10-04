@@ -65,7 +65,7 @@ afterEach(() => {
 
 /** A client and server joined by an in-process transport pair, rooted at the project. */
 async function connect(): Promise<Client> {
-  const { server } = buildMcpServer({ env, log: () => {} });
+  const { server } = buildMcpServer({ cwd: sandbox, env, log: () => {} });
   const client = new Client(
     { name: 'claude-code', version: '1.0.0' },
     { capabilities: { roots: {} } },

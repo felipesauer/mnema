@@ -31,6 +31,7 @@ import { type OtsAttestation, serializeOtsProof } from './ots.js';
 import {
   readStoredWitness,
   readWitness,
+  type UnattestedReading,
   type WitnessedTail,
   type WitnessReading,
   witnessOfChain,
@@ -70,6 +71,14 @@ afterEach(() => {
   rmSync(root, { recursive: true, force: true });
 });
 
+/** The reading narrowed to the half that can carry a dating; a covered one has none to read. */
+function unattested(reading: WitnessReading | null | undefined): UnattestedReading {
+  if (reading == null || reading.status === 'covered') {
+    throw new Error(`expected an unattested reading, got ${reading?.status ?? String(reading)}`);
+  }
+  return reading;
+}
+
 describe('a record nobody stamped', () => {
   it('reads not-covered, which is what it always read', () => {
     expect(readWitness(layout, TAIL, PENDING_PROOF_DIGEST)).toEqual({
@@ -101,8 +110,8 @@ describe('a request that has not confirmed', () => {
 
   it('carries no instant and no block, because none has been attested', () => {
     const reading = readWitness(layout, TAIL, PENDING_PROOF_DIGEST);
-    expect(reading.at).toBeUndefined();
-    expect(reading.block).toBeUndefined();
+    expect(reading).not.toHaveProperty('at');
+    expect(reading).not.toHaveProperty('block');
   });
 
   it('leaves no headers sidecar behind for a reader to wonder about', () => {
@@ -517,7 +526,7 @@ describe('a tail whose attestation is over an OLDER checkpoint', () => {
     // cover, in the same sentence, under the word `not covered`.
     const reading = dated(4);
     expect(reading.status).toBe('not-covered');
-    expect(reading.datedThrough).toEqual({
+    expect(unattested(reading).datedThrough).toEqual({
       at: BLOCK_800000_TIME,
       block: BLOCK_800000_HEIGHT,
       after: 2,
@@ -596,7 +605,7 @@ describe('a tail whose attestation is over an OLDER checkpoint', () => {
       events: 4,
     });
     expect(reading?.detail).toContain('dated by Bitcoin block');
-    expect(reading?.datedThrough?.after).toBe(2);
+    expect(unattested(reading).datedThrough?.after).toBe(2);
   });
 
   it('ignores an attestation filed under a checkpoint the caller did not offer', () => {
@@ -680,9 +689,9 @@ describe('a tail whose only proof is a request still in flight', () => {
     // The type says it and this pins it: `datedThrough` is the only way a fact about
     // an instant leaves this function, and a promise has no instant to give.
     const reading = waiting();
-    expect(reading.datedThrough).toBeUndefined();
-    expect(reading.at).toBeUndefined();
-    expect(reading.block).toBeUndefined();
+    expect(unattested(reading).datedThrough).toBeUndefined();
+    expect(reading).not.toHaveProperty('at');
+    expect(reading).not.toHaveProperty('block');
   });
 
   it('takes the NEWEST request still open, not the first one it can find', () => {
@@ -730,7 +739,7 @@ describe('a tail whose only proof is a request still in flight', () => {
         'and an attestation was requested from https://alice.btc.calendar.opentimestamps.org ' +
         'and has not confirmed',
     );
-    expect(reading?.datedThrough).toEqual({
+    expect(unattested(reading).datedThrough).toEqual({
       at: BLOCK_800000_TIME,
       block: BLOCK_800000_HEIGHT,
       after: 3,

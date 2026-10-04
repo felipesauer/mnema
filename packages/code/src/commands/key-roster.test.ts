@@ -20,10 +20,17 @@ import { join } from 'node:path';
 import { generateKeyPair, listPrivateKeyFingerprints } from '@mnema/chain';
 import type { DiscoveryEnv } from '@mnema/core';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
-import { runInit } from './init.js';
+import { type InitContext, type InitResult, runInit } from './init.js';
 import { runKeyEnroll } from './key-enroll.js';
 import { runKeyRequest } from './key-request.js';
 import { runKeyRevoke } from './key-revoke.js';
+
+/** Founds the project; a refusal here is a broken setup, not a case. */
+function found(ctx: InitContext): InitResult {
+  const result = runInit(ctx);
+  if ('refused' in result) throw new Error('setup: init refused');
+  return result;
+}
 
 let sandbox: string;
 
@@ -111,7 +118,7 @@ describe('key enroll — a member vouches, in the committed record', () => {
     const a = machine('a');
     const b = machine('b');
     const project = repo();
-    const anchor = runInit({ cwd: project, env: a.env }).anchor;
+    const anchor = found({ cwd: project, env: a.env }).anchor;
     const request = (runKeyRequest({ cwd: project, env: b.env }, { anchor }) as { request: string })
       .request;
 
@@ -159,7 +166,7 @@ describe('key revoke — a retirement, in the committed record', () => {
     const a = machine('a');
     const b = machine('b');
     const project = repo();
-    const anchor = runInit({ cwd: project, env: a.env }).anchor;
+    const anchor = found({ cwd: project, env: a.env }).anchor;
     const request = (runKeyRequest({ cwd: project, env: b.env }, { anchor }) as { request: string })
       .request;
     const joined = runKeyEnroll({ cwd: project, env: a.env }, { request }) as {
@@ -221,7 +228,7 @@ describe('the three verbs together — a second machine joins and writes as one 
     const a = machine('a');
     const b = machine('b');
     const project = repo();
-    const anchor = runInit({ cwd: project, env: a.env }).anchor;
+    const anchor = found({ cwd: project, env: a.env }).anchor;
 
     const request = (runKeyRequest({ cwd: project, env: b.env }, { anchor }) as { request: string })
       .request;

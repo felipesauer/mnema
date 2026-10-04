@@ -348,8 +348,11 @@ function byTotalThenWho(a: WhoAccount, b: WhoAccount): number {
 /** Agent counts by count descending, then by name — `null` (no agent) last. */
 function byCountThenWhich(a: WhichCount, b: WhichCount): number {
   if (a.count !== b.count) return b.count - a.count;
-  if (a.which === b.which) return 0;
-  if (a.which === null) return 1;
-  if (b.which === null) return -1;
-  return a.which < b.which ? -1 : 1;
+  // `null` last, decided by ONE expression that reads both sides, so the answer cannot depend
+  // on which side the sort happens to hand over as `a` — a branch per side would be taken by
+  // whichever orientation the engine and the row order produce, and by no other.
+  const nullLast = Number(a.which === null) - Number(b.which === null);
+  if (nullLast !== 0) return nullLast;
+  if (a.which === null || b.which === null) return 0;
+  return a.which < b.which ? -1 : a.which > b.which ? 1 : 0;
 }

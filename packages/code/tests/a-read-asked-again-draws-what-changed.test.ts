@@ -73,6 +73,7 @@ import { alreadyOnThePage, belowThePage } from '../src/repl/session.js';
 import { CLEAR } from '../src/session-words.js';
 import { REPL_VERB } from '../src/wiring/repl.js';
 import { ENDS_THE_INPUT, fakeTerminal, hooksNothing, until } from './support/console.js';
+import { lastIndexWhere } from './support/last-index-where.js';
 import {
   aFrameSince,
   aPageWithout,
@@ -390,7 +391,7 @@ describe('a read asked again is seen, on the page or on a row saying the page di
       THE_ROW_BELOW,
     );
     const at = again.rows.findIndex((row) => row.includes(THE_ROW));
-    const lastOfTheRoll = again.rows.findLastIndex((row) => row.includes(THE_GUIDE));
+    const lastOfTheRoll = lastIndexWhere(again.rows, (row) => row.includes(THE_GUIDE));
     expect(at, 'the row is not under the window').toBeGreaterThan(lastOfTheRoll);
     expect(at, 'the row is not over the row being typed').toBeLessThan(promptRow(again, PROMPT));
     // AND THE ROLL IS THE SAME ROLL: the second answer's end is the end the first one left, and all
@@ -492,7 +493,7 @@ describe('a read asked again is seen, on the page or on a row saying the page di
     // under the end of the first answer.
     expect(again.rows, 'the second answer left the page as it was').not.toEqual(first.rows);
     const endOfTheFirst = rowsOfTheRoll(first).at(-1);
-    const secondAsked = again.rows.findLastIndex((row) => row.includes(ASKED));
+    const secondAsked = lastIndexWhere(again.rows, (row) => row.includes(ASKED));
     expect(secondAsked, 'the second read is not on the page').toBeGreaterThan(0);
     expect(again.rows[secondAsked - 1], 'the second read does not follow the first answer').toBe(
       endOfTheFirst,
@@ -695,7 +696,7 @@ describe("an answer that lands below a reader who has walked back is told, in th
       'a reader who had walked back was told the end was on the page',
     ).not.toContain(THE_ROW);
     const at = told.rows.findIndex((row) => row.includes(THE_ROW_BELOW));
-    const lastOfTheRoll = told.rows.findLastIndex((row) => row.includes(THE_GUIDE));
+    const lastOfTheRoll = lastIndexWhere(told.rows, (row) => row.includes(THE_GUIDE));
     expect(at, 'the row is not under the window').toBeGreaterThan(lastOfTheRoll);
     expect(at, 'the row is not over the row being typed').toBeLessThan(promptRow(told, PROMPT));
     // AND THE READER IS WHERE THEY WERE READING. The answer is not on their page, and the window is

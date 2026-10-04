@@ -1,5 +1,11 @@
 import { describe, expect, it } from 'vitest';
-import { detectSecrets, SECRET_CLASSES, scrubSecrets, secretPlaceholder } from './secrets.js';
+import {
+  detectSecrets,
+  SECRET_CLASSES,
+  type SecretClass,
+  scrubSecrets,
+  secretPlaceholder,
+} from './secrets.js';
 
 /**
  * Every assertion in this file asks the SAME question: is the value ABSENT from
@@ -32,7 +38,7 @@ interface Sample {
   readonly holder: string;
 }
 
-const SAMPLES: Readonly<Record<string, Sample>> = {
+const SAMPLES: Readonly<Record<SecretClass, Sample>> = {
   'aws-access-key': itself('AKIAIOSFODNN7EXAMPLE'),
   'github-token': itself(`ghp_${'A1b2C3d4E5'.repeat(4)}`),
   'anthropic-key': itself(`sk-ant-api03-${'Xy9'.repeat(12)}`),

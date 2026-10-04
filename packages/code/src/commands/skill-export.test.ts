@@ -177,7 +177,7 @@ describe('the file the export composes', () => {
     expect(result.ok).toBe(false);
     if (result.ok) return;
     expect(result.reason).toBe('NOT_A_SPEC_NAME');
-    expect(result.message).toContain('One slice per PR');
+    expect(result).toMatchObject({ message: expect.stringContaining('One slice per PR') });
     // Both halves, because the first alone passes over a verb that refuses AND writes:
     // nothing at all is under the destination, not even the directory.
     expect(filesUnder(out)).toEqual([]);
@@ -207,7 +207,7 @@ describe('the file the export composes', () => {
     expect(result.reason).toBe('NO_DESCRIPTION');
     // The wording is the caller's case and not the body's: the body here IS usable, so a
     // message about deriving one would send them looking in the wrong place.
-    expect(result.message).toContain('--description you gave');
+    expect(result).toMatchObject({ message: expect.stringContaining('--description you gave') });
     expect(filesUnder(out)).toEqual([]);
   });
 

@@ -395,7 +395,7 @@ describe('the line a caller sent is told from the answer to it', () => {
     const columns = 100;
     const rows = THE_FLOOR.rows;
     // AND NOTHING FORCING IT THE OTHER WAY.
-    const quietly = { ...environment, NO_COLOR: '1' };
+    const quietly: NodeJS.ProcessEnv = { ...environment, NO_COLOR: '1' };
     delete quietly.FORCE_COLOR;
     const ran = await inPty({
       columns,

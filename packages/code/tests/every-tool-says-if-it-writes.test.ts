@@ -377,7 +377,7 @@ const RECORDS_NOTHING: Readonly<Record<string, string>> = {};
 describe('every tool says if it writes', () => {
   it('classifies everything the server serves, and nothing else', async () => {
     const project = makeProject('proj');
-    const { server, tools } = buildMcpServer({ env, log: () => undefined });
+    const { server, tools } = buildMcpServer({ cwd: sandbox, env, log: () => undefined });
     const client = await connectTo(server, project);
     const served = (await client.listTools()).tools.map((one) => one.name);
     await client.close();
@@ -395,7 +395,7 @@ describe('every tool says if it writes', () => {
   it('counts thirteen writes and thirteen reads over the whole surface', () => {
     // The classification itself, asserted rather than trusted. The order is registration
     // order, which is the order an agent meets the tools in `tools/list`.
-    const { tools } = buildMcpServer({ env, log: () => undefined });
+    const { tools } = buildMcpServer({ cwd: sandbox, env, log: () => undefined });
     const named = (effect: RecordEffect): string[] =>
       tools.filter((one) => one.effect === effect).map((one) => one.act);
     expect(named('mutates')).toEqual([
@@ -438,7 +438,7 @@ describe('every tool says if it writes', () => {
 
   it('measures every tool against the chain: a read appends nothing', async () => {
     const project = makeProject('proj');
-    const { server, tools } = buildMcpServer({ env, log: () => undefined });
+    const { server, tools } = buildMcpServer({ cwd: sandbox, env, log: () => undefined });
     const client = await connectTo(server, project);
     const effectOf = new Map(tools.map((one) => [one.act, one.effect]));
     const measured: Exercised[] = [];

@@ -15,13 +15,19 @@ function proofFor(required: readonly ProofField[]): TransitionFields | undefined
   return fields as TransitionFields;
 }
 
+/** The `fields` slot of a request: present when there is a proof to give, absent when there is none. */
+function proofIn(required: readonly ProofField[]): { readonly fields?: TransitionFields } {
+  const fields = proofFor(required);
+  return fields === undefined ? {} : { fields };
+}
+
 describe('gate — every legal transition passes with valid authority and proof', () => {
   for (const t of TRANSITIONS) {
     it(`${t.from} --${t.action}--> ${t.to}`, () => {
       const result = gate({
         from: t.from,
         action: t.action,
-        fields: proofFor(t.requires),
+        ...proofIn(t.requires),
         who: WHO,
         which: WHICH,
       });
@@ -45,7 +51,7 @@ describe('gate — legality', () => {
         const result = gate({
           from,
           action,
-          fields: proofFor(['reason', 'note', 'feedback']),
+          ...proofIn(['reason', 'note', 'feedback']),
           who: WHO,
         });
         expect(result.ok, `${from} --${action}-->`).toBe(false);
@@ -183,11 +189,12 @@ describe('gate — authority (who != which)', () => {
 
   it('rejects who and which that differ ONLY by whitespace (no self-authorization bypass)', () => {
     // A lookalike spelling of the agent's own id must not pass the invariant.
-    for (const [who, which] of [
+    const lookalikes: readonly (readonly [string, string])[] = [
       ['alice', 'alice '],
       ['alice', ' alice'],
       ['alice', 'alice\n'],
-    ]) {
+    ];
+    for (const [who, which] of lookalikes) {
       const result = gate({ from: 'READY', action: 'start', who, which });
       expect(result, `${JSON.stringify(who)} vs ${JSON.stringify(which)}`).toMatchObject({
         ok: false,
@@ -236,7 +243,7 @@ describe('gate — never throws on untrusted junk (the boundary it claims to own
         gate({
           from: 'IN_PROGRESS',
           action: 'complete',
-          fields: bad as unknown as undefined,
+          fields: bad as unknown as TransitionFields, // the input is not an object: that is the case
           who: WHO,
         });
       expect(call).not.toThrow();

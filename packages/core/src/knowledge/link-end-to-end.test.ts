@@ -30,6 +30,12 @@ import { captureMemory, linkKnowledge } from './operations.js';
 
 const upcasters = catalogUpcasters();
 
+/** A write that must have landed: narrows the result to its accepted half, or fails the case loudly. */
+function ok<T extends { ok: boolean }>(result: T): Extract<T, { ok: true }> {
+  if (!result.ok) throw new Error(`the write was refused: ${JSON.stringify(result)}`);
+  return result as Extract<T, { ok: true }>;
+}
+
 describe('knowledge.linked — end to end, the four publics (cross-tree)', () => {
   let sandbox: string;
   let trees: ResolvedTrees;
@@ -59,11 +65,11 @@ describe('knowledge.linked — end to end, the four publics (cross-tree)', () =>
     // private note links to it. The link is written in the PRIVATE tree, whose
     // writer never sees the public target.
     const pub = ctxFor('public');
-    const target = captureMemory(pub.ctx, { content: 'the public thing' });
+    const target = ok(captureMemory(pub.ctx, { content: 'the public thing' }));
     pub.ctx.writer.checkpoint();
 
     const prv = ctxFor('private');
-    const source = captureMemory(prv.ctx, { content: 'my private note' });
+    const source = ok(captureMemory(prv.ctx, { content: 'my private note' }));
     linkKnowledge(prv.ctx, { subject: source.id, target: target.id, rel: 'relates-to' });
     prv.ctx.writer.checkpoint();
 
@@ -84,13 +90,13 @@ describe('knowledge.linked — end to end, the four publics (cross-tree)', () =>
     // PRIVATE tree alone, the edge stands but its target is not present — honest
     // dangling, resolved on read against the union, never refused at write.
     const prv = ctxFor('private');
-    const source = captureMemory(prv.ctx, { content: 'note pointing outward' });
-    const ok = linkKnowledge(prv.ctx, {
+    const source = ok(captureMemory(prv.ctx, { content: 'note pointing outward' }));
+    const linked = linkKnowledge(prv.ctx, {
       subject: source.id,
       target: 'not-in-this-tree',
       rel: 'relates-to',
     });
-    expect(ok.ok).toBe(true);
+    expect(linked.ok).toBe(true);
 
     const privateView = projectLinks(orderedEvents(layout(prv.root), upcasters));
     expect(privateView).toHaveLength(1);
@@ -103,11 +109,11 @@ describe('knowledge.linked — end to end, the four publics (cross-tree)', () =>
 
   it('the TEAM (public tree only) never sees the private link', () => {
     const pub = ctxFor('public');
-    const target = captureMemory(pub.ctx, { content: 'public target' });
+    const target = ok(captureMemory(pub.ctx, { content: 'public target' }));
     pub.ctx.writer.checkpoint();
 
     const prv = ctxFor('private');
-    const source = captureMemory(prv.ctx, { content: 'private source' });
+    const source = ok(captureMemory(prv.ctx, { content: 'private source' }));
     linkKnowledge(prv.ctx, { subject: source.id, target: target.id, rel: 'relates-to' });
     prv.ctx.writer.checkpoint();
 
@@ -118,7 +124,7 @@ describe('knowledge.linked — end to end, the four publics (cross-tree)', () =>
 
   it('the CLONE of the linking tree reconstructs the edge and verifies', () => {
     const prv = ctxFor('private');
-    const source = captureMemory(prv.ctx, { content: 'a note the clone recovers' });
+    const source = ok(captureMemory(prv.ctx, { content: 'a note the clone recovers' }));
     // Link to a target that will NOT be in the clone — the cross-tree case.
     linkKnowledge(prv.ctx, { subject: source.id, target: 'target-elsewhere', rel: 'derived-from' });
     prv.ctx.writer.checkpoint();

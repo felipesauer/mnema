@@ -7,6 +7,7 @@ const ENVELOPE = {
   v: 1,
   at: '2026-09-10T00:00:00.000Z',
   who: 'mnid:aa',
+  signerFp: 'fp-1',
   subject: 's-1',
 } as const;
 

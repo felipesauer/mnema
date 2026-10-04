@@ -160,7 +160,10 @@ const ARRIVALS: { readonly [K in EventKind]: Arrival } = {
   'run.started': { emit: (ctx) => landed(startRun(ctx, { agent: 'a-fresh-agent' })) },
   'run.ended': {
     setup: (ctx) => landed(startRun(ctx, { agent: 'an-agent-that-will-stop' })).id,
-    emit: (ctx, run) => landed(endRun(ctx, { run: run as string, outcome: 'done' })),
+    emit: (ctx, run) =>
+      landed(
+        endRun(ctx, { run: run as string, which: 'an-agent-that-will-stop', outcome: 'done' }),
+      ),
   },
   // The birth PAIR — see the note at the top of this file.
   'task.created': { emit: (ctx) => landed(createTask(ctx, { title: 'a task that arrived' })) },
@@ -349,7 +352,7 @@ function aSecondTailIn(chainRoot: string): string {
     };
     landed(captureMemory(other, { content: 'written from the other machine' }));
     other.writer.checkpoint();
-    return other.writer.tailId;
+    return other.writer.tail;
   } finally {
     rmSync(otherKeys, { recursive: true, force: true });
   }
@@ -512,7 +515,7 @@ describe('a chain that changed some other way is replayed whole', () => {
     const before = cache.listTasks().length;
     expect(before).toBe(1);
 
-    const tail = ctx.writer.tailId;
+    const tail = ctx.writer.tail;
     const dir = tailDir({ root }, tail);
     const segments = readdirSync(dir)
       .filter((name) => name.endsWith('.jsonl'))
@@ -671,7 +674,7 @@ describe('the suffix test is the merge’s own comparison, per tail', () => {
       // Whichever tail sorts EARLIER is the one whose arrival would be placed before
       // the other's covered event. The ids are key fingerprints, so which is which is
       // not this test's to choose — it reads them and drives the one that must fail.
-      const earlier = first.writer.tailId < second.writer.tailId ? firstFrozen : second;
+      const earlier = first.writer.tail < second.writer.tail ? firstFrozen : second;
       const before = chainReplay({ root }, upcasters);
       landed(captureMemory(earlier, { content: 'tying with a tail that sorts after me' }));
       earlier.writer.checkpoint();

@@ -52,6 +52,9 @@ jobs:
       - name: Build
         run: pnpm build
 
+      - name: Type-check the tests
+        run: pnpm typecheck
+
       # WHAT THE SUITE LEAVES IN /tmp, half one. 187 prefixes are built under `tmpdir()` by this
       # workspace and exactly one of them is watched by a test, because the obvious watch — list
       # the directory before and after — is a race inside a suite that runs several files at once.

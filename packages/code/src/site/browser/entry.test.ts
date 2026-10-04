@@ -34,7 +34,10 @@ function fake(): Fake {
   return made;
 }
 
-function aPage(): { page: Parameters<typeof showVerdict>[0]; by: Record<string, Fake> } {
+function aPage(): {
+  page: Parameters<typeof showVerdict>[0];
+  by: Record<'verdict-status' | 'verdict-summary' | 'verdict-issues', Fake>;
+} {
   const by = { 'verdict-status': fake(), 'verdict-summary': fake(), 'verdict-issues': fake() };
   return {
     by,

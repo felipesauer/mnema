@@ -132,7 +132,12 @@ function decision(session: Session, path: string): { value?: string; reason?: st
   // The event name is CHECKED by the host — a reply naming the wrong one is dropped in
   // silence — so a decision without it is not a decision that reaches anybody.
   expect(specific.hookEventName).toBe('PreToolUse');
-  return { value: specific.permissionDecision, reason: specific.permissionDecisionReason };
+  return {
+    value: specific.permissionDecision,
+    ...(specific.permissionDecisionReason !== undefined
+      ? { reason: specific.permissionDecisionReason }
+      : {}),
+  };
 }
 
 /** Every event of one of this project's trees, in the tree's own order. */

@@ -740,7 +740,7 @@ describe('the door is the command line’s alone', () => {
     // `server.registerTool(\n    '<name>'`, and the registration shape changed under it —
     // caught only because the count below is asserted, which is the whole argument for
     // asserting it. A pattern over somebody's formatting is not an enumeration.
-    const { tools } = buildMcpServer({ env, log: () => undefined });
+    const { tools } = buildMcpServer({ cwd: sandbox, env, log: () => undefined });
     const registered = tools.map((tool) => tool.act);
     // Non-vacuity first: a list that came back empty would make the absence below free.
     expect(registered.length).toBeGreaterThan(20);

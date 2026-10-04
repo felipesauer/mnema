@@ -301,7 +301,10 @@ describe('the two entry points that already existed are still the only ones', ()
     for (const name of Object.keys(scripts)) {
       expect(name, `${name} is a second entry point`).not.toMatch(/harness|ruler/i);
     }
-    expect(scripts.typecheck).toBe('tsc -b');
+    // The typecheck covers the tests on purpose: the build, then each package's test config.
+    expect(scripts.typecheck).toBe(
+      'tsc -b && pnpm -r --workspace-concurrency=1 exec tsc -p tsconfig.test.json',
+    );
     expect(scripts.lint).toContain('.github/');
     expect(scripts['lint:fix']).toContain('.github/');
   });

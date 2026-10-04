@@ -47,6 +47,8 @@ import { fileURLToPath } from 'node:url';
 import { describe, expect, it } from 'vitest';
 
 import {
+  type Ancestor,
+  type Book,
   loadAcross,
   RECORDING_FLOOR,
   shapeOf,
@@ -54,6 +56,7 @@ import {
   titlesOf,
 } from '../../../.github/why-it-went-red/ledger.mjs';
 import {
+  type Alone,
   asPattern,
   BUDGET,
   CAUGHT,
@@ -62,6 +65,9 @@ import {
   exitCodeOf,
   NOT_ALONE,
   namesOf,
+  type Published,
+  type Reading,
+  type Rerunner,
   render,
   runAlone,
   UNDECLARED,
@@ -72,7 +78,7 @@ import {
 const ROOT = fileURLToPath(new URL('../../../', import.meta.url));
 
 /** One of the three captures, by its suffix. */
-function capture(which: string): Record<string, unknown> {
+function capture(which: string): Book {
   return JSON.parse(
     readFileSync(
       join(ROOT, `packages/code/tests/the-red-says-why-it-went-red.${which}.json`),
@@ -81,10 +87,19 @@ function capture(which: string): Record<string, unknown> {
   );
 }
 
+/** What a verdict says when the ruler held; a broken ruler publishes no counts to read. */
+function published(result: Reading): Published {
+  if (result.verdict === 'RULER BROKEN') throw new Error(`the ruler broke: ${result.broken}`);
+  return result;
+}
+
 /** A runner that answers the same thing to everything, and counts what it was asked. */
-function alwaysAnswers(answer: Record<string, unknown>) {
+function alwaysAnswers(answer: Alone): {
+  alone: Rerunner;
+  asked: { file: string; titles: readonly string[] }[];
+} {
   const asked: { file: string; titles: readonly string[] }[] = [];
-  const alone = (what: { file: string; titles: readonly string[] }) => {
+  const alone: Rerunner = (what) => {
     asked.push(what);
     return answer;
   };
@@ -108,11 +123,7 @@ describe('the ledger reads the run, because the source cannot carry a duration',
   });
 
   it('and the real captures carry a shared ceiling of five seconds, inherited by the many', () => {
-    const contended = capture('contended') as {
-      sharedCeiling: number;
-      atSharedCeiling: number;
-      ran: number;
-    };
+    const contended = capture('contended');
     expect(contended.sharedCeiling).toBe(5000);
     // 3989 of 4190 inherit it, so 201 cases of this suite declare a ceiling at their own `it`.
     // That is the enumeration the plan for this slice put at FOUR and a scan of the source put
@@ -122,9 +133,11 @@ describe('the ledger reads the run, because the source cannot carry a duration',
   });
 
   it('names the titles a case sits under, outermost first', () => {
-    const module = { type: 'module', name: 'a file' };
-    const outer = { type: 'suite', name: 'the outer', parent: module };
-    const inner = { type: 'suite', name: 'the inner', parent: outer };
+    // Stand-ins for the reporter's own objects, which only a running vitest builds: the names and
+    // the parents are all `titlesOf` reads of them.
+    const module = { type: 'module', name: 'a file' } as unknown as Ancestor;
+    const outer = { type: 'suite', name: 'the outer', parent: module } as unknown as Ancestor;
+    const inner = { type: 'suite', name: 'the inner', parent: outer } as unknown as Ancestor;
     expect(titlesOf({ name: 'the case', parent: inner })).toEqual([
       'the outer',
       'the inner',
@@ -160,7 +173,7 @@ describe('the ledger reads the run, because the source cannot carry a duration',
     // discounted at 35 s threw "never came back" from the case's own helper while carrying a
     // 240-second ceiling — no ceiling ended it — and the two reds that contention burst in
     // `contended.json` died at the shared five seconds. Both were contention; the shapes differ.
-    const broke = capture('broke') as { cases: { state: string; errors: { shape: string }[] }[] };
+    const broke = capture('broke');
     const shapes = broke.cases
       .filter((one) => one.state === 'failed')
       .map((one) => one.errors[0]?.shape);
@@ -203,7 +216,7 @@ describe('a red is settled by running it alone', () => {
     expect(result.verdict).toBe('SOMETHING TO READ');
     expect(result.reds).toHaveLength(3);
     expect(result.reds.map((red: { says: string }) => red.says)).toEqual([CAUGHT, CAUGHT, CAUGHT]);
-    expect(result.caught).toBe(3);
+    expect(published(result).caught).toBe(3);
     expect(exitCodeOf(result)).toBe(EXIT.SOMETHING);
     // And every red was actually asked about. A classification over an empty list would report
     // three of three just as well.
@@ -215,8 +228,8 @@ describe('a red is settled by running it alone', () => {
     const result = decide({ ledger: capture('contended'), alone });
     expect(result.reds).toHaveLength(2);
     expect(result.reds.map((red: { says: string }) => red.says)).toEqual([NOT_ALONE, NOT_ALONE]);
-    expect(result.caught).toBe(0);
-    expect(result.notAlone).toBe(2);
+    expect(published(result).caught).toBe(0);
+    expect(published(result).notAlone).toBe(2);
   });
 
   it('and the two verdicts are DIFFERENT WORDS', () => {
@@ -255,12 +268,12 @@ describe('a red is settled by running it alone', () => {
     // a machine with up to 80 runnable threads on 16 cores, once with every load field rewritten
     // to an idle machine — and the verdicts have to be identical. An instrument that read the
     // load would flip here, and an instrument that flips here files real defects as noise.
-    const loud = capture('broke') as { cases: { load: unknown }[] };
-    const calm = JSON.parse(JSON.stringify(loud)) as { cases: { load: unknown }[] };
+    const loud = capture('broke');
+    const calm: Book = JSON.parse(JSON.stringify(loud));
     for (const one of calm.cases) {
       one.load = { samples: 4, runnableMost: 1, runnableMean: 1, lagMost: 0 };
     }
-    const said = (ledger: unknown) =>
+    const said = (ledger: Book) =>
       decide({
         ledger,
         alone: alwaysAnswers({ ran: true, failed: true, duration: 3390 }).alone,
@@ -280,7 +293,7 @@ describe('the hole the ban declares is closed with a duration, not with a scan',
     expect(result.accused[0]?.name).toBe(
       'a case that waits > waits on something and never says so',
     );
-    expect(result.retimed).toBe(1);
+    expect(published(result).retimed).toBe(1);
     expect(exitCodeOf(result)).toBe(EXIT.SOMETHING);
   });
 
@@ -288,10 +301,7 @@ describe('the hole the ban declares is closed with a duration, not with a scan',
     // The capture holds two cases that both sleep 2800 ms. One inherits the shared five seconds
     // and one declares 30000 at its own `it`. Only the ceiling differs, so only the ceiling can
     // be what the accusation is about — a budget that read duration alone would take both.
-    const ledger = capture('waits-undeclared') as {
-      sharedCeiling: number;
-      cases: { ceiling: number; duration: number }[];
-    };
+    const ledger = capture('waits-undeclared');
     const declared = ledger.cases.find((one) => one.ceiling !== ledger.sharedCeiling);
     const inherited = ledger.cases.find((one) => one.ceiling === ledger.sharedCeiling);
     expect(declared?.duration).toBeGreaterThan(BUDGET);
@@ -313,7 +323,7 @@ describe('the hole the ban declares is closed with a duration, not with a scan',
     const { alone, asked } = alwaysAnswers({ ran: true, failed: false, duration: 40 });
     const result = decide({ ledger: capture('waits-undeclared'), alone });
     expect(result.accused).toEqual([]);
-    expect(result.retimed).toBe(1);
+    expect(published(result).retimed).toBe(1);
     expect(asked).toHaveLength(1);
     expect(result.verdict).toBe('CLEAN');
     expect(exitCodeOf(result)).toBe(EXIT.CLEAN);
@@ -338,7 +348,7 @@ describe('one mechanism, and both halves are the same call', () => {
 });
 
 describe('it refuses rather than publishes a verdict it cannot stand behind', () => {
-  const broken = (ledger: unknown, answer = { ran: true, failed: true, duration: 1 }) =>
+  const broken = (ledger: Book, answer: Alone = { ran: true, failed: true, duration: 1 }) =>
     decide({ ledger, alone: alwaysAnswers(answer).alone });
 
   it('refuses a ledger whose run collected nothing', () => {
@@ -361,9 +371,12 @@ describe('it refuses rather than publishes a verdict it cannot stand behind', ()
   });
 
   it('refuses a case it cannot re-run by name', () => {
-    const ledger = capture('broke') as { cases: { titles?: string[] }[] };
-    const maimed = JSON.parse(JSON.stringify(ledger)) as { cases: { titles?: string[] }[] };
-    for (const one of maimed.cases) delete one.titles;
+    const ledger = capture('broke');
+    const maimed: Book = JSON.parse(JSON.stringify(ledger));
+    for (const one of maimed.cases) {
+      // @ts-expect-error The case under test is a ledger case the type forbids: one with no titles.
+      delete one.titles;
+    }
     const result = broken(maimed);
     expect(result.verdict).toBe('RULER BROKEN');
     expect(result.broken.join(' ')).toContain('carries no titles');
@@ -461,7 +474,7 @@ describe('a report where the case is PRESENT and was never run', () => {
       'the ledger reads the run, because the source cannot carry a duration derives the shared ceiling from what the run actually ran under';
     const answer = whatRan(lying, { shown: present, selects: present });
     expect(answer.ran).toBe(false);
-    expect(answer.why).toContain('ran no case named');
+    expect('why' in answer ? answer.why : undefined).toContain('ran no case named');
   });
 
   it('and a name that is absent is refused too, for the other reason', () => {
@@ -471,9 +484,8 @@ describe('a report where the case is PRESENT and was never run', () => {
 
   it('and a report missing the fields it counts is refused rather than read as empty', () => {
     expect(whatRan({}, { shown: 'x', selects: 'x' }).ran).toBe(false);
-    expect(whatRan({ numTotalTests: 1 }, { shown: 'x', selects: 'x' }).why).toContain(
-      'missing the fields',
-    );
+    const partial = whatRan({ numTotalTests: 1 }, { shown: 'x', selects: 'x' });
+    expect('why' in partial ? partial.why : undefined).toContain('missing the fields');
   });
 
   it('and a case that really ran is read as having run', () => {
@@ -513,7 +525,7 @@ describe('a report where the case is PRESENT and was never run', () => {
     };
     const answer = whatRan(twice, { shown: 'a > b > c', selects: 'a b c' });
     expect(answer.ran).toBe(false);
-    expect(answer.why).toContain('selects 2 cases');
+    expect('why' in answer ? answer.why : undefined).toContain('selects 2 cases');
   });
 });
 
@@ -528,7 +540,7 @@ describe('the runner really does tell a case that ran from a name that ran nothi
       ],
     });
     expect(answer.ran).toBe(true);
-    expect(answer.failed).toBe(false);
+    expect('failed' in answer ? answer.failed : undefined).toBe(false);
   }, 180_000);
 
   it('and refuses a name that selects nothing, rather than calling it a pass', () => {
@@ -541,7 +553,7 @@ describe('the runner really does tell a case that ran from a name that ran nothi
       titles: ['no case of this workspace is called this'],
     });
     expect(answer.ran).toBe(false);
-    expect(answer.why).toContain('ran no case named');
+    expect('why' in answer ? answer.why : undefined).toContain('ran no case named');
   }, 180_000);
 });
 

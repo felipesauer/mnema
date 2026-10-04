@@ -92,7 +92,7 @@ function redirected(to: string): Response {
 /** A calendar's answer: a promise to aggregate the commitment it was handed. */
 function promise(uri: string): Response {
   return new Response(
-    serializeOtsTimestamp({ attestations: [{ kind: 'pending', uri }], steps: [] }),
+    new Uint8Array(serializeOtsTimestamp({ attestations: [{ kind: 'pending', uri }], steps: [] })),
     { status: 200 },
   );
 }
@@ -100,10 +100,12 @@ function promise(uri: string): Response {
 /** A calendar's answer once a block carries it. */
 function anchored(): Response {
   return new Response(
-    serializeOtsTimestamp({
-      attestations: [{ kind: 'bitcoin', height: BLOCK_800000_HEIGHT }],
-      steps: [],
-    }),
+    new Uint8Array(
+      serializeOtsTimestamp({
+        attestations: [{ kind: 'bitcoin', height: BLOCK_800000_HEIGHT }],
+        steps: [],
+      }),
+    ),
     { status: 200 },
   );
 }

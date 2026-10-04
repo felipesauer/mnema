@@ -104,7 +104,7 @@ async function advertised(): Promise<{
   mkdirSync(project, { recursive: true });
   ensureTree({ root: join(project, PROJECT_DIR) });
 
-  const { server } = buildMcpServer({ env, log: () => {} });
+  const { server } = buildMcpServer({ cwd: sandbox, env, log: () => {} });
   const client = new Client(
     { name: 'claude-code', version: '1.0.0' },
     { capabilities: { roots: {} } },
@@ -443,7 +443,8 @@ describe('the shared vocabulary publishes nothing plumbed to nowhere', () => {
         (other) => other.length === set.length && other.every((value, at) => value === set[at]),
       );
 
-    const published = Object.entries(shared).filter(
+    const everyExport: Record<string, unknown> = shared;
+    const published = Object.entries(everyExport).filter(
       (entry): entry is [string, readonly string[]] =>
         Array.isArray(entry[1]) && entry[1].every((value) => typeof value === 'string'),
     );

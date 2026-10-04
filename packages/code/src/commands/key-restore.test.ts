@@ -23,9 +23,16 @@ import { join } from 'node:path';
 import { generateKeyPair } from '@mnema/chain';
 import type { DiscoveryEnv } from '@mnema/core';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
-import { runInit } from './init.js';
+import { type InitContext, type InitResult, runInit } from './init.js';
 import { runKeyRestore } from './key-restore.js';
 import { runVerify } from './verify.js';
+
+/** Founds the project; a refusal here is a broken setup, not a case. */
+function found(ctx: InitContext): InitResult {
+  const result = runInit(ctx);
+  if ('refused' in result) throw new Error('setup: init refused');
+  return result;
+}
 
 let sandbox: string;
 
@@ -54,7 +61,7 @@ function initThenLoseTheKey(
   env: DiscoveryEnv,
   keyRoot: string,
 ): { anchorBefore: string; backupFp: string; vaultCopy: string } {
-  const init = runInit({ cwd: repo, env });
+  const init = found({ cwd: repo, env });
   const backupFp = init.identity?.backup?.fingerprint as string;
 
   // The person moved the cold private half off the machine, as init told them to.
