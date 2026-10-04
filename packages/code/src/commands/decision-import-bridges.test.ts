@@ -100,10 +100,42 @@ describe('decision import --format', () => {
       { from: memory, format: 'claude-memory', write: true },
     );
     expect(done.ok && done.proposals.map((p) => [p.title, p.path])).toEqual([
-      ['No publish', 'claude-memory:feedback_x.md'],
+      ['No publish', expect.stringMatching(/^claude-memory:feedback_x\.md#[0-9a-f]{12}$/)],
     ]);
-    expect(tree().links.map((l) => l.target)).toEqual(['claude-memory:feedback_x.md']);
+    expect(tree().links.map((l) => l.target)).toEqual([
+      expect.stringMatching(/^claude-memory:feedback_x\.md#[0-9a-f]{12}$/),
+    ]);
     expect([...tree().decisions.values()].map((d) => d.state)).toEqual(['proposed']);
+  });
+
+  it('every decision a bridge imports opens its reason with where it was read', () => {
+    put(repo, 'vault/a.json', VAULT_MEMORY);
+    runDecisionImport({ cwd: repo, env }, { from: 'vault', format: 'ecc-vault', write: true });
+    const [decision] = [...tree().decisions.values()];
+    expect(decision?.rationale).toBe(
+      "Imported as written in ecc-vault a.json; not yet this project's own words.\n\nOne file, no server.",
+    );
+  });
+
+  it('two sources of one file name and different content are both imported, and neither path is recorded', () => {
+    const one = join(sandbox, 'one');
+    const two = join(sandbox, 'two');
+    put(one, 'm.json', VAULT_MEMORY);
+    put(two, 'm.json', VAULT_MEMORY.replace('sqlite', 'postgres'));
+    for (const from of [one, two]) {
+      runDecisionImport({ cwd: repo, env }, { from, format: 'ecc-vault', write: true });
+    }
+    const targets = tree().links.map((l) => l.target);
+    expect(targets).toHaveLength(2);
+    expect(new Set(targets).size).toBe(2);
+    for (const target of targets) expect(target).toMatch(/^ecc-vault:m\.json#[0-9a-f]{12}$/);
+    expect(tree().decisions.size).toBe(2);
+    // Each is already imported on its own content, and not the other's.
+    const again = runDecisionImport(
+      { cwd: repo, env },
+      { from: one, format: 'ecc-vault', write: true },
+    );
+    expect(again.ok && [again.proposals.length, again.already.length]).toEqual([0, 1]);
   });
 
   it('a malformed file is named, and nothing is written from it', () => {

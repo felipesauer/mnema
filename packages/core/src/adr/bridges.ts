@@ -27,8 +27,9 @@
  * does not exist as empty.
  */
 
+import { createHash } from 'node:crypto';
 import { readdirSync, readFileSync } from 'node:fs';
-import { join } from 'node:path';
+import { basename, join } from 'node:path';
 import { reasonRefusal, titleRefusal } from '../a-reason-states-something.js';
 import type { AdrDocument, AdrRefusalCode } from './read.js';
 import { type AdrScan, type ScannedDecision, type ScanRefusal, triage } from './scan.js';
@@ -41,6 +42,23 @@ const TITLE_LIMIT = 120;
 
 /** The states the vault itself uses for a memory it retired; its words, not this product's. */
 const RETIRED_IN_THE_VAULT = /^(?:rejected|superseded)$/;
+
+/** The characters of a content hash that a citation carries. */
+const DIGEST_LENGTH = 12;
+
+/** A short hash of what was read, so two sources that share a name are told apart by content. */
+function digestOf(content: string): string {
+  return createHash('sha256').update(content).digest('hex').slice(0, DIGEST_LENGTH);
+}
+
+/**
+ * The line a rationale opens with: where the words come from, and that they are not yet this
+ * project's. It names the file and never its directory, so no path of this machine is recorded.
+ */
+function imported(format: BridgeFormat, file: string, rationale: string, line?: number): string {
+  const at = line !== undefined ? `${basename(file)}:${line}` : basename(file);
+  return `Imported as written in ${format} ${at}; not yet this project's own words.\n\n${rationale}`;
+}
 
 /** What a source's entry came to before triage. */
 type Entry = { readonly document: AdrDocument } | { readonly refused: ScanRefusal['code'] };
@@ -66,7 +84,7 @@ function names(directory: string, extension: RegExp): string[] {
 }
 
 /** One ECC memory object: a decision still in force, or the reason it is not read. */
-function eccMemory(text: string): Entry {
+function eccMemory(text: string, file: string): Entry {
   let parsed: unknown;
   try {
     parsed = JSON.parse(text);
@@ -91,14 +109,14 @@ function eccMemory(text: string): Entry {
   return {
     document: {
       title,
-      rationale,
+      rationale: imported('ecc-vault', file, rationale),
       ...(typeof memory.state === 'string' ? { status: memory.state } : {}),
     },
   };
 }
 
 /** One host memory file: its `name` and its body. */
-function hostMemory(text: string): Entry {
+function hostMemory(text: string, file: string): Entry {
   const match = /^---\r?\n([\s\S]*?)\r?\n---\r?\n?([\s\S]*)$/.exec(text);
   if (match === null) return { refused: 'MALFORMED' };
   const name = /^name:[ \t]*(.*?)[ \t]*$/m.exec(match[1] ?? '')?.[1] ?? '';
@@ -107,7 +125,7 @@ function hostMemory(text: string): Entry {
   if (title === '' || rationale === '') return { refused: 'MALFORMED' };
   const refusal = shape(title, rationale);
   if (refusal !== undefined) return { refused: refusal };
-  return { document: { title, rationale } };
+  return { document: { title, rationale: imported('claude-memory', file, rationale) } };
 }
 
 /** Reads each file of a directory with `one`, in file-name order. */
@@ -115,7 +133,7 @@ function fromDirectory(
   directory: string,
   extension: RegExp,
   skip: (name: string) => boolean,
-  one: (text: string) => Entry,
+  one: (text: string, file: string) => Entry,
 ): AdrScan {
   const read: ScannedDecision[] = [];
   const refused: ScanRefusal[] = [];
@@ -128,14 +146,14 @@ function fromDirectory(
       refused.push({ path, code: 'UNREADABLE' });
       continue;
     }
-    const entry = one(text);
+    const entry = one(text, name);
     if ('refused' in entry) {
       refused.push({ path, code: entry.refused });
       continue;
     }
     const triaged = triage(path, entry.document);
     if ('code' in triaged) refused.push(triaged);
-    else read.push(triaged);
+    else read.push({ ...triaged, digest: digestOf(text) });
   }
   return { read, refused };
 }
@@ -162,9 +180,13 @@ function fromLedger(file: string): AdrScan {
       refused.push({ path: file, line, code: 'MALFORMED' });
       return;
     }
-    const triaged = triage(file, { title, rationale: ruling }, line);
+    const triaged = triage(
+      file,
+      { title, rationale: imported('rulings', file, ruling, line) },
+      line,
+    );
     if ('code' in triaged) refused.push(triaged);
-    else read.push(triaged);
+    else read.push({ ...triaged, digest: digestOf(ruling) });
   });
   if (!found) refused.push({ path: file, code: 'MALFORMED' });
   return { read, refused };

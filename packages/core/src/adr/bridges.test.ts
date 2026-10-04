@@ -1,3 +1,4 @@
+import { createHash } from 'node:crypto';
 import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
@@ -13,6 +14,10 @@ beforeEach(() => {
 afterEach(() => {
   rmSync(sandbox, { recursive: true, force: true });
 });
+
+/** The first 12 hex characters of the sha256 of `text`: what a citation carries. */
+const digest = (text: string): string =>
+  createHash('sha256').update(text).digest('hex').slice(0, 12);
 
 function put(name: string, text: string): string {
   const path = join(sandbox, name);
@@ -41,9 +46,11 @@ describe('the Memory Vault of the ECC', () => {
     expect(scan.read).toEqual([
       {
         title: 'Use sqlite for the local cache',
-        rationale: 'One file, no server, and the cache is disposable.',
+        rationale:
+          "Imported as written in ecc-vault a.json; not yet this project's own words.\n\nOne file, no server, and the cache is disposable.",
         status: 'active',
         path: join(sandbox, 'vault', 'a.json'),
+        digest: digest(memory({})),
       },
     ]);
   });
@@ -91,11 +98,20 @@ describe('the Ruling lines of the superpowers ledger', () => {
     expect(scan.read).toEqual([
       {
         title: 'keep the parser strict because loose parsing hid two bugs',
-        rationale: 'keep the parser strict because loose parsing hid two bugs',
+        rationale:
+          "Imported as written in rulings ledger.md:3; not yet this project's own words.\n\nkeep the parser strict because loose parsing hid two bugs",
         path: file,
         line: 3,
+        digest: digest('keep the parser strict because loose parsing hid two bugs'),
       },
-      { title: 'ship without the cache', rationale: 'ship without the cache', path: file, line: 5 },
+      {
+        title: 'ship without the cache',
+        rationale:
+          "Imported as written in rulings ledger.md:5; not yet this project's own words.\n\nship without the cache",
+        path: file,
+        line: 5,
+        digest: digest('ship without the cache'),
+      },
     ]);
   });
 
@@ -122,8 +138,10 @@ describe('the memory files of the host', () => {
     expect(scan.read).toEqual([
       {
         title: 'No publish',
-        rationale: 'Do not suggest publishing.',
+        rationale:
+          "Imported as written in claude-memory feedback_x.md; not yet this project's own words.\n\nDo not suggest publishing.",
         path: join(sandbox, 'memory', 'feedback_x.md'),
+        digest: digest(memory('No publish', 'Do not suggest publishing.')),
       },
     ]);
   });

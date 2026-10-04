@@ -836,8 +836,8 @@ mnema decision import docs/decisions
 ```
 
 **Other places decisions are written** are read with `--format`, down the same road: planned
-before written, every one born `proposed`, cited to where it was read, never recorded as the
-project's own text.
+before written, every one born `proposed`, cited to where it was read, and the reason of each opens with
+a line saying it was imported as written there and is not yet the project's own words.
 
 | `--format` | `<source>` is | What is read |
 | --- | --- | --- |

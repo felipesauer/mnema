@@ -1,5 +1,5 @@
 /**
- * `mnema decision import <dir>` — propose the decisions this repository already
+ * `mnema decision import <source>` — propose the decisions this repository already
  * wrote down.
  *
  * THE GAP IT CLOSES. Reading the record is discoverable and writing to it is not:
@@ -217,13 +217,13 @@ function alreadyDerived(ctx: DecisionImportContext): {
 /** The plan a run would carry out: what is new, and what the record already has. */
 function plan(
   scanned: readonly ScannedDecision[],
-  originOf: (path: string, line?: number) => string,
+  originOf: (path: string, line?: number, digest?: string) => string,
   derived: ReadonlyMap<string, string>,
 ): { readonly fresh: readonly ScannedDecision[]; readonly already: readonly AlreadyImported[] } {
   const fresh: ScannedDecision[] = [];
   const already: AlreadyImported[] = [];
   for (const document of scanned) {
-    const path = originOf(document.path, document.line);
+    const path = originOf(document.path, document.line, document.digest);
     const decision = derived.get(path);
     if (decision !== undefined) {
       already.push({ path, decision });
@@ -247,7 +247,7 @@ function plan(
  */
 function named(
   refusal: ScanRefusal,
-  originOf: (path: string, line?: number) => string,
+  originOf: (path: string, line?: number, digest?: string) => string,
 ): ScanRefusal {
   return { ...refusal, path: originOf(refusal.path, refusal.line) };
 }
@@ -306,9 +306,13 @@ export function runDecisionImport(
   if (from === undefined && format === 'adr') {
     return { ok: false, reason: 'OUTSIDE_PROJECT', from: input.from };
   }
-  const originOf = (path: string, line?: number): string => {
+  // A path inside the project cites itself. A source outside it is cited by its format and
+  // file name, and the name is not unique across directories, so the content's hash is what
+  // tells two files of one name apart (and never a path of this machine).
+  const originOf = (path: string, line?: number, digest?: string): string => {
     const base = inside(root, path) ?? `${format}:${basename(path)}`;
-    return line !== undefined ? `${base}:${line}` : base;
+    const at = line !== undefined ? `${base}:${line}` : base;
+    return digest !== undefined && inside(root, path) === undefined ? `${at}#${digest}` : at;
   };
 
   const scope = resolveScope('decision.recorded', { which: input.which }, input.scope);

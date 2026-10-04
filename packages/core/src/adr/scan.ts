@@ -65,6 +65,11 @@ export interface ScannedDecision extends AdrDocument {
   readonly path: string;
   /** The line it was read from, for a source that holds many entries per file. */
   readonly line?: number;
+  /**
+   * A short hash of the content read — the file, or the one entry of a file that holds many —
+   * for a source cited by its name alone, where two directories can hold the same name.
+   */
+  readonly digest?: string;
 }
 
 /** One file that produced no proposal, and why. */
