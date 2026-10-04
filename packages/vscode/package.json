@@ -28,6 +28,11 @@
   "activationEvents": [
     "workspaceContains:.mnema"
   ],
+  "capabilities": {
+    "untrustedWorkspaces": {
+      "supported": false
+    }
+  },
   "contributes": {
     "configuration": {
       "title": "mnema",
@@ -35,6 +40,7 @@
         "mnema.command": {
           "type": "string",
           "default": "mnema",
+          "scope": "machine",
           "description": "The mnema executable the extension runs. It is started directly, with an argument array, never through a shell."
         }
       }

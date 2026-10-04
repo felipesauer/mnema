@@ -33,7 +33,9 @@ this repository, and every read and every write goes through the `mnema` command
 
 The extension needs the `mnema` command (from `@mnema/code`) where the editor can start it; the
 setting `mnema.command` names another executable if it is not on the `PATH`. It starts when the
-workspace holds a `.mnema` folder.
+workspace holds a `.mnema` folder. The path of the executable comes only from your user settings
+(`mnema.command` is a machine-scoped setting, so a repository's `.vscode/settings.json` cannot set
+it), and the extension stays off in a workspace that is not trusted.
 
 There is nothing to install from a registry. From a built checkout (`pnpm install`, `pnpm build`):
 
