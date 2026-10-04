@@ -86,6 +86,18 @@ document, delivered by the host instead of waited for.
   Claude Code, which runs the call; VS Code's command door starts a process per write and has no
   session to remember a path by, so it does not hold. That the host refuses the write on `deny` and
   hands the reason to the model was measured (`measurements/hooks-by-host/`).
+- **Three skills**, which the host offers a model when a skill's description matches what the
+  session is doing. `recording-decisions` is for the moment a choice between approaches is
+  settled, an option is turned down, or a person says how something is done here: look first
+  (`governing_rules`, `search`), then `record_decision` with the reasoning and what was turned
+  down, and a note for what the project's code does not show. `recording-rulings` is for a workflow
+  that keeps its rulings in a ledger thrown away when the work ends: each ruling is also recorded,
+  as a proposal, and the ledger stays as it is. `diagnosing-recording` is for the question *why
+  did this session record nothing*: it reads the host's own transcripts of the session and cites
+  the line each finding comes from. A skill is text the host may load, and nothing here makes it
+  load or makes the agent follow it: whether a session recorded is read off the record, and the
+  measurements the `recording-decisions` table rests on are in its `references/`. A subagent
+  dispatched for a task is told not to record and to hand its decisions back in its reply.
 - **A switch for each of them.** `mnema switch` says where each stands and what each
   carries; `mnema switch off edit-rules-push` stops the per-edit push, `mnema switch off
   brief-document` stops the opening document, and `mnema switch off recall-document` stops
@@ -254,6 +266,21 @@ but for the indentation of their continuation lines, which arrives as a single s
 and the model called the server's tools. That the server there goes by the directory
 Cursor starts it in is this product's rule and is held by a case of its own
 ([`a-client-that-names-no-workspace.test.ts`](../packages/code/tests/a-client-that-names-no-workspace.test.ts)).
+
+## The server without the hooks
+
+The marketplace carries a second plugin, `mnema-server-only` (`plugin-server-only/`), for whoever
+wants the MCP server and the command line and nothing the hooks hand over: it declares the same
+`mnema mcp` and runs no hook and installs no skill. With it, the record is not put into the session
+as it opens, no rule comes beside an edit, no pause for a person or refusal of a write is asked or
+made at one (a rule that says so is still in the record, and nothing at the host acts on it), and no
+count or correction is taken at the end of a response. The agent keeps every tool of the server,
+and you keep every command. Install one of the two and not both: they declare the same server, and a
+session would be offered every tool twice.
+
+```sh
+claude plugin install mnema-server-only@mnema
+```
 
 ## Layout
 

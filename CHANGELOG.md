@@ -15,6 +15,13 @@ Requires Node ≥ 22.12.0; the packages are ESM-only.
 
 ### Added
 
+- **A front page that says who it is for.** The root README opens with the promise, honest badges and
+  the first-record recording, then who it is for and when not to use it; one section lists what else
+  the product does, each with what it does not prove. The package pages gain the log read against
+  the record, the inherited record, `doctor`, the plugin's skills and the server-only plugin.
+- **A guard on commit e-mails.** The pull request job that keeps the tool's footer out of the record
+  now also refuses an author or committer outside `*@users.noreply.github.com` (GitHub's own
+  `noreply@github.com` is allowed as a committer).
 - **A library door to the record** (`packages/sdk`, not published): `openRecord` records a decision, accepts
   or rejects one, takes a note, reads the brief, the notes and the rules for a path, and verifies the
   record, each by calling the function the matching command calls; `mnemaHooks` returns the

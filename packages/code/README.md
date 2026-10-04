@@ -765,6 +765,79 @@ a declaration can make the runner start that program. The Action in `packages/ac
 record and runs `mnema verify`; it does not run `check run`, so today the step above is one of your
 own workflow's.
 
+### Reading the git log against the record
+
+A commit carries the change and the record carries the reasoning; a trailer in the commit's
+message is the line between them, and four verbs read it. They run `git log` when asked, take no
+lock and write nothing: not a pointer to a commit, not a count.
+
+```sh
+# The line to put in a commit message. It carries the label, or `--id` for the id, which names
+# the decision in whichever clone it is read.
+git commit --trailer "$(mnema trailer ADR-4)"
+
+# The commits that cite a decision, and — as a second list — the commits that touched a path it
+# addresses.
+mnema commits ADR-4
+
+# Under which decisions a file stands, or a commit: the rules in force that address it, and the
+# commits that touched it and carry a trailer.
+mnema why src/billing/invoice.ts
+
+# Accepted decisions whose addressed paths changed in many commits since they were accepted.
+mnema aging --min-commits 10
+```
+
+**What it proves.** That a commit's message carries the trailer, and that a commit touched a path
+a decision addresses — facts git holds and anyone can re-run with `git log`. **What it does not.**
+A trailer is a claim its author made, signed by nobody: it does not say the commit follows the
+decision, and the record does not know the commit exists. A commit that touched a path says only
+that the change landed where the decision speaks, and the two lists are kept apart for that
+reason. `why` answers with the rules in force today, not the ones that were when the commit was
+made. A clone that holds part of the history says so, and answers from what it holds; a commit
+rewritten away takes its trailer with it, and the record does not keep a copy. `aging` counts one
+number — commits since the acceptance that touched an address of the decision, 20 or more unless
+`--min-commits` says otherwise — and it points, it does not conclude: a decision about a file
+edited every day because the decision is being followed is listed too. Only accepted decisions
+that hold an address are asked about. `commits` and `why` show the newest 30 of a list and say when there were more.
+
+### A record that inherits another repository's decisions
+
+A project can read the decisions in force of another repository — a team's shared conventions, say
+— without copying them in. `mnema inherit set <origin> --at <revision> --write` writes
+`.mnema/inherit.json`, a committed file naming the origin and **one commit** of it; `mnema inherit
+update` moves that commit and prints what changes first. Without `--write`, both print what would
+be inherited and write nothing.
+
+```sh
+mnema inherit set ../team-decisions --at main
+mnema inherit update --to main --write
+```
+
+`mnema brief` then prints the inherited decisions in force in a section of their own, naming the
+origin and the commit. They are read and never written: this project does not sign them, its
+`verify` does not count them, and nothing is added to its chain. **What it proves** is that the
+record at that commit verifies with the same check as the project's own, and a record that does
+not verify there contributes nothing, and the brief says so. **What it does not prove** is that the
+origin is the one you meant or that it deserves trust: pointing at an origin is trusting it at that
+commit, and the commit never moves unless `inherit update --write` moves it. Only `set` and `update`
+use the network; a read uses this machine's copy, kept under the mnema home and not in the project,
+and says when the commit is not there yet.
+
+### Is mnema set up on this machine
+
+```sh
+mnema doctor
+```
+
+One line to a finding, each with what to do about it: whether a `mnema` is on the `PATH` and which
+one runs, whether the Claude Code plugin is installed and at what version, whether the MCP server is
+declared more than once (a session is offered every tool once per declaration), and whether a second
+`mnema`, or an npm package of that name, is installed. It reads files on this machine and writes
+nothing; it does not ask the registry, so a package that is published and not installed here is
+outside what it can say. The exit status is 0 whatever it found: a script that wants to act on a
+finding reads the line.
+
 ### What goes into the record
 
 Every field of text you record passes one door on the way in.
