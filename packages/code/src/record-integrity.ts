@@ -247,6 +247,11 @@ export const SERVES_NO_RECORD_CONTENT: { readonly [path: string]: string } = {
     '`agent-accepts` switch stands, to turn an agent’s accept away, and it serves nothing of ' +
     'the record to anybody — a notice about the chain would be said to a caller who asked to ' +
     'change it, and the reads that follow (`show`, `brief`) carry it',
+  'commands/check.ts':
+    'it records results at a commit and reads the record only to know which rules are in ' +
+    'force; what it serves is the verdict of each check, a notice about the chain would be ' +
+    'said to a runner that asked for the results, and `mnema verify` rules on the chain in the ' +
+    'same job',
   'commands/before-a-write.ts':
     'a host runs it before a write and reads one field of its reply — the reason a person ' +
     'decides on — so a notice about the chain has nowhere to land; the same session opens ' +

@@ -10,11 +10,12 @@
 
 _mnema_commands() {
   case "$1" in
-    '') echo 'init task decision skill memory observe handoff link retract run status focus resume next-actions guard search show timeline accountability antipatterns exposure export refs diagram rules rules-file trailer commits why aging skills usage brief recall before-a-write tally corrections key tail witness switch inherit doctor verify mcp repl completion help' ;;
+    '') echo 'init task decision skill memory observe handoff link retract run status focus resume next-actions guard search show timeline accountability antipatterns exposure export refs diagram rules rules-file check trailer commits why aging skills usage brief recall before-a-write tally corrections key tail witness switch inherit doctor verify mcp repl completion help' ;;
     'task') echo 'create move help' ;;
     'decision') echo 'record move supersede import help' ;;
     'skill') echo 'create move export help' ;;
     'run') echo 'start end help' ;;
+    'check') echo 'declare run help' ;;
     'key') echo 'restore request enroll github revoke protect unprotect help' ;;
     'tail') echo 'list prune help' ;;
     'witness') echo 'stamp upgrade' ;;
@@ -64,6 +65,9 @@ _mnema_flags() {
     'diagram') echo '-h --help -V --version --color --identify' ;;
     'rules') echo '--json -h --help -V --version --color --identify' ;;
     'rules-file') echo '--host -h --help -V --version --color --identify' ;;
+    'check') echo '-h --help -V --version --color --identify' ;;
+    'check declare') echo '--which -h --help -V --version --color --identify' ;;
+    'check run') echo '--key --timeout -h --help -V --version --color --identify' ;;
     'trailer') echo '--id --json -h --help -V --version --color --identify' ;;
     'commits') echo '--json -h --help -V --version --color --identify' ;;
     'why') echo '--json -h --help -V --version --color --identify' ;;
@@ -77,8 +81,8 @@ _mnema_flags() {
     'corrections') echo '-h --help -V --version --color --identify' ;;
     'key') echo '-h --help -V --version --color --identify' ;;
     'key restore') echo '-h --help -V --version --color --identify' ;;
-    'key request') echo '--anchor --key -h --help -V --version --color --identify' ;;
-    'key enroll') echo '-h --help -V --version --color --identify' ;;
+    'key request') echo '--anchor --key --checker -h --help -V --version --color --identify' ;;
+    'key enroll') echo '--checker -h --help -V --version --color --identify' ;;
     'key github') echo '-h --help -V --version --color --identify' ;;
     'key revoke') echo '--reason -h --help -V --version --color --identify' ;;
     'key protect') echo '-h --help -V --version --color --identify' ;;
@@ -164,6 +168,9 @@ _mnema_values() {
     'rules:--color') echo 'auto always never' ;;
     'rules-file:--host') echo 'claude vscode cursor' ;;
     'rules-file:--color') echo 'auto always never' ;;
+    'check:--color') echo 'auto always never' ;;
+    'check declare:--color') echo 'auto always never' ;;
+    'check run:--color') echo 'auto always never' ;;
     'trailer:--color') echo 'auto always never' ;;
     'commits:--color') echo 'auto always never' ;;
     'why:--color') echo 'auto always never' ;;

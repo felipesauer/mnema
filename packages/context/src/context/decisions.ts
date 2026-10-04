@@ -250,6 +250,15 @@ export function decisionsInForce(caches: readonly ProjectionCache[]): DecisionRe
 }
 
 /**
+ * The ids of the rules in force over these caches — the set the checks a runner owes are
+ * taken from. It asks {@link decisionsInForce}, so the rule for which decisions govern is
+ * still decided in one place and the caller never restates it.
+ */
+export function ruleIdsInForce(caches: readonly ProjectionCache[]): ReadonlySet<string> {
+  return new Set(decisionsInForce(caches).map((rule) => rule.id));
+}
+
+/**
  * A decision nobody has ruled on yet — a name, plus the state that says WHICH
  * ruling is missing.
  *

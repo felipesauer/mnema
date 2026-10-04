@@ -6,7 +6,7 @@ against their implementation, and get the same digests we do.
 
 **Somebody has.** [`verifier/`](./verifier/) beside this file is a second implementation, in
 Python, written from this document and importing nothing of the product it checks. It
-reproduces the 25 published vectors and the four aggregate digests, and checks the frozen
+reproduces the 29 published vectors and the four aggregate digests, and checks the frozen
 records in the test suite beside the product
 (`packages/chain/src/chain/second-reader-agrees-on-the-record.test.ts`), on honest records
 and on every input the format refuses. The two verdicts differ in two pinned cases. With the
@@ -418,6 +418,22 @@ against `keys/<newFp>.pub` **with that file's fingerprint recomputed** (§6): a
 member could otherwise enrol a key it does not hold, or swap the file afterwards
 and have someone else's signature verify against it.
 
+**A fourth fact grants a ROLE rather than a membership**, and two kinds are judged by
+it instead of by the sets above:
+
+| kind | what it must satisfy | what it does |
+|---|---|---|
+| `checker.enrolled` | `subject == anchor(payload.checkerFp)`; `signerFp` is in the set of `who` at this point; and `payload.reverseSig` is a valid Ed25519 signature, by the key `checkerFp` names (fingerprint recomputed, as above), over the UTF-8 of `check-enroll:<who>:<checkerFp>` | makes `checkerFp` a CHECKER key |
+| `check.passed`, `check.failed` | `signerFp` is a checker key at this point, and `who == anchor(signerFp)` | — |
+
+A checker key signs check results and **nothing else**: an event of any other kind
+whose `signerFp` is a checker key at its point in the fold is refused, whatever its
+kind — its own `identity.founded` included. A checker joins no identity; it speaks under
+the anchor its own key derives, so a reader can tell a machine's result from a person's
+act. The consent message is not §6.2's `enroll:` message, so a consent given to join an
+identity cannot enrol a checker, nor the reverse. There is no fact that withdraws the
+role.
+
 **And every other event is authentic only if its `signerFp` is in the set of its
 own `who` at its point in the fold.** That is the whole rule; there is no
 "the anchor is my own key" shortcut. A lone key still founds its anchor, so one
@@ -493,7 +509,7 @@ paragraph used to read *"the seven top-level keys of an event are `at`, `kind`,
 `payload`, `signerFp`, `subject`, `v` and `who`"*, and that sentence was false: it
 was the INTERSECTION of the published vectors, and `which` and `run` were carried
 by sixteen and three of those same vectors respectively (eighteen and five of the
-twenty-six published today). What falsified it is that
+thirty published today). What falsified it is that
 an independent verifier believed it — it took the intersection, as the sentence
 invited, and **refused an honest event for carrying `which`**, on a record this
 product read as fine (§4.1, gap G25). A required field and an optional one look

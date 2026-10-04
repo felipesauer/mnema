@@ -757,6 +757,19 @@ export class ProjectionCache {
   }
 
   /**
+   * The anchors this tree enrolls as CHECKERS — machines whose key signs check results and
+   * nothing else — in record order, once each. Read off the membership facts this cache keeps;
+   * whether each enrolment holds is `verify`'s to prove (FORMAT.md section 6.2).
+   */
+  checkers(): string[] {
+    const anchors = new Set<string>();
+    for (const event of readMembership(this.db)) {
+      if (event.kind === 'checker.enrolled') anchors.add(event.subject);
+    }
+    return [...anchors];
+  }
+
+  /**
    * Every decision, skill and task of this tree that two machines moved out of one state
    * without seeing each other (`divergentMoves`) — asked of the rows this cache keeps for the
    * entities that have one, which an advance maintains one entity at a time. The same answer

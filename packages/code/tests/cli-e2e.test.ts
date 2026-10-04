@@ -2921,6 +2921,7 @@ describe('mnema CLI — a --which that names nobody', () => {
     expect(declaring.sort()).toEqual(
       [
         'accountability',
+        'check declare',
         'export',
         'decision',
         // The import declares its OWN `--which` because it is a BIRTH: it names the

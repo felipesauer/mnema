@@ -440,7 +440,7 @@ describe('the refused run is refused everywhere', () => {
         .filter((one) => one.parserAnswered)
         .map((one) => one.path)
         .sort(),
-    ).toEqual(['decision', 'inherit', 'key', 'run', 'skill', 'tail', 'task']);
+    ).toEqual(['check', 'decision', 'inherit', 'key', 'run', 'skill', 'tail', 'task']);
     // And the two facts are exclusive, which is what makes the first list readable: a path
     // the parser answered for cannot also have been heard by the pin resolver.
     expect(measured.filter((one) => one.parserAnswered && one.asked)).toEqual([]);

@@ -179,6 +179,8 @@ interface Fixture {
   readonly foreignTail: string;
   /** A memory the fixture captured — the note `retract` takes back. */
   readonly note: string;
+  /** The decision the fixture recorded — the rule `check declare` gives a check to. */
+  readonly rule: string;
 }
 
 /** How one verb is exercised: the line it is invoked with, and where it is typed. */
@@ -229,6 +231,9 @@ const INVOCATION: Readonly<Record<string, Invocation>> = {
   link: { argv: (f) => ['link', f.task, f.task, '--rel', 'relates-to'] },
   retract: { argv: (f) => ['retract', f.note, '--reason', 'it turned out to be wrong'] },
   run: { argv: () => ['run', 'start', '--which', 'agent-alpha'] },
+  // The group's recording half; `check run` needs a key enrolled as a checker and a tree at
+  // a commit, and is driven through the binary in `a-rule-carries-its-check.test.ts`.
+  check: { argv: (f) => ['check', 'declare', f.rule, 'node', '--', '-e', 'process.exit(0)'] },
   key: { argv: (f) => ['key', 'revoke', f.backupKey, '--reason', 'it left this machine'] },
   tail: {
     argv: (f) => ['tail', 'prune', f.foreignTail, '--reason', 'the person asked to be taken out'],
@@ -463,11 +468,14 @@ async function fixture(name: string): Promise<Fixture> {
     'a rationale',
   ]);
   if (decided.failed) throw new Error(`fixture: decision refused: ${decided.out}`);
+  const rule = decided.out.join('\n').match(/\(([0-9a-f-]{36})\)/);
+  if (rule?.[1] === undefined) throw new Error(`fixture: decision printed no id: ${decided.out}`);
   const captured = await mnema(['memory', 'a note somebody will take back']);
   const note = captured.out.join('\n').match(/([0-9a-f]{8}-[0-9a-f-]{27})/);
   if (note?.[1] === undefined) throw new Error(`fixture: memory printed no id: ${captured.out}`);
   return {
     note: note[1],
+    rule: rule[1],
     anchor: identity.trim().slice('identity:'.length).trim(),
     task: id[1],
     backupKey: basename(backup.slice(backup.indexOf(AT) + AT.length).trim(), '.key'),
@@ -606,6 +614,7 @@ describe('every verb says if it writes', () => {
       'link',
       'retract',
       'run',
+      'check',
       'before-a-write',
       'corrections',
       'key',
@@ -662,6 +671,7 @@ describe('every verb says if it writes', () => {
     // stopped being a project — cannot leave the assertion above passing over nothing.
     const wrote = exercised.filter((one) => one.appended > 0);
     expect(wrote.map((one) => one.verb).sort()).toEqual([
+      'check',
       'decision',
       'handoff',
       'init',

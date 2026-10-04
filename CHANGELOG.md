@@ -22,6 +22,12 @@ Requires Node ≥ 22.12.0; the packages are ESM-only.
   `verify` does not count them. A record that does not verify at the commit prints none, and the
   brief says so. Moving the pointer is explicit and shows what changes first; the copy is kept
   under the mnema home, outside the project. Inheriting is trusting that repository at that commit.
+- **A rule can carry its check** (the `check` command): a decision in force names the program that
+  checks it, and a machine with a key of its own records, at a commit, whether the rule held. That
+  key is enrolled by a member of an identity (the `--checker` form of the key request and enroll
+  commands) and signs check results only: `mnema verify` refuses a check result from any other key
+  and any other fact from that key, and `mnema accountability` lists it as a machine. Four new event
+  kinds, read by both verifiers.
 - **A GitHub Action over the record** (`packages/action`, not published): on a pull request it keeps
   one comment saying which events the pull request adds to the record and which changed files an
   accepted rule addresses, and fails the check when `mnema verify --require=signed` fails. An

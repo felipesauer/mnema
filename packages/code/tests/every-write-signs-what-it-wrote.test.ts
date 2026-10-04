@@ -1,3 +1,4 @@
+import { spawnSync } from 'node:child_process';
 import {
   cpSync,
   mkdirSync,
@@ -22,12 +23,13 @@ import {
 import { createTask, openTreeForWriting } from '@mnema/core/write';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { runBeforeAWrite } from '../src/commands/before-a-write.js';
+import { runCheckDeclare, runCheckRun } from '../src/commands/check.js';
 import { runDecision } from '../src/commands/decision.js';
 import { runDecisionImport } from '../src/commands/decision-import.js';
 import { runDecisionTransition } from '../src/commands/decision-transition.js';
 import { runHandoff } from '../src/commands/handoff.js';
 import { runInit } from '../src/commands/init.js';
-import { runKeyEnroll } from '../src/commands/key-enroll.js';
+import { runCheckerEnroll, runKeyEnroll } from '../src/commands/key-enroll.js';
 import { runKeyGithub } from '../src/commands/key-github.js';
 import { runKeyRequest } from '../src/commands/key-request.js';
 import { runKeyRevoke } from '../src/commands/key-revoke.js';
@@ -59,6 +61,7 @@ import {
   runRulesBeforeAnEditTool,
   runSkillsTool,
 } from '../src/mcp/tools.js';
+import { GIT_WITHOUT_MAINTENANCE } from './support/git-without-maintenance.js';
 
 /**
  * The invariant this file exists for: EVERY path that puts an event on a tail SIGNS
@@ -154,12 +157,13 @@ const CODE_SRC = join(HERE, 'src');
  * 33 since the founding is decided under the tail's lock: `ensureFounded` hands the half that
  * may found to `foundUnderTheLock`, which is where the founding's append now is. 35 since the
  * refusal of a write arrived: `recordChannelRefused`, and the one body it shares with
- * `recordChannelAsked` (`recordRuleAtPath`). 36 since a note can be retracted: `retractNote`. 37 since an identity can name its account: `linkAccount`.
+ * `recordChannelAsked` (`recordRuleAtPath`). 36 since a note can be retracted: `retractNote`. 39 since a rule can carry a check: `declareCheck`,
+ * `enrollChecker` and `runRuleChecks`. 40 since an identity can name its account: `linkAccount`.
  */
-const CORE_OPERATIONS_THAT_APPEND = 37;
+const CORE_OPERATIONS_THAT_APPEND = 40;
 
 /** How many paths of the shipped surface reach one of them. */
-const SURFACE_WRITE_PATHS = 37;
+const SURFACE_WRITE_PATHS = 40;
 
 /** Every non-test TypeScript file under a source root. */
 function sourceFiles(dir: string): string[] {
@@ -663,6 +667,52 @@ describe('every write path leaves the record fully signed', () => {
             'key enroll',
             runKeyEnroll(ctx, { request: (asked as { request: string }).request }),
           );
+        },
+      },
+      {
+        at: 'commands/check.ts:runCheckDeclare',
+        drive: () =>
+          void ok(
+            'check declare',
+            runCheckDeclare(ctx, { rule: decision, command: 'node', args: ['-e', '0'] }),
+          ),
+      },
+      {
+        at: 'commands/key-enroll.ts:runCheckerEnroll',
+        drive: () => {
+          const runner = otherMachine('runner');
+          const anchor = runInit({ cwd: project, env }).anchor;
+          const asked = ok(
+            'checker request',
+            runKeyRequest({ cwd: project, env: runner }, { anchor, asChecker: true }),
+          );
+          void ok('checker enroll', runCheckerEnroll(ctx, { request: asked.request }));
+        },
+      },
+      {
+        // The runner signs under a key of its own, handed as a file, in a tree that is a commit.
+        at: 'commands/check.ts:runCheckRun',
+        drive: () => {
+          const git = (...args: string[]): void => {
+            const ran = spawnSync('git', ['-c', 'user.name=t', '-c', 'user.email=t@t', ...args], {
+              cwd: project,
+              env: {
+                PATH: process.env.PATH ?? '',
+                HOME: env.home,
+                GIT_CONFIG_GLOBAL: GIT_WITHOUT_MAINTENANCE,
+              },
+            });
+            if (ran.status !== 0) throw new Error(`git ${args.join(' ')} failed`);
+          };
+          git('init', '-q');
+          git('add', '.');
+          git('commit', '-q', '-m', 'the tree the check runs at');
+          const keys = join(resolveTrees(project, otherMachine('runner')).keyRoot, 'keys');
+          const keyFile = join(
+            keys,
+            readdirSync(keys).find((name) => name.endsWith('.key')) as string,
+          );
+          void ok('check run', runCheckRun(ctx, { keyFile, timeoutMs: 60_000 }));
         },
       },
       {

@@ -41,11 +41,12 @@
  * arrives as exactly one event, which each case asserts.
  */
 
-import { mkdtempSync, readdirSync, rmSync } from 'node:fs';
+import { mkdirSync, mkdtempSync, readdirSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import {
   catalogUpcasters,
+  deriveAnchor,
   type EventKind,
   LATEST_VERSION,
   openChainForWriting,
@@ -53,8 +54,10 @@ import {
   type UpcasterRegistry,
 } from '@mnema/chain';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
+import { declareCheck, enrollChecker, runRuleChecks } from '../checks/operations.js';
 import { ensureSchema, PROJECTION_TABLES } from '../db/schema.js';
 import { IN_MEMORY, openDatabase, type SqliteDatabase } from '../db/sqlite.js';
+import { requestEnrollment } from '../identity/handshake.js';
 import {
   captureMemory,
   linkKnowledge,
@@ -95,6 +98,7 @@ beforeEach(() => {
 
 afterEach(() => {
   rmSync(root, { recursive: true, force: true });
+  rmSync(`${root}-ci`, { recursive: true, force: true });
 });
 
 /** A write context over the sandbox chain, signing with a key rooted in it. */
@@ -257,6 +261,35 @@ const ARRIVALS: { readonly [K in EventKind]: Arrival } = {
         }),
       ),
   },
+  // A rule with a check: the declaration is the arrival, and the rule it names is already here.
+  'check.declared': {
+    setup: (ctx) => landed(recordDecision(ctx, { title: 'a rule to check', rationale: 'why' })).id,
+    emit: (ctx, rule) => landed(declareCheck(ctx, { rule: rule as string, command: 'node' })),
+  },
+  // A machine's key vouched for: the arrival is a membership fact, which is what the
+  // projection reads to say which identities are machines.
+  'checker.enrolled': {
+    setup: (ctx) =>
+      landed(
+        requestEnrollment({
+          anchor: deriveAnchor(ctx.writer.signerFingerprint),
+          keyRoot: ciKeyRoot(),
+          asChecker: true,
+        }),
+      ).request,
+    emit: (ctx, request) => landed(enrollChecker(ctx, { request: request as string })),
+  },
+  'check.passed': {
+    setup: aRuleWithACheckAndACheckerKey,
+    emit: (ctx, rule) => landed(runAs(ctx, rule as string, { passed: true, output: 'fine' })),
+  },
+  'check.failed': {
+    setup: aRuleWithACheckAndACheckerKey,
+    emit: (ctx, rule) =>
+      landed(
+        runAs(ctx, rule as string, { passed: false, failure: 'exited with code 1', output: '' }),
+      ),
+  },
   // A note already projected, and indexed, taken back by the arrival: its row changes and it
   // leaves the index, which is the case a stale suffix would get wrong.
   'note.retracted': {
@@ -265,6 +298,45 @@ const ARRIVALS: { readonly [K in EventKind]: Arrival } = {
       landed(retractNote(ctx, { id: note as string, reason: 'it turned out to be wrong' })),
   },
 };
+
+/** The key root of the machine that runs checks, beside the sandbox so it goes with it. */
+function ciKeyRoot(): string {
+  mkdirSync(`${root}-ci`, { recursive: true });
+  return `${root}-ci`;
+}
+
+/** A decision with a declared check, and a key enrolled to run it — the setup of a result. */
+function aRuleWithACheckAndACheckerKey(ctx: WriteContext): string {
+  const rule = landed(recordDecision(ctx, { title: 'a rule to check', rationale: 'why' })).id;
+  landed(declareCheck(ctx, { rule, command: 'node' }));
+  const asked = landed(
+    requestEnrollment({
+      anchor: deriveAnchor(ctx.writer.signerFingerprint),
+      keyRoot: ciKeyRoot(),
+      asChecker: true,
+    }),
+  );
+  landed(enrollChecker(ctx, { request: asked.request }));
+  return rule;
+}
+
+/** Runs the rule's check as the enrolled checker, which is the only key that may record it. */
+function runAs(
+  ctx: WriteContext,
+  rule: string,
+  outcome: { passed: true; output: string } | { passed: false; failure: string; output: string },
+) {
+  const checker: WriteContext = {
+    writer: openChainForWriting(ctx.layout.root, { keyRoot: ciKeyRoot() }),
+    layout: ctx.layout,
+    upcasters,
+  };
+  return runRuleChecks(checker, {
+    commit: 'c0ffee'.padEnd(40, '0'),
+    rulesInForce: new Set([rule]),
+    run: () => outcome,
+  });
+}
 
 /** Puts a SECOND tail in the tree — another installation's key writing into it. */
 function aSecondTailIn(chainRoot: string): string {

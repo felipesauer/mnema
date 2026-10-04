@@ -2,8 +2,9 @@ import { cpSync, mkdtempSync, readdirSync, readFileSync, rmSync } from 'node:fs'
 import { tmpdir } from 'node:os';
 import { dirname, join, relative } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { catalogUpcasters, openChainForWriting } from '@mnema/chain';
+import { catalogUpcasters, deriveAnchor, openChainForWriting } from '@mnema/chain';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
+import { declareCheck, enrollChecker, runRuleChecks } from '../checks/operations.js';
 import { requestEnrollment } from '../identity/handshake.js';
 import { enrollFromRequest, revokeMember } from '../identity/roster.js';
 import {
@@ -182,6 +183,8 @@ describe('every write refuses what no read could accept', () => {
     let secondKey = '';
     let foreignTail = '';
     let note = '';
+    let rule = '';
+    let checker: WriteContext | undefined;
     return [
       {
         op: 'createTask',
@@ -238,6 +241,47 @@ describe('every write refuses what no read could accept', () => {
           note = made.id;
         },
         drive: () => retractNote(ctx, { id: note, reason: '' }),
+      },
+      {
+        op: 'declareCheck',
+        field: 'command',
+        names: 'payload.command',
+        prepare: () => {
+          const made = recordDecision(ctx, { title: 'a rule to check', rationale: 'because' });
+          if (!made.ok) throw new Error('the rule to check could not be recorded');
+          rule = made.id;
+        },
+        drive: () => declareCheck(ctx, { rule, command: '' }),
+      },
+      {
+        op: 'runRuleChecks',
+        field: 'failure',
+        names: 'payload.failure',
+        prepare: () => {
+          const made = recordDecision(ctx, { title: 'a rule to check', rationale: 'because' });
+          if (!made.ok) throw new Error('the rule to check could not be recorded');
+          rule = made.id;
+          if (!declareCheck(ctx, { rule, command: 'node' }).ok) throw new Error('no check');
+          const asked = requestEnrollment({
+            anchor: deriveAnchor(ctx.writer.signerFingerprint),
+            keyRoot,
+            asChecker: true,
+          });
+          if (!asked.ok) throw new Error('no checker request');
+          if (!enrollChecker(ctx, { request: asked.request }).ok) throw new Error('no checker');
+          ctx.writer.checkpoint();
+          checker = {
+            writer: openChainForWriting(root, { keyRoot }),
+            layout: ctx.layout,
+            upcasters,
+          };
+        },
+        drive: () =>
+          runRuleChecks(checker as WriteContext, {
+            commit: 'c0ffee'.padEnd(40, '0'),
+            rulesInForce: new Set([rule]),
+            run: () => ({ passed: false, failure: '', output: '' }),
+          }),
       },
       {
         op: 'recordObservation',
@@ -590,6 +634,7 @@ describe('every write refuses what no read could accept', () => {
     // request, and there is no argument a caller could empty.
     ensureFounded: 'the founding is derived entirely from the local key',
     establishIdentity: 'enrolls what the key root registered; a refusal is reported as declined',
+    enrollChecker: 'the fingerprint is computed from a decoded request, the signature proven first',
     enrollFromRequest: 'the fingerprint is computed and the signature is rejected as absent first',
   };
 

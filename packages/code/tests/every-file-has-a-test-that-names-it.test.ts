@@ -428,6 +428,10 @@ const UNWITNESSED: Readonly<Record<string, Debt>> = {
     reached: 'nobody imports it',
     why: "The inherit verbs' wiring, which prints the plan and the refusals; a-project-inherits-a-record.test.ts drives it through the binary, and the cases beside the command read what it returns, never what this prints.",
   },
+  'packages/code/src/wiring/check.ts': {
+    reached: 'nobody imports it',
+    why: "The check group's two subcommands and the lines they print; cli-e2e asserts the record they leave and the exit code of `check run`, not the sentences this file prints about it.",
+  },
   'packages/code/src/wiring/commits.ts': {
     reached: 'nobody imports it',
     why: "The commits verb's wiring; the-record-meets-the-git-log.test.ts drives it through the CLI and reads its --json and its page.",
@@ -640,7 +644,7 @@ const UNWITNESSED: Readonly<Record<string, Debt>> = {
  * reading, so nothing can fall in two.
  */
 const THE_SHAPE_OF_WHAT_IS_LEFT: Readonly<Record<string, number>> = {
-  wiring: 43,
+  wiring: 44,
   presentation: 11,
   projections: 4,
   completion: 4,
@@ -883,6 +887,7 @@ const CLAUSES_PER_FILE: Readonly<Record<string, number>> = {
   'packages/code/src/what-the-session-touches.test.ts': 13,
   'packages/code/src/wiring/from-the-group.test.ts': 5,
   'packages/code/src/wiring/io.test.ts': 3,
+  'packages/code/tests/a-check-runs-as-declared.test.ts': 5,
   'packages/code/tests/a-client-that-names-no-workspace.test.ts': 14,
   'packages/code/tests/a-correction-becomes-a-proposal.test.ts': 14,
   'packages/code/tests/a-flag-declared-twice.test.ts': 9,
@@ -905,6 +910,7 @@ const CLAUSES_PER_FILE: Readonly<Record<string, number>> = {
   'packages/code/tests/a-refusal-is-one-line.test.ts': 7,
   'packages/code/tests/a-refusal-leaves-nothing.test.ts': 13,
   'packages/code/tests/a-refused-group-flag-leaves-the-record.test.ts': 7,
+  'packages/code/tests/a-rule-carries-its-check.test.ts': 9,
   'packages/code/tests/a-rule-says-who-ruled-it.test.ts': 11,
   'packages/code/tests/a-rule-that-refuses-a-write.test.ts': 16,
   'packages/code/tests/a-rules-file-carries-only-what-becomes-a-glob-exactly.test.ts': 11,
@@ -932,7 +938,7 @@ const CLAUSES_PER_FILE: Readonly<Record<string, number>> = {
   'packages/code/tests/every-skill-the-plugin-ships-is-what-it-says.test.ts': 11,
   'packages/code/tests/every-tool-says-if-it-writes.test.ts': 16,
   'packages/code/tests/every-verb-says-if-it-writes.test.ts': 14,
-  'packages/code/tests/every-write-signs-what-it-wrote.test.ts': 32,
+  'packages/code/tests/every-write-signs-what-it-wrote.test.ts': 35,
   'packages/code/tests/mcp-audit-across-workspace.test.ts': 12,
   'packages/code/tests/mcp-configured-project.test.ts': 11,
   'packages/code/tests/mcp-context.test.ts': 8,
@@ -1128,8 +1134,9 @@ const CLAUSES_PER_FILE: Readonly<Record<string, number>> = {
   'packages/core/src/adr/read.test.ts': 3,
   'packages/core/src/adr/scan.test.ts': 6,
   'packages/core/src/boundaries.test.ts': 4,
+  'packages/core/src/checks/a-rule-carries-its-check.test.ts': 14,
   'packages/core/src/content/every-door.test.ts': 14,
-  'packages/core/src/content/every-field.test.ts': 17,
+  'packages/core/src/content/every-field.test.ts': 19,
   'packages/core/src/content/screen.test.ts': 3,
   'packages/core/src/content/secrets.test.ts': 2,
   'packages/core/src/identity/account.test.ts': 2,
@@ -1149,7 +1156,7 @@ const CLAUSES_PER_FILE: Readonly<Record<string, number>> = {
   'packages/core/src/knowledge/link-end-to-end.test.ts': 11,
   'packages/core/src/knowledge/operations.test.ts': 11,
   'packages/core/src/projections/accumulate.test.ts': 7,
-  'packages/core/src/projections/advance.test.ts': 20,
+  'packages/core/src/projections/advance.test.ts': 22,
   'packages/core/src/projections/cache-meta.test.ts': 8,
   'packages/core/src/projections/cache.test.ts': 7,
   'packages/core/src/projections/decision.test.ts': 3,
@@ -1176,7 +1183,7 @@ const CLAUSES_PER_FILE: Readonly<Record<string, number>> = {
   'packages/core/src/topology/resolve.test.ts': 5,
   'packages/core/src/topology/routing.test.ts': 11,
   'packages/core/src/workflow/a-gate-judges-the-record-as-it-stands.test.ts': 4,
-  'packages/core/src/workflow/a-stale-anchor-writes-nothing.test.ts': 19,
+  'packages/core/src/workflow/a-stale-anchor-writes-nothing.test.ts': 20,
   'packages/core/src/workflow/a-write-reads-what-arrived.test.ts': 11,
   'packages/core/src/workflow/adoption.test.ts': 12,
   'packages/core/src/workflow/as-the-record-stands.test.ts': 6,
@@ -1185,7 +1192,7 @@ const CLAUSES_PER_FILE: Readonly<Record<string, number>> = {
   'packages/core/src/workflow/decision-states.test.ts': 2,
   'packages/core/src/workflow/decision-transitions.test.ts': 3,
   'packages/core/src/workflow/disposition.test.ts': 4,
-  'packages/core/src/workflow/every-append.test.ts': 18,
+  'packages/core/src/workflow/every-append.test.ts': 19,
   'packages/core/src/workflow/gate.test.ts': 5,
   'packages/core/src/workflow/identity-operations.test.ts': 9,
   'packages/core/src/workflow/prune-operations.test.ts': 8,
@@ -1274,6 +1281,7 @@ const PRODUCTION_FILES: readonly string[] = [
   'packages/code/src/commands/antipatterns.ts',
   'packages/code/src/commands/before-a-write.ts',
   'packages/code/src/commands/brief.ts',
+  'packages/code/src/commands/check.ts',
   'packages/code/src/commands/commits.ts',
   'packages/code/src/commands/corrections.ts',
   'packages/code/src/commands/decision-import.ts',
@@ -1440,6 +1448,7 @@ const PRODUCTION_FILES: readonly string[] = [
   'packages/code/src/wiring/before-a-write.ts',
   'packages/code/src/wiring/body-source.ts',
   'packages/code/src/wiring/brief.ts',
+  'packages/code/src/wiring/check.ts',
   'packages/code/src/wiring/color.ts',
   'packages/code/src/wiring/commits.ts',
   'packages/code/src/wiring/completion.ts',
@@ -1526,6 +1535,8 @@ const PRODUCTION_FILES: readonly string[] = [
   'packages/core/src/a-reason-states-something.ts',
   'packages/core/src/adr/read.ts',
   'packages/core/src/adr/scan.ts',
+  'packages/core/src/checks/checkers.ts',
+  'packages/core/src/checks/operations.ts',
   'packages/core/src/content/fields.ts',
   'packages/core/src/content/screen.ts',
   'packages/core/src/content/secrets.ts',
@@ -1648,8 +1659,10 @@ describe('every file has a test that names it', () => {
     );
     // 78 with the git bridge's five wiring files; 73 until `chain/src/one-line.test.ts` began calling the functions it is about.
     // 72 until `mcp/hook-reply.test.ts` began calling the function it is about.
-    expect(found.size).toBe(80);
-    expect(byReach('nobody imports it')).toBe(80);
+    // 81 with the inherit verbs' wiring, beside the check group's, which the end-to-end run reaches.
+    // 80 with the check group.
+    expect(found.size).toBe(81);
+    expect(byReach('nobody imports it')).toBe(81);
     expect(byReach('imported, and no assertion observes it')).toBe(0);
   });
 
@@ -1671,7 +1684,7 @@ describe('every file has a test that names it', () => {
     // Announced in the header and, until now, kept by hand. A shared excuse is how a table
     // like this turns into a rubber stamp, and a row drained to a stub is how it starts.
     const reasons = Object.values(UNWITNESSED).map((one) => one.why);
-    expect(reasons).toHaveLength(80);
+    expect(reasons).toHaveLength(81);
     expect(new Set(reasons).size).toBe(reasons.length);
     // The shortest reason standing is 156 characters; the floor is under it and well over
     // anything that could be written without saying what reaches that file.

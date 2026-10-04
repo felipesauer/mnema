@@ -1,15 +1,18 @@
-import { cpSync, mkdtempSync, rmSync } from 'node:fs';
+import { cpSync, mkdirSync, mkdtempSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import {
   type CatalogEvent,
   catalogUpcasters,
+  deriveAnchor,
   type EventKind,
   LATEST_VERSION,
   openChainForWriting,
   type TransitionFields,
 } from '@mnema/chain';
 import { describe, expect, it } from 'vitest';
+import { declareCheck, enrollChecker, runRuleChecks } from '../checks/operations.js';
+import { requestEnrollment } from '../identity/handshake.js';
 import {
   captureMemory,
   linkKnowledge,
@@ -393,6 +396,52 @@ const DRIVERS: { readonly [K in EventKind]: Driver } = {
       run: text('run'),
     }),
 
+  'check.declared': (ctx, text) => {
+    // The subject is a decision this driver records first and is NOT poisoned; the program
+    // and its argument are names, so poisoning either refuses the declaration.
+    const rule = landed(recordDecision(ctx, { title: 'a rule to check', rationale: 'because' }));
+    return declareCheck(ctx, {
+      rule: rule.id,
+      command: text('payload.command'),
+      args: [text('payload.args')],
+      which: text('which'),
+    });
+  },
+
+  // Both fields are derived from a key that really asked, so there is nothing to poison.
+  'checker.enrolled': (ctx) => {
+    const { request } = landed(
+      requestEnrollment({
+        anchor: deriveAnchor(ctx.writer.signerFingerprint),
+        keyRoot: checkerKeyRoot(ctx),
+        asChecker: true,
+      }),
+    );
+    return enrollChecker(ctx, { request });
+  },
+
+  'check.passed': (ctx, text) =>
+    asChecker(ctx, (checker, rule) =>
+      runRuleChecks(checker, {
+        commit: COMMIT,
+        rulesInForce: new Set([rule]),
+        run: () => ({ passed: true, output: text('payload.output') }),
+      }),
+    ),
+
+  'check.failed': (ctx, text) =>
+    asChecker(ctx, (checker, rule) =>
+      runRuleChecks(checker, {
+        commit: COMMIT,
+        rulesInForce: new Set([rule]),
+        run: () => ({
+          passed: false,
+          failure: text('payload.failure'),
+          output: text('payload.output'),
+        }),
+      }),
+    ),
+
   'note.retracted': (ctx, text) => {
     // The subject is proved against the record, so it is a memory this driver captures first
     // and is NOT poisoned; the reason is the one field a caller writes.
@@ -405,6 +454,43 @@ const DRIVERS: { readonly [K in EventKind]: Driver } = {
     });
   },
 };
+
+/** A full commit object name, the shape a check result names. */
+const COMMIT = 'c0ffee'.padEnd(40, '0');
+
+/** The key root of the machine that runs checks: beside the tree, so it goes with it. */
+function checkerKeyRoot(ctx: WriteContext): string {
+  const keyRoot = `${ctx.layout.root}-ci`;
+  mkdirSync(keyRoot, { recursive: true });
+  return keyRoot;
+}
+
+/**
+ * Records a rule with a declared check, enrolls a checker key for it, and hands `run` the
+ * checker's context — the way a result reaches the chain, which only a checker key may sign.
+ */
+function asChecker(
+  ctx: WriteContext,
+  run: (checker: WriteContext, rule: string) => WriteResult,
+): WriteResult {
+  const rule = landed(recordDecision(ctx, { title: 'a rule to check', rationale: 'because' }));
+  landed(declareCheck(ctx, { rule: rule.id, command: 'node' }));
+  const { request } = landed(
+    requestEnrollment({
+      anchor: deriveAnchor(ctx.writer.signerFingerprint),
+      keyRoot: checkerKeyRoot(ctx),
+      asChecker: true,
+    }),
+  );
+  landed(enrollChecker(ctx, { request }));
+  ctx.writer.checkpoint();
+  const checker: WriteContext = {
+    writer: openChainForWriting(ctx.layout.root, { keyRoot: checkerKeyRoot(ctx) }),
+    layout: ctx.layout,
+    upcasters: ctx.upcasters,
+  };
+  return run(checker, rule.id);
+}
 
 /**
  * A rule id in the shape the record mints them — the value the ONE identifier of
@@ -544,6 +630,7 @@ function drive(kind: EventKind, text: Poison): Driven {
     return { result, events: orderedEvents(ctx.layout, upcasters), asked };
   } finally {
     rmSync(root, { recursive: true, force: true });
+    rmSync(`${root}-ci`, { recursive: true, force: true });
   }
 }
 
@@ -811,6 +898,12 @@ describe('the envelope’s own text goes through the door on every kind that car
   }
 });
 
+/** The fields an operation bounds itself instead of refusing: the tail of a program's output. */
+const BOUNDED: ReadonlySet<string> = new Set([
+  'check.passed payload.output',
+  'check.failed payload.output',
+]);
+
 describe('the size ceiling holds on every field the door owes', () => {
   // The door is a limit and THEN a scrub, so a field that reaches it is under both
   // and a field that reaches neither is invisible to the pass above in the same way.
@@ -824,6 +917,16 @@ describe('the size ceiling holds on every field the door owes', () => {
 
       for (const path of clean.asked) {
         const driven = drive(kind, oversizeAt(kind, path));
+        if (BOUNDED.has(`${kind} ${path}`)) {
+          // What a check printed is cut to its tail by the operation, not refused: a failing
+          // check's flood is the one thing a record must still say it did.
+          expect(driven.result.ok, `${kind} refused a flood in "${path}"`).toBe(true);
+          for (const event of driven.events) {
+            if (event.kind !== kind) continue;
+            expect(Array.from(JSON.stringify(event.payload)).length).toBeLessThan(FIELD_BYTE_LIMIT);
+          }
+          continue;
+        }
         expect(driven.result.ok, `${kind} accepted an oversize "${path}"`).toBe(false);
         if (driven.result.ok) continue;
         expect(driven.result.code, `${kind}.${path}`).toBe('CONTENT_TOO_LARGE');

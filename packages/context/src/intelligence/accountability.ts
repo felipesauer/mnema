@@ -88,6 +88,12 @@ export interface WhoAccount {
    * counted, and a founding is where the author came from, whatever was counted since.
    */
   readonly foundedBeside: readonly FoundedBesideMark[];
+  /**
+   * True when this identity is a MACHINE: a key the record enrolls as a checker, which signs
+   * check results under its own anchor and nothing else. Its facts are counted like anyone's;
+   * this says that nobody authorized them in the sense a person does — a runner reported them.
+   */
+  readonly machine: boolean;
 }
 
 /** One founding beside others, as the account reports it beside the identity it founded. */
@@ -257,13 +263,14 @@ function fold(
       accumulate(perWho, cell);
     }
   }
+  const machines = new Set(sources.flatMap((source) => source.cache.checkers()));
   const foundings = sources.flatMap((source) =>
     source.cache.foundedBeside().map((founding) => ({ scope: source.scope, founding })),
   );
   return {
     total,
     byWho: [...perWho.values()]
-      .map((acc) => finishWho(acc, foundedBesideOf(foundings, acc.who)))
+      .map((acc) => finishWho(acc, foundedBesideOf(foundings, acc.who), machines.has(acc.who)))
       .sort(byTotalThenWho),
   };
 }
@@ -318,14 +325,18 @@ function accumulate(perWho: Map<string, WhoAccumulator>, cell: AuthorshipTally):
 }
 
 /** Finishes an accumulator into an immutable, stably-ordered account. */
-function finishWho(acc: WhoAccumulator, foundedBeside: readonly FoundedBesideMark[]): WhoAccount {
+function finishWho(
+  acc: WhoAccumulator,
+  foundedBeside: readonly FoundedBesideMark[],
+  machine: boolean,
+): WhoAccount {
   const byKind = [...acc.byKind.entries()]
     .map(([kind, count]) => ({ kind, count }))
     .sort((a, b) => (a.kind < b.kind ? -1 : a.kind > b.kind ? 1 : 0));
   const byWhich = [...acc.byWhich.entries()]
     .map(([which, count]) => ({ which, count }))
     .sort(byCountThenWhich);
-  return { who: acc.who, total: acc.total, byKind, byWhich, foundedBeside };
+  return { who: acc.who, total: acc.total, byKind, byWhich, foundedBeside, machine };
 }
 
 /** Accounts by count descending, then by `who` ascending — stable, not a verdict. */

@@ -40,6 +40,9 @@ import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 
 import {
   channelRefused,
+  checkerEnrolled,
+  checkerEnrollmentMessage,
+  checkPassed,
   enrollmentMessage,
   identityFounded,
   keyEnrolled,
@@ -655,5 +658,130 @@ describe('the two readers agree on records the product itself wrote — a retrac
     expect(productOk).toBe(false);
     expect(verdict).toBe('REFUSED');
     expect(refused.join('\n')).toContain('note.retracted');
+  });
+});
+
+/**
+ * A KEY THAT SIGNS CHECK RESULTS AND NOTHING ELSE, read by both. The role is a fold rule of
+ * section 6.2 — `checker.enrolled` adds a key to the checkers, a `check.passed`/`check.failed`
+ * is authentic only under such a key and the anchor it derives, and any other kind under such
+ * a key is refused — so the stranger's reader has a line of Python for it, and these cases
+ * are where the two have to reach the same polarity.
+ */
+describe('the two readers agree on records the product itself wrote — a checker', () => {
+  const RULE = '019f81f8-e400-7006-8000-000000000006';
+  const COMMIT = 'a'.repeat(40);
+
+  function consent(anchor: string, checker: KeyPair): string {
+    return Buffer.from(
+      sign(checkerEnrollmentMessage(anchor, checker.fingerprint), checker.privateKey),
+    ).toString('hex');
+  }
+
+  function enrolChecker(
+    anchor: string,
+    voucher: KeyPair,
+    checker: KeyPair,
+    sig = consent(anchor, checker),
+  ): CatalogEvent {
+    return checkerEnrolled(
+      {
+        at: at(2),
+        who: anchor,
+        signerFp: voucher.fingerprint,
+        subject: deriveAnchor(checker.fingerprint),
+      },
+      { checkerFp: checker.fingerprint, reverseSig: sig },
+    );
+  }
+
+  function passed(signer: KeyPair, who = deriveAnchor(signer.fingerprint)): CatalogEvent {
+    return checkPassed(
+      { at: at(4), who, signerFp: signer.fingerprint, subject: RULE },
+      { commit: COMMIT, command: 'node', args: ['check.js'], output: 'ok' },
+    );
+  }
+
+  /** A person (A) and a CI key (C); the CI key's .pub committed, as the enrolment commits it. */
+  function personAndChecker(): { a: KeyPair; c: KeyPair; anchor: string } {
+    const a = generateKeyPair();
+    const c = generateKeyPair();
+    commitPublicKey(a);
+    commitPublicKey(c);
+    return { a, c, anchor: deriveAnchor(a.fingerprint) };
+  }
+
+  it('a checker enrolled by a person, signing a result in its own tail: green on both', () => {
+    const { a, c, anchor } = personAndChecker();
+    writeTail(`${a.fingerprint}-i1`, [founding(a), enrolChecker(anchor, a, c)], a);
+    writeTail(`${c.fingerprint}-i2`, [passed(c)], c);
+
+    const { productOk, verdict, refused } = bothReaders();
+    expect(refused, 'the second reader refuses an honest check result').toEqual([]);
+    expect(productOk).toBe(true);
+    expect(verdict).toBe('VERIFIED');
+  });
+
+  it('a check result signed by a PERSON’s key: refused by both', () => {
+    const { a, anchor } = personAndChecker();
+    writeTail(`${a.fingerprint}-i1`, [founding(a), passed(a, anchor)], a);
+
+    const { productOk, verdict, refused } = bothReaders();
+    expect(productOk).toBe(false);
+    expect(verdict).toBe('REFUSED');
+    expect(refused).toHaveLength(1);
+    expect(refused.join('\n')).toContain('not enrolled as a checker');
+  });
+
+  it('any other kind signed by a checker key: refused by both', () => {
+    // The other half of the role: a leaked runner secret must not be able to say anything
+    // but a result — not a task, and not its own founding.
+    const { a, c, anchor } = personAndChecker();
+    const cAnchor = deriveAnchor(c.fingerprint);
+    writeTail(`${a.fingerprint}-i1`, [founding(a), enrolChecker(anchor, a, c)], a);
+    writeTail(
+      `${c.fingerprint}-i2`,
+      [
+        identityFounded(
+          { at: at(3), who: cAnchor, signerFp: c.fingerprint, subject: cAnchor },
+          { foundingFp: c.fingerprint },
+        ),
+        task(cAnchor, c, 't-1', 4),
+      ],
+      c,
+    );
+
+    const { productOk, verdict, refused } = bothReaders();
+    expect(productOk).toBe(false);
+    expect(verdict).toBe('REFUSED');
+    expect(refused).toHaveLength(2);
+    expect(refused.join('\n')).toContain('signs check results only');
+  });
+
+  it('a checker enrolment whose consent was given to another identity: refused by both', () => {
+    const { a, c, anchor } = personAndChecker();
+    const elsewhere = consent(deriveAnchor('deadbeef'), c);
+    writeTail(`${a.fingerprint}-i1`, [founding(a), enrolChecker(anchor, a, c, elsewhere)], a);
+    writeTail(`${c.fingerprint}-i2`, [passed(c)], c);
+
+    const { productOk, verdict, refused } = bothReaders();
+    expect(productOk).toBe(false);
+    expect(verdict).toBe('REFUSED');
+    expect(refused.join('\n')).toContain('does not prove the checker consented');
+  });
+
+  it('a consent to JOIN an identity, used as a checker enrolment: refused by both', () => {
+    // The two messages differ on purpose: `enroll:` is not `check-enroll:`.
+    const { a, c, anchor } = personAndChecker();
+    writeTail(
+      `${a.fingerprint}-i1`,
+      [founding(a), enrolChecker(anchor, a, c, reverseSig(anchor, c))],
+      a,
+    );
+
+    const { productOk, verdict, refused } = bothReaders();
+    expect(productOk).toBe(false);
+    expect(verdict).toBe('REFUSED');
+    expect(refused.join('\n')).toContain('does not prove the checker consented');
   });
 });

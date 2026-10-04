@@ -20,6 +20,13 @@ The shape, from the document:
     key.revoked        who == subject, signerFp valid at this point
                                                               -> removes revokedFp
 
+    checker.enrolled   subject == anchor(checkerFp), signerFp valid for `who` at this point,
+                       and reverseSig verifies under the key checkerFp names, over the
+                       UTF-8 of `check-enroll:<who>:<checkerFp>`  -> checkerFp is a checker
+    check.passed,      signerFp is a checker at this point, and who == anchor(signerFp)
+    check.failed
+    any other kind     signed by a checker key: refused, whatever it is
+
     every other event  signerFp is in the set of its own `who` at its point in the fold
 
 THE TWO GATES ARE THE PART A READER GETS WRONG BY OMISSION. An event above the last
@@ -56,6 +63,11 @@ def anchor_of(fingerprint: str) -> str:
 def enrolment_message(anchor: str, new_fp: str) -> bytes:
     """What a new key signs to prove it consented: `enroll:<anchor>:<newFp>`, in UTF-8."""
     return f"enroll:{anchor}:{new_fp}".encode("utf-8")
+
+
+def checker_message(anchor: str, checker_fp: str) -> bytes:
+    """What a key signs to consent to sign check results: `check-enroll:<anchor>:<fp>`."""
+    return f"check-enroll:{anchor}:{checker_fp}".encode("utf-8")
 
 
 class Issue(NamedTuple):
@@ -102,6 +114,8 @@ def resolve(
     # Keys a signature-covered revocation removed, as `<anchor>|<fp>`. An addition that
     # would restore one takes effect only when it is itself covered.
     covered_revoked: set[str] = set()
+    # Keys enrolled as checkers: they sign check results and nothing else.
+    checkers: set[str] = set()
 
     def keys_of(anchor: str) -> set[str]:
         return valid.setdefault(anchor, set())
@@ -135,6 +149,43 @@ def resolve(
         payload = event.get("payload")
         if not isinstance(payload, dict):
             payload = {}
+
+        is_result = kind in ("check.passed", "check.failed")
+        if not is_result and signer in checkers:
+            issues.append(
+                Issue(tail, seq, f"{kind} is signed by a checker key, which signs check results only")
+            )
+            continue
+
+        if kind == "checker.enrolled":
+            checker = payload.get("checkerFp")
+            if not isinstance(checker, str) or subject != anchor_of(checker):
+                issues.append(
+                    Issue(tail, seq, "checker.enrolled subject is not the anchor its checker key derives")
+                )
+                continue
+            if not isinstance(who, str) or signer not in keys_of(who):
+                issues.append(
+                    Issue(tail, seq, "checker.enrolled is signed by a key not valid for its who at this point")
+                )
+                continue
+            if not _consent_ok(ring, checker_message(who, checker), checker, payload.get("reverseSig")):
+                issues.append(
+                    Issue(tail, seq, "checker.enrolled reverse signature does not prove the checker consented")
+                )
+                continue
+            checkers.add(checker)
+            continue
+
+        if is_result:
+            if signer not in checkers:
+                issues.append(
+                    Issue(tail, seq, f"{kind} is signed by a key not enrolled as a checker at this point")
+                )
+                continue
+            if not isinstance(signer, str) or who != anchor_of(signer):
+                issues.append(Issue(tail, seq, f"{kind} who is not the anchor of the checker key that signed it"))
+            continue
 
         if kind == "identity.founded":
             founding = payload.get("foundingFp")
@@ -214,13 +265,20 @@ def _reverse_signature_ok(
     `newFp` here is what stops a member enrolling a key it does not hold and then swapping
     the committed file for one whose signature they can make.
     """
-    if not isinstance(new_fp, str) or not isinstance(reverse, str):
+    if not isinstance(new_fp, str):
         return False
-    key = ring.get(new_fp)
+    return _consent_ok(ring, enrolment_message(anchor, new_fp), new_fp, reverse)
+
+
+def _consent_ok(ring: dict[str, PublicKey], message: bytes, fp: Any, reverse: Any) -> bool:
+    """A key's proof of possession over `message`, under the committed key `fp` names."""
+    if not isinstance(fp, str) or not isinstance(reverse, str):
+        return False
+    key = ring.get(fp)
     if key is None:
         return False
     try:
         signature = bytes.fromhex(reverse)
     except ValueError:
         return False
-    return ed25519_verify(key.raw, signature, enrolment_message(anchor, new_fp))
+    return ed25519_verify(key.raw, signature, message)
