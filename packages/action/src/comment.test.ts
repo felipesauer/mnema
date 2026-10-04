@@ -109,7 +109,12 @@ describe('plain', () => {
       ...busy,
       record: { ...busy.record, byKind: [['a|b', 1]] },
       governed: [
-        { path: 'p.ts', governs: [{ id: '[x](javascript:alert(1))' }], asks: [], refuses: [] },
+        {
+          path: 'p.ts',
+          governs: [{ id: '[x](javascript:alert(1))', name: undefined }],
+          asks: [],
+          refuses: [],
+        },
       ],
     });
     expect(body).toContain('| `a\\|b` | 1 |');

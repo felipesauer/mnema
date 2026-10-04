@@ -388,7 +388,8 @@ describe('what a reported run says about its age and its idleness', () => {
     try {
       const [reported] = focus([cache], asking(bench.who)).openRuns;
       const projected = cache.getRun('run-1');
-      expect(reported).toMatchObject(projected as Record<string, unknown>);
+      if (projected === null) throw new Error('the run was started, so the cache must project it');
+      expect(reported).toMatchObject(projected);
     } finally {
       cache.close();
     }
