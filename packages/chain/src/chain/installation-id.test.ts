@@ -240,7 +240,7 @@ async function inAThreadOfItsOwn(plant: Plant = {}): Promise<Answer> {
     eval: true,
     workerData: { built: BUILT, root, fingerprint, path, ...plant },
   });
-  let ceiling: NodeJS.Timeout | undefined;
+  let ceiling: NodeJS.Timeout | number | undefined;
   try {
     const first = await Promise.race([
       once(thread, 'message').then(

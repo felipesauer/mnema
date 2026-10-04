@@ -833,7 +833,9 @@ describe('chain — census crosses committed keys against tails on disk', () => 
       expect(result.tails).toHaveLength(1);
       // The census flags the orphaned key by its fingerprint.
       expect(result.census).toHaveLength(1);
-      expect(result.census[0]?.fingerprint).toBe(fpB);
+      const note = result.census[0];
+      if (note?.kind !== 'key-without-tail') throw new Error(`census said ${note?.kind}`);
+      expect(note.fingerprint).toBe(fpB);
       expect(result.summary).toMatch(/committed key\(s\) without a tail/);
     } finally {
       rmSync(rootB, { recursive: true, force: true });

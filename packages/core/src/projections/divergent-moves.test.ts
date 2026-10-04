@@ -135,7 +135,7 @@ describe('divergentMoves', () => {
     const accepted = acceptDecision(a, { id: recorded.id, fields: { note: 'agreed' } });
     if (!accepted.ok) throw new Error(accepted.message);
     const events = eventsOf(tree);
-    const last = events.findLast((e) => e.kind === 'decision.transitioned') as CatalogEvent;
+    const last = events.filter((e) => e.kind === 'decision.transitioned').at(-1) as CatalogEvent;
     expect(divergentMoves([...events, last])).toEqual([]);
   });
 

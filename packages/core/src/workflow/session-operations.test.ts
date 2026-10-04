@@ -330,7 +330,7 @@ describe('rebuild is byte-identical: replaying the events reproduces the project
     const ctx = contextFor(w, root, clock);
     const id = mustStart(ctx, { agent: AGENT, goal: 'g' });
     tick();
-    endRun(ctx, { run: id, outcome: 'o' });
+    endRun(ctx, { run: id, which: AGENT, outcome: 'o' });
 
     const once = runsOf(root);
     const twice = runsOf(root);
@@ -346,7 +346,7 @@ describe('session — end to end: a clone reconstructs and verifies from events 
     const ctx = contextFor(w, root, clock);
     const id = mustStart(ctx, { agent: 'claude', goal: 'reconstruct me' });
     tick();
-    endRun(ctx, { run: id, outcome: 'done' });
+    endRun(ctx, { run: id, which: AGENT, outcome: 'done' });
     // Checkpoint so the tail is fully signed for an anonymous verify.
     w.checkpoint();
 

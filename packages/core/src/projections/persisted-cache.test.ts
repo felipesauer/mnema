@@ -97,7 +97,7 @@ function aRecord(ctx: WriteContext): { task: string; decision: string } {
   landed(recordObservation(ctx, { about: task, topic: 'already', text: 'an observation' }));
   landed(switchChannel(ctx, { channel: 'a-channel-already-here', on: false }));
   const run = landed(startRun(ctx, { agent: 'an-agent', goal: 'to have a run here' }));
-  landed(endRun(ctx, { run: run.id, outcome: 'done' }));
+  landed(endRun(ctx, { run: run.id, which: 'an-agent', outcome: 'done' }));
   ctx.writer.checkpoint();
   return { task, decision };
 }
@@ -344,7 +344,7 @@ describe('a cache that cannot be vouched for is replaced, never trusted', () => 
 
   it('a tail whose earlier segment was cut', () => {
     const ctx = aWarmFile({ maxSegmentBytes: 2048 });
-    const dir = tailDir({ root }, ctx.writer.tailId);
+    const dir = tailDir({ root }, ctx.writer.tail);
     const segments = readdirSync(dir)
       .filter((name) => name.endsWith('.jsonl') && name !== 'checkpoints.jsonl')
       .sort();
@@ -361,7 +361,7 @@ describe('a cache that cannot be vouched for is replaced, never trusted', () => 
     // starts before the boundary the cache holds, which a resumed reading used to take for "no
     // arrival" — so it went on serving the entries the file no longer held.
     const ctx = aWarmFile();
-    const file = join(tailDir({ root }, ctx.writer.tailId), '000001.jsonl');
+    const file = join(tailDir({ root }, ctx.writer.tail), '000001.jsonl');
     const held = readFileSync(file, 'utf-8');
     const lines = held.trimEnd().split('\n');
     writeFileSync(file, `${lines.slice(0, -2).join('\n')}\n`);
@@ -373,7 +373,7 @@ describe('a cache that cannot be vouched for is replaced, never trusted', () => 
 
   it('a sealed segment rewritten to the same size', () => {
     const ctx = aWarmFile({ maxSegmentBytes: 2048 });
-    const dir = tailDir({ root }, ctx.writer.tailId);
+    const dir = tailDir({ root }, ctx.writer.tail);
     const sealed = readdirSync(dir)
       .filter((name) => /^\d{6}\.jsonl$/.test(name))
       .sort()[0] as string;
@@ -548,15 +548,13 @@ describe('linkBreaksAsOfNow names every tail that broke', () => {
       cache.refresh();
       expect(cache.linkBreaksAsOfNow(), 'a chain that chains').toEqual([]);
 
-      for (const tail of [ctx.writer.tailId, other.tailId]) {
+      for (const tail of [ctx.writer.tail, other.tail]) {
         const file = join(tailDir({ root }, tail), '000001.jsonl');
         const lines = readFileSync(file, 'utf-8').trimEnd().split('\n');
         appendFileSync(file, `${lines[lines.length - 1] as string}\n`);
       }
       const named = cache.linkBreaksAsOfNow();
-      expect(named.map((broke) => broke.tail).sort()).toEqual(
-        [ctx.writer.tailId, other.tailId].sort(),
-      );
+      expect(named.map((broke) => broke.tail).sort()).toEqual([ctx.writer.tail, other.tail].sort());
     } finally {
       rmSync(colleague, { recursive: true, force: true });
     }

@@ -22,6 +22,12 @@ import { captureMemory, linkKnowledge, recordHandoff, recordObservation } from '
 
 const upcasters = catalogUpcasters();
 
+/** A write that must have landed: narrows the result to its accepted half, or fails the case loudly. */
+function ok<T extends { ok: boolean }>(result: T): Extract<T, { ok: true }> {
+  if (!result.ok) throw new Error(`the write was refused: ${JSON.stringify(result)}`);
+  return result as Extract<T, { ok: true }>;
+}
+
 describe('captureMemory — the operation', () => {
   let chainRoot: string;
 
@@ -42,8 +48,8 @@ describe('captureMemory — the operation', () => {
 
   it('mints the memory id — the caller never supplies it', () => {
     const ctx = ctxFor(chainRoot);
-    const a = captureMemory(ctx, { content: 'first' });
-    const b = captureMemory(ctx, { content: 'second' });
+    const a = ok(captureMemory(ctx, { content: 'first' }));
+    const b = ok(captureMemory(ctx, { content: 'second' }));
     expect(a.ok).toBe(true);
     expect(b.ok).toBe(true);
     // Two captures, two DISTINCT minted ids (v7: timestamp + randomness).
@@ -93,8 +99,8 @@ describe('recordObservation — the operation', () => {
 
   it('mints the observation id — the caller never supplies it', () => {
     const ctx = ctxFor(chainRoot);
-    const a = recordObservation(ctx, { about: 't-1', topic: 'x', text: 'first' });
-    const b = recordObservation(ctx, { about: 't-1', topic: 'y', text: 'second' });
+    const a = ok(recordObservation(ctx, { about: 't-1', topic: 'x', text: 'first' }));
+    const b = ok(recordObservation(ctx, { about: 't-1', topic: 'y', text: 'second' }));
     // Two observations about the SAME entity, two DISTINCT minted ids.
     expect(a.id).not.toBe(b.id);
     expect(a.id).toMatch(/^[0-9a-f]{8}-[0-9a-f]{4}-7[0-9a-f]{3}-[0-9a-f]{4}-[0-9a-f]{12}$/);
@@ -102,12 +108,14 @@ describe('recordObservation — the operation', () => {
 
   it('records the observed entity in `about`, and derives `who` from the key', () => {
     const ctx = ctxFor(chainRoot);
-    const rec = recordObservation(ctx, {
-      about: 't-42',
-      topic: 'flaky',
-      text: 'retries',
-      which: 'claude',
-    });
+    const rec = ok(
+      recordObservation(ctx, {
+        about: 't-42',
+        topic: 'flaky',
+        text: 'retries',
+        which: 'claude',
+      }),
+    );
     const obs = projectObservations(orderedEvents({ root: chainRoot }, upcasters)).get(rec.id);
     expect(obs?.about).toBe('t-42');
     expect(obs?.who).toBe(ctx.writer.anchor);
@@ -117,7 +125,9 @@ describe('recordObservation — the operation', () => {
   it('does NOT refuse an absent `about` — a cross-tree assertion is honest', () => {
     const ctx = ctxFor(chainRoot);
     // Nothing named `t-nowhere` exists in this tree, yet the observation stands.
-    const rec = recordObservation(ctx, { about: 't-nowhere', topic: 't', text: 'still recorded' });
+    const rec = ok(
+      recordObservation(ctx, { about: 't-nowhere', topic: 't', text: 'still recorded' }),
+    );
     expect(rec.ok).toBe(true);
     expect(projectObservations(orderedEvents({ root: chainRoot }, upcasters)).has(rec.id)).toBe(
       true,

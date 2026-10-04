@@ -20,8 +20,9 @@ export default defineConfig({
        * so a second full run of the suite could only fail if a case failed, and the name said
        * something this file did not do.
        *
-       * These are today's figures — 94.48 statements, 87.35 branches, 96.22 functions, 95.59
-       * lines, identical across two passes — floored to the integer. Floored, so they can only
+       * These are today's figures — 94.94 statements, 88.19 to 88.22 branches, 96.50 functions,
+       * 96.22 lines, measured over two full passes (the other three figures identical in both;
+       * the branch count moved by 3 of 8,682 between them) — floored to the integer. Floored, so they can only
        * be raised, and so a rebuild of the report cannot redden them by a rounding digit. THE
        * COST OF FLOORING IS SAID OUT LOUD: up to a point of real coverage can be lost before
        * this notices. It catches the cliff, not the drift.
