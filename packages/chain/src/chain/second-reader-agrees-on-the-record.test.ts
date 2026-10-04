@@ -191,14 +191,14 @@ describe('the second reader can be run at all', () => {
     const report = JSON.parse(run.stdout) as SecondReading;
     expect(report.verdict, run.stdout).toBe('VERIFIED');
     expect(refusals(report)).toEqual([]);
-    // The 26 rows and the four aggregates, named in the finding so a shrinking vector
+    // The 30 rows and the four aggregates, named in the finding so a shrinking vector
     // set cannot pass quietly.
     const said = report.findings.map((f) => f.what).join('\n');
-    expect(said).toMatch(/26 of 26 published vectors reproduce/);
+    expect(said).toMatch(/30 of 30 published vectors reproduce/);
     expect(said).toMatch(/the fold over an empty range reproduces/);
     expect(said).toMatch(/the entry hash of a genesis entry reproduces/);
     expect(said).toMatch(/the entry hash of a linked entry reproduces/);
-    expect(said).toMatch(/the content root over all 26 vectors reproduces/);
+    expect(said).toMatch(/the content root over all 30 vectors reproduces/);
   });
 });
 

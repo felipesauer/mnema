@@ -237,11 +237,21 @@ export function linkBreakBlockOnWrite(breaks: readonly ScopedLinkBreak[]): reado
  * read, and a name would have to be matched back to a file by a second rule.
  */
 export const SERVES_NO_RECORD_CONTENT: { readonly [path: string]: string } = {
+  'inherited-record.ts':
+    'it opens ANOTHER repository’s record, never this project’s, and only after that record ' +
+    'verified at the commit pointed at: a break there is the answer `unverified`, which the ' +
+    'brief’s section says in words and prints no decision under, so a notice about this ' +
+    'project’s chain has nothing to attach to',
   'commands/decision-transition.ts':
     'a move is a write, answered by the move; the one thing it reads first is where the ' +
     '`agent-accepts` switch stands, to turn an agent’s accept away, and it serves nothing of ' +
     'the record to anybody — a notice about the chain would be said to a caller who asked to ' +
     'change it, and the reads that follow (`show`, `brief`) carry it',
+  'commands/check.ts':
+    'it records results at a commit and reads the record only to know which rules are in ' +
+    'force; what it serves is the verdict of each check, a notice about the chain would be ' +
+    'said to a runner that asked for the results, and `mnema verify` rules on the chain in the ' +
+    'same job',
   'commands/before-a-write.ts':
     'a host runs it before a write and reads one field of its reply — the reason a person ' +
     'decides on — so a notice about the chain has nowhere to land; the same session opens ' +

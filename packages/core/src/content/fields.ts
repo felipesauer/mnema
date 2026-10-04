@@ -275,6 +275,13 @@ export const SUBJECT_TEXT = {
   // PROVED against the record: a retraction is written only once the note it names is
   // found in the tree it lands in, so its subject is a note's minted id.
   'note.retracted': 'identifier',
+  // PROVED against the record: a check is declared only on a decision found in the tree, and
+  // a result names the rule its declaration named.
+  'check.declared': 'identifier',
+  'check.passed': 'identifier',
+  'check.failed': 'identifier',
+  // DERIVED: the checker's anchor, from its key.
+  'checker.enrolled': 'identifier',
   // DERIVED from the record: the anchor a waiver names is read off the pruned
   // tail's own last event, never handed in. No caller can put anything in it.
   'tail.pruned': 'identifier',
@@ -401,6 +408,26 @@ export const PAYLOAD_TEXT = {
   'channel.refused': { rule: 'identifier', path: 'body' },
   // Prose a person or an agent wrote, as every other reason in this table.
   'note.retracted': { reason: 'body' },
+  // A program and its arguments are NAMES: one argument redacted is another program, so a
+  // credential in either refuses the declaration rather than being replaced.
+  'check.declared': { command: 'name', args: 'name' },
+  'checker.enrolled': { checkerFp: 'identifier', reverseSig: 'identifier' },
+  // What a check printed is a body, scrubbed like any other; the commit is read from git. The
+  // program and its arguments are copied from the declaration, which the door already refused
+  // a credential in, so here they are what the record handed back, not what a caller wrote.
+  'check.passed': {
+    commit: 'identifier',
+    command: 'identifier',
+    args: 'identifier',
+    output: 'body',
+  },
+  'check.failed': {
+    commit: 'identifier',
+    command: 'identifier',
+    args: 'identifier',
+    failure: 'body',
+    output: 'body',
+  },
   // `service` is the product's own literal (`github`), never a caller's string. `account` is
   // the caller's, and a NAME: a reading puts it in an address and asks the host for it by
   // exact string, so a scrubbed one would ask about somebody else.

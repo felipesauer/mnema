@@ -148,12 +148,13 @@ function verbsThat(effect: RecordEffect): string[] {
 /**
  * A verb no invocation can exercise, and why — the marker, so the row still exists.
  *
- * TWO verbs carry it, one on each side of the classification, and the reason is the same
- * shape: both serve the surface for the length of a connection instead of doing a piece
- * of work and returning. `mcp` would never come back; `repl` refuses outright without a
- * terminal at both ends, and this harness has neither. The consequence is stated in this
- * file's doc, because a read that is declared and never measured is exactly the gap this
- * file exists to close, and it is closed for `repl` somewhere else.
+ * THREE verbs carry it. Two, one on each side of the classification, share a reason: both
+ * serve the surface for the length of a connection instead of doing a piece of work and
+ * returning. `mcp` would never come back; `repl` refuses outright without a terminal at both
+ * ends, and this harness has neither. The third, `inherit`, needs a git repository holding a
+ * record to read, which the fixture is not. The consequence is stated in this file's doc,
+ * because a read that is declared and never measured is exactly the gap this file exists to
+ * close, and it is closed for `repl` somewhere else.
  */
 const CANNOT_BE_EXERCISED = Symbol('cannot-be-exercised');
 
@@ -178,6 +179,8 @@ interface Fixture {
   readonly foreignTail: string;
   /** A memory the fixture captured — the note `retract` takes back. */
   readonly note: string;
+  /** The decision the fixture recorded — the rule `check declare` gives a check to. */
+  readonly rule: string;
 }
 
 /** How one verb is exercised: the line it is invoked with, and where it is typed. */
@@ -228,6 +231,9 @@ const INVOCATION: Readonly<Record<string, Invocation>> = {
   link: { argv: (f) => ['link', f.task, f.task, '--rel', 'relates-to'] },
   retract: { argv: (f) => ['retract', f.note, '--reason', 'it turned out to be wrong'] },
   run: { argv: () => ['run', 'start', '--which', 'agent-alpha'] },
+  // The group's recording half; `check run` needs a key enrolled as a checker and a tree at
+  // a commit, and is driven through the binary in `a-rule-carries-its-check.test.ts`.
+  check: { argv: (f) => ['check', 'declare', f.rule, 'node', '--', '-e', 'process.exit(0)'] },
   key: { argv: (f) => ['key', 'revoke', f.backupKey, '--reason', 'it left this machine'] },
   tail: {
     argv: (f) => ['tail', 'prune', f.foreignTail, '--reason', 'the person asked to be taken out'],
@@ -250,6 +256,10 @@ const INVOCATION: Readonly<Record<string, Invocation>> = {
   // The one invocation that records, an asking, is exercised through the binary with a payload
   // (`a-host-that-runs-commands-asks-for-a-person.test.ts`) and in the signing sweep.
   'before-a-write': { argv: () => ['before-a-write', '--host', 'vscode'] },
+  // It reads another repository, so the exercise needs one: a git repository holding a record,
+  // which this harness's fixture is not. What it does to THIS project's record — nothing — is
+  // measured through the binary, over a real origin, in `a-project-inherits-a-record.test.ts`.
+  inherit: CANNOT_BE_EXERCISED,
   mcp: CANNOT_BE_EXERCISED,
   // The reads.
   status: { argv: (f) => ['status', '--actor', f.anchor] },
@@ -309,6 +319,10 @@ const INVOCATION: Readonly<Record<string, Invocation>> = {
  */
 const RECORDS_NOTHING: Readonly<Record<string, string>> = {
   mcp: 'not exercised: it serves a connection for its lifetime and would not return',
+  inherit:
+    'not exercised here: it reads another git repository, which the fixture is not — and what it ' +
+    'writes is one file, `.mnema/inherit.json`, neither an event nor a key; through the binary, over ' +
+    'a real origin, the project’s own record is held unchanged',
   'before-a-write':
     'answers a payload a host hands it on the standard input, and in process there is none — ' +
     'its asking is exercised with a payload through the binary',
@@ -454,11 +468,14 @@ async function fixture(name: string): Promise<Fixture> {
     'a rationale',
   ]);
   if (decided.failed) throw new Error(`fixture: decision refused: ${decided.out}`);
+  const rule = decided.out.join('\n').match(/\(([0-9a-f-]{36})\)/);
+  if (rule?.[1] === undefined) throw new Error(`fixture: decision printed no id: ${decided.out}`);
   const captured = await mnema(['memory', 'a note somebody will take back']);
   const note = captured.out.join('\n').match(/([0-9a-f]{8}-[0-9a-f-]{27})/);
   if (note?.[1] === undefined) throw new Error(`fixture: memory printed no id: ${captured.out}`);
   return {
     note: note[1],
+    rule: rule[1],
     anchor: identity.trim().slice('identity:'.length).trim(),
     task: id[1],
     backupKey: basename(backup.slice(backup.indexOf(AT) + AT.length).trim(), '.key'),
@@ -582,7 +599,7 @@ describe('every verb says if it writes', () => {
     expect(Object.keys(INVOCATION).sort()).toEqual([...EFFECT_BY_VERB.keys()].sort());
   });
 
-  it('counts seventeen writes and twenty-nine reads over the whole surface', () => {
+  it('counts eighteen writes and twenty-nine reads over the whole surface', () => {
     // The count in the report, asserted rather than trusted, and the total against the
     // list: a verb that stopped being registered would otherwise leave both halves
     // looking healthy.
@@ -597,12 +614,14 @@ describe('every verb says if it writes', () => {
       'link',
       'retract',
       'run',
+      'check',
       'before-a-write',
       'corrections',
       'key',
       'tail',
       'witness',
       'switch',
+      'inherit',
       'mcp',
     ]);
     expect(verbsThat('reads')).toEqual([
@@ -652,6 +671,7 @@ describe('every verb says if it writes', () => {
     // stopped being a project — cannot leave the assertion above passing over nothing.
     const wrote = exercised.filter((one) => one.appended > 0);
     expect(wrote.map((one) => one.verb).sort()).toEqual([
+      'check',
       'decision',
       'handoff',
       'init',

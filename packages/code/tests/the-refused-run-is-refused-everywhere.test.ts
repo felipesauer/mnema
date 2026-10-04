@@ -426,10 +426,10 @@ describe('the refused run is refused everywhere', () => {
     // anywhere is a row like any other.
     expect(measured.length).toBe(theSurface().length - Object.keys(SERVES_OR_REACHES_OUT).length);
 
-    // SO THE CLAIM IS MEASURED SEPARATELY, and it does not hold for six: a line that
+    // SO THE CLAIM IS MEASURED SEPARATELY, and it does not hold for seven: a line that
     // stopped at the parser was counted as a path that does not ask, silently, and here
     // are the ones it happened to. (Three, until `task`, `decision` and `skill` stopped
-    // creating on their own and moved it into a subcommand.) All six are groups whose bare form routes nothing —
+    // creating on their own and moved it into a subcommand.) All seven are groups whose bare form routes nothing —
     // they declare subcommands and no act of their own, so the parser answers with usage
     // and no code of this surface runs. They have no run to be refused and nothing here is
     // said about them; what this pins is that there are no OTHERS. A fourth arriving is a
@@ -440,7 +440,7 @@ describe('the refused run is refused everywhere', () => {
         .filter((one) => one.parserAnswered)
         .map((one) => one.path)
         .sort(),
-    ).toEqual(['decision', 'key', 'run', 'skill', 'tail', 'task']);
+    ).toEqual(['check', 'decision', 'inherit', 'key', 'run', 'skill', 'tail', 'task']);
     // And the two facts are exclusive, which is what makes the first list readable: a path
     // the parser answered for cannot also have been heard by the pin resolver.
     expect(measured.filter((one) => one.parserAnswered && one.asked)).toEqual([]);

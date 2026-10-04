@@ -9,7 +9,12 @@ import {
   moveDecisionAt,
   supersedeDecision,
 } from '../../tests/support/chain.js';
-import { acceptances, decisionsAwaitingJudgement, decisionsInForce } from './decisions.js';
+import {
+  acceptances,
+  decisionsAwaitingJudgement,
+  decisionsInForce,
+  ruleIdsInForce,
+} from './decisions.js';
 
 /**
  * Every fixture here reaches its state through the move the workflow defines, from
@@ -74,6 +79,21 @@ describe('decisionsInForce — the calls that govern', () => {
     try {
       const served = new Set(decisionsInForce([cache]).map((d) => d.id));
       expect(served).toEqual(new Set(['dec-accepted', 'dec-successor']));
+    } finally {
+      cache.close();
+    }
+  });
+
+  it('names the rules in force by id alone, the same set the derivation serves', () => {
+    const b = bench();
+    accept(b, 'dec-accepted', 'In force');
+    birthDecision(b, 'dec-proposed', 'Still on the table');
+    const cache = b.cache();
+    try {
+      expect(ruleIdsInForce([cache])).toEqual(new Set(['dec-accepted']));
+      expect(ruleIdsInForce([cache])).toEqual(
+        new Set(decisionsInForce([cache]).map((rule) => rule.id)),
+      );
     } finally {
       cache.close();
     }

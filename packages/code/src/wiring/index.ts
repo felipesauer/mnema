@@ -219,6 +219,7 @@ import { registerAging } from './aging.js';
 import { registerAntipatterns } from './antipatterns.js';
 import { registerBeforeAWrite } from './before-a-write.js';
 import { registerBrief } from './brief.js';
+import { registerCheck } from './check.js';
 import { registerCommits } from './commits.js';
 import { registerCompletion } from './completion.js';
 import { registerCorrections } from './corrections.js';
@@ -230,6 +231,7 @@ import { registerExposure } from './exposure.js';
 import { registerFocus } from './focus.js';
 import { registerGuard } from './guard.js';
 import { registerHandoff } from './handoff.js';
+import { registerInherit } from './inherit.js';
 import { registerInit } from './init.js';
 import { registerKey } from './key.js';
 import { registerLink } from './link.js';
@@ -290,6 +292,7 @@ export const VERBS: readonly Verb[] = [
   registerDiagram,
   registerRules,
   registerRulesFile,
+  registerCheck,
   registerTrailer,
   registerCommits,
   registerWhy,
@@ -305,6 +308,7 @@ export const VERBS: readonly Verb[] = [
   registerTail,
   registerWitness,
   registerSwitch,
+  registerInherit,
   registerDoctor,
   registerVerify,
   registerMcp,

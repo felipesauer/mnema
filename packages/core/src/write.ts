@@ -15,6 +15,25 @@
  * scope maps to is a read; only OPENING it for writing is here).
  */
 
+// Rule checks: declaring the program that checks a rule, enrolling a key that signs check
+// results only, and running the checks as that key. The runner is handed in, so nothing here
+// starts a process.
+export {
+  type CheckOutcome,
+  type CheckResult,
+  type DeclareCheckErr,
+  type DeclareCheckInput,
+  type DeclareCheckOk,
+  type DeclaredCheck,
+  declareCheck,
+  type EnrollCheckerErr,
+  type EnrollCheckerOk,
+  enrollChecker,
+  type RunChecksErr,
+  type RunChecksInput,
+  type RunChecksOk,
+  runRuleChecks,
+} from './checks/operations.js';
 // The refusal an oversize field earns, and the report a scrubbed write carries
 // back. Both travel in every write's result union, so a surface needs to be able
 // to name them; the screening function itself is deliberately NOT exported — the

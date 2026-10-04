@@ -12,7 +12,7 @@
 function __mnema_commands --description 'the subcommands one level of the tree offers'
     switch "$argv[1]"
         case ''
-            echo 'init task decision skill memory observe handoff link retract run status focus resume next-actions guard search show timeline accountability antipatterns exposure export refs diagram rules rules-file trailer commits why aging skills usage brief recall before-a-write tally corrections key tail witness switch doctor verify mcp repl completion help'
+            echo 'init task decision skill memory observe handoff link retract run status focus resume next-actions guard search show timeline accountability antipatterns exposure export refs diagram rules rules-file check trailer commits why aging skills usage brief recall before-a-write tally corrections key tail witness switch inherit doctor verify mcp repl completion help'
         case 'task'
             echo 'create move help'
         case 'decision'
@@ -21,6 +21,8 @@ function __mnema_commands --description 'the subcommands one level of the tree o
             echo 'create move export help'
         case 'run'
             echo 'start end help'
+        case 'check'
+            echo 'declare run help'
         case 'key'
             echo 'restore request enroll github revoke protect unprotect help'
         case 'tail'
@@ -29,6 +31,8 @@ function __mnema_commands --description 'the subcommands one level of the tree o
             echo 'stamp upgrade'
         case 'switch'
             echo 'off on'
+        case 'inherit'
+            echo 'set update help'
     end
 end
 
@@ -88,6 +92,7 @@ complete -c mnema -f -n '__mnema_at ""' -a 'refs' -d 'show what an entity is con
 complete -c mnema -f -n '__mnema_at ""' -a 'diagram' -d 'print a state machine, or an entity’s history or connections, as mermaid'
 complete -c mnema -f -n '__mnema_at ""' -a 'rules' -d 'show which recorded rules govern a path, and which address nothing'
 complete -c mnema -f -n '__mnema_at ""' -a 'rules-file' -d 'print the rules addressed at a file as another host’s rules file, and why the rest are not'
+complete -c mnema -f -n '__mnema_at ""' -a 'check' -d 'give a rule a program that checks it, and record whether it held at a commit'
 complete -c mnema -f -n '__mnema_at ""' -a 'trailer' -d 'print the commit trailer that ties a commit to a decision'
 complete -c mnema -f -n '__mnema_at ""' -a 'commits' -d 'show the commits that cite a decision and those that touched what it addresses'
 complete -c mnema -f -n '__mnema_at ""' -a 'why' -d 'show under which decisions a file or a commit stands'
@@ -103,6 +108,7 @@ complete -c mnema -f -n '__mnema_at ""' -a 'key' -d 'manage this machine\'s sign
 complete -c mnema -f -n '__mnema_at ""' -a 'tail' -d 'authorize a cut in the record\'s own tails'
 complete -c mnema -f -n '__mnema_at ""' -a 'witness' -d 'ask an outside witness to date this record, and read where that stands'
 complete -c mnema -f -n '__mnema_at ""' -a 'switch' -d 'turn off, or back on, what mnema hands to a model unasked, and whether an agent may accept a decision'
+complete -c mnema -f -n '__mnema_at ""' -a 'inherit' -d 'read another repository’s decisions, pinned to one of its commits'
 complete -c mnema -f -n '__mnema_at ""' -a 'doctor' -d 'say how mnema is installed on this machine, and what to do about each thing found (writes nothing)'
 complete -c mnema -f -n '__mnema_at ""' -a 'verify' -d 'verify this project\'s record — its committed tree and its private one'
 complete -c mnema -f -n '__mnema_at ""' -a 'mcp' -d 'run the mnema MCP server over stdio (for an agent host)'
@@ -448,6 +454,30 @@ complete -c mnema -f -n '__mnema_at "rules-file"' -s V -l version
 complete -c mnema -f -n '__mnema_at "rules-file"' -l color -x -a 'auto always never'
 complete -c mnema -f -n '__mnema_at "rules-file"' -l identify
 
+# mnema check
+complete -c mnema -f -n '__mnema_at "check"' -a 'declare' -d 'declare the program that checks a rule (no shell: the program and its arguments)'
+complete -c mnema -f -n '__mnema_at "check"' -a 'run' -d 'run the check of every rule in force and record each result (run by a checker key, in CI)'
+complete -c mnema -f -n '__mnema_at "check"' -a 'help' -d 'display help for command'
+complete -c mnema -f -n '__mnema_at "check"' -s h -l help
+complete -c mnema -f -n '__mnema_at "check"' -s V -l version
+complete -c mnema -f -n '__mnema_at "check"' -l color -x -a 'auto always never'
+complete -c mnema -f -n '__mnema_at "check"' -l identify
+
+# mnema check declare
+complete -c mnema -f -n '__mnema_at "check declare"' -l which -r
+complete -c mnema -f -n '__mnema_at "check declare"' -s h -l help
+complete -c mnema -f -n '__mnema_at "check declare"' -s V -l version
+complete -c mnema -f -n '__mnema_at "check declare"' -l color -x -a 'auto always never'
+complete -c mnema -f -n '__mnema_at "check declare"' -l identify
+
+# mnema check run
+complete -c mnema -f -n '__mnema_at "check run"' -l key -r
+complete -c mnema -f -n '__mnema_at "check run"' -l timeout -r
+complete -c mnema -f -n '__mnema_at "check run"' -s h -l help
+complete -c mnema -f -n '__mnema_at "check run"' -s V -l version
+complete -c mnema -f -n '__mnema_at "check run"' -l color -x -a 'auto always never'
+complete -c mnema -f -n '__mnema_at "check run"' -l identify
+
 # mnema trailer
 complete -c mnema -f -n '__mnema_at "trailer"' -l id
 complete -c mnema -f -n '__mnema_at "trailer"' -l json
@@ -547,12 +577,14 @@ complete -c mnema -f -n '__mnema_at "key restore"' -l identify
 # mnema key request
 complete -c mnema -f -n '__mnema_at "key request"' -l anchor -r
 complete -c mnema -f -n '__mnema_at "key request"' -l key -r
+complete -c mnema -f -n '__mnema_at "key request"' -l checker
 complete -c mnema -f -n '__mnema_at "key request"' -s h -l help
 complete -c mnema -f -n '__mnema_at "key request"' -s V -l version
 complete -c mnema -f -n '__mnema_at "key request"' -l color -x -a 'auto always never'
 complete -c mnema -f -n '__mnema_at "key request"' -l identify
 
 # mnema key enroll
+complete -c mnema -f -n '__mnema_at "key enroll"' -l checker
 complete -c mnema -f -n '__mnema_at "key enroll"' -s h -l help
 complete -c mnema -f -n '__mnema_at "key enroll"' -s V -l version
 complete -c mnema -f -n '__mnema_at "key enroll"' -l color -x -a 'auto always never'
@@ -659,6 +691,31 @@ complete -c mnema -f -n '__mnema_at "switch on"' -s V -l version
 complete -c mnema -f -n '__mnema_at "switch on"' -l color -x -a 'auto always never'
 complete -c mnema -f -n '__mnema_at "switch on"' -l identify
 complete -c mnema -f -n '__mnema_at "switch on"' -a 'brief-document recall-document edit-rules-push edit-asks-a-person edit-refuses-a-write agent-accepts edit-first-write-gate user-corrections session-tally'
+
+# mnema inherit
+complete -c mnema -f -n '__mnema_at "inherit"' -a 'set' -d 'point this project at a repository of decisions, at one commit'
+complete -c mnema -f -n '__mnema_at "inherit"' -a 'update' -d 'move the pointer to a newer commit, showing what changes first'
+complete -c mnema -f -n '__mnema_at "inherit"' -a 'help' -d 'display help for command'
+complete -c mnema -f -n '__mnema_at "inherit"' -s h -l help
+complete -c mnema -f -n '__mnema_at "inherit"' -s V -l version
+complete -c mnema -f -n '__mnema_at "inherit"' -l color -x -a 'auto always never'
+complete -c mnema -f -n '__mnema_at "inherit"' -l identify
+
+# mnema inherit set
+complete -c mnema -f -n '__mnema_at "inherit set"' -l at -r
+complete -c mnema -f -n '__mnema_at "inherit set"' -l write
+complete -c mnema -f -n '__mnema_at "inherit set"' -s h -l help
+complete -c mnema -f -n '__mnema_at "inherit set"' -s V -l version
+complete -c mnema -f -n '__mnema_at "inherit set"' -l color -x -a 'auto always never'
+complete -c mnema -f -n '__mnema_at "inherit set"' -l identify
+
+# mnema inherit update
+complete -c mnema -f -n '__mnema_at "inherit update"' -l to -r
+complete -c mnema -f -n '__mnema_at "inherit update"' -l write
+complete -c mnema -f -n '__mnema_at "inherit update"' -s h -l help
+complete -c mnema -f -n '__mnema_at "inherit update"' -s V -l version
+complete -c mnema -f -n '__mnema_at "inherit update"' -l color -x -a 'auto always never'
+complete -c mnema -f -n '__mnema_at "inherit update"' -l identify
 
 # mnema doctor
 complete -c mnema -f -n '__mnema_at "doctor"' -s h -l help
