@@ -102,7 +102,10 @@ function pattern(n: number, name = `Pattern number ${n}`) {
  * Every target here is a value a `derived-from` link really takes. The relation holds
  * whatever the writer typed, a path or an id, and neither is validated on the way in.
  */
-function derivedFrom(rule: { readonly id: string }, sources: number) {
+function derivedFrom<R extends { readonly id: string }>(
+  rule: R,
+  sources: number,
+): R & { readonly origin: readonly string[] } {
   return {
     ...rule,
     origin: Array.from({ length: sources }, (_, at) => `docs/adr/ADR-00${at + 1}-a-source.md`),

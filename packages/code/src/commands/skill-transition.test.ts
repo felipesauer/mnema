@@ -5,9 +5,16 @@ import { catalogUpcasters, skillBirth, verify } from '@mnema/chain';
 import { type DiscoveryEnv, orderedEvents, projectSkills, resolveTrees } from '@mnema/core';
 import { openTreeForWriting } from '@mnema/core/write';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
-import { runInit } from './init.js';
+import { type InitContext, type InitResult, runInit } from './init.js';
 import { runSkill } from './skill.js';
 import { runSkillTransition } from './skill-transition.js';
+
+/** Founds the project; a refusal here is a broken setup, not a case. */
+function found(ctx: InitContext): InitResult {
+  const result = runInit(ctx);
+  if ('refused' in result) throw new Error('setup: init refused');
+  return result;
+}
 
 let sandbox: string;
 
@@ -249,7 +256,7 @@ describe('mnema skill move --which — the agent that executed the move', () => 
 
   it('refuses WHO_IS_WHICH when the agent IS the authorizing identity, moving nothing', () => {
     const { repo, env } = setup();
-    const { anchor } = runInit({ cwd: repo, env });
+    const { anchor } = found({ cwd: repo, env });
     const proposed = runSkill({ cwd: repo, env }, { name: 'a skill', body: 'a pattern' });
     if (!proposed.ok) throw new Error('setup: propose refused');
 

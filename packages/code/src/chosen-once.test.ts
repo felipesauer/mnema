@@ -333,7 +333,10 @@ describe('the flag reaches the bytes', () => {
     // The stream is DRESSED as a terminal rather than a terminal being found: what is under
     // test is the rule, and the process running a suite has a pipe. Both properties are put
     // back whatever the case does.
-    const stdout = process.stdout as unknown as { isTTY?: boolean; columns?: number };
+    const stdout = process.stdout as unknown as {
+      isTTY?: boolean | undefined;
+      columns?: number | undefined;
+    };
     const wasTty = stdout.isTTY;
     const wasWide = stdout.columns;
     try {

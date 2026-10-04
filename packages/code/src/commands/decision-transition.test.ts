@@ -7,8 +7,15 @@ import { openTreeForWriting } from '@mnema/core/write';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { runDecision } from './decision.js';
 import { runDecisionTransition } from './decision-transition.js';
-import { runInit } from './init.js';
+import { type InitContext, type InitResult, runInit } from './init.js';
 import { runSwitch } from './switch.js';
+
+/** Founds the project; a refusal here is a broken setup, not a case. */
+function found(ctx: InitContext): InitResult {
+  const result = runInit(ctx);
+  if ('refused' in result) throw new Error('setup: init refused');
+  return result;
+}
 
 // The first time the switch is asked about, it is answered as it stands and THEN `afterTheFirstAsk`
 // runs, so a test can turn the switch off in the gap between that answer and the append.
@@ -351,7 +358,7 @@ describe('mnema decision move / supersede --which — the agent that executed', 
 
   it('refuses WHO_IS_WHICH when the agent IS the authorizing identity, moving nothing', () => {
     const { repo, env } = setup();
-    const { anchor } = runInit({ cwd: repo, env });
+    const { anchor } = found({ cwd: repo, env });
     const recorded = runDecision({ cwd: repo, env }, { title: 'a decision', rationale: 'because' });
     if (!recorded.ok) throw new Error('setup: record refused');
 

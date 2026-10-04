@@ -4,8 +4,15 @@ import { join } from 'node:path';
 import { catalogUpcasters, verify } from '@mnema/chain';
 import { type DiscoveryEnv, orderedEvents, projectTasks, resolveTrees } from '@mnema/core';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
-import { runInit } from './init.js';
+import { type InitContext, type InitResult, runInit } from './init.js';
 import { runTask } from './task.js';
+
+/** Founds the project; a refusal here is a broken setup, not a case. */
+function found(ctx: InitContext): InitResult {
+  const result = runInit(ctx);
+  if ('refused' in result) throw new Error('setup: init refused');
+  return result;
+}
 
 let sandbox: string;
 
@@ -251,7 +258,7 @@ describe('mnema task --which — the agent that executed', () => {
 
   it('refuses WHO_IS_WHICH when the agent IS the authorizing identity, creating nothing', () => {
     const { repo, env } = setup();
-    const { anchor } = runInit({ cwd: repo, env });
+    const { anchor } = found({ cwd: repo, env });
 
     const before = countCreations(repo, env);
     const result = runTask({ cwd: repo, env }, { title: 'self-authorized', which: anchor });

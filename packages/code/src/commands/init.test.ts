@@ -13,7 +13,14 @@ import { join } from 'node:path';
 import { catalogUpcasters, verify } from '@mnema/chain';
 import { type DiscoveryEnv, orderedEvents, PROJECT_DIR } from '@mnema/core';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
-import { runInit } from './init.js';
+import { type InitContext, type InitResult, runInit } from './init.js';
+
+/** Founds the project; a refusal here is a broken setup, not a case. */
+function found(ctx: InitContext): InitResult {
+  const result = runInit(ctx);
+  if ('refused' in result) throw new Error('setup: init refused');
+  return result;
+}
 
 let sandbox: string;
 
@@ -66,7 +73,7 @@ function contentsUnder(directory: string): Record<string, string> {
 describe('mnema init', () => {
   it('creates .mnema at the exact cwd and founds identity', () => {
     const { repo, env } = setup();
-    const result = runInit({ cwd: repo, env });
+    const result = found({ cwd: repo, env });
 
     expect(result.created).toBe(true);
     expect(result.root).toBe(join(repo, '.mnema'));
@@ -104,7 +111,7 @@ describe('mnema init', () => {
 
   it('is born with TWO keys: the machine’s and the identity’s cold backup', () => {
     const { repo, env } = setup();
-    const result = runInit({ cwd: repo, env });
+    const result = found({ cwd: repo, env });
 
     // The backup was created on this machine's first init and enrolled here.
     const backupFp = result.identity?.backup?.fingerprint as string;
@@ -128,7 +135,7 @@ describe('mnema init', () => {
     // inside the key root's `keys/`, where it would compete to be this machine's
     // identity.
     const { repo, env } = setup();
-    const result = runInit({ cwd: repo, env });
+    const result = found({ cwd: repo, env });
     const privateKeyPath = result.identity?.backup?.privateKeyPath as string;
 
     expect(existsSync(privateKeyPath)).toBe(true);
@@ -148,12 +155,12 @@ describe('mnema init', () => {
     // backup enrolled only where it was created would be a stranger in every
     // project made afterwards — silently, until the day it was needed.
     const { repo, env } = setup();
-    const first = runInit({ cwd: repo, env });
+    const first = found({ cwd: repo, env });
     const backupFp = first.identity?.backup?.fingerprint as string;
 
     const later = join(sandbox, 'another-repo');
     mkdirSync(later, { recursive: true });
-    const second = runInit({ cwd: later, env });
+    const second = found({ cwd: later, env });
 
     expect(second.anchor).toBe(first.anchor);
     expect(second.identity?.backup?.created).toBe(false);
@@ -172,12 +179,12 @@ describe('mnema init', () => {
     // then says the key as a backup (`verify.test.ts`, "the machine the verdict is
     // asked from").
     const { repo, env } = setup();
-    const result = runInit({ cwd: repo, env });
+    const result = found({ cwd: repo, env });
     const verdict = verify(result.root);
 
-    expect(verdict.census.map((note) => note.fingerprint)).toEqual([
-      result.identity?.backup?.fingerprint,
-    ]);
+    expect(
+      verdict.census.map((note) => ('fingerprint' in note ? note.fingerprint : undefined)),
+    ).toEqual([result.identity?.backup?.fingerprint]);
     expect(verdict.ok).toBe(true);
     expect(verdict.fullySigned).toBe(true);
   });
@@ -187,7 +194,7 @@ describe('mnema init', () => {
     runInit({ cwd: repo, env });
     const sub = join(repo, 'packages', 'inner');
     mkdirSync(sub, { recursive: true });
-    const result = runInit({ cwd: sub, env });
+    const result = found({ cwd: sub, env });
     // A fresh tree at the subdir, not a reuse of the parent's.
     expect(result.created).toBe(true);
     expect(result.root).toBe(join(sub, '.mnema'));
@@ -200,12 +207,12 @@ describe('mnema init', () => {
     // stronger, because it says the effect is NONE — every file of the tree and of
     // the app data directory is byte-identical afterwards.
     const { repo, env } = setup();
-    const first = runInit({ cwd: repo, env });
+    const first = found({ cwd: repo, env });
     const before = orderedEvents({ root: first.root }, catalogUpcasters()).length;
     const treeBefore = contentsUnder(first.root);
     const outsideBefore = contentsUnder(join(sandbox, 'home', '.mnema'));
 
-    const second = runInit({ cwd: repo, env });
+    const second = found({ cwd: repo, env });
 
     expect(second.created).toBe(false);
     expect(second.root).toBe(first.root);
@@ -228,13 +235,13 @@ describe('mnema init', () => {
     // that half survives the index: an existing project is still not re-founded, and
     // its chain is untouched, by a machine that lost its own key material.
     const { repo, env } = setup();
-    const first = runInit({ cwd: repo, env });
+    const first = found({ cwd: repo, env });
     const before = orderedEvents({ root: first.root }, catalogUpcasters()).length;
     // The home's `.mnema/` IS the app data directory — it used to be `$XDG_DATA_HOME/mnema`,
     // and a case that went on removing that path would have lost nothing at all.
     rmSync(join(sandbox, 'home', '.mnema'), { recursive: true, force: true });
 
-    const second = runInit({ cwd: repo, env });
+    const second = found({ cwd: repo, env });
     expect(second.created).toBe(false);
     expect(second.root).toBe(first.root);
     expect(orderedEvents({ root: second.root }, catalogUpcasters()).length).toBe(before);
