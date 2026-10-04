@@ -617,15 +617,18 @@ describe('a dry run and the move it previews give one verdict', () => {
   });
 
   it('asks the event the door asks, so neither can drift from the other', () => {
+    const refusal = gate({ from: 'READY', action: 'start', fields: { note: '***' }, who: 'w' });
+    if (refusal.ok) throw new Error('the door accepted a note that states nothing');
     expect(
       unstatedReason({
         v: 1,
         kind: 'task.transitioned',
         subject: 't',
         who: 'w',
+        signerFp: 'f'.repeat(64),
         at: '2026-01-01T00:00:00.000Z',
         payload: { from: 'READY', to: 'IN_PROGRESS', action: 'start', fields: { note: '***' } },
-      } as never),
-    ).toBe(gate({ from: 'READY', action: 'start', fields: { note: '***' }, who: 'w' }).message);
+      }),
+    ).toBe(refusal.message);
   });
 });

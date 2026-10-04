@@ -656,7 +656,7 @@ function writeEverything(w: ChainWriter): void {
       from: 'proposed',
       to: 'accepted',
       action: 'accept',
-      fields: { rationale: 'r' },
+      fields: { note: 'r' },
     }),
   ];
   w.append(recorded);

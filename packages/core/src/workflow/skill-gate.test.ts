@@ -15,13 +15,19 @@ function proofFor(required: readonly SkillProofField[]): TransitionFields | unde
   return fields as TransitionFields;
 }
 
+/** The `fields` slot of a request: present when there is a proof to give, absent when there is none. */
+function proofIn(required: readonly SkillProofField[]): { readonly fields?: TransitionFields } {
+  const fields = proofFor(required);
+  return fields === undefined ? {} : { fields };
+}
+
 describe('skillGate — every legal transition passes with valid authority and proof', () => {
   for (const t of SKILL_TRANSITIONS) {
     it(`${t.from} --${t.action}--> ${t.to}`, () => {
       const result = skillGate({
         from: t.from,
         action: t.action,
-        fields: proofFor(t.requires),
+        ...proofIn(t.requires),
         who: WHO,
         which: WHICH,
       });
@@ -45,7 +51,7 @@ describe('skillGate — legality (the forbidden moves are refused)', () => {
         const result = skillGate({
           from,
           action,
-          fields: proofFor(['note', 'reason']),
+          ...proofIn(['note', 'reason']),
           who: WHO,
         });
         expect(result.ok, `${from} --${action}-->`).toBe(false);
@@ -71,7 +77,7 @@ describe('skillGate — legality (the forbidden moves are refused)', () => {
         const result = skillGate({
           from,
           action,
-          fields: proofFor(['note', 'reason']),
+          ...proofIn(['note', 'reason']),
           who: WHO,
         });
         expect(result.ok, `${from} --${action}-->`).toBe(false);
@@ -203,7 +209,7 @@ describe('skillGate — never throws on untrusted junk', () => {
         skillGate({
           from: 'proposed',
           action: 'review',
-          fields: bad as unknown as undefined,
+          fields: bad as unknown as TransitionFields, // the input is not an object: that is the case
           who: WHO,
         });
       expect(call).not.toThrow();

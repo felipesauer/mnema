@@ -23,7 +23,7 @@ const fp = (c: string) => c.repeat(64);
 const founded = (at: string): CatalogEvent =>
   ({
     kind: 'identity.founded',
-    version: 1,
+    v: 1,
     at,
     who: 'mnid:one',
     signerFp: fp('a'),
@@ -34,7 +34,7 @@ const founded = (at: string): CatalogEvent =>
 const decided = (at: string, who: string, to: string): CatalogEvent =>
   ({
     kind: 'decision.transitioned',
-    version: 1,
+    v: 1,
     at,
     who,
     signerFp: fp('b'),
