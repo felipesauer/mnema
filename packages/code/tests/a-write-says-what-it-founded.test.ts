@@ -499,8 +499,10 @@ describe('the server says it where the agent reads', () => {
     closeSession(asB);
     expect(reply.ok).toBe(true);
     const output = reply.ok ? reply.value.hookSpecificOutput : undefined;
-    expect(output?.additionalContext).toContain('lay it out');
-    expect(output?.additionalContext).toContain(FOUNDED);
+    const context =
+      output !== undefined && 'additionalContext' in output ? output.additionalContext : undefined;
+    expect(context).toContain('lay it out');
+    expect(context).toContain(FOUNDED);
   });
 });
 

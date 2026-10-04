@@ -129,7 +129,11 @@ function mintedId(lines: readonly string[]): string {
 
 /** A client wired to a fresh server over the in-memory transport. */
 async function connectTo(project: string): Promise<Client> {
-  const { server } = buildMcpServer({ env: { home: join(sandbox, 'home') }, log: () => {} });
+  const { server } = buildMcpServer({
+    cwd: sandbox,
+    env: { home: join(sandbox, 'home') },
+    log: () => {},
+  });
   const client = new Client(
     { name: 'claude-code', version: '1.0.0' },
     { capabilities: { roots: {} } },

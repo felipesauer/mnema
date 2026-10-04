@@ -67,7 +67,7 @@ let env: DiscoveryEnv;
 
 beforeEach(() => {
   sandbox = mkdtempSync(join(tmpdir(), 'mnema-rules-land-'));
-  env = { HOME: sandbox, XDG_DATA_HOME: join(sandbox, 'xdg') };
+  env = { home: sandbox };
 });
 
 afterEach(() => {
@@ -149,7 +149,7 @@ async function described(): Promise<{ name: string; description: string }[]> {
   const project = join(sandbox, 'proj');
   mkdirSync(project, { recursive: true });
   ensureTree({ root: join(project, PROJECT_DIR) });
-  const { server } = buildMcpServer({ env, log: () => {} });
+  const { server } = buildMcpServer({ cwd: sandbox, env, log: () => {} });
   const client = new Client(
     { name: 'claude-code', version: '1.0.0' },
     { capabilities: { roots: {} } },

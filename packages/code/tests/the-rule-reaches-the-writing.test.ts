@@ -497,7 +497,9 @@ describe('the plugin names the server the host will answer to', () => {
     // `server.registerTool(\n    '<name>'` in the source text, which is a check on
     // somebody's formatting: the registration shape changed and this went red for a
     // reason that had nothing to do with the hook.
-    const registered = buildMcpServer({ env, log: () => undefined }).tools.map((one) => one.act);
+    const registered = buildMcpServer({ cwd: sandbox, env, log: () => undefined }).tools.map(
+      (one) => one.act,
+    );
     expect(registered.length).toBeGreaterThan(20);
     for (const tool of tools) expect(registered).toContain(tool);
   });

@@ -46,9 +46,7 @@ let project: string;
 
 beforeEach(() => {
   sandbox = mkdtempSync(join(tmpdir(), 'mnema-instructions-'));
-  // Both variables, because the global tree resolves from either and a sandbox that set
-  // one would let a spawned server read the machine's own.
-  env = { HOME: join(sandbox, 'home'), XDG_DATA_HOME: join(sandbox, 'xdg') };
+  env = { home: join(sandbox, 'home') };
   project = join(sandbox, 'proj');
   mkdirSync(project, { recursive: true });
   ensureTree({ root: join(project, PROJECT_DIR) });
@@ -60,7 +58,7 @@ afterEach(() => {
 
 /** A client connected to the server the product builds, in this process. */
 async function connected(): Promise<Client> {
-  const { server } = buildMcpServer({ env, log: () => {} });
+  const { server } = buildMcpServer({ cwd: sandbox, env, log: () => {} });
   const client = new Client(
     { name: 'claude-code', version: '1.0.0' },
     { capabilities: { roots: {} } },
@@ -102,8 +100,7 @@ describe('the server says what its tools are for, before any is chosen', () => {
       args: [CLI, 'mcp', '--project', project],
       env: {
         PATH: process.env.PATH ?? '',
-        HOME: env.HOME ?? '',
-        XDG_DATA_HOME: env.XDG_DATA_HOME ?? '',
+        HOME: env.home,
       },
       stderr: 'ignore',
     });

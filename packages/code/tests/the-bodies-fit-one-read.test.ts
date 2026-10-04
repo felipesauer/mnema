@@ -186,7 +186,7 @@ describe('a record whose bodies do not fit one read', () => {
     adoptMany(session, 6, MEDIAN_BODY);
 
     return (async () => {
-      const { server } = buildMcpServer({ env, log: () => {} });
+      const { server } = buildMcpServer({ cwd: sandbox, env, log: () => {} });
       const client = new Client(
         { name: 'claude-code', version: '1.0.0' },
         { capabilities: { roots: {} } },

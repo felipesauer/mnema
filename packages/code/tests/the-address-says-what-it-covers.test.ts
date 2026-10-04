@@ -89,7 +89,7 @@ function connect(): Session {
 
 /** A connected client over the real transport — what the agent actually talks to. */
 async function connectClient(): Promise<Client> {
-  const { server } = buildMcpServer({ env, log: () => {} });
+  const { server } = buildMcpServer({ cwd: sandbox, env, log: () => {} });
   const client = new Client(
     { name: 'claude-code', version: '1.0.0' },
     { capabilities: { roots: {} } },

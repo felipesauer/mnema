@@ -2260,7 +2260,7 @@ function allText(result: unknown): string {
 describe('MCP server — end to end over a real client', () => {
   it('resolves the project from the client roots, captures, and bootstraps', async () => {
     const project = makeProject('proj');
-    const { server } = buildMcpServer({ env, log: () => {} });
+    const { server } = buildMcpServer({ cwd: sandbox, env, log: () => {} });
     const client = await connectClient(server, [pathToFileURL(project).href]);
 
     // The handshake ran; the tools are advertised.
@@ -2328,7 +2328,7 @@ describe('MCP server — end to end over a real client', () => {
     // made of positions the read really carries — including `IN_REVIEW`, which the
     // read serves on the OTHER list, and this case follows both.
     const project = makeProject('proj');
-    const { server } = buildMcpServer({ env, log: () => {} });
+    const { server } = buildMcpServer({ cwd: sandbox, env, log: () => {} });
     const client = await connectClient(server, [pathToFileURL(project).href]);
 
     // A spread of states, so the answers differ per item and a single hard-coded
@@ -2418,7 +2418,7 @@ describe('MCP server — end to end over a real client', () => {
     // that must NOT be listed present in the record, so this also proves the filter
     // through the transport rather than only in the derivation.
     const project = makeProject('proj');
-    const { server } = buildMcpServer({ env, log: () => {} });
+    const { server } = buildMcpServer({ cwd: sandbox, env, log: () => {} });
     const client = await connectClient(server, [pathToFileURL(project).href]);
 
     /** Records a decision through the server, returning its id. */
@@ -2496,7 +2496,7 @@ describe('MCP server — end to end over a real client', () => {
     // server: written through the tools, read back off the wire, and every id it
     // hands out is followed through the door the description names.
     const project = makeProject('proj');
-    const { server } = buildMcpServer({ env, log: () => {} });
+    const { server } = buildMcpServer({ cwd: sandbox, env, log: () => {} });
     const client = await connectClient(server, [pathToFileURL(project).href]);
 
     /** Calls a tool and fails loudly if the gate refused it. */
@@ -2623,7 +2623,7 @@ describe('MCP server — end to end over a real client', () => {
     // directly would stay green with nothing reaching the wire. This one reads the TEXT
     // the server sent and parses that.
     const project = makeProject('proj');
-    const { server } = buildMcpServer({ env, log: () => {} });
+    const { server } = buildMcpServer({ cwd: sandbox, env, log: () => {} });
     const client = await connectClient(server, [pathToFileURL(project).href]);
 
     // Three writes of two kinds through the server, so the tally is a tally and not a
@@ -2663,7 +2663,7 @@ describe('MCP server — end to end over a real client', () => {
     // carries a run, so a fifth one appending the same contract is covered the day it
     // is written, and a contract split in two is caught rather than half-kept.
     const project = makeProject('proj');
-    const { server } = buildMcpServer({ env, log: () => {} });
+    const { server } = buildMcpServer({ cwd: sandbox, env, log: () => {} });
     const client = await connectClient(server, [pathToFileURL(project).href]);
 
     const { tools } = await client.listTools();
@@ -2702,7 +2702,7 @@ describe('MCP server — end to end over a real client', () => {
 
   it('focus / resume / next_actions read the session context over the real transport', async () => {
     const project = makeProject('proj');
-    const { server } = buildMcpServer({ env, log: () => {} });
+    const { server } = buildMcpServer({ cwd: sandbox, env, log: () => {} });
     const client = await connectClient(server, [pathToFileURL(project).href]);
 
     // focus — the session actor's open runs. This connection has not written, so it
@@ -2777,7 +2777,7 @@ describe('MCP server — end to end over a real client', () => {
 
   it('create_task opens a task over the real transport, moves it, and verifies clean', async () => {
     const project = makeProject('proj');
-    const { server } = buildMcpServer({ env, log: () => {} });
+    const { server } = buildMcpServer({ cwd: sandbox, env, log: () => {} });
     const client = await connectClient(server, [pathToFileURL(project).href]);
 
     // The tool is advertised with its title and the optional scope arg.
@@ -2831,7 +2831,7 @@ describe('MCP server — end to end over a real client', () => {
 
   it('task_transition moves a task over the real transport, and refuses as a tool error', async () => {
     const project = makeProject('proj');
-    const { server } = buildMcpServer({ env, log: () => {} });
+    const { server } = buildMcpServer({ cwd: sandbox, env, log: () => {} });
 
     // Seed a task in the project's private tree (the scope an agent session
     // writes to) so the tool has something to move. Same env → same machine
@@ -2866,7 +2866,7 @@ describe('MCP server — end to end over a real client', () => {
 
   it('capture_memory scope arg routes over the real transport, and refuses absent scopes', async () => {
     const project = makeProject('proj');
-    const { server } = buildMcpServer({ env, log: () => {} });
+    const { server } = buildMcpServer({ cwd: sandbox, env, log: () => {} });
     const client = await connectClient(server, [pathToFileURL(project).href]);
 
     // The tool advertises the scope arg in its schema.
@@ -2893,7 +2893,7 @@ describe('MCP server — end to end over a real client', () => {
 
   it('record_decision then decision_transition move a decision over the real transport', async () => {
     const project = makeProject('proj');
-    const { server } = buildMcpServer({ env, log: () => {} });
+    const { server } = buildMcpServer({ cwd: sandbox, env, log: () => {} });
     const client = await connectClient(server, [pathToFileURL(project).href]);
 
     // Record over the wire; the ADR comes back in the text envelope. The
@@ -2947,7 +2947,7 @@ describe('MCP server — end to end over a real client', () => {
 
   it('create_skill then skill_transition move a skill over the real transport', async () => {
     const project = makeProject('proj');
-    const { server } = buildMcpServer({ env, log: () => {} });
+    const { server } = buildMcpServer({ cwd: sandbox, env, log: () => {} });
     const client = await connectClient(server, [pathToFileURL(project).href]);
 
     // Propose over the wire; the name and id come back in the text envelope.
@@ -2984,7 +2984,7 @@ describe('MCP server — end to end over a real client', () => {
 
   it('record_observation, record_handoff, link_knowledge over the real transport', async () => {
     const project = makeProject('proj');
-    const { server } = buildMcpServer({ env, log: () => {} });
+    const { server } = buildMcpServer({ cwd: sandbox, env, log: () => {} });
     const client = await connectClient(server, [pathToFileURL(project).href]);
 
     // observe returns its own minted id in the text envelope.
@@ -3039,7 +3039,7 @@ describe('MCP server — end to end over a real client', () => {
 
   it('bootstrap names the pattern, skills serves its body, and the consultation is on the chain', async () => {
     const project = makeProject('proj');
-    const { server } = buildMcpServer({ env, log: () => {} });
+    const { server } = buildMcpServer({ cwd: sandbox, env, log: () => {} });
     const client = await connectClient(server, [pathToFileURL(project).href]);
 
     // A pattern the team adopts, over the wire, through the real gate.
@@ -3123,7 +3123,7 @@ describe('MCP server — end to end over a real client', () => {
 
   it('search finds a record over the transport, and read_record serves its body', async () => {
     const project = makeProject('proj');
-    const { server } = buildMcpServer({ env, log: () => {} });
+    const { server } = buildMcpServer({ cwd: sandbox, env, log: () => {} });
     const client = await connectClient(server, [pathToFileURL(project).href]);
 
     // Three records over the wire, in two trees. Only one carries the term.
@@ -3172,7 +3172,7 @@ describe('MCP server — end to end over a real client', () => {
 
   it('read_record refuses a skill and an unknown id as tool errors over the transport', async () => {
     const project = makeProject('proj');
-    const { server } = buildMcpServer({ env, log: () => {} });
+    const { server } = buildMcpServer({ cwd: sandbox, env, log: () => {} });
     const client = await connectClient(server, [pathToFileURL(project).href]);
 
     const proposed = await client.callTool({
@@ -3195,7 +3195,7 @@ describe('MCP server — end to end over a real client', () => {
 
   it('skills refuses an unknown id as a tool error over the transport', async () => {
     const project = makeProject('proj');
-    const { server } = buildMcpServer({ env, log: () => {} });
+    const { server } = buildMcpServer({ cwd: sandbox, env, log: () => {} });
     const client = await connectClient(server, [pathToFileURL(project).href]);
 
     const refused = await client.callTool({ name: 'skills', arguments: { id: 'sk-nowhere' } });
@@ -3208,7 +3208,7 @@ describe('MCP server — end to end over a real client', () => {
   it('a knowledge tool refuses an absent scope as a tool error over the transport', async () => {
     // A client that LISTED no roots is served on the global tree — asking for public
     // names a tree that does not exist, refused as a tool error, not a crash.
-    const { server } = buildMcpServer({ env, log: () => {} });
+    const { server } = buildMcpServer({ cwd: sandbox, env, log: () => {} });
     const client = await connectClient(server, []);
     const refused = await client.callTool({
       name: 'record_observation',
@@ -3225,7 +3225,7 @@ describe('MCP server — end to end over a real client', () => {
     // the global tree. A client with no `roots` capability at all is served the project
     // at the working directory now (`a-client-that-names-no-workspace.test.ts`), so the
     // old name described two clients and was true of one.
-    const { server } = buildMcpServer({ env, log: () => {} });
+    const { server } = buildMcpServer({ cwd: sandbox, env, log: () => {} });
     const client = await connectClient(server, []);
 
     const captured = await client.callTool({
@@ -3247,7 +3247,7 @@ describe('MCP server — end to end over a real client', () => {
 
   it('the audit_* intelligence tools are callable by name and return the faithful object', async () => {
     const project = makeProject('proj');
-    const { server } = buildMcpServer({ env, log: () => {} });
+    const { server } = buildMcpServer({ cwd: sandbox, env, log: () => {} });
     const client = await connectClient(server, [pathToFileURL(project).href]);
 
     // Seed a task so timeline and accountability have real events to fold.
@@ -3296,7 +3296,7 @@ describe('MCP server — end to end over a real client', () => {
     // and to nothing else would list here and refuse to work.
     const project = makeProject('governed');
     mkdirSync(join(project, 'src', 'collate'), { recursive: true });
-    const { server } = buildMcpServer({ env, log: () => {} });
+    const { server } = buildMcpServer({ cwd: sandbox, env, log: () => {} });
     const client = await connectClient(server, [pathToFileURL(project).href]);
 
     const decided = await client.callTool({
@@ -3376,7 +3376,7 @@ describe('MCP server — end to end over a real client', () => {
 
   it('search gives the id, audit_refs gives the neighbourhood, and then the lineage', async () => {
     const project = makeProject('proj');
-    const { server } = buildMcpServer({ env, log: () => {} });
+    const { server } = buildMcpServer({ cwd: sandbox, env, log: () => {} });
     const client = await connectClient(server, [pathToFileURL(project).href]);
 
     // The record: a decision, its successor, and a memory that links to the first.
@@ -3469,7 +3469,7 @@ describe('MCP server — end to end over a real client', () => {
   });
 
   it('an audit_* tool refuses NO_PROJECT as a tool error over the transport (global session)', async () => {
-    const { server } = buildMcpServer({ env, log: () => {} });
+    const { server } = buildMcpServer({ cwd: sandbox, env, log: () => {} });
     const client = await connectClient(server, []);
     const refused = await client.callTool({ name: 'audit_antipatterns', arguments: {} });
     expect(refused.isError).toBe(true);
@@ -3503,7 +3503,7 @@ describe('MCP — what enters the record', () => {
 
   it('an agent records a credential over the wire: the chain holds a placeholder and the reply says so', async () => {
     const project = makeProject('proj');
-    const { server } = buildMcpServer({ env, log: () => {} });
+    const { server } = buildMcpServer({ cwd: sandbox, env, log: () => {} });
     const client = await connectClient(server, [pathToFileURL(project).href]);
 
     const captured = await client.callTool({
@@ -3533,7 +3533,7 @@ describe('MCP — what enters the record', () => {
 
   it('a field over the limit comes back as a tool error, with nothing recorded', async () => {
     const project = makeProject('proj');
-    const { server } = buildMcpServer({ env, log: () => {} });
+    const { server } = buildMcpServer({ cwd: sandbox, env, log: () => {} });
     const client = await connectClient(server, [pathToFileURL(project).href]);
 
     // A first write, so the tree exists and the count is a real before/after.
@@ -3554,7 +3554,7 @@ describe('MCP — what enters the record', () => {
 
   it('every write tool declares the contract in its own description', async () => {
     const project = makeProject('proj');
-    const { server, tools: declaredTools } = buildMcpServer({ env, log: () => {} });
+    const { server, tools: declaredTools } = buildMcpServer({ cwd: sandbox, env, log: () => {} });
     const client = await connectClient(server, [pathToFileURL(project).href]);
 
     const tools = await client.listTools();
@@ -3601,7 +3601,7 @@ describe('MCP — what enters the record', () => {
 
   it('the skills tool declares WHAT A PATTERN IS in its own description', async () => {
     const project = makeProject('proj');
-    const { server } = buildMcpServer({ env, log: () => {} });
+    const { server } = buildMcpServer({ cwd: sandbox, env, log: () => {} });
     const client = await connectClient(server, [pathToFileURL(project).href]);
 
     const tools = await client.listTools();
@@ -3621,7 +3621,7 @@ describe('MCP — what enters the record', () => {
 
   it('the bootstrap tool NAMES the read that serves what its lists leave out', async () => {
     const project = makeProject('proj');
-    const { server } = buildMcpServer({ env, log: () => {} });
+    const { server } = buildMcpServer({ cwd: sandbox, env, log: () => {} });
     const client = await connectClient(server, [pathToFileURL(project).href]);
 
     const tools = await client.listTools();
@@ -3681,7 +3681,7 @@ describe('MCP — what enters the record', () => {
     // absent when there is nothing to declare, which is what keeps five empty lists
     // over an empty record honest.
     const project = makeProject('proj');
-    const { server } = buildMcpServer({ env, log: () => {} });
+    const { server } = buildMcpServer({ cwd: sandbox, env, log: () => {} });
     const client = await connectClient(server, [pathToFileURL(project).href]);
 
     // Nothing recorded yet: the answer is five empty lists, and NO declaration.
@@ -3730,7 +3730,7 @@ describe('MCP — what enters the record', () => {
 
   it('the framing travels BESIDE the bodies: the payload block stays parseable', async () => {
     const project = makeProject('proj');
-    const { server } = buildMcpServer({ env, log: () => {} });
+    const { server } = buildMcpServer({ cwd: sandbox, env, log: () => {} });
     const client = await connectClient(server, [pathToFileURL(project).href]);
 
     const proposed = await client.callTool({
@@ -3772,7 +3772,7 @@ describe('MCP — what enters the record', () => {
 
   it('a CLIENT NAME holding a newline cannot forge a pattern in the framing', async () => {
     const project = makeProject('proj');
-    const { server } = buildMcpServer({ env, log: () => {} });
+    const { server } = buildMcpServer({ cwd: sandbox, env, log: () => {} });
     // The adopter's name on this surface is the client's own declared name — text
     // the caller chose, exactly as writable as the pattern's name. Crafted so its
     // second half reads as a provenance line for a pattern nothing served.
@@ -3818,7 +3818,7 @@ describe('MCP — what enters the record', () => {
 
   it('audit_exposure reports where a credential format sits, and never the value', async () => {
     const project = makeProject('proj');
-    const { server } = buildMcpServer({ env, log: () => {} });
+    const { server } = buildMcpServer({ cwd: sandbox, env, log: () => {} });
     const client = await connectClient(server, [pathToFileURL(project).href]);
 
     // A record the door would have cleaned, appended the way a pre-door write
@@ -3867,7 +3867,7 @@ describe('MCP — what enters the record', () => {
     // The host's log, collected where the server would write stderr — a channel
     // that leaves mnema and may be persisted, so it goes through the door too.
     const logged: string[] = [];
-    const { server } = buildMcpServer({ env, log: (line) => logged.push(line) });
+    const { server } = buildMcpServer({ cwd: sandbox, env, log: (line) => logged.push(line) });
     // A client announcing a name with a credential in it. Nobody types this name
     // and nobody reads it, which is what makes it the field to worry about.
     const client = await connectClient(server, [pathToFileURL(project).href], `agent-${SECRET}`);
@@ -3920,7 +3920,7 @@ describe('MCP — what enters the record', () => {
   });
 
   it('audit_exposure refuses NO_PROJECT outside a project', async () => {
-    const { server } = buildMcpServer({ env, log: () => {} });
+    const { server } = buildMcpServer({ cwd: sandbox, env, log: () => {} });
     const client = await connectClient(server, []);
     const refused = await client.callTool({ name: 'audit_exposure' });
     expect(refused.isError).toBe(true);
@@ -3964,7 +3964,7 @@ describe('MCP — who the record says acted', () => {
   for (const [label, announced, recorded] of ANNOUNCED) {
     it(`a client announcing ${label} is recorded as "${recorded === announced ? 'itself' : recorded}" on every event`, async () => {
       const project = makeProject('proj');
-      const { server } = buildMcpServer({ env, log: () => {} });
+      const { server } = buildMcpServer({ cwd: sandbox, env, log: () => {} });
       const client = await connectClient(server, [pathToFileURL(project).href], announced);
 
       const captured = await client.callTool({
@@ -4001,7 +4001,7 @@ describe('MCP — who the record says acted', () => {
   it("a blank-named client writes PRIVATE again, not into the team's committed tree", async () => {
     const project = makeProject('proj');
     const logged: string[] = [];
-    const { server } = buildMcpServer({ env, log: (line) => logged.push(line) });
+    const { server } = buildMcpServer({ cwd: sandbox, env, log: (line) => logged.push(line) });
     const client = await connectClient(server, [pathToFileURL(project).href], '   ');
 
     await client.callTool({
