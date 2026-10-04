@@ -202,8 +202,9 @@ export function registerBrief(program: Command, wiring: Wiring): Declared {
               result.brief,
               roomBeside(notice.map((line) => render(line))),
               result.outside,
+              result.inherited,
             )
-          : briefDocument(result.brief),
+          : briefDocument(result.brief, result.inherited),
       );
     });
   return readsTheRecord(brief);

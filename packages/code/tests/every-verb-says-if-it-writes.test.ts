@@ -148,12 +148,13 @@ function verbsThat(effect: RecordEffect): string[] {
 /**
  * A verb no invocation can exercise, and why — the marker, so the row still exists.
  *
- * TWO verbs carry it, one on each side of the classification, and the reason is the same
- * shape: both serve the surface for the length of a connection instead of doing a piece
- * of work and returning. `mcp` would never come back; `repl` refuses outright without a
- * terminal at both ends, and this harness has neither. The consequence is stated in this
- * file's doc, because a read that is declared and never measured is exactly the gap this
- * file exists to close, and it is closed for `repl` somewhere else.
+ * THREE verbs carry it. Two, one on each side of the classification, share a reason: both
+ * serve the surface for the length of a connection instead of doing a piece of work and
+ * returning. `mcp` would never come back; `repl` refuses outright without a terminal at both
+ * ends, and this harness has neither. The third, `inherit`, needs a git repository holding a
+ * record to read, which the fixture is not. The consequence is stated in this file's doc,
+ * because a read that is declared and never measured is exactly the gap this file exists to
+ * close, and it is closed for `repl` somewhere else.
  */
 const CANNOT_BE_EXERCISED = Symbol('cannot-be-exercised');
 
@@ -255,6 +256,10 @@ const INVOCATION: Readonly<Record<string, Invocation>> = {
   // The one invocation that records, an asking, is exercised through the binary with a payload
   // (`a-host-that-runs-commands-asks-for-a-person.test.ts`) and in the signing sweep.
   'before-a-write': { argv: () => ['before-a-write', '--host', 'vscode'] },
+  // It reads another repository, so the exercise needs one: a git repository holding a record,
+  // which this harness's fixture is not. What it does to THIS project's record — nothing — is
+  // measured through the binary, over a real origin, in `a-project-inherits-a-record.test.ts`.
+  inherit: CANNOT_BE_EXERCISED,
   mcp: CANNOT_BE_EXERCISED,
   // The reads.
   status: { argv: (f) => ['status', '--actor', f.anchor] },
@@ -314,6 +319,10 @@ const INVOCATION: Readonly<Record<string, Invocation>> = {
  */
 const RECORDS_NOTHING: Readonly<Record<string, string>> = {
   mcp: 'not exercised: it serves a connection for its lifetime and would not return',
+  inherit:
+    'not exercised here: it reads another git repository, which the fixture is not — and what it ' +
+    'writes is one file, `.mnema/inherit.json`, neither an event nor a key; through the binary, over ' +
+    'a real origin, the project’s own record is held unchanged',
   'before-a-write':
     'answers a payload a host hands it on the standard input, and in process there is none — ' +
     'its asking is exercised with a payload through the binary',
@@ -612,6 +621,7 @@ describe('every verb says if it writes', () => {
       'tail',
       'witness',
       'switch',
+      'inherit',
       'mcp',
     ]);
     expect(verbsThat('reads')).toEqual([
