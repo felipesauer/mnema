@@ -26,6 +26,7 @@ import {
   actionsRequiring,
   DECISION_MOVE_ACTIONS,
   enumeratedArgument,
+  enumeratedOption,
   IMPORT_SCOPES,
   listed,
   scopeOption,
@@ -41,9 +42,18 @@ import {
   WHICH_HELP,
   WHICH_ON_SUBCOMMAND_HELP,
 } from './options.js';
-import { type Reporter, reportRecorded, reportRefusal, reportReplacement } from './report.js';
+import {
+  type Reporter,
+  reportRecorded,
+  reportRefusal,
+  reportReplacement,
+  reportUsage,
+} from './report.js';
 import { PIN_REFUSED } from './run-pin.js';
 import { type Declared, mutatesTheRecord, type Wiring } from './verb.js';
+
+/** What `decision import --format` reads besides a directory of decision files. */
+const IMPORT_FORMATS = ['ecc-vault', 'rulings', 'claude-memory'] as const;
 
 /** Why a move refuses the group's `--scope`. */
 const A_MOVE_FOLLOWS_THE_DECISION = 'a move follows the decision to the tree it was born in.';
@@ -240,7 +250,7 @@ export function registerDecision(program: Command, wiring: Wiring): Declared {
     });
     await reportDecisionMove(result, oldId, wiring, newId);
   });
-  // `decision import <dir>` — propose the decisions this repository already wrote.
+  // `decision import <source>` — propose the decisions this repository already wrote.
   //
   // It is a SUBCOMMAND of `decision` and not a top-level verb because what it
   // produces is decisions, and the group for that kind already exists; a top-level
@@ -276,8 +286,19 @@ export function registerDecision(program: Command, wiring: Wiring): Declared {
     .command('import')
     .description('propose the decisions already written in this repository’s decision files')
     .argument(
-      '<dir>',
-      'the directory holding the decision files (e.g. docs/adr), inside the project',
+      '<source>',
+      'what to read: the directory holding the decision files (e.g. docs/adr), inside the project — ' +
+        'or, with --format, the source of that format',
+    )
+    .addOption(
+      enumeratedOption(
+        '--format <format>',
+        `what <source> holds: ${listed(IMPORT_FORMATS)}. Omitted, it is a directory of decision ` +
+          'files. ecc-vault: a directory of the ECC Memory Vault’s *.json memories. rulings: ' +
+          'one file whose `Ruling:` lines are read. claude-memory: a directory of the ' +
+          'memory files Claude Code writes.',
+        IMPORT_FORMATS,
+      ),
     )
     .option(
       '--write',
@@ -306,7 +327,15 @@ export function registerDecision(program: Command, wiring: Wiring): Declared {
         'The reason is what the file’s own decision section says (MADR’s “Chosen option, because”,\n' +
         'Nygard’s `## Decision`). A list of every option (MADR’s `## Considered Options`) is recorded\n' +
         'WITHOUT the option the file chose; when the file does not say which it chose, none is\n' +
-        'recorded as turned down, and the plan says so.',
+        'recorded as turned down, and the plan says so.\n\n' +
+        'With --format the same road reads other places decisions are written: the ECC Memory\n' +
+        'Vault (a directory of *.json memories; only `kind: "decision"` is read, and a `rejected`\n' +
+        'or `superseded` state is skipped), the `Ruling:` lines of one ledger file (each line is\n' +
+        'one proposal, cited by file and line), and the memory files Claude Code writes under\n' +
+        '~/.claude/projects/<project>/memory/ (a `name:` frontmatter and a body; MEMORY.md is\n' +
+        'skipped). All are born `proposed` and cited to where they were read. A source outside the\n' +
+        'project is cited as `<format>:<file>`, a name no clone can open. A file that does not\n' +
+        'have its source’s shape is named and nothing is read from it.',
     )
     .addHelpText('after', RECORD_CONTRACT_HELP);
   takesFromItsGroup(decisionImport, {
@@ -316,7 +345,7 @@ export function registerDecision(program: Command, wiring: Wiring): Declared {
         '`## Considered Options`.',
     },
   });
-  decisionImport.action(async (dir: string, opts: { write?: boolean }) => {
+  decisionImport.action(async (dir: string, opts: { write?: boolean; format?: string }) => {
     // Written after `import`, both flags still land on the GROUP, which declares the same
     // two — so that is where their values are read. This command's own declarations are
     // what its `--help` lists and what `ownFlagsWrittenBefore` knows to look for.
@@ -326,6 +355,11 @@ export function registerDecision(program: Command, wiring: Wiring): Declared {
     const { runDecisionImport } = await import('../commands/decision-import.js');
     const scope = parseScope(given.scope, wiring);
     if (scope === INVALID) return;
+    const format = IMPORT_FORMATS.find((one) => one === opts.format);
+    if (opts.format !== undefined && format === undefined) {
+      reportUsage(wiring, `--format takes one of ${listed(IMPORT_FORMATS)}, not "${opts.format}".`);
+      return;
+    }
     const run = pinnedRun();
     if (run === PIN_REFUSED) {
       io.fail();
@@ -333,6 +367,7 @@ export function registerDecision(program: Command, wiring: Wiring): Declared {
     }
     const result = runDecisionImport(here(), {
       from: dir,
+      ...(format !== undefined ? { format } : {}),
       ...(opts.write === true ? { write: true } : {}),
       ...(scope !== undefined ? { scope } : {}),
       ...(given.which !== undefined ? { which: given.which } : {}),
@@ -504,4 +539,6 @@ const IMPORT_REFUSALS: Record<ScanRefusalCode, string> = {
   HOLDS_A_SECRET: 'it holds something shaped like a credential, so nothing was read from it',
   FIELD_TOO_LARGE: 'a field is over the size a recorded field may hold',
   UNREADABLE: 'the file could not be read from disk',
+  MALFORMED: 'it does not have the shape of its source, so nothing was read from it',
+  NOT_A_DECISION: 'it is not a decision (its kind says so), so nothing was read from it',
 };

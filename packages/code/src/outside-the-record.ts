@@ -2,7 +2,7 @@
  * The decision documents this repository holds that the record has NO decision for —
  * a fact about this checkout, for the one reader who can do something about it.
  *
- * WHAT IT ANSWERS, AND WHY NOBODY WAS BEING TOLD. `mnema decision import <dir>` reads
+ * WHAT IT ANSWERS, AND WHY NOBODY WAS BEING TOLD. `mnema decision import <source>` reads
  * the markdown decisions a project already wrote and proposes them; running it is a
  * gesture somebody has to remember. Measured on a real project: four documents in a
  * base the record had already imported from were outside it, three of them written the
@@ -173,7 +173,7 @@ function basesOf(targets: ReadonlySet<string>): ReadonlySet<string> {
  * a directory, and it is held against this list by `outside-the-record.test.ts` — the
  * entry a reader of the source would most expect to find, and the one that must not be
  * there. A project that keeps decisions somewhere unconventional is a project this
- * reading says nothing about, and that is the honest silence — `decision import <dir>`
+ * reading says nothing about, and that is the honest silence — `decision import <source>`
  * takes any directory, and `--help` names it.
  *
  * THE LIST IS SHORT ON PURPOSE, because each entry costs a `readdirSync` on every

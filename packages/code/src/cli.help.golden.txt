@@ -319,7 +319,7 @@ $ mnema decision --help
 |   record [options] <title> [rationale]   record a decision in the current project
 |   move [options] <action> <id...>        accept or reject a decision (follows the decision; takes no --scope)
 |   supersede [options] <old-id> <new-id>  supersede a decision with a later one (follows the decision; takes no --scope)
-|   import [options] <dir>                 propose the decisions already written in this repository’s decision files
+|   import [options] <source>              propose the decisions already written in this repository’s decision files
 |   help [command]                         display help for command
 |
 | What recording means here:
@@ -1456,28 +1456,37 @@ $ mnema decision supersede --help
 
 ### mnema decision import --help
 $ mnema decision import --help
-| Usage: mnema decision import [options] <dir>
+| Usage: mnema decision import [options] <source>
 |
 | propose the decisions already written in this repository’s decision files
 |
 | Arguments:
-|   dir              the directory holding the decision files (e.g. docs/adr),
-|                    inside the project
+|   source             what to read: the directory holding the decision files
+|                      (e.g. docs/adr), inside the project — or, with --format,
+|                      the source of that format
 |
 | Options:
-|   --write          record the plan. Omitted, nothing is written: the plan is
-|                    printed and the record is untouched.
-|   --scope <scope>  where the decision is born: public (team-visible), or private
-|                    (this machine, this project). Omitted, an imported decision
-|                    lands in the public tree, like any other. The global tree is
-|                    not offered: a proposal records a path inside this project,
-|                    and every project reads the global tree.
-|   --which <agent>  the agent that executed this, when an agent (a script, a CI
-|                    step) is driving mnema — omit it when you are acting
-|                    directly. Declared, never assumed; it names the executor. See
-|                    --scope for where the fact lands. A value that names no agent
-|                    (an unset variable) is refused, never credited to you.
-|   -h, --help       display help for command
+|   --format <format>  what <source> holds: ecc-vault, rulings, claude-memory.
+|                      Omitted, it is a directory of decision files. ecc-vault: a
+|                      directory of the ECC Memory Vault’s *.json memories.
+|                      rulings: one file whose `Ruling:` lines are read.
+|                      claude-memory: a directory of the memory files Claude Code
+|                      writes.
+|   --write            record the plan. Omitted, nothing is written: the plan is
+|                      printed and the record is untouched.
+|   --scope <scope>    where the decision is born: public (team-visible), or
+|                      private (this machine, this project). Omitted, an imported
+|                      decision lands in the public tree, like any other. The
+|                      global tree is not offered: a proposal records a path
+|                      inside this project, and every project reads the global
+|                      tree.
+|   --which <agent>    the agent that executed this, when an agent (a script, a CI
+|                      step) is driving mnema — omit it when you are acting
+|                      directly. Declared, never assumed; it names the executor.
+|                      See --scope for where the fact lands. A value that names no
+|                      agent (an unset variable) is refused, never credited to
+|                      you.
+|   -h, --help         display help for command
 |
 | Every proposal is born `proposed`, whatever the file says its status is: what
 | the file states is reported, never applied. Accepting one is a person’s move,
@@ -1493,6 +1502,15 @@ $ mnema decision import --help
 | Nygard’s `## Decision`). A list of every option (MADR’s `## Considered Options`) is recorded
 | WITHOUT the option the file chose; when the file does not say which it chose, none is
 | recorded as turned down, and the plan says so.
+|
+| With --format the same road reads other places decisions are written: the ECC Memory
+| Vault (a directory of *.json memories; only `kind: "decision"` is read, and a `rejected`
+| or `superseded` state is skipped), the `Ruling:` lines of one ledger file (each line is
+| one proposal, cited by file and line), and the memory files Claude Code writes under
+| ~/.claude/projects/<project>/memory/ (a `name:` frontmatter and a body; MEMORY.md is
+| skipped). All are born `proposed` and cited to where they were read. A source outside the
+| project is cited as `<format>:<file>`, a name no clone can open. A file that does not
+| have its source’s shape is named and nothing is read from it.
 |
 | What recording means here:
 |   Permanent — mnema is append-only and nothing deletes a fact. A public record

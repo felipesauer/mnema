@@ -15,6 +15,12 @@ Requires Node ≥ 22.12.0; the packages are ESM-only.
 
 ### Added
 
+- **A library door to the record** (`packages/sdk`, not published): `openRecord` records a decision, accepts
+  or rejects one, takes a note, reads the brief, the notes and the rules for a path, and verifies the
+  record, each by calling the function the matching command calls; `mnemaHooks` returns the
+  Claude Agent SDK hooks that hand a session the opening document and ask the record before a write.
+  A test holds the command line, the MCP server and the library to the same events and the same
+  refusal codes. `@mnema/code` gains one subpath, `library`, which only the SDK is meant to import.
 - **Decisions inherited from another repository** (the `inherit` verb): a project points,
   in the committed `.mnema/inherit.json`, at a git repository that holds a record and at one commit of
   it. `mnema brief` prints that record's decisions in force in a section of their own, naming the

@@ -98,6 +98,18 @@ importers:
         specifier: ^9.6.0
         version: 9.6.0
 
+  packages/sdk:
+    dependencies:
+      '@mnema/chain':
+        specifier: workspace:*
+        version: link:../chain
+      '@mnema/code':
+        specifier: workspace:*
+        version: link:../code
+      '@mnema/core':
+        specifier: workspace:*
+        version: link:../core
+
 packages:
 
   '@alcalzone/ansi-tokenize@0.3.0':

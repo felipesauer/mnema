@@ -154,6 +154,10 @@ export const NO_RUNNABLE_EXAMPLE: readonly { pkg: string; why: string }[] = [
     pkg: 'action',
     why: 'It is the page of a GitHub Action, used from a workflow file: its blocks are ```yaml and there is no ```ts block in it to run. The comparison is about a library example, and this package exports no library.',
   },
+  {
+    pkg: 'sdk',
+    why: 'Its page describes the methods in a table and the hooks in prose, and carries no ```ts block: an example of a program that opens a project and writes to it cannot be run verbatim here without founding an identity in this repository. What holds the page to the code is `the-three-doors-are-one.test.ts`, which calls every method and both hooks.',
+  },
 ];
 
 /**

@@ -820,6 +820,7 @@ const CLAUSES_PER_FILE: Readonly<Record<string, number>> = {
   'packages/code/src/commands/accountability.test.ts': 10,
   'packages/code/src/commands/antipatterns.test.ts': 13,
   'packages/code/src/commands/brief.test.ts': 16,
+  'packages/code/src/commands/decision-import-bridges.test.ts': 8,
   'packages/code/src/commands/decision-import-twice-at-once.test.ts': 8,
   'packages/code/src/commands/decision-import.test.ts': 8,
   'packages/code/src/commands/decision-transition.test.ts': 11,
@@ -1087,6 +1088,7 @@ const CLAUSES_PER_FILE: Readonly<Record<string, number>> = {
   'packages/code/tests/the-split-is-frozen-before-the-number.test.ts': 4,
   'packages/code/tests/the-strict-gate-catches-the-forgery.test.ts': 7,
   'packages/code/tests/the-switch-is-a-fact.test.ts': 16,
+  'packages/code/tests/the-three-doors-are-one.test.ts': 30,
   'packages/code/tests/the-vectors-hold-what-the-product-produces.test.ts': 6,
   'packages/code/tests/the-verb-says-which-tails.test.ts': 9,
   'packages/code/tests/the-verb-that-does-not-cut.test.ts': 7,
@@ -1142,6 +1144,7 @@ const CLAUSES_PER_FILE: Readonly<Record<string, number>> = {
   'packages/context/tests/support/chain.ts': 7,
   'packages/context/tests/the-bench-leaves-nothing-behind.test.ts': 5,
   'packages/core/src/a-reason-states-something.test.ts': 20,
+  'packages/core/src/adr/bridges.test.ts': 6,
   'packages/core/src/adr/published-templates.test.ts': 2,
   'packages/core/src/adr/read.test.ts': 3,
   'packages/core/src/adr/scan.test.ts': 6,
@@ -1368,6 +1371,7 @@ const PRODUCTION_FILES: readonly string[] = [
   'packages/code/src/intelligence-source.ts',
   'packages/code/src/key-file.ts',
   'packages/code/src/label-as-address.ts',
+  'packages/code/src/library.ts',
   'packages/code/src/mcp/cache-registry.ts',
   'packages/code/src/mcp/context.ts',
   'packages/code/src/mcp/hook-reply.ts',
@@ -1555,6 +1559,7 @@ const PRODUCTION_FILES: readonly string[] = [
   'packages/context/src/intelligence/timeline.ts',
   'packages/context/src/sources.ts',
   'packages/core/src/a-reason-states-something.ts',
+  'packages/core/src/adr/bridges.ts',
   'packages/core/src/adr/read.ts',
   'packages/core/src/adr/scan.ts',
   'packages/core/src/checks/checkers.ts',
@@ -1633,6 +1638,8 @@ const PRODUCTION_FILES: readonly string[] = [
   'packages/core/src/workflow/states.ts',
   'packages/core/src/workflow/transitions.ts',
   'packages/core/src/write.ts',
+  'packages/sdk/src/hooks.ts',
+  'packages/sdk/src/record.ts',
 ];
 
 describe('every file has a test that names it', () => {
@@ -1736,7 +1743,7 @@ describe('every file has a test that names it', () => {
 
   it('names a package with no src/ instead of dying while it collects', () => {
     expect(WITHOUT_SOURCE).toEqual([]);
-    expect(READABLE).toEqual(['action', 'chain', 'code', 'context', 'core']);
+    expect(READABLE).toEqual(['action', 'chain', 'code', 'context', 'core', 'sdk']);
   });
 
   it('cannot be dissolved by the ledger that describes it', () => {

@@ -1,5 +1,5 @@
 /**
- * `mnema decision import <dir>` — propose the decisions this repository already
+ * `mnema decision import <source>` — propose the decisions this repository already
  * wrote down.
  *
  * THE GAP IT CLOSES. Reading the record is discoverable and writing to it is not:
@@ -55,9 +55,10 @@
  * is the cost argument for the verb existing at all, and the report says the number.
  */
 
-import { dirname, isAbsolute, relative, resolve, sep } from 'node:path';
+import { basename, dirname, isAbsolute, relative, resolve, sep } from 'node:path';
 import { catalogUpcasters, chainExtent } from '@mnema/chain';
 import {
+  type BridgeFormat,
   chainRootForScope,
   DERIVED_FROM_RELATION,
   type DiscoveryEnv,
@@ -68,6 +69,7 @@ import {
   type Scope,
   type SecretClass,
   scanAdrDirectory,
+  scanBridge,
 } from '@mnema/core';
 import {
   type Judged,
@@ -173,6 +175,9 @@ export type ImportRefused =
    */
   | { readonly ok: false; readonly reason: 'GLOBAL_TREE' };
 
+/** What `decision import` reads: a directory of decision files, or one of the bridges. */
+export type ImportFormat = 'adr' | BridgeFormat;
+
 /** The project-relative POSIX path of `target`, or undefined when it is outside `root`. */
 function inside(root: string, target: string): string | undefined {
   const rel = relative(root, target);
@@ -212,13 +217,13 @@ function alreadyDerived(ctx: DecisionImportContext): {
 /** The plan a run would carry out: what is new, and what the record already has. */
 function plan(
   scanned: readonly ScannedDecision[],
-  root: string,
+  originOf: (path: string, line?: number, digest?: string) => string,
   derived: ReadonlyMap<string, string>,
 ): { readonly fresh: readonly ScannedDecision[]; readonly already: readonly AlreadyImported[] } {
   const fresh: ScannedDecision[] = [];
   const already: AlreadyImported[] = [];
   for (const document of scanned) {
-    const path = inside(root, document.path) ?? document.path;
+    const path = originOf(document.path, document.line, document.digest);
     const decision = derived.get(path);
     if (decision !== undefined) {
       already.push({ path, decision });
@@ -240,8 +245,11 @@ function plan(
  * THIS MACHINE'S, and every other path this verb prints is one a reader of a pasted
  * transcript can open in their own clone.
  */
-function named(refusal: ScanRefusal, root: string): ScanRefusal {
-  return { ...refusal, path: inside(root, refusal.path) ?? refusal.path };
+function named(
+  refusal: ScanRefusal,
+  originOf: (path: string, line?: number, digest?: string) => string,
+): ScanRefusal {
+  return { ...refusal, path: originOf(refusal.path, refusal.line) };
 }
 
 /** What a proposal looks like before anything is written. */
@@ -279,6 +287,7 @@ export function runDecisionImport(
   ctx: DecisionImportContext,
   input: {
     from: string;
+    format?: ImportFormat;
     write?: boolean;
     scope?: Scope;
     which?: string;
@@ -289,25 +298,39 @@ export function runDecisionImport(
   if (trees.projectPublic === undefined) return { ok: false, reason: 'NO_PROJECT' };
   const root = dirname(trees.projectPublic);
   const directory = resolve(ctx.cwd, input.from);
+  const format = input.format ?? 'adr';
   const from = inside(root, directory);
-  if (from === undefined) return { ok: false, reason: 'OUTSIDE_PROJECT', from: input.from };
+  // A decision FILE is cited by a path every clone can open, so one outside the project is
+  // refused. A bridge's source is somebody else's notes and may live anywhere (the host keeps
+  // its memory under the home): it is cited by its source and file name instead.
+  if (from === undefined && format === 'adr') {
+    return { ok: false, reason: 'OUTSIDE_PROJECT', from: input.from };
+  }
+  // A path inside the project cites itself. A source outside it is cited by its format and
+  // file name, and the name is not unique across directories, so the content's hash is what
+  // tells two files of one name apart (and never a path of this machine).
+  const originOf = (path: string, line?: number, digest?: string): string => {
+    const base = inside(root, path) ?? `${format}:${basename(path)}`;
+    const at = line !== undefined ? `${base}:${line}` : base;
+    return digest !== undefined && inside(root, path) === undefined ? `${at}#${digest}` : at;
+  };
 
   const scope = resolveScope('decision.recorded', { which: input.which }, input.scope);
   if (!IMPORT_SCOPES.includes(scope)) return { ok: false, reason: 'GLOBAL_TREE' };
-  const scan = scanAdrDirectory(directory);
-  const refused = scan.refused.map((refusal) => named(refusal, root));
+  const scan = format === 'adr' ? scanAdrDirectory(directory) : scanBridge(format, directory);
+  const refused = scan.refused.map((refusal) => named(refusal, originOf));
   const layout = { root: chainRootForScope(trees, scope) as string };
   // Taken BEFORE the reading, so a write that lands while the record is being read moves it.
   const readAt = chainExtent(layout);
   const derived = alreadyDerived(ctx);
-  const { fresh, already } = plan(scan.read, root, derived.byTarget);
+  const { fresh, already } = plan(scan.read, originOf, derived.byTarget);
 
   if (input.write !== true) {
     return {
       ok: true,
       linkBreaks: derived.linkBreaks,
       wrote: false,
-      from,
+      from: from ?? input.from,
       proposals: fresh.map(proposed),
       already,
       refused,
@@ -325,7 +348,7 @@ export function runDecisionImport(
       ok: true,
       linkBreaks: derived.linkBreaks,
       wrote: true,
-      from,
+      from: from ?? input.from,
       proposals: [],
       already,
       refused,
@@ -433,7 +456,7 @@ export function runDecisionImport(
     ok: true,
     linkBreaks: derived.linkBreaks,
     wrote: true,
-    from,
+    from: from ?? input.from,
     proposals,
     already: [...already, ...meanwhile],
     refused,

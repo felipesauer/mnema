@@ -162,6 +162,7 @@ function byName(name: string, fixture: Fixture): string | undefined {
     'old-id': fixture.decision,
     'new-id': fixture.successor,
     dir: fixture.decisionFiles,
+    source: fixture.decisionFiles,
     tail: fixture.foreignTail,
     path: 'src',
     term: 'task',

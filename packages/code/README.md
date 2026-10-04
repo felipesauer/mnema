@@ -843,6 +843,20 @@ mnema decision import docs/decisions
 #> 3 proposal(s), 1 refused — nothing written. Add --write to record them.
 ```
 
+**Other places decisions are written** are read with `--format`, down the same road: planned
+before written, every one born `proposed`, cited to where it was read, and the reason of each opens with
+a line saying it was imported as written there and is not yet the project's own words.
+
+| `--format` | `<source>` is | What is read |
+| --- | --- | --- |
+| `ecc-vault` | a directory of the ECC Memory Vault's `*.json` memories | `kind: "decision"` only; a `rejected` or `superseded` state is skipped |
+| `rulings` | one ledger file | each line starting `Ruling:`, cited as `file:line` |
+| `claude-memory` | a directory of the memory files Claude Code writes under `~/.claude/projects/<project>/memory/` | the `name:` frontmatter as the title, the body as the reason; `MEMORY.md` is skipped |
+
+A source outside the project is cited as `<format>:<file>`, a name no clone can open. A file that
+does not have its source's shape is named and nothing is read from it. A `rulings` origin
+carries a line number, so a ledger edited above a line is read as new.
+
 **The shape it reads is two things.** A level-1 title, and a why: the file's own decision
 (the *Chosen option, because* sentence of a MADR `## Decision Outcome`, or the `## Decision`
 of a Nygard record) when it has one; else a `## Context` section (`## Contexto` is read too)
