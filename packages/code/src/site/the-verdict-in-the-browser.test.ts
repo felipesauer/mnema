@@ -195,12 +195,16 @@ describe('the verdict a page computes', () => {
     honestRecord();
     const checkpoints = join(dirname(segmentOf(repo)), 'checkpoints.jsonl');
     const text = readFileSync(checkpoints, 'utf-8');
-    const signature = /"sig":"([0-9a-f]{4})/.exec(text)?.[1] as string;
-    expect(signature, 'the checkpoint carries a signature to alter').toBeDefined();
-    const flipped = signature.startsWith('0') ? '1' : '0';
+    // The signature is R (32 bytes) then S (32 bytes), 128 hex digits. A digit of R usually makes
+    // a point that does not exist, which is refused before any arithmetic; a digit of S's low
+    // bytes leaves a well-formed signature that only the equation can refuse.
+    const parts = /"sig":"([0-9a-f]{64})([0-9a-f]{2})/.exec(text);
+    expect(parts, 'the checkpoint carries a signature to alter').not.toBeNull();
+    const [, r, low] = parts as unknown as [string, string, string];
+    const flipped = low.startsWith('0') ? '1' : '0';
     writeFileSync(
       checkpoints,
-      text.replace(`"sig":"${signature}`, `"sig":"${flipped}${signature.slice(1)}`),
+      text.replace(`"sig":"${r}${low}`, `"sig":"${r}${flipped}${low.slice(1)}`),
     );
     expect(runSite({ cwd: repo, env }, { out: join(sandbox, 'tampered') }).ok).toBe(true);
     const page = readFileSync(join(sandbox, 'tampered', 'index.html'), 'utf-8');
