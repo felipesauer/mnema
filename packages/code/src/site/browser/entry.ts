@@ -70,6 +70,12 @@ export function showVerdict(page: Page, files: Readonly<Record<string, string>>)
   const summary = page.getElementById('verdict-summary');
   const issues = page.getElementById('verdict-issues');
   if (status === null || summary === null || issues === null) return;
+  if (Object.keys(files).length === 0) {
+    status.setAttribute('data-state', 'unverified');
+    status.textContent = 'not verified';
+    summary.textContent = 'This page carries no record files, so nothing was verified.';
+    return;
+  }
   let verdict: RecordVerdict;
   try {
     verdict = verifyRecord(files);
@@ -82,7 +88,7 @@ export function showVerdict(page: Page, files: Readonly<Record<string, string>>)
   status.setAttribute('data-state', verdict.ok ? 'verified' : 'broken');
   status.textContent = verdict.ok ? `verified (${verdict.level})` : `broken (${verdict.level})`;
   summary.textContent = verdict.summary;
-  for (const line of [...verdict.issues, ...verdict.census]) {
+  for (const line of [...verdict.issues, ...verdict.census.map((note) => `note: ${note}`)]) {
     const item = page.createElement('li');
     item.textContent = line;
     issues.appendChild(item);

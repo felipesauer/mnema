@@ -36,6 +36,11 @@ export async function bundleTheSiteVerifier() {
       'node:crypto': browser('crypto.ts'),
     },
     inject: [browser('buffer.ts')],
+    // The chain makes a `SharedArrayBuffer` when it loads, for a sleep the verifier never
+    // takes. A page that is not cross-origin isolated has none, and loading would stop there.
+    // And it names two of its own data files by `import.meta.url`, which a script has no
+    // module location to give. They are only ever named, never read, here.
+    define: { SharedArrayBuffer: 'ArrayBuffer', 'import.meta.url': '"file:///the-chain/x.js"' },
   });
   const text = built.outputFiles[0].text;
   // The script is written into a page between <script> tags, where either of these would end
