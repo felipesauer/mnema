@@ -1226,6 +1226,7 @@ const CLAUSES_PER_FILE: Readonly<Record<string, number>> = {
   'packages/core/tests/readme-example.test.ts': 7,
   'packages/vscode/src/cli.test.ts': 2,
   'packages/vscode/src/extension.test.ts': 3,
+  'packages/vscode/src/manifest.test.ts': 2,
   'packages/vscode/src/proposed.test.ts': 2,
   'packages/vscode/src/rules.test.ts': 2,
   'packages/vscode/src/status.test.ts': 2,

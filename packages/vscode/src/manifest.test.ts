@@ -1,9 +1,7 @@
 import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
 
-const manifest = JSON.parse(
-  readFileSync(new URL('../package.json', import.meta.url), 'utf8'),
-) as {
+const manifest = JSON.parse(readFileSync(new URL('../package.json', import.meta.url), 'utf8')) as {
   capabilities?: { untrustedWorkspaces?: { supported?: unknown } };
   contributes: { configuration: { properties: Record<string, { scope?: unknown }> } };
 };
