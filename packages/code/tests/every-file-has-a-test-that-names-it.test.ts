@@ -1075,7 +1075,7 @@ const CLAUSES_PER_FILE: Readonly<Record<string, number>> = {
   'packages/code/tests/the-split-is-frozen-before-the-number.test.ts': 4,
   'packages/code/tests/the-strict-gate-catches-the-forgery.test.ts': 7,
   'packages/code/tests/the-switch-is-a-fact.test.ts': 16,
-  'packages/code/tests/the-three-doors-are-one.test.ts': 29,
+  'packages/code/tests/the-three-doors-are-one.test.ts': 30,
   'packages/code/tests/the-vectors-hold-what-the-product-produces.test.ts': 6,
   'packages/code/tests/the-verb-says-which-tails.test.ts': 9,
   'packages/code/tests/the-verb-that-does-not-cut.test.ts': 7,
