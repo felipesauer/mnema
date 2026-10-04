@@ -9,7 +9,8 @@
  *
  * Both callbacks are the plugin's own handlers over the same functions, not a second copy of them:
  *
- *   - `SessionStart` hands over the document `mnema brief --hook` prints, as `additionalContext`.
+ *   - `SessionStart` hands over the document `mnema brief --hook` prints, as `additionalContext`,
+ *     and under it what the same read says about a record that does not chain.
  *     Where there is no project, the channel is switched off, or the record will not read, the
  *     reply is `{}`: a session that opened with nothing is what each of those asks for.
  *   - `PreToolUse` on `Write`, `Edit` and `NotebookEdit` asks what `mnema before-a-write` asks
@@ -27,6 +28,8 @@ import {
   briefWithin,
   discoveryEnv,
   hookReply,
+  linkBreakNotice,
+  renderPlain,
   roomBeside,
   runBeforeAPath,
   runBrief,
@@ -99,8 +102,12 @@ export function mnemaHooks(options: HookOptions): MnemaHooks {
   const opening: HookCallback = async (input) => {
     const result = runBrief(whereFor(input), { outside: true });
     if (!result.ok) return {};
-    const document = briefWithin(result.brief, roomBeside([]), result.outside).join('\n');
-    return hookReply('SessionStart', { context: document });
+    // WHAT THE PLUGIN'S HANDLER DOES: the notice about a record that does not chain goes under
+    // the document after a blank line, and counts against the room the host leaves.
+    const notice = linkBreakNotice(result.linkBreaks).map((line) => renderPlain(line));
+    const document = briefWithin(result.brief, roomBeside(notice), result.outside).join('\n');
+    const said = notice.length === 0 ? document : `${document}\n\n${notice.join('\n')}`;
+    return hookReply('SessionStart', { context: said });
   };
 
   const beforeAWrite: HookCallback = async (input) => {

@@ -19,7 +19,7 @@
  */
 
 import { spawnSync } from 'node:child_process';
-import { mkdirSync, mkdtempSync, rmSync } from 'node:fs';
+import { appendFileSync, mkdirSync, mkdtempSync, readdirSync, readFileSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
@@ -53,6 +53,7 @@ import {
 } from '../src/library.js';
 import { buildMcpServer } from '../src/mcp/server.js';
 import { renderPlain } from '../src/presentation/plain.js';
+import { HOOK_TEXT_CEILING } from '../src/presentation/within-a-hook.js';
 import { registerVerbs } from '../src/wiring/index.js';
 import { NO_PROJECT } from '../src/wiring/report.js';
 import type { PinnedRun } from '../src/wiring/run-pin.js';
@@ -638,6 +639,52 @@ describe('the hook at the start of a session', () => {
       ),
     ).toEqual({});
   });
+
+  it('carries, under the document, what the plugin carries about a record that does not chain', async () => {
+    // A DOCUMENT THAT FILLS WHAT A HOOK CARRIES, to within a few characters: the notice is
+    // part of what has to fit, so only a document this full is cut differently by one that
+    // reserves room for it and one that does not. The pad rule's title is sized off a probe
+    // project, so the figure is measured and not written down.
+    const record = (door: Door, title: string) => {
+      const made = door.mnema('decision', 'record', title, 'agreed with finance').out;
+      const id = /\(([0-9a-f-]{36})\)/.exec(made)?.[1] as string;
+      expect(door.mnema('decision', 'move', 'accept', id, '--note', 'agreed').status).toBe(0);
+    };
+    const titled = (n: number, length: number) => `Rule ${n}: ${'x'.repeat(length)}`;
+    const fill = (door: Door, padLength: number) => {
+      record(door, titled(1, 2500));
+      record(door, titled(2, 2500));
+      record(door, titled(3, padLength));
+      return door.mnema('brief', '--hook').out.length;
+    };
+    const aim = HOOK_TEXT_CEILING - 20;
+    const probeLength = 100;
+    const probed = fill(founded('sdk'), probeLength);
+    const door = founded('cli');
+    const unbroken = fill(door, probeLength + (aim - probed));
+    expect(unbroken).toBe(aim);
+
+    // A line repeated on the tail: bytes the product wrote, in a place where they do not chain.
+    const tails = join(door.repo, '.mnema', 'tails');
+    const file = join(tails, readdirSync(tails)[0] as string, '000001.jsonl');
+    const lines = readFileSync(file, 'utf-8').trimEnd().split('\n');
+    appendFileSync(file, `${lines[lines.length - 1] as string}\n`, 'utf-8');
+
+    const printed = door.mnema('brief', '--hook');
+    expect(printed.err).toContain('issue [T1]');
+    // The plugin hands over the verb's two streams, a blank line between: the document as
+    // printed, then the notice. The host's callback has no terminator to keep.
+    const asThePluginHandsIt = `${printed.out.replace(/\n$/, '')}\n\n${printed.err.trim()}`;
+    // The notice really did change what fits: without room for it the whole of what was
+    // printed above would not be the document.
+    expect(printed.out.length).toBeLessThan(unbroken);
+    expect(asThePluginHandsIt.length).toBeLessThanOrEqual(HOOK_TEXT_CEILING);
+    const hooks = mnemaHooks({ cwd: door.repo, env: { home: door.home } });
+    const reply = await hooks.SessionStart[0]?.hooks[0]?.({ cwd: door.repo }, undefined, signal);
+    expect(reply).toEqual({
+      hookSpecificOutput: { hookEventName: 'SessionStart', additionalContext: asThePluginHandsIt },
+    });
+  }, 90_000);
 });
 
 // ---------------------------------------------------------------------------

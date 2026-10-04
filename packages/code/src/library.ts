@@ -18,5 +18,7 @@ export { runVerify } from './commands/verify.js';
 export { discoveryEnv } from './env.js';
 export { hookReply } from './mcp/hook-reply.js';
 export { briefDocument, briefWithin } from './presentation/brief.js';
+export { renderPlain } from './presentation/plain.js';
 export { roomBeside } from './presentation/within-a-hook.js';
+export { linkBreakNotice } from './wiring/integrity.js';
 export { DEFAULT_REQUIREMENT } from './wiring/verify.js';
