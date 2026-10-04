@@ -681,6 +681,33 @@ const CLASSIFIED: Readonly<Record<string, { verdict: Verdict; why: string }>> = 
     why: 'the agent that adopted the pattern — a name somebody typed',
   },
 
+  // --- site.ts: the page `mnema site` wrote --------------------------------------
+  'site.ts «Wrote {}» oneLine(done.path) #1': {
+    verdict: 'collapsed',
+    why: 'the path the page went to, built under the directory `--out` named — a value from the command line',
+  },
+  'site.ts «{} decision(s), {} in force; {} event(s); » done.decisions #1': {
+    verdict: 'minted',
+    why: 'a count of the decisions the public tree holds',
+  },
+  'site.ts «{} decision(s), {} in force; {} event(s); » done.inForce #1': {
+    verdict: 'minted',
+    why: 'a count of the decisions the record says govern',
+  },
+  'site.ts «{} decision(s), {} in force; {} event(s); » done.events #1': {
+    verdict: 'minted',
+    why: 'a count of the events in the public tree’s tails',
+  },
+  'site.ts «{} file(s) carried for the verification in the page» done.files #1': {
+    verdict: 'minted',
+    why: 'a count of the record’s files the page carries',
+  },
+  'site.ts «this record does not verify: {} — the page says so to » oneLine(done.verdict.summary) #1':
+    {
+      verdict: 'collapsed',
+      why: 'the chain’s sentence over the public tree, which names tails by directories a disk chose',
+    },
+
   // --- exposure.ts: what a scan for credentials found ----------------------------
   'exposure.ts «Nothing recognizable in {} record(s).» report.scanned #1': {
     verdict: 'minted',
@@ -2078,8 +2105,8 @@ describe('every value this layer puts on a line is classified', () => {
     // values are the start of a memory and an observation's topic, both typed by somebody.
     // The thirtieth is `within-a-hook.ts`, MACHINERY: it words nothing and receives no record —
     // it measures what the two opening texts print for a hook, and cuts them at a whole item.
-    expect(FOUND.composers.length + FOUND.machinery.length).toBe(33);
-    expect(FOUND.composers.length).toBe(21);
+    expect(FOUND.composers.length + FOUND.machinery.length).toBe(34);
+    expect(FOUND.composers.length).toBe(22);
     expect(FOUND.machinery).toContain('items.ts');
     expect(FOUND.machinery).toContain('line.ts');
     expect(FOUND.machinery).toContain('width.ts');
@@ -2089,8 +2116,8 @@ describe('every value this layer puts on a line is classified', () => {
     // 251 until the renderer began making an actor's control bytes visible and joined the
     // composers with its two template values; then 253 until the rules in force began saying who
     // accepted them (`brief.ts`, `record.ts`); 294 until `mnema rules` printed the four numbers
-    // of the relation that refuses a write; 301 with the three the trunk added meanwhile; 306 once the document counts the rules that refuse a write; 367 with the pages of the git bridge; 377 with its shallow sentence and the recipe aging prints; 389 with the section for an inherited record.
-    expect(FOUND.sites.length).toBe(389);
+    // of the relation that refuses a write; 301 with the three the trunk added meanwhile; 395 with the lines `mnema site` prints; 306 once the document counts the rules that refuse a write; 367 with the pages of the git bridge; 377 with its shallow sentence and the recipe aging prints; 389 with the section for an inherited record.
+    expect(FOUND.sites.length).toBe(395);
   });
 
   it('reads the verdict off the source rather than believing the table', () => {
@@ -2111,10 +2138,10 @@ describe('every value this layer puts on a line is classified', () => {
     // No arm of the case above may be empty, or that much of it is vacuous.
     const verdicts = Object.values(CLASSIFIED).map((said) => said.verdict);
     const count = (verdict: Verdict): number => verdicts.filter((said) => said === verdict).length;
-    expect(count('collapsed')).toBe(106);
-    expect(count('minted')).toBe(215);
+    expect(count('collapsed')).toBe(108);
+    expect(count('minted')).toBe(219);
     expect(count('composed')).toBe(68);
-    expect(FOUND.sites.filter((site) => /\boneLine\b/.test(site.expression))).toHaveLength(106);
+    expect(FOUND.sites.filter((site) => /\boneLine\b/.test(site.expression))).toHaveLength(108);
   });
 
   it('every reason says where the value comes from', () => {

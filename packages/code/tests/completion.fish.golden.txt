@@ -12,7 +12,7 @@
 function __mnema_commands --description 'the subcommands one level of the tree offers'
     switch "$argv[1]"
         case ''
-            echo 'init task decision skill memory observe handoff link retract run status focus resume next-actions guard search show timeline accountability antipatterns exposure export refs diagram rules rules-file check trailer commits why aging skills usage brief recall before-a-write tally corrections key tail witness switch inherit doctor verify mcp repl completion help'
+            echo 'init task decision skill memory observe handoff link retract run status focus resume next-actions guard search show timeline accountability antipatterns exposure export site refs diagram rules rules-file check trailer commits why aging skills usage brief recall before-a-write tally corrections key tail witness switch inherit doctor verify mcp repl completion help'
         case 'task'
             echo 'create move help'
         case 'decision'
@@ -88,6 +88,7 @@ complete -c mnema -f -n '__mnema_at ""' -a 'accountability' -d 'show who authori
 complete -c mnema -f -n '__mnema_at ""' -a 'antipatterns' -d 'show recurring shapes in the record (reopens, supersessions, deprecations)'
 complete -c mnema -f -n '__mnema_at ""' -a 'exposure' -d 'show which records hold something shaped like a credential (never the value)'
 complete -c mnema -f -n '__mnema_at ""' -a 'export' -d 'emit the record as an OCSF audit feed (NDJSON, envelope only — never a body)'
+complete -c mnema -f -n '__mnema_at ""' -a 'site' -d 'write the project\'s committed record as one HTML page that verifies itself in the browser (records nothing)'
 complete -c mnema -f -n '__mnema_at ""' -a 'refs' -d 'show what an entity is connected to across the trees'
 complete -c mnema -f -n '__mnema_at ""' -a 'diagram' -d 'print a state machine, or an entity’s history or connections, as mermaid'
 complete -c mnema -f -n '__mnema_at ""' -a 'rules' -d 'show which recorded rules govern a path, and which address nothing'
@@ -424,6 +425,13 @@ complete -c mnema -f -n '__mnema_at "export"' -s h -l help
 complete -c mnema -f -n '__mnema_at "export"' -s V -l version
 complete -c mnema -f -n '__mnema_at "export"' -l color -x -a 'auto always never'
 complete -c mnema -f -n '__mnema_at "export"' -l identify
+
+# mnema site
+complete -c mnema -f -n '__mnema_at "site"' -l out -r
+complete -c mnema -f -n '__mnema_at "site"' -s h -l help
+complete -c mnema -f -n '__mnema_at "site"' -s V -l version
+complete -c mnema -f -n '__mnema_at "site"' -l color -x -a 'auto always never'
+complete -c mnema -f -n '__mnema_at "site"' -l identify
 
 # mnema refs
 complete -c mnema -f -n '__mnema_at "refs"' -l direction -x -a 'both out in'

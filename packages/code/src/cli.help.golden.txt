@@ -66,6 +66,9 @@ $ mnema
 !                                         like a credential (never the value)
 !   export [options]                      emit the record as an OCSF audit feed
 !                                         (NDJSON, envelope only — never a body)
+!   site [options]                        write the project's committed record as
+!                                         one HTML page that verifies itself in
+!                                         the browser (records nothing)
 !   refs [options] <id>                   show what an entity is connected to
 !                                         across the trees
 !   diagram <subject> [id]                print a state machine, or an entity’s
@@ -193,6 +196,9 @@ $ mnema --help
 |                                         like a credential (never the value)
 |   export [options]                      emit the record as an OCSF audit feed
 |                                         (NDJSON, envelope only — never a body)
+|   site [options]                        write the project's committed record as
+|                                         one HTML page that verifies itself in
+|                                         the browser (records nothing)
 |   refs [options] <id>                   show what an entity is connected to
 |                                         across the trees
 |   diagram <subject> [id]                print a state machine, or an entity’s
@@ -718,6 +724,30 @@ $ mnema export --help
 | The window:
 |   A window (`from`/`to`) selects the FACTS themselves,
 |   by the instant each was recorded.
+
+### mnema site --help
+$ mnema site --help
+| Usage: mnema site [options]
+|
+| write the project's committed record as one HTML page that verifies itself in
+| the browser (records nothing)
+|
+| Options:
+|   --out <dir>  the directory index.html is written under
+|   -h, --help   display help for command
+|
+| The page holds the committed (public) tree and nothing else: no private tree, no
+| machine-global tree — and all of that tree's text, so publish it only where the
+| repository itself may be read. It lists the decisions in force (a control shows the
+| rest), their history and who authorized them, and the stored events. It also carries
+| the files the record is made of, and the browser runs the same verifier as
+| `mnema verify` over them, with no request and no key: the sentence on the page is the
+| one `mnema verify` gives a fresh clone. It checks the chain and the checkpoint
+| signatures; it does not check the lists on the page against the files. Everything is
+| inside the one file: no script or style comes from elsewhere.
+|
+| Examples:
+|   mnema site --out dist/record     write dist/record/index.html
 
 ### mnema refs --help
 $ mnema refs --help

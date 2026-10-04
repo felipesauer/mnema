@@ -536,6 +536,10 @@ const UNWITNESSED: Readonly<Record<string, Debt>> = {
     reached: 'nobody imports it',
     why: "The `show` verb declaration; cli-e2e drives `show <id>` and `--json`, but its expectations land on runShow's record and recordReport's lines, not on what this file declares.",
   },
+  'packages/code/src/wiring/site.ts': {
+    reached: 'nobody imports it',
+    why: 'The site verb\u2019s declaration, its help and the three lines it prints; the-verdict-in-the-browser.test.ts runs the built binary through it and asserts those lines, and everything it writes is asserted on commands/site.ts and site/page.ts.',
+  },
   'packages/code/src/wiring/skill.ts': {
     reached: 'nobody imports it',
     why: "The `skill` group's declaration; every test that runs `skill export` passes `--out`, so the './skills' default this file declares is exercised by nothing and asserted by nothing.",
@@ -644,7 +648,7 @@ const UNWITNESSED: Readonly<Record<string, Debt>> = {
  * reading, so nothing can fall in two.
  */
 const THE_SHAPE_OF_WHAT_IS_LEFT: Readonly<Record<string, number>> = {
-  wiring: 44,
+  wiring: 45,
   presentation: 11,
   projections: 4,
   completion: 4,
@@ -841,6 +845,7 @@ const CLAUSES_PER_FILE: Readonly<Record<string, number>> = {
   'packages/code/src/commands/run-start.test.ts': 8,
   'packages/code/src/commands/search.test.ts': 16,
   'packages/code/src/commands/show-says-a-move-made-apart.test.ts': 10,
+  'packages/code/src/commands/site.test.ts': 11,
   'packages/code/src/commands/skill-export.test.ts': 11,
   'packages/code/src/commands/skill-transition.test.ts': 10,
   'packages/code/src/commands/skill.test.ts': 8,
@@ -875,6 +880,7 @@ const CLAUSES_PER_FILE: Readonly<Record<string, number>> = {
   'packages/code/src/presentation/parts.test.ts': 11,
   'packages/code/src/presentation/recall.test.ts': 7,
   'packages/code/src/presentation/references.test.ts': 4,
+  'packages/code/src/presentation/site.test.ts': 3,
   'packages/code/src/presentation/styled.test.ts': 13,
   'packages/code/src/presentation/width.test.ts': 10,
   'packages/code/src/presentation/within-a-hook.test.ts': 2,
@@ -884,6 +890,12 @@ const CLAUSES_PER_FILE: Readonly<Record<string, number>> = {
   'packages/code/src/repl/seen.test.ts': 2,
   'packages/code/src/repl/session.test.ts': 9,
   'packages/code/src/served-patterns.test.ts': 4,
+  'packages/code/src/site/browser/buffer.test.ts': 2,
+  'packages/code/src/site/browser/crypto.test.ts': 3,
+  'packages/code/src/site/browser/entry.test.ts': 2,
+  'packages/code/src/site/browser/fs.test.ts': 4,
+  'packages/code/src/site/page.test.ts': 3,
+  'packages/code/src/site/the-verdict-in-the-browser.test.ts': 14,
   'packages/code/src/tree-sources.test.ts': 7,
   'packages/code/src/what-the-session-touches.test.ts': 13,
   'packages/code/src/wiring/from-the-group.test.ts': 5,
@@ -1318,6 +1330,7 @@ const PRODUCTION_FILES: readonly string[] = [
   'packages/code/src/commands/run-start.ts',
   'packages/code/src/commands/search.ts',
   'packages/code/src/commands/show.ts',
+  'packages/code/src/commands/site.ts',
   'packages/code/src/commands/skill-export.ts',
   'packages/code/src/commands/skill-transition.ts',
   'packages/code/src/commands/skill.ts',
@@ -1398,6 +1411,7 @@ const PRODUCTION_FILES: readonly string[] = [
   'packages/code/src/presentation/rules.ts',
   'packages/code/src/presentation/runs.ts',
   'packages/code/src/presentation/search.ts',
+  'packages/code/src/presentation/site.ts',
   'packages/code/src/presentation/state.ts',
   'packages/code/src/presentation/status.ts',
   'packages/code/src/presentation/styled.ts',
@@ -1438,6 +1452,13 @@ const PRODUCTION_FILES: readonly string[] = [
   'packages/code/src/repl/standing.ts',
   'packages/code/src/served-patterns.ts',
   'packages/code/src/session-words.ts',
+  'packages/code/src/site/browser/buffer.ts',
+  'packages/code/src/site/browser/crypto.ts',
+  'packages/code/src/site/browser/entry.ts',
+  'packages/code/src/site/browser/fs.ts',
+  'packages/code/src/site/browser/path.ts',
+  'packages/code/src/site/page.ts',
+  'packages/code/src/site/verifier-bundle.ts',
   'packages/code/src/transcripts.ts',
   'packages/code/src/tree-sources.ts',
   'packages/code/src/user-corrections.ts',
@@ -1496,6 +1517,7 @@ const PRODUCTION_FILES: readonly string[] = [
   'packages/code/src/wiring/run.ts',
   'packages/code/src/wiring/search.ts',
   'packages/code/src/wiring/show.ts',
+  'packages/code/src/wiring/site.ts',
   'packages/code/src/wiring/skill.ts',
   'packages/code/src/wiring/skills.ts',
   'packages/code/src/wiring/status.ts',
@@ -1667,9 +1689,10 @@ describe('every file has a test that names it', () => {
     // 78 with the git bridge's five wiring files; 73 until `chain/src/one-line.test.ts` began calling the functions it is about.
     // 72 until `mcp/hook-reply.test.ts` began calling the function it is about.
     // 81 with the inherit verbs' wiring, beside the check group's, which the end-to-end run reaches.
+    // 82 with the site verb's wiring, which the built binary reaches.
     // 80 with the check group.
-    expect(found.size).toBe(81);
-    expect(byReach('nobody imports it')).toBe(81);
+    expect(found.size).toBe(82);
+    expect(byReach('nobody imports it')).toBe(82);
     expect(byReach('imported, and no assertion observes it')).toBe(0);
   });
 
@@ -1691,7 +1714,7 @@ describe('every file has a test that names it', () => {
     // Announced in the header and, until now, kept by hand. A shared excuse is how a table
     // like this turns into a rubber stamp, and a row drained to a stub is how it starts.
     const reasons = Object.values(UNWITNESSED).map((one) => one.why);
-    expect(reasons).toHaveLength(81);
+    expect(reasons).toHaveLength(82);
     expect(new Set(reasons).size).toBe(reasons.length);
     // The shortest reason standing is 156 characters; the floor is under it and well over
     // anything that could be written without saying what reaches that file.

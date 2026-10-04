@@ -24,7 +24,7 @@
     ]
   },
   "scripts": {
-    "build": "tsc -b && node .github/the-binary-runs/mark-it-runnable.mjs",
+    "build": "tsc -b && node .github/the-binary-runs/mark-it-runnable.mjs && node packages/code/build/the-site-verifier.mjs",
     "clean": "tsc -b --clean",
     "typecheck": "tsc -b",
     "lint": "biome check --error-on-warnings packages/ plugin/ .github/ .claude-plugin/",
