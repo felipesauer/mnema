@@ -127,11 +127,11 @@ describe('the sampler counts what vitest wrote', () => {
     expect(result.verdict).toBe('FLAKY');
     expect(result.rows).toHaveLength(1);
     const [row] = result.rows;
-    expect(row.file).toBe('packages/chain/src/one-line.test.ts');
-    expect(row.name).toBe(
+    expect(row?.file).toBe('packages/chain/src/one-line.test.ts');
+    expect(row?.name).toBe(
       'the rule of the line needs nothing > is published on its own, so reaching it is not reaching the package',
     );
-    expect(row.runs).toEqual(['node22#01', 'node22#05']);
+    expect(row?.runs).toEqual(['node22#01', 'node22#05']);
     expect(render(result)).toContain('| 2 | 10 | 20.0% | node22#01, node22#05 |');
     expect(exitCodeOf(result)).toBe(EXIT.FLAKY);
   });
@@ -171,7 +171,7 @@ describe('the sampler counts what vitest wrote', () => {
     const result = tally({ dir, root: RUNNER_ROOT, expect: 4, perLabel: 4 });
 
     expect(result.rows).toHaveLength(1);
-    expect(result.rows[0].runs).toEqual(['node22#04']);
+    expect(result.rows[0]?.runs).toEqual(['node22#04']);
   });
 
   /**
@@ -218,7 +218,7 @@ describe('the sampler counts what vitest wrote', () => {
 
     const result = tally({ dir, root: join(ROOT, 'somewhere', 'else'), expect: 1, perLabel: 1 });
 
-    expect(result.rows[0].file).toBe(`${RUNNER_ROOT}/packages/chain/src/one-line.test.ts`);
+    expect(result.rows[0]?.file).toBe(`${RUNNER_ROOT}/packages/chain/src/one-line.test.ts`);
   });
 
   it('reports how many runs each label carried, so two labels can be compared', () => {
@@ -463,8 +463,10 @@ describe('the sampler reads exactly the names its workflow writes', () => {
           [],
         );
         expect(reports).toHaveLength(1);
-        expect(reports[0].seq).toBe(7);
-        written.push(reports[0].label);
+        const [only] = reports;
+        if (only === undefined) throw new Error('the summariser read no report');
+        expect(only.seq).toBe(7);
+        written.push(only.label);
       }
     }
 

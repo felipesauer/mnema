@@ -4,6 +4,7 @@
     "composite": false,
     "declaration": false,
     "noEmit": true,
+    "allowJs": true,
     "types": ["node"]
   },
   "include": ["src/**/*", "tests/**/*.ts"]

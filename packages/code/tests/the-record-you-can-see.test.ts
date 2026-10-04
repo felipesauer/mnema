@@ -53,9 +53,6 @@ import { screenOf, theFirstScreenWhere, theFirstScreenWith } from './support/scr
 /** The built CLI — the same file the `mnema` bin points at. */
 const CLI = new URL('../dist/cli.js', import.meta.url).pathname;
 
-/** One escape byte, written as an escape so no control byte enters this file. */
-const _ESC = '\u001b';
-
 /** What the caller types in front of, as the layout writes it: trimmed at the end. */
 const PROMPT = 'mnema>';
 /** Ctrl-C, which abandons the row being typed. Spelled as an escape, never typed. */
@@ -351,9 +348,6 @@ function searches(): Step {
     what: 'answered with the records',
   };
 }
-
-/** How many times `what` occurs in `text`. Overlapping is impossible for these. */
-const _times = (text: string, what: string): number => text.split(what).length - 1;
 
 /**
  * The step that takes what was said off the SCREEN without unsaying it.

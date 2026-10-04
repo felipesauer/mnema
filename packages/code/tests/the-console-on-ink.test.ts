@@ -48,18 +48,14 @@ import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { type CliIo, run } from '../src/cli.js';
-import { runVerify } from '../src/commands/verify.js';
 import { renderPlain } from '../src/presentation/plain.js';
 import { renderStyled } from '../src/presentation/styled.js';
 import { withoutTheHistoryErase } from '../src/repl/erasing.js';
 import { THE_FLOOR } from '../src/repl/floor.js';
 import { EXIT_SIGNALS } from '../src/repl/leaving.js';
 import { THE_WHEEL_BACK, WATCHING_THE_WHEEL } from '../src/repl/pointing.js';
-import { badgeLine, openSession, tips } from '../src/repl/session.js';
-
-import { here } from '../src/wiring/context.js';
+import { openSession } from '../src/repl/session.js';
 import { REPL_VERB } from '../src/wiring/repl.js';
-import { DEFAULT_REQUIREMENT } from '../src/wiring/verify.js';
 import { decodedWhole } from './support/arriving.js';
 import {
   ENDS_THE_INPUT,
@@ -470,75 +466,6 @@ describe('the console gives the terminal back, whichever way the session ends', 
 // The same verbs, the same lines, another place
 // ---------------------------------------------------------------------------
 
-/** Every style sequence out, so what is left is what a pipe would have received. */
-const stripped = (line: string): string =>
-  // biome-ignore lint/suspicious/noControlCharactersInRegex: the escape IS the subject.
-  line.replace(/\u001b\[[0-9;]*m/g, '');
-
-/** The console's own row of affordances, as the session composes it. Never an answer. */
-const TIPS = renderPlain(tips());
-
-/**
- * The rune the two rules of the input area are drawn with, named by its code point.
- *
- * A run is one keystroke away from a hyphen, and a rune a reader cannot tell from a
- * neighbouring one is a rune an edit destroys without anybody seeing it happen.
- */
-const RUN = '\u2500';
-
-/**
- * Whether a row is the console's OWN tips rather than a line the session landed.
- *
- * Matched as a SUFFIX of the tips and not by equality, because the region holding them is
- * redrawn on every keystroke and a slice of the byte stream taken between two frames can
- * begin part-way through the row. An empty row is never the tips, and the guard is not
- * pedantry: two of the reads compared below separate their sections with blank lines, and
- * every string ends with the empty one.
- */
-function _isTips(row: string): boolean {
-  const text = stripped(row);
-  return text.length > 0 && TIPS.endsWith(text);
-}
-
-/**
- * The console's own badge, as the session composes it over THIS fixture's record.
- *
- * Composed by the module that composes it rather than retyped here, for the reason that
- * module gives: a second spelling of the row goes stale the day the shape changes, and the
- * case below would then be comparing an answer to a stale filter. The level comes from the
- * fold every reading of this surface reads.
- */
-function theBadge(): string {
-  const verdict = runVerify({ ...here(), requirement: DEFAULT_REQUIREMENT, global: false });
-  return verdict.ok ? renderPlain(badgeLine(verdict.record.level, 'the-whole-record')) : '';
-}
-
-/** Whether a row is the console's own badge, at whatever column the width put it. */
-function _isBadge(row: string): boolean {
-  const text = stripped(row).trim();
-  return text.length > 0 && theBadge().endsWith(text);
-}
-
-/**
- * Whether a row is one of the two rules the input sits between.
- *
- * By SHAPE, and it is the one row of the area that cannot be matched against something the
- * session composed: a rule is drawn by the layout rather than written, so there is no
- * string anywhere to compare it to. Nothing this product PRINTS is one character repeated
- * across a row, and the case below is what says so, because a filter that swallowed an answer
- * would break the very equality it exists to serve.
- *
- * THE REASON GIVEN USED TO BE THE FRAME — *the panel's own rule has the frame at both ends of
- * it*, so a row of nothing but the run could only be the input area's. The panel drew a rule then
- * and it draws none now, which makes the filter safer rather than less safe: the two rules the
- * input sits between are the only runs on the page at all (`tests/the-panel.test.ts` asks the
- * absence of the other kind).
- */
-function _isRule(row: string): boolean {
-  const text = stripped(row).replace(/ +$/, '');
-  return text.length > 0 && [...text].every((glyph) => glyph === RUN);
-}
-
 /**
  * Everything the console wrote to the page that is not the row being typed, nor the rows
  * of the area around it.
@@ -687,7 +614,12 @@ describe('the same verbs, the same lines, another place', () => {
     const inside = await inTheConsole(['task oops']);
     const outside = await captured(async (io) => {
       const { typedLine } = await import('../src/repl/session.js');
-      await typedLine('task oops', { io, render: renderPlain, self: REPL_VERB });
+      await typedLine('task oops', {
+        io,
+        render: renderPlain,
+        self: REPL_VERB,
+        identity: undefined,
+      });
     });
     expect(outside.err.length).toBeGreaterThan(0);
     expect(outside.out).toEqual([]);
