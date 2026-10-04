@@ -188,7 +188,7 @@ describe('one declaration, and one place that decides it', () => {
         .map((file) => /^packages\/([^/]+)\//.exec(file.path.slice(REPO.length))?.[1])
         .filter((name): name is string => name !== undefined),
     );
-    expect(packages).toEqual(new Set(['action', 'chain', 'code', 'context', 'core']));
+    expect(packages).toEqual(new Set(['action', 'chain', 'code', 'context', 'core', 'vscode']));
   });
 
   it('reaches every framed channel through that one module', () => {

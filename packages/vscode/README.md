@@ -20,8 +20,8 @@ this repository, and every read and every write goes through the `mnema` command
 - **Accept or reject, with the note.** Each item has an accept and a reject button (and the commands
   `mnema: Accept decision` and `mnema: Reject decision`). The input box does not take an empty
   note, nor one of only spaces, and cancelling it sends nothing. What is sent is
-  `mnema decision move accept|reject <id> --note <note>`, started with an argument array and no
-  shell, and what the command line answers is what is shown, a refusal included.
+  `mnema decision move accept <id> --note <note>` (or `reject`), started with an argument array and
+  no shell, and what the command line answers is what is shown, a refusal included.
 - **A notice when a decision is proposed while the window is open.** The record is watched through
   the editor's file watcher on `.mnema/**`; when it has been quiet for 1.5 seconds it is read again,
   and a decision waiting now that was not waiting at the previous reading is announced once. There
@@ -37,7 +37,7 @@ workspace holds a `.mnema` folder.
 
 There is nothing to install from a registry. From a built checkout (`pnpm install`, `pnpm build`):
 
-```
+```sh
 pnpm --filter @mnema/vscode deploy --legacy --prod <folder>
 cd <folder>
 npx @vscode/vsce package

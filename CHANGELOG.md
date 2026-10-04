@@ -17,7 +17,7 @@ Requires Node ≥ 22.12.0; the packages are ESM-only.
 
 - **A VS Code extension for the person who judges** (`packages/vscode`, not published): a lens over
   each file a rule in force addresses, a panel of decisions awaiting judgment that accepts or
-  rejects through `mnema decision move` with the required note, a notice when one is proposed while
+  rejects through the command line's own decision verb with the required note, a notice when one is proposed while
   the window is open, and the verify level and channel state in the status bar. Every read and
   write goes through the `mnema` command line.
 - **Decisions inherited from another repository** (the `inherit` verb): a project points,
