@@ -35,6 +35,13 @@
  * shape walks through — and this way the 13 legitimate trailers pass for the same reason a
  * human co-author's would. `the-link-cannot-come-back.test.ts` pins that in both directions.
  *
+ * THE E-MAIL OF A COMMIT IS THE THIRD THING IT READS. A commit made with a work or private
+ * address in `user.email` publishes that address in a public history, and removing it later is a
+ * rewrite of the trunk (it was done once, on 2026-09-30). So every pull request is refused whose
+ * commits name an author or a committer outside `*@users.noreply.github.com`; the committer of
+ * the merges GitHub itself makes, `noreply@github.com`, is the one address besides. Dependabot's
+ * author and committer are both of those shapes, so nothing is exempted by name here either.
+ *
  * IT REFUSES RATHER THAN GUESSES, in the mould of `.github/why-it-went-red/` and
  * `.github/what-the-suite-left-behind/`: 0 nothing to report, 1 something to report, 2 it could
  * not tell. A scan that examined no commit is the dangerous one — an empty range, a shallow
@@ -66,7 +73,9 @@ import { appendFileSync, readFileSync, writeFileSync } from 'node:fs';
  * A COMMIT AS THIS SCAN NEEDS IT. `message` is the whole thing, subject and body together, which
  * is what `git show -s --format=%B` gives.
  *
- * @typedef {{ sha: string, subject: string, message: string }} Commit
+ * `author` and `committer` are the e-mail addresses the commit recorded (`%ae`, `%ce`).
+ *
+ * @typedef {{ sha: string, subject: string, message: string, author: string, committer: string }} Commit
  */
 
 /**
@@ -138,6 +147,50 @@ export const THE_FOOTERS = [
       /claude\.com\/claude-code/i.test(line),
   },
 ];
+
+/** The address of a person on GitHub who chose not to publish one: what a commit may carry. */
+const GITHUB_NOREPLY = /^[^@\s]+@users\.noreply\.github\.com$/i;
+
+/** What GitHub writes as the committer of a merge it makes itself. */
+const GITHUB_OWN = /^noreply@github\.com$/i;
+
+const EMAIL_RULE =
+  'an author or committer e-mail outside *@users.noreply.github.com (for a committer, noreply@github.com is allowed too)';
+
+/**
+ * THE ADDRESSES OF ONE COMMIT THAT ARE NOT GITHUB'S NOREPLY, as findings. The author must be a
+ * `users.noreply.github.com` address; the committer may also be GitHub's own. An empty address is
+ * outside both and is refused: a commit that names nobody is not one this rule can pass.
+ *
+ * @param {Commit} commit
+ * @returns {Finding[]}
+ */
+export function emailsOutsideNoreply(commit) {
+  /** @type {Finding[]} */
+  const found = [];
+  const where = `commit ${commit.sha.slice(0, 8)} (${commit.subject})`;
+  const author = String(commit.author ?? '');
+  const committer = String(commit.committer ?? '');
+  if (!GITHUB_NOREPLY.test(author)) {
+    found.push({
+      footer: 'author-email-outside-noreply',
+      what: EMAIL_RULE,
+      where,
+      at: 0,
+      line: `author: ${author}`,
+    });
+  }
+  if (!GITHUB_NOREPLY.test(committer) && !GITHUB_OWN.test(committer)) {
+    found.push({
+      footer: 'committer-email-outside-noreply',
+      what: EMAIL_RULE,
+      where,
+      at: 0,
+      line: `committer: ${committer}`,
+    });
+  }
+  return found;
+}
 
 /**
  * THE PHRASE A SCAN THAT EXAMINED NOTHING PRINTS, and it is exported so a case can pin it rather
@@ -227,9 +280,10 @@ export function judge({ commits, pullRequest }) {
       found: [],
     };
   }
-  const found = commits.flatMap((commit) =>
-    attributionIn(commit.message, `commit ${commit.sha.slice(0, 8)} (${commit.subject})`),
-  );
+  const found = commits.flatMap((commit) => [
+    ...attributionIn(commit.message, `commit ${commit.sha.slice(0, 8)} (${commit.subject})`),
+    ...emailsOutsideNoreply(commit),
+  ]);
   if (pullRequest !== 'not-asked') {
     found.push(
       ...attributionIn(pullRequest.title, 'the pull request title'),
@@ -275,15 +329,16 @@ export function asProse(result) {
     return `NO ATTRIBUTION FOOTER — none of the ${THE_FOOTERS.length} footers this trunk refuses appears in ${examined}.`;
   }
   return [
-    `ATTRIBUTION FOUND — ${result.found.length} line(s) credit the tool, out of ${examined}:`,
+    `ATTRIBUTION FOUND — ${result.found.length} finding(s) against the footer and e-mail rules, out of ${examined}:`,
     '',
     ...result.found.flatMap((one) => [
-      `  ${one.where}, line ${one.at}`,
+      one.at === 0 ? `  ${one.where}` : `  ${one.where}, line ${one.at}`,
       `    ${one.line}`,
       `    (${one.what})`,
       '',
     ]),
-    'This repository keeps the tool out of the record of a change. Amend the commit, or edit the',
+    'This repository keeps the tool out of the record of a change, and every commit carries a',
+    'GitHub noreply address (*@users.noreply.github.com). Amend the commit, or edit the',
     'description, and push again.',
   ].join('\n');
 }
@@ -328,6 +383,14 @@ export function commitsIn(range, cwd = process.cwd()) {
       encoding: 'utf-8',
     }).trim(),
     message: execFileSync('git', ['show', '-s', '--format=%B', sha], { cwd, encoding: 'utf-8' }),
+    author: execFileSync('git', ['show', '-s', '--format=%ae', sha], {
+      cwd,
+      encoding: 'utf-8',
+    }).trim(),
+    committer: execFileSync('git', ['show', '-s', '--format=%ce', sha], {
+      cwd,
+      encoding: 'utf-8',
+    }).trim(),
   }));
 }
 
