@@ -81,8 +81,11 @@
  *     d.state`), computed rather than written, in a constant bound in another file, or in a
  *     table keyed by the states and kept inside one file rather than published. And the
  *     other way round: a value called `state` in some other domain, compared against a word
- *     that happens to be a workflow state, would be accused — none exists today, and that
- *     would be the day to argue it in place.
+ *     that happens to be a workflow state, would be accused. The first is declared: the
+ *     `state` of an ECC Vault memory, read in `core/src/adr/bridges.ts` as
+ *     `RETIRED_IN_THE_VAULT.test(memory.state)` — another tool's vocabulary, which the guard
+ *     lets through by a spelling it does not read (a regex test, not a comparison). It is
+ *     declared, not accidental; a second one would be the day to argue it in place.
  *
  *     THE COARSE SCAN CARRIES AN EXCEPTION. `grep -rnE "(===|!==|case) '<state>'"`
  *     over packages/*​/src finds ONE production site and it is a FALSE POSITIVE:
@@ -627,6 +630,7 @@ describe('no classification table reaches the surface', () => {
     for (const [path, innocent] of [
       ['core/src/workflow/identity-operations.ts', "decided.source === 'adopted'"],
       ['core/src/projections/skill.ts', 'event.payload.to === ADOPTED'],
+      ['core/src/adr/bridges.ts', 'RETIRED_IN_THE_VAULT.test(memory.state)'],
     ] as const) {
       const source = readFileSync(join(PACKAGES, path), 'utf-8');
       expect(source, path).toContain(innocent);
