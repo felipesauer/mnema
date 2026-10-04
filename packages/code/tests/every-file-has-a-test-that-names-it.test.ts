@@ -1076,6 +1076,7 @@ const CLAUSES_PER_FILE: Readonly<Record<string, number>> = {
   'packages/code/tests/the-split-is-frozen-before-the-number.test.ts': 4,
   'packages/code/tests/the-strict-gate-catches-the-forgery.test.ts': 7,
   'packages/code/tests/the-switch-is-a-fact.test.ts': 16,
+  'packages/code/tests/the-three-doors-are-one.test.ts': 30,
   'packages/code/tests/the-vectors-hold-what-the-product-produces.test.ts': 6,
   'packages/code/tests/the-verb-says-which-tails.test.ts': 9,
   'packages/code/tests/the-verb-that-does-not-cut.test.ts': 7,
@@ -1362,6 +1363,7 @@ const PRODUCTION_FILES: readonly string[] = [
   'packages/code/src/intelligence-source.ts',
   'packages/code/src/key-file.ts',
   'packages/code/src/label-as-address.ts',
+  'packages/code/src/library.ts',
   'packages/code/src/mcp/cache-registry.ts',
   'packages/code/src/mcp/context.ts',
   'packages/code/src/mcp/hook-reply.ts',
@@ -1619,6 +1621,8 @@ const PRODUCTION_FILES: readonly string[] = [
   'packages/core/src/workflow/states.ts',
   'packages/core/src/workflow/transitions.ts',
   'packages/core/src/write.ts',
+  'packages/sdk/src/hooks.ts',
+  'packages/sdk/src/record.ts',
   'packages/vscode/src/cli.ts',
   'packages/vscode/src/extension.ts',
   'packages/vscode/src/proposed.ts',
@@ -1726,7 +1730,7 @@ describe('every file has a test that names it', () => {
 
   it('names a package with no src/ instead of dying while it collects', () => {
     expect(WITHOUT_SOURCE).toEqual([]);
-    expect(READABLE).toEqual(['action', 'chain', 'code', 'context', 'core', 'vscode']);
+    expect(READABLE).toEqual(['action', 'chain', 'code', 'context', 'core', 'sdk', 'vscode']);
   });
 
   it('cannot be dissolved by the ledger that describes it', () => {

@@ -332,7 +332,7 @@ describe('no manifest sells the gate as more than it is', () => {
           : [];
       });
 
-  it('finds the manifests that describe themselves — nine of them', () => {
+  it('finds the manifests that describe themselves — ten of them', () => {
     // The non-vacuity of the case below, which is otherwise true of an empty list.
     expect(
       described()
@@ -345,6 +345,7 @@ describe('no manifest sells the gate as more than it is', () => {
       'packages/code/package.json',
       'packages/context/package.json',
       'packages/core/package.json',
+      'packages/sdk/package.json',
       'packages/vscode/package.json',
       'plugin-server-only/.claude-plugin/plugin.json',
       'plugin/.claude-plugin/plugin.json',
@@ -457,7 +458,7 @@ describe('every manifest points home at the same place', () => {
         return typeof parsed.homepage === 'string' ? [{ file, homepage: parsed.homepage }] : [];
       });
 
-  it('finds the manifests that name one, and there are nine', () => {
+  it('finds the manifests that name one, and there are ten', () => {
     // The non-vacuity of the case below: a reader that parsed nothing would leave it true.
     //
     // IT WAS THREE, AND THE GUARD IS WHAT SAID SO. The comment above this describe block
@@ -478,6 +479,7 @@ describe('every manifest points home at the same place', () => {
       'packages/code/package.json',
       'packages/context/package.json',
       'packages/core/package.json',
+      'packages/sdk/package.json',
       'packages/vscode/package.json',
       'plugin-server-only/.claude-plugin/plugin.json',
       'plugin/.claude-plugin/plugin.json',

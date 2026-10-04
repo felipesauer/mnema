@@ -587,10 +587,12 @@ export const HANDED_OVER: Readonly<
   // And one name more for the changelog entry that names `mnema brief` beside the inherited section.
   // line 48 until the page said which flag compares the keys that signed with GitHub's, and how an
   // account is linked (`mnema verify --against-github`, `mnema key github`).
-  // line 48 and name 92 until the editor extension's page was added: it hands over the verdict
+  // line 50 and name 90 once the page of the library door was added: it names `mnema brief`,
+  // `mnema recall`, `mnema rules <path>`, `mnema verify` and `mnema brief --hook` in its table.
+  // And five lines and four names more for the editor extension's page: it hands over the verdict
   // line of `mnema decision move`, and names the five reads it makes (`mnema rules`, `mnema search`,
   // `mnema show`, `mnema verify`, `mnema switch`).
-  span: { line: 53, name: 96, flag: 1, unwritten: 0 },
+  span: { line: 55, name: 100, flag: 1, unwritten: 0 },
   // name 18 until the page that says where the key lives named `mnema key protect` in a line of
   // its own.
   // line 35 until the same page showed that question in a block of its own.

@@ -15,6 +15,12 @@ Requires Node ≥ 22.12.0; the packages are ESM-only.
 
 ### Added
 
+- **A library door to the record** (`packages/sdk`, not published): `openRecord` records a decision, accepts
+  or rejects one, takes a note, reads the brief, the notes and the rules for a path, and verifies the
+  record, each by calling the function the matching command calls; `mnemaHooks` returns the
+  Claude Agent SDK hooks that hand a session the opening document and ask the record before a write.
+  A test holds the command line, the MCP server and the library to the same events and the same
+  refusal codes. `@mnema/code` gains one subpath, `library`, which only the SDK is meant to import.
 - **A VS Code extension for the person who judges** (`packages/vscode`, not published): a lens over
   each file a rule in force addresses, a panel of decisions awaiting judgment that accepts or
   rejects through the command line's own decision verb with the required note, a notice when one is proposed while
