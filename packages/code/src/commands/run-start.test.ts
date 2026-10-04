@@ -4,8 +4,15 @@ import { join } from 'node:path';
 import { catalogUpcasters, verify } from '@mnema/chain';
 import { type DiscoveryEnv, orderedEvents, projectRuns, resolveTrees } from '@mnema/core';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
-import { runInit } from './init.js';
+import { type InitContext, type InitResult, runInit } from './init.js';
 import { runRunStart } from './run-start.js';
+
+/** Founds the project; a refusal here is a broken setup, not a case. */
+function found(ctx: InitContext): InitResult {
+  const result = runInit(ctx);
+  if ('refused' in result) throw new Error('setup: init refused');
+  return result;
+}
 
 let sandbox: string;
 
@@ -112,7 +119,7 @@ describe('mnema run start', () => {
     // An agent must not open the session that authorizes its own work — the whole
     // session would inherit a `who` the agent chose for itself.
     const { repo, env } = setup();
-    const init = runInit({ cwd: repo, env });
+    const init = found({ cwd: repo, env });
 
     const result = runRunStart({ cwd: repo, env }, { agent: init.anchor });
     expect(result).toMatchObject({ ok: false, reason: 'REFUSED', code: 'WHO_IS_WHICH' });

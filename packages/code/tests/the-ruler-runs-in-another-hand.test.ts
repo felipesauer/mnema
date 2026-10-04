@@ -108,7 +108,9 @@ function bulletsOfTheCellSection(): string {
 
 /** Every backticked thing in that list that starts with `--`, e.g. `--model claude-…`. */
 function declarationsInTheDocument(): readonly string[] {
-  const found = [...bulletsOfTheCellSection().matchAll(/`(--[^`]+)`/g)].map((m) => m[1].trim());
+  const found = [...bulletsOfTheCellSection().matchAll(/`(--[^`]+)`/g)].map((m) =>
+    (m[1] ?? '').trim(),
+  );
   return [...new Set(found)];
 }
 
@@ -321,7 +323,7 @@ function specifiersIn(text: string): readonly string[] {
     ...[...text.matchAll(/^\s*import\s*'([^']+)'/gm)],
     ...[...text.matchAll(/\bimport\(\s*'([^']+)'/g)],
     ...[...text.matchAll(/\brequire\(\s*'([^']+)'/g)],
-  ].map((m) => m[1]);
+  ].map((m) => m[1] ?? '');
   return found;
 }
 

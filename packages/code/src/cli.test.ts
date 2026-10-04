@@ -62,6 +62,7 @@ describe('the CLI loads the MCP server only for the verb that serves it', () => 
     const { buildMcpServer } = await import('./mcp/server.js');
     const built = buildMcpServer({
       env: { home: `${srcDir}__absent__` },
+      cwd: `${srcDir}__absent__`,
       log: () => {},
     });
     expect(built.server).toBeDefined();

@@ -405,7 +405,7 @@ describe('governance — what a rule IS travels with it, and is never judged', (
     const b = bench();
     birthDecision(b, 'old', 'the call that was replaced');
     moveDecision(b, 'old', 'proposed', 'accepted', 'accept');
-    moveDecision(b, 'old', 'accepted', 'superseded', 'supersede', { by: 'new' });
+    moveDecision(b, 'old', 'accepted', 'superseded', 'supersede');
     link(b, 'old', 'src', 'governs');
 
     const [rule] = governingRules([tree(b)], asking('src/file.ts', ['src'])).rules;

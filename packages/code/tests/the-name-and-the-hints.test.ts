@@ -354,7 +354,6 @@ async function openedAt(
  * (`src/repl/floor.ts`), so forty is under it and a session opened there draws no page at all.
  */
 const TALL = THE_FLOOR.rows;
-const _CARRIES_THE_PAGE = `${ESC}[${TALL};1H`;
 
 /**
  * What a console drew, opened at `columns` and then resized to each of `widths` in turn.

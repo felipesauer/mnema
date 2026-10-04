@@ -125,6 +125,7 @@ describe('enrollment e2e — a distinct second key joins one anchor', () => {
 
     // A enrolls B (vouches), supplying B's fingerprint and reverse signature.
     const enrolledOk = enrollKey(ctxA, { newFp: b.fingerprint, reverseSig: rsig });
+    if (!enrolledOk.ok) throw new Error(`A could not enroll B: ${JSON.stringify(enrolledOk)}`);
     expect(enrolledOk.anchor).toBe(anchor);
 
     // B, now a member, authors a task under the SHARED anchor.

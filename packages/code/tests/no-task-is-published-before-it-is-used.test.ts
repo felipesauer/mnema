@@ -95,8 +95,8 @@ function pathsAbout(id: string): readonly string[] {
   return PUBLISHABLE.filter((where) => {
     const parts = where.split('/');
     if (parts.slice(0, -1).includes(id)) return true;
-    const name = parts[parts.length - 1];
-    return name === id || name.startsWith(`${id}-`);
+    const name = parts.at(-1);
+    return name === id || (name?.startsWith(`${id}-`) ?? false);
   });
 }
 

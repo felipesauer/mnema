@@ -218,7 +218,8 @@ describe('the first write to a file a rule addresses is held once', () => {
     answer(session, 'src/billing/invoice.ts');
     answer(session, 'src/billing/refund.ts');
     const asked = publicEvents().filter(
-      (event) => event.kind === 'channel.asked' && event.subject === GATE,
+      (event): event is Extract<CatalogEvent, { kind: 'channel.asked' }> =>
+        event.kind === 'channel.asked' && event.subject === GATE,
     );
     expect(asked.map((event) => `${event.payload.rule} @ ${event.payload.path}`)).toEqual([
       `${id} @ src/billing/invoice.ts`,

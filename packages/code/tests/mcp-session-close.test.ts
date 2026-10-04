@@ -87,7 +87,11 @@ async function connect(
   end: (how?: 'SIGTERM' | 'SIGINT' | 'stdin') => void;
   endTwice: () => void;
 }> {
-  const { server, armClose } = buildMcpServer({ env, log: (line) => logged.push(line) });
+  const { server, armClose } = buildMcpServer({
+    cwd: sandbox,
+    env,
+    log: (line) => logged.push(line),
+  });
   const client = new Client(
     { name: clientName, version: '1.0.0' },
     { capabilities: { roots: {} } },

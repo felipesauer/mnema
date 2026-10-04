@@ -81,6 +81,27 @@ describe('accountability — who authorized what, which agent executed', () => {
     ]);
   });
 
+  it('orders the agents by count, then by name, with no agent last wherever it started', () => {
+    // The order is a rule about the VALUES, never about which row the index returned first:
+    // the same facts written in either order, and with the no-agent count above, equal to
+    // and below the named ones, must read the same.
+    const b = bench();
+    endRun(b, 'run-1'); // no which
+    endRun(b, 'run-2'); // no which
+    endRun(b, 'run-3'); // no which
+    startRun(b, 'run-4', { agent: 'codex' });
+    startRun(b, 'run-5', { agent: 'claude' });
+    startRun(b, 'run-6', { agent: 'claude' });
+    startRun(b, 'run-7', { agent: 'zed' });
+    const mine = accountability([tree(b)]).byWho[0];
+    expect(mine?.byWhich).toEqual([
+      { which: null, count: 3 },
+      { which: 'claude', count: 2 },
+      { which: 'codex', count: 1 },
+      { which: 'zed', count: 1 },
+    ]);
+  });
+
   it('ranks authors by count for a stable shape, without a verdict', () => {
     // Two authors sharing the tail: the projection replays `who` as written.
     const b = bench();

@@ -26,7 +26,7 @@
   "scripts": {
     "build": "tsc -b && node .github/the-binary-runs/mark-it-runnable.mjs && node packages/code/build/the-site-verifier.mjs",
     "clean": "tsc -b --clean",
-    "typecheck": "tsc -b",
+    "typecheck": "tsc -b && pnpm -r --workspace-concurrency=1 exec tsc -p tsconfig.test.json",
     "lint": "biome check --error-on-warnings packages/ plugin/ .github/ .claude-plugin/",
     "lint:fix": "biome check --write packages/ plugin/ .github/ .claude-plugin/",
     "format": "biome format --write packages/",

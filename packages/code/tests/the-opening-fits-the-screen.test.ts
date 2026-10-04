@@ -352,7 +352,9 @@ describe('the name has four drawings, and the widest that fits across is the one
     // NOT VACUOUS: the drawings really are made of those glyphs rather than of ASCII alone,
     // so the enumeration is ruling on something. Every one of the named glyphs is used, which
     // is what makes one more the only thing the guard below can be about.
-    const drawn = new Set([...everyForm().flat().join('')].filter((g) => g.codePointAt(0) >= 0x80));
+    const drawn = new Set(
+      [...everyForm().flat().join('')].filter((g) => (g.codePointAt(0) ?? 0) >= 0x80),
+    );
     expect([...drawn].sort(), 'a named glyph is drawn nowhere').toEqual([...GLYPHS].sort());
   });
 

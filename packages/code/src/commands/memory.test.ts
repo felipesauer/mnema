@@ -4,8 +4,15 @@ import { join } from 'node:path';
 import { catalogUpcasters, verify } from '@mnema/chain';
 import { type DiscoveryEnv, orderedEvents, projectKnowledge, resolveTrees } from '@mnema/core';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
-import { runInit } from './init.js';
+import { type InitContext, type InitResult, runInit } from './init.js';
 import { runMemory } from './memory.js';
+
+/** Founds the project; a refusal here is a broken setup, not a case. */
+function found(ctx: InitContext): InitResult {
+  const result = runInit(ctx);
+  if ('refused' in result) throw new Error('setup: init refused');
+  return result;
+}
 
 let sandbox: string;
 
@@ -200,7 +207,7 @@ describe('mnema memory --which — the agent that executed', () => {
 
   it('refuses WHO_IS_WHICH when the agent IS the authorizing identity, capturing nothing', () => {
     const { repo, env } = setup();
-    const { anchor } = runInit({ cwd: repo, env });
+    const { anchor } = found({ cwd: repo, env });
 
     const trees = resolveTrees(repo, env);
     const roots = [trees.projectPublic, trees.projectPrivate, trees.global].filter(

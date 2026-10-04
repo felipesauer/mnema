@@ -49,7 +49,7 @@ beforeAll(() => {
     ['memory', 'a personal note', '--scope', 'global'],
   ]) {
     const done = mnema(project, ...argv);
-    expect(done.status, done.stderr).toBe(0);
+    expect(done.status, done.said).toBe(0);
   }
 });
 

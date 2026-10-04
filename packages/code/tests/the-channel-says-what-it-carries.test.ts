@@ -232,6 +232,8 @@ describe('one declaration, and one place that decides it', () => {
       addressed: 0,
       asking: 0,
       refusing: 0,
+      decisionsAwaiting: 0,
+      skillsAwaiting: 0,
       editPush: { channel: 'edit-rules-push', on: true },
       asksAPerson: { channel: 'edit-asks-a-person', on: true },
       refusesAWrite: { channel: 'edit-refuses-a-write', on: true },

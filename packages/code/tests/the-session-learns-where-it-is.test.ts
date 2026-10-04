@@ -114,7 +114,7 @@ async function connect(initial: readonly string[]): Promise<{
   announce: (roots: readonly string[]) => Promise<void>;
 }> {
   const box = { roots: [...initial] };
-  const { server } = buildMcpServer({ env, log: (line) => logged.push(line) });
+  const { server } = buildMcpServer({ cwd: sandbox, env, log: (line) => logged.push(line) });
   // `listChanged: true`, and it is not decoration: the SDK REFUSES to send the
   // notification from a client that did not declare it, so a host that announces roots
   // without it can never tell this server anything changed. That is the shape of what

@@ -3514,6 +3514,8 @@ describe('where a pattern came from — across the two surfaces', () => {
     // The body carries the ADOPTER, which is the act that made it live.
     const served = runSkillsTool(b);
     if (!served.ok) throw new Error('skills refused');
+    if (served.served !== 'bodies')
+      throw new Error('the bodies fit one read: expected them served');
     expect(served.skills[0]?.adoptedBy).toBe('agent-B');
 
     const audit = capture();

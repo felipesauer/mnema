@@ -137,7 +137,6 @@ const GIVES_THE_SCREEN_BACK = `${ESC}[?1049l`;
 /** A notch of the wheel, as a terminal reporting the mouse in SGR sends it. */
 const wheel = (button: number): string => `${ESC}[<${button};10;5M`;
 const WHEEL_UP = wheel(64);
-const _WHEEL_DOWN = wheel(65);
 
 /** The four keys that move the window, as a terminal sends them. */
 const PAGE_UP = `${ESC}[5~`;

@@ -96,7 +96,8 @@ describe('every skill the plugin ships', () => {
       mkdirSync(project, { recursive: true });
       ensureTree({ root: join(project, PROJECT_DIR) });
       const { server } = buildMcpServer({
-        env: { HOME: join(sandbox, 'home'), XDG_DATA_HOME: join(sandbox, 'xdg') },
+        cwd: sandbox,
+        env: { home: join(sandbox, 'home') },
         log: () => {},
       });
       const client = new Client(

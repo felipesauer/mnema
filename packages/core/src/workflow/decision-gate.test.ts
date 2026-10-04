@@ -22,9 +22,21 @@ function proofFor(required: readonly DecisionProofField[]): TransitionFields | u
   return fields as TransitionFields;
 }
 
+/** The `fields` slot of a request: present when there is a proof to give, absent when there is none. */
+function proofIn(required: readonly DecisionProofField[]): { readonly fields?: TransitionFields } {
+  const fields = proofFor(required);
+  return fields === undefined ? {} : { fields };
+}
+
 /** A supersede needs a `by`; everything else must not have one. */
 function byFor(action: DecisionAction): string | undefined {
   return action === 'supersede' ? BY : undefined;
+}
+
+/** The `by` slot of a request: a supersede names one, every other action leaves it out. */
+function byIn(action: DecisionAction): { readonly by?: string } {
+  const by = byFor(action);
+  return by === undefined ? {} : { by };
 }
 
 describe('decisionGate — every legal transition passes with valid authority, proof, and by', () => {
@@ -33,8 +45,8 @@ describe('decisionGate — every legal transition passes with valid authority, p
       const result = decisionGate({
         from: t.from,
         action: t.action,
-        fields: proofFor(t.requires),
-        by: byFor(t.action),
+        ...proofIn(t.requires),
+        ...byIn(t.action),
         subject: SUBJECT,
         who: WHO,
         which: WHICH,
@@ -61,8 +73,8 @@ describe('decisionGate — legality', () => {
         const result = decisionGate({
           from,
           action,
-          fields: proofFor(['reason', 'note']),
-          by: byFor(action),
+          ...proofIn(['reason', 'note']),
+          ...byIn(action),
           subject: SUBJECT,
           who: WHO,
         });
@@ -116,7 +128,7 @@ describe('decisionGate — required proof', () => {
       const result = decisionGate({
         from: t.from,
         action: t.action,
-        by: byFor(t.action),
+        ...byIn(t.action),
         subject: SUBJECT,
         who: WHO,
       });
@@ -130,7 +142,7 @@ describe('decisionGate — required proof', () => {
         from: t.from,
         action: t.action,
         fields: blank as TransitionFields,
-        by: byFor(t.action),
+        ...byIn(t.action),
         subject: SUBJECT,
         who: WHO,
       });

@@ -26,7 +26,7 @@ import { cpSync, mkdirSync, mkdtempSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { basename, join } from 'node:path';
 import { pathToFileURL } from 'node:url';
-import { type ChainEvent, catalogUpcasters, verify } from '@mnema/chain';
+import { type CatalogEvent, catalogUpcasters, verify } from '@mnema/chain';
 import {
   chainRootForScope,
   type DiscoveryEnv,
@@ -85,7 +85,7 @@ function openOn(project: string): Session {
 }
 
 /** Every event of a tree, replayed. */
-function eventsIn(root: string): ChainEvent[] {
+function eventsIn(root: string): CatalogEvent[] {
   return orderedEvents({ root }, upcasters);
 }
 

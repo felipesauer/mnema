@@ -487,10 +487,10 @@ describe('the session releases what it held', () => {
     const broken: Session = {
       ...session,
       runs: new Map(
-        [...session.runs].map(([root, run]) => [
-          root,
-          { ...run, trees: { ...run.trees, projectPrivate: undefined } },
-        ]),
+        [...session.runs].map(([root, run]) => {
+          const { projectPrivate: _gone, ...trees } = run.trees;
+          return [root, { ...run, trees }];
+        }),
       ),
     };
     expect(closeSession(broken)).toEqual({

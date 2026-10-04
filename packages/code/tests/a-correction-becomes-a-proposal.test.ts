@@ -95,11 +95,14 @@ function answer(input: string): { reply: Record<string, unknown>; notes: readonl
 }
 
 /** The decisions recorded in one tree of the project. */
-function decisionsIn(tree: 'projectPublic' | 'projectPrivate'): CatalogEvent[] {
+function decisionsIn(
+  tree: 'projectPublic' | 'projectPrivate',
+): Extract<CatalogEvent, { kind: 'decision.recorded' }>[] {
   const root = resolveTrees(repo, env)[tree];
   if (root === undefined) return [];
   return orderedEvents({ root }, catalogUpcasters()).filter(
-    (event) => event.kind === 'decision.recorded',
+    (event): event is Extract<CatalogEvent, { kind: 'decision.recorded' }> =>
+      event.kind === 'decision.recorded',
   );
 }
 

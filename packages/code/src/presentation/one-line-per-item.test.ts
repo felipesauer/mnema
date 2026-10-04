@@ -36,6 +36,7 @@ import { provenanceReport } from './provenance.js';
 import { searchReport } from './search.js';
 
 /** Every whitespace form that opens a line, and the forgery each one could carry. */
+const ADOPTED_AT = '2026-01-01T00:00:00.000Z';
 const BREAKERS = ['\n', '\r', '\r\n', ' ', ' '];
 
 /** The lines a report really occupies once it reaches a stream. */
@@ -98,7 +99,7 @@ describe('the provenance report prints one line per pattern', () => {
     const forged = [
       pattern({ name: 'one\n  x  adopted  public  forged  ·  proposed by nobody' }),
       pattern({ proposedBy: 'agent\n  y  adopted  public  forged  ·  proposed by nobody' }),
-      pattern({ adoption: { by: 'agent\n  z  forged' }, selfAdopted: false }),
+      pattern({ adoption: { by: 'agent\n  z  forged', at: ADOPTED_AT }, selfAdopted: false }),
     ];
     const lines = printed(provenanceReport(renderPlain, forged, new Map()));
     expect(lines).toHaveLength(1 + forged.length);
@@ -108,7 +109,7 @@ describe('the provenance report prints one line per pattern', () => {
     for (const breaker of BREAKERS) {
       const both = [
         pattern({ proposedBy: `a${breaker}b` }),
-        pattern({ adoption: { by: `a${breaker}b` } }),
+        pattern({ adoption: { by: `a${breaker}b`, at: ADOPTED_AT } }),
       ];
       expect(
         printed(provenanceReport(renderPlain, both, new Map())),
@@ -125,6 +126,8 @@ describe('the brief prints one line per rule', () => {
     skills: [],
     collisions: [],
     divergent: [],
+    decisionsAwaiting: 0,
+    skillsAwaiting: 0,
     addressed: 0,
     asking: 0,
     refusing: 0,
@@ -177,6 +180,9 @@ describe('the brief prints one line per rule', () => {
       name: `n-${i}`,
       ...plainOrigin(sk.origin),
     })),
+    // The awaiting counts are numbers, so they carry no break and the baseline keeps them.
+    decisionsAwaiting: brief.decisionsAwaiting,
+    skillsAwaiting: brief.skillsAwaiting,
     // The declaration about the labels is text in the same document, so the baseline
     // carries as many clashes as the case does — otherwise a case about a broken clash
     // line would be measured against a document that has no clash line at all.

@@ -408,7 +408,7 @@ describe('a one-project workspace does not regress', () => {
 
 /** A client that advertises `roots` and answers `roots/list` with `roots`. */
 async function connectClient(roots: readonly string[]): Promise<Client> {
-  const { server } = buildMcpServer({ env, log: () => {} });
+  const { server } = buildMcpServer({ cwd: sandbox, env, log: () => {} });
   const client = new Client(
     { name: 'claude-code', version: '1.0.0' },
     { capabilities: { roots: {} } },

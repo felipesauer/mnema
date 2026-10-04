@@ -104,12 +104,6 @@ const PROMPT = 'mnema>';
 const CLEARS_THE_LINE = '\u0003';
 
 /**
- * The sequence that erases the caller's history. IT MAY NOT REACH A TERMINAL THIS SURFACE IS
- * DRAWING ON, at any height (`src/repl/page.ts`, `theEraseAsAScroll`).
- */
-const _ERASES_THE_HISTORY = `${ESC}[3J`;
-
-/**
  * The widest a hint may be and still be one row.
  *
  * Eighty columns, because that is the width every terminal has had since before any of
@@ -653,6 +647,7 @@ describe('the badge says what the record proved, and the verb that says the rest
     for (const level of OUTCOMES) {
       const covered = levelSeverity(level);
       const moved = severityOf(badgeLine(level, 'the-record-as-it-opened'));
+      if (moved === undefined) throw new Error(`the badge for ${level} carries no hue`);
       // NEVER BETTER NEWS THAN THE LEVEL ITSELF: a record ruled `broken` that then moved is
       // still broken, and a caution painted over red would be this row talking a verdict
       // down.
@@ -976,67 +971,8 @@ describe('the caret is left on the row being typed, under everything drawn over 
 // The height at which the area degrades, and the one the library gives up at
 // ---------------------------------------------------------------------------
 
-/**
- * THE HEIGHT THE LIBRARY GIVES UP AT, MEASURED AGAIN ON EVERY DELIVERY THAT TOUCHES THE
- * REGION — and it turned out to be a function of ONE thing.
- *
- * IT USED TO SAY TWO ROWS AT SIXTY COLUMNS, pinned in both directions, and it was right
- * when it was written. The WIDTH rule (`repl/area.ts`) is what moved it, and the whole
- * story is the hint's own width: a hint the terminal would FOLD is not drawn, so a window
- * that loses the hint has a one-row region and the library never reaches the boundary
- * there, while a window that keeps it has a two-row region and reaches it at one row.
- *
- * MEASURED THREE TIMES ACROSS THIS FRONT, at sixty columns, with the hint at three
- * lengths: at seventy columns it folded in two and the boundary was TWO rows; at
- * seventy-four it was dropped and the boundary was reached at NO height at all; at
- * fifty-three it is one row again and the boundary is ONE. So the number at sixty columns
- * went 2, then none, then 1 — better than where the front found it, at every width.
- *
- * The boundary is pinned three ways below: at a width that keeps the hint, at one that
- * loses it, and — the sharp one — at the hint's own width and one column under it.
- */
-const _TOO_SHORT_TO_REDRAW_IN_PART = 1;
-
 /** A window with room for the hint on one row — which is what makes the region two. */
 const WIDE_ENOUGH_FOR_THE_HINT = 100;
-
-/**
- * And one without, where the hint is not drawn and the region is one row.
- *
- * Forty, and the number is stated rather than derived from the hint: a width computed as
- * "one less than the hint" would make the assertion that the hint is wider than it true by
- * construction. The sharp case below is the one that derives, and it derives the INPUT.
- */
-const _TOO_NARROW_FOR_THE_HINT = 40;
-
-/** The width the two deliveries before this one recorded the boundary at. */
-const _WHERE_IT_WAS_RECORDED = 60;
-
-/**
- * A height with no room for a rule, and enough for the row being typed and its hint.
- *
- * IT WAS FOUR, AND FOUR ROWS WERE ENOUGH FOR THE BARE FORM ONLY BECAUSE OF WHAT WAS ABOVE IT.
- * The area is chosen against what is LEFT of the screen under the region above it (`repl/
- * area.ts`, `within`), and the opening used to take fifteen rows at this width whatever the
- * height — so on a four-row terminal there was nothing left and the area was on its floor. The
- * opening may hold at most a THIRD of the screen now (`repl/panel.ts`, `panelFor`), which on
- * four rows is one and on any screen at all leaves the area two thirds: the ladder is the area's
- * own again, and its floor is where its own arithmetic puts it — a rule, the row being typed, a
- * rule and the hint are four rows, so three is the first height that cannot hold them.
- *
- * WHICH IS A FINDING AS MUCH AS A NUMBER: no terminal a person opens can squeeze the input area
- * any more. It gives way at three rows and nowhere else.
- *
- * AND NO TERMINAL CAN BE THREE ROWS TALL AT ALL NOW, which is what took this number out of the
- * case below. There is a FLOOR under the window (`src/repl/floor.ts`): under eighty by twenty-four
- * the frame is a screen saying so, and a three-row session draws no area of any form. So the
- * height ladder is the area's own arithmetic and nothing a device can walk — the rungs under
- * `full` are reached by a LIST that grows into the region instead
- * (`a-palette-for-the-words.test.ts`), and the ladder itself is asserted as the pure function it
- * is, at the top of this file. The number is kept because it is where the arithmetic still gives
- * way, and it is unread because nothing can be that size.
- */
-const _SHORT_ENOUGH_FOR_THE_BARE_FORM = 3;
 
 describe('every terminal a caller can open gets the whole area', () => {
   it('draws the rules and the badge on a roomy window and at the floor alike', async () => {

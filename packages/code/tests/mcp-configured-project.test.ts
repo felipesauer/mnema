@@ -76,6 +76,7 @@ async function connect(
   configProject?: string,
 ): Promise<{ client: Client; close: () => Promise<void> }> {
   const { server } = buildMcpServer({
+    cwd: sandbox,
     env,
     log: (line) => logged.push(line),
     ...(configProject !== undefined ? { configProject } : {}),

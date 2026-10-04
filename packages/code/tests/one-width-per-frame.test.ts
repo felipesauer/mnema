@@ -63,9 +63,9 @@ import { indentOf, renderPlain, widthOf } from '../src/presentation/plain.js';
 import { renderStyled } from '../src/presentation/styled.js';
 import { openConsole } from '../src/repl/console.js';
 import { THE_FLOOR } from '../src/repl/floor.js';
-import { dispositionOf, verbsOffered } from '../src/repl/gate.js';
+import { dispositionOf } from '../src/repl/gate.js';
 import { BEFORE_THE_BAR, insideTheMargin, THE_INSET } from '../src/repl/inset.js';
-import { standingLine, whatItRefuses } from '../src/repl/session.js';
+import { standingLine } from '../src/repl/session.js';
 import { standing } from '../src/repl/standing.js';
 import { CLEAR } from '../src/session-words.js';
 import { type Capability, rendererAtEachWidth, rendererFor } from '../src/wiring/color.js';
@@ -261,27 +261,6 @@ function theWordsItPrints(): readonly Line[] {
   expect(what.does, `\`${A_WRITE}\` is not refused by this session`).toBe('refuse');
   if (what.does !== 'refuse') throw new Error('unreachable');
   return [refusalSentence(what.sentence, what.detail)];
-}
-
-/**
- * THE ONE LINE THE OPENING ITSELF LANDS — the sentence that says what the session refuses.
- *
- * It is a different subject from the words above and it needs its own case: the opening is
- * composed for a SIZE (`repl/session.ts`, the closure the console calls), so it is the half of
- * the page whose renderer could be right for the report and wrong for the header. How many
- * verbs it names comes from the same function the session counts them with, so this is the
- * product's own line and not a copy of it.
- *
- * AND NOTHING READS IT ANY MORE, WHICH IS THE FLOOR'S DOING RATHER THAN A CASE GIVING UP. The
- * sentence is seventy-seven columns wide and the narrowest window a console is drawn on is eighty
- * (`src/repl/floor.ts`), so no caller can produce the fold this measured. The subject moved to
- * the other line the opening lands that a real window can be narrower than — the row saying where
- * the session is standing, which is a path ({@link deep}) — and this is kept because it is where
- * the sentence's own width can still be read off the product.
- */
-function _theLineItOpensWith(): Line {
-  const built = buildProgram(quiet, [], renderPlain);
-  return whatItRefuses(verbsOffered(built.verbs, REPL_VERB).length)[0] as Line;
 }
 
 /**

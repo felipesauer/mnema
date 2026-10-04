@@ -56,6 +56,7 @@ import { badgeLine, pickingTips, theSessionsOwnWords, tips } from '../src/repl/s
 import { CLEAR, PREFIX, SESSION_WORDS } from '../src/session-words.js';
 import { REPL_VERB } from '../src/wiring/repl.js';
 import { ENDS_THE_INPUT, ESC } from './support/console.js';
+import { lastIndexWhere } from './support/last-index-where.js';
 import {
   aFrameAfter,
   aFrameWithout,
@@ -1480,7 +1481,7 @@ describe('the two keys open one list, and it stands off the row under it', () =>
       fillsTheScreen(screen, rows, `${keys}: with the list open`);
       // And what is above the whole run of emptiness really is the page rather than the top of
       // the screen, so the list is not being read on an empty page.
-      const above = screen.rows.slice(0, first).findLastIndex((row) => row.trim().length > 0);
+      const above = lastIndexWhere(screen.rows.slice(0, first), (row) => row.trim().length > 0);
       expect(above, `${keys}: nothing at all is above the list`).toBeGreaterThanOrEqual(0);
       return listed.map((row) => row.trimStart().split(/\s{2,}/)[0] as string);
     };

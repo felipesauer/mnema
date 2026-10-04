@@ -26,7 +26,7 @@ import { mkdirSync, mkdtempSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { pathToFileURL } from 'node:url';
-import { catalogUpcasters, ensureTree, verify } from '@mnema/chain';
+import { type CatalogEvent, catalogUpcasters, ensureTree, verify } from '@mnema/chain';
 import { type DiscoveryEnv, orderedEvents, PROJECT_DIR, resolveTrees } from '@mnema/core';
 import { Client } from '@modelcontextprotocol/sdk/client/index.js';
 import { InMemoryTransport } from '@modelcontextprotocol/sdk/inMemory.js';
@@ -52,7 +52,7 @@ async function connect(
   roots: readonly string[],
   clientName = 'claude-code',
 ): Promise<{ client: Client }> {
-  const { server } = buildMcpServer({ env, log: (line) => logged.push(line) });
+  const { server } = buildMcpServer({ cwd: sandbox, env, log: (line) => logged.push(line) });
   const client = new Client(
     { name: clientName, version: '1.0.0' },
     { capabilities: { roots: {} } },
@@ -66,7 +66,7 @@ async function connect(
 }
 
 /** Every event in a tree, or none when the tree holds nothing. */
-function eventsIn(root: string): readonly { kind: string; subject: string }[] {
+function eventsIn(root: string): readonly CatalogEvent[] {
   return orderedEvents({ root }, catalogUpcasters());
 }
 

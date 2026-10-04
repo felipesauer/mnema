@@ -28,7 +28,7 @@ import { runDecision } from '../src/commands/decision.js';
 import { runDecisionImport } from '../src/commands/decision-import.js';
 import { runDecisionTransition } from '../src/commands/decision-transition.js';
 import { runHandoff } from '../src/commands/handoff.js';
-import { runInit } from '../src/commands/init.js';
+import { type InitRefused, type InitResult, runInit } from '../src/commands/init.js';
 import { runCheckerEnroll, runKeyEnroll } from '../src/commands/key-enroll.js';
 import { runKeyGithub } from '../src/commands/key-github.js';
 import { runKeyRequest } from '../src/commands/key-request.js';
@@ -164,6 +164,12 @@ const CORE_OPERATIONS_THAT_APPEND = 40;
 
 /** How many paths of the shipped surface reach one of them. */
 const SURFACE_WRITE_PATHS = 40;
+
+/** What `runInit` answered when it did not refuse; a refusal ends the setup. */
+function founded(result: InitResult | InitRefused): InitResult {
+  if ('refused' in result) throw new Error(`init was refused: ${JSON.stringify(result)}`);
+  return result;
+}
 
 /** Every non-test TypeScript file under a source root. */
 function sourceFiles(dir: string): string[] {
@@ -498,18 +504,19 @@ describe('every write path leaves the record fully signed', () => {
     let run = '';
     let backupKey = '';
     let foreignTail = '';
-    const ok = <T extends { ok: boolean }>(what: string, result: T): T => {
+    const ok = <T extends { ok: boolean }>(what: string, result: T): Extract<T, { ok: true }> => {
       if (!result.ok) throw new Error(`${what} was refused: ${JSON.stringify(result)}`);
-      return result;
+      return result as Extract<T, { ok: true }>;
     };
     return [
       {
         at: 'commands/init.ts:runInit',
         drive: () => {
-          const made = runInit(ctx);
+          const made = founded(runInit(ctx));
           if (!made.created) throw new Error('init founded nothing');
-          backupKey = made.identity.backup?.fingerprint as string;
-          if (backupKey === undefined) throw new Error('init made no backup key');
+          const fingerprint = made.identity?.backup?.fingerprint;
+          if (fingerprint === undefined) throw new Error('init made no backup key');
+          backupKey = fingerprint;
         },
       },
       {
@@ -658,7 +665,7 @@ describe('every write path leaves the record fully signed', () => {
         at: 'commands/key-enroll.ts:runKeyEnroll',
         drive: () => {
           const joining = otherMachine('joiner');
-          const anchor = runInit({ cwd: project, env }).anchor;
+          const anchor = founded(runInit({ cwd: project, env })).anchor;
           const asked = ok(
             'key request',
             runKeyRequest({ cwd: project, env: joining }, { anchor }),
@@ -681,7 +688,7 @@ describe('every write path leaves the record fully signed', () => {
         at: 'commands/key-enroll.ts:runCheckerEnroll',
         drive: () => {
           const runner = otherMachine('runner');
-          const anchor = runInit({ cwd: project, env }).anchor;
+          const anchor = founded(runInit({ cwd: project, env })).anchor;
           const asked = ok(
             'checker request',
             runKeyRequest({ cwd: project, env: runner }, { anchor, asChecker: true }),
@@ -764,9 +771,9 @@ describe('every write path leaves the record fully signed', () => {
     let task = '';
     let decision = '';
     let skill = '';
-    const ok = <T extends { ok: boolean }>(what: string, result: T): T => {
+    const ok = <T extends { ok: boolean }>(what: string, result: T): Extract<T, { ok: true }> => {
       if (!result.ok) throw new Error(`${what} was refused: ${JSON.stringify(result)}`);
-      return result;
+      return result as Extract<T, { ok: true }>;
     };
     return [
       {

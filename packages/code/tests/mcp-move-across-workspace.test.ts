@@ -30,7 +30,7 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { pathToFileURL } from 'node:url';
 import {
-  type ChainEvent,
+  type CatalogEvent,
   catalogUpcasters,
   ensureTree,
   taskBirth,
@@ -108,7 +108,7 @@ function publicOf(project: string): string {
 }
 
 /** Every event in a chain, replayed off DISK — never the tool's own answer. */
-function eventsIn(root: string): readonly ChainEvent[] {
+function eventsIn(root: string): readonly CatalogEvent[] {
   return orderedEvents({ root }, upcasters);
 }
 

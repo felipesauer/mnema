@@ -32,7 +32,7 @@ import { mkdirSync, mkdtempSync, readdirSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { basename, join } from 'node:path';
 import { pathToFileURL } from 'node:url';
-import { type ChainEvent, catalogUpcasters, ensureTree, verify } from '@mnema/chain';
+import { type CatalogEvent, catalogUpcasters, ensureTree, verify } from '@mnema/chain';
 import { type DiscoveryEnv, orderedEvents, PROJECT_DIR, projectRuns } from '@mnema/core';
 import { Client } from '@modelcontextprotocol/sdk/client/index.js';
 import { InMemoryTransport } from '@modelcontextprotocol/sdk/inMemory.js';
@@ -83,7 +83,7 @@ function treeOf(project: string, tree: 'public' | 'private'): string {
 }
 
 /** Every event in a chain, replayed off DISK — never the tool's own answer. */
-function eventsIn(root: string): readonly ChainEvent[] {
+function eventsIn(root: string): readonly CatalogEvent[] {
   return orderedEvents({ root }, catalogUpcasters());
 }
 
@@ -572,7 +572,7 @@ describe('the close accounts for every run the connection opened', () => {
 
 /** A client that advertises `roots` and answers `roots/list` with `roots`. */
 async function connectClient(roots: readonly string[]): Promise<Client> {
-  const { server } = buildMcpServer({ env, log: () => {} });
+  const { server } = buildMcpServer({ cwd: sandbox, env, log: () => {} });
   const client = new Client(
     { name: 'claude-code', version: '1.0.0' },
     { capabilities: { roots: {} } },

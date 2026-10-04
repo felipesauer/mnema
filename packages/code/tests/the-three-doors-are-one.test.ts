@@ -130,11 +130,11 @@ function founded(name: Door['name'], founding = true): Door {
 
 /** The tools a connection to this project's server declares as writing, and a way to call one. */
 async function connected(door: Door): Promise<{
-  call: (tool: string, args: object) => Promise<Verdict>;
+  call: (tool: string, args: Record<string, unknown>) => Promise<Verdict>;
   close: () => Promise<void>;
 }> {
   const env: DiscoveryEnv = { home: door.home };
-  const { server } = buildMcpServer({ env, log: () => {} });
+  const { server } = buildMcpServer({ cwd: sandbox, env, log: () => {} });
   const client = new Client({ name: AGENT, version: '1.0.0' }, { capabilities: { roots: {} } });
   client.setRequestHandler(ListRootsRequestSchema, () => ({
     roots: [{ uri: pathToFileURL(door.repo).href, name: 'repo' }],
@@ -254,7 +254,7 @@ const VERBS_NOT_IN_THE_LIBRARY: Readonly<Record<string, string>> = {
 interface Step {
   readonly cli: (ids: Ids) => readonly string[];
   readonly tool: string;
-  readonly args: (ids: Ids) => object;
+  readonly args: (ids: Ids) => Record<string, unknown>;
   readonly sdk: (record: MnemaRecord, ids: Ids) => Verdict;
 }
 
@@ -703,7 +703,7 @@ describe('an operation on one door has the others', () => {
   });
 
   it('has, for every tool the server writes with, a method or a reason', () => {
-    const { tools } = buildMcpServer({ env: { home: sandbox }, log: () => {} });
+    const { tools } = buildMcpServer({ cwd: sandbox, env: { home: sandbox }, log: () => {} });
     const writing = tools.filter((tool) => tool.effect === 'mutates').map((tool) => tool.act);
     const covered = new Set(
       OPERATIONS.flatMap((row) => (typeof row.tool === 'string' ? [row.tool] : [])),

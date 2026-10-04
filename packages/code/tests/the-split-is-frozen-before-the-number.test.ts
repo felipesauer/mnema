@@ -504,6 +504,9 @@ describe('each round says its own size, and says it the way that round decided i
     // as a sentence — it is a number that ages in silence the day the split moves, so the
     // sentence is checked against the arithmetic rather than trusted.
     const first = ROUNDS[0] as Round;
+    if (first.split.headline === null || first.reading === null) {
+      throw new Error('round 1 has no headline or no reading to count');
+    }
     const cells = first.split.headline.length * runsPerCell();
     const counted = [...first.reading.matchAll(/(\d+) cells/g)].map((match) => Number(match[1]));
     expect(counted.length, 'the reading states no cell count at all').toBeGreaterThan(0);
@@ -779,6 +782,8 @@ describe('the prediction of round 3', () => {
     );
     expect(rows.size, 'the prediction calls the wrong number of tasks').toBe(third.tasks);
 
+    const headline = third.split.headline;
+    if (headline === null) throw new Error('round 3 has no headline to hold the prediction to');
     for (const id of tasks(third)) {
       const row = rows.get(id);
       expect(row, `the prediction says nothing about ${id}`).toBeDefined();
@@ -786,7 +791,7 @@ describe('the prediction of round 3', () => {
         isNegativeControl(id) ? 'B' : 'A',
       );
       expect(row?.headline === '**yes**', `the prediction and the split disagree about ${id}`).toBe(
-        third.split.headline.includes(id),
+        headline.includes(id),
       );
       // A call with no reason is a coin toss written down. Ten of those would pass every other
       // assertion in this file.
