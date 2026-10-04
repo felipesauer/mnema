@@ -204,7 +204,7 @@ describe('mnema tail prune', () => {
     expect(result.ok).toBe(false);
     if (result.ok) return;
     expect(result.reason).toBe('REFUSED');
-    expect(result.code).toBe('TAIL_IS_OWN');
+    expect(result).toMatchObject({ code: 'TAIL_IS_OWN' });
   });
 
   it('refuses outside a project, where there is no record to account for', () => {

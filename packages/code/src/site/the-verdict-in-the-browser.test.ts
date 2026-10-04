@@ -231,7 +231,7 @@ describe('the verdict a page computes', () => {
     const page = `id="record-files">${JSON.stringify(files)}</script>`;
     const shown = runInAPage(page, theSiteVerifier());
     const chain = verify(join(FROZEN, 'witnessed-record'));
-    expect(chain.witness.state).not.toBe('none');
+    expect(chain.witness).toBe('covered');
     expect({ summary: shown.summary, status: shown.status }).toEqual({
       summary: chain.summary,
       status: `verified (${chain.level})`,

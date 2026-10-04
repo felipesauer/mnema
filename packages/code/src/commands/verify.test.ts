@@ -3,9 +3,16 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { type DiscoveryEnv, resolveTrees, type Scope } from '@mnema/core';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
-import { runInit } from './init.js';
+import { type InitContext, type InitResult, runInit } from './init.js';
 import { runTask } from './task.js';
 import { runVerify, type TreeReport, type TreeVerdict, type VerifyDone } from './verify.js';
+
+/** Founds the project; a refusal here is a broken setup, not a case. */
+function found(ctx: InitContext): InitResult {
+  const result = runInit(ctx);
+  if ('refused' in result) throw new Error('setup: init refused');
+  return result;
+}
 
 let sandbox: string;
 
@@ -168,7 +175,7 @@ describe('the machine the verdict is asked from', () => {
     // verb hands it THIS machine's key root, and a verb that stopped handing it would print
     // the key `init` made never to write as one whose tail may have gone.
     const { repo, env } = setup();
-    const made = runInit({ cwd: repo, env });
+    const made = found({ cwd: repo, env });
     const backup = made.identity?.backup?.fingerprint;
     expect(backup).toBeDefined();
     const anotherMachine = join(sandbox, 'another-machine');
@@ -184,7 +191,10 @@ describe('the machine the verdict is asked from', () => {
     if (!here.ok || !there.ok) throw new Error('verify refused a project it was run in');
 
     const kinds = (out: VerifyDone) =>
-      verdictOf(out, 'public').result.census.map((note) => [note.kind, note.fingerprint]);
+      verdictOf(out, 'public').result.census.map((note) => [
+        note.kind,
+        'fingerprint' in note ? note.fingerprint : undefined,
+      ]);
     expect(kinds(here)).toEqual([['backup-key', backup]]);
     expect(kinds(there)).toEqual([['key-without-tail', backup]]);
     // What the machine knows moves the words, never the verdict.

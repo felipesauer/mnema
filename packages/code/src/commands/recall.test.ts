@@ -22,11 +22,18 @@ import { GIT_WITHOUT_MAINTENANCE } from '../../tests/support/git-without-mainten
 import { renderPlain } from '../presentation/plain.js';
 import { recallDocument } from '../presentation/recall.js';
 import { registerRecall } from '../wiring/recall.js';
-import { runInit } from './init.js';
+import { type InitContext, type InitResult, runInit } from './init.js';
 import { runMemory } from './memory.js';
 import { runObserve } from './observe.js';
 import { runRecall } from './recall.js';
 import { runSwitch } from './switch.js';
+
+/** Founds the project; a refusal here is a broken setup, not a case. */
+function found(ctx: InitContext): InitResult {
+  const result = runInit(ctx);
+  if ('refused' in result) throw new Error('setup: init refused');
+  return result;
+}
 
 let sandbox: string;
 let repo: string;
@@ -116,7 +123,7 @@ describe('runRecall — the notes out of every tree this machine holds', () => {
   });
 
   it('refuses while its own channel is switched off, naming who switched it', () => {
-    const founded = runInit(here());
+    const founded = found(here());
     minted(runMemory(here(), { content: 'a note the switch keeps out' }));
     const switched = runSwitch(here(), { channel: 'recall-document', on: false, reason: 'x' });
     expect(switched.ok).toBe(true);

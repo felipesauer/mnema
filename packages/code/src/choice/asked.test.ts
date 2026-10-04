@@ -185,7 +185,7 @@ async function asking(): Promise<Asking> {
   const io: CliIo = {
     out: (line) => said.push(line),
     err: (line) => said.push(line),
-    fail: (line) => said.push(line),
+    fail: () => {},
   };
   const page = new PassThrough();
   page.on('data', (chunk: Buffer) => said.push(String(chunk)));

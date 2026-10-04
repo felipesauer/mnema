@@ -1,11 +1,6 @@
 import { rmSync } from 'node:fs';
-import { catalogUpcasters } from '@mnema/chain';
-import {
-  type CatalogEvent,
-  orderedEventsOfRecord,
-  type ProjectionCache,
-  type Scope,
-} from '@mnema/core';
+import { type CatalogEvent, catalogUpcasters } from '@mnema/chain';
+import { orderedEventsOfRecord, type ProjectionCache, type Scope } from '@mnema/core';
 import { afterEach, describe, expect, it } from 'vitest';
 import {
   type Bench,

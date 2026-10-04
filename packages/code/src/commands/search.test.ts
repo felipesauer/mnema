@@ -58,7 +58,7 @@ function digest(dir: string): string {
 /** Captures a memory in a scope, returning its id (throws if the write refused). */
 function capture(ctx: { cwd: string; env: DiscoveryEnv }, content: string, scope: string): string {
   const result = runMemory(ctx, { content, scope: scope as never });
-  if (!result.ok) throw new Error(`setup: memory refused (${result.code})`);
+  if (!result.ok) throw new Error(`setup: memory refused (${result.reason})`);
   return result.id;
 }
 

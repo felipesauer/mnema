@@ -13,13 +13,8 @@ import {
   observe,
   startRun,
 } from '../../tests/support/chain.js';
-import {
-  pertinentFirst,
-  pertinentRecords,
-  readRecord,
-  type ScopedCache,
-  searchRecords,
-} from './search.js';
+import type { ScopedCache } from '../sources.js';
+import { pertinentFirst, pertinentRecords, readRecord, searchRecords } from './search.js';
 
 let benches: Bench[] = [];
 let caches: ProjectionCache[] = [];
@@ -107,7 +102,8 @@ describe('searchRecords — the record across the trees', () => {
     const listed = searchRecords(sources, {});
 
     expect(listed.hits).toHaveLength(2);
-    expect(listed.hits[0]?.at >= (listed.hits[1]?.at ?? '')).toBe(true);
+    const ats = listed.hits.map((hit) => hit.at);
+    expect(ats).toEqual([...ats].sort().reverse());
   });
 
   it('cuts the merged list to the limit and still reports the true total', () => {

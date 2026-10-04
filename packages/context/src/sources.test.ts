@@ -65,7 +65,7 @@ describe('two trees in the same role are two trees', () => {
     const second = tree();
     capture(second.bench, 'mem-b', 'the shared word too');
 
-    const found = searchRecords([first.source, second.source], { text: 'shared' });
+    const found = searchRecords([first.source, second.source], { term: 'shared' });
     expect(found.hits.map((h) => h.id).sort()).toEqual(['mem-a', 'mem-b']);
     expect(found.total).toBe(2);
   });
