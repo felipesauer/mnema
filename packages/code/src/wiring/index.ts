@@ -249,6 +249,7 @@ import { registerRulesFile } from './rules-file.js';
 import { registerRun } from './run.js';
 import { registerSearch } from './search.js';
 import { registerShow } from './show.js';
+import { registerSite } from './site.js';
 import { registerSkill } from './skill.js';
 import { registerSkills } from './skills.js';
 import { registerStatus } from './status.js';
@@ -288,6 +289,7 @@ export const VERBS: readonly Verb[] = [
   registerAntipatterns,
   registerExposure,
   registerExport,
+  registerSite,
   registerReferences,
   registerDiagram,
   registerRules,
