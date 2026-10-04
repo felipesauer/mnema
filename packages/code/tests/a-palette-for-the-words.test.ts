@@ -1412,7 +1412,7 @@ describe('the two keys open one list, and it stands off the row under it', () =>
     const columns = NOTHING_IS_CUT;
     const rows = THE_FLOOR.rows;
     const asked = theCompleter();
-    const letter = 's';
+    const letter = 'a';
     const offers = asked(letter)[0];
     expect(offers.length, 'the letter narrows to nothing').toBeGreaterThan(1);
     expect(offers.length, 'the letter reaches more than the ceiling').toBeLessThanOrEqual(atMost());

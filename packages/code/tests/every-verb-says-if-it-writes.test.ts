@@ -274,6 +274,8 @@ const INVOCATION: Readonly<Record<string, Invocation>> = {
   antipatterns: { argv: () => ['antipatterns'] },
   exposure: { argv: () => ['exposure'] },
   export: { argv: () => ['export'] },
+  // It writes ONE file, `index.html`, under the directory it is given, and nothing to the record.
+  site: { argv: () => ['site', '--out', join(sandbox, 'site-out')] },
   refs: { argv: (f) => ['refs', f.task] },
   diagram: { argv: (f) => ['diagram', 'timeline', f.task] },
   rules: { argv: () => ['rules', 'src'] },
@@ -599,7 +601,7 @@ describe('every verb says if it writes', () => {
     expect(Object.keys(INVOCATION).sort()).toEqual([...EFFECT_BY_VERB.keys()].sort());
   });
 
-  it('counts eighteen writes and twenty-nine reads over the whole surface', () => {
+  it('counts eighteen writes and thirty reads over the whole surface', () => {
     // The count in the report, asserted rather than trusted, and the total against the
     // list: a verb that stopped being registered would otherwise leave both halves
     // looking healthy.
@@ -637,6 +639,7 @@ describe('every verb says if it writes', () => {
       'antipatterns',
       'exposure',
       'export',
+      'site',
       'refs',
       'diagram',
       'rules',
