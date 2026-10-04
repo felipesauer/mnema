@@ -204,6 +204,18 @@ function callsStartingGit(file: string, source: string): Call[] {
 }
 
 /**
+ * Whether a call turns automatic maintenance off, by either channel: the file handed as
+ * `GIT_CONFIG_GLOBAL` (which a test's remote reads), or both settings on the call's own command
+ * line (`-c`), which is how a product module does it for the cache it fetches into.
+ */
+function turnsMaintenanceOff(text: string): boolean {
+  return (
+    /\bGIT_CONFIG_GLOBAL:\s*GIT_WITHOUT_MAINTENANCE\b/.test(text) ||
+    (text.includes('maintenance.auto=false') && text.includes('gc.auto=0'))
+  );
+}
+
+/**
  * The calls in one file that start git to write a repository without the file that turns automatic
  * maintenance off, as `file:line` — the whole rule, in the one function both cases below ask.
  */
@@ -211,7 +223,7 @@ function bareCallsIn(file: string, source: string): string[] {
   if (!WRITES.test(source)) return [];
   return callsStartingGit(file, source)
     .filter((call) => call.verb === undefined || WRITES.test(`'${call.verb}'`))
-    .filter((call) => !/\bGIT_CONFIG_GLOBAL:\s*GIT_WITHOUT_MAINTENANCE\b/.test(call.text))
+    .filter((call) => !turnsMaintenanceOff(call.text))
     .map((call) => `${file}:${call.line}`);
 }
 
@@ -239,11 +251,14 @@ describe('the reading of a call', () => {
       "spawnSync('git', ['-c', 'user.name=x', 'commit', '-q'], { env: {} });",
       "execFileSync('git', ['commit', '-q'], { cwd: 'a)b', env: { GIT_CONFIG_GLOBAL: GIT_WITHOUT_MAINTENANCE } });",
       "spawn('git', ['push'], {});",
+      "execFileSync('git', ['-c', 'gc.auto=0', '-c', 'maintenance.auto=false', ...args], {});",
+      "execFileSync('git', ['-c', 'gc.auto=0', ...args], {});",
     ].join('\n');
     expect(bareCallsIn('synthetic.ts', source)).toEqual([
       'synthetic.ts:2',
       'synthetic.ts:4',
       'synthetic.ts:6',
+      'synthetic.ts:8',
     ]);
     // A file that names no verb that writes starts nothing that repacks: none of its calls count.
     expect(
@@ -262,6 +277,8 @@ describe('every git a test starts to write a repository', () => {
   });
 
   it('hands every one of its calls the file that turns automatic maintenance off', () => {
+    // The product's own modules are held to it too: the one that fetches does it into a cache of
+    // its own and says so in the call, with `-c maintenance.auto=false -c gc.auto=0`.
     const bare = startingGit.flatMap((one) => bareCallsIn(one.file, one.source));
     expect(
       bare,

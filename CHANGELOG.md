@@ -15,6 +15,13 @@ Requires Node ≥ 22.12.0; the packages are ESM-only.
 
 ### Added
 
+- **Decisions inherited from another repository** (the `inherit` verb): a project points,
+  in the committed `.mnema/inherit.json`, at a git repository that holds a record and at one commit of
+  it. `mnema brief` prints that record's decisions in force in a section of their own, naming the
+  repository and the commit; they are read and never signed by the project, and the project's
+  `verify` does not count them. A record that does not verify at the commit prints none, and the
+  brief says so. Moving the pointer is explicit and shows what changes first; the copy is kept
+  under the mnema home, outside the project. Inheriting is trusting that repository at that commit.
 - **A rule can carry its check** (the `check` command): a decision in force names the program that
   checks it, and a machine with a key of its own records, at a commit, whether the rule held. That
   key is enrolled by a member of an identity (the `--checker` form of the key request and enroll

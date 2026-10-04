@@ -69,6 +69,7 @@
 import { dirname } from 'node:path';
 import { type Brief, brief, channelIsOn, channelStates } from '@mnema/context';
 import { type DiscoveryEnv, resolveTrees } from '@mnema/core';
+import { type InheritedReading, readProjectInherited } from '../inherited-record.js';
 import {
   basesNeverImported,
   type DecisionsOutside,
@@ -126,6 +127,12 @@ export interface BriefDone {
     readonly drift: readonly DecisionsOutside[];
     readonly arrival: readonly UnimportedBase[];
   };
+  /**
+   * What the project inherits from another repository's record, read at the commit it points to
+   * — present only when the project points at one (`inherited-record.ts`). It is NEVER part of
+   * {@link brief}: those are the project's own, signed by it and counted by its `verify`.
+   */
+  readonly inherited?: InheritedReading;
 }
 
 /** The read was refused — there is no project to compose a brief for. */
@@ -238,6 +245,7 @@ export function runBrief(
       // stderr: that reader is an AGENT, and the door built for it is the MCP, where
       // this same fact rides beside every answer (`record-integrity.ts`).
       linkBreaks: linkBreaksOf(sources, THE_READING_THAT_OPENED_THESE),
+      ...inheritedOf(trees),
       // READ FROM THE DISK, AND ONLY WHEN ASKED: see {@link BriefDone.outside}. Over every tree,
       // for `decision import`'s reason — a file imported into the private tree is imported.
       ...(asked.outside === true
@@ -259,4 +267,10 @@ export function runBrief(
       }),
     };
   });
+}
+
+/** The inherited reading, as the field {@link BriefDone} carries it — absent when none. */
+function inheritedOf(trees: ReturnType<typeof resolveTrees>): { inherited?: InheritedReading } {
+  const inherited = readProjectInherited(trees);
+  return inherited === undefined ? {} : { inherited };
 }

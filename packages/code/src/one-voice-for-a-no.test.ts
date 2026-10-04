@@ -430,6 +430,7 @@ describe('no parent takes a word of its own, and every one refuses a mistyped su
       'tail',
       'witness',
       'switch',
+      'inherit',
     ]);
     expect(all.filter((p) => p.positionals > 0).map((p) => p.path)).toEqual([]);
   });
@@ -457,6 +458,7 @@ describe('no parent takes a word of its own, and every one refuses a mistyped su
       'tail: has no command',
       'witness: has no command',
       'switch: has no command',
+      'inherit: has no command',
     ]);
   }, 60_000);
 

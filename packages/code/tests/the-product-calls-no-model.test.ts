@@ -90,6 +90,10 @@ const MAY_REACH_THE_NETWORK: readonly string[] = [
   // never a model. Only this file names the global `fetch`; `run.ts` hands it in and nothing
   // else in the package reaches the network.
   'packages/action/src/github.ts',
+  // Runs `git fetch` into a cache of its own, from the repository a project points at to read its
+  // decisions — a network call only when that location is a URL, and only from `inherit set`,
+  // `inherit update` and the one read that finds its pinned commit missing; never a model.
+  'packages/code/src/inherited-record.ts',
 ];
 
 /** Ways to reach the network from JavaScript. */

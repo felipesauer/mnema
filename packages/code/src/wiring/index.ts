@@ -231,6 +231,7 @@ import { registerExposure } from './exposure.js';
 import { registerFocus } from './focus.js';
 import { registerGuard } from './guard.js';
 import { registerHandoff } from './handoff.js';
+import { registerInherit } from './inherit.js';
 import { registerInit } from './init.js';
 import { registerKey } from './key.js';
 import { registerLink } from './link.js';
@@ -307,6 +308,7 @@ export const VERBS: readonly Verb[] = [
   registerTail,
   registerWitness,
   registerSwitch,
+  registerInherit,
   registerDoctor,
   registerVerify,
   registerMcp,
