@@ -11,7 +11,7 @@
  */
 
 import type { Command } from 'commander';
-import { fact } from '../presentation/detail.js';
+import { siteNotice, siteReport } from '../presentation/site.js';
 import { here } from './context.js';
 import { writeLines } from './io.js';
 import { reportRefusal } from './report.js';
@@ -55,26 +55,8 @@ export function registerSite(program: Command, wiring: Wiring): Declared {
         );
         return;
       }
-      writeLines(io, [
-        `Wrote ${result.path}`,
-        render(
-          fact(
-            `${result.decisions} decision(s), ${result.inForce} in force; ${result.events} event(s); ` +
-              `${result.files} file(s) carried for the verification in the page`,
-          ),
-        ),
-        render(fact('only the committed public tree is in the page')),
-      ]);
-      if (!result.verdict.ok) {
-        io.err(
-          render(
-            fact(
-              `this record does not verify: ${result.verdict.summary} — the page says so to its readers; run \`mnema verify\``,
-              0,
-            ),
-          ),
-        );
-      }
+      writeLines(io, siteReport(render, result));
+      for (const line of siteNotice(render, result)) io.err(line);
     });
   return readsTheRecord(site);
 }
