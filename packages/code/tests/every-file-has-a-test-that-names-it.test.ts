@@ -1131,7 +1131,7 @@ const CLAUSES_PER_FILE: Readonly<Record<string, number>> = {
   'packages/context/tests/support/chain.ts': 7,
   'packages/context/tests/the-bench-leaves-nothing-behind.test.ts': 5,
   'packages/core/src/a-reason-states-something.test.ts': 20,
-  'packages/core/src/adr/bridges.test.ts': 5,
+  'packages/core/src/adr/bridges.test.ts': 6,
   'packages/core/src/adr/published-templates.test.ts': 2,
   'packages/core/src/adr/read.test.ts': 3,
   'packages/core/src/adr/scan.test.ts': 6,
