@@ -220,7 +220,8 @@ describe('the verdict a page computes', () => {
     const walk = (dir: string, prefix: string): void => {
       for (const entry of readdirSync(dir, { withFileTypes: true })) {
         if (entry.isDirectory()) walk(join(dir, entry.name), `${prefix}${entry.name}/`);
-        else files[`${prefix}${entry.name}`] = readFileSync(join(dir, entry.name)).toString('base64');
+        else
+          files[`${prefix}${entry.name}`] = readFileSync(join(dir, entry.name)).toString('base64');
       }
     };
     walk(join(FROZEN, 'witnessed-record'), '');

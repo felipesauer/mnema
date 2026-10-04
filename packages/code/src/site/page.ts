@@ -184,13 +184,13 @@ export function renderPage(model: SiteModel, verifier: string): string {
 <ul id="verdict-issues"></ul>
 <noscript><p>This page verifies the record with JavaScript. Without it, nothing here has been verified.</p></noscript>
 </section>
-<p>The verdict above is what <code>mnema verify</code> says about the public tree, computed in this
-browser by the same verifier (<code>@mnema/chain</code>) over the ${fileCount} file(s) this page carries,
-with no network request and no key of yours. It checks the hash chain and every checkpoint
-signature against the public keys carried with the files. It does not say that a key belongs to
-the person a list names, and it does not check the lists below against the files: they were
-written from those files by <code>mnema site</code>. Only the committed public tree is in this
-page — no private tree and no machine-global tree.</p>
+<p>The verdict above is the sentence <code>mnema verify</code> gives a fresh clone of the repository,
+computed in this browser by the same verifier (<code>@mnema/chain</code>) over the ${fileCount} file(s)
+this page carries, with no network request and no key of yours. It checks the hash chain and every
+checkpoint signature against the public keys carried with the files. It does not say that a key
+belongs to the person a list names, and it does not check the lists below against the files: they
+were written from those files by <code>mnema site</code>. Only the committed public tree is in this
+page — no private tree and no machine-global tree — and all of its text is.</p>
 <h2>Decisions</h2>
 <p>${inForce} in force, ${others} not in force.</p>
 <input type="checkbox" id="all"><label for="all">Also show the rejected, superseded and proposed decisions</label>
