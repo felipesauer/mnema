@@ -95,13 +95,12 @@ import { neutralized } from '../one-line.js';
 /**
  * The hook event a reply answers, echoed back because the host compares it.
  *
- * A closed union of ONE, which is the point rather than an oversight: this server
- * answers hooks at exactly one event, and a second one is a slice with its own
- * measurement. A caller cannot pass a string, so the event cannot drift out of step with
- * what `plugin/hooks/hooks.json` declares — and when a second event arrives, every site
- * that builds a reply has to say which it is.
+ * A closed union, so a caller cannot pass a string and the event cannot drift out of step with
+ * what a host declares. `PreToolUse` is the one `plugin/hooks/hooks.json` declares for a write;
+ * `SessionStart` is the event a program built on the Claude Agent SDK registers the opening
+ * document under, and it carries `additionalContext` alone — the Agent SDK hooks page says so.
  */
-export type HookEvent = 'PreToolUse';
+export type HookEvent = 'PreToolUse' | 'SessionStart';
 
 /**
  * The permission decisions this server can express: hold the write for a person, or not let

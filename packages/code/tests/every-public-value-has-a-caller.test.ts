@@ -403,6 +403,12 @@ function unwired(): string[] {
  * here: this table stays auto-pruning over the real surface.
  */
 const UNWIRED: Readonly<Record<string, string>> = {
+  '@mnema/sdk mnemaHooks':
+    'what a program built on the Agent SDK imports; the package is a library door and nothing in ' +
+    'this workspace is that program. the-three-doors-are-one.test.ts calls it.',
+  '@mnema/sdk openRecord':
+    'what a program that records and reads imports; nothing in this workspace is that program. ' +
+    'the-three-doors-are-one.test.ts calls it.',
   '@mnema/core projectRuns':
     'the oracle of the run commands’ own tests: the runs as a replay of the chain says them, ' +
     'read against what the command reports.',
@@ -458,9 +464,12 @@ const SURFACE_FLOOR: Readonly<Record<string, number>> = {
   // verb has been routed may not pay for the proof engine to get it.
   '@mnema/chain/one-line': 1,
   '@mnema/code': 0,
+  // What the private SDK imports, so each of these has that caller.
+  '@mnema/code/library': 14,
   '@mnema/context': 20,
   '@mnema/core': 90,
   '@mnema/core/write': 25,
+  '@mnema/sdk': 4,
 };
 
 // ---------------------------------------------------------------------------
