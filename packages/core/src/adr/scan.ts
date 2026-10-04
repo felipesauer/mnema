@@ -53,12 +53,23 @@ export type ScanRefusalCode =
   /** A field is over the limit a recorded field may weigh. */
   | 'FIELD_TOO_LARGE'
   /** The file could not be read from disk (permission, a broken link, a race). */
-  | 'UNREADABLE';
+  | 'UNREADABLE'
+  /** A bridge's file does not have the shape its source documents: nothing is proposed from it. */
+  | 'MALFORMED'
+  /** A bridge's entry is not a decision (a note, a lesson, a runbook): nothing is proposed from it. */
+  | 'NOT_A_DECISION';
 
 /** One document that WOULD become a decision, and the file it came from. */
 export interface ScannedDecision extends AdrDocument {
   /** The file's path as the caller will record it — the provenance of the proposal. */
   readonly path: string;
+  /** The line it was read from, for a source that holds many entries per file. */
+  readonly line?: number;
+  /**
+   * A short hash of the content read — the file, or the one entry of a file that holds many —
+   * for a source cited by its name alone, where two directories can hold the same name.
+   */
+  readonly digest?: string;
 }
 
 /** One file that produced no proposal, and why. */
@@ -66,6 +77,8 @@ export interface ScanRefusal {
   /** The file's path, so the refusal names something the caller can open. */
   readonly path: string;
   readonly code: ScanRefusalCode;
+  /** The line of the file the refusal is about, for a source that holds many entries per file. */
+  readonly line?: number;
   /**
    * The credential classes found, on `HOLDS_A_SECRET` and nothing else. The CLASS
    * travels and the value never does — the same posture the record's own exposure
@@ -121,6 +134,30 @@ function fieldsOf(document: AdrDocument): readonly string[] {
     document.rationale,
     ...(document.alternatives !== undefined ? [document.alternatives] : []),
   ];
+}
+
+/**
+ * The two refusals that are this product's and not the document's, applied to a document
+ * already read — whatever file shape it came out of. One function, so a bridge from another
+ * tool's notes is screened by the same size limit and the same idea of a credential as an ADR.
+ */
+export function triage(
+  path: string,
+  document: AdrDocument,
+  line?: number,
+): ScannedDecision | ScanRefusal {
+  const at = line !== undefined ? { line } : {};
+  const fields = fieldsOf(document);
+  if (fields.some((field) => weight(field) > FIELD_BYTE_LIMIT)) {
+    return { path, ...at, code: 'FIELD_TOO_LARGE' };
+  }
+  // Screened over what was READ, not only over what is kept: the whole options section is
+  // screened even where the list is not recorded (see {@link AdrDocument.considered}).
+  const screened = document.considered !== undefined ? [...fields, document.considered] : fields;
+  const classes = [...new Set(screened.flatMap((field) => detectSecrets(field)))].sort();
+  if (classes.length > 0) return { path, ...at, code: 'HOLDS_A_SECRET', classes };
+  const { considered: _considered, ...fieldsOfDocument } = document;
+  return { ...fieldsOfDocument, path, ...at };
 }
 
 /**
@@ -189,21 +226,10 @@ export function scanAdrDirectory(directory: string): AdrScan {
       refused.push({ path, code: 'RETIRED' });
       continue;
     }
-    const fields = fieldsOf(document);
-    if (fields.some((field) => weight(field) > FIELD_BYTE_LIMIT)) {
-      refused.push({ path, code: 'FIELD_TOO_LARGE' });
-      continue;
-    }
-    // Screened over what was READ, not only over what is kept: the whole options section is
-    // screened even where the list is not recorded (see {@link AdrDocument.considered}).
-    const screened = document.considered !== undefined ? [...fields, document.considered] : fields;
-    const classes = [...new Set(screened.flatMap((field) => detectSecrets(field)))].sort();
-    if (classes.length > 0) {
-      refused.push({ path, code: 'HOLDS_A_SECRET', classes });
-      continue;
-    }
-    const { ok: _ok, considered: _considered, ...fieldsOfDocument } = document;
-    read.push({ ...fieldsOfDocument, path });
+    const { ok: _ok, ...parsed } = document;
+    const triaged = triage(path, parsed);
+    if ('code' in triaged) refused.push(triaged);
+    else read.push(triaged);
   }
   return { read, refused };
 }

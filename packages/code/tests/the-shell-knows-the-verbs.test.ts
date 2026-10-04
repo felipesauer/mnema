@@ -52,7 +52,7 @@ import { HOOK_HOSTS, RULES_FILE_HOSTS } from '../src/host-names.js';
 import { SWITCHABLE_CHANNELS } from '../src/record-framing.js';
 import { REFERENCE_DIRECTIONS } from '../src/reference-directions.js';
 import { SHELLS, type Shell } from '../src/wiring/completion.js';
-import { SCOPES } from '../src/wiring/enumerated.js';
+import { SCOPES, valuesDeclaredOn } from '../src/wiring/enumerated.js';
 import { everyCommandOf } from '../src/wiring/misuse.js';
 import { WHAT_A_SUBCOMMAND_READS } from './support/what-a-subcommand-reads.js';
 
@@ -367,6 +367,7 @@ describe('the script knows every verb the program declares', () => {
       }
       for (const option of command.options) {
         for (const value of option.argChoices ?? []) allowed.add(value);
+        for (const value of valuesDeclaredOn(option)) allowed.add(value);
       }
     }
     let seen = 0;

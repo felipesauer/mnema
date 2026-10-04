@@ -469,7 +469,7 @@ function switchedOffAtTheGate(gate: ChannelState): string[] {
  *
  * IT NAMES THE AGENT'S DOOR, for the reason {@link DECISIONS_WAITING} names `bootstrap`
  * and the verb's own help names `mnema status`: the reader of this file is a model, and
- * each surface names the door its reader can open. `mnema decision import <dir>` is the
+ * each surface names the door its reader can open. `mnema decision import <source>` is the
  * other way a decision enters and it is NOT here, because it needs a directory this
  * module cannot know and must not guess — the bytes are the contract, above.
  *
@@ -748,7 +748,7 @@ function notInTheRecord(outside: NonNullable<BriefDone['outside']>): string[] {
     '',
     `Not in the record: ${counted(total, 'decision document', 'decision documents')} in this checkout, by file name, with no decision derived from them here.`,
     ...bases.map((base) => `- ${toImport(base.directory, base.documents)}`),
-    '`mnema decision import <dir>` prints what it would propose from a directory and writes nothing; with `--write` it records each one as `proposed`, for a person to accept.',
+    '`mnema decision import <source>` prints what it would propose from a directory and writes nothing; with `--write` it records each one as `proposed`, for a person to accept.',
   ];
 }
 
