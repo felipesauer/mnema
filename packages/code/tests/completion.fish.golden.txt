@@ -201,6 +201,7 @@ complete -c mnema -f -n '__mnema_at "decision supersede"' -l color -x -a 'auto a
 complete -c mnema -f -n '__mnema_at "decision supersede"' -l identify
 
 # mnema decision import
+complete -c mnema -f -n '__mnema_at "decision import"' -l format -x -a 'ecc-vault rulings claude-memory'
 complete -c mnema -f -n '__mnema_at "decision import"' -l write
 complete -c mnema -f -n '__mnema_at "decision import"' -l scope -x -a 'public private'
 complete -c mnema -f -n '__mnema_at "decision import"' -l which -r
