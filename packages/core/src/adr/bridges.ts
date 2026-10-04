@@ -39,6 +39,9 @@ export type BridgeFormat = 'ecc-vault' | 'rulings' | 'claude-memory';
 /** Longest title a ruling line makes out of its text. */
 const TITLE_LIMIT = 120;
 
+/** The states the vault itself uses for a memory it retired; its words, not this product's. */
+const RETIRED_IN_THE_VAULT = /^(?:rejected|superseded)$/;
+
 /** What a source's entry came to before triage. */
 type Entry = { readonly document: AdrDocument } | { readonly refused: ScanRefusal['code'] };
 
@@ -78,7 +81,9 @@ function eccMemory(text: string): Entry {
   if (typeof memory.title !== 'string' || typeof memory.body !== 'string') {
     return { refused: 'MALFORMED' };
   }
-  if (memory.state === 'rejected' || memory.state === 'superseded') return { refused: 'RETIRED' };
+  if (typeof memory.state === 'string' && RETIRED_IN_THE_VAULT.test(memory.state)) {
+    return { refused: 'RETIRED' };
+  }
   const title = memory.title.trim();
   const rationale = memory.body.trim();
   const refusal = shape(title, rationale);

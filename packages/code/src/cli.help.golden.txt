@@ -309,7 +309,7 @@ $ mnema decision --help
 |   record [options] <title> [rationale]   record a decision in the current project
 |   move [options] <action> <id...>        accept or reject a decision (follows the decision; takes no --scope)
 |   supersede [options] <old-id> <new-id>  supersede a decision with a later one (follows the decision; takes no --scope)
-|   import [options] <path>                propose the decisions already written in this repository’s decision files
+|   import [options] <source>              propose the decisions already written in this repository’s decision files
 |   help [command]                         display help for command
 |
 | What recording means here:
@@ -1396,17 +1396,17 @@ $ mnema decision supersede --help
 
 ### mnema decision import --help
 $ mnema decision import --help
-| Usage: mnema decision import [options] <path>
+| Usage: mnema decision import [options] <source>
 |
 | propose the decisions already written in this repository’s decision files
 |
 | Arguments:
-|   path               what to read: the directory holding the decision files
+|   source             what to read: the directory holding the decision files
 |                      (e.g. docs/adr), inside the project — or, with --format,
 |                      the source of that format
 |
 | Options:
-|   --format <format>  what <path> holds: ecc-vault, rulings, claude-memory.
+|   --format <format>  what <source> holds: ecc-vault, rulings, claude-memory.
 |                      Omitted, it is a directory of decision files. ecc-vault: a
 |                      directory of the ECC Memory Vault’s *.json memories.
 |                      rulings: one file whose `Ruling:` lines are read.

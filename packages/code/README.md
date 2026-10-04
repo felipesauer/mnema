@@ -839,7 +839,7 @@ mnema decision import docs/decisions
 before written, every one born `proposed`, cited to where it was read, never recorded as the
 project's own text.
 
-| `--format` | `<path>` is | What is read |
+| `--format` | `<source>` is | What is read |
 | --- | --- | --- |
 | `ecc-vault` | a directory of the ECC Memory Vault's `*.json` memories | `kind: "decision"` only; a `rejected` or `superseded` state is skipped |
 | `rulings` | one ledger file | each line starting `Ruling:`, cited as `file:line` |

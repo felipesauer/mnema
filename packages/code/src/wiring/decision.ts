@@ -286,14 +286,14 @@ export function registerDecision(program: Command, wiring: Wiring): Declared {
     .command('import')
     .description('propose the decisions already written in this repository’s decision files')
     .argument(
-      '<path>',
+      '<source>',
       'what to read: the directory holding the decision files (e.g. docs/adr), inside the project — ' +
         'or, with --format, the source of that format',
     )
     .addOption(
       enumeratedOption(
         '--format <format>',
-        `what <path> holds: ${listed(IMPORT_FORMATS)}. Omitted, it is a directory of decision ` +
+        `what <source> holds: ${listed(IMPORT_FORMATS)}. Omitted, it is a directory of decision ` +
           'files. ecc-vault: a directory of the ECC Memory Vault’s *.json memories. rulings: ' +
           'one file whose `Ruling:` lines are read. claude-memory: a directory of the ' +
           'memory files Claude Code writes.',
