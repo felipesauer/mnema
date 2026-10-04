@@ -36,7 +36,7 @@ _mnema_flags() {
     'decision record') echo '--alternatives --scope --which --stdin --body-file -h --help -V --version --color --identify' ;;
     'decision move') echo '--note -h --help --which -V --version --color --identify' ;;
     'decision supersede') echo '--reason -h --help --which -V --version --color --identify' ;;
-    'decision import') echo '--write --scope --which -h --help -V --version --color --identify' ;;
+    'decision import') echo '--format --write --scope --which -h --help -V --version --color --identify' ;;
     'skill') echo '--body --scope --which -h --help -V --version --color --identify' ;;
     'skill create') echo '--body --scope --which -h --help -V --version --color --identify' ;;
     'skill move') echo '--note --reason -h --help --which -V --version --color --identify' ;;
@@ -125,6 +125,7 @@ _mnema_values() {
     'decision move:--color') echo 'auto always never' ;;
     'decision move:') echo 'accept reject' ;;
     'decision supersede:--color') echo 'auto always never' ;;
+    'decision import:--format') echo 'ecc-vault rulings claude-memory' ;;
     'decision import:--scope') echo 'public private' ;;
     'decision import:--color') echo 'auto always never' ;;
     'skill:--scope') echo 'public private global' ;;
