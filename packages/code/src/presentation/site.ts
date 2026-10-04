@@ -10,6 +10,7 @@
 import type { SiteDone } from '../commands/site.js';
 import { oneLine } from '../one-line.js';
 import { fact } from './detail.js';
+import type { Line } from './line.js';
 import type { Render } from './render.js';
 
 /** The lines on standard output after a page was written. */
@@ -27,15 +28,13 @@ export function siteReport(render: Render, done: SiteDone): string[] {
 }
 
 /** The line on standard error for a record that does not verify; none for one that does. */
-export function siteNotice(render: Render, done: SiteDone): string[] {
+export function siteNotice(done: SiteDone): Line[] {
   if (done.verdict.ok) return [];
   return [
-    render(
-      fact(
-        `this record does not verify: ${oneLine(done.verdict.summary)} — the page says so to ` +
-          'its readers, and `mnema verify` says more',
-        0,
-      ),
+    fact(
+      `this record does not verify: ${oneLine(done.verdict.summary)} — the page says so to ` +
+        'its readers, and `mnema verify` says more',
+      0,
     ),
   ];
 }

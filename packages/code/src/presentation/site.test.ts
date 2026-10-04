@@ -36,11 +36,10 @@ describe('what mnema site says', () => {
   });
 
   it('is silent about a record that verifies, and says so for one that does not', () => {
-    expect(siteNotice(render, done())).toEqual([]);
+    expect(siteNotice(done())).toEqual([]);
     const [notice] = siteNotice(
-      render,
       done({ verdict: { ok: false, summary: 'local integrity FAILED\nsee issues' } }),
-    );
+    ).map(render);
     expect(notice).toBe(
       'this record does not verify: local integrity FAILED see issues — the page says so to its readers, and `mnema verify` says more',
     );

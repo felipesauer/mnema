@@ -56,7 +56,7 @@ export function registerSite(program: Command, wiring: Wiring): Declared {
         return;
       }
       writeLines(io, siteReport(render, result));
-      for (const line of siteNotice(render, result)) io.err(line);
+      for (const line of siteNotice(result)) io.err(render(line));
     });
   return readsTheRecord(site);
 }
