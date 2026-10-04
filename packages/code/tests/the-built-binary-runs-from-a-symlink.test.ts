@@ -65,7 +65,7 @@ describe('the binary a build leaves', () => {
       scripts: Record<string, string>;
     };
     expect(manifest.scripts.build).toBe(
-      'tsc -b && node .github/the-binary-runs/mark-it-runnable.mjs',
+      'tsc -b && node .github/the-binary-runs/mark-it-runnable.mjs && node packages/code/build/the-site-verifier.mjs',
     );
   });
 

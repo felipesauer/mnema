@@ -23,12 +23,11 @@ import {
 } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { dirname, join } from 'node:path';
-import { fileURLToPath } from 'node:url';
+import { fileURLToPath, pathToFileURL } from 'node:url';
 import vm from 'node:vm';
 import { verify } from '@mnema/chain';
 import type { DiscoveryEnv } from '@mnema/core';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
-import { bundleTheSiteVerifier } from '../../build/the-site-verifier.mjs';
 import { runDecision } from '../commands/decision.js';
 import { runDecisionTransition } from '../commands/decision-transition.js';
 import { runInit } from '../commands/init.js';
@@ -276,7 +275,44 @@ describe('the verdict a page computes', () => {
   });
 
   it('is computed by the script the build left, not by an older one', async () => {
+    // Named by a variable, because it is a build script and not a module of the product.
+    const script = join(HERE, '..', '..', 'build', 'the-site-verifier.mjs');
+    const { bundleTheSiteVerifier } = (await import(pathToFileURL(script).href)) as {
+      bundleTheSiteVerifier: () => Promise<string>;
+    };
     expect(theSiteVerifier()).toBe(await bundleTheSiteVerifier());
+  });
+
+  it('is what `mnema site` writes through the built binary, which says what it wrote', () => {
+    honestRecord();
+    const out = join(sandbox, 'by-the-binary');
+    const ran = spawnSync('node', [CLI, 'site', '--out', out], {
+      cwd: repo,
+      env: {
+        HOME: env.home as string,
+        PATH: process.env.PATH as string,
+        GIT_CONFIG_NOSYSTEM: '1',
+      },
+      encoding: 'utf-8',
+    });
+    expect(ran.status).toBe(0);
+    expect(ran.stdout.split('\n').filter((line) => line !== '')).toEqual([
+      `Wrote ${join(out, 'index.html')}`,
+      expect.stringMatching(
+        /^ {2}2 decision\(s\), 2 in force; \d+ event\(s\); \d+ file\(s\) carried/,
+      ),
+      '  only the committed public tree is in the page',
+    ]);
+    expect(readFileSync(join(out, 'index.html'), 'utf-8')).toBe(
+      readFileSync(join(sandbox, 'out', 'index.html'), 'utf-8'),
+    );
+    const outside = spawnSync('node', [CLI, 'site', '--out', out], {
+      cwd: sandbox,
+      env: { HOME: env.home as string, PATH: process.env.PATH as string },
+      encoding: 'utf-8',
+    });
+    expect(outside.status).not.toBe(0);
+    expect(outside.stderr).toContain('No mnema project here');
   });
 
   it('refuses nothing it cannot do: a page with no files says it verified nothing', () => {
