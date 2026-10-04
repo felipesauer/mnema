@@ -1224,6 +1224,12 @@ const CLAUSES_PER_FILE: Readonly<Record<string, number>> = {
   'packages/core/tests/integration/enrollment-e2e.test.ts': 8,
   'packages/core/tests/integration/gated-transition.test.ts': 9,
   'packages/core/tests/readme-example.test.ts': 7,
+  'packages/vscode/src/cli.test.ts': 2,
+  'packages/vscode/src/extension.test.ts': 3,
+  'packages/vscode/src/manifest.test.ts': 2,
+  'packages/vscode/src/proposed.test.ts': 2,
+  'packages/vscode/src/rules.test.ts': 2,
+  'packages/vscode/src/status.test.ts': 2,
 };
 
 /**
@@ -1640,6 +1646,11 @@ const PRODUCTION_FILES: readonly string[] = [
   'packages/core/src/write.ts',
   'packages/sdk/src/hooks.ts',
   'packages/sdk/src/record.ts',
+  'packages/vscode/src/cli.ts',
+  'packages/vscode/src/extension.ts',
+  'packages/vscode/src/proposed.ts',
+  'packages/vscode/src/rules.ts',
+  'packages/vscode/src/status.ts',
 ];
 
 describe('every file has a test that names it', () => {
@@ -1743,7 +1754,7 @@ describe('every file has a test that names it', () => {
 
   it('names a package with no src/ instead of dying while it collects', () => {
     expect(WITHOUT_SOURCE).toEqual([]);
-    expect(READABLE).toEqual(['action', 'chain', 'code', 'context', 'core', 'sdk']);
+    expect(READABLE).toEqual(['action', 'chain', 'code', 'context', 'core', 'sdk', 'vscode']);
   });
 
   it('cannot be dissolved by the ledger that describes it', () => {
