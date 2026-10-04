@@ -193,6 +193,7 @@ describe('every package page words its honest guarantee as a proof', () => {
       'packages/context/README.md',
       'packages/core/README.md',
       'packages/sdk/README.md',
+      'packages/vscode/README.md',
     ]);
   });
 
