@@ -45,6 +45,7 @@ import {
   servesRecord,
   servesUnasked,
   switchedOffChannels,
+  BORN_OFF_CHANNELS,
 } from '../lib/seed.mjs'
 import { editPushProblems, editPushSpeaks, servedChannels, surfaceProblem } from '../lib/channel.mjs'
 import { injectedDocument, mcpToolEntries, withoutFreshIds } from '../lib/hook.mjs'
@@ -146,10 +147,15 @@ describe('11 · the sixth arm is the fifth with ONE channel switched off', () =>
       const positions = channelPositions(sandbox, MNEMA_BIN)
       assert.ok(positions.channels, positions.probe)
       assert.ok(positions.channels.includes(`${EDIT_PUSH_CHANNEL}:${want}`), `${arm}: [${positions.channels}]`)
-      // Every OTHER channel is on in both arms: the third channel is a controlled variable
-      // and a second one switched off would be a second difference.
+      // Every OTHER channel is where the product bore it, in both arms: the third channel is a
+      // controlled variable and a second one switched would be a second difference. Born on,
+      // except the two the product bears off.
       const others = positions.channels.filter((entry) => !entry.startsWith(`${EDIT_PUSH_CHANNEL}:`))
-      assert.equal(others.every((entry) => entry.endsWith(':on')), true, `${arm}: [${others}]`)
+      const born = (entry) => {
+        const name = entry.slice(0, entry.lastIndexOf(':'))
+        return entry.endsWith(BORN_OFF_CHANNELS.includes(name) ? ':off' : ':on')
+      }
+      assert.equal(others.every(born), true, `${arm}: [${others}]`)
       assert.ok(others.length >= 2, `${arm}: the product prints more than the one channel`)
       assert.equal(assertSeed({ arm, fixture: axisA, sandbox, mnemaBin: MNEMA_BIN }), true)
     }
@@ -166,7 +172,7 @@ describe('11 · the sixth arm is the fifth with ONE channel switched off', () =>
     assert.equal(on.status, 0, on.stderr)
     assert.throws(
       () => assertSeed({ arm: DOC_ARM, fixture: axisA, sandbox: doc.sandbox, mnemaBin: MNEMA_BIN }),
-      /the channels switched off are \[\], expected \[edit-rules-push\]/,
+      /the channels switched off are \[edit-first-write-gate,user-corrections\], expected \[edit-first-write-gate,edit-rules-push,user-corrections\]/,
     )
 
     // And the switch leaking into the arm that must not have it — the direction that
@@ -175,7 +181,7 @@ describe('11 · the sixth arm is the fifth with ONE channel switched off', () =>
     assert.equal(off.status, 0, off.stderr)
     assert.throws(
       () => assertSeed({ arm: SURFACE_ARM, fixture: axisA, sandbox: plus.sandbox, mnemaBin: MNEMA_BIN }),
-      /the channels switched off are \[edit-rules-push\], expected \[\]/,
+      /the channels switched off are \[edit-first-write-gate,edit-rules-push,user-corrections\], expected \[edit-first-write-gate,user-corrections\]/,
     )
   })
 })

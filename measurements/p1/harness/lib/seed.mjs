@@ -211,6 +211,23 @@ export function switchedOffChannels(arm) {
   return arm === DOC_ARM ? [EDIT_PUSH_CHANNEL] : []
 }
 
+/**
+ * The channels the product BORN OFF — off in a fresh record before any arm touches a switch.
+ *
+ * "Nothing is born switched off" was true when the switch check below was written, and the
+ * product falsified it: `mnema switch` now prints these two as off until somebody switches them on
+ * (`packages/code/src/wiring/switch.ts`). The check kept asking for an empty list, so every seed of
+ * every arm that holds a record failed — which is the check doing its job, since a default that
+ * moved is the case it exists for. The list is written out rather than read from the product
+ * because a default that moves AGAIN must stop the seed by name, not be absorbed.
+ */
+export const BORN_OFF_CHANNELS = ['edit-first-write-gate', 'user-corrections']
+
+/** Every channel a seeded cell of `arm` must show as off: the born-off ones, plus the arm's own switch. */
+export function offAtSeed(arm) {
+  return [...new Set([...BORN_OFF_CHANNELS, ...switchedOffChannels(arm)])].sort()
+}
+
 
 /**
  * The address the fifth arm records on the decision it seeds: the repository root.
@@ -711,7 +728,7 @@ export function assertSeed({ arm, fixture, sandbox, mnemaBin }) {
         }
       }
       const off = positions.channels.filter((entry) => entry.endsWith(':off')).map((entry) => entry.slice(0, entry.lastIndexOf(':'))).sort()
-      const wantOff = [...want.switchedOff].sort()
+      const wantOff = offAtSeed(arm)
       if (off.join(',') !== wantOff.join(',')) {
         problems.push(`the channels switched off are [${off}], expected [${wantOff}]`)
       }

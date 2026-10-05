@@ -38,6 +38,7 @@ import {
   mnemaRules,
   servesUnasked,
   servesRecord,
+  BORN_OFF_CHANNELS,
 } from '../lib/seed.mjs'
 import { runCell, seededSandbox } from '../lib/cell.mjs'
 import { cellEnv, writeCellConfig } from '../lib/isolation.mjs'
@@ -319,18 +320,18 @@ describe('8 · the fifth arm is the mnema arm plus the surface, and nothing else
   })
 
   test('every channel of the product is ON in a cell of this arm, and it is read not assumed', () => {
-    // G4 of the round's arms.md: the arm DECLARES the surface on. Nothing is born
-    // switched off, so today this is redundant — and the day a default moves is the day
-    // a cell goes quiet with nothing in the line to say why.
+    // G4 of the round's arms.md: the arm DECLARES the surface on. Every channel is where the
+    // product bore it — on, except the two it bears off (`BORN_OFF_CHANNELS`) — and the day a
+    // default moves is the day a cell goes quiet with nothing in the line to say why.
     const { sandbox } = cellOf(axisA, SURFACE_ARM)
     const positions = channelPositions(sandbox, MNEMA_BIN)
     assert.ok(positions.channels, positions.probe)
     assert.ok(positions.channels.includes(`${EDIT_PUSH_CHANNEL}:on`), `[${positions.channels}]`)
-    assert.equal(
-      positions.channels.every((entry) => entry.endsWith(':on')),
-      true,
-      `every channel is on: [${positions.channels}]`,
-    )
+    const born = (entry) => {
+      const name = entry.slice(0, entry.lastIndexOf(':'))
+      return entry.endsWith(BORN_OFF_CHANNELS.includes(name) ? ':off' : ':on')
+    }
+    assert.equal(positions.channels.every(born), true, `every channel is where it was born: [${positions.channels}]`)
   })
 
   test('the seed itself is unchanged — assertSeed clears the arm on both axes', () => {
