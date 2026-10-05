@@ -228,6 +228,9 @@ describe('the lock a writer holds while it appends', () => {
     } catch (error) {
       expect((error as TailBusyError).code).toBe('TAIL_BUSY');
       expect((error as Error).message).toContain(String(process.pid));
+      // And says what to do about it: the lock file is named, and deleting it is the way out.
+      expect((error as Error).message).toContain(lock);
+      expect((error as Error).message).toContain('delete the lock file');
     }
     rmSync(lock);
   });

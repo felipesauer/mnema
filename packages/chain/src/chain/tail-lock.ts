@@ -197,8 +197,8 @@ function release(fd: number, path: string): void {
   try {
     unlinkSync(path);
   } catch {
-    // Already gone: a waiter judged this lock abandoned and broke it. That is a
-    // real outcome (this process was stopped long enough to look dead) and there
+    // Already gone: somebody removed the file under us (a person clearing a lock they took for
+    // a reused pid's, or a breaker that judged a previous owner dead). There
     // is nothing to undo — the bytes of every append it made are already on the
     // tail, and the next writer recovers its state from them.
   }

@@ -8,7 +8,7 @@
  */
 
 import { spawnSync } from 'node:child_process';
-import { chmodSync, mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs';
+import { chmodSync, mkdirSync, mkdtempSync, readdirSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -93,5 +93,14 @@ describe('biome-asks-for-a-person.sh', () => {
     expect(asked.reason).toContain('Changes to biome.json need a person');
     // The rule addresses one path: it does not hold the whole project.
     expect(replyFor('src/index.ts')).toEqual({});
+  });
+});
+
+describe('the directory', () => {
+  it('holds at least one script, and every script is covered by a case above', () => {
+    const scripts = readdirSync(EXAMPLES).filter((name) => name.endsWith('.sh'));
+    expect(scripts.length).toBeGreaterThan(0);
+    // A script with no case in this file would be an example nobody runs: name it here to add it.
+    expect(scripts).toEqual(['biome-asks-for-a-person.sh']);
   });
 });
