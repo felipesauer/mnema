@@ -22,6 +22,10 @@ tag, with its own changelog.
   key or a handler type that Claude Code's hooks documentation does not list (the list carries the
   date and the page it was read from), so a typo that would leave a hook silently mute turns the
   suite red.
+- **Example rules (`examples/rules/`).** A first rule ready to take as it is: an edit to `biome.json`
+  is held for a person (`asks-for-a-person`). It is a short script of `mnema` commands, and a test
+  runs it against a sandbox and checks that the product asks for a person on that file and on no
+  other.
 
 ### Fixed
 

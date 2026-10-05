@@ -246,7 +246,9 @@ describe('the lock a writer holds while it appends', () => {
     expect(verify(root, upcasters).ok).toBe(true);
   });
 
-  it('does not break a lock whose holder is alive, however long it has held it', { timeout: 20_000 }, () => {
+  it('does not break a lock whose holder is alive, however long it has held it', {
+    timeout: 20_000,
+  }, () => {
     const w = founded();
     const before = entries().length;
     const lock = tailLockPath({ root }, w.tail);
