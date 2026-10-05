@@ -114,11 +114,12 @@ export function oneLine(text: string): string {
  * C0 but for tab and line feed, a CR that is not half of a CRLF, DEL, and C1 — and the
  * format characters that draw nothing or reorder what is drawn: zero-width and
  * joiner marks, the directional marks, embeddings, overrides and isolates, the word
- * joiner and the byte order mark.
+ * joiner, the byte order mark and the Tag characters (U+E0000 to U+E007F). The Tags sit
+ * outside the basic plane, so the `u` flag is what lets the class match them at all.
  */
 const CONTROL_BYTES =
   // biome-ignore lint/suspicious/noControlCharactersInRegex: matching control characters is this rule
-  /[\u0000-\u0008\u000b\u000c\u000e-\u001f\u007f-\u009f\u061c\u180e\u200b-\u200f\u202a-\u202e\u2060-\u2064\u2066-\u2069\ufeff]|\r(?!\n)/g;
+  /[\u0000-\u0008\u000b\u000c\u000e-\u001f\u007f-\u009f\u061c\u180e\u200b-\u200f\u202a-\u202e\u2060-\u2064\u2066-\u2069\ufeff\u{e0000}-\u{e007f}]|\r(?!\n)/gu;
 
 /**
  * Every control byte in `text` made visible as the escape JSON writes for it — the one
@@ -158,6 +159,10 @@ const CONTROL_BYTES =
 export function neutralized(text: string): string {
   return text.replace(
     CONTROL_BYTES,
-    (found) => `\\u${found.charCodeAt(0).toString(16).padStart(4, '0')}`,
+    (found) => {
+      const code = found.codePointAt(0) ?? 0;
+      const hex = code.toString(16);
+      return code > 0xffff ? `\\u{${hex}}` : `\\u${hex.padStart(4, '0')}`;
+    },
   );
 }

@@ -190,6 +190,19 @@ describe('the control bytes of a line are made visible', () => {
     expect(neutralized(once)).toBe(once);
   });
 
+  it('writes the Tag characters, which sit outside the basic plane, as escapes too', () => {
+    const tagA = String.fromCodePoint(0xe0041);
+    const tagB = String.fromCodePoint(0xe0042);
+    const cancel = String.fromCodePoint(0xe007f);
+    const title = `use${tagA}${tagB} it${cancel}`;
+    for (const out of [neutralized(title), oneLine(title)]) {
+      expect(out).toBe('use\\u{e0041}\\u{e0042} it\\u{e007f}');
+      expect([...out].some((c) => (c.codePointAt(0) ?? 0) >= 0xe0000)).toBe(false);
+    }
+    const once = neutralized(title);
+    expect(neutralized(once)).toBe(once);
+  });
+
   it('keeps the letters of a script written right to left', () => {
     expect(neutralized('\u05e9\u05dc\u05d5\u05dd')).toBe('\u05e9\u05dc\u05d5\u05dd');
   });
