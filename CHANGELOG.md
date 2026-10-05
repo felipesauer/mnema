@@ -10,6 +10,19 @@ tag, with its own changelog.
 
 ## [Unreleased]
 
+### Added
+
+- **A `mnema_path` option on the plugin.** Both plugins declare a `userConfig` option for the
+  absolute path of the `mnema` to run; left as `mnema` (the default) they run the first one on the
+  `PATH`, as before. The hooks read it from `CLAUDE_PLUGIN_OPTION_MNEMA_PATH` and the MCP server
+  through a small launcher (`server/launch.mjs`) that treats an unsubstituted placeholder as no choice
+  made, so a host that does not know `userConfig` still starts the `PATH`'s `mnema`. The manifests
+  also carry the `$schema` of the Claude Code plugin manifest.
+- **A guard on the plugin's `hooks.json`.** A test refuses an event, a matcher-group key, a handler
+  key or a handler type that Claude Code's hooks documentation does not list (the list carries the
+  date and the page it was read from), so a typo that would leave a hook silently mute turns the
+  suite red.
+
 ## [0.1.0-beta] - 2026-10-05
 
 The first release of this line: `@mnema/code`, and the three packages it is built from. The

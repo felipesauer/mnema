@@ -1165,8 +1165,10 @@ describe('the record arrives unasked', () => {
     expect(servers.length).toBe(1);
     const [name, server] = servers[0] as [string, { command?: string; args?: string[] }];
     expect(name).toBe('mnema');
-    expect(server.command).toBe('mnema');
-    expect(server.args).toEqual(['mcp']);
+    // The launcher starts the binary (`the-plugin-runs-the-binary-the-person-named.test.ts`
+    // holds what it runs); what is held here is that the server it ends in is `mcp`.
+    expect(server.command).toBe('node');
+    expect(server.args).toEqual([`\${CLAUDE_PLUGIN_ROOT}/server/launch.mjs`, 'mcp']);
     const declared = buildProgram({ out: () => {}, err: () => {}, fail: () => {} }).verbs;
     const commands: readonly Command[] = declared.map((one) => one.act);
     expect(commands.map((one) => one.name())).toContain('mcp');

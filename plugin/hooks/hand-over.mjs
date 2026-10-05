@@ -81,6 +81,19 @@ import { spawnSync } from 'node:child_process';
 const BINARY = process.platform === 'win32' ? 'mnema.cmd' : 'mnema';
 
 /**
+ * What to run: the program the person named in the plugin's `mnema_path` option, which the host
+ * exports to every hook process as `CLAUDE_PLUGIN_OPTION_MNEMA_PATH`, or {@link BINARY} when
+ * they named none. A host that exports nothing of the kind runs the PATH's, as it always did.
+ *
+ * @param {Readonly<Record<string, string | undefined>>} [env]
+ * @returns {string}
+ */
+export function binaryToRun(env = process.env) {
+  const named = (env.CLAUDE_PLUGIN_OPTION_MNEMA_PATH ?? '').trim();
+  return named === '' ? BINARY : named;
+}
+
+/**
  * Where the session is, from the host's own environment.
  *
  * `CLAUDE_PROJECT_DIR` is the project root the host announces to every command hook.
@@ -135,7 +148,7 @@ const QUOTED = 120;
  * @returns {{ readonly kind: 'this' | 'older' | 'absent' } | { readonly kind: 'stranger', readonly said: string, readonly status: number | null }}
  */
 export function whoAnswers(cwd) {
-  const ran = spawnSync(BINARY, [WHICH_PROGRAM], {
+  const ran = spawnSync(binaryToRun(), [WHICH_PROGRAM], {
     cwd,
     encoding: 'utf-8',
     stdio: ['ignore', 'pipe', 'pipe'],
@@ -168,6 +181,15 @@ export function aStranger(stranger) {
     stranger.said === ''
       ? `printed nothing and exited ${stranger.status}`
       : `answered ${JSON.stringify(stranger.said)} and exited ${stranger.status}`;
+  const named = binaryToRun();
+  if (named !== BINARY) {
+    return [
+      `The mnema plugin did not run ${THIS_PRODUCT}: the program its \`mnema_path\` option names, ${JSON.stringify(named)}, is not it.`,
+      `Asked \`${named} --identify\`, which ${THIS_PRODUCT} answers with its name and version, it ${answered}.`,
+      "So this project's record was not handed to this session, and the MCP server the plugin declares starts that same program.",
+      `Point \`mnema_path\` at the ${THIS_PRODUCT} executable, or set it back to \`mnema\` to run the first one on the PATH.`,
+    ].join('\n');
+  }
   return [
     `The mnema plugin did not run the program named mnema first on this session's PATH: it is not ${THIS_PRODUCT}.`,
     `Asked \`mnema --identify\`, which ${THIS_PRODUCT} answers with its name and version, it ${answered}.`,
@@ -230,7 +252,7 @@ export function whatTheVerbSays(verb, cwd, { namesAStranger = false } = {}) {
  * @returns {string | null}
  */
 export function whatTheVerbAnswers(argv, cwd, input) {
-  const ran = spawnSync(BINARY, [...argv], {
+  const ran = spawnSync(binaryToRun(), [...argv], {
     cwd,
     input,
     encoding: 'utf-8',
@@ -250,7 +272,7 @@ export function whatTheVerbAnswers(argv, cwd, input) {
  * @returns {import('node:child_process').SpawnSyncReturns<string>}
  */
 function running(verb, flags, cwd) {
-  return spawnSync(BINARY, [verb, ...flags], {
+  return spawnSync(binaryToRun(), [verb, ...flags], {
     cwd,
     encoding: 'utf-8',
     stdio: ['ignore', 'pipe', 'pipe'],
