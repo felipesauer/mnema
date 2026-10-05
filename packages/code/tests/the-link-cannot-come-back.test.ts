@@ -83,9 +83,9 @@ function git(...args: string[]): string {
     env: {
       ...process.env,
       GIT_AUTHOR_NAME: 'A Person',
-      GIT_AUTHOR_EMAIL: 'person@example.invalid',
+      GIT_AUTHOR_EMAIL: '1+a-person@users.noreply.github.com',
       GIT_COMMITTER_NAME: 'A Person',
-      GIT_COMMITTER_EMAIL: 'person@example.invalid',
+      GIT_COMMITTER_EMAIL: '1+a-person@users.noreply.github.com',
       GIT_CONFIG_GLOBAL: GIT_WITHOUT_MAINTENANCE,
       GIT_CONFIG_SYSTEM: join(sandbox, 'no-such-gitconfig'),
     },
@@ -102,6 +102,7 @@ function aRepositoryWithABase(): string {
 }
 
 /** The footers as this repository has actually seen them written. */
+const NOREPLY = '1+a-person@users.noreply.github.com';
 const THE_CO_AUTHOR = 'Co-Authored-By: Claude Opus 5 (1M context) <noreply@anthropic.com>';
 const THE_GENERATED_WITH = '🤖 Generated with [Claude Code](https://claude.com/claude-code)';
 
@@ -217,7 +218,12 @@ describe('what it must never refuse', () => {
 });
 
 describe('the scan reads both surfaces, and refuses rather than reads nothing', () => {
-  const aCommit = (message: string) => ({ sha: 'abc1234def', subject: 'A subject', message });
+  const aCommit = (message: string, emails = { author: NOREPLY, committer: NOREPLY }) => ({
+    sha: 'abc1234def',
+    subject: 'A subject',
+    message,
+    ...emails,
+  });
 
   it('goes red on the footer in a commit', () => {
     const result = judge({
@@ -279,6 +285,81 @@ describe('the scan reads both surfaces, and refuses rather than reads nothing', 
     expect(
       asProse(judge({ commits: [aCommit('A subject')], pullRequest: { title: '', body: '' } })),
     ).toContain(`${THE_FOOTERS.length} footers`);
+  });
+});
+
+describe('the e-mail a commit carries', () => {
+  const aCommit = (author: string, committer: string) => ({
+    sha: 'abc1234def',
+    subject: 'A subject',
+    message: 'A subject',
+    author,
+    committer,
+  });
+  const clean = { title: 'A title', body: 'A body' };
+
+  it('refuses an author outside the GitHub noreply domain, naming the address', () => {
+    const result = judge({ commits: [aCommit('me@work.example', NOREPLY)], pullRequest: clean });
+    expect(result).toMatchObject({ verdict: 'attribution-found', code: 1 });
+    expect(result.found).toHaveLength(1);
+    expect(result.found[0]).toMatchObject({
+      footer: 'author-email-outside-noreply',
+      line: 'author: me@work.example',
+    });
+    expect(asProse(result)).toContain('author: me@work.example');
+  });
+
+  it('refuses a committer outside the domain, and an empty address', () => {
+    const result = judge({
+      commits: [aCommit(NOREPLY, 'me@work.example'), aCommit('', NOREPLY)],
+      pullRequest: clean,
+    });
+    expect(result.found.map((one) => one.footer)).toEqual([
+      'committer-email-outside-noreply',
+      'author-email-outside-noreply',
+    ]);
+  });
+
+  it('lets through what GitHub itself writes: the merge committer and dependabot', () => {
+    const result = judge({
+      commits: [
+        aCommit(NOREPLY, 'noreply@github.com'),
+        aCommit('49699333+dependabot[bot]@users.noreply.github.com', 'noreply@github.com'),
+      ],
+      pullRequest: clean,
+    });
+    expect(result).toMatchObject({ verdict: 'clean', code: 0, found: [] });
+  });
+
+  it('does not let a lookalike through: the domain must end the address, and an author is not GitHub', () => {
+    const lookalike = judge({
+      commits: [aCommit('x@users.noreply.github.com.example.invalid', NOREPLY)],
+      pullRequest: clean,
+    });
+    expect(lookalike.found).toHaveLength(1);
+    const authorIsGithub = judge({
+      commits: [aCommit('noreply@github.com', NOREPLY)],
+      pullRequest: clean,
+    });
+    expect(authorIsGithub.found.map((one) => one.footer)).toEqual(['author-email-outside-noreply']);
+  });
+
+  it('reads the addresses out of real git: a commit made with another e-mail goes red', () => {
+    const base = aRepositoryWithABase();
+    writeCommit('Made with the machine e-mail', {
+      author: 'me@work.example',
+      committer: 'me@work.example',
+    });
+    const commits = commitsIn(`${base}..HEAD`, sandbox);
+    expect(commits.map((one) => [one.author, one.committer])).toEqual([
+      ['me@work.example', 'me@work.example'],
+    ]);
+    const result = judge({ commits, pullRequest: clean });
+    expect(result).toMatchObject({ verdict: 'attribution-found', code: 1 });
+    expect(result.found.map((one) => one.line)).toEqual([
+      'author: me@work.example',
+      'committer: me@work.example',
+    ]);
   });
 });
 
@@ -504,7 +585,15 @@ describe('the scan takes its range and its pull request off the runner, never of
   it('drives the whole instrument end to end, through the seam', () => {
     const jsonAt = join(sandbox, 'verdict.json');
     const code = main(['--range', 'x..y', '--json', jsonAt], {
-      commits: () => [{ sha: 'abc1234def', subject: 'A subject', message: THE_CO_AUTHOR }],
+      commits: () => [
+        {
+          sha: 'abc1234def',
+          subject: 'A subject',
+          message: THE_CO_AUTHOR,
+          author: NOREPLY,
+          committer: NOREPLY,
+        },
+      ],
       pullRequest: () => ({ title: 'A title', body: 'A body' }),
     });
     expect(code).toBe(1);
@@ -587,7 +676,10 @@ describe('the scan takes its range and its pull request off the runner, never of
 });
 
 /** One more commit on the sandbox repository, with the message given verbatim. */
-function writeCommit(message: string): string {
+function writeCommit(
+  message: string,
+  emails: { author: string; committer: string } = { author: NOREPLY, committer: NOREPLY },
+): string {
   writeFileSync(join(sandbox, 'a-file'), `${message}\n${Math.random()}`);
   git('add', 'a-file');
   execFileSync('git', ['commit', '-q', '--file=-'], {
@@ -597,9 +689,9 @@ function writeCommit(message: string): string {
     env: {
       ...process.env,
       GIT_AUTHOR_NAME: 'A Person',
-      GIT_AUTHOR_EMAIL: 'person@example.invalid',
+      GIT_AUTHOR_EMAIL: emails.author,
       GIT_COMMITTER_NAME: 'A Person',
-      GIT_COMMITTER_EMAIL: 'person@example.invalid',
+      GIT_COMMITTER_EMAIL: emails.committer,
       GIT_CONFIG_GLOBAL: GIT_WITHOUT_MAINTENANCE,
       GIT_CONFIG_SYSTEM: join(sandbox, 'no-such-gitconfig'),
     },
