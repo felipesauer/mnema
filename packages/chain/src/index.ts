@@ -139,6 +139,7 @@ export {
   type BackupKeyNote,
   type CensusNote,
   canonicalIdentityForm,
+  type ForeignRetractionNote,
   type KeyWithoutTailNote,
   type PartialFinalLineNote,
   type TailIssue,
@@ -273,6 +274,7 @@ export type { Envelope, Which, Who } from './events/envelope.js';
 export { EventParseError, parseEvent, toCanonical, unreadableReason } from './events/parse.js';
 export { PROOF_FIELDS, proofFields, transitionProse } from './events/proof.js';
 export { catalogUpcasters } from './events/registry.js';
+export { mayRetract } from './events/retraction.js';
 export {
   type LatestVersions,
   type Upcaster,

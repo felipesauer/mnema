@@ -190,6 +190,26 @@ describe('the control bytes of a line are made visible', () => {
     expect(neutralized(once)).toBe(once);
   });
 
+  it('writes the Tag characters, which sit outside the basic plane, as escapes too', () => {
+    const tagA = String.fromCodePoint(0xe0041);
+    const tagB = String.fromCodePoint(0xe0042);
+    const cancel = String.fromCodePoint(0xe007f);
+    const title = `use${tagA}${tagB} it${cancel}`;
+    for (const out of [neutralized(title), oneLine(title)]) {
+      expect(out).toBe('use\\udb40\\udc41\\udb40\\udc42 it\\udb40\\udc7f');
+      expect([...out].some((c) => (c.codePointAt(0) ?? 0) >= 0xe0000)).toBe(false);
+    }
+    const once = neutralized(title);
+    expect(neutralized(once)).toBe(once);
+  });
+
+  it('leaves a JSON document with Tag characters in a title parsing to the value it had', () => {
+    const value = { title: `use${String.fromCodePoint(0xe0041, 0xe0042)} it` };
+    const text = neutralized(JSON.stringify(value, null, 2));
+    expect(JSON.parse(text)).toEqual(value);
+    expect([...text].some((c) => (c.codePointAt(0) ?? 0) >= 0xe0000)).toBe(false);
+  });
+
   it('keeps the letters of a script written right to left', () => {
     expect(neutralized('\u05e9\u05dc\u05d5\u05dd')).toBe('\u05e9\u05dc\u05d5\u05dd');
   });

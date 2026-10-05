@@ -59,6 +59,7 @@ import {
   type CatalogEvent,
   handoffRecorded,
   knowledgeLinked,
+  mayRetract,
   memoryCaptured,
   noteRetracted,
   observationRecorded,
@@ -438,7 +439,9 @@ export type RetractError =
   /** The id names a record with a lifecycle of its own — a decision, a pattern, a task. */
   | { readonly ok: false; readonly code: 'NOT_A_NOTE'; readonly message: string }
   /** The record already took this note back. */
-  | { readonly ok: false; readonly code: 'ALREADY_RETRACTED'; readonly message: string };
+  | { readonly ok: false; readonly code: 'ALREADY_RETRACTED'; readonly message: string }
+  /** The note was written by another identity, and only that identity retracts it. */
+  | { readonly ok: false; readonly code: 'NOT_THE_AUTHOR'; readonly message: string };
 
 /** What the caller asks to retract. */
 export interface RetractInput {
@@ -454,7 +457,14 @@ export interface RetractInput {
 
 /** What one id names in a tree, as far as a retraction needs to know. */
 type Standing =
-  | { readonly is: 'note'; readonly note: 'memory' | 'observation'; readonly retractedAt?: string }
+  | {
+      readonly is: 'note';
+      readonly note: 'memory' | 'observation';
+      /** The identity that wrote it. */
+      readonly who: string;
+      /** When a retraction by that identity took it back, if one did. */
+      readonly retractedAt?: string;
+    }
   | { readonly is: 'other'; readonly what: 'decision' | 'pattern' | 'task' }
   | { readonly is: 'nothing' };
 
@@ -472,22 +482,28 @@ const ITS_OWN_LIFECYCLE = {
   task: 'move it to the state it is in',
 } as const;
 
-/** Reads what `id` names in this tree's ordered stream. */
+/**
+ * Reads what `id` names in this tree's ordered stream. A retraction counts only when its
+ * identity may retract the note ({@link mayRetract}) — the rule the read applies — so a
+ * stranger's retraction neither hides the note nor stands in its author's way.
+ */
 function standingOf(events: readonly CatalogEvent[], id: string): Standing {
-  let note: 'memory' | 'observation' | undefined;
-  let retractedAt: string | undefined;
+  let note: { readonly note: 'memory' | 'observation'; readonly who: string } | undefined;
+  const retractions: { readonly at: string; readonly who: string }[] = [];
   for (const event of events) {
     if (event.subject !== id) continue;
-    if (event.kind === 'memory.captured') note = 'memory';
-    else if (event.kind === 'observation.recorded') note = 'observation';
-    else if (event.kind === 'note.retracted') retractedAt ??= event.at;
+    if (event.kind === 'memory.captured') note = { note: 'memory', who: event.who };
+    else if (event.kind === 'observation.recorded') note = { note: 'observation', who: event.who };
+    else if (event.kind === 'note.retracted') retractions.push({ at: event.at, who: event.who });
     else {
       const what = NOT_A_NOTE[event.kind];
       if (what !== undefined) return { is: 'other', what };
     }
   }
   if (note === undefined) return { is: 'nothing' };
-  return { is: 'note', note, ...(retractedAt !== undefined ? { retractedAt } : {}) };
+  const author = note.who;
+  const retractedAt = retractions.find((retraction) => mayRetract(author, retraction.who))?.at;
+  return { is: 'note', ...note, ...(retractedAt !== undefined ? { retractedAt } : {}) };
 }
 
 /**
@@ -496,9 +512,9 @@ function standingOf(events: readonly CatalogEvent[], id: string): Standing {
  * event stays, a verifier still sees it, and the read by id still serves it, saying it was
  * taken back; the reads that LIST notes stop offering it.
  *
- * WHO MAY is what the record already decides for a supersede: any writer of this tree, the
- * fact attributed to its anchor (`who`) and to the agent that carried it out (`which`), with
- * nothing that ties the act to whoever wrote the note. As with a supersede, it is SAME-TREE:
+ * WHO MAY is the identity that wrote the note, with any key of it ({@link mayRetract}): a
+ * writer of another identity is refused, told whose the note is. The fact is attributed to the
+ * anchor (`who`) and to the agent that carried it out (`which`). It is SAME-TREE:
  * the note is looked for in the tree this writer owns — a surface opens the note's own tree,
  * the way a decision's move follows the decision — and a retraction of an id this tree does
  * not hold is refused rather than recorded dangling.
@@ -542,6 +558,18 @@ export function retractNote(ctx: WriteContext, input: RetractInput): RetractOk |
               `${standing.what} "${oneLine(input.id)}" is not a note: only a memory or an ` +
               `observation is retracted. A ${standing.what} keeps its own lifecycle — ` +
               `${ITS_OWN_LIFECYCLE[standing.what]}.`,
+          },
+        };
+      }
+      if (!mayRetract(standing.who, who)) {
+        return {
+          refuse: {
+            ok: false,
+            code: 'NOT_THE_AUTHOR',
+            message:
+              `${standing.note} "${oneLine(input.id)}" was written by ${oneLine(standing.who)}, ` +
+              `and only that identity retracts it; this writer is ${oneLine(who)}. ` +
+              'Nothing was appended.',
           },
         };
       }
