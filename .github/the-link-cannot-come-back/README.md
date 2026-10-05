@@ -38,6 +38,14 @@ Two spellings, each declared with the shape it recognises rather than as a subst
   checked on its own, because the emoji, the spacing and the bracket text are cosmetic and the
   link is the thing this directory is named after.
 
+A third thing is read from each commit, and it is not a footer: **the e-mail**. An author, or a
+committer, outside `*@users.noreply.github.com` is refused, and the committer of the merges GitHub
+makes itself, `noreply@github.com`, is the one address besides. A work or private address in
+`user.email` lands in a public history, and taking it out again is a rewrite of the trunk (done once,
+on 2026-09-30). The finding names the address, so the fix is where it says: `git config user.email`,
+then amend. Dependabot's author and committer are both of the two shapes, so it is not named either.
+An empty address is refused too.
+
 The other half of being right is what it lets through, and on this repository that half is
 load-bearing:
 

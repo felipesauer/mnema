@@ -425,6 +425,26 @@ export const NAMES_THAT_NEED_MORE: Readonly<
     times: 1,
     why: 'the verb named in a sentence about what wrote the lists on the page; the section hands the line over, with its --out',
   },
+  'README.md: mnema check declare': {
+    times: 1,
+    why: 'the verb named in the front page’s list of what else it does, beside what it leaves unproven; the page of the package hands the line over, with the program it declares',
+  },
+  'README.md: mnema decision import': {
+    times: 1,
+    why: 'the verb named in the same list, as what reads decision documents; the package page hands the line over, with a directory',
+  },
+  'README.md: mnema inherit set': {
+    times: 1,
+    why: 'the verb named in the same list, as what pins another repository’s decisions; the package page hands the line over, with the origin',
+  },
+  'README.md: mnema retract': {
+    times: 1,
+    why: 'the verb named in the same list, as what takes a note back; the package page names the id and the reason it takes',
+  },
+  'README.md: mnema trailer': {
+    times: 1,
+    why: 'the verb named in the same list, beside `commits`, `why` and `aging`; the package page hands the line over, with the decision',
+  },
   'packages/code/README.md: mnema site': {
     times: 1,
     why: 'the verb named in the table row about the page\u2019s verdict; the bullet above it hands the line over, with its --out',
@@ -602,14 +622,19 @@ export const HANDED_OVER: Readonly<
   // `mnema show`, `mnema verify`, `mnema switch`).
   // line 51 and name 103 for the section and the table row that hand over `mnema site --out` and
   // name the verb and what it checks (`mnema verify`, `mnema site`) in prose, twice over on two pages.
-  span: { line: 56, name: 107, flag: 1, unwritten: 0 },
+  // line 60 and name 118 for the front page's list of what else it does (the verbs it points at),
+  // and the package page's sections on the log read against the record, the inherited record and
+  // `mnema doctor`.
+  span: { line: 60, name: 118, flag: 1, unwritten: 0 },
   // name 18 until the page that says where the key lives named `mnema key protect` in a line of
   // its own.
   // line 35 until the same page showed that question in a block of its own.
   // name 19 until the page said `mnema key protect` asks for the passphrase at a terminal.
   // line 40 and flag 1 once a page showed the commands that declare a check and run it.
   // line 41 for the block that writes the page.
-  block: { line: 41, name: 20, flag: 1, unwritten: 0 },
+  // line 46 and name 21 for the package page's blocks on the log read against the record and on
+  // the inherited record, and the plugin page's block that installs the server-only plugin.
+  block: { line: 46, name: 21, flag: 1, unwritten: 0 },
   // 46 until the refusal an agent's `accept` gets, with the switch off, began naming the command a
   // person accepts with (`agent-accepts.ts`).
   // line 34 until the sentences an agent's accept is answered with began handing whole lines
