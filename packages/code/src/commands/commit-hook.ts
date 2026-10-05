@@ -16,9 +16,11 @@
  * appended to the message file. Git's default cleanup drops them when the editor closes, so a
  * person who does not accept them gets the commit they would have got; one who does removes the
  * `# ` in front of a line and the line is the trailer. It is made only where that holds: when the
- * message has no source (an editor is about to open — `-m`, `-F`, a merge, a squash and an amend
- * all have one) and `commit.cleanup` is unset or a setting that strips comments. Elsewhere the
- * comment would stay in the message, so nothing is written.
+ * message has no source (an editor is about to open — `-m`, `-F`, a template, a merge, a squash
+ * and an amend all have one; a template may even be committed with no editor at all),
+ * `commit.cleanup` is unset or a setting that strips comments, and `core.commentChar` is `#` or
+ * `auto`. Elsewhere the comment would stay in the message, so nothing is written. A
+ * `--cleanup=verbatim` typed on the command line is invisible to a hook, and keeps the block.
  *
  * WHAT IT SUGGESTS: the decisions in force that govern the staged files — the reading `mnema
  * rules` and the per-edit push share (`readRulesInForceAt`), not a second one — and, among those
@@ -121,7 +123,7 @@ export function uninstallCommitHook(ctx: CommitHookContext): HookActed {
 }
 
 /** The message sources (git's second argument) under which an editor is about to open on the file. */
-const NO_SOURCE = new Set(['', 'template']);
+const NO_SOURCE = new Set(['']);
 
 /** The `commit.cleanup` values under which a `#` line is dropped from the message. */
 const STRIPS_COMMENTS = new Set(['', 'strip', 'default']);
@@ -200,6 +202,8 @@ export function suggestTrailer(
     if (!NO_SOURCE.has(input.source)) return false;
     const cleanup = git(ctx.cwd, ['config', '--get', 'commit.cleanup'])?.trim() ?? '';
     if (!STRIPS_COMMENTS.has(cleanup)) return false;
+    const commentChar = git(ctx.cwd, ['config', '--get', 'core.commentChar'])?.trim() ?? '';
+    if (commentChar !== '' && commentChar !== '#' && commentChar !== 'auto') return false;
     const message = readFileSync(input.messageFile, 'utf-8');
     const found = governing(ctx.cwd, ctx.env, message);
     if (found.length === 0) return false;

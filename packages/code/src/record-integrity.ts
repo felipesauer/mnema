@@ -253,9 +253,11 @@ export const SERVES_NO_RECORD_CONTENT: { readonly [path: string]: string } = {
     'said to a runner that asked for the results, and `mnema verify` rules on the chain in the ' +
     'same job',
   'commands/commit-hook.ts':
-    'it runs inside a `git commit` and appends `#` comment lines that git drops; its output ' +
-    'goes to /dev/null and an error must never cost the commit, so a notice about the chain ' +
-    'has nowhere to land — and `mnema verify` rules on it',
+    'it serves the title and label of each governing decision into a commit message file the ' +
+    'person edits, as `#` lines git drops; that file is not a reading anyone asked the record ' +
+    'for, and a notice about the chain would be one more comment in a message, with the ' +
+    'hook’s own output sent to /dev/null so an error never costs the commit — `mnema verify` ' +
+    'rules on the chain',
   'commands/before-a-write.ts':
     'a host runs it before a write and reads one field of its reply — the reason a person ' +
     'decides on — so a notice about the chain has nowhere to land; the same session opens ' +

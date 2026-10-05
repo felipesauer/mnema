@@ -824,7 +824,9 @@ appends a few `#` lines to the message naming the decisions in force that govern
 commit you leave alone is the commit you would have made; to cite a decision, delete the `# ` in front
 of its line. **What it does not do.** It suggests and never decides: it does not check that the change
 follows the decision, and it adds nothing to a message given with `-m` or `-F`, to a merge, an amend, or
-under a `commit.cleanup` that keeps comments. It needs `mnema` on the `PATH` git runs hooks with; when
+under a `commit.cleanup` that keeps comments or a `core.commentChar` other than `#`. A `--cleanup=verbatim`
+typed on the command line is not seen by the hook, and the block stays in the message, like git's own
+comments. It needs `mnema` on the `PATH` git runs hooks with; when
 `mnema` is missing or fails, the hook does nothing and the commit goes through. It looks for the
 project from the repository's top directory, so a record kept in a subdirectory draws no suggestion.
 

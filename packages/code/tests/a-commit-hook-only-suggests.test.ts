@@ -97,7 +97,7 @@ function bin(name: string, body?: string): string {
   const dir = join(sandbox, name);
   mkdirSync(dir, { recursive: true });
   const gitPath = spawnSync('sh', ['-c', 'command -v git'], { encoding: 'utf-8' }).stdout.trim();
-  symlinkSync(gitPath, join(dir, 'git'));
+  if (!existsSync(join(dir, 'git'))) symlinkSync(gitPath, join(dir, 'git'));
   if (body !== undefined) {
     writeFileSync(join(dir, 'mnema'), `#!/bin/sh\n${body}\n`);
     chmodSync(join(dir, 'mnema'), 0o755);
@@ -315,6 +315,89 @@ describe('a commit with the hook installed', () => {
     expect(message()).toContain('Mnema-Decision: ADR-1');
     const read = await mnema('commits', 'ADR-1');
     expect(read.text).toContain('subject');
+  });
+});
+
+describe('where git keeps the block in the message, nothing is written', () => {
+  const REAL = (): string => bin('real-bin', `exec "${process.execPath}" "${CLI}" "$@"`);
+
+  /** Stages a governed file and returns the environment of a commit that opens the editor. */
+  function stageGoverned(file: string): { env: Record<string, string>; seen: string } {
+    mkdirSync(dirname(join(repo, file)), { recursive: true });
+    writeFileSync(join(repo, file), `${Math.random()}`);
+    git(['add', file]);
+    const { command, seen } = editor();
+    return { env: envWith(REAL(), { GIT_EDITOR: command, GIT_MERGE_AUTOEDIT: 'yes' }), seen };
+  }
+
+  const cited = (): boolean => git(['log', '--format=%B']).stdout.includes('Mnema-Decision');
+
+  it('has a comment character other than #, where the # lines would be kept', async () => {
+    await aGovernedProject();
+    installCommitHook({ cwd: repo });
+    git(['config', 'core.commentChar', ';']);
+    const { env, seen } = stageGoverned('src/a.ts');
+    const ran = git(['commit', '-q'], env);
+    expect(ran.status, ran.stderr).toBe(0);
+    expect(readFileSync(seen, 'utf-8')).not.toContain('Mnema-Decision');
+    expect(cited()).toBe(false);
+  });
+
+  it('is given a template and no editor', async () => {
+    await aGovernedProject();
+    installCommitHook({ cwd: repo });
+    const template = join(sandbox, 'template.txt');
+    writeFileSync(template, 'from the template\n');
+    const { env } = stageGoverned('src/a.ts');
+    const ran = git(['commit', '-q', '--no-edit', '-t', template], env);
+    // Git refuses a template committed untouched. With the block appended the message would no
+    // longer be the template, and the commit would go through carrying it.
+    expect(ran.stderr).toContain('did not edit the message');
+    expect(ran.status).not.toBe(0);
+    expect(cited()).toBe(false);
+  });
+
+  it('takes its message from -F', async () => {
+    await aGovernedProject();
+    installCommitHook({ cwd: repo });
+    const file = join(sandbox, 'message.txt');
+    writeFileSync(file, 'from a file\n');
+    const { env } = stageGoverned('src/a.ts');
+    const ran = git(['commit', '-q', '-F', file], env);
+    expect(ran.status, ran.stderr).toBe(0);
+    expect(message()).toBe('from a file');
+  });
+
+  it('amends, with or without the editor', async () => {
+    await aGovernedProject();
+    installCommitHook({ cwd: repo });
+    const first = stageGoverned('src/a.ts');
+    expect(git(['commit', '-q', '-m', 'first'], first.env).status).toBe(0);
+    const second = stageGoverned('src/b.ts');
+    const quiet = git(['commit', '-q', '--amend', '--no-edit'], second.env);
+    expect(quiet.status, quiet.stderr).toBe(0);
+    expect(cited()).toBe(false);
+    const third = stageGoverned('src/c.ts');
+    const edited = git(['commit', '-q', '--amend'], third.env);
+    expect(edited.status, edited.stderr).toBe(0);
+    expect(readFileSync(third.seen, 'utf-8')).not.toContain('Mnema-Decision');
+    expect(cited()).toBe(false);
+  });
+
+  it('merges', async () => {
+    await aGovernedProject();
+    installCommitHook({ cwd: repo });
+    const base = stageGoverned('docs/base.md');
+    expect(git(['commit', '-q', '-m', 'base'], base.env).status).toBe(0);
+    git(['switch', '-q', '-c', 'side']);
+    const side = stageGoverned('src/side.ts');
+    expect(git(['commit', '-q', '-m', 'side'], side.env).status).toBe(0);
+    git(['switch', '-q', 'main']);
+    const main = stageGoverned('docs/main.md');
+    expect(git(['commit', '-q', '-m', 'main'], main.env).status).toBe(0);
+    const merged = git(['merge', '--no-ff', 'side'], main.env);
+    expect(merged.status, merged.stderr).toBe(0);
+    expect(cited()).toBe(false);
   });
 });
 
