@@ -42,6 +42,13 @@ tag, with its own changelog.
   answers 404 until the packages are published; they now give the install of the pre-release from
   its four tarballs, the line the root README gives.
 
+### Changed
+
+- **The Action's own test has room in its time limit.** Its cases start the real `mnema` binary
+  (seven processes of set-up and two per run); the slowest took 4.3 to 4.5 s measured alone against
+  the 5 s default, and went red once on a loaded runner. The limit is 20 s for that file; nothing
+  in it waits on a network.
+
 ## [0.1.0-beta] - 2026-10-05
 
 The first release of this line: `@mnema/code`, and the three packages it is built from. The
