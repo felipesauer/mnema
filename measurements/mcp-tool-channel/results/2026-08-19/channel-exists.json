@@ -20,7 +20,7 @@
       "server_named_in_hook": "probe",
       "tool_was_called": true,
       "tool_arguments": {
-        "path": "/tmp/claude-1000/-home-felipe-Documents-Personal-Me--projects-mnema/e5f4117e-e90e-4005-8452-0bff5447eb94/scratchpad/probe/runs/pretooluse-hookjson/project/target.txt"
+        "path": "<scratchpad>/probe/runs/pretooluse-hookjson/project/target.txt"
       },
       "injected_into_the_next_request": true,
       "the_edit_went_through": true,
@@ -46,7 +46,7 @@
       "server_named_in_hook": "probe",
       "tool_was_called": true,
       "tool_arguments": {
-        "path": "/tmp/claude-1000/-home-felipe-Documents-Personal-Me--projects-mnema/e5f4117e-e90e-4005-8452-0bff5447eb94/scratchpad/probe/runs/pretooluse-prose/project/target.txt"
+        "path": "<scratchpad>/probe/runs/pretooluse-prose/project/target.txt"
       },
       "injected_into_the_next_request": false,
       "the_edit_went_through": true,
@@ -61,7 +61,7 @@
       "server_named_in_hook": "probe",
       "tool_was_called": true,
       "tool_arguments": {
-        "path": "/tmp/claude-1000/-home-felipe-Documents-Personal-Me--projects-mnema/e5f4117e-e90e-4005-8452-0bff5447eb94/scratchpad/probe/runs/pretooluse-probe_wrongevent/project/target.txt"
+        "path": "<scratchpad>/probe/runs/pretooluse-probe_wrongevent/project/target.txt"
       },
       "injected_into_the_next_request": false,
       "the_edit_went_through": true,
@@ -76,7 +76,7 @@
       "server_named_in_hook": "probe",
       "tool_was_called": true,
       "tool_arguments": {
-        "path": "/tmp/claude-1000/-home-felipe-Documents-Personal-Me--projects-mnema/e5f4117e-e90e-4005-8452-0bff5447eb94/scratchpad/probe/runs/pretooluse-probe_error/project/target.txt"
+        "path": "<scratchpad>/probe/runs/pretooluse-probe_error/project/target.txt"
       },
       "injected_into_the_next_request": false,
       "the_edit_went_through": true,
@@ -181,7 +181,7 @@
       "server_named_in_hook": "plugin:probeplug:probe",
       "tool_was_called": true,
       "tool_arguments": {
-        "path": "/tmp/claude-1000/-home-felipe-Documents-Personal-Me--projects-mnema/e5f4117e-e90e-4005-8452-0bff5447eb94/scratchpad/probe/runs/plugin-hostname/project/target.txt"
+        "path": "<scratchpad>/probe/runs/plugin-hostname/project/target.txt"
       },
       "injected_into_the_next_request": true,
       "the_edit_went_through": true,
@@ -207,7 +207,7 @@
       "server_named_in_hook": "probe",
       "tool_was_called": true,
       "tool_arguments": {
-        "path": "/tmp/claude-1000/-home-felipe-Documents-Personal-Me--projects-mnema/e5f4117e-e90e-4005-8452-0bff5447eb94/scratchpad/probe/runs/plugin-hook-config-server/project/target.txt"
+        "path": "<scratchpad>/probe/runs/plugin-hook-config-server/project/target.txt"
       },
       "injected_into_the_next_request": true,
       "the_edit_went_through": true,
