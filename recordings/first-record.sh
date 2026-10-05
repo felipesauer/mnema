@@ -16,7 +16,7 @@
 #
 #   asciinema rec --overwrite -q --cols 96 --rows 34 \
 #     -c "bash recordings/first-record.sh $PWD/packages/code/dist/cli.js" recordings/first-record.cast
-#   agg recordings/first-record.cast recordings/first-record.gif
+#   agg --theme github-dark --font-size 16 recordings/first-record.cast recordings/first-record.gif
 #
 # HOW IT IS HELD TO THE BINARY: packages/code/tests/the-recordings-are-what-the-binary-draws.test.ts
 # runs this same script with PACE=0 — every pause and every per-character delay skipped, the
