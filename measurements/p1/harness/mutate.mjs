@@ -12,7 +12,9 @@
 //      cannot be parsed is RULER BROKEN, never zero;
 //   3. it restores the exact bytes it saved, whether or not the run succeeded.
 //
-// FORTY-EIGHT mutations, in thirteen families: the floor of the experiment (the arm that
+// FIFTY-NINE mutations: the forty-eight below in thirteen families, then eleven against the guards
+// round 5 added (`r5a` to `r5k`), each putting back the defect its guard was written against. The
+// forty-eight are: the floor of the experiment (the arm that
 // should carry the decision stops carrying it, and the arm that should carry
 // nothing starts), the memory column, the mnema arm's channel, the surface arms'
 // document channel, their PER-EDIT channel, the AXIS that channel's rule
@@ -48,6 +50,10 @@ const SPLIT = join(HARNESS_DIR, 'lib/split.mjs')
 const CELL = join(HARNESS_DIR, 'lib/cell.mjs')
 const RUN = join(HARNESS_DIR, 'run.mjs')
 const SELFTEST = join(HARNESS_DIR, 'lib/selftest.mjs')
+const FIXTURES = join(HARNESS_DIR, 'lib/fixtures.mjs')
+const VERDICT = join(HARNESS_DIR, 'lib/verdict.mjs')
+const DELIVERED = join(HARNESS_DIR, 'lib/delivered.mjs')
+const ANALYSIS = join(HARNESS_DIR, '..', 'analysis.mjs')
 
 /**
  * THE MATRIX, EXPORTED. It was a module-level `const` with the driver loop
@@ -198,8 +204,8 @@ export const MUTATIONS = [
   {
     name: 's · an undelivered arm becomes a verdict again',
     file: CHANNEL,
-    from: 'export function surfaceProblem({ arm, axis, mechanism, diff, pushed = [], matchers = [] }) {\n  if (!servesUnasked(arm)) return null',
-    to: 'export function surfaceProblem({ arm, axis, mechanism, diff, pushed = [], matchers = [] }) {\n  return null',
+    from: 'export function surfaceProblem({ arm, axis, mechanism, diff, pushed = [], matchers = [], governsTouched = null }) {\n  if (!servesUnasked(arm)) return null',
+    to: 'export function surfaceProblem({ arm, axis, mechanism, diff, pushed = [], matchers = [], governsTouched = null }) {\n  return null',
     expect: 'a cell whose surface never ran is scored, and reads as "the surface did not help"',
   },
   {
@@ -349,8 +355,8 @@ export const MUTATIONS = [
   {
     name: 'z13 · the bench stops walking the newest pre-registered round',
     file: SPLIT,
-    from: 'export const ROUNDS = [1, 2, 3, 4]',
-    to: 'export const ROUNDS = [1, 2, 3]',
+    from: 'export const ROUNDS = [1, 2, 3, 4, 5]',
+    to: 'export const ROUNDS = [1, 2, 3, 4]',
     expect: 'a frozen round is a round nothing checks — exactly the state round 3 shipped in',
   },
   {
@@ -445,6 +451,88 @@ export const MUTATIONS = [
     from: '  let current = resolve(from)',
     to: "  return resolve(from, '../../../../..')\n  let current = resolve(from)",
     expect: 'the root lands inside the working directory again, and every path built from it points at nothing',
+  },
+  // ---------------------------------------------------------------------------------------
+  // ROUND 5's GUARDS — each puts back the defect it was written against, and nothing else.
+  // Listed after the forty-eight, which keep their names and their order: a matrix whose
+  // first forty-eight are the old ones is a matrix whose old result can be compared.
+  // ---------------------------------------------------------------------------------------
+  {
+    name: 'r5a · the seed forgets the channels the product bears off',
+    file: SEED,
+    from: '  return [...new Set([...BORN_OFF_CHANNELS.filter((c) => !on.includes(c)), ...switchedOffChannels(arm)])].sort()',
+    to: '  return [...switchedOffChannels(arm)].sort()',
+    expect: 'every seed of an arm with a record reads two born-off channels as a switch the arm never made',
+  },
+  {
+    name: 'r5b · the program check is read as the hook’s first verb again',
+    file: HOOK,
+    from: '  const log = read.filter((call) => call.argv?.[0] !== IDENTIFY_FLAG)',
+    to: '  const log = read',
+    expect: 'every surface cell reads as a hook that never ran, because `--identify` comes before `brief`',
+  },
+  {
+    name: 'r5c · the opening documents are compared with the cell’s own identity in them',
+    file: HOOK,
+    from: "    .replace(/\\bmnid:[0-9a-f]{8}\\b/g, 'mnid:<A-FRESH-IDENTITY>')",
+    to: '',
+    expect: 'two surface arms never hand over the same document, because each cell signs with its own identity',
+  },
+  {
+    name: 'r5d · a history is seeded without its replacement',
+    file: SEED,
+    from: '      for (const entry of set) {\n        if (!entry.supersedes) continue',
+    to: '      for (const entry of []) {\n        if (!entry.supersedes) continue',
+    expect: 'the record holds the replaced decision as in force, and the opening document hands over both sides',
+  },
+  {
+    name: 'r5e · a history task is scored with three words',
+    file: VERDICT,
+    from: "  return fixture.verdicts === 'four' ? VERDICTS_FOUR : VERDICTS",
+    to: '  return VERDICTS',
+    expect: 'a cell that followed the replaced decision is a broken ruler instead of a finding',
+  },
+  {
+    name: 'r5f · the eighth arm stops switching the hold on',
+    file: SEED,
+    from: '  return arm === GATE_ARM ? [FIRST_WRITE_GATE_CHANNEL] : []',
+    to: '  return []',
+    expect: 'the exploratory arm is mnema+ under another name',
+  },
+  {
+    name: 'r5g · the hold’s refusal is not read as the channel speaking',
+    file: CHANNEL,
+    from: '    contexts.push(specific.additionalContext ?? specific.permissionDecisionReason ?? null)',
+    to: '    contexts.push(specific.additionalContext ?? null)',
+    expect: 'the preflight reads the held first write as a channel that cited nothing',
+  },
+  {
+    name: 'r5h · a write no decision governs is accused of a silent channel',
+    file: CHANNEL,
+    from: '      return governsTouched === false ? null : (',
+    to: '      return (',
+    expect: 'every surface cell of the negative control is thrown away as undelivered',
+  },
+  {
+    name: 'r5i · the surface arms are declared to hand over the replaced title',
+    file: DELIVERED,
+    from: "  [SURFACE_ARM]: { current: { title: 'full', statement: 'none', why: 'none', alternatives: 'none' }, superseded: all('none') },",
+    to: "  [SURFACE_ARM]: { current: { title: 'full', statement: 'none', why: 'none', alternatives: 'none' }, superseded: { title: 'full', statement: 'none', why: 'none', alternatives: 'none' } },",
+    expect: 'the declaration of the mechanism under test drifts from what the host hands over, and nothing notices',
+  },
+  {
+    name: 'r5j · the per-edit family is read over every cell, with or without the occasion',
+    file: ANALYSIS,
+    from: "  const kept = family.filter((c) => typeof c.mcp_pushed === 'number' && c.mcp_pushed >= minPushed)",
+    to: '  const kept = family',
+    expect: 'a cell where the channel had no write to speak after is counted as the channel having no effect',
+  },
+  {
+    name: 'r5k · a history whose replacement points forward is read as one',
+    file: FIXTURES,
+    from: '    if (supersedes !== null && !keys.has(supersedes)) {',
+    to: '    if (false) {',
+    expect: 'a decision replaced by an earlier one is seeded, and the order of the history means nothing',
   },
 ]
 

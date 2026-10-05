@@ -34,7 +34,7 @@ Any reading stronger than that is false, and this file says so before it says an
   else is a caller free to move it"*;
 - the arms that measure a product measure **this** product — `mnema init`, its MCP server, its
   plugin declarations. The four that do not (`base`, `prosa`, `host`, `claude-md`), and the shape all
-  seven share, are the transferable part.
+  eight share, are the transferable part.
 
 ## What it is, in one page
 
@@ -54,7 +54,11 @@ node run.mjs --sieve --round 4 --resume --out <dir> --yes
 node run.mjs --cell a1-rounding mnema 1 --yes
 node run.mjs --full --round 3 --yes
 node --test "tests/*.test.mjs"       the instrument's own suite
-node mutate.mjs                      48 mutations against that suite. None may come back green
+node run.mjs --full --round 5 --yes  a round whose split declares a PLAN runs that plan: each
+                                     entry's families, arms and runs, over its held-out tasks
+node run.mjs --replica --round 5 --yes
+                                     the round's declared replica: the same tasks on its model
+node mutate.mjs                      59 mutations against that suite. None may come back green
 ```
 
 **`--sieve` is a stage and not a round**, and round 4 is the first to declare one: it runs one
@@ -69,7 +73,7 @@ already holds with `status: ok` and plans everything else again — including th
 vendor refused, which are present in the capture and are not results. It never edits a capture,
 and a stopped run resumes into the same file rather than into a second directory.
 
-Seven arms exist in code (`ARMS` in `lib/seed.mjs`); a **round** declares which of them it runs, and
+Eight arms exist in code (`ARMS` in `lib/seed.mjs`); a **round** declares which of them it runs, and
 the harness refuses a round that declares an arm it cannot seed — by name, saying which
 (`refuseUnrunnableRound`, asserted both ways in `tests/rounds.test.mjs`).
 
@@ -119,6 +123,19 @@ which are three diagnoses of a defect that is none of them. `tests/root.test.mjs
 - **The starting `repo/` must come back `BROKEN`.** A task whose starting point already conforms is
   a task that measures nothing, and `selftest.sh` requires all three references to land where they
   claim before the task may enter the protocol.
+
+**A task can also hold a HISTORY**, and round 5's do. Instead of `decision.md` it has `decisions/`:
+one file per decision in the shape above, and `decisions/index.json` saying their order, which one
+replaces which (`supersedes`), the path each governs (`governs`) and the paths the ticket writes
+(`touches`). Every arm that holds decisions holds the whole history — the record supersedes through
+the product's own verb, the instructions file and the host's memory say it in one line,
+`**Supersedes:** <title>` — and the parity check compares them decision by decision and replacement
+by replacement. Such a task is scored with **four** words (`CONFORMS_CURRENT` 0, `VIOLATES` 1,
+`BROKEN` 2, `FOLLOWS_OBSOLETE` 3), has `refs/current`, `refs/naive` and, when a decision replaces
+another, `refs/obsolete`, and a `quality.<ext>` that prints `QUALITY <passed>/<total>` — hidden
+behaviour tests whose two numbers ride in the line. The shape is read off the disk (`readDecisionSet`,
+`lib/fixtures.mjs`); a history that cannot be one — a replacement pointing forward, a decision
+replaced twice, a title inside another title, two statements that open alike — is refused by name.
 
 ## What a cell holds fixed, and where
 
@@ -200,7 +217,7 @@ read *"0 failures"* — and both times it was caught only because a mutation tha
 came back zero. An instrument that cannot say it broke is worse than no instrument.
 
 **`mutate.mjs` is published with the runner, and it is not our deliveries' battery.** Every one of
-its 48 mutations targets a file of THIS runner — `lib/seed.mjs`, `lib/selftest.mjs`, `lib/root.mjs`,
+its 59 mutations targets a file of THIS runner — `lib/seed.mjs`, `lib/selftest.mjs`, `lib/root.mjs`,
 `run.mjs` and nine others, each resolved from its own directory — and it runs this directory's own
 suite. It is the instrument proving that its own guards can go red, which is the only evidence that
 the suite above is worth its green. Nothing in it touches `packages/`.
@@ -217,6 +234,14 @@ cell, and each key is optional: a round that names none runs as rounds 1 to 4 di
 | `cli_version` | the exact `claude --version` the round was written for | `lib/pin.mjs`: another CLI means the round does not start, and a CLI that changes between two cells stops the round at the second |
 | `output_format` | `stream-json`: the whole event stream, so a line says which tools the session called, in what order, which of them wrote, and how many writes came after a hook had handed the session text | `outputFormatOf`; an unknown format |
 | `scenarios`, `arm_codes` | the family of each task and the code of each arm, written into the line as `scenario` and `arm_code` | `labelProblems`, in the `split frozen` check |
+| `plan` | the cells `--full` runs: per entry, families, arms and runs, over the held-out tasks; `--runs` is refused | `planProblems`, in the `split frozen` check |
+| `replica` | a model and a plan for `--replica`: the same tasks on another model, a capture of its own | `planProblems` |
+
+**The eighth arm, `mnema-gate`,** is `mnema+` with one channel switched ON in the cell's own record:
+the hold on the first write of a session to a file a rule addresses (`edit-first-write-gate`,
+private). That write does not happen and the rules come back as its reason; the same write repeated
+goes through. The preflight checks it with a scripted write against the stand-in: refused once,
+written the second time, and the title of each decision in force addressed there in the refusal.
 
 **The seventh arm, `claude-md`,** holds the decision verbatim in the file the host loads on its
 own. It is `prosa` with the file renamed — the same bytes — and that is the design: `prosa`'s

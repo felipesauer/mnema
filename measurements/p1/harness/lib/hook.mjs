@@ -59,7 +59,7 @@ import { spawnSync } from 'node:child_process'
 import { join } from 'node:path'
 import { REPO_ROOT } from './root.mjs'
 import { sandboxEnv } from './sandbox.mjs'
-import { carriesDecision, readDecision } from './fixtures.mjs'
+import { carriesDecision, readDecisionSet } from './fixtures.mjs'
 
 /** The host event the plugin's document handler answers, and the key it is declared under. */
 export const HOOK_EVENT = 'SessionStart'
@@ -472,9 +472,12 @@ export function injectionProblems({ sandbox, fixture, settingsPath, env }) {
   }
 
   if (carriesDecision(fixture.axis)) {
-    const { title } = readDecision(fixture)
-    if (!document.includes(title)) {
-      problems.push(`the document does not name the seeded decision "${title}"`)
+    // Every decision IN FORCE has to be named. The ones a later decision replaced are not asked
+    // for here — whether they arrive is what the delivered-text check reads, in both directions.
+    for (const { title } of readDecisionSet(fixture).filter((entry) => entry.current)) {
+      if (!document.includes(title)) {
+        problems.push(`the document does not name the seeded decision "${title}"`)
+      }
     }
   }
   return { problems, document }

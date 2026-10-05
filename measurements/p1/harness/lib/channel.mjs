@@ -39,7 +39,7 @@ import { join } from 'node:path'
 import { declaredServer, mcpConversation } from './mcpcheck.mjs'
 import { EDIT_EVENT, pushedTools } from './hook.mjs'
 import { exists } from './sandbox.mjs'
-import { carriesDecision } from './fixtures.mjs'
+import { addressCovers, carriesDecision, readDecisionSet, touchedPaths } from './fixtures.mjs'
 import {
   EDIT_PUSH_CHANNEL,
   channelNames,
@@ -48,6 +48,8 @@ import {
   mnemaRecords,
   servesUnasked,
   switchedOffChannels,
+  switchedOnChannels,
+  FIRST_WRITE_GATE_CHANNEL,
 } from './seed.mjs'
 
 /** The event kind the product appends when a channel spoke. Its subject is the channel. */
@@ -214,7 +216,7 @@ export function editPushSpeaks(arm, axis) {
  * The axis is read through {@link carriesDecision}, the one reading of what the axes
  * mean, so a third axis throws here instead of being quietly treated as a control.
  */
-export function surfaceProblem({ arm, axis, mechanism, diff, pushed = [], matchers = [] }) {
+export function surfaceProblem({ arm, axis, mechanism, diff, pushed = [], matchers = [], governsTouched = null }) {
   if (!servesUnasked(arm)) return null
   if (mechanism?.hook?.ran !== true) {
     return `the document channel did not run in this cell: ${mechanism?.hook?.probe ?? 'no hook column'}`
@@ -240,6 +242,16 @@ export function surfaceProblem({ arm, axis, mechanism, diff, pushed = [], matche
       : `the ${EDIT_PUSH_CHANNEL} channel was OFF at the end of this cell, and nothing about the arm ` +
         'seeds it off: something in the cell switched it, which the record of the cell says who and when'
   }
+  // THE EIGHTH ARM'S OWN INVALID CELL, the mirror of the one above: an arm that IS the hold
+  // switched on, whose hold is not on at the end, is `mnema+` under another name.
+  for (const channel of switchedOnChannels(arm)) {
+    if ((mechanism?.channel?.channels ?? []).includes(`${channel}:off`)) {
+      return (
+        `the ${channel} channel is OFF at the end of this cell, and this arm IS that channel switched ` +
+        `on: [${mechanism?.channel?.channels ?? []}]`
+      )
+    }
+  }
   const pushes = mechanism?.mcp?.pushed ?? 0
   const wrote = (diff?.filesChanged ?? 0) > 0
   if (pushes === 0 && wrote) {
@@ -258,10 +270,16 @@ export function surfaceProblem({ arm, axis, mechanism, diff, pushed = [], matche
     )
   }
   const served = mechanism?.channel?.served ?? []
-  const spoke = served.some((entry) => entry.startsWith(`${EDIT_PUSH_CHANNEL}:`))
+  // A held first write is the per-edit tool speaking too — through the hold, with the rules in
+  // the refusal — so in the arm that holds, either channel's service is the channel having spoken.
+  const speaking = [EDIT_PUSH_CHANNEL, ...switchedOnChannels(arm)]
+  const spoke = served.some((entry) => speaking.some((channel) => entry.startsWith(`${channel}:`)))
+  // `governsTouched` is false only for a task that holds a history and whose ticket writes a path
+  // no decision in force covers — the control that carries decisions about OTHER code. There a call
+  // that served nothing is the channel being right, not a channel that never arrived.
   if (editPushSpeaks(arm, axis)) {
     if (pushes > 0 && !spoke) {
-      return (
+      return governsTouched === false ? null : (
         `the per-edit channel was called ${pushes} time(s) on an axis ${axis} cell and the cell’s ` +
         `record holds no ${SERVED_KIND} for ${EDIT_PUSH_CHANNEL}: ` +
         `${mechanism?.channel?.probe ?? 'no channel column'}`
@@ -320,8 +338,14 @@ export async function editPushProblems({ sandbox, arm, fixture, mnemaBin, settin
   }
   const tools = pushedTools(hooks)
   if (tools.length === 0) return [`${settingsPath} declares no ${EDIT_EVENT} tool to push with`]
+  // Which channel answers the FIRST write a session makes to a governed file: the hold, in the arm
+  // that switched it on, and the push everywhere else. The record's `channel.served` names it.
+  const holds = switchedOnChannels(arm).includes(FIRST_WRITE_GATE_CHANNEL) && editPushSpeaks(arm, fixture.axis)
+  const speaking = switchedOnChannels(arm).includes(FIRST_WRITE_GATE_CHANNEL) ? FIRST_WRITE_GATE_CHANNEL : EDIT_PUSH_CHANNEL
 
-  const target = firstFile(sandbox.repo)
+  // A task that holds a history says which file the ticket writes, and that is the path asked
+  // about: the rules addressed there are the ones a write of the session would meet.
+  const target = touchedPaths(fixture)[0] ?? firstFile(sandbox.repo)
   if (target === null) return [`the planted repo has no file to ask about`]
 
   let server
@@ -358,15 +382,54 @@ export async function editPushProblems({ sandbox, arm, fixture, mnemaBin, settin
       problems.push(`${tools[i]} answered for "${specific.hookEventName}", not ${EDIT_EVENT}`)
       continue
     }
-    contexts.push(specific.additionalContext ?? null)
+    // A held write answers with a refusal and puts the rules in its REASON, not beside a result:
+    // that is the eighth arm's whole difference, so the text is read from wherever the reply puts
+    // it, and the kind of reply is checked against the arm right after.
+    const held = specific.permissionDecision === 'deny'
+    if (held !== holds) {
+      problems.push(
+        held
+          ? `${tools[i]} refused the write, and this arm does not hold a first write`
+          : `${tools[i]} let the first write through, and this arm holds it`,
+      )
+    }
+    contexts.push(specific.additionalContext ?? specific.permissionDecisionReason ?? null)
   }
 
   const said = contexts.filter((text) => typeof text === 'string' && text !== '')
-  const service = servedChannels(sandbox, mnemaBin, [EDIT_PUSH_CHANNEL])
+  const service = servedChannels(sandbox, mnemaBin, [speaking])
   if (service.served === null) return [...problems, service.detail]
   const served = service.served.length
 
-  if (editPushSpeaks(arm, fixture.axis)) {
+  if (fixture.shape === 'set' && editPushSpeaks(arm, fixture.axis)) {
+    // The decisions IN FORCE whose address covers the path, each cited by id — and no other: a
+    // replaced decision, or one addressed elsewhere, cited at this write is the channel handing
+    // over a rule the record says does not govern it. Where none covers the path (a ticket in a
+    // corner no decision is about) the channel must say nothing, as on axis B.
+    const set = readDecisionSet(fixture)
+    const hits = mnemaRecords(sandbox, mnemaBin).hits
+    const idOf = (entry) => hits.find((h) => h.title === entry.title)?.id
+    const covering = set.filter((entry) => entry.current && addressCovers(entry.governs, target))
+    const text = said.join('\n')
+    for (const entry of set) {
+      const id = idOf(entry)
+      if (!id) {
+        problems.push(`the cell holds no record of "${entry.title}" to be cited`)
+        continue
+      }
+      const cited = text.includes(id)
+      if (covering.includes(entry) && !cited) {
+        problems.push(`nothing the channel pushed at ${target} cites ${entry.key} (${id})`)
+      }
+      if (!covering.includes(entry) && cited) {
+        problems.push(`the channel cited ${entry.key} (${id}) at ${target}, and it does not govern it in force`)
+      }
+    }
+    const wantServed = covering.length > 0 ? 1 : 0
+    if (served !== wantServed) {
+      problems.push(`the record holds ${served} ${SERVED_KIND} for ${speaking} on ${target}, expected ${wantServed}`)
+    }
+  } else if (editPushSpeaks(arm, fixture.axis)) {
     const id = mnemaRecords(sandbox, mnemaBin).hits[0]?.id
     if (!id) {
       problems.push('the cell holds no record to be cited')
@@ -374,7 +437,7 @@ export async function editPushProblems({ sandbox, arm, fixture, mnemaBin, settin
       problems.push(`nothing the channel pushed cites the seeded decision ${id}: ${said.join(' ').slice(0, 200)}`)
     }
     if (served !== 1) {
-      problems.push(`the record holds ${served} ${SERVED_KIND} for ${EDIT_PUSH_CHANNEL} on ${target}, expected 1`)
+      problems.push(`the record holds ${served} ${SERVED_KIND} for ${speaking} on ${target}, expected 1`)
     }
   } else {
     // WHERE THE SLICE THAT BUILT `mnema-doc` WOULD HAVE STOPPED. Until 2026-08-20 this

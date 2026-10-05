@@ -35,7 +35,9 @@ import {
   cliVersionOf,
   modelOf,
   outputFormatOf,
+  planOf,
   readSplit,
+  replicaOf,
   refuseUnrunnableRound,
   roundArms,
   scenarioOf,
@@ -101,6 +103,7 @@ function parseArgv(argv) {
     maxBudgetUsd: null,
     round: DEFAULTS.round,
     resume: false,
+    runsGiven: false,
   }
   for (let i = 0; i < argv.length; i += 1) {
     const a = argv[i]
@@ -109,10 +112,11 @@ function parseArgv(argv) {
       case '--selftest': opts.mode = 'selftest'; break
       case '--pilot': opts.mode = 'pilot'; break
       case '--full': opts.mode = 'full'; break
+      case '--replica': opts.mode = 'replica'; break
       case '--sieve': opts.mode = 'sieve'; break
       case '--resume': opts.resume = true; break
       case '--cell': opts.mode = 'cell'; opts.cell = [next(), next(), Number(next())]; break
-      case '--runs': opts.runs = Number(next()); break
+      case '--runs': opts.runs = Number(next()); opts.runsGiven = true; break
       case '--round': opts.round = Number(next()); break
       case '--fixture': opts.fixture = next(); break
       case '--arm': opts.arm = next(); break
@@ -143,9 +147,12 @@ function usage() {
   --pilot                        the split's pilot task x the ROUND's arms x 1 run
   --sieve                        the ROUND's declared candidates x its sieve arm x its
                                  sieve runs, all three read from the frozen split
-  --full                         every fixture x the ROUND's arms x --runs
-                                 (this harness seeds ${ARMS.length}; a round declares
+  --full                         every fixture x the ROUND's arms x --runs, or, when the
+                                 ROUND's split declares a plan, that plan over its held-out
+                                 tasks (this harness seeds ${ARMS.length}; a round declares
                                  which of them it runs, and round 3 declares four)
+  --replica                      the ROUND's declared replica: its model, its families, its
+                                 arms and its runs, all read from the frozen split
   --cell <fixture> <arm> <run>   one cell
   --runs <n>                     repetitions per (fixture, arm)   [${DEFAULTS.runs}]
   --round <${ROUNDS.join('|')}>                  which round's tasks a spending mode runs
@@ -240,6 +247,25 @@ export function sievePlan(fixtures, sieve, arms) {
     return fixture
   })
   return cellPlan(chosen, sieve.runs, [sieve.arm])
+}
+
+/**
+ * The cells a round's DECLARED plan names — each entry's families, arms and runs, over the round's
+ * held-out tasks — in the order of the entries.
+ *
+ * THE PLAN IS READ FROM THE SPLIT, never typed, for the reason the pilot and the sieve are: a round
+ * that measures its families with different numbers of runs, and one arm on two families only,
+ * cannot be said by one `--runs`, and a plan typed at the prompt is a plan nobody can check. A
+ * development task is never planned here; it is the pilot's.
+ */
+export function declaredPlan(fixtures, entries, { heldOut, scenarioOf }) {
+  const plan = []
+  for (const entry of entries) {
+    const chosen = fixtures.filter((f) => heldOut.includes(f.id) && entry.scenarios.includes(scenarioOf(f.id)))
+    if (chosen.length === 0) throw new Error(`a declared entry over [${entry.scenarios}] reaches no held-out task`)
+    plan.push(...cellPlan(chosen, entry.runs, entry.arms))
+  }
+  return plan
 }
 
 /**
@@ -365,6 +391,16 @@ async function main() {
     plan = pilotPlan(fixtures, split, arms)
   } else if (opts.mode === 'sieve') {
     plan = sievePlan(fixtures, sieveOf(preregOf(opts.round)), arms)
+  } else if (opts.mode === 'replica') {
+    const replica = replicaOf(preregOf(opts.round))
+    if (replica === null) throw new Error(`round ${opts.round} declares no replica, and a replica this file invents is not one`)
+    plan = declaredPlan(fixtures, replica.plan, { heldOut: split.held_out, scenarioOf: (id) => scenarioOf(preregOf(opts.round), id) })
+  } else if (planOf(preregOf(opts.round)) !== null) {
+    if (opts.runsGiven) throw new Error(`round ${opts.round} declares its plan, runs included: --runs would replace a frozen number`)
+    plan = declaredPlan(fixtures, planOf(preregOf(opts.round)), {
+      heldOut: split.held_out,
+      scenarioOf: (id) => scenarioOf(preregOf(opts.round), id),
+    })
   } else {
     plan = cellPlan(fixtures, opts.runs, arms)
   }
@@ -394,7 +430,8 @@ async function main() {
 
   const prereg = preregOf(opts.round)
   const outputFormat = outputFormatOf(prereg)
-  const model = modelOf(prereg)
+  // The replica's cells run on the replica's model, and on no other; every other cell on the round's.
+  const model = opts.mode === 'replica' ? replicaOf(prereg).model : modelOf(prereg)
   console.log(`\n${plan.length} cells, model ${model}, output ${outputFormat}`)
   console.log(`results: ${resultsPath}`)
   if (plan.some((c) => servesUnasked(c.arm))) {

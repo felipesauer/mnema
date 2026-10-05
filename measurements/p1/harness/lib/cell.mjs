@@ -22,9 +22,9 @@ import { cellPushedTools, cellPushMatchers, mechanismBefore, mechanismBetween } 
 import { surfaceProblem } from './channel.mjs'
 import { MODEL, OUTPUT_FORMAT_DEFAULT, cellEnv, claudeArgv, installAuth, writeCellConfig } from './isolation.mjs'
 import { readAgentOutput } from './interactions.mjs'
-import { runVerify } from './verdict.mjs'
+import { runQuality, runVerify } from './verdict.mjs'
 import { appendResult, missingFrom, resultLine } from './result.mjs'
-import { readTicket } from './fixtures.mjs'
+import { addressCovers, readDecisionSet, readTicket, touchedPaths } from './fixtures.mjs'
 import { builtProduct } from './build.mjs'
 
 export function claudeVersion(claudeBin) {
@@ -268,6 +268,7 @@ export function runCell({
     diff,
     pushed: cellPushedTools(sandbox),
     matchers: cellPushMatchers(sandbox),
+    governsTouched: governsTouched(fixture),
   })
   if (undelivered) {
     return finish({
@@ -285,6 +286,9 @@ export function runCell({
 
   // --- score ----------------------------------------------------------------
   const scored = runVerify(fixture, sandbox.repo)
+  // The hidden behaviour tests, run on the same tree, whatever the verdict: a cell that followed
+  // the decision and broke what the ticket did not mention is a different cell from one that did not.
+  const quality = runQuality(fixture, sandbox.repo)
   if (scored.rulerBroken) {
     return finish({
       status: 'ruler_broken',
@@ -303,6 +307,7 @@ export function runCell({
   return finish({
     status: 'ok',
     verdict: scored.verdict,
+    quality,
     exit: scored.exit,
     // A BROKEN cell keeps the discriminant's own reason. Round 1's `a5-no-retry`
     // came back four-of-four BROKEN in one arm and the lines said only BROKEN, so
@@ -380,4 +385,14 @@ export function seededSandbox({ fixture, arm, mnemaBin, label = 'seed' }) {
 /** Copy a reference implementation over the sandbox repo, as if an agent had written it. */
 export function applyReference(sandbox, refDir) {
   cpSync(refDir, sandbox.repo, { recursive: true, filter: (src) => !src.includes('__pycache__') })
+}
+
+/**
+ * Whether a decision IN FORCE covers a path the ticket writes — `null` for a task of the first
+ * shape, which states no path and whose one decision is addressed at the root.
+ */
+export function governsTouched(fixture) {
+  if (fixture.shape !== 'set') return null
+  const set = readDecisionSet(fixture)
+  return touchedPaths(fixture).some((path) => set.some((entry) => entry.current && addressCovers(entry.governs, path)))
 }

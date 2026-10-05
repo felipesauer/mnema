@@ -60,7 +60,7 @@ import { servesUnasked } from './seed.mjs'
 // `output_format` says how the capture was taken, because `null` in the interaction columns means
 // "this capture could not know" and `0` means "it knew and nothing happened" — the two are never
 // merged, and the format is what tells a reader which of them a `null` is.
-export const RESULT_SCHEMA = 'mnema-bench/cell/9'
+export const RESULT_SCHEMA = 'mnema-bench/cell/10'
 
 /**
  * What a surface-arm cell run on ROUND 1's tasks is, carried in the DATA and not only in
@@ -178,6 +178,7 @@ export function resultLine(fields) {
     cliVersion,
     mnemaVersion,
     verdict = null,
+    quality = null,
     exit = null,
     status,
     error = null,
@@ -232,6 +233,11 @@ export function resultLine(fields) {
     status,
     error,
     ruler_detail: rulerDetail,
+    // Schema 10: the task's hidden behaviour tests, beside the verdict. `null` for a task that has
+    // none (the first shape) and for a script that did not run — never zero for either.
+    quality_passed: quality?.passed ?? null,
+    quality_total: quality?.total ?? null,
+    quality_detail: quality?.detail ?? null,
     // The discriminant's OWN sentence when it refused the code — first line, as
     // printed. `null` on every cell whose code RAN, so the field says which of two
     // things happened: there was nothing to report, or the reason existed and was

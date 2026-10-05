@@ -213,7 +213,7 @@ describe('and it reaches the line', () => {
   test('schema 9 carries the path of a stream-json cell', () => {
     const line = lineFor('stream-json', jsonl([call('Read'), call('Write'), push(), call('Write'), vendorResult()]))
     assert.equal(line.schema, RESULT_SCHEMA)
-    assert.equal(RESULT_SCHEMA, 'mnema-bench/cell/9')
+    assert.equal(RESULT_SCHEMA, 'mnema-bench/cell/10')
     assert.equal(line.status, 'ok', line.error)
     assert.equal(line.output_format, 'stream-json')
     assert.deepEqual(line.tool_calls, { Read: 1, Write: 2 })

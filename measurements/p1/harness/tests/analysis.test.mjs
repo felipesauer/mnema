@@ -13,9 +13,12 @@ import { readCells, tally } from '../lib/cells.mjs'
 import {
   ALPHA,
   analysePair,
+  inputTokens,
+  medianInputTokens,
   newcombe90,
   pairedDifferences,
   seededRandom,
+  selectCells,
   separationRate,
   signFlipPermutation,
   tost,
@@ -172,5 +175,34 @@ describe('what is eligible, and what is not', () => {
     // it to 0.5 found unguarded, because the simulation used to call the permutation test directly.
     const rate = separationRate({ tasks: 20, runs: 8, effect: 0, rounds: 300, seed: 7, samples: 800 })
     assert.ok(rate <= 0.05, `${rate}`)
+  })
+})
+
+describe('which cells a reading is over', () => {
+  const cell = (fixture, scenario, pushed, verdict = 'CONFORMS_CURRENT', tokens = [1, 10, 100]) => ({
+    arm: 'x', fixture, run: 1, status: 'ok', verdict, scenario, mcp_pushed: pushed,
+    input_tokens: tokens[0], cache_read_input_tokens: tokens[1], cache_creation_input_tokens: tokens[2],
+  })
+
+  test('one family, and in it only the cells where the per-edit channel had its occasion', () => {
+    const cells = [cell('t1', 'S5', 3), cell('t1', 'S5', 1), cell('t2', 'S5', null), cell('t3', 'S3b', 0)]
+    assert.equal(selectCells(cells, { scenario: 'S3b' }).cells.length, 1)
+    const { cells: kept, opportunity } = selectCells(cells, { scenario: 'S5', minPushed: 2 })
+    assert.deepEqual(kept.map((c) => c.mcp_pushed), [3])
+    assert.deepEqual(opportunity, { kept: 1, of: 3 })
+  })
+
+  test('the four-word verdicts are read by the same tally the reading stands on', () => {
+    const cells = [cell('t1', 'S3b', 0, 'CONFORMS_CURRENT'), cell('t1', 'S3b', 0, 'FOLLOWS_OBSOLETE')]
+    assert.equal(tally(cells).rate('x', 't1'), 0.5)
+  })
+
+  test('the input tokens of a cell are all three it paid for, and a missing one makes the cell unread', () => {
+    assert.equal(inputTokens(cell('t1', 'S4', 0)), 111)
+    assert.equal(inputTokens({ input_tokens: 1, cache_read_input_tokens: null, cache_creation_input_tokens: 1 }), null)
+    const cells = [cell('t1', 'S4', 0, 'CONFORMS_CURRENT', [1, 1, 1]), cell('t1', 'S4', 0, 'CONFORMS_CURRENT', [5, 5, 5]), cell('t2', 'S4', 0, 'CONFORMS_CURRENT', [9, 9, 9])]
+    assert.equal(medianInputTokens(cells, 'x', ['t1', 't2']), 15)
+    assert.equal(medianInputTokens(cells, 'x', ['t1']), 9)
+    assert.equal(medianInputTokens(cells, 'y', ['t1']), null)
   })
 })

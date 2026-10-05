@@ -82,13 +82,35 @@ export function listFixtures(fixturesDir) {
       const ticketPath = join(dir, 'ticket.txt')
       if (!existsSync(ticketPath)) throw new Error(`fixture ${id}: no ticket.txt`)
 
+      // TWO SHAPES OF TASK. The first rounds hold ONE decision in `decision.md` and score it with
+      // three words. A task that holds a HISTORY — decisions in an order, one replacing another,
+      // dozens of them, each addressed at the path it governs — keeps it in `decisions/`, with
+      // `decisions/index.json` saying the order, the replacements and the addresses, and is scored
+      // with four words, because "followed the decision that was replaced" is a finding of its own
+      // and not a kind of violation. The shape is read off the disk and never declared twice.
       const decisionPath = join(dir, 'decision.md')
-      const hasDecision = existsSync(decisionPath)
+      const decisionsDir = join(dir, DECISIONS_DIR)
+      const isSet = existsSync(decisionsDir)
+      if (isSet && existsSync(decisionPath)) {
+        throw new Error(`fixture ${id}: holds both decision.md and ${DECISIONS_DIR}/ — one shape or the other`)
+      }
+      const hasDecision = isSet || existsSync(decisionPath)
       if (carriesDecision(axis) && !hasDecision) {
         throw new Error(`fixture ${id}: axis ${axis} needs a decision.md`)
       }
       if (!carriesDecision(axis) && hasDecision) {
         throw new Error(`fixture ${id}: axis ${axis} is the negative control and must have no decision.md`)
+      }
+
+      let quality = null
+      if (isSet) {
+        const qualityName = readdirSync(dir).find((n) => n.startsWith('quality.'))
+        if (!qualityName) throw new Error(`fixture ${id}: a task with ${DECISIONS_DIR}/ needs a quality.* file`)
+        const qext = qualityName.slice('quality.'.length)
+        if (RUNNERS[qext] !== runner) {
+          throw new Error(`fixture ${id}: quality.${qext} and verify.${ext} must run on the same runtime`)
+        }
+        quality = join(dir, qualityName)
       }
 
       return {
@@ -99,10 +121,114 @@ export function listFixtures(fixturesDir) {
         verify: join(dir, verifyName),
         repo: join(dir, 'repo'),
         ticketPath,
-        decisionPath: hasDecision ? decisionPath : null,
+        decisionPath: hasDecision && !isSet ? decisionPath : null,
+        decisionsDir: isSet ? decisionsDir : null,
+        shape: isSet ? 'set' : 'single',
+        verdicts: isSet ? 'four' : 'three',
+        quality,
         hasDecision,
       }
     })
+}
+
+/** Where a task that holds a history keeps it. */
+export const DECISIONS_DIR = 'decisions'
+
+/** The file in it that says the order, the replacements and the addresses. */
+export const DECISIONS_INDEX = 'index.json'
+
+/** How many leading characters of a statement have to tell it apart from every other one. */
+export const DISTINCT_LEAD = 40
+
+/**
+ * The decisions a task holds, in the order they were made — ONE reading for both shapes.
+ *
+ * Each entry: `{ key, title, statement, why, alternatives, raw, governs, supersedes,
+ * supersededBy, current }`. A `decision.md` task is a set of one, current, with no address of
+ * its own (`governs: null`; the arms that address it use their single root address). A
+ * `decisions/` task is read from `decisions/index.json`:
+ *
+ *   { "decisions": [ { "file": "01-….md", "governs": "<path>", "supersedes": "<earlier file>" }, … ],
+ *     "touches": ["<path the ticket writes>", …] }
+ *
+ * and refused, not repaired, when the history it states cannot be one: a replacement of a
+ * decision that comes later or does not exist, a decision replaced twice, two titles one of which
+ * contains the other (the delivered-text check finds a title by inclusion, so it could not tell
+ * which of the two arrived), or two statements that open with the same words (same reason, for
+ * the lead of a memory index line).
+ */
+export function readDecisionSet(fixture) {
+  if (!fixture.hasDecision) return []
+  if (fixture.shape !== 'set') {
+    return [{ key: 'decision', ...readDecision(fixture), governs: null, supersedes: null, supersededBy: null, current: true }]
+  }
+  const where = `${fixture.id}/${DECISIONS_DIR}/${DECISIONS_INDEX}`
+  const index = readIndex(fixture)
+  if (!Array.isArray(index.decisions) || index.decisions.length === 0) {
+    throw new Error(`${where}: "decisions" names no decision`)
+  }
+  const entries = []
+  const keys = new Set()
+  for (const declared of index.decisions) {
+    const { file, governs, supersedes = null } = declared ?? {}
+    if (typeof file !== 'string' || !file.endsWith('.md')) throw new Error(`${where}: an entry has no .md "file"`)
+    if (keys.has(file)) throw new Error(`${where}: ${file} is listed twice`)
+    if (typeof governs !== 'string' || governs === '') throw new Error(`${where}: ${file} has no "governs" address`)
+    if (supersedes !== null && !keys.has(supersedes)) {
+      throw new Error(`${where}: ${file} supersedes ${supersedes}, which is not an EARLIER decision of this task`)
+    }
+    const text = readFileSync(join(fixture.decisionsDir, file), 'utf8')
+    entries.push({ key: file, ...parseDecision(text, `${fixture.id}/${DECISIONS_DIR}/${file}`), governs, supersedes })
+    keys.add(file)
+  }
+  for (const entry of entries) {
+    const by = entries.filter((other) => other.supersedes === entry.key)
+    if (by.length > 1) throw new Error(`${where}: ${entry.key} is superseded twice`)
+    entry.supersededBy = by[0]?.key ?? null
+    entry.current = entry.supersededBy === null
+  }
+  for (const a of entries) {
+    for (const b of entries) {
+      if (a === b) continue
+      if (b.title.includes(a.title)) {
+        throw new Error(`${where}: the title of ${a.key} is inside the title of ${b.key}, so no reading can tell which arrived`)
+      }
+      if (canonicalKnowledge(a.statement).slice(0, DISTINCT_LEAD) === canonicalKnowledge(b.statement).slice(0, DISTINCT_LEAD)) {
+        throw new Error(`${where}: ${a.key} and ${b.key} open their statements with the same ${DISTINCT_LEAD} characters`)
+      }
+    }
+  }
+  return entries
+}
+
+/** The paths the ticket writes, from a `decisions/` task's index — `[]` for the first shape. */
+export function touchedPaths(fixture) {
+  if (fixture.shape !== 'set') return []
+  const touches = readIndex(fixture).touches
+  if (!Array.isArray(touches) || touches.length === 0 || touches.some((p) => typeof p !== 'string' || p === '')) {
+    throw new Error(`${fixture.id}/${DECISIONS_DIR}/${DECISIONS_INDEX}: "touches" names no path`)
+  }
+  return touches
+}
+
+function readIndex(fixture) {
+  const path = join(fixture.decisionsDir, DECISIONS_INDEX)
+  try {
+    return JSON.parse(readFileSync(path, 'utf8'))
+  } catch (err) {
+    throw new Error(`${fixture.id}/${DECISIONS_DIR}/${DECISIONS_INDEX}: ${err.message}`)
+  }
+}
+
+/**
+ * Whether an address covers a path, the way the product reads an address: the path itself, or a
+ * directory above it, or the root. Used to say which rules the per-edit channel must cite at a
+ * path — the product's own reading is what the cell checks (`mnema rules`), and this is the
+ * expectation it is checked against.
+ */
+export function addressCovers(address, path) {
+  if (address === '.' || address === path) return true
+  return path.startsWith(`${address.replace(/\/+$/, '')}/`)
 }
 
 export function readTicket(fixture) {
@@ -151,6 +277,9 @@ export function parseDecision(text, id = 'decision.md') {
 
 export function readDecision(fixture) {
   if (!fixture.hasDecision) return null
+  if (fixture.shape === 'set') {
+    throw new Error(`${fixture.id} holds a history in ${DECISIONS_DIR}/, not one decision: read it with readDecisionSet`)
+  }
   return parseDecision(readFileSync(fixture.decisionPath, 'utf8'), `${fixture.id}/decision.md`)
 }
 

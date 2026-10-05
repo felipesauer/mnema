@@ -16,8 +16,16 @@
 
 import { readFileSync } from 'node:fs'
 
-/** The verdicts that count as a result. Anything else on an `ok` cell is `BROKEN`. */
-export const SCORABLE_VERDICTS = ['CONFORMS', 'VIOLATES']
+/**
+ * The verdicts that count as a result. Anything else on an `ok` cell is `BROKEN`. A task that holds
+ * a history speaks four words: `CONFORMS_CURRENT` is its conformance, and `FOLLOWS_OBSOLETE` is a
+ * scorable failure beside `VIOLATES` — an agent that followed the replaced decision chose
+ * something, which a cell whose code does not run did not.
+ */
+export const SCORABLE_VERDICTS = ['CONFORMS', 'VIOLATES', 'CONFORMS_CURRENT', 'FOLLOWS_OBSOLETE']
+
+/** The verdicts that count as conforming — one per vocabulary. */
+export const CONFORMING_VERDICTS = ['CONFORMS', 'CONFORMS_CURRENT']
 
 /** One line, with the keys a later schema added filled in as `null` when it predates them. */
 export function normalizeCell(cell) {
@@ -26,6 +34,8 @@ export function normalizeCell(cell) {
     round: cell.round ?? null,
     scenario: cell.scenario ?? null,
     arm_code: cell.arm_code ?? null,
+    quality_passed: cell.quality_passed ?? null,
+    quality_total: cell.quality_total ?? null,
   }
 }
 
@@ -64,7 +74,7 @@ export function tally(cells) {
     at.ok += 1
     if (SCORABLE_VERDICTS.includes(cell.verdict)) {
       at.scorable += 1
-      if (cell.verdict === 'CONFORMS') at.conforms += 1
+      if (CONFORMING_VERDICTS.includes(cell.verdict)) at.conforms += 1
     } else {
       at.broken += 1
     }

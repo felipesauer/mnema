@@ -1,0 +1,207 @@
+{
+  "round": 5,
+  "frozen_at": "2026-10-05",
+  "pilot": "a41-lease-arrears",
+  "development": [
+    "a41-lease-arrears"
+  ],
+  "held_out": [
+    "a42-lockout-threshold",
+    "a43-idle-sessions",
+    "a44-refund-window",
+    "a45-username-case",
+    "a46-contact-order",
+    "a47-discount-stacking",
+    "a48-webhook-retries",
+    "a49-shipping-charge",
+    "a50-stored-timestamps",
+    "a51-phone-format",
+    "a52-reservation-expiry",
+    "a53-overtime-pay",
+    "a54-invoice-numbers",
+    "a55-percent-display",
+    "a56-exchange-rate-date",
+    "a57-duplicate-customers",
+    "a58-weekend-due-dates",
+    "a59-search-page-size",
+    "a60-commission-base",
+    "a61-log-retention",
+    "a62-cancellation-fee",
+    "a63-negative-amounts",
+    "a64-passphrase-length",
+    "a65-week-numbers",
+    "a66-upgrade-proration",
+    "a67-csv-separators",
+    "a68-billable-weight",
+    "a69-coupon-codes",
+    "a70-installment-interest",
+    "a71-reorder-point",
+    "a72-customer-tier",
+    "a73-date-display",
+    "a74-split-remainder",
+    "a75-verified-ratings",
+    "a76-cent-rounding",
+    "a77-quiet-hours",
+    "a78-order-references",
+    "a79-gram-weights",
+    "a80-cost-floor",
+    "a81-half-point-grades",
+    "a82-family-name-first",
+    "a83-safety-stock",
+    "a84-rating-average",
+    "a85-delivery-estimate",
+    "a86-wallet-balance",
+    "a87-cache-freshness"
+  ],
+  "headline": [
+    "a42-lockout-threshold",
+    "a43-idle-sessions",
+    "a44-refund-window",
+    "a45-username-case",
+    "a46-contact-order",
+    "a47-discount-stacking",
+    "a48-webhook-retries",
+    "a49-shipping-charge",
+    "a50-stored-timestamps",
+    "a51-phone-format",
+    "a52-reservation-expiry",
+    "a53-overtime-pay",
+    "a54-invoice-numbers",
+    "a55-percent-display",
+    "a56-exchange-rate-date",
+    "a57-duplicate-customers",
+    "a58-weekend-due-dates",
+    "a59-search-page-size",
+    "a60-commission-base",
+    "a61-log-retention"
+  ],
+  "headline_note": "The twenty held-out S3b tasks: the family the two primary hypotheses read. Every other family is read by its own rule in the pre-registration beside this file, over its own held-out tasks.",
+  "arms": [
+    "base",
+    "claude-md",
+    "host",
+    "mnema-doc",
+    "mnema+",
+    "mnema-gate"
+  ],
+  "arm_codes": {
+    "base": "E1",
+    "claude-md": "E2",
+    "host": "E3",
+    "mnema-doc": "E4",
+    "mnema+": "E5",
+    "mnema-gate": "E6"
+  },
+  "scenarios": {
+    "a41-lease-arrears": "S3b",
+    "a42-lockout-threshold": "S3b",
+    "a43-idle-sessions": "S3b",
+    "a44-refund-window": "S3b",
+    "a45-username-case": "S3b",
+    "a46-contact-order": "S3b",
+    "a47-discount-stacking": "S3b",
+    "a48-webhook-retries": "S3b",
+    "a49-shipping-charge": "S3b",
+    "a50-stored-timestamps": "S3b",
+    "a51-phone-format": "S3b",
+    "a52-reservation-expiry": "S3b",
+    "a53-overtime-pay": "S3b",
+    "a54-invoice-numbers": "S3b",
+    "a55-percent-display": "S3b",
+    "a56-exchange-rate-date": "S3b",
+    "a57-duplicate-customers": "S3b",
+    "a58-weekend-due-dates": "S3b",
+    "a59-search-page-size": "S3b",
+    "a60-commission-base": "S3b",
+    "a61-log-retention": "S3b",
+    "a62-cancellation-fee": "S2",
+    "a63-negative-amounts": "S2",
+    "a64-passphrase-length": "S2",
+    "a65-week-numbers": "S2",
+    "a66-upgrade-proration": "S2",
+    "a67-csv-separators": "S2",
+    "a68-billable-weight": "S4",
+    "a69-coupon-codes": "S4",
+    "a70-installment-interest": "S4",
+    "a71-reorder-point": "S4",
+    "a72-customer-tier": "S4",
+    "a73-date-display": "S4",
+    "a74-split-remainder": "S4",
+    "a75-verified-ratings": "S4",
+    "a76-cent-rounding": "S5",
+    "a77-quiet-hours": "S5",
+    "a78-order-references": "S5",
+    "a79-gram-weights": "S5",
+    "a80-cost-floor": "S5",
+    "a81-half-point-grades": "S5",
+    "a82-family-name-first": "S5",
+    "a83-safety-stock": "S5",
+    "a84-rating-average": "S1",
+    "a85-delivery-estimate": "S1",
+    "a86-wallet-balance": "S1",
+    "a87-cache-freshness": "S1"
+  },
+  "model": "claude-haiku-4-5-20251001",
+  "cli_version": "2.1.281 (Claude Code)",
+  "output_format": "stream-json",
+  "plan": [
+    {
+      "scenarios": [
+        "S3b"
+      ],
+      "arms": [
+        "base",
+        "claude-md",
+        "host",
+        "mnema-doc",
+        "mnema+"
+      ],
+      "runs": 8
+    },
+    {
+      "scenarios": [
+        "S1",
+        "S2",
+        "S4",
+        "S5"
+      ],
+      "arms": [
+        "base",
+        "claude-md",
+        "host",
+        "mnema-doc",
+        "mnema+"
+      ],
+      "runs": 4
+    },
+    {
+      "scenarios": [
+        "S3b",
+        "S5"
+      ],
+      "arms": [
+        "mnema-gate"
+      ],
+      "runs": 4
+    }
+  ],
+  "replica": {
+    "model": "claude-sonnet-5-5",
+    "plan": [
+      {
+        "scenarios": [
+          "S3b"
+        ],
+        "arms": [
+          "base",
+          "claude-md",
+          "host",
+          "mnema-doc",
+          "mnema+"
+        ],
+        "runs": 4
+      }
+    ]
+  },
+  "rule": "held-out tasks are touched once, by the plan and the replica this file declares, and nothing here — a task, a digest, this split, the reading or analysis.mjs — is edited after the first cell of this round exists."
+}

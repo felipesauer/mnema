@@ -66,7 +66,7 @@
 import { cpSync, existsSync, readFileSync, readdirSync, writeFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { spawnSync } from 'node:child_process'
-import { carriesDecision, listFixtures } from './fixtures.mjs'
+import { carriesDecision, listFixtures, readDecisionSet } from './fixtures.mjs'
 import {
   ARMS,
   assertKnowledgeParity,
@@ -78,7 +78,7 @@ import {
 } from './seed.mjs'
 import { handlerFiles, injectionProblems, productPluginDir, withoutFreshIds } from './hook.mjs'
 import { editPushProblems } from './channel.mjs'
-import { StandInNotReached, deliveredAtOpen, deliveredProblems } from './delivered.mjs'
+import { StandInNotReached, deliveredAtFirstWrite, deliveredAtOpen, firstWriteProblems } from './delivered.mjs'
 import { createSandbox, plantRepo, sandboxEnv } from './sandbox.mjs'
 import { mcpProbe } from './mcpcheck.mjs'
 import { mcpAsked } from './mcplog.mjs'
@@ -88,6 +88,7 @@ import {
   armsOf,
   crossRoundProblems,
   labelProblems,
+  planProblems,
   preregOf,
   readDigests,
   readSplit,
@@ -297,6 +298,7 @@ export async function runSelftest({
   // seeding a record is the slow part of this check, and the delivery is asked of exactly the
   // bytes the seed produced.
   const deliveries = []
+  const writes = []
   const undelivered = []
   let standInBroken = null
   {
@@ -311,10 +313,20 @@ export async function runSelftest({
           try {
             if (standInBroken) throw standInBroken
             const seen = await deliveredAtOpen({ sandbox, arm, fixture, mnemaBin, pluginDir, claudeBin })
-            for (const problem of deliveredProblems({ arm, axis: fixture.axis, delivered: seen.parts })) {
+            for (const problem of seen.problems) {
               undelivered.push(`${where(fixture)}/${arm}: ${problem}`)
             }
             deliveries.push(`${where(fixture)}/${arm}`)
+            // AND AT THE FIRST WRITE, for a task that holds a history and an arm that carries the
+            // surface — the only arms in which a write is an occasion to hand anything over, and the
+            // only check that can see the eighth arm at all, since it opens exactly as `mnema+` does.
+            if (fixture.shape === 'set' && servesUnasked(arm)) {
+              const atWrite = await deliveredAtFirstWrite({ sandbox, arm, fixture, mnemaBin, pluginDir, claudeBin })
+              for (const problem of firstWriteProblems({ arm, fixture, seen: atWrite })) {
+                undelivered.push(`${where(fixture)}/${arm}: ${problem}`)
+              }
+              writes.push(`${where(fixture)}/${arm}`)
+            }
           } catch (err) {
             // A host that never reaches the stand-in says the same about every cell after this one,
             // so the first such cell is reported and the rest are not run (the cost of asking a
@@ -412,7 +424,7 @@ export async function runSelftest({
           const { mcpPath } = writeCellConfig({ sandbox, arm, mnemaBin, pluginDir })
           const probe = await mcpProbe({ sandbox, mcpPath })
           if (!probe.ok) throw new Error(probe.detail)
-          const want = carriesDecision(fixture.axis) ? 1 : 0
+          const want = carriesDecision(fixture.axis) ? readDecisionSet(fixture).length : 0
           if (probe.index.total !== want) {
             throw new Error(`search answered ${probe.index.total} records, expected ${want}`)
           }
@@ -609,7 +621,9 @@ export async function runSelftest({
       arrived
         ? `${deliveries.length} cells: the first request the host sends carries, per arm, exactly the ` +
             'parts of the decision the arm declares (title, statement, reasoning, alternative) — ' +
-            "and the instructions arm's file is in it, where the other arms' files are not"
+            "and the instructions arm's file is in it, where the other arms' files are not. " +
+            `${writes.length} more at the first write of a governed file: what the surface arms hand ` +
+            'over there, and the one write the eighth arm holds and the repeat it lets through'
         : undelivered.join('\n  '),
     )
     if (!arrived) return done(checks)
@@ -643,6 +657,7 @@ export async function runSelftest({
             frozen: readDigests(prereg.digests),
           }),
           ...labelProblems(split),
+          ...planProblems(split),
         ]) {
           problems.push(`round ${round}: ${problem}`)
         }
