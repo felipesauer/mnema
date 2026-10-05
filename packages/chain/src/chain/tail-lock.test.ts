@@ -17,8 +17,7 @@
  * the base that is a duplicate `seq` in 100% of runs, not 75%.
  *
  * The rounds-and-rates form still exists, because it is what proves the fix on the
- * real binary through the real transports, and it lives where a measurement belongs:
- * `.refactor/active/two-windows-do-not-break-the-chain/evidence/`.
+ * real binary through the real transports.
  *
  * The other half — that a tail already held by somebody else is REFUSED rather than
  * waited on forever, and that a lock outliving its holder is broken rather than

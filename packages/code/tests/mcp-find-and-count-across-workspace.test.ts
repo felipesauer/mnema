@@ -210,10 +210,10 @@ describe('a one-project workspace does not regress', () => {
 describe('search spans every project of the workspace', () => {
   it('finds what a sibling project holds, and says which one holds it', () => {
     // The defect, stated as a session: the words are in `nferural`, the cascade landed
-    // on `plantae-legacy`, and the search came back empty without a word saying two
+    // on `acme-legacy`, and the search came back empty without a word saying two
     // projects were never opened.
-    const legacy = makeProject('plantae-legacy');
-    const laravel = makeProject('plantae-laravel');
+    const legacy = makeProject('acme-legacy');
+    const laravel = makeProject('acme-laravel');
     const nferural = makeProject('nferural');
     const session = openOn(legacy, laravel, nferural);
 
@@ -293,8 +293,8 @@ describe('accountability accounts for each project, and never sums them', () => 
     // surface exists for. Summed, the answer says "42 facts" for a record that holds
     // 12: the same name over a different question. Decomposed, every number still
     // means what it meant when the project was the only one.
-    const legacy = makeProject('plantae-legacy');
-    const laravel = makeProject('plantae-laravel');
+    const legacy = makeProject('acme-legacy');
+    const laravel = makeProject('acme-laravel');
     const nferural = makeProject('nferural');
     const session = openOn(legacy, laravel, nferural);
 

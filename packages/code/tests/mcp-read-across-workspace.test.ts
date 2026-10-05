@@ -119,8 +119,8 @@ function normalizedInThree(): {
   projects: readonly [string, string, string];
   normalizers: readonly [string, string];
 } {
-  const legacy = makeProject('plantae-legacy');
-  const laravel = makeProject('plantae-laravel');
+  const legacy = makeProject('acme-legacy');
+  const laravel = makeProject('acme-laravel');
   const nferural = makeProject('nferural');
   const session = openOn(legacy, laravel, nferural);
 

@@ -34,7 +34,7 @@
  *      subagent transcripts whose `cwd` is that subdirectory. Both are work in the one
  *      project.
  *   3. The two transcripts that broke the rule record a `cwd` the session MOVED to
- *      (`/var/www/plantae-utilities` → `/var/www/plantae-infra`), so the flattened name
+ *      (`/var/www/acme-utilities` → `/var/www/acme-infra`), so the flattened name
  *      is a fact about where a process started and the `cwd` is a fact about where it
  *      worked. This reading wants the second one.
  *
