@@ -623,7 +623,7 @@ export const HANDED_OVER: Readonly<
   // `mnema doctor`.
   // name 121 for who may take a note back: the changelog names `mnema retract` and `mnema verify`,
   // and the package page `mnema verify` once more.
-  span: { line: 60, name: 121, flag: 1, unwritten: 0 },
+  span: { line: 62, name: 121, flag: 1, unwritten: 0 },
   // name 18 until the page that says where the key lives named `mnema key protect` in a line of
   // its own.
   // line 35 until the same page showed that question in a block of its own.

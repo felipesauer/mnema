@@ -73,13 +73,16 @@
  * trailing slash dropped, an absolute path made relative when it lies under the
  * root. Everything else is left alone, and the consequences are the answer's, not a
  * hidden fix:
- *   - a SYMLINK is not resolved. Two names for one file are two addresses here, and
- *     a rule addressed at one is not found through the other. Resolving would mean
- *     touching the disk per segment, and this bench has already been bitten by
- *     treating a textual resolution as a real one. The DISK PROBE does follow one,
+ *   - a SYMLINK is not resolved HERE. Two names for one file are two addresses to this
+ *     derivation, and a rule addressed at one is not found through the other.
+ *     Resolving would mean touching the disk per segment, and this bench has already
+ *     been bitten by treating a textual resolution as a real one; the commands that
+ *     read a path for a person read it a second time at the place a link leads to
+ *     (`code/src/governed-tree.ts`), so this derivation stays text. The DISK PROBE
+ *     does follow one,
  *     because it is `existsSync` and that is what existing means — so an address at a
  *     live link is held and one at a dangling link is stale. Both halves are fixed by
- *     `code/tests/the-rule-has-an-address.test.ts` ("does not resolve a symlink" and
+ *     `code/tests/the-rule-has-an-address.test.ts` ("compares the text of a path" and
  *     "asks the working tree through the link");
  *   - a path outside the project has no address at all, so nothing matches it. The
  *     answer says so by carrying no {@link GoverningRules.relative}, rather than by
