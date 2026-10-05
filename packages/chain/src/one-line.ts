@@ -160,9 +160,9 @@ export function neutralized(text: string): string {
   // A character outside the basic plane is written as the escaped surrogate pair JSON uses
   // for it, one `\uXXXX` per code unit, so the escape stays valid inside a JSON string.
   return text.replace(CONTROL_BYTES, (found) =>
-    Array.from(
-      { length: found.length },
-      (_, i) => `\\u${found.charCodeAt(i).toString(16).padStart(4, '0')}`,
-    ).join(''),
+    found
+      .split('')
+      .map((unit) => `\\u${unit.charCodeAt(0).toString(16).padStart(4, '0')}`)
+      .join(''),
   );
 }
