@@ -88,9 +88,10 @@ export function worldAt(
       checkRun(key) {
         // The key is written to a file of its own, readable by this user only, for the length
         // of the run, and removed after it whatever happened.
-        const dir = mkdtempSync(
-          join(env.RUNNER_TEMP ?? process.env.RUNNER_TEMP ?? tmpdir(), 'mnema-checker-'),
-        );
+        // On one line, base and all: the guard that follows every sandbox to its removal reads a
+        // making by its line (`every-sandbox-is-removed-where-it-was-made.test.ts`).
+        const runnerTemp = env.RUNNER_TEMP ?? process.env.RUNNER_TEMP;
+        const dir = mkdtempSync(join(runnerTemp ?? tmpdir(), 'mnema-checker-'));
         try {
           const file = join(dir, 'checker.key');
           writeFileSync(file, `${key}\n`, { mode: 0o600 });
