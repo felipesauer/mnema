@@ -65,27 +65,30 @@ Said as scope, because each of these is a choice with a reason behind it:
 
 ## Install
 
+**Nothing is on npm yet**, so `npm i -g @mnema/code` answers 404 until the first
+publication. Until then, install the pre-release `v0.1.0-beta`: `@mnema/code` depends on
+the other three packages, so the four tarballs go in one command.
+
+```sh
+npm i -g \
+  https://github.com/felipesauer/mnema/releases/download/v0.1.0-beta/mnema-chain-0.1.0-beta.tgz \
+  https://github.com/felipesauer/mnema/releases/download/v0.1.0-beta/mnema-core-0.1.0-beta.tgz \
+  https://github.com/felipesauer/mnema/releases/download/v0.1.0-beta/mnema-context-0.1.0-beta.tgz \
+  https://github.com/felipesauer/mnema/releases/download/v0.1.0-beta/mnema-code-0.1.0-beta.tgz
+```
+
+The release carries a `SHA256SUMS` beside them. Once the packages are published, this is
+the install:
+
 ```sh
 npm i -g @mnema/code
 # or, if your global binaries live under pnpm:
 pnpm add -g @mnema/code
 ```
 
-It puts the `mnema` binary on your `PATH`. Requires Node ≥ 22.12.0; the package
-is ESM-only.
-
-**Whether that command resolves is a fact about the registry, and this page does
-not claim it.** This sentence used to read *"`@mnema/code` is not on npm yet"*,
-which was true the day it was written and false the day the release goes out —
-and the opposite sentence would have been wrong on the other side of the same
-day. A page cannot know what somebody else's server answers, so it asks instead:
-
-```sh
-npm view @mnema/code version
-```
-
-A 404 there means the release has not been pushed, and until it is, the way to
-run it is from a clone — see
+Either puts the `mnema` binary on your `PATH`. Requires Node ≥ 22.12.0; the package
+is ESM-only. `npm view @mnema/code version` says whether the publication has happened: a
+404 means it has not. To run it from a clone instead, see
 [Building it from source](#building-it-from-source) at the bottom of the page.
 
 For the Claude Code plugin — the opening context, the notes beside it and the per-edit
@@ -238,6 +241,18 @@ a new decision that supersedes the old one, never an edit of it. Every move carr
 what it owes — a note to accept, a reason to supersede — and a move the gate does
 not allow is refused with a typed reason, the same on the command line and over MCP.
 
+The `ADR-1` that `decision record` printed is the decision's **label**, and the move takes
+its **id**, the value in the parentheses beside it:
+
+```sh
+mnema decision move accept 01a0af84-7eab-7000-8888-79c0dd5690e2 --note "agreed in review"
+#> Decision ADR-1 (01a0af84-7eab-7000-8888-79c0dd5690e2) → accepted
+```
+
+A label is numbered inside one tree, so the committed tree and a machine's private one can
+each hold an `ADR-1`, and a name that can mean two decisions is no address. Hand `move` the
+label and it refuses, and says which id, or which ids, carry it here.
+
 That diagram is the output of `mnema diagram decision`, read from the gate's own table;
 `skill` and `task` print theirs, and `timeline <id>` and `refs <id>` draw one entity's
 history and connections. It is mermaid text on stdout, and it writes nothing.
@@ -332,6 +347,8 @@ verdict names the **level** it reached rather than saying yes or no.
 | **The gate protects what is recorded** | It protects the *shape* of a change, not its contents, and it is not access control. Anyone who can run the command line writes as this machine's identity. |
 | **Only whoever wrote a note can take it back** | Only for a binary from this version on. A retraction signed by another identity is refused when written, not applied when read, and named by `verify` in a census line — but it is a well-formed signed event, and an older binary reading the same record applies it and stops serving the note. |
 | **Secrets stay out** | Only the ones mnema recognizes by their format. A value in a known shape never reaches the chain; a proprietary token or a password written out in prose does, and nothing deletes a fact afterwards. It reduces the damage; it does not make the record safe to paste secrets into. |
+| **A key that signs only check results can do no harm** | The role narrows what the key can sign, and only that. A leaked checker key can say that any rule's check passed at any commit, no fact withdraws the role yet, and `verify` accepts what the key signs. Keep it in a secret scoped to the job that runs `check run`, and treat a leak as a reason to stop trusting every result it signed. |
+| **Any version of the tool can read the record** | A binary from before a kind existed stops reading the whole record once that kind is in the committed tree, as it does for any kind it does not know (`packages/chain/FORMAT.md` §4.1). Read a record written by a newer version with a newer binary. |
 
 The pattern underneath all of it: **local cryptography covers alteration; the
 history a git remote keeps covers omission and gives the signing key a history

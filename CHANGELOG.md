@@ -10,29 +10,10 @@ tag, with its own changelog.
 
 ## [Unreleased]
 
-### Changed
-
-- The trunk is now named `main` (it was `main-v1`); the 0.x alpha is on the `archive/alpha-0.14` tag.
-- Only the identity that wrote a note retracts it, with any key of that identity. `mnema retract`
-  and the `retract_note` tool refuse another identity and say whose the note is; a retraction
-  another identity signed anyway is not applied, so `search`, the opening read and `recall` keep
-  serving the note; and `mnema verify` names it in a census line, informational, with the exit
-  unchanged. The rule is in `packages/chain/FORMAT.md` §6.4; no byte of any event changed.
-  Known limit: a binary from before this change still applies such a retraction and hides the note.
-
-### Fixed
-
-- The brief, and every other line that passes through the rule of the line, now writes the Unicode Tag characters (U+E0000 to U+E007F) as visible escapes; they sit outside the basic plane and slipped through.
-- A rule that refuses a write, or asks for a person, no longer stops at the path the host wrote:
-  a write through a symbolic link (or into a new file under a linked directory) is matched against
-  where it really lands inside the project as well, the refusal still outranking the asking. A link
-  that leaves the project is matched by the path as given.
-
 ## [0.1.0-beta] - 2026-10-05
 
-The first version of this line: the numbering starts over here and does not continue the 0.x alpha.
-
-The first release of this line: `@mnema/code`, and the three packages it is built from.
+The first release of this line: `@mnema/code`, and the three packages it is built from. The
+numbering starts over here: it does not continue the 0.x alpha.
 Requires Node ≥ 22.12.0; the packages are ESM-only.
 
 ### Added
@@ -131,4 +112,73 @@ Requires Node ≥ 22.12.0; the packages are ESM-only.
 - **Source maps that carry their source.** Every map a package ships holds the text of the
   files it names, so a debugger in an installed tree can open them.
 
+- **A read-only diagram of the state machines**, and the timeline and references of one entity
+  (the `diagram`, `timeline` and `refs` verbs): mermaid text on stdout, nothing written.
+- **A signed retraction for notes**: a memory or an observation can be taken back by a fact
+  of its own, and the note stops being offered while its history stays.
+- **A rule that refuses a write** (`refuses-a-write`): the relation, the signed fact that
+  records a refusal at a channel, the switch that turns it off, and one decision that carries
+  it; the three hosts' pre-write hooks answer `deny` for a path such a rule addresses.
+- **Keys compared with GitHub's** (`verify --against-github`, when asked): the signing keys
+  against the SSH keys the linked account publishes.
+- **The agent's second channel to write**: skills, a session tally, a hold on the first write
+  and a reader for the corrections an agent was given.
+- **Decisions imported as proposals** from the ECC Memory Vault, superpowers rulings and
+  Claude Code memory files (`decision import`).
+- **The `site` verb**: the committed record as one page that verifies itself in the browser.
+- **Small things the command line should do**: a rationale from a file or from stdin, a rules
+  file for Claude Code, `doctor`, a plugin without hooks, a warning when a skill is exported.
+- **`verify --since`**, and a sentence saying how far a green `verify` proves; a stored line that
+  is not canonical is refused.
+- **Invisible characters made visible**, a repeated refusal said once, and a test that private
+  notes stay in their project.
+- **Guards on the plugin's hooks and the repository**: hook ids, `AGENTS.md`, a pull request
+  template and no home paths in the measurements.
+- **The git log read against the record.** Four read-only verbs: `trailer` prints the
+  `Mnema-Decision: ADR-n` line for a commit message; `commits` lists the commits that cite a
+  decision and, apart, those that touched the paths it addresses; `why` shows the decisions a file
+  or a commit stands under; and `aging` lists the accepted decisions whose paths changed in many
+  commits since they were accepted.
+
+### Changed
+
+- The trunk is now named `main` (it was `main-v1`); the 0.x alpha is on the `archive/alpha-0.14` tag.
+- Only the identity that wrote a note retracts it, with any key of that identity. `mnema retract`
+  and the `retract_note` tool refuse another identity and say whose the note is; a retraction
+  another identity signed anyway is not applied, so `search`, the opening read and `recall` keep
+  serving the note; and `mnema verify` names it in a census line, informational, with the exit
+  unchanged. The rule is in `packages/chain/FORMAT.md` §6.4; no byte of any event changed.
+  Known limit: a binary from before this change still applies such a retraction and hides the note.
+- **A write is decided on the record as it stands, under the lock**, every write is synced to
+  disk, and a move made apart from the writer's view is said so.
+- **The console shrinks one axis per resize**, every frame held to the screen.
+- **The tests of every package are type-checked** by `pnpm typecheck`, and what the checker
+  found is fixed (326 errors, 0 left).
+- **The docs say what holds today.** The README gains two rows in the table of what does not
+  hold: a leaked checker key signs "passed" for any rule and commit and no fact withdraws the
+  role, and a binary from before a kind existed stops reading the whole record once that kind
+  is in the committed tree. The install section says nothing is on npm yet and gives the
+  command for the pre-release's four tarballs. The README shows what the `ADR-<n>` label is and
+  that `decision move` takes the id. `SECURITY.md` says the alpha lives on the
+  `archive/alpha-0.14` tag, and `AGENTS.md` says the tests are type-checked.
+- **A label typed where an id belongs is answered with the id.** `decision move`, over MCP too,
+  refuses an `ADR-<n>` and names the decision, or the decisions, that carry it. The label is
+  still no address: a tree numbers its own.
+
+### Fixed
+
+- The brief, and every other line that passes through the rule of the line, now writes the Unicode Tag characters (U+E0000 to U+E007F) as visible escapes; they sit outside the basic plane and slipped through.
+- A rule that refuses a write, or asks for a person, no longer stops at the path the host wrote:
+  a write through a symbolic link (or into a new file under a linked directory) is matched against
+  where it really lands inside the project as well, the refusal still outranking the asking. A link
+  that leaves the project is matched by the path as given.
+
+### Known limits
+
+- A leaked checker key keeps signing results the verifier accepts: the role narrows what the
+  key can sign, and no fact withdraws it yet. A program started by `check run` can read the key.
+- A binary from before a kind existed stops reading the whole record once that kind is in the
+  committed tree (`packages/chain/FORMAT.md` §4.1).
+
 [Unreleased]: https://github.com/felipesauer/mnema/commits/main
+[0.1.0-beta]: https://github.com/felipesauer/mnema/releases/tag/v0.1.0-beta

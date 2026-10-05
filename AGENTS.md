@@ -32,9 +32,10 @@ guard caught a defect or the machine was busy.
 
 Product tests are in `packages/*/tests/`, named for the behaviour they hold. A new file under
 `packages/*/src` needs a test that asserts about a value it produced, and a new test file needs
-its line in `every-file-has-a-test-that-names-it.test.ts`. The tests are not type-checked:
-assert on a value, never on a type guard. A new guard comes with a case that shows it failing
-on the defect it exists for.
+its line in `every-file-has-a-test-that-names-it.test.ts`. `pnpm typecheck` checks the tests
+too (each package's `tsconfig.test.json`), but vitest strips types when it runs them, so a type
+is never what makes a test fail: assert on a value, never on a type guard. A new guard comes
+with a case that shows it failing on the defect it exists for.
 
 ## Writing
 
