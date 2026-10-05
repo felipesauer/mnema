@@ -24,7 +24,7 @@
  * separate store or tail.
  */
 
-import type { CatalogEvent } from '@mnema/chain';
+import { type CatalogEvent, mayRetract } from '@mnema/chain';
 
 /**
  * A note TAKEN BACK — what a `note.retracted` says about the memory or observation it
@@ -43,24 +43,40 @@ export interface NoteRetraction {
 }
 
 /**
- * The retractions in an ordered stream, by the id of the note each names. The FIRST in the
- * stream's order holds: the operation refuses a second on one tree, and two clones that each
- * took the same note back offline merge into one note that was taken back — the earlier
- * saying when. Order-independent of the note's own event, so the fold never depends on the
- * capture having been seen first.
+ * The retractions in an ordered stream, by the id of the note each names, EVERY ONE in the
+ * stream's order — which of them takes the note back depends on who wrote the note, and that
+ * is {@link retractionOf}'s to say. Order-independent of the note's own event, so the fold
+ * never depends on the capture having been seen first.
  */
-export function retractionsOf(events: readonly CatalogEvent[]): Map<string, NoteRetraction> {
-  const found = new Map<string, NoteRetraction>();
+export function retractionsOf(events: readonly CatalogEvent[]): Map<string, NoteRetraction[]> {
+  const found = new Map<string, NoteRetraction[]>();
   for (const event of events) {
-    if (event.kind !== 'note.retracted' || found.has(event.subject)) continue;
-    found.set(event.subject, {
+    if (event.kind !== 'note.retracted') continue;
+    const named = found.get(event.subject) ?? [];
+    named.push({
       at: event.at,
       who: event.who,
       ...(event.which !== undefined ? { which: event.which } : {}),
       reason: event.payload.reason,
     });
+    found.set(event.subject, named);
   }
   return found;
+}
+
+/**
+ * The retraction that takes `note` back: the FIRST, in the stream's order, by an identity that
+ * may retract it ({@link mayRetract} — the one that wrote it). A retraction by another identity
+ * is not applied, so a stranger cannot take somebody's note out of what the record serves;
+ * `verify` lists it in its census. The operation refuses a second retraction on one tree, and
+ * two clones that each took the same note back offline merge into one note that was taken
+ * back — the earlier saying when.
+ */
+export function retractionOf(
+  note: { readonly who: string },
+  named: readonly NoteRetraction[] | undefined,
+): NoteRetraction | undefined {
+  return named?.find((retraction) => mayRetract(note.who, retraction.who));
 }
 
 /** A captured memory, as projected from its one event. */
@@ -94,7 +110,7 @@ export function projectKnowledge(events: readonly CatalogEvent[]): Map<string, M
   for (const event of events) {
     const memory = memoryOf(event);
     if (memory === undefined) continue;
-    const retracted = retractions.get(memory.id);
+    const retracted = retractionOf(memory, retractions.get(memory.id));
     result.set(memory.id, retracted !== undefined ? { ...memory, retracted } : memory);
   }
   return result;
@@ -150,7 +166,7 @@ export function projectObservations(
   for (const event of events) {
     const observation = observationOf(event);
     if (observation === undefined) continue;
-    const retracted = retractions.get(observation.id);
+    const retracted = retractionOf(observation, retractions.get(observation.id));
     result.set(
       observation.id,
       retracted !== undefined ? { ...observation, retracted } : observation,

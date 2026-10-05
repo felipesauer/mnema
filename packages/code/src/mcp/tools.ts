@@ -889,8 +889,8 @@ export type RetractNoteResult =
  * It follows the NOTE, as a decision's move follows the decision: the walk is the one every
  * entity-keyed tool asks ({@link locateEntity}), reaching the notes as well, and the write
  * goes through that tree's own door. A retraction is attributed to the connecting agent
- * (`which`) and pinned to the run, as every write of this server is; who may retract is
- * what the record decides for a supersede, which an agent may also carry out. A decision,
+ * (`which`) and pinned to the run, as every write of this server is; only the identity that
+ * wrote the note retracts it, and the core refuses any other, saying whose it is. A decision,
  * a pattern or a task is refused by the core in its own tree, with what to do instead.
  */
 export function runRetractNote(

@@ -102,6 +102,7 @@
  */
 
 import { existsSync, readFileSync } from 'node:fs';
+import { mayRetract } from '../events/retraction.js';
 import type { UpcasterRegistry } from '../events/upcaster.js';
 import { oneLine } from '../one-line.js';
 import { isBackupRegistration, listRegistrations } from './backup.js';
@@ -167,7 +168,11 @@ export interface TailIssue {
  * things, and a reader that has to branch on `kind` is a reader who cannot mistake one
  * for the other.
  */
-export type CensusNote = KeyWithoutTailNote | BackupKeyNote | PartialFinalLineNote;
+export type CensusNote =
+  | KeyWithoutTailNote
+  | BackupKeyNote
+  | PartialFinalLineNote
+  | ForeignRetractionNote;
 
 /**
  * A committed public key with no tail on disk.
@@ -252,6 +257,33 @@ export interface PartialFinalLineNote {
   readonly kind: 'partial-final-line';
   /** The tail whose physical end held the fragment. */
   readonly tail: string;
+  readonly detail: string;
+}
+
+/**
+ * A `note.retracted` signed by an identity that did not write the note it names
+ * ({@link mayRetract}), which no reader applies: the note is still served.
+ *
+ * Not a break, and the reason is the same as a backup key's: the event is intact — hashed,
+ * chained, signed by a key of its own `who` — so nothing the crypto proves has failed. What
+ * fails is the event's AUTHORITY over the note, and that is a reading of the record rather
+ * than a fact about its bytes. A reader is told, because the person whose note it is has a
+ * stranger's claim about it on the record, and a binary older than this rule applies it.
+ *
+ * A retraction naming a note this tree does not hold is not one of these: there is no
+ * author to compare with, and nothing for it to hide.
+ */
+export interface ForeignRetractionNote {
+  readonly kind: 'foreign-retraction';
+  /** The note it names (the retraction's subject). */
+  readonly note: string;
+  /** The identity that signed the retraction. */
+  readonly by: string;
+  /** The identity that wrote the note. */
+  readonly author: string;
+  /** Where the retraction sits. */
+  readonly tail: string;
+  readonly seq: number;
   readonly detail: string;
 }
 
@@ -493,6 +525,7 @@ export function verifyChain(
   const census: CensusNote[] = [
     ...keysWithoutTail(committedFingerprints, tails, waivers, backups),
     ...notes,
+    ...foreignRetractions(tails, entriesByTail),
   ];
 
   const ok = allIssues.length === 0;
@@ -648,6 +681,46 @@ function keysWithoutTail(
     });
   }
   return notes;
+}
+
+/**
+ * Every `note.retracted` whose `who` may not retract the note it names ({@link mayRetract}),
+ * in tail order. The notes' authors are read over every tail first, so a retraction is judged
+ * whatever tail, or order, its note sits in.
+ */
+function foreignRetractions(
+  tails: readonly string[],
+  entriesByTail: ReadonlyMap<string, readonly Entry[]>,
+): ForeignRetractionNote[] {
+  const authors = new Map<string, string>();
+  for (const tail of tails) {
+    for (const { event } of entriesByTail.get(tail) ?? []) {
+      if (event.kind === 'memory.captured' || event.kind === 'observation.recorded') {
+        authors.set(event.subject, event.who);
+      }
+    }
+  }
+  const found: ForeignRetractionNote[] = [];
+  for (const tail of tails) {
+    for (const { event, link } of entriesByTail.get(tail) ?? []) {
+      if (event.kind !== 'note.retracted') continue;
+      const author = authors.get(event.subject);
+      if (author === undefined || mayRetract(author, event.who)) continue;
+      found.push({
+        kind: 'foreign-retraction',
+        note: event.subject,
+        by: event.who,
+        author,
+        tail,
+        seq: link.seq,
+        detail:
+          `a retraction of ${oneLine(event.subject)} signed by ${oneLine(event.who)}, which did not ` +
+          `write it (${oneLine(author)} did) — only the identity that wrote a note takes it back, ` +
+          'so it is not applied and the note is still served',
+      });
+    }
+  }
+  return found;
 }
 
 /**
@@ -1140,6 +1213,8 @@ const CENSUS_CLAUSE: Readonly<Record<CensusNote['kind'], (count: number) => stri
     `${count} backup key(s), which sign nothing until restored (see census — informational, not a break)`,
   'partial-final-line': (count) =>
     `${count} tail(s) ending in a dropped partial line (see census — informational, not a break)`,
+  'foreign-retraction': (count) =>
+    `${count} retraction(s) by an identity that did not write the note, not applied (see census — informational, not a break)`,
 };
 
 /** One clause per kind of note present, in the order the kinds are declared in. */

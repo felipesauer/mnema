@@ -13,9 +13,16 @@ tag, with its own changelog.
 ### Changed
 
 - The trunk is now named `main` (it was `main-v1`); the 0.x alpha is on the `archive/alpha-0.14` tag.
+- Only the identity that wrote a note retracts it, with any key of that identity. `mnema retract`
+  and the `retract_note` tool refuse another identity and say whose the note is; a retraction
+  another identity signed anyway is not applied, so `search`, the opening read and `recall` keep
+  serving the note; and `mnema verify` names it in a census line, informational, with the exit
+  unchanged. The rule is in `packages/chain/FORMAT.md` §6.4; no byte of any event changed.
+  Known limit: a binary from before this change still applies such a retraction and hides the note.
 
 ### Fixed
 
+- The brief, and every other line that passes through the rule of the line, now writes the Unicode Tag characters (U+E0000 to U+E007F) as visible escapes; they sit outside the basic plane and slipped through.
 - A rule that refuses a write, or asks for a person, no longer stops at the path the host wrote:
   a write through a symbolic link (or into a new file under a linked directory) is matched against
   where it really lands inside the project as well, the refusal still outranking the asking. A link
