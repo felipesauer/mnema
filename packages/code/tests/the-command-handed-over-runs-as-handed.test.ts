@@ -631,7 +631,7 @@ export const HANDED_OVER: Readonly<
   // `mnema doctor`.
   // name 121 for who may take a note back: the changelog names `mnema retract` and `mnema verify`,
   // and the package page `mnema verify` once more.
-  span: { line: 60, name: 121, flag: 1, unwritten: 0 },
+  span: { line: 60, name: 124, flag: 1, unwritten: 0 },
   // name 18 until the page that says where the key lives named `mnema key protect` in a line of
   // its own.
   // line 35 until the same page showed that question in a block of its own.
@@ -641,7 +641,7 @@ export const HANDED_OVER: Readonly<
   // line 46 and name 21 for the package page's blocks on the log read against the record and on
   // the inherited record, and the plugin page's block that installs the server-only plugin.
   // line 47 for the front page's block that moves a decision by its id (`mnema decision move`).
-  block: { line: 47, name: 21, flag: 1, unwritten: 0 },
+  block: { line: 47, name: 23, flag: 1, unwritten: 0 },
   // 46 until the refusal an agent's `accept` gets, with the switch off, began naming the command a
   // person accepts with (`agent-accepts.ts`).
   // line 34 until the sentences an agent's accept is answered with began handing whole lines
@@ -662,7 +662,7 @@ export const HANDED_OVER: Readonly<
   // line 54 and name 62 once a key could be requested and enrolled to sign check results, and the
   // checks' own help named the verbs that declare and run them.
   // line 60 and name 72 for the verb's own help: its example, and the names it mentions.
-  source: { line: 60, name: 72, flag: 3, unwritten: 3 },
+  source: { line: 61, name: 75, flag: 3, unwritten: 3 },
 };
 
 // ---------------------------------------------------------------------------

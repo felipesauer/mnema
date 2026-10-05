@@ -85,7 +85,11 @@ function envWith(path: string, extra: Record<string, string> = {}): Record<strin
 
 /** `git <args>` in the sandbox repository. */
 function git(args: string[], env: Record<string, string> = envWith(process.env.PATH ?? '')) {
-  return spawnSync('git', args, { cwd: repo, encoding: 'utf-8', env });
+  return spawnSync('git', args, {
+    cwd: repo,
+    encoding: 'utf-8',
+    env: { ...env, GIT_CONFIG_GLOBAL: GIT_WITHOUT_MAINTENANCE },
+  });
 }
 
 /** A directory of programs: `mnema` as the script `body` (when given), and `git` itself. */
@@ -179,6 +183,16 @@ describe('installing and removing the hook', () => {
     expect(uninstallCommitHook(ctx)).toEqual({ ok: true, path: HOOK(), state: 'removed' });
     expect(existsSync(HOOK())).toBe(false);
     expect(uninstallCommitHook(ctx)).toEqual({ ok: true, path: HOOK(), state: 'absent' });
+  });
+
+  it('says, on the command line, where it put the hook and where it took it from', async () => {
+    const put = await mnema('commit-hook', 'install');
+    expect(put.failed, put.err).toBe(false);
+    expect(put.text.trim()).toBe(`Installed the prepare-commit-msg hook: ${HOOK()}`);
+    const took = await mnema('commit-hook', 'uninstall');
+    expect(took.failed, took.err).toBe(false);
+    expect(took.text.trim()).toBe(`Removed the prepare-commit-msg hook: ${HOOK()}`);
+    expect(existsSync(HOOK())).toBe(false);
   });
 
   it('is not written by init', async () => {

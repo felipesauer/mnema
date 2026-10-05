@@ -18,6 +18,7 @@
 import type { Command } from 'commander';
 import { fact } from '../presentation/detail.js';
 import { here } from './context.js';
+import { onOneLine } from './on-one-line.js';
 import { reportRefusal } from './report.js';
 import { type Declared, mutatesTheRecord, type Wiring } from './verb.js';
 
@@ -70,7 +71,7 @@ export function registerCommitHook(program: Command, wiring: Wiring): Declared {
           removed: 'Removed the prepare-commit-msg hook',
           absent: 'There is no prepare-commit-msg hook to remove',
         };
-        io.out(render(fact(`${said[result.state]}: ${result.path}`)));
+        io.out(render(fact(onOneLine`${said[result.state]}: ${result.path}`)));
       });
   }
 

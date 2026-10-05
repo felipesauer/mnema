@@ -215,7 +215,7 @@ export const NOT_CHECKED: Readonly<Record<string, string>> = {
  */
 export const PAGES: Readonly<Record<string, number>> = {
   'README.md': 6,
-  'packages/code/README.md': 57,
+  'packages/code/README.md': 59,
   'plugin/README.md': 6,
 };
 

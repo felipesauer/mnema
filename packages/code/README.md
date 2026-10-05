@@ -820,7 +820,7 @@ Only these two verbs touch your hooks; `mnema init` does not. The hook goes wher
 is already there that mnema did not write, `install` refuses and prints its path; `uninstall` removes
 a file only when it is byte for byte the hook `install` writes. When you commit in an editor, the hook
 appends a few `#` lines to the message naming the decisions in force that govern the staged files
-(the same reading as `mnema rules`), each with its `Mnema-Decision:` line. Git drops `#` lines, so a
+(the reading that finds the rules for a path), each with its `Mnema-Decision:` line. Git drops `#` lines, so a
 commit you leave alone is the commit you would have made; to cite a decision, delete the `# ` in front
 of its line. **What it does not do.** It suggests and never decides: it does not check that the change
 follows the decision, and it adds nothing to a message given with `-m` or `-F`, to a merge, an amend, or
