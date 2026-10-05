@@ -62,6 +62,7 @@ import {
   recordFraming,
 } from '../src/record-framing.js';
 import { IDENTITY } from '../src/version.js';
+import { EVENTS } from './support/hook-keys-the-host-reads.js';
 import { held } from './support/the-record-held.js';
 
 /** The repository root: `packages/code/tests/` is three levels under it. */
@@ -74,35 +75,6 @@ const HOOKS = join(PLUGIN, 'hooks', 'hooks.json');
 const MARKETPLACE = join(REPO, '.claude-plugin', 'marketplace.json');
 /** The built CLI — the same file the `mnema` bin points at. */
 const CLI = fileURLToPath(new URL('../dist/cli.js', import.meta.url));
-
-/**
- * The lifecycle events this host publishes, as of the hook documentation of
- * `anthropics/claude-code` 2.1.224 (`plugins/plugin-dev/skills/hook-development/
- * SKILL.md`, "Available events", plus the ones the CHANGELOG adds).
- *
- * It is here to catch a TYPO — an event this host has never heard of is a hook that
- * never runs, and nothing else in the repository would say so. It is not a claim
- * that the list is complete: the host adds events, and a new one missing from here
- * would be a red this file earns by being out of date. Which of these the plugin may
- * use is a different question, and it is asserted separately.
- */
-const PUBLISHED_EVENTS = [
-  'PreToolUse',
-  'PostToolUse',
-  'UserPromptSubmit',
-  'Stop',
-  'SubagentStop',
-  'SessionStart',
-  'SessionEnd',
-  'PreCompact',
-  'Notification',
-  'MessageDisplay',
-  'Setup',
-  'SubagentStart',
-  'DirectoryAdded',
-  'ConfigChange',
-  'WorktreeCreate',
-];
 
 /**
  * A handler path written against the plugin's root, and the path it names.
@@ -1201,7 +1173,7 @@ describe('the record arrives unasked', () => {
 
     const hooks = readJson<HooksFile>(HOOKS);
     expect(hooks.description ?? '').not.toBe('');
-    for (const event of declaredEvents()) expect(PUBLISHED_EVENTS).toContain(event);
+    for (const event of declaredEvents()) expect(EVENTS).toContain(event);
     // TWO TYPES OF HOOK NOW, and each is checked for what can silently break IT. This
     // loop used to require `command` of every handler, which was a description of the
     // plugin rather than a rule: a `mcp_tool` hook is a call into the server this same
