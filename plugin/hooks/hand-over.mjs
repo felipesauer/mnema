@@ -187,7 +187,7 @@ export function aStranger(stranger) {
       `The mnema plugin did not run ${THIS_PRODUCT}: the program its \`mnema_path\` option names, ${JSON.stringify(named)}, is not it.`,
       `Asked \`${named} --identify\`, which ${THIS_PRODUCT} answers with its name and version, it ${answered}.`,
       "So this project's record was not handed to this session, and the MCP server the plugin declares starts that same program.",
-      `Point \`mnema_path\` at the ${THIS_PRODUCT} executable, or set it back to \`mnema\` to run the first one on the PATH.`,
+      `Point \`mnema_path\` at the ${THIS_PRODUCT} executable, or set it back to mnema to run the first one on the PATH.`,
     ].join('\n');
   }
   return [

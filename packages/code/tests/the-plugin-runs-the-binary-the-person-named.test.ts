@@ -23,11 +23,11 @@
  */
 
 import { spawnSync } from 'node:child_process';
-import { chmodSync, mkdtempSync, readFileSync, writeFileSync } from 'node:fs';
+import { chmodSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
-import { describe, expect, it } from 'vitest';
+import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 
 const REPO = fileURLToPath(new URL('../../../', import.meta.url));
 const LAUNCHER = join(REPO, 'plugin', 'server', 'launch.mjs');
@@ -81,7 +81,13 @@ describe('the launcher chooses what to run', async () => {
 });
 
 describe('the launcher starts it as the host would have', () => {
-  const directory = mkdtempSync(join(tmpdir(), 'mnema-launch-'));
+  let directory = '';
+  beforeAll(() => {
+    directory = mkdtempSync(join(tmpdir(), 'mnema-launch-'));
+  });
+  afterAll(() => {
+    rmSync(directory, { recursive: true, force: true });
+  });
 
   it('runs the binary named, with the arguments and the standard input, and ends as it ends', () => {
     const named = aFakeBinary(directory, 'named-mnema', 7);
