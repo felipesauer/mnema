@@ -173,10 +173,10 @@ afterEach(() => {
 describe('audit_exposure spans every project of the workspace', () => {
   it('finds a credential in a SIBLING project, and says which project to rotate in', () => {
     // The defect, stated as a session: the credential is in `nferural`, the cascade
-    // landed on `plantae-legacy`, and the audit said `findings: []` with a denominator
+    // landed on `acme-legacy`, and the audit said `findings: []` with a denominator
     // beside it. Meanwhile `search` in the same session printed the value in full.
-    const legacy = makeProject('plantae-legacy');
-    const laravel = makeProject('plantae-laravel');
+    const legacy = makeProject('acme-legacy');
+    const laravel = makeProject('acme-laravel');
     const nferural = makeProject('nferural');
     const far = plantCredential(nferural, 'public', '019fa8b7-0410-717b-9af2-cfeb013fc4a1');
 

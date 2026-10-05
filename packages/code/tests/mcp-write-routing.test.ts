@@ -244,8 +244,8 @@ describe('three projects, one session', () => {
   it('puts each fact in the project it was told, read off all three disks', () => {
     // The shape of the work this exists for: a task resolved in one codebase and
     // normalized into two others, in one conversation.
-    const legacy = makeProject('plantae-legacy');
-    const laravel = makeProject('plantae-laravel');
+    const legacy = makeProject('acme-legacy');
+    const laravel = makeProject('acme-laravel');
     const nferural = makeProject('nferural');
     const session = openOn(legacy, laravel, nferural);
 
