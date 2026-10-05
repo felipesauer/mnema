@@ -1,4 +1,5 @@
 {
+  "$schema": "https://json.schemastore.org/claude-code-plugin-manifest.json",
   "name": "mnema-server-only",
   "version": "0.1.0-beta",
   "description": "Connects the mnema MCP server so the agent can record its own work, and runs no hook: nothing is handed to a session as it opens, at an edit or when it ends.",
@@ -10,10 +11,24 @@
   "repository": "https://github.com/felipesauer/mnema",
   "license": "Apache-2.0",
   "keywords": ["audit-trail", "append-only", "accountability", "adr", "local-first"],
+  "userConfig": {
+    "mnema_path": {
+      "type": "string",
+      "title": "Path to the mnema executable",
+      "description": "Absolute path of the mnema binary the plugin runs. Leave it as mnema to run the first one on your PATH.",
+      "default": "mnema"
+    }
+  },
   "mcpServers": {
     "mnema": {
-      "command": "mnema",
-      "args": ["mcp"]
+      "command": "node",
+      "args": [
+        "${CLAUDE_PLUGIN_ROOT}/server/launch.mjs",
+        "mcp"
+      ],
+      "env": {
+        "MNEMA_PLUGIN_BINARY": "${user_config.mnema_path}"
+      }
     }
   }
 }
