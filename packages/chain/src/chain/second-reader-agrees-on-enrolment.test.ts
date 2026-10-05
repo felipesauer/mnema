@@ -42,6 +42,7 @@ import {
   channelRefused,
   checkerEnrolled,
   checkerEnrollmentMessage,
+  checkerRetired,
   checkPassed,
   enrollmentMessage,
   identityFounded,
@@ -695,9 +696,9 @@ describe('the two readers agree on records the product itself wrote — a checke
     );
   }
 
-  function passed(signer: KeyPair, who = deriveAnchor(signer.fingerprint)): CatalogEvent {
+  function passed(signer: KeyPair, who = deriveAnchor(signer.fingerprint), when = 4): CatalogEvent {
     return checkPassed(
-      { at: at(4), who, signerFp: signer.fingerprint, subject: RULE },
+      { at: at(when), who, signerFp: signer.fingerprint, subject: RULE },
       { commit: COMMIT, command: 'node', args: ['check.js'], output: 'ok' },
     );
   }
@@ -783,5 +784,137 @@ describe('the two readers agree on records the product itself wrote — a checke
     expect(productOk).toBe(false);
     expect(verdict).toBe('REFUSED');
     expect(refused.join('\n')).toContain('does not prove the checker consented');
+  });
+
+  // RETIRING THE ROLE. `checker.retired` takes a key out of the checkers when it is itself
+  // signature-covered; what the key signed before stays authentic, what it signs after does
+  // not, and it never signs anything else or comes back.
+
+  function retire(anchor: string, signer: KeyPair, checker: KeyPair, when: number): CatalogEvent {
+    return checkerRetired(
+      {
+        at: at(when),
+        who: anchor,
+        signerFp: signer.fingerprint,
+        subject: deriveAnchor(checker.fingerprint),
+      },
+      { checkerFp: checker.fingerprint, reason: 'the runner secret leaked' },
+    );
+  }
+
+  it('a result signed before the retirement: green on both', () => {
+    const { a, c, anchor } = personAndChecker();
+    writeTail(
+      `${a.fingerprint}-i1`,
+      [founding(a), enrolChecker(anchor, a, c), retire(anchor, a, c, 5)],
+      a,
+    );
+    writeTail(`${c.fingerprint}-i2`, [passed(c, undefined, 3)], c);
+
+    const { productOk, verdict, refused } = bothReaders();
+    expect(
+      refused,
+      'the second reader refuses a result signed while the key held the role',
+    ).toEqual([]);
+    expect(productOk).toBe(true);
+    expect(verdict).toBe('VERIFIED');
+    // Authentic, and named: "before" is placed by the `at` the key itself wrote, so the
+    // product's census says which key it was and how many results it signed before.
+    const census = verify(root, catalogUpcasters()).census;
+    expect(census).toEqual([
+      expect.objectContaining({
+        kind: 'retired-checker',
+        fingerprint: c.fingerprint,
+        by: anchor,
+        resultsBefore: 1,
+      }),
+    ]);
+  });
+
+  it('a result signed after the retirement: refused by both', () => {
+    // The defect this kind exists for: a leaked key went on signing passes the verifier took.
+    const { a, c, anchor } = personAndChecker();
+    writeTail(
+      `${a.fingerprint}-i1`,
+      [founding(a), enrolChecker(anchor, a, c), retire(anchor, a, c, 3)],
+      a,
+    );
+    writeTail(`${c.fingerprint}-i2`, [passed(c, undefined, 4)], c);
+
+    const { productOk, verdict, refused } = bothReaders();
+    expect(productOk).toBe(false);
+    expect(verdict).toBe('REFUSED');
+    expect(refused).toHaveLength(1);
+    expect(refused.join('\n')).toContain('retired');
+  });
+
+  it('a retirement in the window no checkpoint covers: ignored by both', () => {
+    // A keyless party could append it there; honouring it would turn the honest results the
+    // key signs afterwards into failures with no key at all — the revocation's gate, mirrored.
+    const { a, c, anchor } = personAndChecker();
+    writeTail(
+      `${a.fingerprint}-i1`,
+      [founding(a), enrolChecker(anchor, a, c), retire(anchor, a, c, 3)],
+      a,
+      { residual: 1 },
+    );
+    writeTail(`${c.fingerprint}-i2`, [passed(c, undefined, 4)], c);
+
+    const { productOk, verdict, refused } = bothReaders();
+    expect(refused, 'the second reader honours an uncovered retirement').toEqual([]);
+    expect(productOk).toBe(true);
+    expect(verdict).toBe('VERIFIED');
+  });
+
+  it('a retirement signed by a key not valid for its who: refused by both', () => {
+    const { a, c, anchor } = personAndChecker();
+    const stranger = generateKeyPair();
+    commitPublicKey(stranger);
+    writeTail(
+      `${a.fingerprint}-i1`,
+      [founding(a), enrolChecker(anchor, a, c), retire(anchor, stranger, c, 3)],
+      a,
+    );
+
+    const { productOk, verdict, refused } = bothReaders();
+    expect(productOk).toBe(false);
+    expect(verdict).toBe('REFUSED');
+    expect(refused.join('\n')).toContain('checker.retired');
+  });
+
+  it('a retired key enrolled again, or signing any other kind: refused by both', () => {
+    // A retired key does not come back, and it does not become a person: its own founding
+    // would put the anchor its results were signed under into an identity.
+    const { a, c, anchor } = personAndChecker();
+    const cAnchor = deriveAnchor(c.fingerprint);
+    writeTail(
+      `${a.fingerprint}-i1`,
+      [
+        founding(a),
+        enrolChecker(anchor, a, c),
+        retire(anchor, a, c, 3),
+        checkerEnrolled(
+          { at: at(5), who: anchor, signerFp: a.fingerprint, subject: cAnchor },
+          { checkerFp: c.fingerprint, reverseSig: consent(anchor, c) },
+        ),
+      ],
+      a,
+    );
+    writeTail(
+      `${c.fingerprint}-i2`,
+      [
+        identityFounded(
+          { at: at(4), who: cAnchor, signerFp: c.fingerprint, subject: cAnchor },
+          { foundingFp: c.fingerprint },
+        ),
+      ],
+      c,
+    );
+
+    const { productOk, verdict, refused } = bothReaders();
+    expect(productOk).toBe(false);
+    expect(verdict).toBe('REFUSED');
+    expect(refused).toHaveLength(2);
+    expect(refused.join('\n')).toContain('retired');
   });
 });

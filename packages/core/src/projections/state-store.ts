@@ -34,7 +34,8 @@ export function isMembershipFact(event: CatalogEvent): boolean {
     event.kind === 'identity.founded' ||
     event.kind === 'key.enrolled' ||
     event.kind === 'key.revoked' ||
-    event.kind === 'checker.enrolled'
+    event.kind === 'checker.enrolled' ||
+    event.kind === 'checker.retired'
   );
 }
 

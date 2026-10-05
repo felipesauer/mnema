@@ -659,6 +659,22 @@ export function checkFailed(
 }
 
 /**
+ * Builds a `checker.retired` event (subject = the retired checker's own anchor). `who` is the
+ * retiring identity and `signerFp` one of its keys; the checker key is not asked.
+ */
+export function checkerRetired(
+  envelope: EnvelopeInput,
+  payload: { checkerFp: string; reason: string },
+): CatalogEvent {
+  return {
+    v: 1,
+    kind: 'checker.retired',
+    ...envelopeFields(envelope),
+    payload: { checkerFp: payload.checkerFp, reason: payload.reason },
+  };
+}
+
+/**
  * Builds an `account.linked` event (subject = the ANCHOR that names its account).
  *
  * Both fields are required and neither is checked here: which hosts and which account
