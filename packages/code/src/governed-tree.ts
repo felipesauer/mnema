@@ -27,8 +27,8 @@
  * whether the claim above is checked.
  */
 
-import { type Dirent, existsSync, readdirSync } from 'node:fs';
-import { isAbsolute, join } from 'node:path';
+import { type Dirent, existsSync, readdirSync, realpathSync } from 'node:fs';
+import { basename, dirname, isAbsolute, join, relative, resolve, sep } from 'node:path';
 import {
   type AddressReach,
   addressReach,
@@ -171,6 +171,46 @@ function asked(read: GovernedRead): GovernanceQuery {
     root: read.root,
     onDisk: (relative) => existsSync(join(read.root, relative)),
   };
+}
+
+/**
+ * Where a path really is, when that is somewhere else INSIDE the project — the one resolution
+ * every write gate uses to match an address against a path a link may be hiding.
+ *
+ * A rule addressed at `src/ledger` is a rule about those bytes, and a host that names them
+ * through a link (`alias.ts -> src/ledger/posting.ts`, or a new file under a directory that is
+ * one) has not named a different file. The real path is the `realpath` of the file, or — when it
+ * does not exist yet — of its nearest existing ancestor with the rest put back, so a file about
+ * to be created is placed by where its directory really is. It answers an absolute path under
+ * `read.root`, or `undefined` when there is nothing more to match: the path is already its own
+ * real path, or the real one is outside the project, where no address can reach and the path as
+ * given is all there is to match. Nothing here is ever asked to fail: an unreadable link is no
+ * further evidence, and the path as given stands.
+ */
+export function realPathInside(read: GovernedRead): string | undefined {
+  const given = resolve(read.from, read.path);
+  let rootReal: string;
+  try {
+    rootReal = realpathSync(read.root);
+  } catch {
+    return undefined;
+  }
+  let existing = given;
+  const rest: string[] = [];
+  for (;;) {
+    try {
+      const real = join(realpathSync(existing), ...rest);
+      const inside = relative(rootReal, real);
+      if (inside === '..' || inside.startsWith(`..${sep}`) || isAbsolute(inside)) return undefined;
+      const there = resolve(read.root, inside);
+      return there === given ? undefined : there;
+    } catch {
+      const parent = dirname(existing);
+      if (parent === existing) return undefined;
+      rest.unshift(basename(existing));
+      existing = parent;
+    }
+  }
 }
 
 /**

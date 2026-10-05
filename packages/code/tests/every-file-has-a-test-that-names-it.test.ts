@@ -1110,7 +1110,7 @@ const CLAUSES_PER_FILE: Readonly<Record<string, number>> = {
   'packages/code/tests/verify-against-github.test.ts': 9,
   'packages/code/tests/what-a-package-publishes-is-what-its-page-promises.test.ts': 6,
   'packages/code/tests/what-a-session-records-on-its-own-it-reports.test.ts': 11,
-  'packages/code/tests/what-a-write-meets.test.ts': 11,
+  'packages/code/tests/what-a-write-meets.test.ts': 15,
   'packages/code/tests/what-ships-cites-only-what-ships.test.ts': 5,
   'packages/code/tests/what-the-agent-just-did.test.ts': 20,
   'packages/code/tests/what-the-record-can-witness.test.ts': 10,

@@ -11,7 +11,7 @@
  * and the rules are read from a real record rather than a fixture.
  */
 
-import { mkdirSync, mkdtempSync, rmSync } from 'node:fs';
+import { mkdirSync, mkdtempSync, rmSync, symlinkSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { type DiscoveryEnv, resolveTrees } from '@mnema/core';
@@ -231,5 +231,45 @@ describe('what the refusal says is what the record says', () => {
     expect(line).toBeDefined();
     expect(line).toContain('Nobody writes');
     expect(line).toContain('the ledger');
+  });
+});
+
+describe('a link does not step around a rule', () => {
+  it('refuses a write through a link to a protected file, and still refuses the direct path', async () => {
+    const rule = await ruleAt('Nobody writes the ledger by hand', 'src/ledger', 'refuses-a-write');
+    writeFileSync(join(repo, 'src', 'ledger', 'posting.ts'), 'x');
+    symlinkSync(join(repo, 'src', 'ledger', 'posting.ts'), join(repo, 'src', 'billing', 'alias.ts'));
+
+    const direct = meets('src/ledger/posting.ts');
+    const linked = meets('src/billing/alias.ts');
+    expect(direct?.grade).toBe('refuse');
+    expect(linked?.grade).toBe('refuse');
+    expect(linked?.at.flatMap((at) => at.rules.map((one) => one.id))).toEqual([rule]);
+    expect(linked?.at.map((at) => at.relative)).toEqual(['src/ledger/posting.ts']);
+  });
+
+  it('refuses a new file inside a directory that is a link to a protected one', async () => {
+    await ruleAt('Nobody writes the ledger by hand', 'src/ledger', 'refuses-a-write');
+    symlinkSync(join(repo, 'src', 'ledger'), join(repo, 'src', 'billing', 'books'));
+
+    expect(meets('src/billing/books/brand-new/deep.ts')?.grade).toBe('refuse');
+  });
+
+  it('asks for a person through a link, and a refusal still outranks the asking', async () => {
+    await ruleAt('Look at the ledger', 'src/ledger', 'asks-for-a-person');
+    symlinkSync(join(repo, 'src', 'ledger'), join(repo, 'src', 'billing', 'books'));
+    expect(meets('src/billing/books/posting.ts')?.grade).toBe('ask');
+
+    await ruleAt('Nobody writes the ledger by hand', 'src/ledger', 'refuses-a-write');
+    expect(meets('src/billing/books/posting.ts')?.grade).toBe('refuse');
+  });
+
+  it('meets nothing through a link that leaves the project, whatever it points at', async () => {
+    await ruleAt('Nobody writes the ledger by hand', 'src/ledger', 'refuses-a-write');
+    const outside = join(sandbox, 'outside');
+    mkdirSync(join(outside, 'src', 'ledger'), { recursive: true });
+    symlinkSync(join(outside, 'src', 'ledger'), join(repo, 'src', 'billing', 'away'));
+
+    expect(meets('src/billing/away/posting.ts')).toBeUndefined();
   });
 });
