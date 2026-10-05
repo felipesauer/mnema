@@ -88,6 +88,11 @@ export function registerAccountability(program: Command, wiring: Wiring): Declar
                 // A machine, said as one: a key that signs check results only. Its facts are
                 // reports a runner made, not acts a person authorized.
                 ...(account.machine ? ['machine (signs check results only)'] : []),
+                // And a machine whose key was retired, said by whom: it signs nothing now, and
+                // what it signed before is no longer vouched for.
+                ...(account.retiredBy !== undefined
+                  ? [`retired by ${anchorText(result.anchors, account.retiredBy)}`]
+                  : []),
                 ...founded,
               ]),
             ),

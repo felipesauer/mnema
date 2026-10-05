@@ -1740,6 +1740,8 @@ $ mnema key revoke --help
 |
 | Options:
 |   --reason <text>  why it is being retired (recorded in the fact)
+|   --checker        retire a key that signs check results: from then on it signs
+|                    nothing, and is never enrolled again
 |   -h, --help       display help for command
 |
 | What recording means here:

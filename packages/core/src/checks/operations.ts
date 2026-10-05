@@ -495,7 +495,9 @@ export function retireChecker(
     return {
       ok: false,
       code: 'NOT_A_CHECKER',
-      message: `the record enrolls no checker key ${oneLine(fingerprint)} — give the full fingerprint \`mnema accountability\` lists the machine under`,
+      message:
+        `the record enrolls no checker key ${oneLine(fingerprint)} — give the full fingerprint ` +
+        'the enrolment printed (`Enrolled checker <fingerprint>`)',
     };
   }
   const retirement = retiredCheckersIn(ctx.layout, ctx.upcasters).get(fingerprint);

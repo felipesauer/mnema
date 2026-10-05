@@ -10,6 +10,29 @@ tag, with its own changelog.
 
 ## [Unreleased]
 
+### Added
+
+- **A checker key can be retired.** `mnema key revoke --checker <fingerprint> --reason "<why>"`
+  records `checker.retired`, a new event kind, signed by any identity of the record, as an
+  enrolment is. Once a checkpoint covers it, `mnema verify` refuses a `check.passed` or
+  `check.failed` the key signs after it, any other fact it signs, and a `checker.enrolled` naming it
+  again; `check run` and `key enroll --checker` refuse the key. The results it signed before stay
+  valid and `verify` names them in its census, informational, because a leaked key can date a
+  result before its own retirement. `mnema accountability` says who retired the machine. The
+  Python reader folds the same rule, and the two readers agree on it.
+- **The Action runs the checks.** `@mnema/action` takes a `checker-key` input, the private half of
+  a checker key from a repository secret: after its other steps it runs `mnema check run` with it,
+  leaves the results in the working tree and fails when a check did not pass. A declared program
+  is started without the Action's inputs in its environment.
+
+### Known limits
+
+- A binary from before `checker.retired` stops reading the whole record once a retirement is in
+  the committed tree, as it does for any kind it does not know (`packages/chain/FORMAT.md`,
+  section 4.1).
+- A retirement does not take back the results the key signed before it: they verify, and the
+  census names them. Which of them the key signed after it leaked, the record cannot say.
+
 ## [0.1.0-beta] - 2026-10-05
 
 The first release of this line: `@mnema/code`, and the three packages it is built from. The

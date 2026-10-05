@@ -607,6 +607,7 @@ complete -c mnema -f -n '__mnema_at "key github"' -l identify
 
 # mnema key revoke
 complete -c mnema -f -n '__mnema_at "key revoke"' -l reason -r
+complete -c mnema -f -n '__mnema_at "key revoke"' -l checker
 complete -c mnema -f -n '__mnema_at "key revoke"' -s h -l help
 complete -c mnema -f -n '__mnema_at "key revoke"' -s V -l version
 complete -c mnema -f -n '__mnema_at "key revoke"' -l color -x -a 'auto always never'

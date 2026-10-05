@@ -2,7 +2,7 @@
   "name": "@mnema/action",
   "version": "0.1.0-beta",
   "private": true,
-  "description": "A GitHub Action that reads the mnema record on a pull request: it comments what the pull request does to the record and which changed files a rule governs, and it fails the check when the record does not verify as signed. It only reads; it is not published.",
+  "description": "A GitHub Action that reads the mnema record on a pull request: it comments what the pull request does to the record and which changed files a rule governs, and it fails the check when the record does not verify as signed. Handed a checker key, it records whether each rule in force held, in the working tree; it commits nothing and is not published.",
   "author": "Felipe Sauer (https://github.com/felipesauer)",
   "license": "Apache-2.0",
   "type": "module",

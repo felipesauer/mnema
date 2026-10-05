@@ -24,7 +24,7 @@
 
 import { privateKeyPath } from '@mnema/chain';
 import { type DiscoveryEnv, resolveTrees } from '@mnema/core';
-import { deferredWrite, revokeMember } from '@mnema/core/write';
+import { deferredWrite, retireChecker, revokeMember } from '@mnema/core/write';
 import { forwardReplacement, type Replacement } from '../recorded-content.js';
 
 /** What the revocation needs — injected so it is testable. */
@@ -103,5 +103,50 @@ export function runKeyRevoke(
       : {}),
     ...(revoked.stillMemberOf !== undefined ? { stillMemberOf: revoked.stillMemberOf } : {}),
     ...forwardReplacement(revoked),
+  };
+}
+
+/** The checker key signs nothing from now on. */
+export interface CheckerRetired extends Replacement {
+  readonly ok: true;
+  readonly fingerprint: string;
+  /** The anchor its results were signed under — its own. */
+  readonly checker: string;
+  /** The identity that retired it. */
+  readonly retiredBy: string;
+  /** True when the record already retired it, so nothing was appended. */
+  readonly alreadyRetired: boolean;
+  /** The project tree that recorded it. */
+  readonly root: string;
+}
+
+/**
+ * Retires a CHECKER key — a key that signs check results only — signed by the identity this
+ * machine serves in the project's public tree, where the runner and every verifier read it.
+ */
+export function runCheckerRetire(
+  ctx: KeyRevokeContext,
+  input: { fingerprint: string; reason: string },
+): CheckerRetired | KeyRevokeRefused {
+  const trees = resolveTrees(ctx.cwd, ctx.env);
+  if (trees.projectPublic === undefined) {
+    return { ok: false, reason: 'NO_PROJECT' };
+  }
+  const write = deferredWrite(trees, 'public');
+  const retired = retireChecker(write, { fingerprint: input.fingerprint, reason: input.reason });
+  if (!retired.ok) {
+    return { ok: false, reason: 'REFUSED', code: retired.code, message: retired.message };
+  }
+  // The retirement signs its own checkpoint (the reader honours only a covered one); this
+  // covers a founding it may have appended alongside, and is a no-op otherwise.
+  write.checkpoint();
+  return {
+    ok: true,
+    fingerprint: retired.fingerprint,
+    checker: retired.checker,
+    retiredBy: retired.retiredBy,
+    alreadyRetired: retired.alreadyRetired,
+    root: trees.projectPublic,
+    ...forwardReplacement(retired),
   };
 }

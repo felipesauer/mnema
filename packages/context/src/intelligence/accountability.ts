@@ -94,6 +94,12 @@ export interface WhoAccount {
    * this says that nobody authorized them in the sense a person does — a runner reported them.
    */
   readonly machine: boolean;
+  /**
+   * When this machine's key was retired (`checker.retired`), the identity that retired it.
+   * Absent for a person, and for a machine nobody retired. A retired key signs nothing from
+   * then on, and the results it signed before are no longer vouched for (FORMAT.md 6.2).
+   */
+  readonly retiredBy?: string;
 }
 
 /** One founding beside others, as the account reports it beside the identity it founded. */
@@ -264,13 +270,21 @@ function fold(
     }
   }
   const machines = new Set(sources.flatMap((source) => source.cache.checkers()));
+  const retired = new Map(sources.flatMap((source) => [...source.cache.retiredCheckers()]));
   const foundings = sources.flatMap((source) =>
     source.cache.foundedBeside().map((founding) => ({ scope: source.scope, founding })),
   );
   return {
     total,
     byWho: [...perWho.values()]
-      .map((acc) => finishWho(acc, foundedBesideOf(foundings, acc.who), machines.has(acc.who)))
+      .map((acc) =>
+        finishWho(
+          acc,
+          foundedBesideOf(foundings, acc.who),
+          machines.has(acc.who),
+          retired.get(acc.who),
+        ),
+      )
       .sort(byTotalThenWho),
   };
 }
@@ -329,6 +343,7 @@ function finishWho(
   acc: WhoAccumulator,
   foundedBeside: readonly FoundedBesideMark[],
   machine: boolean,
+  retiredBy: string | undefined,
 ): WhoAccount {
   const byKind = [...acc.byKind.entries()]
     .map(([kind, count]) => ({ kind, count }))
@@ -336,7 +351,15 @@ function finishWho(
   const byWhich = [...acc.byWhich.entries()]
     .map(([which, count]) => ({ which, count }))
     .sort(byCountThenWhich);
-  return { who: acc.who, total: acc.total, byKind, byWhich, foundedBeside, machine };
+  return {
+    who: acc.who,
+    total: acc.total,
+    byKind,
+    byWhich,
+    foundedBeside,
+    machine,
+    ...(retiredBy !== undefined ? { retiredBy } : {}),
+  };
 }
 
 /** Accounts by count descending, then by `who` ascending — stable, not a verdict. */

@@ -1,9 +1,12 @@
 name: mnema record
-description: Comment what a pull request does to the mnema record and which changed files a rule governs, and fail the check when the record does not verify as signed.
+description: Comment what a pull request does to the mnema record and which changed files a rule governs, and fail the check when the record does not verify as signed. Handed a checker key, also record whether each rule in force held.
 inputs:
   github-token:
     description: Token used to read the pull request and to write its one comment. The default token is enough with pull-requests write.
     default: ${{ github.token }}
+  checker-key:
+    description: The private key (PEM) of a key the record enrolls as a checker, from a repository secret. When it is set, the Action runs `mnema check run` with it after everything else, leaves the results in the working tree, and fails when a check did not pass. Empty by default, and no check runs.
+    default: ""
   require-approval-for-asks:
     description: Set to "true" to fail when a changed file is addressed by an accepted asks-for-a-person rule and nobody but the author has approved the pull request. Off by default.
     default: "false"

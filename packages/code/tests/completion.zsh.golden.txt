@@ -188,7 +188,7 @@ _mnema_flags() {
     'key request') echo '--anchor --key --checker -h --help -V --version --color --identify' ;;
     'key enroll') echo '--checker -h --help -V --version --color --identify' ;;
     'key github') echo '-h --help -V --version --color --identify' ;;
-    'key revoke') echo '--reason -h --help -V --version --color --identify' ;;
+    'key revoke') echo '--reason --checker -h --help -V --version --color --identify' ;;
     'key protect') echo '-h --help -V --version --color --identify' ;;
     'key unprotect') echo '-h --help -V --version --color --identify' ;;
     'tail') echo '-h --help -V --version --color --identify' ;;
