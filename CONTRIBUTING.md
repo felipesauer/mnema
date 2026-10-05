@@ -86,6 +86,19 @@ for: a guard that has never been seen to fail looks exactly like one that cannot
   over the one that is more convenient.** That is the criterion behind most of what the
   guards above ask for.
 
+## Changing a skill
+
+The skills the plugin ships are in [`plugin/skills/`](plugin/skills/). **A change to a skill, or a
+new one, comes with an eval: the cases that must bring the skill up and the cases that must not.**
+Today no automated eval of that kind exists. What runs is
+[`every-skill-the-plugin-ships-is-what-it-says.test.ts`](packages/code/tests/every-skill-the-plugin-ships-is-what-it-says.test.ts),
+which holds the form (the `name` is the directory, the `description` says when the skill applies,
+every tool it cites is served), not whether a model reaches for it. So the minimum is in the pull
+request: at least one prompt that should activate the skill and one that should not, and what a
+real run of a host did with each. A change to the `description` is the change this matters most
+for, since that line decides when the skill is offered. If an eval is added later, this section
+names how to run it.
+
 ## Cutting a release
 
 This is how the `v0.1.0-beta` pre-release was cut, and it is the whole procedure. It is the
