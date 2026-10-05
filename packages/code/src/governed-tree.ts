@@ -95,6 +95,43 @@ export function readGoverningRules(
 }
 
 /**
+ * The rules that govern where `read.path` REALLY is, for a reader that asks (`mnema rules`).
+ *
+ * The path as written is read first. When no rule of any relation covers it and a link leads
+ * somewhere else inside the project ({@link realPathInside}, the one resolution every gate uses),
+ * the answer is the reading at that place, still carrying the path as the caller wrote it and
+ * naming, in `relative`, the place it was compared at. A path some rule already covers is
+ * answered as written: a reading is one place, not the union of two.
+ */
+export function readGoverningRulesWhereItLands(
+  sources: readonly ScopedCache[],
+  read: GovernedRead,
+): GoverningRules {
+  const given = readGoverningRules(sources, read);
+  if (given.rules.length + given.asks.length + given.refuses.length > 0) return given;
+  const real = realPathInside(read);
+  return real === undefined
+    ? given
+    : { ...readGoverningRules(sources, { ...read, path: real }), path: given.path };
+}
+
+/**
+ * The rules in force where `read.path` really is, for the reads that tell (`mnema why`, the
+ * push): the path as written first, then — when it has none — the place a link leads to inside
+ * the project. Same rule as {@link readGoverningRulesWhereItLands}, for the same reason: the
+ * two readings of one path must not disagree about where it is.
+ */
+export function readRulesInForceWhereItLands(
+  sources: readonly ScopedCache[],
+  read: GovernedRead,
+): RulesAtPath {
+  const given = readRulesInForceAt(sources, read);
+  if (given.rules.length > 0) return given;
+  const real = realPathInside(read);
+  return real === undefined ? given : readRulesInForceAt(sources, { ...read, path: real });
+}
+
+/**
  * The same reading, narrowed to the rules that still hold — what a channel that PUSHES
  * carries.
  *
@@ -180,6 +217,15 @@ function asked(read: GovernedRead): GovernanceQuery {
   };
 }
 
+/** The directory `path` sits in, as the file system has it; the spelled one when it cannot be read. */
+function realDirectoryOf(path: string): string {
+  try {
+    return realpathSync(dirname(path));
+  } catch {
+    return dirname(path);
+  }
+}
+
 /** How many links one resolution follows by hand before it gives the path as given (the kernel's own 40). */
 const MOST_LINKS_FOLLOWED = 40;
 
@@ -217,7 +263,9 @@ export function realPathInside(read: GovernedRead): string | undefined {
       if (lstatSync(existing).isSymbolicLink()) {
         hops += 1;
         if (hops > MOST_LINKS_FOLLOWED) return undefined;
-        target = resolve(dirname(existing), readlinkSync(existing));
+        // A relative target is read from where the link REALLY is: the directory it sits in may
+        // itself be a link, and `..` climbs out of the real one, not out of the spelling.
+        target = resolve(realDirectoryOf(existing), readlinkSync(existing));
       }
     } catch {
       target = undefined;

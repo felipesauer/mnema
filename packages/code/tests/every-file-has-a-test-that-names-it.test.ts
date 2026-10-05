@@ -1057,6 +1057,7 @@ const CLAUSES_PER_FILE: Readonly<Record<string, number>> = {
   'packages/code/tests/the-prose-carries-its-own-emphasis.test.ts': 5,
   'packages/code/tests/the-python-floor-is-declared-once.test.ts': 5,
   'packages/code/tests/the-read-says-the-record-does-not-chain.test.ts': 6,
+  'packages/code/tests/the-reads-follow-a-link-to-where-it-lands.test.ts': 8,
   'packages/code/tests/the-recipe-says-what-it-overwrites.test.ts': 8,
   'packages/code/tests/the-record-arrives-unasked.test.ts': 14,
   'packages/code/tests/the-record-asks-for-a-person.test.ts': 14,

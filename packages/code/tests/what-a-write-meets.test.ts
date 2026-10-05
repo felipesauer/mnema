@@ -276,6 +276,17 @@ describe('a link does not step around a rule', () => {
     expect(meets('src/billing/relative.ts')?.grade).toBe('refuse');
   });
 
+  it('reads a relative link from where its directory really is, not from the way it was spelled', async () => {
+    await ruleAt('Nobody writes the ledger by hand', 'src/ledger', 'refuses-a-write');
+    // `src/books` is a link to `src/deep/inner`, and the link in it climbs two levels FROM THERE:
+    // read against the spelling it would climb out of `src` altogether.
+    mkdirSync(join(repo, 'src', 'deep', 'inner'), { recursive: true });
+    symlinkSync(join(repo, 'src', 'deep', 'inner'), join(repo, 'src', 'books'));
+    symlinkSync('../../ledger/later.ts', join(repo, 'src', 'deep', 'inner', 'rel.ts'));
+
+    expect(meets('src/books/rel.ts')?.grade).toBe('refuse');
+  });
+
   it('meets nothing through a link that leaves the project, whatever it points at', async () => {
     await ruleAt('Nobody writes the ledger by hand', 'src/ledger', 'refuses-a-write');
     const outside = join(sandbox, 'outside');

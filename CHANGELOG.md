@@ -31,6 +31,12 @@ tag, with its own changelog.
   the label a write printed instead of an id, refuse as before (`UNKNOWN_DECISION`) and now carry a
   `message` with the sentence the command line and the MCP server say: the id (or ids) that label
   stands for. The three doors say it from one function.
+- **`mnema rules <path>` and `mnema why <path>` read a path where it really lands.** A path that no
+  rule covers as written, and that a link leads to somewhere else inside the project, is read again
+  at that place, with the same resolution the write gates use; a path some rule already covers is
+  answered as written, and a link that leaves the project is answered as written too. The same
+  resolution now reads a relative link from the directory it really sits in, so a link inside a
+  directory that is itself a link no longer climbs out of the way it was spelled.
 
 ## [0.1.0-beta] - 2026-10-05
 

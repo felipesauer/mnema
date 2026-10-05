@@ -35,7 +35,7 @@
 import { dirname } from 'node:path';
 import type { GoverningRules } from '@mnema/context';
 import { type DiscoveryEnv, resolveTrees } from '@mnema/core';
-import { readGoverningRules } from '../governed-tree.js';
+import { readGoverningRulesWhereItLands } from '../governed-tree.js';
 import {
   linkBreaksOf,
   type ScopedLinkBreak,
@@ -88,6 +88,6 @@ export function runRules(ctx: RulesContext, input: { path: string }): RulesDone 
   return withScopedCaches(trees, (sources) => ({
     ok: true,
     linkBreaks: linkBreaksOf(sources, THE_READING_THAT_OPENED_THESE),
-    governed: readGoverningRules(sources, { path: input.path, root, from: ctx.cwd }),
+    governed: readGoverningRulesWhereItLands(sources, { path: input.path, root, from: ctx.cwd }),
   }));
 }
