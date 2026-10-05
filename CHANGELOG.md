@@ -116,7 +116,7 @@ Requires Node ≥ 22.12.0; the packages are ESM-only.
   files it names, so a debugger in an installed tree can open them.
 
 - **A read-only diagram of the state machines**, and the timeline and references of one entity
-  (`mnema diagram`, `timeline`, `refs`): mermaid text on stdout, nothing written.
+  (the `diagram`, `timeline` and `refs` verbs): mermaid text on stdout, nothing written.
 - **A signed retraction for notes**: a memory or an observation can be taken back by a fact
   of its own, and the note stops being offered while its history stays.
 - **A rule that refuses a write** (`refuses-a-write`): the relation, the signed fact that
@@ -128,7 +128,7 @@ Requires Node ≥ 22.12.0; the packages are ESM-only.
   and a reader for the corrections an agent was given.
 - **Decisions imported as proposals** from the ECC Memory Vault, superpowers rulings and
   Claude Code memory files (`decision import`).
-- **`mnema site`**: the committed record as one page that verifies itself in the browser.
+- **The `site` verb**: the committed record as one page that verifies itself in the browser.
 - **Small things the command line should do**: a rationale from a file or from stdin, a rules
   file for Claude Code, `doctor`, a plugin without hooks, a warning when a skill is exported.
 - **`verify --since`**, and a sentence saying how far a green `verify` proves; a stored line that

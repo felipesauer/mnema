@@ -634,7 +634,8 @@ export const HANDED_OVER: Readonly<
   // line 41 for the block that writes the page.
   // line 46 and name 21 for the package page's blocks on the log read against the record and on
   // the inherited record, and the plugin page's block that installs the server-only plugin.
-  block: { line: 46, name: 21, flag: 1, unwritten: 0 },
+  // line 47 for the front page's block that moves a decision by its id (`mnema decision move`).
+  block: { line: 47, name: 21, flag: 1, unwritten: 0 },
   // 46 until the refusal an agent's `accept` gets, with the switch off, began naming the command a
   // person accepts with (`agent-accepts.ts`).
   // line 34 until the sentences an agent's accept is answered with began handing whole lines
