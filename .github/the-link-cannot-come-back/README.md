@@ -44,7 +44,8 @@ makes itself, `noreply@github.com`, is the one address besides. A work or privat
 `user.email` lands in a public history, and taking it out again is a rewrite of the trunk (done once,
 on 2026-09-30). The finding names the address, so the fix is where it says: `git config user.email`,
 then amend. Dependabot's author and committer are both of the two shapes, so it is not named either.
-An empty address is refused too.
+An empty address is refused too. The non-merge commits of one pull request must also share the
+*same* author address: GitHub's squash turns every other author into a `Co-authored-by` trailer.
 
 The other half of being right is what it lets through, and on this repository that half is
 load-bearing:

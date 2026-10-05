@@ -10,6 +10,8 @@ own changelog.
 
 ## [Unreleased]
 
+## [0.15.0] - 2026-10-05
+
 The first release of this line: `@mnema/code`, and the three packages it is built from.
 Requires Node ≥ 22.12.0; the packages are ESM-only.
 
@@ -21,7 +23,8 @@ Requires Node ≥ 22.12.0; the packages are ESM-only.
   the record, the inherited record, `doctor`, the plugin's skills and the server-only plugin.
 - **A guard on commit e-mails.** The pull request job that keeps the tool's footer out of the record
   now also refuses an author or committer outside `*@users.noreply.github.com` (GitHub's own
-  `noreply@github.com` is allowed as a committer).
+  `noreply@github.com` is allowed as a committer), and the non-merge commits of one pull request
+  must share a single author address, since the squash turns any other into a `Co-authored-by`.
 - **A library door to the record** (`packages/sdk`, not published): `openRecord` records a decision, accepts
   or rejects one, takes a note, reads the brief, the notes and the rules for a path, and verifies the
   record, each by calling the function the matching command calls; `mnemaHooks` returns the

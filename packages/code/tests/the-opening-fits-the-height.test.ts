@@ -360,14 +360,17 @@ const THE_GEOMETRIES: readonly {
   // a screen everybody has. What moved is the art, not the rule: the same third of the same
   // screen buys an arrangement now, and the three sizes are kept at their old numbers so that
   // the change is visible here rather than hidden by re-choosing them.
-  { columns: 100, rows: 24, form: 'columns' },
+  // The title carries the version, so this row sits where the title's width puts it: at 0.15.0
+  // the title is one column wider than at 0.1.0 and 100 columns by 24 rows no longer holds the
+  // arrangement (the first width that does is 101); the last row moved with it.
+  { columns: 101, rows: 24, form: 'columns' },
   { columns: 120, rows: 30, form: 'columns' },
   { columns: 190, rows: 64, form: 'columns' },
   // A tmux pane, and a narrow window — neither has the rows for an arrangement.
   { columns: 60, rows: 20, form: 'bare' },
   { columns: 47, rows: 24, form: 'bare' },
   // Wide enough for the text beside the mark, and now tall enough to hold it there too.
-  { columns: 100, rows: 30, form: 'columns' },
+  { columns: 101, rows: 30, form: 'columns' },
 ];
 
 describe('the arrangement is chosen by the height as well as the width', () => {

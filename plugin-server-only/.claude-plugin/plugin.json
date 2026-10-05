@@ -1,6 +1,6 @@
 {
   "name": "mnema-server-only",
-  "version": "0.1.0",
+  "version": "0.15.0",
   "description": "Connects the mnema MCP server so the agent can record its own work, and runs no hook: nothing is handed to a session as it opens, at an edit or when it ends.",
   "author": {
     "name": "Felipe Sauer",

@@ -1,6 +1,6 @@
 {
   "name": "@mnema/sdk",
-  "version": "0.1.0",
+  "version": "0.15.0",
   "private": true,
   "description": "A library door to the mnema record for a program that builds its own agent: record a decision, accept or reject one, take a note, read the brief, the notes and the rules for a path, verify the record, and register the Claude Agent SDK hooks that put the record in front of the agent. It calls the same functions as the command line and the MCP server; it is not published.",
   "author": "Felipe Sauer (https://github.com/felipesauer)",
