@@ -629,7 +629,18 @@ export async function main() {
   console.log('baseline')
   report(runTests(), { isMutation: false })
 
-  for (const mutation of MUTATIONS.filter((_, i) => i % n === k)) {
+  // `--only id,id` runs the named ones — the id is the name before ` · ` — so that what a stopped
+  // slice did not reach can be handed to another copy without running the rest twice.
+  const onlyAt = process.argv.indexOf('--only')
+  const only = onlyAt === -1 ? null : process.argv[onlyAt + 1].split(',')
+  const idOf = (mutation) => mutation.name.split(' · ')[0]
+  if (only) {
+    const unknown = only.filter((id) => !MUTATIONS.some((m) => idOf(m) === id))
+    if (unknown.length) throw new Error(`--only names no mutation: ${unknown.join(', ')}`)
+  }
+  const chosen = MUTATIONS.filter((m, i) => (only ? only.includes(idOf(m)) : i % n === k))
+
+  for (const mutation of chosen) {
     // The one turn of the event loop this script gets. Without it the handlers above
     // are unreachable for the entire run — see the paragraph on the signal, and the
     // SIGTERM that was measured being swallowed.
