@@ -1017,6 +1017,7 @@ const CLAUSES_PER_FILE: Readonly<Record<string, number>> = {
   'packages/code/tests/the-echo-names-the-record.test.ts': 13,
   'packages/code/tests/the-example-is-read-from-the-page.test.ts': 5,
   'packages/code/tests/the-example-is-type-checked.test.ts': 6,
+  'packages/code/tests/the-example-rules-run.test.ts': 8,
   'packages/code/tests/the-feed-covers-this-project.test.ts': 10,
   'packages/code/tests/the-feed-leaves-the-bodies-behind.test.ts': 7,
   'packages/code/tests/the-first-record-a-page-shows-is-the-one-printed.test.ts': 8,
