@@ -140,7 +140,11 @@ describe('only the identity that wrote a note retracts it', () => {
     try {
       // The cache that was open brings itself forward, and a fresh one replays: both serve it.
       cache.refresh();
-      expect(served(cache, taken)).toEqual({ searched: [taken], listed: [taken], retracted: undefined });
+      expect(served(cache, taken)).toEqual({
+        searched: [taken],
+        listed: [taken],
+        retracted: undefined,
+      });
       const replayed = ProjectionCache.open(tree);
       try {
         replayed.rebuild();
@@ -159,7 +163,11 @@ describe('only the identity that wrote a note retracts it', () => {
     const verdict = verify(tree, upcasters);
     expect(verdict.ok).toBe(true);
     expect(verdict.census.map((note) => note.kind)).toEqual(['foreign-retraction']);
-    expect(verdict.census[0]).toMatchObject({ note: taken, by: stranger, author: ensureFounded(a) });
+    expect(verdict.census[0]).toMatchObject({
+      note: taken,
+      by: stranger,
+      author: ensureFounded(a),
+    });
     expect(verdict.summary).toContain('not applied');
 
     // And the stranger's fact does not stand in the author's way.

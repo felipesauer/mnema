@@ -483,6 +483,28 @@ last checkpoint could be appended by somebody holding no key, naming an account 
 had published this identity's public key
 (`packages/code/src/commands/verify-github.test.ts`).
 
+### 6.4 A note taken back
+
+`note.retracted` (`payload.reason`) takes back the memory (`memory.captured`) or observation
+(`observation.recorded`) its `subject` names. Like §6.3's link it is **not part of the fold**
+and is authenticated by the rule every other event is. Nothing about its bytes, its chaining
+or its signature differs from any other kind; what this section adds is who it speaks for.
+
+**Only the identity that wrote a note takes it back: a retraction applies when its `who` is the
+`who` of the note it names.** The comparison is on the anchor, not the key, so any key in that
+anchor's set — a second machine enrolled into the identity, a cold backup restored — retracts,
+and a key of another identity does not. Of the retractions of one note that apply, the first in
+the merged order of §6.2 holds. A retraction whose `who` is not the note's is not applied: a
+reader keeps serving the note. It is **not a break** — the event is intact and its key speaks
+for its own `who`; what it lacks is authority over somebody else's note — so this product's
+`verify` names it in its census, informational, and the exit is unchanged. A retraction of a
+note the tree does not hold has no author to compare with, and is neither applied nor named
+(`packages/core/src/knowledge/only-the-identity-that-wrote-a-note-retracts-it.test.ts`).
+
+A verification of the format does not need this rule — it decides what a reader SERVES, not
+what verifies — and the second reader beside this file does not read retractions at all. A
+binary from before the rule applied every retraction, whoever signed it.
+
 ## 7. Versions, and why a proof is never recomputed over a reading
 
 Every event carries `kind` and `v`. Together they select exactly one payload

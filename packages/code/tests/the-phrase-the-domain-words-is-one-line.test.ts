@@ -652,6 +652,23 @@ const CLASSIFIED: Readonly<Record<string, { verdict: Verdict; why: string }>> = 
     verdict: 'minted',
     why: 'what that kind does instead, a phrase of the retraction’s own table',
   },
+  '@mnema/core knowledge/operations.ts «{} "{}" was written by {}, » standing.note #1': {
+    verdict: 'minted',
+    why: 'the kind of the note, `memory` or `observation`, read off its own event',
+  },
+  '@mnema/core knowledge/operations.ts «{} "{}" was written by {}, » oneLine(input.id) #1': {
+    verdict: 'collapsed',
+    why: 'the id the caller named, from the argv or a tool argument',
+  },
+  '@mnema/core knowledge/operations.ts «{} "{}" was written by {}, » oneLine(standing.who) #1': {
+    verdict: 'collapsed',
+    why: 'the identity a stored note names as its writer',
+  },
+  '@mnema/core knowledge/operations.ts «and only that identity retracts it; this writer is {}. » oneLine(who) #1':
+    {
+      verdict: 'collapsed',
+      why: 'the anchor this installation writes as, read from a file at its key root',
+    },
   '@mnema/core knowledge/operations.ts «{} "{}" was already retracted at » standing.note #1': {
     verdict: 'minted',
     why: 'the kind of the note, `memory` or `observation`, read off its own event',
@@ -998,6 +1015,21 @@ const CLASSIFIED: Readonly<Record<string, { verdict: Verdict; why: string }>> = 
     verdict: 'collapsed',
     why: 'the head the waiver claims the tail ended at — a string field of a stored event',
   },
+  '@mnema/chain chain/verify.ts «a retraction of {} signed by {}, which did not » oneLine(event.subject) #1':
+    {
+      verdict: 'collapsed',
+      why: 'the subject of a stored retraction, the id of the note it names',
+    },
+  '@mnema/chain chain/verify.ts «a retraction of {} signed by {}, which did not » oneLine(event.who) #1':
+    {
+      verdict: 'collapsed',
+      why: 'the identity a stored retraction names as its signer',
+    },
+  '@mnema/chain chain/verify.ts «write it ({} did) — only the identity that wrote a note takes it back, » oneLine(author) #1':
+    {
+      verdict: 'collapsed',
+      why: 'the identity a stored note names as its writer',
+    },
   '@mnema/chain chain/verify.ts «authorized by {}» oneLine(waiver.who) #1': {
     verdict: 'collapsed',
     why: 'the identity a stored waiver names as its authorizer',
@@ -1497,6 +1529,8 @@ const NOT_A_SENTENCE: Readonly<Record<string, string>> = {
     'another clause of that same table, and a count on the same terms',
   '@mnema/chain chain/verify.ts «{} tail(s) ending in a dropped partial line (see census — informational, not a break)» count':
     'another clause of that same table, and a count on the same terms',
+  '@mnema/chain chain/verify.ts «{} retraction(s) by an identity that did not write the note, not applied (see census — informational, not a break)» count':
+    'another clause of that same table, and a count on the same terms',
   '@mnema/chain chain/verify.ts «{}/» layout.root':
     'the prefix `withinChain` STRIPS — what makes the locus a path inside the chain rather ' +
     'than wherever this clone sits. It is never printed.',
@@ -1522,9 +1556,9 @@ describe('every value the domain puts in a sentence is classified', () => {
     // are equal. The scale is stated, and so is what the HANDOFF said — twenty-three
     // sites, twelve in `core` and eleven in `chain` — because it counted sentences
     // written at a `message:` or a `detail:` directly, and a value is not a sentence.
-    expect(SITES.length).toBe(183);
-    expect(FOUND[0]?.sites.length).toBe(53);
-    expect(FOUND[1]?.sites.length).toBe(130);
+    expect(SITES.length).toBe(190);
+    expect(FOUND[0]?.sites.length).toBe(56);
+    expect(FOUND[1]?.sites.length).toBe(134);
     expect(FOUND.flatMap((layer) => layer.wording).length).toBeGreaterThan(15);
   });
 
@@ -1574,11 +1608,11 @@ describe('every value the domain puts in a sentence is classified', () => {
     // No arm of the case above may be empty, or that much of it is vacuous.
     const verdicts = Object.values(CLASSIFIED).map((said) => said.verdict);
     const count = (verdict: Verdict): number => verdicts.filter((said) => said === verdict).length;
-    expect(count('collapsed')).toBe(110);
-    expect(count('minted')).toBe(51);
+    expect(count('collapsed')).toBe(116);
+    expect(count('minted')).toBe(52);
     expect(count('composed')).toBe(22);
     expect(SITES.filter((site) => new RegExp(`\\b${DOOR}\\b`).test(site.expression))).toHaveLength(
-      110,
+      116,
     );
   });
 
