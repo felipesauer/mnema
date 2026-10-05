@@ -4,7 +4,7 @@
  * THE RULE IS OLD AND IT WAS BROKEN ANYWAY. This repository does not credit the tool that wrote
  * a change in the change's own record: no `Co-Authored-By:` naming the assistant, no `Generated
  * with [Claude Code]` under a pull request. That held for 243 pull requests because somebody
- * remembered it each time. On 2026-09-11 a sweep of `main-v1` found ONE co-author trailer and
+ * remembered it each time. On 2026-09-11 a sweep of the trunk (named `main-v1` until 2026-10-05) found ONE co-author trailer and
  * THIRTEEN generated-with lines in the trunk's own commits, and NINETEEN more in the descriptions
  * of merged pull requests, from #361 to #616. Of the four deliveries around the leak, three were
  * read by hand before the merge and the one that was not is the one that carried it.

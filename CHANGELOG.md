@@ -5,10 +5,14 @@ Notable changes to the packages in this repository are recorded here. The format
 [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 The line before this one, the 0.x alpha published as `@felipesauer/mnema`, is deprecated on
-npm and lives on the [`main`](https://github.com/felipesauer/mnema/tree/main) branch, with its
-own changelog.
+npm and lives on the [`archive/alpha-0.14`](https://github.com/felipesauer/mnema/tree/archive/alpha-0.14)
+tag, with its own changelog.
 
 ## [Unreleased]
+
+### Changed
+
+- The trunk is now named `main` (it was `main-v1`); the 0.x alpha is on the `archive/alpha-0.14` tag.
 
 ## [0.15.0] - 2026-10-05
 
@@ -111,4 +115,4 @@ Requires Node ≥ 22.12.0; the packages are ESM-only.
 - **Source maps that carry their source.** Every map a package ships holds the text of the
   files it names, so a debugger in an installed tree can open them.
 
-[Unreleased]: https://github.com/felipesauer/mnema/commits/main-v1
+[Unreleased]: https://github.com/felipesauer/mnema/commits/main

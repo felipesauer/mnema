@@ -2,12 +2,11 @@ name: CI
 
 on:
   push:
-    # main is the published alpha and what dependabot works against; main-v1 is the trunk
-    # the v1 is built on. Twelve merges landed on main-v1 before it was named here, and none
-    # of them had ever run on a runner.
-    branches: [main, main-v1]
+    # The trunk was named `main-v1` until 2026-10-05, and twelve merges landed on it before
+    # it was named here; none of them had ever run on a runner.
+    branches: [main]
   pull_request:
-    branches: [main, main-v1]
+    branches: [main]
 
 permissions:
   contents: read

@@ -9,7 +9,7 @@ each time, and on **2026-09-11** a sweep found what remembering had missed:
 
 | where | how many | reach |
 |---|---:|---|
-| a co-author trailer in `main-v1`'s own commits | **1** | the default branch of a public repository |
+| a co-author trailer in the trunk's own commits (then named `main-v1`) | **1** | the default branch of a public repository |
 | `🤖 Generated with [Claude Code]` in those commits | **13** | 27/07 to 11/09 |
 | the same footer in pull request **descriptions** | **19** | public, #361 to #616 |
 
