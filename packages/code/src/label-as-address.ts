@@ -30,17 +30,30 @@ const A_LABEL = /^ADR-\d+$/i;
 
 /** The sentence for a typed `named`, or undefined when it is not a label some decision carries. */
 export function labelAsAddress(ctx: Here, named: string): string | undefined {
+  if (!A_LABEL.test(named.trim())) return undefined;
+  return withScopedCaches(resolveTrees(ctx.cwd, ctx.env), (sources) =>
+    labelSentence(
+      named,
+      caches(sources).flatMap((cache) => cache.listDecisions()),
+    ),
+  );
+}
+
+/**
+ * The same sentence over decisions already in hand: the door that holds its own caches (the MCP
+ * session's) reads them itself and asks only for the words, so the two surfaces cannot say it
+ * differently.
+ */
+export function labelSentence(
+  named: string,
+  decisions: readonly { readonly id: string; readonly adr: string }[],
+): string | undefined {
   const typed = named.trim();
   if (!A_LABEL.test(typed)) return undefined;
   const label = typed.toUpperCase();
-  const ids = withScopedCaches(resolveTrees(ctx.cwd, ctx.env), (sources) => [
-    ...new Set(
-      caches(sources)
-        .flatMap((cache) => cache.listDecisions())
-        .filter((decision) => decision.adr === label)
-        .map((decision) => decision.id),
-    ),
-  ]).sort();
+  const ids = [
+    ...new Set(decisions.filter((decision) => decision.adr === label).map((d) => d.id)),
+  ].sort();
   if (ids.length < 1) return undefined;
   const list = ids.map((id) => oneLine(id)).join(', ');
   return ids.length === 1

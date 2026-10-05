@@ -144,6 +144,7 @@ import {
   successorOnlyForASupersede,
   supersedeLeavesNothingInForce,
 } from '../moved-record.js';
+import { labelSentence } from '../label-as-address.js';
 import { oneLine } from '../one-line.js';
 import {
   ASKS_A_PERSON_CHANNEL,
@@ -776,7 +777,20 @@ export function runDecisionTransition(
   // Route by the decision's home tree, not the session's scope: the move follows
   // the entity so its history stays whole in one tree — in whichever project it is.
   const located = locateEntity(session, input.id);
-  if (located.outcome !== 'found') return refuseUnlocated(session, 'decision', input.id, located);
+  if (located.outcome !== 'found') {
+    const refused = refuseUnlocated(session, 'decision', input.id, located);
+    // The `ADR-<n>` label every write prints is no address (a tree numbers its own), so the
+    // refusal says which id or ids carry the one that was typed: the sentence the command line
+    // says, from the same function.
+    const label =
+      located.outcome === 'nowhere'
+        ? labelSentence(
+            input.id,
+            workspaceCaches(session).flatMap(({ cache }) => cache.listDecisions()),
+          )
+        : undefined;
+    return label === undefined ? refused : { ...refused, message: `${refused.message}. ${label}` };
+  }
 
   // Dispatch on the action to pick the right typed operation (accept/reject vs
   // supersede differ in the core's types). That needs the closed set of verbs;
