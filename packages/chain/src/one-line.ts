@@ -157,12 +157,9 @@ const CONTROL_BYTES =
  * parses to the same value it did.
  */
 export function neutralized(text: string): string {
-  return text.replace(
-    CONTROL_BYTES,
-    (found) => {
-      const code = found.codePointAt(0) ?? 0;
-      const hex = code.toString(16);
-      return code > 0xffff ? `\\u{${hex}}` : `\\u${hex.padStart(4, '0')}`;
-    },
-  );
+  return text.replace(CONTROL_BYTES, (found) => {
+    const code = found.codePointAt(0) ?? 0;
+    const hex = code.toString(16);
+    return code > 0xffff ? `\\u{${hex}}` : `\\u${hex.padStart(4, '0')}`;
+  });
 }
