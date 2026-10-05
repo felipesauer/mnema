@@ -2,7 +2,7 @@
   "name": "@mnema/vscode",
   "displayName": "mnema",
   "publisher": "felipesauer",
-  "version": "0.15.0",
+  "version": "0.1.0-beta",
   "private": true,
   "description": "A VS Code extension for the person who reviews the mnema record: the rules in force over the open file, the decisions waiting for a judgment, and where the record verifies. It reads and writes only through the mnema command line and is not published.",
   "author": "Felipe Sauer (https://github.com/felipesauer)",

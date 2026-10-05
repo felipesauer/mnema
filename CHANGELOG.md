@@ -14,7 +14,9 @@ tag, with its own changelog.
 
 - The trunk is now named `main` (it was `main-v1`); the 0.x alpha is on the `archive/alpha-0.14` tag.
 
-## [0.15.0] - 2026-10-05
+## [0.1.0-beta] - 2026-10-05
+
+The first version of this line: the numbering starts over here and does not continue the 0.x alpha.
 
 The first release of this line: `@mnema/code`, and the three packages it is built from.
 Requires Node ≥ 22.12.0; the packages are ESM-only.
