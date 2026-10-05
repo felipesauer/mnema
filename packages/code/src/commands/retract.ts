@@ -9,9 +9,9 @@
  *
  * It follows the note to the tree it was written in, the way a decision's move follows the
  * decision, and takes no `--scope`: a retraction filed in another tree would leave the note's
- * history split. Who may retract is what the record already decides for a supersede — anyone
- * who writes in it, attributed to this installation and, with `--which`, to the agent that
- * carried it out. Decisions and patterns keep their own lifecycle and are refused here.
+ * history split. Only the identity that wrote the note retracts it, with any key of it; the
+ * fact is attributed to this installation and, with `--which`, to the agent that carried it
+ * out. Decisions and patterns keep their own lifecycle and are refused here.
  */
 
 import { catalogUpcasters } from '@mnema/chain';

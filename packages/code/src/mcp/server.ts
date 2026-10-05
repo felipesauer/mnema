@@ -921,8 +921,9 @@ function registerTools(tool: ToolRegistrar, ensureSession: () => Promise<Session
         'note stops being served by the opening read and the search, and reading it by id ' +
         'still returns it, saying when, by whom and why it was retracted. It follows the ' +
         'note to the tree it was written in. Only notes are retracted: a decision is ' +
-        'rejected or superseded, a pattern rejected or deprecated. A note already ' +
-        'retracted is refused.' +
+        'rejected or superseded, a pattern rejected or deprecated. Only the identity that ' +
+        'wrote a note retracts it; a note of another identity, or one already retracted, ' +
+        'is refused.' +
         RECORD_CONTRACT,
       inputSchema: {
         id: z.string().min(1).describe('The id of the note to retract, as `read_record` opens it.'),
