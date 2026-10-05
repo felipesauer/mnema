@@ -11,11 +11,13 @@
 import { mkdirSync, mkdtempSync, rmSync, symlinkSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
-import type { DiscoveryEnv } from '@mnema/core';
+import { type DiscoveryEnv, resolveTrees } from '@mnema/core';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { type CliIo, run } from '../src/cli.js';
 import { runRules } from '../src/commands/rules.js';
 import { runWhy } from '../src/commands/why.js';
+import { withScopedCaches } from '../src/tree-sources.js';
+import { whatAWriteMeets } from '../src/what-a-write-meets.js';
 
 let sandbox: string;
 let repo: string;
@@ -40,12 +42,12 @@ async function did(...argv: string[]): Promise<string> {
 }
 
 /** A decision in force, linked to `path` under `governs`. */
-async function ruleAt(title: string, path: string): Promise<string> {
+async function ruleAt(title: string, path: string, rel = 'governs'): Promise<string> {
   const id = (await did('decision', 'record', title, `why ${title}`)).match(
     /\(([0-9a-f-]{20,})\)/,
   )?.[1] as string;
   await did('decision', 'move', 'accept', id, '--note', 'agreed');
-  await did('link', id, path, '--rel', 'governs');
+  await did('link', id, path, '--rel', rel);
   return id;
 }
 
@@ -90,7 +92,7 @@ describe('mnema rules <path>', () => {
     if (!read.ok) throw new Error('no project');
     expect(read.governed.rules.map((one) => one.rule)).toEqual([rule]);
     expect(read.governed.path).toBe(join(repo, 'src', 'billing', 'alias.ts'));
-    expect(read.governed.relative).toBe('src/ledger/posting.ts');
+    expect(read.governed.relative).toBe('src/billing/alias.ts');
   });
 
   it('places a path under a directory that is a link, and one through a relative link in it', async () => {
@@ -113,12 +115,42 @@ describe('mnema rules <path>', () => {
     expect(ruleIdsOf('src/billing/away/posting.ts')).toEqual([]);
   });
 
-  it('keeps the rules of the path as written when some cover it', async () => {
+  it('adds the rules of the place to those of the path as written, each once', async () => {
     const own = await ruleAt('Billing has its own reviewer', 'src/billing');
-    await ruleAt('The ledger is posted by the batch', 'src/ledger');
+    const ledger = await ruleAt('The ledger is posted by the batch', 'src/ledger');
     symlinkSync(join(repo, 'src', 'ledger'), join(repo, 'src', 'billing', 'books'));
 
-    expect(ruleIdsOf('src/billing/books/posting.ts')).toEqual([own]);
+    // Most specific first: the ledger is as deep as billing, so the address orders them.
+    expect(ruleIdsOf('src/billing/books/posting.ts').sort()).toEqual([own, ledger].sort());
+    const read = runRules({ cwd: repo, env }, { path: 'src/billing/books/posting.ts' });
+    if (!read.ok) throw new Error('no project');
+    expect(read.governed.counts.matching).toBe(2);
+  });
+
+  it('lists the refusal the write gate applies, even when a rule over the whole project covers the path', async () => {
+    await ruleAt('Everything here is reviewed', '.');
+    const refusal = await ruleAt(
+      'Nobody writes the ledger by hand',
+      'src/ledger',
+      'refuses-a-write',
+    );
+    symlinkSync(join(repo, 'src', 'ledger'), join(repo, 'src', 'billing', 'books'));
+    const governs = await ruleAt('The ledger is posted by the batch', 'src/ledger');
+    const path = 'src/billing/books/posting.ts';
+
+    const read = runRules({ cwd: repo, env }, { path });
+    if (!read.ok) throw new Error('no project');
+    const gate = withScopedCaches(resolveTrees(repo, env), (sources) =>
+      whatAWriteMeets(sources, { paths: [path], root: repo, from: repo }),
+    );
+    // The two surfaces agree: the gate refuses, and `rules` names the rule it refuses by.
+    expect(gate?.grade).toBe('refuse');
+    expect(read.governed.refuses.map((one) => one.rule)).toEqual([refusal]);
+    expect(read.governed.counts.refuses.matching).toBe(1);
+    const why = runWhy({ cwd: repo, env }, { target: path });
+    if (!why.ok || why.about !== 'file') throw new Error('expected a file answer');
+    // `why` cites the rules that govern: the ledger's, which the whole-project rule would hide.
+    expect(why.rules.map((one) => one.id)).toContain(governs);
   });
 });
 

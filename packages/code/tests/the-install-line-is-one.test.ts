@@ -13,6 +13,7 @@ import { join } from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 import { describe, expect, it } from 'vitest';
 import { runDoctor } from '../src/commands/doctor.js';
+import { VERSION } from '../src/version.js';
 
 const REPO = fileURLToPath(new URL('../../../', import.meta.url));
 const TARBALL = /https:\/\/github\.com\/felipesauer\/mnema\/releases\/download\/[^\s\\]+\.tgz/g;
@@ -32,6 +33,15 @@ describe('the install of the pre-release', () => {
       expect.stringMatching(/^mnema-context-/),
       expect.stringMatching(/^mnema-code-/),
     ]);
+  });
+
+  it('names the version of the package, in the page, in the doctor and in the hook', () => {
+    expect(
+      README_URLS.every((url) => url.includes(`/v${VERSION}/`) && url.endsWith(`-${VERSION}.tgz`)),
+    ).toBe(true);
+    expect(readFileSync(join(REPO, 'plugin', 'hooks', 'hand-over.mjs'), 'utf-8')).toContain(
+      `const PRERELEASE = '${VERSION}';`,
+    );
   });
 
   it('is what `mnema doctor` says when there is no mnema on the PATH', () => {

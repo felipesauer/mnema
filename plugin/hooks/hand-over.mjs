@@ -133,10 +133,11 @@ const THIS_PRODUCT = '@mnema/code';
  * one command, the line the root README gives (`the-install-line-is-one.test.ts` holds them
  * together). Move it to `npm install -g @mnema/code` when the packages are published.
  */
+const PRERELEASE = '0.1.0-beta';
 const PRERELEASE_INSTALL = `npm i -g ${['chain', 'core', 'context', 'code']
   .map(
     (name) =>
-      `https://github.com/felipesauer/mnema/releases/download/v0.1.0-beta/mnema-${name}-0.1.0-beta.tgz`,
+      `https://github.com/felipesauer/mnema/releases/download/v${PRERELEASE}/mnema-${name}-${PRERELEASE}.tgz`,
   )
   .join(' ')}`;
 

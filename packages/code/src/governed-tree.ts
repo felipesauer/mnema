@@ -95,40 +95,102 @@ export function readGoverningRules(
 }
 
 /**
- * The rules that govern where `read.path` REALLY is, for a reader that asks (`mnema rules`).
- *
- * The path as written is read first. When no rule of any relation covers it and a link leads
- * somewhere else inside the project ({@link realPathInside}, the one resolution every gate uses),
- * the answer is the reading at that place, still carrying the path as the caller wrote it and
- * naming, in `relative`, the place it was compared at. A path some rule already covers is
- * answered as written: a reading is one place, not the union of two.
+ * EVERY PLACE A PATH IS READ AT: as written, and — when a link leads somewhere else inside the
+ * project ({@link realPathInside}) — where it really lands. The write gate and the readers below
+ * take their places from here, so the reading never names fewer places than the gate applies.
+ */
+export function placesOfAPath(read: GovernedRead): string[] {
+  const real = realPathInside(read);
+  return real === undefined ? [read.path] : [read.path, real];
+}
+
+/** How many segments an address has, `.` (the whole project) being none: the order of specificity. */
+const depthOf = (address: string): number =>
+  address === '.' ? 0 : address.split('/').filter((part) => part !== '').length;
+
+/** Several readings of one path as ONE list: each rule once, most specific first. */
+function onceBySpecificity<T extends { readonly address?: string | undefined }>(
+  lists: readonly (readonly T[])[],
+  idOf: (item: T) => string,
+): T[] {
+  const seen = new Set<string>();
+  const merged: T[] = [];
+  for (const item of lists.flat()) {
+    const key = `${idOf(item)}\0${item.address ?? ''}`;
+    if (seen.has(key)) continue;
+    seen.add(key);
+    merged.push(item);
+  }
+  return merged.sort(
+    (a, b) =>
+      depthOf(b.address ?? '.') - depthOf(a.address ?? '.') ||
+      (a.address ?? '').localeCompare(b.address ?? '') ||
+      idOf(a).localeCompare(idOf(b)),
+  );
+}
+
+/**
+ * The rules that govern a path, for a reader that asks (`mnema rules`): the reading at EVERY
+ * place the path is read at ({@link placesOfAPath}) added together, each rule once. A reader
+ * that said less than the write gate applies would be telling a person a write is free that the
+ * gate refuses. The answer carries the path as written and compares it as written; the lists a
+ * place does not change (stale, unresolved, what the project addresses at all) are the first's.
  */
 export function readGoverningRulesWhereItLands(
   sources: readonly ScopedCache[],
   read: GovernedRead,
 ): GoverningRules {
-  const given = readGoverningRules(sources, read);
-  if (given.rules.length + given.asks.length + given.refuses.length > 0) return given;
-  const real = realPathInside(read);
-  return real === undefined
-    ? given
-    : { ...readGoverningRules(sources, { ...read, path: real }), path: given.path };
+  const [first, ...others] = placesOfAPath(read).map((path) =>
+    readGoverningRules(sources, { ...read, path }),
+  ) as [GoverningRules, ...GoverningRules[]];
+  if (others.length === 0) return first;
+  const all = [first, ...others];
+  const rules = onceBySpecificity(
+    all.map((one) => one.rules),
+    (rule) => rule.rule,
+  );
+  const asks = onceBySpecificity(
+    all.map((one) => one.asks),
+    (rule) => rule.rule,
+  );
+  const refuses = onceBySpecificity(
+    all.map((one) => one.refuses),
+    (rule) => rule.rule,
+  );
+  return {
+    ...first,
+    rules,
+    asks,
+    refuses,
+    counts: {
+      ...first.counts,
+      matching: rules.length,
+      asks: { ...first.counts.asks, matching: asks.length },
+      refuses: { ...first.counts.refuses, matching: refuses.length },
+    },
+  };
 }
 
 /**
- * The rules in force where `read.path` really is, for the reads that tell (`mnema why`, the
- * push): the path as written first, then — when it has none — the place a link leads to inside
- * the project. Same rule as {@link readGoverningRulesWhereItLands}, for the same reason: the
- * two readings of one path must not disagree about where it is.
+ * The rules in force at a path, for the reads that tell (`mnema why`, the push): the reading at
+ * every place the path is read at, each rule once — the same addition, for the same reason, as
+ * {@link readGoverningRulesWhereItLands}.
  */
 export function readRulesInForceWhereItLands(
   sources: readonly ScopedCache[],
   read: GovernedRead,
 ): RulesAtPath {
-  const given = readRulesInForceAt(sources, read);
-  if (given.rules.length > 0) return given;
-  const real = realPathInside(read);
-  return real === undefined ? given : readRulesInForceAt(sources, { ...read, path: real });
+  const [first, ...others] = placesOfAPath(read).map((path) =>
+    readRulesInForceAt(sources, { ...read, path }),
+  ) as [RulesAtPath, ...RulesAtPath[]];
+  if (others.length === 0) return first;
+  return {
+    ...first,
+    rules: onceBySpecificity(
+      [first, ...others].map((one) => one.rules),
+      (rule) => rule.id,
+    ),
+  };
 }
 
 /**

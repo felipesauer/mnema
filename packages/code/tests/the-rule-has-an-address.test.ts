@@ -328,7 +328,7 @@ describe('the reading answers, and charges nothing', () => {
     // addresses to it (a symlink once made one project look like two). What reads a path for a
     // person is the command, and it asks the one resolution every write gate uses
     // (`realPathInside`) when no rule covers the path as written: the answer then says, in
-    // `relative`, the place it was compared at.
+    // `relative`, the path as written.
     mkdirSync(join(repo, 'src', 'collate'), { recursive: true });
     symlinkSync(join(repo, 'src', 'collate'), join(repo, 'linked'));
     const rule = await decide('how collation works');
@@ -340,16 +340,17 @@ describe('the reading answers, and charges nothing', () => {
     // Through the link: found too, and it says where.
     const through = await reported('linked/fold.ts');
     expect(through.rules.map((one) => one.rule)).toEqual([rule]);
-    expect(through.relative).toBe('src/collate/fold.ts');
+    expect(through.relative).toBe('linked/fold.ts');
     expect(through.counts.matching).toBe(1);
 
-    // A rule that addresses the link's own name wins: the path as written is read first, and
-    // a reading is one place, not the union of two.
+    // A rule that addresses the link's own name is added to it, not preferred: the reading says
+    // what the write gate applies, which is the sum of the two places.
     const own = await decide('how the shortcut is kept');
     await addressAt(own, 'linked');
     const written = await reported('linked/fold.ts');
-    expect(written.rules.map((one) => one.rule)).toEqual([own]);
+    expect(written.rules.map((one) => one.rule).sort()).toEqual([own, rule].sort());
     expect(written.relative).toBe('linked/fold.ts');
+    expect(written.counts.matching).toBe(2);
   });
 
   it('asks the working tree through the link, so a live symlink is not stale', async () => {

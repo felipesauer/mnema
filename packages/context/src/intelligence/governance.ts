@@ -77,7 +77,7 @@
  *     derivation, and a rule addressed at one is not found through the other.
  *     Resolving would mean touching the disk per segment, and this bench has already
  *     been bitten by treating a textual resolution as a real one; the commands that
- *     read a path for a person read it a second time at the place a link leads to
+ *     read a path for a person add the reading at the place a link leads to
  *     (`code/src/governed-tree.ts`), so this derivation stays text. The DISK PROBE
  *     does follow one,
  *     because it is `existsSync` and that is what existing means — so an address at a
