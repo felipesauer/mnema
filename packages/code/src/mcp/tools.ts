@@ -139,12 +139,12 @@ import {
   type ScopedTree,
   scopedEventsOf,
 } from '../intelligence-source.js';
+import { labelSentence } from '../label-as-address.js';
 import {
   movedDisplay,
   successorOnlyForASupersede,
   supersedeLeavesNothingInForce,
 } from '../moved-record.js';
-import { labelSentence } from '../label-as-address.js';
 import { oneLine } from '../one-line.js';
 import {
   ASKS_A_PERSON_CHANNEL,
