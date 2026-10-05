@@ -157,9 +157,12 @@ const CONTROL_BYTES =
  * parses to the same value it did.
  */
 export function neutralized(text: string): string {
-  return text.replace(CONTROL_BYTES, (found) => {
-    const code = found.codePointAt(0) ?? 0;
-    const hex = code.toString(16);
-    return code > 0xffff ? `\\u{${hex}}` : `\\u${hex.padStart(4, '0')}`;
-  });
+  // A character outside the basic plane is written as the escaped surrogate pair JSON uses
+  // for it, one `\uXXXX` per code unit, so the escape stays valid inside a JSON string.
+  return text.replace(CONTROL_BYTES, (found) =>
+    Array.from(
+      { length: found.length },
+      (_, i) => `\\u${found.charCodeAt(i).toString(16).padStart(4, '0')}`,
+    ).join(''),
+  );
 }
