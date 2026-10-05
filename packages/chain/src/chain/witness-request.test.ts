@@ -480,6 +480,17 @@ describe('what the rule allows, read off the rule', () => {
     }
   });
 
+  it('allows only the https port, so an operator domain cannot be aimed at another service', () => {
+    for (const domain of WITNESS_OPERATOR_DOMAINS) {
+      expect(refuseCalendarAddress(`https://a.${domain}:8443/x`)).toBe(
+        `port 8443 is not the https port`,
+      );
+      expect(refuseCalendarAddress(`https://a.${domain}:22`)).not.toBeNull();
+      // 443 is the scheme's own default, so the URL parser drops it and it is the same address.
+      expect(refuseCalendarAddress(`https://a.${domain}:443/x`)).toBeNull();
+    }
+  });
+
   it('refuses what is not an address at all, rather than throwing on it', () => {
     // The URI is `varbytes` off a file, so it is bytes and not a URL until this says so.
     for (const nonsense of ['', 'not a url', '//', 'https://', '\u0000']) {

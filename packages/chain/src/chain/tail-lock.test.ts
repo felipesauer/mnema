@@ -246,18 +246,19 @@ describe('the lock a writer holds while it appends', () => {
     expect(verify(root, upcasters).ok).toBe(true);
   });
 
-  it('breaks a lock older than the staleness backstop even though its pid answers', () => {
+  it('does not break a lock whose holder is alive, however long it has held it', { timeout: 20_000 }, () => {
     const w = founded();
+    const before = entries().length;
     const lock = tailLockPath({ root }, w.tail);
-    // A LIVE pid — ours — with a record from long ago. This is the reused-pid case
-    // the pid check cannot decide, and it is the only thing the age is for. It is also a
-    // live holder that is merely slow, which the product cannot tell apart from it: the lock
-    // is taken from it all the same, and `tail-lock.ts` says that is a presumption and not a
-    // proof. The case holds the behaviour so that changing it is a decision and not a drift.
+    // A LIVE pid — ours — whose record is ten minutes old: a holder that is alive and slow
+    // (a stopped process, a suspended laptop). Breaking it would put two writers on one tail,
+    // which is the corruption the lock exists to prevent, so the writer waits and refuses.
     plantAt(lock, process.pid, Date.now() - 10 * 60_000);
 
-    w.append(task(w, 'after-a-reuse'));
-    expect(entries().length).toBe(2);
+    expect(() => w.append(task(w, 'after-a-slow-hold'))).toThrow(TailBusyError);
+    expect(entries().length).toBe(before);
+    expect(existsSync(lock)).toBe(true);
+    rmSync(lock);
   });
 
   it('releases the lock when the act inside it throws', () => {

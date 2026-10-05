@@ -23,6 +23,16 @@ tag, with its own changelog.
   date and the page it was read from), so a typo that would leave a hook silently mute turns the
   suite red.
 
+### Fixed
+
+- **A tail's lock is no longer taken from a live holder.** A waiter used to break a lock a minute
+  old even when its process still answered, so a holder that was alive and slow (a stopped process,
+  a suspended laptop) could end up with a second writer on the same tail. Only a lock whose process
+  is gone is broken now; a pid reused by an unrelated process keeps the tail busy, and the refusal
+  says to delete the lock file it names.
+- **A timestamp calendar is contacted only on the https port.** A proof naming an operator's host on
+  another port is refused and not contacted.
+
 ## [0.1.0-beta] - 2026-10-05
 
 The first release of this line: `@mnema/code`, and the three packages it is built from. The

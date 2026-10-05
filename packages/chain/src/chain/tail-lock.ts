@@ -35,17 +35,15 @@
  *
  * ## What happens when the holder dies
  *
- * A lock that outlives its holder would wedge the tail forever, so a waiter breaks
- * one it judges abandoned, and there are TWO judgements and only one is a proof: the
- * recorded pid is gone (a proof, as far as a pid proves anything), or the record is older
- * than {@link DEFAULT_STALE_MS} (a PRESUMPTION — the pid may answer, and a holder that is
- * alive and slow is broken all the same). This paragraph said "one it can prove is
- * abandoned" for both, which was true of the first and false of the second: a holder that
- * is alive past the minute loses the lock to the next waiter and the two then write the
- * one tail, which is the corruption the lock exists to prevent. The presumption is kept
- * because its alternative wedges a tail on a recycled pid with nobody to clear it, and the
- * hold it presumes against is measured in milliseconds; `tail-lock.test.ts` fixes both
- * judgements as cases so the day the second is replaced it is replaced on purpose. Breaking is itself a race — two waiters could both
+ * A lock that outlives its holder would wedge the tail forever, so a waiter breaks one
+ * whose recorded pid is gone, and ONLY that: a pid that answers is a holder, however long
+ * it has held. An age limit used to break a live holder after a minute, to recover a lock
+ * whose dead owner's pid had been reused; the cost was that a holder alive and merely slow
+ * (a stopped process, a suspended laptop) lost the lock to the next waiter and the two then
+ * wrote one tail, which is the corruption the lock exists to prevent. The cost of the
+ * choice made now is the other case: a reused pid keeps the tail busy, with nobody to
+ * clear it, so the refusal names the pid and the lock file and says what to do.
+ * `tail-lock.test.ts` fixes both judgements as cases. Breaking is itself a race — two waiters could both
  * decide to break, and the second could unlink a lock the first had just taken
  * fresh — so a breaker first `rename`s the file away, which the kernel gives to
  * exactly one of them, and then confirms the bytes it moved are the bytes it judged.
@@ -99,21 +97,6 @@ import { sleepSync } from './sleep.js';
  */
 export const DEFAULT_WAIT_MS = 2_000;
 
-/**
- * How old a lock record may be before a waiter treats it as abandoned even though
- * its pid answers.
- *
- * The pid check is the real test and this is the backstop under it, for the one case
- * the pid cannot decide: a dead holder's pid reused by an unrelated process. It has
- * to be comfortably longer than the longest honest hold, or it would break a lock
- * that is merely working — hence a minute against a hold measured in milliseconds.
- *
- * WHAT IT COSTS, SAID PLAINLY: the pid cannot tell a recycled pid from a live holder, so the
- * backstop breaks BOTH. A process that is alive and has held the lock for over a minute (a
- * stopped one, a suspended laptop) loses it, and may append after the next writer has.
- */
-export const DEFAULT_STALE_MS = 60_000;
-
 /** How long a waiter sleeps between attempts. */
 const POLL_MS = 5;
 
@@ -138,13 +121,16 @@ export class TailBusyError extends CodedError {
     waitedMs: number,
   ) {
     const holder = heldBy === undefined ? 'another process' : `process ${heldBy}`;
+    // A live pid is never overruled, so a pid reused by an unrelated process keeps the tail
+    // busy: the sentence says how to clear it, because nothing else will.
     // THIS WRITE, not "nothing": this said "nothing was appended", which is true of the act
     // the lock refused and not of the call around it — through the agent's server, the call
     // that meets a busy tail may already have opened its session's run on the way in.
     super(
       `this machine's tail is being written by ${holder} and did not come free in ${waitedMs}ms. ` +
         'Two sessions writing the same project at once share one tail; this write was not appended. ' +
-        `Lock: ${tailLock}`,
+        `Lock: ${tailLock}. If that process is not a mnema session that is still working, ` +
+        'delete the lock file and try again.',
     );
     this.name = 'TailBusyError';
   }
@@ -153,7 +139,6 @@ export class TailBusyError extends CodedError {
 /** Knobs the tests turn; production takes the defaults. */
 export interface TailLockOptions {
   readonly waitMs?: number;
-  readonly staleMs?: number;
 }
 
 /**
@@ -168,7 +153,7 @@ export interface TailLockOptions {
  * of `act` has run at that point, so the caller's tail is untouched.
  */
 export function withTailLock<T>(path: string, act: () => T, options: TailLockOptions = {}): T {
-  const fd = acquire(path, options.waitMs ?? DEFAULT_WAIT_MS, options.staleMs ?? DEFAULT_STALE_MS);
+  const fd = acquire(path, options.waitMs ?? DEFAULT_WAIT_MS);
   try {
     return act();
   } finally {
@@ -176,7 +161,7 @@ export function withTailLock<T>(path: string, act: () => T, options: TailLockOpt
   }
 }
 
-function acquire(path: string, waitMs: number, staleMs: number): number {
+function acquire(path: string, waitMs: number): number {
   const deadline = Date.now() + waitMs;
   let heldBy: number | undefined;
   for (;;) {
@@ -201,7 +186,7 @@ function acquire(path: string, waitMs: number, staleMs: number): number {
     }
     const held = holderOf(path);
     heldBy = held?.pid;
-    if (held !== undefined && breakIfAbandoned(path, held, staleMs)) continue;
+    if (held !== undefined && breakIfAbandoned(path, held)) continue;
     if (Date.now() >= deadline) throw new TailBusyError(path, heldBy, waitMs);
     sleepSync(POLL_MS);
   }
@@ -242,15 +227,13 @@ function holderOf(path: string): Holder | undefined {
 }
 
 /**
- * Breaks a lock whose holder is gone — or has held it past {@link DEFAULT_STALE_MS}, alive or
- * not. Only the first is "provably gone"; the second is a presumption that a minute is
- * longer than any honest hold, and it takes the lock from a live holder that is merely slow.
+ * Breaks a lock whose holder's pid is gone, and no other. A pid that answers is a live
+ * holder however old its record is: taking the lock from it would put two writers on one tail.
  * Returns true if the caller should try to take it again — either because this broke it, or
  * because it moved under us and the situation is worth re-reading.
  */
-function breakIfAbandoned(path: string, held: Holder, staleMs: number): boolean {
-  const abandoned = !alive(held.pid) || Date.now() - held.since > staleMs;
-  if (!abandoned) return false;
+function breakIfAbandoned(path: string, held: Holder): boolean {
+  if (alive(held.pid)) return false;
   // `rename` is the atomic claim: of two waiters that both judged this lock
   // abandoned, exactly one moves the file, and the other's rename fails.
   const claim = `${path}.${process.pid}.breaking`;
