@@ -132,7 +132,12 @@ import {
 } from '@mnema/core/write';
 import { agentMayAccept } from '../agent-accepts.js';
 import { editRulesNotice, editRulesTold, firstWriteNotice } from '../edit-rules-push.js';
-import { reachOfAddress, readGoverningRules, readRulesInForceAt } from '../governed-tree.js';
+import {
+  reachOfAddress,
+  readGoverningRules,
+  readRulesInForceAt,
+  realPathInside,
+} from '../governed-tree.js';
 import {
   projectEventsOf,
   recordTrees,
@@ -898,8 +903,8 @@ export type RetractNoteResult =
  * It follows the NOTE, as a decision's move follows the decision: the walk is the one every
  * entity-keyed tool asks ({@link locateEntity}), reaching the notes as well, and the write
  * goes through that tree's own door. A retraction is attributed to the connecting agent
- * (`which`) and pinned to the run, as every write of this server is; who may retract is
- * what the record decides for a supersede, which an agent may also carry out. A decision,
+ * (`which`) and pinned to the run, as every write of this server is; only the identity that
+ * wrote the note retracts it, and the core refuses any other, saying whose it is. A decision,
  * a pattern or a task is refused by the core in its own tree, with what to do instead.
  */
 export function runRetractNote(
@@ -2293,7 +2298,18 @@ export function runRulesBeforeAnEditTool(
     const refusal = [reasonTold(met, session.told), ...founded].join('\n\n');
     return { ok: true, value: hookReply(PRE_TOOL_USE, { refuse: refusal }) };
   }
-  const rulesAt = pushing || holding ? readRulesInForceAt(caches, read) : undefined;
+  // THE RULES OF A PATH ARE THE RULES OF WHERE IT REALLY IS, for the push and the hold alike: a
+  // path the rules do not address as written is read again at where a link leads inside the
+  // project (`realPathInside`), so a link does not step around the hold of a first write.
+  const rulesAt =
+    pushing || holding
+      ? (() => {
+          const given = readRulesInForceAt(caches, read);
+          if (given.rules.length > 0) return given;
+          const real = realPathInside(read);
+          return real === undefined ? given : readRulesInForceAt(caches, { ...read, path: real });
+        })()
+      : undefined;
   const context = !pushing || rulesAt === undefined ? undefined : editRulesNotice(rulesAt);
 
   // THE GATE, AND ITS WHOLE ORDER OF OPERATIONS. The rules that ask are derived, the text

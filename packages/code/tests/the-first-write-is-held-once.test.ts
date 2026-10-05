@@ -11,7 +11,7 @@
  * (`measurements/hooks-by-host/`) and is not asserted here.
  */
 
-import { mkdirSync, mkdtempSync, rmSync } from 'node:fs';
+import { mkdirSync, mkdtempSync, rmSync, symlinkSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { pathToFileURL } from 'node:url';
@@ -204,6 +204,16 @@ describe('the first write to a file a rule addresses is held once', () => {
   it('says nothing for a file no rule addresses, and holds nothing', async () => {
     await ruleAt('Round money at the boundary', 'src/billing', 'governs');
     expect(answer(connect(), 'src/elsewhere.ts')).toEqual({ empty: true });
+  });
+
+  it('holds a write through a link to a held path as it holds the direct one', async () => {
+    await ruleAt('Round money at the boundary', 'src/billing', 'governs');
+    symlinkSync(join(repo, 'src', 'billing'), join(repo, 'src', 'alias'));
+    const direct = answer(connect(), 'src/billing/invoice.ts');
+    const linked = answer(connect(), 'src/alias/invoice.ts');
+    expect(direct.decision).toBe('deny');
+    expect(linked.decision).toBe('deny');
+    expect(linked.reason).toContain('Round money at the boundary');
   });
 
   it('asks a person where a rule asks, and does not also refuse', async () => {

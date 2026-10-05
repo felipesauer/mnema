@@ -26,7 +26,7 @@
 import { channelIsOn, type RulesAtPath, type ScopedCache } from '@mnema/context';
 import { whatAWriteAsks } from './edit-asks-a-person.js';
 import { editRefusesNotice } from './edit-refuses-a-write.js';
-import { readRefusesAWriteAt } from './governed-tree.js';
+import { readRefusesAWriteAt, realPathInside } from './governed-tree.js';
 import { oneLine } from './one-line.js';
 import { ASKS_A_PERSON_CHANNEL, REFUSES_A_WRITE_CHANNEL } from './record-framing.js';
 
@@ -98,22 +98,39 @@ export function whatAWriteMeets(
   write: AWrite,
 ): WriteVerdict | undefined {
   const read = (path: string) => ({ path, root: write.root, from: write.from });
+  // EVERY PATH IS MET TWICE WHEN A LINK MAKES IT TWO: as the host wrote it, and as it really is
+  // inside the project (`realPathInside`). A rule about a file is a rule about its bytes, so a
+  // write through a link meets the rules of what the link leads to, the refusal still before the
+  // asking. Two spellings that land on one address are one meeting, never two recorded facts.
+  const places = write.paths.flatMap((path) => {
+    const real = realPathInside(read(path));
+    return real === undefined ? [path] : [path, real];
+  });
+  const once = <T extends { readonly at: RulesAtPath }>(met: readonly T[]): T[] => {
+    const seen = new Set<string>();
+    return met.filter(({ at }) => {
+      const key = at.relative ?? at.path;
+      if (seen.has(key)) return false;
+      seen.add(key);
+      return true;
+    });
+  };
 
   if (channelIsOn(sources, REFUSES_A_WRITE_CHANNEL)) {
-    const refused = write.paths.flatMap((path) => {
+    const refused = places.flatMap((path) => {
       const at = readRefusesAWriteAt(sources, read(path));
       const notice = editRefusesNotice(at);
       return notice === undefined ? [] : [{ at, notice }];
     });
-    if (refused.length > 0) return verdict('refuse', refused);
+    if (refused.length > 0) return verdict('refuse', once(refused));
   }
 
   if (!channelIsOn(sources, ASKS_A_PERSON_CHANNEL)) return undefined;
-  const asked = write.paths.flatMap((path) => {
+  const asked = places.flatMap((path) => {
     const gate = whatAWriteAsks(sources, read(path));
     return gate === undefined ? [] : [{ at: gate.asked, notice: gate.notice }];
   });
-  return asked.length > 0 ? verdict('ask', asked) : undefined;
+  return asked.length > 0 ? verdict('ask', once(asked)) : undefined;
 }
 
 function verdict(

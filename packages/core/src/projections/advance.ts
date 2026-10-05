@@ -45,6 +45,7 @@ import {
   memoryOf,
   type NoteRetraction,
   observationOf,
+  retractionOf,
   retractionsOf,
 } from './knowledge.js';
 import {
@@ -122,15 +123,19 @@ function lastOf<P>(
  * retraction the replay gives it. A note a retraction names but that is neither in the batch
  * nor a row of the other note table is not this table's, and is left alone.
  */
-function withRetractions<P extends { readonly id: string; readonly retracted?: NoteRetraction }>(
+function withRetractions<
+  P extends { readonly id: string; readonly who: string; readonly retracted?: NoteRetraction },
+>(
   brought: readonly P[],
-  retractions: ReadonlyMap<string, NoteRetraction>,
+  retractions: ReadonlyMap<string, readonly NoteRetraction[]>,
   stored: (id: string) => P | null,
 ): P[] {
   const result = new Map(brought.map((note) => [note.id, note]));
-  for (const [id, retracted] of retractions) {
+  for (const [id, named] of retractions) {
     const note = result.get(id) ?? stored(id);
     if (note === null || note === undefined || note.retracted !== undefined) continue;
+    const retracted = retractionOf(note, named);
+    if (retracted === undefined) continue;
     result.set(id, { ...note, retracted });
   }
   return [...result.values()];

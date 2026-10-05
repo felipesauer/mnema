@@ -1187,7 +1187,10 @@ a signed fact saying who took it back and why, in the tree the note was written 
 note leaves this list and `mnema search`; `mnema show` still prints it whole, with the
 retraction above it, and `mnema verify` still sees both facts. Only memories and
 observations are retracted: a decision is rejected or superseded, and a pattern rejected or
-deprecated, each by its own move.
+deprecated, each by its own move. Only the identity that wrote a note takes it back, with
+any key of it: another identity is refused, and a retraction another identity signed anyway
+is not applied — the note is still served, and `mnema verify` names it in a census line,
+informational, not a break.
 
 ### Switching off what mnema hands to a model
 

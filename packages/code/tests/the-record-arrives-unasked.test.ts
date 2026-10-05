@@ -1184,7 +1184,7 @@ describe('the record arrives unasked', () => {
     const manifest = readJson<Manifest>(MANIFEST);
     expect(manifest.name).toBe('mnema');
     expect(manifest.name).toMatch(/^[a-z][a-z0-9-]*$/);
-    expect(manifest.version).toMatch(/^\d+\.\d+\.\d+$/);
+    expect(manifest.version).toMatch(/^\d+\.\d+\.\d+(-[0-9A-Za-z.-]+)?$/);
     expect(manifest.description ?? '').not.toBe('');
 
     // One installation, both surfaces: the plugin declares the server that already

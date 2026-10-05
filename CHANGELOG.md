@@ -10,13 +10,10 @@ tag, with its own changelog.
 
 ## [Unreleased]
 
-### Changed
-
-- The trunk is now named `main` (it was `main-v1`); the 0.x alpha is on the `archive/alpha-0.14` tag.
-
 ## [0.1.0-beta] - 2026-10-05
 
-The first release of this line: `@mnema/code`, and the three packages it is built from.
+The first release of this line: `@mnema/code`, and the three packages it is built from. The
+numbering starts over here: it does not continue the 0.x alpha.
 Requires Node ≥ 22.12.0; the packages are ESM-only.
 
 ### Added
@@ -137,9 +134,21 @@ Requires Node ≥ 22.12.0; the packages are ESM-only.
   notes stay in their project.
 - **Guards on the plugin's hooks and the repository**: hook ids, `AGENTS.md`, a pull request
   template and no home paths in the measurements.
+- **The git log read against the record.** Four read-only verbs: `trailer` prints the
+  `Mnema-Decision: ADR-n` line for a commit message; `commits` lists the commits that cite a
+  decision and, apart, those that touched the paths it addresses; `why` shows the decisions a file
+  or a commit stands under; and `aging` lists the accepted decisions whose paths changed in many
+  commits since they were accepted.
 
 ### Changed
 
+- The trunk is now named `main` (it was `main-v1`); the 0.x alpha is on the `archive/alpha-0.14` tag.
+- Only the identity that wrote a note retracts it, with any key of that identity. `mnema retract`
+  and the `retract_note` tool refuse another identity and say whose the note is; a retraction
+  another identity signed anyway is not applied, so `search`, the opening read and `recall` keep
+  serving the note; and `mnema verify` names it in a census line, informational, with the exit
+  unchanged. The rule is in `packages/chain/FORMAT.md` §6.4; no byte of any event changed.
+  Known limit: a binary from before this change still applies such a retraction and hides the note.
 - **A write is decided on the record as it stands, under the lock**, every write is synced to
   disk, and a move made apart from the writer's view is said so.
 - **The console shrinks one axis per resize**, every frame held to the screen.
@@ -155,6 +164,14 @@ Requires Node ≥ 22.12.0; the packages are ESM-only.
 - **A label typed where an id belongs is answered with the id.** `decision move`, over MCP too,
   refuses an `ADR-<n>` and names the decision, or the decisions, that carry it. The label is
   still no address: a tree numbers its own.
+
+### Fixed
+
+- The brief, and every other line that passes through the rule of the line, now writes the Unicode Tag characters (U+E0000 to U+E007F) as visible escapes; they sit outside the basic plane and slipped through.
+- A rule that refuses a write, or asks for a person, no longer stops at the path the host wrote:
+  a write through a symbolic link (or into a new file under a linked directory) is matched against
+  where it really lands inside the project as well, the refusal still outranking the asking. A link
+  that leaves the project is matched by the path as given.
 
 ### Known limits
 
