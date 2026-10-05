@@ -136,7 +136,7 @@ describe('FORMAT.md points at the artifact the code resolves', () => {
     // address and `FORMAT.md` says THAT. What this case holds is unchanged and still
     // needed: a path that a `.gitignore` swallowed would publish nothing while every
     // other case here stayed green, and this tree ignores whole directories by name
-    // (`dist/`, `scripts/`, `.refactor/`), so the hazard is real rather than
+    // (`dist/`, `scripts/`), so the hazard is real rather than
     // theoretical. `git` is asked directly. The tarball half is somebody else's case —
     // `packages/code/tests/what-a-package-publishes-is-what-its-page-promises.test.ts`
     // packs the package and runs the verifier out of it.

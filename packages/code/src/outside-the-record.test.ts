@@ -254,11 +254,11 @@ describe('which decision documents this checkout holds that the record has none 
  * because a reading that names directories is a reading that can name a wrong one.
  *
  *   - IT NAMES ONLY WHAT A PUBLISHED TOOL CREATES. A directory this project invented, or
- *     somebody else did, is a directory this says nothing about — including THIS bench's
- *     own `.refactor/decisions`, which is the entry a reader of the source would most
- *     expect to find and the one that must not be there. THE FIXTURE BELOW SPELLS IT OUT
- *     AND THE SOURCE NO LONGER DOES, which is deliberate: this file does not ship, the
- *     module does, so the name lives on the side that stays in the repository.
+ *     somebody else did, is a directory this says nothing about — including internal
+ *     decisions, which is the entry a reader of the source would most expect to find and
+ *     the one that must not be there. THE FIXTURE BELOW SPELLS IT OUT AND THE SOURCE NO
+ *     LONGER DOES, which is deliberate: this file does not ship, the module does, so the
+ *     name lives on the side that stays in the repository.
  *   - IT NEVER NAMES A BASE THE RECORD READS. One directory in two sections is one fact
  *     worded twice, and the weaker wording would be this one.
  *   - IT COUNTS BY FILE NAME and opens nothing, which is what makes it cost a `readdirSync`
@@ -289,10 +289,10 @@ describe('which conventional decision bases this checkout holds that the record 
   });
 
   it("says nothing about THIS bench's own convention, which is not the market's", () => {
-    // `.refactor/decisions` is where this repository keeps its decisions, and it holds 82
-    // of them. Shipping it as a candidate would put a fact about how this product is built
-    // into what the product says to everybody else, which is a rule of this workspace and
-    // not a matter of taste.
+    // Internal decisions are where this repository keeps its decisions. Shipping them
+    // as a candidate would put a fact about how this product is built into what the
+    // product says to everybody else, which is a rule of this workspace and not a
+    // matter of taste.
     //
     // THIS USED TO SAY IT WAS ASSERTED HERE "because the source is the only other place it
     // is written", AND THAT PREMISE IS GONE: the module's own doc named the directory, and
