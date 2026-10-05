@@ -16,7 +16,7 @@ tag, with its own changelog.
 
 ### Fixed
 
-- `mnema brief`, and every other line that passes through the rule of the line, now writes the Unicode Tag characters (U+E0000 to U+E007F) as visible escapes; they sit outside the basic plane and slipped through.
+- The brief, and every other line that passes through the rule of the line, now writes the Unicode Tag characters (U+E0000 to U+E007F) as visible escapes; they sit outside the basic plane and slipped through.
 
 ## [0.15.0] - 2026-10-05
 
