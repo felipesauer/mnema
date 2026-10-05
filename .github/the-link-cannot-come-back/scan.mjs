@@ -73,9 +73,10 @@ import { appendFileSync, readFileSync, writeFileSync } from 'node:fs';
  * A COMMIT AS THIS SCAN NEEDS IT. `message` is the whole thing, subject and body together, which
  * is what `git show -s --format=%B` gives.
  *
- * `author` and `committer` are the e-mail addresses the commit recorded (`%ae`, `%ce`).
+ * `author` and `committer` are the e-mail addresses the commit recorded (`%ae`, `%ce`); `merge` is
+ * whether it has more than one parent (`%P`), and a commit that does not say is not one.
  *
- * @typedef {{ sha: string, subject: string, message: string, author: string, committer: string }} Commit
+ * @typedef {{ sha: string, subject: string, message: string, author: string, committer: string, merge?: boolean }} Commit
  */
 
 /**
@@ -193,6 +194,32 @@ export function emailsOutsideNoreply(commit) {
 }
 
 /**
+ * ONE AUTHOR ADDRESS FOR THE WHOLE CHANGE, as findings. GitHub's squash turns every author that is
+ * not the first one's into a `Co-authored-by` trailer, so two noreply addresses on one pull
+ * request put somebody's name on the squashed commit that the rule above was written to keep off.
+ * Merge commits are left out: the merge of the trunk into a branch is written by whoever pulled
+ * it, and the squash drops it.
+ *
+ * @param {readonly Commit[]} commits
+ * @returns {Finding[]}
+ */
+export function authorsThatDiffer(commits) {
+  const authors = [
+    ...new Set(commits.filter((one) => one.merge !== true).map((one) => String(one.author ?? ''))),
+  ];
+  if (authors.length < 2) return [];
+  return [
+    {
+      footer: 'author-emails-differ',
+      what: 'the commits of one pull request must all have the same author e-mail, or the squash adds a Co-authored-by',
+      where: 'the commits of the pull request',
+      at: 0,
+      line: `authors: ${authors.join(', ')}`,
+    },
+  ];
+}
+
+/**
  * THE PHRASE A SCAN THAT EXAMINED NOTHING PRINTS, and it is exported so a case can pin it rather
  * than pin a substring of prose that a later edit would silently drift away from.
  *
@@ -284,6 +311,7 @@ export function judge({ commits, pullRequest }) {
     ...attributionIn(commit.message, `commit ${commit.sha.slice(0, 8)} (${commit.subject})`),
     ...emailsOutsideNoreply(commit),
   ]);
+  found.push(...authorsThatDiffer(commits));
   if (pullRequest !== 'not-asked') {
     found.push(
       ...attributionIn(pullRequest.title, 'the pull request title'),
@@ -378,6 +406,11 @@ export function commitsIn(range, cwd = process.cwd()) {
     .filter((one) => /^[0-9a-f]{40}$/.test(one));
   return shas.map((sha) => ({
     sha,
+    merge:
+      execFileSync('git', ['show', '-s', '--format=%P', sha], { cwd, encoding: 'utf-8' })
+        .trim()
+        .split(/\s+/)
+        .filter(Boolean).length > 1,
     subject: execFileSync('git', ['show', '-s', '--format=%s', sha], {
       cwd,
       encoding: 'utf-8',

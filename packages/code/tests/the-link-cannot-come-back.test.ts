@@ -317,18 +317,18 @@ describe('the e-mail a commit carries', () => {
     expect(result.found.map((one) => one.footer)).toEqual([
       'committer-email-outside-noreply',
       'author-email-outside-noreply',
+      'author-emails-differ',
     ]);
   });
 
   it('lets through what GitHub itself writes: the merge committer and dependabot', () => {
-    const result = judge({
-      commits: [
-        aCommit(NOREPLY, 'noreply@github.com'),
-        aCommit('49699333+dependabot[bot]@users.noreply.github.com', 'noreply@github.com'),
-      ],
-      pullRequest: clean,
-    });
-    expect(result).toMatchObject({ verdict: 'clean', code: 0, found: [] });
+    for (const author of [NOREPLY, '49699333+dependabot[bot]@users.noreply.github.com']) {
+      const result = judge({
+        commits: [aCommit(author, 'noreply@github.com')],
+        pullRequest: clean,
+      });
+      expect(result).toMatchObject({ verdict: 'clean', code: 0, found: [] });
+    }
   });
 
   it('does not let a lookalike through: the domain must end the address, and an author is not GitHub', () => {
@@ -360,6 +360,49 @@ describe('the e-mail a commit carries', () => {
       'author: me@work.example',
       'committer: me@work.example',
     ]);
+  });
+});
+
+describe('one author address for the whole pull request', () => {
+  const OTHER = '2+another-person@users.noreply.github.com';
+  const clean = { title: 'A title', body: 'A body' };
+  const aCommit = (sha: string, author: string, merge: boolean) => ({
+    sha: sha.repeat(40),
+    subject: 'A subject',
+    message: 'A subject',
+    author,
+    committer: author,
+    merge,
+  });
+
+  it('goes red on two commits whose noreply authors differ, naming both addresses', () => {
+    const base = aRepositoryWithABase();
+    writeCommit('First');
+    writeCommit('Second', { author: OTHER, committer: OTHER });
+    const result = judge({ commits: commitsIn(`${base}..HEAD`, sandbox), pullRequest: clean });
+    expect(result).toMatchObject({ verdict: 'attribution-found', code: 1 });
+    expect(result.found.map((one) => one.footer)).toEqual(['author-emails-differ']);
+    expect(result.found[0]?.line).toContain(NOREPLY);
+    expect(result.found[0]?.line).toContain(OTHER);
+  });
+
+  it('is green when every commit carries the same address, whatever the committer', () => {
+    const base = aRepositoryWithABase();
+    writeCommit('First');
+    writeCommit('Second', { author: NOREPLY, committer: 'noreply@github.com' });
+    const result = judge({ commits: commitsIn(`${base}..HEAD`, sandbox), pullRequest: clean });
+    expect(result).toMatchObject({ verdict: 'clean', code: 0 });
+  });
+
+  it('does not count a merge commit, and reads whether a commit is one out of real git', () => {
+    const merged = judge({
+      commits: [aCommit('a', OTHER, true), aCommit('b', NOREPLY, false)],
+      pullRequest: clean,
+    });
+    expect(merged).toMatchObject({ verdict: 'clean', code: 0 });
+    const base = aRepositoryWithABase();
+    writeCommit('First');
+    expect(commitsIn(`${base}..HEAD`, sandbox).map((one) => one.merge)).toEqual([false]);
   });
 });
 
