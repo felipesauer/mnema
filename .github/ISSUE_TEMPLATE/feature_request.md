@@ -15,7 +15,7 @@ labels: enhancement
 
 ## What it has to keep true
 
-<!-- The record is signed and append-only, and `mnema verify` has to keep meaning what
+<!-- The record is signed and append-only, and the verify command has to keep meaning what
      it says. If your idea writes something new, say what a reader could then check
      that it could not before; if it cannot be checked, say so. -->
 

@@ -6,7 +6,7 @@ them, because both change faster than a page about them does.
 
 ## 1. Start with the MCP server
 
-Every host gets the same server, `mnema mcp` over stdio. It is what an agent writes the record
+Every host gets the same server, the binary's MCP verb, over stdio. It is what an agent writes the record
 through, and the plugin declares it in [`.claude-plugin/plugin.json`](.claude-plugin/plugin.json).
 Point the new host at that command and check three things, each of which differs between the hosts
 already here ([the table](README.md#in-vs-code-and-cursor)):
@@ -43,7 +43,7 @@ The session opening is two command hooks, [`session-start.mjs`](hooks/session-st
 and puts its text before the model can use unchanged. A host whose hooks are processes and which
 runs a command before a write reuses the verb behind
 [`edit-asks-a-person.mjs`](hooks/edit-asks-a-person.mjs) and
-[`edit-refuses-a-write.mjs`](hooks/edit-refuses-a-write.mjs), `mnema before-a-write --host <name>`.
+[`edit-refuses-a-write.mjs`](hooks/edit-refuses-a-write.mjs), the binary's before-a-write verb, told the host by name.
 The host is a name in [`host-names.ts`](../packages/code/src/host-names.ts), and what the verb
 reads from its payload and how it answers is
 [`host-hook.ts`](../packages/code/src/host-hook.ts). Which rules a write meets is decided in one
@@ -53,7 +53,7 @@ A host that cannot be told to ask must not be answered as if it had asked: a rec
 write nobody paused is the record reading backwards. That is why Cursor is answered a refusal and
 nothing else.
 
-For a host that reads rules from files with a glob and has no hook worth using, `mnema rules-file`
+For a host that reads rules from files with a glob and has no hook worth using, the `rules-file` verb
 prints the file in that host's format ([`host-rules-file.ts`](../packages/code/src/host-rules-file.ts)).
 
 ## 4. What you leave behind
