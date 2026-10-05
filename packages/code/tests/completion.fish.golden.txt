@@ -219,6 +219,8 @@ complete -c mnema -f -n '__mnema_at "skill"' -a 'help' -d 'display help for comm
 complete -c mnema -f -n '__mnema_at "skill"' -l body -r
 complete -c mnema -f -n '__mnema_at "skill"' -l scope -x -a 'public private global'
 complete -c mnema -f -n '__mnema_at "skill"' -l which -r
+complete -c mnema -f -n '__mnema_at "skill"' -l stdin
+complete -c mnema -f -n '__mnema_at "skill"' -l body-file -r
 complete -c mnema -f -n '__mnema_at "skill"' -s h -l help
 complete -c mnema -f -n '__mnema_at "skill"' -s V -l version
 complete -c mnema -f -n '__mnema_at "skill"' -l color -x -a 'auto always never'
@@ -228,6 +230,8 @@ complete -c mnema -f -n '__mnema_at "skill"' -l identify
 complete -c mnema -f -n '__mnema_at "skill create"' -l body -r
 complete -c mnema -f -n '__mnema_at "skill create"' -l scope -x -a 'public private global'
 complete -c mnema -f -n '__mnema_at "skill create"' -l which -r
+complete -c mnema -f -n '__mnema_at "skill create"' -l stdin
+complete -c mnema -f -n '__mnema_at "skill create"' -l body-file -r
 complete -c mnema -f -n '__mnema_at "skill create"' -s h -l help
 complete -c mnema -f -n '__mnema_at "skill create"' -s V -l version
 complete -c mnema -f -n '__mnema_at "skill create"' -l color -x -a 'auto always never'
@@ -254,6 +258,8 @@ complete -c mnema -f -n '__mnema_at "skill export"' -l identify
 # mnema memory
 complete -c mnema -f -n '__mnema_at "memory"' -l scope -x -a 'public private global'
 complete -c mnema -f -n '__mnema_at "memory"' -l which -r
+complete -c mnema -f -n '__mnema_at "memory"' -l stdin
+complete -c mnema -f -n '__mnema_at "memory"' -l body-file -r
 complete -c mnema -f -n '__mnema_at "memory"' -s h -l help
 complete -c mnema -f -n '__mnema_at "memory"' -s V -l version
 complete -c mnema -f -n '__mnema_at "memory"' -l color -x -a 'auto always never'
@@ -264,6 +270,8 @@ complete -c mnema -f -n '__mnema_at "observe"' -l topic -r
 complete -c mnema -f -n '__mnema_at "observe"' -l text -r
 complete -c mnema -f -n '__mnema_at "observe"' -l scope -x -a 'public private global'
 complete -c mnema -f -n '__mnema_at "observe"' -l which -r
+complete -c mnema -f -n '__mnema_at "observe"' -l stdin
+complete -c mnema -f -n '__mnema_at "observe"' -l body-file -r
 complete -c mnema -f -n '__mnema_at "observe"' -s h -l help
 complete -c mnema -f -n '__mnema_at "observe"' -s V -l version
 complete -c mnema -f -n '__mnema_at "observe"' -l color -x -a 'auto always never'

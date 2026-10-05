@@ -8,7 +8,7 @@
  * BOTH a name and a body; the name is a short positional, the body a flag (`--body`) —
  * content that big never goes in a positional (the `git commit -m` / `gh --body`
  * convention).
- * The body is required, but NOT declared as commander's `requiredOption`: the
+ * The body is required (from `--body`, `--stdin` or `--body-file`), but NOT declared as commander's `requiredOption`: the
  * group declares it too, so a `--body` written after `create` lands on the GROUP
  * and the subcommand's own required option would never see it. So it is a plain
  * option the create action checks itself — a missing `--body` on a propose is a usage error the
@@ -32,6 +32,7 @@
 
 import type { Command } from 'commander';
 import { RECORD_CONTRACT_HELP } from '../recorded-content.js';
+import { addBodySourceOptions } from './body-source.js';
 import { here } from './context.js';
 import {
   actionsRequiring,
@@ -52,7 +53,7 @@ import {
   WHICH_HELP,
   WHICH_ON_SUBCOMMAND_HELP,
 } from './options.js';
-import { reportRecorded, reportRefusal, reportReplacement, reportUsage } from './report.js';
+import { reportRecorded, reportRefusal, reportReplacement } from './report.js';
 import { PIN_REFUSED } from './run-pin.js';
 import { type Declared, mutatesTheRecord, type Wiring } from './verb.js';
 
@@ -100,7 +101,7 @@ const SKILL_EXPORT_HELP = [
 ].join('\n');
 
 /** What `--body` is, said once for the group and for `create`, which both declare it. */
-const BODY_HELP = 'the reusable pattern itself (required)';
+const BODY_HELP = 'the reusable pattern itself (or give it with --stdin or --body-file)';
 
 /** Registers `mnema skill` on the program. */
 export function registerSkill(program: Command, wiring: Wiring): Declared {
@@ -117,6 +118,7 @@ export function registerSkill(program: Command, wiring: Wiring): Declared {
     )
     .option('--which <agent>', WHICH_HELP, declaredAgent)
     .addHelpText('after', RECORD_CONTRACT_HELP);
+  addBodySourceOptions(skill, 'pattern');
 
   // `skill create <name> --body <text>` — the verb the agent's surface calls `create_skill`.
   // The group used to propose with the name typed right after its name, and a group that takes
@@ -138,18 +140,25 @@ export function registerSkill(program: Command, wiring: Wiring): Declared {
     )
     .option('--which <agent>', WHICH_HELP, declaredAgent)
     .addHelpText('after', RECORD_CONTRACT_HELP);
+  addBodySourceOptions(create, 'pattern');
   createsBy(create);
   create.action(async (name: string) => {
-    const given = await fromTheGroup<{ body?: string; scope?: string; which?: string }>(
-      create,
-      wiring,
-    );
+    const given = await fromTheGroup<{
+      body?: string;
+      scope?: string;
+      which?: string;
+      stdin?: boolean;
+      bodyFile?: string;
+    }>(create, wiring);
     if (given === REFUSED) return;
     const { runSkill } = await import('../commands/skill.js');
-    if (given.body === undefined) {
-      reportUsage(wiring, '`mnema skill create` requires --body: the reusable pattern itself.');
-      return;
-    }
+    const { bodyFrom } = await import('./body-source.js');
+    const body = await bodyFrom(wiring, 'reusable pattern', 'with --body', {
+      typed: given.body,
+      stdin: given.stdin,
+      bodyFile: given.bodyFile,
+    });
+    if (body === REFUSED) return;
     const scope = parseScope(given.scope, wiring);
     if (scope === INVALID) return;
     const run = pinnedRun();
@@ -159,7 +168,7 @@ export function registerSkill(program: Command, wiring: Wiring): Declared {
     }
     const result = runSkill(here(), {
       name,
-      body: given.body,
+      body,
       ...(scope !== undefined ? { scope } : {}),
       ...(given.which !== undefined ? { which: given.which } : {}),
       ...(run !== undefined ? { run } : {}),

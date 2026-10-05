@@ -18,7 +18,7 @@ export const WHAT_A_SUBCOMMAND_READS: Readonly<Record<string, readonly string[]>
   // what its `--help` lists, and the value is read off the group where commander put it.
   'task create': ['--scope', '--which'],
   'decision record': ['--alternatives', '--body-file', '--scope', '--stdin', '--which'],
-  'skill create': ['--body', '--scope', '--which'],
+  'skill create': ['--body', '--body-file', '--scope', '--stdin', '--which'],
   // The moves name the agent that executed them, and follow the entity to its tree.
   'task move': ['--which'],
   'decision move': ['--which'],

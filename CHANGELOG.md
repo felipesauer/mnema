@@ -22,6 +22,11 @@ tag, with its own changelog.
   key or a handler type that Claude Code's hooks documentation does not list (the list carries the
   date and the page it was read from), so a typo that would leave a hook silently mute turns the
   suite red.
+- **`--stdin` and `--body-file` on `skill create`, `memory` and `observe`.** The long text of a
+  write can come from standard input or from a file instead of the line, as it already could for
+  `decision record`; the text typed on the line (`--body`, the `memory` argument, `--text`) still
+  works, and a line that gives it from two places is refused with the places it named. A missing
+  text is now this refusal, not the parser's.
 
 ## [0.1.0-beta] - 2026-10-05
 
