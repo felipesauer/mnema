@@ -88,8 +88,10 @@ describe('11 · the sixth arm is the fifth with ONE channel switched off', () =>
     // `refuseUnrunnableRound` compares against that file. An arm renamed here without the
     // frozen file agreeing is a refusal to run, not a round that measures three of four.
     assert.ok(armsOf(preregOf(3)).includes(DOC_ARM), 'round 3 pre-registered this name')
-    assert.deepEqual(ARMS.filter(servesUnasked), [DOC_ARM, SURFACE_ARM])
-    assert.deepEqual(ARMS.filter(servesRecord), ['mnema', DOC_ARM, SURFACE_ARM])
+    // And the eighth, built for round 5, carries the same surface: it is `mnema+` with one
+    // channel switched on, as this arm is `mnema+` with one switched off.
+    assert.deepEqual(ARMS.filter(servesUnasked), [DOC_ARM, SURFACE_ARM, 'mnema-gate'])
+    assert.deepEqual(ARMS.filter(servesRecord), ['mnema', DOC_ARM, SURFACE_ARM, 'mnema-gate'])
   })
 
   test('the switch is the arm — exactly one arm has one, and it is one channel', () => {

@@ -30,7 +30,7 @@ import { join } from 'node:path'
 import { addressCovers, canonicalKnowledge, carriesDecision, readDecision, readDecisionSet, touchedPaths } from './fixtures.mjs'
 import { runAgainstStandIn } from './host-session.mjs'
 import { isSessionTurn } from './fake-api.mjs'
-import { DOC_ARM, GATE_ARM, INSTRUCTIONS_ARM, SURFACE_ARM, servesUnasked } from './seed.mjs'
+import { DOC_ARM, GATE_ARM, INSTRUCTIONS_ARM, SURFACE_ARM, indexHook, servesUnasked } from './seed.mjs'
 
 /**
  * The host did not reach the stand-in at all. Systemic and not a finding about an arm: every cell
@@ -204,7 +204,11 @@ export function historyDeliveredProblems({ arm, set, delivered }) {
   if (!declared) throw new Error(`no delivery is declared for the arm ${arm}`)
   const problems = []
   for (const entry of set) {
-    const want = declared[entry.current ? 'current' : 'superseded']
+    const want = { ...declared[entry.current ? 'current' : 'superseded'] }
+    // An index line carries the first ninety characters of a statement (`indexHook`), so a
+    // statement no longer than that arrives WHOLE: the declaration follows the same rule the seed
+    // writes the line with, instead of calling a whole sentence a lead.
+    if (want.statement === 'lead' && !indexHook(entry.statement).endsWith('…')) want.statement = 'full'
     for (const part of DECISION_PARTS) {
       const got = delivered[entry.key]?.[part] ?? 'none'
       if (got === want[part]) continue
@@ -276,8 +280,8 @@ export const SCRIPTED_WRITE = '# written by the stand-in session of the prefligh
  * The text a session is handed AT ITS FIRST WRITE to the file the ticket names, and what the host
  * did with the write — for a task that holds a history, in an arm that carries the surface.
  *
- * The stand-in answers the session's first turn with a `Write` of that file and its second turn
- * with THE SAME `Write`, then stops. The request after the first write is the one that carries
+ * The stand-in answers the session's first turn with a `Read` of that file, its second with a
+ * `Write` of it and its third with THE SAME `Write`, then stops. The request after the first write is the one that carries
  * what the write met: the result of the write, and whatever a hook handed over beside it or
  * instead of it. Only the messages that request ADDS are read — the opening is the other check's.
  *
@@ -286,12 +290,18 @@ export const SCRIPTED_WRITE = '# written by the stand-in session of the prefligh
  */
 export async function deliveredAtFirstWrite({ sandbox, arm, fixture, mnemaBin, pluginDir, claudeBin }) {
   const target = touchedPaths(fixture)[0]
-  const write = { name: 'Write', input: { file_path: join(sandbox.repo, target), content: SCRIPTED_WRITE } }
-  const session = await runAgainstStandIn({ sandbox, arm, fixture, mnemaBin, pluginDir, claudeBin, script: [write, write] })
+  const path = join(sandbox.repo, target)
+  // READ FIRST, because the host refuses a `Write` over a file the session has not read — measured:
+  // without it the first write came back an error in every arm, which reads as a hold where there
+  // is none. The read fires no hook (the matcher is the write tools), so what the write meets is
+  // still the request after the write.
+  const read = { name: 'Read', input: { file_path: path } }
+  const write = { name: 'Write', input: { file_path: path, content: SCRIPTED_WRITE } }
+  const session = await runAgainstStandIn({ sandbox, arm, fixture, mnemaBin, pluginDir, claudeBin, script: [read, write, write] })
   firstOf(session)
   const turns = session.requests.filter((r) => String(r.url).includes('/v1/messages') && isSessionTurn(r.body))
-  if (turns.length < 2) throw new Error(`the host sent ${turns.length} session turn(s); the scripted write never came back`)
-  const added = turns[1].body.messages.slice(turns[0].body.messages.length)
+  if (turns.length < 3) throw new Error(`the host sent ${turns.length} session turn(s); the scripted write never came back`)
+  const added = turns[2].body.messages.slice(turns[1].body.messages.length)
   const text = squash(leaves(added).join('\n'))
   const results = added.flatMap((m) => (Array.isArray(m.content) ? m.content : [])).filter((c) => c?.type === 'tool_result')
   const set = readDecisionSet(fixture)

@@ -12,7 +12,7 @@ import { carriesDecision, listFixtures } from '../lib/fixtures.mjs'
 import { claudeVersion, runCell } from '../lib/cell.mjs'
 import { MODEL, claudeArgv } from '../lib/isolation.mjs'
 import { cliDriftProblem, cliPinProblem } from '../lib/pin.mjs'
-import { ROUNDS, cliVersionOf, modelOf, preregOf } from '../lib/split.mjs'
+import { ROUNDS, cliVersionOf, modelOf, preregOf, readSplit } from '../lib/split.mjs'
 import { modelNote } from '../lib/result.mjs'
 import { sandboxRoot } from '../lib/sandbox.mjs'
 import { firstCliOfCapture, runPlan } from '../run.mjs'
@@ -178,10 +178,16 @@ describe('the model is the pre-registration’s', () => {
   }
 
   test('a round that names none runs on the model rounds 1 to 4 ran on, and declares no CLI', () => {
-    for (const round of ROUNDS) {
+    for (const round of ROUNDS.filter((r) => r <= 4)) {
       assert.equal(modelOf(preregOf(round)), MODEL, `round ${round}`)
       assert.equal(cliVersionOf(preregOf(round)), null, `round ${round}`)
     }
+  })
+
+  test('round 5 names both, and a replica on a second model', () => {
+    assert.equal(modelOf(preregOf(5)), 'claude-haiku-4-5-20251001')
+    assert.equal(cliVersionOf(preregOf(5)), '2.1.281 (Claude Code)')
+    assert.equal(readSplit(preregOf(5).split).replica.model, 'claude-sonnet-5-5')
   })
 
   test('a round that names one runs on it; a model or CLI that is not a string is refused', () => {

@@ -385,7 +385,8 @@ export async function runSelftest({
       if (a.hits[0]?.id && b.hits.some((h) => h.id === a.hits[0].id)) {
         problems.push('the two cells share a record id')
       }
-      if (b.total !== 1) problems.push(`the second cell holds ${b.total} records, expected 1`)
+      const held = readDecisionSet(axisA).length
+      if (b.total !== held) problems.push(`the second cell holds ${b.total} records, expected ${held}`)
       if (identityOf(first) === identityOf(second)) problems.push('the two cells share an identity')
       if (problems.length) throw new Error(problems.join('; '))
       record('sandbox isolation', true, 'a second cell inherits nothing from the first')

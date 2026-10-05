@@ -118,8 +118,8 @@ describe('8 · the fifth arm is the mnema arm plus the surface, and nothing else
     // added a SECOND arm carrying the same surface. Both lists grew by one and the growth
     // is the delivery, so they are written out rather than derived from the predicates
     // they check — a list compared against `ARMS.filter(...)` would agree with any change.
-    assert.deepEqual(ARMS.filter(servesRecord), ['mnema', DOC_ARM, SURFACE_ARM])
-    assert.deepEqual(ARMS.filter(servesUnasked), [DOC_ARM, SURFACE_ARM])
+    assert.deepEqual(ARMS.filter(servesRecord), ['mnema', DOC_ARM, SURFACE_ARM, 'mnema-gate'])
+    assert.deepEqual(ARMS.filter(servesUnasked), [DOC_ARM, SURFACE_ARM, 'mnema-gate'])
   })
 
   test('and the name is the one the round PRE-REGISTERED, read from the frozen file', () => {
@@ -138,7 +138,8 @@ describe('8 · the fifth arm is the mnema arm plus the surface, and nothing else
       [],
       'every arm round 2 declares is one this harness seeds',
     )
-    assert.equal(ARMS.at(-1), SURFACE_ARM)
+    // The last arm until round 5, which added the eighth after it.
+    assert.equal(ARMS.at(-2), SURFACE_ARM)
   })
 
   test('its seeded state is the mnema arm’s, byte for byte', () => {
@@ -499,8 +500,8 @@ describe('8c · the line says the surface ran, and says what these cells are', (
     // key is what says they are from before, and that only works if the number moves
     // — which is why the expectation here is a LITERAL and not the constant it is
     // read from: compared against itself it would agree with every future change.
-    assert.equal(RESULT_SCHEMA, 'mnema-bench/cell/9')
-    assert.equal(lineFor(SURFACE_ARM, { whole: true }).schema, 'mnema-bench/cell/9')
+    assert.equal(RESULT_SCHEMA, 'mnema-bench/cell/10')
+    assert.equal(lineFor(SURFACE_ARM, { whole: true }).schema, 'mnema-bench/cell/10')
   })
 
   test('a whole cell of this arm reports BOTH channels having run', () => {

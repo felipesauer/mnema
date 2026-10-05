@@ -115,13 +115,35 @@ describe('10 · the rounds are separate sets of tasks, and stay separate', () =>
     // own tasks. It named round 2 by number until 2026-08-20, which would have left round
     // 3's calibrator — a file that was ALSO a symlink and could have been a copy —
     // unexamined.
-    for (const round of ROUNDS.filter((r) => r !== 1)) {
+    //
+    // ONE SCRIPT PER VOCABULARY, since round 5. Its tasks hold a history and are scored with four
+    // words, which round 1's calibrator cannot read; so the first round of that shape carries the
+    // four-word calibrator, and any later round of that shape symlinks to IT — the same rule, one
+    // shape over. A round whose tasks mix the two shapes is refused here, since no one script
+    // calibrates it.
+    const shapeOf = (round) => {
+      const shapes = [...new Set(listFixtures(benchOf(round).fixturesDir).map((f) => f.shape))]
+      assert.equal(shapes.length, 1, `round ${round} mixes task shapes [${shapes}]`)
+      return shapes[0]
+    }
+    const firstOfShape = new Map()
+    for (const round of ROUNDS) if (!firstOfShape.has(shapeOf(round))) firstOfShape.set(shapeOf(round), round)
+    assert.equal(firstOfShape.get('single'), 1)
+    for (const round of ROUNDS.filter((r) => r !== firstOfShape.get(shapeOf(r)))) {
+      const reference = firstOfShape.get(shapeOf(round))
       assert.equal(
         realpathSync(benchOf(round).selftestScript),
-        realpathSync(benchOf(1).selftestScript),
+        realpathSync(benchOf(reference).selftestScript),
         `round ${round} is calibrated by a copy, not by the script`,
       )
-      assert.notEqual(benchOf(round).selftestScript, benchOf(1).selftestScript)
+      assert.notEqual(benchOf(round).selftestScript, benchOf(reference).selftestScript)
+    }
+    if (firstOfShape.has('set')) {
+      assert.notEqual(
+        realpathSync(benchOf(firstOfShape.get('set')).selftestScript),
+        realpathSync(benchOf(1).selftestScript),
+        'a round of tasks that hold a history is calibrated by the three-word script',
+      )
     }
   })
 
@@ -180,7 +202,7 @@ describe('10b · a round whose arms this harness cannot seed does not run', () =
     const withdrawn = ARMS.filter((arm) => !three.includes(arm))
     // `claude-md` is not one it withdrew: it is an arm that did not exist when round 3 was frozen, and
     // a round does not run an arm it did not declare — which is the same mechanism.
-    assert.deepEqual(withdrawn, ['prosa', 'mnema', 'claude-md'], 'the two arms round 3 withdrew, and the one built after it')
+    assert.deepEqual(withdrawn, ['prosa', 'mnema', 'claude-md', 'mnema-gate'], 'the two arms round 3 withdrew, and the two built after it')
     assert.deepEqual(roundArms(3), three)
     const planned = new Set(cellPlan([{ id: 'x' }], 1, roundArms(3)).map((c) => c.arm))
     assert.deepEqual([...planned].sort(), [...three].sort())
@@ -288,12 +310,12 @@ describe('10d · and it clears round 3’s tasks too — the round with the arm 
     // walked ONE arm before, so a detail naming ten cells would be a preflight that
     // cleared `mnema+` and left `mnema-doc` untested.
     const arrives = result.checks.find((c) => c.name === "the surface arms' context arrives")
-    assert.match(arrives.detail, /^20 cells across \[mnema-doc,mnema\+\]/)
+    assert.match(arrives.detail, /^30 cells across \[mnema-doc,mnema\+,mnema-gate\]/)
     assert.match(arrives.detail, /10 pair\(s\) hand over the SAME document/)
     const reaches = result.checks.find(
       (c) => c.name === "the surface arms' rules reach the writing, or correctly do not",
     )
-    assert.match(reaches.detail, /^20 cells across \[mnema-doc,mnema\+\]/)
+    assert.match(reaches.detail, /^30 cells across \[mnema-doc,mnema\+,mnema-gate\]/)
     // And the gate that was missing: it runs over the COMMITTED pre-registrations, so it
     // names all three rounds even when the preflight was handed one round's tasks.
     const runnable = result.checks.find((c) => c.name === 'every pre-registered round is runnable')

@@ -617,10 +617,19 @@ export async function main() {
     })
   }
 
+  // `--slice k/n` runs the baseline and every n-th mutation from the k-th (0-based), so a matrix
+  // that takes hours can run in n copies of the tree at once. A slice is never a sample: the n
+  // slices together are the whole list, and each reports the names of the ones it ran.
+  const at = process.argv.indexOf('--slice')
+  const [k, n] = at === -1 ? [0, 1] : process.argv[at + 1].split('/').map(Number)
+  if (!(Number.isInteger(k) && Number.isInteger(n) && n >= 1 && k >= 0 && k < n)) {
+    throw new Error(`--slice wants k/n with 0 <= k < n, not ${process.argv[at + 1]}`)
+  }
+
   console.log('baseline')
   report(runTests(), { isMutation: false })
 
-  for (const mutation of MUTATIONS) {
+  for (const mutation of MUTATIONS.filter((_, i) => i % n === k)) {
     // The one turn of the event loop this script gets. Without it the handlers above
     // are unreachable for the entire run — see the paragraph on the signal, and the
     // SIGTERM that was measured being swallowed.

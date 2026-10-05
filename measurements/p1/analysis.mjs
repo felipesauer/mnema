@@ -335,7 +335,20 @@ function main(argv) {
   const margin = opt('--margin') ? Number(opt('--margin')) : DEFAULT_MARGIN
   const read = analysePair(counted, headline, a, b, { margin })
   const tokens = { [a]: medianInputTokens(cells, a, headline), [b]: medianInputTokens(cells, b, headline) }
-  console.log(JSON.stringify({ ...read, opportunity, median_input_tokens: tokens }, null, 2))
+  // Each arm's cells over the same tasks, pooled: the rate a control is read by.
+  const pooled = Object.fromEntries(
+    [a, b].map((arm) => {
+      const sum = headline.reduce(
+        (at, task) => {
+          const got = counted.get(arm, task)
+          return { conforms: at.conforms + got.conforms, scorable: at.scorable + got.scorable, broken: at.broken + got.broken }
+        },
+        { conforms: 0, scorable: 0, broken: 0 },
+      )
+      return [arm, { ...sum, rate: sum.scorable > 0 ? sum.conforms / sum.scorable : null }]
+    }),
+  )
+  console.log(JSON.stringify({ ...read, pooled, opportunity, median_input_tokens: tokens }, null, 2))
 }
 
 if (process.argv[1] && fileURLToPath(import.meta.url) === process.argv[1]) main(process.argv.slice(2))

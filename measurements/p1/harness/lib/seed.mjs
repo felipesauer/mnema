@@ -908,7 +908,9 @@ export function knowledgeShapes(fixture) {
     const set = readDecisionSet(fixture)
     const blocks = set.map((entry) => instructionBlock(set, entry))
     const memory = hostMemoryFiles(set).filter((file) => file.name !== MEMORY_INDEX)
-    const byDecision = (texts) => texts.map((text) => withoutReplacementLine(text)).join('\n\n')
+    // Each decision with its own title marker taken off, as `canonicalKnowledge` takes off the one
+    // a single decision opens with: the packaging of a heading, not knowledge.
+    const byDecision = (texts) => texts.map((text) => withoutReplacementLine(text).replace(/^#\s+/, '')).join('\n\n')
     return {
       prosa: byDecision(blocks),
       [INSTRUCTIONS_ARM]: byDecision(blocks),

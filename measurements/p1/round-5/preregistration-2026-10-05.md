@@ -47,7 +47,7 @@ declaration it is checked against, in both directions:
 |---|---|---|---|
 | E1 `base` | nothing | nothing | nothing |
 | E2 `claude-md` | title, statement, reasoning, alternative — all of it | all of it | — |
-| E3 `host` | the title and the first words of the statement | the same | — |
+| E3 `host` | the title, and the statement's first ninety characters — the whole statement when it is shorter | the same | — |
 | E4 `mnema-doc` | the title | nothing | nothing |
 | E5 `mnema+` | the title | nothing | the title of each decision in force addressed there, beside the result |
 | E6 `mnema-gate` | the title | nothing | the same title, as the reason the write was refused; the repeat goes through |
@@ -154,8 +154,9 @@ node analysis.mjs --cells <capture> --scenario S3b --a mnema-doc --b claude-md
 node analysis.mjs --cells <capture> --scenario S5  --a mnema+    --b mnema-doc --min-pushed 2
 # H4
 node analysis.mjs --cells <capture> --scenario S4  --a mnema+    --b claude-md
-# controls: S1, each arm against E1; S2, each arm's pooled rate
+# controls: S1, each arm against E1 (its `reading`); S2, each arm's `pooled.rate`
 node analysis.mjs --cells <capture> --scenario S1  --a <arm>     --b base
+node analysis.mjs --cells <capture> --scenario S2  --a <arm>     --b base
 ```
 
 ## 6 · Size, and what it can see
