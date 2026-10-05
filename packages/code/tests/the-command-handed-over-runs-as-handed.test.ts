@@ -437,6 +437,10 @@ export const NAMES_THAT_NEED_MORE: Readonly<
     times: 1,
     why: 'the verb named in the same list, as what pins another repository’s decisions; the package page hands the line over, with the origin',
   },
+  'CHANGELOG.md: mnema retract': {
+    times: 1,
+    why: 'the verb named in the entry that says only the identity that wrote a note retracts it; the package page names the id and the reason it takes',
+  },
   'README.md: mnema retract': {
     times: 1,
     why: 'the verb named in the same list, as what takes a note back; the package page names the id and the reason it takes',
@@ -625,7 +629,9 @@ export const HANDED_OVER: Readonly<
   // line 60 and name 118 for the front page's list of what else it does (the verbs it points at),
   // and the package page's sections on the log read against the record, the inherited record and
   // `mnema doctor`.
-  span: { line: 60, name: 118, flag: 1, unwritten: 0 },
+  // name 121 for who may take a note back: the changelog names `mnema retract` and `mnema verify`,
+  // and the package page `mnema verify` once more.
+  span: { line: 60, name: 121, flag: 1, unwritten: 0 },
   // name 18 until the page that says where the key lives named `mnema key protect` in a line of
   // its own.
   // line 35 until the same page showed that question in a block of its own.

@@ -10,8 +10,8 @@
  *   - `verify` reports such a retraction in its census, informational, exit untouched.
  * Identity is the anchor, not the key: another key of the same identity retracts.
  *
- * Three machines over one shared tree: A founds an identity, A2 is a second key enrolled
- * into A's identity, B is a different identity.
+ * Three machines over one shared tree: one founds an identity, a second key is enrolled into
+ * that same identity, and a third is a different identity.
  */
 
 import { createPrivateKey, createPublicKey } from 'node:crypto';
