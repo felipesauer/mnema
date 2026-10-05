@@ -23,6 +23,10 @@ tag, with its own changelog.
 ### Fixed
 
 - The brief, and every other line that passes through the rule of the line, now writes the Unicode Tag characters (U+E0000 to U+E007F) as visible escapes; they sit outside the basic plane and slipped through.
+- A rule that refuses a write, or asks for a person, no longer stops at the path the host wrote:
+  a write through a symbolic link (or into a new file under a linked directory) is matched against
+  where it really lands inside the project as well, the refusal still outranking the asking. A link
+  that leaves the project is matched by the path as given.
 
 ## [0.15.0] - 2026-10-05
 
