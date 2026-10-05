@@ -3,7 +3,7 @@
  *
  * WHERE THIS COMES FROM. This repository does not credit the tool that wrote a change in the
  * change's own record. That rule is old, it is explicit, and for 243 pull requests it held
- * because a person remembered it every time. A sweep on 2026-09-11 found `main-v1` carrying ONE
+ * because a person remembered it every time. A sweep on 2026-09-11 found the trunk (named `main-v1` until 2026-10-05) carrying ONE
  * co-author trailer and THIRTEEN `Generated with [Claude Code]` lines, and NINETEEN more in the
  * DESCRIPTIONS of merged pull requests, #361 to #616. Three of the four deliveries around the
  * leak were read by hand before their merge; the fourth was not, and it is the one that carried
@@ -599,7 +599,7 @@ describe('the scan takes its range and its pull request off the runner, never of
     // live pull request and called that no event. `onTheRunner` sets the variable, so the case
     // now fails on the shape it is about instead of being skipped by the environment.
     onTheRunner(anEvent({ pull_request: { base: { sha: 'aaa' }, head: { sha: 'bbb' } } }));
-    expect(rangeFrom([], anEvent({ ref: 'refs/heads/main-v1' }))).toBe(null);
+    expect(rangeFrom([], anEvent({ ref: 'refs/heads/main' }))).toBe(null);
     expect(rangeFrom([], undefined)).toBe(null);
   });
 

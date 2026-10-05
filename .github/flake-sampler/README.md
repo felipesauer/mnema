@@ -55,8 +55,8 @@ gh workflow run flake-sampler.yml --ref <branch>
 Works from any branch that carries the file — probed, not assumed: run `32556614503` was
 dispatched against a branch that is not the default one. The nightly `schedule` is the half that
 does **not** work from a branch: scheduled workflows fire from the default branch only, which is
-`main` while the v1 is built on `main-v1`. Until this file reaches `main`, every night has to be
-asked for, or arrives because a pull request touched the sampler.
+`main`. Until this file reaches `main`, every night has to be asked for, or arrives because a
+pull request touched the sampler.
 
 ## Reading a night by hand
 

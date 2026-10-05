@@ -15,7 +15,7 @@ installing this.
 </p>
 
 <p>
-<a href="https://github.com/felipesauer/mnema/actions/workflows/ci.yml"><img alt="CI" src="https://github.com/felipesauer/mnema/actions/workflows/ci.yml/badge.svg?branch=main-v1"></a>
+<a href="https://github.com/felipesauer/mnema/actions/workflows/ci.yml"><img alt="CI" src="https://github.com/felipesauer/mnema/actions/workflows/ci.yml/badge.svg?branch=main"></a>
 <a href="LICENSE"><img alt="License: Apache-2.0" src="https://img.shields.io/badge/license-Apache--2.0-blue?style=flat-square"></a>
 <img alt="Node 22.12 or later" src="https://img.shields.io/badge/node-%E2%89%A522.12-339933?style=flat-square">
 </p>

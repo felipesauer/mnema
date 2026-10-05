@@ -33,11 +33,11 @@ on:
   # flake-sampler.yml --ref the-suite-says-how-often-it-lies` started run `32556614503` from a
   # branch that is not the default one. What is confined to the default branch is the workflow
   # LIST the web interface offers; the dispatch itself takes a `ref` and runs the file it finds
-  # there. And `schedule` runs from the default branch, which is `main-v1` — the branch the v1 is built on —
-  # so a night fires on its own. THIS COMMENT SAID THE OPPOSITE ("the default branch is `main`, so
-  # until this file reaches `main` no night fires on its own and every night has to be asked
-  # for"), and the premise was false: the repository's default branch is `main-v1`, and the
-  # scheduled runs of this file on 29/09, 30/09 and 01/10 (`gh run list --workflow
+  # there. And `schedule` runs from the default branch, which is the trunk, `main`,
+  # so a night fires on its own. THIS COMMENT SAID THE OPPOSITE ("the default branch is the alpha's, so
+  # until this file reaches it no night fires on its own and every night has to be asked
+  # for"), and the premise was false: the default branch was already the trunk (then named
+  # `main-v1`), and the scheduled runs of this file on 29/09, 30/09 and 01/10 (`gh run list --workflow
   # flake-sampler.yml --event schedule`) all ran on it.
   schedule:
     # 06:00 UTC, which is the small hours of the timezone this is developed in.
