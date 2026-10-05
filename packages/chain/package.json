@@ -1,6 +1,6 @@
 {
   "name": "@mnema/chain",
-  "version": "0.1.0",
+  "version": "0.15.0",
   "description": "The mnema proof engine: typed event catalog, per-tail hash chain, Ed25519 checkpoints, and verification. Zero runtime dependencies.",
   "author": "Felipe Sauer (https://github.com/felipesauer)",
   "license": "Apache-2.0",

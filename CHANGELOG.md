@@ -10,6 +10,8 @@ own changelog.
 
 ## [Unreleased]
 
+## [0.15.0] - 2026-10-05
+
 The first release of this line: `@mnema/code`, and the three packages it is built from.
 Requires Node ≥ 22.12.0; the packages are ESM-only.
 

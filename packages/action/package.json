@@ -1,6 +1,6 @@
 {
   "name": "@mnema/action",
-  "version": "0.1.0",
+  "version": "0.15.0",
   "private": true,
   "description": "A GitHub Action that reads the mnema record on a pull request: it comments what the pull request does to the record and which changed files a rule governs, and it fails the check when the record does not verify as signed. It only reads; it is not published.",
   "author": "Felipe Sauer (https://github.com/felipesauer)",
