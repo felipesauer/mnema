@@ -39,6 +39,5 @@ describe('the install without hooks', () => {
     expect(existsSync(join(REPO, 'plugin-server-only', 'hooks'))).toBe(false);
     expect(existsSync(join(REPO, 'plugin-server-only', 'skills'))).toBe(false);
     expect(only.mcpServers).toEqual(manifestOf('plugin').mcpServers);
-    expect(only.mcpServers).toEqual({ mnema: { command: 'mnema', args: ['mcp'] } });
   });
 });

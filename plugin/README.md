@@ -211,6 +211,20 @@ why. The MCP server the plugin declares is started by the host, not by the hooks
 runs that program; `which -a mnema` lists every `mnema` on the `PATH`, and the plugin runs the
 first.
 
+### Running a particular `mnema`
+
+By default the plugin runs the first `mnema` on the `PATH`. To run another — one outside the
+`PATH` the host starts with, or ahead of a namesake — give its absolute path to the plugin's
+`mnema_path` option (Claude Code asks for it when the plugin is enabled, and lists it in
+`/config`; leaving it as `mnema` keeps the `PATH`). Claude Code hands the value to the hooks as
+`CLAUDE_PLUGIN_OPTION_MNEMA_PATH` and to the MCP server through a small launcher
+(`server/launch.mjs`, run with `node`), which starts the binary and passes the arguments, the
+standard streams and the exit code through. The option does not change what is checked: the hooks
+still ask the program they run which one it is. Both plugins in this repository carry the option.
+Only Claude Code's handling of `userConfig` was read from its documentation; whether VS Code and
+Cursor offer the option was not measured, and where a host leaves the placeholder as it was, the
+launcher runs the `PATH`'s `mnema`.
+
 For the per-edit hook, ask about a path the way it does:
 
 ```sh
