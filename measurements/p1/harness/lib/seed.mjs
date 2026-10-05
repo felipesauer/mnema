@@ -640,9 +640,14 @@ export function instructionsText(fixture) {
   return set.map((entry) => instructionBlock(set, entry).replace(/\n*$/, '\n')).join('\n')
 }
 
-/** The records the mnema arm holds, read back through the product's own index. */
+/**
+ * The records the mnema arm holds, read back through the product's own index.
+ *
+ * `--limit 200`, the product's maximum, because its default is twenty and a task that holds thirty
+ * decisions came back with ten of them missing from `hits` while `total` said thirty.
+ */
 export function mnemaRecords(sandbox, mnemaBin) {
-  const out = must(mnema(sandbox, mnemaBin, ['search', '--json']), 'mnema search --json')
+  const out = must(mnema(sandbox, mnemaBin, ['search', '--json', '--limit', '200']), 'mnema search --json')
   return JSON.parse(out.stdout)
 }
 

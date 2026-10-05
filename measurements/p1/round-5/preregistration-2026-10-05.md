@@ -45,7 +45,7 @@ declaration it is checked against, in both directions:
 
 | arm | at the opening, a decision **in force** | at the opening, a **replaced** decision | at the first write to the governed file |
 |---|---|---|---|
-| E1 `base` | nothing | nothing | nothing |
+| E1 `base` | nothing | nothing | — |
 | E2 `claude-md` | title, statement, reasoning, alternative — all of it | all of it | — |
 | E3 `host` | the title, and the statement's first ninety characters — the whole statement when it is shorter | the same | — |
 | E4 `mnema-doc` | the title | nothing | nothing |
@@ -223,7 +223,7 @@ cell with `mcp_pushed < 2` is "no opportunity" for H3.
 |---|---|
 | the forty-seven tasks | by digest, [`fixtures.sha256`](fixtures.sha256) — the tasks are held out |
 | the split, the families, the plan, the replica, the model and the CLI | [`split.json`](split.json) |
-| the analysis | [`../analysis.mjs`](../analysis.mjs) and [`../harness/lib/cells.mjs`](../harness/lib/cells.mjs) at this commit: sha256 `ANALYSIS_SHA` and `CELLS_SHA` |
+| the analysis | [`../analysis.mjs`](../analysis.mjs) and [`../harness/lib/cells.mjs`](../harness/lib/cells.mjs) at this commit: sha256 `a0f5fee7bc7cf37024928911416faa522f4e70b405fd9fd142cca93b2f1d86e6` and `c7d4fc226b62a59c56467c9cc73cfe327d769ab22ecf0064afd629a47a04bb5d` |
 | the runner | [`../harness/`](../harness/) at this commit |
 
 The report of this round will live beside this file.

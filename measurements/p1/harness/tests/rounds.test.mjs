@@ -311,7 +311,9 @@ describe('10d · and it clears round 3’s tasks too — the round with the arm 
     // cleared `mnema+` and left `mnema-doc` untested.
     const arrives = result.checks.find((c) => c.name === "the surface arms' context arrives")
     assert.match(arrives.detail, /^30 cells across \[mnema-doc,mnema\+,mnema-gate\]/)
-    assert.match(arrives.detail, /10 pair\(s\) hand over the SAME document/)
+    // Ten tasks, and each compares the first surface arm with the other two since round 5's
+    // eighth arm, which carries the same surface.
+    assert.match(arrives.detail, /20 pair\(s\) hand over the SAME document/)
     const reaches = result.checks.find(
       (c) => c.name === "the surface arms' rules reach the writing, or correctly do not",
     )

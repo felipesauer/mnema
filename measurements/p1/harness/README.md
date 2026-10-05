@@ -284,9 +284,10 @@ is for whoever holds the plan to check.
 
 ## Dependencies
 
-**None outside `node:`.** 13,054 lines of `.mjs` in 47 files (the tests included; `find . -name '*.mjs' |
-xargs cat | wc -l` from this directory — the figure this sentence carried before, 10,089, had already
-drifted to 10,542 in 33 files), no `package.json`, no lockfile, no
+**None outside `node:`.** 14,652 lines of `.mjs` in 49 files (the tests included; `find . -name '*.mjs' |
+xargs cat | wc -l` from this directory — 13,054 in 47 before round 5's tasks and arm, and the figure
+this sentence carried before that, 10,089, had already drifted to 10,542 in 33 files), no
+`package.json`, no lockfile, no
 build step —
 node and the runtimes a discriminant needs (`php`, `python3`, `node`, `ruby`, plus `git` and
 `bash`), which the `toolchain` check names on the way out if one is missing. That is what makes it
