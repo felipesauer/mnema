@@ -27,7 +27,14 @@
  * whether the claim above is checked.
  */
 
-import { type Dirent, existsSync, readdirSync, realpathSync } from 'node:fs';
+import {
+  type Dirent,
+  existsSync,
+  lstatSync,
+  readdirSync,
+  readlinkSync,
+  realpathSync,
+} from 'node:fs';
 import { basename, dirname, isAbsolute, join, relative, resolve, sep } from 'node:path';
 import {
   type AddressReach,
@@ -173,6 +180,9 @@ function asked(read: GovernedRead): GovernanceQuery {
   };
 }
 
+/** How many links one resolution follows by hand before it gives the path as given (the kernel's own 40). */
+const MOST_LINKS_FOLLOWED = 40;
+
 /**
  * Where a path really is, when that is somewhere else INSIDE the project — the one resolution
  * every write gate uses to match an address against a path a link may be hiding.
@@ -197,7 +207,25 @@ export function realPathInside(read: GovernedRead): string | undefined {
   }
   let existing = given;
   const rest: string[] = [];
+  let hops = 0;
   for (;;) {
+    // A LINK WHOSE TARGET DOES NOT EXIST YET is still where a write lands: `realpath` fails on
+    // it, so it is followed by hand, its target read against the link's own directory. Past the
+    // hop limit (a loop) the path as given is all there is to match.
+    let target: string | undefined;
+    try {
+      if (lstatSync(existing).isSymbolicLink()) {
+        hops += 1;
+        if (hops > MOST_LINKS_FOLLOWED) return undefined;
+        target = resolve(dirname(existing), readlinkSync(existing));
+      }
+    } catch {
+      target = undefined;
+    }
+    if (target !== undefined) {
+      existing = target;
+      continue;
+    }
     try {
       const real = join(realpathSync(existing), ...rest);
       const inside = relative(rootReal, real);

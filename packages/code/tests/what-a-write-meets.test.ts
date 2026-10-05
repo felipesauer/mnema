@@ -267,6 +267,15 @@ describe('a link does not step around a rule', () => {
     expect(meets('src/billing/books/posting.ts')?.grade).toBe('refuse');
   });
 
+  it('refuses a write through a dangling link whose target would be created inside a protected directory', async () => {
+    await ruleAt('Nobody writes the ledger by hand', 'src/ledger', 'refuses-a-write');
+    symlinkSync(join(repo, 'src', 'ledger', 'new.ts'), join(repo, 'src', 'billing', 'dangling.ts'));
+    symlinkSync('../ledger/later.ts', join(repo, 'src', 'billing', 'relative.ts'));
+
+    expect(meets('src/billing/dangling.ts')?.grade).toBe('refuse');
+    expect(meets('src/billing/relative.ts')?.grade).toBe('refuse');
+  });
+
   it('meets nothing through a link that leaves the project, whatever it points at', async () => {
     await ruleAt('Nobody writes the ledger by hand', 'src/ledger', 'refuses-a-write');
     const outside = join(sandbox, 'outside');
