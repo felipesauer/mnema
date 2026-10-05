@@ -8,8 +8,8 @@ exists the supported version is the default branch itself, and after that, the l
 release.
 
 The 0.x alpha published earlier as `@felipesauer/mnema` is the previous line. It is
-deprecated on npm (`npm view @felipesauer/mnema deprecated` says so), it lives on the `main`
-branch, kept as it was, and it receives no fixes.
+deprecated on npm (`npm view @felipesauer/mnema deprecated` says so), it lives on the
+`archive/alpha-0.14` tag, kept as it was, and it receives no fixes.
 
 ## Reporting a vulnerability
 

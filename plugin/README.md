@@ -159,9 +159,9 @@ npm i -g @mnema/code
 pnpm add -g @mnema/code
 ```
 
-Whether that resolves is a fact about the registry rather than about this page — this
-line used to assert *"not on npm yet"*, which stops being true the day the release goes
-out. `npm view @mnema/code version` is the one command that answers it.
+Nothing is on npm yet, so that answers 404 until the first publication; the
+[root README](../README.md#install) has the install of the pre-release `v0.1.0-beta` from
+its tarballs, and `npm view @mnema/code version` says whether the publication has happened.
 
 Then add this repository as a marketplace and install from it:
 

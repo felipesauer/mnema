@@ -131,6 +131,8 @@ layer makes no proof of its own; being clear about that is the point.
 npm i @mnema/context
 ```
 
+Nothing is on npm yet, so that answers 404 until the first publication; the [root README](../../README.md#install) has the install of the pre-release `v0.1.0-beta` from its tarballs.
+
 **It is released because `@mnema/code` depends on it, not because you should install
 it.** This section used to say it was internal and never published; what falsified that
 is that a dependency which is not on the registry is an install that fails, measured —

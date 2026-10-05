@@ -203,22 +203,29 @@ anybody for anything, so a checkpoint cannot fail because a calendar was down.
 
 ## Install
 
+**Nothing is on npm yet**, so `npm i -g @mnema/code` answers 404 until the first
+publication. Until then, install the pre-release `v0.1.0-beta`: this package depends on
+`@mnema/chain`, `@mnema/core` and `@mnema/context`, so the four tarballs go in one command.
+
+```sh
+npm i -g \
+  https://github.com/felipesauer/mnema/releases/download/v0.1.0-beta/mnema-chain-0.1.0-beta.tgz \
+  https://github.com/felipesauer/mnema/releases/download/v0.1.0-beta/mnema-core-0.1.0-beta.tgz \
+  https://github.com/felipesauer/mnema/releases/download/v0.1.0-beta/mnema-context-0.1.0-beta.tgz \
+  https://github.com/felipesauer/mnema/releases/download/v0.1.0-beta/mnema-code-0.1.0-beta.tgz
+```
+
+Once the packages are published, this is the install:
+
 ```sh
 npm i -g @mnema/code
 # or, if your global binaries live under pnpm:
 pnpm add -g @mnema/code
 ```
 
-It puts the `mnema` binary on your `PATH`. Requires Node ≥ 22.12.0; the package is
-ESM-only. It brings `@mnema/chain`, `@mnema/core` and `@mnema/context` with it — they
-are released alongside it because a dependency that is not on the registry is an
-install that fails.
-
-**Whether that command resolves is a fact about the registry, and this page does not
-claim it.** It used to say *"this package is not on npm yet"*: true when it was written,
-false the day the release goes out, and a page that instead announced the release would
-have been wrong until the moment somebody pushed it. So it asks rather than asserts —
-`npm view @mnema/code version`, where a 404 means the release has not been pushed.
+Either puts the `mnema` binary on your `PATH`. Requires Node ≥ 22.12.0; the package is
+ESM-only, and it brings the other three with it. `npm view @mnema/code version` says
+whether the publication has happened: a 404 means it has not.
 
 ## Usage
 
