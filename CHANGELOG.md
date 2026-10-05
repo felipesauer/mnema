@@ -27,6 +27,10 @@ tag, with its own changelog.
   `decision record`; the text typed on the line (`--body`, the `memory` argument, `--text`) still
   works, and a line that gives it from two places is refused with the places it named. A missing
   text is now this refusal, not the parser's.
+- **The SDK names the id behind an `ADR-<n>` label.** `acceptDecision` and `rejectDecision`, handed
+  the label a write printed instead of an id, refuse as before (`UNKNOWN_DECISION`) and now carry a
+  `message` with the sentence the command line and the MCP server say: the id (or ids) that label
+  stands for. The three doors say it from one function.
 
 ## [0.1.0-beta] - 2026-10-05
 
