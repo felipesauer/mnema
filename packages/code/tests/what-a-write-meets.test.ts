@@ -238,7 +238,10 @@ describe('a link does not step around a rule', () => {
   it('refuses a write through a link to a protected file, and still refuses the direct path', async () => {
     const rule = await ruleAt('Nobody writes the ledger by hand', 'src/ledger', 'refuses-a-write');
     writeFileSync(join(repo, 'src', 'ledger', 'posting.ts'), 'x');
-    symlinkSync(join(repo, 'src', 'ledger', 'posting.ts'), join(repo, 'src', 'billing', 'alias.ts'));
+    symlinkSync(
+      join(repo, 'src', 'ledger', 'posting.ts'),
+      join(repo, 'src', 'billing', 'alias.ts'),
+    );
 
     const direct = meets('src/ledger/posting.ts');
     const linked = meets('src/billing/alias.ts');
