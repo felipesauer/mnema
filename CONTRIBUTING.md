@@ -77,15 +77,6 @@ the ones a first change usually meets:
 A new guard is expected to come with a case that shows it failing on the defect it exists
 for: a guard that has never been seen to fail looks exactly like one that cannot.
 
-## A pull request
-
-- **One change per pull request.** If the work has two parts, it is two pull requests.
-- **A title in English that says what changes**, as a sentence, the way the history already
-  reads: `git log --oneline` shows the form.
-- **When two ways of doing something pull apart, the one that keeps the record checkable wins
-  over the one that is more convenient.** That is the criterion behind most of what the
-  guards above ask for.
-
 ## Changing a skill
 
 The skills the plugin ships are in [`plugin/skills/`](plugin/skills/). **A change to a skill, or a
@@ -135,6 +126,15 @@ npm i -g \
 ```
 
 A release that was cut wrongly is not deleted on the spot: ask the maintainer first.
+
+## A pull request
+
+- **One change per pull request.** If the work has two parts, it is two pull requests.
+- **A title in English that says what changes**, as a sentence, the way the history already
+  reads: `git log --oneline` shows the form.
+- **When two ways of doing something pull apart, the one that keeps the record checkable wins
+  over the one that is more convenient.** That is the criterion behind most of what the
+  guards above ask for.
 
 Security problems are not reported through a pull request or a public issue: see
 [`SECURITY.md`](SECURITY.md). Taking part in this project means following the
