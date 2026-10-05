@@ -37,6 +37,10 @@ tag, with its own changelog.
   answered as written, and a link that leaves the project is answered as written too. The same
   resolution now reads a relative link from the directory it really sits in, so a link inside a
   directory that is itself a link no longer climbs out of the way it was spelled.
+- **`doctor` and the plugin's hand-over hook point at the pre-release.** With no `mnema` on the
+  `PATH`, or another program answering to the name, they used to say `npm i -g @mnema/code`, which
+  answers 404 until the packages are published; they now give the install of the pre-release from
+  its four tarballs, the line the root README gives.
 
 ## [0.1.0-beta] - 2026-10-05
 
