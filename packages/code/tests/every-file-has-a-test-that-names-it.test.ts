@@ -432,6 +432,10 @@ const UNWITNESSED: Readonly<Record<string, Debt>> = {
     reached: 'nobody imports it',
     why: "The check group's two subcommands and the lines they print; cli-e2e asserts the record they leave and the exit code of `check run`, not the sentences this file prints about it.",
   },
+  'packages/code/src/wiring/commit-hook.ts': {
+    reached: 'nobody imports it',
+    why: "The commit-hook group's declaration; a-commit-hook-only-suggests.test.ts drives `install` through the CLI and reads the refusal that names the foreign hook, while the success lines and the help are read only in the golden.",
+  },
   'packages/code/src/wiring/commits.ts': {
     reached: 'nobody imports it',
     why: "The commits verb's wiring; the-record-meets-the-git-log.test.ts drives it through the CLI and reads its --json and its page.",
@@ -644,7 +648,7 @@ const UNWITNESSED: Readonly<Record<string, Debt>> = {
  * reading, so nothing can fall in two.
  */
 const THE_SHAPE_OF_WHAT_IS_LEFT: Readonly<Record<string, number>> = {
-  wiring: 45,
+  wiring: 46,
   presentation: 11,
   projections: 4,
   completion: 4,
@@ -899,6 +903,7 @@ const CLAUSES_PER_FILE: Readonly<Record<string, number>> = {
   'packages/code/src/wiring/io.test.ts': 3,
   'packages/code/tests/a-check-runs-as-declared.test.ts': 5,
   'packages/code/tests/a-client-that-names-no-workspace.test.ts': 14,
+  'packages/code/tests/a-commit-hook-only-suggests.test.ts': 10,
   'packages/code/tests/a-correction-becomes-a-proposal.test.ts': 14,
   'packages/code/tests/a-flag-declared-twice.test.ts': 9,
   'packages/code/tests/a-floor-under-the-window.test.ts': 16,
@@ -1304,6 +1309,7 @@ const PRODUCTION_FILES: readonly string[] = [
   'packages/code/src/commands/before-a-write.ts',
   'packages/code/src/commands/brief.ts',
   'packages/code/src/commands/check.ts',
+  'packages/code/src/commands/commit-hook.ts',
   'packages/code/src/commands/commits.ts',
   'packages/code/src/commands/corrections.ts',
   'packages/code/src/commands/decision-import.ts',
@@ -1482,6 +1488,7 @@ const PRODUCTION_FILES: readonly string[] = [
   'packages/code/src/wiring/brief.ts',
   'packages/code/src/wiring/check.ts',
   'packages/code/src/wiring/color.ts',
+  'packages/code/src/wiring/commit-hook.ts',
   'packages/code/src/wiring/commits.ts',
   'packages/code/src/wiring/completion.ts',
   'packages/code/src/wiring/context.ts',
@@ -1704,8 +1711,9 @@ describe('every file has a test that names it', () => {
     // 82 with the site verb's wiring, which the built binary reaches.
     // 80 with the check group.
     // 81 once a test of who may retract a note appended through `workflow/append.ts` itself.
-    expect(found.size).toBe(81);
-    expect(byReach('nobody imports it')).toBe(81);
+    // 82 with the commit-hook group's wiring, which the CLI reaches.
+    expect(found.size).toBe(82);
+    expect(byReach('nobody imports it')).toBe(82);
     expect(byReach('imported, and no assertion observes it')).toBe(0);
   });
 
@@ -1727,7 +1735,7 @@ describe('every file has a test that names it', () => {
     // Announced in the header and, until now, kept by hand. A shared excuse is how a table
     // like this turns into a rubber stamp, and a row drained to a stub is how it starts.
     const reasons = Object.values(UNWITNESSED).map((one) => one.why);
-    expect(reasons).toHaveLength(81);
+    expect(reasons).toHaveLength(82);
     expect(new Set(reasons).size).toBe(reasons.length);
     // The shortest reason standing is 156 characters; the floor is under it and well over
     // anything that could be written without saying what reaches that file.

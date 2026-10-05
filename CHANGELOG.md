@@ -10,6 +10,16 @@ tag, with its own changelog.
 
 ## [Unreleased]
 
+### Added
+
+- **An optional git hook that suggests the `Mnema-Decision` trailer.** `mnema commit-hook install`
+  writes a `prepare-commit-msg` hook, `mnema commit-hook uninstall` removes it, and nothing else
+  installs it: not `init`. It follows `core.hooksPath`, refuses (naming the path) to replace a hook it
+  did not write, and removes only a file that is byte for byte its own. In a commit made in an editor
+  it appends `#` comment lines naming the decisions in force that govern the staged files, which git
+  drops unless the `# ` in front of a line is removed. It never fails a commit: with `mnema` missing
+  from the hook's `PATH`, or failing, it does nothing.
+
 ## [0.1.0-beta] - 2026-10-05
 
 The first release of this line: `@mnema/code`, and the three packages it is built from. The

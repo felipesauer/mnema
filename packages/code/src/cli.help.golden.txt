@@ -82,6 +82,8 @@ $ mnema
 !                                         and record whether it held at a commit
 !   trailer [options] <decision>          print the commit trailer that ties a
 !                                         commit to a decision
+!   commit-hook                           install or remove an optional git hook
+!                                         that suggests the Mnema-Decision trailer
 !   commits [options] <decision>          show the commits that cite a decision
 !                                         and those that touched what it addresses
 !   why [options] <file|commit>           show under which decisions a file or a
@@ -212,6 +214,8 @@ $ mnema --help
 |                                         and record whether it held at a commit
 |   trailer [options] <decision>          print the commit trailer that ties a
 |                                         commit to a decision
+|   commit-hook                           install or remove an optional git hook
+|                                         that suggests the Mnema-Decision trailer
 |   commits [options] <decision>          show the commits that cite a decision
 |                                         and those that touched what it addresses
 |   why [options] <file|commit>           show under which decisions a file or a
@@ -837,6 +841,30 @@ $ mnema trailer --help
 |   --id        carry the id instead of the label
 |   --json      emit the line as JSON
 |   -h, --help  display help for command
+
+### mnema commit-hook --help
+$ mnema commit-hook --help
+| Usage: mnema commit-hook [options] [command]
+|
+| install or remove an optional git hook that suggests the Mnema-Decision trailer
+|
+| Options:
+|   -h, --help                       display help for command
+|
+| Commands:
+|   install                          write the prepare-commit-msg hook in this
+|                                    repository (refuses to replace another one)
+|   uninstall                        remove the prepare-commit-msg hook, only if
+|                                    mnema wrote it
+|   suggest <message-file> [source]  what the hook calls: append the suggestion to
+|                                    a commit message file
+|   help [command]                   display help for command
+|
+| The hook is a prepare-commit-msg script. It appends a few # comment lines to the message
+| of a commit made in an editor, naming the decisions in force that govern the staged files;
+| git drops them if you leave them, and removing the "# " in front of a line cites it.
+| It runs only where `install` put it, never overwrites a hook that is not its own, follows
+| core.hooksPath, and never fails a commit.
 
 ### mnema commits --help
 $ mnema commits --help
@@ -1672,6 +1700,38 @@ $ mnema check run --help
 |   --timeout <seconds>  how long one check may run before it is stopped and
 |                        recorded as failed (default 300)
 |   -h, --help           display help for command
+
+### mnema commit-hook install --help
+$ mnema commit-hook install --help
+| Usage: mnema commit-hook install [options]
+|
+| write the prepare-commit-msg hook in this repository (refuses to replace another
+| one)
+|
+| Options:
+|   -h, --help  display help for command
+
+### mnema commit-hook uninstall --help
+$ mnema commit-hook uninstall --help
+| Usage: mnema commit-hook uninstall [options]
+|
+| remove the prepare-commit-msg hook, only if mnema wrote it
+|
+| Options:
+|   -h, --help  display help for command
+
+### mnema commit-hook suggest --help
+$ mnema commit-hook suggest --help
+| Usage: mnema commit-hook suggest [options] <message-file> [source]
+|
+| what the hook calls: append the suggestion to a commit message file
+|
+| Arguments:
+|   message-file  the file git prepared the message in
+|   source        where git says the message came from
+|
+| Options:
+|   -h, --help    display help for command
 
 ### mnema key restore --help
 $ mnema key restore --help
