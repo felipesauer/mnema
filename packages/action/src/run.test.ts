@@ -235,14 +235,20 @@ describe('the Action with a checker key', () => {
   // five seconds do not leave on a loaded machine.
   it('runs the checks with the key, leaves the results in the tree, and hands the program no input', async () => {
     const { baseSha, key } = aCheckedBase();
+    // Where the runner keeps its temporary files, pointed into the sandbox so that what the run
+    // leaves there can be read: the key's file has to be gone once the run ends.
+    const runnerTemp = join(sandbox, 'runner-temp');
+    mkdirSync(runnerTemp);
     const said: string[] = [];
-    const code = await main(environment(baseSha, 'false', key), github([]).fetchIt, (line) =>
-      said.push(line),
+    const code = await main(
+      { ...environment(baseSha, 'false', key), RUNNER_TEMP: runnerTemp },
+      github([]).fetchIt,
+      (line) => said.push(line),
     );
     expect(said.join('\n')).toContain('1 passed · 0 failed at');
     expect(code).toBe(0);
     expect(git('status', '--porcelain')).toContain('.mnema/');
-    expect(readdirSync(sandbox)).not.toContain('checker.key');
+    expect(readdirSync(runnerTemp).filter((name) => name.startsWith('mnema-checker-'))).toEqual([]);
   }, 30_000);
 
   it('fails the check when a rule’s check did not pass, and records that it did not', async () => {

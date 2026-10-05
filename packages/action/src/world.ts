@@ -88,7 +88,9 @@ export function worldAt(
       checkRun(key) {
         // The key is written to a file of its own, readable by this user only, for the length
         // of the run, and removed after it whatever happened.
-        const dir = mkdtempSync(join(process.env.RUNNER_TEMP ?? tmpdir(), 'mnema-checker-'));
+        const dir = mkdtempSync(
+          join(env.RUNNER_TEMP ?? process.env.RUNNER_TEMP ?? tmpdir(), 'mnema-checker-'),
+        );
         try {
           const file = join(dir, 'checker.key');
           writeFileSync(file, `${key}\n`, { mode: 0o600 });

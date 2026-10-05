@@ -199,6 +199,14 @@ function bothReaders(): { productOk: boolean; verdict: string; refused: readonly
   return { productOk: here.ok, verdict: there.verdict, refused: refusals(there) };
 }
 
+/**
+ * What the product refused, by its words. A case that asserts only `productOk` passes as long as
+ * ANY refusal holds, so the refusal a case is about is named here, as the second reader's is.
+ */
+function productRefused(): readonly string[] {
+  return verify(root, catalogUpcasters()).issues.map((issue) => issue.detail);
+}
+
 describe('the two readers agree on records the product itself wrote — enrolment', () => {
   it('a founded solo key: green on both, and the second reader says WHY it is green', () => {
     const kp = generateKeyPair();
@@ -870,16 +878,19 @@ describe('the two readers agree on records the product itself wrote — a checke
     const { a, c, anchor } = personAndChecker();
     const stranger = generateKeyPair();
     commitPublicKey(stranger);
-    writeTail(
-      `${a.fingerprint}-i1`,
-      [founding(a), enrolChecker(anchor, a, c), retire(anchor, stranger, c, 3)],
-      a,
-    );
+    writeTail(`${a.fingerprint}-i1`, [founding(a), enrolChecker(anchor, a, c)], a);
+    // In the stranger's OWN tail, under a checkpoint the stranger signed: the one place a key can
+    // put a fact, so the only refusal left to it is the one this case is about.
+    writeTail(`${stranger.fingerprint}-i3`, [retire(anchor, stranger, c, 3)], stranger);
 
     const { productOk, verdict, refused } = bothReaders();
     expect(productOk).toBe(false);
+    expect(productRefused()).toEqual([
+      'checker.retired is signed by a key not valid for its who at this point',
+    ]);
     expect(verdict).toBe('REFUSED');
-    expect(refused.join('\n')).toContain('checker.retired');
+    expect(refused).toHaveLength(1);
+    expect(refused.join('\n')).toContain('checker.retired is signed by a key not valid');
   });
 
   it('a retired key enrolled again, or signing any other kind: refused by both', () => {
@@ -913,8 +924,15 @@ describe('the two readers agree on records the product itself wrote — a checke
 
     const { productOk, verdict, refused } = bothReaders();
     expect(productOk).toBe(false);
+    const said = productRefused();
+    expect(said).toHaveLength(2);
+    expect(said.join('\n')).toContain(
+      `identity.founded is signed by ${c.fingerprint}, a checker key retired at this point, which signs nothing`,
+    );
+    expect(said.join('\n')).toContain('which is never enrolled again');
     expect(verdict).toBe('REFUSED');
     expect(refused).toHaveLength(2);
-    expect(refused.join('\n')).toContain('retired');
+    expect(refused.join('\n')).toContain('a retired checker key, which signs nothing');
+    expect(refused.join('\n')).toContain('which is never enrolled again');
   });
 });
