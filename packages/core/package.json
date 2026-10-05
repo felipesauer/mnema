@@ -1,6 +1,6 @@
 {
   "name": "@mnema/core",
-  "version": "0.15.0",
+  "version": "0.1.0-beta",
   "description": "The mnema work domain: the gate over the SHAPE of a change, projections, identity, and queries. Depends on @mnema/chain.",
   "author": "Felipe Sauer (https://github.com/felipesauer)",
   "license": "Apache-2.0",
