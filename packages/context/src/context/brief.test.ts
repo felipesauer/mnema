@@ -2,10 +2,10 @@ import { rmSync } from 'node:fs';
 import {
   ASKS_FOR_A_PERSON_RELATION,
   GOVERNS_RELATION,
-  REFUSES_A_WRITE_RELATION,
   isDecisionState,
   isSkillState,
   type ProjectionCache,
+  REFUSES_A_WRITE_RELATION,
   type Scope,
   SEARCH_DEFAULT_LIMIT,
 } from '@mnema/core';
