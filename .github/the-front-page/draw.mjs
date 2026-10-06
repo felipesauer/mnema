@@ -1,5 +1,6 @@
-// Draws the front page's pictures: `docs/assets/banner-{dark,light}.svg` and
-// `docs/assets/how-it-works-{dark,light}.svg`.
+// Draws the front page's pictures: `docs/assets/banner-{dark,light}.svg`,
+// `docs/assets/how-it-works-{dark,light}.svg` and the animated
+// `docs/assets/how-mnema-fits-{dark,light}.svg`.
 //
 // THE BANNER IS THE CONSOLE'S WORDMARK. Its rows are read from `THE_BLOCKS`
 // (`packages/code/src/presentation/banner.ts`, through the build) and each glyph is drawn as
@@ -10,7 +11,7 @@
 //
 // From the root of a built checkout (`pnpm build`):
 //
-//   node .github/the-front-page/draw.mjs          writes the four pictures
+//   node .github/the-front-page/draw.mjs          writes the pictures
 //   node .github/the-front-page/draw.mjs --check  writes nothing; exits 1 if one differs
 //
 // `packages/code/tests/the-front-page-is-drawn-from-the-console.test.ts` calls
@@ -315,6 +316,297 @@ function howItWorks(theme) {
 }
 
 // ---------------------------------------------------------------------------------------------
+// How mnema fits: an agent session, mnema, the repository — animated
+//
+// One loop of LOOP seconds, in CSS keyframes inside the SVG, which GitHub plays in an <img>
+// (it runs no script and the picture needs none). Every element that moves carries, as its own
+// attributes, how it looks in the last frame of the story; a reader who asked for less motion
+// gets that frame, still, and the loop opens and closes on the first one, so it restarts with no
+// jump. What each frame says is what the product does: see the comment on `HERO_STORY`.
+
+const LOOP = 14;
+
+/**
+ * What the picture tells, in order, each line a thing the product does:
+ *   - a session opens with the decisions in force, by label and title (the opening document's
+ *     own words: `## Decisions in force`, `ADR-2 — Keep money as integer cents`);
+ *   - a write under a path a rule addresses with `refuses-a-write` gets `deny` from the hook, and
+ *     the refusal is itself a signed fact of the record (`recordings/a-write-refused.sh`);
+ *   - a write no rule refuses lands;
+ *   - a decision an agent records is signed and appended, and stays `proposed` until a person
+ *     accepts it;
+ *   - `mnema verify` reads the chain and says `verified`.
+ */
+const HERO_STORY = [
+  { title: 'in force  ADR-2', detail: 'Keep money as integer cents', tone: 'muted' },
+  { title: 'write  src/billing/total.ts', detail: 'deny · refuses-a-write', tone: 'accent' },
+  { title: 'write  src/cart/price.ts', detail: 'allowed', tone: 'muted' },
+  { title: 'record  ADR-3', detail: 'signed · proposed', tone: 'accent' },
+];
+
+const HERO_STEPS = [
+  'session opens',
+  'write refused',
+  'write lands',
+  'decision signed',
+  'record verified',
+];
+
+/**
+ * Keyframes for one property over the loop, from [seconds, value] stops. The first stop must
+ * be at 0 and the last at LOOP, with the same value, so the loop closes on itself.
+ * @param {string} name
+ * @param {string} property
+ * @param {[number, string][]} stops
+ */
+function keyframes(name, property, stops) {
+  const at = stops.map(([t, v]) => `${n((t / LOOP) * 100)}%{${property}:${v}}`).join('');
+  return `@keyframes ${name}{${at}}`;
+}
+
+/**
+ * An opacity that is 0 outside [from, to], fading over `fade` seconds at each end.
+ * @param {number} from
+ * @param {number} to
+ * @param {number} [fade]
+ * @returns {[number, string][]}
+ */
+function shown(from, to, fade = 0.3) {
+  return [
+    [0, '0'],
+    [from, '0'],
+    [from + fade, '1'],
+    [to - fade, '1'],
+    [to, '0'],
+    [LOOP, '0'],
+  ];
+}
+
+/**
+ * A packet's travel along the lane: hidden, then from x `a` to x `b` over [from, to].
+ * @param {number} from
+ * @param {number} to
+ * @param {number} a
+ * @param {number} b
+ * @returns {{ move: [number, string][], fade: [number, string][] }}
+ */
+function travel(from, to, a, b) {
+  return {
+    move: [
+      [0, `translateX(${a}px)`],
+      [from, `translateX(${a}px)`],
+      [to, `translateX(${b}px)`],
+      [LOOP, `translateX(${b}px)`],
+    ],
+    fade: [
+      [0, '0'],
+      [from - 0.05, '0'],
+      [from + 0.1, '1'],
+      [to - 0.1, '1'],
+      [to + 0.05, '0'],
+      [LOOP, '0'],
+    ],
+  };
+}
+
+/**
+ * @param {readonly string[]} blocks
+ * @param {'dark' | 'light'} theme
+ */
+function howMnemaFits(blocks, theme) {
+  const accent = ACCENT[theme];
+  const { text, muted, border } = NEUTRAL[theme];
+  const W = 880;
+  const H = 302;
+  const box = { top: 8, h: 238, w: 260 };
+  const lane = 127;
+  const agentRight = box.w;
+  const repoLeft = W - box.w;
+  const hub = { x: 360, w: 160, y: 84, h: 86 };
+  /** @type {string[]} */
+  const css = [];
+  /** @type {string[]} */
+  const body = [];
+  let count = 0;
+  /**
+   * Gives an element a name and the keyframes that move it.
+   * @param {string} property
+   * @param {[number, string][]} stops
+   */
+  const animate = (property, stops) => {
+    const name = `k${count++}`;
+    css.push(keyframes(name, property, stops));
+    return name;
+  };
+  /** @param {string[]} names */
+  const style = (names) => `style="animation-name:${names.join(',')}"`;
+
+  // The two panels and the hub.
+  const panel = (/** @type {number} */ x, /** @type {string} */ title) => [
+    `<rect x="${x + 0.5}" y="${box.top + 0.5}" width="${box.w - 1}" height="${box.h}" rx="12" fill="none" stroke="${border}"/>`,
+    `<text x="${x + 18}" y="${box.top + 26}" font-family="${SANS}" font-size="14" font-weight="600" fill="${text}">${title}</text>`,
+    `<path d="M${x + 0.5} ${box.top + 40.5}H${x + box.w - 0.5}" stroke="${border}"/>`,
+  ];
+  body.push(...panel(0, 'agent session'), ...panel(repoLeft, 'repository'));
+  body.push(
+    `<text x="${box.w / 2}" y="${box.top + box.h + 24}" font-family="${SANS}" font-size="12" fill="${muted}" text-anchor="middle">Claude Code · VS Code · Cursor CLI</text>`,
+    `<path d="M${agentRight + 4} ${lane}H${hub.x - 4}M${hub.x + hub.w + 4} ${lane}H${repoLeft - 4}" stroke="${border}" stroke-width="1.5" stroke-dasharray="3 5" stroke-linecap="round"/>`,
+    `<rect x="${hub.x + 0.5}" y="${hub.y + 0.5}" width="${hub.w - 1}" height="${hub.h}" rx="12" fill="none" stroke="${border}"/>`,
+  );
+  const scale = 0.25;
+  const markW = Math.max(...blocks.map((row) => [...row].length)) * CELL.w * scale;
+  const markH = blocks.length * CELL.h * scale;
+  body.push(
+    `<g transform="translate(${n(hub.x + (hub.w - markW) / 2)} ${n(hub.y + (hub.h - markH) / 2)}) scale(${scale})">`,
+    ...wordmark(blocks, accent, 0, 0),
+    '</g>',
+  );
+  const pulse = (/** @type {number} */ at) => [
+    [at - 0.05, '0'],
+    [at + 0.15, '1'],
+    [at + 0.6, '0'],
+  ];
+  const hubPulse = animate('opacity', [
+    [0, '0'],
+    .../** @type {[number, string][]} */ (pulse(3.6)),
+    .../** @type {[number, string][]} */ (pulse(6.75)),
+    .../** @type {[number, string][]} */ (pulse(9.8)),
+    [LOOP, '0'],
+  ]);
+  body.push(
+    `<rect class="a" ${style([hubPulse])} opacity="0" x="${hub.x + 0.5}" y="${hub.y + 0.5}" width="${hub.w - 1}" height="${hub.h}" rx="12" fill="${accent}" fill-opacity="0.08" stroke="${accent}" stroke-width="1.5"/>`,
+  );
+
+  // The session's transcript: each entry appears when its packet arrives, and all of them leave
+  // together at the end of the loop.
+  const ends = LOOP - 0.7;
+  /** @type {[number, number][]} */
+  const entryTimes = [
+    [1.2, 1.2],
+    [2.8, 5.0],
+    [6.0, 7.8],
+    [9.0, 10.2],
+  ];
+  HERO_STORY.forEach((entry, i) => {
+    const y = box.top + 68 + i * 44;
+    const [first, second] = entryTimes[i] ?? [0, 0];
+    const a = animate('opacity', shown(first, ends));
+    const b = animate('opacity', shown(second, ends));
+    const [verb, ...rest] = entry.title.split('  ');
+    body.push(
+      `<text class="a" ${style([a])} x="18" y="${y}" font-family="${MONO}" font-size="11.5"><tspan fill="${muted}">${escaped(verb ?? '')}</tspan><tspan fill="${text}" dx="7">${escaped(rest.join(' '))}</tspan></text>`,
+      `<text class="a" ${style([b])} x="30" y="${y + 18}" font-family="${MONO}" font-size="11.5" fill="${entry.tone === 'accent' ? accent : muted}">${escaped(entry.detail)}</text>`,
+    );
+  });
+
+  // The repository: the two files, the rule addressed at the first, and the record.
+  const rx = repoLeft + 18;
+  const pricePulse = animate('opacity', shown(7.8, 8.8));
+  body.push(
+    `<text x="${rx}" y="${box.top + 68}" font-family="${MONO}" font-size="11.5" fill="${text}">src/billing/total.ts</text>`,
+    `<text x="${rx + 12}" y="${box.top + 86}" font-family="${MONO}" font-size="10.5" fill="${muted}">refuses-a-write · ADR-2</text>`,
+    `<rect class="a" ${style([pricePulse])} opacity="0" x="${rx - 8}" y="${box.top + 98}" width="${box.w - 20}" height="24" rx="6" fill="${accent}" fill-opacity="0.16" stroke="${accent}" stroke-opacity="0.7"/>`,
+    `<text x="${rx}" y="${box.top + 114}" font-family="${MONO}" font-size="11.5" fill="${text}">src/cart/price.ts</text>`,
+    `<text x="${rx}" y="${box.top + 152}" font-family="${MONO}" font-size="11.5" fill="${muted}">.mnema/</text>`,
+  );
+  const a = 12;
+  const dx = a * COS30;
+  const link = 10;
+  const cy = box.top + 186;
+  const cubeAt = (/** @type {number} */ i) => rx + dx + i * (2 * dx + link);
+  const arrivals = [undefined, undefined, undefined, 5.0, 11.0];
+  for (let i = 0; i < 5; i++) {
+    const x = cubeAt(i);
+    const arrives = arrivals[i];
+    const glow = animate('opacity', [
+      [0, '0'],
+      [11.6 + i * 0.22, '0'],
+      [11.8 + i * 0.22, '1'],
+      [12.3 + i * 0.22, '0'],
+      [LOOP, '0'],
+    ]);
+    /** @type {string[]} */
+    const parts = [];
+    if (i > 0) {
+      parts.push(
+        `<path d="M${n(x - 2 * dx - link + dx + 2)} ${cy}H${n(x - dx - 2)}" stroke="${muted}" stroke-width="1.5" stroke-linecap="round"/>`,
+      );
+    }
+    parts.push(...cube(x, cy, a, accent, [0.3, 0.16, 0.06]));
+    parts.push(
+      `<path class="a" ${style([glow])} opacity="0" d="M${n(x)} ${n(cy - a)}L${n(x + dx)} ${n(cy - a / 2)}L${n(x + dx)} ${n(cy + a / 2)}L${n(x)} ${n(cy + a)}L${n(x - dx)} ${n(cy + a / 2)}L${n(x - dx)} ${n(cy - a / 2)}z" fill="${accent}" fill-opacity="0.85"/>`,
+    );
+    if (arrives === undefined) body.push(...parts);
+    else {
+      const enter = animate('opacity', shown(arrives, ends, 0.4));
+      body.push(`<g class="a" ${style([enter])}>`, ...parts, '</g>');
+    }
+  }
+  const verified = animate('opacity', shown(12.8, ends));
+  body.push(
+    `<text class="a" ${style([verified])} x="${n(cubeAt(4) + dx + 14)}" y="${cy + 4}" font-family="${SANS}" font-size="13" font-weight="600" fill="${accent}">verified</text>`,
+  );
+
+  // The packets, each a dot that runs along the lane.
+  const legs = [
+    travel(0.4, 1.2, hub.x - 6, agentRight + 6),
+    travel(2.8, 3.6, agentRight + 6, hub.x - 6),
+    travel(4.2, 5.0, hub.x - 6, agentRight + 6),
+    travel(4.2, 5.0, hub.x + hub.w + 6, repoLeft - 6),
+    travel(6.0, 6.75, agentRight + 6, hub.x - 6),
+    travel(7.0, 7.8, hub.x + hub.w + 6, repoLeft - 6),
+    travel(9.0, 9.8, agentRight + 6, hub.x - 6),
+    travel(10.2, 11.0, hub.x + hub.w + 6, repoLeft - 6),
+  ];
+  for (const leg of legs) {
+    const move = animate('transform', leg.move);
+    const fade = animate('opacity', leg.fade);
+    body.push(
+      `<g class="a" ${style([move, fade])} opacity="0"><circle cx="0" cy="${lane}" r="9" fill="${accent}" fill-opacity="0.22"/><circle cx="0" cy="${lane}" r="4.5" fill="${accent}"/></g>`,
+    );
+  }
+
+  // The five steps, the one under way lit.
+  /** @type {[number, number][]} */
+  const stepTimes = [
+    [0.2, 2.6],
+    [2.7, 5.8],
+    [5.9, 8.8],
+    [8.9, 11.5],
+    [11.6, 13.3],
+  ];
+  const stepW = W / HERO_STEPS.length;
+  HERO_STEPS.forEach((step, i) => {
+    const cx = stepW * i + stepW / 2;
+    const [from, to] = stepTimes[i] ?? [0, 0];
+    const lit = animate('opacity', shown(from, to));
+    // The grey label steps aside while the lit one stands in its place, so the two never overlap.
+    const unlit = animate(
+      'opacity',
+      shown(from, to).map(([t, v]) => /** @type {[number, string]} */ ([t, v === '1' ? '0' : '1'])),
+    );
+    const label = `${i + 1}  ${step}`;
+    body.push(
+      `<text class="a" ${style([unlit])} x="${n(cx)}" y="${H - 6}" font-family="${SANS}" font-size="12" fill="${muted}" text-anchor="middle" xml:space="preserve">${escaped(label)}</text>`,
+      `<text class="a" ${style([lit])} opacity="0" x="${n(cx)}" y="${H - 6}" font-family="${SANS}" font-size="12" font-weight="600" fill="${accent}" text-anchor="middle" xml:space="preserve">${escaped(label)}</text>`,
+    );
+  });
+
+  return [
+    `<svg xmlns="http://www.w3.org/2000/svg" width="${W}" height="${H}" viewBox="0 0 ${W} ${H}" role="img" aria-label="How mnema fits: a session opens with the decisions in force, a write under a refusing rule is denied, a write elsewhere lands, a recorded decision is signed into the chain, and mnema verify checks it">`,
+    '<title>How mnema fits between an agent session and the repository</title>',
+    '<style>',
+    `.a{animation-duration:${LOOP}s;animation-iteration-count:infinite;animation-timing-function:ease-in-out}`,
+    ...css,
+    '@media (prefers-reduced-motion: reduce){.a{animation:none!important}}',
+    '</style>',
+    ...body,
+    '</svg>',
+    '',
+  ].join('\n');
+}
+
+// ---------------------------------------------------------------------------------------------
 
 /**
  * Every picture, by its file name under `docs/assets/`, drawn from the console's rows.
@@ -327,6 +619,8 @@ export function drawTheFrontPage(blocks) {
     'banner-light.svg': banner(blocks, 'light'),
     'how-it-works-dark.svg': howItWorks('dark'),
     'how-it-works-light.svg': howItWorks('light'),
+    'how-mnema-fits-dark.svg': howMnemaFits(blocks, 'dark'),
+    'how-mnema-fits-light.svg': howMnemaFits(blocks, 'light'),
   };
 }
 

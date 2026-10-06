@@ -89,6 +89,8 @@ describe('the front page is drawn from the console', () => {
       'banner-light.svg',
       'how-it-works-dark.svg',
       'how-it-works-light.svg',
+      'how-mnema-fits-dark.svg',
+      'how-mnema-fits-light.svg',
     ]);
   });
 

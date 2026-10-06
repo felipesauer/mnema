@@ -20,7 +20,10 @@ session opens with the ones in force, a rule can refuse or pause the write it go
 <code>mnema verify</code> checks the record with no key and no network.
 </p>
 
-<img src="recordings/a-decision-superseded.gif" alt="A decision superseded: it leaves what the next session is handed, and stays in the record" width="80%">
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="docs/assets/how-mnema-fits-dark.svg">
+  <img src="docs/assets/how-mnema-fits-light.svg" alt="How mnema fits: an agent session opens with the decision in force; a write under the path a rule refuses is denied; a write elsewhere lands; a decision the agent records is signed into the chain in the repository; mnema verify checks the chain" width="100%">
+</picture>
 
 </div>
 
@@ -110,7 +113,7 @@ More in [`docs/how-it-works.md`](docs/how-it-works.md); what each host does and 
 </tr>
 <tr>
 <td width="50%" valign="top"><img src="recordings/a-write-refused.gif" alt="An agent's write refused by a rule addressed at its path"><br><sub>A write refused: the rule addressed at the path stops an agent's edit there. Recorded from the built binary by <a href="recordings/a-write-refused.sh"><code>recordings/a-write-refused.sh</code></a>.</sub></td>
-<td width="50%" valign="top"><sub>The page <code>mnema site</code> writes verifies itself in the reader's own browser, with no request and no key. <a href="docs/site.md">What it checks, what it does not, and how to publish it</a>.</sub></td>
+<td width="50%" valign="top"><img src="recordings/a-decision-superseded.gif" alt="A decision superseded: it leaves what the next session is handed, and stays in the record"><br><sub>A decision superseded: a later call takes its place, the old one leaves what the next session is handed and stays in the record. Recorded from the built binary by <a href="recordings/a-decision-superseded.sh"><code>recordings/a-decision-superseded.sh</code></a>.</sub></td>
 </tr>
 </table>
 
