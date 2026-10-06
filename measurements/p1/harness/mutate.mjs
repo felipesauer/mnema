@@ -389,8 +389,10 @@ export const MUTATIONS = [
   {
     name: 'z22 · the resume plans a cell the capture already resolved',
     file: RUN,
+    // Since the re-run rule a resolved cell is held back by two branches, so `if (false)` left the
+    // second one holding it and lit nothing: the defect is a resolved line that reaches NEITHER.
     from: "    if (row.status === 'ok') done.add(key)",
-    to: '    if (false) done.add(key)',
+    to: "    if (row.status === 'ok') continue",
     expect: 'a resumed sieve re-spends every cell that already worked',
   },
   {
