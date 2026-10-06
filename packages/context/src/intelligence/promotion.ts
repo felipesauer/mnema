@@ -227,5 +227,17 @@ export function judgePromotion(
       detail: 'this set is not among the candidates `mnema promote --workspace` lists',
     };
   }
-  return { ok: true, candidate };
+  // The words that travel are the FIRST CITED instance's — the one a person typed first —
+  // and they are equal to the others' after normalizing, which is what was just proved.
+  const first = found[0] as Instance;
+  return {
+    ok: true,
+    candidate: {
+      kind: candidate.kind,
+      instances: candidate.instances,
+      title: first.title,
+      body: first.body,
+      ...(first.alternatives !== undefined ? { alternatives: first.alternatives } : {}),
+    },
+  };
 }
