@@ -110,6 +110,12 @@ describe('worthSaying', () => {
     expect(worthSaying({ ...quiet, governed: busy.governed })).toBe(true);
     expect(worthSaying({ ...quiet, verification: { passed: false, said: '' } })).toBe(true);
   });
+  it('is true when a check was asked for and failed, even with nothing else to say', () => {
+    expect(worthSaying({ ...quiet, checks: { passed: false, said: '' } })).toBe(true);
+  });
+  it('is false when a check was asked for and passed, if nothing else matters', () => {
+    expect(worthSaying({ ...quiet, checks: { passed: true, said: '' } })).toBe(false);
+  });
 });
 
 describe('plain', () => {
