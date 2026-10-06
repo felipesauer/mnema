@@ -7,7 +7,12 @@
  */
 
 import { describe, expect, it } from 'vitest';
-import { GITHUB_SERVICE, githubLoginRefusal } from './account.js';
+import {
+  GITHUB_SERVICE,
+  githubLoginRefusal,
+  SIGSTORE_SERVICE,
+  sigstoreIdentityRefusal,
+} from './account.js';
 
 describe('githubLoginRefusal', () => {
   it('accepts the names GitHub accepts', () => {
@@ -34,7 +39,36 @@ describe('githubLoginRefusal', () => {
     }
   });
 
-  it('names the one service this product links', () => {
+  it('names the GitHub service by the word the record carries', () => {
     expect(GITHUB_SERVICE).toBe('github');
+  });
+});
+
+describe('sigstoreIdentityRefusal', () => {
+  it('accepts the two shapes a Sigstore certificate names: an e-mail and a workflow', () => {
+    for (const identity of [
+      'felipe@example.com',
+      'a.b+c@sub.example.org',
+      'https://github.com/felipesauer/mnema/.github/workflows/witness.yml@refs/heads/main',
+    ]) {
+      expect(sigstoreIdentityRefusal(identity), identity).toBeUndefined();
+    }
+    expect(SIGSTORE_SERVICE).toBe('sigstore');
+  });
+
+  it('refuses anything else, a bare login and a repository URL included', () => {
+    for (const identity of [
+      '',
+      'felipesauer',
+      'felipe@localhost',
+      'felipe @example.com',
+      'https://github.com/felipesauer/mnema',
+      'http://github.com/o/r/.github/workflows/w.yml@refs/heads/main',
+      'https://github.com/o/r/.github/workflows/w.yml',
+    ]) {
+      expect(sigstoreIdentityRefusal(identity), JSON.stringify(identity)).toMatch(
+        /not an identity a Sigstore certificate names/,
+      );
+    }
   });
 });

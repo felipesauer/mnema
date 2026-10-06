@@ -60,6 +60,22 @@ const WHAT_TRAVELS = [
 ].join('\n');
 
 /**
+ * What `sigstore` sends, and to whom — the identity half is the one a person has to decide on,
+ * so it is said in the help and again in the act's own answer.
+ */
+const WHAT_SIGSTORE_KEEPS = [
+  'What leaves this machine: to Fulcio (fulcio.sigstore.dev), a sign-in token and a key made',
+  'for this act alone; to Rekor (rekor.sigstore.dev), the SHA-256 of each checkpoint and a',
+  "signature over it — never the record's events. AND YOUR IDENTITY: the certificate names the",
+  'e-mail you sign in with or, in GitHub Actions, the repository and the workflow, and it goes',
+  'into a public log that does not forget, and into the bundle the record commits.',
+].join('\n');
+
+/** The line the act says after it signed, so nobody learns of the log from somebody else. */
+const IN_THE_PUBLIC_LOG = (identity: string): string =>
+  `${identity} is now in Sigstore's public log, which does not forget, and in the bundle this record commits.`;
+
+/**
  * Why an act refuses the group's `--json`: the acts answer in prose, and the reading beside them
  * is the one with a machine-readable answer.
  */
@@ -185,6 +201,77 @@ export function registerWitness(program: Command, wiring: Wiring): Declared {
       opts.blocks === undefined ? {} : { blockSource: opts.blocks },
     );
     await report(wiring, act);
+  });
+
+  const sigstore = witness
+    .command('sigstore')
+    .description(
+      "countersign each tail's last checkpoint with a Sigstore certificate — who signed in, and when Rekor logged it",
+    )
+    .addHelpText(
+      'after',
+      [
+        '',
+        WHAT_SIGSTORE_KEEPS,
+        '',
+        'Here it opens the browser to sign in at oauth2.sigstore.dev. In GitHub Actions it uses',
+        "the job's own token (the workflow needs `permissions: id-token: write`), and it refuses",
+        'in a private repository, whose name the certificate would publish.',
+        '',
+        'It refuses a tree that is not fully signed, as `stamp` does, and appends no event: the',
+        'bundle is a file beside the checkpoint, `witness/<checkpoint>.sigstore.json`.',
+        '',
+        'The bundle dates the checkpoint on Rekor’s clock and names who signed in. It speaks for',
+        'an identity of this record only once that identity names the same e-mail or workflow:',
+        '`mnema key sigstore <identity>`. It is not a witness level: `verify` reads it only with',
+        '`--against-sigstore`, as notes.',
+      ].join('\n'),
+    )
+    .option('--global', GLOBAL_HELP, false);
+  takesFromItsGroup(sigstore, { refuses: { '--json': THE_READING_IS_THE_JSON } });
+  sigstore.action(async () => {
+    const given = await fromTheGroup<{ global: boolean }>(sigstore, wiring);
+    if (given === REFUSED) return;
+    const { runWitnessSigstore } = await import('../commands/witness.js');
+    const act = await runWitnessSigstore(
+      { ...here(), global: given.global },
+      { say: (line) => io.err(onOneLine`${line}`) },
+    );
+    if (!act.ok) {
+      reportRefusal(wiring, act, {});
+      return;
+    }
+    if (act.outcomes.length === 0) {
+      const { noTailHoldsEvents } = await import('../presentation/tails.js');
+      io.out(noTailHoldsEvents(act.trees));
+      return;
+    }
+    for (const outcome of act.outcomes) {
+      io.out(onOneLine`${outcome.tail} (${outcome.scope}): ${outcome.did} — ${outcome.detail}`);
+    }
+    if (act.signer === undefined) return;
+    io.out(
+      render(
+        fact(
+          onOneLine`The certificate names ${act.signer.identity}, vouched for by ${act.signer.issuer}.`,
+        ),
+      ),
+    );
+    io.out(render(fact(onOneLine`${IN_THE_PUBLIC_LOG(act.signer.identity)}`)));
+    if (!act.signer.named) {
+      io.out(
+        render(
+          fact(
+            onOneLine`No identity of this record names it, so the bundle dates the checkpoint and says nothing about who wrote it: \`mnema key sigstore ${act.signer.identity}\` names it.`,
+          ),
+        ),
+      );
+    }
+    io.out(
+      render(
+        fact('Commit the bundle with the record: a countersignature nobody can read says nothing.'),
+      ),
+    );
   });
 
   return mutatesTheRecord(witness);

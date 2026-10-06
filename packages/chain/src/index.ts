@@ -26,6 +26,7 @@ export {
   CheckpointParseError,
   type CheckpointVerdict,
   checkpointHash,
+  checkpointMessage,
   parseCheckpoint,
   serializeCheckpoint,
   signCheckpoint,
@@ -107,6 +108,8 @@ export {
   projectionCachePath,
   publicKeyPath,
   tailDir,
+  witnessDir,
+  witnessSigstorePath,
 } from './chain/layout.js';
 export {
   LEVEL_REQUIREMENTS,

@@ -230,6 +230,17 @@ describe('linkAccount — an identity names its GitHub account', () => {
     expect(verdict.fullySigned).toBe(true);
   });
 
+  it('names a Sigstore identity under the service the caller gives, through the same door', () => {
+    const tree = openTree('mnema-identity-link-');
+    const linked = linkAccount(tree.ctx, { account: 'felipe@example.com', service: 'sigstore' });
+    if (!linked.ok) throw new Error(linked.message);
+    const link = orderedEvents({ root: tree.root }, upcasters).find(
+      (e) => e.kind === 'account.linked',
+    );
+    expect(link?.payload).toEqual({ service: 'sigstore', account: 'felipe@example.com' });
+    expect(verify(tree.root).fullySigned).toBe(true);
+  });
+
   it('refuses an account name that holds a credential, and writes nothing', () => {
     const tree = openTree('mnema-identity-link-');
     const refused = linkAccount(tree.ctx, { account: 'AKIAIOSFODNN7EXAMPLE' });

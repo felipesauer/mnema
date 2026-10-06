@@ -637,8 +637,9 @@ export interface AccountLinkOk extends ScreenedWrite {
 }
 
 /**
- * Records that THIS machine's identity is a GitHub account: one `account.linked` whose subject
- * and `who` are the identity itself, so an identity only ever names its own account.
+ * Records that THIS machine's identity is an account — a GitHub account by default, or the
+ * identity a Sigstore certificate names (`service: "sigstore"`): one `account.linked` whose
+ * subject and `who` are the identity itself, so an identity only ever names its own account.
  *
  * It is a claim, and it is checkpointed at once for the reason a revocation is: the reading that
  * uses it (`verify --against-github`) honours only a signature-covered one, because one in the
@@ -651,7 +652,7 @@ export interface AccountLinkOk extends ScreenedWrite {
  */
 export function linkAccount(
   ctx: WriteContext,
-  input: { account: string },
+  input: { account: string; service?: string },
 ): AccountLinkOk | ScreenRefusal | AppendRefusal {
   const text = screenContent({ account: input.account });
   if (!text.ok) return text;
@@ -662,7 +663,7 @@ export function linkAccount(
     ctx.writer,
     accountLinked(
       { at, who: anchor, signerFp: ctx.writer.signerFingerprint, subject: anchor },
-      { service: GITHUB_SERVICE, account: text.fields.account },
+      { service: input.service ?? GITHUB_SERVICE, account: text.fields.account },
     ),
   );
   if (!appended.ok) return appended;

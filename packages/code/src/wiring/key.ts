@@ -228,6 +228,44 @@ export function registerKey(program: Command, wiring: Wiring): Declared {
       });
     });
 
+  // `mnema key sigstore <identity>` — this identity names the identity a Sigstore certificate
+  // carries. A signed claim and nothing else: no network; `verify --against-sigstore` reads it.
+  key
+    .command('sigstore')
+    .description(
+      'record that this identity is the one a Sigstore certificate names, so a bundle ' +
+        '`mnema witness sigstore` files speaks for it in `mnema verify --against-sigstore`',
+    )
+    .argument(
+      '<identity>',
+      'the e-mail address you sign in to Sigstore with, or a GitHub Actions workflow as ' +
+        'https://github.com/<owner>/<repo>/.github/workflows/<file>@<ref>',
+    )
+    .action(async (identity: string) => {
+      const { runKeySigstore } = await import('../commands/key-sigstore.js');
+      const result = runKeySigstore(here(), { identity });
+      if (result.ok) {
+        io.out(onOneLine`Linked ${result.anchor} to the Sigstore identity ${result.identity}`);
+        reportReplacement(result, io);
+        io.out(
+          render(
+            fact(
+              'A claim, signed: a Sigstore bundle naming this identity now speaks for it. ' +
+                'Without the claim a bundle dates a checkpoint and says nothing about who wrote it.',
+            ),
+          ),
+        );
+        io.out(
+          render(fact('Commit and share the record: a claim others cannot read says nothing.')),
+        );
+        return;
+      }
+      reportRefusal(wiring, result, {
+        NO_PROJECT:
+          'No mnema project here. Run `mnema key sigstore` inside the project to record it.',
+      });
+    });
+
   // `mnema key revoke <fingerprint> --reason <text>` — retire a key. The
   // fingerprint is a positional (the subject); the reason is a required flag, as
   // every other verb that demands its evidence does. It is the full fingerprint,

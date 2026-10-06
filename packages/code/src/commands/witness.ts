@@ -67,10 +67,12 @@
  * are named by what they attest.
  */
 
+import { existsSync, mkdirSync, writeFileSync } from 'node:fs';
 import {
   type ChainLayout,
   catalogUpcasters,
   checkpointHash,
+  checkpointMessage,
   checkpointToWitness,
   completeWitness,
   listTails,
@@ -78,6 +80,7 @@ import {
   type ProvenCheckpoint,
   type ProvenLevel,
   readTailCheckpoints,
+  readTailEntries,
   readWitness,
   stampCheckpoint,
   tailStanding,
@@ -86,7 +89,9 @@ import {
   type WitnessReading,
   type WitnessRefusal,
   type WitnessReturnVisit,
+  witnessDir,
   witnessOfTail,
+  witnessSigstorePath,
   witnessWalk,
   writeWitness,
 } from '@mnema/chain';
@@ -95,8 +100,10 @@ import {
   type DiscoveryEnv,
   resolveTrees,
   type Scope,
+  SIGSTORE_SERVICE,
   treesSearched,
 } from '@mnema/core';
+import type { CheckpointToSign, SigstoreNetwork } from '../sigstore/sign.js';
 
 /** What every act of this verb needs — injected so it is testable. */
 export interface WitnessContext {
@@ -526,4 +533,162 @@ function said(
  */
 function skipped(chain: HeldChain, detail: string): WitnessOutcome {
   return said(chain, 'skipped', detail, { status: 'not-covered', detail });
+}
+
+/** What `mnema witness sigstore` did to one tail. */
+export interface SigstoreOutcome {
+  readonly scope: Scope;
+  readonly tail: string;
+  readonly did: 'signed' | 'skipped' | 'failed';
+  /** Why, in the words the report prints. */
+  readonly detail: string;
+}
+
+/** What `mnema witness sigstore` answers with, or why it would not run at all. */
+export type SigstoreAct =
+  | {
+      readonly ok: true;
+      readonly outcomes: readonly SigstoreOutcome[];
+      readonly trees: readonly Scope[];
+      /**
+       * Who the certificate names and who vouched for it — absent when nothing was sent,
+       * because every tail was skipped before Sigstore was asked.
+       */
+      readonly signer?: {
+        readonly identity: string;
+        readonly issuer: string;
+        /** Whether an identity of these trees names it in a covered `account.linked`. */
+        readonly named: boolean;
+      };
+    }
+  | { readonly ok: false; readonly reason: string; readonly message: string };
+
+/**
+ * Countersigns the last checkpoint of every tail held here with a Sigstore certificate, and
+ * files the bundle beside the `.ots` (`witness/<checkpoint>.sigstore.json`).
+ *
+ * The same act as `stamp`, with the same refusal: a tree that is not fully signed is not signed
+ * over, because a bundle is filed under a checkpoint the verifier must prove. And the same
+ * absence: no event is appended, so the checkpoint signed stays the head.
+ */
+export async function runWitnessSigstore(
+  ctx: WitnessContext,
+  network: SigstoreNetwork = {},
+): Promise<SigstoreAct> {
+  const { chains, trees } = heldChains(ctx);
+  if (!chains.some((chain) => chain.events > 0)) {
+    return {
+      ok: false,
+      reason: 'NO_TAIL',
+      message: 'there is no tail here to witness — nothing has been recorded in these trees',
+    };
+  }
+  // Read before any tree is judged, for the reason `stamp` gives.
+  const heads = chains.map((chain) => ({
+    chain,
+    head: readTailCheckpoints(chain.layout, chain.tail).at(-1),
+  }));
+  const upcasters = catalogUpcasters();
+  const levels = new Map<string, ProvenLevel>();
+  const outcomes: SigstoreOutcome[] = [];
+  const asking: { chain: HeldChain; ask: CheckpointToSign }[] = [];
+  for (const { chain, head } of heads) {
+    const said = (did: SigstoreOutcome['did'], detail: string): SigstoreOutcome => ({
+      scope: chain.scope,
+      tail: chain.tail,
+      did,
+      detail,
+    });
+    if (head === undefined) {
+      outcomes.push(said('skipped', 'the tail has no checkpoint to witness'));
+      continue;
+    }
+    const root = chain.layout.root;
+    const level = levels.get(root) ?? verify(root, upcasters).level;
+    levels.set(root, level);
+    if (!meetsRequirement(level, 'signed')) {
+      outcomes.push(
+        said(
+          'skipped',
+          `the tree is ${level}, and a witness is only filed under a checkpoint the verifier ` +
+            `proves — sign it once it reaches ${STAMPABLE}`,
+        ),
+      );
+      continue;
+    }
+    const digest = checkpointHash(head);
+    if (existsSync(witnessSigstorePath(chain.layout, chain.tail, digest))) {
+      outcomes.push(said('skipped', `checkpoint ${digest} is already countersigned`));
+      continue;
+    }
+    asking.push({ chain, ask: { digest, message: checkpointMessage(head) } });
+  }
+  if (asking.length === 0) return { ok: true, outcomes, trees };
+
+  const { signWithSigstore } = await import('../sigstore/sign.js');
+  const signing = await signWithSigstore(
+    asking.map(({ ask }) => ask),
+    network,
+  );
+  if (!signing.ok) return { ok: false, reason: signing.code, message: signing.message };
+  signing.checkpoints.forEach((signed, at) => {
+    const chain = (asking[at] as { chain: HeldChain }).chain;
+    if (!signed.ok) {
+      outcomes.push({
+        scope: chain.scope,
+        tail: chain.tail,
+        did: 'failed',
+        detail: `checkpoint ${signed.digest} was not logged: ${signed.why}`,
+      });
+      return;
+    }
+    mkdirSync(witnessDir(chain.layout, chain.tail), { recursive: true });
+    writeFileSync(
+      witnessSigstorePath(chain.layout, chain.tail, signed.digest),
+      `${JSON.stringify(signed.bundle, null, 2)}\n`,
+    );
+    const logIndex = String(
+      (signed.bundle.verificationMaterial.tlogEntries[0] as { logIndex?: unknown }).logIndex ?? '',
+    );
+    outcomes.push({
+      scope: chain.scope,
+      tail: chain.tail,
+      did: 'signed',
+      detail: `countersigned checkpoint ${signed.digest} — Rekor entry ${logIndex}`,
+    });
+  });
+  return {
+    ok: true,
+    outcomes,
+    trees,
+    signer: {
+      identity: signing.identity,
+      issuer: signing.issuer,
+      named: namesSigstoreIdentity(chains, signing.identity),
+    },
+  };
+}
+
+/**
+ * Whether an identity of these trees says the Sigstore identity is its own — a signed
+ * `account.linked` under a checkpoint, from the identity itself.
+ */
+function namesSigstoreIdentity(chains: readonly HeldChain[], identity: string): boolean {
+  const upcasters = catalogUpcasters();
+  for (const chain of chains) {
+    const through = readTailCheckpoints(chain.layout, chain.tail).at(-1)?.toSeq ?? -1;
+    for (const entry of readTailEntries(chain.layout, chain.tail, upcasters)) {
+      if (entry.link.seq > through) break;
+      const event = entry.event;
+      if (
+        event.kind === 'account.linked' &&
+        event.who === event.subject &&
+        event.payload.service === SIGSTORE_SERVICE &&
+        event.payload.account === identity
+      ) {
+        return true;
+      }
+    }
+  }
+  return false;
 }
