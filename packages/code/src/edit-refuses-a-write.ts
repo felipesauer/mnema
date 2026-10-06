@@ -60,7 +60,7 @@ function opening(at: RulesAtPath): readonly string[] {
  */
 const NOT_THE_SHELL =
   'This refusal covers the editing tools, not the shell: a write to a path a rule governs ' +
-  'made through the shell goes round the rule.';
+  'made through the shell goes round the rule, and is not one the record allows.';
 
 /** What it says after them: whether one does not travel, where a rule opens, what is not covered. */
 function closing(at: RulesAtPath): readonly string[] {

@@ -229,7 +229,7 @@ describe('what the refusal says is what the record says', () => {
     expect(reason).not.toContain('These are the calls and the patterns recorded');
     expect(reason).toContain(
       'This refusal covers the editing tools, not the shell: a write to a path a rule governs ' +
-        'made through the shell goes round the rule.',
+        'made through the shell goes round the rule, and is not one the record allows.',
     );
   });
 
