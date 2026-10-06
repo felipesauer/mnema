@@ -402,9 +402,9 @@ describe('the arrangement is chosen by the height as well as the width', () => {
     const longest = '0.10.0-beta.12';
     const title = subjectLine(`mnema  ·  v${longest}  ·  a session over this project`);
     const inside = insideTheMargin(100);
-    expect(panelFor({ ...OF_THE_PRODUCTS_SHAPE, title, columns: inside, rows: THE_FLOOR.rows }).form).toBe(
-      'stacked',
-    );
+    expect(
+      panelFor({ ...OF_THE_PRODUCTS_SHAPE, title, columns: inside, rows: THE_FLOOR.rows }).form,
+    ).toBe('stacked');
   });
 
   it('walks the same three forms down the screen, and the last rung fits every size', () => {
