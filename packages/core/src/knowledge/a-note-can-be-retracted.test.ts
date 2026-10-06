@@ -22,7 +22,8 @@ import { orderedEvents } from '../projections/order.js';
 import { resolveTrees } from '../topology/resolve.js';
 import { chainRootForScope, openTreeForWriting } from '../topology/routing.js';
 import { recordDecision } from '../workflow/decision-operations.js';
-import type { WriteContext } from '../workflow/operations.js';
+import { createTask, type WriteContext } from '../workflow/operations.js';
+import { createSkill } from '../workflow/skill-operations.js';
 import { captureMemory, recordObservation, retractNote } from './operations.js';
 
 const upcasters = catalogUpcasters();
@@ -143,6 +144,30 @@ describe('a note can be retracted', () => {
     const refused = retractNote(ctx, { id: decided.id, reason: REASON });
     expect(refused).toMatchObject({ ok: false, code: 'NOT_A_NOTE' });
     expect(refused.ok ? '' : refused.message).toContain('supersede');
+    expect(eventCount()).toBe(before);
+  });
+
+  it('refuses a pattern, which keeps its own lifecycle, and appends nothing', () => {
+    const born = createSkill(ctx, { name: 'cache-first', body: 'Ask the cache before the chain.' });
+    if (!born.ok) throw new Error(born.message);
+    const before = eventCount();
+
+    const refused = retractNote(ctx, { id: born.id, reason: REASON });
+    expect(refused).toMatchObject({ ok: false, code: 'NOT_A_NOTE' });
+    expect(refused.ok ? '' : refused.message).toContain('pattern');
+    expect(refused.ok ? '' : refused.message).toContain('deprecate');
+    expect(eventCount()).toBe(before);
+  });
+
+  it('refuses a task, which keeps its own lifecycle, and appends nothing', () => {
+    const born = createTask(ctx, { title: 'Move the cache to SQLite' });
+    if (!born.ok) throw new Error(born.message);
+    const before = eventCount();
+
+    const refused = retractNote(ctx, { id: born.id, reason: REASON });
+    expect(refused).toMatchObject({ ok: false, code: 'NOT_A_NOTE' });
+    expect(refused.ok ? '' : refused.message).toContain('task');
+    expect(refused.ok ? '' : refused.message).toContain('state it is in');
     expect(eventCount()).toBe(before);
   });
 

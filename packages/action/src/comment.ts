@@ -23,11 +23,22 @@ export interface Report {
   readonly approval:
     | { readonly asking: readonly GovernedFile[]; readonly approved: boolean }
     | undefined;
+  /** What `mnema check run` said and whether it passed; present only when the checks were asked for. */
+  readonly checks?: { readonly passed: boolean; readonly said: string };
 }
+
+/** The most characters GitHub accepts in one comment. */
+const MOST_IN_A_COMMENT = 65536;
+
+const CUT_NOTICE =
+  '\n\nThe rest of this comment was cut: GitHub accepts at most 65536 characters.\n';
 
 /** Whether there is anything on the pull request worth a comment of its own. */
 export const worthSaying = (report: Report): boolean =>
-  !report.verification.passed || report.record.total > 0 || report.governed.length > 0;
+  !report.verification.passed ||
+  report.record.total > 0 ||
+  report.governed.length > 0 ||
+  report.checks?.passed === false;
 
 /** The longest stretch of `verify`'s own words the comment quotes. */
 const MOST_QUOTED = 1500;
@@ -70,6 +81,25 @@ function governedLines(file: GovernedFile): string[] {
     ...by('asks for a person:', file.asks),
     ...by('a write is refused by', file.refuses),
   ];
+}
+
+/** One line `check run` prints per rule: `passed <rule>` or `failed <rule>: <why>`. */
+const RULE_RESULT = /^\s*(passed|failed) (\S+?)(?:: (.*))?$/;
+
+function checkLines(checks: { passed: boolean; said: string }): string[] {
+  const lines = checks.said.split('\n');
+  const results = lines.flatMap((line) => {
+    const m = RULE_RESULT.exec(line);
+    if (m === null) return [];
+    const why = m[3] === undefined || m[3].trim() === '' ? '' : ` — ${plain(m[3])}`;
+    return [`- ${m[1]} \`${plain(m[2] ?? '')}\`${why}`];
+  });
+  if (results.length === 0) {
+    const first = lines.find((line) => line.trim() !== '') ?? 'it said nothing';
+    return [`No check ran: ${plain(first)}`];
+  }
+  const summary = lines.find((line) => / passed · \d+ failed at /.test(line));
+  return [...(summary === undefined ? [] : [plain(summary), '']), ...results];
 }
 
 /** The comment body when the repository holds no record at all. */
@@ -125,5 +155,11 @@ export function renderComment(report: Report): string {
       );
     }
   }
-  return `${out.join('\n')}\n`;
+  if (report.checks !== undefined) {
+    out.push('', '**Checks the rules carry**', '', ...checkLines(report.checks));
+  }
+  const body = `${out.join('\n')}\n`;
+  if (body.length <= MOST_IN_A_COMMENT) return body;
+  const room = MOST_IN_A_COMMENT - CUT_NOTICE.length;
+  return `${body.slice(0, body.lastIndexOf('\n', room))}${CUT_NOTICE}`;
 }

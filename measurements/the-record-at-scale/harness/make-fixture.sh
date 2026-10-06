@@ -4,7 +4,7 @@ set -euo pipefail
 N="$1"
 S="$MEASURE_DIR"; WT="$HEAD_WT"; HERE="$(cd "$(dirname "$0")" && pwd)"
 SB="$S/fx/$N"
-[ -e "$SB" ] && { chmod -R u+w "$SB"; rm -rf "$SB"; }
+[ -e "$SB" ] && { chmod -R u+w "$SB"; node "$HERE/../../lib/remove-inside.mjs" "$S" "$SB"; }
 mkdir -p "$SB/proj" "$SB/home"
 ( cd "$SB/proj" && env -i HOME="$SB/home" PATH="$PATH" GIT_CONFIG_NOSYSTEM=1 git init -q . \
   && env -i HOME="$SB/home" PATH="$PATH" GIT_CONFIG_NOSYSTEM=1 node "$WT/packages/code/dist/cli.js" init > /dev/null )

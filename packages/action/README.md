@@ -26,13 +26,16 @@ a checkout of this repository, with the `mnema` of the `@mnema/code` that sits b
   accepted `asks-for-a-person` rule and no reviewer other than the author stands approved on the
   pull request.
 - **Optional, off by default: the checks the rules carry.** With `checker-key` set from a
-  repository secret, the Action runs `mnema check run` with that key once everything above is done:
+  repository secret, the Action runs `mnema check run` with that key once everything above is read:
   each rule in force that carries a check gets one `check.passed` or `check.failed`, signed by the
-  key, naming the rule and the commit checked out. The results are left in the working tree, and
-  the Action fails when a check did not pass.
+  key, naming the rule and the commit checked out. The results are left in the working tree, the
+  comment gets a "Checks the rules carry" section with what passed and what failed, rule by rule
+  (when no check ran, one line says why), and the Action fails when a check did not pass. Without
+  `checker-key` the comment has no such section.
 - **Quiet on pull requests that do not concern the record.** It adds a comment only when the pull
   request adds events, touches a governed file, or the record fails to verify. A comment it wrote
-  earlier is still refreshed, so it never goes stale.
+  earlier is still refreshed, so it never goes stale. A comment over the 65536 characters GitHub
+  accepts is cut, with a line saying so.
 
 ## Install
 

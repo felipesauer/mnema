@@ -21,10 +21,11 @@
 // it recorded. The cases say which kind each one is, and that is a judgement made before any cell.
 
 import { spawn, spawnSync } from 'node:child_process'
-import { appendFileSync, cpSync, existsSync, mkdirSync, readFileSync, readdirSync, rmSync, writeFileSync } from 'node:fs'
+import { appendFileSync, cpSync, existsSync, mkdirSync, readFileSync, readdirSync, writeFileSync } from 'node:fs'
 import { dirname, join, relative, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { commitAll, createSandbox, git } from '../p1/harness/lib/sandbox.mjs'
+import { removeInside } from '../lib/remove-inside.mjs'
 import { hookEnv, installMnemaOnPath } from '../p1/harness/lib/hook.mjs'
 import { authRequirement, installAuth } from '../p1/harness/lib/isolation.mjs'
 import { isSessionTurn, startFakeApi } from '../p1/harness/lib/fake-api.mjs'
@@ -42,7 +43,7 @@ const SKILL_DIR = join('skills', CASES.skill)
 export function pluginForArm(arm, dest) {
   if (!CASES.arms.includes(arm)) throw new Error(`unknown arm: ${arm}`)
   cpSync(PLUGIN, dest, { recursive: true })
-  if (arm === 'without-skill') rmSync(join(dest, SKILL_DIR), { recursive: true, force: true })
+  if (arm === 'without-skill') removeInside(dest, join(dest, SKILL_DIR))
   return dest
 }
 

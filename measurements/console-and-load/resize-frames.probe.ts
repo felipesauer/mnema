@@ -1,10 +1,11 @@
 // Probe. Copy to packages/code/tests/zz-probe.test.ts and run from the repo root:
 //   PROBE_N=15 PROBE_OUT=<tsv> PROBE_LABEL=<label> npx vitest run packages/code/tests/zz-probe.test.ts
 // One frame-by-frame reading of a resize: heights, widths, and the page after each frame against the settled one.
-import { appendFileSync, mkdirSync, mkdtempSync, rmSync } from 'node:fs';
+import { appendFileSync, mkdirSync, mkdtempSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { removeTemporary } from '../../../measurements/lib/remove-inside.mjs';
 import { afterAll, beforeAll, it } from 'vitest';
 import { type CliIo, run } from '../src/cli.js';
 import { REPL_VERB } from '../src/wiring/repl.js';
@@ -27,7 +28,7 @@ beforeAll(async () => {
   environment = { ...process.env, HOME: join(sandbox, 'home'), XDG_DATA_HOME: join(sandbox, 'data'), TERM: 'xterm-256color' };
   delete environment.MNEMA_RUN;
 }, 240_000);
-afterAll(() => rmSync(sandbox, { recursive: true, force: true }));
+afterAll(() => removeTemporary(sandbox));
 const fixture = (): Fixture => ({ cli: CLI, verb: REPL_VERB, project, scratch: sandbox, environment });
 const cases = [
   { name: 'shrink-both 120x55->80x42', from: [120, 55], to: [80, 42] },

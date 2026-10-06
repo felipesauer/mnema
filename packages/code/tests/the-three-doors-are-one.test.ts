@@ -174,6 +174,8 @@ interface Operation {
   readonly method: keyof MnemaRecord;
   /** The verb of the command line, which the program declares. */
   readonly verb: string;
+  /** The subcommand of that verb, when the verb is a group (`decision move`). */
+  readonly sub?: string;
   /** The MCP tool, or why there is none. */
   readonly tool: string | { readonly none: string };
   /** Whether it appends to the record. */
@@ -182,9 +184,27 @@ interface Operation {
 
 /** What each operation of the library door is, on the other two. */
 const OPERATIONS: readonly Operation[] = [
-  { method: 'recordDecision', verb: 'decision', tool: 'record_decision', writes: true },
-  { method: 'acceptDecision', verb: 'decision', tool: 'decision_transition', writes: true },
-  { method: 'rejectDecision', verb: 'decision', tool: 'decision_transition', writes: true },
+  {
+    method: 'recordDecision',
+    verb: 'decision',
+    sub: 'record',
+    tool: 'record_decision',
+    writes: true,
+  },
+  {
+    method: 'acceptDecision',
+    verb: 'decision',
+    sub: 'move',
+    tool: 'decision_transition',
+    writes: true,
+  },
+  {
+    method: 'rejectDecision',
+    verb: 'decision',
+    sub: 'move',
+    tool: 'decision_transition',
+    writes: true,
+  },
   { method: 'addNote', verb: 'memory', tool: 'capture_memory', writes: true },
   { method: 'rulesFor', verb: 'rules', tool: 'governing_rules', writes: false },
   {
@@ -251,6 +271,18 @@ const VERBS_NOT_IN_THE_LIBRARY: Readonly<Record<string, string>> = {
   mcp: 'it serves the MCP door, which is the second of the three',
   check: 'a rule’s check is declared by a person and run by a machine with a key of its own',
   inherit: 'trusting another repository’s record is a person’s decision',
+};
+
+/**
+ * Every subcommand of a verb the library door covers that it has no method for, and why not,
+ * as `<verb> <subcommand>`. The verb's own declaration is one word for all of its subcommands,
+ * so a writing subcommand added to a covered verb would pass the census above by its name
+ * alone: this is the table that makes it be counted.
+ */
+const SUBCOMMANDS_NOT_IN_THE_LIBRARY: Readonly<Record<string, string>> = {
+  'decision supersede':
+    'on the MCP door, in `decision_transition` the `supersede` action; the library has no method',
+  'decision import': 'reading a directory or source format; only from the shell',
 };
 
 // ---------------------------------------------------------------------------
@@ -779,5 +811,34 @@ describe('an operation on one door has the others', () => {
     expect(lacking).toEqual([]);
     const stale = Object.keys(VERBS_NOT_IN_THE_LIBRARY).filter((verb) => !writing.includes(verb));
     expect(stale).toEqual([]);
+  });
+
+  it('has, for every subcommand of a verb the library covers, a method or a reason', () => {
+    const io: CliIo = { out: () => undefined, err: () => undefined, fail: () => undefined };
+    const pinned: PinnedRun = () => undefined;
+    const declared = registerVerbs(new Command(), {
+      io,
+      render: renderPlain,
+      renderingAt: () => renderPlain,
+      pinnedRun: pinned,
+    });
+    const rows = OPERATIONS.filter((row) => row.writes);
+    const covered = new Set(rows.map((row) => row.verb));
+    const coveredSubs = new Set(rows.flatMap((row) => (row.sub ? [`${row.verb} ${row.sub}`] : [])));
+    const subcommands = declared
+      .filter((verb) => verb.effect === 'mutates' && covered.has(verb.act.name()))
+      .flatMap((verb) => verb.act.commands.map((sub) => `${verb.act.name()} ${sub.name()}`));
+    // Non-vacuity: the group this census exists for is among what it walked.
+    expect(subcommands).toContain('decision move');
+    const lacking = subcommands.filter(
+      (sub) => !coveredSubs.has(sub) && SUBCOMMANDS_NOT_IN_THE_LIBRARY[sub] === undefined,
+    );
+    expect(lacking).toEqual([]);
+    const stale = Object.keys(SUBCOMMANDS_NOT_IN_THE_LIBRARY).filter(
+      (sub) => !subcommands.includes(sub),
+    );
+    expect(stale).toEqual([]);
+    // And a row that names a subcommand the verb does not have is not a row.
+    expect([...coveredSubs].filter((sub) => !subcommands.includes(sub))).toEqual([]);
   });
 });
