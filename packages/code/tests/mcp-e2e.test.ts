@@ -3531,6 +3531,32 @@ describe('MCP — what enters the record', () => {
     await client.close();
   });
 
+  it('an agent records an email address over the wire: the chain holds the marker and the reply says what was replaced', async () => {
+    const project = makeProject('proj');
+    const { server } = buildMcpServer({ cwd: sandbox, env, log: () => {} });
+    const client = await connectClient(server, [pathToFileURL(project).href]);
+
+    const recorded = await client.callTool({
+      name: 'record_decision',
+      arguments: {
+        title: 'use tabs',
+        rationale: 'asked by jane.doe@example.com in the review',
+        scope: 'public',
+      },
+    });
+    expect(recorded.isError).not.toBe(true);
+    const reply = textOf(recorded);
+
+    const publicRoot = join(project, PROJECT_DIR);
+    for (const value of recordedText(publicRoot)) expect(value).not.toContain('jane.doe');
+    expect(recordedText(publicRoot)).toContain('asked by <email> in the review');
+
+    expect(reply).toContain('1 value(s) replaced before recording: <email>');
+    expect(reply).not.toContain('rotate them');
+
+    await client.close();
+  });
+
   it('a field over the limit comes back as a tool error, with nothing recorded', async () => {
     const project = makeProject('proj');
     const { server } = buildMcpServer({ cwd: sandbox, env, log: () => {} });
