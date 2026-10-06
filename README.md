@@ -74,10 +74,14 @@ The whole install, the other hosts and the first record, line by line, are in
 
 ## How it works
 
+<div align="center">
+
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="docs/assets/how-it-works-dark.svg">
   <img src="docs/assets/how-it-works-light.svg" alt="Record, rule, hand over, verify — over a signed, append-only record committed with the code" width="880">
 </picture>
+
+</div>
 
 1. **Record.** An agent over MCP, or you at the command line, writes a decision with its reasoning and the options turned down.
 2. **Rule.** A person accepts it, and `mnema link` addresses it at a path. The rule can govern that path, ask for a person there, or refuse a write.
