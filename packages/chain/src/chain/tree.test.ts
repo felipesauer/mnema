@@ -94,6 +94,28 @@ describe('ensureTree — self-contained .gitignore', () => {
     expect(readFileSync(gitignorePath({ root }), 'utf-8')).toBe(edited);
   });
 
+  it('adds only the missing locks line to a .gitignore written before it existed', () => {
+    const old = '# mine\n/private/\n/keys/*.key\n# my own line\n';
+    writeFileSync(gitignorePath({ root }), old, 'utf-8');
+    expect(ensureTree({ root })).toBe(false);
+    expect(readFileSync(gitignorePath({ root }), 'utf-8')).toBe(`${old}/locks/\n`);
+  });
+
+  it('adds the locks line after a last line that has no newline', () => {
+    writeFileSync(gitignorePath({ root }), '/private/', 'utf-8');
+    ensureTree({ root });
+    expect(readFileSync(gitignorePath({ root }), 'utf-8')).toBe('/private/\n/locks/\n');
+  });
+
+  it('leaves a .gitignore that already has the locks line byte for byte', () => {
+    for (const body of ['/private/\n/locks/\n', 'locks/\n/private/', '/private/\r\n/locks/\r\n']) {
+      writeFileSync(gitignorePath({ root }), body, 'utf-8');
+      ensureTree({ root });
+      ensureTree({ root });
+      expect(readFileSync(gitignorePath({ root }), 'utf-8')).toBe(body);
+    }
+  });
+
   it('reports whether it wrote the .gitignore this call', () => {
     expect(ensureTree({ root })).toBe(true); // absent → written
     expect(ensureTree({ root })).toBe(false); // present → left alone
