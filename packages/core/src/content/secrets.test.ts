@@ -128,6 +128,22 @@ describe('scrubSecrets — the value is absent from the output', () => {
     expect(scrubbed.text).toBe('kept:\n<SECRET:private-key-block>\ndone');
   });
 
+  it('takes a real protected key file out whole: the multi-line body `mnema key protect` writes', () => {
+    // Captured from `mnema key protect` run under a throwaway HOME: the body is base64 wrapped at 64
+    // columns, so the block spans lines, unlike the one-line body of the test above.
+    const body = [
+      'eyJ2IjoxLCJrZGYiOiJzY3J5cHQiLCJOIjozMjc2OCwiciI6OCwicCI6MSwic2Fs',
+      'dCI6InFoMkoxMW4rOU9vUFRiNzg2M0tGMVE9PSIsIml2IjoidkZrVFRYZnYrYTgw',
+      'TDJIMiIsInRhZyI6Im9OY2Jqc1hSbUd6ZlFhRWN2SnZYY2c9PSIsImRhdGEiOiJj',
+      'V0wyNjhEemMvR0RCeW89In0=',
+    ];
+    const file = `-----BEGIN MNEMA PROTECTED KEY-----\n${body.join('\n')}\n-----END MNEMA PROTECTED KEY-----\n`;
+    const scrubbed = scrubSecrets(`my key file:\n${file}ends`);
+    for (const line of body) expect(scrubbed.text).not.toContain(line);
+    expect(scrubbed.text).toBe('my key file:\n<SECRET:private-key-block>\nends');
+    expect(scrubbed.replaced).toEqual(['private-key-block']);
+  });
+
   it('spans a real key of the largest size anyone uses', () => {
     // The span the block pattern follows is bounded (an unbounded lazy scan before
     // a literal terminator is quadratic in a field packed with headers), and the

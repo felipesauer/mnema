@@ -62,12 +62,12 @@ import {
   chainRootForScope,
   DERIVED_FROM_RELATION,
   type DiscoveryEnv,
+  type ReplacedClass,
   resolveScope,
   resolveTrees,
   type ScannedDecision,
   type ScanRefusal,
   type Scope,
-  type SecretClass,
   scanAdrDirectory,
   scanBridge,
 } from '@mnema/core';
@@ -119,7 +119,7 @@ export interface ImportedProposal {
    * holds one, so this should always be absent; it is carried because the door is
    * inside the write and its report is not this verb's to swallow.
    */
-  readonly replaced?: readonly SecretClass[];
+  readonly replaced?: readonly ReplacedClass[];
 }
 
 /** One file whose decision the record already holds. */
