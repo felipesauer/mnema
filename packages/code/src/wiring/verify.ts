@@ -834,7 +834,7 @@ function report(io: CliIo, render: Render, tree: TreeReport, where = ''): void {
  * They are about different things and they name different things: two are about a KEY
  * with no tail — a key the record alone cannot place, and a backup this machine
  * registered — so they name the fingerprint; the third is about a TAIL whose last line
- * was dropped, so it names the tail; the fourth is about a NOTE a stranger's retraction
+ * was dropped, and another about a TAIL that holds nothing, so they name the tail; the fourth is about a NOTE a stranger's retraction
  * names, so it names the note — the id a person opens to see it is still there; the fifth is
  * about a checker KEY the record retired, so it names the fingerprint.
  */
@@ -844,6 +844,7 @@ function censusLocus(note: CensusNote): string {
     case 'backup-key':
     case 'retired-checker':
       return note.fingerprint;
+    case 'empty-tail':
     case 'partial-final-line':
       return note.tail;
     case 'foreign-retraction':

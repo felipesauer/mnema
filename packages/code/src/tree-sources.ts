@@ -27,7 +27,15 @@
 import type { UpcasterRegistry } from '@mnema/chain';
 import { catalogUpcasters } from '@mnema/chain';
 import type { ScopedCache } from '@mnema/context';
-import { chainRootForScope, ProjectionCache, type ResolvedTrees, type Scope } from '@mnema/core';
+import {
+  type BirthProbe,
+  chainRootForScope,
+  locateEntityScope,
+  locateEntityScopeWith,
+  ProjectionCache,
+  type ResolvedTrees,
+  type Scope,
+} from '@mnema/core';
 import type { ScopedTree } from './intelligence-source.js';
 import type { ScopedLinkBreak } from './record-integrity.js';
 
@@ -73,6 +81,36 @@ export function withCache<T>(
   } finally {
     cache.close();
   }
+}
+
+/**
+ * The tree an entity was born in, found in the projection each tree keeps rather than by
+ * replaying its chain.
+ *
+ * A move used to walk the whole record to find where its subject lives and then read the record
+ * again for what the gate judges; at 100 thousand events each walk was about 2 s. The projection
+ * is the reading the judgement takes, so the search takes it too, brought forward to the chain as
+ * it stands. One thing a projection cannot answer: it holds only COMPLETE entities, and a birth is
+ * two appends, so a truncated birth is invisible to it. When no projection holds the id the chain
+ * is replayed, exactly as the MCP's locate does (`mcp/locate.ts`), so the refusal a half-written
+ * birth gets is the one it always got — and an id nobody holds, which is refused anyway, is the
+ * only case that pays both.
+ */
+export function locateEntityScopeKept(
+  trees: ResolvedTrees,
+  id: string,
+  upcasters: UpcasterRegistry,
+): Scope | undefined {
+  const kept: BirthProbe = (chainRoot, canonical) =>
+    withCache(
+      chainRoot,
+      upcasters,
+      (cache) =>
+        cache.getTask(canonical) !== null ||
+        cache.getDecision(canonical) !== null ||
+        cache.getSkill(canonical) !== null,
+    );
+  return locateEntityScopeWith(trees, id, kept) ?? locateEntityScope(trees, id, upcasters);
 }
 
 /**

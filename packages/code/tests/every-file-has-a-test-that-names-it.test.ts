@@ -776,7 +776,7 @@ const CLAUSES_PER_FILE: Readonly<Record<string, number>> = {
   'packages/chain/src/chain/range.test.ts': 5,
   'packages/chain/src/chain/second-reader-agrees-on-enrolment.test.ts': 16,
   'packages/chain/src/chain/second-reader-agrees-on-the-bytes.test.ts': 3,
-  'packages/chain/src/chain/second-reader-agrees-on-the-record.test.ts': 12,
+  'packages/chain/src/chain/second-reader-agrees-on-the-record.test.ts': 13,
   'packages/chain/src/chain/second-reader-is-independent.test.ts': 5,
   'packages/chain/src/chain/second-reader-says-what-it-does-not-check.test.ts': 6,
   'packages/chain/src/chain/sleep.test.ts': 2,
@@ -916,6 +916,7 @@ const CLAUSES_PER_FILE: Readonly<Record<string, number>> = {
   'packages/code/tests/a-marker-is-not-a-reason.test.ts': 7,
   'packages/code/tests/a-marker-is-not-a-title.test.ts': 7,
   'packages/code/tests/a-measurement-carries-no-one-s-home.test.ts': 5,
+  'packages/code/tests/a-move-reads-the-record-once.test.ts': 13,
   'packages/code/tests/a-note-can-be-retracted.test.ts': 11,
   'packages/code/tests/a-palette-for-the-words.test.ts': 25,
   'packages/code/tests/a-picture-of-the-record.test.ts': 8,
@@ -974,6 +975,7 @@ const CLAUSES_PER_FILE: Readonly<Record<string, number>> = {
   'packages/code/tests/neutralizes-control-bytes-everywhere.test.ts': 12,
   'packages/code/tests/no-classification-table-reaches-the-surface.test.ts': 5,
   'packages/code/tests/no-task-is-published-before-it-is-used.test.ts': 5,
+  'packages/code/tests/no-workflow-publishes-the-extension.test.ts': 5,
   'packages/code/tests/one-authority-over-colour.test.ts': 18,
   'packages/code/tests/one-rule-for-newest-first.test.ts': 4,
   'packages/code/tests/one-source-for-a-vocabulary.test.ts': 18,
@@ -1167,6 +1169,7 @@ const CLAUSES_PER_FILE: Readonly<Record<string, number>> = {
   'packages/core/src/checks/a-rule-carries-its-check.test.ts': 14,
   'packages/core/src/content/every-door.test.ts': 14,
   'packages/core/src/content/every-field.test.ts': 19,
+  'packages/core/src/content/personal.test.ts': 2,
   'packages/core/src/content/screen.test.ts': 3,
   'packages/core/src/content/secrets.test.ts': 2,
   'packages/core/src/identity/account.test.ts': 2,
@@ -1246,6 +1249,7 @@ const CLAUSES_PER_FILE: Readonly<Record<string, number>> = {
   'packages/vscode/src/proposed.test.ts': 2,
   'packages/vscode/src/rules.test.ts': 2,
   'packages/vscode/src/status.test.ts': 2,
+  'packages/vscode/src/the-bundle-holds-no-database.test.ts': 6,
 };
 
 /**
@@ -1595,6 +1599,7 @@ const PRODUCTION_FILES: readonly string[] = [
   'packages/core/src/checks/checkers.ts',
   'packages/core/src/checks/operations.ts',
   'packages/core/src/content/fields.ts',
+  'packages/core/src/content/personal.ts',
   'packages/core/src/content/screen.ts',
   'packages/core/src/content/secrets.ts',
   'packages/core/src/db/schema.ts',

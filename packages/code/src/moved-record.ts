@@ -46,8 +46,9 @@
 
 import type { UpcasterRegistry } from '@mnema/chain';
 import { decisionDisposition } from '@mnema/context';
-import { isDecisionState, orderedEvents, projectDecisions, projectSkills } from '@mnema/core';
+import { isDecisionState } from '@mnema/core';
 import { oneLine } from './one-line.js';
+import { withCache } from './tree-sources.js';
 
 /** The three entities a workflow moves, and whose move a surface echoes. */
 export type MovedKind = 'task' | 'decision' | 'skill';
@@ -108,9 +109,9 @@ const PROJECTED_DISPLAY: Readonly<
   Record<ProjectedDisplayKind, (root: string, id: string, upcasters: UpcasterRegistry) => string>
 > = {
   decision: (root, id, upcasters) =>
-    projectDecisions(orderedEvents({ root }, upcasters)).get(id)?.adr ?? id,
+    withCache(root, upcasters, (cache) => cache.getDecision(id)?.adr) ?? id,
   skill: (root, id, upcasters) =>
-    projectSkills(orderedEvents({ root }, upcasters)).get(id)?.name ?? id,
+    withCache(root, upcasters, (cache) => cache.getSkill(id)?.name) ?? id,
 };
 
 /**
@@ -165,7 +166,7 @@ export function supersedeLeavesNothingInForce(
   by: string,
   upcasters: UpcasterRegistry,
 ): string | undefined {
-  const successor = projectDecisions(orderedEvents({ root }, upcasters)).get(by);
+  const successor = withCache(root, upcasters, (cache) => cache.getDecision(by) ?? undefined);
   if (
     successor === undefined ||
     !isDecisionState(successor.state) ||

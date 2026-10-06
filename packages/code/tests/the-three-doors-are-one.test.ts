@@ -423,6 +423,10 @@ const SCENARIOS: readonly Scenario[] = [
       note('the staging key rotates monthly', 'public'),
     ],
   },
+  {
+    name: 'an email address in a note is replaced the same way, on the way in',
+    steps: [note('asked by jane.doe@example.com in the review', 'public')],
+  },
 ];
 
 // ---------------------------------------------------------------------------
@@ -549,6 +553,23 @@ describe('the library door calls the command line’s own functions', () => {
     expect(libraryRules).toBe(rules);
     expect(libraryVerify).toBe(verify);
     expect(libraryBeforeAPath).toBe(beforeAPath);
+  });
+});
+
+describe('an email address a write carried', () => {
+  it('is replaced in the record and reported to the program that wrote it', () => {
+    const door = founded('sdk');
+    const library = openRecord({ cwd: door.repo, agent: AGENT, env: { home: door.home } });
+    const written = library.addNote({
+      content: 'asked by jane.doe@example.com in the review',
+      scope: 'public',
+    });
+
+    expect(written.ok).toBe(true);
+    expect(written.ok && written.replaced).toEqual(['email']);
+    const held = eventsOf(door).map((seen) => seen.body);
+    expect(held.some((body) => body.includes('jane.doe'))).toBe(false);
+    expect(held.some((body) => body.includes('asked by <email> in the review'))).toBe(true);
   });
 });
 
