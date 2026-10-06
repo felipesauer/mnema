@@ -917,6 +917,7 @@ const CLAUSES_PER_FILE: Readonly<Record<string, number>> = {
   'packages/code/tests/a-marker-is-not-a-reason.test.ts': 7,
   'packages/code/tests/a-marker-is-not-a-title.test.ts': 7,
   'packages/code/tests/a-measurement-carries-no-one-s-home.test.ts': 5,
+  'packages/code/tests/a-move-reads-the-record-once.test.ts': 13,
   'packages/code/tests/a-note-can-be-retracted.test.ts': 11,
   'packages/code/tests/a-palette-for-the-words.test.ts': 25,
   'packages/code/tests/a-picture-of-the-record.test.ts': 8,
