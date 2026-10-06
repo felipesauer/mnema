@@ -861,10 +861,7 @@ function backupKeyDetail(backup: KnownBackup): string {
  * sentence carries each, in the record's own order, rather than picking one: which
  * of a key's tails was accounted for is exactly what a reader is trying to find out.
  */
-function keyWithoutTailDetail(
-  waivers: readonly TailWaiver[],
-  declaredFor?: string,
-): string {
+function keyWithoutTailDetail(waivers: readonly TailWaiver[], declaredFor?: string): string {
   if (waivers.length === 0) {
     if (declaredFor !== undefined) {
       // Declared a backup, then revoked: the record DID declare it, so it cannot be said not to
