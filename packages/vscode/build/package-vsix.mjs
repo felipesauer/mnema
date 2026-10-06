@@ -51,6 +51,9 @@ function run(command, args, cwd) {
 function rewrite(file, change) {
   const json = JSON.parse(readFileSync(file, 'utf8'));
   change(json);
+  // `pnpm deploy` hard-links the workspace packages' files into the copy, and writing through a
+  // link would rewrite the manifest in `packages/*` too. Unlink first, then write a file of its own.
+  rmSync(file);
   writeFileSync(file, `${JSON.stringify(json, null, 2)}\n`);
 }
 
