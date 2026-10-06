@@ -193,6 +193,7 @@ export {
 export {
   accountLinked,
   BIRTH_ACTION,
+  backupDeclared,
   channelAsked,
   channelRefused,
   channelServed,
@@ -236,6 +237,7 @@ export {
   type AccountLinkedV1,
   ADDRESS_RELATIONS,
   ASKS_FOR_A_PERSON_RELATION,
+  type BackupDeclaredV1,
   type CatalogEvent,
   type ChannelAskedV1,
   type ChannelRefusedV1,

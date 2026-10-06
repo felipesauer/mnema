@@ -212,9 +212,8 @@ export interface KeyWithoutTailNote {
 }
 
 /**
- * A committed public key with no tail on disk that THE MACHINE ASKING made as an
- * identity's cold backup — the key `mnema init` creates beside the machine's own and
- * tells a person to carry off the machine.
+ * A committed public key with no tail on disk that is an identity's cold backup — the key
+ * `mnema init` creates beside the machine's own and tells a person to carry off the machine.
  *
  * A backup signs nothing until it is restored, so having no tail is the state it is made
  * in. Said as a {@link KeyWithoutTailNote}, it was the first thing a person read in their
@@ -222,17 +221,16 @@ export interface KeyWithoutTailNote {
  * written (an empty tail is not versioned), or removed" — a warning of loss about the one
  * key built so that nothing is lost.
  *
- * TWO FACTS DECIDE IT, and neither is the absence of anything. The key root of the
- * machine asking holds a usable registration naming this key as a backup
- * ({@link isBackupRegistration}), and the record proves the key a member of the identity
- * that registration names (the enrollment fold, {@link IdentityResolution.members}). A key
- * short of either is a {@link KeyWithoutTailNote}, exactly as before.
+ * WHAT DECIDES IT IS A FACT, NEVER AN ABSENCE, and in every case the record proves the key a
+ * member of the identity at the end of the fold ({@link IdentityResolution.members}). The fact
+ * is a signature-covered `backup.declared` (FORMAT.md section 6.5), which `mnema init` writes
+ * when it enrolls the backup and every clone reads. A record written before that kind existed
+ * carries no declaration; there the machine that made the backup still says it, from a usable
+ * registration at its own key root ({@link isBackupRegistration}), and any other machine reads
+ * the key as a {@link KeyWithoutTailNote}, whose words say why.
  *
- * WHAT IT CANNOT KNOW, AND SAYS. The record does not say which key is a backup — the
- * enrollment event carries no role — so a verify on any machine that did not register
- * the key reads the same key as a {@link KeyWithoutTailNote}. And a backup that WAS
- * restored and signed would have a tail of its own, so the note still says that tail
- * would then be missing here.
+ * WHAT IT CANNOT KNOW, AND SAYS. A backup that WAS restored and signed would have a tail of
+ * its own, so the note still says that tail would then be missing here.
  */
 export interface BackupKeyNote {
   readonly kind: 'backup-key';
@@ -547,7 +545,7 @@ export function verifyChain(
   // asks only about keys with no tail at all, so a waiver can never quiet an issue
   // on a tail that is present and broken.
   const waivers = tailWaiversIn(entriesByTail);
-  const backups = backupsTheRecordEnrolled(options.keyRoot, identity.members);
+  const backups = knownBackups(identity, options.keyRoot);
   const census: CensusNote[] = [
     ...keysWithoutTail(committedFingerprints, tails, waivers, backups),
     ...notes,
@@ -688,16 +686,21 @@ function keysWithoutTail(
   committed: ReadonlySet<string>,
   tails: readonly string[],
   waivers: readonly TailWaiver[],
-  backups: ReadonlyMap<string, string>,
+  backups: ReadonlyMap<string, KnownBackup>,
 ): (KeyWithoutTailNote | BackupKeyNote)[] {
   const fingerprintsWithTail = new Set(tails.map(tailFingerprint));
   const notes: (KeyWithoutTailNote | BackupKeyNote)[] = [];
   for (const fingerprint of committed) {
     if (fingerprintsWithTail.has(fingerprint)) continue;
     const accounted = waiversForKey(fingerprint, waivers);
-    const anchor = backups.get(fingerprint);
-    if (accounted.length === 0 && anchor !== undefined) {
-      notes.push({ kind: 'backup-key', fingerprint, anchor, detail: backupKeyDetail(anchor) });
+    const backup = backups.get(fingerprint);
+    if (accounted.length === 0 && backup !== undefined) {
+      notes.push({
+        kind: 'backup-key',
+        fingerprint,
+        anchor: backup.anchor,
+        detail: backupKeyDetail(backup),
+      });
       continue;
     }
     notes.push({
@@ -775,38 +778,61 @@ function retiredCheckers(retired: IdentityResolution['retiredCheckers']): Retire
   return found;
 }
 
+/** A key known to be an identity's backup, and what makes it known. */
+interface KnownBackup {
+  readonly anchor: string;
+  /**
+   * `record`: a signature-covered `backup.declared` says so, which every clone reads.
+   * `registration`: only this machine's key root says so — a record written before backups were
+   * declared, read on the machine that made the backup.
+   */
+  readonly by: 'record' | 'registration';
+}
+
 /**
- * The keys the machine asking registered as an identity's cold backup, each with that
- * identity — kept only where the record's enrollment fold proves the key a member of it.
+ * The keys known to be an identity's backup, each with that identity — kept only where the
+ * record's enrollment fold proves the key a member of it at the end of the record.
  *
- * Both halves are required, and each is the other's missing fact: the registration says
- * what the key was made FOR, which the record does not carry, and the fold says whether
- * the identity took it in, which a file on one machine cannot. Handed no key root, there
- * is nothing to cross and every key reads as the record alone says it.
+ * TWO SOURCES, AND THE RECORD COMES FIRST. A covered `backup.declared` (FORMAT.md section 6.5)
+ * is read by every clone; it is what makes a backup expected anywhere. A record written before
+ * the declaration existed carries none, so the machine that made the backup still has its own
+ * key root to go on: a registration says what the key was made FOR, and the fold says whether
+ * the identity took it in. Handed no key root, a key the record does not declare reads as the
+ * record alone says it. A backup revoked since is not a member, and reads as any key would.
  */
-function backupsTheRecordEnrolled(
+function knownBackups(
+  identity: IdentityResolution,
   keyRoot: string | undefined,
-  members: IdentityResolution['members'],
-): ReadonlyMap<string, string> {
-  const backups = new Map<string, string>();
+): ReadonlyMap<string, KnownBackup> {
+  const isMember = (anchor: string, fingerprint: string): boolean =>
+    identity.members.get(anchor)?.has(fingerprint) === true;
+  const backups = new Map<string, KnownBackup>();
+  for (const [fingerprint, anchor] of identity.backups) {
+    if (isMember(anchor, fingerprint)) backups.set(fingerprint, { anchor, by: 'record' });
+  }
   if (keyRoot === undefined) return backups;
   for (const registration of listRegistrations({ root: keyRoot })) {
     if (!isBackupRegistration(registration)) continue;
-    if (members.get(registration.anchor)?.has(registration.fingerprint) !== true) continue;
-    backups.set(registration.fingerprint, registration.anchor);
+    if (backups.has(registration.fingerprint)) continue;
+    if (!isMember(registration.anchor, registration.fingerprint)) continue;
+    backups.set(registration.fingerprint, { anchor: registration.anchor, by: 'registration' });
   }
   return backups;
 }
 
 /**
- * How a backup key with no tail READS: what it is, why it has no tail, and the one reading
- * that would make the absence mean something — said, because the record cannot rule it out.
+ * How a backup key with no tail READS: what it is, who says so, why it has no tail, and the one
+ * reading that would make the absence mean something — said, because the record cannot rule it
+ * out.
  */
-function backupKeyDetail(anchor: string): string {
+function backupKeyDetail(backup: KnownBackup): string {
+  const said =
+    backup.by === 'record'
+      ? `the backup key of ${oneLine(backup.anchor)}, as the record declares it`
+      : `the backup key this machine registered for ${oneLine(backup.anchor)}`;
   return (
-    `the backup key this machine registered for ${oneLine(anchor)} — a backup signs nothing ` +
-    'until it is restored, so it has no tail (if it was restored and has signed, that tail ' +
-    'is not here)'
+    `${said} — a backup signs nothing until it is restored, so it has no tail (if it was ` +
+    'restored and has signed, that tail is not here)'
   );
 }
 
@@ -832,8 +858,10 @@ function backupKeyDetail(anchor: string): string {
 function keyWithoutTailDetail(waivers: readonly TailWaiver[]): string {
   if (waivers.length === 0) {
     return (
-      'committed public key has no tail on disk — the tail may have been dropped ' +
-      '(a botched merge), never written (an empty tail is not versioned), or removed'
+      'committed public key has no tail on disk, and the record declares no backup for it — ' +
+      'the tail may have been dropped (a botched merge), never written (an empty tail is not ' +
+      'versioned), or removed; a backup made before backups were declared in the record reads ' +
+      'this way too'
     );
   }
   const accounts = waivers.map(

@@ -39,6 +39,7 @@
 
 import {
   accountLinked,
+  backupDeclared,
   channelAsked,
   channelRefused,
   channelServed,
@@ -494,6 +495,13 @@ export const CANONICAL_VECTORS: {
       // An identity names its own account: the subject is the anchor that signs it.
       name: 'account.linked (an identity names its GitHub account)',
       event: accountLinked(person(VECTOR_WHO), { service: 'github', account: 'octocat' }),
+    },
+  ],
+  'backup.declared': [
+    {
+      // An identity declares one of its own keys its cold backup: the subject is the anchor.
+      name: 'backup.declared (an identity declares a key its backup)',
+      event: backupDeclared(person(VECTOR_WHO), { backupFp: VECTOR_NEW_FP }),
     },
   ],
 };

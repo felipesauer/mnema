@@ -289,6 +289,8 @@ export const SUBJECT_TEXT = {
   // DERIVED: the anchor of the key that signs it, never handed in — an identity names
   // only its own account.
   'account.linked': 'identifier',
+  // DERIVED: the anchor of the key that signs it — an identity declares only its own keys.
+  'backup.declared': 'identifier',
 } as const satisfies { readonly [K in EventKind]: FieldNature };
 
 /**
@@ -436,6 +438,8 @@ export const PAYLOAD_TEXT = {
   // the caller's, and a NAME: a reading puts it in an address and asks the host for it by
   // exact string, so a scrubbed one would ask about somebody else.
   'account.linked': { service: 'identifier', account: 'name' },
+  // A fingerprint computed from the backup's own key, never typed by a caller.
+  'backup.declared': { backupFp: 'identifier' },
 } as const satisfies {
   readonly [K in EventKind]: { readonly [P in PayloadPath<K>]: FieldNature };
 };

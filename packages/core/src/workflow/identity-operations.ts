@@ -26,6 +26,7 @@
 import {
   accountLinked,
   type BackupKey,
+  backupDeclared,
   type CatalogEvent,
   type ChainLayout,
   type ChainSigner,
@@ -488,6 +489,18 @@ export function establishIdentity(
       declined.push({ fingerprint: registration.fingerprint, reason: joined.message });
       continue;
     }
+    // The backup's role goes into the record beside its enrollment, so every clone knows the
+    // key is kept off the machine and expects it to have no tail (FORMAT.md section 6.5).
+    if (registration.fingerprint === backup?.fingerprint) {
+      const declared = declareBackup(ctx, anchor, registration.fingerprint);
+      if (!declared.ok) {
+        declined.push({
+          fingerprint: registration.fingerprint,
+          reason: `its role as this identity's backup was not recorded: ${declared.message}`,
+        });
+        continue;
+      }
+    }
     enrolled.push(registration.fingerprint);
   }
 
@@ -527,6 +540,29 @@ export function enrollKey(
     keyEnrolled(
       { at, who: anchor, signerFp: ctx.writer.signerFingerprint, subject: anchor },
       { newFp: input.newFp, reverseSig: input.reverseSig },
+    ),
+  );
+  if (!appended.ok) return appended;
+  ctx.writer.checkpoint();
+  return { ok: true, anchor };
+}
+
+/**
+ * Declares one of the anchor's keys its cold backup: a key kept off the machine, which signs
+ * nothing until it is restored, so a reader expects it to have no tail. Checkpointed at once,
+ * because a reader honours the declaration only when it is signature-covered.
+ */
+function declareBackup(
+  ctx: WriteContext,
+  anchor: string,
+  backupFp: string,
+): IdentityOk | AppendRefusal {
+  const at = (ctx.clock ?? systemClock)();
+  const appended = appendEvent(
+    ctx.writer,
+    backupDeclared(
+      { at, who: anchor, signerFp: ctx.writer.signerFingerprint, subject: anchor },
+      { backupFp },
     ),
   );
   if (!appended.ok) return appended;
