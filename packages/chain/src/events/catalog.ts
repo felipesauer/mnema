@@ -986,6 +986,34 @@ export interface CheckerEnrolledV1 extends Envelope {
 }
 
 /**
+ * A CHECKER KEY WAS RETIRED: from this point the key is no checker, and it never signs again.
+ *
+ * The answer to a leaked runner secret. `who` is an identity, and `signerFp` a key valid for
+ * it at this point — the same as a {@link CheckerEnrolledV1}'s voucher, and any identity may
+ * retire as any identity may enrol. The key's consent is not asked: a leaked key is the case
+ * this is for. `subject` is the checker's own anchor, derived from `checkerFp`, as at its
+ * enrolment, and `reason` says why.
+ *
+ * What the reader does with it (FORMAT.md section 6.2), when it is itself signature-covered:
+ * a `check.passed` or `check.failed` the key signs after it is refused, any other kind it
+ * signs stays refused, and a later `checker.enrolled` naming it is refused — a retired key
+ * does not come back; a new key does. A result it signed BEFORE stays authentic, because the
+ * key held the role when it signed; and `verify` names every such result in its census,
+ * because "before" is placed by the `at` the key itself wrote, which a leaked key chooses.
+ */
+export interface CheckerRetiredV1 extends Envelope {
+  readonly kind: 'checker.retired';
+  readonly v: 1;
+  /** Subject is the checker's own anchor, derived from `checkerFp`. */
+  readonly payload: {
+    /** The full fingerprint of the checker key being retired. */
+    readonly checkerFp: string;
+    /** Why it is being retired — the proof of the why. */
+    readonly reason: string;
+  };
+}
+
+/**
  * A RULE'S CHECK PASSED at one commit: the command declared for it ran there and exited 0.
  *
  * Signed by a key enrolled as a checker (see {@link CheckerEnrolledV1}), under that key's own
@@ -1096,6 +1124,7 @@ export type CatalogEvent =
   | CheckerEnrolledV1
   | CheckPassedV1
   | CheckFailedV1
+  | CheckerRetiredV1
   | AccountLinkedV1;
 
 /** The `kind` discriminators present in the catalog. */
@@ -1132,5 +1161,6 @@ export const LATEST_VERSION: { readonly [K in EventKind]: number } = {
   'checker.enrolled': 1,
   'check.passed': 1,
   'check.failed': 1,
+  'checker.retired': 1,
   'account.linked': 1,
 };

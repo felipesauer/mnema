@@ -323,6 +323,22 @@ const CLASSIFIED: Readonly<Record<string, { verdict: Verdict; why: string }>> = 
     verdict: 'minted',
     why: 'a fingerprint decoded from the request, and an anchor',
   },
+  'key.ts «Retired checker {}» #1': {
+    verdict: 'minted',
+    why: 'the fingerprint of a key the record enrolls as a checker, or the write refused',
+  },
+  'key.ts «Key {} was retired as a checker by {} already — nothing recorded.» #1': {
+    verdict: 'minted',
+    why: 'a fingerprint the record holds, and the anchor of the identity that retired it',
+  },
+  'key.ts «it signs nothing from here on — retired by {}» #1': {
+    verdict: 'minted',
+    why: 'the anchor of the identity that signed the retirement',
+  },
+  'accountability.ts «retired by {}» #1': {
+    verdict: 'minted',
+    why: 'the anchor text of the identity that retired the machine, as the author column is said',
+  },
   'key.ts «Enrolled checker {}» #1': {
     verdict: 'minted',
     why: 'a fingerprint decoded out of the request that was vouched for',
@@ -367,6 +383,10 @@ const CLASSIFIED: Readonly<Record<string, { verdict: Verdict; why: string }>> = 
   'check.ts «recorded in {}» #1': {
     verdict: 'collapsed',
     why: 'the project root, discovered from the cwd — the same value `init` prints',
+  },
+  'commit-hook.ts «{}: {}» #1': {
+    verdict: 'collapsed',
+    why: 'the hook’s path, which comes from the repository’s configuration (`core.hooksPath`) and may hold anything a directory name can',
   },
   'key.ts «Enrolled key {}» #1': {
     verdict: 'minted',
@@ -736,7 +756,9 @@ describe('every line this wiring words is classified', () => {
     // 80 until the channel that starts off said what it does once it is switched on.
     // 81 until user-corrections got its own message.
     // 82 until `doctor` printed a line to a finding.
-    expect(FOUND.sites.length).toBe(98);
+    // 99 with the line `commit-hook` prints for where the hook is.
+    // 103 once a checker key could be retired.
+    expect(FOUND.sites.length).toBe(103);
   });
 
   it('reads the verdict off the source rather than believing the table', () => {
@@ -756,9 +778,9 @@ describe('every line this wiring words is classified', () => {
   it('found sites of both kinds, and the scanner sees a tag when there is one', () => {
     // Neither arm of the case above may be empty, or half of it is vacuous.
     const verdicts = Object.values(CLASSIFIED).map((said) => said.verdict);
-    expect(verdicts.filter((verdict) => verdict === 'collapsed').length).toBe(44);
-    expect(verdicts.filter((verdict) => verdict === 'minted').length).toBe(54);
-    expect(FOUND.sites.filter((site) => site.tagged).length).toBe(44);
+    expect(verdicts.filter((verdict) => verdict === 'collapsed').length).toBe(45);
+    expect(verdicts.filter((verdict) => verdict === 'minted').length).toBe(58);
+    expect(FOUND.sites.filter((site) => site.tagged).length).toBe(45);
   });
 
   it('every reason says where the value comes from', () => {
@@ -892,6 +914,7 @@ const UNREACHABLE: Readonly<Record<string, string>> = {
   'antipatterns.ts «moved twice out of one state ({} {})» #1':
     'needs two machines moving one decision out of one state, then merged',
   'antipatterns.ts «{}: {}» #1': 'the same divergence',
+  'commit-hook.ts «{}: {}» #1': 'needs a repository whose hooks path holds a line break',
   'focus.ts «{}» #1': 'the run’s own line — driven by `run start`, read back by `focus`',
   'focus.ts « — {}» #1': 'the same line',
   'guard.ts «{} {} → {}» #1': 'the id must match a task, so a forged one never reaches it',

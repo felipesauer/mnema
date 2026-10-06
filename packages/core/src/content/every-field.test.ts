@@ -11,7 +11,7 @@ import {
   type TransitionFields,
 } from '@mnema/chain';
 import { describe, expect, it } from 'vitest';
-import { declareCheck, enrollChecker, runRuleChecks } from '../checks/operations.js';
+import { declareCheck, enrollChecker, retireChecker, runRuleChecks } from '../checks/operations.js';
 import { requestEnrollment } from '../identity/handshake.js';
 import {
   captureMemory,
@@ -441,6 +441,20 @@ const DRIVERS: { readonly [K in EventKind]: Driver } = {
         }),
       }),
     ),
+
+  // The key is proved against the record — a checker this driver enrolls first — so it is not
+  // poisoned; the reason is the one field a person writes.
+  'checker.retired': (ctx, text) => {
+    const { request, fingerprint } = landed(
+      requestEnrollment({
+        anchor: deriveAnchor(ctx.writer.signerFingerprint),
+        keyRoot: checkerKeyRoot(ctx),
+        asChecker: true,
+      }),
+    );
+    landed(enrollChecker(ctx, { request }));
+    return retireChecker(ctx, { fingerprint, reason: text('payload.reason') });
+  },
 
   'note.retracted': (ctx, text) => {
     // The subject is proved against the record, so it is a memory this driver captures first

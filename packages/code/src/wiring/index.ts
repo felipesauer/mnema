@@ -220,6 +220,7 @@ import { registerAntipatterns } from './antipatterns.js';
 import { registerBeforeAWrite } from './before-a-write.js';
 import { registerBrief } from './brief.js';
 import { registerCheck } from './check.js';
+import { registerCommitHook } from './commit-hook.js';
 import { registerCommits } from './commits.js';
 import { registerCompletion } from './completion.js';
 import { registerCorrections } from './corrections.js';
@@ -296,6 +297,7 @@ export const VERBS: readonly Verb[] = [
   registerRulesFile,
   registerCheck,
   registerTrailer,
+  registerCommitHook,
   registerCommits,
   registerWhy,
   registerAging,

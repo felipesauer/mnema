@@ -172,7 +172,8 @@ export type CensusNote =
   | KeyWithoutTailNote
   | BackupKeyNote
   | PartialFinalLineNote
-  | ForeignRetractionNote;
+  | ForeignRetractionNote
+  | RetiredCheckerNote;
 
 /**
  * A committed public key with no tail on disk.
@@ -282,6 +283,31 @@ export interface ForeignRetractionNote {
   /** The identity that wrote the note. */
   readonly author: string;
   /** Where the retraction sits. */
+  readonly tail: string;
+  readonly seq: number;
+  readonly detail: string;
+}
+
+/**
+ * A checker key the record retired (`checker.retired`, FORMAT.md section 6.2) that had signed
+ * check results before its retirement.
+ *
+ * Not a break: each of those results was signed while the key held the role, so nothing the
+ * record proves has failed, and the results it signs AFTER are breaks of their own. A reader
+ * is told anyway, because "before" is the place the merged order gives a result, and that
+ * place comes from the `at` the key itself wrote — a leaked key can put a pass before its
+ * own retirement. The record no longer vouches for any result this key signed; the census
+ * says how many there are and who retired it.
+ */
+export interface RetiredCheckerNote {
+  readonly kind: 'retired-checker';
+  /** The retired checker key. */
+  readonly fingerprint: string;
+  /** The identity that retired it. */
+  readonly by: string;
+  /** How many results it signed that the fold accepted before the retirement. */
+  readonly resultsBefore: number;
+  /** Where the retirement sits. */
   readonly tail: string;
   readonly seq: number;
   readonly detail: string;
@@ -526,6 +552,7 @@ export function verifyChain(
     ...keysWithoutTail(committedFingerprints, tails, waivers, backups),
     ...notes,
     ...foreignRetractions(tails, entriesByTail),
+    ...retiredCheckers(identity.retiredCheckers),
   ];
 
   const ok = allIssues.length === 0;
@@ -719,6 +746,31 @@ function foreignRetractions(
           'so it is not applied and the note is still served',
       });
     }
+  }
+  return found;
+}
+
+/**
+ * Every retired checker key that signed results before its retirement, in the order the fold
+ * met the retirements. A key retired before it signed anything has nothing to name.
+ */
+function retiredCheckers(retired: IdentityResolution['retiredCheckers']): RetiredCheckerNote[] {
+  const found: RetiredCheckerNote[] = [];
+  for (const [fingerprint, retirement] of retired) {
+    if (retirement.resultsBefore === 0) continue;
+    found.push({
+      kind: 'retired-checker',
+      fingerprint,
+      by: retirement.by,
+      resultsBefore: retirement.resultsBefore,
+      tail: retirement.tail,
+      seq: retirement.seq,
+      detail:
+        `${retirement.resultsBefore} check result(s) signed by ${oneLine(fingerprint)} before ` +
+        `${oneLine(retirement.by)} retired it — authentic, since the key held the role when it ` +
+        'signed, and no longer vouched for: a result is placed before a retirement by the time ' +
+        'the key itself wrote',
+    });
   }
   return found;
 }
@@ -1215,6 +1267,8 @@ const CENSUS_CLAUSE: Readonly<Record<CensusNote['kind'], (count: number) => stri
     `${count} tail(s) ending in a dropped partial line (see census — informational, not a break)`,
   'foreign-retraction': (count) =>
     `${count} retraction(s) by an identity that did not write the note, not applied (see census — informational, not a break)`,
+  'retired-checker': (count) =>
+    `${count} retired checker key(s) whose earlier check results are no longer vouched for (see census — informational, not a break)`,
 };
 
 /** One clause per kind of note present, in the order the kinds are declared in. */

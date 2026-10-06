@@ -45,6 +45,7 @@ import {
   channelSwitched,
   checkDeclared,
   checkerEnrolled,
+  checkerRetired,
   checkFailed,
   checkPassed,
   decisionRecorded,
@@ -474,6 +475,17 @@ export const CANONICAL_VECTORS: {
         commit: VECTOR_COMMIT,
         command: 'node',
         failure: 'exited with code 1',
+      }),
+    },
+  ],
+  'checker.retired': [
+    {
+      // A person withdraws the role; the subject is the checker's own anchor, as at its
+      // enrolment, and the checker key is not asked.
+      name: 'checker.retired (a person withdraws a key that signed check results)',
+      event: checkerRetired(person(VECTOR_CHECKER_WHO), {
+        checkerFp: VECTOR_NEW_FP,
+        reason: 'The runner secret was printed in a public build log.',
       }),
     },
   ],

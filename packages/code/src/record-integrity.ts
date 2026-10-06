@@ -252,6 +252,12 @@ export const SERVES_NO_RECORD_CONTENT: { readonly [path: string]: string } = {
     'force; what it serves is the verdict of each check, a notice about the chain would be ' +
     'said to a runner that asked for the results, and `mnema verify` rules on the chain in the ' +
     'same job',
+  'commands/commit-hook.ts':
+    'it serves the title and label of each governing decision into a commit message file the ' +
+    'person edits, as `#` lines git drops; that file is not a reading anyone asked the record ' +
+    'for, and a notice about the chain would be one more comment in a message, with the ' +
+    'hook’s own output sent to /dev/null so an error never costs the commit — `mnema verify` ' +
+    'rules on the chain',
   'commands/before-a-write.ts':
     'a host runs it before a write and reads one field of its reply — the reason a person ' +
     'decides on — so a notice about the chain has nowhere to land; the same session opens ' +

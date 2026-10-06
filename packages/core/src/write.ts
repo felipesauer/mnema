@@ -16,7 +16,7 @@
  */
 
 // Rule checks: declaring the program that checks a rule, enrolling a key that signs check
-// results only, and running the checks as that key. The runner is handed in, so nothing here
+// results only, running the checks as that key, and retiring it. The runner is handed in, so nothing here
 // starts a process.
 export {
   type CheckOutcome,
@@ -29,9 +29,13 @@ export {
   type EnrollCheckerErr,
   type EnrollCheckerOk,
   enrollChecker,
+  type RetireCheckerErr,
+  type RetireCheckerInput,
+  type RetireCheckerOk,
   type RunChecksErr,
   type RunChecksInput,
   type RunChecksOk,
+  retireChecker,
   runRuleChecks,
 } from './checks/operations.js';
 // The refusal an oversize field earns, and the report a scrubbed write carries

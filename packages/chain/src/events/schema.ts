@@ -243,6 +243,9 @@ export const PAYLOAD_SCHEMA: { readonly [K in EventKind]: PayloadSchemaOf<K> } =
     failure: 'string',
     output: 'string?',
   },
+  // Required for the reason the fact exists, as a revocation's: a retirement that cannot say
+  // why is a line this reader refuses rather than one that quietly withdraws a machine.
+  'checker.retired': { checkerFp: 'string', reason: 'string' },
   // Both required: a claim of an account that does not say which host, or which account,
   // names nothing a reader could go and ask.
   'account.linked': { service: 'string', account: 'string' },

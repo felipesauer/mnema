@@ -773,6 +773,36 @@ const CLASSIFIED: Readonly<Record<string, { verdict: Verdict; why: string }>> = 
       verdict: 'collapsed',
       why: 'the signer a stored event claims; the catalog requires a non-empty string and nothing more',
     },
+  '@mnema/chain chain/enrollment.ts «{} is signed by {}, a checker key retired at this point, which signs nothing» oneLine(event.kind) #1':
+    {
+      verdict: 'collapsed',
+      why: 'the kind a stored event claims, read before the role is asked; the catalog names it and nothing here has narrowed it yet',
+    },
+  '@mnema/chain chain/enrollment.ts «{} is signed by {}, a checker key retired at this point, which signs nothing» oneLine(event.signerFp) #1':
+    {
+      verdict: 'collapsed',
+      why: 'the signer a stored event claims; the catalog requires a non-empty string and nothing more',
+    },
+  '@mnema/chain chain/enrollment.ts «checker.enrolled names {}, a checker key retired at this point, which is never enrolled again» oneLine(checkerFp) #1':
+    {
+      verdict: 'collapsed',
+      why: 'the checker key a stored enrolment names; the catalog requires a non-empty string and nothing more',
+    },
+  '@mnema/chain chain/verify.ts «{} check result(s) signed by {} before » retirement.resultsBefore #1':
+    {
+      verdict: 'minted',
+      why: 'a count the fold kept, of results it accepted from the key',
+    },
+  '@mnema/chain chain/verify.ts «{} check result(s) signed by {} before » oneLine(fingerprint) #1':
+    {
+      verdict: 'collapsed',
+      why: 'the checker key a stored retirement names',
+    },
+  '@mnema/chain chain/verify.ts «{} retired it — authentic, since the key held the role when it » oneLine(retirement.by) #1':
+    {
+      verdict: 'collapsed',
+      why: 'the identity a stored retirement names as its signer',
+    },
   '@mnema/chain chain/enrollment.ts «{} is signed by {}, which is not enrolled as a checker at this point» event.kind #1':
     {
       verdict: 'minted',
@@ -807,6 +837,26 @@ const CLASSIFIED: Readonly<Record<string, { verdict: Verdict; why: string }>> = 
     {
       verdict: 'collapsed',
       why: 'a fingerprint decoded from a request line a person pasted',
+    },
+  "@mnema/core checks/operations.ts «this machine's key is not currently valid for {}, so a retirement it signed would be rejected» oneLine(decided.anchor) #1":
+    {
+      verdict: 'collapsed',
+      why: 'the anchor this installation serves, read back out of the record',
+    },
+  '@mnema/core checks/operations.ts «the key {} was retired as a checker by {}, and a retired » oneLine(fingerprint) #1':
+    {
+      verdict: 'collapsed',
+      why: 'the fingerprint of a key, from a request or from the key root, which the record retired',
+    },
+  '@mnema/core checks/operations.ts «the key {} was retired as a checker by {}, and a retired » oneLine(by) #1':
+    {
+      verdict: 'collapsed',
+      why: 'the identity a stored retirement names as its signer',
+    },
+  '@mnema/core checks/operations.ts «the record enrolls no checker key {} — give the full fingerprint » oneLine(fingerprint) #1':
+    {
+      verdict: 'collapsed',
+      why: 'the fingerprint a person typed, which the record does not enroll',
     },
   "@mnema/core checks/operations.ts «this machine's key is not currently valid for {}, so a vouch it signed would be rejected» oneLine(anchor) #1":
     {
@@ -1531,6 +1581,8 @@ const NOT_A_SENTENCE: Readonly<Record<string, string>> = {
     'another clause of that same table, and a count on the same terms',
   '@mnema/chain chain/verify.ts «{} retraction(s) by an identity that did not write the note, not applied (see census — informational, not a break)» count':
     'another clause of that same table, and a count on the same terms',
+  '@mnema/chain chain/verify.ts «{} retired checker key(s) whose earlier check results are no longer vouched for (see census — informational, not a break)» count':
+    'another clause of that same table, and a count on the same terms',
   '@mnema/chain chain/verify.ts «{}/» layout.root':
     'the prefix `withinChain` STRIPS — what makes the locus a path inside the chain rather ' +
     'than wherever this clone sits. It is never printed.',
@@ -1556,9 +1608,9 @@ describe('every value the domain puts in a sentence is classified', () => {
     // are equal. The scale is stated, and so is what the HANDOFF said — twenty-three
     // sites, twelve in `core` and eleven in `chain` — because it counted sentences
     // written at a `message:` or a `detail:` directly, and a value is not a sentence.
-    expect(SITES.length).toBe(190);
-    expect(FOUND[0]?.sites.length).toBe(56);
-    expect(FOUND[1]?.sites.length).toBe(134);
+    expect(SITES.length).toBe(200);
+    expect(FOUND[0]?.sites.length).toBe(62);
+    expect(FOUND[1]?.sites.length).toBe(138);
     expect(FOUND.flatMap((layer) => layer.wording).length).toBeGreaterThan(15);
   });
 
@@ -1608,11 +1660,11 @@ describe('every value the domain puts in a sentence is classified', () => {
     // No arm of the case above may be empty, or that much of it is vacuous.
     const verdicts = Object.values(CLASSIFIED).map((said) => said.verdict);
     const count = (verdict: Verdict): number => verdicts.filter((said) => said === verdict).length;
-    expect(count('collapsed')).toBe(116);
-    expect(count('minted')).toBe(52);
+    expect(count('collapsed')).toBe(125);
+    expect(count('minted')).toBe(53);
     expect(count('composed')).toBe(22);
     expect(SITES.filter((site) => new RegExp(`\\b${DOOR}\\b`).test(site.expression))).toHaveLength(
-      116,
+      125,
     );
   });
 

@@ -282,6 +282,7 @@ export const SUBJECT_TEXT = {
   'check.failed': 'identifier',
   // DERIVED: the checker's anchor, from its key.
   'checker.enrolled': 'identifier',
+  'checker.retired': 'identifier',
   // DERIVED from the record: the anchor a waiver names is read off the pruned
   // tail's own last event, never handed in. No caller can put anything in it.
   'tail.pruned': 'identifier',
@@ -412,6 +413,9 @@ export const PAYLOAD_TEXT = {
   // credential in either refuses the declaration rather than being replaced.
   'check.declared': { command: 'name', args: 'name' },
   'checker.enrolled': { checkerFp: 'identifier', reverseSig: 'identifier' },
+  // The key is proved against the record (a checker this tree enrolled); the reason is prose,
+  // as a revocation's is.
+  'checker.retired': { checkerFp: 'identifier', reason: 'body' },
   // What a check printed is a body, scrubbed like any other; the commit is read from git. The
   // program and its arguments are copied from the declaration, which the door already refused
   // a credential in, so here they are what the record handed back, not what a caller wrote.

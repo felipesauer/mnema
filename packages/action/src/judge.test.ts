@@ -18,6 +18,7 @@ interface Seen {
   comments: { body: string; onlyIfThere: boolean }[];
   asked: string[];
   warnings: string[];
+  checked: string[];
 }
 
 function worldWith(
@@ -30,9 +31,10 @@ function worldWith(
     hasCommit?: boolean;
     commentFails?: boolean;
     noRecord?: boolean;
+    checks?: { passed: boolean; said: string };
   } = {},
 ): { world: World; seen: Seen } {
-  const seen: Seen = { comments: [], asked: [], warnings: [] };
+  const seen: Seen = { comments: [], asked: [], warnings: [], checked: [] };
   const world: World = {
     git: {
       hasCommit: () => over.hasCommit ?? true,
@@ -43,6 +45,10 @@ function worldWith(
       rules: (path) => {
         seen.asked.push(path);
         return over.rules?.[path] ?? {};
+      },
+      checkRun: (key) => {
+        seen.checked.push(key);
+        return over.checks ?? { passed: true, said: '1 passed · 0 failed at abc' };
       },
     },
     github: {
@@ -68,6 +74,25 @@ const rule = (rule: string, state = 'accepted') => ({
 });
 
 describe('judge', () => {
+  it('runs the checks only when handed a checker key, and fails when one did not pass', async () => {
+    const none = worldWith();
+    expect(await judge(none.world, pr)).toEqual({ failed: false, reasons: [] });
+    expect(none.seen.checked).toEqual([]);
+
+    const held = worldWith();
+    expect(await judge(held.world, { ...pr, checkerKey: 'PEM' })).toEqual({
+      failed: false,
+      reasons: [],
+    });
+    expect(held.seen.checked).toEqual(['PEM']);
+
+    const broke = worldWith({ checks: { passed: false, said: '0 passed · 1 failed at abc' } });
+    expect(await judge(broke.world, { ...pr, checkerKey: 'PEM' })).toEqual({
+      failed: true,
+      reasons: ['a rule’s check did not pass, or the checks did not run'],
+    });
+  });
+
   it('comments the new events and the governed files, and passes when the record verifies', async () => {
     const { world, seen } = worldWith({
       files: ['src/a.ts', 'src/b.ts', '.mnema/tails/x/000001.jsonl'],

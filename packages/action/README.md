@@ -2,7 +2,8 @@
 
 A GitHub Action for [mnema](https://github.com/felipesauer/mnema). On a pull request it reads the
 record the repository already carries in `.mnema/`, writes ONE comment saying what the pull request
-does to it, and fails the check when the record does not verify as signed.
+does to it, and fails the check when the record does not verify as signed. Handed a checker key, it
+also runs the checks the rules in force carry and records whether each one held.
 
 It is not published: not to the GitHub Marketplace and not to npm (`private: true`). It runs from
 a checkout of this repository, with the `mnema` of the `@mnema/code` that sits beside it.
@@ -22,6 +23,11 @@ a checkout of this repository, with the `mnema` of the `@mnema/code` that sits b
   `require-approval-for-asks: "true"` the Action also fails when a changed file is addressed by an
   accepted `asks-for-a-person` rule and no reviewer other than the author stands approved on the
   pull request.
+- **Optional, off by default: the checks the rules carry.** With `checker-key` set from a
+  repository secret, the Action runs `mnema check run` with that key once everything above is done:
+  each rule in force that carries a check gets one `check.passed` or `check.failed`, signed by the
+  key, naming the rule and the commit checked out. The results are left in the working tree, and
+  the Action fails when a check did not pass.
 - **Quiet on pull requests that do not concern the record.** It adds a comment only when the pull
   request adds events, touches a governed file, or the record fails to verify. A comment it wrote
   earlier is still refreshed, so it never goes stale.
@@ -62,10 +68,53 @@ jobs:
 `pull-requests: write` is there for the comment alone; `contents: read` is all the checkout needs.
 The action runs on `node24`.
 
+### Running the checks
+
+A rule can carry the program that checks it (`mnema check declare <decision-id> <program>`), and a machine with a key of its
+own records whether it held. That key is a checker: the record enrolls it once, and it signs check
+results and nothing else.
+
+1. On any machine, make the key under a home of its own, so it is not the key you write with:
+   `MNEMA_HOME=<a new directory> mnema key request --checker --anchor <your identity>`.
+2. In the project, enroll the line it printed: `mnema key enroll --checker <the line>`, then commit
+   and push the record.
+3. Store the private half — the `.key` file under `<that directory>/identity/keys/` — as a
+   repository secret, for example `MNEMA_CHECKER_KEY`, and delete the file.
+4. Hand it to the Action, and keep the results:
+
+```yaml
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+          # the pull request's own commit, so a result names a commit that stays in the history
+          ref: ${{ github.event.pull_request.head.sha }}
+      # … install and build as above …
+      - uses: ./packages/action
+        with:
+          checker-key: ${{ secrets.MNEMA_CHECKER_KEY }}
+      - uses: actions/upload-artifact@v7
+        if: always()
+        with:
+          name: mnema-check-results
+          path: .mnema/tails/
+```
+
+A result names the commit checked out. The default checkout of a `pull_request` event is a merge
+commit that exists only on the runner, which is why the example checks out the pull request's head.
+Committing the results, or uploading them as above, is a step of your workflow: the Action pushes
+nothing.
+
+If the secret leaks, retire the key — `mnema key revoke --checker <fingerprint> --reason "<why>"`,
+from a machine that writes as a member — commit and push the retirement, and enroll a new key. From
+the retirement on, `mnema verify` refuses a result the old key signs, and it names the results that
+key signed before in its census: they were signed while the key held the role, and a leaked key can
+date a result before its own retirement, so the record no longer vouches for them.
+
 | Input | Default | What it does |
 | --- | --- | --- |
 | `github-token` | `${{ github.token }}` | reads the pull request's files and reviews, and writes the comment |
 | `require-approval-for-asks` | `false` | `true` fails the check when an accepted `asks-for-a-person` rule addresses a changed file and only the author has approved |
+| `checker-key` | empty | the private half (PEM) of a key the record enrolls as a checker, from a secret; runs `mnema check run` with it and fails when a check did not pass. Empty runs no check |
 
 ## How it is built
 
@@ -95,9 +144,20 @@ token, and `fetch` is a parameter. `world.ts` is `git` and the `mnema` binary as
   the host's `before-a-write` and the repository's own branch protection.
 - It asks `mnema rules` about at most 200 changed files, one process each, and the comment says
   how many it left out. Files under `.mnema/` are never asked about.
-- It never writes to the record, signs an event, commits or pushes. `mnema` keeps a projection
-  cache under `.mnema/locks/`, which the record's own `.gitignore` leaves out. The only thing sent
-  to GitHub is the comment.
+- Without `checker-key` it never writes to the record or signs an event. With it, it writes the
+  results `mnema check run` signs to the working tree, and nothing else; it never commits or
+  pushes. `mnema` keeps a projection cache under `.mnema/locks/`, which the record's own
+  `.gitignore` leaves out. The only thing sent to GitHub is the comment.
+- A result says that the key the record enrolled reported the rule held at that commit. It does
+  not prove the program ran as declared, nor that it checks what its rule says; whoever can commit
+  a declaration can make the runner start that program.
+- The checker key is written to a file readable by the runner's user only, under `RUNNER_TEMP`,
+  for the length of the run, and removed after it. A declared program is started without the
+  Action's inputs in its environment — the key and the token among them — and without `MNEMA_*`;
+  it runs as the same user, so it can read the key file while it exists. Scope the secret to the
+  job that runs the checks.
+- A pull request from a fork is not given the repository's secrets, so `checker-key` arrives empty
+  and no check runs there.
 - A pull request from a fork gets a read-only token, so the comment cannot be written; the run
   logs a warning and the check still reports `verify`'s verdict.
 - It reads the record at the repository root only, and only a `pull_request` event: any other event

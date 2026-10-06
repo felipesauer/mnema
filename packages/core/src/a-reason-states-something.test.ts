@@ -17,6 +17,7 @@ import {
   unfilledTitle,
   unstatedReason,
 } from './a-reason-states-something.js';
+import { enrollChecker, retireChecker } from './checks/operations.js';
 import { requestEnrollment } from './identity/handshake.js';
 import { enrollFromRequest, revokeMember } from './identity/roster.js';
 import {
@@ -148,6 +149,7 @@ describe('every kind says where its why is, and the door asks it there', () => {
     let successor = '';
     let skill = '';
     let secondKey = '';
+    let checkerKey = '';
     let foreignTail = '';
     return [
       {
@@ -242,6 +244,22 @@ describe('every kind says where its why is, and the door asks it there', () => {
           foreignTail = other.tail;
         },
         drive: (said) => authorizeTailPrune(ctx, { tail: foreignTail, reason: said }),
+      },
+      {
+        kind: 'checker.retired',
+        site: 'reason',
+        prepare: () => {
+          const asked = requestEnrollment({
+            anchor: ensureFounded(ctx),
+            // A key root of its own: the one beside it holds a key another case makes a member.
+            keyRoot: join(keyRoot, 'checker'),
+            asChecker: true,
+          });
+          if (!asked.ok) throw new Error('no checker request');
+          if (!enrollChecker(ctx, { request: asked.request }).ok) throw new Error('no checker');
+          checkerKey = asked.fingerprint;
+        },
+        drive: (said) => retireChecker(ctx, { fingerprint: checkerKey, reason: said }),
       },
       {
         kind: 'channel.switched',

@@ -479,6 +479,7 @@ const FLOOR_MODULES: readonly string[] = [
   'wiring/brief.ts',
   'wiring/check.ts',
   'wiring/color.ts',
+  'wiring/commit-hook.ts',
   'wiring/commits.ts',
   'wiring/completion.ts',
   'wiring/context.ts',

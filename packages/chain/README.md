@@ -272,7 +272,7 @@ guard holds the two byte for byte.
 [`verifier/`](./verifier/) is the other half of the same idea, and it is what stops
 the paragraph above from being a claim about a document nobody ever implemented: a
 verifier in Python, written **from** `FORMAT.md`, importing nothing of this package.
-It reproduces the 30 vectors and the four aggregate digests, checks T1, T2/T4 and T3
+It reproduces the 31 vectors and the four aggregate digests, checks T1, T2/T4 and T3
 over real records, and refuses every mutation in `verifier/mutate.py`. It found
 twenty-five points where the document was not enough to write it from, all of which
 are now fixed in the document.
@@ -292,6 +292,34 @@ implementation* — is the one `verifier/` falsified, and the document now says
 precisely which half of it fell: the second implementation is independent in the
 **technical** sense (another language, written from the document, sharing no code)
 and not in the **social** one (same author, same repository).
+
+## Between versions: what changes and what does not
+
+This is for someone who keeps a record across upgrades of the tool. It lives on this page
+because it is a statement about the format, and the format travels with this package. It
+promises what [`FORMAT.md`](./FORMAT.md) and its tests already hold, and nothing more.
+
+**What can change.** A new kind of event can be added to the catalog, and a kind can gain a
+second version. A reader picks the contract for a line by its `kind` and `v` together, so
+either is one new row in the published `event-schema.json`, visible in a diff (`FORMAT.md` §4.1).
+
+**What does not change silently.** A change to the bytes of an event moves a published digest in
+`canonical-vectors.json`, and a change to a contract moves a row of `event-schema.json`; a test
+holds each. That is the whole of the commitment: the format is this product's own, with no
+standards body and no promised process for changing it (`FORMAT.md`, "What this document does
+**not** promise").
+
+**An older record, read by a newer tool.** A line written under an old `v` is lifted to today's
+contract when it is read, and the proof is still taken over the form that was written, so an
+upgrade does not make an honest old record report as tampered
+(`src/chain/upcast-vs-proof.test.ts`). Today no kind carries a `v` above 1, so no upcaster has
+yet been needed; the page does not promise one for a change that has not happened.
+
+**A newer record, read by an older tool.** This does not work, and the format says so: a reader
+refuses a line whose `kind` and `v` no row of its table declares (`FORMAT.md` §4.1). Once a kind
+your binary does not know is in the committed tree, that binary stops reading the whole record,
+not only that event. Read a record with a binary at least as new as the newest tool that wrote
+to it.
 
 ## License
 

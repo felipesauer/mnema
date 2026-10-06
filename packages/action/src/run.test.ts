@@ -5,7 +5,15 @@
  */
 
 import { execFileSync } from 'node:child_process';
-import { mkdirSync, mkdtempSync, readdirSync, rmSync, truncateSync, writeFileSync } from 'node:fs';
+import {
+  mkdirSync,
+  mkdtempSync,
+  readdirSync,
+  readFileSync,
+  rmSync,
+  truncateSync,
+  writeFileSync,
+} from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -14,7 +22,7 @@ import { GIT_WITHOUT_MAINTENANCE } from '../../code/tests/support/git-without-ma
 import { MARKER } from './comment.js';
 import type { Fetch } from './github.js';
 import { main, requestFrom } from './run.js';
-import { theMnemaBinary } from './world.js';
+import { theMnemaBinary, withoutTheInputs } from './world.js';
 
 const REPO = fileURLToPath(new URL('../../../', import.meta.url));
 const CLI = join(REPO, 'packages', 'code', 'dist', 'cli.js');
@@ -54,7 +62,11 @@ function committedBase(): string {
 }
 
 /** What the runner would hand the Action for a pull request on top of `baseSha`. */
-function environment(baseSha: string, approval = 'false'): Record<string, string> {
+function environment(
+  baseSha: string,
+  approval = 'false',
+  checkerKey?: string,
+): Record<string, string> {
   const event = join(sandbox, 'event.json');
   writeFileSync(
     event,
@@ -68,6 +80,7 @@ function environment(baseSha: string, approval = 'false'): Record<string, string
     GITHUB_API_URL: 'https://api.test',
     'INPUT_GITHUB-TOKEN': 'tok',
     'INPUT_REQUIRE-APPROVAL-FOR-ASKS': approval,
+    ...(checkerKey !== undefined ? { 'INPUT_CHECKER-KEY': checkerKey } : {}),
   };
 }
 
@@ -197,6 +210,77 @@ describe('the Action on a real repository', { timeout: A_REAL_BINARY_PER_CASE },
   });
 });
 
+describe('the Action with a checker key', () => {
+  /**
+   * A base whose one rule carries a check, and a runner key the record enrolls as a checker,
+   * made under a home of its own — the way a repository secret holds it. The check passes only
+   * when the program is NOT handed the Action's inputs: the key and the token are among them.
+   */
+  const HANDED =
+    'process.exit(Object.keys(process.env).some((k) => k.startsWith("INPUT_")) ? 7 : 0)';
+
+  function aCheckedBase(program = HANDED): { baseSha: string; key: string } {
+    git('init', '-q', '-b', 'main');
+    mnema('init');
+    const id = idOf(mnema('decision', 'record', 'Keep money as integer cents', 'Floats drift.'));
+    mnema('decision', 'move', 'accept', id, '--note', 'agreed');
+    mnema('check', 'declare', id, 'node', '--', '-e', program);
+    const account = JSON.parse(mnema('accountability', '--json')) as { byWho: { who: string }[] };
+    const anchor = account.byWho[0]?.who ?? '';
+    const runner = join(sandbox, 'runner');
+    const asked = execFileSync(
+      process.execPath,
+      [CLI, 'key', 'request', '--checker', '--anchor', anchor],
+      { cwd: repo, encoding: 'utf-8', env: { ...process.env, MNEMA_HOME: runner } },
+    );
+    const line = asked.split('\n').find((l) => l.startsWith('mnema-checker-request:1:')) ?? '';
+    mnema('key', 'enroll', '--checker', line);
+    git('add', '.');
+    git('commit', '-q', '-m', 'base');
+    const keys = join(runner, 'identity', 'keys');
+    const file = readdirSync(keys).find((name) => name.endsWith('.key')) as string;
+    return { baseSha: git('rev-parse', 'HEAD'), key: readFileSync(join(keys, file), 'utf-8') };
+  }
+
+  // Each run starts the binary several times — init, a request under another home, an
+  // enrolment, the Action's own verify and check run — so it is given room the default
+  // five seconds do not leave on a loaded machine.
+  it('runs the checks with the key, leaves the results in the tree, and hands the program no input', async () => {
+    const { baseSha, key } = aCheckedBase();
+    // Where the runner keeps its temporary files, pointed into the sandbox so that what the run
+    // leaves there can be read: the key's file has to be gone once the run ends.
+    const runnerTemp = join(sandbox, 'runner-temp');
+    mkdirSync(runnerTemp);
+    const said: string[] = [];
+    const code = await main(
+      { ...environment(baseSha, 'false', key), RUNNER_TEMP: runnerTemp },
+      github([]).fetchIt,
+      (line) => said.push(line),
+    );
+    expect(said.join('\n')).toContain('1 passed · 0 failed at');
+    expect(code).toBe(0);
+    expect(git('status', '--porcelain')).toContain('.mnema/');
+    expect(readdirSync(runnerTemp).filter((name) => name.startsWith('mnema-checker-'))).toEqual([]);
+  }, 30_000);
+
+  it('fails the check when a rule’s check did not pass, and records that it did not', async () => {
+    const { baseSha, key } = aCheckedBase('process.exit(3)');
+    const said: string[] = [];
+    const code = await main(environment(baseSha, 'false', key), github([]).fetchIt, (line) =>
+      said.push(line),
+    );
+    expect(code).toBe(1);
+    expect(said).toContain('::error::a rule’s check did not pass, or the checks did not run');
+    expect(said.join('\n')).toContain('0 passed · 1 failed at');
+  }, 30_000);
+
+  it('hands a program the environment without one input of the Action', () => {
+    expect(
+      withoutTheInputs({ 'INPUT_CHECKER-KEY': 'k', 'INPUT_GITHUB-TOKEN': 't', PATH: '/bin' }),
+    ).toEqual({ PATH: '/bin' });
+  });
+});
+
 describe('requestFrom', () => {
   it('answers only a pull_request event, by name', () => {
     expect(() => requestFrom({ GITHUB_EVENT_NAME: 'push' }, () => '{}')).toThrow(
@@ -232,5 +316,22 @@ describe('requestFrom', () => {
     expect(() =>
       requestFrom({ ...env, 'INPUT_REQUIRE-APPROVAL-FOR-ASKS': 'yes' }, () => event),
     ).toThrow('takes true or false');
+  });
+
+  it('takes a checker key when one is given, and none when the input is empty', () => {
+    const event = JSON.stringify({
+      pull_request: { number: 1, base: { sha: 's' }, user: { login: 'u' } },
+    });
+    const env = {
+      GITHUB_EVENT_NAME: 'pull_request',
+      GITHUB_EVENT_PATH: 'e',
+      GITHUB_REPOSITORY: 'o/r',
+      'INPUT_GITHUB-TOKEN': 't',
+    };
+    expect(requestFrom(env, () => event).checkerKey).toBeUndefined();
+    expect(requestFrom({ ...env, 'INPUT_CHECKER-KEY': '  ' }, () => event).checkerKey).toBe(
+      undefined,
+    );
+    expect(requestFrom({ ...env, 'INPUT_CHECKER-KEY': 'PEM' }, () => event).checkerKey).toBe('PEM');
   });
 });
