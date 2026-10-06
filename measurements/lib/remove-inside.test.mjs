@@ -23,6 +23,31 @@ afterAll(() => {
   for (const dir of made) removeTemporary(dir)
 })
 
+// A decoy that is outside the accepted area in every layout, unlike the repository tree, which sits
+// inside it when the checkout lives under the temporary directory. The area is pinned to `base/area`
+// (the guard reads TMPDIR and MNEMA_BENCH_TMP at call time) and the decoy sits beside it, in
+// `base/decoy`. Nothing here ever points a removal at the repository.
+const decoyEnv = {}
+function pinArea() {
+  const base = temp('base')
+  const area = join(base, 'area')
+  const decoy = join(base, 'decoy')
+  mkdirSync(area)
+  mkdirSync(join(decoy, 'lib'), { recursive: true })
+  const guard = join(decoy, 'lib', 'guard.mjs')
+  writeFileSync(guard, 'kept')
+  for (const key of ['TMPDIR', 'MNEMA_BENCH_TMP']) decoyEnv[key] = process.env[key]
+  process.env.TMPDIR = area
+  delete process.env.MNEMA_BENCH_TMP
+  return { area, decoy, guard }
+}
+function unpinArea() {
+  for (const [key, value] of Object.entries(decoyEnv)) {
+    if (value === undefined) delete process.env[key]
+    else process.env[key] = value
+  }
+}
+
 describe('removeInside', () => {
   it('removes a tree inside a temporary root', () => {
     const root = temp('root')
@@ -68,8 +93,13 @@ describe('removeInside', () => {
 
   it('refuses a root that is not inside a temporary directory', () => {
     expect(() => removeInside('/', join('/', 'nothing-here'))).toThrow(/not inside a temporary directory/)
-    expect(() => removeInside(HERE, join(HERE, 'remove-inside.mjs'))).toThrow(/not inside a temporary directory/)
-    expect(existsSync(GUARD)).toBe(true)
+    const { decoy, guard } = pinArea()
+    try {
+      expect(() => removeInside(decoy, join(decoy, 'lib', 'guard.mjs'))).toThrow(/not inside a temporary directory/)
+      expect(existsSync(guard)).toBe(true)
+    } finally {
+      unpinArea()
+    }
   })
 })
 
@@ -82,12 +112,16 @@ describe('removeTemporary', () => {
   })
 
   it('refuses a directory outside it, and one reached through a link', () => {
-    expect(() => removeTemporary(HERE)).toThrow(/not inside a temporary directory/)
-    expect(existsSync(GUARD)).toBe(true)
-    const root = temp('root')
-    symlinkSync(MEASUREMENTS, join(root, 'door'))
-    expect(() => removeTemporary(join(root, 'door', 'lib'))).toThrow(/not inside a temporary directory/)
-    expect(existsSync(GUARD)).toBe(true)
+    const { area, decoy, guard } = pinArea()
+    try {
+      expect(() => removeTemporary(join(decoy, 'lib'))).toThrow(/not inside a temporary directory/)
+      expect(existsSync(guard)).toBe(true)
+      symlinkSync(decoy, join(area, 'door'))
+      expect(() => removeTemporary(join(area, 'door', 'lib'))).toThrow(/not inside a temporary directory/)
+      expect(existsSync(guard)).toBe(true)
+    } finally {
+      unpinArea()
+    }
   })
 })
 
@@ -97,9 +131,11 @@ describe('as a command', () => {
     mkdirSync(join(root, 'run'))
     execFileSync('node', [GUARD, root, join(root, 'run')])
     expect(existsSync(join(root, 'run'))).toBe(false)
-    const refused = () => execFileSync('node', [GUARD, root, MEASUREMENTS], { stdio: 'pipe' })
+    const beside = temp('beside')
+    writeFileSync(join(beside, 'keep.txt'), 'kept')
+    const refused = () => execFileSync('node', [GUARD, root, beside], { stdio: 'pipe' })
     expect(refused).toThrow(/outside/)
-    expect(existsSync(GUARD)).toBe(true)
+    expect(existsSync(join(beside, 'keep.txt'))).toBe(true)
   })
 })
 

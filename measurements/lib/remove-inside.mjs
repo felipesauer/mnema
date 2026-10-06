@@ -5,7 +5,8 @@
 // target is resolved first, its PARENT through `realpathSync` and its own name kept as
 // written (removing a link removes the link, not what it points at), and it is removed only
 // when it lands strictly inside `root`, and `root` itself is inside the temporary area (the
-// OS temp directory, or `MNEMA_BENCH_TMP` when set). Anything else throws and removes
+// OS temp directory, whose location `TMPDIR` sets, and `MNEMA_BENCH_TMP` when set: both
+// define the accepted area and either one widens it). Anything else throws and removes
 // nothing. A path that is not there is not an error.
 //
 // As a command, for the shell harnesses:  node remove-inside.mjs <root> <path>
