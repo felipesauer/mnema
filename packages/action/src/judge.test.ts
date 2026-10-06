@@ -93,6 +93,30 @@ describe('judge', () => {
     });
   });
 
+  it('puts what each check said in the one comment, not only in the log', async () => {
+    const said = [
+      '1 passed · 1 failed at abc',
+      '  passed rule-ok',
+      '  failed rule-bad: exited 1',
+      '  signed by anchor',
+    ].join('\n');
+    const { world, seen } = worldWith({ checks: { passed: false, said } });
+    await judge(world, { ...pr, checkerKey: 'PEM' });
+    expect(seen.comments).toHaveLength(1);
+    const body = seen.comments[0]?.body ?? '';
+    expect(body).toContain('**Checks the rules carry**');
+    expect(body).toContain('1 passed · 1 failed at abc');
+    expect(body).toContain('- passed `rule-ok`');
+    expect(body).toContain('- failed `rule-bad` — exited 1');
+    expect(body).not.toContain('signed by');
+  });
+
+  it('leaves the comment as it was when no check was asked for', async () => {
+    const { world, seen } = worldWith();
+    await judge(world, pr);
+    expect(seen.comments[0]?.body).not.toContain('Checks the rules carry');
+  });
+
   it('comments the new events and the governed files, and passes when the record verifies', async () => {
     const { world, seen } = worldWith({
       files: ['src/a.ts', 'src/b.ts', '.mnema/tails/x/000001.jsonl'],
