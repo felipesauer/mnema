@@ -220,6 +220,19 @@ describe('what the refusal says is what the record says', () => {
     expect(ours.map(tellsWhatToDo).filter((word) => word !== undefined)).toEqual([]);
   });
 
+  it('opens with the rule, not with the brief’s preamble, and says the shell is not covered', async () => {
+    await ruleAt('Nobody writes the ledger', 'src/ledger', 'refuses-a-write');
+    const reason = meets('src/ledger/posting.ts')?.reason ?? '';
+    expect(reason.split('\n')[0]).toBe(
+      'A rule of this project’s record refuses a write at src/ledger/posting.ts while it stands.',
+    );
+    expect(reason).not.toContain('These are the calls and the patterns recorded');
+    expect(reason).toContain(
+      'This refusal covers the editing tools, not the shell: a write to a path a rule governs ' +
+        'made through the shell goes round the rule.',
+    );
+  });
+
   it('keeps a rule name holding a newline on one line', async () => {
     await ruleAt('Nobody writes\nthe ledger', 'src/ledger', 'refuses-a-write');
     const reason = meets('src/ledger/posting.ts')?.reason ?? '';

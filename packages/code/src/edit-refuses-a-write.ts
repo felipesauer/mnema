@@ -8,9 +8,11 @@
  * heuristic here. A refusal that cannot name the fact that caused it does not happen, and
  * {@link editRefusesNotice} has nothing to say without a rule.
  *
- * IT IS FRAMED, for the asking's measured reason: a hook's refusal reason comes back to the
- * session as the result of the refused call, where a model reads it, so it is record text in
- * front of a model and it says whose text it is before anything else.
+ * IT OPENS WITH THE RULE AND THE REASON and not with the sentence the brief opens with: that one
+ * says what a list of the project's rules is, and a refusal is not a list. It is record text in
+ * front of a model all the same (a hook's refusal reason comes back to the session as the
+ * result of the refused call), and what it says of whose text it is, it says at the rule's own
+ * line, which names the rule by id.
  *
  * IT SAYS WHERE THE RULE OPENS AND WHO MAY CHANGE IT, and stops there. A reader whose write was
  * refused has no person to ask at the host, so the text names the two facts that are a way out
@@ -27,7 +29,6 @@ import type { PushedRule, RulesAtPath } from '@mnema/context';
 import { oneLine } from './one-line.js';
 import { acceptedBy } from './presentation/accepted-by.js';
 import { DERIVED_FROM } from './provenance.js';
-import { recordFramingBlock } from './record-framing.js';
 
 /** What the record refuses, and about which file — passive about the record, never addressed to the reader. */
 function refusesAtPath(path: string): string {
@@ -47,16 +48,26 @@ export function editRefusesNotice(at: RulesAtPath): string | undefined {
   return [...opening(at), ...at.rules.map(refuseLine), ...closing(at)].join('\n');
 }
 
-/** What this channel says before the rules: whose text this is, and what is refused. */
+/** What this channel says before the rules: the rule and the reason, which is what is refused. */
 function opening(at: RulesAtPath): readonly string[] {
-  return [recordFramingBlock('edit-refuses-a-write'), refusesAtPath(at.relative ?? at.path)];
+  return [refusesAtPath(at.relative ?? at.path)];
 }
 
-/** What it says after them: whether one does not travel, and where a rule opens. */
+/**
+ * What the refusal covers, said as a fact about the record: the editing tools of a host, and
+ * not its shell. Said here because a reader whose write was refused is the one reader who may
+ * go round it, and the fact is the whole of what the product knows about that.
+ */
+const NOT_THE_SHELL =
+  'This refusal covers the editing tools, not the shell: a write to a path a rule governs ' +
+  'made through the shell goes round the rule.';
+
+/** What it says after them: whether one does not travel, where a rule opens, what is not covered. */
 function closing(at: RulesAtPath): readonly string[] {
   return [
     ...(at.rules.every((rule) => rule.travels) ? [] : [ONE_IS_NOT_COMMITTED]),
     wayToTheRule(at.rules),
+    NOT_THE_SHELL,
   ];
 }
 
