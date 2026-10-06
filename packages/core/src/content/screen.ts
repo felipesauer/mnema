@@ -70,6 +70,7 @@
  */
 
 import { type ScreenedKey, screensAsAName } from './fields.js';
+import { type ReplacedClass, scrubEmails } from './personal.js';
 import { type SecretClass, scrubSecrets } from './secrets.js';
 
 /**
@@ -128,7 +129,7 @@ export interface ScreenedContent<T> {
    * One entry per value replaced, across every field. Empty when nothing was, and
    * a caller that reports it is what keeps the scrub from happening in silence.
    */
-  readonly replaced: readonly SecretClass[];
+  readonly replaced: readonly ReplacedClass[];
 }
 
 /**
@@ -145,7 +146,7 @@ export interface ScreenedContent<T> {
  */
 export interface ScreenedWrite {
   /** One entry per value replaced. Omitted entirely when the text was clean. */
-  readonly replaced?: readonly SecretClass[];
+  readonly replaced?: readonly ReplacedClass[];
 }
 
 /**
@@ -155,7 +156,7 @@ export interface ScreenedWrite {
  * "something was taken out" and "nothing was" stay distinguishable in the data
  * and not only in a length check.
  */
-export function screened(replaced: readonly SecretClass[]): ScreenedWrite {
+export function screened(replaced: readonly ReplacedClass[]): ScreenedWrite {
   return replaced.length > 0 ? { replaced } : {};
 }
 
@@ -194,7 +195,7 @@ export function screenContent<
   T extends { [K in keyof T]: Screenable } & { [K in Exclude<keyof T, ScreenedKey>]: never },
 >(fields: T): ScreenedContent<T> | ScreenRefusal {
   const screened: Record<string, Screenable> = {};
-  const replaced: SecretClass[] = [];
+  const replaced: ReplacedClass[] = [];
 
   for (const field of Object.keys(fields)) {
     const value = (fields as Record<string, Screenable>)[field];
@@ -216,8 +217,9 @@ export function screenContent<
         screened[field] = value;
         continue;
       }
-      replaced.push(...scrubbed.replaced);
-      screened[field] = scrubbed.text;
+      const bare = scrubEmails(scrubbed.text);
+      replaced.push(...scrubbed.replaced, ...bare.replaced);
+      screened[field] = bare.text;
       continue;
     }
 
@@ -238,8 +240,9 @@ export function screenContent<
         items.push(item);
         continue;
       }
-      replaced.push(...scrubbed.replaced);
-      items.push(scrubbed.text);
+      const bare = scrubEmails(scrubbed.text);
+      replaced.push(...scrubbed.replaced, ...bare.replaced);
+      items.push(bare.text);
     }
     screened[field] = items;
   }

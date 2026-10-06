@@ -301,6 +301,7 @@ $ mnema task --help
 |   is committed and reaches every machine that clones the repository.
 |   Do not record credentials: a recognized format is replaced with a placeholder
 |   and reported back, but what mnema does not recognize is written verbatim.
+|   Nor personal data: an email address is replaced with <email>; the mnid already says who wrote.
 |   Each text field holds at most 65536 bytes; a longer one is refused.
 
 ### mnema decision --help
@@ -329,6 +330,7 @@ $ mnema decision --help
 |   is committed and reaches every machine that clones the repository.
 |   Do not record credentials: a recognized format is replaced with a placeholder
 |   and reported back, but what mnema does not recognize is written verbatim.
+|   Nor personal data: an email address is replaced with <email>; the mnid already says who wrote.
 |   Each text field holds at most 65536 bytes; a longer one is refused.
 
 ### mnema skill --help
@@ -371,6 +373,7 @@ $ mnema skill --help
 |   is committed and reaches every machine that clones the repository.
 |   Do not record credentials: a recognized format is replaced with a placeholder
 |   and reported back, but what mnema does not recognize is written verbatim.
+|   Nor personal data: an email address is replaced with <email>; the mnid already says who wrote.
 |   Each text field holds at most 65536 bytes; a longer one is refused.
 
 ### mnema memory --help
@@ -403,6 +406,7 @@ $ mnema memory --help
 |   is committed and reaches every machine that clones the repository.
 |   Do not record credentials: a recognized format is replaced with a placeholder
 |   and reported back, but what mnema does not recognize is written verbatim.
+|   Nor personal data: an email address is replaced with <email>; the mnid already says who wrote.
 |   Each text field holds at most 65536 bytes; a longer one is refused.
 
 ### mnema observe --help
@@ -438,6 +442,7 @@ $ mnema observe --help
 |   is committed and reaches every machine that clones the repository.
 |   Do not record credentials: a recognized format is replaced with a placeholder
 |   and reported back, but what mnema does not recognize is written verbatim.
+|   Nor personal data: an email address is replaced with <email>; the mnid already says who wrote.
 |   Each text field holds at most 65536 bytes; a longer one is refused.
 
 ### mnema handoff --help
@@ -468,6 +473,7 @@ $ mnema handoff --help
 |   is committed and reaches every machine that clones the repository.
 |   Do not record credentials: a recognized format is replaced with a placeholder
 |   and reported back, but what mnema does not recognize is written verbatim.
+|   Nor personal data: an email address is replaced with <email>; the mnid already says who wrote.
 |   Each text field holds at most 65536 bytes; a longer one is refused.
 
 ### mnema link --help
@@ -501,6 +507,7 @@ $ mnema link --help
 |   is committed and reaches every machine that clones the repository.
 |   Do not record credentials: a recognized format is replaced with a placeholder
 |   and reported back, but what mnema does not recognize is written verbatim.
+|   Nor personal data: an email address is replaced with <email>; the mnid already says who wrote.
 |   Each text field holds at most 65536 bytes; a longer one is refused.
 
 ### mnema retract --help
@@ -527,6 +534,7 @@ $ mnema retract --help
 |   is committed and reaches every machine that clones the repository.
 |   Do not record credentials: a recognized format is replaced with a placeholder
 |   and reported back, but what mnema does not recognize is written verbatim.
+|   Nor personal data: an email address is replaced with <email>; the mnid already says who wrote.
 |   Each text field holds at most 65536 bytes; a longer one is refused.
 
 ### mnema run --help
@@ -549,6 +557,7 @@ $ mnema run --help
 |   is committed and reaches every machine that clones the repository.
 |   Do not record credentials: a recognized format is replaced with a placeholder
 |   and reported back, but what mnema does not recognize is written verbatim.
+|   Nor personal data: an email address is replaced with <email>; the mnid already says who wrote.
 |   Each text field holds at most 65536 bytes; a longer one is refused.
 
 ### mnema status --help
@@ -1368,6 +1377,7 @@ $ mnema task create --help
 |   is committed and reaches every machine that clones the repository.
 |   Do not record credentials: a recognized format is replaced with a placeholder
 |   and reported back, but what mnema does not recognize is written verbatim.
+|   Nor personal data: an email address is replaced with <email>; the mnid already says who wrote.
 |   Each text field holds at most 65536 bytes; a longer one is refused.
 
 ### mnema task move --help
@@ -1399,6 +1409,7 @@ $ mnema task move --help
 |   is committed and reaches every machine that clones the repository.
 |   Do not record credentials: a recognized format is replaced with a placeholder
 |   and reported back, but what mnema does not recognize is written verbatim.
+|   Nor personal data: an email address is replaced with <email>; the mnid already says who wrote.
 |   Each text field holds at most 65536 bytes; a longer one is refused.
 
 ### mnema decision record --help
@@ -1437,6 +1448,7 @@ $ mnema decision record --help
 |   is committed and reaches every machine that clones the repository.
 |   Do not record credentials: a recognized format is replaced with a placeholder
 |   and reported back, but what mnema does not recognize is written verbatim.
+|   Nor personal data: an email address is replaced with <email>; the mnid already says who wrote.
 |   Each text field holds at most 65536 bytes; a longer one is refused.
 
 ### mnema decision move --help
@@ -1465,6 +1477,7 @@ $ mnema decision move --help
 |   is committed and reaches every machine that clones the repository.
 |   Do not record credentials: a recognized format is replaced with a placeholder
 |   and reported back, but what mnema does not recognize is written verbatim.
+|   Nor personal data: an email address is replaced with <email>; the mnid already says who wrote.
 |   Each text field holds at most 65536 bytes; a longer one is refused.
 
 ### mnema decision supersede --help
@@ -1492,6 +1505,7 @@ $ mnema decision supersede --help
 |   is committed and reaches every machine that clones the repository.
 |   Do not record credentials: a recognized format is replaced with a placeholder
 |   and reported back, but what mnema does not recognize is written verbatim.
+|   Nor personal data: an email address is replaced with <email>; the mnid already says who wrote.
 |   Each text field holds at most 65536 bytes; a longer one is refused.
 
 ### mnema decision import --help
@@ -1557,6 +1571,7 @@ $ mnema decision import --help
 |   is committed and reaches every machine that clones the repository.
 |   Do not record credentials: a recognized format is replaced with a placeholder
 |   and reported back, but what mnema does not recognize is written verbatim.
+|   Nor personal data: an email address is replaced with <email>; the mnid already says who wrote.
 |   Each text field holds at most 65536 bytes; a longer one is refused.
 
 ### mnema skill create --help
@@ -1590,6 +1605,7 @@ $ mnema skill create --help
 |   is committed and reaches every machine that clones the repository.
 |   Do not record credentials: a recognized format is replaced with a placeholder
 |   and reported back, but what mnema does not recognize is written verbatim.
+|   Nor personal data: an email address is replaced with <email>; the mnid already says who wrote.
 |   Each text field holds at most 65536 bytes; a longer one is refused.
 
 ### mnema skill move --help
@@ -1618,6 +1634,7 @@ $ mnema skill move --help
 |   is committed and reaches every machine that clones the repository.
 |   Do not record credentials: a recognized format is replaced with a placeholder
 |   and reported back, but what mnema does not recognize is written verbatim.
+|   Nor personal data: an email address is replaced with <email>; the mnid already says who wrote.
 |   Each text field holds at most 65536 bytes; a longer one is refused.
 
 ### mnema skill export --help
@@ -1701,6 +1718,7 @@ $ mnema check declare --help
 |   is committed and reaches every machine that clones the repository.
 |   Do not record credentials: a recognized format is replaced with a placeholder
 |   and reported back, but what mnema does not recognize is written verbatim.
+|   Nor personal data: an email address is replaced with <email>; the mnid already says who wrote.
 |   Each text field holds at most 65536 bytes; a longer one is refused.
 
 ### mnema check run --help
@@ -1825,6 +1843,7 @@ $ mnema key revoke --help
 |   is committed and reaches every machine that clones the repository.
 |   Do not record credentials: a recognized format is replaced with a placeholder
 |   and reported back, but what mnema does not recognize is written verbatim.
+|   Nor personal data: an email address is replaced with <email>; the mnid already says who wrote.
 |   Each text field holds at most 65536 bytes; a longer one is refused.
 
 ### mnema key protect --help
@@ -1886,6 +1905,7 @@ $ mnema tail prune --help
 |   is committed and reaches every machine that clones the repository.
 |   Do not record credentials: a recognized format is replaced with a placeholder
 |   and reported back, but what mnema does not recognize is written verbatim.
+|   Nor personal data: an email address is replaced with <email>; the mnid already says who wrote.
 |   Each text field holds at most 65536 bytes; a longer one is refused.
 
 ### mnema witness stamp --help
@@ -1988,6 +2008,7 @@ $ mnema switch off --help
 |   is committed and reaches every machine that clones the repository.
 |   Do not record credentials: a recognized format is replaced with a placeholder
 |   and reported back, but what mnema does not recognize is written verbatim.
+|   Nor personal data: an email address is replaced with <email>; the mnid already says who wrote.
 |   Each text field holds at most 65536 bytes; a longer one is refused.
 
 ### mnema switch on --help
@@ -2022,6 +2043,7 @@ $ mnema switch on --help
 |   is committed and reaches every machine that clones the repository.
 |   Do not record credentials: a recognized format is replaced with a placeholder
 |   and reported back, but what mnema does not recognize is written verbatim.
+|   Nor personal data: an email address is replaced with <email>; the mnid already says who wrote.
 |   Each text field holds at most 65536 bytes; a longer one is refused.
 
 ### mnema inherit set --help
