@@ -111,10 +111,10 @@
  */
 
 import {
+  ADDRESS_RELATIONS,
   type AdrCollision,
   ASKS_FOR_A_PERSON_RELATION,
   type DivergentMove,
-  GOVERNS_RELATION,
   type ProjectionCache,
   REFUSES_A_WRITE_RELATION,
   type Scope,
@@ -478,10 +478,11 @@ function channelPair(
  * in the private tree is not counted, for the reason nothing private is printed — it does
  * not travel, and a reader of a clone would find a number they cannot account for.
  *
- * It intersects with the rules PRINTED rather than counting `governs` links, and that is
- * the difference that matters: a link whose subject is a superseded decision, or a task,
- * or an id no tree here holds, is a link this document says nothing about. Counting those
- * would tell the reader to expect a rule at an edit that nothing will ever push.
+ * It counts a rule that has any address relation (`ADDRESS_RELATIONS`), once however many it
+ * has. It intersects with the rules PRINTED rather than counting links, and that is the
+ * difference that matters: a link whose subject is a superseded decision, or a task, or an id no
+ * tree here holds, is a link this document says nothing about. Counting those would tell the
+ * reader to expect a rule at an edit that nothing will ever push.
  *
  * THAT CLAUSE WAS THE ONLY READING OF THE PRODUCT THAT GOT IT RIGHT, and it is worth
  * saying so here because it looks like a detail. Measured in a clone over a record holding
@@ -501,7 +502,7 @@ function countAddressed(
   travels: readonly ProjectionCache[],
   rules: readonly { readonly id: string }[],
 ): number {
-  return countUnder(travels, rules, GOVERNS_RELATION);
+  return countUnder(travels, rules, ADDRESS_RELATIONS);
 }
 
 /**
@@ -520,15 +521,17 @@ function countAsking(
   return countUnder(travels, rules, ASKS_FOR_A_PERSON_RELATION);
 }
 
-/** How many of `rules` are the subject of a link under `relation`, in the trees that travel. */
+/** How many of `rules` are the subject of a link under any of `relations`, in the trees that go. */
 function countUnder(
   travels: readonly ProjectionCache[],
   rules: readonly { readonly id: string }[],
-  relation: string,
+  relations: string | readonly string[],
 ): number {
   const subjects = new Set<string>();
-  for (const cache of travels) {
-    for (const edge of cache.linksByRelation(relation)) subjects.add(edge.subject);
+  for (const relation of typeof relations === 'string' ? [relations] : relations) {
+    for (const cache of travels) {
+      for (const edge of cache.linksByRelation(relation)) subjects.add(edge.subject);
+    }
   }
   return rules.filter((rule) => subjects.has(rule.id)).length;
 }
