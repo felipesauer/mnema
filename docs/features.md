@@ -14,6 +14,9 @@ Each line says what it does and what it leaves unproven; the page it points to h
 - **A read pays for what arrived, not for the whole record.** A read keeps what it built in each tree's gitignored
   `locks/projection.db` and takes only what was appended since. It is derived, never the record:
   deleting it changes no answer, and a clone does not carry it.
+  `MNEMA_CACHE_DIR` keeps it in a directory you choose instead (a checkout you cannot write to,
+  worktrees that share one, or a CI cache restored between runs); a directory shared by several
+  projects holds a file for each, and it is still only a cache.
 - **The git log, read against the record.** `mnema trailer`, `commits`, `why` and `aging` print the
   `Mnema-Decision` trailer a commit carries and the commits that cite or touched what a decision
   addresses. They write nothing; a trailer is its author's claim, signed by nobody, and `aging`
