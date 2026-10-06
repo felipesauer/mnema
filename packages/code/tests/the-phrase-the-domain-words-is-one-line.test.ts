@@ -1094,6 +1094,11 @@ const CLASSIFIED: Readonly<Record<string, { verdict: Verdict; why: string }>> = 
       verdict: 'collapsed',
       why: 'the subject of a `backup.declared` read from the record — a string whoever wrote the file chose',
     },
+  '@mnema/chain chain/verify.ts «{}, and that identity has since revoked it, so the absence is no » oneLine(declaredFor) #1':
+    {
+      verdict: 'collapsed',
+      why: 'the subject of a `backup.declared` read from the record — a string whoever wrote the file chose',
+    },
   "@mnema/chain chain/verify.ts «committed public key has no tail on disk, and the record names the cut: {}» accounts.join('; ') #1":
     {
       verdict: 'composed',
@@ -1613,8 +1618,8 @@ describe('every value the domain puts in a sentence is classified', () => {
     // are equal. The scale is stated, and so is what the HANDOFF said — twenty-three
     // sites, twelve in `core` and eleven in `chain` — because it counted sentences
     // written at a `message:` or a `detail:` directly, and a value is not a sentence.
-    expect(SITES.length).toBe(201);
-    expect(FOUND[0]?.sites.length).toBe(63);
+    expect(SITES.length).toBe(202);
+    expect(FOUND[0]?.sites.length).toBe(64);
     expect(FOUND[1]?.sites.length).toBe(138);
     expect(FOUND.flatMap((layer) => layer.wording).length).toBeGreaterThan(15);
   });
@@ -1665,11 +1670,11 @@ describe('every value the domain puts in a sentence is classified', () => {
     // No arm of the case above may be empty, or that much of it is vacuous.
     const verdicts = Object.values(CLASSIFIED).map((said) => said.verdict);
     const count = (verdict: Verdict): number => verdicts.filter((said) => said === verdict).length;
-    expect(count('collapsed')).toBe(126);
+    expect(count('collapsed')).toBe(127);
     expect(count('minted')).toBe(53);
     expect(count('composed')).toBe(22);
     expect(SITES.filter((site) => new RegExp(`\\b${DOOR}\\b`).test(site.expression))).toHaveLength(
-      126,
+      127,
     );
   });
 
