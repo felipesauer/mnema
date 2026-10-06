@@ -831,8 +831,9 @@ function backupKeyDetail(backup: KnownBackup): string {
       ? `the backup key of ${oneLine(backup.anchor)}, as the record declares it`
       : `the backup key this machine registered for ${oneLine(backup.anchor)}`;
   return (
-    `${said} — a backup signs nothing until it is restored, so it has no tail (if it was ` +
-    'restored and has signed, that tail is not here)'
+    said +
+    ' — a backup signs nothing until it is restored, so it has no tail (if it was restored ' +
+    'and has signed, that tail is not here)'
   );
 }
 

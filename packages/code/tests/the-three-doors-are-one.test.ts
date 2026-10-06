@@ -397,7 +397,10 @@ const SCENARIOS: readonly Scenario[] = [
 
 /** The kinds that are bookkeeping of a door and not of the operation. */
 const NOT_COMPARED = (kind: string): boolean =>
-  kind === 'identity.founded' || kind === 'key.enrolled' || kind.startsWith('run.');
+  kind === 'identity.founded' ||
+  kind === 'key.enrolled' ||
+  kind === 'backup.declared' ||
+  kind.startsWith('run.');
 
 interface Seen {
   readonly tree: 'public' | 'private';

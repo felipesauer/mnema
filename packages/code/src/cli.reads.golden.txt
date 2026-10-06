@@ -154,29 +154,33 @@ $ mnema aging --json
 |   "aged": []
 | }
 $ mnema exposure
-| Nothing recognizable in 2 record(s).
+| Nothing recognizable in 3 record(s).
 |   Read here: this project’s trees and the machine-global tree — no other project.
 |   That is not the same as nothing: only known credential formats are recognized.
 $ mnema exposure --json
 | {
 |   "findings": [],
-|   "scanned": 2
+|   "scanned": 3
 | }
 $ mnema timeline no-such-id
 | No history recorded for no-such-id.
 $ mnema timeline no-such-id --json
 | []
 $ mnema accountability
-| 2 fact(s) · 1 author(s)
-|   <anchor-short>  2
+| 3 fact(s) · 1 author(s)
+|   <anchor-short>  3
 $ mnema accountability --json
 | {
-|   "total": 2,
+|   "total": 3,
 |   "byWho": [
 |     {
 |       "who": "<anchor>",
-|       "total": 2,
+|       "total": 3,
 |       "byKind": [
+|         {
+|           "kind": "backup.declared",
+|           "count": 1
+|         },
 |         {
 |           "kind": "identity.founded",
 |           "count": 1
@@ -189,7 +193,7 @@ $ mnema accountability --json
 |       "byWhich": [
 |         {
 |           "which": null,
-|           "count": 2
+|           "count": 3
 |         }
 |       ],
 |       "foundedBeside": [],
@@ -198,8 +202,8 @@ $ mnema accountability --json
 |   ]
 | }
 $ mnema accountability --who <anchor-short>
-| 2 fact(s) · 1 author(s)
-|   <anchor-short>  2
+| 3 fact(s) · 1 author(s)
+|   <anchor-short>  3
 $ mnema antipatterns
 | reopened tasks: 0
 | superseded decisions: 0
@@ -353,7 +357,7 @@ $ mnema brief
 $ mnema recall
 $ mnema tail list
 | 1 tail(s) holding events — the ones a cut can name:
-|   <tail-own>  public   2 event(s) through <tail-head-an-empty-project-1>  the tail of <anchor>  ·  no waiver
+|   <tail-own>  public   3 event(s) through <tail-head-an-empty-project-1>  the tail of <anchor>  ·  no waiver
 $ mnema switch
 | 9 channel(s), looked in public, private, global:
 |   brief-document         on   the document `mnema brief` prints, which a session opens with: the decisions in force and the adopted patterns of the committed record, by name
@@ -371,7 +375,7 @@ $ mnema usage
 | These counts come from Claude Code's own transcripts on this machine, not from the record: nothing here is signed, `mnema verify` does not cover it, and the host deletes a transcript on a retention it decides. Which host session belongs to which run is this reading inferring it from two clocks, not a fact the record states. Nothing was written to produce it.
 $ mnema verify
 | public: local integrity verified (T1/T2/T4); 1 tail(s); all events are signature-covered; 1 backup key(s), which sign nothing until restored (see census — informational, not a break); external witness (T3): not covered — nothing outside this machine attests this record
-|   census [backup-key] public <backup-key-fingerprint>: the backup key this machine registered for <anchor> — a backup signs nothing until it is restored, so it has no tail (if it was restored and has signed, that tail is not here)
+|   census [backup-key] public <backup-key-fingerprint>: the backup key of <anchor>, as the record declares it — a backup signs nothing until it is restored, so it has no tail (if it was restored and has signed, that tail is not here)
 | private: no record here — nothing has been written to this tree on this machine, so there is nothing to rule on
 
 ### the run that did something
@@ -899,7 +903,7 @@ $ mnema aging --json
 |   "aged": []
 | }
 $ mnema exposure
-| 1 of 48 record(s) hold a credential format:
+| 1 of 49 record(s) hold a credential format:
 |   public  <date:01>  memory.captured  <memory-unscreened>  github-token
 |
 |   These records are permanent — nothing deletes a fact. Rotate the credentials.
@@ -917,7 +921,7 @@ $ mnema exposure --json
 |       ]
 |     }
 |   ],
-|   "scanned": 48
+|   "scanned": 49
 | }
 $ mnema timeline <task-runbook>
 | <task-runbook> — 13 event(s):
@@ -1235,16 +1239,20 @@ $ mnema timeline <task-runbook> --json
 |   }
 | ]
 $ mnema accountability
-| 48 fact(s) · 1 author(s)
-|   <anchor-short>  48
+| 49 fact(s) · 1 author(s)
+|   <anchor-short>  49
 $ mnema accountability --json
 | {
-|   "total": 48,
+|   "total": 49,
 |   "byWho": [
 |     {
 |       "who": "<anchor>",
-|       "total": 48,
+|       "total": 49,
 |       "byKind": [
+|         {
+|           "kind": "backup.declared",
+|           "count": 1
+|         },
 |         {
 |           "kind": "decision.recorded",
 |           "count": 3
@@ -1305,7 +1313,7 @@ $ mnema accountability --json
 |       "byWhich": [
 |         {
 |           "which": null,
-|           "count": 43
+|           "count": 44
 |         },
 |         {
 |           "which": "agent-alpha",
@@ -1322,8 +1330,8 @@ $ mnema accountability --json
 |   ]
 | }
 $ mnema accountability --who <anchor-short>
-| 48 fact(s) · 1 author(s)
-|   <anchor-short>  48
+| 49 fact(s) · 1 author(s)
+|   <anchor-short>  49
 $ mnema antipatterns
 | reopened tasks: 1
 | superseded decisions: 1
@@ -1840,7 +1848,7 @@ $ mnema recall
 | - **review** · `<observation-rollback>`
 $ mnema tail list
 | 3 tail(s) holding events — the ones a cut can name:
-|   <tail-own>  public   36 event(s) through <tail-head-a-populated-project-1>  the tail of <anchor>  ·  no waiver
+|   <tail-own>  public   37 event(s) through <tail-head-a-populated-project-1>  the tail of <anchor>  ·  no waiver
 |   <tail-private>  private  8 event(s) through <tail-head-a-populated-project-2>  the tail of <anchor>  ·  no waiver
 |   <tail-global>  global   4 event(s) through <tail-head-a-populated-project-3>  the tail of <anchor>  ·  no waiver
 $ mnema switch
@@ -1863,7 +1871,7 @@ $ mnema usage
 | These counts come from Claude Code's own transcripts on this machine, not from the record: nothing here is signed, `mnema verify` does not cover it, and the host deletes a transcript on a retention it decides. Which host session belongs to which run is this reading inferring it from two clocks, not a fact the record states. Nothing was written to produce it.
 $ mnema verify
 | public: local integrity verified (T1/T2/T4); 1 tail(s); all events are signature-covered; 1 backup key(s), which sign nothing until restored (see census — informational, not a break); external witness (T3): not covered — nothing outside this machine attests this record
-|   census [backup-key] public <backup-key-fingerprint>: the backup key this machine registered for <anchor> — a backup signs nothing until it is restored, so it has no tail (if it was restored and has signed, that tail is not here)
+|   census [backup-key] public <backup-key-fingerprint>: the backup key of <anchor>, as the record declares it — a backup signs nothing until it is restored, so it has no tail (if it was restored and has signed, that tail is not here)
 | private: local integrity verified (T1/T2/T4); 1 tail(s); all events are signature-covered; external witness (T3): not covered — nothing outside this machine attests this record
 
 ### one whole record of each kind
