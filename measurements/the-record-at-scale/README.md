@@ -55,9 +55,13 @@ How to read the ones that are not obvious.
   that once per clone and again only when the product's stamp or the record's shape changes.
 - **`recall` is not flat at 100k** (1.21 s): it reads more than it asks the index for, and that
   remainder is the record's, not the replay's.
-- **The moves still replay.** `task move` and `decision move` locate the entity's tree and, after
-  the write, read the move back for the report, and both are still a replay of the record (about 2 s
-  each at 100k). What they no longer do is replay under the lock, which is what `TAIL_BUSY` was.
+- **The moves, as measured in the table above, still replay.** `task move` and `decision move`
+  located the entity's tree and, after the write, read the move back for the report, each a replay
+  of the record (about 2 s at 100k). What they no longer did was replay under the lock, which is
+  what `TAIL_BUSY` was. Later, both reads were taken from the kept projection: on a record of 100k
+  events a warm `task move` went from 2.16 s to 0.25 s and a warm `decision move` from 4.01 s to
+  0.26 s (median of six processes per arm, base and head interleaved; the first move on a record
+  nobody had read still builds the projection and was not improved).
 - **`TAIL_BUSY` at 100k**: nine moves in three rounds of three, twice per arm on a record nobody
   had read: 5 and 3 refused before, 1 and 0 after. On a record that had been read first
   ([`busy-warm.jsonl`](results/2026-10-02/busy-warm.jsonl)): 4 and 3 before, and none in three

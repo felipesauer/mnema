@@ -11,7 +11,7 @@
  * The transition follows the ENTITY, not a fixed tree. A decision lives in one
  * tree (the one it was recorded in); its move must land THERE, or the history
  * would split across the public/private boundary. So this LOCATES the decision's
- * home tree ({@link locateEntityScope}) and opens THAT writer, never a scope the
+ * home tree ({@link locateEntityScopeKept}) and opens THAT writer, never a scope the
  * caller picks — a transition takes no `--scope`.
  *
  * Supersede is not folded into the generic move. The core separates it in the
@@ -41,13 +41,7 @@
  */
 
 import { catalogUpcasters, type TransitionFields } from '@mnema/chain';
-import {
-  chainRootForScope,
-  DECISION_ACTIONS,
-  type DiscoveryEnv,
-  locateEntityScope,
-  resolveTrees,
-} from '@mnema/core';
+import { chainRootForScope, DECISION_ACTIONS, type DiscoveryEnv, resolveTrees } from '@mnema/core';
 import {
   acceptDecision,
   openTreeForWriting,
@@ -62,7 +56,7 @@ import {
   supersedeLeavesNothingInForce,
 } from '../moved-record.js';
 import { forwardReplacement, type Replacement } from '../recorded-content.js';
-import { withScopedCaches } from '../tree-sources.js';
+import { locateEntityScopeKept, withScopedCaches } from '../tree-sources.js';
 
 /** What the transition command needs — injected so it is testable. */
 export interface DecisionTransitionContext {
@@ -117,7 +111,7 @@ export type DecisionTransitionRefused =
 
 /**
  * Moves a decision in the tree it was recorded in. Locates the home tree
- * ({@link locateEntityScope}) and opens THAT writer, so the move follows the
+ * ({@link locateEntityScopeKept}) and opens THAT writer, so the move follows the
  * entity and never splits the history. With no `.mnema/` found and no global home
  * this refuses `NO_PROJECT`; with a project present but the decision in no visible
  * tree, `UNKNOWN_DECISION`.
@@ -157,7 +151,7 @@ export function runDecisionTransition(
   // Find the tree the decision lives in; the move must follow it there. When no
   // tree holds it, distinguish "you are not in a project" from "this project has
   // no such decision".
-  const scope = locateEntityScope(trees, input.id, upcasters);
+  const scope = locateEntityScopeKept(trees, input.id, upcasters);
   if (scope === undefined) {
     return trees.projectPublic === undefined
       ? { ok: false, reason: 'NO_PROJECT' }

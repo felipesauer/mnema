@@ -412,6 +412,9 @@ const UNWIRED: Readonly<Record<string, string>> = {
   '@mnema/core projectRuns':
     'the oracle of the run commands’ own tests: the runs as a replay of the chain says them, ' +
     'read against what the command reports.',
+  '@mnema/core projectSkills':
+    'the oracle of the skill commands’ own tests: the skills as a replay of the chain says them, ' +
+    'read against what the command reports.',
   '@mnema/core projectTasks':
     'the oracle of the task commands’ own tests: the tasks as a replay of the chain says them, ' +
     'read against what the command reports.',
