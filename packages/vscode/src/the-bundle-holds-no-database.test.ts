@@ -35,7 +35,7 @@ afterAll(() => rmSync(scratch, { recursive: true, force: true }));
 
 describe('the bundled extension', () => {
   it('asks the runtime for node built-ins and the editor, and for nothing installed', () => {
-    const asked = [...text.matchAll(/require\(["']([^"']+)["']\)/g)].map((m) => m[1]);
+    const asked = [...text.matchAll(/require\(["']([^"']+)["']\)/g)].map((m) => m[1] ?? '');
     expect(asked).toContain('vscode');
     const builtins = new Set(builtinModules.flatMap((name) => [name, `node:${name}`]));
     expect(asked.filter((name) => name !== 'vscode' && !builtins.has(name))).toEqual([]);
