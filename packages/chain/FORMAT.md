@@ -490,17 +490,21 @@ fold only ever runs over tails whose key owns them
 ### 6.3 An account an identity names
 
 `account.linked` (`payload.service`, `payload.account`) is an identity saying which account
-it holds on a code host — `github` is the one service this product writes. It is **not part of
+it holds — this product writes two services: `github`, an account on the code host, and
+`sigstore`, the identity a Sigstore certificate names (an e-mail address, or a GitHub Actions
+workflow as `https://github.com/<owner>/<repo>/.github/workflows/<file>@<ref>`). It is **not part of
 the fold above**: it adds and removes no key, so a reader authenticates it by the rule every
 other event is authenticated by, and by nothing else. Its `subject` is the anchor and its `who`
 is the same anchor — an identity names only its own account.
 
-A verification of the format does not read it. It is read by one comparison that has to be
-asked for, `mnema verify --against-github`, which honours a link only when its `who` is its
+A verification of the format does not read it. It is read by two readings that have to be
+asked for: `mnema verify --against-github` (a `github` link) and `mnema verify
+--against-sigstore` (a `sigstore` link, §8.1). Each honours a link only when its `who` is its
 `subject` and it is SIGNATURE-COVERED (§6.2's meaning): one in the keyless window above the
 last checkpoint could be appended by somebody holding no key, naming an account on which they
-had published this identity's public key
-(`packages/code/src/commands/verify-github.test.ts`).
+had published this identity's public key, or an e-mail of their own
+(`packages/code/src/commands/verify-github.test.ts`,
+`packages/code/src/sigstore/sigstore.test.ts`).
 
 ### 6.4 A note taken back
 
@@ -760,6 +764,38 @@ What this layer does **not** prove, said here rather than in a footnote: the sto
 header is checked for its work, not for its place in the chain. A reader who needs
 that follows the block id into any explorer, or runs the `ots` client against a node
 — which the unaltered `.ots` is there for.
+
+### 8.1 A Sigstore countersignature
+
+A third file can sit beside a checkpoint:
+
+```
+tails/<tailId>/witness/<checkpointHash>.sigstore.json   a Sigstore bundle, v0.3
+```
+
+It is **[Sigstore](https://www.sigstore.dev)'s own bundle, unaltered**
+(`application/vnd.dev.sigstore.bundle.v0.3+json`, a `messageSignature`): an ECDSA signature
+over **the checkpoint's signed message** (§6), whose SHA-256 is the file's name, made with a
+short-lived Fulcio certificate, and logged in Rekor as a `hashedrekord` of that digest. The
+message itself is not in the bundle and never left the machine; a reader recomputes it from
+`checkpoints.jsonl`. A stranger checks it with Sigstore's own tools (`cosign verify-blob
+--bundle`) against that recomputed message, without this product installed.
+
+**It is no witness level.** A verification of the format does not read it, and neither
+reader moves its verdict, its level or its exit for it: the `.ots` above is the only file T3
+counts. It is read by one reading that has to be asked for, `mnema verify
+--against-sigstore`, which checks it offline against the Sigstore trust root the binary
+carries and answers in notes. A reader that only knows `.ots` passes it by, and the reference
+reader in `verifier/` names each one as not checked (gap G26).
+
+**What it says, and what it does not.** The certificate names an e-mail address, or a GitHub
+Actions workflow of a repository — not a person, not a GitHub login, and not a mnema
+identity. Anybody can countersign the digest of any checkpoint they can read, so a bundle on
+its own dates the checkpoint, on Rekor's clock and Rekor's key, and says nothing about who
+wrote it. It speaks for an identity of the record only where that identity named the same
+e-mail or workflow in a signature-covered `account.linked` with `service: "sigstore"` (§6.3)
+(`packages/code/src/sigstore/sigstore.test.ts`). The identity it names is public by
+construction: it is in Rekor's log and in the committed file.
 
 ## What this document does **not** promise
 

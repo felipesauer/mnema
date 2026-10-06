@@ -12,6 +12,15 @@ tag, with its own changelog.
 
 ### Added
 
+- **A Sigstore countersignature.** `mnema witness sigstore` signs the last checkpoint of each
+  tail with a short-lived Sigstore certificate (the browser here; the job's own token in GitHub
+  Actions) and files the bundle at `witness/<checkpoint>.sigstore.json`. Of the record only the
+  checkpoint digest leaves; the e-mail, or the repository and the workflow, goes into Sigstore's
+  public log by design, and the help and the act say so. In GitHub Actions it refuses a private
+  repository. `mnema key sigstore <identity>` records the claim (`account.linked`,
+  `service: "sigstore"`, no new kind) that lets a bundle speak for an identity of the record, and
+  `mnema verify --against-sigstore` reads every bundle offline against the trust root the binary
+  carries, in notes. The Python reader names each bundle as not checked (gap G26).
 - **The record says which key is a backup.** A new event kind, `backup.declared`
   (`payload.backupFp`), says that one of an identity's keys is kept off the machine. `mnema init`
   writes it when it enrolls the cold backup. `verify` and the Python reader read it: a declared
@@ -108,6 +117,10 @@ tag, with its own changelog.
 - A record written before `backup.declared` carries no declaration, and a later `init` does not
   add one: its backup still reads as `census [key-without-tail]` on every machine but the one
   that made it, and the note says that an undeclared backup reads that way.
+- A Sigstore bundle is no witness level: it never moves the verdict, the level,
+  `--require witnessed` or the exit. The trust root is carried, not fetched, so a bundle signed
+  after Sigstore turns its keys over reads `not covered` on this binary. Signing has been run
+  only against Sigstore's own test doubles, not against the public instance.
 
 ## [0.1.0-beta] - 2026-10-05
 
