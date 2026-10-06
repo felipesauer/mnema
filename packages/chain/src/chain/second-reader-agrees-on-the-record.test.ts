@@ -81,6 +81,7 @@ import { catalogUpcasters } from '../events/registry.js';
 import { openChainForWriting, verify } from './chain.js';
 import { sealEntry, serializeEntry } from './entry.js';
 import { deriveAnchor } from './keys.js';
+import { meetsRequirement } from './level.js';
 
 /** The second reader, and the tool that builds the inputs it has to refuse. */
 const VERIFIER = fileURLToPath(new URL('../../verifier/mnema_verify.py', import.meta.url));
@@ -1243,5 +1244,126 @@ describe('both readers over an identity that names its GitHub account', () => {
     const here = verify(record, catalogUpcasters());
     expect(here.ok).toBe(false);
     expect(here.issues.map((issue) => issue.detail).join('\n')).toContain('payload.account');
+  });
+});
+
+describe('both readers over an event written after the last checkpoint, with and without --require signed', () => {
+  /**
+   * A record whose events are signed, with ONE MORE appended keylessly after the checkpoint:
+   * the entry hash takes no key, so anybody who can write the repository can put this line
+   * there, and the record around it stays honest. The event is a valid one on purpose. What
+   * is asked here is not whether either reader refuses it (neither can, it is well formed)
+   * but what each one answers a caller who said it wants a signature over everything.
+   */
+  function keylessAppend(options: { readonly checkpoint: boolean }): string {
+    const record = join(root, 'keyless-append');
+    const writer = openChainForWriting(record, { keyRoot: join(root, 'keys') });
+    const fp = writer.signerFingerprint;
+    const anchor = deriveAnchor(fp);
+    const at = '2026-10-03T00:00:00.000Z';
+    const envelope = { at, who: anchor, signerFp: fp, subject: anchor };
+    writer.append(identityFounded(envelope, { foundingFp: fp }));
+    writer.append(accountLinked(envelope, { service: 'github', account: 'octocat' }));
+    if (options.checkpoint) writer.checkpoint();
+    const segment = segmentOf(record);
+    const lines = readFileSync(segment, 'utf-8')
+      .split('\n')
+      .filter((line) => line !== '');
+    const last = JSON.parse(lines[lines.length - 1] as string) as {
+      link: { tail: string; seq: number; hash: string };
+    };
+    const later = accountLinked(envelope, { service: 'github', account: 'hubot' });
+    const entry = sealEntry({
+      event: later,
+      tail: last.link.tail,
+      seq: last.link.seq + 1,
+      prev: last.link.hash,
+    });
+    appendFileSync(segment, `${serializeEntry(entry)}\n`);
+    return record;
+  }
+
+  function secondReadingRequiring(record: string, require: string): SecondReading {
+    const run = python([VERIFIER, '--json', 'record', record, '--require', require]);
+    if (run.stdout === '') throw new Error(`no verdict. stderr: ${run.stderr}`);
+    return { ...(JSON.parse(run.stdout) as Omit<SecondReading, 'exit'>), exit: run.status ?? -1 };
+  }
+
+  it('is accepted by both without the flag, and both say what it rests on', () => {
+    const record = keylessAppend({ checkpoint: true });
+    const here = verify(record, catalogUpcasters());
+    expect(here.ok).toBe(true);
+    expect(here.level).toBe('signed-through-last-checkpoint');
+    expect(meetsRequirement(here.level, 'chained')).toBe(true);
+    const there = secondReading(record);
+    expect(there.verdict).toBe('VERIFIED');
+    expect(there.exit).toBe(0);
+    expect(notes(there)).toContain('1 event(s) sit above the last checkpoint');
+  });
+
+  it('is refused by both under --require signed, the second reader with exit 1', () => {
+    const record = keylessAppend({ checkpoint: true });
+    const here = verify(record, catalogUpcasters());
+    expect(meetsRequirement(here.level, 'signed')).toBe(false);
+    const there = secondReadingRequiring(record, 'signed');
+    expect(there.verdict).toBe('REFUSED');
+    expect(there.exit).toBe(1);
+    const named = refusals(there);
+    expect(named).toHaveLength(1);
+    expect(named[0]?.what).toContain('--require=signed');
+    expect(named[0]?.what).toContain('1 event(s)');
+  });
+
+  it('answers --require chained as it answers no flag at all', () => {
+    const record = keylessAppend({ checkpoint: true });
+    const there = secondReadingRequiring(record, 'chained');
+    expect(there.verdict).toBe('VERIFIED');
+    expect(there.exit).toBe(0);
+    expect(there.findings.filter((f) => f.what.includes('--require'))).toEqual([]);
+  });
+
+  it('accepts a record with nothing above the checkpoint under --require signed, in both', () => {
+    // NON-VACUITY: a reader that refused every record under the flag would pass the case above.
+    const record = copyOf('witnessed-record');
+    expect(meetsRequirement(verify(record, catalogUpcasters()).level, 'signed')).toBe(true);
+    const there = secondReadingRequiring(record, 'signed');
+    expect(there.verdict).toBe('VERIFIED');
+    expect(there.exit).toBe(0);
+  });
+
+  it('refuses under --require signed a record in which no checkpoint ever signed anything, in both', () => {
+    const record = keylessAppend({ checkpoint: false });
+    const here = verify(record, catalogUpcasters());
+    expect(here.level).toBe('hash-chain-only');
+    expect(meetsRequirement(here.level, 'signed')).toBe(false);
+    expect(secondReading(record).exit).toBe(0);
+    const there = secondReadingRequiring(record, 'signed');
+    expect(there.verdict).toBe('REFUSED');
+    expect(there.exit).toBe(1);
+  });
+
+  it('refuses under --require signed a tail that holds no event at all, in both', () => {
+    // The branch of the requirement that no event above a checkpoint can reach: nothing is
+    // uncovered because nothing is there, and "every event is signed" over zero events is a
+    // sentence neither reader may say.
+    const record = copyOf('witnessed-record');
+    const tails = join(record, 'tails');
+    const tail = join(tails, readdirSync(tails)[0] as string);
+    for (const name of readdirSync(tail)) {
+      if (name !== 'tailproof.json') rmSync(join(tail, name), { recursive: true, force: true });
+    }
+    const here = verify(record, catalogUpcasters());
+    expect(meetsRequirement(here.level, 'signed')).toBe(false);
+    const there = secondReadingRequiring(record, 'signed');
+    expect(there.verdict).toBe('REFUSED');
+    expect(refusals(there).map((f) => f.what)).toContainEqual(
+      expect.stringContaining('nothing here is signed'),
+    );
+  });
+
+  it('offers the flag on the verb that reads a record', () => {
+    const run = python([VERIFIER, 'record', '--help']);
+    expect(run.stdout).toContain('--require');
+    expect(run.stdout).toContain('signed');
   });
 });
