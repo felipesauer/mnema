@@ -2,7 +2,7 @@ import { defineConfig } from 'vitest/config';
 
 export default defineConfig({
   test: {
-    include: ['packages/**/*.test.ts'],
+    include: ['packages/**/*.test.ts', 'measurements/lib/*.test.mjs'],
     exclude: ['**/dist/**', '**/node_modules/**'],
     environment: 'node',
     // EVERY TEST PROCESS RUNS IN A HOME OF ITS OWN, and no process it starts may resolve the

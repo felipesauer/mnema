@@ -95,8 +95,11 @@ const A_MAKING = /mkdtempSync\(([^;]*)/g;
 const THE_MACHINES_TEMP = /\btmpdir\(\)/;
 /** A base at all — some expression is being passed. This is what makes "unreadable" mean it. */
 const SOME_BASE = /\S/;
-/** A removal — any removal, which is what the file-wide case (and only it) asks about. */
-const A_REMOVAL = /\brmSync\(/;
+/**
+ * A removal — any removal, which is what the file-wide case (and only it) asks about.
+ * `removeTemporary` is the measurement harnesses' guarded one: it removes its argument.
+ */
+const A_REMOVAL = /\b(?:rmSync|removeTemporary)\(/;
 
 /** An identifier, and a dotted path of them. */
 const A_NAME = String.raw`[A-Za-z_$][\w$]*`;
@@ -139,7 +142,7 @@ const globally = (pattern: RegExp): RegExp => new RegExp(pattern.source, 'g');
  */
 function removalSubjects(code: string): string[] {
   const subjects: string[] = [];
-  for (const call of code.matchAll(/\brmSync\(/g)) {
+  for (const call of code.matchAll(/\b(?:rmSync|removeTemporary)\(/g)) {
     const from = (call.index ?? 0) + call[0].length;
     let at = from;
     let depth = 0;
