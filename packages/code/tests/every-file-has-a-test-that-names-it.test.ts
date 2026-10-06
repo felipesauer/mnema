@@ -1177,7 +1177,7 @@ const CLAUSES_PER_FILE: Readonly<Record<string, number>> = {
   'packages/core/src/identity/the-roster-sees-the-other-session.test.ts': 11,
   'packages/core/src/identity/who.test.ts': 2,
   'packages/core/src/index.test.ts': 2,
-  'packages/core/src/knowledge/a-note-can-be-retracted.test.ts': 12,
+  'packages/core/src/knowledge/a-note-can-be-retracted.test.ts': 13,
   'packages/core/src/knowledge/end-to-end.test.ts': 11,
   'packages/core/src/knowledge/link-end-to-end.test.ts': 11,
   'packages/core/src/knowledge/only-the-identity-that-wrote-a-note-retracts-it.test.ts': 12,

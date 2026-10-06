@@ -64,6 +64,9 @@ describe('two trees in the same role are two trees', () => {
     capture(first.bench, 'mem-a', 'the shared word here');
     const second = tree();
     capture(second.bench, 'mem-b', 'the shared word too');
+    // One record per tree that does NOT hold the term: a term ignored would list them.
+    capture(first.bench, 'mem-x', 'nothing alike in the first');
+    capture(second.bench, 'mem-y', 'nothing alike in the second');
 
     const found = searchRecords([first.source, second.source], { term: 'shared' });
     expect(found.hits.map((h) => h.id).sort()).toEqual(['mem-a', 'mem-b']);
