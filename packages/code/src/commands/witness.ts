@@ -214,9 +214,14 @@ function heldChains(ctx: WitnessContext): {
     if (root === undefined) return [];
     const layout = { root };
     return listTails(layout).flatMap((tail): HeldChain[] => {
-      const events = tailStanding(layout, tail, upcasters)?.eventCount ?? 0;
-      const checkpoints = readTailCheckpoints(layout, tail).length;
-      return isEmptyTail({ events, checkpoints }) ? [] : [{ scope, tail, layout, events }];
+      const chain: HeldChain = {
+        scope,
+        tail,
+        layout,
+        events: tailStanding(layout, tail, upcasters)?.eventCount ?? 0,
+      };
+      const checkpoints = storedCheckpoints(chain).length;
+      return isEmptyTail({ events: chain.events, checkpoints }) ? [] : [chain];
     });
   });
   return { chains, trees: searched };
