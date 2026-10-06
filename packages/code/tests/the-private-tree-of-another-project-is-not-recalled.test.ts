@@ -75,16 +75,7 @@ describe('the private tree of one project, read from another', () => {
     const name = `${mark} habit`;
     const body = 'How the first project works.';
     const adopt = (dir: string, scope: string): string => {
-      const made = mnemaIn(
-        dir,
-        'skill',
-        'create',
-        name,
-        '--body',
-        body,
-        '--scope',
-        scope,
-      );
+      const made = mnemaIn(dir, 'skill', 'create', name, '--body', body, '--scope', scope);
       const id = /\(([0-9a-f-]{36})\)/.exec(made)?.[1] as string;
       mnemaIn(dir, 'skill', 'move', 'review', id, '--note', 'read');
       mnemaIn(dir, 'skill', 'move', 'adopt', id, '--note', 'good');
