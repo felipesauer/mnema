@@ -36,12 +36,13 @@ import { type Fetch, type KeyPair, signWithSigstore } from './sign.js';
 import { PUBLIC_GOOD_TRUSTED_ROOT } from './trusted-root.js';
 
 const P256 = (): KeyPair => generateKeyPairSync('ec', { namedCurve: 'P-256' });
-const b64 = (bytes: ArrayBufferView | ArrayBuffer): string =>
-  Buffer.from(
+const b64 = (bytes: ArrayBufferView | ArrayBuffer): string => {
+  const view =
     bytes instanceof ArrayBuffer
-      ? bytes
-      : new Uint8Array(bytes.buffer, bytes.byteOffset, bytes.byteLength),
-  ).toString('base64');
+      ? new Uint8Array(bytes)
+      : new Uint8Array(bytes.buffer, bytes.byteOffset, bytes.byteLength);
+  return Buffer.from(view).toString('base64');
+};
 
 const FULCIO = 'https://fulcio.sigstore.dev/api/v2/signingCert';
 const REKOR = 'https://rekor.sigstore.dev/api/v1/log/entries';
