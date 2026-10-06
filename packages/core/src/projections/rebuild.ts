@@ -47,9 +47,9 @@ import { materializeChannelSwitches } from './channel-store.js';
 import { type DecisionAccumulator, decisionFold } from './decision.js';
 import { materializeDecisions } from './decision-store.js';
 import {
+  edgesOf,
   projectHandoffs,
   projectKnowledge,
-  edgesOf,
   projectLinkAssertions,
   projectObservations,
 } from './knowledge.js';

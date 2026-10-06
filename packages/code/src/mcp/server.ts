@@ -162,6 +162,7 @@ import {
   runRecordObservation,
   runReferencesTool,
   runResumeTool,
+  runRetractLink,
   runRetractNote,
   runRulesBeforeAnEditTool,
   runSearchTool,
@@ -937,6 +938,40 @@ function registerTools(tool: ToolRegistrar, ensureSession: () => Promise<Session
         return refused(active, result);
       }
       return recorded(active, `Retracted ${result.note} ${result.id}`, result);
+    },
+  );
+
+  tool(
+    mutatesTheRecord('retract_link'),
+    {
+      title: 'Retract a link',
+      description:
+        'Take back a link that was recorded by mistake — a `governs` on the wrong path, a ' +
+        'relation that does not hold. Name the edge exactly as `link_knowledge` took it. The ' +
+        'link is NOT erased: a signed retraction carrying the `reason` is appended, and every ' +
+        'read of links stops seeing the edge when nobody else asserts it, so a rule it ' +
+        'addressed at a path stops acting there. It follows the link to the tree it was ' +
+        'recorded in. Only the identity that recorded a link retracts it; a link of another ' +
+        'identity, or one already retracted, is refused.' +
+        RECORD_CONTRACT,
+      inputSchema: {
+        subject: z.string().min(1).describe('The entity the link originates from.'),
+        target: z.string().min(1).describe('What the link points at, as it was linked.'),
+        rel: z.string().min(1).describe('The relation, as it was linked.'),
+        reason: z.string().min(1).describe('Why it is taken back.'),
+      },
+    },
+    async ({ subject, target, rel, reason }) => {
+      const active = await ensureSession();
+      const result = runRetractLink(active, { subject, target, rel, reason });
+      if (!result.ok) {
+        return refused(active, result);
+      }
+      return recorded(
+        active,
+        `Retracted link ${oneLine(result.subject)} —${oneLine(result.rel)}→ ${oneLine(result.target)}`,
+        result,
+      );
     },
   );
 

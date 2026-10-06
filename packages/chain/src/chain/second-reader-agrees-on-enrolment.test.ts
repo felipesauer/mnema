@@ -766,10 +766,7 @@ describe('the two readers agree on records the product itself wrote — a link r
   });
 
   it('a retraction at a version no row declares: refused by both — what an older reader does', () => {
-    identityWith((anchor, kp) => [
-      linked(anchor, kp, 2),
-      retraction(anchor, kp, 3, undefined, 2),
-    ]);
+    identityWith((anchor, kp) => [linked(anchor, kp, 2), retraction(anchor, kp, 3, undefined, 2)]);
     const { productOk, verdict, refused } = bothReaders();
     expect(productOk).toBe(false);
     expect(verdict).toBe('REFUSED');

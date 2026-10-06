@@ -842,15 +842,15 @@ function foreignRetractions(
  * Every `link.retracted` whose `who` asserted no `knowledge.linked` of the edge it names while
  * some other identity did ({@link mayRetract} against each assertion), in tail order. The
  * assertions are read over every tail first, so a retraction is judged whatever tail, or
- * order, its link sits in. The edge is framed by length, as the readers that fold it key it,
- * so no choice of target or label can make two edges one.
+ * order, its link sits in. The edge is keyed as a JSON array of its three parts, so no choice
+ * of target or label can make two edges one.
  */
 function foreignLinkRetractions(
   tails: readonly string[],
   entriesByTail: ReadonlyMap<string, readonly Entry[]>,
 ): ForeignLinkRetractionNote[] {
   const edge = (subject: string, target: string, rel: string) =>
-    `${subject.length}:${subject}|${target.length}:${target}|${rel.length}:${rel}`;
+    JSON.stringify([subject, target, rel]);
   const asserters = new Map<string, string[]>();
   for (const tail of tails) {
     for (const { event } of entriesByTail.get(tail) ?? []) {

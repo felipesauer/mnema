@@ -302,9 +302,15 @@ async function fixture(name: string): Promise<Fixture> {
     'utf8',
   );
 
+  // The task the lines name, and the edge `unlink` takes back: the line a path takes names
+  // the task as both ends of a link, under the relation it names every link by.
+  const task = await idOf(['task', 'create', 'the task the lines name']);
+  const linked = await mnema(['link', task, task, '--rel', 'relates-to']);
+  if (linked.failed) throw new Error(`fixture: link refused: ${linked.err}`);
+
   return {
     anchor: identity.trim().slice('identity:'.length).trim(),
-    task: await idOf(['task', 'create', 'the task the lines name']),
+    task,
     decision: await idOf(['decision', 'record', 'a decision to move', 'because it was decided']),
     successor: await idOf([
       'decision',
@@ -398,7 +404,7 @@ describe('the refused run is refused everywhere', () => {
 
     // The derivation itself, both ways: this is the list the rule was applied to, and a
     // path that starts stamping a run has to arrive in it before anything can be said to
-    // have checked it. SIXTEEN paths from FIFTEEN written sites — `switch off` and
+    // have checked it. SEVENTEEN paths from SIXTEEN written sites — `switch off` and
     // `switch on` are one site, declared once by a function that hangs both.
     const asks = measured.filter((one) => one.asked).map((one) => one.path);
     expect([...asks].sort()).toEqual([
@@ -418,6 +424,7 @@ describe('the refused run is refused everywhere', () => {
       'tail prune',
       'task create',
       'task move',
+      'unlink',
     ]);
     // The count is the walk's, and it says only that: every path the walk found was
     // exercised except the ones declared unexercisable. It is not the claim underneath —
@@ -513,7 +520,7 @@ describe('the refused run is refused everywhere', () => {
     // The pair covered the whole derived set, so no site's "wrote nothing" rests on a line
     // that could not have written anything in the first place.
     expect([...bothHalvesSeen].sort()).toEqual([...asks].map((one) => one.path).sort());
-    expect(bothHalvesSeen.length).toBe(16);
+    expect(bothHalvesSeen.length).toBe(17);
   }, 300_000);
 
   it('tells the parser’s three answers from a verb’s own, and names what the literal missed', async () => {

@@ -333,9 +333,7 @@ const ARRIVALS: { readonly [K in EventKind]: Arrival } = {
     },
     emit: (ctx, prepared) => {
       const { task, skill } = prepared as { task: string; skill: string };
-      landed(
-        retractLink(ctx, { subject: skill, target: task, rel: 'informs', reason: 'not so' }),
-      );
+      landed(retractLink(ctx, { subject: skill, target: task, rel: 'informs', reason: 'not so' }));
     },
   },
 };

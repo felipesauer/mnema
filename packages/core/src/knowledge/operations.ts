@@ -724,7 +724,6 @@ export function retractLink(
     target: canonicalId(text.fields.target) ?? text.fields.target,
     rel: text.fields.rel,
   };
-  const named = `${oneLine(edge.subject)} —${oneLine(edge.rel)}→ ${oneLine(edge.target)}`;
   return onTheRecordAsItStands(
     ctx,
     () => linkStandingOf(orderedEvents(ctx.layout, ctx.upcasters), edge, who),
@@ -734,7 +733,7 @@ export function retractLink(
           refuse: {
             ok: false,
             code: 'UNKNOWN_LINK',
-            message: `no link ${named} is in this record`,
+            message: 'no link of that subject, target and relation is in this record',
           },
         };
       }
@@ -744,7 +743,7 @@ export function retractLink(
             ok: false,
             code: 'NOT_THE_AUTHOR',
             message:
-              `the link ${named} was recorded by ${standing.authors.map(oneLine).join(', ')}, ` +
+              `that link was recorded by ${standing.authors.map(oneLine).join(', ')}, ` +
               `and only that identity retracts it; this writer is ${oneLine(who)}. ` +
               'Nothing was appended.',
           },
@@ -755,7 +754,8 @@ export function retractLink(
           refuse: {
             ok: false,
             code: 'ALREADY_RETRACTED',
-            message: `the link ${named} was already retracted. Nothing was appended.`,
+            message:
+              'this identity’s link of that edge was already retracted. Nothing was appended.',
           },
         };
       }
