@@ -146,7 +146,7 @@ and nothing else; they move when the product moves. If you want the tool, take
 with the format and an independent verifier in the tarball — take `@mnema/chain`. Read on
 to know what this one holds and what it proves.
 
-Requires Node ≥ 22.12.0. The package is ESM-only.
+Requires Node 22.22.2 or a later 22, or 24.15.0 or later. The package is ESM-only.
 
 Whether the command above resolves is a fact about the registry rather than about this
 page: `npm view @mnema/context version` answers it in one line.

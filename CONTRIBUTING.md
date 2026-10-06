@@ -5,7 +5,7 @@ the product is, and what it does and does not prove, is on the [front page](READ
 
 ## What you need
 
-- **Node.** Requires Node ≥ 22.12.0: that is the floor `engines.node` declares in the root
+- **Node.** Requires Node 22.22.2 or a later 22, or 24.15.0 or later: that is the range `engines.node` declares in the root
   `package.json`, and `.npmrc` sets `engine-strict=true`, so an older runtime is refused at
   install rather than failing later. CI runs the suite on Node 22 and 24.
 - **pnpm**, at the version the root `package.json` pins in `packageManager`. This is a pnpm

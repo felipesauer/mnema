@@ -47,6 +47,7 @@ import { existsSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { describe, expect, it } from 'vitest';
+import { acceptedBy } from '../src/node-floor.js';
 
 /** The workspace root — this file is `packages/code/tests/…`. */
 const ROOT = fileURLToPath(new URL('../../../', import.meta.url));
@@ -202,19 +203,45 @@ describe('the floor is at least what the dependencies demand', () => {
 });
 
 describe('every place that repeats the floor repeats this number', () => {
-  /** The sentence an adopter reads. The version, not the word `engines`, is the discriminant. */
-  const SAYS_THE_FLOOR = /Requires Node ≥ (\d+(?:\.\d+)*)/g;
+  /**
+   * The sentence an adopter reads. The version, not the word `engines`, is the discriminant —
+   * and the sentence is the one the binary refuses with (`acceptedBy` in `src/node-floor.ts`),
+   * so the page and the refusal cannot say two ranges. The shape the floor had while it was one
+   * number, `Requires Node ≥ X`, is still read, so a page left behind is found rather than
+   * skipped by a pattern that no longer fits it.
+   */
+  const SAYS_THE_FLOOR =
+    /Requires\s+Node\s+(≥\s*\d+(?:\.\d+)*|\d+\.\d+\.\d+\s+or\s+(?:later|a\s+later\s+\d+(?:\.\d+)?)(?:,\s+or\s+\d+\.\d+\.\d+\s+or\s+(?:later|a\s+later\s+\d+(?:\.\d+)?))*)/g;
+
+  /** What the declared range says, in the refusal's words. */
+  const SAID = (acceptedBy(DECLARING[0]?.read.engines?.node ?? '') ?? [])
+    .map((a) => a.said)
+    .join(', or ');
+
+  /**
+   * A RELEASED changelog entry states the floor of THAT release, which is history and is true;
+   * only the part above the first released heading speaks for what is here now.
+   */
+  const current = (where: string, text: string): string => {
+    if (where !== 'CHANGELOG.md') return text;
+    const released = text.search(/\n## \[\d/);
+    return released < 0 ? text : text.slice(0, released);
+  };
 
   const prose = TRACKED.filter((where) => where.endsWith('.md'))
-    .map((where) => ({ where, text: readFileSync(join(ROOT, where), 'utf-8') }))
+    .map((where) => ({ where, text: current(where, readFileSync(join(ROOT, where), 'utf-8')) }))
     .flatMap(({ where, text }) =>
-      [...text.matchAll(SAYS_THE_FLOOR)].map((said) => ({ where, said: said[1] ?? '' })),
+      [...text.matchAll(SAYS_THE_FLOOR)].map((said) => ({
+        where,
+        said: (said[1] ?? '').replace(/\s+/g, ' '),
+      })),
     );
 
   it('is said by the READMEs an adopter actually reads', () => {
+    expect(SAID, 'the declared range is not one the refusal reads').not.toBe('');
     expect(prose.length, 'no shipped prose states the runtime floor').toBeGreaterThan(4);
-    const wrong = prose.filter((p) => p.said !== show(FLOOR)).map((p) => `${p.where}: ${p.said}`);
-    expect(wrong, `prose states a floor other than ${show(FLOOR)}`).toEqual([]);
+    const wrong = prose.filter((p) => p.said !== SAID).map((p) => `${p.where}: ${p.said}`);
+    expect(wrong, `prose states a range other than ${SAID}`).toEqual([]);
   });
 
   /**

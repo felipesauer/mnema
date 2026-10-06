@@ -224,7 +224,7 @@ npm i -g @mnema/code
 pnpm add -g @mnema/code
 ```
 
-Either puts the `mnema` binary on your `PATH`. Requires Node ≥ 22.12.0; the package is
+Either puts the `mnema` binary on your `PATH`. Requires Node 22.22.2 or a later 22, or 24.15.0 or later; the package is
 ESM-only, and it brings the other three with it. `npm view @mnema/code version` says
 whether the publication has happened: a 404 means it has not.
 
