@@ -326,6 +326,13 @@ export const AUDIT_BY_KIND: { readonly [K in EventKind]: AuditMapping } = {
     entityTypeId: ENTITY_USER,
     entityType: 'identity',
   },
+  // An identity saying which of its keys is kept off the machine adds and removes no key, as
+  // naming its account does not: an Update of the identity.
+  'backup.declared': {
+    activity: ACTIVITY.update,
+    entityTypeId: ENTITY_USER,
+    entityType: 'identity',
+  },
 };
 
 /** Who is reporting the feed — the producer's own identity, which the record does not hold. */

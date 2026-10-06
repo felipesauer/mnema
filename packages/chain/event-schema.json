@@ -40,6 +40,13 @@
       }
     },
     {
+      "kind": "backup.declared",
+      "v": 1,
+      "payload": {
+        "backupFp": "string"
+      }
+    },
+    {
       "kind": "channel.asked",
       "v": 1,
       "payload": {

@@ -578,6 +578,22 @@
         }
       },
       "sha256": "53366b95e0f2f7cd287498f882b07f392ae5baf500f39ab9d10ce232d102c89d"
+    },
+    {
+      "name": "backup.declared (an identity declares a key its backup)",
+      "kind": "backup.declared",
+      "event": {
+        "v": 1,
+        "kind": "backup.declared",
+        "at": "2026-07-21T00:00:00.000Z",
+        "who": "mnid:1111111111111111111111111111111111111111111111111111111111111111",
+        "signerFp": "2222222222222222222222222222222222222222222222222222222222222222",
+        "subject": "mnid:1111111111111111111111111111111111111111111111111111111111111111",
+        "payload": {
+          "backupFp": "3333333333333333333333333333333333333333333333333333333333333333"
+        }
+      },
+      "sha256": "072da5cb6fcfd8f051e077af4a3cc88ed75d93000f744b9bc687c756ffcdfddd"
     }
   ],
   "chain": {
@@ -595,6 +611,6 @@
       "vector": "run.ended",
       "entryHash": "bafbebddd9d5ee75b10bdde626c5e36eed44b37d9fe352b4d98f614fa2647b73"
     },
-    "contentRootOverAllVectors": "b309f6469eb4dd323b8de0de17c81f650c80c809d9ca25b20aba1b72ee3867fe"
+    "contentRootOverAllVectors": "df12f6cea67800972e627486b86868cb4456fcdeb1dab40c63f7a74facb8ddd6"
   }
 }

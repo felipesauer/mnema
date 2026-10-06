@@ -190,6 +190,7 @@ export const REASONS: { readonly [K in EventKind]: readonly ReasonSite<K>[] } = 
   'check.failed': [],
   'checker.retired': ['reason'],
   'account.linked': [],
+  'backup.declared': [],
 };
 
 /** The refusal the first reason of `event` that says nothing earns, or undefined. */
@@ -249,6 +250,7 @@ export const TITLES: { readonly [K in EventKind]: readonly TextField<K>[] } = {
   'check.failed': [],
   'checker.retired': [],
   'account.linked': [],
+  'backup.declared': [],
 };
 
 /** The refusal the title of `event` earns when it is a marker, or undefined. */
@@ -318,6 +320,7 @@ export const REFERENCES: { readonly [K in EventKind]: readonly ReferenceSite<K>[
   'check.failed': [],
   'checker.retired': [],
   'account.linked': ['account'],
+  'backup.declared': [],
 };
 
 /**

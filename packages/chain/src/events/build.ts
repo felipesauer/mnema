@@ -290,6 +290,22 @@ export function keyRevoked(
 }
 
 /**
+ * Builds a `backup.declared` event (subject = the anchor). `signerFp` on the envelope is a key
+ * valid for the anchor; `backupFp` is one of the anchor's keys, kept off the machine.
+ */
+export function backupDeclared(
+  envelope: EnvelopeInput,
+  payload: { backupFp: string },
+): CatalogEvent {
+  return {
+    v: 1,
+    kind: 'backup.declared',
+    ...envelopeFields(envelope),
+    payload: { backupFp: payload.backupFp },
+  };
+}
+
+/**
  * Builds a `memory.captured` event (subject = the memory's id). A memory is a
  * single point-in-time fact — no birth pair, no state — so this mirrors
  * `taskCreated` (the simplest one-field builder) and not the birth builders.

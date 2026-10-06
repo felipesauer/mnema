@@ -107,6 +107,13 @@ export interface IdentityResolution {
    * because "before" is placed by the `at` the key itself wrote.
    */
   readonly retiredCheckers: ReadonlyMap<string, RetiredChecker>;
+  /**
+   * The keys a signature-covered `backup.declared` says are an identity's backup, each with that
+   * identity (FORMAT.md section 6.5). A declaration is about how a key with no tail is SAID, so it
+   * is kept here for the census and decides nothing about which events are authentic; the census
+   * still asks {@link members} whether the key is the identity's at the end of the fold.
+   */
+  readonly backups: ReadonlyMap<string, string>;
 }
 
 /** A checker key the record retired (FORMAT.md section 6.2). */
@@ -204,6 +211,8 @@ export function resolveIdentity(
   // The keys a signature-covered `checker.retired` took out of the role. A retired key signs
   // NOTHING from then on: not a result, not any other kind, and it is never enrolled again.
   const retired = new Map<string, RetiredChecker>();
+  // The keys a covered `backup.declared` names, with the identity that declared them.
+  const backups = new Map<string, string>();
 
   for (const { tail, entry } of order) {
     const event = entry.event;
@@ -313,6 +322,44 @@ export function resolveIdentity(
         // Remember this key was removed under coverage: a later addition that
         // would restore it must itself be signature-covered (see addKeyGated).
         coveredRevoked.add(restoreKey(anchor, event.payload.revokedFp));
+        break;
+      }
+      case 'backup.declared': {
+        // An identity says one of its OWN keys is kept off the machine, so that key's having no
+        // tail is expected. Who may say it is who may enrol: the anchor, by a key in its set now.
+        // And the key must be one the anchor holds now — a declaration about another identity's
+        // key, or a key never taken in, would silence a warning that is not the declarer's.
+        const anchor = event.subject;
+        if (event.who !== anchor) {
+          issues.push({
+            tail,
+            seq,
+            detail: 'backup.declared who is not the anchor it declares for',
+          });
+          break;
+        }
+        if (!keysOf(anchor).has(event.signerFp)) {
+          issues.push({
+            tail,
+            seq,
+            detail: 'backup.declared is signed by a key not valid for the anchor at this point',
+          });
+          break;
+        }
+        if (!keysOf(anchor).has(event.payload.backupFp)) {
+          issues.push({
+            tail,
+            seq,
+            detail:
+              'backup.declared names a key that is not a member of its identity at this point',
+          });
+          break;
+        }
+        // It quiets the one warning that a removed tail raises, so — like a revocation — it is
+        // honoured only when signature-covered: a party with no key can append above the last
+        // checkpoint, and must not be able to declare away the tail it took out.
+        if (!isCheckpointed(tail, seq)) break;
+        backups.set(event.payload.backupFp, anchor);
         break;
       }
       case 'checker.enrolled': {
@@ -431,7 +478,7 @@ export function resolveIdentity(
     }
   }
 
-  return { issues, members: validKeys, retiredCheckers: retired };
+  return { issues, members: validKeys, retiredCheckers: retired, backups };
 }
 
 /**

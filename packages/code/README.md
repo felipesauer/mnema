@@ -279,13 +279,10 @@ mnema guard reopen "$TASK" --actor "$ME"
 # verdict per tree of the project, under the tree's name.
 mnema verify
 #> public: local integrity verified (T1/T2/T4); 1 tail(s); all events are signature-covered; …
-#>   census [backup-key] public …: the backup key this machine registered for mnid:c0fc3c71… — …
+#>   census [backup-key] public …: the backup key of mnid:c0fc3c71…, as the record declares it — …
 #> private: no record here — nothing has been written to this tree on this machine, …
-# On any OTHER machine — a clone, a CI runner — that same key reads
-# `census [key-without-tail]` instead, by design: which key is a backup is known only
-# to the machine that made it, and the record will not say so until the key's role is
-# part of the format (see "what neither value answers", below). It is a note every
-# honest clone of a record `mnema init` made carries; another one is a tail to look for.
+# `mnema init` declares the backup in the record, so every clone and CI runner says that
+# key the same way; a `census [key-without-tail]` is a tail to look for.
 
 # Auditing several projects? Name them, and get ONE verdict over all of them.
 mnema verify --workspace ~/work/api ~/work/web
@@ -344,11 +341,12 @@ signature was checked` over the record it cannot vouch for.
 **And what neither value answers, said plainly.** A removed tail is reported but is
 not a break: `verify` crosses the committed keys against the tails on disk and prints
 `N committed key(s) without a tail (see census — informational, not a break)`, exit 0.
-One key is said otherwise, and only on the machine that made it: the backup `mnema init`
-creates never signs until it is restored, so on that machine it reads `N backup key(s),
-which sign nothing until restored` — and its line still says that a backup restored and
-used would have left a tail that is not there. The record does not say which key is a
-backup, so on any other machine the same key reads as a committed key without a tail.
+One key is said otherwise: the backup `mnema init` creates never signs until it is
+restored, and `init` declares it in the record (`backup.declared`), so every machine reads
+`N backup key(s), which sign nothing until restored` — and its line still says that a backup
+restored and used would have left a tail that is not there. A record written before that
+declaration existed does not say which key is a backup: there the key reads as a backup only
+on the machine that made it, and as a committed key without a tail anywhere else.
 A tail removed *together with its key* is not reported at all — that record reads
 `0 tail(s); no events yet`, indistinguishable from a fresh one, and only a history
 outside this record (the one a git remote keeps) can testify to what was taken

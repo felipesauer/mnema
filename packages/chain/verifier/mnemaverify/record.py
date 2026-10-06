@@ -727,7 +727,8 @@ def verify_record(root: str, report: Report) -> None:
         entries_by_tail[tail_id] = entries
         covered_by_tail[tail_id] = found.covered_through
 
-    _check_enrolment(report, entries_by_tail, covered_by_tail, ring)
+    resolution = _check_enrolment(report, entries_by_tail, covered_by_tail, ring)
+    _say_keys_without_tail(report, ring, tail_ids, resolution)
 
 
 def _load_declarations(report: Report) -> schema.Schema | None:
@@ -776,7 +777,7 @@ def _check_enrolment(
     entries_by_tail: dict[str, list[Entry]],
     covered_by_tail: dict[str, int],
     ring: dict[str, PublicKey],
-) -> None:
+) -> enrolment.Resolution | None:
     """Section 6.2, folded over every tail at once, because enrolment spans them."""
     if not ring:
         report.unchecked(
@@ -785,11 +786,12 @@ def _check_enrolment(
             "fold was not run",
             gap="G21",
         )
-        return
+        return None
     total = sum(len(entries) for entries in entries_by_tail.values())
     if total == 0:
-        return
-    issues = enrolment.resolve(entries_by_tail, covered_by_tail, ring)
+        return None
+    resolution = enrolment.resolve(entries_by_tail, covered_by_tail, ring)
+    issues = resolution.issues
     for issue in issues:
         report.fail("6.2", issue.detail, f"{issue.tail[:20]}... seq {issue.seq}", "G21")
     if not issues:
@@ -798,6 +800,51 @@ def _check_enrolment(
             f"every one of the {total} event(s) is signed by a key VALID FOR ITS ANCHOR at "
             "its point in the fold, which is a stronger claim than the signature verifying",
             gap="G21",
+        )
+    return resolution
+
+
+def _say_keys_without_tail(
+    report: Report,
+    ring: dict[str, PublicKey],
+    tail_ids: list[str],
+    resolution: enrolment.Resolution | None,
+) -> None:
+    """Section 6.5: a committed key with no tail, said as a backup only when the record says so.
+
+    A key's fingerprint is the id of the tail it writes - the whole name, or the part before
+    the last `-` - so `keys/` is a roster of the tails that should exist. A key with none is
+    either a backup, which signs nothing until it is restored, or a key whose tail is gone, and
+    only a covered `backup.declared` naming a key the identity still holds tells them apart.
+    Both are notes: an absence is not something this reader can refuse.
+    """
+    with_tail = {tail_id.rsplit("-", 1)[0] if "-" in tail_id else tail_id for tail_id in tail_ids}
+    backups = resolution.backups if resolution is not None else {}
+    members = resolution.members if resolution is not None else {}
+    for fingerprint in sorted(ring):
+        if fingerprint in with_tail:
+            continue
+        anchor = backups.get(fingerprint)
+        if anchor is not None and fingerprint in members.get(anchor, set()):
+            report.note(
+                "6.5",
+                f"the committed key {fingerprint} has no tail, and the record declares it the "
+                f"backup of {anchor}, which signs nothing until it is restored",
+            )
+            continue
+        if anchor is not None:
+            report.note(
+                "6.5",
+                f"the committed key {fingerprint} has no tail on disk, and the record declared it "
+                f"a backup of {anchor}, which that identity has since revoked, so the absence is "
+                "no longer expected: the tail may have been dropped, never written, or removed",
+            )
+            continue
+        report.note(
+            "6.5",
+            f"the committed key {fingerprint} has no tail on disk, and the record declares no "
+            "backup for it: the tail may have been dropped, never written, or removed (a backup "
+            "made before backups were declared in the record reads this way too)",
         )
 
 

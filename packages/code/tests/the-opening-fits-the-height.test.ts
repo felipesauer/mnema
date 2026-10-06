@@ -39,7 +39,7 @@ import { bannerFor } from '../src/presentation/banner.js';
 import { fact, subjectLine } from '../src/presentation/detail.js';
 import { renderPlain } from '../src/presentation/plain.js';
 import { THE_FLOOR } from '../src/repl/floor.js';
-import { THE_INSET } from '../src/repl/inset.js';
+import { insideTheMargin, THE_INSET } from '../src/repl/inset.js';
 import { type Opening, openingFor, type PanelForm, panelFor } from '../src/repl/panel.js';
 import { VERSION } from '../src/version.js';
 import { REPL_VERB } from '../src/wiring/repl.js';
@@ -363,6 +363,9 @@ const THE_GEOMETRIES: readonly {
   // The title carries the version, so this row sits where the title's width puts it: at 0.1.0-beta
   // the title is wider than at 0.1.0 and 101 columns by 24 rows no longer holds the
   // arrangement (the first width that does is 105, measured at 24 and at 30 rows); the last row moved with it.
+  // The widths in this table are what `panelFor` is asked, which is the width INSIDE the margin
+  // (`insideTheMargin` takes six off the terminal), not the terminal's columns; and 24 rows is
+  // below the floor, so these are the rule's answers and not a screen the console opens on.
   { columns: 105, rows: 24, form: 'columns' },
   { columns: 120, rows: 30, form: 'columns' },
   { columns: 190, rows: 64, form: 'columns' },
@@ -390,6 +393,18 @@ describe('the arrangement is chosen by the height as well as the width', () => {
     // one with no room for eight.
     expect(formAt(190, 64)).not.toBe(formAt(190, 20));
     expect(formAt(190, 64)).not.toBe(formAt(40, 64));
+  });
+
+  it('keeps a hundred-column console stacked under the longest version a title can carry', () => {
+    // What is pinned is the shape at a hundred columns on the floor's height: the width asked is
+    // what the margin leaves of a hundred, and the longest plausible version (a two-digit minor on
+    // a numbered pre-release) still gets the stacked arrangement, the drawing over the text.
+    const longest = '0.10.0-beta.12';
+    const title = subjectLine(`mnema  ·  v${longest}  ·  a session over this project`);
+    const inside = insideTheMargin(100);
+    expect(
+      panelFor({ ...OF_THE_PRODUCTS_SHAPE, title, columns: inside, rows: THE_FLOOR.rows }).form,
+    ).toBe('stacked');
   });
 
   it('walks the same three forms down the screen, and the last rung fits every size', () => {

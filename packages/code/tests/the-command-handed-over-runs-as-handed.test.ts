@@ -647,7 +647,8 @@ export const HANDED_OVER: Readonly<
   // name 139 for the front page and the docs that took its long form: the row that says the
   // reader's browser checks the page (`mnema site`, twice), the step that addresses a rule at a path
   // (`mnema link`), and the quick start, which names the verbs it runs.
-  span: { line: 68, name: 139, flag: 1, unwritten: 0 },
+  // name 140 for the changelog entry that says `mnema init` declares the backup in the record.
+  span: { line: 68, name: 140, flag: 1, unwritten: 0 },
   // name 18 until the page that says where the key lives named `mnema key protect` in a line of
   // its own.
   // line 35 until the same page showed that question in a block of its own.

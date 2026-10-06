@@ -39,6 +39,7 @@ import { fileURLToPath } from 'node:url';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 
 import {
+  backupDeclared,
   channelRefused,
   checkerEnrolled,
   checkerEnrollmentMessage,
@@ -934,5 +935,169 @@ describe('the two readers agree on records the product itself wrote — a checke
     expect(refused).toHaveLength(2);
     expect(refused.join('\n')).toContain('a retired checker key, which signs nothing');
     expect(refused.join('\n')).toContain('which is never enrolled again');
+  });
+});
+
+/**
+ * A KEY KEPT AS A BACKUP, said by the record (FORMAT.md section 6.5).
+ *
+ * A cold backup signs nothing until it is restored, so it never has a tail, and a reader that
+ * crosses `keys/` against `tails/` used to say it the only way the bytes allowed: a committed key
+ * whose tail may have gone. On every clone, for every honest record — a warning that is always on
+ * teaches a reader to skip the one that is not. `backup.declared` puts the role in the record, so
+ * every reader can tell the key built to write nothing from a key whose writing went missing, and
+ * the warning keeps its meaning for the second.
+ */
+describe('the two readers agree on records the product itself wrote — a declared backup', () => {
+  function declared(anchor: string, signer: KeyPair, backup: KeyPair, when = 3): CatalogEvent {
+    return backupDeclared(
+      { at: at(when), who: anchor, signerFp: signer.fingerprint, subject: anchor },
+      { backupFp: backup.fingerprint },
+    );
+  }
+
+  /** The keys each reader says have no tail and are not an expected backup. */
+  function keysWithoutTail(): { product: string[]; second: string[] } {
+    const product = verify(root, catalogUpcasters())
+      .census.filter((note) => note.kind === 'key-without-tail')
+      .map((note) => ('fingerprint' in note ? note.fingerprint : ''));
+    const second = secondReading(root)
+      .findings.filter((f) => f.level === 'note' && f.what.includes('has no tail on disk'))
+      .map((f) => f.what);
+    return { product, second };
+  }
+
+  /** A founder, and the cold backup it enrolled — the tree `mnema init` leaves. */
+  function founderAndBackup(): { a: KeyPair; b: KeyPair; anchor: string } {
+    const a = generateKeyPair();
+    const b = generateKeyPair();
+    commitPublicKey(a);
+    commitPublicKey(b);
+    return { a, b, anchor: deriveAnchor(a.fingerprint) };
+  }
+
+  it('an honest clone: a declared backup with no tail is expected by both, and neither warns', () => {
+    const { a, b, anchor } = founderAndBackup();
+    writeTail(
+      `${a.fingerprint}-i1`,
+      [founding(a), enrolled(anchor, a, b), declared(anchor, a, b)],
+      a,
+    );
+
+    const { productOk, verdict, refused } = bothReaders();
+    expect(refused).toEqual([]);
+    expect(productOk).toBe(true);
+    expect(verdict).toBe('VERIFIED');
+    expect(keysWithoutTail()).toEqual({ product: [], second: [] });
+    // NON-VACUITY: both readers SAW the key and said it as a backup, rather than not looking.
+    const census = verify(root, catalogUpcasters()).census;
+    expect(census.map((note) => note.kind)).toEqual(['backup-key']);
+    expect(census[0]?.detail).toContain('the record declares it');
+    const said = secondReading(root)
+      .findings.filter((f) => f.level === 'note')
+      .map((f) => f.what)
+      .join('\n');
+    expect(said).toContain(`${b.fingerprint} has no tail, and the record declares it the backup`);
+  });
+
+  it('a tail removed beside a declared backup: both still warn, about that key alone', () => {
+    // The declaration answers for ONE key. A second machine of the same identity, enrolled and
+    // never declared, whose tail is gone while its key stays, is the reading the warning is for.
+    const { a, b, anchor } = founderAndBackup();
+    const c = generateKeyPair();
+    commitPublicKey(c);
+    writeTail(
+      `${a.fingerprint}-i1`,
+      [founding(a), enrolled(anchor, a, b), declared(anchor, a, b), enrolled(anchor, a, c, 4)],
+      a,
+    );
+
+    const { productOk, verdict, refused } = bothReaders();
+    expect(refused).toEqual([]);
+    expect(productOk).toBe(true);
+    expect(verdict).toBe('VERIFIED');
+    const found = keysWithoutTail();
+    expect(found.product).toEqual([c.fingerprint]);
+    expect(found.second).toHaveLength(1);
+    expect(found.second[0]).toContain(c.fingerprint);
+    expect(found.second[0]).toContain('declares no backup');
+  });
+
+  it('a backup declared and then revoked: both say so, and neither calls it an expected backup', () => {
+    // The declaration is real and covered, so "the record declares no backup for it" would be
+    // false. But the identity no longer holds the key, so the absence is not expected either:
+    // a revoked key with no tail is a real signal, said in words that do not deny the record.
+    const { a, b, anchor } = founderAndBackup();
+    const revoke = keyRevoked(
+      { at: at(4), who: anchor, signerFp: a.fingerprint, subject: anchor },
+      { revokedFp: b.fingerprint, reason: 'rotation' },
+    );
+    writeTail(
+      `${a.fingerprint}-i1`,
+      [founding(a), enrolled(anchor, a, b), declared(anchor, a, b), revoke],
+      a,
+    );
+
+    const { productOk, verdict, refused } = bothReaders();
+    expect(refused).toEqual([]);
+    expect(productOk).toBe(true);
+    expect(verdict).toBe('VERIFIED');
+    const found = keysWithoutTail();
+    expect(found.product).toEqual([b.fingerprint]);
+    const census = verify(root, catalogUpcasters()).census;
+    expect(census.map((note) => note.kind)).toEqual(['key-without-tail']);
+    expect(census[0]?.detail).toBe(
+      `committed public key has no tail on disk — the record declared it a backup of ${anchor}, ` +
+        'and that identity has since revoked it, so the absence is no longer expected: the tail ' +
+        'may have been dropped (a botched merge), never written (an empty tail is not versioned), ' +
+        'or removed',
+    );
+    expect(found.second).toEqual([
+      `the committed key ${b.fingerprint} has no tail on disk, and the record declared it a ` +
+        `backup of ${anchor}, which that identity has since revoked, so the absence is no longer ` +
+        'expected: the tail may have been dropped, never written, or removed',
+    ]);
+  });
+
+  it('a declaration of another identity’s key: refused by both, and the key is not silenced', () => {
+    // X signs, in its own tail and under its own checkpoint, that A's backup is X's. The key is
+    // not a member of X, so the declaration is not X's to make.
+    const { a, b, anchor } = founderAndBackup();
+    const x = generateKeyPair();
+    commitPublicKey(x);
+    const xAnchor = deriveAnchor(x.fingerprint);
+    writeTail(`${a.fingerprint}-i1`, [founding(a), enrolled(anchor, a, b)], a);
+    writeTail(`${x.fingerprint}-i2`, [founding(x), declared(xAnchor, x, b, 4)], x);
+
+    const { productOk, verdict, refused } = bothReaders();
+    expect(productOk).toBe(false);
+    expect(productRefused()).toEqual([
+      'backup.declared names a key that is not a member of its identity at this point',
+    ]);
+    expect(verdict).toBe('REFUSED');
+    expect(refused).toHaveLength(1);
+    expect(refused.join('\n')).toContain('backup.declared names a key that is not a member');
+    expect(keysWithoutTail().product).toEqual([b.fingerprint]);
+  });
+
+  it('a declaration no checkpoint covers: ignored by both, and the key still warns', () => {
+    // A party with no key can append in the window above the last checkpoint. Honouring a
+    // declaration there would let it silence the warning about a tail it removed.
+    const { a, b, anchor } = founderAndBackup();
+    writeTail(
+      `${a.fingerprint}-i1`,
+      [founding(a), enrolled(anchor, a, b), declared(anchor, a, b)],
+      a,
+      { residual: 1 },
+    );
+
+    const { productOk, verdict, refused } = bothReaders();
+    expect(refused).toEqual([]);
+    expect(productOk).toBe(true);
+    expect(verdict).toBe('VERIFIED');
+    const found = keysWithoutTail();
+    expect(found.product).toEqual([b.fingerprint]);
+    expect(found.second).toHaveLength(1);
+    expect(found.second[0]).toContain(b.fingerprint);
   });
 });
