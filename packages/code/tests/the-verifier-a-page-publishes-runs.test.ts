@@ -35,9 +35,10 @@
  * verifier that changes its actual one cannot drift apart quietly.
  *
  * THE RECORD IT IS AIMED AT IS THE ONE THE PAGE TEACHES, and that is not a detail: the
- * published `checks: 11 ok … 4 note` is true of a record founded by `mnema init` AND
+ * published `checks: 11 ok … 5 note` is true of a record founded by `mnema init` AND
  * carrying one decision, which is exactly the sequence the section above it publishes.
- * Measured on 21/09/2026: `init` alone verifies at `9 ok, 4 note`. So this case founds the
+ * Measured on 21/09/2026: `init` alone verifies at `9 ok, 4 note`; the fifth note is the
+ * backup `init` declares, said as one (FORMAT.md section 6.5). So this case founds the
  * page's own first record, and a page whose two halves stopped agreeing goes red here.
  *
  * WHAT IT DOES NOT CHECK. The `git clone` line: it reaches the network, and a guard that

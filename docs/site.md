@@ -9,8 +9,8 @@ rejected, superseded and proposed ones), the history of each, who authorized it,
 stored events. The file also carries the record's files, and the page runs the same
 verifier as `mnema verify` over them in the reader's browser — no request, no key, nothing
 loaded from elsewhere — and prints its sentence. It is `mnema verify`'s verdict for a fresh
-clone of the repository; a machine that holds a registered backup key words one more clause
-of the census, which a clone cannot.
+clone of the repository, and the record's own declaration of the backup key `init` made is
+what lets a clone say that key as a backup rather than as a key whose tail is missing.
 
 What the verdict does not cover: it checks the hash chain and the checkpoint signatures
 against the public keys the page carries, not that a key belongs to the person a list names,

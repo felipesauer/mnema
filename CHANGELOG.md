@@ -12,6 +12,15 @@ tag, with its own changelog.
 
 ### Added
 
+- **The record says which key is a backup.** A new event kind, `backup.declared`
+  (`payload.backupFp`), says that one of an identity's keys is kept off the machine. `mnema init`
+  writes it when it enrolls the cold backup. `verify` and the Python reader read it: a declared
+  backup with no tail is said as `census [backup-key]` on every machine, so an honest clone no
+  longer carries a `census [key-without-tail]` note, and any other key with no tail still gets
+  one. The declaration is accepted only from the key's own identity (one naming another
+  identity's key is refused) and takes effect only when a checkpoint covers it
+  (`packages/chain/FORMAT.md`, section 6.5).
+
 - **An optional git hook that suggests the `Mnema-Decision` trailer.** `mnema commit-hook install`
   writes a `prepare-commit-msg` hook, `mnema commit-hook uninstall` removes it, and nothing else
   installs it: not `init`. It follows `core.hooksPath`, refuses (naming the path) to replace a hook it
@@ -90,6 +99,12 @@ tag, with its own changelog.
   section 4.1).
 - A retirement does not take back the results the key signed before it: they verify, and the
   census names them. Which of them the key signed after it leaked, the record cannot say.
+
+- A binary from before `backup.declared` stops reading the whole record once `init` has written
+  one into the committed tree, as it does for any kind it does not know.
+- A record written before `backup.declared` carries no declaration, and a later `init` does not
+  add one: its backup still reads as `census [key-without-tail]` on every machine but the one
+  that made it, and the note says that an undeclared backup reads that way.
 
 ## [0.1.0-beta] - 2026-10-05
 

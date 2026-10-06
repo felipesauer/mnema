@@ -300,6 +300,29 @@ export interface KeyRevokedV1 extends Envelope {
 }
 
 /**
+ * AN IDENTITY DECLARED ONE OF ITS KEYS A BACKUP: a key kept off the machine, which signs
+ * nothing until it is restored, so its having no tail is what is expected of it.
+ *
+ * `who` is the anchor and `subject` the same anchor — an identity declares only its own keys —
+ * and `signerFp` a key valid for it at this point. `backupFp` must be a member of the anchor at
+ * this point too: a declaration naming a key the identity does not hold is refused.
+ *
+ * It adds and removes no key, and it vouches for nothing a key signs; what it changes is how a
+ * reader SAYS a committed key with no tail (FORMAT.md section 6.5). Like a revocation it takes
+ * effect only when it is itself signature-covered: a declaration a party with no key appended
+ * above the last checkpoint would otherwise silence the warning about a tail it removed.
+ */
+export interface BackupDeclaredV1 extends Envelope {
+  readonly kind: 'backup.declared';
+  readonly v: 1;
+  /** Subject is the anchor whose backup the key is. */
+  readonly payload: {
+    /** The full fingerprint of the key kept as the identity's backup. */
+    readonly backupFp: string;
+  };
+}
+
+/**
  * A memory was captured — a point-in-time fact of knowledge.
  *
  * This is a POINTLESS fact in the workflow sense: it has no state and no birth
@@ -1125,7 +1148,8 @@ export type CatalogEvent =
   | CheckPassedV1
   | CheckFailedV1
   | CheckerRetiredV1
-  | AccountLinkedV1;
+  | AccountLinkedV1
+  | BackupDeclaredV1;
 
 /** The `kind` discriminators present in the catalog. */
 export type EventKind = CatalogEvent['kind'];
@@ -1163,4 +1187,5 @@ export const LATEST_VERSION: { readonly [K in EventKind]: number } = {
   'check.failed': 1,
   'checker.retired': 1,
   'account.linked': 1,
+  'backup.declared': 1,
 };

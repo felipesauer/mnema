@@ -73,6 +73,7 @@ import {
 } from '../workflow/channel-operations.js';
 import { acceptDecision, recordDecision } from '../workflow/decision-operations.js';
 import {
+  declareBackup,
   enrollKey,
   foundIdentity,
   linkAccount,
@@ -192,6 +193,9 @@ const ARRIVALS: { readonly [K in EventKind]: Arrival } = {
   },
   'account.linked': {
     emit: (ctx) => landed(linkAccount(ctx, { account: 'octocat' })),
+  },
+  'backup.declared': {
+    emit: (ctx) => landed(declareBackup(ctx, { backupFp: 'a'.repeat(64) })),
   },
   'memory.captured': {
     emit: (ctx) => landed(captureMemory(ctx, { content: 'a memory that arrived' })),

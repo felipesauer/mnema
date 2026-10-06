@@ -30,6 +30,10 @@ The shape, from the document:
     any other kind     signed by a checker key: refused, whatever it is
     any kind at all    signed by a retired key: refused; a checker.enrolled naming one too
 
+    backup.declared    who == subject, signerFp valid for the anchor at this point, and
+                       backupFp valid for the anchor at this point
+                       -> when COVERED, backupFp is the anchor's declared backup (6.5)
+
     every other event  signerFp is in the set of its own `who` at its point in the fold
 
 THE TWO GATES ARE THE PART A READER GETS WRONG BY OMISSION. An event above the last
@@ -79,6 +83,16 @@ class Issue(NamedTuple):
     detail: str
 
 
+class Resolution(NamedTuple):
+    """What the fold answers: the refusals, and what it leaves standing at the end."""
+
+    issues: list[Issue]
+    # The keys valid for each anchor once every tail is folded.
+    members: dict[str, set[str]]
+    # Section 6.5: the keys a COVERED backup.declared names, each with its anchor.
+    backups: dict[str, str]
+
+
 def _merged(entries_by_tail: dict[str, list[Entry]]) -> list[tuple[str, Entry]]:
     """Section 6.2's order: `seq` within a tail, smallest `at` across tails, then tail id."""
     cursors = {tail: 0 for tail, entries in entries_by_tail.items() if entries}
@@ -110,9 +124,11 @@ def resolve(
     entries_by_tail: dict[str, list[Entry]],
     covered_through: dict[str, int],
     ring: dict[str, PublicKey],
-) -> list[Issue]:
+) -> Resolution:
     """Fold the enrolment facts and answer every event whose signer was not authorized."""
     issues: list[Issue] = []
+    # Section 6.5: the keys a covered declaration says are an anchor's backup.
+    backups: dict[str, str] = {}
     valid: dict[str, set[str]] = {}
     # Keys a signature-covered revocation removed, as `<anchor>|<fp>`. An addition that
     # would restore one takes effect only when it is itself covered.
@@ -256,6 +272,33 @@ def resolve(
             add_key(anchor, str(new_fp), tail, seq)
             continue
 
+        if kind == "backup.declared":
+            anchor = subject
+            backup = payload.get("backupFp")
+            if who != anchor or not isinstance(anchor, str):
+                issues.append(Issue(tail, seq, "backup.declared who is not the anchor it declares for"))
+                continue
+            if signer not in keys_of(anchor):
+                issues.append(
+                    Issue(tail, seq, "backup.declared is signed by a key not valid for the anchor at this point")
+                )
+                continue
+            if not isinstance(backup, str) or backup not in keys_of(anchor):
+                issues.append(
+                    Issue(
+                        tail,
+                        seq,
+                        "backup.declared names a key that is not a member of its identity at this point",
+                    )
+                )
+                continue
+            # Section 6.5's gate: the declaration quiets the warning a removed tail raises, so an
+            # uncovered one, which a keyless party could have appended, is ignored.
+            if not is_covered(tail, seq):
+                continue
+            backups[backup] = anchor
+            continue
+
         if kind == "key.revoked":
             anchor = subject
             if who != anchor or not isinstance(anchor, str):
@@ -286,7 +329,7 @@ def resolve(
                     f"{str(who)[:20]}... at this point",
                 )
             )
-    return issues
+    return Resolution(issues, valid, backups)
 
 
 def _reverse_signature_ok(

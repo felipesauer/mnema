@@ -124,6 +124,8 @@ export const FED_BY_KIND: { readonly [K in EventKind]: readonly ProjectionTable[
   // A claim about an identity, read off the chain by the one reading that asks it
   // (`verify --against-github`), never off this cache.
   'account.linked': [...EVERY_KIND_FEEDS],
+  // A key's role, read by the verifier's census; it adds and removes no member.
+  'backup.declared': [...EVERY_KIND_FEEDS],
 };
 
 /**

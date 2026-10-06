@@ -412,7 +412,11 @@ describe('mnema CLI — init → task → verify, end to end', () => {
 
     const rosters = [firstRoot, secondRoot].map((root) => {
       const events = orderedEvents({ root }, catalogUpcasters());
-      expect(events.map((e) => e.kind)).toEqual(['identity.founded', 'key.enrolled']);
+      expect(events.map((e) => e.kind)).toEqual([
+        'identity.founded',
+        'key.enrolled',
+        'backup.declared',
+      ]);
       const verdict = verify(root);
       expect(verdict.ok).toBe(true);
       expect(verdict.fullySigned).toBe(true);

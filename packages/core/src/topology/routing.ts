@@ -203,6 +203,7 @@ export const UNROUTED_KINDS: { readonly [K in Exclude<EventKind, RoutedKind>]: s
   'key.enrolled': 'the roster belongs to the tree that holds the identity it rosters',
   'key.revoked': 'the roster belongs to the tree that holds the identity it rosters',
   'account.linked': 'an identity names its account in the tree that holds the identity',
+  'backup.declared': 'a backup is declared in the tree that enrolled it, beside its enrollment',
   'tail.pruned':
     'a waiver belongs to the tree whose tail it names — the census that reads it is per-tree',
 };

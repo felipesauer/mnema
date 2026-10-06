@@ -26,6 +26,7 @@
 import {
   accountLinked,
   type BackupKey,
+  backupDeclared,
   type CatalogEvent,
   type ChainLayout,
   type ChainSigner,
@@ -474,10 +475,14 @@ export function establishIdentity(
     }
     if (decided.has(registration.fingerprint)) continue;
     materializePublicKey(ctx.layout, registration);
-    const joined = enrollKey(ctx, {
-      newFp: registration.fingerprint,
-      reverseSig: registration.reverseSig,
-    });
+    const input = { newFp: registration.fingerprint, reverseSig: registration.reverseSig };
+    // The backup's role goes into the record beside its enrollment, under the same signature,
+    // so every clone knows the key is kept off the machine and expects it to have no tail
+    // (FORMAT.md section 6.5).
+    const joined =
+      registration.fingerprint === backup?.fingerprint
+        ? enrollBackup(ctx, input)
+        : enrollKey(ctx, input);
     // A registration the catalog itself would not accept is a key this tree did
     // not take, reported like every other one rather than thrown. It is not
     // reachable through `listRegistrations` (a usable registration carries a
@@ -516,19 +521,69 @@ export function enrollKey(
   input: { newFp: string; reverseSig: string },
 ): IdentityOk | AppendRefusal {
   const anchor = ensureFounded(ctx);
-  const at = (ctx.clock ?? systemClock)();
   // Through the door like every other write, even though both fields are derived
   // (a fingerprint computed from the joining key, a signature `decodeKeyRequest`
   // already rejected as absent). This is an EXPORT of the writing surface, so a
   // caller outside the two surfaces can hand it a value the real callers never
   // produce, and it owes that caller a refusal it can read rather than a throw.
-  const appended = appendEvent(
-    ctx.writer,
-    keyEnrolled(
-      { at, who: anchor, signerFp: ctx.writer.signerFingerprint, subject: anchor },
-      { newFp: input.newFp, reverseSig: input.reverseSig },
-    ),
+  const appended = appendEvent(ctx.writer, enrollment(ctx, anchor, input));
+  if (!appended.ok) return appended;
+  ctx.writer.checkpoint();
+  return { ok: true, anchor };
+}
+
+/**
+ * Enrolls the identity's cold backup and declares it one, under ONE checkpoint: the two facts
+ * are one act of `init`, and a reader honours the declaration only once it is covered. A
+ * declaration the door refused after the enrollment landed still leaves the enrollment signed.
+ */
+function enrollBackup(
+  ctx: WriteContext,
+  input: { newFp: string; reverseSig: string },
+): IdentityOk | AppendRefusal {
+  const anchor = ensureFounded(ctx);
+  const enrolledHere = appendEvent(ctx.writer, enrollment(ctx, anchor, input));
+  if (!enrolledHere.ok) return enrolledHere;
+  const declared = appendEvent(ctx.writer, declaration(ctx, anchor, input.newFp));
+  ctx.writer.checkpoint();
+  if (!declared.ok) return declared;
+  return { ok: true, anchor };
+}
+
+function enrollment(
+  ctx: WriteContext,
+  anchor: string,
+  input: { newFp: string; reverseSig: string },
+): CatalogEvent {
+  const at = (ctx.clock ?? systemClock)();
+  return keyEnrolled(
+    { at, who: anchor, signerFp: ctx.writer.signerFingerprint, subject: anchor },
+    { newFp: input.newFp, reverseSig: input.reverseSig },
   );
+}
+
+function declaration(ctx: WriteContext, anchor: string, backupFp: string): CatalogEvent {
+  const at = (ctx.clock ?? systemClock)();
+  return backupDeclared(
+    { at, who: anchor, signerFp: ctx.writer.signerFingerprint, subject: anchor },
+    { backupFp },
+  );
+}
+
+/**
+ * Declares one of this installation's anchor's keys its cold backup: a key kept off the
+ * machine, which signs nothing until it is restored, so a reader expects it to have no tail.
+ * Checkpointed at once, because a reader honours the declaration only when it is
+ * signature-covered. {@link establishIdentity} declares the backup it enrolls in the same act;
+ * this is the operation on its own, and a reader refuses a declaration naming a key the anchor
+ * does not hold.
+ */
+export function declareBackup(
+  ctx: WriteContext,
+  input: { backupFp: string },
+): IdentityOk | AppendRefusal {
+  const anchor = ensureFounded(ctx);
+  const appended = appendEvent(ctx.writer, declaration(ctx, anchor, input.backupFp));
   if (!appended.ok) return appended;
   ctx.writer.checkpoint();
   return { ok: true, anchor };

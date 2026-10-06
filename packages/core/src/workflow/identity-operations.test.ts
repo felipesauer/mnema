@@ -88,11 +88,13 @@ describe('establishIdentity — a tree is born with the whole identity', () => {
     expect(established.backup?.created).toBe(true);
     expect(established.enrolled).toEqual([established.backup?.fingerprint]);
     expect(established.declined).toEqual([]);
-    // Both facts are on the chain: the founding of the machine's key, and the
-    // enrollment of a key that has never signed here.
+    // The facts are on the chain: the founding of the machine's key, the
+    // enrollment of a key that has never signed here, and its declaration as the
+    // backup, so every reader expects it to have no tail.
     expect(orderedEvents({ root: tree.root }, upcasters).map((e) => e.kind)).toEqual([
       'identity.founded',
       'key.enrolled',
+      'backup.declared',
     ]);
     // The public half is materialized, so an anonymous verifier can check the
     // consent signature without ever seeing the key root.

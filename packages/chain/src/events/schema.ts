@@ -249,6 +249,8 @@ export const PAYLOAD_SCHEMA: { readonly [K in EventKind]: PayloadSchemaOf<K> } =
   // Both required: a claim of an account that does not say which host, or which account,
   // names nothing a reader could go and ask.
   'account.linked': { service: 'string', account: 'string' },
+  // Required: a declaration that names no key says nothing a reader could cross.
+  'backup.declared': { backupFp: 'string' },
 };
 
 /**

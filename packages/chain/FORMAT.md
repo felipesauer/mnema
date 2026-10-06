@@ -6,7 +6,7 @@ against their implementation, and get the same digests we do.
 
 **Somebody has.** [`verifier/`](./verifier/) beside this file is a second implementation, in
 Python, written from this document and importing nothing of the product it checks. It
-reproduces the 29 published vectors and the four aggregate digests, and checks the frozen
+reproduces the 32 published vectors and the four aggregate digests, and checks the frozen
 records in the test suite beside the product
 (`packages/chain/src/chain/second-reader-agrees-on-the-record.test.ts`), on honest records
 and on every input the format refuses. The two verdicts differ in two pinned cases. With the
@@ -524,6 +524,47 @@ A verification of the format does not need this rule — it decides what a reade
 what verifies — and the second reader beside this file does not read retractions at all. A
 binary from before the rule applied every retraction, whoever signed it.
 
+### 6.5 A key kept as a backup
+
+A key's fingerprint is the id of the tail it writes (§3), so `keys/` is a roster of the tails
+that should exist, and a reader can cross the two. A committed key with no tail has innocent
+readings — a machine that never wrote, a merge that dropped a tail — and a guilty one: a tail
+removed to hide its events. One key has no tail by design: the cold backup an identity keeps
+off the machine, which signs nothing until it is restored. Without a fact saying which key that
+is, every honest record warned about it on every clone, and a warning that is always on is one a
+reader learns to skip.
+
+`backup.declared` (`payload.backupFp`) is that fact. It is **not part of the fold of §6.2**: it
+adds and removes no key and makes no event authentic or not. It is judged at its point in the
+merged order of §6.2, and refused — as a `key.enrolled` would be — when any condition fails:
+
+| kind | what it must satisfy | what it does |
+|---|---|---|
+| `backup.declared` | `who == subject`; `signerFp` is in the anchor's set at this point; and `payload.backupFp` is in the anchor's set at this point | when SIGNATURE-COVERED: `backupFp` is the anchor's declared backup |
+
+An identity declares only its own keys: a declaration naming a key another identity holds, or a
+key never enrolled, is refused, not ignored, because it is a signed claim about somebody else's
+roster. **It takes effect only when it is signature-covered** (§6.2's meaning), for the
+revocation's reason mirrored: a party with no key can append above the last checkpoint, and an
+uncovered declaration would let it silence the warning about a tail it removed.
+
+**How a reader uses it.** For each committed key whose fingerprint names no tail: if a covered
+`backup.declared` names it, and the key is still in that anchor's set at the end of the fold (a
+backup revoked since is not), the absence is expected and is said as a backup's. Any other key
+with no tail is said as one whose tail may have gone; a key declared a backup and revoked since
+is said so, as declared and revoked, rather than as a key the record declares no backup for. Both are notes, never a refusal: an
+absence is not something a reader can prove was tampering. A record written before this kind
+existed carries no declaration, so its backup reads as any other key with no tail; this
+product's `verify` still says it as a backup on the machine that made it, from that machine's
+own registration, and the words of the note say why elsewhere. A binary from before this kind
+refuses to read a record that holds one, as it does any kind it does not know (§4.1)
+(`packages/chain/src/chain/second-reader-agrees-on-enrolment.test.ts`,
+`packages/code/src/commands/verify.test.ts`).
+
+What it does not answer: a backup that WAS restored and signed would have a tail of its own, so
+a declared backup with no tail is also what a restored backup whose tail was removed looks like.
+The note says so.
+
 ## 7. Versions, and why a proof is never recomputed over a reading
 
 Every event carries `kind` and `v`. Together they select exactly one payload
@@ -550,7 +591,7 @@ paragraph used to read *"the seven top-level keys of an event are `at`, `kind`,
 `payload`, `signerFp`, `subject`, `v` and `who`"*, and that sentence was false: it
 was the INTERSECTION of the published vectors, and `which` and `run` were carried
 by sixteen and three of those same vectors respectively (eighteen and five of the
-thirty published today). What falsified it is that
+thirty-two published today). What falsified it is that
 an independent verifier believed it — it took the intersection, as the sentence
 invited, and **refused an honest event for carrying `which`**, on a record this
 product read as fine (§4.1, gap G25). A required field and an optional one look

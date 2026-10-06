@@ -170,10 +170,10 @@ describe('mnema verify', () => {
 });
 
 describe('the machine the verdict is asked from', () => {
-  it('says the backup `init` made as one where it was made, and as the record alone says it anywhere else', () => {
-    // The link from the verb to the chain: the census can only say a key is a backup if the
-    // verb hands it THIS machine's key root, and a verb that stopped handing it would print
-    // the key `init` made never to write as one whose tail may have gone.
+  it('says the backup `init` made as one on every machine, because the record declares it', () => {
+    // An honest clone: `init` declares the backup in the record, so a machine that never saw
+    // the key root reads the key the record says it is — and does not print the key made never
+    // to write as one whose tail may have gone.
     const { repo, env } = setup();
     const made = found({ cwd: repo, env });
     const backup = made.identity?.backup?.fingerprint;
@@ -196,7 +196,9 @@ describe('the machine the verdict is asked from', () => {
         'fingerprint' in note ? note.fingerprint : undefined,
       ]);
     expect(kinds(here)).toEqual([['backup-key', backup]]);
-    expect(kinds(there)).toEqual([['key-without-tail', backup]]);
+    expect(kinds(there)).toEqual([['backup-key', backup]]);
+    const [said] = verdictOf(there, 'public').result.census;
+    expect(said?.detail).toContain('as the record declares it');
     // What the machine knows moves the words, never the verdict.
     expect(here.record.level).toBe(there.record.level);
     expect(here.record.ok).toBe(there.record.ok);

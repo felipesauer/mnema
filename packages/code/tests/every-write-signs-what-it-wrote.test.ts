@@ -159,9 +159,10 @@ const CODE_SRC = join(HERE, 'src');
  * refusal of a write arrived: `recordChannelRefused`, and the one body it shares with
  * `recordChannelAsked` (`recordRuleAtPath`). 36 since a note can be retracted: `retractNote`. 39 since a rule can carry a check: `declareCheck`,
  * `enrollChecker` and `runRuleChecks`. 40 since an identity can name its account: `linkAccount`.
- * 41 since a checker key can be retired: `retireChecker`.
+ * 41 since a checker key can be retired: `retireChecker`. 43 since an identity declares its
+ * backup: `declareBackup`, and `enrollBackup`, which `init` enrolls and declares it with.
  */
-const CORE_OPERATIONS_THAT_APPEND = 41;
+const CORE_OPERATIONS_THAT_APPEND = 43;
 
 /** How many paths of the shipped surface reach one of them. */
 const SURFACE_WRITE_PATHS = 41;
@@ -998,7 +999,8 @@ describe('every write path leaves the record fully signed', () => {
     // of it, measured on the binary (30 writes to a fresh record — 32 events, 31
     // checkpoints, 1.03 events per checkpoint), and it must not have moved. Counted
     // off the files rather than through `verify`, because what is being pinned is the
-    // ratio and not the level.
+    // ratio and not the level. `init` writes one event more since it declares the backup
+    // it enrolls, under the same signature: 33 events, and still 31 checkpoints.
     const project = join(sandbox, 'cadence');
     mkdirSync(project, { recursive: true });
     const ctx = { cwd: project, env };
@@ -1018,7 +1020,7 @@ describe('every write path leaves the record fully signed', () => {
         if (file === 'checkpoints.jsonl') checkpoints += lines;
       }
     }
-    expect(events).toBe(32);
+    expect(events).toBe(33);
     expect(checkpoints).toBe(31);
     expect(verify(root).level).toBe('fully-signed');
   });

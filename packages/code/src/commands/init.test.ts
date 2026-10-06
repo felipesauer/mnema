@@ -118,10 +118,11 @@ describe('mnema init', () => {
     expect(result.identity?.backup?.created).toBe(true);
     expect(result.identity?.enrolled).toEqual([backupFp]);
     expect(result.identity?.declined).toEqual([]);
-    // Both facts are on the chain, in order.
+    // The facts are on the chain, in order: the backup is enrolled, then declared one.
     expect(orderedEvents({ root: result.root }, catalogUpcasters()).map((e) => e.kind)).toEqual([
       'identity.founded',
       'key.enrolled',
+      'backup.declared',
     ]);
     // Both public keys are in the tree (committed material an anonymous verifier
     // needs); only the machine's own key has a private half, and it is not here.
