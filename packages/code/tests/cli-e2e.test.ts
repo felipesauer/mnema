@@ -3041,6 +3041,25 @@ describe('mnema CLI — what enters the record', () => {
     expect(printed).toContain('1 value(s) replaced before recording');
   });
 
+  it('an email address in a note is replaced by a marker, and the writer is told what was taken out', async () => {
+    await run(['init'], capture().io);
+    const m = capture();
+    await run(['memory', 'asked by jane.doe@example.com in the review'], m.io);
+    expect(m.failed()).toBe(false);
+    const printed = m.out.join('\n');
+    expect(printed).toContain('Captured memory');
+
+    // The record, not the report: the address is absent and the marker is in its place.
+    const trees = treesOf();
+    for (const value of recordedText(trees.projectPublic)) expect(value).not.toContain('jane.doe');
+    expect(recordedText(trees.projectPublic)).toContain('asked by <email> in the review');
+
+    expect(printed).toContain('1 value(s) replaced before recording: <email>');
+    // An address is not a credential: there is nothing to rotate, and the line must not say so.
+    expect(printed).not.toContain('rotate them');
+    expect(printed).toContain('mnid');
+  });
+
   it('the notice stays away when nothing was replaced', async () => {
     await run(['init'], capture().io);
     const m = capture();

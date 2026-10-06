@@ -61,9 +61,9 @@ import {
   chainRootForScope,
   type DiscoveryEnv,
   type PassedOverTree,
+  type ReplacedClass,
   type ResolvedTrees,
   type Scope,
-  type SecretClass,
 } from '@mnema/core';
 import {
   authorizingAnchor,
@@ -776,10 +776,10 @@ export function openWrite(session: Session, scope: Scope, target?: WriteTarget):
  * saying which facts it is about — they are not the fact the reply acknowledges.
  */
 export class ReplacementsOwed {
-  private held: SecretClass[] = [];
+  private held: ReplacedClass[] = [];
 
   /** Holds what a write the connection made on its own replaced, when it replaced anything. */
-  add(replaced: readonly SecretClass[] | undefined): void {
+  add(replaced: readonly ReplacedClass[] | undefined): void {
     if (replaced !== undefined) this.held.push(...replaced);
   }
 
@@ -878,7 +878,7 @@ export interface SessionClose {
    * no tool call, so the host's log is the one place it can be said; the same name was
    * already reported to the agent when the run opened ({@link ReplacementsOwed}).
    */
-  readonly replaced: readonly SecretClass[];
+  readonly replaced: readonly ReplacedClass[];
   /** The roots a write began in with no run to show for it — see {@link Session.writesBegun}. */
   readonly begunWithNoRun: readonly string[];
 }
@@ -911,7 +911,7 @@ export interface SessionClose {
 export function closeSession(session: Session): SessionClose {
   const closed: string[] = [];
   const leftOpen: string[] = [];
-  const replaced: SecretClass[] = [];
+  const replaced: ReplacedClass[] = [];
   // FIRST, before a single `run.ended` is appended: from here on this session has no
   // run a write could honestly pin to, and a call already in flight resumes after this
   // function returns (see {@link Session.ended}). Set even if the closes below fail —

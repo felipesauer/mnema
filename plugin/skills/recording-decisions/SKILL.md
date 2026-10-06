@@ -33,7 +33,8 @@ you records it. Then skip the rest of this skill.
    would otherwise work out again, goes to `capture_memory`.
 
 Not for the record: a credential (a record is permanent, and a public one is committed and
-cloned), what the code or its history already says, or a log of every step.
+cloned), personal data such as an email address (the `mnid` already says who wrote), what
+the code or its history already says, or a log of every step.
 
 ## Red Flags
 

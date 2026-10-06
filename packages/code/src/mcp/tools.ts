@@ -102,9 +102,9 @@ import {
   isSearchKind,
   type ProjectionCache,
   type ReferenceDirection,
+  type ReplacedClass,
   type Scope,
   SEARCH_KINDS,
-  type SecretClass,
   SKILL_ACTIONS,
   systemClock,
 } from '@mnema/core';
@@ -1686,7 +1686,7 @@ function recordConsultations(
   // The classes across every consultation this call appended, distinct: the agent
   // name is the same on all of them, so listing it once per skill would turn one
   // dirty session name into a report as long as the pattern list.
-  const replaced = new Set<SecretClass>();
+  const replaced = new Set<ReplacedClass>();
   for (const skill of fresh) {
     const done = recordConsultation(ctx, {
       skill: skill.id,
