@@ -4,7 +4,7 @@ import { dirname, join, relative } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { catalogUpcasters, deriveAnchor, openChainForWriting } from '@mnema/chain';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
-import { declareCheck, enrollChecker, runRuleChecks } from '../checks/operations.js';
+import { declareCheck, enrollChecker, retireChecker, runRuleChecks } from '../checks/operations.js';
 import { requestEnrollment } from '../identity/handshake.js';
 import { enrollFromRequest, revokeMember } from '../identity/roster.js';
 import {
@@ -185,6 +185,7 @@ describe('every write refuses what no read could accept', () => {
     let note = '';
     let rule = '';
     let checker: WriteContext | undefined;
+    let checkerKey = '';
     return [
       {
         op: 'createTask',
@@ -282,6 +283,22 @@ describe('every write refuses what no read could accept', () => {
             rulesInForce: new Set([rule]),
             run: () => ({ passed: false, failure: '', output: '' }),
           }),
+      },
+      {
+        op: 'retireChecker',
+        field: 'reason',
+        names: 'payload.reason',
+        prepare: () => {
+          const asked = requestEnrollment({
+            anchor: deriveAnchor(ctx.writer.signerFingerprint),
+            keyRoot,
+            asChecker: true,
+          });
+          if (!asked.ok) throw new Error('no checker request');
+          if (!enrollChecker(ctx, { request: asked.request }).ok) throw new Error('no checker');
+          checkerKey = asked.fingerprint;
+        },
+        drive: () => retireChecker(ctx, { fingerprint: checkerKey, reason: '' }),
       },
       {
         op: 'recordObservation',

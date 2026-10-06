@@ -8,8 +8,10 @@
 
 import type { Command } from 'commander';
 import { RECORD_CONTRACT_HELP } from '../recorded-content.js';
+import { addBodySourceOptions } from './body-source.js';
 import { here } from './context.js';
 import { scopeOption } from './enumerated.js';
+import { REFUSED } from './from-the-group.js';
 import { declaredAgent, INVALID, parseScope, WHICH_HELP } from './options.js';
 import { reportRecorded, reportRefusal } from './report.js';
 import { PIN_REFUSED } from './run-pin.js';
@@ -21,7 +23,7 @@ export function registerMemory(program: Command, wiring: Wiring): Declared {
   const memory = program
     .command('memory')
     .description('capture a memory in the current project')
-    .argument('<content>', 'the memory to record')
+    .argument('[content]', 'the memory to record (or give it with --stdin or --body-file)')
     .addOption(
       scopeOption(
         'memory',
@@ -29,8 +31,20 @@ export function registerMemory(program: Command, wiring: Wiring): Declared {
       ),
     )
     .option('--which <agent>', WHICH_HELP, declaredAgent)
-    .addHelpText('after', RECORD_CONTRACT_HELP)
-    .action(async (content: string, opts: { scope?: string; which?: string }) => {
+    .addHelpText('after', RECORD_CONTRACT_HELP);
+  addBodySourceOptions(memory, 'memory');
+  memory.action(
+    async (
+      typed: string | undefined,
+      opts: { scope?: string; which?: string; stdin?: boolean; bodyFile?: string },
+    ) => {
+      const { bodyFrom } = await import('./body-source.js');
+      const content = await bodyFrom(wiring, 'memory', 'as an argument', {
+        typed,
+        stdin: opts.stdin,
+        bodyFile: opts.bodyFile,
+      });
+      if (content === REFUSED) return;
       const { runMemory } = await import('../commands/memory.js');
       const scope = parseScope(opts.scope, wiring);
       if (scope === INVALID) return;
@@ -51,6 +65,7 @@ export function registerMemory(program: Command, wiring: Wiring): Declared {
         return;
       }
       reportRefusal(wiring, result);
-    });
+    },
+  );
   return mutatesTheRecord(memory);
 }

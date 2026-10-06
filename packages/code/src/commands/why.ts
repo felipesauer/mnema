@@ -31,7 +31,7 @@ import {
   LISTED,
   resolveCommit,
 } from '../git-log.js';
-import { readRulesInForceAt } from '../governed-tree.js';
+import { readRulesInForceWhereItLands } from '../governed-tree.js';
 import {
   linkBreaksOf,
   type ScopedLinkBreak,
@@ -156,7 +156,7 @@ export function runWhy(
       const changed = filesOf(root, commit.sha);
       const covered = new Map<string, { rule: PushedRule; files: number }>();
       for (const file of changed.files) {
-        const at = readRulesInForceAt(sources, { path: file, root, from: root });
+        const at = readRulesInForceWhereItLands(sources, { path: file, root, from: root });
         for (const rule of at.rules) {
           const key = `${rule.id}\0${rule.address}`;
           covered.set(key, { rule, files: (covered.get(key)?.files ?? 0) + 1 });
@@ -173,7 +173,11 @@ export function runWhy(
         linkBreaks,
       };
     }
-    const at = readRulesInForceAt(sources, { path: input.target, root, from: ctx.cwd });
+    const at = readRulesInForceWhereItLands(sources, {
+      path: input.target,
+      root,
+      from: ctx.cwd,
+    });
     const gitHere = inAWorkTree(root);
     const touched =
       at.relative !== undefined && gitHere ? commitsWithTrailer(root, [at.relative]) : [];

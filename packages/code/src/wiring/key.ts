@@ -241,8 +241,46 @@ export function registerKey(program: Command, wiring: Wiring): Declared {
     .description('retire a key from this identity, from this point forward')
     .argument('<fingerprint>', 'the full fingerprint of the key to retire')
     .requiredOption('--reason <text>', 'why it is being retired (recorded in the fact)')
+    .option(
+      '--checker',
+      'retire a key that signs check results: from then on it signs nothing, and is never enrolled again',
+    )
     .addHelpText('after', RECORD_CONTRACT_HELP)
-    .action(async (fingerprint: string, opts: { reason: string }) => {
+    .action(async (fingerprint: string, opts: { reason: string; checker?: boolean }) => {
+      if (opts.checker === true) {
+        const { runCheckerRetire } = await import('../commands/key-revoke.js');
+        const result = runCheckerRetire(here(), { fingerprint, reason: opts.reason });
+        if (result.ok) {
+          if (result.alreadyRetired) {
+            io.out(
+              `Key ${result.fingerprint} was retired as a checker by ${result.retiredBy} already — nothing recorded.`,
+            );
+            return;
+          }
+          io.out(`Retired checker ${result.fingerprint}`);
+          reportReplacement(result, io);
+          io.out(render(fact(`it signs nothing from here on — retired by ${result.retiredBy}`)));
+          io.out(
+            render(
+              fact(
+                'What it signed before stays in the record, and `mnema verify` names it: a leaked ' +
+                  'key can date a result before its own retirement.',
+              ),
+            ),
+          );
+          io.out(
+            render(
+              fact('Commit and share the record: a retirement others cannot read retires nothing.'),
+            ),
+          );
+          return;
+        }
+        reportRefusal(wiring, result, {
+          NO_PROJECT:
+            'No mnema project here. Run `mnema key revoke` inside the project to record it.',
+        });
+        return;
+      }
       const { runKeyRevoke } = await import('../commands/key-revoke.js');
       const result = runKeyRevoke(here(), { fingerprint, reason: opts.reason });
       if (result.ok) {

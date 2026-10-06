@@ -765,17 +765,31 @@ of an identity, and a key that is already a member of one is refused. `mnema ver
 checker key, so a leaked runner secret cannot decide a rule or write a note. `mnema accountability`
 lists the checker as a machine, apart from the people.
 
+**A leaked key is retired.** Any member of an identity can take the role away, as any member can
+grant it; the key is not asked:
+
+```sh
+mnema key revoke --checker <fingerprint> --reason "<why>"
+```
+
+Commit and push the retirement, and enroll a new key for the runner. From the retirement on, `mnema
+verify` refuses a result the old key signs, any other fact it signs, and an enrolment of it again;
+`check run` refuses to run with it. The results it signed before still verify, because the key held
+the role when it signed them, and `verify` names them in its census
+(`census [retired-checker] …`): a leaked key can date a result before its own
+retirement, so the record no longer vouches for them. `mnema accountability` says who retired it.
+
 What it does not promise: a result says that a key your team enrolled reported the rule held at that
 commit. It does not say the program ran as it was declared on that machine, and it does not say
 the program checks what its rule says. A declared program runs on the runner, so whoever can commit
-a declaration can make the runner start that program. The Action in `packages/action` reads the
-record and runs `mnema verify`; it does not run `check run`, so today the step above is one of your
-own workflow's.
+a declaration can make the runner start that program. The Action in `packages/action` runs the
+step above for you when it is handed the checker key as a secret (`checker-key`), and leaves the
+results in the working tree for your workflow to commit or upload.
 
 ### Reading the git log against the record
 
 A commit carries the change and the record carries the reasoning; a trailer in the commit's
-message is the line between them, and four verbs read it. They run `git log` when asked, take no
+message is the line between them, and four verbs read it (a fifth, `commit-hook`, is below). They run `git log` when asked, take no
 lock and write nothing: not a pointer to a commit, not a count.
 
 ```sh
@@ -807,6 +821,28 @@ number — commits since the acceptance that touched an address of the decision,
 `--min-commits` says otherwise — and it points, it does not conclude: a decision about a file
 edited every day because the decision is being followed is listed too. Only accepted decisions
 that hold an address are asked about. `commits` and `why` show the newest 30 of a list and say when there were more.
+
+**A hook that suggests the trailer, if you want one.**
+
+```sh
+mnema commit-hook install     # writes the prepare-commit-msg hook in this repository
+mnema commit-hook uninstall   # removes it, if mnema wrote it
+```
+
+Only these two verbs touch your hooks; `mnema init` does not. The hook goes where git reads hooks
+(`core.hooksPath` when it is set, otherwise the repository's `hooks/`), and if a `prepare-commit-msg`
+is already there that mnema did not write, `install` refuses and prints its path; `uninstall` removes
+a file only when it is byte for byte the hook `install` writes. When you commit in an editor, the hook
+appends a few `#` lines to the message naming the decisions in force that govern the staged files
+(the reading that finds the rules for a path), each with its `Mnema-Decision:` line. Git drops `#` lines, so a
+commit you leave alone is the commit you would have made; to cite a decision, delete the `# ` in front
+of its line. **What it does not do.** It suggests and never decides: it does not check that the change
+follows the decision, and it adds nothing to a message given with `-m` or `-F`, to a merge, an amend, or
+under a `commit.cleanup` that keeps comments or a `core.commentChar` other than `#`. A `--cleanup=verbatim`
+typed on the command line is not seen by the hook, and the block stays in the message, like git's own
+comments. It needs `mnema` on the `PATH` git runs hooks with; when
+`mnema` is missing or fails, the hook does nothing and the commit goes through. It looks for the
+project from the repository's top directory, so a record kept in a subdirectory draws no suggestion.
 
 ### A record that inherits another repository's decisions
 

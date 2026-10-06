@@ -281,6 +281,10 @@ const INVOCATION: Readonly<Record<string, Invocation>> = {
   rules: { argv: () => ['rules', 'src'] },
   'rules-file': { argv: () => ['rules-file', '--host', 'vscode'] },
   trailer: { argv: () => ['trailer', 'ADR-1'] },
+  // It writes a hook into a git repository, which this harness's fixture is not; refusing there
+  // would measure a refusal. What it does to the record — nothing — and to the repository is
+  // measured in `a-commit-hook-only-suggests.test.ts`.
+  'commit-hook': CANNOT_BE_EXERCISED,
   commits: { argv: () => ['commits', 'ADR-1'] },
   why: { argv: () => ['why', 'src'] },
   aging: { argv: () => ['aging'] },
@@ -325,6 +329,10 @@ const RECORDS_NOTHING: Readonly<Record<string, string>> = {
     'not exercised here: it reads another git repository, which the fixture is not — and what it ' +
     'writes is one file, `.mnema/inherit.json`, neither an event nor a key; through the binary, over ' +
     'a real origin, the project’s own record is held unchanged',
+  'commit-hook':
+    'not exercised here: it writes one hook file into a git repository, which the fixture is not ' +
+    '— neither an event nor a key; `a-commit-hook-only-suggests.test.ts` drives it over a real ' +
+    'repository',
   'before-a-write':
     'answers a payload a host hands it on the standard input, and in process there is none — ' +
     'its asking is exercised with a payload through the binary',
@@ -601,7 +609,7 @@ describe('every verb says if it writes', () => {
     expect(Object.keys(INVOCATION).sort()).toEqual([...EFFECT_BY_VERB.keys()].sort());
   });
 
-  it('counts eighteen writes and thirty reads over the whole surface', () => {
+  it('counts nineteen writes and thirty reads over the whole surface', () => {
     // The count in the report, asserted rather than trusted, and the total against the
     // list: a verb that stopped being registered would otherwise leave both halves
     // looking healthy.
@@ -617,6 +625,7 @@ describe('every verb says if it writes', () => {
       'retract',
       'run',
       'check',
+      'commit-hook',
       'before-a-write',
       'corrections',
       'key',

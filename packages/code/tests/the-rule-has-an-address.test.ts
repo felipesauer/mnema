@@ -322,34 +322,35 @@ describe('the reading answers, and charges nothing', () => {
     expect(reading.rules.map((one) => one.rule)).toEqual([rule]);
   });
 
-  it('does not resolve a symlink, and the consequence is stated rather than hidden', async () => {
-    // WHAT IT NORMALIZES IS TEXT: `.`, `..`, a trailing slash, a repeated separator,
-    // and an absolute path under the root. A SYMLINK is not text, and resolving one
-    // would mean touching the disk per segment — so two names for one file are two
-    // addresses here, and a rule addressed at the real one is not found through the
-    // link. This bench has been bitten by a textual resolution passing for a real one
-    // (a symlink once made one project look like two), so the behaviour is FIXED by a
-    // case rather than left to be discovered.
+  it('compares the text of a path, and reads one that goes through a link again where the link leads', async () => {
+    // THE DERIVATION NORMALIZES TEXT: `.`, `..`, a trailing slash, a repeated separator, and an
+    // absolute path under the root. A SYMLINK is not text, so two names for one file are two
+    // addresses to it (a symlink once made one project look like two). What reads a path for a
+    // person is the command, and it asks the one resolution every write gate uses
+    // (`realPathInside`) when no rule covers the path as written: the answer then says, in
+    // `relative`, the path as written.
     mkdirSync(join(repo, 'src', 'collate'), { recursive: true });
     symlinkSync(join(repo, 'src', 'collate'), join(repo, 'linked'));
     const rule = await decide('how collation works');
     await addressAt(rule, 'src/collate');
 
     // Through the real name: found.
-    expect((await reported('src/collate/fold.ts')).rules.map((one) => one.rule)).toEqual([rule]);
-    // Through the link: NOT found — and the two counts beside it are what say the
-    // mechanism is not empty, so the answer is "no rule addresses this name" rather
-    // than "there are no rules".
+    const direct = await reported('src/collate/fold.ts');
+    expect(direct.rules.map((one) => one.rule)).toEqual([rule]);
+    // Through the link: found too, and it says where.
     const through = await reported('linked/fold.ts');
-    expect(through.rules).toEqual([]);
-    expect(through.counts).toEqual({
-      matching: 0,
-      governing: 1,
-      stale: 0,
-      unresolved: 0,
-      asks: NO_GATE,
-      refuses: NO_GATE,
-    });
+    expect(through.rules.map((one) => one.rule)).toEqual([rule]);
+    expect(through.relative).toBe('linked/fold.ts');
+    expect(through.counts.matching).toBe(1);
+
+    // A rule that addresses the link's own name is added to it, not preferred: the reading says
+    // what the write gate applies, which is the sum of the two places.
+    const own = await decide('how the shortcut is kept');
+    await addressAt(own, 'linked');
+    const written = await reported('linked/fold.ts');
+    expect(written.rules.map((one) => one.rule).sort()).toEqual([own, rule].sort());
+    expect(written.relative).toBe('linked/fold.ts');
+    expect(written.counts.matching).toBe(2);
   });
 
   it('asks the working tree through the link, so a live symlink is not stale', async () => {

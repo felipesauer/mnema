@@ -461,10 +461,6 @@ export const NAMES_THAT_NEED_MORE: Readonly<
     times: 4,
     why: 'the read named in sentences about what it serves; its lines are in the reading section',
   },
-  'packages/code/README.md: mnema memory': {
-    times: 1,
-    why: 'a verb named in a list of what a session’s facts are written with',
-  },
   'packages/code/README.md: mnema retract': {
     times: 1,
     why: 'the verb named in a sentence about taking a note back, with the id and the reason it takes',
@@ -502,8 +498,8 @@ export const NAMES_THAT_NEED_MORE: Readonly<
     why: 'answers a line typed outside a project, whole, by naming the verb to run inside one — once for a member’s request, once for a checker’s, which names the same verb with its flag',
   },
   'packages/code/src/wiring/key.ts: mnema key revoke': {
-    times: 1,
-    why: 'answers a line typed outside a project, whole, by naming the verb to run inside one',
+    times: 2,
+    why: 'answers a line typed outside a project, whole, by naming the verb to run inside one — once for a member’s key, once for a checker’s, which names the same verb with its flag',
   },
   'packages/code/src/wiring/verify.ts: mnema key github': {
     times: 1,
@@ -516,10 +512,6 @@ export const NAMES_THAT_NEED_MORE: Readonly<
   'packages/code/src/wiring/run.ts: mnema run start': {
     times: 1,
     why: 'names the verb whose printed id the variable holds',
-  },
-  'packages/code/src/wiring/skill.ts: mnema skill create': {
-    times: 1,
-    why: 'the usage refusal of that very verb, naming it before saying what it requires',
   },
   'packages/code/src/wiring/tail.ts: mnema tail prune': {
     times: 1,
@@ -631,9 +623,16 @@ export const HANDED_OVER: Readonly<
   // `mnema doctor`.
   // name 121 for who may take a note back: the changelog names `mnema retract` and `mnema verify`,
   // and the package page `mnema verify` once more.
-  // line 61 and name 122 for the page of example rules: it names `mnema rules biome.json` and
+  // name 124 for the optional commit hook: the changelog entry and the package page's section name
+  // `mnema commit-hook install` and `mnema commit-hook uninstall`, and the page `mnema init`.
+  // line 65 and name 128 once a checker key could be retired and the Action ran the checks: the
+  // front page, the package page, the Action's page and the changelog hand over the retirement
+  // whole, and name the verbs it refuses and the one the Action runs (name 131 with the hook's).
+  // line 67 for the changelog entries on `--stdin` and `--body-file` and on reading a path where it
+  // really lands (`line` counts two more spans than before).
+  // line 68 and name 132 for the page of example rules: it names `mnema rules biome.json` and
   // the `mnema` its scripts are run with, and each moved the count by one, looked at.
-  span: { line: 61, name: 122, flag: 1, unwritten: 0 },
+  span: { line: 68, name: 132, flag: 1, unwritten: 0 },
   // name 18 until the page that says where the key lives named `mnema key protect` in a line of
   // its own.
   // line 35 until the same page showed that question in a block of its own.
@@ -643,7 +642,9 @@ export const HANDED_OVER: Readonly<
   // line 46 and name 21 for the package page's blocks on the log read against the record and on
   // the inherited record, and the plugin page's block that installs the server-only plugin.
   // line 47 for the front page's block that moves a decision by its id (`mnema decision move`).
-  block: { line: 47, name: 21, flag: 1, unwritten: 0 },
+  // name 23 for the package page's block that installs and removes the commit hook.
+  // line 48 for the package page's block that retires a checker key.
+  block: { line: 48, name: 23, flag: 1, unwritten: 0 },
   // 46 until the refusal an agent's `accept` gets, with the switch off, began naming the command a
   // person accepts with (`agent-accepts.ts`).
   // line 34 until the sentences an agent's accept is answered with began handing whole lines
@@ -664,7 +665,14 @@ export const HANDED_OVER: Readonly<
   // line 54 and name 62 once a key could be requested and enrolled to sign check results, and the
   // checks' own help named the verbs that declare and run them.
   // line 60 and name 72 for the verb's own help: its example, and the names it mentions.
-  source: { line: 60, name: 72, flag: 3, unwritten: 3 },
+  // line 61 and name 75 for the commit hook: the script `install` writes runs `mnema commit-hook
+  // suggest`, and the group's help names `install` and `uninstall`.
+  // line 62 and name 77 once a checker key could be retired: the refusal of a retired key names
+  // the line that enrolls a new one, and the verb's help and the retirement's sentence name
+  // `mnema verify` and the reads beside it.
+  // name 76 once the usage refusal of `skill create` stopped naming the verb, now that the long text
+  // can come from standard input or a file.
+  source: { line: 62, name: 76, flag: 3, unwritten: 3 },
 };
 
 // ---------------------------------------------------------------------------

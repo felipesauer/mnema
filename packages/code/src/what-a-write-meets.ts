@@ -26,7 +26,7 @@
 import { channelIsOn, type RulesAtPath, type ScopedCache } from '@mnema/context';
 import { whatAWriteAsks } from './edit-asks-a-person.js';
 import { editRefusesNotice } from './edit-refuses-a-write.js';
-import { readRefusesAWriteAt, realPathInside } from './governed-tree.js';
+import { placesOfAPath, readRefusesAWriteAt } from './governed-tree.js';
 import { oneLine } from './one-line.js';
 import { ASKS_A_PERSON_CHANNEL, REFUSES_A_WRITE_CHANNEL } from './record-framing.js';
 
@@ -102,10 +102,7 @@ export function whatAWriteMeets(
   // inside the project (`realPathInside`). A rule about a file is a rule about its bytes, so a
   // write through a link meets the rules of what the link leads to, the refusal still before the
   // asking. Two spellings that land on one address are one meeting, never two recorded facts.
-  const places = write.paths.flatMap((path) => {
-    const real = realPathInside(read(path));
-    return real === undefined ? [path] : [path, real];
-  });
+  const places = write.paths.flatMap((path) => placesOfAPath(read(path)));
   const once = <T extends { readonly at: RulesAtPath }>(met: readonly T[]): T[] => {
     const seen = new Set<string>();
     return met.filter(({ at }) => {

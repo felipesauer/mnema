@@ -24,6 +24,7 @@ interface Request {
   readonly baseSha: string;
   readonly author: string;
   readonly requireApprovalForAsks: boolean;
+  readonly checkerKey?: string;
 }
 
 /** Reads the environment the runner sets for an Action, or says what is missing. */
@@ -54,6 +55,9 @@ export function requestFrom(env: Env, readEvent: (path: string) => string): Requ
   if (approval !== 'true' && approval !== 'false') {
     throw new Error(`require-approval-for-asks is "${approval}"; it takes true or false`);
   }
+  // A secret a fork's pull request is not given arrives empty, the same as an input left out:
+  // either way, no check runs.
+  const checkerKey = (env['INPUT_CHECKER-KEY'] ?? '').trim();
   return {
     cwd: env.GITHUB_WORKSPACE ?? process.cwd(),
     token,
@@ -63,6 +67,7 @@ export function requestFrom(env: Env, readEvent: (path: string) => string): Requ
     baseSha,
     author,
     requireApprovalForAsks: approval === 'true',
+    ...(checkerKey !== '' ? { checkerKey } : {}),
   };
 }
 
@@ -80,10 +85,15 @@ export async function main(env: Env, fetchIt: Fetch, say: (line: string) => void
       fetchIt,
     );
     const verdict = await judge(
-      worldAt(request.cwd, github, {
-        info: say,
-        warning: (line) => say(`::warning::${line}`),
-      }),
+      worldAt(
+        request.cwd,
+        github,
+        {
+          info: say,
+          warning: (line) => say(`::warning::${line}`),
+        },
+        env,
+      ),
       request,
     );
     for (const reason of verdict.reasons) say(`::error::${reason}`);

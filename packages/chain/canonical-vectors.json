@@ -546,6 +546,23 @@
       "sha256": "80ecaceed5ab0b38150a5f01be28478266d8071136628399c126d99112367f4c"
     },
     {
+      "name": "checker.retired (a person withdraws a key that signed check results)",
+      "kind": "checker.retired",
+      "event": {
+        "v": 1,
+        "kind": "checker.retired",
+        "at": "2026-07-21T00:00:00.000Z",
+        "who": "mnid:1111111111111111111111111111111111111111111111111111111111111111",
+        "signerFp": "2222222222222222222222222222222222222222222222222222222222222222",
+        "subject": "mnid:6666666666666666666666666666666666666666666666666666666666666666",
+        "payload": {
+          "checkerFp": "3333333333333333333333333333333333333333333333333333333333333333",
+          "reason": "The runner secret was printed in a public build log."
+        }
+      },
+      "sha256": "dcdaba289df2b2e9d429b65fd4ee0eea58e2d4d16cfcf411e16730a891c66274"
+    },
+    {
       "name": "account.linked (an identity names its GitHub account)",
       "kind": "account.linked",
       "event": {
@@ -578,6 +595,6 @@
       "vector": "run.ended",
       "entryHash": "bafbebddd9d5ee75b10bdde626c5e36eed44b37d9fe352b4d98f614fa2647b73"
     },
-    "contentRootOverAllVectors": "f5df69b3e3d91ff11baf5fc444fc6e73890e9503fdd11e5e42bfe73e9677b120"
+    "contentRootOverAllVectors": "b309f6469eb4dd323b8de0de17c81f650c80c809d9ca25b20aba1b72ee3867fe"
   }
 }

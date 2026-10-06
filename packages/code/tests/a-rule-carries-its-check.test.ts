@@ -9,13 +9,15 @@
  *     one result per rule at HEAD under the runner's own identity, and exits non-zero when one
  *     failed; the record verifies with them in it;
  *   - a person's key runs nothing, and a tree with changes outside the record runs nothing;
- *   - `accountability` says the runner is a machine.
+ *   - `accountability` says the runner is a machine;
+ *   - `key revoke --checker` retires the runner's key: it runs nothing after, `verify` still
+ *     passes and names the results it signed before, and `accountability` says who retired it.
  */
 
 import { spawnSync } from 'node:child_process';
 import { mkdirSync, mkdtempSync, readdirSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
-import { join } from 'node:path';
+import { basename, join } from 'node:path';
 import { type CatalogEvent, catalogUpcasters } from '@mnema/chain';
 import { type DiscoveryEnv, orderedEvents, resolveTrees } from '@mnema/core';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
@@ -208,5 +210,42 @@ describe('mnema check', () => {
     expect(said.failed).toBe(true);
     expect(said.err.join('\n')).toContain('changes outside the record');
     expect(events()).toHaveLength(before);
+  });
+
+  it('a retired runner key runs nothing, and what it signed before is named by verify', async () => {
+    const rule = await acceptedRule('Money is kept in integer cents');
+    await did('check', 'declare', rule, 'node', '--', '-e', 'process.exit(0)');
+    const { line, keyFile } = await runnerRequest();
+    await did('key', 'enroll', '--checker', line);
+    git('add', '-A');
+    git('commit', '-q', '-m', 'the record');
+    await did('check', 'run', '--key', keyFile);
+    git('add', '-A');
+    git('commit', '-q', '-m', 'the results');
+
+    const fingerprint = basename(keyFile, '.key');
+    const retired = await did(
+      'key',
+      'revoke',
+      '--checker',
+      fingerprint,
+      '--reason',
+      'the runner secret was printed in a build log',
+    );
+    expect(retired.out.join('\n')).toContain(`Retired checker ${fingerprint}`);
+    expect(events().filter((e) => e.kind === 'checker.retired')).toHaveLength(1);
+    git('add', '-A');
+    git('commit', '-q', '-m', 'the retirement');
+
+    const before = events().length;
+    const refused = await mnema('check', 'run', '--key', keyFile);
+    expect(refused.failed).toBe(true);
+    expect(refused.err.join('\n')).toContain('was retired as a checker');
+    expect(events()).toHaveLength(before);
+
+    const verified = await did('verify');
+    expect(verified.out.join('\n')).toContain('census [retired-checker]');
+    const account = await did('accountability');
+    expect(account.out.join('\n')).toContain('retired by');
   });
 });

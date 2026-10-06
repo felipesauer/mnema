@@ -77,6 +77,56 @@ the ones a first change usually meets:
 A new guard is expected to come with a case that shows it failing on the defect it exists
 for: a guard that has never been seen to fail looks exactly like one that cannot.
 
+## Changing a skill
+
+The skills the plugin ships are in [`plugin/skills/`](plugin/skills/). **A change to a skill, or a
+new one, comes with an eval: the cases that must bring the skill up and the cases that must not.**
+Today no automated eval of that kind exists. What runs is
+[`every-skill-the-plugin-ships-is-what-it-says.test.ts`](packages/code/tests/every-skill-the-plugin-ships-is-what-it-says.test.ts),
+which holds the form (the `name` is the directory, the `description` says when the skill applies,
+every tool it cites is served), not whether a model reaches for it. So the minimum is in the pull
+request: at least one prompt that should activate the skill and one that should not, and what a
+real run of a host did with each. A change to the `description` is the change this matters most
+for, since that line decides when the skill is offered. If an eval is added later, this section
+names how to run it.
+
+## Cutting a release
+
+This is how the `v0.1.0-beta` pre-release was cut, and it is the whole procedure. It is the
+maintainer's to run, not a pull request's. **Publishing to npm is the maintainer's own act and no
+part of this procedure, automatic or otherwise**: nothing here runs `npm publish`, and until the
+maintainer does it, the packages are installed from the release's tarballs.
+
+1. **Start from a merged trunk.** The version is already in the four `package.json` files and the
+   changelog has a section for it, both merged through a pull request. Run the gates on what is
+   committed.
+2. **Pack the four publishable packages**, `@mnema/chain`, `@mnema/core`, `@mnema/context` and
+   `@mnema/code`, with `pnpm pack` (for example `pnpm --filter @mnema/chain pack`, once for each).
+   The result is one tarball per package, named `mnema-<package>-<version>.tgz`. The other
+   packages of the workspace are private and are not packed.
+3. **Write `SHA256SUMS`**: the SHA-256 digest of each of the four tarballs, one line per file, in
+   `sha256sum`'s format (the digest, two spaces, the file name).
+4. **Tag the commit with an annotated tag**, `v<version>`, on the trunk commit the tarballs were
+   built from, and push the tag.
+5. **Create the GitHub release as a pre-release** on that tag, with the four tarballs and
+   `SHA256SUMS` attached. Its notes give the install command, which has to name all four tarballs
+   (`@mnema/code` depends on the other three at its exact version), say that the packages are not
+   on npm, and state the Node floor.
+6. **Prove the install the notes give, from the release itself.** In a throwaway `HOME`, never
+   your own, run the notes' `npm i -g` with the four release URLs together, and check that the
+   binary it puts on the `PATH` prints the version of the tag. Check the tarballs against
+   `SHA256SUMS` too.
+
+```sh
+npm i -g \
+  https://github.com/felipesauer/mnema/releases/download/v<version>/mnema-chain-<version>.tgz \
+  https://github.com/felipesauer/mnema/releases/download/v<version>/mnema-core-<version>.tgz \
+  https://github.com/felipesauer/mnema/releases/download/v<version>/mnema-context-<version>.tgz \
+  https://github.com/felipesauer/mnema/releases/download/v<version>/mnema-code-<version>.tgz
+```
+
+A release that was cut wrongly is not deleted on the spot: ask the maintainer first.
+
 ## A pull request
 
 - **One change per pull request.** If the work has two parts, it is two pull requests.

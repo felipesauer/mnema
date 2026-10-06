@@ -12,6 +12,13 @@ tag, with its own changelog.
 
 ### Added
 
+- **An optional git hook that suggests the `Mnema-Decision` trailer.** `mnema commit-hook install`
+  writes a `prepare-commit-msg` hook, `mnema commit-hook uninstall` removes it, and nothing else
+  installs it: not `init`. It follows `core.hooksPath`, refuses (naming the path) to replace a hook it
+  did not write, and removes only a file that is byte for byte its own. In a commit made in an editor
+  it appends `#` comment lines naming the decisions in force that govern the staged files, which git
+  drops unless the `# ` in front of a line is removed. It never fails a commit: with `mnema` missing
+  from the hook's `PATH`, or failing, it does nothing.
 - **A `mnema_path` option on the plugin.** Both plugins declare a `userConfig` option for the
   absolute path of the `mnema` to run; left as `mnema` (the default) they run the first one on the
   `PATH`, as before. The hooks read it from `CLAUDE_PLUGIN_OPTION_MNEMA_PATH` and the MCP server
@@ -26,6 +33,45 @@ tag, with its own changelog.
   is held for a person (`asks-for-a-person`). It is a short script of `mnema` commands, and a test
   runs it against a sandbox and checks that the product asks for a person on that file and on no
   other.
+- **`--stdin` and `--body-file` on `skill create`, `memory` and `observe`.** The long text of a
+  write can come from standard input or from a file instead of the line, as it already could for
+  `decision record`; the text typed on the line (`--body`, the `memory` argument, `--text`) still
+  works, and a line that gives it from two places is refused with the places it named. A missing
+  text is now this refusal, not the parser's.
+- **The SDK names the id behind an `ADR-<n>` label.** `acceptDecision` and `rejectDecision`, handed
+  the label a write printed instead of an id, refuse as before (`UNKNOWN_DECISION`) and now carry a
+  `message` with the sentence the command line and the MCP server say: the id (or ids) that label
+  stands for. The three doors say it from one function.
+- **`mnema rules <path>` and `mnema why <path>` read a path where it really lands.** A path that
+  a link leads to somewhere else inside the project is read again
+  at that place too, with the same resolution the write gates use, and the rules of both places are
+  added together, each once, so the reading never says less than the gate applies; a link that
+  leaves the project is answered as written. The same
+  resolution now reads a relative link from the directory it really sits in, so a link inside a
+  directory that is itself a link no longer climbs out of the way it was spelled.
+- **`doctor` and the plugin's hand-over hook point at the pre-release.** With no `mnema` on the
+  `PATH`, or another program answering to the name, they used to say `npm i -g @mnema/code`, which
+  answers 404 until the packages are published; they now give the install of the pre-release from
+  its four tarballs, the line the root README gives.
+- **A checker key can be retired.** `mnema key revoke --checker <fingerprint> --reason "<why>"`
+  records `checker.retired`, a new event kind, signed by any identity of the record, as an
+  enrolment is. Once a checkpoint covers it, `mnema verify` refuses a `check.passed` or
+  `check.failed` the key signs after it, any other fact it signs, and a `checker.enrolled` naming it
+  again; `check run` and `key enroll --checker` refuse the key. The results it signed before stay
+  valid and `verify` names them in its census, informational, because a leaked key can date a
+  result before its own retirement. `mnema accountability` says who retired the machine. The
+  Python reader folds the same rule, and the two readers agree on it.
+- **The Action runs the checks.** `@mnema/action` takes a `checker-key` input, the private half of
+  a checker key from a repository secret: after its other steps it runs `mnema check run` with it,
+  leaves the results in the working tree and fails when a check did not pass. A declared program
+  is started without the Action's inputs in its environment.
+
+### Changed
+
+- **The Action's own test has room in its time limit.** Its cases start the real `mnema` binary
+  (seven processes of set-up and two per run); the slowest took 4.3 to 4.5 s measured alone against
+  the 5 s default, and went red once on a loaded runner. The limit is 20 s for that file; nothing
+  in it waits on a network.
 
 ### Fixed
 
@@ -36,6 +82,14 @@ tag, with its own changelog.
   says to delete the lock file it names.
 - **A timestamp calendar is contacted only on the https port.** A proof naming an operator's host on
   another port is refused and not contacted.
+
+### Known limits
+
+- A binary from before `checker.retired` stops reading the whole record once a retirement is in
+  the committed tree, as it does for any kind it does not know (`packages/chain/FORMAT.md`,
+  section 4.1).
+- A retirement does not take back the results the key signed before it: they verify, and the
+  census names them. Which of them the key signed after it leaked, the record cannot say.
 
 ## [0.1.0-beta] - 2026-10-05
 

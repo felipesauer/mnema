@@ -32,7 +32,7 @@ import { type InitRefused, type InitResult, runInit } from '../src/commands/init
 import { runCheckerEnroll, runKeyEnroll } from '../src/commands/key-enroll.js';
 import { runKeyGithub } from '../src/commands/key-github.js';
 import { runKeyRequest } from '../src/commands/key-request.js';
-import { runKeyRevoke } from '../src/commands/key-revoke.js';
+import { runCheckerRetire, runKeyRevoke } from '../src/commands/key-revoke.js';
 import { runLink } from '../src/commands/link.js';
 import { runMemory } from '../src/commands/memory.js';
 import { runObserve } from '../src/commands/observe.js';
@@ -159,11 +159,12 @@ const CODE_SRC = join(HERE, 'src');
  * refusal of a write arrived: `recordChannelRefused`, and the one body it shares with
  * `recordChannelAsked` (`recordRuleAtPath`). 36 since a note can be retracted: `retractNote`. 39 since a rule can carry a check: `declareCheck`,
  * `enrollChecker` and `runRuleChecks`. 40 since an identity can name its account: `linkAccount`.
+ * 41 since a checker key can be retired: `retireChecker`.
  */
-const CORE_OPERATIONS_THAT_APPEND = 40;
+const CORE_OPERATIONS_THAT_APPEND = 41;
 
 /** How many paths of the shipped surface reach one of them. */
-const SURFACE_WRITE_PATHS = 40;
+const SURFACE_WRITE_PATHS = 41;
 
 /** What `runInit` answered when it did not refuse; a refusal ends the setup. */
 function founded(result: InitResult | InitRefused): InitResult {
@@ -720,6 +721,21 @@ describe('every write path leaves the record fully signed', () => {
             readdirSync(keys).find((name) => name.endsWith('.key')) as string,
           );
           void ok('check run', runCheckRun(ctx, { keyFile, timeoutMs: 60_000 }));
+        },
+      },
+      {
+        // The runner's key, enrolled and used above, retired by the person who enrolled it.
+        at: 'commands/key-revoke.ts:runCheckerRetire',
+        drive: () => {
+          const keys = join(resolveTrees(project, otherMachine('runner')).keyRoot, 'keys');
+          const keyFile = readdirSync(keys).find((name) => name.endsWith('.key')) as string;
+          void ok(
+            'key revoke --checker',
+            runCheckerRetire(ctx, {
+              fingerprint: keyFile.slice(0, -'.key'.length),
+              reason: 'the runner secret leaked',
+            }),
+          );
         },
       },
       {

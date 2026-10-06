@@ -117,6 +117,8 @@ const ANSWERS_ANYWAY: Readonly<Record<string, string>> = {
     'a host runs it on every tool call of a session, and outside a project it answers `{}` — the silence a host reads — because that session is not the product’s to speak into',
   corrections:
     'a host runs it at every Stop of a session, and outside a project it answers `{}` — the same silence — and records nothing, because that session is not the product’s to speak into',
+  'commit-hook suggest':
+    'git runs it inside every commit made with the hook installed, and outside a project it writes nothing and exits zero, because a suggestion must never cost a commit',
   tally:
     'a host runs it at every Stop of a session, and outside a project it answers `{}` — the same silence — because that session is not the product’s to speak into',
 };
@@ -198,6 +200,10 @@ const REFUSES_SOMETHING_ELSE_FIRST: Readonly<Record<string, string>> = {
   key: THE_PARSER_ANSWERED_FIRST,
   tail: THE_PARSER_ANSWERED_FIRST,
   inherit: THE_PARSER_ANSWERED_FIRST,
+  'commit-hook': THE_PARSER_ANSWERED_FIRST,
+  'commit-hook install':
+    'a hook belongs to a git repository, not to a project: outside a repository it refuses with its own sentence',
+  'commit-hook uninstall': 'the same: it asks for a git repository, never for a project',
   'run end': 'with no id and no MNEMA_RUN there is no session named, which it says first',
   'key protect':
     'with no MNEMA_KEY_PASSPHRASE there is nothing to protect with, which it says first; it needs no project either way',

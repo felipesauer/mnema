@@ -9,7 +9,9 @@
  *   - the checker runs every check of a rule in force, through the runner it is handed, and the
  *     record verifies with its results in it, `who` being the checker's own anchor;
  *   - a key that is not a checker runs nothing and writes nothing;
- *   - what a check printed is recorded bounded and with its control bytes made visible.
+ *   - what a check printed is recorded bounded and with its control bytes made visible;
+ *   - a member retires a checker key, and from then on it runs nothing, is never enrolled again,
+ *     and the record verifies with the results it signed before.
  */
 
 import { mkdirSync, mkdtempSync, rmSync } from 'node:fs';
@@ -34,6 +36,7 @@ import {
   declareCheck,
   enrollChecker,
   OUTPUT_LIMIT,
+  retireChecker,
   runRuleChecks,
 } from './operations.js';
 
@@ -239,5 +242,52 @@ describe('a rule carries its check', () => {
       /enrolled in this record as a checker/,
     );
     expect(kinds()).toHaveLength(before);
+  });
+
+  function passAt(rule: string) {
+    return runRuleChecks(deferredWrite(ciTrees(), 'public'), {
+      commit: COMMIT,
+      rulesInForce: new Set([rule]),
+      run: () => ({ passed: true, output: '' }),
+    });
+  }
+
+  it('a retired checker runs nothing, is not enrolled again, and its earlier result still verifies', () => {
+    const rule = acceptedRule('Money is kept in integer cents');
+    declareCheck(person, { rule, command: 'node' });
+    const { request, fingerprint } = checkerRequest();
+    expect(enrollChecker(person, { request }).ok).toBe(true);
+    person.writer.checkpoint();
+    expect(passAt(rule).ok).toBe(true);
+
+    const retired = retireChecker(person, { fingerprint, reason: 'the runner secret leaked' });
+    expect(retired.ok).toBe(true);
+    expect(retired.ok ? retired.alreadyRetired : true).toBe(false);
+    expect(kinds()).toContain('checker.retired');
+
+    const before = kinds().length;
+    const refused = passAt(rule);
+    expect(refused.ok ? '' : refused.code).toBe('RETIRED_CHECKER');
+    const again = enrollChecker(person, { request });
+    expect(again.ok ? '' : again.code).toBe('RETIRED_CHECKER');
+    expect(kinds()).toHaveLength(before);
+
+    const verdict = verify(root, upcasters);
+    expect(verdict.issues).toEqual([]);
+    expect(verdict.ok).toBe(true);
+    expect(verdict.census.map((note) => note.kind)).toEqual(['retired-checker']);
+  });
+
+  it('retires only a key the record enrolls as a checker, and a second time records nothing', () => {
+    const before = kinds().length;
+    const stranger = retireChecker(person, { fingerprint: 'ab'.repeat(32), reason: 'leaked' });
+    expect(stranger.ok ? '' : stranger.code).toBe('NOT_A_CHECKER');
+    expect(kinds()).toHaveLength(before);
+
+    const fingerprint = enrolledChecker();
+    expect(retireChecker(person, { fingerprint, reason: 'leaked' }).ok).toBe(true);
+    const twice = retireChecker(person, { fingerprint, reason: 'leaked again' });
+    expect(twice.ok ? twice.alreadyRetired : false).toBe(true);
+    expect(kinds().filter((k) => k === 'checker.retired')).toHaveLength(1);
   });
 });

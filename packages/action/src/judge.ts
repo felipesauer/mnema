@@ -3,8 +3,9 @@
  *
  * `judge` reads the record at the pull request's base and at what is checked out, asks `mnema`
  * which changed files a rule addresses, writes the comment, and says whether the check fails.
- * It writes nothing to the record and pushes nothing: the only thing it sends anywhere is the
- * comment, through the `GitHub` it is given.
+ * Handed a checker key, it also has `mnema check run` record, in the working tree, whether each
+ * rule in force held — the one write it makes, and never a commit or a push: the only thing it
+ * sends anywhere is the comment, through the `GitHub` it is given.
  */
 
 import { renderComment, renderNoRecord, worthSaying } from './comment.js';
@@ -33,6 +34,11 @@ export interface World {
     verify(): { passed: boolean; said: string };
     /** `mnema rules <path> --json`, parsed. */
     rules(path: string): unknown;
+    /**
+     * `mnema check run`, signing with the checker key whose private half is `key`: whether it
+     * exited zero — every check passed — and what it said.
+     */
+    checkRun(key: string): { passed: boolean; said: string };
   };
   readonly github: GitHub;
   readonly log: { info(line: string): void; warning(line: string): void };
@@ -43,6 +49,8 @@ export interface PullRequest {
   readonly baseSha: string;
   readonly author: string;
   readonly requireApprovalForAsks: boolean;
+  /** The private half of a checker key the record enrolls, from a secret. Absent: no check runs. */
+  readonly checkerKey?: string;
 }
 
 /** What the run concluded. */
@@ -111,6 +119,14 @@ export async function judge(world: World, pr: PullRequest): Promise<Verdict> {
     world.log.warning(
       `the comment was not written: ${error instanceof Error ? error.message : String(error)}`,
     );
+  }
+
+  // Last, so that everything above read the record as the pull request committed it: the
+  // results land in the working tree, for a later step of the workflow to commit or upload.
+  if (pr.checkerKey !== undefined) {
+    const checks = world.mnema.checkRun(pr.checkerKey);
+    for (const line of checks.said.split('\n')) if (line.trim() !== '') world.log.info(line);
+    if (!checks.passed) reasons.push('a rule’s check did not pass, or the checks did not run');
   }
   return { failed: reasons.length > 0, reasons };
 }

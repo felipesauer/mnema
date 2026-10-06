@@ -131,8 +131,11 @@ function founded(name: Door['name'], founding = true): Door {
 /** The tools a connection to this project's server declares as writing, and a way to call one. */
 async function connected(door: Door): Promise<{
   call: (tool: string, args: Record<string, unknown>) => Promise<Verdict>;
+  /** What the last call said, whole. */
+  said: () => string;
   close: () => Promise<void>;
 }> {
+  let lastText = '';
   const env: DiscoveryEnv = { home: door.home };
   const { server } = buildMcpServer({ cwd: sandbox, env, log: () => {} });
   const client = new Client({ name: AGENT, version: '1.0.0' }, { capabilities: { roots: {} } });
@@ -147,9 +150,11 @@ async function connected(door: Door): Promise<{
         isError?: boolean;
         content: { text: string }[];
       };
+      lastText = reply.content[0]?.text ?? '';
       if (reply.isError !== true) return 'ok';
       return `refused ${codeIn(reply.content[0]?.text ?? '') ?? 'UNCODED'}`;
     },
+    said: () => lastText,
     close: () => client.close(),
   };
 }
@@ -241,6 +246,8 @@ const VERBS_NOT_IN_THE_LIBRARY: Readonly<Record<string, string>> = {
   run: 'a run is pinned by the host',
   corrections: 'covered by nothing: a hook the plugin switches on, not an operation',
   witness: 'an outside witness is a person’s',
+  'commit-hook':
+    'it writes a file into a git repository’s hooks, which only a person at a shell asks for',
   mcp: 'it serves the MCP door, which is the second of the three',
   check: 'a rule’s check is declared by a person and run by a machine with a key of its own',
   inherit: 'trusting another repository’s record is a person’s decision',
@@ -461,6 +468,39 @@ async function through(
   }
   return { said, held: eventsOf(door) };
 }
+
+describe('an ADR label typed where an id belongs', () => {
+  it('is refused on the three doors with the id that carries it', async () => {
+    const said = async (name: Door['name']): Promise<{ id: string; text: string }> => {
+      const door = founded(name);
+      door.mnema('decision', 'record', 'use postgres', 'why', '--which', AGENT);
+      const born = orderedEvents({ root: join(door.repo, PROJECT_DIR) }, catalogUpcasters()).filter(
+        (event) => event.kind === 'decision.recorded',
+      );
+      const id = born[0]?.subject as string;
+      if (name === 'cli') {
+        const ran = door.mnema('decision', 'move', 'accept', 'ADR-1', '--note', 'x');
+        return { id, text: ran.err };
+      }
+      if (name === 'mcp') {
+        const server = await connected(door);
+        await server.call('decision_transition', { id: 'ADR-1', action: 'accept', note: 'x' });
+        const text = server.said();
+        await server.close();
+        return { id, text };
+      }
+      const library = openRecord({ cwd: door.repo, agent: AGENT, env: { home: door.home } });
+      const refused = library.acceptDecision({ id: 'ADR-1', note: 'x' });
+      return { id, text: refused.ok ? '' : ((refused as { message?: string }).message ?? '') };
+    };
+    for (const name of ['cli', 'mcp', 'sdk'] as const) {
+      const { id, text } = await said(name);
+      expect(text, name).toContain(
+        `ADR-1 is a label, not an id: in this project it names the decision ${id}. Use the id.`,
+      );
+    }
+  });
+});
 
 describe('the library door calls the command line’s own functions', () => {
   it('is the very function, not a copy of it', () => {

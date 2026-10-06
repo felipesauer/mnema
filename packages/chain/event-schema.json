@@ -106,6 +106,14 @@
       }
     },
     {
+      "kind": "checker.retired",
+      "v": 1,
+      "payload": {
+        "checkerFp": "string",
+        "reason": "string"
+      }
+    },
+    {
       "kind": "decision.recorded",
       "v": 1,
       "payload": {

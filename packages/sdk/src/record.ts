@@ -12,6 +12,7 @@ import {
   briefDocument,
   DEFAULT_REQUIREMENT,
   discoveryEnv,
+  labelAsAddress,
   runBrief,
   runDecision,
   runDecisionTransition,
@@ -45,9 +46,9 @@ export interface MnemaRecord {
     scope?: Scope;
   }): ReturnType<typeof runDecision>;
   /** `mnema decision accept`. The note says why; the gate refuses an accept without one. */
-  acceptDecision(input: { id: string; note: string }): ReturnType<typeof runDecisionTransition>;
+  acceptDecision(input: { id: string; note: string }): DecisionMoved;
   /** `mnema decision reject`. The note says why; the gate refuses a reject without one. */
-  rejectDecision(input: { id: string; note: string }): ReturnType<typeof runDecisionTransition>;
+  rejectDecision(input: { id: string; note: string }): DecisionMoved;
   /** `mnema memory`: a note about the work. */
   addNote(input: { content: string; scope?: Scope }): ReturnType<typeof runMemory>;
   /** `mnema brief`: the document of what governs the work here, as the command prints it. */
@@ -59,6 +60,15 @@ export interface MnemaRecord {
   /** `mnema verify`: the verdict over the record, against the least the caller accepts. */
   verify(input?: { require?: LevelRequirement; global?: boolean }): ReturnType<typeof runVerify>;
 }
+
+/**
+ * What a move answered. Handed the `ADR-<n>` label a write printed instead of an id, the refusal
+ * (`UNKNOWN_DECISION`) carries a `message` naming the id that label stands for: the sentence the
+ * command line and the MCP server say.
+ */
+export type DecisionMoved =
+  | Exclude<ReturnType<typeof runDecisionTransition>, { readonly reason: 'UNKNOWN_DECISION' }>
+  | { readonly ok: false; readonly reason: 'UNKNOWN_DECISION'; readonly message?: string };
 
 /** The document, or the command's own refusal. */
 export type BriefRead =
@@ -72,9 +82,17 @@ export function openRecord(options: RecordOptions): MnemaRecord {
   return {
     recordDecision: (input) => runDecision(here, { ...input, which }),
     acceptDecision: ({ id, note }) =>
-      runDecisionTransition(here, { id, action: 'accept', proof: { note }, which }),
+      namingTheLabel(
+        here,
+        id,
+        runDecisionTransition(here, { id, action: 'accept', proof: { note }, which }),
+      ),
     rejectDecision: ({ id, note }) =>
-      runDecisionTransition(here, { id, action: 'reject', proof: { note }, which }),
+      namingTheLabel(
+        here,
+        id,
+        runDecisionTransition(here, { id, action: 'reject', proof: { note }, which }),
+      ),
     addNote: (input) => runMemory(here, { ...input, which }),
     brief: () => {
       const result = runBrief(here);
@@ -89,4 +107,15 @@ export function openRecord(options: RecordOptions): MnemaRecord {
         global: input.global === true,
       }),
   };
+}
+
+/** A refusal to find `id` that was an `ADR-<n>` label gains the sentence naming the id behind it. */
+function namingTheLabel(
+  here: Parameters<typeof labelAsAddress>[0],
+  id: string,
+  result: ReturnType<typeof runDecisionTransition>,
+): DecisionMoved {
+  if (result.ok || result.reason !== 'UNKNOWN_DECISION') return result;
+  const message = labelAsAddress(here, id);
+  return message === undefined ? result : { ...result, message };
 }

@@ -188,6 +188,7 @@ export const REASONS: { readonly [K in EventKind]: readonly ReasonSite<K>[] } = 
   'checker.enrolled': [],
   'check.passed': [],
   'check.failed': [],
+  'checker.retired': ['reason'],
   'account.linked': [],
 };
 
@@ -246,6 +247,7 @@ export const TITLES: { readonly [K in EventKind]: readonly TextField<K>[] } = {
   'checker.enrolled': [],
   'check.passed': [],
   'check.failed': [],
+  'checker.retired': [],
   'account.linked': [],
 };
 
@@ -314,6 +316,7 @@ export const REFERENCES: { readonly [K in EventKind]: readonly ReferenceSite<K>[
   'checker.enrolled': [],
   'check.passed': [],
   'check.failed': [],
+  'checker.retired': [],
   'account.linked': ['account'],
 };
 

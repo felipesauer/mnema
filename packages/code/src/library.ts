@@ -16,6 +16,7 @@ export { runRecall } from './commands/recall.js';
 export { runRules } from './commands/rules.js';
 export { runVerify } from './commands/verify.js';
 export { discoveryEnv } from './env.js';
+export { labelAsAddress } from './label-as-address.js';
 export { hookReply } from './mcp/hook-reply.js';
 export { briefDocument, briefWithin } from './presentation/brief.js';
 export { renderPlain } from './presentation/plain.js';
