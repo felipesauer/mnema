@@ -1,7 +1,7 @@
 {
   "name": "@mnema/code",
   "version": "0.1.0-beta",
-  "description": "A signed, append-only record of the decisions behind AI-agent work — the decision, the reasoning, and who wrote it down, in the repository where the work happens.",
+  "description": "Your decisions, handed to your agents' sessions and held at the edits they govern — append-only and signed in the repository, and checkable by anyone.",
   "keywords": [
     "mcp",
     "model-context-protocol",

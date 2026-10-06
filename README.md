@@ -5,7 +5,7 @@
   <img src="docs/assets/banner-light.svg" alt="mnema, a chain of signed blocks" width="640">
 </picture>
 
-<h3>Your team's decisions, handed to your agents' sessions and held at the edits they govern — append-only and signed in the repository, and checkable by anyone.</h3>
+<h3>Your decisions, handed to your agents' sessions and held at the edits they govern — append-only and signed in the repository, and checkable by anyone.</h3>
 
 <p>
 <a href="https://github.com/felipesauer/mnema/actions/workflows/ci.yml"><img alt="CI" src="https://img.shields.io/github/actions/workflow/status/felipesauer/mnema/ci.yml?branch=main&amp;style=flat-square&amp;label=CI&amp;color=997dbf"></a>
@@ -45,10 +45,6 @@ session opens with the ones in force, a rule can refuse or pause the write it go
 </p>
 
 <p align="center">
-A signed, append-only record of the decisions behind AI-agent work — the
-decision, the reasoning, and who wrote it down, in the repository where the work
-happens.
-<br>
 Tamper-evident, not tamper-proof: what is still in the record has not changed
 since it was signed, and a stranger can check that without your keys and without
 installing this.
