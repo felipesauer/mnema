@@ -96,8 +96,9 @@ identically, because they are the same call.
   addresses, which is why the opening document says how many of the project's rules have
   an address. The two opening hooks are reads: they append nothing and open no run, so the
   record's `channel.served` counts what the per-edit hook pushed and never the opening
-  texts. The per-edit one records that it served, and holds a write for a person only where a rule of
-  your own record asks it to — the plugin's page says how. The fourth is that same pause for a
+  texts. It is mnema noting that it delivered the hook's answer, not a person's approval of
+  anything. The per-edit one records that it served, and holds a write for a person only where a
+  rule of your own record asks it to — the plugin's page says how. The fourth is that same pause for a
   host whose hooks are processes: VS Code's agent runs it as `mnema before-a-write --host vscode`
   before a write, and it asks, and records, exactly where the third would; Claude Code and
   Cursor never run it. The fifth and sixth are one command, `mnema tally`, run at `Stop` and
@@ -348,6 +349,10 @@ restored, and `init` declares it in the record (`backup.declared`), so every mac
 restored and used would have left a tail that is not there. A record written before that
 declaration existed does not say which key is a backup: there the key reads as a backup only
 on the machine that made it, and as a committed key without a tail anywhere else.
+A tail that holds nothing — its directory with only its ownership proof, which an older
+version left when a key's first write was refused — is not counted as a tail: `verify` says
+`N empty tail(s), which hold no event and are not counted`, and it moves neither the level nor
+the witness. A tail emptied of its events with its proof kept reads the same way.
 A tail removed *together with its key* is not reported at all — that record reads
 `0 tail(s); no events yet`, indistinguishable from a fresh one, and only a history
 outside this record (the one a git remote keeps) can testify to what was taken
