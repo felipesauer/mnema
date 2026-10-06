@@ -154,7 +154,9 @@ installed here, and only its command-line agent was read.
 is the prompt Cursor's servers assembled for the model in one session of 23 Sep 2026 — Cursor's
 command-line agent on the free plan, the `Auto` model, a sandbox project with the plugin — read
 back from the chat the agent keeps on the machine. It is the evidence behind the plugin page's
-sentence that the server's instructions and both opening texts reach the model there.
+sentence that the server's instructions and both opening texts reach the model there. A summary of
+what reached the model on VS Code and on Cursor, and when, is in
+[what the editors hand the model](../what-the-editors-hand-the-model/).
 
 **What is kept whole**: the `mnema` entry of the tool namespaces (the server's instructions, as
 they arrived), the hooks' context (the opening document and the notes of the sandbox project) and
