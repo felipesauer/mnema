@@ -1,9 +1,11 @@
 import { rmSync } from 'node:fs';
 import {
+  ASKS_FOR_A_PERSON_RELATION,
   GOVERNS_RELATION,
   isDecisionState,
   isSkillState,
   type ProjectionCache,
+  REFUSES_A_WRITE_RELATION,
   type Scope,
   SEARCH_DEFAULT_LIMIT,
 } from '@mnema/core';
@@ -199,6 +201,30 @@ describe('brief — everything that governs the work here', () => {
     // Non-vacuity on the other side: both printed rules are there to be counted.
     expect(composed.decisions.map((d) => d.id)).toContain('dec-1');
     expect(composed.skills.map((s) => s.id)).toEqual(['sk-1']);
+  });
+
+  it('counts a rule that asks for a person or refuses a write among those with an address', () => {
+    // The opening document used to say "0 rules have an address" and, a line later, that one
+    // refuses a write at an address: the count only read `governs`. A rule is addressed under
+    // any of the three relations, and one rule under two of them is still one rule.
+    const b = bench();
+    accept(b, 'dec-gov', 'Bill on the last business day');
+    accept(b, 'dec-ask', 'Hand-written config needs a person');
+    accept(b, 'dec-ref', 'Generated code is never edited');
+    accept(b, 'dec-none', 'Tabs');
+    link(b, 'dec-ask', 'src/manual', ASKS_FOR_A_PERSON_RELATION);
+    link(b, 'dec-ref', 'src/gen', REFUSES_A_WRITE_RELATION);
+    link(b, 'dec-ref', 'src/gen2', GOVERNS_RELATION);
+    address(b, 'dec-gov', 'src/billing');
+    const composed = brief([tree(b, 'public')], CHANNELS);
+    expect(composed.addressed).toBe(3);
+    expect(composed.asking).toBe(1);
+    expect(composed.refusing).toBe(1);
+
+    const onlyRefusing = bench();
+    accept(onlyRefusing, 'dec-ref', 'Generated code is never edited');
+    link(onlyRefusing, 'dec-ref', 'src/gen', REFUSES_A_WRITE_RELATION);
+    expect(brief([tree(onlyRefusing, 'public')], CHANNELS).addressed).toBe(1);
   });
 
   it('counts nothing when the addresses are in a tree that does not travel', () => {

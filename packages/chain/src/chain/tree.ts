@@ -23,7 +23,7 @@
  * already does on open.
  */
 
-import { existsSync, mkdirSync, writeFileSync } from 'node:fs';
+import { appendFileSync, existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 
 import { type ChainLayout, gitignorePath } from './layout.js';
 
@@ -54,17 +54,32 @@ const GITIGNORE_CONTENT = [
   '',
 ].join('\n');
 
+const LOCKS_LINE = '/locks/';
+
 /**
  * Ensures a PROJECT tree exists at `layout.root` and carries its own
  * `.gitignore`. Creates the tree directory if absent and writes the `.gitignore`
- * only if one is not already there. Idempotent: safe to call before every write.
+ * only if one is not already there; an older one that lacks the `/locks/` line gets
+ * that line appended and nothing else. Idempotent: safe to call before every write.
  * Returns true if it wrote the `.gitignore` this call (it was absent), false if
- * one already existed.
+ * one already existed (even if a line was appended to it).
  */
 export function ensureTree(layout: ChainLayout): boolean {
   mkdirSync(layout.root, { recursive: true });
   const path = gitignorePath(layout);
-  if (existsSync(path)) return false;
-  writeFileSync(path, GITIGNORE_CONTENT, 'utf-8');
-  return true;
+  if (!existsSync(path)) {
+    writeFileSync(path, GITIGNORE_CONTENT, 'utf-8');
+    return true;
+  }
+  // A tree made before the writers' lock directory existed has no line for it, and a lock left
+  // by a killed holder would be committed. Add that one line, at the end; touch nothing else.
+  const existing = readFileSync(path, 'utf-8');
+  const hasLocks = existing
+    .split(/\r?\n/)
+    .some((l) => l.trim() === LOCKS_LINE || l.trim() === 'locks/');
+  if (!hasLocks) {
+    const gap = existing === '' || existing.endsWith('\n') ? '' : '\n';
+    appendFileSync(path, `${gap}${LOCKS_LINE}\n`, 'utf-8');
+  }
+  return false;
 }

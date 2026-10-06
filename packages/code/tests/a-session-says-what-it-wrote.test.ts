@@ -88,6 +88,26 @@ function result(at: string): string {
   });
 }
 
+/** A tool result the host marks as an error — what a refused tool call comes back as. */
+function refusedResult(at: string): string {
+  return JSON.stringify({
+    type: 'user',
+    timestamp: at,
+    cwd: repo,
+    message: {
+      role: 'user',
+      content: [
+        {
+          type: 'tool_result',
+          tool_use_id: `t-${at}`,
+          content: 'PreToolUse:Edit hook error: refused',
+          is_error: true,
+        },
+      ],
+    },
+  });
+}
+
 /** Writes a transcript and answers its path. */
 function transcript(lines: readonly string[]): string {
   const path = join(sandbox, 'session.jsonl');
@@ -158,6 +178,27 @@ describe('what a transcript says the session wrote', () => {
     expect(did?.editedFiles).toEqual([join(repo, 'src', 'a.ts'), join(repo, 'src', 'b.ts')]);
     expect(did?.openedAt).toBe(LONG_AGO);
     expect(did?.lastResponseEdited).toBe(true);
+  });
+
+  it('does not count a tool call the host refused, only the write that happened', () => {
+    // The result carries `is_error` and the same id as the call: what a hook's refusal looks like.
+    const refused = [
+      prompt(LONG_AGO, 'change the generated api'),
+      call('2020-01-01T00:00:01.000Z', 'Edit', { file_path: join(repo, 'src', 'gen.ts') }),
+      refusedResult('2020-01-01T00:00:01.000Z'),
+    ];
+    const none = whatTheSessionDid(transcript(refused), repo);
+    expect(none?.editedFiles).toEqual([]);
+    expect(none?.lastResponseEdited).toBe(false);
+    // A refused attempt beside a write that went through: one file, and the response did write.
+    const both = [
+      ...refused,
+      call('2020-01-01T00:00:03.000Z', 'Edit', { file_path: join(repo, 'src', 'ok.ts') }),
+      result('2020-01-01T00:00:03.000Z'),
+    ];
+    const one = whatTheSessionDid(transcript(both), repo);
+    expect(one?.editedFiles).toEqual([join(repo, 'src', 'ok.ts')]);
+    expect(one?.lastResponseEdited).toBe(true);
   });
 
   it('knows a response that wrote nothing from one that did, by the last prompt', () => {
