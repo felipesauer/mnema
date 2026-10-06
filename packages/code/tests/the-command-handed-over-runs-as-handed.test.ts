@@ -663,7 +663,9 @@ export const HANDED_OVER: Readonly<
   // line 48 for the package page's block that retires a checker key.
   // line 49 and name 25 for the front page's quick start, which hands over the first record in a block
   // of its own beside the one on the first-record page.
-  block: { line: 49, name: 25, flag: 1, unwritten: 0 },
+  // name 26 for the package page's block that runs `mnema verify` in a CI workflow with the cache
+  // directory set.
+  block: { line: 49, name: 26, flag: 1, unwritten: 0 },
   // 46 until the refusal an agent's `accept` gets, with the switch off, began naming the command a
   // person accepts with (`agent-accepts.ts`).
   // line 34 until the sentences an agent's accept is answered with began handing whole lines

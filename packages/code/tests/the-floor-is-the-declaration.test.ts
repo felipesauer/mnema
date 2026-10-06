@@ -285,6 +285,12 @@ const EAGER_DOMAIN: Readonly<Record<string, string>> = {
     'declaration: it could be loaded inside the catch, which is free today because ' +
     'the declarations below already hold core open, and would cost a domain load on ' +
     'an unrelated throw the day they do not.',
+  'env.ts @mnema/core':
+    'the discovery environment hands `$MNEMA_CACHE_DIR` to the core (`keepReadCacheIn`), which ' +
+    'decides what the value means and refuses one that cannot serve. NOT a declaration: it is ' +
+    'a sync call every door makes while building its environment, so deferring it means ' +
+    'awaiting it at each of them — and it costs nothing TODAY because the declarations above ' +
+    'already hold `@mnema/core` open.',
   'pinned-run.ts @mnema/chain':
     'the entry builds the pinned-run resolver, and resolving a run replays the record. ' +
     'NOT a declaration: the resolver is memoized and sync, so deferring it means ' +
@@ -612,7 +618,7 @@ describe('the floor is the declaration', () => {
     // And the SIZE, so the number this file's own doc states cannot drift from the
     // table it describes. It drifted twice before anybody noticed — the prose said
     // eight through two slices that made it ten and then eleven.
-    expect(Object.keys(EAGER_DOMAIN)).toHaveLength(14);
+    expect(Object.keys(EAGER_DOMAIN)).toHaveLength(15);
   });
 
   it('loads these modules and no others — the ceiling, by name', () => {
