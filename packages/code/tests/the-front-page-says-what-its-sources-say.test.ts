@@ -1,17 +1,17 @@
 /**
- * THE FRONT PAGE SAYS WHAT ITS SOURCES SAY — each number it shows and each table it draws is read
+ * THE DOCS SAY WHAT THEIR SOURCES SAY — each number the pages show and each table they draw is read
  * off the file it came from, so the page cannot go on saying a fact its source stopped saying.
  *
  * THE PAGE COUNTS AND DRAWS TWO THINGS THAT ARE NOT ITS OWN, and this reads both from where they
  * live:
  *
- *   - THE MEASUREMENT. `## What was measured` shows four rates, the tasks and the runs they are
+ *   - THE MEASUREMENT. `docs/measured.md` shows four rates, the tasks and the runs they are
  *     over, the model, the day and the cells — and they are one round's, the report that section
  *     links to. Each is read out of that report here (its capture table, its rates, its task
  *     tables), and the report is found by the page's OWN link, so the page and this case cannot
  *     come to be about two different rounds. A number on the page that the report does not carry
  *     is red, and so is a report the page stopped citing.
- *   - THE DECISION'S STATES. `## Three things it does` draws the workflow a decision moves through,
+ *   - THE DECISION'S STATES. `docs/how-it-works.md`, under `## Three things it does`, draws the workflow a decision moves through,
  *     and that workflow is the gate's table (`DECISION_TRANSITIONS`) with the proof each move owes.
  *     The state a decision is born into and the one in force are the core's and the context package's
  *     answers, asked here rather than assumed.
@@ -26,25 +26,31 @@
  */
 
 import { execFileSync } from 'node:child_process';
-import { join } from 'node:path';
+import { dirname, join } from 'node:path';
 import { decisionDisposition } from '@mnema/context';
 import { DECISION_STATES, DECISION_TRANSITIONS, INITIAL_DECISION_STATE } from '@mnema/core';
 import { describe, expect, it } from 'vitest';
 import { ROOT, read } from './support/published-examples.js';
 import { linesOf } from './support/reading-a-shell-line.js';
 
-/** The page this file rules on. */
-const PAGE = 'README.md';
+/**
+ * The pages this file rules on: each fact lives on the page that carries its section, since the
+ * front page keeps only the sentence and the grid and the long form moved under `docs/`.
+ */
+const MEASURED = 'docs/measured.md';
+const HOW_IT_WORKS = 'docs/how-it-works.md';
+const PACKAGES = 'docs/packages.md';
+const VERIFY = 'docs/verify-without-installing.md';
 
 /**
  * The body of a `##` section of the page — from under its heading to the next `##` that is a
  * heading, which a `##` inside a fence is not. It throws when the section is gone, because a case
  * that read an empty section would be a case saying nothing is wrong with what it never read.
  */
-function sectionOf(page: string, heading: string): string {
+function sectionOf(page: string, heading: string, name = 'the page'): string {
   const raw = page.split('\n');
   const at = raw.indexOf(heading);
-  if (at < 0) throw new Error(`${PAGE} no longer carries "${heading}"`);
+  if (at < 0) throw new Error(`${name} no longer carries "${heading}"`);
   const next = linesOf(page).find(
     (line) => line.fence === null && line.at > at + 1 && line.source.startsWith('## '),
   );
@@ -208,9 +214,10 @@ function ratesOnThePage(section: string): Record<string, string> {
   );
 }
 
-describe('the measurement the front page shows', () => {
-  const section = sectionOf(read(PAGE), '## What was measured');
-  const cited = theReportCited(section);
+describe('the measurement the measured page shows', () => {
+  const section = sectionOf(read(MEASURED), '# What was measured', MEASURED);
+  // The link is the page's own, so it is read from the page's directory.
+  const cited = join(dirname(MEASURED), theReportCited(section));
   const round = theRound(read(cited));
 
   it('shows every arm of the round, at the rate its report gives it', () => {
@@ -258,7 +265,7 @@ const OWED: Readonly<Record<string, string>> = { note: 'a note', reason: 'a reas
 
 /** The transitions the page's state diagram draws, one line each, as written. */
 function theDiagramDrawn(page: string): string[] {
-  const section = sectionOf(page, '## Three things it does');
+  const section = sectionOf(page, '## Three things it does', HOW_IT_WORKS);
   const blocks: string[][] = [];
   let last = -2;
   for (const line of linesOf(section)) {
@@ -268,7 +275,8 @@ function theDiagramDrawn(page: string): string[] {
     last = line.at;
   }
   const diagram = blocks.find((block) => block[0] === 'stateDiagram-v2');
-  if (diagram === undefined) throw new Error(`${PAGE} no longer draws the decision's states`);
+  if (diagram === undefined)
+    throw new Error(`${HOW_IT_WORKS} no longer draws the decision's states`);
   return diagram.filter((line) => line.includes('-->'));
 }
 
@@ -283,15 +291,15 @@ function theGatesTable(): string[] {
   ];
 }
 
-describe("the decision's states the front page draws", () => {
-  const page = read(PAGE);
+describe("the decision's states the how-it-works page draws", () => {
+  const page = read(HOW_IT_WORKS);
 
   it('are the gate’s transitions, each with the proof it owes', () => {
     expect(theDiagramDrawn(page)).toEqual(theGatesTable());
   });
 
   it('say where a decision is born and which state is in force, as the product answers', () => {
-    const prose = sectionOf(page, '## Three things it does').replace(/\s+/g, ' ');
+    const prose = sectionOf(page, '## Three things it does', HOW_IT_WORKS).replace(/\s+/g, ' ');
     const inForce = DECISION_STATES.filter((state) => decisionDisposition(state) === 'in-force');
     expect(inForce).toHaveLength(1);
     expect(prose).toContain(
@@ -310,8 +318,9 @@ describe("the decision's states the front page draws", () => {
 // The counts the page takes from the rest of the repository
 // ---------------------------------------------------------------------------
 
-describe('the counts the front page takes from the rest of the repository', () => {
-  const page = read(PAGE).replace(/\s+/g, ' ');
+describe('the counts the docs take from the rest of the repository', () => {
+  const packages = read(PACKAGES).replace(/\s+/g, ' ');
+  const verifier = read(VERIFY).replace(/\s+/g, ' ');
 
   it('counts the plugin’s hooks as its declaration declares them, and when each runs', () => {
     const declared = JSON.parse(read('plugin/hooks/hooks.json')) as {
@@ -320,7 +329,7 @@ describe('the counts the front page takes from the rest of the repository', () =
     const per = (event: string): number =>
       (declared.hooks[event] ?? []).reduce((total, matcher) => total + matcher.hooks.length, 0);
     const all = Object.keys(declared.hooks).reduce((total, event) => total + per(event), 0);
-    expect(page).toContain(
+    expect(packages).toContain(
       `The Claude Code plugin: ${inWords(all)} hooks — ${inWords(per('SessionStart'))} as a session opens, ${inWords(per('PreToolUse'))} at each edit (the one Claude Code runs, the one VS Code runs and the one Cursor runs, each skipped by the others), ${inWords(per('Stop'))} at the end of a response, ${inWords(per('PreCompact'))} before a compaction —`,
     );
     // NON-VACUITY: the declaration is read, not assumed to be empty.
@@ -335,7 +344,7 @@ describe('the counts the front page takes from the rest of the repository', () =
     );
     const counted = /^(\d+) gaps:/m.exec(listed);
     expect(counted, 'the second reader no longer says how many gaps it lists').not.toBeNull();
-    expect(page).toContain(
+    expect(verifier).toContain(
       `found ${inWords(Number(counted?.[1]))} points where the specification was not enough`,
     );
   });

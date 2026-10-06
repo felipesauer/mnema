@@ -600,7 +600,7 @@ describe('the console recording', () => {
     // block is held to `brief` over it, the way the first record's block is held to its commands
     // — every line shown was printed, in order, and a line that is `…` alone stands for lines
     // left out (`support/a-page-held-to-a-run.ts`).
-    const quoted = theQuotedOpening(read(PAGE));
+    const quoted = theQuotedOpening(read(OPENING_PAGE));
     const printed = spawnSync(process.execPath, [CLI, 'brief'], {
       cwd: project,
       encoding: 'utf-8',
@@ -610,7 +610,7 @@ describe('the console recording', () => {
     const lines = printed.stdout.replace(/\n$/, '').split('\n').map(asMinted);
     expect(
       accountsFor(quoted.map(asMinted), lines),
-      `${PAGE} quotes an opening \`brief\` does not print over ${CONSOLE_SCRIPT}'s record:\n` +
+      `${OPENING_PAGE} quotes an opening \`brief\` does not print over ${CONSOLE_SCRIPT}'s record:\n` +
         `--- the page quotes:\n${quoted.join('\n')}\n--- brief printed:\n${printed.stdout}`,
     ).toBe(true);
     // NON-VACUITY: the quote is the document's beginning and its decisions, not an empty block.
@@ -628,9 +628,11 @@ describe('the console recording', () => {
   });
 });
 
-/** The page the recordings are played on, and the section whose block quotes the opening. */
+/** The page the recordings are played on. */
 const PAGE = 'README.md';
-const QUOTES_THE_OPENING = '## What a session is handed';
+/** The page, and the section, whose block quotes the opening document. */
+const OPENING_PAGE = 'docs/agent-hosts.md';
+const QUOTES_THE_OPENING = '# What a session is handed';
 
 /**
  * The block the front page quotes the opening document in: the first fence under
@@ -639,10 +641,11 @@ const QUOTES_THE_OPENING = '## What a session is handed';
  */
 function theQuotedOpening(page: string): string[] {
   const heading = page.split('\n').indexOf(QUOTES_THE_OPENING) + 1;
-  if (heading === 0) throw new Error(`${PAGE} no longer carries "${QUOTES_THE_OPENING}"`);
+  if (heading === 0) throw new Error(`${OPENING_PAGE} no longer carries "${QUOTES_THE_OPENING}"`);
   const lines = linesOf(page).filter((line) => line.at > heading);
   const first = lines.find((line) => line.fence === 'text');
-  if (first === undefined) throw new Error(`${PAGE} quotes no \`text\` block under the heading`);
+  if (first === undefined)
+    throw new Error(`${OPENING_PAGE} quotes no \`text\` block under the heading`);
   const block: string[] = [];
   for (const line of lines.filter((one) => one.at >= first.at)) {
     if (line.fence !== 'text' || line.at !== first.at + block.length) break;

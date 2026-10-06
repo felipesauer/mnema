@@ -1,9 +1,9 @@
 /**
- * THE VERIFIER THE ROOT PAGE PUBLISHES IS A VERIFIER THAT RUNS — and prints what the page
+ * THE VERIFIER THE PAGE PUBLISHES IS A VERIFIER THAT RUNS — and prints what the page
  * says it prints.
  *
  * WHAT WAS UNCHECKED, AND WHAT IT COST. `README.md` sells the second reader in its opening
- * sentence and publishes two lines to reach it: a `git clone`, and a `python3` invocation
+ * sentence and `docs/verify-without-installing.md` publishes two lines to reach it: a `git clone`, and a `python3` invocation
  * whose last argument was `path/to/a/repo/.mnema`. A reader who copied both got
  * `THE VERIFIER BROKE: there is no record at …` and exit 3 — because the path is a
  * PLACEHOLDER and a fresh clone carries no record to aim it at. The output the page
@@ -20,7 +20,7 @@
  *
  * THE BROAD GUARD WAS CONSIDERED AND REFUSED, with its reason. The wide form — sweep every
  * published block for placeholder shapes (`path/to/`, `your-`, `<…>`) and accuse them — is
- * born with an exception: `README.md` publishes `cd your-repository` twelve lines above
+ * born with an exception: `docs/first-record.md` publishes `cd your-repository`
  * this block, deliberately and correctly, because there the placeholder IS the
  * instruction. A guard that must be taught which placeholders are allowed is a list of
  * this page's lines wearing a rule's clothes, and a new instrument in this workspace has
@@ -58,8 +58,8 @@ import { runInit } from '../src/commands/init.js';
 import { ROOT, read } from './support/published-examples.js';
 
 /** The page that sells the second reader, and the heading the block lives under. */
-const PAGE = 'README.md';
-const SECTION = '## Checking a record without installing this';
+const PAGE = 'docs/verify-without-installing.md';
+const SECTION = '# Checking a record without installing this';
 
 /** The placeholder the page publishes, which is the one thing a reader must replace. */
 const PLACEHOLDER = '/path/to/a/repo/.mnema';
@@ -106,7 +106,7 @@ function runPublished(recordPath: string): { out: string; status: number } {
   }
 }
 
-describe('the verifier the root page publishes', () => {
+describe('the verifier the verify-without-installing page publishes', () => {
   let sandbox: string;
 
   beforeEach(() => {

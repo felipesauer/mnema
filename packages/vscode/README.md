@@ -1,5 +1,7 @@
 # @mnema/vscode
 
+[![CI](https://img.shields.io/github/actions/workflow/status/felipesauer/mnema/ci.yml?branch=main&style=flat-square&label=CI&color=997dbf)](https://github.com/felipesauer/mnema/actions/workflows/ci.yml) [![License: Apache-2.0](https://img.shields.io/badge/license-Apache--2.0-997dbf?style=flat-square)](../../LICENSE) ![Node 22.12 or later](https://img.shields.io/badge/node-%E2%89%A522.12-997dbf?style=flat-square) ![Not published: run from a checkout](https://img.shields.io/badge/npm-not%20published-997dbf?style=flat-square)
+
 A VS Code extension for the person who reviews the [mnema](https://github.com/felipesauer/mnema)
 record, not for the agent. The record already says which decisions govern a file and which wait for
 a judgment; this puts both where the person is reading, so that a decision is not left unjudged only

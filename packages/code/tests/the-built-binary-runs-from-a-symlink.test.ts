@@ -1,7 +1,7 @@
 /**
  * THE BINARY A BUILD LEAVES RUNS WHEN IT IS LINKED ONTO THE PATH, the way the page says to.
  *
- * WHAT WAS WRONG. The root page tells a reader who builds from a clone to *"symlink it onto your
+ * WHAT WAS WRONG. The build-from-source page (`docs/build-from-source.md`) tells a reader who builds from a clone to *"symlink it onto your
  * `PATH` under the name `mnema`"*. `tsc` keeps no executable bit — it wrote `dist/cli.js` with mode
  * 0664 — so the symlink the page asks for gave `Permission denied`, exit 126, on the last step of
  * the only install that works while the package is not on the registry. Measured on the built
@@ -72,7 +72,7 @@ describe('the binary a build leaves', () => {
   it('is what the page tells a reader to link', () => {
     // The sentence the recipe comes from. If the page stops saying it, this case is the one to
     // read before deleting the step that makes it true.
-    const page = readFileSync(join(ROOT, 'README.md'), 'utf-8');
+    const page = readFileSync(join(ROOT, 'docs', 'build-from-source.md'), 'utf-8');
     expect(page).toContain('`pnpm build` leaves the binary at `packages/code/dist/cli.js`');
     expect(page).toContain('symlink it onto your `PATH` under the name `mnema`');
   });

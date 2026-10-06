@@ -1,10 +1,10 @@
 /**
  * THE INSTALL LINE IS ONE. Until the packages are published, `npm i -g @mnema/code` answers 404,
- * and the root README gives the install of the pre-release from the four tarballs of its GitHub
+ * and `docs/install.md` gives the install of the pre-release from the four tarballs of its GitHub
  * release. `mnema doctor` and the plugin's hand-over hook say how to install too; a third
- * spelling of the line would send a person to a URL the README does not give.
+ * spelling of the line would send a person to a URL that page does not give.
  *
- * The README is the source: its four URLs are read off the page and each of the other two must
+ * `docs/install.md` is the source: its four URLs are read off the page and each of the other two must
  * carry exactly those, in that order.
  */
 
@@ -18,11 +18,10 @@ import { VERSION } from '../src/version.js';
 const REPO = fileURLToPath(new URL('../../../', import.meta.url));
 const TARBALL = /https:\/\/github\.com\/felipesauer\/mnema\/releases\/download\/[^\s\\]+\.tgz/g;
 
-/** The four URLs of the install block of the root README. */
-const README_URLS = (readFileSync(join(REPO, 'README.md'), 'utf-8').match(TARBALL) ?? []).slice(
-  0,
-  4,
-);
+/** The four URLs of the install block of `docs/install.md`. */
+const README_URLS = (
+  readFileSync(join(REPO, 'docs', 'install.md'), 'utf-8').match(TARBALL) ?? []
+).slice(0, 4);
 
 describe('the install of the pre-release', () => {
   it('is four tarballs on the page, chain first and code last', () => {

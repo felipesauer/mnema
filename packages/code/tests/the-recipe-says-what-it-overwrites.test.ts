@@ -189,7 +189,7 @@ function everyPublishedPassage(): ReadonlyMap<string, string> {
  * does, and one whose publications vanish tells a broken sweep from a changed workspace.
  */
 const PAGES_PUBLISHING: Readonly<Record<string, number>> = {
-  'README.md': 1,
+  'docs/first-record.md': 1,
   'packages/code/README.md': 2,
   'plugin/README.md': 1,
 };
