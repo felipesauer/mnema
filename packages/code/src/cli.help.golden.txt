@@ -554,6 +554,7 @@ $ mnema promote --help
 |   is committed and reaches every machine that clones the repository.
 |   Do not record credentials: a recognized format is replaced with a placeholder
 |   and reported back, but what mnema does not recognize is written verbatim.
+|   Nor personal data: an email address is replaced with <email>; the mnid already says who wrote.
 |   Each text field holds at most 65536 bytes; a longer one is refused.
 
 ### mnema retract --help
