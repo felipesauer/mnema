@@ -1,5 +1,7 @@
 # @mnema/sdk
 
+[![CI](https://img.shields.io/github/actions/workflow/status/felipesauer/mnema/ci.yml?branch=main&style=flat-square&label=CI&color=997dbf)](https://github.com/felipesauer/mnema/actions/workflows/ci.yml) [![License: Apache-2.0](https://img.shields.io/badge/license-Apache--2.0-997dbf?style=flat-square)](../../LICENSE) ![Node 22.12 or later](https://img.shields.io/badge/node-%E2%89%A522.12-997dbf?style=flat-square) ![Not published: run from a checkout](https://img.shields.io/badge/npm-not%20published-997dbf?style=flat-square)
+
 A library door to the [mnema](https://github.com/felipesauer/mnema) record, for a program that
 builds its own agent (the Claude Agent SDK, LangGraph and the like) and does not run inside a host
 that speaks MCP. It reads and writes the same record the command line and the MCP server do, by

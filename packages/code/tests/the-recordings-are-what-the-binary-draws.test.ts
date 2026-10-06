@@ -1,6 +1,6 @@
 /**
- * THE RECORDINGS ARE WHAT THE BINARY DRAWS — the two animations the front page shows, each held to
- * a run of the script it was made from, against the built binary, so neither goes stale in silence.
+ * THE RECORDINGS ARE WHAT THE BINARY DRAWS — the animations the front page shows, each held to a
+ * run of the script it was made from, against the built binary, so none goes stale in silence.
  *
  * WHY THIS EXISTS. An animation is the one kind of evidence on a page that a reader cannot check by
  * copying it, and it is the kind that rots quietest: it goes on showing the binary of the day it
@@ -11,10 +11,11 @@
  * `recordings/`, and this file runs that script again and holds what the binary does today to
  * what the recording shows.
  *
- * TWO RECORDINGS, TWO WAYS OF BEING MADE, ONE RULE.
+ * TWO WAYS OF BEING MADE, ONE RULE.
  *
- *   - THE COMMAND LINE. `recordings/first-record.sh` is typed at a terminal by `asciinema`, which
- *     keeps every byte and when it came in `first-record.cast`; `agg` renders that into the GIF.
+ *   - THE COMMAND LINE. Each script in {@link COMMAND_LINE_RECORDINGS} — `first-record.sh`,
+ *     `a-write-refused.sh`, `a-decision-superseded.sh` — is typed at a terminal by `asciinema`, which
+ *     keeps every byte and when it came in its `.cast`; `agg` renders that into the GIF.
  *     Here the same script runs with `PACE=0` — no pause and no per-character delay, the text
  *     unchanged — and what it prints is held to the text of the committed cast, line for line:
  *     the control sequences out, the carriage returns out, and what the machine mints read as what
@@ -30,10 +31,12 @@
  *
  *     asciinema rec --overwrite -q --cols 96 --rows 34 \
  *       -c "bash recordings/first-record.sh $PWD/packages/code/dist/cli.js" recordings/first-record.cast
- *     agg recordings/first-record.cast recordings/first-record.gif
+ *     agg --theme github-dark --font-size 16 recordings/first-record.cast recordings/first-record.gif
+ *
+ *     (and so for each command-line script, whose own header names the line that makes it)
  *
  *     RECORDING=console npx vitest run packages/code/tests/the-recordings-are-what-the-binary-draws.test.ts
- *     agg recordings/console.cast recordings/console.gif
+ *     agg --theme github-dark --font-size 16 recordings/console.cast recordings/console.gif
  *
  * WHAT A RECORDING SHOWS THAT THE BINARY DID NOT WRITE, each said here:
  *   - the sandbox's home is spelled `~` — by the script for the command line, and by
@@ -79,15 +82,15 @@ const RECORDINGS = join(ROOT, 'recordings');
 
 /** What a failure says, so that a red here says how it goes green again. */
 const THE_WAY_BACK = {
-  cli:
-    'recordings/first-record.cast no longer shows what the binary prints. Make it again: ' +
-    'asciinema rec --overwrite -q --cols 96 --rows 34 -c "bash recordings/first-record.sh ' +
-    '$PWD/packages/code/dist/cli.js" recordings/first-record.cast, then agg ' +
-    'recordings/first-record.cast recordings/first-record.gif',
+  cli: (name: string): string =>
+    `recordings/${name}.cast no longer shows what the binary prints. Make it again: ` +
+    `asciinema rec --overwrite -q --cols 96 --rows 34 -c "bash recordings/${name}.sh ` +
+    `$PWD/packages/code/dist/cli.js" recordings/${name}.cast, then agg --theme github-dark --font-size 16 ` +
+    `recordings/${name}.cast recordings/${name}.gif`,
   console:
     'recordings/console.cast no longer shows what the console draws. Make it again: ' +
     'RECORDING=console npx vitest run packages/code/tests/the-recordings-are-what-the-binary-draws.test.ts, ' +
-    'then agg recordings/console.cast recordings/console.gif',
+    'then agg --theme github-dark --font-size 16 recordings/console.cast recordings/console.gif',
 } as const;
 
 // ---------------------------------------------------------------------------
@@ -165,53 +168,101 @@ function typedIn(lines: readonly string[]): string[] {
 // The command line
 // ---------------------------------------------------------------------------
 
-describe('the command-line recording', () => {
-  let sandbox: string;
-  let today: string[];
-  let shown: string[];
-  let cast: Cast;
-
-  beforeAll(() => {
-    // ITS OWN SANDBOX, handed to the script as its temp directory: the script makes its own
-    // under it and removes it, and this removes whatever a script that died left.
-    sandbox = mkdtempSync(join(tmpdir(), 'mnema-first-record-case-'));
-    const ran = spawnSync('bash', [join(RECORDINGS, 'first-record.sh'), CLI], {
-      encoding: 'utf-8',
-      env: { PATH: process.env.PATH ?? '', HOME: sandbox, TMPDIR: sandbox, PACE: '0' },
-    });
-    if (ran.status !== 0 || ran.stderr !== '') {
-      throw new Error(
-        `recordings/first-record.sh did not run clean (exit ${ran.status}): ${ran.stderr}`,
-      );
-    }
-    today = asMinted(readable(ran.stdout)).split('\n');
-    cast = castOf(read('recordings/first-record.cast'));
-    shown = asMinted(readable(drawnBy(cast.events))).split('\n');
-  }, 120_000);
-
-  afterAll(() => {
-    rmSync(sandbox, { recursive: true, force: true });
-  });
-
-  it('prints today, line for line, what the committed cast shows', () => {
-    expect(shown, THE_WAY_BACK.cli).toEqual(today);
-  });
-
-  it('reads the five commands the script types, and a cast made at the size its header names', () => {
-    // NON-VACUITY. A script that printed nothing and a cast that held nothing would agree above.
-    expect(typedIn(today).map((command) => command.split(' ').slice(0, 3).join(' '))).toEqual([
+/**
+ * Each command-line recording: the script in `recordings/` it is made from, the first three words
+ * of every command it types (what the machine mints read as what it is), and how many lines it
+ * prints at the least — so a script that printed nothing cannot agree with a cast that holds nothing.
+ */
+const COMMAND_LINE_RECORDINGS: readonly {
+  readonly name: string;
+  readonly typed: readonly string[];
+  readonly lines: number;
+}[] = [
+  {
+    name: 'first-record',
+    typed: [
       'mnema init',
       'mnema decision record',
       'mnema decision move',
       'mnema brief |',
       'mnema verify',
-    ]);
-    expect(today.length).toBeGreaterThan(30);
-    expect([cast.header.width, cast.header.height]).toEqual([96, 34]);
-    // Typed at human speed, the commands arrive one character an event.
-    expect(cast.events.length).toBeGreaterThan(200);
+    ],
+    lines: 30,
+  },
+  {
+    name: 'a-write-refused',
+    typed: [
+      'mnema init >',
+      'mnema decision record',
+      'mnema decision move',
+      'mnema link <uuid>',
+      'mnema before-a-write --host',
+      'mnema verify',
+    ],
+    lines: 25,
+  },
+  {
+    name: 'a-decision-superseded',
+    typed: [
+      'mnema init >',
+      'mnema decision record',
+      'mnema decision move',
+      'mnema brief |',
+      'mnema decision record',
+      'mnema decision move',
+      'mnema decision supersede',
+      'mnema brief |',
+      'mnema search cents',
+    ],
+    lines: 25,
+  },
+];
+
+for (const recording of COMMAND_LINE_RECORDINGS) {
+  describe(`the command-line recording ${recording.name}`, () => {
+    let sandbox: string;
+    let today: string[];
+    let shown: string[];
+    let cast: Cast;
+
+    beforeAll(() => {
+      // ITS OWN SANDBOX, handed to the script as its temp directory: the script makes its own
+      // under it and removes it, and this removes whatever a script that died left.
+      sandbox = mkdtempSync(join(tmpdir(), `mnema-${recording.name}-case-`));
+      const ran = spawnSync('bash', [join(RECORDINGS, `${recording.name}.sh`), CLI], {
+        encoding: 'utf-8',
+        env: { PATH: process.env.PATH ?? '', HOME: sandbox, TMPDIR: sandbox, PACE: '0' },
+      });
+      if (ran.status !== 0 || ran.stderr !== '') {
+        throw new Error(
+          `recordings/${recording.name}.sh did not run clean (exit ${ran.status}): ${ran.stderr}`,
+        );
+      }
+      today = asMinted(readable(ran.stdout)).split('\n');
+      cast = castOf(read(`recordings/${recording.name}.cast`));
+      shown = asMinted(readable(drawnBy(cast.events))).split('\n');
+    }, 120_000);
+
+    afterAll(() => {
+      rmSync(sandbox, { recursive: true, force: true });
+    });
+
+    it('prints today, line for line, what the committed cast shows', () => {
+      expect(shown, THE_WAY_BACK.cli(recording.name)).toEqual(today);
+    });
+
+    it('reads the commands the script types, and a cast made at the size its header names', () => {
+      // NON-VACUITY. A script that printed nothing and a cast that held nothing would agree above.
+      expect(typedIn(today).map((command) => command.split(' ').slice(0, 3).join(' '))).toEqual(
+        recording.typed,
+      );
+      expect(today.length).toBeGreaterThan(recording.lines);
+      expect([cast.header.width, cast.header.height]).toEqual([96, 34]);
+      // Typed at human speed, the commands arrive one character an event.
+      expect(cast.events.length).toBeGreaterThan(200);
+    });
   });
-});
+}
 
 // ---------------------------------------------------------------------------
 // The console
@@ -600,7 +651,7 @@ describe('the console recording', () => {
     // block is held to `brief` over it, the way the first record's block is held to its commands
     // — every line shown was printed, in order, and a line that is `…` alone stands for lines
     // left out (`support/a-page-held-to-a-run.ts`).
-    const quoted = theQuotedOpening(read(PAGE));
+    const quoted = theQuotedOpening(read(OPENING_PAGE));
     const printed = spawnSync(process.execPath, [CLI, 'brief'], {
       cwd: project,
       encoding: 'utf-8',
@@ -610,7 +661,7 @@ describe('the console recording', () => {
     const lines = printed.stdout.replace(/\n$/, '').split('\n').map(asMinted);
     expect(
       accountsFor(quoted.map(asMinted), lines),
-      `${PAGE} quotes an opening \`brief\` does not print over ${CONSOLE_SCRIPT}'s record:\n` +
+      `${OPENING_PAGE} quotes an opening \`brief\` does not print over ${CONSOLE_SCRIPT}'s record:\n` +
         `--- the page quotes:\n${quoted.join('\n')}\n--- brief printed:\n${printed.stdout}`,
     ).toBe(true);
     // NON-VACUITY: the quote is the document's beginning and its decisions, not an empty block.
@@ -628,9 +679,11 @@ describe('the console recording', () => {
   });
 });
 
-/** The page the recordings are played on, and the section whose block quotes the opening. */
+/** The page the recordings are played on. */
 const PAGE = 'README.md';
-const QUOTES_THE_OPENING = '## What a session is handed';
+/** The page, and the section, whose block quotes the opening document. */
+const OPENING_PAGE = 'docs/agent-hosts.md';
+const QUOTES_THE_OPENING = '# What a session is handed';
 
 /**
  * The block the front page quotes the opening document in: the first fence under
@@ -639,10 +692,11 @@ const QUOTES_THE_OPENING = '## What a session is handed';
  */
 function theQuotedOpening(page: string): string[] {
   const heading = page.split('\n').indexOf(QUOTES_THE_OPENING) + 1;
-  if (heading === 0) throw new Error(`${PAGE} no longer carries "${QUOTES_THE_OPENING}"`);
+  if (heading === 0) throw new Error(`${OPENING_PAGE} no longer carries "${QUOTES_THE_OPENING}"`);
   const lines = linesOf(page).filter((line) => line.at > heading);
   const first = lines.find((line) => line.fence === 'text');
-  if (first === undefined) throw new Error(`${PAGE} quotes no \`text\` block under the heading`);
+  if (first === undefined)
+    throw new Error(`${OPENING_PAGE} quotes no \`text\` block under the heading`);
   const block: string[] = [];
   for (const line of lines.filter((one) => one.at >= first.at)) {
     if (line.fence !== 'text' || line.at !== first.at + block.length) break;

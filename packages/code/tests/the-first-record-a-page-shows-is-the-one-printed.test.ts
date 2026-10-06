@@ -41,8 +41,8 @@ import { read } from './support/published-examples.js';
 const CLI = fileURLToPath(new URL('../dist/cli.js', import.meta.url));
 
 /** The page, and the heading the block lives under. */
-const PAGE = 'README.md';
-const SECTION = '## Your first record';
+const PAGE = 'docs/first-record.md';
+const SECTION = '# Your first record';
 
 /** One command of the block, and the lines the page shows under it. */
 interface Shown {
@@ -87,7 +87,7 @@ afterEach(() => {
   rmSync(sandbox, { recursive: true, force: true });
 });
 
-describe('the first record the root page shows', () => {
+describe('the first record the first-record page shows', () => {
   it('is what the binary prints, line for line, cut only where the page says so', () => {
     const block = theBlock();
     for (const { at, argv, shown } of block) {

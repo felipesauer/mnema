@@ -1,8 +1,9 @@
 # @mnema/code
 
-A signed, append-only record of the decisions behind AI-agent work — the
-decision, the reasoning, and who wrote it down, in the repository where the
-work happens.
+[![CI](https://img.shields.io/github/actions/workflow/status/felipesauer/mnema/ci.yml?branch=main&style=flat-square&label=CI&color=997dbf)](https://github.com/felipesauer/mnema/actions/workflows/ci.yml) [![License: Apache-2.0](https://img.shields.io/badge/license-Apache--2.0-997dbf?style=flat-square)](../../LICENSE) ![Node 22.12 or later](https://img.shields.io/badge/node-%E2%89%A522.12-997dbf?style=flat-square)
+
+Your decisions, handed to your agents' sessions and held at the edits they
+govern — append-only and signed in the repository, and checkable by anyone.
 
 Tamper-evident, not tamper-proof: what is still in the record has not changed
 since it was signed, and a stranger can check that without your keys and

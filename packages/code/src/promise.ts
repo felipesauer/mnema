@@ -33,12 +33,12 @@
  */
 
 /**
- * The promise, first line: what the product is, for whom, and where it lives.
+ * The promise, first line: what the product does for your decisions, and where it keeps them.
  *
  * Verbatim on every door. A door with room for one line carries this one.
  */
 export const PRODUCT_PROMISE =
-  'A signed, append-only record of the decisions behind AI-agent work — the decision, the reasoning, and who wrote it down, in the repository where the work happens.';
+  "Your decisions, handed to your agents' sessions and held at the edits they govern — append-only and signed in the repository, and checkable by anyone.";
 
 /**
  * The promise, second line: the limit, stated in the promise rather than under it.

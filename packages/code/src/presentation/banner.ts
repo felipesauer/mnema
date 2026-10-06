@@ -226,8 +226,11 @@ const INKED: { readonly [mark: string]: string } = {
  * is that no terminal ever draws a forty-eighth column on that row, and the five rows under it
  * are the same width to the column ({@link widthOfTheDrawing} is what the page is measured by,
  * and it answers forty-eight).
+ *
+ * Exported because the front page's banner is drawn from these rows and from nothing else
+ * (`.github/the-front-page/draw.mjs`); a test holds the committed picture to them.
  */
-const THE_BLOCKS: readonly string[] = [
+export const THE_BLOCKS: readonly string[] = [
   '███╗   ███╗███╗   ██╗███████╗███╗   ███╗ █████╗',
   '████╗ ████║████╗  ██║██╔════╝████╗ ████║██╔══██╗',
   '██╔████╔██║██╔██╗ ██║█████╗  ██╔████╔██║███████║',

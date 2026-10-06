@@ -294,8 +294,8 @@ describe('every link a page carries lands', () => {
     );
     expect(asked).toEqual(
       expect.arrayContaining([
-        'README.md → #what-lives-where',
-        'README.md → plugin/README.md#in-vs-code-and-cursor',
+        'README.md → #what-it-proves--and-what-it-does-not',
+        'docs/install.md → ../plugin/README.md#in-vs-code-and-cursor',
         'packages/code/README.md → ../../plugin/README.md#in-vs-code-and-cursor',
       ]),
     );

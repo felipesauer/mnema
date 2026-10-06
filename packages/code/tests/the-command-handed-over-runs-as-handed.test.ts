@@ -421,19 +421,27 @@ export const NAMES_THAT_NEED_MORE: Readonly<
     times: 1,
     why: 'the verb named in the table row; the same row hands the whole restore over as a line',
   },
-  'README.md: mnema site': {
+  'docs/site.md: mnema site': {
     times: 1,
     why: 'the verb named in a sentence about what wrote the lists on the page; the section hands the line over, with its --out',
   },
-  'README.md: mnema check declare': {
-    times: 1,
-    why: 'the verb named in the front page’s list of what else it does, beside what it leaves unproven; the page of the package hands the line over, with the program it declares',
+  'README.md: mnema site': {
+    times: 2,
+    why: 'the verb named in the step and in the row that say the reader’s browser checks the page it writes; the page about it hands the line over, with its --out',
   },
-  'README.md: mnema decision import': {
+  'README.md: mnema link': {
+    times: 1,
+    why: 'the verb named in the step that says a rule is addressed at a path; the line needs a decision and a path, which the front page does not pick for the reader',
+  },
+  'docs/features.md: mnema check declare': {
+    times: 1,
+    why: 'the verb named in the page’s list of what else it does, beside what it leaves unproven; the page of the package hands the line over, with the program it declares',
+  },
+  'docs/features.md: mnema decision import': {
     times: 1,
     why: 'the verb named in the same list, as what reads decision documents; the package page hands the line over, with a directory',
   },
-  'README.md: mnema inherit set': {
+  'docs/features.md: mnema inherit set': {
     times: 1,
     why: 'the verb named in the same list, as what pins another repository’s decisions; the package page hands the line over, with the origin',
   },
@@ -441,11 +449,15 @@ export const NAMES_THAT_NEED_MORE: Readonly<
     times: 1,
     why: 'the verb named in the entry that says only the identity that wrote a note retracts it; the package page names the id and the reason it takes',
   },
-  'README.md: mnema retract': {
+  'docs/features.md: mnema retract': {
     times: 1,
     why: 'the verb named in the same list, as what takes a note back; the package page names the id and the reason it takes',
   },
-  'README.md: mnema trailer': {
+  'README.md: mnema retract': {
+    times: 1,
+    why: 'the verb named in the feature grid, as what takes a note back; the package page names the id and the reason it takes',
+  },
+  'docs/features.md: mnema trailer': {
     times: 1,
     why: 'the verb named in the same list, beside `commits`, `why` and `aging`; the package page hands the line over, with the decision',
   },
@@ -632,7 +644,10 @@ export const HANDED_OVER: Readonly<
   // really lands (`line` counts two more spans than before).
   // line 68 and name 132 for the page of example rules: it names `mnema rules biome.json` and
   // the `mnema` its scripts are run with, and each moved the count by one, looked at.
-  span: { line: 68, name: 132, flag: 1, unwritten: 0 },
+  // name 139 for the front page and the docs that took its long form: the row that says the
+  // reader's browser checks the page (`mnema site`, twice), the step that addresses a rule at a path
+  // (`mnema link`), and the quick start, which names the verbs it runs.
+  span: { line: 68, name: 139, flag: 1, unwritten: 0 },
   // name 18 until the page that says where the key lives named `mnema key protect` in a line of
   // its own.
   // line 35 until the same page showed that question in a block of its own.
@@ -644,7 +659,9 @@ export const HANDED_OVER: Readonly<
   // line 47 for the front page's block that moves a decision by its id (`mnema decision move`).
   // name 23 for the package page's block that installs and removes the commit hook.
   // line 48 for the package page's block that retires a checker key.
-  block: { line: 48, name: 23, flag: 1, unwritten: 0 },
+  // line 49 and name 25 for the front page's quick start, which hands over the first record in a block
+  // of its own beside the one on the first-record page.
+  block: { line: 49, name: 25, flag: 1, unwritten: 0 },
   // 46 until the refusal an agent's `accept` gets, with the switch off, began naming the command a
   // person accepts with (`agent-accepts.ts`).
   // line 34 until the sentences an agent's accept is answered with began handing whole lines
