@@ -776,7 +776,7 @@ const CLAUSES_PER_FILE: Readonly<Record<string, number>> = {
   'packages/chain/src/chain/range.test.ts': 5,
   'packages/chain/src/chain/second-reader-agrees-on-enrolment.test.ts': 16,
   'packages/chain/src/chain/second-reader-agrees-on-the-bytes.test.ts': 3,
-  'packages/chain/src/chain/second-reader-agrees-on-the-record.test.ts': 12,
+  'packages/chain/src/chain/second-reader-agrees-on-the-record.test.ts': 13,
   'packages/chain/src/chain/second-reader-is-independent.test.ts': 5,
   'packages/chain/src/chain/second-reader-says-what-it-does-not-check.test.ts': 6,
   'packages/chain/src/chain/sleep.test.ts': 2,
