@@ -77,7 +77,7 @@ environment a hook saw only the names are kept.
   leaves reading it to the model — measured with five placements, the matching one included, and
   the file's text reached the model in none of them. Cursor matches `globs` on its servers.
   Whether a directory's glob could be exact was then looked at in each host (§5): it is not, in
-  either, so `mnema rules-file` carries file addresses only. The file it prints is read by both as it is written: VS Code lists
+  either, which `mnema rules-file` now says beside a directory it writes as `dir/**`. The file it prints is read by both as it is written: VS Code lists
   it with its `applyTo` (`v-rules-file`), and Cursor's agent sends the rule to its backend as
   file-globbed, the two globs apart (`c-rules-file`).
 
@@ -124,7 +124,7 @@ own `.github/hooks` file format, which this product does not use.
 ## 5 · Where a rules file's pattern is matched, and whether a directory's could be exact
 
 An address in the record governs a path and everything under it, names that start with a dot
-included. `mnema rules-file` carried file addresses only, because whether a host's `**` reaches
+included. `mnema rules-file` once carried file addresses only, because whether a host's `**` reaches
 those names was not known. On 30 Sep 2026 each host's own code was read, and VS Code's glob was
 run — [`results/2026-09-30/rules-file-globs.json`](results/2026-09-30/rules-file-globs.json):
 
@@ -142,8 +142,8 @@ run — [`results/2026-09-30/rules-file-globs.json`](results/2026-09-30/rules-fi
   glob library in the agent is used for repository URLs. Where the rule is matched is on Cursor's
   servers, and that was not measured.
 
-So a directory's glob was found exact in neither host, and it stays out, with that reason on the
-second stream. A file stays in: in Cursor a literal path is the pattern it names, and in VS Code
+So a directory's glob was found exact in neither host. `mnema rules-file` writes it as `dir/**`
+anyway, since each host's field takes a glob, and says on the second stream what each host adds. A file is in too: in Cursor a literal path is the pattern it names, and in VS Code
 the output says what the `**/` adds. What was not done: the VS Code function was run outside
 VS Code, taken from its bundle, and not in a window with a file attached; Cursor's editor is not
 installed here, and only its command-line agent was read.

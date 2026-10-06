@@ -108,8 +108,26 @@ describe('what goes into the file', () => {
     ]);
   });
 
-  it('leaves out a directory, the root, a stale address and what is not committed — each with its reason', async () => {
-    await governing('Billing is UTC', 'src/billing');
+  it('carries a directory as its glob in every host, and the same bytes on a second run', async () => {
+    const dir = await governing('Billing is UTC', 'src/billing');
+    const want = {
+      claude: ['paths:', '  - "src/billing/**"'],
+      vscode: ['applyTo: "src/billing/**"'],
+      cursor: ['globs: src/billing/**'],
+    };
+    for (const host of ['claude', 'vscode', 'cursor'] as const) {
+      const first = runRulesFile({ cwd: repo, env }, { host });
+      const second = runRulesFile({ cwd: repo, env }, { host });
+      if (!first.ok || !second.ok) throw new Error('refused');
+      expect(first.carried).toBe(1);
+      expect(first.leftOut).toEqual([]);
+      for (const line of want[host]) expect(first.text?.split('\n'), host).toContain(line);
+      expect(first.text).toContain(`governs src/billing · ${dir}`);
+      expect(second.text).toBe(first.text);
+    }
+  });
+
+  it('leaves out the root, a stale address and what is not committed — each with its reason', async () => {
     await governing('Everything is reviewed', '.');
     await governing('Legacy is frozen', 'src/legacy');
     await governing('Private one', 'src/billing/invoice.ts', '--scope', 'private');
@@ -125,8 +143,6 @@ describe('what goes into the file', () => {
         ]),
       ),
     ).toEqual({
-      'src/billing':
-        'is a directory, and no list of globs was found to match exactly what it governs in either host: VS Code puts “**/” before a pattern, so “src/billing/**” would also match a directory of that name elsewhere, and Cursor matches on its servers',
       '.': 'addresses the whole project, and no glob was found to match exactly that in either host: VS Code matches a pattern against any file attached to its chat, and Cursor matches on its servers',
       'src/legacy':
         'names nothing in the working tree, so whether it is a file or a directory cannot be told',
@@ -169,8 +185,19 @@ describe('the translation is exact where it is made, and the reasons are true of
     expect(matchesGlob('app/i', 'app/[id]')).toBe(true);
     expect(matchesGlob('app/[id]', 'app/[id]')).toBe(false);
     expect(matchesGlob('src/billing/.env', 'src/billing/**')).toBe(false);
-    expect('why' in globFor(at('src/billing', { onDisk: 'directory' }))).toBe(true);
     expect('why' in globFor(at('src/billing/invoice.ts', { inProject: false }))).toBe(true);
+  });
+
+  it('writes a directory as dir/**, which reaches what is under it and not a sibling that starts the same', () => {
+    const made = globFor(at('src/billing', { onDisk: 'directory' }));
+    expect(made).toEqual({ glob: 'src/billing/**' });
+    expect(matchesGlob('src/billing/invoice.ts', 'src/billing/**')).toBe(true);
+    expect(matchesGlob('src/billing/a/b.ts', 'src/billing/**')).toBe(true);
+    expect(matchesGlob('src/billing_old/x.ts', 'src/billing/**')).toBe(false);
+    expect('why' in globFor(at('src/billing', { onDisk: 'directory', inProject: false }))).toBe(
+      true,
+    );
+    expect('why' in globFor(at('src/bill[ing', { onDisk: 'directory' }))).toBe(true);
   });
 
   it('prints no file for nothing — an empty pattern is every file to some matchers', () => {
@@ -217,7 +244,7 @@ describe('mnema rules-file, as a person runs it', () => {
     expect(vscode.status).toBe(0);
     expect(vscode.stdout).toContain('applyTo: "src/billing/invoice.ts"');
     expect(vscode.stderr).toContain(
-      'it puts “**/” before it, so a file of the same name under another directory matches too.',
+      'it puts “**/” before it, so a file of the same name under another directory matches too',
     );
     const cursor = cli('rules-file', '--host', 'cursor');
     expect(cursor.stderr).not.toContain('“**/”');
@@ -238,13 +265,25 @@ describe('mnema rules-file, as a person runs it', () => {
     );
   });
 
-  it('prints no file, and says so, when nothing translates', async () => {
+  it('says beside a VS Code directory that its pattern also matches a directory of that name elsewhere', async () => {
     await governing('Billing is UTC', 'src/billing');
+    const vscode = cli('rules-file', '--host', 'vscode');
+    expect(vscode.stdout).toContain('applyTo: "src/billing/**"');
+    expect(vscode.stderr).toContain(
+      'a directory’s “/**” also matches a directory of that name elsewhere',
+    );
+    const again = cli('rules-file', '--host', 'vscode');
+    expect(again.stdout).toBe(vscode.stdout);
+    expect(again.stderr).toBe(vscode.stderr);
+  });
+
+  it('prints no file, and says so, when nothing translates', async () => {
+    await governing('Everything is reviewed', '.');
     const printed = cli('rules-file', '--host', 'vscode');
     expect(printed.status).toBe(0);
     expect(printed.stdout).toBe('');
     expect(printed.stderr).toContain(
-      'No rule of this project is addressed at a file a glob can name, so no file was printed — a `>` would have left its file empty.',
+      'No rule of this project is addressed at a file or a directory a glob can name, so no file was printed — a `>` would have left its file empty.',
     );
   });
 

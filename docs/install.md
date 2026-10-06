@@ -56,7 +56,7 @@ picks up a plugin installed in Claude Code on the same machine; the per-host det
 each one runs, the rules at each edit that are Claude Code's alone, and the pause for a person
 that reaches VS Code as well — are in the [plugin's page](../plugin/README.md#in-vs-code-and-cursor).
 Without the plugin, `mnema rules-file --host claude`, `--host vscode` or `--host cursor` prints the committed rules
-addressed at a file in that host's own rules format, and says which rules it left out and why.
+addressed at a file or a directory in that host's own rules format, and says which rules it left out and why.
 
 `mnema doctor` says, one line to a finding and with what to do about it, whether a `mnema` is
 on the `PATH` and which one, whether the Claude Code plugin is installed and at what version,
