@@ -9,7 +9,7 @@
  */
 
 import { homedir, userInfo } from 'node:os';
-import type { DiscoveryEnv } from '@mnema/core';
+import { type DiscoveryEnv, keepReadCacheIn } from '@mnema/core';
 
 /**
  * Builds the discovery environment from a process environment map (defaulting to this
@@ -17,6 +17,10 @@ import type { DiscoveryEnv } from '@mnema/core';
  * database. What each of them decides is the core's (`resolve.ts`): the walk stops at `$HOME`,
  * the data directory is `$MNEMA_HOME` or `~/.mnema`, and the account's home is where that goes
  * when `$HOME` names no directory.
+ *
+ * `$MNEMA_CACHE_DIR`, when it names a directory, moves the cache of reads there (`cache-home.ts`
+ * in the core): it is handed to the core rather than carried in the value returned, because the
+ * cache is opened below a hundred call sites that carry no environment.
  *
  * `$XDG_DATA_HOME` is NOT read, and that is a reversal: it used to decide where the key root
  * lived, which made the key that signs a fact depend on which program had launched the process
@@ -30,6 +34,10 @@ import type { DiscoveryEnv } from '@mnema/core';
  * when that is the only home there was.
  */
 export function discoveryEnv(processEnv: NodeJS.ProcessEnv = process.env): DiscoveryEnv {
+  // `$MNEMA_CACHE_DIR` is read HERE and nowhere else, because every door builds its environment
+  // through this function: the command line, the server a host spawns and the library. The core
+  // decides what the value means (`keepReadCacheIn`) and refuses one that cannot serve.
+  keepReadCacheIn(processEnv.MNEMA_CACHE_DIR);
   const relocated = processEnv.MNEMA_HOME;
   const account = accountHome();
   return {

@@ -218,7 +218,7 @@ export const PAGES: Readonly<Record<string, number>> = {
   'docs/first-record.md': 4,
   'docs/how-it-works.md': 1,
   'docs/site.md': 1,
-  'packages/code/README.md': 60,
+  'packages/code/README.md': 61,
   'plugin/README.md': 6,
 };
 
@@ -263,7 +263,7 @@ describe('the sweep knows what it swept', () => {
     // The fence languages actually swept, so narrowing the reading to one of them is a
     // change somebody has to make on purpose rather than a filter that quietly appears.
     const fences = [...new Set(published.map((one) => one.fence))].sort();
-    expect(fences).toEqual(['bash', 'sh']);
+    expect(fences).toEqual(['bash', 'sh', 'yaml']);
   });
 
   it('the program it resolves against is the one with the verbs on it', () => {
