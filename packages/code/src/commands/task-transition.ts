@@ -15,7 +15,7 @@
  * to a different tree would split the task's history across the public/private
  * boundary and leave whoever reads only one tree (the team, on the public tree)
  * with an incoherent view. So the command first LOCATES the task's home tree
- * ({@link locateEntityScope}) and opens THAT tree's writer, rather than assuming
+ * ({@link locateEntityScopeKept}) and opens THAT tree's writer, rather than assuming
  * the public one. If no visible tree holds the task, it refuses — you cannot
  * move what you cannot see.
  *
@@ -31,15 +31,10 @@
  */
 
 import { catalogUpcasters, type TransitionFields } from '@mnema/chain';
-import {
-  chainRootForScope,
-  type DiscoveryEnv,
-  deriveAlias,
-  locateEntityScope,
-  resolveTrees,
-} from '@mnema/core';
+import { chainRootForScope, type DiscoveryEnv, deriveAlias, resolveTrees } from '@mnema/core';
 import { openTreeForWriting, transitionTask } from '@mnema/core/write';
 import { forwardReplacement, type Replacement } from '../recorded-content.js';
+import { locateEntityScopeKept } from '../tree-sources.js';
 
 /** What the transition command needs — injected so it is testable. */
 export interface TaskTransitionContext {
@@ -86,7 +81,7 @@ export type TaskTransitionRefused =
 
 /**
  * Moves a task in the tree it was born in. The transition follows the entity: it
- * locates which tree holds the task ({@link locateEntityScope}) and opens THAT
+ * locates which tree holds the task ({@link locateEntityScopeKept}) and opens THAT
  * tree's writer, so the move never lands in a different tree than the birth and
  * never splits the history. With no `.mnema/` found from the cwd and no global
  * home for the task, this refuses `NO_PROJECT` (a human moves project work);
@@ -105,7 +100,7 @@ export function runTaskTransition(
   // Find the tree the task lives in; the move must follow it there. When no tree
   // holds the task, distinguish "you are not in a project" (a human moves
   // project work) from "this project simply does not have that task".
-  const scope = locateEntityScope(trees, input.id, upcasters);
+  const scope = locateEntityScopeKept(trees, input.id, upcasters);
   if (scope === undefined) {
     return trees.projectPublic === undefined
       ? { ok: false, reason: 'NO_PROJECT' }

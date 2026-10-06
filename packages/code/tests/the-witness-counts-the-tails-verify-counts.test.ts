@@ -4,10 +4,11 @@
  *
  * WHAT THE EMPTY TAIL IS. A tail directory with its ownership proof and no event — what an
  * older writer left when a key's first write was refused, and what records committed then
- * still carry (they stay as they are). The verifier counts every directory under `tails/`, and
- * folds the empty one into the witness level as a tail nothing attests; the listing walked the
- * tails that HOLD events, so it listed one fewer — and the one it left out was the one lowering
- * the level. Now both walk `listTails`, the verifier's enumeration.
+ * still carry (they stay as they are). The verifier used to count every directory under
+ * `tails/` and fold the empty one into the witness level as a tail nothing attests, while the
+ * listing walked the tails that HOLD events, so it listed one fewer. Now a tail with no event
+ * and no checkpoint is not counted as a tail (FORMAT.md section 4): neither reader counts it,
+ * the level does not move for it, and `verify`'s census is where it is named.
  *
  * THE FIXTURE IS THE PRODUCT'S OWN BYTES. The other machine is the product's writer
  * (`mergeAForeignTail`), and what is kept of its tail is the one file an older writer minted at
@@ -112,63 +113,66 @@ describe('witness and verify count the same tails', () => {
     expect(listed.out[0]).toBe('1 tail(s):');
   });
 
-  it('agree over a record holding an empty tail, and the listing shows it', async () => {
+  it('agree over a record holding an empty tail, and neither counts it', async () => {
     const empty = anEmptyTail();
     const verified = await mnema('verify');
     const listed = await mnema('witness');
-    expect(tailsVerified(verified)).toBe(2);
-    expect(listed.out[0]).toBe(`${tailsVerified(verified)} tail(s):`);
-    const row = listed.out.find((line) => line.includes(empty));
-    expect(row, listed.out.join(' / ')).toBeDefined();
-    expect(row).toContain('no checkpoint');
-    expect(row).toContain('the tail has no checkpoint to witness');
+    expect(tailsVerified(verified)).toBe(1);
+    expect(listed.out[0]).toBe('1 tail(s):');
+    expect(listed.out.join(' / ')).not.toContain(empty);
   });
 
-  it('says the same number as JSON, with the reading the verifier derives for it', async () => {
+  it('says the same number as JSON, and the empty tail is not among the lines', async () => {
     const empty = anEmptyTail();
     const listed = await mnema('witness', '--json');
-    const json = JSON.parse(listed.out.join('\n')) as {
-      lines: { tail: string; checkpoint: string | null; reading: { status: string } }[];
-    };
+    const json = JSON.parse(listed.out.join('\n')) as { lines: { tail: string }[] };
     expect(json.lines).toHaveLength(tailsVerified(await mnema('verify')));
-    const line = json.lines.find((one) => one.tail === empty);
-    expect(line?.checkpoint).toBeNull();
-    expect(line?.reading.status).toBe('not-covered');
+    expect(json.lines.map((one) => one.tail)).not.toContain(empty);
   });
 
-  it('changes no verdict: `verify` says what it said, and stamping still asks for nothing', async () => {
-    // What was aligned is the COUNT. The verdict over the record is the verifier's and it is
-    // untouched — the empty tail was already folded into it — and an act over the tails walks
-    // past the empty one without asking anybody anything about it.
-    anEmptyTail();
-    const verified = await mnema('verify');
-    expect(verified.out.join(' / ')).toContain('all events are signature-covered');
+  it('`verify` names it in the census, as informational, and the verdict does not move', async () => {
+    const before = await mnema('verify');
+    const empty = anEmptyTail();
+    const after = await mnema('verify');
+    expect(after.failed, after.err.join(' / ')).toBe(false);
+    const line = (said: Said) => said.out.find((one) => one.startsWith('public:')) ?? '';
+    expect(line(after)).toContain('all events are signature-covered');
+    expect(line(after)).toContain(
+      '1 empty tail(s), which hold no event and are not counted (see census — informational, not a break)',
+    );
+    // The sentence is the one it was without the residue, plus that clause — nothing else.
+    expect(
+      line(after).replace(
+        '; 1 empty tail(s), which hold no event and are not counted (see census — informational, not a break)',
+        '',
+      ),
+    ).toBe(line(before));
+    expect(after.out.join(' / ')).toContain(empty);
     const upgraded = await mnema('witness', 'upgrade');
     expect(upgraded.failed, upgraded.err.join(' / ')).toBe(false);
-    expect(upgraded.out.join(' / ')).toContain('skipped — the tail has no checkpoint to witness');
+    expect(upgraded.out.join(' / ')).not.toContain(empty);
   });
 
-  it('tail list says it counts the tails holding events, which is not the count verify gives', async () => {
-    // The one reading that still leaves the empty tail out, and does it on purpose: it lists
-    // what a cut can name, and a tail with no event holds nothing to cut. Over the SAME record
-    // the two numbers differ by that tail, so the first line says which question it answers.
+  it('tail list gives the count verify gives, now that verify leaves the empty tail out', async () => {
     anEmptyTail();
     const verified = await mnema('verify');
     const listed = await mnema('tail', 'list');
-    expect(tailsVerified(verified)).toBe(2);
+    expect(tailsVerified(verified)).toBe(1);
     expect(listed.out[0]).toBe('1 tail(s) holding events — the ones a cut can name:');
   });
 
   it('still refuses to stamp a tree whose only tail is empty — nothing is recorded there', async () => {
-    // The listing counts the empty tail now; the refusal is about there being nothing to
-    // witness, and a tree holding only an ownership proof holds nothing. Asked of this machine's
-    // global tree, from outside any project, so that no other tail is beside it.
+    // A tree holding only an ownership proof holds nothing, so the listing finds no tail and the
+    // stamp has nothing to witness. Asked of this machine's global tree, from outside any
+    // project, so that no other tail is beside it.
     const elsewhere = join(sandbox, 'elsewhere');
     mkdirSync(elsewhere, { recursive: true });
     process.chdir(elsewhere);
     anEmptyTail(resolveTrees(elsewhere, { home: join(sandbox, 'home') }).global);
     const listed = await mnema('witness', '--global');
-    expect(listed.out[0], listed.out.join(' / ')).toBe('1 tail(s):');
+    expect(listed.out[0], listed.out.join(' / ')).toBe(
+      'No tail holds events in any tree here — looked in global.',
+    );
     const stamped = await mnema('witness', 'stamp', '--global');
     expect(stamped.failed).toBe(true);
     expect(stamped.err.join(' / ')).toContain('Refused (NO_TAIL)');

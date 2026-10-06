@@ -69,7 +69,16 @@
  */
 
 import { spawnSync } from 'node:child_process';
-import { appendFileSync, cpSync, mkdtempSync, readdirSync, readFileSync, rmSync } from 'node:fs';
+import {
+  appendFileSync,
+  cpSync,
+  mkdirSync,
+  mkdtempSync,
+  readdirSync,
+  readFileSync,
+  rmSync,
+  writeFileSync,
+} from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -80,8 +89,9 @@ import type { CatalogEvent } from '../events/catalog.js';
 import { catalogUpcasters } from '../events/registry.js';
 import { openChainForWriting, verify } from './chain.js';
 import { sealEntry, serializeEntry } from './entry.js';
-import { deriveAnchor } from './keys.js';
+import { deriveAnchor, generateKeyPair, publicKeyToPem } from './keys.js';
 import { meetsRequirement } from './level.js';
+import { serializeTailProof, signTailProof } from './tailproof.js';
 
 /** The second reader, and the tool that builds the inputs it has to refuse. */
 const VERIFIER = fileURLToPath(new URL('../../verifier/mnema_verify.py', import.meta.url));
@@ -1365,5 +1375,77 @@ describe('both readers over an event written after the last checkpoint, with and
     const run = python([VERIFIER, 'record', '--help']);
     expect(run.stdout).toContain('--require');
     expect(run.stdout).toContain('signed');
+  });
+});
+
+/**
+ * A TAIL THAT HOLDS NO EVENT IS NOT A TAIL (FORMAT.md section 4), and both readers say so.
+ *
+ * The input is the residue an older writer left when a new key's first write was refused: the
+ * key committed beside the others and a tail directory holding only its ownership proof, signed
+ * by that key — no segment line, no checkpoint. It asserts nothing. Counted as a tail, it added
+ * one to every verdict for good and, being a tail with nothing attested, folded a witnessed
+ * record down from `externally-witnessed` to `fully-signed`, so `--require witnessed` failed over
+ * a record whose every event an outside witness dates.
+ */
+describe('a tail that holds no event, to both readers', () => {
+  /** The witnessed record with that residue beside its one tail. Answers with the residue's id. */
+  function withAnEmptyTail(): { readonly record: string; readonly empty: string } {
+    const record = copyOf('witnessed-record');
+    const key = generateKeyPair();
+    const empty = `${key.fingerprint}-${'0'.repeat(32)}`;
+    writeFileSync(join(record, 'keys', `${key.fingerprint}.pub`), publicKeyToPem(key.publicKey));
+    mkdirSync(join(record, 'tails', empty));
+    writeFileSync(
+      join(record, 'tails', empty, 'tailproof.json'),
+      `${serializeTailProof(signTailProof(empty, key))}\n`,
+    );
+    return { record, empty };
+  }
+
+  it('leaves the product saying what it says without it, and names it in the census', () => {
+    const { record, empty } = withAnEmptyTail();
+    const here = verify(record, catalogUpcasters());
+    expect(here.issues).toEqual([]);
+    expect(here.level).toBe('externally-witnessed');
+    expect(here.witness).toBe('covered');
+    expect(here.tails.map((tail) => tail.tail)).not.toContain(empty);
+    expect(here.tails).toHaveLength(1);
+    expect(here.summary).toContain('; 1 tail(s); ');
+    expect(here.census.filter((note) => note.kind === 'empty-tail')).toEqual([
+      expect.objectContaining({ kind: 'empty-tail', tail: empty }),
+    ]);
+    expect(here.summary).toContain(
+      '1 empty tail(s), which hold no event and are not counted (see census — informational, not a break)',
+    );
+  });
+
+  it('leaves the second reader VERIFIED, saying it once and nothing of it as a tail', () => {
+    const { record, empty } = withAnEmptyTail();
+    const there = secondReading(record);
+    expect(refusals(there)).toEqual([]);
+    expect(there.verdict).toBe('VERIFIED');
+    // Its ownership is still checked — the id against the keys (section 3) and its proof (`-`);
+    // what goes is every reading of it AS A TAIL: its segments, its checkpoints, its witness.
+    const asATail = there.findings.filter(
+      (finding) => finding.where === empty && finding.section !== '-' && finding.section !== '3',
+    );
+    expect(asATail.map((finding) => [finding.level, finding.section])).toEqual([['note', '4']]);
+    expect(asATail[0]?.what).toContain('holds no event and no checkpoint');
+    expect(asATail[0]?.what).toContain('not counted as a tail');
+    expect(notes(there)).toMatch(/^covered: /m);
+  });
+
+  it('is still refused by both when its ownership proof is gone: holding nothing excuses nothing', () => {
+    const { record, empty } = withAnEmptyTail();
+    rmSync(join(record, 'tails', empty, 'tailproof.json'));
+    const here = verify(record, catalogUpcasters());
+    expect(here.ok).toBe(false);
+    expect(here.issues.map((issue) => issue.tail)).toEqual([empty]);
+    const there = secondReading(record);
+    expect(there.verdict).toBe('REFUSED');
+    expect(refusals(there).map((finding) => [finding.section, finding.where])).toEqual([
+      ['6.1', empty],
+    ]);
   });
 });

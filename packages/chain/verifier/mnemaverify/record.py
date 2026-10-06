@@ -765,6 +765,9 @@ def verify_record(root: str, report: Report, require: str = "chained") -> None:
     for tail_id in tail_ids:
         tail_dir = os.path.join(tails_dir, tail_id)
         _check_tail_id(report, tail_id, ring)
+        if _holds_nothing(tail_dir):
+            _say_empty_tail(report, tail_dir, tail_id, ring)
+            continue
         entries, refused = _read_entries(report, tail_dir, tail_id, declarations)
         _check_chain(report, entries, tail_id, refused)
         found = _check_checkpoints(report, tail_dir, tail_id, entries, ring, refused)
@@ -777,6 +780,44 @@ def verify_record(root: str, report: Report, require: str = "chained") -> None:
     resolution = _check_enrolment(report, entries_by_tail, covered_by_tail, ring)
     _say_keys_without_tail(report, ring, tail_ids, resolution)
     _check_requirement(report, require, entries_by_tail, covered_by_tail)
+
+
+def _holds_nothing(tail_dir: str) -> bool:
+    """Section 4: a tail with no event and no checkpoint is not counted as a tail.
+
+    A line is anything `_lines` returns, so a line of whitespace is a line here, and the
+    tail holding one is read and refused like any other rather than passed over as empty.
+    """
+    names = os.listdir(tail_dir)
+    for name in names:
+        if (SEGMENT_NAME.match(name) or name == CHECKPOINTS_FILE) and _lines(
+            os.path.join(tail_dir, name)
+        ):
+            return False
+    return True
+
+
+def _say_empty_tail(
+    report: Report, tail_dir: str, tail_id: str, ring: dict[str, PublicKey]
+) -> None:
+    """Section 4: said once, and folded into nothing, with its ownership still checked.
+
+    Read as a tail, it said four things about nothing - no segment, no checkpoint, no witness -
+    and none of them was false; what was wrong was that a reader counted it. Its proof is
+    still checked, because a tail directory whose key never signed its id is a refusal
+    whether or not it holds anything. A witness directory in it, about a checkpoint it does
+    not hold, is still read, so a proof there that does not parse is still refused.
+    """
+    report.note(
+        "4",
+        "this tail holds no event and no checkpoint, so it asserts nothing and is not counted "
+        "as a tail: what an older writer left when a first write was refused, and what a tail "
+        "emptied of its events with its ownership proof kept looks like too",
+        tail_id,
+    )
+    _check_tailproof(report, tail_dir, tail_id, ring)
+    if os.path.isdir(os.path.join(tail_dir, WITNESS_DIR)):
+        _check_witness(report, tail_dir, tail_id, [], -1)
 
 
 def _load_declarations(report: Report) -> schema.Schema | None:
