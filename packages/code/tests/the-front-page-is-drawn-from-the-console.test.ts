@@ -12,9 +12,8 @@
  *     grey, whose channels lie within {@link NEUTRAL_SPREAD} of each other — or the accent of the
  *     theme the file is named for. Any other hue fails, and so does a colour written in a form
  *     this does not read (a name, `rgb()`, `hsl()`), rather than pass unread.
- *   - THE BADGES: a shields.io badge in `README.md` or a package's README that sets `color=`
- *     sets the light accent. A badge whose colour sits in its path (`/badge/label-message-blue`)
- *     is not read here.
+ *   - THE BADGES: a shields.io badge in `README.md` or a package's README that sets a colour,
+ *     in `color=` or in its path (`/badge/label-message-colour`), sets the light accent.
  *
  * HOW THE PICTURES ARE MADE AGAIN, from the root of a built checkout (`pnpm build`):
  *
@@ -115,6 +114,18 @@ describe('the front page is drawn from the console', () => {
   });
 });
 
+// A badge sets its colour in the query (`color=` / `colorB=`, after `?`, `&` or the `;` of an
+// escaped `&amp;`) or, for a static badge, as the last segment of `/badge/<label>-<msg>-<colour>`
+// (where `--` is an escaped hyphen).
+function* badgeColours(url: string): Generator<string> {
+  for (const c of url.matchAll(/[?&;](?:color|colorB)=([^&#;]*)/g)) yield c[1] as string;
+  const path = /^https:\/\/img\.shields\.io\/badge\/([^?#]*)/.exec(url)?.[1];
+  if (path !== undefined) {
+    const last = path.replaceAll('--', '\u0000').split('-').at(-1);
+    if (last !== undefined && path.includes('-')) yield last.replaceAll('\u0000', '-');
+  }
+}
+
 describe('the front page has one accent', () => {
   it('has pictures to read', () => {
     expect(svgs.length).toBeGreaterThanOrEqual(4);
@@ -154,7 +165,7 @@ describe('the front page has one accent', () => {
     ];
     const colours = pages.flatMap((page) =>
       [...read(page).matchAll(/https:\/\/img\.shields\.io\/[^\s)"'<>]*/g)].flatMap((m) =>
-        [...m[0].matchAll(/[?&](?:color|colorB)=([^&#]*)/g)].map((c) => `${page}: ${c[1]}`),
+        [...badgeColours(m[0])].map((c) => `${page}: ${c}`),
       ),
     );
     const light = ACCENT.light.slice(1);

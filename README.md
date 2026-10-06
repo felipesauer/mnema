@@ -5,7 +5,7 @@
   <img src="docs/assets/banner-light.svg" alt="mnema, a chain of signed blocks" width="640">
 </picture>
 
-<h3>Your team's decisions, in front of every agent session and at the edits they govern — kept in the repository, changed only by a new signed fact, and checkable by anyone.</h3>
+<h3>Your team's decisions, handed to your agents' sessions and held at the edits they govern — append-only and signed in the repository, and checkable by anyone.</h3>
 
 <p>
 <a href="https://github.com/felipesauer/mnema/actions/workflows/ci.yml"><img alt="CI" src="https://img.shields.io/github/actions/workflow/status/felipesauer/mnema/ci.yml?branch=main&amp;style=flat-square&amp;label=CI&amp;color=997dbf"></a>
@@ -31,7 +31,7 @@ session opens with the ones in force, a rule can refuse or pause the write it go
 <th align="center">Prove</th>
 </tr>
 <tr>
-<td align="center" width="33%">Each agent session opens with the decisions in force, by name and id.</td>
+<td align="center" width="33%">With the plugin, each agent session opens with the decisions in force, by name and id.</td>
 <td align="center" width="33%">A rule addressed at a path can refuse an agent's write there, or hold it for a person where the host allows.</td>
 <td align="center" width="33%">Every write is signed and hash-chained; anyone can verify it, even in a browser.</td>
 </tr>
@@ -58,7 +58,7 @@ installing this.
 ## Quick start
 
 ```sh
-npm i -g <the four release tarballs>   # nothing is on npm yet: the line is in docs/install.md
+# install: npm i -g the four release tarballs; the exact line is in docs/install.md
 claude plugin marketplace add felipesauer/mnema   # the plugin hands each session the record
 claude plugin install mnema@mnema
 cd your-repository && mnema init
@@ -86,11 +86,11 @@ More in [`docs/how-it-works.md`](docs/how-it-works.md); what each host does and 
 
 ## Features
 
-| | |
+| Feature | What it does |
 |---|---|
-| **Opens every session** | The decisions in force, the adopted patterns and the notes near the work. [Agent hosts](docs/agent-hosts.md) |
+| **Opens every session** | With the plugin, the decisions in force, the adopted patterns and the notes near the work. [Agent hosts](docs/agent-hosts.md) |
 | **Rules at each edit** | In Claude Code, the rules for a file land beside the write. [Agent hosts](docs/agent-hosts.md) |
-| **Refuses a write** | `refuses-a-write` stops an agent's write there, in Claude Code, VS Code and Cursor. [Features](docs/features.md) |
+| **Refuses a write** | `refuses-a-write` stops an agent's write there, in Claude Code, VS Code and Cursor CLI. [Features](docs/features.md) |
 | **Asks for a person** | `asks-for-a-person` holds the write until someone decides, in Claude Code and VS Code. [Features](docs/features.md) |
 | **Supersede, never edit** | A change of mind is a new decision. The old one leaves the opening and stays in the record. [How it works](docs/how-it-works.md) |
 | **Take a note back** | `mnema retract` appends a signed retraction, and nothing is erased. [Features](docs/features.md) |
@@ -109,7 +109,7 @@ More in [`docs/how-it-works.md`](docs/how-it-works.md); what each host does and 
 <td width="50%" valign="top"><img src="recordings/console.gif" alt="mnema at a shell, the first door, and the console answering reads"><br><sub>At a terminal, <code>mnema</code> alone asks what you want to do here, and its first door opens the console: a session that reads the record and refuses to write. It needs a window at least 80 columns wide and 42 rows tall. Driven through a pseudo-terminal by <a href="recordings/console.json"><code>recordings/console.json</code></a>.</sub></td>
 </tr>
 <tr>
-<td width="50%" valign="top"><img src="recordings/a-write-refused.gif" alt="An agent's write refused by a rule addressed at its path"><br><sub>A write refused: the rule addressed at the path stops an agent's edit there.</sub></td>
+<td width="50%" valign="top"><img src="recordings/a-write-refused.gif" alt="An agent's write refused by a rule addressed at its path"><br><sub>A write refused: the rule addressed at the path stops an agent's edit there. Recorded from the built binary by <a href="recordings/a-write-refused.sh"><code>recordings/a-write-refused.sh</code></a>.</sub></td>
 <td width="50%" valign="top"><sub>The page <code>mnema site</code> writes verifies itself in the reader's own browser, with no request and no key. <a href="docs/site.md">What it checks, what it does not, and how to publish it</a>.</sub></td>
 </tr>
 </table>
