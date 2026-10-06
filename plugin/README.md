@@ -279,7 +279,7 @@ result of the tool; what a person sees in the confirmation was not read from the
 was measured on the free plan with the `Auto` model, the only model used: the server's
 instructions and both opening texts are in the prompt Cursor's servers assembled for the
 model, read back from the chat the agent keeps on the machine
-([the prompt, with everything Cursor and the machine put in it cut out](../measurements/hooks-by-host/results/2026-09-30/cursor-prompt-2026-09-23-session-1.sanitized.txt)) — the instructions whole,
+([the prompt, with everything Cursor and the machine put in it cut out](../measurements/hooks-by-host/results/2026-09-30/cursor-prompt-2026-09-23-session-1.sanitized.txt); [a summary for VS Code and Cursor](../measurements/what-the-editors-hand-the-model/)) — the instructions whole,
 but for the indentation of their continuation lines, which arrives as a single space —
 and the model called the server's tools. That the server there goes by the directory
 Cursor starts it in is this product's rule and is held by a case of its own

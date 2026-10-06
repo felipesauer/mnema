@@ -127,12 +127,14 @@ identically, because they are the same call.
   the table, host by host, and [`measurements/hooks-by-host/`](../../measurements/hooks-by-host/)
   the captures.
 - **A rules file for a host without the plugin** — `mnema rules-file --host vscode` prints the
-  committed rules in force whose address is a file, as a `.instructions.md` with an `applyTo`,
+  committed rules in force whose address is a file or a directory, as a `.instructions.md` with an `applyTo`,
   `--host cursor` as a `.mdc` with `globs`, and `--host claude` as a `.claude/rules/mnema.md` with
-  the `paths` list Claude Code's documentation names (not measured here). A directory is left out, because no list of
-  globs was found to match exactly what it governs in either host: VS Code puts `**/` before a
-  relative pattern, so `src/billing/**` would also match a `src/billing` anywhere else under the
-  folder it reads, and Cursor matches `globs` on its servers, where it could not be measured. So
+  the `paths` list Claude Code's documentation names (not measured here). A directory is written as
+  `dir/**`, which each of the three fields takes as a glob; it is not exact the way a file is: VS Code puts
+  `**/` before a relative pattern, so `src/billing/**` would also match a `src/billing` anywhere else under the
+  folder it reads, Cursor matches `globs` on its servers, where it could not be measured, and
+  whether Claude Code's `**` reaches a name that starts with a dot was not measured. The output
+  says so beside the file. The project root is left out, and so
   is an address holding a character a glob reads as syntax — `app/[id]` as a glob matches
   `app/i`. The same `**/` reaches a file too — `src/x.ts` also matches `other/src/x.ts` — and the
   output says so where it prints a file for VS Code. Every rule it leaves out is named
