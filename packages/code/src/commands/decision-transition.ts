@@ -23,12 +23,16 @@
  * the CLI the two shapes are two commands (a positional `by` the parser demands);
  * on the MCP they are one tool with an optional `by` — this runner serves both.
  *
- * A decision is named by its id (the value `decision` record returned), not an
- * alias: a decision HAS no alias — its human name is the `ADR-<n>` label, which
- * this resolves from the projection ({@link movedDisplay}) so the caller sees
- * `ADR-7 (0198…) → accepted`. The label alone would not say which decision moved,
- * because a label is minted per chain and a record built from several trees can
- * hold two of them.
+ * A decision is named by its id (the value `decision` record returned) or by the `ADR-<n>` label
+ * every write prints for it, which this resolves from the projection ({@link movedDisplay}) so the
+ * caller sees `ADR-7 (0198…) → accepted`. This used to refuse the label outright, on the argument
+ * that a label is numbered inside ONE tree and so can name two things. That argument holds for a
+ * label two decisions carry, and it still refuses THAT one, listing the ids. It never held for a
+ * label exactly one decision carries: refusing it made this verb the odd one out (`mnema link`
+ * took the same label and recorded the text "ADR-7" as an edge that pointed at nothing), and a
+ * person who typed what the output showed them was told the decision was not there. So the label
+ * is turned into the id by the one function that decides it (`label-as-address.ts`), before the
+ * decision is looked up, and the label itself is never what gets written.
  *
  * A move carries the executing agent (`which`) when the caller declares one, on
  * whichever op the action routes to. Unlike a birth, `which` has NO say in where
@@ -51,6 +55,7 @@ import {
   supersedeDecision,
 } from '@mnema/core/write';
 import { agentMayAccept } from '../agent-accepts.js';
+import { resolveAddress } from '../label-as-address.js';
 import {
   movedDisplay,
   successorOnlyForASupersede,
@@ -125,7 +130,7 @@ export type DecisionTransitionRefused =
  */
 export function runDecisionTransition(
   ctx: DecisionTransitionContext,
-  input: {
+  asked: {
     id: string;
     action: string;
     by?: string;
@@ -136,6 +141,18 @@ export function runDecisionTransition(
 ): DecisionTransitioned | DecisionTransitionRefused {
   const upcasters = catalogUpcasters();
   const trees = resolveTrees(ctx.cwd, ctx.env);
+
+  // A label that names one decision becomes its id here, for the decision and for a successor; one
+  // that names several is refused with their ids before anything is looked up or written.
+  const named = resolveAddress(ctx, asked.id);
+  if (!named.ok) return ambiguous(named.message);
+  const successor = asked.by === undefined ? undefined : resolveAddress(ctx, asked.by);
+  if (successor !== undefined && !successor.ok) return ambiguous(successor.message);
+  const input = {
+    ...asked,
+    id: named.id,
+    ...(successor?.ok ? { by: successor.id } : {}),
+  };
 
   // Find the tree the decision lives in; the move must follow it there. When no
   // tree holds it, distinguish "you are not in a project" from "this project has
@@ -245,6 +262,11 @@ export function runDecisionTransition(
       : {}),
     ...forwardReplacement(moved),
   };
+}
+
+/** The refusal for a label several decisions carry. */
+function ambiguous(message: string): DecisionTransitionRefused {
+  return { ok: false, reason: 'REFUSED', code: 'AMBIGUOUS_LABEL', message };
 }
 
 /**

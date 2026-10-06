@@ -16,7 +16,7 @@ import { scopeOption } from './enumerated.js';
 import { REFUSED } from './from-the-group.js';
 import { onOneLine } from './on-one-line.js';
 import { declaredAgent, INVALID, parseScope, WHICH_HELP } from './options.js';
-import { reportRecorded, reportRefusal } from './report.js';
+import { idOrRefuse, reportRecorded, reportRefusal } from './report.js';
 import { PIN_REFUSED } from './run-pin.js';
 import { type Declared, mutatesTheRecord, type Wiring } from './verb.js';
 
@@ -65,8 +65,10 @@ export function registerObserve(program: Command, wiring: Wiring): Declared {
         io.fail();
         return;
       }
+      const named = await idOrRefuse(wiring, about);
+      if (named === undefined) return;
       const result = runObserve(here(), {
-        about,
+        about: named,
         topic: opts.topic,
         text,
         ...(scope !== undefined ? { scope } : {}),

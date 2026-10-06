@@ -10,7 +10,7 @@
 import type { Command } from 'commander';
 import { here } from './context.js';
 import { onOneLine } from './on-one-line.js';
-import { reportRefusal } from './report.js';
+import { idOrRefuse, reportRefusal } from './report.js';
 import { type Declared, readsTheRecord, type Wiring } from './verb.js';
 
 /** Registers `mnema timeline` on the program. */
@@ -29,7 +29,9 @@ export function registerTimeline(program: Command, wiring: Wiring): Declared {
       // module reaches the chain for the reader that turns a move's fields into text,
       // and a static import here would put that on the floor every invocation pays.
       const { historyLine, saidLine } = await import('../presentation/occurrence.js');
-      const result = runTimeline(here(), { id });
+      const named = await idOrRefuse(wiring, id);
+      if (named === undefined) return;
+      const result = runTimeline(here(), { id: named });
       if (!result.ok) {
         reportRefusal(wiring, result);
         return;

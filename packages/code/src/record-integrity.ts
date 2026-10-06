@@ -275,9 +275,10 @@ export const SERVES_NO_RECORD_CONTENT: { readonly [path: string]: string } = {
     'nobody: the verbs that use it are themselves on the list that owes the notice, so ' +
     'a notice here would be the same fact said twice in one invocation',
   'label-as-address.ts':
-    'it is the second line of a REFUSAL — which ids an `ADR-<n>` the caller typed names — and ' +
-    'serves no record content: the verb that refused is on the list that owes the notice, so ' +
-    'a notice here would be the same fact said twice in one invocation',
+    'it turns an `ADR-<n>` the caller typed into the id of the one decision it names, or into the ' +
+    'refusal that lists the ids when several carry it, and serves no record content: the verb ' +
+    'that asked is on the list that owes the notice, so a notice here would be the same fact ' +
+    'said twice in one invocation',
   'pinned-run.ts':
     'it checks that the run `MNEMA_RUN` names exists before a write is allowed to cite ' +
     'it — an ARGUMENT being validated, not an answer being served, and what it hands ' +

@@ -987,8 +987,10 @@ function registerTools(tool: ToolRegistrar, ensureSession: () => Promise<Session
       description:
         'Link one piece of knowledge to another — a directed edge from a `subject` ' +
         'entity to a `target` entity, labeled by a relation `rel`. The relation is ' +
-        `an OPEN string (${RECOMMENDED_RELATIONS}). Neither endpoint is checked to ` +
-        'exist — a link is legitimately cross-tree, resolved on read. Optionally ' +
+        `an OPEN string (${RECOMMENDED_RELATIONS}). An \`ADR-<n>\` label ` +
+        'is recorded as the id of the one decision it names, and refused when several carry it or ' +
+        'none does. Neither endpoint is checked to exist — a link is legitimately cross-tree, ' +
+        'resolved on read. Optionally ' +
         'pick the scope and the project the EDGE is recorded in; omitted, a link ' +
         'asserts a relation between the project’s records and lands PUBLIC (global ' +
         'outside a project). A link has no id of its own — it is an edge. The reply ' +

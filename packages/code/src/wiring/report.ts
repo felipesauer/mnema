@@ -53,6 +53,7 @@ import {
   type Replacement,
   replacementNotice,
 } from '../recorded-content.js';
+import { here } from './context.js';
 import { type CliIo, writeLines } from './io.js';
 
 /**
@@ -220,4 +221,18 @@ export function reportReplacement(result: Replacement, io: CliIo): void {
  */
 export function reportRecorded(result: Landed & Replacement, io: CliIo): void {
   writeLines(io, [landedNotice(result.scope), ...replacementNotice(result.replaced)]);
+}
+
+/**
+ * The `<id>` a verb is handed, turned into the id it means — the command line's door onto
+ * `resolveAddress`. An `ADR-<n>` that names one decision comes back as that decision's id; one that
+ * names several is refused here, once, with their ids, and the verb never runs. `undefined` means
+ * the refusal is already printed and the exit recorded.
+ */
+export async function idOrRefuse(to: Reporter, named: string): Promise<string | undefined> {
+  const { resolveAddress } = await import('../label-as-address.js');
+  const resolved = resolveAddress(here(), named);
+  if (resolved.ok) return resolved.id;
+  reportRefusal(to, { reason: 'REFUSED', code: 'AMBIGUOUS_LABEL', message: resolved.message });
+  return undefined;
 }
