@@ -12,6 +12,13 @@ tag, with its own changelog.
 
 ### Added
 
+- **An optional git hook that suggests the `Mnema-Decision` trailer.** `mnema commit-hook install`
+  writes a `prepare-commit-msg` hook, `mnema commit-hook uninstall` removes it, and nothing else
+  installs it: not `init`. It follows `core.hooksPath`, refuses (naming the path) to replace a hook it
+  did not write, and removes only a file that is byte for byte its own. In a commit made in an editor
+  it appends `#` comment lines naming the decisions in force that govern the staged files, which git
+  drops unless the `# ` in front of a line is removed. It never fails a commit: with `mnema` missing
+  from the hook's `PATH`, or failing, it does nothing.
 - **A `mnema_path` option on the plugin.** Both plugins declare a `userConfig` option for the
   absolute path of the `mnema` to run; left as `mnema` (the default) they run the first one on the
   `PATH`, as before. The hooks read it from `CLAUDE_PLUGIN_OPTION_MNEMA_PATH` and the MCP server

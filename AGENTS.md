@@ -37,6 +37,13 @@ too (each package's `tsconfig.test.json`), but vitest strips types when it runs 
 is never what makes a test fail: assert on a value, never on a type guard. A new guard comes
 with a case that shows it failing on the defect it exists for.
 
+## Skills
+
+A change to a skill in `plugin/skills/` needs an eval: prompts that must bring the skill up and
+prompts that must not, and what a real run did with each. No automated eval exists yet; the test
+named `every-skill-the-plugin-ships-is-what-it-says` checks only the skill's form. The details are
+in [`CONTRIBUTING.md`](CONTRIBUTING.md#changing-a-skill).
+
 ## Writing
 
 A sentence in a README or `--help` says only what the code guarantees, and a claim cites the

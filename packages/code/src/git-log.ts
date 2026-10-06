@@ -47,7 +47,7 @@ export interface Commit {
 }
 
 /** One read-only git in `root`, or `null` for every outcome that is not an answer. */
-function git(root: string, args: readonly string[]): string | null {
+export function git(root: string, args: readonly string[]): string | null {
   try {
     return execFileSync('git', [...READ_ONLY, ...args], {
       cwd: root,

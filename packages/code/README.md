@@ -789,7 +789,7 @@ results in the working tree for your workflow to commit or upload.
 ### Reading the git log against the record
 
 A commit carries the change and the record carries the reasoning; a trailer in the commit's
-message is the line between them, and four verbs read it. They run `git log` when asked, take no
+message is the line between them, and four verbs read it (a fifth, `commit-hook`, is below). They run `git log` when asked, take no
 lock and write nothing: not a pointer to a commit, not a count.
 
 ```sh
@@ -821,6 +821,28 @@ number — commits since the acceptance that touched an address of the decision,
 `--min-commits` says otherwise — and it points, it does not conclude: a decision about a file
 edited every day because the decision is being followed is listed too. Only accepted decisions
 that hold an address are asked about. `commits` and `why` show the newest 30 of a list and say when there were more.
+
+**A hook that suggests the trailer, if you want one.**
+
+```sh
+mnema commit-hook install     # writes the prepare-commit-msg hook in this repository
+mnema commit-hook uninstall   # removes it, if mnema wrote it
+```
+
+Only these two verbs touch your hooks; `mnema init` does not. The hook goes where git reads hooks
+(`core.hooksPath` when it is set, otherwise the repository's `hooks/`), and if a `prepare-commit-msg`
+is already there that mnema did not write, `install` refuses and prints its path; `uninstall` removes
+a file only when it is byte for byte the hook `install` writes. When you commit in an editor, the hook
+appends a few `#` lines to the message naming the decisions in force that govern the staged files
+(the reading that finds the rules for a path), each with its `Mnema-Decision:` line. Git drops `#` lines, so a
+commit you leave alone is the commit you would have made; to cite a decision, delete the `# ` in front
+of its line. **What it does not do.** It suggests and never decides: it does not check that the change
+follows the decision, and it adds nothing to a message given with `-m` or `-F`, to a merge, an amend, or
+under a `commit.cleanup` that keeps comments or a `core.commentChar` other than `#`. A `--cleanup=verbatim`
+typed on the command line is not seen by the hook, and the block stays in the message, like git's own
+comments. It needs `mnema` on the `PATH` git runs hooks with; when
+`mnema` is missing or fails, the hook does nothing and the commit goes through. It looks for the
+project from the repository's top directory, so a record kept in a subdirectory draws no suggestion.
 
 ### A record that inherits another repository's decisions
 
