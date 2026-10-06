@@ -73,7 +73,7 @@ How to read the ones that are not obvious.
 ## Reproducing
 
 ```
-export MEASURE_DIR=<a scratch directory> BASE_WT=<built trunk> HEAD_WT=<built branch>
+export MEASURE_DIR=<a scratch directory inside the temporary directory> BASE_WT=<built trunk> HEAD_WT=<built branch>
 for n in 10000 30000 100000; do bash harness/make-fixture.sh $n; done
 bash harness/matrix.sh
 ```
