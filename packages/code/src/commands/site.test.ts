@@ -196,4 +196,32 @@ describe('mnema site', () => {
     expect(page).not.toMatch(/(?:src|href)=["']?(?:https?:)?\/\//);
     expect(page).toContain(theSiteVerifier());
   });
+
+  it('carries no absolute path of the machine it was written on, in the page or in the files inside it', () => {
+    runInit({ cwd: repo, env });
+    decide('Keep money in integer cents', 'public', 'accept');
+    const note = runMemory({ cwd: repo, env }, { content: 'a note', scope: 'public' });
+    expect(note.ok).toBe(true);
+    const out = join(sandbox, 'out');
+    expect(runSite({ cwd: repo, env }, { out }).ok).toBe(true);
+    const page = pageOf(out);
+    const files = JSON.parse(
+      /id="record-files">(.*?)<\/script>/s.exec(page)?.[1] as string,
+    ) as Record<string, string>;
+    // Non-vacuity: there is a record inside the page for the search below to look through.
+    expect(Object.keys(files).length).toBeGreaterThan(0);
+    const inside = Object.values(files).map((file) =>
+      Buffer.from(file, 'base64').toString('utf-8'),
+    );
+    // The sandbox is the root of every path this run touched: the project, the home, the
+    // output, the temporary directory itself. Nothing under it may be named by the page.
+    for (const path of [sandbox, repo, env.home as string, out, tmpdir()]) {
+      expect(page.includes(path), `the page names ${path}`).toBe(false);
+      expect(
+        inside.some((file) => file.includes(path)),
+        `a file inside the page names ${path}`,
+      ).toBe(false);
+    }
+    expect(page).not.toMatch(/(?:^|[^\w/.:-])\/(?:home|Users|tmp|var|root)\/[\w.-]+/);
+  });
 });
