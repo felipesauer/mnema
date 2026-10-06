@@ -128,6 +128,19 @@ const WHICH_PROGRAM = '--identify';
  */
 const THIS_PRODUCT = '@mnema/code';
 
+/**
+ * How the product is installed until it is on npm: the four tarballs of the GitHub release, in
+ * one command, the line the root README gives (`the-install-line-is-one.test.ts` holds them
+ * together). Move it to `npm install -g @mnema/code` when the packages are published.
+ */
+const PRERELEASE = '0.1.0-beta';
+const PRERELEASE_INSTALL = `npm i -g ${['chain', 'core', 'context', 'code']
+  .map(
+    (name) =>
+      `https://github.com/felipesauer/mnema/releases/download/v${PRERELEASE}/mnema-${name}-${PRERELEASE}.tgz`,
+  )
+  .join(' ')}`;
+
 /** How much of what a stranger answered is quoted back — enough to recognize it. */
 const QUOTED = 120;
 
@@ -194,7 +207,7 @@ export function aStranger(stranger) {
     `The mnema plugin did not run the program named mnema first on this session's PATH: it is not ${THIS_PRODUCT}.`,
     `Asked \`mnema --identify\`, which ${THIS_PRODUCT} answers with its name and version, it ${answered}.`,
     "So this project's record was not handed to this session, and the MCP server the plugin declares starts that same program.",
-    `\`which -a mnema\` lists every program of that name on the PATH; the plugin runs the first, and ${THIS_PRODUCT} installs one (\`npm install -g ${THIS_PRODUCT}\`).`,
+    `\`which -a mnema\` lists every program of that name on the PATH; the plugin runs the first, and ${THIS_PRODUCT} installs one: until the packages are published, the pre-release (\`${PRERELEASE_INSTALL}\`).`,
   ].join('\n');
 }
 

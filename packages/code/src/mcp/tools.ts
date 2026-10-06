@@ -135,8 +135,7 @@ import { editRulesNotice, editRulesTold, firstWriteNotice } from '../edit-rules-
 import {
   reachOfAddress,
   readGoverningRules,
-  readRulesInForceAt,
-  realPathInside,
+  readRulesInForceWhereItLands,
 } from '../governed-tree.js';
 import {
   projectEventsOf,
@@ -2301,15 +2300,7 @@ export function runRulesBeforeAnEditTool(
   // THE RULES OF A PATH ARE THE RULES OF WHERE IT REALLY IS, for the push and the hold alike: a
   // path the rules do not address as written is read again at where a link leads inside the
   // project (`realPathInside`), so a link does not step around the hold of a first write.
-  const rulesAt =
-    pushing || holding
-      ? (() => {
-          const given = readRulesInForceAt(caches, read);
-          if (given.rules.length > 0) return given;
-          const real = realPathInside(read);
-          return real === undefined ? given : readRulesInForceAt(caches, { ...read, path: real });
-        })()
-      : undefined;
+  const rulesAt = pushing || holding ? readRulesInForceWhereItLands(caches, read) : undefined;
   const context = !pushing || rulesAt === undefined ? undefined : editRulesNotice(rulesAt);
 
   // THE GATE, AND ITS WHOLE ORDER OF OPERATIONS. The rules that ask are derived, the text

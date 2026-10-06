@@ -201,6 +201,8 @@ const DECLARED_TWICE: Readonly<Record<string, Reading>> = {
   'decision record --scope': 'where it was written',
   'decision record --which': 'where it was written',
   'skill create --body': 'where it was written',
+  'skill create --body-file': 'where it was written',
+  'skill create --stdin': 'where it was written',
   'skill create --scope': 'where it was written',
   'skill create --which': 'where it was written',
   'decision import --scope': 'where it was written',

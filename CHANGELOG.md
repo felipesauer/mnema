@@ -29,6 +29,26 @@ tag, with its own changelog.
   key or a handler type that Claude Code's hooks documentation does not list (the list carries the
   date and the page it was read from), so a typo that would leave a hook silently mute turns the
   suite red.
+- **`--stdin` and `--body-file` on `skill create`, `memory` and `observe`.** The long text of a
+  write can come from standard input or from a file instead of the line, as it already could for
+  `decision record`; the text typed on the line (`--body`, the `memory` argument, `--text`) still
+  works, and a line that gives it from two places is refused with the places it named. A missing
+  text is now this refusal, not the parser's.
+- **The SDK names the id behind an `ADR-<n>` label.** `acceptDecision` and `rejectDecision`, handed
+  the label a write printed instead of an id, refuse as before (`UNKNOWN_DECISION`) and now carry a
+  `message` with the sentence the command line and the MCP server say: the id (or ids) that label
+  stands for. The three doors say it from one function.
+- **`mnema rules <path>` and `mnema why <path>` read a path where it really lands.** A path that
+  a link leads to somewhere else inside the project is read again
+  at that place too, with the same resolution the write gates use, and the rules of both places are
+  added together, each once, so the reading never says less than the gate applies; a link that
+  leaves the project is answered as written. The same
+  resolution now reads a relative link from the directory it really sits in, so a link inside a
+  directory that is itself a link no longer climbs out of the way it was spelled.
+- **`doctor` and the plugin's hand-over hook point at the pre-release.** With no `mnema` on the
+  `PATH`, or another program answering to the name, they used to say `npm i -g @mnema/code`, which
+  answers 404 until the packages are published; they now give the install of the pre-release from
+  its four tarballs, the line the root README gives.
 - **A checker key can be retired.** `mnema key revoke --checker <fingerprint> --reason "<why>"`
   records `checker.retired`, a new event kind, signed by any identity of the record, as an
   enrolment is. Once a checkpoint covers it, `mnema verify` refuses a `check.passed` or
@@ -41,6 +61,13 @@ tag, with its own changelog.
   a checker key from a repository secret: after its other steps it runs `mnema check run` with it,
   leaves the results in the working tree and fails when a check did not pass. A declared program
   is started without the Action's inputs in its environment.
+
+### Changed
+
+- **The Action's own test has room in its time limit.** Its cases start the real `mnema` binary
+  (seven processes of set-up and two per run); the slowest took 4.3 to 4.5 s measured alone against
+  the 5 s default, and went red once on a loaded runner. The limit is 20 s for that file; nothing
+  in it waits on a network.
 
 ### Known limits
 

@@ -23,6 +23,7 @@ import { accessSync, constants, readFileSync, realpathSync, statSync } from 'nod
 import { basename, delimiter, dirname, join } from 'node:path';
 import { type DiscoveryEnv, resolveTrees } from '@mnema/core';
 import { oneLine } from '../one-line.js';
+import { VERSION } from '../version.js';
 
 /** What the doctor needs — injected so it is testable against a sandbox. */
 export interface DoctorContext {
@@ -88,6 +89,18 @@ function binariesOnPath(processEnv: NodeJS.ProcessEnv): { path: string; real: st
   return found;
 }
 
+/**
+ * The install of the pre-release, until the packages are published: `@mnema/code` depends on the
+ * other three, so the four tarballs of the GitHub release go in one command. It is the line the
+ * root README gives, and `the-install-line-is-one.test.ts` holds the two together.
+ */
+const PRERELEASE_INSTALL = `npm i -g ${['chain', 'core', 'context', 'code']
+  .map(
+    (name) =>
+      `https://github.com/felipesauer/mnema/releases/download/v${VERSION}/mnema-${name}-${VERSION}.tgz`,
+  )
+  .join(' ')}`;
+
 function binaryFindings(ctx: DoctorContext): Finding[] {
   const binaries = binariesOnPath(ctx.processEnv);
   const first = binaries[0];
@@ -98,7 +111,7 @@ function binaryFindings(ctx: DoctorContext): Finding[] {
         state: 'attention',
         line:
           'no “mnema” on the PATH: the plugin and any MCP entry that runs `mnema mcp` cannot start it — ' +
-          'install it with `npm i -g @mnema/code`, or put the directory of this binary on the PATH.',
+          `install the pre-release v${VERSION} (\`npm i -g @mnema/code\` answers 404 until the packages are published) with \`${PRERELEASE_INSTALL}\`, or put the directory of this binary on the PATH.`,
       },
     ];
   }

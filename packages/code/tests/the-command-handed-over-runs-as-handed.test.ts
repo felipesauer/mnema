@@ -461,10 +461,6 @@ export const NAMES_THAT_NEED_MORE: Readonly<
     times: 4,
     why: 'the read named in sentences about what it serves; its lines are in the reading section',
   },
-  'packages/code/README.md: mnema memory': {
-    times: 1,
-    why: 'a verb named in a list of what a session’s facts are written with',
-  },
   'packages/code/README.md: mnema retract': {
     times: 1,
     why: 'the verb named in a sentence about taking a note back, with the id and the reason it takes',
@@ -516,10 +512,6 @@ export const NAMES_THAT_NEED_MORE: Readonly<
   'packages/code/src/wiring/run.ts: mnema run start': {
     times: 1,
     why: 'names the verb whose printed id the variable holds',
-  },
-  'packages/code/src/wiring/skill.ts: mnema skill create': {
-    times: 1,
-    why: 'the usage refusal of that very verb, naming it before saying what it requires',
   },
   'packages/code/src/wiring/tail.ts: mnema tail prune': {
     times: 1,
@@ -636,7 +628,9 @@ export const HANDED_OVER: Readonly<
   // line 65 and name 128 once a checker key could be retired and the Action ran the checks: the
   // front page, the package page, the Action's page and the changelog hand over the retirement
   // whole, and name the verbs it refuses and the one the Action runs (name 131 with the hook's).
-  span: { line: 65, name: 131, flag: 1, unwritten: 0 },
+  // line 67 for the changelog entries on `--stdin` and `--body-file` and on reading a path where it
+  // really lands (`line` counts two more spans than before).
+  span: { line: 67, name: 131, flag: 1, unwritten: 0 },
   // name 18 until the page that says where the key lives named `mnema key protect` in a line of
   // its own.
   // line 35 until the same page showed that question in a block of its own.
@@ -674,7 +668,9 @@ export const HANDED_OVER: Readonly<
   // line 62 and name 77 once a checker key could be retired: the refusal of a retired key names
   // the line that enrolls a new one, and the verb's help and the retirement's sentence name
   // `mnema verify` and the reads beside it.
-  source: { line: 62, name: 77, flag: 3, unwritten: 3 },
+  // name 76 once the usage refusal of `skill create` stopped naming the verb, now that the long text
+  // can come from standard input or a file.
+  source: { line: 62, name: 76, flag: 3, unwritten: 3 },
 };
 
 // ---------------------------------------------------------------------------

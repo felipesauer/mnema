@@ -45,6 +45,12 @@ async function shown(recorded: Ran): Promise<string> {
   return (await mnema(['show', id])).out;
 }
 
+/** The page `show` prints for the id a line that prints no parentheses reported. */
+async function shownById(recorded: Ran): Promise<string> {
+  const id = recorded.out.match(/[0-9a-f]{8}-[0-9a-f-]{20,}/)?.[0] as string;
+  return (await mnema(['show', id])).out;
+}
+
 beforeEach(async () => {
   sandbox = mkdtempSync(join(tmpdir(), 'mnema-body-'));
   mkdirSync(join(sandbox, 'home'));
@@ -142,5 +148,62 @@ describe('the text that comes from one place', () => {
     expect(await bodyFrom(wiring, 'rationale', 'as an argument', { typed: 'a', stdin: true })).toBe(
       REFUSED,
     );
+  });
+});
+
+describe('the same three doors on the other writes with a long text', () => {
+  const file = (text: string): string => {
+    const path = join(sandbox, 'text.md');
+    writeFileSync(path, text);
+    return path;
+  };
+
+  it('skill create takes the pattern from --body, --stdin or --body-file', async () => {
+    const typed = await mnema(['skill', 'create', 'S1', '--body', 'typed pattern']);
+    expect(typed.failed).toBe(false);
+    const piped = await mnema(['skill', 'create', 'S2', '--stdin'], 'piped pattern\n');
+    expect(piped.failed).toBe(false);
+    const filed = await mnema(['skill', 'create', 'S3', '--body-file', file('filed pattern\n')]);
+    expect(filed.failed).toBe(false);
+    expect(await shown(typed)).toContain('typed pattern');
+    expect(await shown(piped)).toContain('piped pattern');
+    expect(await shown(filed)).toContain('filed pattern');
+  });
+
+  it('skill create refuses two places and none, writing nothing', async () => {
+    const two = await mnema(['skill', 'create', 'S4', '--body', 'x', '--stdin'], 'y');
+    expect(two.failed).toBe(true);
+    expect(two.err).toContain('the reusable pattern came from the argument and --stdin');
+    const none = await mnema(['skill', 'create', 'S5']);
+    expect(none.failed).toBe(true);
+    expect(none.err).toContain('the reusable pattern is missing');
+    expect((await mnema(['timeline'])).out).not.toMatch(/S4|S5/);
+  });
+
+  it('memory takes the content as an argument, from --stdin or from --body-file', async () => {
+    const typed = await mnema(['memory', 'typed memory']);
+    const piped = await mnema(['memory', '--stdin'], 'piped memory\n');
+    const filed = await mnema(['memory', '--body-file', file('filed memory\n')]);
+    for (const ran of [typed, piped, filed]) expect(ran.failed).toBe(false);
+    expect(await shownById(typed)).toContain('typed memory');
+    expect(await shownById(piped)).toContain('piped memory');
+    expect(await shownById(filed)).toContain('filed memory');
+    const none = await mnema(['memory']);
+    expect(none.failed).toBe(true);
+    expect(none.err).toContain('the memory is missing');
+  });
+
+  it('observe takes --text, --stdin or --body-file, and refuses two', async () => {
+    const base = ['observe', 'T-1', '--topic', 'why'];
+    const typed = await mnema([...base, '--text', 'typed note']);
+    const piped = await mnema([...base, '--stdin'], 'piped note\n');
+    const filed = await mnema([...base, '--body-file', file('filed note\n')]);
+    for (const ran of [typed, piped, filed]) expect(ran.failed).toBe(false);
+    expect(await shownById(typed)).toContain('typed note');
+    expect(await shownById(piped)).toContain('piped note');
+    expect(await shownById(filed)).toContain('filed note');
+    const two = await mnema([...base, '--text', 'x', '--stdin'], 'y');
+    expect(two.failed).toBe(true);
+    expect(two.err).toContain('the observation came from the argument and --stdin');
   });
 });

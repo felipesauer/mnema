@@ -38,12 +38,12 @@ _mnema_flags() {
     'decision move') echo '--note -h --help --which -V --version --color --identify' ;;
     'decision supersede') echo '--reason -h --help --which -V --version --color --identify' ;;
     'decision import') echo '--format --write --scope --which -h --help -V --version --color --identify' ;;
-    'skill') echo '--body --scope --which -h --help -V --version --color --identify' ;;
-    'skill create') echo '--body --scope --which -h --help -V --version --color --identify' ;;
+    'skill') echo '--body --scope --which --stdin --body-file -h --help -V --version --color --identify' ;;
+    'skill create') echo '--body --scope --which --stdin --body-file -h --help -V --version --color --identify' ;;
     'skill move') echo '--note --reason -h --help --which -V --version --color --identify' ;;
     'skill export') echo '--out --description -h --help -V --version --color --identify' ;;
-    'memory') echo '--scope --which -h --help -V --version --color --identify' ;;
-    'observe') echo '--topic --text --scope --which -h --help -V --version --color --identify' ;;
+    'memory') echo '--scope --which --stdin --body-file -h --help -V --version --color --identify' ;;
+    'observe') echo '--topic --text --scope --which --stdin --body-file -h --help -V --version --color --identify' ;;
     'handoff') echo '--scope --which -h --help -V --version --color --identify' ;;
     'link') echo '--rel --scope --which -h --help -V --version --color --identify' ;;
     'retract') echo '--reason --which -h --help -V --version --color --identify' ;;

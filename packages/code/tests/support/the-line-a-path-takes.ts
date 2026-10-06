@@ -198,7 +198,8 @@ export const THE_ID_MEANT: Readonly<Record<string, keyof Fixture>> = {
  * A move's `--note` and a supersede's `--reason` are declared as plain options so a
  * sibling command does not inherit them as mandatory, and the requirement is the
  * WORKFLOW's: the gate refuses the move without them. `--body` is the same shape on
- * `skill create`, enforced in the action. `--write` is required by nothing — it is what makes
+ * `skill create`, and the text of `decision record`, `memory` and `observe` is too: each of those takes it from
+ * the line, a pipe or a file, so none is declared required. `--write` is required by nothing — it is what makes
  * `decision import` record instead of print, and a caller that needs the path to write
  * has to ask for it.
  *
@@ -207,6 +208,8 @@ export const THE_ID_MEANT: Readonly<Record<string, keyof Fixture>> = {
  */
 export const ALSO_NEEDS: Readonly<Record<string, readonly string[]>> = {
   'decision record': ['the rationale, typed on the line'],
+  memory: ['a memory, typed on the line'],
+  observe: ['--text', 'what was noticed'],
   'skill create': ['--body', 'the reusable pattern itself'],
   'skill move': ['--note', 'why this verdict'],
   'decision move': ['--note', 'why this verdict'],

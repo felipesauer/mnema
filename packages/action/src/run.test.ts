@@ -111,7 +111,19 @@ beforeEach(() => {
 });
 afterEach(() => rmSync(sandbox, { recursive: true, force: true }));
 
-describe('the Action on a real repository', () => {
+/**
+ * The cases start the real `mnema` binary, one node process each (≈0.25 s apiece on a free
+ * machine, several times that on a loaded runner): `committedBase` and the case's own set-up
+ * start seven, and every `main` reads the record with two more (`verify`, then `rules` for each
+ * file). Measured alone, the case that asks for a person runs `main` three times and takes 4.3 to
+ * 4.5 s, with the other three between 2 and 3 s, against vitest's 5 s default. Nothing in it
+ * waits on a network (GitHub is a table) and no spawn is spare, so the time is the cost of
+ * asking a real binary, and the limit is given room for a runner several times slower than the
+ * one measured, not removed.
+ */
+const A_REAL_BINARY_PER_CASE = 20_000;
+
+describe('the Action on a real repository', { timeout: A_REAL_BINARY_PER_CASE }, () => {
   it('finds the mnema binary of the package it depends on', () => {
     expect(theMnemaBinary()).toBe(CLI);
   });
