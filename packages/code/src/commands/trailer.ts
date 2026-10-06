@@ -12,7 +12,7 @@
 
 import { dirname } from 'node:path';
 import { type DiscoveryEnv, resolveTrees } from '@mnema/core';
-import { nameOf, readDecisionFacts } from '../decisions-in-git.js';
+import { type DecisionFacts, nameOf, readDecisionFacts } from '../decisions-in-git.js';
 import { TRAILER } from '../git-log.js';
 import {
   linkBreaksOf,
@@ -46,6 +46,19 @@ export type TrailerRefused =
       readonly ids: readonly string[];
     };
 
+/**
+ * The trailer line that cites `decision`: its label, or its id when asked or when a second
+ * decision carries the same label — a label two decisions carry cites neither of them.
+ */
+export function trailerLine(
+  all: readonly DecisionFacts[],
+  decision: DecisionFacts,
+  byId: boolean,
+): string {
+  const carriers = all.filter((one) => one.adr === decision.adr).length;
+  return `${TRAILER}: ${byId || carriers > 1 ? decision.id : decision.adr}`;
+}
+
 /** Composes the trailer for `input.decision`. */
 export function runTrailer(
   ctx: TrailerContext,
@@ -64,12 +77,9 @@ export function runTrailer(
       return { ok: false, reason: 'AMBIGUOUS_LABEL', typed: input.decision, ids: named.ids };
     }
     const { decision } = named;
-    // A label two decisions carry cites neither of them, so the id is what is printed then.
-    const carriers = all.filter((one) => one.adr === decision.adr).length;
-    const value = input.byId || carriers > 1 ? decision.id : decision.adr;
     return {
       ok: true,
-      line: `${TRAILER}: ${value}`,
+      line: trailerLine(all, decision, input.byId),
       title: decision.title,
       linkBreaks: linkBreaksOf(sources, THE_READING_THAT_OPENED_THESE),
     };
