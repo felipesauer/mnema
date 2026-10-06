@@ -130,7 +130,7 @@ const THIS_PRODUCT = '@mnema/code';
 
 /**
  * How the product is installed until it is on npm: the four tarballs of the GitHub release, in
- * one command, the line the root README gives (`the-install-line-is-one.test.ts` holds them
+ * one command, the line `docs/install.md` gives (`the-install-line-is-one.test.ts` holds them
  * together). Move it to `npm install -g @mnema/code` when the packages are published.
  */
 const PRERELEASE = '0.1.0-beta';

@@ -1,5 +1,7 @@
 # @mnema/context
 
+[![CI](https://img.shields.io/github/actions/workflow/status/felipesauer/mnema/ci.yml?branch=main&style=flat-square&label=CI&color=997dbf)](https://github.com/felipesauer/mnema/actions/workflows/ci.yml) [![License: Apache-2.0](https://img.shields.io/badge/license-Apache--2.0-997dbf?style=flat-square)](../../LICENSE) ![Node 22.12 or later](https://img.shields.io/badge/node-%E2%89%A522.12-997dbf?style=flat-square)
+
 The layer of [mnema](https://github.com/felipesauer/mnema) that guides an agent
 by reading the proof: read-only derivations that turn the recorded work into the
 context an agent needs — where a person left off, what they may do next, whether
@@ -131,7 +133,7 @@ layer makes no proof of its own; being clear about that is the point.
 npm i @mnema/context
 ```
 
-Nothing is on npm yet, so that answers 404 until the first publication; the [root README](../../README.md#install) has the install of the pre-release `v0.1.0-beta` from its tarballs.
+Nothing is on npm yet, so that answers 404 until the first publication; the [install page](../../docs/install.md) has the install of the pre-release `v0.1.0-beta` from its tarballs.
 
 **It is released because `@mnema/code` depends on it, not because you should install
 it.** This section used to say it was internal and never published; what falsified that

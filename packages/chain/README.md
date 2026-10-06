@@ -1,5 +1,7 @@
 # @mnema/chain
 
+[![CI](https://img.shields.io/github/actions/workflow/status/felipesauer/mnema/ci.yml?branch=main&style=flat-square&label=CI&color=997dbf)](https://github.com/felipesauer/mnema/actions/workflows/ci.yml) [![License: Apache-2.0](https://img.shields.io/badge/license-Apache--2.0-997dbf?style=flat-square)](../../LICENSE) ![Node 22.12 or later](https://img.shields.io/badge/node-%E2%89%A522.12-997dbf?style=flat-square)
+
 The proof engine at the core of [mnema](https://github.com/felipesauer/mnema): a
 signed, append-only event log for the work of AI agents. It records what happened
 as typed, self-contained events and chains them, so that what is still in the log
@@ -133,7 +135,7 @@ witnesses do different halves of that, and neither does the other's:
 npm i @mnema/chain
 ```
 
-Nothing is on npm yet, so that answers 404 until the first publication; the [root README](../../README.md#install) has the install of the pre-release `v0.1.0-beta` from its tarballs.
+Nothing is on npm yet, so that answers 404 until the first publication; the [install page](../../docs/install.md) has the install of the pre-release `v0.1.0-beta` from its tarballs.
 
 **This package is released on its own, and that is the point of it.** This section
 used to say it was internal and never published, and the channel it named — the

@@ -160,7 +160,7 @@ pnpm add -g @mnema/code
 ```
 
 Nothing is on npm yet, so that answers 404 until the first publication; the
-[root README](../README.md#install) has the install of the pre-release `v0.1.0-beta` from
+[install page](../docs/install.md) has the install of the pre-release `v0.1.0-beta` from
 its tarballs, and `npm view @mnema/code version` says whether the publication has happened.
 
 Then add this repository as a marketplace and install from it:

@@ -159,10 +159,10 @@ describe('what the record puts in a diagram', () => {
   });
 });
 
-describe('the front page', () => {
+describe('the page that explains how it works', () => {
   it('draws what `mnema diagram decision` prints', async () => {
     const page = readFileSync(
-      fileURLToPath(new URL('../../../README.md', import.meta.url)),
+      fileURLToPath(new URL('../../../docs/how-it-works.md', import.meta.url)),
       'utf8',
     ).split(LF);
     const start = page.indexOf('stateDiagram-v2');
