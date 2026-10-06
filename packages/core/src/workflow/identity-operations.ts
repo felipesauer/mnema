@@ -492,7 +492,7 @@ export function establishIdentity(
     // The backup's role goes into the record beside its enrollment, so every clone knows the
     // key is kept off the machine and expects it to have no tail (FORMAT.md section 6.5).
     if (registration.fingerprint === backup?.fingerprint) {
-      const declared = declareBackup(ctx, anchor, registration.fingerprint);
+      const declared = declareBackup(ctx, { backupFp: registration.fingerprint });
       if (!declared.ok) {
         declined.push({
           fingerprint: registration.fingerprint,
@@ -548,15 +548,18 @@ export function enrollKey(
 }
 
 /**
- * Declares one of the anchor's keys its cold backup: a key kept off the machine, which signs
- * nothing until it is restored, so a reader expects it to have no tail. Checkpointed at once,
- * because a reader honours the declaration only when it is signature-covered.
+ * Declares one of this installation's anchor's keys its cold backup: a key kept off the
+ * machine, which signs nothing until it is restored, so a reader expects it to have no tail.
+ * Checkpointed at once, because a reader honours the declaration only when it is
+ * signature-covered. {@link establishIdentity} is its caller, right after it enrolls the
+ * backup; a reader refuses a declaration naming a key the anchor does not hold.
  */
-function declareBackup(
+export function declareBackup(
   ctx: WriteContext,
-  anchor: string,
-  backupFp: string,
+  input: { backupFp: string },
 ): IdentityOk | AppendRefusal {
+  const anchor = ensureFounded(ctx);
+  const backupFp = input.backupFp;
   const at = (ctx.clock ?? systemClock)();
   const appended = appendEvent(
     ctx.writer,

@@ -29,6 +29,7 @@ import {
 } from '../workflow/channel-operations.js';
 import { recordDecision, supersedeDecision } from '../workflow/decision-operations.js';
 import {
+  declareBackup,
   enrollKey,
   foundIdentity,
   linkAccount,
@@ -271,6 +272,9 @@ const DRIVERS: { readonly [K in EventKind]: Driver } = {
   // The account is the caller's NAME and is driven; the service is the product's literal and
   // the subject is the signing identity, so the sweep's other half checks both came through.
   'account.linked': (ctx, text) => linkAccount(ctx, { account: text('payload.account') }),
+
+  // A fingerprint, an identifier like an enrolment's: nothing a caller types reaches it.
+  'backup.declared': (ctx) => declareBackup(ctx, { backupFp: 'a'.repeat(64) }),
 
   'memory.captured': (ctx, text) =>
     captureMemory(ctx, {

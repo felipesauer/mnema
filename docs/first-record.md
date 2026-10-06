@@ -42,7 +42,7 @@ mnema search
 # which signs nothing until you restore it, so it has no tail of its own.
 mnema verify
 #> public: local integrity verified (T1/T2/T4); 1 tail(s); all events are signature-covered; 1 backup key(s), which sign nothing until restored (see census — informational, not a break); external witness (T3): not covered — nothing outside this machine attests this record
-#>   census [backup-key] public 9dd8d3df…: the backup key this machine registered for mnid:eaacca5499e459f77de6c5f821336b4a… — a backup signs nothing until it is restored, so it has no tail (if it was restored and has signed, that tail is not here)
+#>   census [backup-key] public 9dd8d3df…: the backup key of mnid:eaacca5499e459f77de6c5f821336b4a…, as the record declares it — a backup signs nothing until it is restored, so it has no tail (if it was restored and has signed, that tail is not here)
 #> private: no record here — nothing has been written to this tree on this machine, so there is nothing to rule on
 ```
 
