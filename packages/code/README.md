@@ -1570,6 +1570,35 @@ A read of a tree nobody has written to creates nothing, and where the file canno
 had — a read-only directory, a damaged file — the read builds it in memory and answers
 the same.
 
+`MNEMA_CACHE_DIR` keeps that file somewhere else: set to an absolute directory that exists
+and can be written to, every read — the command line, the MCP server and the library —
+keeps its cache there instead of in the tree. It is for a checkout you cannot write to,
+for several worktrees of one project that should build it once, and for CI, where the
+directory is what the runner's cache step saves and restores between runs, so a job starts
+from the last run's cache instead of rebuilding it:
+
+```yaml
+- uses: actions/cache@v4
+  with:
+    path: ${{ runner.temp }}/mnema-cache
+    key: mnema-cache-${{ github.sha }}
+    restore-keys: mnema-cache-
+- run: mkdir -p "$RUNNER_TEMP/mnema-cache" && mnema verify
+  env:
+    MNEMA_CACHE_DIR: ${{ runner.temp }}/mnema-cache
+```
+
+It is still a cache and never the record. A directory may be shared by any number of
+projects: each file is named for the tree it was built from, so a tree reads only a file
+made from it, and a file that no longer follows the record, or that cannot be opened, is
+built again. A value that is relative, or a directory that does not exist or cannot be
+written to, is refused with what to do rather than ignored.
+
+The SDK honors `MNEMA_CACHE_DIR` only when `openRecord` uses the default environment; with an explicit
+`env` it is ignored, as `MNEMA_HOME` is. When a fresh install creates a tail, the project moves to another
+cache file and the old one stays in the directory: deleting old cache files is safe (it is only cache), and
+in a cached CI directory it means the directory can grow.
+
 `~/.mnema` is this machine's data directory, whatever `$XDG_DATA_HOME` says.
 `MNEMA_HOME` moves it: set to an absolute path, the key root and the global tree live
 directly under that directory; set to a relative one, every command refuses rather than
