@@ -835,12 +835,14 @@ function report(io: CliIo, render: Render, tree: TreeReport, where = ''): void {
  * with no tail — a key the record alone cannot place, and a backup this machine
  * registered — so they name the fingerprint; the third is about a TAIL whose last line
  * was dropped, so it names the tail; the fourth is about a NOTE a stranger's retraction
- * names, so it names the note — the id a person opens to see it is still there.
+ * names, so it names the note — the id a person opens to see it is still there; the fifth is
+ * about a checker KEY the record retired, so it names the fingerprint.
  */
 function censusLocus(note: CensusNote): string {
   switch (note.kind) {
     case 'key-without-tail':
     case 'backup-key':
+    case 'retired-checker':
       return note.fingerprint;
     case 'partial-final-line':
       return note.tail;

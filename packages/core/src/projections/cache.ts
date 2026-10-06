@@ -770,6 +770,21 @@ export class ProjectionCache {
   }
 
   /**
+   * The checkers this tree RETIRES, by the checker's anchor, each with the identity whose
+   * `checker.retired` came first in record order. Read off the membership facts this cache
+   * keeps; whether each retirement took effect is `verify`'s to prove (FORMAT.md section 6.2).
+   */
+  retiredCheckers(): Map<string, string> {
+    const retired = new Map<string, string>();
+    for (const event of readMembership(this.db)) {
+      if (event.kind === 'checker.retired' && !retired.has(event.subject)) {
+        retired.set(event.subject, event.who);
+      }
+    }
+    return retired;
+  }
+
+  /**
    * Every decision, skill and task of this tree that two machines moved out of one state
    * without seeing each other (`divergentMoves`) — asked of the rows this cache keeps for the
    * entities that have one, which an advance maintains one entity at a time. The same answer

@@ -23,9 +23,12 @@ The shape, from the document:
     checker.enrolled   subject == anchor(checkerFp), signerFp valid for `who` at this point,
                        and reverseSig verifies under the key checkerFp names, over the
                        UTF-8 of `check-enroll:<who>:<checkerFp>`  -> checkerFp is a checker
+    checker.retired    subject == anchor(checkerFp), signerFp valid for `who` at this point
+                       -> when COVERED, checkerFp is a checker no longer, and is retired
     check.passed,      signerFp is a checker at this point, and who == anchor(signerFp)
     check.failed
     any other kind     signed by a checker key: refused, whatever it is
+    any kind at all    signed by a retired key: refused; a checker.enrolled naming one too
 
     every other event  signerFp is in the set of its own `who` at its point in the fold
 
@@ -116,6 +119,8 @@ def resolve(
     covered_revoked: set[str] = set()
     # Keys enrolled as checkers: they sign check results and nothing else.
     checkers: set[str] = set()
+    # Keys a covered checker.retired took out of the role: they sign nothing, ever again.
+    retired: set[str] = set()
 
     def keys_of(anchor: str) -> set[str]:
         return valid.setdefault(anchor, set())
@@ -151,6 +156,9 @@ def resolve(
             payload = {}
 
         is_result = kind in ("check.passed", "check.failed")
+        if signer in retired:
+            issues.append(Issue(tail, seq, f"{kind} is signed by a retired checker key, which signs nothing"))
+            continue
         if not is_result and signer in checkers:
             issues.append(
                 Issue(tail, seq, f"{kind} is signed by a checker key, which signs check results only")
@@ -174,7 +182,32 @@ def resolve(
                     Issue(tail, seq, "checker.enrolled reverse signature does not prove the checker consented")
                 )
                 continue
+            if checker in retired:
+                issues.append(
+                    Issue(tail, seq, "checker.enrolled names a retired checker key, which is never enrolled again")
+                )
+                continue
             checkers.add(checker)
+            continue
+
+        if kind == "checker.retired":
+            checker = payload.get("checkerFp")
+            if not isinstance(checker, str) or subject != anchor_of(checker):
+                issues.append(
+                    Issue(tail, seq, "checker.retired subject is not the anchor its checker key derives")
+                )
+                continue
+            if not isinstance(who, str) or signer not in keys_of(who):
+                issues.append(
+                    Issue(tail, seq, "checker.retired is signed by a key not valid for its who at this point")
+                )
+                continue
+            # The revocation's gate: it refuses the key's LATER results, so an uncovered one,
+            # which a keyless party could have appended, is ignored rather than honoured.
+            if not is_covered(tail, seq):
+                continue
+            checkers.discard(checker)
+            retired.add(checker)
             continue
 
         if is_result:

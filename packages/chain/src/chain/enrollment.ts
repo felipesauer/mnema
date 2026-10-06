@@ -100,6 +100,24 @@ export interface IdentityResolution {
    * only the record says whether the identity took it in.
    */
   readonly members: ReadonlyMap<string, ReadonlySet<string>>;
+  /**
+   * Every checker key a signature-covered `checker.retired` took out of the role, by
+   * fingerprint: who retired it, where, and how many results it signed BEFORE — results the
+   * fold accepted, because the key held the role when it signed, and which the census names,
+   * because "before" is placed by the `at` the key itself wrote.
+   */
+  readonly retiredCheckers: ReadonlyMap<string, RetiredChecker>;
+}
+
+/** A checker key the record retired (FORMAT.md section 6.2). */
+export interface RetiredChecker {
+  /** The identity that retired it. */
+  readonly by: string;
+  /** Where the retirement sits. */
+  readonly tail: string;
+  readonly seq: number;
+  /** How many `check.passed`/`check.failed` it signed that the fold accepted before it. */
+  readonly resultsBefore: number;
 }
 
 /** One tail's entries in proven (`seq`) order, plus a read cursor. */
@@ -180,6 +198,12 @@ export function resolveIdentity(
 
   // The keys enrolled as CHECKERS at this point: they sign check results and nothing else.
   const checkers = new Set<string>();
+  // How many results each checker key signed that this fold accepted — what a later
+  // retirement reports as signed before it.
+  const resultsSigned = new Map<string, number>();
+  // The keys a signature-covered `checker.retired` took out of the role. A retired key signs
+  // NOTHING from then on: not a result, not any other kind, and it is never enrolled again.
+  const retired = new Map<string, RetiredChecker>();
 
   for (const { tail, entry } of order) {
     const event = entry.event;
@@ -188,6 +212,14 @@ export function resolveIdentity(
     // before the kind is even looked at — its own founding, an enrolment, a decision — so a
     // leaked runner secret can say a check passed and nothing more.
     const isCheckResult = event.kind === 'check.passed' || event.kind === 'check.failed';
+    if (retired.has(event.signerFp)) {
+      issues.push({
+        tail,
+        seq,
+        detail: `${oneLine(event.kind)} is signed by ${oneLine(event.signerFp)}, a checker key retired at this point, which signs nothing`,
+      });
+      continue;
+    }
     if (!isCheckResult && checkers.has(event.signerFp)) {
       issues.push({
         tail,
@@ -314,7 +346,52 @@ export function resolveIdentity(
           });
           break;
         }
+        if (retired.has(checkerFp)) {
+          // A retired key does not come back: the leak it was retired for is still a leak.
+          // A new key is enrolled instead.
+          issues.push({
+            tail,
+            seq,
+            detail: `checker.enrolled names ${oneLine(checkerFp)}, a checker key retired at this point, which is never enrolled again`,
+          });
+          break;
+        }
         checkers.add(checkerFp);
+        break;
+      }
+      case 'checker.retired': {
+        // Any identity takes the role away, as any identity grants it: `who`, with a key valid
+        // for it now. The checker key is not asked — a leaked key is what this is for.
+        const { checkerFp } = event.payload;
+        if (event.subject !== deriveAnchor(checkerFp)) {
+          issues.push({
+            tail,
+            seq,
+            detail: 'checker.retired subject is not the anchor derived from the checker key',
+          });
+          break;
+        }
+        if (!keysOf(event.who).has(event.signerFp)) {
+          issues.push({
+            tail,
+            seq,
+            detail: 'checker.retired is signed by a key not valid for its who at this point',
+          });
+          break;
+        }
+        // It refuses the key's LATER results, which are other, possibly checkpointed, events —
+        // so, like a revocation, it takes effect only when signature-covered. A keyless party
+        // cannot checkpoint, so an appended retirement cannot fail an honest runner's results.
+        if (!isCheckpointed(tail, seq)) break;
+        checkers.delete(checkerFp);
+        if (!retired.has(checkerFp)) {
+          retired.set(checkerFp, {
+            by: event.who,
+            tail,
+            seq,
+            resultsBefore: resultsSigned.get(checkerFp) ?? 0,
+          });
+        }
         break;
       }
       case 'check.passed':
@@ -335,7 +412,9 @@ export function resolveIdentity(
             seq,
             detail: `${event.kind} who is not the anchor of the checker key that signed it`,
           });
+          break;
         }
+        resultsSigned.set(event.signerFp, (resultsSigned.get(event.signerFp) ?? 0) + 1);
         break;
       }
       default: {
@@ -352,7 +431,7 @@ export function resolveIdentity(
     }
   }
 
-  return { issues, members: validKeys };
+  return { issues, members: validKeys, retiredCheckers: retired };
 }
 
 /**

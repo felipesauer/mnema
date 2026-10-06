@@ -765,12 +765,26 @@ of an identity, and a key that is already a member of one is refused. `mnema ver
 checker key, so a leaked runner secret cannot decide a rule or write a note. `mnema accountability`
 lists the checker as a machine, apart from the people.
 
+**A leaked key is retired.** Any member of an identity can take the role away, as any member can
+grant it; the key is not asked:
+
+```sh
+mnema key revoke --checker <fingerprint> --reason "<why>"
+```
+
+Commit and push the retirement, and enroll a new key for the runner. From the retirement on, `mnema
+verify` refuses a result the old key signs, any other fact it signs, and an enrolment of it again;
+`check run` refuses to run with it. The results it signed before still verify, because the key held
+the role when it signed them, and `verify` names them in its census
+(`census [retired-checker] …`): a leaked key can date a result before its own
+retirement, so the record no longer vouches for them. `mnema accountability` says who retired it.
+
 What it does not promise: a result says that a key your team enrolled reported the rule held at that
 commit. It does not say the program ran as it was declared on that machine, and it does not say
 the program checks what its rule says. A declared program runs on the runner, so whoever can commit
-a declaration can make the runner start that program. The Action in `packages/action` reads the
-record and runs `mnema verify`; it does not run `check run`, so today the step above is one of your
-own workflow's.
+a declaration can make the runner start that program. The Action in `packages/action` runs the
+step above for you when it is handed the checker key as a secret (`checker-key`), and leaves the
+results in the working tree for your workflow to commit or upload.
 
 ### Reading the git log against the record
 

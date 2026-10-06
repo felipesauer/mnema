@@ -310,6 +310,12 @@ export const AUDIT_BY_KIND: { readonly [K in EventKind]: AuditMapping } = {
     entityTypeId: ENTITY_USER,
     entityType: 'identity',
   },
+  // The machine leaves the role: the mirror of its enrolment, as a revocation is of a key's.
+  'checker.retired': {
+    activity: ACTIVITY.unenroll,
+    entityTypeId: ENTITY_USER,
+    entityType: 'identity',
+  },
   // A result is a report about the rule, not a change to it.
   'check.passed': { activity: ACTIVITY.other, entityTypeId: ENTITY_OTHER, entityType: 'decision' },
   'check.failed': { activity: ACTIVITY.other, entityTypeId: ENTITY_OTHER, entityType: 'decision' },

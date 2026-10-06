@@ -11,7 +11,7 @@ import {
   writeAnchor,
 } from '@mnema/chain';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
-import { declareCheck, enrollChecker } from '../checks/operations.js';
+import { declareCheck, enrollChecker, retireChecker } from '../checks/operations.js';
 import { requestEnrollment } from '../identity/handshake.js';
 import { IdentityUnavailableError, rosterOf } from '../identity/membership.js';
 import { enrollFromRequest, revokeMember } from '../identity/roster.js';
@@ -394,6 +394,17 @@ describe('a checkout the key left writes nothing, through every write of the sur
       refusedBy: 'the roster',
       drive: (as, _, s) =>
         enrollChecker(as, { request: s.fixtures.checking.ok ? s.fixtures.checking.request : '' }),
+    },
+    {
+      // Driven AFTER the checker enrolment above, whose control enrolled the key retired here; a
+      // retirement is signed by the identity's key, so the roster refuses it first.
+      op: 'retireChecker',
+      refusedBy: 'the roster',
+      drive: (as, _, s) =>
+        retireChecker(as, {
+          fingerprint: s.fixtures.checking.ok ? s.fixtures.checking.fingerprint : '',
+          reason: 'the runner secret leaked',
+        }),
     },
     {
       op: 'enrollFromRequest',

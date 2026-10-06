@@ -54,7 +54,7 @@ import {
   type UpcasterRegistry,
 } from '@mnema/chain';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
-import { declareCheck, enrollChecker, runRuleChecks } from '../checks/operations.js';
+import { declareCheck, enrollChecker, retireChecker, runRuleChecks } from '../checks/operations.js';
 import { ensureSchema, PROJECTION_TABLES } from '../db/schema.js';
 import { IN_MEMORY, openDatabase, type SqliteDatabase } from '../db/sqlite.js';
 import { requestEnrollment } from '../identity/handshake.js';
@@ -292,6 +292,23 @@ const ARRIVALS: { readonly [K in EventKind]: Arrival } = {
       landed(
         runAs(ctx, rule as string, { passed: false, failure: 'exited with code 1', output: '' }),
       ),
+  },
+  // A machine already enrolled, and the arrival takes the role away: a membership fact, which
+  // is what the projection reads to say a machine was retired.
+  'checker.retired': {
+    setup: (ctx) => {
+      const asked = landed(
+        requestEnrollment({
+          anchor: deriveAnchor(ctx.writer.signerFingerprint),
+          keyRoot: ciKeyRoot(),
+          asChecker: true,
+        }),
+      );
+      landed(enrollChecker(ctx, { request: asked.request }));
+      return asked.fingerprint;
+    },
+    emit: (ctx, fingerprint) =>
+      landed(retireChecker(ctx, { fingerprint: fingerprint as string, reason: 'its key leaked' })),
   },
   // A note already projected, and indexed, taken back by the arrival: its row changes and it
   // leaves the index, which is the case a stale suffix would get wrong.

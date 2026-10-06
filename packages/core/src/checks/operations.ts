@@ -9,6 +9,8 @@
  *     nothing else, from the line that key's machine printed (`checker.enrolled`).
  *   - {@link runRuleChecks} — the checker runs every declared check of a rule in force and
  *     records each result under its OWN anchor (`check.passed` / `check.failed`).
+ *   - {@link retireChecker} — a person takes the role away from a checker key, for good
+ *     (`checker.retired`): the answer to a leaked runner secret.
  *
  * WHAT RUNS A CHECK IS HANDED IN. This module decides which checks run, refuses a key that is
  * not a checker before anything runs, bounds and neutralizes what a check printed, and writes
@@ -25,6 +27,7 @@ import {
   type CatalogEvent,
   checkDeclared,
   checkerEnrolled,
+  checkerRetired,
   checkFailed,
   checkPassed,
   deriveAnchor,
@@ -51,7 +54,7 @@ import {
   signerOfContext,
   type WriteContext,
 } from '../workflow/operations.js';
-import { checkersIn, consentsToCheck } from './checkers.js';
+import { checkersIn, consentsToCheck, retiredCheckersIn } from './checkers.js';
 
 /**
  * The most of what a check printed that the record keeps: the LAST characters, because a
@@ -163,7 +166,12 @@ export type EnrollCheckerErr =
   | AppendRefusal
   | {
       readonly ok: false;
-      readonly code: 'MALFORMED_REQUEST' | 'UNPROVEN_REQUEST' | 'CANNOT_VOUCH' | 'A_MEMBER_KEY';
+      readonly code:
+        | 'MALFORMED_REQUEST'
+        | 'UNPROVEN_REQUEST'
+        | 'CANNOT_VOUCH'
+        | 'A_MEMBER_KEY'
+        | 'RETIRED_CHECKER';
       readonly message: string;
     };
 
@@ -223,6 +231,8 @@ export function enrollChecker(
         'Make a key of its own for the machine that runs the checks',
     };
   }
+  const retirement = retiredCheckersIn(ctx.layout, ctx.upcasters).get(fingerprint);
+  if (retirement !== undefined) return retiredRefusal(fingerprint, retirement.by);
   const checker = deriveAnchor(fingerprint);
   if (checkersIn(ctx.layout, ctx.upcasters).has(fingerprint)) {
     return { ok: true, fingerprint, checker, vouchedBy: anchor, alreadyChecker: true };
@@ -296,7 +306,7 @@ export type RunChecksErr =
   | ScreenRefusal
   | {
       readonly ok: false;
-      readonly code: 'NOT_A_CHECKER' | 'BAD_COMMIT';
+      readonly code: 'NOT_A_CHECKER' | 'BAD_COMMIT' | 'RETIRED_CHECKER';
       readonly message: string;
     };
 
@@ -333,6 +343,8 @@ export function runRuleChecks(
         'with `mnema key enroll --checker <the line>`',
     };
   }
+  const retirement = retiredCheckersIn(ctx.layout, ctx.upcasters).get(fingerprint);
+  if (retirement !== undefined) return retiredRefusal(fingerprint, retirement.by);
 
   const checks = declaredChecks(orderedEvents(ctx.layout, ctx.upcasters)).filter((check) =>
     input.rulesInForce.has(check.rule),
@@ -410,4 +422,132 @@ function boundedOutput(raw: string): string {
   const chars = Array.from(visible);
   if (chars.length <= OUTPUT_LIMIT) return visible;
   return `…\n${chars.slice(chars.length - OUTPUT_LIMIT).join('')}`;
+}
+
+// ---------------------------------------------------------------------------------------
+// Retiring a checker
+// ---------------------------------------------------------------------------------------
+
+/** The refusal a retired key earns at every door: it is never a checker again. */
+function retiredRefusal(
+  fingerprint: string,
+  by: string,
+): { readonly ok: false; readonly code: 'RETIRED_CHECKER'; readonly message: string } {
+  return {
+    ok: false,
+    code: 'RETIRED_CHECKER',
+    message:
+      `the key ${oneLine(fingerprint)} was retired as a checker by ${oneLine(by)}, and a retired ` +
+      'key signs nothing again — make a new key for the machine that runs the checks, and enroll ' +
+      'its line with `mnema key enroll --checker <the line>`',
+  };
+}
+
+/** What a person asks to retire. */
+export interface RetireCheckerInput {
+  /** The full fingerprint of the checker key. */
+  readonly fingerprint: string;
+  /** Why — recorded in the fact. */
+  readonly reason: string;
+}
+
+/** The key is a checker no longer. */
+export interface RetireCheckerOk extends ScreenedWrite {
+  readonly ok: true;
+  readonly fingerprint: string;
+  /** The anchor its results were signed under — its own. */
+  readonly checker: string;
+  /** The identity that retired it — this machine's, or the one that did it first. */
+  readonly retiredBy: string;
+  /** True when the record already retired it, so nothing was appended. */
+  readonly alreadyRetired: boolean;
+}
+
+/** Why the key was not retired; nothing was written. */
+export type RetireCheckerErr =
+  | AppendRefusal
+  | ScreenRefusal
+  | {
+      readonly ok: false;
+      readonly code: 'NOT_A_CHECKER' | 'CANNOT_VOUCH';
+      readonly message: string;
+    };
+
+/**
+ * Retires a checker key, signed by this machine's identity: one `checker.retired`, checkpointed
+ * at once, because the reader honours a retirement only when a checkpoint covers it.
+ *
+ * Who may retire is who may enrol: a key valid for its identity now. Any identity, not only the
+ * one that vouched — the person who most needs to retire a leaked key may not be the one who
+ * enrolled it, and the worst a retirement does is stop a machine's results from counting, in a
+ * fact that names who did it. The checker key is not asked.
+ *
+ * Refused: a key this record does not enroll as a checker, and a machine whose key its identity
+ * no longer counts. A key already retired is reported, and nothing is appended.
+ */
+export function retireChecker(
+  ctx: DecideThenWrite,
+  input: RetireCheckerInput,
+): RetireCheckerOk | RetireCheckerErr {
+  const fingerprint = input.fingerprint;
+  const checker = deriveAnchor(fingerprint);
+  if (!checkersIn(ctx.layout, ctx.upcasters).has(fingerprint)) {
+    return {
+      ok: false,
+      code: 'NOT_A_CHECKER',
+      message:
+        `the record enrolls no checker key ${oneLine(fingerprint)} — give the full fingerprint ` +
+        'the enrolment printed (`Enrolled checker <fingerprint>`)',
+    };
+  }
+  const retirement = retiredCheckersIn(ctx.layout, ctx.upcasters).get(fingerprint);
+  if (retirement !== undefined) {
+    return {
+      ok: true,
+      fingerprint,
+      checker,
+      retiredBy: retirement.by,
+      alreadyRetired: true,
+    };
+  }
+  const signer = signerOfContext(ctx);
+  const decided = decideAnchor({ writer: signer, layout: ctx.layout, upcasters: ctx.upcasters });
+  const query = { tree: ctx.layout.root, upcasters: ctx.upcasters };
+  if (
+    decided.source !== 'unfounded' &&
+    !rosterOf(query, decided.anchor).has(signer.signerFingerprint)
+  ) {
+    return {
+      ok: false,
+      code: 'CANNOT_VOUCH',
+      message: `this machine's key is not currently valid for ${oneLine(decided.anchor)}, so a retirement it signed would be rejected`,
+    };
+  }
+  const text = screenContent({ reason: input.reason });
+  if (!text.ok) return text;
+
+  const write = openedContext(ctx);
+  const who = ensureFounded(write);
+  const appended = appendEvent(
+    write.writer,
+    checkerRetired(
+      {
+        at: (write.clock ?? systemClock)(),
+        who,
+        signerFp: write.writer.signerFingerprint,
+        subject: checker,
+      },
+      { checkerFp: fingerprint, reason: text.fields.reason },
+    ),
+  );
+  if (!appended.ok) return appended;
+  write.writer.checkpoint();
+  return {
+    ok: true,
+    fingerprint,
+    checker,
+    retiredBy: who,
+    alreadyRetired: false,
+    ...screened(text.replaced),
+  };
 }

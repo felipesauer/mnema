@@ -502,8 +502,8 @@ export const NAMES_THAT_NEED_MORE: Readonly<
     why: 'answers a line typed outside a project, whole, by naming the verb to run inside one — once for a member’s request, once for a checker’s, which names the same verb with its flag',
   },
   'packages/code/src/wiring/key.ts: mnema key revoke': {
-    times: 1,
-    why: 'answers a line typed outside a project, whole, by naming the verb to run inside one',
+    times: 2,
+    why: 'answers a line typed outside a project, whole, by naming the verb to run inside one — once for a member’s key, once for a checker’s, which names the same verb with its flag',
   },
   'packages/code/src/wiring/verify.ts: mnema key github': {
     times: 1,
@@ -633,7 +633,10 @@ export const HANDED_OVER: Readonly<
   // and the package page `mnema verify` once more.
   // name 124 for the optional commit hook: the changelog entry and the package page's section name
   // `mnema commit-hook install` and `mnema commit-hook uninstall`, and the page `mnema init`.
-  span: { line: 60, name: 124, flag: 1, unwritten: 0 },
+  // line 65 and name 128 once a checker key could be retired and the Action ran the checks: the
+  // front page, the package page, the Action's page and the changelog hand over the retirement
+  // whole, and name the verbs it refuses and the one the Action runs (name 131 with the hook's).
+  span: { line: 65, name: 131, flag: 1, unwritten: 0 },
   // name 18 until the page that says where the key lives named `mnema key protect` in a line of
   // its own.
   // line 35 until the same page showed that question in a block of its own.
@@ -644,7 +647,8 @@ export const HANDED_OVER: Readonly<
   // the inherited record, and the plugin page's block that installs the server-only plugin.
   // line 47 for the front page's block that moves a decision by its id (`mnema decision move`).
   // name 23 for the package page's block that installs and removes the commit hook.
-  block: { line: 47, name: 23, flag: 1, unwritten: 0 },
+  // line 48 for the package page's block that retires a checker key.
+  block: { line: 48, name: 23, flag: 1, unwritten: 0 },
   // 46 until the refusal an agent's `accept` gets, with the switch off, began naming the command a
   // person accepts with (`agent-accepts.ts`).
   // line 34 until the sentences an agent's accept is answered with began handing whole lines
@@ -667,7 +671,10 @@ export const HANDED_OVER: Readonly<
   // line 60 and name 72 for the verb's own help: its example, and the names it mentions.
   // line 61 and name 75 for the commit hook: the script `install` writes runs `mnema commit-hook
   // suggest`, and the group's help names `install` and `uninstall`.
-  source: { line: 61, name: 75, flag: 3, unwritten: 3 },
+  // line 62 and name 77 once a checker key could be retired: the refusal of a retired key names
+  // the line that enrolls a new one, and the verb's help and the retirement's sentence name
+  // `mnema verify` and the reads beside it.
+  source: { line: 62, name: 77, flag: 3, unwritten: 3 },
 };
 
 // ---------------------------------------------------------------------------

@@ -323,6 +323,22 @@ const CLASSIFIED: Readonly<Record<string, { verdict: Verdict; why: string }>> = 
     verdict: 'minted',
     why: 'a fingerprint decoded from the request, and an anchor',
   },
+  'key.ts «Retired checker {}» #1': {
+    verdict: 'minted',
+    why: 'the fingerprint of a key the record enrolls as a checker, or the write refused',
+  },
+  'key.ts «Key {} was retired as a checker by {} already — nothing recorded.» #1': {
+    verdict: 'minted',
+    why: 'a fingerprint the record holds, and the anchor of the identity that retired it',
+  },
+  'key.ts «it signs nothing from here on — retired by {}» #1': {
+    verdict: 'minted',
+    why: 'the anchor of the identity that signed the retirement',
+  },
+  'accountability.ts «retired by {}» #1': {
+    verdict: 'minted',
+    why: 'the anchor text of the identity that retired the machine, as the author column is said',
+  },
   'key.ts «Enrolled checker {}» #1': {
     verdict: 'minted',
     why: 'a fingerprint decoded out of the request that was vouched for',
@@ -741,7 +757,8 @@ describe('every line this wiring words is classified', () => {
     // 81 until user-corrections got its own message.
     // 82 until `doctor` printed a line to a finding.
     // 99 with the line `commit-hook` prints for where the hook is.
-    expect(FOUND.sites.length).toBe(99);
+    // 103 once a checker key could be retired.
+    expect(FOUND.sites.length).toBe(103);
   });
 
   it('reads the verdict off the source rather than believing the table', () => {
@@ -762,7 +779,7 @@ describe('every line this wiring words is classified', () => {
     // Neither arm of the case above may be empty, or half of it is vacuous.
     const verdicts = Object.values(CLASSIFIED).map((said) => said.verdict);
     expect(verdicts.filter((verdict) => verdict === 'collapsed').length).toBe(45);
-    expect(verdicts.filter((verdict) => verdict === 'minted').length).toBe(54);
+    expect(verdicts.filter((verdict) => verdict === 'minted').length).toBe(58);
     expect(FOUND.sites.filter((site) => site.tagged).length).toBe(45);
   });
 

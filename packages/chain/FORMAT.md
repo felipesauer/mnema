@@ -418,12 +418,13 @@ against `keys/<newFp>.pub` **with that file's fingerprint recomputed** (§6): a
 member could otherwise enrol a key it does not hold, or swap the file afterwards
 and have someone else's signature verify against it.
 
-**A fourth fact grants a ROLE rather than a membership**, and two kinds are judged by
-it instead of by the sets above:
+**A fourth fact grants a ROLE rather than a membership, and a fifth withdraws it**; two
+kinds are judged by the role instead of by the sets above:
 
 | kind | what it must satisfy | what it does |
 |---|---|---|
 | `checker.enrolled` | `subject == anchor(payload.checkerFp)`; `signerFp` is in the set of `who` at this point; and `payload.reverseSig` is a valid Ed25519 signature, by the key `checkerFp` names (fingerprint recomputed, as above), over the UTF-8 of `check-enroll:<who>:<checkerFp>` | makes `checkerFp` a CHECKER key |
+| `checker.retired` | `subject == anchor(payload.checkerFp)`; and `signerFp` is in the set of `who` at this point | when SIGNATURE-COVERED: `checkerFp` is a checker no longer, and is RETIRED |
 | `check.passed`, `check.failed` | `signerFp` is a checker key at this point, and `who == anchor(signerFp)` | — |
 
 A checker key signs check results and **nothing else**: an event of any other kind
@@ -431,8 +432,26 @@ whose `signerFp` is a checker key at its point in the fold is refused, whatever 
 kind — its own `identity.founded` included. A checker joins no identity; it speaks under
 the anchor its own key derives, so a reader can tell a machine's result from a person's
 act. The consent message is not §6.2's `enroll:` message, so a consent given to join an
-identity cannot enrol a checker, nor the reverse. There is no fact that withdraws the
-role.
+identity cannot enrol a checker, nor the reverse.
+
+**A retired key signs nothing.** From its retirement on, an event of any kind whose
+`signerFp` is a retired key is refused — a result, and any other kind, its own
+`identity.founded` included — and so is a `checker.enrolled` naming it: a retired key does
+not come back, a new key is enrolled instead. Who may retire is who may enrol — any
+identity, by a key in its set at that point — and the checker key's consent is not asked,
+because a leaked key is the case the fact is for. Like a `key.revoked`, a `checker.retired`
+takes effect only when it is itself signature-covered: it refuses the key's LATER results,
+which are other, possibly checkpointed, events, so honouring one in the window above the
+last checkpoint would let a party with no key fail an honest runner's results.
+
+A result the key signed BEFORE its retirement stays authentic: the key held the role when
+it signed, and the fold judges every event at its own point. What "before" means is the
+merged order above, and across tails that order is the `at` each tail's writer stamped — so
+a leaked key can place a result before its own retirement. A reader of this format
+therefore learns from the record that the key was retired, and which results it signed
+before; this product's `verify` names those in its census, informational, and does not
+call them breaks
+(`packages/chain/src/chain/second-reader-agrees-on-enrolment.test.ts`).
 
 **And every other event is authentic only if its `signerFp` is in the set of its
 own `who` at its point in the fold.** That is the whole rule; there is no

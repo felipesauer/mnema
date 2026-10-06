@@ -118,6 +118,7 @@ export const FED_BY_KIND: { readonly [K in EventKind]: readonly ProjectionTable[
   'check.declared': [...EVERY_KIND_FEEDS],
   // A checker is a fact about who may sign: the reading of which identities are machines.
   'checker.enrolled': [...EVERY_KIND_FEEDS, ...MEMBERSHIP],
+  'checker.retired': [...EVERY_KIND_FEEDS, ...MEMBERSHIP],
   'check.passed': [...EVERY_KIND_FEEDS],
   'check.failed': [...EVERY_KIND_FEEDS],
   // A claim about an identity, read off the chain by the one reading that asks it
