@@ -275,6 +275,9 @@ export const SUBJECT_TEXT = {
   // PROVED against the record: a retraction is written only once the note it names is
   // found in the tree it lands in, so its subject is a note's minted id.
   'note.retracted': 'identifier',
+  // PROVED against the record: a link retraction is written only once this identity's own
+  // assertion of the edge is found in the tree it lands in, so its subject is that link's.
+  'link.retracted': 'identifier',
   // PROVED against the record: a check is declared only on a decision found in the tree, and
   // a result names the rule its declaration named.
   'check.declared': 'identifier',
@@ -411,6 +414,8 @@ export const PAYLOAD_TEXT = {
   'channel.refused': { rule: 'identifier', path: 'body' },
   // Prose a person or an agent wrote, as every other reason in this table.
   'note.retracted': { reason: 'body' },
+  // The edge's two names, as the link recorded them, and a reason like every other.
+  'link.retracted': { target: 'name', rel: 'name', reason: 'body' },
   // A program and its arguments are NAMES: one argument redacted is another program, so a
   // credential in either refuses the declaration rather than being replaced.
   'check.declared': { command: 'name', args: 'name' },

@@ -174,6 +174,7 @@ export type CensusNote =
   | EmptyTailNote
   | PartialFinalLineNote
   | ForeignRetractionNote
+  | ForeignLinkRetractionNote
   | RetiredCheckerNote;
 
 /**
@@ -325,6 +326,29 @@ export interface ForeignRetractionNote {
   readonly by: string;
   /** The identity that wrote the note. */
   readonly author: string;
+  /** Where the retraction sits. */
+  readonly tail: string;
+  readonly seq: number;
+  readonly detail: string;
+}
+
+/**
+ * A `link.retracted` signed by an identity that asserted no `knowledge.linked` of the edge it
+ * names, while another identity did ({@link mayRetract}, FORMAT.md section 6.4). No reader
+ * applies it: the edge still stands, and a rule it addresses still acts.
+ *
+ * Not a break, for the reason a {@link ForeignRetractionNote} is not: the event is intact and
+ * its key speaks for its own `who`; what it lacks is authority over somebody else's link. An
+ * edge this tree does not hold at all has no author to compare with, and is not named.
+ */
+export interface ForeignLinkRetractionNote {
+  readonly kind: 'foreign-link-retraction';
+  /** The edge it names, as the retraction names it. */
+  readonly link: { readonly subject: string; readonly target: string; readonly rel: string };
+  /** The identity that signed the retraction. */
+  readonly by: string;
+  /** The identities that asserted the edge, in tail order. */
+  readonly authors: readonly string[];
   /** Where the retraction sits. */
   readonly tail: string;
   readonly seq: number;
@@ -609,6 +633,7 @@ export function verifyChain(
     ...[...empty].map(emptyTail),
     ...notes,
     ...foreignRetractions(tails, entriesByTail),
+    ...foreignLinkRetractions(tails, entriesByTail),
     ...retiredCheckers(identity.retiredCheckers),
   ];
 
@@ -807,6 +832,56 @@ function foreignRetractions(
           `a retraction of ${oneLine(event.subject)} signed by ${oneLine(event.who)}, which did not ` +
           `write it (${oneLine(author)} did) — only the identity that wrote a note takes it back, ` +
           'so it is not applied and the note is still served',
+      });
+    }
+  }
+  return found;
+}
+
+/**
+ * Every `link.retracted` whose `who` asserted no `knowledge.linked` of the edge it names while
+ * some other identity did ({@link mayRetract} against each assertion), in tail order. The
+ * assertions are read over every tail first, so a retraction is judged whatever tail, or
+ * order, its link sits in. The edge is framed by length, as the readers that fold it key it,
+ * so no choice of target or label can make two edges one.
+ */
+function foreignLinkRetractions(
+  tails: readonly string[],
+  entriesByTail: ReadonlyMap<string, readonly Entry[]>,
+): ForeignLinkRetractionNote[] {
+  const edge = (subject: string, target: string, rel: string) =>
+    `${subject.length}:${subject}|${target.length}:${target}|${rel.length}:${rel}`;
+  const asserters = new Map<string, string[]>();
+  for (const tail of tails) {
+    for (const { event } of entriesByTail.get(tail) ?? []) {
+      if (event.kind !== 'knowledge.linked') continue;
+      const key = edge(event.subject, event.payload.target, event.payload.rel);
+      const whos = asserters.get(key) ?? [];
+      if (!whos.includes(event.who)) whos.push(event.who);
+      asserters.set(key, whos);
+    }
+  }
+  const found: ForeignLinkRetractionNote[] = [];
+  for (const tail of tails) {
+    for (const { event, link } of entriesByTail.get(tail) ?? []) {
+      if (event.kind !== 'link.retracted') continue;
+      const { target, rel } = event.payload;
+      const authors = asserters.get(edge(event.subject, target, rel));
+      if (authors === undefined || authors.some((author) => mayRetract(author, event.who))) {
+        continue;
+      }
+      found.push({
+        kind: 'foreign-link-retraction',
+        link: { subject: event.subject, target, rel },
+        by: event.who,
+        authors,
+        tail,
+        seq: link.seq,
+        detail:
+          `a retraction of the link ${oneLine(event.subject)} —${oneLine(rel)}→ ${oneLine(target)} ` +
+          `signed by ${oneLine(event.who)}, which did not record it (${authors.map(oneLine).join(', ')} ` +
+          'did) — only the identity that recorded a link takes it back, so it is not applied and the ' +
+          'link still stands',
       });
     }
   }
@@ -1372,6 +1447,8 @@ const CENSUS_CLAUSE: Readonly<Record<CensusNote['kind'], (count: number) => stri
     `${count} tail(s) ending in a dropped partial line (see census — informational, not a break)`,
   'foreign-retraction': (count) =>
     `${count} retraction(s) by an identity that did not write the note, not applied (see census — informational, not a break)`,
+  'foreign-link-retraction': (count) =>
+    `${count} link retraction(s) by an identity that did not record the link, not applied (see census — informational, not a break)`,
   'retired-checker': (count) =>
     `${count} retired checker key(s) whose earlier check results are no longer vouched for (see census — informational, not a break)`,
 };

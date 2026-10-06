@@ -29,6 +29,7 @@ export const PROJECTION_TABLES = [
   'observations',
   'handoffs',
   'links',
+  'link_assertions',
   'skills',
   // The full-text index. A virtual table, but a projection like any other:
   // dropping it drops the shadow tables FTS5 keeps behind it, so the rebuild
@@ -242,6 +243,20 @@ CREATE INDEX IF NOT EXISTS idx_links_target ON links (target);
 -- scanned the whole table and sorted it. The columns after the label are the order the query
 -- returns, so the index is read in order and nothing is sorted.
 CREATE INDEX IF NOT EXISTS idx_links_rel ON links (rel, target, subject);
+
+-- WHO STILL ASSERTS EACH EDGE — one row per (subject, target, rel, who) whose
+-- assertion stands, in the order it came to stand ('rowid'). A 'link.retracted'
+-- withdraws its identity's row of the edge it names; the edge's row in 'links' is
+-- then the lowest row left here, or none. Read by nothing but the cache brought
+-- forward: the readers of links read 'links'.
+CREATE TABLE IF NOT EXISTS link_assertions (
+  subject   TEXT NOT NULL,
+  target    TEXT NOT NULL,
+  rel       TEXT NOT NULL,
+  who       TEXT NOT NULL,
+  linked_at TEXT NOT NULL,
+  PRIMARY KEY (subject, target, rel, who)
+) STRICT;
 
 CREATE TABLE IF NOT EXISTS skills (
   -- The skill's id (the event subject). One row per skill.

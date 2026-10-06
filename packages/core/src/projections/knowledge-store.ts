@@ -9,13 +9,17 @@
  * is a source of truth.
  */
 
+import type { CatalogEvent } from '@mnema/chain';
 import type { SqliteDatabase } from '../db/sqlite.js';
-import type {
-  HandoffProjection,
-  LinkEdge,
-  MemoryProjection,
-  NoteRetraction,
-  ObservationProjection,
+import {
+  type HandoffProjection,
+  type LinkEdge,
+  linkOf,
+  linkRetractionOf,
+  type MemoryProjection,
+  type NoteRetraction,
+  type ObservationProjection,
+  withdraws,
 } from './knowledge.js';
 import { verb } from './upsert.js';
 
@@ -289,17 +293,74 @@ interface LinkRow {
  * recreated empty. The fold already collapsed duplicate edges, so every row is a
  * fresh insert with no primary-key clash. The caller owns the transaction.
  */
-export function materializeLinks(
-  db: SqliteDatabase,
-  links: Iterable<LinkEdge>,
-  keepingTheFirst = false,
-): void {
+export function materializeLinks(db: SqliteDatabase, links: Iterable<LinkEdge>): void {
   const insert = db.prepare(
-    `${keepingTheFirst ? 'INSERT OR IGNORE' : 'INSERT'} INTO links (subject, target, rel, who, linked_at)
+    `INSERT INTO links (subject, target, rel, who, linked_at)
      VALUES (@subject, @target, @rel, @who, @linkedAt)`,
   );
   for (const link of links) {
     insert.run(link);
+  }
+}
+
+/**
+ * Inserts the standing assertions of edges, in the order they came to stand — the order
+ * `rowid` keeps, and the one {@link advanceLinks} reads an edge's origin by. Called during a
+ * rebuild after the table has been recreated empty. The caller owns the transaction.
+ */
+export function materializeLinkAssertions(
+  db: SqliteDatabase,
+  assertions: Iterable<LinkEdge>,
+): void {
+  const insert = db.prepare(
+    `INSERT INTO link_assertions (subject, target, rel, who, linked_at)
+     VALUES (@subject, @target, @rel, @who, @linkedAt)`,
+  );
+  for (const assertion of assertions) insert.run(assertion);
+}
+
+/**
+ * Brings `links` and `link_assertions` forward over events appended to the order they were
+ * built from, ONE EVENT AT A TIME and in that order, applying the rule the replay applies: an
+ * assertion stands from where it is made ({@link linkOf}), a retraction withdraws the ones of
+ * its edge it {@link withdraws}, and an edge's row is the lowest of its assertions standing —
+ * or no row at all, when none does. The caller owns the transaction.
+ */
+export function advanceLinks(db: SqliteDatabase, arrived: readonly CatalogEvent[]): void {
+  const assert = db.prepare(
+    `INSERT OR IGNORE INTO link_assertions (subject, target, rel, who, linked_at)
+     VALUES (@subject, @target, @rel, @who, @linkedAt)`,
+  );
+  const edge = db.prepare(
+    `INSERT OR IGNORE INTO links (subject, target, rel, who, linked_at)
+     VALUES (@subject, @target, @rel, @who, @linkedAt)`,
+  );
+  const ofEdge = db.prepare(
+    'SELECT * FROM link_assertions WHERE subject = ? AND target = ? AND rel = ? ORDER BY rowid',
+  );
+  const withdraw = db.prepare(
+    'DELETE FROM link_assertions WHERE subject = ? AND target = ? AND rel = ? AND who = ?',
+  );
+  const drop = db.prepare('DELETE FROM links WHERE subject = ? AND target = ? AND rel = ?');
+  for (const event of arrived) {
+    const asserted = linkOf(event);
+    if (asserted !== undefined) {
+      assert.run(asserted);
+      edge.run(asserted);
+      continue;
+    }
+    const retraction = linkRetractionOf(event);
+    if (retraction === undefined) continue;
+    const { subject, target, rel } = retraction;
+    const standing = (ofEdge.all(subject, target, rel) as LinkRow[]).map(toLink);
+    const left = standing.filter((assertion) => !withdraws(retraction, assertion));
+    if (left.length === standing.length) continue;
+    for (const gone of standing) {
+      if (withdraws(retraction, gone)) withdraw.run(subject, target, rel, gone.who);
+    }
+    drop.run(subject, target, rel);
+    const origin = left[0];
+    if (origin !== undefined) edge.run(origin);
   }
 }
 

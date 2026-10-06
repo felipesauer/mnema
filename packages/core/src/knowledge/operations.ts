@@ -59,6 +59,7 @@ import {
   type CatalogEvent,
   handoffRecorded,
   knowledgeLinked,
+  linkRetracted,
   mayRetract,
   memoryCaptured,
   noteRetracted,
@@ -73,6 +74,7 @@ import {
 import { resolveExecutingAgent, type SelfAuthorizedErr } from '../identity/authority.js';
 import { canonicalId, mintId } from '../identity/id.js';
 import { oneLine } from '../one-line.js';
+import { linkOf, projectLinkAssertions, withdraws } from '../projections/knowledge.js';
 import { orderedEvents } from '../projections/order.js';
 import { type AppendRefusal, appendEvent } from '../workflow/append.js';
 import { type Judged, onTheRecordAsItStands } from '../workflow/as-the-record-stands.js';
@@ -608,6 +610,178 @@ export function retractNote(ctx: WriteContext, input: RetractInput): RetractOk |
             ok: true,
             id,
             note: standing.note,
+            ...screened([...text.replaced, ...agent.replaced]),
+          };
+        },
+      };
+    },
+  );
+}
+
+/** A link was retracted: the fact was appended. */
+export interface LinkRetractOk extends ScreenedWrite {
+  readonly ok: true;
+  /** The edge taken back, as the link recorded it. */
+  readonly subject: string;
+  readonly target: string;
+  readonly rel: string;
+}
+
+/** A link retraction refused before touching the chain. */
+export type LinkRetractError =
+  | FactError
+  /** This tree holds no link of that subject, target and relation. */
+  | { readonly ok: false; readonly code: 'UNKNOWN_LINK'; readonly message: string }
+  /** This identity recorded the link, and the record already took it back. */
+  | { readonly ok: false; readonly code: 'ALREADY_RETRACTED'; readonly message: string }
+  /** The link was recorded by another identity, and only that identity retracts it. */
+  | { readonly ok: false; readonly code: 'NOT_THE_AUTHOR'; readonly message: string };
+
+/** What the caller asks to retract: the edge, named the way the link named it. */
+export interface LinkRetractInput {
+  /** The entity the link originates from. */
+  readonly subject: string;
+  /** What the link points at. */
+  readonly target: string;
+  /** The relation label, exactly as the link recorded it. */
+  readonly rel: string;
+  /** Why it is taken back. Required; a reason that says nothing is refused. */
+  readonly reason: string;
+  /** The agent that carried it out, if any. `who` is derived from the writer's key. */
+  readonly which?: string;
+  /** The run this belongs to, if any. */
+  readonly run?: string;
+}
+
+/** What the record says of one edge, as far as a retraction by `who` needs to know. */
+type LinkStanding =
+  | { readonly is: 'nothing' }
+  | { readonly is: 'mine' }
+  | { readonly is: 'withdrawn' }
+  | { readonly is: 'theirs'; readonly authors: readonly string[] };
+
+/**
+ * Reads what this tree's ordered stream says of the edge, for a retraction by `who`: whether
+ * an assertion of it that `who` may retract still stands ({@link mayRetract}, through the
+ * read's own {@link withdraws}), whether one did and was taken back, or whether only other
+ * identities ever asserted it.
+ */
+function linkStandingOf(
+  events: readonly CatalogEvent[],
+  edge: { readonly subject: string; readonly target: string; readonly rel: string },
+  who: string,
+): LinkStanding {
+  const same = (link: { subject: string; target: string; rel: string }) =>
+    link.subject === edge.subject && link.target === edge.target && link.rel === edge.rel;
+  const asserted = events.flatMap((event) => {
+    const link = linkOf(event);
+    return link !== undefined && same(link) ? [link] : [];
+  });
+  if (asserted.length === 0) return { is: 'nothing' };
+  const asWho = { ...edge, who };
+  const standing = projectLinkAssertions(events).filter(same);
+  if (standing.some((assertion) => withdraws(asWho, assertion))) return { is: 'mine' };
+  if (asserted.some((assertion) => withdraws(asWho, assertion))) return { is: 'withdrawn' };
+  return { is: 'theirs', authors: [...new Set(asserted.map((assertion) => assertion.who))] };
+}
+
+/**
+ * Retracts a link by appending one `link.retracted` that names the edge as the link did —
+ * subject, target, relation — and why. Nothing is erased: the link's own event stays and a
+ * verifier still sees it; every reader of links, which reads the edges the record still
+ * asserts, stops seeing this identity's assertion of it, and the edge with it when nobody
+ * else asserts it.
+ *
+ * WHO MAY is the identity that recorded the link, with any key of it ({@link mayRetract}): a
+ * writer of another identity is refused, told whose the link is. It is SAME-TREE: the edge
+ * is looked for in the tree this writer owns — a surface opens the tree the link landed in —
+ * and an edge this tree does not hold is refused rather than recorded dangling.
+ *
+ * Decided under the tail's lock against the record as it stands ({@link
+ * onTheRecordAsItStands}), so two retractions of one link in two sessions append one.
+ */
+export function retractLink(
+  ctx: WriteContext,
+  input: LinkRetractInput,
+): LinkRetractOk | LinkRetractError {
+  // The edge's two names go through the door as the link's did — a name carrying a credential
+  // is refused, never replaced, so a clean one comes back as it went in — and the reason too.
+  const text = screenContent({
+    target: input.target,
+    rel: input.rel,
+    reason: input.reason,
+    run: input.run,
+  });
+  if (!text.ok) return text;
+
+  const who = authorizingAnchor(ctx);
+  const agent = resolveExecutingAgent(who, input.which);
+  if (!agent.ok) return agent;
+  const which = agent.which;
+
+  const edge = {
+    subject: canonicalId(input.subject) ?? input.subject,
+    target: canonicalId(text.fields.target) ?? text.fields.target,
+    rel: text.fields.rel,
+  };
+  const named = `${oneLine(edge.subject)} —${oneLine(edge.rel)}→ ${oneLine(edge.target)}`;
+  return onTheRecordAsItStands(
+    ctx,
+    () => linkStandingOf(orderedEvents(ctx.layout, ctx.upcasters), edge, who),
+    (standing): Judged<LinkRetractOk | LinkRetractError> => {
+      if (standing.is === 'nothing') {
+        return {
+          refuse: {
+            ok: false,
+            code: 'UNKNOWN_LINK',
+            message: `no link ${named} is in this record`,
+          },
+        };
+      }
+      if (standing.is === 'theirs') {
+        return {
+          refuse: {
+            ok: false,
+            code: 'NOT_THE_AUTHOR',
+            message:
+              `the link ${named} was recorded by ${standing.authors.map(oneLine).join(', ')}, ` +
+              `and only that identity retracts it; this writer is ${oneLine(who)}. ` +
+              'Nothing was appended.',
+          },
+        };
+      }
+      if (standing.is === 'withdrawn') {
+        return {
+          refuse: {
+            ok: false,
+            code: 'ALREADY_RETRACTED',
+            message: `the link ${named} was already retracted. Nothing was appended.`,
+          },
+        };
+      }
+      return {
+        write: () => {
+          ensureFounded(ctx);
+          const at = (ctx.clock ?? systemClock)();
+          const appended = appendEvent(
+            ctx.writer,
+            linkRetracted(
+              {
+                at,
+                who,
+                signerFp: ctx.writer.signerFingerprint,
+                subject: edge.subject,
+                ...(which !== undefined ? { which } : {}),
+                ...(text.fields.run !== undefined ? { run: text.fields.run } : {}),
+              },
+              // The screened reason, never `input.reason`.
+              { target: edge.target, rel: edge.rel, reason: text.fields.reason },
+            ),
+          );
+          if (!appended.ok) return appended;
+          return {
+            ok: true,
+            ...edge,
             ...screened([...text.replaced, ...agent.replaced]),
           };
         },

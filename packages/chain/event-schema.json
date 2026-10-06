@@ -181,6 +181,15 @@
       }
     },
     {
+      "kind": "link.retracted",
+      "v": 1,
+      "payload": {
+        "target": "string",
+        "rel": "string",
+        "reason": "string"
+      }
+    },
+    {
       "kind": "memory.captured",
       "v": 1,
       "payload": {

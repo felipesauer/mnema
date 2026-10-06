@@ -469,6 +469,26 @@
       "sha256": "7c5712d1f6925f7962c4ce793e49c0dc7ff4849b42687f44583eed6c6c9ec945"
     },
     {
+      "name": "link.retracted (the relates-to edge taken back, with its reason)",
+      "kind": "link.retracted",
+      "event": {
+        "v": 1,
+        "kind": "link.retracted",
+        "at": "2026-07-21T00:00:00.000Z",
+        "who": "mnid:1111111111111111111111111111111111111111111111111111111111111111",
+        "signerFp": "2222222222222222222222222222222222222222222222222222222222222222",
+        "subject": "019f81f8-e400-7001-8000-000000000001",
+        "which": "claude",
+        "run": "019f81f8-e400-7005-8000-000000000005",
+        "payload": {
+          "target": "019f81f8-e400-7003-8000-000000000003",
+          "rel": "relates-to",
+          "reason": "The memory is about another task."
+        }
+      },
+      "sha256": "d619a88ebb7f40fb89a3c4d0124ad4ed5914155d66f73581d2b164dd0784102a"
+    },
+    {
       "name": "check.declared (a program and its arguments)",
       "kind": "check.declared",
       "event": {
@@ -611,6 +631,6 @@
       "vector": "run.ended",
       "entryHash": "bafbebddd9d5ee75b10bdde626c5e36eed44b37d9fe352b4d98f614fa2647b73"
     },
-    "contentRootOverAllVectors": "df12f6cea67800972e627486b86868cb4456fcdeb1dab40c63f7a74facb8ddd6"
+    "contentRootOverAllVectors": "2f0c20ef32a5063411b86335a20c46c29c3bbb05a5c4a94be9fb0fc170d77b53"
   }
 }

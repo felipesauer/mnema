@@ -49,11 +49,13 @@ import { materializeDecisions } from './decision-store.js';
 import {
   projectHandoffs,
   projectKnowledge,
-  projectLinks,
+  edgesOf,
+  projectLinkAssertions,
   projectObservations,
 } from './knowledge.js';
 import {
   materializeHandoffs,
+  materializeLinkAssertions,
   materializeLinks,
   materializeMemories,
   materializeObservations,
@@ -82,7 +84,8 @@ interface Folded {
   readonly memories: ReturnType<typeof projectKnowledge>;
   readonly observations: ReturnType<typeof projectObservations>;
   readonly handoffs: ReturnType<typeof projectHandoffs>;
-  readonly links: ReturnType<typeof projectLinks>;
+  readonly links: ReturnType<typeof edgesOf>;
+  readonly linkAssertions: ReturnType<typeof projectLinkAssertions>;
   readonly switches: ReturnType<typeof projectChannelSwitches>;
 }
 
@@ -97,6 +100,8 @@ type ProjectionOf<F> = F extends { finish(id: string, acc: never): infer P }
  * says. It folds all of them even when only some will be written — a rebuild writes them all.
  */
 function foldAll(events: readonly CatalogEvent[]): Folded {
+  // The edges and who still asserts them are ONE fold, so the two tables cannot disagree.
+  const linkAssertions = projectLinkAssertions(events);
   return {
     events,
     tasks: accumulate(taskFold, events),
@@ -106,7 +111,8 @@ function foldAll(events: readonly CatalogEvent[]): Folded {
     memories: projectKnowledge(events),
     observations: projectObservations(events),
     handoffs: projectHandoffs(events),
-    links: projectLinks(events),
+    links: edgesOf(linkAssertions),
+    linkAssertions,
     switches: projectChannelSwitches(events),
   };
 }
@@ -142,6 +148,9 @@ function materialize(
       return;
     case 'links':
       materializeLinks(db, folded.links);
+      return;
+    case 'link_assertions':
+      materializeLinkAssertions(db, folded.linkAssertions);
       return;
     case 'skills':
       materializeSkills(db, folded.skills.projections.values());
@@ -194,6 +203,7 @@ const FOLDED_TABLES: readonly Exclude<ProjectionTable, 'refs'>[] = [
   'observations',
   'handoffs',
   'links',
+  'link_assertions',
   'skills',
   'record_search',
   'search_rows',
