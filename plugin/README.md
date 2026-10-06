@@ -247,6 +247,8 @@ That records a fact in your project's record — who switched it, when, and why 
 why — and the next session's opening document says the push is off instead of implying it
 had nothing to say. `mnema switch on edit-rules-push` puts it back.
 
+For guidance on porting mnema to a host that is not yet supported, see [porting-to-a-host.md](porting-to-a-host.md) — it covers the MCP server setup, host-specific hooks, and what the product already handles.
+
 ## In VS Code and Cursor
 
 The plugin is written in Claude Code's format, and two other hosts read that format.
