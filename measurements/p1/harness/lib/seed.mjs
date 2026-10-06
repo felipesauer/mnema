@@ -94,10 +94,10 @@ import { readFileSync, writeFileSync } from 'node:fs'
 import { readdirSync } from 'node:fs'
 import { join } from 'node:path'
 import { spawnSync } from 'node:child_process'
-import { canonicalKnowledge, carriesDecision, readDecision } from './fixtures.mjs'
+import { addressCovers, canonicalKnowledge, carriesDecision, readDecision, readDecisionSet, touchedPaths } from './fixtures.mjs'
 import { assertCleanTree, commitAll, exists, sandboxEnv } from './sandbox.mjs'
 
-export const ARMS = ['base', 'prosa', 'host', 'mnema', 'claude-md', 'mnema-doc', 'mnema+']
+export const ARMS = ['base', 'prosa', 'host', 'mnema', 'claude-md', 'mnema-doc', 'mnema+', 'mnema-gate']
 
 /**
  * The arm whose decision sits in the file the host loads by itself.
@@ -136,6 +136,27 @@ export const SURFACE_ARM = 'mnema+'
 export const DOC_ARM = 'mnema-doc'
 
 /**
+ * The arm that carries the same surface as `mnema+` with ONE channel switched ON: the hold on the
+ * first write of a session to a file a rule addresses.
+ *
+ * WHAT IT ADDS, measured on the product's own tool before any cell: the first write to a governed
+ * file does not happen, and the session is handed the rules addressed at that file as the reason,
+ * BEFORE the write instead of beside its result; the same write repeated goes through, with the
+ * rules pushed as in `mnema+`. It is the eighth arm and an exploratory one: no round reads it in
+ * the conclusion it pre-registers.
+ *
+ * WHY THE HOLD AND NOT A `refuses-a-write` ADDRESS, which is the other way the product stops a
+ * write. Measured the same way: a rule linked `refuses-a-write` at the file the ticket asks the
+ * agent to write refuses EVERY write to it, the second exactly as the first, so the only cells that
+ * could score would be the ones where the agent got the file written some other way — the arm
+ * would measure that, and not whether a rule handed over before a write changes it.
+ */
+export const GATE_ARM = 'mnema-gate'
+
+/** The channel the eighth arm switches on, as the product names it. */
+export const FIRST_WRITE_GATE_CHANNEL = 'edit-first-write-gate'
+
+/**
  * The channel the per-edit push speaks on, as the product names it.
  *
  * A LITERAL, and this file is where it lives BECAUSE THE ARM IS A SWITCH POSITION.
@@ -167,7 +188,7 @@ export const EDIT_PUSH_CHANNEL = 'edit-rules-push'
  * record had not been there.
  */
 export function servesRecord(arm) {
-  return arm === 'mnema' || arm === DOC_ARM || arm === SURFACE_ARM
+  return arm === 'mnema' || arm === DOC_ARM || arm === SURFACE_ARM || arm === GATE_ARM
 }
 
 /**
@@ -179,7 +200,7 @@ export function servesRecord(arm) {
  * after the first thing it had.
  */
 export function servesUnasked(arm) {
-  return arm === DOC_ARM || arm === SURFACE_ARM
+  return arm === DOC_ARM || arm === SURFACE_ARM || arm === GATE_ARM
 }
 
 /**
@@ -209,6 +230,35 @@ export function servesUnasked(arm) {
 export function switchedOffChannels(arm) {
   if (!ARMS.includes(arm)) throw new Error(`unknown arm: ${arm}`)
   return arm === DOC_ARM ? [EDIT_PUSH_CHANNEL] : []
+}
+
+/**
+ * The channels the product BORN OFF — off in a fresh record before any arm touches a switch.
+ *
+ * "Nothing is born switched off" was true when the switch check below was written, and the
+ * product falsified it: `mnema switch` now prints these two as off until somebody switches them on
+ * (`packages/code/src/wiring/switch.ts`). The check kept asking for an empty list, so every seed of
+ * every arm that holds a record failed — which is the check doing its job, since a default that
+ * moved is the case it exists for. The list is written out rather than read from the product
+ * because a default that moves AGAIN must stop the seed by name, not be absorbed.
+ */
+export const BORN_OFF_CHANNELS = ['edit-first-write-gate', 'user-corrections']
+
+/**
+ * The channels an arm switches ON at seed time — the eighth arm's whole mechanism, the mirror of
+ * {@link switchedOffChannels}. Private, for the reason the sixth arm's switch is: the opening
+ * document reads the committed record, and a public switch would hand the model a paragraph about
+ * the bench's arrangement that `mnema+` does not get.
+ */
+export function switchedOnChannels(arm) {
+  if (!ARMS.includes(arm)) throw new Error(`unknown arm: ${arm}`)
+  return arm === GATE_ARM ? [FIRST_WRITE_GATE_CHANNEL] : []
+}
+
+/** Every channel a seeded cell of `arm` must show as off: the born-off ones it did not switch on, plus its own switch. */
+export function offAtSeed(arm) {
+  const on = switchedOnChannels(arm)
+  return [...new Set([...BORN_OFF_CHANNELS.filter((c) => !on.includes(c)), ...switchedOffChannels(arm)])].sort()
 }
 
 
@@ -270,6 +320,17 @@ export const SEEDING_AGENT = 'mnema-bench-harness'
 /** Constant, and deliberately free of domain knowledge — the arms must not differ by a note. */
 export const ACCEPT_NOTE = 'Seeded as settled for the measurement.'
 
+/** Constant for the same reason: the reason a replacement is recorded with says nothing of the domain. */
+export const SUPERSEDE_NOTE = 'Seeded as replaced for the measurement.'
+
+/**
+ * How the arms that hold a history AS TEXT say that one decision replaced another: one line, the
+ * same in the instructions file and in the host's memory, naming the replaced decision by its
+ * title. It is packaging — the record says the same with a link — so the parity check takes it out
+ * before comparing what the arms know, and checks it apart, as the link it is.
+ */
+export const SUPERSEDES_LABEL = '**Supersedes:**'
+
 export const DECISIONS_FILE = 'DECISIONS.md'
 /** The name the host loads without being asked. The same bytes as `DECISIONS_FILE`, under a name it reads. */
 export const INSTRUCTIONS_FILE = 'CLAUDE.md'
@@ -283,9 +344,13 @@ export const MEMORY_INDEX = 'MEMORY.md'
  * silent divergence, and here the divergence would be "the floor arm quietly
  * had the answer".
  */
-export function expectedSeedState(arm, axis) {
+export function expectedSeedState(arm, axis, held = 1) {
   if (!ARMS.includes(arm)) throw new Error(`unknown arm: ${arm}`)
   const carries = carriesDecision(axis)
+  // `held` is how many decisions the task holds: one in a `decision.md` task, the whole history
+  // in a `decisions/` task — every one of them recorded, and in the surface arms every one
+  // addressed, superseded ones included, because the arms hold the same history and only what is
+  // HANDED OVER of it differs.
   return {
     decisionsFile: arm === 'prosa' && carries,
     // The seventh dimension, and the seventh arm's alone: the decision under the name the
@@ -296,13 +361,13 @@ export function expectedSeedState(arm, axis) {
     hostMemory: arm === 'host' && carries,
     // The mechanism, not the content: the tree exists on both axes.
     mnemaTree: servesRecord(arm),
-    mnemaRecords: servesRecord(arm) && carries ? 1 : 0,
+    mnemaRecords: servesRecord(arm) && carries ? held : 0,
     // The fifth dimension, and the fifth arm's alone: an ADDRESS on the decision it
     // holds. Declared here rather than inside `seedArm` for the reason the other four
     // are — this table is the single source both halves read, and an address written
     // by one half and unchecked by the other is the shape that quietly stops being
     // true. Zero on axis B because there is no decision to address.
-    mnemaAddresses: servesUnasked(arm) && carries ? 1 : 0,
+    mnemaAddresses: servesUnasked(arm) && carries ? held : 0,
     // The SIXTH dimension, and the sixth arm's alone: a switch position, recorded in
     // the cell's own record. It does not depend on the axis — the arm is the switch,
     // and an arm that were itself only on one axis would be two arms. Written by
@@ -313,6 +378,8 @@ export function expectedSeedState(arm, axis) {
     // the pair two differences instead of one, and the subtraction the round exists to
     // make would stop being the push.
     switchedOff: switchedOffChannels(arm),
+    // The EIGHTH dimension, the eighth arm's alone and the sixth's mirror: a channel switched ON.
+    switchedOn: switchedOnChannels(arm),
   }
 }
 
@@ -341,8 +408,9 @@ export function indexHook(statement) {
  * `prosa` gets. Kept separate from the frontmatter so the parity check can
  * compare knowledge against packaging that only one arm has.
  */
-export function hostMemoryBody(decision) {
+export function hostMemoryBody(decision, replaced = null) {
   return [
+    ...(replaced ? [supersedesLine(replaced), ''] : []),
     decision.statement,
     '',
     `**Why.** ${decision.why}`,
@@ -353,7 +421,7 @@ export function hostMemoryBody(decision) {
 }
 
 /** The host's auto-memory format: frontmatter, then the decision body. */
-export function hostMemoryFile(decision) {
+export function hostMemoryFile(decision, replaced = null) {
   return [
     '---',
     `name: ${slugFor(decision.title)}`,
@@ -362,8 +430,40 @@ export function hostMemoryFile(decision) {
     '  type: project',
     '---',
     '',
-    hostMemoryBody(decision),
+    hostMemoryBody(decision, replaced),
   ].join('\n')
+}
+
+/** The line that says a decision replaced another, in the arms that hold the history as text. */
+export function supersedesLine(replacedTitle) {
+  return `${SUPERSEDES_LABEL} ${replacedTitle}`
+}
+
+/** The title of the decision `entry` replaced, or `null`. */
+function replacedTitle(set, entry) {
+  return entry.supersedes ? set.find((other) => other.key === entry.supersedes).title : null
+}
+
+/**
+ * One decision as the instructions file and `DECISIONS.md` hold it: its own bytes, with the line
+ * that says what it replaced put right under its title. A task of the first shape has no such
+ * line, and its file is the decision verbatim, as it always was.
+ */
+export function instructionBlock(set, entry) {
+  const replaced = replacedTitle(set, entry)
+  if (!replaced) return entry.raw
+  const [title, ...rest] = entry.raw.split('\n')
+  return [title, '', supersedesLine(replaced), ...rest].join('\n')
+}
+
+/** The host's memory for a whole history: one file per decision, and the index naming each, in order. */
+export function hostMemoryFiles(set) {
+  const files = set.map((entry) => ({
+    name: `${slugFor(entry.title)}.md`,
+    content: hostMemoryFile(entry, replacedTitle(set, entry)),
+  }))
+  files.push({ name: MEMORY_INDEX, content: set.map((entry) => hostIndexFile(entry)).join('') })
+  return files
 }
 
 export function hostIndexFile(decision) {
@@ -405,11 +505,11 @@ function must(result, what) {
  */
 export function seedArm({ arm, fixture, sandbox, mnemaBin }) {
   if (!ARMS.includes(arm)) throw new Error(`unknown arm: ${arm}`)
-  const decision = readDecision(fixture)
-  const want = expectedSeedState(arm, fixture.axis)
+  const set = readDecisionSet(fixture)
+  const want = expectedSeedState(arm, fixture.axis, set.length)
 
   if (want.decisionsFile) {
-    writeFileSync(join(sandbox.repo, DECISIONS_FILE), readFileSync(fixture.decisionPath, 'utf8'))
+    writeFileSync(join(sandbox.repo, DECISIONS_FILE), instructionsText(fixture))
   }
 
   if (want.instructionsFile) {
@@ -417,35 +517,40 @@ export function seedArm({ arm, fixture, sandbox, mnemaBin }) {
   }
 
   if (want.hostMemory) {
-    writeFileSync(join(sandbox.memory, `${slugFor(decision.title)}.md`), hostMemoryFile(decision))
-    writeFileSync(join(sandbox.memory, MEMORY_INDEX), hostIndexFile(decision))
+    for (const file of hostMemoryFiles(set)) writeFileSync(join(sandbox.memory, file.name), file.content)
   }
 
   if (want.mnemaTree) {
     must(mnema(sandbox, mnemaBin, ['init']), 'mnema init')
     if (want.mnemaRecords > 0) {
-      const fields = mnemaFields(decision)
-      const recorded = must(
-        mnema(sandbox, mnemaBin, [
-          'decision',
-          'record',
-          fields.title,
-          fields.rationale,
-          '--alternatives',
-          fields.alternatives,
-          '--which',
-          SEEDING_AGENT,
-        ]),
-        'mnema decision',
-      )
-      const id = /\(([0-9a-f]{8}-[0-9a-f-]{27})\)/.exec(recorded.stdout)?.[1]
-      if (!id) throw new Error(`mnema decision printed no id:\n${recorded.stdout}`)
+      // IN THE ORDER THE TASK SAYS THEY WERE MADE, each recorded and then all accepted, so that a
+      // replacement is recorded after both decisions it joins exist and are in force.
+      const ids = new Map()
+      for (const entry of set) {
+        const fields = mnemaFields(entry)
+        const recorded = must(
+          mnema(sandbox, mnemaBin, [
+            'decision',
+            'record',
+            fields.title,
+            fields.rationale,
+            '--alternatives',
+            fields.alternatives,
+            '--which',
+            SEEDING_AGENT,
+          ]),
+          'mnema decision',
+        )
+        const id = /\(([0-9a-f]{8}-[0-9a-f-]{27})\)/.exec(recorded.stdout)?.[1]
+        if (!id) throw new Error(`mnema decision printed no id:\n${recorded.stdout}`)
+        ids.set(entry.key, id)
+      }
       must(
         mnema(sandbox, mnemaBin, [
           'decision',
           'move',
           'accept',
-          id,
+          ...ids.values(),
           '--note',
           ACCEPT_NOTE,
           '--which',
@@ -460,18 +565,40 @@ export function seedArm({ arm, fixture, sandbox, mnemaBin }) {
         // mechanism the eight cells of 2026-08-18 already measured — while claiming
         // to be the surface `arms.md` declares. `--which` is the harness, like every
         // other write it makes, so a reader of the cell's record can tell the seed's
-        // facts from the session's.
+        // facts from the session's. A task of the first shape addresses its one decision
+        // at the root; a task that holds a history addresses each decision where the task
+        // says it governs, which is what lets the channel choose among dozens by path.
+        for (const entry of set) {
+          must(
+            mnema(sandbox, mnemaBin, [
+              'link',
+              ids.get(entry.key),
+              entry.governs ?? GOVERNS_ADDRESS,
+              '--rel',
+              'governs',
+              '--which',
+              SEEDING_AGENT,
+            ]),
+            'mnema link governs',
+          )
+        }
+      }
+      // THE REPLACEMENTS, through the product's own verb, after every decision is in force: the
+      // record then holds the same history the instructions file and the memory hold as text.
+      for (const entry of set) {
+        if (!entry.supersedes) continue
         must(
           mnema(sandbox, mnemaBin, [
-            'link',
-            id,
-            GOVERNS_ADDRESS,
-            '--rel',
-            'governs',
+            'decision',
+            'supersede',
+            ids.get(entry.supersedes),
+            ids.get(entry.key),
+            '--reason',
+            SUPERSEDE_NOTE,
             '--which',
             SEEDING_AGENT,
           ]),
-          'mnema link governs',
+          'mnema decision supersede',
         )
       }
     }
@@ -487,6 +614,13 @@ export function seedArm({ arm, fixture, sandbox, mnemaBin }) {
         `mnema switch off ${channel}`,
       )
     }
+    // And the eighth arm's, the same way and in the same scope, in the other direction.
+    for (const channel of want.switchedOn) {
+      must(
+        mnema(sandbox, mnemaBin, ['switch', 'on', channel, '--scope', SWITCH_SCOPE, '--which', SEEDING_AGENT]),
+        `mnema switch on ${channel}`,
+      )
+    }
   }
 
   commitAll(sandbox, `seed: ${arm}`)
@@ -494,14 +628,26 @@ export function seedArm({ arm, fixture, sandbox, mnemaBin }) {
   return { arm, axis: fixture.axis, want }
 }
 
-/** What the instructions arm's file holds: the decision, verbatim — the bytes `seedArm` writes. */
-function instructionsText(fixture) {
-  return readFileSync(fixture.decisionPath, 'utf8')
+/**
+ * What the instructions arm's file holds — the bytes `seedArm` writes, and `DECISIONS.md` holds
+ * the same. A task of the first shape: its decision, verbatim. A task that holds a history: every
+ * decision verbatim, in the order they were made, each replacement saying what it replaced under
+ * its title — an instructions file kept up to date by adding to it, which is how one is kept.
+ */
+export function instructionsText(fixture) {
+  if (fixture.shape !== 'set') return readFileSync(fixture.decisionPath, 'utf8')
+  const set = readDecisionSet(fixture)
+  return set.map((entry) => instructionBlock(set, entry).replace(/\n*$/, '\n')).join('\n')
 }
 
-/** The records the mnema arm holds, read back through the product's own index. */
+/**
+ * The records the mnema arm holds, read back through the product's own index.
+ *
+ * `--limit 200`, the product's maximum, because its default is twenty and a task that holds thirty
+ * decisions came back with ten of them missing from `hits` while `total` said thirty.
+ */
 export function mnemaRecords(sandbox, mnemaBin) {
-  const out = must(mnema(sandbox, mnemaBin, ['search', '--json']), 'mnema search --json')
+  const out = must(mnema(sandbox, mnemaBin, ['search', '--json', '--limit', '200']), 'mnema search --json')
   return JSON.parse(out.stdout)
 }
 
@@ -591,7 +737,8 @@ export function channelNames(positions) {
  * into it would make the two surface arms differ in nothing.
  */
 export function assertSeed({ arm, fixture, sandbox, mnemaBin }) {
-  const want = expectedSeedState(arm, fixture.axis)
+  const set = readDecisionSet(fixture)
+  const want = expectedSeedState(arm, fixture.axis, set.length)
   const problems = []
   const where = `${fixture.id}/${arm}`
 
@@ -601,7 +748,7 @@ export function assertSeed({ arm, fixture, sandbox, mnemaBin }) {
   }
   if (want.decisionsFile && hasDecisionsFile) {
     const onDisk = readFileSync(join(sandbox.repo, DECISIONS_FILE), 'utf8')
-    if (onDisk !== readFileSync(fixture.decisionPath, 'utf8')) {
+    if (onDisk !== instructionsText(fixture)) {
       problems.push(`${DECISIONS_FILE} is not the decision verbatim`)
     }
     const tracked = spawnSync('git', ['ls-files', DECISIONS_FILE], {
@@ -631,9 +778,16 @@ export function assertSeed({ arm, fixture, sandbox, mnemaBin }) {
 
   const memoryFiles = readdirSync(sandbox.memory)
   if (want.hostMemory) {
-    const expectFiles = [MEMORY_INDEX, `${slugFor(readDecision(fixture).title)}.md`].sort()
+    const expected = hostMemoryFiles(set)
+    const expectFiles = expected.map((file) => file.name).sort()
     if (memoryFiles.slice().sort().join(',') !== expectFiles.join(',')) {
       problems.push(`the host memory holds [${memoryFiles}], expected [${expectFiles}]`)
+    } else {
+      for (const file of expected) {
+        if (readFileSync(join(sandbox.memory, file.name), 'utf8') !== file.content) {
+          problems.push(`the host memory file ${file.name} is not the one this arm writes`)
+        }
+      }
     }
   } else if (memoryFiles.length > 0) {
     problems.push(`the host memory directory is not empty: [${memoryFiles}]`)
@@ -649,13 +803,17 @@ export function assertSeed({ arm, fixture, sandbox, mnemaBin }) {
       problems.push(`the record holds ${index.total} entries, expected ${want.mnemaRecords}`)
     }
     if (want.mnemaRecords > 0) {
-      const hit = index.hits[0]
-      const decision = readDecision(fixture)
-      if (hit?.title !== decision.title) {
-        problems.push(`the record holds "${hit?.title}", expected "${decision.title}"`)
-      }
-      if (hit?.state !== 'accepted') {
-        problems.push(`the decision is "${hit?.state}", expected "accepted"`)
+      // Every decision of the history, each in the state the history gives it: in force, or
+      // replaced. A replacement that did not take would hand the opening document both sides of
+      // the history, which is the difference the round measures.
+      for (const entry of set) {
+        const hit = index.hits.find((h) => h.title === entry.title)
+        const state = entry.current ? 'accepted' : 'superseded'
+        if (!hit) {
+          problems.push(`the record holds no "${entry.title}"`)
+        } else if (hit.state !== state) {
+          problems.push(`the decision "${entry.title}" is "${hit.state}", expected "${state}"`)
+        }
       }
     }
     // THE ADDRESS, checked in both directions, because it is the dimension that
@@ -664,13 +822,24 @@ export function assertSeed({ arm, fixture, sandbox, mnemaBin }) {
     // ABSENCE — the same reason `base` is checked for three absences: an absence
     // nobody asserts is the one that quietly stops being true, and an address that
     // leaked into `mnema` would give the two arms two differences instead of one.
-    const rules = mnemaRules(sandbox, mnemaBin)
+    const touched = touchedPaths(fixture)[0] ?? GOVERNS_ADDRESS
+    const rules = mnemaRules(sandbox, mnemaBin, touched)
     if (rules.counts?.governing !== want.mnemaAddresses) {
       problems.push(
         `${rules.counts?.governing} rule(s) govern the repository root, expected ${want.mnemaAddresses}`,
       )
     }
-    if (want.mnemaAddresses > 0) {
+    if (want.mnemaAddresses > 0 && fixture.shape === 'set') {
+      // At the path the ticket writes: exactly the decisions whose address covers it, by the
+      // product's own reading, each in its state. The ones addressed elsewhere are the ones the
+      // channel must NOT hand over at that write — the selection S4 measures.
+      const covering = set.filter((entry) => addressCovers(entry.governs, touched))
+      const got = (rules.rules ?? []).map((r) => `${r.name}:${r.state}`).sort()
+      const expected = covering.map((e) => `${e.title}:${e.current ? 'accepted' : 'superseded'}`).sort()
+      if (got.join('\n') !== expected.join('\n')) {
+        problems.push(`the rules at ${touched} are [${got}], expected [${expected}]`)
+      }
+    } else if (want.mnemaAddresses > 0) {
       const addressed = rules.rules?.[0]
       if (addressed?.address !== GOVERNS_ADDRESS) {
         problems.push(`the address is "${addressed?.address}", expected "${GOVERNS_ADDRESS}"`)
@@ -711,7 +880,12 @@ export function assertSeed({ arm, fixture, sandbox, mnemaBin }) {
         }
       }
       const off = positions.channels.filter((entry) => entry.endsWith(':off')).map((entry) => entry.slice(0, entry.lastIndexOf(':'))).sort()
-      const wantOff = [...want.switchedOff].sort()
+      const wantOff = offAtSeed(arm)
+      for (const channel of want.switchedOn) {
+        if (!positions.channels.includes(`${channel}:on`)) {
+          problems.push(`this arm switches "${channel}" on and the product prints [${positions.channels}]`)
+        }
+      }
       if (off.join(',') !== wantOff.join(',')) {
         problems.push(`the channels switched off are [${off}], expected [${wantOff}]`)
       }
@@ -728,8 +902,30 @@ export function assertSeed({ arm, fixture, sandbox, mnemaBin }) {
  * Its own function so that "which arms are compared" is a fact a test can enumerate from the
  * seed table (`expectedSeedState`) instead of a list inside a check: an arm that holds the
  * decision as text and is missing from here is an arm whose knowledge nobody compared.
+ *
+ * A TASK THAT HOLDS A HISTORY is compared decision by decision, in order, each arm's text built by
+ * the same functions the seed writes with, and with the one line that says what a decision
+ * replaced taken out first — it is the link, written as text, and it is compared apart, as a link
+ * (`replacementsByArm`).
  */
 export function knowledgeShapes(fixture) {
+  if (fixture.shape === 'set') {
+    const set = readDecisionSet(fixture)
+    const blocks = set.map((entry) => instructionBlock(set, entry))
+    const memory = hostMemoryFiles(set).filter((file) => file.name !== MEMORY_INDEX)
+    // Each decision with its own title marker taken off, as `canonicalKnowledge` takes off the one
+    // a single decision opens with: the packaging of a heading, not knowledge.
+    const byDecision = (texts) => texts.map((text) => withoutReplacementLine(text).replace(/^#\s+/, '')).join('\n\n')
+    return {
+      prosa: byDecision(blocks),
+      [INSTRUCTIONS_ARM]: byDecision(blocks),
+      host: byDecision(set.map((entry, i) => `${entry.title}\n\n${memory[i].content.replace(/^---\n[\s\S]*?\n---\n/, '')}`)),
+      mnema: byDecision(set.map((entry) => {
+        const fields = mnemaFields(entry)
+        return `${fields.title}\n\n${fields.rationale}\n\n${fields.alternatives}`
+      })),
+    }
+  }
   const decision = readDecision(fixture)
   const fields = mnemaFields(decision)
   // Each arm as the agent would meet it, with the title back in front of the
@@ -744,6 +940,38 @@ export function knowledgeShapes(fixture) {
   }
 }
 
+/** A decision's text with the line that says what it replaced taken out. */
+function withoutReplacementLine(text) {
+  return text
+    .split('\n')
+    .filter((line) => !line.startsWith(SUPERSEDES_LABEL))
+    .join('\n')
+}
+
+/**
+ * Which decision each arm says replaced which, as `new <- old` title pairs, per arm that holds the
+ * history as text, plus the record's — read off the same bytes the seed writes. The record's pairs
+ * are the replacements the seed performs; that the product then holds them is `assertSeed`'s
+ * question, asked of the cell.
+ */
+export function replacementsByArm(fixture) {
+  const set = readDecisionSet(fixture)
+  const fromText = (texts) =>
+    texts.flatMap((text, i) =>
+      text
+        .split('\n')
+        .filter((line) => line.startsWith(SUPERSEDES_LABEL))
+        .map((line) => `${set[i].title} <- ${line.slice(SUPERSEDES_LABEL.length).trim()}`),
+    )
+  const memory = hostMemoryFiles(set).filter((file) => file.name !== MEMORY_INDEX)
+  return {
+    prosa: fromText(set.map((entry) => instructionBlock(set, entry))),
+    [INSTRUCTIONS_ARM]: fromText(set.map((entry) => instructionBlock(set, entry))),
+    host: fromText(memory.map((file) => file.content)),
+    mnema: set.filter((e) => e.supersedes).map((e) => `${e.title} <- ${set.find((o) => o.key === e.supersedes).title}`),
+  }
+}
+
 /**
  * The four arms that hold the decision as text must carry the SAME knowledge — asserted, not assumed.
  *
@@ -753,7 +981,6 @@ export function knowledgeShapes(fixture) {
  */
 export function assertKnowledgeParity(fixture) {
   if (!fixture.hasDecision) return true
-  const decision = readDecision(fixture)
   const shapes = knowledgeShapes(fixture)
   const canonical = Object.entries(shapes).map(([arm, text]) => [arm, canonicalKnowledge(text)])
   const [[refArm, refText], ...rest] = canonical
@@ -768,9 +995,29 @@ export function assertKnowledgeParity(fixture) {
 
   // The index line is a pointer, not content: its hook must be a prefix of the
   // statement, or the host arm is handed a sentence the others never see.
-  const hook = indexHook(decision.statement).replace(/…$/, '')
-  if (!decision.statement.replace(/\s+/g, ' ').startsWith(hook)) {
-    throw new Error(`${fixture.id}: the MEMORY.md hook is not a prefix of the statement`)
+  for (const entry of readDecisionSet(fixture)) {
+    const hook = indexHook(entry.statement).replace(/…$/, '')
+    if (!entry.statement.replace(/\s+/g, ' ').startsWith(hook)) {
+      throw new Error(`${fixture.id}: the MEMORY.md hook is not a prefix of the statement`)
+    }
+  }
+
+  if (fixture.shape === 'set') {
+    const set = readDecisionSet(fixture)
+    const slugs = set.map((entry) => slugFor(entry.title))
+    if (new Set(slugs).size !== slugs.length) {
+      throw new Error(`${fixture.id}: two decisions would share one memory file name`)
+    }
+    const pairs = Object.entries(replacementsByArm(fixture)).map(([arm, list]) => [arm, list.join(' | ')])
+    const [[refPairsArm, refPairs], ...others] = pairs
+    for (const [arm, list] of others) {
+      if (list !== refPairs) {
+        throw new Error(
+          `${fixture.id}: the ${arm} arm and the ${refPairsArm} arm do not say the same decision replaced the same one\n` +
+            `  ${refPairsArm}: ${refPairs}\n  ${arm}: ${list}`,
+        )
+      }
+    }
   }
   return true
 }

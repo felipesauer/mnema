@@ -60,7 +60,7 @@ import { servesUnasked } from './seed.mjs'
 // `output_format` says how the capture was taken, because `null` in the interaction columns means
 // "this capture could not know" and `0` means "it knew and nothing happened" — the two are never
 // merged, and the format is what tells a reader which of them a `null` is.
-export const RESULT_SCHEMA = 'mnema-bench/cell/9'
+export const RESULT_SCHEMA = 'mnema-bench/cell/11'
 
 /**
  * What a surface-arm cell run on ROUND 1's tasks is, carried in the DATA and not only in
@@ -178,9 +178,11 @@ export function resultLine(fields) {
     cliVersion,
     mnemaVersion,
     verdict = null,
+    quality = null,
     exit = null,
     status,
     error = null,
+    failure = null,
     rulerDetail = null,
     brokenDetail = null,
     seedOk,
@@ -231,7 +233,16 @@ export function resultLine(fields) {
     exit,
     status,
     error,
+    // Schema 11: WHY a cell that reached no verdict failed, when the cause is the infrastructure —
+    // one of `INFRASTRUCTURE_FAILURES` — and `null` for everything else, a result included. It is
+    // what `--resume` reads to decide whether a cell goes back into the plan; see `run.mjs`.
+    failure,
     ruler_detail: rulerDetail,
+    // Schema 10: the task's hidden behaviour tests, beside the verdict. `null` for a task that has
+    // none (the first shape) and for a script that did not run — never zero for either.
+    quality_passed: quality?.passed ?? null,
+    quality_total: quality?.total ?? null,
+    quality_detail: quality?.detail ?? null,
     // The discriminant's OWN sentence when it refused the code — first line, as
     // printed. `null` on every cell whose code RAN, so the field says which of two
     // things happened: there was nothing to report, or the reason existed and was
@@ -354,4 +365,35 @@ export function missingFrom(result) {
 export function appendResult(path, line) {
   mkdirSync(dirname(path), { recursive: true })
   appendFileSync(path, `${JSON.stringify(line)}\n`)
+}
+
+/**
+ * The failures that are the INFRASTRUCTURE's and not the cell's — the only ones a cell is ever run
+ * again for. A cell that reached a verdict, whichever (`BROKEN` included), is a result and is never
+ * run again; a seed, a configuration or a discriminant that broke is the bench's defect and counts
+ * as an error, not as a reason to spend again.
+ *
+ *   quota            the vendor refused for a limit (HTTP 429, a session or usage limit)
+ *   network          the vendor or the way to it failed (HTTP 5xx, a refused or reset connection)
+ *   cli-died         the agent CLI could not run, or ended before the model said anything
+ *   harness-timeout  the harness killed the CLI at its own ceiling
+ */
+export const INFRASTRUCTURE_FAILURES = ['quota', 'network', 'cli-died', 'harness-timeout']
+
+/** The failures that are waiting and not a result: run again with no ceiling on how many times. */
+export const UNCAPPED_FAILURES = ['quota']
+
+const QUOTA_TEXT = /\b(429|rate limit|session limit|usage limit|quota)\b/i
+const NETWORK_TEXT = /\b(ECONNREFUSED|ECONNRESET|ETIMEDOUT|ENOTFOUND|EAI_AGAIN|fetch failed|network|socket hang up|overloaded)\b/i
+
+/**
+ * Which infrastructure failure a vendor's own result message reports, or `null` when it reports
+ * none of them — read from its HTTP status first and its text second.
+ */
+export function vendorFailure(result) {
+  const status = result?.api_error_status
+  const text = String(result?.result ?? '')
+  if (status === 429 || QUOTA_TEXT.test(text)) return 'quota'
+  if ((typeof status === 'number' && status >= 500) || NETWORK_TEXT.test(text)) return 'network'
+  return null
 }

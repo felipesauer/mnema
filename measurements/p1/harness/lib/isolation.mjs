@@ -8,7 +8,7 @@
 // declaring it. In the case that nearly falsified `ponytail`, a SessionStart
 // hook fired in every arm and the baseline was silently running the treatment.
 //
-// So: the command line below is IDENTICAL in all seven arms. The only thing that
+// So: the command line below is IDENTICAL in all eight arms. The only thing that
 // differs is the CONTENT of the two files it points at.
 //
 // UNTIL 2026-08-18 THIS SAID the settings file was identical too, and the fifth arm
@@ -71,7 +71,7 @@ export const OUTPUT_FORMATS = ['json', 'stream-json']
 export const OUTPUT_FORMAT_DEFAULT = 'json'
 
 /**
- * The `NO_RUN` equivalent — identical in all seven arms.
+ * The `NO_RUN` equivalent — identical in all eight arms.
  *
  * It says how to work, never what to consult. A sentence about memory, records
  * or decisions here would nudge one arm's mechanism and quietly become the
@@ -315,7 +315,7 @@ export const ISOLATION_CHECKLIST = [
     '--mcp-config <cell>/mcp.json',
     'the per-cell file `--strict-mcp-config` reduces the world to. It is the ONE thing that ' +
       'differs between the arms without a record and the arms with one, and the command line is ' +
-      'identical in all seven precisely so that this is where the difference has to be',
+      'identical in all eight precisely so that this is where the difference has to be',
   ],
   [
     '--output-format json',
@@ -426,6 +426,16 @@ export const ISOLATION_CHECKLIST = [
       'tree. THE COST, stated: in this arm the document tells the model the addressed rules arrive ' +
       'on their own and nothing arrives. It is the same sentence mnema+ reads, in the same position, ' +
       'so it is common to both sides of the subtraction — which is what a controlled variable is',
+  ],
+  [
+    'a channel switched ON in the cell’s own record',
+    'the mnema-gate arm only, and it IS that arm: `mnema switch on edit-first-write-gate --scope ' +
+      'private`, the mirror of mnema-doc’s switch and private for the same reason, so the opening ' +
+      'document is the one mnema+ hands over. With it on, the first write of a session to a file a ' +
+      'rule addresses does not happen and the rules come back as its reason; the same write repeated ' +
+      'goes through. A `refuses-a-write` address was measured as the other route and not taken: it ' +
+      'refuses every write to the file, the repeat included, so the ticket could not be done with the ' +
+      'tools the hook covers',
   ],
   [
     'a cell-owned mnema in front of PATH',

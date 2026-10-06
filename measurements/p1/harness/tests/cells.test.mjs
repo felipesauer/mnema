@@ -20,7 +20,7 @@ describe('the definition', () => {
     ])
     assert.deepEqual(counted.get('x', 't'), { conforms: 2, scorable: 3, broken: 1, ok: 4 })
     assert.equal(counted.rate('x', 't'), 2 / 3)
-    assert.deepEqual(SCORABLE_VERDICTS, ['CONFORMS', 'VIOLATES'])
+    assert.deepEqual(SCORABLE_VERDICTS, ['CONFORMS', 'VIOLATES', 'CONFORMS_CURRENT', 'FOLLOWS_OBSOLETE'])
   })
 
   test('a pair with no scorable cell has NO rate — not zero', () => {

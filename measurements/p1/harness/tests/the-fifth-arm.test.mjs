@@ -38,10 +38,11 @@ import {
   mnemaRules,
   servesUnasked,
   servesRecord,
+  BORN_OFF_CHANNELS,
 } from '../lib/seed.mjs'
 import { runCell, seededSandbox } from '../lib/cell.mjs'
 import { cellEnv, writeCellConfig } from '../lib/isolation.mjs'
-import { sandboxRoot } from '../lib/sandbox.mjs'
+import { removeInside, sandboxRoot } from '../lib/sandbox.mjs'
 import {
   EDIT_EVENT,
   HOOK_EVENT,
@@ -103,7 +104,7 @@ function workspace() {
 
 after(() => {
   for (const sandbox of opened) sandbox.destroy()
-  for (const dir of scratch) rmSync(dir, { recursive: true, force: true })
+  for (const dir of scratch) removeInside(sandboxRoot(), dir)
 })
 
 describe('8 · the fifth arm is the mnema arm plus the surface, and nothing else', () => {
@@ -117,8 +118,8 @@ describe('8 · the fifth arm is the mnema arm plus the surface, and nothing else
     // added a SECOND arm carrying the same surface. Both lists grew by one and the growth
     // is the delivery, so they are written out rather than derived from the predicates
     // they check — a list compared against `ARMS.filter(...)` would agree with any change.
-    assert.deepEqual(ARMS.filter(servesRecord), ['mnema', DOC_ARM, SURFACE_ARM])
-    assert.deepEqual(ARMS.filter(servesUnasked), [DOC_ARM, SURFACE_ARM])
+    assert.deepEqual(ARMS.filter(servesRecord), ['mnema', DOC_ARM, SURFACE_ARM, 'mnema-gate'])
+    assert.deepEqual(ARMS.filter(servesUnasked), [DOC_ARM, SURFACE_ARM, 'mnema-gate'])
   })
 
   test('and the name is the one the round PRE-REGISTERED, read from the frozen file', () => {
@@ -137,7 +138,8 @@ describe('8 · the fifth arm is the mnema arm plus the surface, and nothing else
       [],
       'every arm round 2 declares is one this harness seeds',
     )
-    assert.equal(ARMS.at(-1), SURFACE_ARM)
+    // The last arm until round 5, which added the eighth after it.
+    assert.equal(ARMS.at(-2), SURFACE_ARM)
   })
 
   test('its seeded state is the mnema arm’s, byte for byte', () => {
@@ -319,18 +321,18 @@ describe('8 · the fifth arm is the mnema arm plus the surface, and nothing else
   })
 
   test('every channel of the product is ON in a cell of this arm, and it is read not assumed', () => {
-    // G4 of the round's arms.md: the arm DECLARES the surface on. Nothing is born
-    // switched off, so today this is redundant — and the day a default moves is the day
-    // a cell goes quiet with nothing in the line to say why.
+    // G4 of the round's arms.md: the arm DECLARES the surface on. Every channel is where the
+    // product bore it — on, except the two it bears off (`BORN_OFF_CHANNELS`) — and the day a
+    // default moves is the day a cell goes quiet with nothing in the line to say why.
     const { sandbox } = cellOf(axisA, SURFACE_ARM)
     const positions = channelPositions(sandbox, MNEMA_BIN)
     assert.ok(positions.channels, positions.probe)
     assert.ok(positions.channels.includes(`${EDIT_PUSH_CHANNEL}:on`), `[${positions.channels}]`)
-    assert.equal(
-      positions.channels.every((entry) => entry.endsWith(':on')),
-      true,
-      `every channel is on: [${positions.channels}]`,
-    )
+    const born = (entry) => {
+      const name = entry.slice(0, entry.lastIndexOf(':'))
+      return entry.endsWith(BORN_OFF_CHANNELS.includes(name) ? ':off' : ':on')
+    }
+    assert.equal(positions.channels.every(born), true, `every channel is where it was born: [${positions.channels}]`)
   })
 
   test('the seed itself is unchanged — assertSeed clears the arm on both axes', () => {
@@ -498,8 +500,8 @@ describe('8c · the line says the surface ran, and says what these cells are', (
     // key is what says they are from before, and that only works if the number moves
     // — which is why the expectation here is a LITERAL and not the constant it is
     // read from: compared against itself it would agree with every future change.
-    assert.equal(RESULT_SCHEMA, 'mnema-bench/cell/9')
-    assert.equal(lineFor(SURFACE_ARM, { whole: true }).schema, 'mnema-bench/cell/9')
+    assert.equal(RESULT_SCHEMA, 'mnema-bench/cell/11')
+    assert.equal(lineFor(SURFACE_ARM, { whole: true }).schema, 'mnema-bench/cell/11')
   })
 
   test('a whole cell of this arm reports BOTH channels having run', () => {
@@ -696,7 +698,7 @@ describe('8c · the line says the surface ran, and says what these cells are', (
     assert.equal(line.status, 'harness_error')
     assert.equal(line.verdict, null)
     assert.match(line.error, /the document channel did not run/)
-    rmSync(sandboxRoot, { recursive: true, force: true })
+    removeInside(dirname(sandboxRoot), sandboxRoot)
   })
 
   test('a plugin that cannot be read is a harness error, never a verdict', () => {

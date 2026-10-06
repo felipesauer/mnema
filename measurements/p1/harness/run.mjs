@@ -25,7 +25,7 @@ import { ISOLATION_CHECKLIST, AUTH_MODES } from './lib/isolation.mjs'
 import { cliDriftProblem, cliPinProblem } from './lib/pin.mjs'
 import { cloneBench, runSelftest } from './lib/selftest.mjs'
 import { claudeVersion, mnemaVersion, runCell } from './lib/cell.mjs'
-import { QUALIFICATIONS } from './lib/result.mjs'
+import { INFRASTRUCTURE_FAILURES, QUALIFICATIONS, UNCAPPED_FAILURES } from './lib/result.mjs'
 import {
   PREREG,
   REPO_ROOT,
@@ -35,7 +35,9 @@ import {
   cliVersionOf,
   modelOf,
   outputFormatOf,
+  planOf,
   readSplit,
+  replicaOf,
   refuseUnrunnableRound,
   roundArms,
   scenarioOf,
@@ -101,6 +103,7 @@ function parseArgv(argv) {
     maxBudgetUsd: null,
     round: DEFAULTS.round,
     resume: false,
+    runsGiven: false,
   }
   for (let i = 0; i < argv.length; i += 1) {
     const a = argv[i]
@@ -109,10 +112,11 @@ function parseArgv(argv) {
       case '--selftest': opts.mode = 'selftest'; break
       case '--pilot': opts.mode = 'pilot'; break
       case '--full': opts.mode = 'full'; break
+      case '--replica': opts.mode = 'replica'; break
       case '--sieve': opts.mode = 'sieve'; break
       case '--resume': opts.resume = true; break
       case '--cell': opts.mode = 'cell'; opts.cell = [next(), next(), Number(next())]; break
-      case '--runs': opts.runs = Number(next()); break
+      case '--runs': opts.runs = Number(next()); opts.runsGiven = true; break
       case '--round': opts.round = Number(next()); break
       case '--fixture': opts.fixture = next(); break
       case '--arm': opts.arm = next(); break
@@ -143,9 +147,12 @@ function usage() {
   --pilot                        the split's pilot task x the ROUND's arms x 1 run
   --sieve                        the ROUND's declared candidates x its sieve arm x its
                                  sieve runs, all three read from the frozen split
-  --full                         every fixture x the ROUND's arms x --runs
-                                 (this harness seeds ${ARMS.length}; a round declares
+  --full                         every fixture x the ROUND's arms x --runs, or, when the
+                                 ROUND's split declares a plan, that plan over its held-out
+                                 tasks (this harness seeds ${ARMS.length}; a round declares
                                  which of them it runs, and round 3 declares four)
+  --replica                      the ROUND's declared replica: its model, its families, its
+                                 arms and its runs, all read from the frozen split
   --cell <fixture> <arm> <run>   one cell
   --runs <n>                     repetitions per (fixture, arm)   [${DEFAULTS.runs}]
   --round <${ROUNDS.join('|')}>                  which round's tasks a spending mode runs
@@ -243,6 +250,25 @@ export function sievePlan(fixtures, sieve, arms) {
 }
 
 /**
+ * The cells a round's DECLARED plan names — each entry's families, arms and runs, over the round's
+ * held-out tasks — in the order of the entries.
+ *
+ * THE PLAN IS READ FROM THE SPLIT, never typed, for the reason the pilot and the sieve are: a round
+ * that measures its families with different numbers of runs, and one arm on two families only,
+ * cannot be said by one `--runs`, and a plan typed at the prompt is a plan nobody can check. A
+ * development task is never planned here; it is the pilot's.
+ */
+export function declaredPlan(fixtures, entries, { heldOut, scenarioOf }) {
+  const plan = []
+  for (const entry of entries) {
+    const chosen = fixtures.filter((f) => heldOut.includes(f.id) && entry.scenarios.includes(scenarioOf(f.id)))
+    if (chosen.length === 0) throw new Error(`a declared entry over [${entry.scenarios}] reaches no held-out task`)
+    plan.push(...cellPlan(chosen, entry.runs, entry.arms))
+  }
+  return plan
+}
+
+/**
  * The cells of `plan` a capture does not already hold, so a stage can spend across sittings.
  *
  * WHY THIS EXISTS, and it is not convenience. Round 4's sieve is 128 cells on one arm, and the
@@ -263,7 +289,15 @@ export function sievePlan(fixtures, sieve, arms) {
  */
 export function cellsNotYetRun(plan, resultsPath) {
   if (!existsSync(resultsPath)) return plan
+  // THE RE-RUN RULE, pre-registered for round 5 and the rule for every resume since: a cell goes
+  // back into the plan ONLY for a failure of the infrastructure that the capture classifies
+  // (`failure`, `lib/result.mjs`). A cell that reached a verdict — whichever, `BROKEN` included —
+  // is a result and never runs again; a failure that is not the infrastructure's (a seed, a
+  // discriminant) counts as an error and never runs again either. A quota refusal is waiting and
+  // goes back every time; any other infrastructure failure goes back ONCE, and after a second it
+  // counts as an error toward the round's ceiling. Every attempt stays in the capture.
   const done = new Set()
+  const capped = new Map()
   for (const line of readFileSync(resultsPath, 'utf8').split('\n')) {
     if (line.trim() === '') continue
     let row
@@ -272,9 +306,31 @@ export function cellsNotYetRun(plan, resultsPath) {
     } catch {
       throw new Error(`${resultsPath} holds a line that is not JSON: a capture cannot be resumed from`)
     }
-    if (row.status === 'ok') done.add(`${row.fixture}\u0000${row.arm}\u0000${row.run}`)
+    const key = `${row.fixture}\u0000${row.arm}\u0000${row.run}`
+    const infrastructure = row.status !== 'ok' && INFRASTRUCTURE_FAILURES.includes(row.failure)
+    if (row.status === 'ok') done.add(key)
+    else if (!infrastructure) done.add(key)
+    else if (!UNCAPPED_FAILURES.includes(row.failure)) {
+      capped.set(key, (capped.get(key) ?? 0) + 1)
+      if (capped.get(key) >= 2) done.add(key)
+    }
   }
   return plan.filter((c) => !done.has(`${c.fixture.id}\u0000${c.arm}\u0000${c.run}`))
+}
+
+/**
+ * Where a stage's capture lives. Named by the operator (`--out`, and a pre-registration names it
+ * for each phase), or dated by today when a stage starts fresh.
+ *
+ * A RESUME NAMES ITS CAPTURE OR DOES NOT RUN. Defaulted, a resume on the day after a stop would open
+ * a new dated directory and plan the WHOLE stage again — every cell already spent spent twice, and
+ * the first capture left as a second, partial copy of the same stage.
+ */
+export function captureDir({ outDir = null, mode, resume = false, today = new Date() }) {
+  if (resume && !outDir) {
+    throw new Error('--resume needs --out <the capture to resume>: without it a new capture would be opened and the stage spent again')
+  }
+  return outDir ?? join(PREREG.results, `${today.toISOString().slice(0, 10)}-${mode}`)
 }
 
 /**
@@ -365,6 +421,16 @@ async function main() {
     plan = pilotPlan(fixtures, split, arms)
   } else if (opts.mode === 'sieve') {
     plan = sievePlan(fixtures, sieveOf(preregOf(opts.round)), arms)
+  } else if (opts.mode === 'replica') {
+    const replica = replicaOf(preregOf(opts.round))
+    if (replica === null) throw new Error(`round ${opts.round} declares no replica, and a replica this file invents is not one`)
+    plan = declaredPlan(fixtures, replica.plan, { heldOut: split.held_out, scenarioOf: (id) => scenarioOf(preregOf(opts.round), id) })
+  } else if (planOf(preregOf(opts.round)) !== null) {
+    if (opts.runsGiven) throw new Error(`round ${opts.round} declares its plan, runs included: --runs would replace a frozen number`)
+    plan = declaredPlan(fixtures, planOf(preregOf(opts.round)), {
+      heldOut: split.held_out,
+      scenarioOf: (id) => scenarioOf(preregOf(opts.round), id),
+    })
   } else {
     plan = cellPlan(fixtures, opts.runs, arms)
   }
@@ -378,9 +444,11 @@ async function main() {
   // Results land in the COMMITTED tree by default. They used to land inside the
   // workbench, which git ignores — a protocol that asks for a result per cell
   // committed, writing where nothing can be committed from.
-  const stamp = new Date().toISOString().slice(0, 10)
-  const outDir = opts.outDir ?? join(PREREG.results, `${stamp}-${opts.mode}`)
+  const outDir = captureDir({ outDir: opts.outDir, mode: opts.mode, resume: opts.resume })
   const resultsPath = join(outDir, 'cells.jsonl')
+  if (!opts.resume && existsSync(resultsPath)) {
+    throw new Error(`${resultsPath} already holds a capture: resume it with --resume, or name another --out`)
+  }
 
   if (opts.resume) {
     const wanted = plan.length
@@ -394,7 +462,8 @@ async function main() {
 
   const prereg = preregOf(opts.round)
   const outputFormat = outputFormatOf(prereg)
-  const model = modelOf(prereg)
+  // The replica's cells run on the replica's model, and on no other; every other cell on the round's.
+  const model = opts.mode === 'replica' ? replicaOf(prereg).model : modelOf(prereg)
   console.log(`\n${plan.length} cells, model ${model}, output ${outputFormat}`)
   console.log(`results: ${resultsPath}`)
   if (plan.some((c) => servesUnasked(c.arm))) {

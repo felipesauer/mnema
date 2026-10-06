@@ -6,15 +6,15 @@
 
 import { test, describe, after } from 'node:test'
 import assert from 'node:assert/strict'
-import { chmodSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
+import { chmodSync, mkdtempSync, readFileSync, writeFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { carriesDecision, listFixtures } from '../lib/fixtures.mjs'
 import { claudeVersion, runCell } from '../lib/cell.mjs'
 import { MODEL, claudeArgv } from '../lib/isolation.mjs'
 import { cliDriftProblem, cliPinProblem } from '../lib/pin.mjs'
-import { ROUNDS, cliVersionOf, modelOf, preregOf } from '../lib/split.mjs'
+import { ROUNDS, cliVersionOf, modelOf, preregOf, readSplit } from '../lib/split.mjs'
 import { modelNote } from '../lib/result.mjs'
-import { sandboxRoot } from '../lib/sandbox.mjs'
+import { removeInside, sandboxRoot } from '../lib/sandbox.mjs'
 import { firstCliOfCapture, runPlan } from '../run.mjs'
 import { FIXTURES_DIR, HARNESS_DIR, MNEMA_BIN, vendorResult } from './helpers.mjs'
 
@@ -22,7 +22,7 @@ const axisA = listFixtures(FIXTURES_DIR).find((f) => carriesDecision(f.axis))
 const scratch = []
 
 after(() => {
-  for (const dir of scratch) rmSync(dir, { recursive: true, force: true })
+  for (const dir of scratch) removeInside(sandboxRoot(), dir)
 })
 
 function scratchDir() {
@@ -178,10 +178,16 @@ describe('the model is the pre-registration’s', () => {
   }
 
   test('a round that names none runs on the model rounds 1 to 4 ran on, and declares no CLI', () => {
-    for (const round of ROUNDS) {
+    for (const round of ROUNDS.filter((r) => r <= 4)) {
       assert.equal(modelOf(preregOf(round)), MODEL, `round ${round}`)
       assert.equal(cliVersionOf(preregOf(round)), null, `round ${round}`)
     }
+  })
+
+  test('round 5 names both, and a replica on a second model', () => {
+    assert.equal(modelOf(preregOf(5)), 'claude-haiku-4-5-20251001')
+    assert.equal(cliVersionOf(preregOf(5)), '2.1.281 (Claude Code)')
+    assert.equal(readSplit(preregOf(5).split).replica.model, 'claude-sonnet-5-5')
   })
 
   test('a round that names one runs on it; a model or CLI that is not a string is refused', () => {

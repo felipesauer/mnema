@@ -22,10 +22,10 @@
 
 import { test, describe, after } from 'node:test'
 import assert from 'node:assert/strict'
-import { cpSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs'
+import { cpSync, mkdtempSync, writeFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { runSelftest } from '../lib/selftest.mjs'
-import { sandboxRoot } from '../lib/sandbox.mjs'
+import { removeInside, sandboxRoot } from '../lib/sandbox.mjs'
 import {
   MNEMA_BIN,
   cloneFixtures,
@@ -58,7 +58,7 @@ function workspace() {
 }
 
 after(() => {
-  for (const dir of scratch) rmSync(dir, { recursive: true, force: true })
+  for (const dir of scratch) removeInside(sandboxRoot(), dir)
 })
 
 function failed(result) {

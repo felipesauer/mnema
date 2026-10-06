@@ -7,12 +7,13 @@
 // for money. A double that also scored, or also seeded, would leave the tests
 // green about a harness that does not exist.
 
-import { chmodSync, cpSync, existsSync, mkdirSync, readFileSync, readdirSync, writeFileSync } from 'node:fs'
+import { chmodSync, cpSync, existsSync, lstatSync, mkdirSync, readFileSync, readdirSync, realpathSync, writeFileSync } from 'node:fs'
 import { createHash } from 'node:crypto'
 import { dirname, join, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { REPO_ROOT } from '../lib/root.mjs'
 import { seededSandbox } from '../lib/cell.mjs'
+export { removeInside } from '../lib/sandbox.mjs'
 import { cellEnv, claudeArgv, writeCellConfig } from '../lib/isolation.mjs'
 import { mnemaRecords } from '../lib/seed.mjs'
 import { MCP_SERVER_NAME } from '../lib/mcplog.mjs'
@@ -381,14 +382,24 @@ process.stdin.on('end', () => {
  * shape by hand would be free to assemble one the harness never builds. The
  * calibrator is copied by content — round 2's is a symlink to round 1's, and
  * `cpSync` dereferences it — so the copy calibrates without the link.
+ *
+ * The tasks are copied by content too. `fixtures` may itself be a link (a workbench
+ * that keeps the tasks elsewhere), and `cpSync` copies a link AS a link unless told
+ * otherwise: the "copy" is then the original, and a test that deletes a task from it
+ * deletes the real one. The source is resolved, the copy dereferences, and a result
+ * that is still a link is refused.
  */
 export function cloneFixtures(destDir, round = 1) {
   const bench = benchOf(round)
-  cpSync(bench.fixturesDir, join(destDir, 'fixtures'), {
+  cpSync(realpathSync(bench.fixturesDir), join(destDir, 'fixtures'), {
     recursive: true,
+    dereference: true,
     filter: (src) => !src.includes('__pycache__'),
   })
-  cpSync(bench.selftestScript, join(destDir, 'selftest.sh'))
+  cpSync(bench.selftestScript, join(destDir, 'selftest.sh'), { dereference: true })
+  if (lstatSync(join(destDir, 'fixtures')).isSymbolicLink()) {
+    throw new Error(`the clone of ${bench.fixturesDir} is a link, not a copy`)
+  }
   return {
     round,
     fixturesDir: join(destDir, 'fixtures'),

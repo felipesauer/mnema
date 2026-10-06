@@ -12,12 +12,13 @@
 
 import { test, describe, after } from 'node:test'
 import assert from 'node:assert/strict'
-import { cpSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
+import { cpSync, mkdtempSync, readFileSync, writeFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { listFixtures } from '../lib/fixtures.mjs'
 import { runVerify } from '../lib/verdict.mjs'
 import { runCell } from '../lib/cell.mjs'
-import { sandboxRoot } from '../lib/sandbox.mjs'
+import { vendorFailure } from '../lib/result.mjs'
+import { removeInside, sandboxRoot } from '../lib/sandbox.mjs'
 import { FIXTURES_DIR, MNEMA_BIN, fakeAgent, vendorResult } from './helpers.mjs'
 
 const fixtures = listFixtures(FIXTURES_DIR)
@@ -31,7 +32,7 @@ function workspace() {
 }
 
 after(() => {
-  for (const dir of scratch) rmSync(dir, { recursive: true, force: true })
+  for (const dir of scratch) removeInside(sandboxRoot(), dir)
 })
 
 function cellWith(agentOptions, { arm = 'base' } = {}) {
@@ -224,6 +225,17 @@ describe('5b · a broken harness is never an agent that disobeyed', () => {
     assert.match(line.error, /HTTP 429/)
     assert.match(line.error, /terminal_reason api_error/)
     assert.match(line.error, /session limit/)
+    // And the capture says WHY, which is what `--resume` reads: a quota refusal goes back.
+    assert.equal(line.failure, 'quota')
+  })
+
+  test('the infrastructure failure a vendor message reports is read from its status, then its text', () => {
+    assert.equal(vendorFailure({ api_error_status: 429, result: '' }), 'quota')
+    assert.equal(vendorFailure({ result: 'You have hit your usage limit' }), 'quota')
+    assert.equal(vendorFailure({ api_error_status: 529, result: 'Overloaded' }), 'network')
+    assert.equal(vendorFailure({ result: 'fetch failed: ECONNRESET' }), 'network')
+    assert.equal(vendorFailure({ api_error_status: 400, result: 'prompt is too long' }), null)
+    assert.equal(vendorFailure(null), null)
   })
 
   test('but a TRUNCATED session is an error the CLI means differently, and it is still scored', () => {

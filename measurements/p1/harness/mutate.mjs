@@ -12,7 +12,9 @@
 //      cannot be parsed is RULER BROKEN, never zero;
 //   3. it restores the exact bytes it saved, whether or not the run succeeded.
 //
-// FORTY-EIGHT mutations, in thirteen families: the floor of the experiment (the arm that
+// SIXTY-THREE mutations: the forty-eight below in thirteen families, then fifteen against the guards
+// round 5 added (`r5a` to `r5o`), each putting back the defect its guard was written against. The
+// forty-eight are: the floor of the experiment (the arm that
 // should carry the decision stops carrying it, and the arm that should carry
 // nothing starts), the memory column, the mnema arm's channel, the surface arms'
 // document channel, their PER-EDIT channel, the AXIS that channel's rule
@@ -48,6 +50,10 @@ const SPLIT = join(HARNESS_DIR, 'lib/split.mjs')
 const CELL = join(HARNESS_DIR, 'lib/cell.mjs')
 const RUN = join(HARNESS_DIR, 'run.mjs')
 const SELFTEST = join(HARNESS_DIR, 'lib/selftest.mjs')
+const FIXTURES = join(HARNESS_DIR, 'lib/fixtures.mjs')
+const VERDICT = join(HARNESS_DIR, 'lib/verdict.mjs')
+const DELIVERED = join(HARNESS_DIR, 'lib/delivered.mjs')
+const ANALYSIS = join(HARNESS_DIR, '..', 'analysis.mjs')
 
 /**
  * THE MATRIX, EXPORTED. It was a module-level `const` with the driver loop
@@ -198,8 +204,8 @@ export const MUTATIONS = [
   {
     name: 's · an undelivered arm becomes a verdict again',
     file: CHANNEL,
-    from: 'export function surfaceProblem({ arm, axis, mechanism, diff, pushed = [], matchers = [] }) {\n  if (!servesUnasked(arm)) return null',
-    to: 'export function surfaceProblem({ arm, axis, mechanism, diff, pushed = [], matchers = [] }) {\n  return null',
+    from: 'export function surfaceProblem({ arm, axis, mechanism, diff, pushed = [], matchers = [], governsTouched = null }) {\n  if (!servesUnasked(arm)) return null',
+    to: 'export function surfaceProblem({ arm, axis, mechanism, diff, pushed = [], matchers = [], governsTouched = null }) {\n  return null',
     expect: 'a cell whose surface never ran is scored, and reads as "the surface did not help"',
   },
   {
@@ -349,8 +355,8 @@ export const MUTATIONS = [
   {
     name: 'z13 · the bench stops walking the newest pre-registered round',
     file: SPLIT,
-    from: 'export const ROUNDS = [1, 2, 3, 4]',
-    to: 'export const ROUNDS = [1, 2, 3]',
+    from: 'export const ROUNDS = [1, 2, 3, 4, 5]',
+    to: 'export const ROUNDS = [1, 2, 3, 4]',
     expect: 'a frozen round is a round nothing checks — exactly the state round 3 shipped in',
   },
   {
@@ -370,8 +376,8 @@ export const MUTATIONS = [
   {
     name: 'z16 · the preflight stops comparing the two arms’ documents',
     file: SELFTEST,
-    from: '        if (other !== reference) {',
-    to: '        if (false) {',
+    from: '      if (other !== reference) {',
+    to: '      if (false) {',
     expect: 'the switch could move the opening document and the round would subtract two channels',
   },
   // And the root, which is not an absence guard but a path every absolute path in
@@ -383,15 +389,17 @@ export const MUTATIONS = [
   {
     name: 'z22 · the resume plans a cell the capture already resolved',
     file: RUN,
-    from: "    if (row.status === 'ok') done.add(",
-    to: "    if (false) done.add(",
+    // Since the re-run rule a resolved cell is held back by two branches, so `if (false)` left the
+    // second one holding it and lit nothing: the defect is a resolved line that reaches NEITHER.
+    from: "    if (row.status === 'ok') done.add(key)",
+    to: "    if (row.status === 'ok') continue",
     expect: 'a resumed sieve re-spends every cell that already worked',
   },
   {
     name: 'z23 · the resume skips a cell the vendor refused, as though it were a result',
     file: RUN,
-    from: "    if (row.status === 'ok') done.add(",
-    to: '    if (true) done.add(',
+    from: '    else if (!infrastructure) done.add(key)',
+    to: '    else done.add(key)',
     expect: 'the cells a session limit produced are never run, and the sieve is short by exactly them',
   },
   // And the two below are THE VENDOR'S OWN VERDICT ON THE SESSION. They exist because a
@@ -445,6 +453,116 @@ export const MUTATIONS = [
     from: '  let current = resolve(from)',
     to: "  return resolve(from, '../../../../..')\n  let current = resolve(from)",
     expect: 'the root lands inside the working directory again, and every path built from it points at nothing',
+  },
+  // ---------------------------------------------------------------------------------------
+  // ROUND 5's GUARDS — each puts back the defect it was written against, and nothing else.
+  // Listed after the forty-eight, which keep their names and their order: a matrix whose
+  // first forty-eight are the old ones is a matrix whose old result can be compared.
+  // ---------------------------------------------------------------------------------------
+  {
+    name: 'r5a · the seed forgets the channels the product bears off',
+    file: SEED,
+    from: '  return [...new Set([...BORN_OFF_CHANNELS.filter((c) => !on.includes(c)), ...switchedOffChannels(arm)])].sort()',
+    to: '  return [...switchedOffChannels(arm)].sort()',
+    expect: 'every seed of an arm with a record reads two born-off channels as a switch the arm never made',
+  },
+  {
+    name: 'r5b · the program check is read as the hook’s first verb again',
+    file: HOOK,
+    from: '  const log = read.filter((call) => call.argv?.[0] !== IDENTIFY_FLAG)',
+    to: '  const log = read',
+    expect: 'every surface cell reads as a hook that never ran, because `--identify` comes before `brief`',
+  },
+  {
+    name: 'r5c · the opening documents are compared with the cell’s own identity in them',
+    file: HOOK,
+    from: "    .replace(/\\bmnid:[0-9a-f]{8}\\b/g, 'mnid:<A-FRESH-IDENTITY>')",
+    to: '',
+    expect: 'two surface arms never hand over the same document, because each cell signs with its own identity',
+  },
+  {
+    name: 'r5d · a history is seeded without its replacement',
+    file: SEED,
+    from: '      for (const entry of set) {\n        if (!entry.supersedes) continue',
+    to: '      for (const entry of []) {\n        if (!entry.supersedes) continue',
+    expect: 'the record holds the replaced decision as in force, and the opening document hands over both sides',
+  },
+  {
+    name: 'r5e · a history task is scored with three words',
+    file: VERDICT,
+    from: "  return fixture.verdicts === 'four' ? VERDICTS_FOUR : VERDICTS",
+    to: '  return VERDICTS',
+    expect: 'a cell that followed the replaced decision is a broken ruler instead of a finding',
+  },
+  {
+    name: 'r5f · the eighth arm stops switching the hold on',
+    file: SEED,
+    from: '  return arm === GATE_ARM ? [FIRST_WRITE_GATE_CHANNEL] : []',
+    to: '  return []',
+    expect: 'the exploratory arm is mnema+ under another name',
+  },
+  {
+    name: 'r5g · the hold’s refusal is not read as the channel speaking',
+    file: CHANNEL,
+    from: '    contexts.push(specific.additionalContext ?? specific.permissionDecisionReason ?? null)',
+    to: '    contexts.push(specific.additionalContext ?? null)',
+    expect: 'the preflight reads the held first write as a channel that cited nothing',
+  },
+  {
+    name: 'r5h · a write no decision governs is accused of a silent channel',
+    file: CHANNEL,
+    from: '      return governsTouched === false ? null : (',
+    to: '      return (',
+    expect: 'every surface cell of the negative control is thrown away as undelivered',
+  },
+  {
+    name: 'r5i · the surface arms are declared to hand over the replaced title',
+    file: DELIVERED,
+    from: "  [SURFACE_ARM]: { current: { title: 'full', statement: 'none', why: 'none', alternatives: 'none' }, superseded: all('none') },",
+    to: "  [SURFACE_ARM]: { current: { title: 'full', statement: 'none', why: 'none', alternatives: 'none' }, superseded: { title: 'full', statement: 'none', why: 'none', alternatives: 'none' } },",
+    expect: 'the declaration of the mechanism under test drifts from what the host hands over, and nothing notices',
+  },
+  {
+    name: 'r5j · the per-edit family is read over every cell, with or without the occasion',
+    file: ANALYSIS,
+    from: "  const has = (c) => typeof c.mcp_pushed === 'number' && c.mcp_pushed >= minPushed",
+    to: '  const has = () => true',
+    expect: 'a cell where the channel had no write to speak after is counted as the channel having no effect',
+  },
+  {
+    name: 'r5k · a history whose replacement points forward is read as one',
+    file: FIXTURES,
+    from: '    if (supersedes !== null && !keys.has(supersedes)) {',
+    to: '    if (false) {',
+    expect: 'a decision replaced by an earlier one is seeded, and the order of the history means nothing',
+  },
+  {
+    name: 'r5l · the occasion is pooled over the family again',
+    file: ANALYSIS,
+    from: '    const at = (opportunity[c.arm] ??= { kept: 0, of: 0, share: null })',
+    to: "    const at = (opportunity.family ??= { kept: 0, of: 0, share: null })",
+    expect: 'arms with no per-edit channel drag the share of the two compared arms below the floor',
+  },
+  {
+    name: 'r5m · a cell that failed for no reason of the infrastructure goes back into the plan',
+    file: RUN,
+    from: '    else if (!infrastructure) done.add(key)\n',
+    to: '',
+    expect: 'a broken ruler or a broken seed is spent again, and the capture chooses which attempt counts',
+  },
+  {
+    name: 'r5n · a quota refusal is capped like any other failure',
+    file: RUN,
+    from: '    else if (!UNCAPPED_FAILURES.includes(row.failure)) {',
+    to: '    else if (true) {',
+    expect: 'a cell the session limit cut twice is counted as an error instead of waited for',
+  },
+  {
+    name: 'r5o · a resume opens a new capture when nobody names one',
+    file: RUN,
+    from: '  if (resume && !outDir) {',
+    to: '  if (false) {',
+    expect: 'a stage resumed the next day spends every cell it already spent, into a second directory',
   },
 ]
 
@@ -529,10 +647,30 @@ export async function main() {
     })
   }
 
+  // `--slice k/n` runs the baseline and every n-th mutation from the k-th (0-based), so a matrix
+  // that takes hours can run in n copies of the tree at once. A slice is never a sample: the n
+  // slices together are the whole list, and each reports the names of the ones it ran.
+  const at = process.argv.indexOf('--slice')
+  const [k, n] = at === -1 ? [0, 1] : process.argv[at + 1].split('/').map(Number)
+  if (!(Number.isInteger(k) && Number.isInteger(n) && n >= 1 && k >= 0 && k < n)) {
+    throw new Error(`--slice wants k/n with 0 <= k < n, not ${process.argv[at + 1]}`)
+  }
+
   console.log('baseline')
   report(runTests(), { isMutation: false })
 
-  for (const mutation of MUTATIONS) {
+  // `--only id,id` runs the named ones — the id is the name before ` · ` — so that what a stopped
+  // slice did not reach can be handed to another copy without running the rest twice.
+  const onlyAt = process.argv.indexOf('--only')
+  const only = onlyAt === -1 ? null : process.argv[onlyAt + 1].split(',')
+  const idOf = (mutation) => mutation.name.split(' · ')[0]
+  if (only) {
+    const unknown = only.filter((id) => !MUTATIONS.some((m) => idOf(m) === id))
+    if (unknown.length) throw new Error(`--only names no mutation: ${unknown.join(', ')}`)
+  }
+  const chosen = MUTATIONS.filter((m, i) => (only ? only.includes(idOf(m)) : i % n === k))
+
+  for (const mutation of chosen) {
     // The one turn of the event loop this script gets. Without it the handlers above
     // are unreachable for the entire run — see the paragraph on the signal, and the
     // SIGTERM that was measured being swallowed.

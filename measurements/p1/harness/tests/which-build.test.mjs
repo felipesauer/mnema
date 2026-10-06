@@ -23,21 +23,21 @@
 
 import { test, describe, after } from 'node:test'
 import assert from 'node:assert/strict'
-import { appendFileSync, mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs'
+import { appendFileSync, mkdirSync, mkdtempSync, writeFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { builtProduct } from '../lib/build.mjs'
 import { runCell } from '../lib/cell.mjs'
 import { listFixtures } from '../lib/fixtures.mjs'
 import { RESULT_SCHEMA } from '../lib/result.mjs'
 import { ROOT_MARKER } from '../lib/root.mjs'
-import { sandboxRoot } from '../lib/sandbox.mjs'
+import { removeInside, sandboxRoot } from '../lib/sandbox.mjs'
 import { FIXTURES_DIR, MNEMA_BIN, fakeAgent } from './helpers.mjs'
 
 const fixture = listFixtures(FIXTURES_DIR).find((f) => f.id === 'a1-rounding')
 
 const scratch = []
 after(() => {
-  for (const dir of scratch) rmSync(dir, { recursive: true, force: true })
+  for (const dir of scratch) removeInside(sandboxRoot(), dir)
 })
 
 function workspace() {
@@ -191,7 +191,7 @@ describe('11 · the line says which build the cell executed', () => {
     // CLI's `subtype` and not its `is_error`, so no capture taken at 7 or earlier can be
     // audited for the vendor refusal that corrupted the sieve of 2026-08-24. The 492 cells
     // committed before it were checked for it by hand, out of `raw/`, and none carries it.
-    assert.equal(RESULT_SCHEMA, 'mnema-bench/cell/9')
+    assert.equal(RESULT_SCHEMA, 'mnema-bench/cell/11')
   })
 })
 

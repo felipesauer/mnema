@@ -3,14 +3,14 @@
 
 import { test, describe, after } from 'node:test'
 import assert from 'node:assert/strict'
-import { mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
+import { mkdtempSync, readFileSync, writeFileSync } from 'node:fs'
 import { dirname, join } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { carriesDecision, listFixtures } from '../lib/fixtures.mjs'
 import { runCell } from '../lib/cell.mjs'
 import { readCells, normalizeCell } from '../lib/cells.mjs'
 import { ROUNDS, SCENARIOS, armCodeOf, labelProblems, preregOf, readSplit, scenarioOf } from '../lib/split.mjs'
-import { sandboxRoot } from '../lib/sandbox.mjs'
+import { removeInside, sandboxRoot } from '../lib/sandbox.mjs'
 import { FIXTURES_DIR, HARNESS_DIR, MNEMA_BIN, fakeAgent } from './helpers.mjs'
 
 const P1 = join(dirname(fileURLToPath(import.meta.url)), '..', '..')
@@ -18,7 +18,7 @@ const axisA = listFixtures(FIXTURES_DIR).find((f) => carriesDecision(f.axis))
 const scratch = []
 
 after(() => {
-  for (const dir of scratch) rmSync(dir, { recursive: true, force: true })
+  for (const dir of scratch) removeInside(sandboxRoot(), dir)
 })
 
 function lineWith(extra) {
@@ -82,12 +82,21 @@ describe('declared in the split', () => {
   }
 
   test('rounds 1 to 4 declare none, are not touched, and have no label problem', () => {
-    for (const round of ROUNDS) {
+    for (const round of ROUNDS.filter((r) => r <= 4)) {
       const prereg = preregOf(round)
       assert.equal(scenarioOf(prereg, 'any-task'), null, `round ${round}`)
       assert.equal(armCodeOf(prereg, 'base'), null, `round ${round}`)
       assert.deepEqual(labelProblems(readSplit(prereg.split)), [], `round ${round}`)
     }
+  })
+
+  test('round 5 declares them, for every task it holds and every arm it runs, with no problem', () => {
+    const prereg = preregOf(5)
+    const declared = readSplit(prereg.split)
+    assert.deepEqual(labelProblems(declared), [])
+    assert.equal(armCodeOf(prereg, 'claude-md'), 'E2')
+    assert.equal(scenarioOf(prereg, declared.pilot), 'S3b')
+    for (const id of [...declared.development, ...declared.held_out]) assert.ok(scenarioOf(prereg, id), id)
   })
 
   test('a round that declares them is read by task and by arm', () => {

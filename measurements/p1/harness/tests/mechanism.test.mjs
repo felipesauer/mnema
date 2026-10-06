@@ -22,11 +22,11 @@
 
 import { test, describe, after } from 'node:test'
 import assert from 'node:assert/strict'
-import { mkdtempSync, rmSync, writeFileSync } from 'node:fs'
+import { mkdtempSync, writeFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { listFixtures, readDecision } from '../lib/fixtures.mjs'
 import { runCell } from '../lib/cell.mjs'
-import { sandboxRoot } from '../lib/sandbox.mjs'
+import { removeInside, sandboxRoot } from '../lib/sandbox.mjs'
 import { atimeProbe, mechanismBetween } from '../lib/mechanism.mjs'
 import { ARMS, MEMORY_INDEX, servesRecord, servesUnasked, slugFor } from '../lib/seed.mjs'
 import { FIXTURES_DIR, MNEMA_BIN, fakeAgent } from './helpers.mjs'
@@ -45,7 +45,7 @@ function workspace() {
 }
 
 after(() => {
-  for (const dir of scratch) rmSync(dir, { recursive: true, force: true })
+  for (const dir of scratch) removeInside(sandboxRoot(), dir)
 })
 
 /**

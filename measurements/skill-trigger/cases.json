@@ -1,0 +1,70 @@
+{
+  "frozen_at": "2026-10-05",
+  "skill": "recording-decisions",
+  "model": "claude-haiku-4-5-20251001",
+  "cli_version": "2.1.281 (Claude Code)",
+  "runs": 4,
+  "arms": ["with-skill", "without-skill"],
+  "cases": [
+    {
+      "id": "t1-library-chosen",
+      "expect": "trigger",
+      "prompt": "We compared requests and httpx for the HTTP client and settled on httpx, because the service is moving to async. Switch app/client.py to httpx."
+    },
+    {
+      "id": "t2-option-turned-down",
+      "expect": "trigger",
+      "prompt": "We looked at Redis for the cache and turned it down: operations cannot run another server. Make app/cache.py an in-process LRU of 256 entries instead."
+    },
+    {
+      "id": "t3-told-how",
+      "expect": "trigger",
+      "prompt": "From now on every timestamp this project writes is UTC, ISO 8601, ending in Z. Update app/stamps.py to do that."
+    },
+    {
+      "id": "t4-correction",
+      "expect": "trigger",
+      "prompt": "No - we never retry a failed payment here; it goes to the review queue instead. Change app/payments.py so a failed charge is not retried."
+    },
+    {
+      "id": "t5-tradeoff-settled",
+      "expect": "trigger",
+      "prompt": "We agreed to keep the monolith and not split billing into its own service this year, because the team is too small to run two deployments. Make sure the next session knows that."
+    },
+    {
+      "id": "t6-convention",
+      "expect": "trigger",
+      "prompt": "Let's settle it: functions in app/parse.py return None for input they cannot read instead of raising. Change parse_amount accordingly."
+    },
+    {
+      "id": "n1-typo",
+      "expect": "no-trigger",
+      "prompt": "Fix the spelling of 'recieve' in README.md."
+    },
+    {
+      "id": "n2-test",
+      "expect": "no-trigger",
+      "prompt": "Add a unit test for add() in app/math_utils.py, in tests/test_math_utils.py."
+    },
+    {
+      "id": "n3-question",
+      "expect": "no-trigger",
+      "prompt": "What does parse_amount in app/parse.py do with an empty string? Just tell me; do not change anything."
+    },
+    {
+      "id": "n4-rename",
+      "expect": "no-trigger",
+      "prompt": "Rename the variable tmp to total in app/math_utils.py."
+    },
+    {
+      "id": "n5-explain",
+      "expect": "no-trigger",
+      "prompt": "Explain in two sentences what app/cache.py does."
+    },
+    {
+      "id": "n6-imports",
+      "expect": "no-trigger",
+      "prompt": "Add a module docstring to app/client.py that says it fetches JSON over HTTP."
+    }
+  ]
+}

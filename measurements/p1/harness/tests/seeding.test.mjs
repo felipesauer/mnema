@@ -132,6 +132,7 @@ describe('2 · the base arm sees nothing — the floor of the experiment', () =>
         mnemaRecords: 0,
         mnemaAddresses: 0,
         switchedOff: [],
+        switchedOn: [],
       })
       assert.equal(existsSync(join(sandbox.repo, DECISIONS_FILE)), false)
       assert.equal(existsSync(join(sandbox.repo, '.mnema')), false)
@@ -149,7 +150,8 @@ describe('2 · the base arm sees nothing — the floor of the experiment', () =>
     assert.equal(found.stdout.trim(), '', `the floor arm can read: ${found.stdout}`)
   })
 
-  test('every arm is checked on all SEVEN dimensions, not only on what it adds', () => {
+  test('every arm is checked on all EIGHT dimensions, not only on what it adds', () => {
+    // EIGHT from 2026-10-05, when `mnema-gate` gained a channel switched ON — the sixth's mirror.
     // The absences ARE the assertion for base; a checker that only verified what
     // an arm writes would leave the floor unguarded. It said FOUR until 2026-08-19,
     // when the fifth arm gained an address, and SIX from 2026-08-20, when `mnema-doc`
@@ -168,6 +170,7 @@ describe('2 · the base arm sees nothing — the floor of the experiment', () =>
         'mnemaRecords',
         'mnemaTree',
         'switchedOff',
+        'switchedOn',
       ])
     }
     // AND IT IS NOT VACUOUS ON THE NEW ONE. A dimension whose value is the same in every

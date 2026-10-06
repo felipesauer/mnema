@@ -59,7 +59,7 @@ import { spawnSync } from 'node:child_process'
 import { join } from 'node:path'
 import { REPO_ROOT } from './root.mjs'
 import { sandboxEnv } from './sandbox.mjs'
-import { carriesDecision, readDecision } from './fixtures.mjs'
+import { carriesDecision, readDecisionSet } from './fixtures.mjs'
 
 /** The host event the plugin's document handler answers, and the key it is declared under. */
 export const HOOK_EVENT = 'SessionStart'
@@ -87,6 +87,8 @@ export const SHIM_LOG = 'mnema-calls.jsonl'
 
 /** The verb the handler runs. The column reports on this one by name. */
 export const HANDLER_VERB = 'brief'
+/** The question the product's handler asks the `mnema` on the PATH before it runs a verb. */
+export const IDENTIFY_FLAG = '--identify'
 
 export const HOOK_NO_HOOK =
   'this arm declares no SessionStart hook: there was nothing to inject, and the column is null'
@@ -470,9 +472,12 @@ export function injectionProblems({ sandbox, fixture, settingsPath, env }) {
   }
 
   if (carriesDecision(fixture.axis)) {
-    const { title } = readDecision(fixture)
-    if (!document.includes(title)) {
-      problems.push(`the document does not name the seeded decision "${title}"`)
+    // Every decision IN FORCE has to be named. The ones a later decision replaced are not asked
+    // for here — whether they arrive is what the delivered-text check reads, in both directions.
+    for (const { title } of readDecisionSet(fixture).filter((entry) => entry.current)) {
+      if (!document.includes(title)) {
+        problems.push(`the document does not name the seeded decision "${title}"`)
+      }
     }
   }
   return { problems, document }
@@ -494,7 +499,11 @@ export function injectionProblems({ sandbox, fixture, settingsPath, env }) {
  */
 export function withoutFreshIds(text) {
   if (typeof text !== 'string') return null
-  return text.replace(/\b[0-9a-f]{8}-[0-9a-f]{4}-7[0-9a-f]{3}-[0-9a-f]{4}-[0-9a-f]{12}\b/g, '<A-FRESH-ID>')
+  return text
+    .replace(/\b[0-9a-f]{8}-[0-9a-f]{4}-7[0-9a-f]{3}-[0-9a-f]{4}-[0-9a-f]{12}\b/g, '<A-FRESH-ID>')
+    // The cell's signing identity, which the document now names beside who accepted each
+    // decision (`accepted by mnid:…`). Fresh per cell for the reason the ids are.
+    .replace(/\bmnid:[0-9a-f]{8}\b/g, 'mnid:<A-FRESH-IDENTITY>')
 }
 
 /** Every invocation the shim recorded, or `null` if there is no log to read. */
@@ -529,8 +538,13 @@ export function readShimLog(sandbox) {
  */
 export function hookCalls(sandbox) {
   const silent = { ran: null, calls: null, invocations: [] }
-  const log = readShimLog(sandbox)
-  if (log === null) return { ...silent, probe: HOOK_NO_SHIM }
+  const read = readShimLog(sandbox)
+  if (read === null) return { ...silent, probe: HOOK_NO_SHIM }
+  // The handler asks WHICH program `mnema` is before it runs a verb (`--identify`, in
+  // `plugin/hooks/hand-over.mjs`). That question is the handler checking its PATH, not a verb of
+  // the hook or of the agent, so it is passed over here: read as the first verb, it made every
+  // cell of both surface arms read as a hook that never ran.
+  const log = read.filter((call) => call.argv?.[0] !== IDENTIFY_FLAG)
   if (log.length === 0) return { ran: false, calls: 0, invocations: [], probe: HOOK_SILENT }
 
   const counted = new Map()

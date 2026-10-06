@@ -58,7 +58,7 @@ export const PREREG = {
  * is a round nothing checks. `tests/rounds.test.mjs` therefore asserts this list against
  * the pre-registrations that EXIST rather than against itself.
  */
-export const ROUNDS = [1, 2, 3, 4]
+export const ROUNDS = [1, 2, 3, 4, 5]
 
 /**
  * Where round `n`'s pre-registration lives, and the two files that fix it.
@@ -472,6 +472,82 @@ export function splitProblems({ fixtures, split = readSplit(), frozen = readDige
   }
   for (const id of frozen.keys()) {
     if (!onDisk.includes(id)) problems.push(`${id} has a frozen digest and is not on disk`)
+  }
+  return problems
+}
+
+/**
+ * The cells a round PLANS, when its pre-registration says them — `null` when it does not, and the
+ * round runs `--runs` over every task and every arm it declares, as rounds 1 to 4 did.
+ *
+ * WHY A ROUND MAY DECLARE THIS, and the first one that does is round 5: its families are measured
+ * with different numbers of runs (the comparison its primary hypotheses read gets eight, the
+ * controls four), and one of its arms is exploratory and runs on two families only. A single
+ * `--runs` typed at the prompt cannot say that, and a plan typed at the prompt is a plan nobody can
+ * check afterwards — the reason the pilot and the sieve are read from the split.
+ *
+ *   "plan": [ { "scenarios": ["S1", …], "arms": ["base", …], "runs": 4 }, … ]
+ *
+ * Over the HELD-OUT tasks only: the development side is the pilot's.
+ */
+export function planOf(prereg) {
+  const declared = readSplit(prereg.split).plan
+  return declared === undefined ? null : declared
+}
+
+/**
+ * The REPLICA a round declares — the same tasks on another model, a subset of the plan — or `null`.
+ *
+ *   "replica": { "model": "<model id>", "plan": [ { "scenarios": […], "arms": […], "runs": n } ] }
+ *
+ * Its cells are a capture of their own and carry the replica's model in every line; nothing else
+ * about a cell differs.
+ */
+export function replicaOf(prereg) {
+  const declared = readSplit(prereg.split).replica
+  return declared === undefined ? null : declared
+}
+
+/**
+ * Everything wrong with the plan and the replica a split declares, as sentences. Empty when it
+ * declares neither. A plan entry that names a family no task has, an arm the round does not run, or
+ * a number of runs that is not a whole positive number would reach `cellPlan` and spend a plan
+ * nobody declared — and a held-out task no entry reaches is a task frozen for nothing.
+ */
+export function planProblems(split) {
+  const problems = []
+  const arms = Array.isArray(split.arms) ? split.arms : null
+  const entriesOk = (entries, where) => {
+    if (!Array.isArray(entries) || entries.length === 0) {
+      problems.push(`${where} is not a list of entries`)
+      return false
+    }
+    for (const [i, entry] of entries.entries()) {
+      const at = `${where}[${i}]`
+      if (!Array.isArray(entry?.scenarios) || entry.scenarios.some((s) => !SCENARIOS.includes(s))) {
+        problems.push(`${at} names a family that is not one of ${SCENARIOS.join(', ')}`)
+      }
+      if (!Array.isArray(entry?.arms) || entry.arms.length === 0 || (arms && entry.arms.some((a) => !arms.includes(a)))) {
+        problems.push(`${at} names an arm the round does not run`)
+      }
+      if (!Number.isInteger(entry?.runs) || entry.runs < 1) problems.push(`${at} has a "runs" that is not a whole number of runs`)
+    }
+    return true
+  }
+  if (split.plan !== undefined) {
+    if (entriesOk(split.plan, '"plan"')) {
+      const families = new Set(split.plan.flatMap((e) => e.scenarios ?? []))
+      for (const id of split.held_out ?? []) {
+        const family = split.scenarios?.[id]
+        if (!family) problems.push(`"plan" is declared and ${id} has no scenario`)
+        else if (!families.has(family)) problems.push(`no entry of "plan" reaches ${id} (${family})`)
+      }
+    }
+  }
+  if (split.replica !== undefined) {
+    const replica = split.replica
+    if (typeof replica?.model !== 'string' || replica.model.trim() === '') problems.push('"replica" names no model')
+    entriesOk(replica?.plan, '"replica.plan"')
   }
   return problems
 }

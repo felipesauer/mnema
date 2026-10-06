@@ -63,10 +63,10 @@
 // nothing checks. Check 8b is the one that would have caught it, and it is here because
 // the list alone was not enough to make anybody look.
 
-import { cpSync, existsSync, readFileSync, readdirSync, writeFileSync } from 'node:fs'
+import { cpSync, existsSync, lstatSync, readFileSync, readdirSync, realpathSync, writeFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { spawnSync } from 'node:child_process'
-import { carriesDecision, listFixtures } from './fixtures.mjs'
+import { carriesDecision, listFixtures, readDecisionSet } from './fixtures.mjs'
 import {
   ARMS,
   assertKnowledgeParity,
@@ -78,7 +78,7 @@ import {
 } from './seed.mjs'
 import { handlerFiles, injectionProblems, productPluginDir, withoutFreshIds } from './hook.mjs'
 import { editPushProblems } from './channel.mjs'
-import { StandInNotReached, deliveredAtOpen, deliveredProblems } from './delivered.mjs'
+import { StandInNotReached, deliveredAtFirstWrite, deliveredAtOpen, firstWriteProblems } from './delivered.mjs'
 import { createSandbox, plantRepo, sandboxEnv } from './sandbox.mjs'
 import { mcpProbe } from './mcpcheck.mjs'
 import { mcpAsked } from './mcplog.mjs'
@@ -88,6 +88,7 @@ import {
   armsOf,
   crossRoundProblems,
   labelProblems,
+  planProblems,
   preregOf,
   readDigests,
   readSplit,
@@ -297,6 +298,7 @@ export async function runSelftest({
   // seeding a record is the slow part of this check, and the delivery is asked of exactly the
   // bytes the seed produced.
   const deliveries = []
+  const writes = []
   const undelivered = []
   let standInBroken = null
   {
@@ -311,10 +313,20 @@ export async function runSelftest({
           try {
             if (standInBroken) throw standInBroken
             const seen = await deliveredAtOpen({ sandbox, arm, fixture, mnemaBin, pluginDir, claudeBin })
-            for (const problem of deliveredProblems({ arm, axis: fixture.axis, delivered: seen.parts })) {
+            for (const problem of seen.problems) {
               undelivered.push(`${where(fixture)}/${arm}: ${problem}`)
             }
             deliveries.push(`${where(fixture)}/${arm}`)
+            // AND AT THE FIRST WRITE, for a task that holds a history and an arm that carries the
+            // surface — the only arms in which a write is an occasion to hand anything over, and the
+            // only check that can see the eighth arm at all, since it opens exactly as `mnema+` does.
+            if (fixture.shape === 'set' && servesUnasked(arm)) {
+              const atWrite = await deliveredAtFirstWrite({ sandbox, arm, fixture, mnemaBin, pluginDir, claudeBin })
+              for (const problem of firstWriteProblems({ arm, fixture, seen: atWrite })) {
+                undelivered.push(`${where(fixture)}/${arm}: ${problem}`)
+              }
+              writes.push(`${where(fixture)}/${arm}`)
+            }
           } catch (err) {
             // A host that never reaches the stand-in says the same about every cell after this one,
             // so the first such cell is reported and the rest are not run (the cost of asking a
@@ -373,7 +385,8 @@ export async function runSelftest({
       if (a.hits[0]?.id && b.hits.some((h) => h.id === a.hits[0].id)) {
         problems.push('the two cells share a record id')
       }
-      if (b.total !== 1) problems.push(`the second cell holds ${b.total} records, expected 1`)
+      const held = readDecisionSet(axisA).length
+      if (b.total !== held) problems.push(`the second cell holds ${b.total} records, expected ${held}`)
       if (identityOf(first) === identityOf(second)) problems.push('the two cells share an identity')
       if (problems.length) throw new Error(problems.join('; '))
       record('sandbox isolation', true, 'a second cell inherits nothing from the first')
@@ -412,7 +425,7 @@ export async function runSelftest({
           const { mcpPath } = writeCellConfig({ sandbox, arm, mnemaBin, pluginDir })
           const probe = await mcpProbe({ sandbox, mcpPath })
           if (!probe.ok) throw new Error(probe.detail)
-          const want = carriesDecision(fixture.axis) ? 1 : 0
+          const want = carriesDecision(fixture.axis) ? readDecisionSet(fixture).length : 0
           if (probe.index.total !== want) {
             throw new Error(`search answered ${probe.index.total} records, expected ${want}`)
           }
@@ -497,22 +510,8 @@ export async function runSelftest({
     // The comparison across arms, once every cell has produced its document. It runs
     // even when a document is missing — a `null` compares unequal to a document and the
     // sentence says which task and which arm, which is more use than skipping.
-    let compared = 0
-    for (const fixture of fixtures) {
-      const [first, ...rest] = surfaceArms
-      const reference = documents.get(`${where(fixture)}/${first}`)
-      for (const arm of rest) {
-        compared += 1
-        const other = documents.get(`${where(fixture)}/${arm}`)
-        if (other !== reference) {
-          problems.push(
-            `${where(fixture)}: the document ${arm} hands over is not the one ${first} hands over — ` +
-              `${(other ?? '').length} chars against ${(reference ?? '').length}, with the cell's own ` +
-              'ids named out. These two arms may differ in the per-edit switch and in nothing else',
-          )
-        }
-      }
-    }
+    const compared = fixtures.length * Math.max(surfaceArms.length - 1, 0)
+    problems.push(...documentProblems({ documents, cells: fixtures.map(where), surfaceArms }))
     const ok = problems.length === 0
     record(
       "the surface arms' context arrives",
@@ -609,7 +608,9 @@ export async function runSelftest({
       arrived
         ? `${deliveries.length} cells: the first request the host sends carries, per arm, exactly the ` +
             'parts of the decision the arm declares (title, statement, reasoning, alternative) — ' +
-            "and the instructions arm's file is in it, where the other arms' files are not"
+            "and the instructions arm's file is in it, where the other arms' files are not. " +
+            `${writes.length} more at the first write of a governed file: what the surface arms hand ` +
+            'over there, and the one write the eighth arm holds and the repeat it lets through'
         : undelivered.join('\n  '),
     )
     if (!arrived) return done(checks)
@@ -643,6 +644,7 @@ export async function runSelftest({
             frozen: readDigests(prereg.digests),
           }),
           ...labelProblems(split),
+          ...planProblems(split),
         ]) {
           problems.push(`round ${round}: ${problem}`)
         }
@@ -686,6 +688,39 @@ export async function runSelftest({
   return done(checks)
 }
 
+/**
+ * Every pair of surface arms that does NOT hand over the same opening document, as sentences —
+ * the first surface arm against each of the others, per cell, over the documents with each cell's
+ * fresh ids named out (`withoutFreshIds`). Empty means the pair the round subtracts differs in its
+ * switch and in nothing the session opens with.
+ *
+ * ITS OWN FUNCTION SO A CASE CAN HAND IT TWO DIFFERENT DOCUMENTS. Inline in the preflight, no case
+ * ever did — every bench a case builds hands over the same document in every surface arm — so a
+ * comparison that compared nothing passed the whole suite (mutation `z16`). A `null` (a cell whose
+ * document never arrived) compares unequal to a document, and says which.
+ *
+ * @param {{ documents: Map<string, string | null>, cells: string[], surfaceArms: string[] }} input
+ *   `documents` is keyed `<cell>/<arm>`.
+ */
+export function documentProblems({ documents, cells, surfaceArms }) {
+  const problems = []
+  const [first, ...rest] = surfaceArms
+  for (const cell of cells) {
+    const reference = documents.get(`${cell}/${first}`)
+    for (const arm of rest) {
+      const other = documents.get(`${cell}/${arm}`)
+      if (other !== reference) {
+        problems.push(
+          `${cell}: the document ${arm} hands over is not the one ${first} hands over — ` +
+            `${(other ?? '').length} chars against ${(reference ?? '').length}, with the cell's own ` +
+            'ids named out. These arms may differ in their per-edit switches and in nothing else',
+        )
+      }
+    }
+  }
+  return problems
+}
+
 function done(checks) {
   return { ok: checks.every((c) => c.ok), checks }
 }
@@ -702,10 +737,15 @@ function identityOf(sandbox) {
  * be touched. Returns the paths `runSelftest` takes.
  */
 export function cloneBench(sourceDir, destDir) {
-  cpSync(join(sourceDir, 'fixtures'), join(destDir, 'fixtures'), {
+  // By content: `fixtures` may be a link, and a link copied as a link is the original.
+  cpSync(realpathSync(join(sourceDir, 'fixtures')), join(destDir, 'fixtures'), {
     recursive: true,
+    dereference: true,
     filter: (src) => !src.includes('__pycache__'),
   })
+  if (lstatSync(join(destDir, 'fixtures')).isSymbolicLink()) {
+    throw new Error(`the clone of ${sourceDir}/fixtures is a link, not a copy`)
+  }
   writeFileSync(join(destDir, 'selftest.sh'), readFileSync(join(sourceDir, 'selftest.sh')))
   return { fixturesDir: join(destDir, 'fixtures'), selftestScript: join(destDir, 'selftest.sh') }
 }
