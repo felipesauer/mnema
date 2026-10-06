@@ -8,7 +8,7 @@
  * nothing, and so does a set with nothing in common.
  */
 
-import { mkdirSync, mkdtempSync, rmSync } from 'node:fs';
+import { appendFileSync, mkdirSync, mkdtempSync, readdirSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
@@ -110,5 +110,21 @@ describe('the sentence after a line that names projects', () => {
     expect(apart).not.toContain('mnema promote');
     const alone = (await prompt('verify')).join('\n');
     expect(alone).not.toContain('mnema promote');
+  }, 60_000);
+});
+
+describe('a named project whose chain is damaged', () => {
+  it('ends the turn without rejecting, and the sentence is simply not said', async () => {
+    const d = join(sandbox, 'delta');
+    mkdirSync(d, { recursive: true });
+    process.chdir(d);
+    await mnema('init');
+    await adopted(d, 'Run the suite', BODY);
+    const tails = join(d, '.mnema', 'tails');
+    const tail = readdirSync(tails)[0] as string;
+    appendFileSync(join(tails, tail, '000001.jsonl'), 'this is not a stored line\n', 'utf-8');
+    process.chdir(a);
+    const lines = (await prompt(`verify --workspace ${a} ${d}`)).join('\n');
+    expect(lines).not.toContain('mnema promote');
   }, 60_000);
 });

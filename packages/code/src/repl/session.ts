@@ -934,8 +934,14 @@ export async function typedLine(line: string, session: Session): Promise<AfterLi
 async function sayWhatRecurs(argv: readonly string[], io: CliIo, render: Render): Promise<void> {
   const named = projectsNamedBy(argv);
   if (named.length === 0) return;
-  const line = promotableLine(runPromoteList(here(), { named }).candidates.length);
-  if (line !== undefined) io.out(render(line));
+  // A named project whose chain cannot be read has already been reported by the verb that
+  // just ran; this sentence is an aside, so it says nothing rather than reject the turn.
+  try {
+    const line = promotableLine(runPromoteList(here(), { named }).candidates.length);
+    if (line !== undefined) io.out(render(line));
+  } catch {
+    // nothing to say
+  }
 }
 
 /**
