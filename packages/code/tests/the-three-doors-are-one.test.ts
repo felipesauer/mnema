@@ -280,8 +280,9 @@ const VERBS_NOT_IN_THE_LIBRARY: Readonly<Record<string, string>> = {
  * alone: this is the table that makes it be counted.
  */
 const SUBCOMMANDS_NOT_IN_THE_LIBRARY: Readonly<Record<string, string>> = {
-  'decision supersede': 'replacing a decision with another is a person’s decision',
-  'decision import': 'bringing decisions in from a file is a person’s act, at a shell',
+  'decision supersede':
+    'on the MCP door, in `decision_transition` the `supersede` action; the library has no method',
+  'decision import': 'reading a directory or source format; only from the shell',
 };
 
 // ---------------------------------------------------------------------------
