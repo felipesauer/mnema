@@ -10,13 +10,14 @@
 
 import type { Command } from 'commander';
 import { discoveryEnv } from '../env.js';
+import { fact } from '../presentation/detail.js';
 import { VERSION } from '../version.js';
 import { here } from './context.js';
 import { type Declared, readsTheRecord, type Wiring } from './verb.js';
 
 /** Registers `mnema doctor` on the program. */
 export function registerDoctor(program: Command, wiring: Wiring): Declared {
-  const { io } = wiring;
+  const { io, render } = wiring;
   const verb = program
     .command('doctor')
     .description(
@@ -53,7 +54,7 @@ export function registerDoctor(program: Command, wiring: Wiring): Declared {
       };
       if (options.fix !== undefined) {
         if (options.fix !== 'vscode') {
-          io.err('the one thing `--fix` knows how to fix is `vscode`.');
+          io.err(render(fact('the one thing `--fix` knows how to fix is `vscode`.')));
           io.fail();
           return;
         }
@@ -63,7 +64,13 @@ export function registerDoctor(program: Command, wiring: Wiring): Declared {
         return;
       }
       if (options.dryRun === true) {
-        io.err('`--dry-run` goes with `--fix vscode`; asked alone, `mnema doctor` writes nothing.');
+        io.err(
+          render(
+            fact(
+              '`--dry-run` goes with `--fix vscode`; asked alone, `mnema doctor` writes nothing.',
+            ),
+          ),
+        );
         io.fail();
         return;
       }

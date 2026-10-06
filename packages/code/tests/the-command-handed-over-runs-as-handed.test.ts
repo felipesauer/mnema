@@ -648,7 +648,9 @@ export const HANDED_OVER: Readonly<
   // reader's browser checks the page (`mnema site`, twice), the step that addresses a rule at a path
   // (`mnema link`), and the quick start, which names the verbs it runs.
   // name 140 for the changelog entry that says `mnema init` declares the backup in the record.
-  span: { line: 68, name: 140, flag: 1, unwritten: 0 },
+  // line 73 and name 144 for the pages that say how VS Code's agent is made to load the plugin
+  // (`mnema doctor --fix vscode`, `mnema doctor`) and the doctor's changed paragraphs.
+  span: { line: 73, name: 144, flag: 1, unwritten: 0 },
   // name 18 until the page that says where the key lives named `mnema key protect` in a line of
   // its own.
   // line 35 until the same page showed that question in a block of its own.
