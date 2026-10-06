@@ -2,10 +2,11 @@
 //   PROBE_OUT=<tsv> PROBE_N=20 npx vitest run packages/code/tests/zz-probe.test.ts
 // Never committed under tests/: it is an instrument, not a case.
 import { spawn } from 'node:child_process';
-import { appendFileSync, mkdirSync, mkdtempSync, readFileSync, rmSync } from 'node:fs';
+import { appendFileSync, mkdirSync, mkdtempSync, readFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { removeTemporary } from '../../../measurements/lib/remove-inside.mjs';
 import { afterAll, beforeAll, expect, it } from 'vitest';
 import { type CliIo, run } from '../src/cli.js';
 import { REPL_VERB } from '../src/wiring/repl.js';
@@ -33,7 +34,7 @@ beforeAll(async () => {
   environment = { ...process.env, HOME: join(sandbox, 'home'), XDG_DATA_HOME: join(sandbox, 'data'), TERM: 'xterm-256color' };
   delete environment.MNEMA_RUN;
 }, 240_000);
-afterAll(() => rmSync(sandbox, { recursive: true, force: true }));
+afterAll(() => removeTemporary(sandbox));
 const fixture = (): Fixture => ({ cli: CLI, verb: REPL_VERB, project, scratch: sandbox, environment });
 process.on('uncaughtException', (error: NodeJS.ErrnoException) => {
   if (error.code !== 'EPIPE') throw error;

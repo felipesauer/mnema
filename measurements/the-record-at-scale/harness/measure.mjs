@@ -2,7 +2,8 @@
 // usage: node measure.mjs <worktree> <N> <op> [reps]
 // Every op works on a private copy of the frozen fixture and removes it.
 import { execFileSync, spawn, spawnSync } from 'node:child_process';
-import { existsSync, mkdtempSync, rmSync } from 'node:fs';
+import { existsSync, mkdtempSync } from 'node:fs';
+import { removeInside } from '../../lib/remove-inside.mjs';
 import { join } from 'node:path';
 
 // DIR holds the frozen fixtures (`fx/<events>`) and is where every private copy is made.
@@ -153,5 +154,5 @@ try {
   }
   console.log(JSON.stringify(out));
 } finally {
-  rmSync(work, { recursive: true, force: true });
+  removeInside(S, work);
 }

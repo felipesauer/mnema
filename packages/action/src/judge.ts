@@ -105,12 +105,22 @@ export async function judge(world: World, pr: PullRequest): Promise<Verdict> {
     if (!approved) reasons.push('a rule asks for a person and no one but the author has approved');
   }
 
+  // Before the comment, so that the comment carries the results; the run only writes the
+  // record's own files, which everything above had already read.
+  let checks: { passed: boolean; said: string } | undefined;
+  if (pr.checkerKey !== undefined) {
+    checks = world.mnema.checkRun(pr.checkerKey);
+    for (const line of checks.said.split('\n')) if (line.trim() !== '') world.log.info(line);
+    if (!checks.passed) reasons.push('a rule’s check did not pass, or the checks did not run');
+  }
+
   const report = {
     verification,
     record,
     governed,
     notAsked: changed.length - asked.length,
     approval,
+    ...(checks !== undefined ? { checks } : {}),
   };
   try {
     const done = await world.github.upsertComment(renderComment(report), !worthSaying(report));
@@ -119,14 +129,6 @@ export async function judge(world: World, pr: PullRequest): Promise<Verdict> {
     world.log.warning(
       `the comment was not written: ${error instanceof Error ? error.message : String(error)}`,
     );
-  }
-
-  // Last, so that everything above read the record as the pull request committed it: the
-  // results land in the working tree, for a later step of the workflow to commit or upload.
-  if (pr.checkerKey !== undefined) {
-    const checks = world.mnema.checkRun(pr.checkerKey);
-    for (const line of checks.said.split('\n')) if (line.trim() !== '') world.log.info(line);
-    if (!checks.passed) reasons.push('a rule’s check did not pass, or the checks did not run');
   }
   return { failed: reasons.length > 0, reasons };
 }

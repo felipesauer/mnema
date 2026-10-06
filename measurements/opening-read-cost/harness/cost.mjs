@@ -31,7 +31,8 @@
  *   pnpm build && node measurements/opening-read-cost/harness/cost.mjs
  */
 
-import { mkdtempSync, mkdirSync, rmSync } from 'node:fs';
+import { mkdtempSync, mkdirSync } from 'node:fs';
+import { removeTemporary } from '../../lib/remove-inside.mjs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 
@@ -54,7 +55,7 @@ const RECORD = { tasks: 30, decisions: 15, skills: 25, memories: 20, observation
 const ITERATIONS = 400;
 
 const sandbox = mkdtempSync(join(tmpdir(), 'mnema-unread-cost-'));
-process.on('exit', () => rmSync(sandbox, { recursive: true, force: true }));
+process.on('exit', () => removeTemporary(sandbox));
 
 mkdirSync(join(sandbox, 'repo', '.mnema'), { recursive: true });
 const trees = resolveTrees(join(sandbox, 'repo'), {
@@ -271,7 +272,7 @@ function growARecord(scale) {
     who: w.anchor,
     close: () => {
       grown.close();
-      rmSync(dir, { recursive: true, force: true });
+      removeTemporary(dir);
     },
   };
 }
