@@ -348,6 +348,10 @@ restored, and `init` declares it in the record (`backup.declared`), so every mac
 restored and used would have left a tail that is not there. A record written before that
 declaration existed does not say which key is a backup: there the key reads as a backup only
 on the machine that made it, and as a committed key without a tail anywhere else.
+A tail that holds nothing — its directory with only its ownership proof, which an older
+version left when a key's first write was refused — is not counted as a tail: `verify` says
+`N empty tail(s), which hold no event and are not counted`, and it moves neither the level nor
+the witness. A tail emptied of its events with its proof kept reads the same way.
 A tail removed *together with its key* is not reported at all — that record reads
 `0 tail(s); no events yet`, indistinguishable from a fresh one, and only a history
 outside this record (the one a git remote keeps) can testify to what was taken

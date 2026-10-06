@@ -951,10 +951,11 @@ const NO_VERIFIED_CHECKPOINT: UnattestedReading = {
  * and one tail falsifies that: an EMPTY one, a directory holding its ownership proof and no
  * event, which records committed by older writers still carry. It has nothing to sign, so
  * it does not stop the chain being `fully-signed`, and it has no checkpoint, so it reads
- * `not-covered` here and is the weakest tail of a chain whose every other tail is
- * witnessed. That is what the record says of it, and it was decided to stand: the empty
- * tails already committed stay as they are. What was aligned instead is that the listing a
- * reader opens to find the tail (`mnema witness`) now counts and shows it, as `verify` does.
+ * `not-covered` here and was the weakest tail of a chain whose every other tail is
+ * witnessed. So the verifier no longer hands one in: a tail holding no event and no
+ * checkpoint is not counted as a tail (FORMAT.md section 4, `isEmptyTail` in verify.ts),
+ * and this fold only ever sees tails that hold something. The empty tails already
+ * committed stay on disk; the census names them, and nothing here reads them.
  */
 export function witnessOfChain(
   layout: ChainLayout,
