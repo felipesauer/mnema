@@ -95,3 +95,6 @@ measurements/p1/results/2026-08-18-mechanism/diffs/b2-moving-average-*
 
 # What `pnpm --filter @mnema/vscode package` writes. Built on request, never reviewed.
 *.vsix
+
+# VS Code, downloaded for `install-check`.
+.vscode-test/

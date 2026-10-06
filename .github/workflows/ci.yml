@@ -249,7 +249,7 @@ jobs:
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
-      # The extension loads `dist`, and so do the two packages it carries.
+      # The bundle is made from the built `dist` of the two workspace packages it takes two functions from.
       - name: Build
         run: pnpm build
 
@@ -262,6 +262,12 @@ jobs:
           name: mnema-vscode-extension
           path: packages/vscode/mnema-*.vsix
           if-no-files-found: error
+
+      # The file, installed into a real VS Code (downloaded here, free) with `--install-extension`,
+      # in a workspace with a `.mnema` folder: the extension has to be active. No screen on a runner,
+      # so the editor runs under a virtual one.
+      - name: Install it in VS Code and check that it starts
+        run: xvfb-run -a pnpm --filter @mnema/vscode install-check
 
   # THE LINK CANNOT COME BACK. This repository does not credit the tool that wrote a change in
   # the change's own record, and for 243 pull requests that held because somebody remembered it.

@@ -46,11 +46,14 @@ pnpm --filter @mnema/vscode package
 code --install-extension packages/vscode/mnema-*.vsix
 ```
 
-`package` copies the extension with the workspace packages it reads, `@mnema/context` and
-`@mnema/core`, and has `vsce`, the editor vendor's packer, write the `.vsix` next to this
-`package.json`. CI runs the same command and keeps the file as an artifact of the run
-(`mnema-vscode-extension`). It is a local file and this repository never sends it anywhere: no
-workflow publishes it, and a test fails if one does.
+`package` bundles the extension into one file, `extension.cjs`, with no database in it, and has `vsce`,
+the editor vendor's packer, write the `.vsix` next to this `package.json`. The file is about 15 KB:
+the extension reads the record only through the `mnema` command line, so nothing native rides along
+and nothing is installed beside it. CI runs the same command, installs the file into a real VS Code
+in a workspace with a `.mnema` folder to see it start (`pnpm --filter @mnema/vscode install-check`
+does the same by hand, under `xvfb-run -a` on a machine without a screen), and keeps the file as an
+artifact of the run (`mnema-vscode-extension`). It is a local file and this repository never sends it
+anywhere: no workflow publishes it, and a test fails if one does.
 
 ## How it is built
 
