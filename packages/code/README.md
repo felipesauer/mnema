@@ -1592,6 +1592,11 @@ made from it, and a file that no longer follows the record, or that cannot be op
 built again. A value that is relative, or a directory that does not exist or cannot be
 written to, is refused with what to do rather than ignored.
 
+The SDK honors `MNEMA_CACHE_DIR` only when `openRecord` uses the default environment; with an explicit
+`env` it is ignored, as `MNEMA_HOME` is. When a fresh install creates a tail, the project moves to another
+cache file and the old one stays in the directory: deleting old cache files is safe (it is only cache), and
+in a cached CI directory it means the directory can grow.
+
 `~/.mnema` is this machine's data directory, whatever `$XDG_DATA_HOME` says.
 `MNEMA_HOME` moves it: set to an absolute path, the key root and the global tree live
 directly under that directory; set to a relative one, every command refuses rather than
