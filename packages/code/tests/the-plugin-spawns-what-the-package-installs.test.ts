@@ -4,8 +4,8 @@
  *
  * WHERE THIS COMES FROM. The plugin reaches the product through the PATH and through
  * nothing else: the handlers spawn a bare `mnema` — through the one module they share,
- * `hand-over.mjs`, which is the only file of the plugin that spawns — and `plugin.json` tells the
- * host to start an MCP server by running a bare `mnema mcp`. Neither of those strings is
+ * `hand-over.mjs`, which is the only hook file that spawns — and `plugin.json` tells the
+ * host to start an MCP server through `server/launch.mjs`, which spawns a bare `mnema`. Neither string is
  * an import, so no module graph follows them, and the failure they produce is silent by
  * the handler's own design — "a failed spawn is silence", which is right for a hook and
  * wrong for a repository that would like to know. Rename the `bin` key of
@@ -71,6 +71,9 @@ const HOOKS_DIR = join(REPO, 'plugin', 'hooks');
 /** The manifest that tells the host how to start the MCP server. */
 const MANIFEST = join(REPO, 'plugin', '.claude-plugin', 'plugin.json');
 
+/** The launcher the manifest starts: it spawns the product for the MCP server. */
+const LAUNCHER = join(REPO, 'plugin', 'server', 'launch.mjs');
+
 /**
  * THE ONE EXECUTABLE THIS WORKSPACE INSTALLS, off the manifest that installs it.
  *
@@ -106,16 +109,23 @@ export function whatTheHookSpawns(source: string): { win32: string; otherwise: s
   return { win32: written[1] as string, otherwise: written[2] as string };
 }
 
-/** What `plugin.json` tells the host to run for the MCP server. */
-export function whatTheManifestRuns(manifestText: string): string {
+/**
+ * The program `plugin.json` tells the host to start for the MCP server, and the file it hands
+ * that program: a launcher, which spawns the product. The name the launcher spawns is read off
+ * the launcher (see {@link whatTheHookSpawns}), not off the manifest.
+ */
+export function whatTheManifestRuns(manifestText: string): { command: string; script: string } {
   const servers = (
-    JSON.parse(manifestText) as { mcpServers?: Record<string, { command?: string }> }
+    JSON.parse(manifestText) as {
+      mcpServers?: Record<string, { command?: string; args?: string[] }>;
+    }
   ).mcpServers;
   const entries = Object.entries(servers ?? {});
   if (entries.length !== 1) {
     throw new Error(`the plugin declares ${entries.length} servers, not one`);
   }
-  return (entries[0] as [string, { command?: string }])[1].command ?? '';
+  const server = (entries[0] as [string, { command?: string; args?: string[] }])[1];
+  return { command: server.command ?? '', script: server.args?.[0] ?? '' };
 }
 
 describe('every place that spells the executable spells the one the package installs', () => {
@@ -162,8 +172,13 @@ describe('every place that spells the executable spells the one the package inst
     expect(codeOnly(readFileSync(HOOK, 'utf-8'))).toMatch(/\bspawnSync\(/);
   });
 
-  it('starts the MCP server by running it', () => {
-    expect(whatTheManifestRuns(readFileSync(MANIFEST, 'utf-8'))).toBe(installed);
+  it('starts the MCP server through a launcher that spawns it, off the same name', () => {
+    const runs = whatTheManifestRuns(readFileSync(MANIFEST, 'utf-8'));
+    expect(runs.command).toBe('node');
+    expect(runs.script).toBe(`\${CLAUDE_PLUGIN_ROOT}/server/launch.mjs`);
+    const spawns = whatTheHookSpawns(readFileSync(LAUNCHER, 'utf-8'));
+    expect(spawns.otherwise).toBe(installed);
+    expect(spawns.win32).toBe(`${installed}.cmd`);
   });
 
   it('prints it on every usage line the product publishes', () => {
@@ -191,9 +206,14 @@ describe('every place that spells the executable spells the one the package inst
     expect(whatTheHookSpawns(drifted).otherwise).not.toBe(installed);
     expect(whatTheHookSpawns(drifted).win32).not.toBe(`${installed}.cmd`);
 
-    expect(whatTheManifestRuns('{"mcpServers":{"mnema":{"command":"mnema-next"}}}')).not.toBe(
-      installed,
-    );
+    expect(
+      whatTheHookSpawns(
+        readFileSync(LAUNCHER, 'utf-8').replace(
+          `'${installed}.cmd' : '${installed}'`,
+          `'mnema-next.cmd' : 'mnema-next'`,
+        ),
+      ).otherwise,
+    ).not.toBe(installed);
     expect(theInstalledBinary('{"bin":{"mnema-next":"./dist/cli.js"}}')).not.toBe(installed);
 
     // And the extractor refuses over a hook that no longer declares the constant, rather
