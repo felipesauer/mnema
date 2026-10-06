@@ -8,7 +8,7 @@
 
 import { test, describe, after } from 'node:test'
 import assert from 'node:assert/strict'
-import { mkdtempSync, rmSync, writeFileSync } from 'node:fs'
+import { mkdtempSync, writeFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { carriesDecision, listFixtures } from '../lib/fixtures.mjs'
 import { WRITE_TOOLS, readAgentOutput, readStream, streamEvents } from '../lib/interactions.mjs'
@@ -17,7 +17,7 @@ import { outputFormatOf } from '../lib/split.mjs'
 import { runAgainstStandIn } from '../lib/host-session.mjs'
 import { productPluginDir } from '../lib/hook.mjs'
 import { runCell, seededSandbox } from '../lib/cell.mjs'
-import { createSandbox, sandboxRoot } from '../lib/sandbox.mjs'
+import { createSandbox, removeInside, sandboxRoot } from '../lib/sandbox.mjs'
 import { RESULT_SCHEMA } from '../lib/result.mjs'
 import { FIXTURES_DIR, MNEMA_BIN, fakeAgent, vendorResult } from './helpers.mjs'
 
@@ -28,7 +28,7 @@ const scratch = []
 
 after(() => {
   for (const sandbox of opened) sandbox.destroy()
-  for (const dir of scratch) rmSync(dir, { recursive: true, force: true })
+  for (const dir of scratch) removeInside(sandboxRoot(), dir)
 })
 
 const jsonl = (events) => `${events.map((event) => JSON.stringify(event)).join('\n')}\n`

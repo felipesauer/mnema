@@ -9,12 +9,12 @@
 
 import { test, describe, after } from 'node:test'
 import assert from 'node:assert/strict'
-import { mkdtempSync, rmSync, writeFileSync } from 'node:fs'
+import { mkdtempSync, writeFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { listFixtures } from '../lib/fixtures.mjs'
 import { ARMS } from '../lib/seed.mjs'
 import { runSelftest } from '../lib/selftest.mjs'
-import { sandboxRoot } from '../lib/sandbox.mjs'
+import { removeInside, sandboxRoot } from '../lib/sandbox.mjs'
 import { pilotPlan } from '../run.mjs'
 import { digestOf, readDigests, readSplit, splitProblems } from '../lib/split.mjs'
 import { FIXTURES_DIR, MNEMA_BIN, cloneFixtures } from './helpers.mjs'
@@ -29,7 +29,7 @@ function workspace() {
 }
 
 after(() => {
-  for (const dir of scratch) rmSync(dir, { recursive: true, force: true })
+  for (const dir of scratch) removeInside(sandboxRoot(), dir)
 })
 
 describe('6 · the split, against the tasks on disk', () => {

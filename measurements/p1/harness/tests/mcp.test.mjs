@@ -26,11 +26,11 @@ import { test, describe, after } from 'node:test'
 import assert from 'node:assert/strict'
 import { createHash } from 'node:crypto'
 import { spawn } from 'node:child_process'
-import { mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
+import { mkdtempSync, readFileSync, writeFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { listFixtures } from '../lib/fixtures.mjs'
 import { runCell, seededSandbox } from '../lib/cell.mjs'
-import { sandboxRoot } from '../lib/sandbox.mjs'
+import { removeInside, sandboxRoot } from '../lib/sandbox.mjs'
 import { writeCellConfig } from '../lib/isolation.mjs'
 import { mcpProbe } from '../lib/mcpcheck.mjs'
 import {
@@ -65,7 +65,7 @@ function workspace() {
 
 after(() => {
   for (const sandbox of sandboxes) sandbox.destroy()
-  for (const dir of scratch) rmSync(dir, { recursive: true, force: true })
+  for (const dir of scratch) removeInside(sandboxRoot(), dir)
 })
 
 /**

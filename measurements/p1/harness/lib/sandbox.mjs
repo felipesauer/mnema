@@ -9,14 +9,59 @@
 // `XDG_DATA_HOME` when this harness was written) and a tree under `.mnema/`. A cell that shared either with the next one would not be an
 // independent observation.
 
-import { cpSync, existsSync, mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs'
+import { cpSync, existsSync, lstatSync, mkdirSync, mkdtempSync, realpathSync, rmSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
-import { join } from 'node:path'
+import { basename, dirname, join, relative, isAbsolute } from 'node:path'
 import { spawnSync } from 'node:child_process'
 
 /** Where sandboxes are made. Overridable so a constrained machine can point it elsewhere. */
 export function sandboxRoot() {
   return process.env.MNEMA_BENCH_TMP || tmpdir()
+}
+
+/**
+ * The only recursive removal this runner does.
+ *
+ * `rmSync(path, { recursive: true })` follows what is on the way to `path`: when a
+ * directory above it is a symlink, the copy a test thought it was breaking is the
+ * original, and the original is gone. That is how a round's frozen tasks were
+ * deleted once, through a `fixtures` link that a clone had copied AS a link.
+ *
+ * So the target is resolved first — its PARENT through `realpathSync`, its own name
+ * kept as written, because removing a link removes the link and not what it points at
+ * — and it is removed only when it lands strictly inside `root`, and `root` itself is
+ * inside the sandbox area (`sandboxRoot()` or the OS temp directory). Anything else
+ * throws, and nothing is removed. A path that is not there is not an error.
+ */
+export function removeInside(root, path) {
+  const base = realpathSync(root)
+  const areas = [sandboxRoot(), tmpdir()].map((dir) => realpathSync(dir))
+  if (!areas.some((area) => area === base || within(area, base))) {
+    throw new Error(`refusing to remove under ${root}: it is not inside a temporary directory`)
+  }
+  let parent
+  try {
+    parent = realpathSync(dirname(path))
+  } catch (err) {
+    if (err.code === 'ENOENT') return
+    throw err
+  }
+  const target = join(parent, basename(path))
+  if (target === base || !within(base, target)) {
+    throw new Error(`refusing to remove ${path}: it resolves to ${target}, outside ${base}`)
+  }
+  try {
+    lstatSync(target)
+  } catch (err) {
+    if (err.code === 'ENOENT') return
+    throw err
+  }
+  rmSync(target, { recursive: true, force: true })
+}
+
+function within(dir, path) {
+  const rel = relative(dir, path)
+  return rel !== '' && !rel.startsWith('..') && !isAbsolute(rel)
 }
 
 /**
@@ -47,7 +92,7 @@ export function createSandbox(label = 'cell') {
   return {
     ...paths,
     destroy() {
-      rmSync(root, { recursive: true, force: true })
+      removeInside(sandboxRoot(), root)
     },
   }
 }

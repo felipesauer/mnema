@@ -8,7 +8,7 @@
 
 import { test, describe, after } from 'node:test'
 import assert from 'node:assert/strict'
-import { cpSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
+import { cpSync, mkdirSync, mkdtempSync, readFileSync, writeFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { listFixtures, readDecision, readDecisionSet, touchedPaths } from '../lib/fixtures.mjs'
 import { runQuality, runVerify } from '../lib/verdict.mjs'
@@ -37,7 +37,7 @@ import {
   servesUnasked,
   switchedOnChannels,
 } from '../lib/seed.mjs'
-import { createSandbox, plantRepo, sandboxRoot } from '../lib/sandbox.mjs'
+import { createSandbox, plantRepo, removeInside, sandboxRoot } from '../lib/sandbox.mjs'
 import { writeCellConfig } from '../lib/isolation.mjs'
 import { editPushProblems, surfaceProblem } from '../lib/channel.mjs'
 import { tally } from '../lib/cells.mjs'
@@ -59,7 +59,7 @@ const scratch = []
 const opened = []
 after(() => {
   for (const sandbox of opened) sandbox.destroy()
-  for (const dir of scratch) rmSync(dir, { recursive: true, force: true })
+  for (const dir of scratch) removeInside(sandboxRoot(), dir)
 })
 
 const OLD = { title: 'Late fees on equipment leases', statement: 'An overdue lease installment owes one fee of two per cent, charged once.' }

@@ -6,7 +6,7 @@
 
 import { test, describe, after } from 'node:test'
 import assert from 'node:assert/strict'
-import { chmodSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
+import { chmodSync, mkdtempSync, readFileSync, writeFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { carriesDecision, listFixtures } from '../lib/fixtures.mjs'
 import { claudeVersion, runCell } from '../lib/cell.mjs'
@@ -14,7 +14,7 @@ import { MODEL, claudeArgv } from '../lib/isolation.mjs'
 import { cliDriftProblem, cliPinProblem } from '../lib/pin.mjs'
 import { ROUNDS, cliVersionOf, modelOf, preregOf, readSplit } from '../lib/split.mjs'
 import { modelNote } from '../lib/result.mjs'
-import { sandboxRoot } from '../lib/sandbox.mjs'
+import { removeInside, sandboxRoot } from '../lib/sandbox.mjs'
 import { firstCliOfCapture, runPlan } from '../run.mjs'
 import { FIXTURES_DIR, HARNESS_DIR, MNEMA_BIN, vendorResult } from './helpers.mjs'
 
@@ -22,7 +22,7 @@ const axisA = listFixtures(FIXTURES_DIR).find((f) => carriesDecision(f.axis))
 const scratch = []
 
 after(() => {
-  for (const dir of scratch) rmSync(dir, { recursive: true, force: true })
+  for (const dir of scratch) removeInside(sandboxRoot(), dir)
 })
 
 function scratchDir() {

@@ -18,7 +18,7 @@ import { join } from 'node:path'
 import { carriesDecision, listFixtures, readDecision } from '../lib/fixtures.mjs'
 import { cellEnv, writeCellConfig } from '../lib/isolation.mjs'
 import { ARMS, DECISIONS_FILE, INSTRUCTIONS_ARM, INSTRUCTIONS_FILE, MEMORY_INDEX, seedArm } from '../lib/seed.mjs'
-import { createSandbox, plantRepo, sandboxRoot } from '../lib/sandbox.mjs'
+import { createSandbox, plantRepo, removeInside, sandboxRoot } from '../lib/sandbox.mjs'
 import { HOOK_EVENT, injectedDocument, productPluginDir } from '../lib/hook.mjs'
 import {
   DECISION_PARTS,
@@ -44,7 +44,7 @@ const opened = []
 
 after(() => {
   for (const sandbox of opened) sandbox.destroy()
-  for (const dir of scratch) rmSync(dir, { recursive: true, force: true })
+  for (const dir of scratch) removeInside(sandboxRoot(), dir)
 })
 
 function seeded(fixture, arm) {
@@ -221,7 +221,7 @@ describe('the preflight carries the check', () => {
     const bench = cloneFixtures(dir)
     // One task is enough to reach the check and a smaller bench reaches it in seconds.
     for (const id of fixtures.map((f) => f.id)) {
-      if (id !== axisA.id) rmSync(join(bench.fixturesDir, id), { recursive: true, force: true })
+      if (id !== axisA.id) removeInside(dir, join(bench.fixturesDir, id))
     }
     const was = DELIVERED_AT_OPEN[INSTRUCTIONS_ARM].why
     DELIVERED_AT_OPEN[INSTRUCTIONS_ARM].why = 'none'
@@ -304,7 +304,7 @@ describe('a stand-in the host never reaches is the instrument saying it broke', 
     scratch.push(dir)
     const bench = cloneFixtures(dir)
     for (const id of fixtures.map((f) => f.id)) {
-      if (id !== axisA.id) rmSync(join(bench.fixturesDir, id), { recursive: true, force: true })
+      if (id !== axisA.id) removeInside(dir, join(bench.fixturesDir, id))
     }
     const result = await runSelftest({ rounds: [bench], mnemaBin: MNEMA_BIN, claudeBin: claudeThatNeverAsks(), authMode: 'api-key' })
     const failed = result.checks.filter((c) => !c.ok)

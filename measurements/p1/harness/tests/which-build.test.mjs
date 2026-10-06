@@ -23,21 +23,21 @@
 
 import { test, describe, after } from 'node:test'
 import assert from 'node:assert/strict'
-import { appendFileSync, mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs'
+import { appendFileSync, mkdirSync, mkdtempSync, writeFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { builtProduct } from '../lib/build.mjs'
 import { runCell } from '../lib/cell.mjs'
 import { listFixtures } from '../lib/fixtures.mjs'
 import { RESULT_SCHEMA } from '../lib/result.mjs'
 import { ROOT_MARKER } from '../lib/root.mjs'
-import { sandboxRoot } from '../lib/sandbox.mjs'
+import { removeInside, sandboxRoot } from '../lib/sandbox.mjs'
 import { FIXTURES_DIR, MNEMA_BIN, fakeAgent } from './helpers.mjs'
 
 const fixture = listFixtures(FIXTURES_DIR).find((f) => f.id === 'a1-rounding')
 
 const scratch = []
 after(() => {
-  for (const dir of scratch) rmSync(dir, { recursive: true, force: true })
+  for (const dir of scratch) removeInside(sandboxRoot(), dir)
 })
 
 function workspace() {

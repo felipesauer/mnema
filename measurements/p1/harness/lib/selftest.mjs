@@ -63,7 +63,7 @@
 // nothing checks. Check 8b is the one that would have caught it, and it is here because
 // the list alone was not enough to make anybody look.
 
-import { cpSync, existsSync, readFileSync, readdirSync, writeFileSync } from 'node:fs'
+import { cpSync, existsSync, lstatSync, readFileSync, readdirSync, realpathSync, writeFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { spawnSync } from 'node:child_process'
 import { carriesDecision, listFixtures, readDecisionSet } from './fixtures.mjs'
@@ -737,10 +737,15 @@ function identityOf(sandbox) {
  * be touched. Returns the paths `runSelftest` takes.
  */
 export function cloneBench(sourceDir, destDir) {
-  cpSync(join(sourceDir, 'fixtures'), join(destDir, 'fixtures'), {
+  // By content: `fixtures` may be a link, and a link copied as a link is the original.
+  cpSync(realpathSync(join(sourceDir, 'fixtures')), join(destDir, 'fixtures'), {
     recursive: true,
+    dereference: true,
     filter: (src) => !src.includes('__pycache__'),
   })
+  if (lstatSync(join(destDir, 'fixtures')).isSymbolicLink()) {
+    throw new Error(`the clone of ${sourceDir}/fixtures is a link, not a copy`)
+  }
   writeFileSync(join(destDir, 'selftest.sh'), readFileSync(join(sourceDir, 'selftest.sh')))
   return { fixturesDir: join(destDir, 'fixtures'), selftestScript: join(destDir, 'selftest.sh') }
 }

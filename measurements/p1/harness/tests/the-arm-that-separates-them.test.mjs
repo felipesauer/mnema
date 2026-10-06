@@ -27,7 +27,7 @@
 
 import { test, describe, after } from 'node:test'
 import assert from 'node:assert/strict'
-import { readFileSync, readdirSync, rmSync } from 'node:fs'
+import { readFileSync, readdirSync } from 'node:fs'
 import { join } from 'node:path'
 import { listFixtures } from '../lib/fixtures.mjs'
 import {
@@ -51,7 +51,7 @@ import { editPushProblems, editPushSpeaks, servedChannels, surfaceProblem } from
 import { injectedDocument, mcpToolEntries, withoutFreshIds } from '../lib/hook.mjs'
 import { runCell, seededSandbox } from '../lib/cell.mjs'
 import { cellEnv, writeCellConfig } from '../lib/isolation.mjs'
-import { sandboxRoot } from '../lib/sandbox.mjs'
+import { removeInside, sandboxRoot } from '../lib/sandbox.mjs'
 import { armsOf, preregOf } from '../lib/split.mjs'
 import { FIXTURES_DIR, MNEMA_BIN, armManifest, fakeAgent } from './helpers.mjs'
 import { mkdtempSync } from 'node:fs'
@@ -77,7 +77,7 @@ function workspace() {
 
 after(() => {
   for (const sandbox of opened) sandbox.destroy()
-  for (const dir of scratch) rmSync(dir, { recursive: true, force: true })
+  for (const dir of scratch) removeInside(sandboxRoot(), dir)
 })
 
 describe('11 · the sixth arm is the fifth with ONE channel switched off', () => {

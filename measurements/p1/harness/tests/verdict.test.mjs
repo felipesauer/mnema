@@ -12,13 +12,13 @@
 
 import { test, describe, after } from 'node:test'
 import assert from 'node:assert/strict'
-import { cpSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
+import { cpSync, mkdtempSync, readFileSync, writeFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { listFixtures } from '../lib/fixtures.mjs'
 import { runVerify } from '../lib/verdict.mjs'
 import { runCell } from '../lib/cell.mjs'
 import { vendorFailure } from '../lib/result.mjs'
-import { sandboxRoot } from '../lib/sandbox.mjs'
+import { removeInside, sandboxRoot } from '../lib/sandbox.mjs'
 import { FIXTURES_DIR, MNEMA_BIN, fakeAgent, vendorResult } from './helpers.mjs'
 
 const fixtures = listFixtures(FIXTURES_DIR)
@@ -32,7 +32,7 @@ function workspace() {
 }
 
 after(() => {
-  for (const dir of scratch) rmSync(dir, { recursive: true, force: true })
+  for (const dir of scratch) removeInside(sandboxRoot(), dir)
 })
 
 function cellWith(agentOptions, { arm = 'base' } = {}) {

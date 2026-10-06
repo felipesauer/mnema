@@ -18,12 +18,12 @@
 
 import { test, describe, after } from 'node:test'
 import assert from 'node:assert/strict'
-import { existsSync, mkdtempSync, readdirSync, realpathSync, rmSync, writeFileSync } from 'node:fs'
+import { existsSync, mkdtempSync, readdirSync, realpathSync, writeFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { listFixtures } from '../lib/fixtures.mjs'
 import { ARMS } from '../lib/seed.mjs'
 import { runSelftest } from '../lib/selftest.mjs'
-import { sandboxRoot } from '../lib/sandbox.mjs'
+import { removeInside, sandboxRoot } from '../lib/sandbox.mjs'
 import { benchOf, benches, captureDir, cellPlan, cellsNotYetRun, pilotPlan, sievePlan } from '../run.mjs'
 import {
   ROUNDS,
@@ -42,7 +42,7 @@ const CLAUDE = process.env.MNEMA_BENCH_CLAUDE || 'claude'
 const scratch = []
 
 after(() => {
-  for (const dir of scratch) rmSync(dir, { recursive: true, force: true })
+  for (const dir of scratch) removeInside(sandboxRoot(), dir)
 })
 
 function workspace(round) {

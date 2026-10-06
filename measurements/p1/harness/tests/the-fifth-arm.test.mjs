@@ -42,7 +42,7 @@ import {
 } from '../lib/seed.mjs'
 import { runCell, seededSandbox } from '../lib/cell.mjs'
 import { cellEnv, writeCellConfig } from '../lib/isolation.mjs'
-import { sandboxRoot } from '../lib/sandbox.mjs'
+import { removeInside, sandboxRoot } from '../lib/sandbox.mjs'
 import {
   EDIT_EVENT,
   HOOK_EVENT,
@@ -104,7 +104,7 @@ function workspace() {
 
 after(() => {
   for (const sandbox of opened) sandbox.destroy()
-  for (const dir of scratch) rmSync(dir, { recursive: true, force: true })
+  for (const dir of scratch) removeInside(sandboxRoot(), dir)
 })
 
 describe('8 · the fifth arm is the mnema arm plus the surface, and nothing else', () => {
@@ -698,7 +698,7 @@ describe('8c · the line says the surface ran, and says what these cells are', (
     assert.equal(line.status, 'harness_error')
     assert.equal(line.verdict, null)
     assert.match(line.error, /the document channel did not run/)
-    rmSync(sandboxRoot, { recursive: true, force: true })
+    removeInside(dirname(sandboxRoot), sandboxRoot)
   })
 
   test('a plugin that cannot be read is a harness error, never a verdict', () => {
