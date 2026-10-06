@@ -43,6 +43,7 @@ import { editPushProblems, surfaceProblem } from '../lib/channel.mjs'
 import { tally } from '../lib/cells.mjs'
 import { planProblems } from '../lib/split.mjs'
 import { declaredPlan } from '../run.mjs'
+import { documentProblems } from '../lib/selftest.mjs'
 import { productPluginDir } from '../lib/hook.mjs'
 import {
   DELIVERED_AT_OPEN_HISTORY,
@@ -308,5 +309,26 @@ describe('a round that declares its plan', () => {
     assert.deepEqual(planProblems({ ...split, plan: [{ scenarios: ['S3b', 'S1', 'S5'], arms: ['a'], runs: 4 }] }), [])
     assert.match(planProblems({ ...split, plan: [{ scenarios: ['S3b'], arms: ['zz'], runs: 4 }] }).join('\n'), /an arm the round does not run[\s\S]*no entry of "plan" reaches x2/)
     assert.match(planProblems({ ...split, replica: { model: '', plan: [{ scenarios: ['S3b'], arms: ['a'], runs: 0 }] } }).join('\n'), /names no model[\s\S]*not a whole number/)
+  })
+})
+
+describe('the preflight refuses surface arms that open with different documents', () => {
+  const arms = [DOC_ARM, SURFACE_ARM, GATE_ARM]
+  const same = new Map(arms.map((arm) => [`r5/a90/${arm}`, '# What governs the work here\n- ADR-1 — x']))
+
+  test('the same document in all three is no problem', () => {
+    assert.deepEqual(documentProblems({ documents: same, cells: ['r5/a90'], surfaceArms: arms }), [])
+  })
+
+  test('a document that differs in one arm, or never arrived, is refused by name', () => {
+    const forged = new Map(same)
+    forged.set(`r5/a90/${GATE_ARM}`, '# What governs the work here\n- ADR-1 — x\nThe first write is held.')
+    forged.set(`r5/a91/${DOC_ARM}`, 'doc')
+    forged.set(`r5/a91/${SURFACE_ARM}`, null)
+    forged.set(`r5/a91/${GATE_ARM}`, 'doc')
+    const problems = documentProblems({ documents: forged, cells: ['r5/a90', 'r5/a91'], surfaceArms: arms })
+    assert.equal(problems.length, 2)
+    assert.match(problems[0], /r5\/a90: the document mnema-gate hands over is not the one mnema-doc hands over/)
+    assert.match(problems[1], /r5\/a91: the document mnema\+ hands over/)
   })
 })

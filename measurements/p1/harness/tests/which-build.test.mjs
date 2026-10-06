@@ -191,7 +191,7 @@ describe('11 · the line says which build the cell executed', () => {
     // CLI's `subtype` and not its `is_error`, so no capture taken at 7 or earlier can be
     // audited for the vendor refusal that corrupted the sieve of 2026-08-24. The 492 cells
     // committed before it were checked for it by hand, out of `raw/`, and none carries it.
-    assert.equal(RESULT_SCHEMA, 'mnema-bench/cell/10')
+    assert.equal(RESULT_SCHEMA, 'mnema-bench/cell/11')
   })
 })
 

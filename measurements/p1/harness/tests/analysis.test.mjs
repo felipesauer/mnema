@@ -16,6 +16,7 @@ import {
   inputTokens,
   medianInputTokens,
   newcombe90,
+  opportunityHolds,
   pairedDifferences,
   seededRandom,
   selectCells,
@@ -189,7 +190,29 @@ describe('which cells a reading is over', () => {
     assert.equal(selectCells(cells, { scenario: 'S3b' }).cells.length, 1)
     const { cells: kept, opportunity } = selectCells(cells, { scenario: 'S5', minPushed: 2 })
     assert.deepEqual(kept.map((c) => c.mcp_pushed), [3])
-    assert.deepEqual(opportunity, { kept: 1, of: 3 })
+    assert.deepEqual(opportunity, { x: { kept: 1, of: 3, share: 1 / 3 } })
+  })
+
+  test('the occasion is read PER compared arm — arms with no per-edit channel do not dilute it', () => {
+    // The capture that falsified the pooled reading: E4, E5 and E6 had the occasion in every cell,
+    // and the three arms without the channel in none, which a family-wide share reads as 50%.
+    const capture = []
+    for (const arm of ['base', 'claude-md', 'host', 'mnema-doc', 'mnema+', 'mnema-gate']) {
+      for (let i = 0; i < 32; i += 1) {
+        const pushed = ['mnema-doc', 'mnema+', 'mnema-gate'].includes(arm) ? 2 : 0
+        capture.push({ arm, fixture: `t${i % 8}`, run: i, status: 'ok', verdict: 'CONFORMS_CURRENT', scenario: 'S5', mcp_pushed: pushed })
+      }
+    }
+    const { opportunity } = selectCells(capture, { scenario: 'S5', minPushed: 2 })
+    assert.deepEqual(opportunity['mnema-doc'], { kept: 32, of: 32, share: 1 })
+    assert.deepEqual(opportunity['mnema+'], { kept: 32, of: 32, share: 1 })
+    assert.equal(opportunityHolds(opportunity, ['mnema+', 'mnema-doc']), true)
+    // And it still fails when ONE compared arm lacks the occasion.
+    const thin = capture.map((c) => (c.arm === 'mnema-doc' && c.run % 4 === 0 ? { ...c, mcp_pushed: 1 } : c))
+    const read = selectCells(thin, { scenario: 'S5', minPushed: 2 }).opportunity
+    assert.equal(read['mnema-doc'].share, 0.75)
+    assert.equal(opportunityHolds(read, ['mnema+', 'mnema-doc']), false)
+    assert.equal(opportunityHolds(read, ['mnema+', 'nobody']), false)
   })
 
   test('the four-word verdicts are read by the same tally the reading stands on', () => {

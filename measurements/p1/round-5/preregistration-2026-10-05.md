@@ -29,14 +29,19 @@ difference is the mechanism under test, not an accident of the seed.
 | E3 | `host` | the host's own auto-memory: one file per decision and a `MEMORY.md` index line for each; the replacement's file opens with the same `**Supersedes:**` line | the host loads the index by itself |
 | E4 | `mnema-doc` | a mnema record: every decision accepted, the replaced one then superseded by the product's own verb, each addressed (`--rel governs`) at the path the task says it governs; the per-edit push switched off (`edit-rules-push`, private) | the opening document, at `SessionStart` |
 | E5 | `mnema+` | the same record, the push on | the opening document, and the rules addressed at a file beside the result of each write to it |
-| E6 | `mnema-gate` | the same record as E5, with the hold on the first write switched on (`edit-first-write-gate`, private) | as E5, and the first write of the session to a governed file does not happen: the rules come back as its reason, and the same write repeated goes through |
+| E6 | `mnema-gate` | the same record as E5, with the channel `edit-first-write-gate` switched on (private) | as E5, and the first write of the session to EACH governed file does not happen: the rules addressed at that file come back as its reason, and the same write repeated goes through. The hold is kept per path, so a second governed file is held once too |
 
 **E6 is exploratory.** It runs on two families only (§4), and no hypothesis below reads it: its
-cells are published with the others and read as description. It is the hold on the FIRST write and
-not a `refuses-a-write` address, which was measured as the other way the product stops a write and
-not taken — with the stand-in, a rule linked `refuses-a-write` at the file refuses the second write
-exactly as the first, so the file the ticket asks for could not be written with the tools the hook
-covers, and the arm would measure how agents work around a refusal.
+cells are published with the others and read as description.
+
+**Why E6 is the channel `edit-first-write-gate` and not a `refuses-a-write` rule.** Both are ways
+the product stops a write before it happens, and both were measured with the stand-in before this
+freeze. A rule linked `refuses-a-write` at the file the ticket names refuses the repeated write
+exactly as the first, so that file could never be written with the tools the hook covers, and the
+arm would measure how an agent works around a refusal. The first-write hold refuses once per file,
+hands over the rules as the reason, and lets the repeat through — the question the arm asks. The
+choice is one line of the runner (`switchedOnChannels` in `harness/lib/seed.mjs`); it is to be
+confirmed before the first cell, and a change to it is a change to this file.
 
 **What reaches the model is declared and checked, not assumed.** The preflight runs the real host
 against a stand-in API for every (task, arm) pair and reads its first request — and, for the arms
@@ -103,8 +108,31 @@ after the Haiku block, from the same split (`replica` in [`split.json`](split.js
 `node harness/run.mjs --replica --round 5 --yes`).
 
 Both plans are read from the split by the runner (`plan` and `replica`), never typed: `--runs` is
-refused for this round. A cell the vendor refused or the harness could not complete is run once more
-and both lines are kept (`--resume`).
+refused for this round.
+
+**The re-run rule.** A cell goes back into the plan ONLY when it failed for a reason of the
+infrastructure, which the capture records in every line (`failure`): `quota` (HTTP 429, a session
+or usage limit), `network` (HTTP 5xx, a refused or reset connection), `cli-died` (the CLI could not
+run, or ended before the model said anything), `harness-timeout` (the harness killed the CLI at its
+own ceiling). **A cell that reached a verdict — whichever verdict, `BROKEN` included — is a result
+and is never run again**, and neither is a cell that failed for any other reason (a seed, a
+configuration, a discriminant): it counts as an error. A `quota` failure is waiting, not a result,
+and goes back with no ceiling; any other infrastructure failure goes back **once**, and a second
+counts as an error toward §8.5. Every attempt stays in the capture; nothing is overwritten.
+`--resume` applies this rule.
+
+**The captures, named before they exist.** Each phase writes to one directory, given with `--out`,
+and `--resume` refuses to run without it rather than open a second capture of the same phase:
+
+| phase | command | capture |
+|---|---|---|
+| pilot | `node harness/run.mjs --pilot --round 5 --out results/2026-10-05-round-five-pilot --yes` | `measurements/p1/results/2026-10-05-round-five-pilot/` |
+| full (Haiku) | `node harness/run.mjs --full --round 5 --out results/2026-10-05-round-five-full --yes` | `measurements/p1/results/2026-10-05-round-five-full/` |
+| replica (Sonnet) | `node harness/run.mjs --replica --round 5 --out results/2026-10-05-round-five-replica --yes` | `measurements/p1/results/2026-10-05-round-five-replica/` |
+| skill trigger | `node run.mjs --out results/2026-10-05-round-five --yes` (in `measurements/skill-trigger/`) | `measurements/skill-trigger/results/2026-10-05-round-five/` |
+
+A phase cut by a limit continues with the same command plus `--resume`. The date in each name is the
+date of this freeze, not of the run.
 
 **Not in this round, by decision:** the family where only the record was kept up to date (it is
 determined by construction and is a demonstration, not a measurement), and the `prosa` arm. No sieve:
@@ -131,8 +159,10 @@ The reading is one of `higher`, `lower`, `equivalent`, `unresolved`.
 - `unresolved` is **no conclusion**, and is reported as that.
 - H1 and H2 are each tested at α = 0.05 with no correction for the two; they share E2 and are not
   independent. Both are reported whatever each says.
-- **H3 is testable only if** at least 80% of the `ok` cells of E4 and of E5 in S5 have
-  `mcp_pushed ≥ 2`. Below that it is **"no opportunity"**, never "no effect".
+- **H3 is testable only if** at least 80% of the `ok` cells of E4, and at least 80% of those of
+  E5, in S5 have `mcp_pushed ≥ 2` — each arm on its own, never pooled with the arms that have no
+  per-edit channel. The analysis prints it per compared arm (`opportunity.<arm>.share`) and the
+  condition (`opportunity.holds`). Below that it is **"no opportunity"**, never "no effect".
 - Input tokens are `input_tokens + cache_read_input_tokens + cache_creation_input_tokens`, from the
   vendor's own result message.
 
@@ -194,8 +224,9 @@ The round is **not read** if:
    between cells of one capture;
 3. any arm is separated from E1 in **S1** (`higher` or `lower`): the control that must tie did not;
 4. any arm that holds decisions (E2–E5) scores below **0.90** pooled in **S2**: the delivery broke;
-5. more than **5%** of the planned cells end as `harness_error`, `ruler_broken` or a vendor refusal
-   after the single re-run;
+5. more than **5%** of the planned cells end as an error once the re-run rule (§4) has been
+   applied — every failure that is not the infrastructure's, and every infrastructure failure other
+   than `quota` that failed twice;
 6. `BROKEN` reaches **25%** of an arm's cells in the S3b headline;
 7. any task, this file, the split, `analysis.mjs` or `harness/lib/cells.mjs` changes after the first
    cell of the round exists.
@@ -223,7 +254,7 @@ cell with `mcp_pushed < 2` is "no opportunity" for H3.
 |---|---|
 | the forty-seven tasks | by digest, [`fixtures.sha256`](fixtures.sha256) — the tasks are held out |
 | the split, the families, the plan, the replica, the model and the CLI | [`split.json`](split.json) |
-| the analysis | [`../analysis.mjs`](../analysis.mjs) and [`../harness/lib/cells.mjs`](../harness/lib/cells.mjs) at this commit: sha256 `a0f5fee7bc7cf37024928911416faa522f4e70b405fd9fd142cca93b2f1d86e6` and `c7d4fc226b62a59c56467c9cc73cfe327d769ab22ecf0064afd629a47a04bb5d` |
+| the analysis | [`../analysis.mjs`](../analysis.mjs) and [`../harness/lib/cells.mjs`](../harness/lib/cells.mjs) at this commit: sha256 `eba26ee9fcef48b23040c164199d1c125b6ecc985a1e3828578a6495eb2256bc` and `c7d4fc226b62a59c56467c9cc73cfe327d769ab22ecf0064afd629a47a04bb5d` |
 | the runner | [`../harness/`](../harness/) at this commit |
 
 The report of this round will live beside this file.

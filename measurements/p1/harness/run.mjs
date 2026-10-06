@@ -25,7 +25,7 @@ import { ISOLATION_CHECKLIST, AUTH_MODES } from './lib/isolation.mjs'
 import { cliDriftProblem, cliPinProblem } from './lib/pin.mjs'
 import { cloneBench, runSelftest } from './lib/selftest.mjs'
 import { claudeVersion, mnemaVersion, runCell } from './lib/cell.mjs'
-import { QUALIFICATIONS } from './lib/result.mjs'
+import { INFRASTRUCTURE_FAILURES, QUALIFICATIONS, UNCAPPED_FAILURES } from './lib/result.mjs'
 import {
   PREREG,
   REPO_ROOT,
@@ -289,7 +289,15 @@ export function declaredPlan(fixtures, entries, { heldOut, scenarioOf }) {
  */
 export function cellsNotYetRun(plan, resultsPath) {
   if (!existsSync(resultsPath)) return plan
+  // THE RE-RUN RULE, pre-registered for round 5 and the rule for every resume since: a cell goes
+  // back into the plan ONLY for a failure of the infrastructure that the capture classifies
+  // (`failure`, `lib/result.mjs`). A cell that reached a verdict — whichever, `BROKEN` included —
+  // is a result and never runs again; a failure that is not the infrastructure's (a seed, a
+  // discriminant) counts as an error and never runs again either. A quota refusal is waiting and
+  // goes back every time; any other infrastructure failure goes back ONCE, and after a second it
+  // counts as an error toward the round's ceiling. Every attempt stays in the capture.
   const done = new Set()
+  const capped = new Map()
   for (const line of readFileSync(resultsPath, 'utf8').split('\n')) {
     if (line.trim() === '') continue
     let row
@@ -298,9 +306,31 @@ export function cellsNotYetRun(plan, resultsPath) {
     } catch {
       throw new Error(`${resultsPath} holds a line that is not JSON: a capture cannot be resumed from`)
     }
-    if (row.status === 'ok') done.add(`${row.fixture}\u0000${row.arm}\u0000${row.run}`)
+    const key = `${row.fixture}\u0000${row.arm}\u0000${row.run}`
+    const infrastructure = row.status !== 'ok' && INFRASTRUCTURE_FAILURES.includes(row.failure)
+    if (row.status === 'ok') done.add(key)
+    else if (!infrastructure) done.add(key)
+    else if (!UNCAPPED_FAILURES.includes(row.failure)) {
+      capped.set(key, (capped.get(key) ?? 0) + 1)
+      if (capped.get(key) >= 2) done.add(key)
+    }
   }
   return plan.filter((c) => !done.has(`${c.fixture.id}\u0000${c.arm}\u0000${c.run}`))
+}
+
+/**
+ * Where a stage's capture lives. Named by the operator (`--out`, and a pre-registration names it
+ * for each phase), or dated by today when a stage starts fresh.
+ *
+ * A RESUME NAMES ITS CAPTURE OR DOES NOT RUN. Defaulted, a resume on the day after a stop would open
+ * a new dated directory and plan the WHOLE stage again — every cell already spent spent twice, and
+ * the first capture left as a second, partial copy of the same stage.
+ */
+export function captureDir({ outDir = null, mode, resume = false, today = new Date() }) {
+  if (resume && !outDir) {
+    throw new Error('--resume needs --out <the capture to resume>: without it a new capture would be opened and the stage spent again')
+  }
+  return outDir ?? join(PREREG.results, `${today.toISOString().slice(0, 10)}-${mode}`)
 }
 
 /**
@@ -414,9 +444,11 @@ async function main() {
   // Results land in the COMMITTED tree by default. They used to land inside the
   // workbench, which git ignores — a protocol that asks for a result per cell
   // committed, writing where nothing can be committed from.
-  const stamp = new Date().toISOString().slice(0, 10)
-  const outDir = opts.outDir ?? join(PREREG.results, `${stamp}-${opts.mode}`)
+  const outDir = captureDir({ outDir: opts.outDir, mode: opts.mode, resume: opts.resume })
   const resultsPath = join(outDir, 'cells.jsonl')
+  if (!opts.resume && existsSync(resultsPath)) {
+    throw new Error(`${resultsPath} already holds a capture: resume it with --resume, or name another --out`)
+  }
 
   if (opts.resume) {
     const wanted = plan.length

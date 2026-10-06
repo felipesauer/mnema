@@ -24,7 +24,7 @@ import { listFixtures } from '../lib/fixtures.mjs'
 import { ARMS } from '../lib/seed.mjs'
 import { runSelftest } from '../lib/selftest.mjs'
 import { sandboxRoot } from '../lib/sandbox.mjs'
-import { benchOf, benches, cellPlan, cellsNotYetRun, pilotPlan, sievePlan } from '../run.mjs'
+import { benchOf, benches, captureDir, cellPlan, cellsNotYetRun, pilotPlan, sievePlan } from '../run.mjs'
 import {
   ROUNDS,
   armsOf,
@@ -476,20 +476,46 @@ describe('10f · a stage that spends across sittings resumes into the same captu
     )
   })
 
-  test('but a cell the capture holds as anything ELSE is, and that is the whole point', () => {
-    // THE SECOND VALUE. A guard that only ever skips would pass just as well if it skipped
-    // everything, and the cells this has to plan again are exactly the ones a session limit
-    // produced: present in the capture, and not a result. The failed line is never edited —
-    // the reading rule keeps both attempts — so the only thing that may change is the plan.
+  test('a cell goes back only for a failure of the infrastructure, never for its result', () => {
+    // THE RE-RUN RULE. A guard that only ever skips would pass just as well if it skipped
+    // everything, so each kind is here with the answer it must get. The failed lines are never
+    // edited — every attempt stays in the capture — so the only thing that may change is the plan.
     const path = capture([
-      { fixture: 'a25-late-fee', arm: 'mnema-doc', run: 1, status: 'harness_error' },
-      { fixture: 'a25-late-fee', arm: 'mnema-doc', run: 2, status: 'ruler_broken' },
-      { fixture: 'a26-freight-band', arm: 'mnema-doc', run: 1, status: 'ok' },
+      // a verdict, and a bad one: a result, and never run again
+      { fixture: 'a25-late-fee', arm: 'mnema-doc', run: 1, status: 'ok', verdict: 'BROKEN' },
+      // a quota refusal: waiting, not a result — back in the plan
+      { fixture: 'a25-late-fee', arm: 'mnema-doc', run: 2, status: 'harness_error', failure: 'quota' },
+      // a network failure: back once
+      { fixture: 'a26-freight-band', arm: 'mnema-doc', run: 1, status: 'harness_error', failure: 'network' },
     ])
     assert.deepEqual(
       cellsNotYetRun(plan, path).map((c) => `${c.fixture.id} r${c.run}`),
-      ['a25-late-fee r1', 'a25-late-fee r2'],
+      ['a25-late-fee r2', 'a26-freight-band r1'],
     )
+  })
+
+  test('a quota refusal goes back however many times it happened; any other, once only', () => {
+    const path = capture([
+      ...[1, 2, 3, 4].map(() => ({ fixture: 'a25-late-fee', arm: 'mnema-doc', run: 2, status: 'harness_error', failure: 'quota' })),
+      { fixture: 'a26-freight-band', arm: 'mnema-doc', run: 1, status: 'harness_error', failure: 'network' },
+      { fixture: 'a26-freight-band', arm: 'mnema-doc', run: 1, status: 'harness_error', failure: 'cli-died' },
+      { fixture: 'a25-late-fee', arm: 'mnema-doc', run: 1, status: 'ok', verdict: 'VIOLATES' },
+    ])
+    assert.deepEqual(cellsNotYetRun(plan, path).map((c) => `${c.fixture.id} r${c.run}`), ['a25-late-fee r2'])
+  })
+
+  test('and a failure that is the bench’s own, or a broken ruler, counts as an error and is not run again', () => {
+    const path = capture([
+      { fixture: 'a25-late-fee', arm: 'mnema-doc', run: 1, status: 'harness_error', failure: null, error: 'seeding: x' },
+      { fixture: 'a25-late-fee', arm: 'mnema-doc', run: 2, status: 'ruler_broken', failure: null },
+    ])
+    assert.deepEqual(cellsNotYetRun(plan, path).map((c) => `${c.fixture.id} r${c.run}`), ['a26-freight-band r1'])
+  })
+
+  test('a resume names the capture it resumes, or it does not run', () => {
+    assert.throws(() => captureDir({ mode: 'full', resume: true }), /--resume needs --out/)
+    assert.equal(captureDir({ outDir: '/x/cap', mode: 'full', resume: true }), '/x/cap')
+    assert.match(captureDir({ mode: 'pilot', today: new Date('2026-10-07T12:00:00Z') }), /results\/2026-10-07-pilot$/)
   })
 
   test('and the arm is part of the identity, so two arms on one task are two cells', () => {

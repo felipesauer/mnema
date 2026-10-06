@@ -3,7 +3,8 @@
 //
 //   node run.mjs --selftest             every check below, against the real host with a stand-in
 //                                       where the model would be. No model is called.
-//   node run.mjs --yes [--runs n]       every case x both arms x the frozen runs. SPENDS.
+//   node run.mjs --yes [--runs n] [--out <dir>] [--resume]
+//                                       every case x both arms x the frozen runs. SPENDS.
 //   node run.mjs --read <cells.jsonl>   the reading, per arm and per kind of case.
 //
 // TWO ARMS AND ONE DIFFERENCE. Both load a copy of this product's plugin directory with
@@ -286,16 +287,33 @@ export function reading(lines) {
   return out
 }
 
-async function runCells({ runs, outDir }) {
+/**
+ * The sessions a capture already holds as `ok`, so a run cut by a limit can resume into the same
+ * file. A session that failed is run again; every attempt stays in the capture.
+ */
+export function sessionsDone(path) {
+  if (!existsSync(path)) return new Set()
+  const done = new Set()
+  for (const line of readFileSync(path, 'utf8').split('\n').filter(Boolean)) {
+    const row = JSON.parse(line)
+    if (row.status === 'ok') done.add(`${row.case}\u0000${row.arm}\u0000${row.run}`)
+  }
+  return done
+}
+
+async function runCells({ runs, outDir, resume }) {
   const version = spawnSync(CLAUDE, ['--version'], { encoding: 'utf8' }).stdout.trim()
   if (version !== CASES.cli_version) throw new Error(`the cases were frozen for ${CASES.cli_version} and this CLI is ${version}`)
   mkdirSync(outDir, { recursive: true })
   const path = join(outDir, 'cells.jsonl')
+  if (!resume && existsSync(path)) throw new Error(`${path} already holds a capture: resume it with --resume`)
+  const done = sessionsDone(path)
   let n = 0
   for (let run = 1; run <= runs; run += 1) {
     for (const [i, c] of CASES.cases.entries()) {
       const arms = (run + i) % 2 ? CASES.arms : [...CASES.arms].reverse()
       for (const arm of arms) {
+        if (done.has(`${c.id}\u0000${arm}\u0000${run}`)) continue
         n += 1
         const sandbox = plantedCell(`${c.id}-${arm}-r${run}`)
         try {
@@ -348,8 +366,13 @@ async function main(argv) {
     console.log('this spends real budget. Re-run with --yes to start.')
     process.exit(2)
   }
-  const outDir = resolve(HERE, 'results', new Date().toISOString().slice(0, 10))
-  const path = await runCells({ runs, outDir })
+  // The capture is named (`--out`, and the pre-registration names it); a resume without one is
+  // refused rather than opening a second capture of the same sessions.
+  const resume = argv.includes('--resume')
+  const named = argv.includes('--out') ? resolve(argv[argv.indexOf('--out') + 1]) : null
+  if (resume && !named) throw new Error('--resume needs --out <the capture to resume>')
+  const outDir = named ?? resolve(HERE, 'results', new Date().toISOString().slice(0, 10))
+  const path = await runCells({ runs, outDir, resume })
   console.log(`\nwrote ${path}`)
 }
 

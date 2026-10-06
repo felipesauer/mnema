@@ -58,7 +58,7 @@ node run.mjs --full --round 5 --yes  a round whose split declares a PLAN runs th
                                      entry's families, arms and runs, over its held-out tasks
 node run.mjs --replica --round 5 --yes
                                      the round's declared replica: the same tasks on its model
-node mutate.mjs                      59 mutations against that suite. None may come back green
+node mutate.mjs                      63 mutations against that suite. None may come back green
 ```
 
 **`--sieve` is a stage and not a round**, and round 4 is the first to declare one: it runs one
@@ -217,7 +217,7 @@ read *"0 failures"* — and both times it was caught only because a mutation tha
 came back zero. An instrument that cannot say it broke is worse than no instrument.
 
 **`mutate.mjs` is published with the runner, and it is not our deliveries' battery.** Every one of
-its 59 mutations targets a file of THIS runner — `lib/seed.mjs`, `lib/selftest.mjs`, `lib/root.mjs`,
+its 63 mutations targets a file of THIS runner — `lib/seed.mjs`, `lib/selftest.mjs`, `lib/root.mjs`,
 `run.mjs` and nine others, each resolved from its own directory — and it runs this directory's own
 suite. It is the instrument proving that its own guards can go red, which is the only evidence that
 the suite above is worth its green. Nothing in it touches `packages/`.

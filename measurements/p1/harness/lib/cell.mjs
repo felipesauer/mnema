@@ -23,7 +23,7 @@ import { surfaceProblem } from './channel.mjs'
 import { MODEL, OUTPUT_FORMAT_DEFAULT, cellEnv, claudeArgv, installAuth, writeCellConfig } from './isolation.mjs'
 import { readAgentOutput } from './interactions.mjs'
 import { runQuality, runVerify } from './verdict.mjs'
-import { appendResult, missingFrom, resultLine } from './result.mjs'
+import { appendResult, missingFrom, resultLine, vendorFailure } from './result.mjs'
 import { addressCovers, readDecisionSet, readTicket, touchedPaths } from './fixtures.mjs'
 import { builtProduct } from './build.mjs'
 
@@ -165,10 +165,16 @@ export function runCell({
   }
 
   if (agent.error) {
-    return finish({ status: 'harness_error', error: `the agent CLI could not run: ${agent.error.message}` })
+    return finish({ status: 'harness_error', failure: 'cli-died', error: `the agent CLI could not run: ${agent.error.message}` })
   }
   if (agent.signal) {
-    return finish({ status: 'harness_error', error: `the agent CLI was killed by ${agent.signal}` })
+    // `spawnSync` ends a CLI that outlives `timeoutMs` with SIGTERM: that is the harness's own
+    // ceiling. Any other signal killed the CLI from outside.
+    return finish({
+      status: 'harness_error',
+      failure: agent.signal === 'SIGTERM' ? 'harness-timeout' : 'cli-died',
+      error: `the agent CLI was killed by ${agent.signal}`,
+    })
   }
 
   let result = null
@@ -177,8 +183,12 @@ export function runCell({
     ;({ result, interactions } = readAgentOutput(agent.stdout ?? '', outputFormat))
   } catch {
     const head = (agent.stdout || agent.stderr || '').split('\n')[0] ?? ''
+    // Died before the model said anything — no assistant event in what it wrote — is the CLI's
+    // failure; a session that had already answered and then broke is not, and is not run again.
+    const answered = /"type"\s*:\s*"assistant"/.test(agent.stdout ?? '')
     return finish({
       status: 'harness_error',
+      failure: answered ? null : 'cli-died',
       error: `the agent CLI wrote no result JSON (exit ${agent.status}): ${head.slice(0, 300)}`,
     })
   }
@@ -188,6 +198,7 @@ export function runCell({
   if (subtype !== 'success' && !truncated) {
     return finish({
       status: 'harness_error',
+      failure: vendorFailure(result),
       error: `the agent CLI reported ${subtype ?? 'no subtype'}: ${String(result?.result ?? '').slice(0, 300)}`,
       result,
       interactions,
@@ -223,6 +234,7 @@ export function runCell({
     const status = result?.api_error_status
     return finish({
       status: 'harness_error',
+      failure: vendorFailure(result),
       error:
         `the agent CLI reported is_error beside subtype ${subtype}` +
         `${status ? ` (HTTP ${status})` : ''}` +

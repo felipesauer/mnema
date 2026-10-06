@@ -510,22 +510,8 @@ export async function runSelftest({
     // The comparison across arms, once every cell has produced its document. It runs
     // even when a document is missing — a `null` compares unequal to a document and the
     // sentence says which task and which arm, which is more use than skipping.
-    let compared = 0
-    for (const fixture of fixtures) {
-      const [first, ...rest] = surfaceArms
-      const reference = documents.get(`${where(fixture)}/${first}`)
-      for (const arm of rest) {
-        compared += 1
-        const other = documents.get(`${where(fixture)}/${arm}`)
-        if (other !== reference) {
-          problems.push(
-            `${where(fixture)}: the document ${arm} hands over is not the one ${first} hands over — ` +
-              `${(other ?? '').length} chars against ${(reference ?? '').length}, with the cell's own ` +
-              'ids named out. These two arms may differ in the per-edit switch and in nothing else',
-          )
-        }
-      }
-    }
+    const compared = fixtures.length * Math.max(surfaceArms.length - 1, 0)
+    problems.push(...documentProblems({ documents, cells: fixtures.map(where), surfaceArms }))
     const ok = problems.length === 0
     record(
       "the surface arms' context arrives",
@@ -700,6 +686,39 @@ export async function runSelftest({
   }
 
   return done(checks)
+}
+
+/**
+ * Every pair of surface arms that does NOT hand over the same opening document, as sentences —
+ * the first surface arm against each of the others, per cell, over the documents with each cell's
+ * fresh ids named out (`withoutFreshIds`). Empty means the pair the round subtracts differs in its
+ * switch and in nothing the session opens with.
+ *
+ * ITS OWN FUNCTION SO A CASE CAN HAND IT TWO DIFFERENT DOCUMENTS. Inline in the preflight, no case
+ * ever did — every bench a case builds hands over the same document in every surface arm — so a
+ * comparison that compared nothing passed the whole suite (mutation `z16`). A `null` (a cell whose
+ * document never arrived) compares unequal to a document, and says which.
+ *
+ * @param {{ documents: Map<string, string | null>, cells: string[], surfaceArms: string[] }} input
+ *   `documents` is keyed `<cell>/<arm>`.
+ */
+export function documentProblems({ documents, cells, surfaceArms }) {
+  const problems = []
+  const [first, ...rest] = surfaceArms
+  for (const cell of cells) {
+    const reference = documents.get(`${cell}/${first}`)
+    for (const arm of rest) {
+      const other = documents.get(`${cell}/${arm}`)
+      if (other !== reference) {
+        problems.push(
+          `${cell}: the document ${arm} hands over is not the one ${first} hands over — ` +
+            `${(other ?? '').length} chars against ${(reference ?? '').length}, with the cell's own ` +
+            'ids named out. These arms may differ in their per-edit switches and in nothing else',
+        )
+      }
+    }
+  }
+  return problems
 }
 
 function done(checks) {

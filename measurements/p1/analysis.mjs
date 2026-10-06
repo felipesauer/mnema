@@ -25,9 +25,10 @@
 // both with fixed seeds, so a change to this file that moves either goes red. NO MODEL IS CALLED.
 //
 // WHAT IT DOES NOT DO. It does not pick a round's headline, a threshold or a model; those are
-// pre-registered. It reads the three-word verdicts the harness writes today (`CONFORMS`,
-// `VIOLATES`, `BROKEN`); a round that scores in four words needs the reading widened first, and
-// the reading is `harness/lib/cells.mjs`, one place.
+// pre-registered. It reads both vocabularies the harness writes — the three words of rounds 1 to
+// 4 (`CONFORMS`, `VIOLATES`, `BROKEN`) and the four of a task that holds a history
+// (`CONFORMS_CURRENT`, `FOLLOWS_OBSOLETE`, `VIOLATES`, `BROKEN`) — through one reading of what a
+// line counts as, `harness/lib/cells.mjs`.
 
 import { fileURLToPath } from 'node:url'
 import { readCells, tally } from './harness/lib/cells.mjs'
@@ -263,17 +264,39 @@ export function separationRate({ tasks, runs, effect, heterogeneous = false, rou
  * exists to give the per-edit channel an occasion — only the cells where that occasion happened
  * (`minPushed`: the host dispatched the per-edit tool at least that many times). A cell without the
  * occasion is not a cell where the channel had no effect; it is a cell that cannot say, and it is
- * left out of the reading rather than counted as a zero. `opportunity` says how many were left.
+ * left out of the reading rather than counted as a zero.
+ *
+ * `opportunity` says how many were left, PER ARM: `{ <arm>: { kept, of, share } }` over the `ok`
+ * cells. Per arm and never pooled over the family, because the pre-registered condition is about
+ * the two arms compared, and arms with no per-edit channel at all (their `mcp_pushed` is 0 or
+ * null) would otherwise drag the share down — a capture where both compared arms had the
+ * occasion in every cell read as fifty per cent.
  */
 export function selectCells(cells, { scenario = null, minPushed = null } = {}) {
   const family = scenario === null ? cells : cells.filter((c) => c.scenario === scenario)
   if (minPushed === null) return { cells: family, opportunity: null }
-  const kept = family.filter((c) => typeof c.mcp_pushed === 'number' && c.mcp_pushed >= minPushed)
-  const ok = family.filter((c) => c.status === 'ok')
-  return {
-    cells: kept,
-    opportunity: { kept: kept.filter((c) => c.status === 'ok').length, of: ok.length },
+  const has = (c) => typeof c.mcp_pushed === 'number' && c.mcp_pushed >= minPushed
+  const opportunity = {}
+  for (const c of family) {
+    if (c.status !== 'ok') continue
+    const at = (opportunity[c.arm] ??= { kept: 0, of: 0, share: null })
+    at.of += 1
+    if (has(c)) at.kept += 1
+    at.share = at.kept / at.of
   }
+  return { cells: family.filter(has), opportunity }
+}
+
+/** The share of `ok` cells with the occasion each compared arm must reach for the reading to stand. */
+export const OPPORTUNITY_FLOOR = 0.8
+
+/**
+ * Whether the occasion happened often enough in BOTH compared arms — the pre-registered condition
+ * on the per-edit family. An arm with no `ok` cell in the family fails it: no cells, no occasion.
+ */
+export function opportunityHolds(opportunity, arms, floor = OPPORTUNITY_FLOOR) {
+  if (opportunity === null) return null
+  return arms.every((arm) => (opportunity[arm]?.share ?? 0) >= floor)
 }
 
 /** Every input token a cell's session paid for: the uncached, the cache read and the cache written. */
@@ -348,7 +371,12 @@ function main(argv) {
       return [arm, { ...sum, rate: sum.scorable > 0 ? sum.conforms / sum.scorable : null }]
     }),
   )
-  console.log(JSON.stringify({ ...read, pooled, opportunity, median_input_tokens: tokens }, null, 2))
+  // The occasion of the two compared arms only, and whether it holds for both.
+  const occasion =
+    opportunity === null
+      ? null
+      : { [a]: opportunity[a] ?? null, [b]: opportunity[b] ?? null, floor: OPPORTUNITY_FLOOR, holds: opportunityHolds(opportunity, [a, b]) }
+  console.log(JSON.stringify({ ...read, pooled, opportunity: occasion, median_input_tokens: tokens }, null, 2))
 }
 
 if (process.argv[1] && fileURLToPath(import.meta.url) === process.argv[1]) main(process.argv.slice(2))

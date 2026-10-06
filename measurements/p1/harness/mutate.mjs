@@ -12,8 +12,8 @@
 //      cannot be parsed is RULER BROKEN, never zero;
 //   3. it restores the exact bytes it saved, whether or not the run succeeded.
 //
-// FIFTY-NINE mutations: the forty-eight below in thirteen families, then eleven against the guards
-// round 5 added (`r5a` to `r5k`), each putting back the defect its guard was written against. The
+// SIXTY-THREE mutations: the forty-eight below in thirteen families, then fifteen against the guards
+// round 5 added (`r5a` to `r5o`), each putting back the defect its guard was written against. The
 // forty-eight are: the floor of the experiment (the arm that
 // should carry the decision stops carrying it, and the arm that should carry
 // nothing starts), the memory column, the mnema arm's channel, the surface arms'
@@ -376,8 +376,8 @@ export const MUTATIONS = [
   {
     name: 'z16 · the preflight stops comparing the two arms’ documents',
     file: SELFTEST,
-    from: '        if (other !== reference) {',
-    to: '        if (false) {',
+    from: '      if (other !== reference) {',
+    to: '      if (false) {',
     expect: 'the switch could move the opening document and the round would subtract two channels',
   },
   // And the root, which is not an absence guard but a path every absolute path in
@@ -389,15 +389,15 @@ export const MUTATIONS = [
   {
     name: 'z22 · the resume plans a cell the capture already resolved',
     file: RUN,
-    from: "    if (row.status === 'ok') done.add(",
-    to: "    if (false) done.add(",
+    from: "    if (row.status === 'ok') done.add(key)",
+    to: '    if (false) done.add(key)',
     expect: 'a resumed sieve re-spends every cell that already worked',
   },
   {
     name: 'z23 · the resume skips a cell the vendor refused, as though it were a result',
     file: RUN,
-    from: "    if (row.status === 'ok') done.add(",
-    to: '    if (true) done.add(',
+    from: '    else if (!infrastructure) done.add(key)',
+    to: '    else done.add(key)',
     expect: 'the cells a session limit produced are never run, and the sieve is short by exactly them',
   },
   // And the two below are THE VENDOR'S OWN VERDICT ON THE SESSION. They exist because a
@@ -523,8 +523,8 @@ export const MUTATIONS = [
   {
     name: 'r5j · the per-edit family is read over every cell, with or without the occasion',
     file: ANALYSIS,
-    from: "  const kept = family.filter((c) => typeof c.mcp_pushed === 'number' && c.mcp_pushed >= minPushed)",
-    to: '  const kept = family',
+    from: "  const has = (c) => typeof c.mcp_pushed === 'number' && c.mcp_pushed >= minPushed",
+    to: '  const has = () => true',
     expect: 'a cell where the channel had no write to speak after is counted as the channel having no effect',
   },
   {
@@ -533,6 +533,34 @@ export const MUTATIONS = [
     from: '    if (supersedes !== null && !keys.has(supersedes)) {',
     to: '    if (false) {',
     expect: 'a decision replaced by an earlier one is seeded, and the order of the history means nothing',
+  },
+  {
+    name: 'r5l · the occasion is pooled over the family again',
+    file: ANALYSIS,
+    from: '    const at = (opportunity[c.arm] ??= { kept: 0, of: 0, share: null })',
+    to: "    const at = (opportunity.family ??= { kept: 0, of: 0, share: null })",
+    expect: 'arms with no per-edit channel drag the share of the two compared arms below the floor',
+  },
+  {
+    name: 'r5m · a cell that failed for no reason of the infrastructure goes back into the plan',
+    file: RUN,
+    from: '    else if (!infrastructure) done.add(key)\n',
+    to: '',
+    expect: 'a broken ruler or a broken seed is spent again, and the capture chooses which attempt counts',
+  },
+  {
+    name: 'r5n · a quota refusal is capped like any other failure',
+    file: RUN,
+    from: '    else if (!UNCAPPED_FAILURES.includes(row.failure)) {',
+    to: '    else if (true) {',
+    expect: 'a cell the session limit cut twice is counted as an error instead of waited for',
+  },
+  {
+    name: 'r5o · a resume opens a new capture when nobody names one',
+    file: RUN,
+    from: '  if (resume && !outDir) {',
+    to: '  if (false) {',
+    expect: 'a stage resumed the next day spends every cell it already spent, into a second directory',
   },
 ]
 
