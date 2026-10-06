@@ -82,7 +82,9 @@ document, delivered by the host instead of waited for.
   where a rule asks for a person, the person is asked and the write is not also refused. The server
   remembers the paths it held for as long as the connection lasts, so a session that reconnects is
   held once more. Each hold is recorded as a `channel.asked` citing the rule and the path, before
-  the refusal is made, and the channel's service as one `channel.served` per run (mnema noting that it delivered the hook's answer, which is not a person's approval: an approval is the host's own prompt, and the record keeps no fact of it). It holds in
+  the refusal is made, and the channel's service as one `channel.served` per run (mnema noting
+  that it delivered the hook's answer, which is not a person's approval: an approval is the host's
+  own prompt, and the record keeps no fact of it). It holds in
   Claude Code, which runs the call; VS Code's command door starts a process per write and has no
   session to remember a path by, so it does not hold. That the host refuses the write on `deny` and
   hands the reason to the model was measured (`measurements/hooks-by-host/`).

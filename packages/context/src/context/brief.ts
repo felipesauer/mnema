@@ -478,10 +478,11 @@ function channelPair(
  * in the private tree is not counted, for the reason nothing private is printed — it does
  * not travel, and a reader of a clone would find a number they cannot account for.
  *
- * It intersects with the rules PRINTED rather than counting address links (any of `ADDRESS_RELATIONS`: a rule that only asks for a person, or only refuses a write, has an address too — the count once read `governs` alone and the document said "0 rules have an address" a line above "1 refuses a write at an address"), and that is
- * the difference that matters: a link whose subject is a superseded decision, or a task,
- * or an id no tree here holds, is a link this document says nothing about. Counting those
- * would tell the reader to expect a rule at an edit that nothing will ever push.
+ * It counts a rule that has any address relation (`ADDRESS_RELATIONS`), once however many it
+ * has. It intersects with the rules PRINTED rather than counting links, and that is the
+ * difference that matters: a link whose subject is a superseded decision, or a task, or an id no
+ * tree here holds, is a link this document says nothing about. Counting those would tell the
+ * reader to expect a rule at an edit that nothing will ever push.
  *
  * THAT CLAUSE WAS THE ONLY READING OF THE PRODUCT THAT GOT IT RIGHT, and it is worth
  * saying so here because it looks like a detail. Measured in a clone over a record holding
@@ -520,7 +521,7 @@ function countAsking(
   return countUnder(travels, rules, ASKS_FOR_A_PERSON_RELATION);
 }
 
-/** How many of `rules` are the subject of a link under any of `relations`, in the trees that travel. */
+/** How many of `rules` are the subject of a link under any of `relations`, in the trees that go. */
 function countUnder(
   travels: readonly ProjectionCache[],
   rules: readonly { readonly id: string }[],
