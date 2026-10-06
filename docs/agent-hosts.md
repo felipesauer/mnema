@@ -49,3 +49,5 @@ Names and ids, never bodies: the argument behind a decision is one request away
 arrive beside each rule is who accepted it, so a rule a stranger's clone planted cannot
 open a session looking like the team's: the identity, a person or an agent, and a mark
 on an identity nobody else has ruled with.
+
+To integrate mnema with a new agent host, see [plugin/porting-to-a-host.md](../plugin/porting-to-a-host.md) — it describes how to connect the MCP server, measure hook behavior, and reuse existing host implementations.
