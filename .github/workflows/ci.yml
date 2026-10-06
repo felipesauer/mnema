@@ -224,6 +224,45 @@ jobs:
           packages/code/tests/the-verifier-a-page-publishes-runs.test.ts
           packages/code/tests/what-a-package-publishes-is-what-its-page-promises.test.ts
 
+  # THE EXTENSION AS A FILE. `packages/vscode` is private and is not sent anywhere, so until this
+  # job nothing proved that it can be packed at all: the only route to a `.vsix` was by hand. This
+  # builds the file and keeps it as an artifact of the run, which a person can download and install
+  # with `code --install-extension`. THAT IS WHERE IT STOPS: there is no marketplace token in this
+  # file and no step that publishes, and `no-workflow-publishes-the-extension.test.ts` fails if one
+  # appears. It is not a required check and nothing waits for it.
+  #
+  # Before the job `the-link-cannot-come-back`, which reads its own job from its header to the end
+  # of this file and so has to stay last.
+  the-extension-as-a-file:
+    name: the extension as a file
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: pnpm/action-setup@v6
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version: '24'
+          cache: 'pnpm'
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      # The extension loads `dist`, and so do the two packages it carries.
+      - name: Build
+        run: pnpm build
+
+      - name: Pack the extension
+        run: pnpm --filter @mnema/vscode package
+
+      - name: Upload the extension
+        uses: actions/upload-artifact@v7
+        with:
+          name: mnema-vscode-extension
+          path: packages/vscode/mnema-*.vsix
+          if-no-files-found: error
+
   # THE LINK CANNOT COME BACK. This repository does not credit the tool that wrote a change in
   # the change's own record, and for 243 pull requests that held because somebody remembered it.
   # A sweep on 2026-09-11 found the trunk carrying one co-author trailer and thirteen

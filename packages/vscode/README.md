@@ -42,16 +42,15 @@ it), and the extension stays off in a workspace that is not trusted.
 There is nothing to install from a registry. From a built checkout (`pnpm install`, `pnpm build`):
 
 ```sh
-pnpm --filter @mnema/vscode deploy --legacy --prod <folder>
-cd <folder>
-npx @vscode/vsce package
-code --install-extension *.vsix
+pnpm --filter @mnema/vscode package
+code --install-extension packages/vscode/mnema-*.vsix
 ```
 
-`deploy` copies the package with the two workspace packages it reads, `@mnema/context` and
-`@mnema/core`, and `vsce` is the editor vendor's packer, fetched by `npx`; nothing in this
-repository runs either, so a `.vsix` is built by hand and by you. It is a local file and this
-repository never sends it anywhere.
+`package` copies the extension with the workspace packages it reads, `@mnema/context` and
+`@mnema/core`, and has `vsce`, the editor vendor's packer, write the `.vsix` next to this
+`package.json`. CI runs the same command and keeps the file as an artifact of the run
+(`mnema-vscode-extension`). It is a local file and this repository never sends it anywhere: no
+workflow publishes it, and a test fails if one does.
 
 ## How it is built
 

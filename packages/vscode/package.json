@@ -91,5 +91,11 @@
     "dist/",
     "extension.cjs",
     "NOTICE"
-  ]
+  ],
+  "scripts": {
+    "package": "node build/package-vsix.mjs"
+  },
+  "devDependencies": {
+    "@vscode/vsce": "^4.0.0"
+  }
 }
