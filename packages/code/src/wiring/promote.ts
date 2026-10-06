@@ -22,7 +22,6 @@ import type { Command } from 'commander';
 import { RECORD_CONTRACT_HELP } from '../recorded-content.js';
 import { here } from './context.js';
 import { writeLines } from './io.js';
-import { declaredAgent, WHICH_HELP } from './options.js';
 import { reportRecorded, reportRefusal, reportUsage } from './report.js';
 import { PIN_REFUSED } from './run-pin.js';
 import { type Declared, mutatesTheRecord, type Wiring } from './verb.js';
@@ -36,8 +35,9 @@ const PROMOTE_HELP = [
   '      never searched for; a pattern or decision counts only if it is in force (adopted,',
   '      accepted) and only through the committed tree — a project’s private tree is',
   '      neither counted nor cited, because the copy goes where every project reads.',
-  '  mnema promote <id> --evidence <path>:<id> [--evidence <path>:<id> …]',
-  '      copies <id>, which is in the project you stand in, to this machine’s global tree.',
+  '  mnema promote <id> --evidence <path>:<id>',
+  '      copies <id>, which is in the project you stand in, to this machine’s global tree;',
+  '      repeat --evidence for each other project.',
   '      It is born proposed, carries no address, and cites each id given (and <id>) as',
   '      derived-from. It refuses, and appends nothing, anything the listing would not show.',
   '      Nothing is moved: the originals stay where they are. Adopt the copy with the verb',
@@ -63,14 +63,10 @@ export function registerPromote(program: Command, wiring: Wiring): Declared {
       'with <id>: another project and the id of the same pattern there (repeatable)',
       (value: string, previous: string[] = []) => [...previous, value],
     )
-    .option('--which <agent>', WHICH_HELP, declaredAgent)
     .addHelpText('after', PROMOTE_HELP)
     .addHelpText('after', RECORD_CONTRACT_HELP);
   promote.action(
-    async (
-      id: string | undefined,
-      opts: { workspace?: string[]; evidence?: string[]; which?: string },
-    ) => {
+    async (id: string | undefined, opts: { workspace?: string[]; evidence?: string[] }) => {
       if (id === undefined) {
         if (opts.evidence !== undefined) {
           reportUsage(
@@ -114,7 +110,6 @@ export function registerPromote(program: Command, wiring: Wiring): Declared {
       const result = runPromote(here(), {
         id,
         evidence: opts.evidence ?? [],
-        ...(opts.which !== undefined ? { which: opts.which } : {}),
         ...(run !== undefined ? { run } : {}),
       });
       if (result.ok) {

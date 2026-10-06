@@ -24,7 +24,7 @@ function ending(listed: PromoteListed): Line[] {
   }
   return [
     fact(
-      'Promote one from inside a project that holds it: `mnema promote <id> --evidence <path>:<id> …`, citing the other projects. It is copied to this machine’s global tree as a proposal; nothing is moved.',
+      'Promote one from inside a project that holds it: `mnema promote <id> --evidence <path>:<id>`, citing the other projects. It is copied to this machine’s global tree as a proposal; nothing is moved.',
       0,
     ),
   ];
@@ -39,8 +39,7 @@ export function promotionCandidates(render: Render, listed: PromoteListed): stri
   for (const candidate of listed.candidates) {
     lines.push(
       subjectLine(
-        `${candidate.kind} "${oneLine(candidate.title)}"`,
-        ` — in force in ${new Set(candidate.instances.map((i) => i.project)).size} projects`,
+        `${candidate.kind} "${oneLine(candidate.title)}" — in force in ${new Set(candidate.instances.map((i) => i.project)).size} projects`,
       ),
     );
     for (const instance of candidate.instances) {

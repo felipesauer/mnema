@@ -80,6 +80,7 @@
 
 import type { ProvenLevel } from '@mnema/chain';
 import { buildProgram, type CliIo, parseWith } from '../cli.js';
+import { runPromoteList } from '../commands/promote.js';
 import type { TreeReport } from '../commands/verify.js';
 import { runVerify } from '../commands/verify.js';
 import { type CompletionWord, completionTree } from '../completion/tree.js';
@@ -933,7 +934,6 @@ export async function typedLine(line: string, session: Session): Promise<AfterLi
 async function sayWhatRecurs(argv: readonly string[], io: CliIo, render: Render): Promise<void> {
   const named = projectsNamedBy(argv);
   if (named.length === 0) return;
-  const { runPromoteList } = await import('../commands/promote.js');
   const line = promotableLine(runPromoteList(here(), { named }).candidates.length);
   if (line !== undefined) io.out(render(line));
 }

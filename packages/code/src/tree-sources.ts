@@ -28,6 +28,7 @@ import type { UpcasterRegistry } from '@mnema/chain';
 import { catalogUpcasters } from '@mnema/chain';
 import type { ScopedCache } from '@mnema/context';
 import { chainRootForScope, ProjectionCache, type ResolvedTrees, type Scope } from '@mnema/core';
+import type { ScopedTree } from './intelligence-source.js';
 import type { ScopedLinkBreak } from './record-integrity.js';
 
 /** The trees a composed read opens, in a fixed order. */
@@ -102,6 +103,40 @@ export function withOpenedCaches<T>(
       cache.refresh();
       return source;
     }, opened);
+  } finally {
+    for (const source of opened) source.cache.close();
+  }
+}
+
+/**
+ * Opens a cache over each of the given trees — which may belong to SEVERAL projects, none of
+ * them necessarily the caller's — hands them to `read`, and closes them all before returning,
+ * including when the read throws.
+ *
+ * EVERY ONE IS IN MEMORY AND NOTHING IS WRITTEN INTO ANY TREE. {@link withOpenedCaches} keeps
+ * its caches in the tree (`persist`), which is right for the project a command runs in; a read
+ * that spans projects the caller NAMED would be leaving a cache file in each one of them, and a
+ * project that was only looked at should be as it was found. The price is a replay of each
+ * chain, which is the price a workspace read already pays (`verify --workspace`).
+ */
+export function withTreesRead<T>(
+  trees: readonly ScopedTree[],
+  read: (sources: readonly ScopedCache[]) => T,
+): T {
+  const upcasters = catalogUpcasters();
+  const opened: ScopedCache[] = [];
+  try {
+    for (const tree of trees) {
+      const cache = ProjectionCache.open(tree.chainRoot, { upcasters });
+      opened.push({
+        scope: tree.scope,
+        chainRoot: tree.chainRoot,
+        ...(tree.project !== undefined ? { project: tree.project } : {}),
+        cache,
+      });
+      cache.refresh();
+    }
+    return read(opened);
   } finally {
     for (const source of opened) source.cache.close();
   }

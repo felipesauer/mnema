@@ -29,17 +29,16 @@
 
 import { realpathSync } from 'node:fs';
 import { dirname, resolve } from 'node:path';
-import { catalogUpcasters } from '@mnema/chain';
 import {
   judgePromotion,
   type PatternInstance,
   type PromotionCandidate,
-  type ScopedCache,
   samePattern,
 } from '@mnema/context';
-import { type DiscoveryEnv, ProjectionCache, resolveTrees } from '@mnema/core';
+import { type DiscoveryEnv, resolveTrees } from '@mnema/core';
 import { recordTrees, type ScopedTree } from '../intelligence-source.js';
 import { forwardReplacement, type Landed, type Replacement } from '../recorded-content.js';
+import { withTreesRead } from '../tree-sources.js';
 import { runDecision } from './decision.js';
 import { runLink } from './link.js';
 import { runSkill } from './skill.js';
@@ -137,34 +136,13 @@ function resolveNamed(
   return { projects, withoutRecord, trees };
 }
 
-/** Opens each tree in memory (nothing is written into a project that is not this one), reads, closes. */
-function reading<T>(trees: readonly ScopedTree[], read: (sources: ScopedCache[]) => T): T {
-  const upcasters = catalogUpcasters();
-  const opened: ScopedCache[] = [];
-  try {
-    for (const tree of trees) {
-      const cache = ProjectionCache.open(tree.chainRoot, { upcasters });
-      opened.push({
-        scope: tree.scope,
-        chainRoot: tree.chainRoot,
-        ...(tree.project !== undefined ? { project: tree.project } : {}),
-        cache,
-      });
-      cache.refresh();
-    }
-    return read(opened);
-  } finally {
-    for (const source of opened) source.cache.close();
-  }
-}
-
 /** Lists what recurs across the projects the caller named. Writes nothing. */
 export function runPromoteList(
   ctx: PromoteContext,
   input: { named: readonly string[] },
 ): PromoteListed {
   const set = resolveNamed(ctx, input.named);
-  const candidates = reading(set.trees, (sources) => samePattern(sources));
+  const candidates = withTreesRead(set.trees, (sources) => samePattern(sources));
   return {
     ok: true,
     projects: set.projects.length,
@@ -197,7 +175,6 @@ export function runPromote(
   input: {
     id: string;
     evidence: readonly string[];
-    which?: string;
     run?: string;
   },
 ): PromoteDone | PromoteRefused {
@@ -229,7 +206,7 @@ export function runPromote(
     id: one.id,
   }));
 
-  const judged = reading(set.trees, (sources) => judgePromotion(sources, labelled));
+  const judged = withTreesRead(set.trees, (sources) => judgePromotion(sources, labelled));
   if (!judged.ok) return refused(judged.reason, judged.detail);
   const { candidate } = judged;
 
@@ -239,7 +216,6 @@ export function runPromote(
           name: candidate.title,
           body: candidate.body,
           scope: 'global',
-          ...(input.which !== undefined ? { which: input.which } : {}),
           ...(input.run !== undefined ? { run: input.run } : {}),
         })
       : runDecision(ctx, {
@@ -247,7 +223,6 @@ export function runPromote(
           rationale: candidate.body,
           ...(candidate.alternatives !== undefined ? { alternatives: candidate.alternatives } : {}),
           scope: 'global',
-          ...(input.which !== undefined ? { which: input.which } : {}),
           ...(input.run !== undefined ? { run: input.run } : {}),
         });
   if (!born.ok) {
@@ -260,7 +235,6 @@ export function runPromote(
       target: from.id,
       rel: 'derived-from',
       scope: 'global',
-      ...(input.which !== undefined ? { which: input.which } : {}),
       ...(input.run !== undefined ? { run: input.run } : {}),
     });
     if (!linked.ok) {

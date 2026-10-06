@@ -126,16 +126,11 @@ function globalWords(sources: readonly ScopedCache[]): ReadonlySet<string> {
   return held;
 }
 
-const byProjectThenId = (a: PatternInstance, b: PatternInstance): number =>
-  a.project !== b.project
-    ? a.project < b.project
-      ? -1
-      : 1
-    : a.id < b.id
-      ? -1
-      : a.id > b.id
-        ? 1
-        : 0;
+function byProjectThenId(a: PatternInstance, b: PatternInstance): number {
+  if (a.project !== b.project) return a.project < b.project ? -1 : 1;
+  if (a.id !== b.id) return a.id < b.id ? -1 : 1;
+  return 0;
+}
 
 /**
  * The patterns in force, with the same words, in the committed trees of two or more
