@@ -39,7 +39,7 @@ import { bannerFor } from '../src/presentation/banner.js';
 import { fact, subjectLine } from '../src/presentation/detail.js';
 import { renderPlain } from '../src/presentation/plain.js';
 import { THE_FLOOR } from '../src/repl/floor.js';
-import { THE_INSET } from '../src/repl/inset.js';
+import { insideTheMargin, THE_INSET } from '../src/repl/inset.js';
 import { type Opening, openingFor, type PanelForm, panelFor } from '../src/repl/panel.js';
 import { VERSION } from '../src/version.js';
 import { REPL_VERB } from '../src/wiring/repl.js';
@@ -390,6 +390,21 @@ describe('the arrangement is chosen by the height as well as the width', () => {
     // one with no room for eight.
     expect(formAt(190, 64)).not.toBe(formAt(190, 20));
     expect(formAt(190, 64)).not.toBe(formAt(40, 64));
+  });
+
+  it('keeps a hundred-column console stacked under the longest version a title can carry', () => {
+    // THE TITLE CARRIES THE VERSION, so how wide the two columns want is a function of how long
+    // the version is written — and a hundred-column terminal must not depend on today's. The page
+    // is drawn inside the margin, so the width asked is what the margin leaves of a hundred. The
+    // longest plausible version is a two-digit minor on a numbered pre-release: if THAT title
+    // still gets the stacked arrangement (the drawing over the text) the terminal is not pushed
+    // to the bare one, which is where the drawing would have to give way to a smaller one.
+    const longest = '0.10.0-beta.12';
+    const title = subjectLine(`mnema  ·  v${longest}  ·  a session over this project`);
+    const inside = insideTheMargin(100);
+    expect(panelFor({ ...OF_THE_PRODUCTS_SHAPE, title, columns: inside, rows: 44 }).form).toBe(
+      'stacked',
+    );
   });
 
   it('walks the same three forms down the screen, and the last rung fits every size', () => {

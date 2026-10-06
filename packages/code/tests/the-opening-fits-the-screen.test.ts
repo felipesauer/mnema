@@ -1050,6 +1050,23 @@ describe('the console spends only part of the screen it opens on', () => {
   }
 });
 
+describe('a console a hundred columns wide opens the biggest drawing', () => {
+  // THE EDGE THAT WAS REPORTED, AND WHAT IT TURNED OUT TO BE. The title gained the version and a
+  // terminal of exactly a hundred columns was said to have fallen to a smaller drawing. It did not:
+  // the two columns (the drawing with the text BESIDE it) want the drawing, the gap and the title
+  // inside the margin, which is past a hundred whatever the version is, so at a hundred the biggest
+  // drawing opens STACKED over the text — before the version and after it. What is pinned is the
+  // part that must not move: the drawing a hundred columns is given, a column either side of it.
+  const biggest = drawnAcross(WIDE);
+  for (const columns of [99, 100, 101]) {
+    it(`opens the biggest drawing, whole, at ${columns} columns`, async () => {
+      const opened = await openedAt(columns, 44);
+      expect(opened.drawing, `${columns}x44: which drawing opened`).toEqual(biggest);
+      expect(opened.whole, `${columns}x44: the drawing opened cut`).toBe(true);
+    }, 180_000);
+  }
+});
+
 // ---------------------------------------------------------------------------
 // The art gives way so the opening fits, at heights a person's terminal has
 // ---------------------------------------------------------------------------
