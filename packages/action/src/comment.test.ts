@@ -29,6 +29,28 @@ const busy: Report = {
   ],
 };
 
+describe('renderComment checks', () => {
+  it('says so in one line when a check was asked for and no rule carries one', () => {
+    const text = renderComment({
+      ...quiet,
+      checks: { passed: true, said: 'No rule in force carries a check — nothing ran.' },
+    });
+    expect(text).toContain('No check ran: No rule in force carries a check — nothing ran.');
+  });
+
+  it('cuts a comment that would pass the size GitHub accepts, and says so', () => {
+    const governed = Array.from({ length: 2000 }, (_, i) => ({
+      path: `src/${'d'.repeat(100)}${i}.ts`,
+      governs: [{ id: 'd1', name: 'n' }],
+      asks: [],
+      refuses: [],
+    }));
+    const text = renderComment({ ...busy, governed });
+    expect(text.length).toBeLessThanOrEqual(65536);
+    expect(text).toContain('The rest of this comment was cut');
+  });
+});
+
 describe('renderComment', () => {
   it('opens with the marker a later run finds it by', () => {
     expect(renderComment(quiet).startsWith(`${MARKER}\n`)).toBe(true);
