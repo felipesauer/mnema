@@ -171,6 +171,7 @@ export interface TailIssue {
 export type CensusNote =
   | KeyWithoutTailNote
   | BackupKeyNote
+  | EmptyTailNote
   | PartialFinalLineNote
   | ForeignRetractionNote
   | RetiredCheckerNote;
@@ -239,6 +240,50 @@ export interface BackupKeyNote {
   /** The identity the registration names, and the record enrolled the key into. */
   readonly anchor: string;
   readonly detail: string;
+}
+
+/**
+ * A tail directory that holds no event and no checkpoint — not counted as a tail
+ * (FORMAT.md section 4).
+ *
+ * What an older writer left when a new key's first write was refused: the key, and a tail
+ * holding only its ownership proof. Records committed then still carry them, and nothing
+ * removes them. It asserts nothing, so it adds nothing to the tail count, the level or the
+ * external-witness reading; counted, it put one more tail in every verdict for good and,
+ * being a tail nothing attests, took a witnessed record down to `fully-signed`. Its
+ * ownership proof is still checked, and a failure there is a break like any other.
+ *
+ * WHAT IT COSTS, SAID. A tail whose segments and checkpoints were deleted with its proof
+ * kept reads as this too. That is no new blindness: the same tail deleted WHOLE, with its
+ * key, is already invisible to everything but a copy of the record from before.
+ */
+export interface EmptyTailNote {
+  readonly kind: 'empty-tail';
+  /** The tail directory that holds nothing. */
+  readonly tail: string;
+  readonly detail: string;
+}
+
+/**
+ * Whether a tail holds anything a reader can count — the ONE wording of the rule, so the
+ * verifier and every listing that has to agree with it ask the same question.
+ */
+export function isEmptyTail(held: {
+  readonly events: number;
+  readonly checkpoints: number;
+}): boolean {
+  return held.events === 0 && held.checkpoints === 0;
+}
+
+function emptyTail(tail: string): EmptyTailNote {
+  return {
+    kind: 'empty-tail',
+    tail,
+    detail:
+      `tail ${oneLine(tail)} holds no event and no checkpoint, so it asserts nothing and is not ` +
+      'counted as a tail — what an older writer left when a first write was refused, and what a ' +
+      'tail emptied of its events with its ownership proof kept looks like too',
+  };
 }
 
 /**
@@ -457,6 +502,8 @@ export function verifyChain(
   // left out, so the fold sees every tail there is.
   const provenTails = new Map<string, WitnessedTail>();
   const notes: PartialFinalLineNote[] = [];
+  // The tails that hold no event and no checkpoint ({@link isEmptyTail}).
+  const empty = new Set<string>();
   let unreadable = false;
 
   for (const tail of tails) {
@@ -507,6 +554,12 @@ export function verifyChain(
       // and have its residual events counted. See tailproof.ts.
       verifyTailOwnership(layout, keys, tail, issues);
     }
+    if (isEmptyTail({ events: entries.length, checkpoints: checkpoints.length })) {
+      // Its ownership was checked above and a failure there stands; past that it asserts
+      // nothing, so it is said once in the census and folded into nothing (FORMAT.md §4).
+      empty.add(tail);
+      continue;
+    }
     verifyHashChain(tail, entries, issues);
     const coverage = verifyCheckpoints(keys, tail, entries, checkpoints, issues);
     checkpointedByTail.set(tail, coverage.covered);
@@ -532,13 +585,16 @@ export function verifyChain(
     });
   }
 
-  const tailResults: TailResult[] = tails.map((tail) => ({
+  const counted = tails.filter((tail) => !empty.has(tail));
+  const tailResults: TailResult[] = counted.map((tail) => ({
     tail,
     entryCount: (entriesByTail.get(tail) ?? []).length,
     checkpointedThrough: checkpointedByTail.get(tail) ?? -1,
     issues: issuesByTail.get(tail) ?? [],
   }));
-  const allIssues: TailIssue[] = tailResults.flatMap((t) => t.issues as TailIssue[]);
+  // Every tail's issues, the uncounted ones included: an empty tail whose ownership proof
+  // fails is a refusal like any other, and leaving it out of the count must not hide it.
+  const allIssues: TailIssue[] = tails.flatMap((tail) => issuesByTail.get(tail) ?? []);
 
   // The waivers the record holds, taken from the entries already read. A waiver
   // about a tail that is still HERE is collected and never consulted: the census
@@ -547,7 +603,10 @@ export function verifyChain(
   const waivers = tailWaiversIn(entriesByTail);
   const backups = knownBackups(identity, options.keyRoot);
   const census: CensusNote[] = [
+    // `tails`, not `counted`: an empty tail's directory is there, so its key has a tail, and
+    // reading that key as one whose tail may have been removed would say a loss nobody made.
     ...keysWithoutTail(committedFingerprints, tails, waivers, backups, identity.backups),
+    ...[...empty].map(emptyTail),
     ...notes,
     ...foreignRetractions(tails, entriesByTail),
     ...retiredCheckers(identity.retiredCheckers),
@@ -1307,6 +1366,8 @@ const CENSUS_CLAUSE: Readonly<Record<CensusNote['kind'], (count: number) => stri
     `${count} committed key(s) without a tail (see census — informational, not a break)`,
   'backup-key': (count) =>
     `${count} backup key(s), which sign nothing until restored (see census — informational, not a break)`,
+  'empty-tail': (count) =>
+    `${count} empty tail(s), which hold no event and are not counted (see census — informational, not a break)`,
   'partial-final-line': (count) =>
     `${count} tail(s) ending in a dropped partial line (see census — informational, not a break)`,
   'foreign-retraction': (count) =>

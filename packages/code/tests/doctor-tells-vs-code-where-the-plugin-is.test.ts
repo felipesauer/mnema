@@ -216,6 +216,29 @@ describe('mnema doctor --fix vscode, as a person runs it', () => {
     expect(after).toContain(`"${stable}": true`);
   });
 
+  it('does not turn on a versioned entry the person set to false, and says so', () => {
+    plugin(stable, VERSION);
+    const old = join(home, '.claude', 'plugins', 'cache', 'mnema', 'mnema', '0.0.1');
+    plugin(old, '0.0.1');
+    const text = `{\n  "chat.pluginLocations": {\n    "${old}": false\n  }\n}\n`;
+    write(settings, text);
+    const ran = cli('--fix', 'vscode');
+    expect(ran.out).toContain('you turned it off');
+    expect(readFileSync(settings, 'utf-8')).toBe(text);
+    expect(backups()).toEqual([]);
+    expect(said('vscode')[0]).toMatch(/^fine .*set to false/);
+  });
+
+  it('does not add the absolute form beside a stable entry written as ~/ and set to false', () => {
+    plugin(stable, VERSION);
+    const text = `{ "chat.pluginLocations": { "~/.claude/plugins/marketplaces/mnema/plugin": false } }`;
+    write(settings, text);
+    const ran = cli('--fix', 'vscode');
+    expect(ran.out).toContain('you turned it off');
+    expect(readFileSync(settings, 'utf-8')).toBe(text);
+    expect(said('vscode')[0]).toMatch(/^fine .*set to false/);
+  });
+
   it('is never run by the plain verb: asked alone it writes not a byte', () => {
     plugin(stable, VERSION);
     write(settings, COMMENTED);

@@ -472,10 +472,16 @@ function vscodeFindings(ctx: DoctorContext): Finding[] {
       continue;
     }
     const mine = read.kind === 'setting' ? mnemaEntries(ctx, read.entries, stable.dir) : [];
-    const versioned = mine.find((one) => one.kind === 'cache');
+    const versioned = mine.find((one) => one.kind === 'cache' && one.on !== false);
     const steady = mine.some((one) => one.kind === 'stable' && one.on === true);
+    const off = mine.find((one) => one.kind !== 'other' && one.on === false);
     const other = mine.find((one) => one.kind === 'other' && one.on === true);
-    if (versioned !== undefined) {
+    if (off !== undefined && !steady && versioned === undefined) {
+      say(
+        'fine',
+        `lists ${SETTING} at ${oneLine(off.key)} set to false — you turned it off, so VS Code's agent loads no mnema plugin; ${FIX} leaves it off, and setting it to true is yours to do.`,
+      );
+    } else if (versioned !== undefined) {
       const what =
         versioned.version === ctx.running.version
           ? `the plugin ${oneLine(ctx.running.version)} at a versioned path that stops working at its next update`
@@ -546,12 +552,16 @@ export function fixVscode(
     const where = oneLine(file);
     const text = readFileSync(file, 'utf-8');
     const read = readLocations(text);
-    const stale =
-      read.kind === 'setting'
-        ? mnemaEntries(ctx, read.entries, stable.dir)
-            .filter((one) => one.kind === 'cache')
-            .map((one) => one.key)
-        : [];
+    const known = read.kind === 'setting' ? mnemaEntries(ctx, read.entries, stable.dir) : [];
+    // An entry the person set to false is a choice: it stays, and nothing is added beside it.
+    const off = known.find((one) => one.kind !== 'other' && one.on === false);
+    if (off !== undefined) {
+      lines.push(
+        `${where}: ${oneLine(off.key)} is set to false — you turned it off, so nothing was changed; set it to true yourself if you want VS Code's agent to load the plugin.`,
+      );
+      continue;
+    }
+    const stale = known.filter((one) => one.kind === 'cache').map((one) => one.key);
     const plan: Plan = planFix(text, stable.dir, stale);
     if (plan.kind === 'refused') {
       refused = true;

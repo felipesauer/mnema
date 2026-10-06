@@ -107,9 +107,10 @@ describe('the setting is already there', () => {
     });
   });
 
-  it('turns an entry that is false on', () => {
-    const after = changed(`{ "chat.pluginLocations": { "${WANTED}": false } }`);
-    expect(jsonOf(after)['chat.pluginLocations']).toEqual({ [WANTED]: true });
+  it('leaves an entry the person set to false as it is', () => {
+    expect(planFix(`{ "chat.pluginLocations": { "${WANTED}": false } }`, WANTED, []).kind).toBe(
+      'unchanged',
+    );
   });
 
   it('is idempotent: the second run has nothing to change', () => {

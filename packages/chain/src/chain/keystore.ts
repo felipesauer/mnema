@@ -676,8 +676,8 @@ const KEY_ROOT_GITIGNORE = [
  * data directory that already carries a `.gitignore` written for something else, like a project
  * tree's, which covers `keys/*.key` and not `identity/keys/*.key`.
  *
- * One that exists is left as it is, as a project tree's is (`ensureTree`): a person who edited it
- * keeps the edit.
+ * One that exists is left as it is: a person who edited it keeps the edit. (A project tree's
+ * `.gitignore`, by contrast, gains the one line it lacks, never more — see `ensureTree`.)
  */
 export function ensureKeyRootIgnored(keyRoot: ChainLayout): void {
   mkdirSync(keyRoot.root, { recursive: true });

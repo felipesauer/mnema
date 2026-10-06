@@ -310,10 +310,7 @@ export function planFix(text: string, wanted: string, stale: readonly string[]):
       if (have === undefined) {
         out = insertMember(out, scan, `${entry}: true`, indentOfLine(out, setting.start) ?? '');
         steps.push(`add ${wanted}`);
-      } else if (out.slice(have.valueStart, have.valueEnd) === 'false') {
-        out = `${out.slice(0, have.valueStart)}true${out.slice(have.valueEnd)}`;
-        steps.push(`turn ${wanted} on`);
-      } else if (out.slice(have.valueStart, have.valueEnd) !== 'true') {
+      } else if (!['true', 'false'].includes(out.slice(have.valueStart, have.valueEnd))) {
         return {
           kind: 'refused',
           why: `the entry ${wanted} holds a value that is neither true nor false`,

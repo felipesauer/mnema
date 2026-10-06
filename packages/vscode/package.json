@@ -20,10 +20,6 @@
     "node": ">=22.12.0",
     "vscode": "^1.90.0"
   },
-  "dependencies": {
-    "@mnema/context": "workspace:*",
-    "@mnema/core": "workspace:*"
-  },
   "main": "./extension.cjs",
   "activationEvents": [
     "workspaceContains:.mnema"
@@ -88,8 +84,18 @@
     }
   },
   "files": [
-    "dist/",
     "extension.cjs",
     "NOTICE"
-  ]
+  ],
+  "scripts": {
+    "package": "node build/package-vsix.mjs",
+    "install-check": "node build/install-the-vsix.mjs"
+  },
+  "devDependencies": {
+    "@mnema/context": "workspace:*",
+    "@mnema/core": "workspace:*",
+    "@vscode/test-electron": "^3.1.0",
+    "@vscode/vsce": "^4.0.0",
+    "esbuild": "0.28.1"
+  }
 }

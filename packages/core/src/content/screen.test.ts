@@ -230,3 +230,46 @@ describe('every class the sieve knows is refused in a name and redacted in a bod
     expect(asName.replaced).toEqual([]);
   });
 });
+
+describe('screenContent — an email address in a body', () => {
+  it('is replaced by the marker and reported, beside what was kept', () => {
+    const result = screenContent({
+      title: 'use tabs',
+      rationale: 'asked by felipe.sauer@plantae.agr.br in the review',
+    });
+
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    expect(result.fields.rationale).toBe('asked by <email> in the review');
+    expect(result.fields.title).toBe('use tabs');
+    expect(result.replaced).toEqual(['email']);
+  });
+
+  it('is reported beside a credential found in the same field', () => {
+    const result = screenContent({ rationale: 'ask a@b.io, key AKIAIOSFODNN7EXAMPLE' });
+
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    expect(result.fields.rationale).toBe('ask <email>, key <SECRET:aws-access-key>');
+    expect([...result.replaced].sort()).toEqual(['aws-access-key', 'email']);
+  });
+
+  it('is left in a NAME, which is an address the record is read by and is not rewritten', () => {
+    const result = screenContent({ title: 'ask a@b.io' });
+
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    expect(result.fields.title).toBe('ask a@b.io');
+    expect(result.replaced).toEqual([]);
+  });
+
+  it('is not touched in a citation of a commit or a URL', () => {
+    const text = 'Author: J <1+j@users.noreply.github.com>, see https://u@host.dev/x';
+    const result = screenContent({ rationale: text });
+
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    expect(result.fields.rationale).toBe(text);
+    expect(result.replaced).toEqual([]);
+  });
+});
