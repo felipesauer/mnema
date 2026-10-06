@@ -26,11 +26,11 @@ function __mnema_commands --description 'the subcommands one level of the tree o
         case 'commit-hook'
             echo 'install uninstall suggest help'
         case 'key'
-            echo 'restore request enroll github revoke protect unprotect help'
+            echo 'restore request enroll github sigstore revoke protect unprotect help'
         case 'tail'
             echo 'list prune help'
         case 'witness'
-            echo 'stamp upgrade'
+            echo 'stamp upgrade sigstore'
         case 'switch'
             echo 'off on'
         case 'inherit'
@@ -607,6 +607,7 @@ complete -c mnema -f -n '__mnema_at "key"' -a 'restore' -d 'restore this machine
 complete -c mnema -f -n '__mnema_at "key"' -a 'request' -d 'ask to bring this machine into an identity (run this on the joining machine)'
 complete -c mnema -f -n '__mnema_at "key"' -a 'enroll' -d 'vouch for a requesting key so it joins this identity (run this on a member)'
 complete -c mnema -f -n '__mnema_at "key"' -a 'github' -d 'record that this identity is a GitHub account, so `mnema verify --against-github` can compare the keys that signed with the keys that account publishes'
+complete -c mnema -f -n '__mnema_at "key"' -a 'sigstore' -d 'record that this identity is the one a Sigstore certificate names, so a bundle `mnema witness sigstore` files speaks for it in `mnema verify --against-sigstore`'
 complete -c mnema -f -n '__mnema_at "key"' -a 'revoke' -d 'retire a key from this identity, from this point forward'
 complete -c mnema -f -n '__mnema_at "key"' -a 'protect' -d 'encrypt this machine\'s private keys at rest with the passphrase in MNEMA_KEY_PASSPHRASE'
 complete -c mnema -f -n '__mnema_at "key"' -a 'unprotect' -d 'write this machine\'s private keys back in the clear (needs MNEMA_KEY_PASSPHRASE)'
@@ -643,6 +644,12 @@ complete -c mnema -f -n '__mnema_at "key github"' -s h -l help
 complete -c mnema -f -n '__mnema_at "key github"' -s V -l version
 complete -c mnema -f -n '__mnema_at "key github"' -l color -x -a 'auto always never'
 complete -c mnema -f -n '__mnema_at "key github"' -l identify
+
+# mnema key sigstore
+complete -c mnema -f -n '__mnema_at "key sigstore"' -s h -l help
+complete -c mnema -f -n '__mnema_at "key sigstore"' -s V -l version
+complete -c mnema -f -n '__mnema_at "key sigstore"' -l color -x -a 'auto always never'
+complete -c mnema -f -n '__mnema_at "key sigstore"' -l identify
 
 # mnema key revoke
 complete -c mnema -f -n '__mnema_at "key revoke"' -l reason -r
@@ -690,6 +697,7 @@ complete -c mnema -f -n '__mnema_at "tail prune"' -l identify
 # mnema witness
 complete -c mnema -f -n '__mnema_at "witness"' -a 'stamp' -d 'ask an outside witness to date each tail\'s last checkpoint (T3)'
 complete -c mnema -f -n '__mnema_at "witness"' -a 'upgrade' -d 'go back for every attestation this record is waiting on (T3)'
+complete -c mnema -f -n '__mnema_at "witness"' -a 'sigstore' -d 'countersign each tail\'s last checkpoint with a Sigstore certificate — who signed in, and when Rekor logged it'
 complete -c mnema -f -n '__mnema_at "witness"' -l global
 complete -c mnema -f -n '__mnema_at "witness"' -l json
 complete -c mnema -f -n '__mnema_at "witness"' -s h -l help
@@ -712,6 +720,13 @@ complete -c mnema -f -n '__mnema_at "witness upgrade"' -s h -l help
 complete -c mnema -f -n '__mnema_at "witness upgrade"' -s V -l version
 complete -c mnema -f -n '__mnema_at "witness upgrade"' -l color -x -a 'auto always never'
 complete -c mnema -f -n '__mnema_at "witness upgrade"' -l identify
+
+# mnema witness sigstore
+complete -c mnema -f -n '__mnema_at "witness sigstore"' -l global
+complete -c mnema -f -n '__mnema_at "witness sigstore"' -s h -l help
+complete -c mnema -f -n '__mnema_at "witness sigstore"' -s V -l version
+complete -c mnema -f -n '__mnema_at "witness sigstore"' -l color -x -a 'auto always never'
+complete -c mnema -f -n '__mnema_at "witness sigstore"' -l identify
 
 # mnema switch
 complete -c mnema -f -n '__mnema_at "switch"' -a 'off' -d 'stop a channel handing the record to a model unasked'
@@ -779,6 +794,7 @@ complete -c mnema -f -n '__mnema_at "verify"' -l allow-no-record
 complete -c mnema -f -n '__mnema_at "verify"' -l require -x -a 'chained signed witnessed'
 complete -c mnema -f -n '__mnema_at "verify"' -l since -r
 complete -c mnema -f -n '__mnema_at "verify"' -l against-github
+complete -c mnema -f -n '__mnema_at "verify"' -l against-sigstore
 complete -c mnema -f -n '__mnema_at "verify"' -l json
 complete -c mnema -f -n '__mnema_at "verify"' -s h -l help
 complete -c mnema -f -n '__mnema_at "verify"' -s V -l version

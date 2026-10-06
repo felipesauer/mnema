@@ -235,7 +235,7 @@ export function registerWitness(program: Command, wiring: Wiring): Declared {
     const { runWitnessSigstore } = await import('../commands/witness.js');
     const act = await runWitnessSigstore(
       { ...here(), global: given.global },
-      { say: (line) => io.err(onOneLine`${line}`) },
+      { say: (line) => io.err(render(fact(onOneLine`${line}`))) },
     );
     if (!act.ok) {
       reportRefusal(wiring, act, {});

@@ -29,6 +29,7 @@ export const WHAT_A_SUBCOMMAND_READS: Readonly<Record<string, readonly string[]>
   // Nothing is born, moved or recorded, so there is nothing to scope or to credit.
   'skill export': [],
   // The tree an act covers; the reading's `--json` is the reading's.
+  'witness sigstore': ['--global'],
   'witness stamp': ['--global'],
   'witness upgrade': ['--global'],
 };

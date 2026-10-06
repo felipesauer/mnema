@@ -501,6 +501,10 @@ export const NAMES_THAT_NEED_MORE: Readonly<
     times: 1,
     why: 'answers a line typed outside a project, whole, by naming the verb to run inside one',
   },
+  'packages/code/src/wiring/key.ts: mnema key sigstore': {
+    times: 1,
+    why: 'answers a line typed outside a project, whole, by naming the verb to run inside one',
+  },
   'packages/code/src/wiring/key.ts: mnema key request': {
     times: 1,
     why: 'the help of `key enroll`, naming the verb whose output its argument is',
@@ -516,6 +520,14 @@ export const NAMES_THAT_NEED_MORE: Readonly<
   'packages/code/src/wiring/verify.ts: mnema key github': {
     times: 1,
     why: 'the line saying an identity has no account linked, naming the verb that links one',
+  },
+  'packages/code/src/wiring/verify.ts: mnema key sigstore': {
+    times: 1,
+    why: 'the line saying no identity names a bundle’s signer, naming the verb with the signer it would name',
+  },
+  'docs/what-it-proves.md: mnema key sigstore': {
+    times: 1,
+    why: 'the row that says when a Sigstore signature speaks for an identity, naming the claim by its verb',
   },
   'packages/code/src/wiring/run.ts: mnema run end': {
     times: 1,
@@ -648,7 +660,10 @@ export const HANDED_OVER: Readonly<
   // reader's browser checks the page (`mnema site`, twice), the step that addresses a rule at a path
   // (`mnema link`), and the quick start, which names the verbs it runs.
   // name 140 for the changelog entry that says `mnema init` declares the backup in the record.
-  span: { line: 68, name: 140, flag: 1, unwritten: 0 },
+  // line 74 and name 144 for the Sigstore countersignature: the changelog entry, the package page,
+  // the page's table and the format hand over `witness sigstore`, `key sigstore` and
+  // `verify --against-sigstore`.
+  span: { line: 74, name: 144, flag: 1, unwritten: 0 },
   // name 18 until the page that says where the key lives named `mnema key protect` in a line of
   // its own.
   // line 35 until the same page showed that question in a block of its own.
@@ -690,7 +705,9 @@ export const HANDED_OVER: Readonly<
   // `mnema verify` and the reads beside it.
   // name 76 once the usage refusal of `skill create` stopped naming the verb, now that the long text
   // can come from standard input or a file.
-  source: { line: 62, name: 76, flag: 3, unwritten: 3 },
+  // line 67 and name 81 for the Sigstore countersignature: the help of `witness sigstore`, `key
+  // sigstore` and `verify --against-sigstore` name one another, and the act names the claim.
+  source: { line: 67, name: 81, flag: 3, unwritten: 3 },
 };
 
 // ---------------------------------------------------------------------------

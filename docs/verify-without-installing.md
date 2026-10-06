@@ -25,7 +25,7 @@ Python 3.9 or later, no third-party packages, nothing to install: Ed25519 is
 RFC 8032 by hand, checked against the RFC's own vectors. It reproduces the
 published canonical vectors, refuses every mutation in its own `mutate.py`, and
 prints what it does **not** check before it prints a verdict. Writing it found
-twenty-five points where the specification was not enough to work from, and those
+twenty-six points where the specification was not enough to work from, and those
 are the deliverable half of it — `mnema_verify.py gaps` lists them.
 
 What a second reader does not buy is worth saying here too: it is independent in

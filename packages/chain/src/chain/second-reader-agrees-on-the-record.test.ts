@@ -15,7 +15,7 @@
  * implementations completing end-to-end tests as a PRECONDITION for publishing a
  * standard. Certificate Transparency runs on several implementations checking each other.
  * What that buys is not redundancy — it is that assumptions which work inside one product
- * and are false outside it become visible. Twenty-five of them did; `python3
+ * and are false outside it become visible. Twenty-six of them did; `python3
  * verifier/mnema_verify.py gaps` lists them, and one of them is a place where the two readers,
  * both faithful to the document, DATE THE SAME RECORD DIFFERENTLY.
  *

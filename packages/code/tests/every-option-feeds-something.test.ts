@@ -845,6 +845,7 @@ describe('every option the CLI declares feeds something', () => {
       'mnema skill create --which <agent>',
       'mnema task create --scope <scope>',
       'mnema task create --which <agent>',
+      'mnema witness sigstore --global',
       'mnema witness stamp --global',
       'mnema witness upgrade --global',
     ]);

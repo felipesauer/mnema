@@ -536,10 +536,10 @@ export function registerVerify(program: Command, wiring: Wiring): Declared {
           : undefined;
         // The Sigstore bundles, only when asked: the library that checks them is loaded with the
         // flag and never without it. Offline, and its answer is notes, never the exit.
-        const sigstore =
-          opts.againstSigstore === true
-            ? (await import('../commands/verify-sigstore.js')).readSigstoreReceipts(result.trees)
-            : undefined;
+        const asksSigstore = opts.againstSigstore === true;
+        const sigstore = asksSigstore
+          ? (await import('../commands/verify-sigstore.js')).readSigstoreReceipts(result.trees)
+          : undefined;
         if (opts.json === true) {
           reportAsJson(
             wiring,

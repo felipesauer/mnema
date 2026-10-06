@@ -70,6 +70,7 @@
 import { existsSync, mkdirSync, writeFileSync } from 'node:fs';
 import {
   type ChainLayout,
+  type Checkpoint,
   catalogUpcasters,
   checkpointHash,
   checkpointMessage,
@@ -178,10 +179,13 @@ interface HeldChain {
  * new — it completes a proof that is already on the disk, which is worth completing
  * whatever the signature over its checkpoint turns out to say.
  */
-function storedCheckpoints(chain: HeldChain): readonly ProvenCheckpoint[] {
+function storedCheckpoints(
+  chain: HeldChain,
+): readonly (ProvenCheckpoint & { readonly stored: Checkpoint })[] {
   return readTailCheckpoints(chain.layout, chain.tail).map((stored) => ({
     hash: checkpointHash(stored),
     toSeq: stored.toSeq,
+    stored,
   }));
 }
 
@@ -584,10 +588,7 @@ export async function runWitnessSigstore(
     };
   }
   // Read before any tree is judged, for the reason `stamp` gives.
-  const heads = chains.map((chain) => ({
-    chain,
-    head: readTailCheckpoints(chain.layout, chain.tail).at(-1),
-  }));
+  const heads = chains.map((chain) => ({ chain, head: storedCheckpoints(chain).at(-1) }));
   const upcasters = catalogUpcasters();
   const levels = new Map<string, ProvenLevel>();
   const outcomes: SigstoreOutcome[] = [];
@@ -616,12 +617,12 @@ export async function runWitnessSigstore(
       );
       continue;
     }
-    const digest = checkpointHash(head);
+    const digest = head.hash;
     if (existsSync(witnessSigstorePath(chain.layout, chain.tail, digest))) {
       outcomes.push(said('skipped', `checkpoint ${digest} is already countersigned`));
       continue;
     }
-    asking.push({ chain, ask: { digest, message: checkpointMessage(head) } });
+    asking.push({ chain, ask: { digest, message: checkpointMessage(head.stored) } });
   }
   if (asking.length === 0) return { ok: true, outcomes, trees };
 
@@ -676,7 +677,7 @@ export async function runWitnessSigstore(
 function namesSigstoreIdentity(chains: readonly HeldChain[], identity: string): boolean {
   const upcasters = catalogUpcasters();
   for (const chain of chains) {
-    const through = readTailCheckpoints(chain.layout, chain.tail).at(-1)?.toSeq ?? -1;
+    const through = storedCheckpoints(chain).at(-1)?.toSeq ?? -1;
     for (const entry of readTailEntries(chain.layout, chain.tail, upcasters)) {
       if (entry.link.seq > through) break;
       const event = entry.event;

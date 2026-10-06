@@ -14,7 +14,7 @@ public keys removed, the product says broken over a signature it cannot verify, 
 reader, unable to ask, says INCOMPLETE. And on a tail cut in the middle with no
 `tail.pruned`, the product calls the signed range a contradiction and says broken, while
 this reader reports a gap it cannot judge, because §3 leaves a reader of this document alone
-unable to tell an authorized cut from tampering. Twenty-five points
+unable to tell an authorized cut from tampering. Twenty-six points
 where this document was **not enough** for that were found in the writing, and every one of
 them has been fixed here — `python3 verifier/mnema_verify.py gaps` lists them, with which
 were resolved by reading a specification, which by experiment against the published bytes,
@@ -817,7 +817,7 @@ Stated plainly, because a published format invites all three readings:
   thing the product accepts (an honest event carrying `which`). §4.1 and §6.2 are
   those three, closed. What that buys is technical independence — another language,
   another author-session, no shared code — and it is what surfaced the
-  twenty-five points where this document was not enough, which are now fixed above.
+  twenty-six points where this document was not enough, which are now fixed above.
   What it does **not** buy is social independence: same author, same repository,
   same interest in it working. A format with three implementations maintained by
   three parties checking each other has a kind of assurance this one still does not
