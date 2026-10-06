@@ -1,7 +1,7 @@
 /**
  * The extension: the VS Code side of what the other modules read from the command line.
  *
- * `activate` is handed the `vscode` module by the CommonJS entry (`extension.cjs`), and this file
+ * `activate` is handed the `vscode` module by the bundle's entry (`build/bundle.mjs`), and this file
  * declares the few members of it that it uses. So the whole of it runs, in the tests, against a
  * stand-in — and nothing here imports `vscode`, which would need the editor to exist.
  *

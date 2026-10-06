@@ -187,6 +187,28 @@ are contiguous across that concatenation — **which segment a given sequence nu
 falls in is not specified**, and a verifier should not depend on it. Nothing else
 in the tail directory is a segment.
 
+**A tail that holds no event is not counted as a tail.** A tail directory whose
+segments hold no line and that holds no checkpoint line — in practice one holding
+only its `tailproof.json`, which is what an older writer left when a new key's
+first write was refused — asserts nothing. A reader:
+
+- does not count it among the record's tails, and folds nothing from it into what
+  it says of the record: not the level, not the external witness (§8), so a record
+  every event of which is witnessed stays witnessed beside one;
+- still checks what it does hold: its id against the committed keys (§3) and its
+  tail proof (§6.1). A failure there is a refusal like any other, and holding
+  nothing excuses nothing;
+- says it once, as information, and removes nothing. Its directory still names its
+  key's tail, so that key is not one "with no tail" (§6.5).
+
+Only a line of no length — the piece after a file's final newline — is no line: a
+line of whitespace is not canonical (§1.6), so a segment holding one is not empty;
+it is read, and refused. The cost, said: a tail
+whose segments and checkpoints were deleted with its tail proof kept reads as one
+that never held anything. That is no new blindness — the same tail deleted whole,
+with its key, already leaves nothing for a reader to cross — and only a copy of the
+record from before can testify to either.
+
 Each line of a segment is the **canonical** serialization (§1) of:
 
 ```json

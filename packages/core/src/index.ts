@@ -59,6 +59,7 @@ export {
 // a READ — a pure question about a string — so it belongs here, and the audit of
 // an existing record reaches it through this barrel. Only SCREENING (refusing and
 // rewriting on the way to an append) lives on the writing side.
+export { EMAIL_PLACEHOLDER, type ReplacedClass } from './content/personal.js';
 export { FIELD_BYTE_LIMIT } from './content/screen.js';
 export {
   detectSecrets,

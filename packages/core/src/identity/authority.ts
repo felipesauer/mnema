@@ -54,8 +54,8 @@
  */
 
 import { ANCHOR_PREFIX } from '@mnema/chain';
+import type { ReplacedClass } from '../content/personal.js';
 import { type ScreenRefusal, screenContent } from '../content/screen.js';
-import type { SecretClass } from '../content/secrets.js';
 import { canonicalIdentity } from './who.js';
 
 /** The refusal a self-authorized write earns: one code, one wording, everywhere. */
@@ -80,7 +80,7 @@ export interface ExecutingAgentOk {
    * own report, so a dirty `which` on an otherwise clean write still says what was
    * taken out — the whole point of not scrubbing in silence.
    */
-  readonly replaced: readonly SecretClass[];
+  readonly replaced: readonly ReplacedClass[];
 }
 
 /**

@@ -76,6 +76,7 @@ import {
   checkpointMessage,
   checkpointToWitness,
   completeWitness,
+  isEmptyTail,
   listTails,
   meetsRequirement,
   type ProvenCheckpoint,
@@ -201,11 +202,13 @@ function storedCheckpoints(
  * empty one into the witness level as a tail with nothing attested. Measured over a record
  * holding one, `verify` said `2 tail(s)` and this verb listed one — and the tail missing from
  * the listing was the very one lowering the level, so the verb a reader opens to find out why
- * the witness stands where it does could not show them. Now both walk the same directories,
- * and the empty tail is listed with the reading it has: no checkpoint to witness.
+ * the witness stands where it does could not show them. Both walk the same directories, and
+ * both ask the same question of each: {@link isEmptyTail}. A tail holding no event and no
+ * checkpoint is not counted as a tail (FORMAT.md section 4) — not in the verdict's count, not
+ * in its witness level, and not here; `verify`'s census is where it is named.
  *
- * The events each tail holds are its standing's count, 0 for the empty one — the same reading
- * `tailsHeld` took, asked of each tail once.
+ * The events each tail holds are its standing's count — the same reading `tailsHeld` took,
+ * asked of each tail once.
  */
 function heldChains(ctx: WitnessContext): {
   chains: readonly HeldChain[];
@@ -221,12 +224,16 @@ function heldChains(ctx: WitnessContext): {
     // deciding a question the router owns.
     if (root === undefined) return [];
     const layout = { root };
-    return listTails(layout).map((tail) => ({
-      scope,
-      tail,
-      layout,
-      events: tailStanding(layout, tail, upcasters)?.eventCount ?? 0,
-    }));
+    return listTails(layout).flatMap((tail): HeldChain[] => {
+      const chain: HeldChain = {
+        scope,
+        tail,
+        layout,
+        events: tailStanding(layout, tail, upcasters)?.eventCount ?? 0,
+      };
+      const checkpoints = storedCheckpoints(chain).length;
+      return isEmptyTail({ events: chain.events, checkpoints }) ? [] : [chain];
+    });
   });
   return { chains, trees: searched };
 }

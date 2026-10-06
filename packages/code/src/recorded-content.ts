@@ -35,8 +35,8 @@
 
 import { RECOMMENDED_LINK_RELATIONS } from '@mnema/chain';
 import type { AddressReach } from '@mnema/context';
-import type { Scope, SecretClass } from '@mnema/core';
-import { FIELD_BYTE_LIMIT, secretPlaceholder } from '@mnema/core';
+import type { ReplacedClass, Scope } from '@mnema/core';
+import { EMAIL_PLACEHOLDER, FIELD_BYTE_LIMIT, secretPlaceholder } from '@mnema/core';
 
 /**
  * The lines to print after a link whose target is an ADDRESS, or none at all when it
@@ -138,18 +138,31 @@ const TRAVELS: Scope = 'public';
  *
  * Every placeholder is listed, including a repeat, so the count and the list agree
  * — "2 values" next to one placeholder would leave a reader wondering which of the
- * two it stood for. The second line is the instruction, and it is unconditional:
+ * two it stood for. After a credential comes the instruction, and it is unconditional:
  * the caller cannot know whether the value was real, and the cost of rotating a
  * credential that was fake is nothing next to the cost of not rotating one that
- * was not.
+ * was not. After an email address comes the reason it was taken out, since there is
+ * nothing to rotate.
  */
-export function replacementNotice(replaced: readonly SecretClass[] | undefined): string[] {
+export function replacementNotice(replaced: readonly ReplacedClass[] | undefined): string[] {
   if (replaced === undefined || replaced.length === 0) return [];
-  const placeholders = replaced.map(secretPlaceholder).join(', ');
-  return [
-    `  ${replaced.length} value(s) replaced before recording: ${placeholders}`,
-    '  This record is permanent. If those were real credentials, rotate them.',
-  ];
+  const placeholders = replaced.map(placeholderOf).join(', ');
+  const lines = [`  ${replaced.length} value(s) replaced before recording: ${placeholders}`];
+  if (replaced.some((class_) => class_ !== 'email')) {
+    lines.push('  This record is permanent. If those were real credentials, rotate them.');
+  }
+  if (replaced.includes('email')) {
+    lines.push(
+      '  An email address does not belong in the record, which is permanent and shared; the',
+      '  writer is already identified by its mnid. Write the fact without it.',
+    );
+  }
+  return lines;
+}
+
+/** What stands in the text for one replaced value. */
+function placeholderOf(replaced: ReplacedClass): string {
+  return replaced === 'email' ? EMAIL_PLACEHOLDER : secretPlaceholder(replaced);
 }
 
 /**
@@ -186,7 +199,7 @@ export function landedNotice(scope: Scope): string {
 
 /** The half of a write result that reports what the content door replaced. */
 export interface Replacement {
-  readonly replaced?: readonly SecretClass[];
+  readonly replaced?: readonly ReplacedClass[];
 }
 
 /**
@@ -246,7 +259,9 @@ export const RECORD_CONTRACT =
   'tokens, private keys, a password inside a URL) are replaced with a typed ' +
   'placeholder before anything is written and the reply says what was replaced, ' +
   'but a format mnema does not recognize is written verbatim and cannot be taken ' +
-  `back. Each text field holds at most ${FIELD_BYTE_LIMIT} bytes; a longer one ` +
+  'back. Do not record personal data either: an email address is replaced with <email> ' +
+  'and reported, and the mnid already says who wrote. ' +
+  `Each text field holds at most ${FIELD_BYTE_LIMIT} bytes; a longer one ` +
   'is refused, not truncated.';
 
 /**
@@ -264,5 +279,6 @@ export const RECORD_CONTRACT_HELP = [
   '  is committed and reaches every machine that clones the repository.',
   '  Do not record credentials: a recognized format is replaced with a placeholder',
   '  and reported back, but what mnema does not recognize is written verbatim.',
+  '  Nor personal data: an email address is replaced with <email>; the mnid already says who wrote.',
   `  Each text field holds at most ${FIELD_BYTE_LIMIT} bytes; a longer one is refused.`,
 ].join('\n');
