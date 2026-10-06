@@ -1060,9 +1060,9 @@ describe('a console a hundred columns wide opens the biggest drawing', () => {
   const biggest = drawnAcross(WIDE);
   for (const columns of [99, 100, 101]) {
     it(`opens the biggest drawing, whole, at ${columns} columns`, async () => {
-      const opened = await openedAt(columns, 44);
-      expect(opened.drawing, `${columns}x44: which drawing opened`).toEqual(biggest);
-      expect(opened.whole, `${columns}x44: the drawing opened cut`).toBe(true);
+      const opened = await openedAt(columns, THE_FLOOR.rows);
+      expect(opened.drawing, `${columns}x${THE_FLOOR.rows}: which drawing opened`).toEqual(biggest);
+      expect(opened.whole, `${columns}x${THE_FLOOR.rows}: the drawing opened cut`).toBe(true);
     }, 180_000);
   }
 });
