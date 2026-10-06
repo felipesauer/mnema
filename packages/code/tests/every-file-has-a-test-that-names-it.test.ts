@@ -975,6 +975,7 @@ const CLAUSES_PER_FILE: Readonly<Record<string, number>> = {
   'packages/code/tests/neutralizes-control-bytes-everywhere.test.ts': 12,
   'packages/code/tests/no-classification-table-reaches-the-surface.test.ts': 5,
   'packages/code/tests/no-task-is-published-before-it-is-used.test.ts': 5,
+  'packages/code/tests/no-workflow-publishes-the-extension.test.ts': 5,
   'packages/code/tests/one-authority-over-colour.test.ts': 18,
   'packages/code/tests/one-rule-for-newest-first.test.ts': 4,
   'packages/code/tests/one-source-for-a-vocabulary.test.ts': 18,
@@ -1244,6 +1245,7 @@ const CLAUSES_PER_FILE: Readonly<Record<string, number>> = {
   'packages/vscode/src/proposed.test.ts': 2,
   'packages/vscode/src/rules.test.ts': 2,
   'packages/vscode/src/status.test.ts': 2,
+  'packages/vscode/src/the-bundle-holds-no-database.test.ts': 6,
 };
 
 /**
