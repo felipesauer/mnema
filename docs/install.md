@@ -55,10 +55,21 @@ one. VS Code's agent reads the Claude Code plugin format, and Cursor's command-l
 picks up a plugin installed in Claude Code on the same machine; the per-host details — what
 each one runs, the rules at each edit that are Claude Code's alone, and the pause for a person
 that reaches VS Code as well — are in the [plugin's page](../plugin/README.md#in-vs-code-and-cursor).
+
+VS Code's agent loads the plugin only from a folder listed in its `chat.pluginLocations` setting,
+which VS Code marks as experimental. In order: install the plugin in Claude Code
+(`claude plugin marketplace add felipesauer/mnema`, then `claude plugin install mnema@mnema`), run
+`mnema doctor` and read its `vscode` line, and if it asks for it, run `mnema doctor --fix vscode`
+(`--dry-run` shows the change first). That verb is the one thing `doctor` writes: it runs only when
+you type it, copies your `settings.json` aside first, keeps its comments, and lists the plugin's
+folder in the marketplace, whose path does not change when the plugin updates.
 Without the plugin, `mnema rules-file --host claude`, `--host vscode` or `--host cursor` prints the committed rules
 addressed at a file in that host's own rules format, and says which rules it left out and why.
 
 `mnema doctor` says, one line to a finding and with what to do about it, whether a `mnema` is
 on the `PATH` and which one, whether the Claude Code plugin is installed and at what version,
 whether the mnema MCP server is declared more than once, and whether a second `mnema` or an npm
-package of that name is installed. It writes nothing and does not ask the registry.
+package of that name is installed; whether VS Code's `settings.json` tells its agent where the
+plugin is; and which projects of `~/.claude.json` still declare the server, including ones whose
+directory no longer exists (`claude mcp remove` does not reach those, and `doctor` says what to
+delete). Asked alone it writes nothing and does not ask the registry.

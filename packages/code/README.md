@@ -875,9 +875,20 @@ mnema doctor
 One line to a finding, each with what to do about it: whether a `mnema` is on the `PATH` and which
 one runs, whether the Claude Code plugin is installed and at what version, whether the MCP server is
 declared more than once (a session is offered every tool once per declaration), and whether a second
-`mnema`, or an npm package of that name, is installed. It reads files on this machine and writes
-nothing; it does not ask the registry, so a package that is published and not installed here is
-outside what it can say. The exit status is 0 whatever it found: a script that wants to act on a
+`mnema`, or an npm package of that name, is installed (and, when the first one on the `PATH` is a
+script that shadows the other, which). It also says whether VS Code's user `settings.json` lists the
+plugin under `chat.pluginLocations` — the setting VS Code's agent needs, marked experimental there —
+and which projects of `~/.claude.json` still declare the server, those whose directory no longer
+exists included (`claude mcp remove` does not reach them; the line says what to delete). It reads
+files on this machine and, asked alone, writes nothing; it does not ask the registry, so a package
+that is published and not installed here is outside what it can say.
+
+`mnema doctor --fix vscode` is the one thing it writes, and only when you type it: it shows what it
+will change (`--dry-run` stops there), copies `settings.json` to a file beside it, adds the plugin's
+folder in the Claude Code marketplace to `chat.pluginLocations` and drops an entry that points into
+a versioned folder of the plugin cache, keeps the file's comments and the rest of its text, and a
+second run changes nothing. A file it cannot edit safely it refuses, with the reason, and leaves
+untouched. The exit status is 0 whatever it found: a script that wants to act on a
 finding reads the line.
 
 ### What goes into the record

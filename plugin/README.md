@@ -263,9 +263,34 @@ What each one runs of it:
 | **A write paused for a person, where a rule asks** | yes, through the same `mcp_tool` hook | **yes**, through the plugin's command hook: the write waits for a person, and the asking is recorded as it is in Claude Code | **no**: the agent runs the hook before its write and **ignores** `ask` — the file was written — while it honors `deny` |
 
 **How each loads it.** VS Code's agent loads it from a folder listed in its
-`chat.pluginLocations` setting, which is the route these rows were measured on. Cursor's
+`chat.pluginLocations` setting, which is the route these rows were measured on. Without that
+setting it loads nothing: no hook runs and the agent works as if mnema were not there. Cursor's
 command-line agent loads it on its own from the Claude Code installation on the same
 machine, with Cursor's import of third-party plugins on, which is how it ships.
+
+**To have VS Code's agent load it,** in this order:
+
+1. Install the plugin in Claude Code (`claude plugin marketplace add felipesauer/mnema`, then
+   `claude plugin install mnema@mnema`). That leaves a copy of the plugin in the marketplace
+   folder, `~/.claude/plugins/marketplaces/mnema/plugin`.
+2. Run `mnema doctor` and read its `vscode` line: it says whether your `settings.json` has
+   `chat.pluginLocations`, and whether it lists a mnema plugin that exists and is this version.
+3. If it says to, run `mnema doctor --fix vscode`. It is the only thing `doctor` writes, it
+   runs only when you type it, and `--dry-run` shows what it would change without writing.
+   It copies `settings.json` to a file beside it first, keeps your comments and the rest of the
+   file as it is, adds the marketplace folder above to `chat.pluginLocations` and removes an
+   entry that points into a versioned folder of Claude Code's plugin cache, and a second run
+   changes nothing. A file it cannot edit safely it refuses, and says why; then add the entry by
+   hand.
+
+That folder is the one listed because its path does not carry the plugin's version, so it is the
+same after an update; a versioned cache path stops working at the next one. After a plugin
+update, `claude plugin marketplace update mnema` brings that folder to the new version, and
+`mnema doctor` says when it is behind. VS Code marks `chat.pluginLocations` as experimental
+(*may be unstable, subject to change or removal*), so the setting itself may change. The path
+was chosen from VS Code 1.137's own code, which resolves each listed folder as a directory and
+recognises a Claude plugin by its `.claude-plugin/plugin.json`; it was not run against a live
+window.
 
 **Where the table stops.** It was measured with VS Code 1.137 and its Copilot Chat 0.65,
 and with Cursor's command-line agent 2026.09.18 — not Cursor's editor. The last row was

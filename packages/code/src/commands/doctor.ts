@@ -19,11 +19,22 @@
  * wants to act on a finding reads the line.
  */
 
-import { accessSync, constants, readFileSync, realpathSync, statSync } from 'node:fs';
+import {
+  accessSync,
+  constants,
+  copyFileSync,
+  existsSync,
+  lstatSync,
+  readFileSync,
+  realpathSync,
+  statSync,
+  writeFileSync,
+} from 'node:fs';
 import { basename, delimiter, dirname, join } from 'node:path';
 import { type DiscoveryEnv, resolveTrees } from '@mnema/core';
 import { oneLine } from '../one-line.js';
 import { VERSION } from '../version.js';
+import { type Plan, planFix, readLocations, SETTING, settingsCandidates } from './doctor-vscode.js';
 
 /** What the doctor needs — injected so it is testable against a sandbox. */
 export interface DoctorContext {
@@ -33,11 +44,13 @@ export interface DoctorContext {
   readonly processEnv: NodeJS.ProcessEnv;
   /** The file this process runs from, and the version it carries. */
   readonly running: { readonly file: string; readonly version: string };
+  /** Which platform's places VS Code's settings are looked for in; this process's by default. */
+  readonly platform?: NodeJS.Platform;
 }
 
 /** `attention` is a finding with something to do; `fine` needs nothing. */
 export interface Finding {
-  readonly topic: 'binary' | 'plugin' | 'mcp' | 'namesake';
+  readonly topic: 'binary' | 'plugin' | 'vscode' | 'mcp' | 'namesake';
   readonly state: 'fine' | 'attention';
   /** One line: what was found, then what to do. */
   readonly line: string;
@@ -61,6 +74,16 @@ function realOf(path: string): string {
     return realpathSync(path);
   } catch {
     return path;
+  }
+}
+
+/** A plain script at the place it was found, not a link into an install: what a wrapper is. */
+function isWrapperScript(path: string): boolean {
+  try {
+    if (lstatSync(path).isSymbolicLink()) return false;
+    return readFileSync(path, 'utf-8').startsWith('#!');
+  } catch {
+    return false;
   }
 }
 
@@ -143,8 +166,12 @@ function namesakeFindings(ctx: DoctorContext): Finding[] {
     if (!distinct.has(one.real)) distinct.set(one.real, one.path);
   }
   if (distinct.size > 1) {
+    const [first = '', ...rest] = [...distinct.values()];
+    const advice = isWrapperScript(first)
+      ? `; it is a script, not a link into an install, so it is probably a wrapper an earlier install left: remove it (\`rm ${oneLine(first)}\`) so the other runs.`
+      : '; keep the one you installed and remove the others, or reorder the PATH.';
     found.push(
-      `${distinct.size} different “mnema” executables are on the PATH (${[...distinct.values()].map(oneLine).join(', ')}) — keep the one you installed and remove the others, or reorder the PATH.`,
+      `${distinct.size} different “mnema” executables are on the PATH (${[...distinct.values()].map(oneLine).join(', ')}) — ${oneLine(first)} comes first and shadows ${rest.map(oneLine).join(', ')}${advice}`,
     );
   }
   const roots = new Set<string>([join(ctx.cwd, 'node_modules')]);
@@ -260,6 +287,14 @@ function mnemaIn(table: unknown): string[] {
 function mcpFindings(ctx: DoctorContext, plugins: InstalledPlugin[] | 'unreadable'): Finding[] {
   const trees = resolveTrees(ctx.cwd, ctx.env);
   const root = trees.projectPublic === undefined ? ctx.cwd : dirname(trees.projectPublic);
+  return [...declaredFindings(ctx, plugins, root), ...otherProjectFindings(ctx, root)];
+}
+
+function declaredFindings(
+  ctx: DoctorContext,
+  plugins: InstalledPlugin[] | 'unreadable',
+  root: string,
+): Finding[] {
   const declared: string[] = [];
   const looked: string[] = [];
   const read = (file: string, table: (json: Record<string, unknown>) => unknown, where: string) => {
@@ -315,6 +350,232 @@ function mcpFindings(ctx: DoctorContext, plugins: InstalledPlugin[] | 'unreadabl
   ];
 }
 
+/** Every project of `~/.claude.json` that declares the mnema MCP server, but the one at `root`. */
+function otherProjectFindings(ctx: DoctorContext, root: string): Finding[] {
+  const claudeJson = join(ctx.env.home, '.claude.json');
+  const projects = asRecord(asRecord(readJson(claudeJson))?.projects);
+  if (projects === undefined) return [];
+  const gone: string[] = [];
+  const there: string[] = [];
+  for (const [dir, project] of Object.entries(projects)) {
+    if (dir === root || mnemaIn(asRecord(project)?.mcpServers).length === 0) continue;
+    (existsSync(dir) ? there : gone).push(oneLine(dir));
+  }
+  const found: Finding[] = [];
+  if (gone.length > 0) {
+    found.push({
+      topic: 'mcp',
+      state: 'attention',
+      line: `${oneLine(claudeJson)} still declares the mnema MCP server for ${gone.length} project ${gone.length === 1 ? 'directory' : 'directories'} that no longer exist (${gone.join(', ')}) — \`claude mcp remove\` cannot reach those: open the file and, under "projects", delete the mnema entry of "mcpServers" at each of those paths.`,
+    });
+  }
+  if (there.length > 0) {
+    found.push({
+      topic: 'mcp',
+      state: 'fine',
+      line: `the mnema MCP server is also declared for ${there.length} other ${there.length === 1 ? 'project' : 'projects'} in ${oneLine(claudeJson)} (${there.join(', ')}) — nothing to do if you meant that; otherwise run \`claude mcp remove mnema\` inside each.`,
+    });
+  }
+  return found;
+}
+
+/** Where the plugin can be loaded from without its path changing with its version. */
+function stablePlugin(ctx: DoctorContext): { dir: string; version: string | undefined } {
+  const claudeDir = claudeConfigDir(ctx);
+  const known = asRecord(
+    asRecord(readJson(join(claudeDir, 'plugins', 'known_marketplaces.json')))?.mnema,
+  )?.installLocation;
+  const base =
+    typeof known === 'string' && known !== ''
+      ? known
+      : join(claudeDir, 'plugins', 'marketplaces', 'mnema');
+  const dir = join(base, 'plugin');
+  const manifest = asRecord(readJson(join(dir, '.claude-plugin', 'plugin.json')));
+  return {
+    dir,
+    version:
+      manifest?.name === 'mnema' && typeof manifest.version === 'string'
+        ? manifest.version
+        : undefined,
+  };
+}
+
+function expandHome(path: string, home: string): string {
+  if (path === '~') return home;
+  return path.startsWith('~/') || path.startsWith('~\\') ? join(home, path.slice(2)) : path;
+}
+
+interface VscodeEntry {
+  readonly key: string;
+  readonly on: boolean | undefined;
+  /** `stable` is the marketplace's copy, `cache` a versioned folder of Claude Code's cache. */
+  readonly kind: 'stable' | 'cache' | 'other';
+  readonly version: string | undefined;
+}
+
+/** The entries of one settings file that load a mnema plugin, and what each one is. */
+function mnemaEntries(
+  ctx: DoctorContext,
+  entries: readonly { key: string; on: boolean | undefined }[],
+  stable: string,
+): VscodeEntry[] {
+  const cache = join(claudeConfigDir(ctx), 'plugins', 'cache', 'mnema');
+  const found: VscodeEntry[] = [];
+  for (const one of entries) {
+    const dir = expandHome(one.key, ctx.env.home);
+    const manifest = asRecord(readJson(join(dir, '.claude-plugin', 'plugin.json')));
+    const named = PLUGINS.some((name) => name === manifest?.name);
+    const version = named && typeof manifest?.version === 'string' ? manifest.version : undefined;
+    const inCache = dir.startsWith(`${cache}/`) || dir.startsWith(`${cache}\\`);
+    const base = { key: one.key, on: one.on, version };
+    if (realOf(dir) === realOf(stable)) found.push({ ...base, kind: 'stable' });
+    else if (inCache) found.push({ ...base, kind: 'cache' });
+    else if (named) found.push({ ...base, kind: 'other' });
+  }
+  return found;
+}
+
+function vscodeFiles(ctx: DoctorContext): string[] {
+  return settingsCandidates(ctx.env.home, ctx.platform ?? process.platform, ctx.processEnv).filter(
+    (file) => existsSync(file),
+  );
+}
+
+const FIX = '`mnema doctor --fix vscode`';
+const INSTALL_FIRST =
+  'install the plugin first (`claude plugin marketplace add felipesauer/mnema`, then `claude plugin install mnema@mnema`), then';
+
+function vscodeFindings(ctx: DoctorContext): Finding[] {
+  const files = vscodeFiles(ctx);
+  if (files.length === 0) {
+    return [
+      {
+        topic: 'vscode',
+        state: 'fine',
+        line: "no VS Code user settings.json found where this machine looks (the places of this platform, snap and Flatpak included) — nothing to do if you do not use VS Code's agent.",
+      },
+    ];
+  }
+  const stable = stablePlugin(ctx);
+  const how = stable.version === undefined ? `${INSTALL_FIRST} run` : 'run';
+  const found: Finding[] = [];
+  for (const file of files) {
+    const where = oneLine(file);
+    const say = (state: Finding['state'], line: string) =>
+      found.push({ topic: 'vscode', state, line: `${where} ${line}` });
+    const read = readLocations(readFileSync(file, 'utf-8'));
+    if (read.kind === 'unreadable') {
+      say(
+        'attention',
+        `could not be read safely (${read.why}), so whether VS Code's agent loads the plugin is unknown — add ${SETTING} by hand (the plugin's page says how); ${FIX} refuses this file too.`,
+      );
+      continue;
+    }
+    const mine = read.kind === 'setting' ? mnemaEntries(ctx, read.entries, stable.dir) : [];
+    const versioned = mine.find((one) => one.kind === 'cache');
+    const steady = mine.some((one) => one.kind === 'stable' && one.on === true);
+    const other = mine.find((one) => one.kind === 'other' && one.on === true);
+    if (versioned !== undefined) {
+      const what =
+        versioned.version === ctx.running.version
+          ? `the plugin ${oneLine(ctx.running.version)} at a versioned path that stops working at its next update`
+          : versioned.version === undefined
+            ? 'a plugin folder that is not there'
+            : `the plugin ${oneLine(versioned.version)}, not the ${oneLine(ctx.running.version)} of this binary`;
+      say('attention', `lists ${SETTING} at ${oneLine(versioned.key)}, ${what} — ${how} ${FIX}.`);
+    } else if (steady) {
+      const behind = stable.version !== ctx.running.version;
+      say(
+        behind ? 'attention' : 'fine',
+        behind
+          ? `lists ${SETTING} at ${oneLine(stable.dir)}, which holds the plugin ${oneLine(stable.version ?? 'unknown')} while this binary is ${oneLine(ctx.running.version)} — update the marketplace (\`claude plugin marketplace update mnema\`) so the two agree.`
+          : `lists ${SETTING} at ${oneLine(stable.dir)}, the plugin ${oneLine(ctx.running.version)} at a path that does not change when it updates — nothing to do (the setting is experimental in VS Code).`,
+      );
+    } else if (other?.version === ctx.running.version) {
+      say(
+        'fine',
+        `lists ${SETTING} at ${oneLine(other.key)}, the plugin ${oneLine(ctx.running.version)} — nothing to do.`,
+      );
+    } else {
+      say(
+        'attention',
+        `${read.kind === 'setting' ? `lists ${SETTING} with no mnema plugin on in it` : `does not set ${SETTING}`}, so VS Code's agent loads no mnema plugin and no hook runs there — ${how} ${FIX}.`,
+      );
+    }
+  }
+  return found;
+}
+
+export interface FixResult {
+  readonly lines: readonly string[];
+  /** `true` when a file was refused, or there was nothing to do it to. */
+  readonly refused: boolean;
+}
+
+/**
+ * `mnema doctor --fix vscode`: the one thing this verb writes, and only when a person asks. It
+ * says what it will change, keeps a copy of the file beside it, and edits the bytes of one
+ * setting. It does not create a settings file, and a second run changes nothing.
+ */
+export function fixVscode(
+  ctx: DoctorContext,
+  options: { readonly dryRun: boolean; readonly now?: Date },
+): FixResult {
+  const stable = stablePlugin(ctx);
+  if (stable.version === undefined) {
+    return {
+      refused: true,
+      lines: [
+        `nothing changed: the plugin is not at ${oneLine(stable.dir)}, so there is no path to put in ${SETTING} — ${INSTALL_FIRST} run ${FIX} again.`,
+      ],
+    };
+  }
+  const files = vscodeFiles(ctx);
+  if (files.length === 0) {
+    return {
+      refused: true,
+      lines: [
+        'nothing changed: no VS Code user settings.json found where this machine looks, and this verb does not create one.',
+      ],
+    };
+  }
+  const lines: string[] = [];
+  let refused = false;
+  const stamp = (options.now ?? new Date()).toISOString().replace(/[-:]/g, '').slice(0, 15);
+  for (const file of files) {
+    const where = oneLine(file);
+    const text = readFileSync(file, 'utf-8');
+    const read = readLocations(text);
+    const stale =
+      read.kind === 'setting'
+        ? mnemaEntries(ctx, read.entries, stable.dir)
+            .filter((one) => one.kind === 'cache')
+            .map((one) => one.key)
+        : [];
+    const plan: Plan = planFix(text, stable.dir, stale);
+    if (plan.kind === 'refused') {
+      refused = true;
+      lines.push(
+        `${where}: refused, nothing changed — ${oneLine(plan.why)}. Add ${SETTING} by hand; the plugin's page says how.`,
+      );
+    } else if (plan.kind === 'unchanged') {
+      lines.push(`${where}: already lists ${oneLine(stable.dir)} — nothing to change.`);
+    } else if (options.dryRun) {
+      lines.push(
+        `${where}: would ${plan.steps.map(oneLine).join(', ')}, after keeping a copy; nothing was written.`,
+      );
+    } else {
+      const copy = `${file}.mnema-backup-${stamp}`;
+      copyFileSync(file, copy, constants.COPYFILE_EXCL);
+      writeFileSync(file, plan.text);
+      lines.push(
+        `${where}: ${plan.steps.map(oneLine).join(', ')}; the file as it was is kept at ${oneLine(copy)}.`,
+      );
+    }
+  }
+  return { lines, refused };
+}
+
 /** Reads the machine and answers, in the order the four questions are asked above. */
 export function runDoctor(ctx: DoctorContext): { readonly findings: readonly Finding[] } {
   const plugins = installedPlugins(ctx);
@@ -322,6 +583,7 @@ export function runDoctor(ctx: DoctorContext): { readonly findings: readonly Fin
     findings: [
       ...binaryFindings(ctx),
       ...pluginFindings(ctx, plugins),
+      ...vscodeFindings(ctx),
       ...mcpFindings(ctx, plugins),
       ...namesakeFindings(ctx),
     ],

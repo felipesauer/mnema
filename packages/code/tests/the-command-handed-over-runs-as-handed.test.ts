@@ -690,7 +690,9 @@ export const HANDED_OVER: Readonly<
   // `mnema verify` and the reads beside it.
   // name 76 once the usage refusal of `skill create` stopped naming the verb, now that the long text
   // can come from standard input or a file.
-  source: { line: 62, name: 76, flag: 3, unwritten: 3 },
+  // line 63 and name 77 for the help of `mnema doctor`, which names the one thing it writes,
+  // `mnema doctor --fix vscode`, in a line of its own.
+  source: { line: 63, name: 77, flag: 3, unwritten: 3 },
 };
 
 // ---------------------------------------------------------------------------

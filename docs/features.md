@@ -40,6 +40,7 @@ Each line says what it does and what it leaves unproven; the page it points to h
   The SDK calls the same functions as the command line, and a test holds the doors to the same
   events and refusals.
 - **Your machine, checked.** `mnema doctor` says whether a `mnema` is on the `PATH`, whether the
-  plugin is installed and whether the server is declared twice. It writes nothing and does not ask
-  the registry. For skills, the plugin brings `recording-decisions`, `recording-rulings` and
+  plugin is installed, whether VS Code's settings tell its agent where the plugin is, and whether the
+  server is declared twice. Asked alone it writes nothing and does not ask the registry;
+  `mnema doctor --fix vscode` is the one change it makes, and only when you type it. For skills, the plugin brings `recording-decisions`, `recording-rulings` and
   `diagnosing-recording`; `mnema-server-only` is the same server without the hooks and the skills.
