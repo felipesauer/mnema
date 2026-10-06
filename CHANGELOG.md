@@ -29,6 +29,10 @@ tag, with its own changelog.
   key or a handler type that Claude Code's hooks documentation does not list (the list carries the
   date and the page it was read from), so a typo that would leave a hook silently mute turns the
   suite red.
+- **Example rules (`examples/rules/`).** A first rule ready to take as it is: an edit to `biome.json`
+  is held for a person (`asks-for-a-person`). It is a short script of `mnema` commands, and a test
+  runs it against a sandbox and checks that the product asks for a person on that file and on no
+  other.
 - **`--stdin` and `--body-file` on `skill create`, `memory` and `observe`.** The long text of a
   write can come from standard input or from a file instead of the line, as it already could for
   `decision record`; the text typed on the line (`--body`, the `memory` argument, `--text`) still
@@ -68,6 +72,16 @@ tag, with its own changelog.
   (seven processes of set-up and two per run); the slowest took 4.3 to 4.5 s measured alone against
   the 5 s default, and went red once on a loaded runner. The limit is 20 s for that file; nothing
   in it waits on a network.
+
+### Fixed
+
+- **A tail's lock is no longer taken from a live holder.** A waiter used to break a lock a minute
+  old even when its process still answered, so a holder that was alive and slow (a stopped process,
+  a suspended laptop) could end up with a second writer on the same tail. Only a lock whose process
+  is gone is broken now; a pid reused by an unrelated process keeps the tail busy, and the refusal
+  says to delete the lock file it names.
+- **A timestamp calendar is contacted only on the https port.** A proof naming an operator's host on
+  another port is refused and not contacted.
 
 ### Known limits
 

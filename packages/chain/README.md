@@ -117,7 +117,7 @@ witnesses do different halves of that, and neither does the other's:
   FORMAT.md §8 is the bytes; `witness.ts` is the reading; nothing on the verifying
   path touches a network. The two acts that DO touch one are held to an address list:
   a return visit reads its address off the proof, which is a file a record can receive,
-  so it goes only to an https host at a public timestamp operator and follows a redirect
+  so it goes only to an https host, on the https port, at a public timestamp operator and follows a redirect
   only while it stays on the same host — anything else is named and not contacted
   (`refuseCalendarAddress`, `packages/chain/src/chain/witness-request.test.ts`). What
   travels was never the record's content; what this closes is being made to talk to

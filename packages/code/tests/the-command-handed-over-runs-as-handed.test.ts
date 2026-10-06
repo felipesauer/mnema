@@ -630,7 +630,9 @@ export const HANDED_OVER: Readonly<
   // whole, and name the verbs it refuses and the one the Action runs (name 131 with the hook's).
   // line 67 for the changelog entries on `--stdin` and `--body-file` and on reading a path where it
   // really lands (`line` counts two more spans than before).
-  span: { line: 67, name: 131, flag: 1, unwritten: 0 },
+  // line 68 and name 132 for the page of example rules: it names `mnema rules biome.json` and
+  // the `mnema` its scripts are run with, and each moved the count by one, looked at.
+  span: { line: 68, name: 132, flag: 1, unwritten: 0 },
   // name 18 until the page that says where the key lives named `mnema key protect` in a line of
   // its own.
   // line 35 until the same page showed that question in a block of its own.

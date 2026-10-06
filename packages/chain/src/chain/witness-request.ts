@@ -134,6 +134,9 @@ export function refuseCalendarAddress(uri: string): string | null {
     (domain) => host === domain || host.endsWith(`.${domain}`),
   );
   if (operator === undefined) return `${host} is not a timestamp calendar operator`;
+  // The URL parser drops the scheme's own port, so any port left is one the proof chose: an
+  // operator's host can run other services, and a file must not be able to aim the visit at one.
+  if (parsed.port !== '') return `port ${parsed.port} is not the https port`;
   return null;
 }
 
