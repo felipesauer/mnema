@@ -1023,6 +1023,42 @@ describe('the two readers agree on records the product itself wrote — a declar
     expect(found.second[0]).toContain('declares no backup');
   });
 
+  it('a backup declared and then revoked: both say so, and neither calls it an expected backup', () => {
+    // The declaration is real and covered, so "the record declares no backup for it" would be
+    // false. But the identity no longer holds the key, so the absence is not expected either:
+    // a revoked key with no tail is a real signal, said in words that do not deny the record.
+    const { a, b, anchor } = founderAndBackup();
+    const revoke = keyRevoked(
+      { at: at(4), who: anchor, signerFp: a.fingerprint, subject: anchor },
+      { revokedFp: b.fingerprint, reason: 'rotation' },
+    );
+    writeTail(
+      `${a.fingerprint}-i1`,
+      [founding(a), enrolled(anchor, a, b), declared(anchor, a, b), revoke],
+      a,
+    );
+
+    const { productOk, verdict, refused } = bothReaders();
+    expect(refused).toEqual([]);
+    expect(productOk).toBe(true);
+    expect(verdict).toBe('VERIFIED');
+    const found = keysWithoutTail();
+    expect(found.product).toEqual([b.fingerprint]);
+    const census = verify(root, catalogUpcasters()).census;
+    expect(census.map((note) => note.kind)).toEqual(['key-without-tail']);
+    expect(census[0]?.detail).toBe(
+      `committed public key has no tail on disk — the record declared it a backup of ${anchor}, ` +
+        'and that identity has since revoked it, so the absence is no longer expected: the tail ' +
+        'may have been dropped (a botched merge), never written (an empty tail is not versioned), ' +
+        'or removed',
+    );
+    expect(found.second).toEqual([
+      `the committed key ${b.fingerprint} has no tail on disk, and the record declared it a ` +
+        `backup of ${anchor}, which that identity has since revoked, so the absence is no longer ` +
+        'expected: the tail may have been dropped, never written, or removed',
+    ]);
+  });
+
   it('a declaration of another identity’s key: refused by both, and the key is not silenced', () => {
     // X signs, in its own tail and under its own checkpoint, that A's backup is X's. The key is
     // not a member of X, so the declaration is not X's to make.

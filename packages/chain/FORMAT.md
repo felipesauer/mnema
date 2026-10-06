@@ -551,7 +551,8 @@ uncovered declaration would let it silence the warning about a tail it removed.
 **How a reader uses it.** For each committed key whose fingerprint names no tail: if a covered
 `backup.declared` names it, and the key is still in that anchor's set at the end of the fold (a
 backup revoked since is not), the absence is expected and is said as a backup's. Any other key
-with no tail is said as one whose tail may have gone. Both are notes, never a refusal: an
+with no tail is said as one whose tail may have gone; a key declared a backup and revoked since
+is said so, as declared and revoked, rather than as a key the record declares no backup for. Both are notes, never a refusal: an
 absence is not something a reader can prove was tampering. A record written before this kind
 existed carries no declaration, so its backup reads as any other key with no tail; this
 product's `verify` still says it as a backup on the machine that made it, from that machine's

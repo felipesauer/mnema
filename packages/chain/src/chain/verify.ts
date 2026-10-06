@@ -547,7 +547,7 @@ export function verifyChain(
   const waivers = tailWaiversIn(entriesByTail);
   const backups = knownBackups(identity, options.keyRoot);
   const census: CensusNote[] = [
-    ...keysWithoutTail(committedFingerprints, tails, waivers, backups),
+    ...keysWithoutTail(committedFingerprints, tails, waivers, backups, identity.backups),
     ...notes,
     ...foreignRetractions(tails, entriesByTail),
     ...retiredCheckers(identity.retiredCheckers),
@@ -687,6 +687,7 @@ function keysWithoutTail(
   tails: readonly string[],
   waivers: readonly TailWaiver[],
   backups: ReadonlyMap<string, KnownBackup>,
+  declared: ReadonlyMap<string, string>,
 ): (KeyWithoutTailNote | BackupKeyNote)[] {
   const fingerprintsWithTail = new Set(tails.map(tailFingerprint));
   const notes: (KeyWithoutTailNote | BackupKeyNote)[] = [];
@@ -706,7 +707,7 @@ function keysWithoutTail(
     notes.push({
       kind: 'key-without-tail',
       fingerprint,
-      detail: keyWithoutTailDetail(accounted),
+      detail: keyWithoutTailDetail(accounted, declared.get(fingerprint)),
       waivers: accounted,
     });
   }
@@ -798,7 +799,7 @@ interface KnownBackup {
  * the declaration existed carries none, so the machine that made the backup still has its own
  * key root to go on: a registration says what the key was made FOR, and the fold says whether
  * the identity took it in. Handed no key root, a key the record does not declare reads as the
- * record alone says it. A backup revoked since is not a member, and reads as any key would.
+ * record alone says it. A backup revoked since is not a member, and reads as a key without a tail, said as declared and revoked.
  */
 function knownBackups(
   identity: IdentityResolution,
@@ -852,12 +853,29 @@ function backupKeyDetail(backup: KnownBackup): string {
  * limit the T3 clause states plainly — so the sentence is about what the RECORD
  * says, never about what the world holds.
  *
+ * `declaredFor` is the identity a covered `backup.declared` named the key a backup of, handed in
+ * only for a key the identity no longer holds (a held one is a backup note, not this one): the
+ * sentence then does not deny a declaration the record made.
+ *
  * Two waivers for one key is a key with several installations, all cut. The
  * sentence carries each, in the record's own order, rather than picking one: which
  * of a key's tails was accounted for is exactly what a reader is trying to find out.
  */
-function keyWithoutTailDetail(waivers: readonly TailWaiver[]): string {
+function keyWithoutTailDetail(
+  waivers: readonly TailWaiver[],
+  declaredFor?: string,
+): string {
   if (waivers.length === 0) {
+    if (declaredFor !== undefined) {
+      // Declared a backup, then revoked: the record DID declare it, so it cannot be said not to
+      // have. The identity no longer holds the key, so its absence is not the expected one.
+      return (
+        'committed public key has no tail on disk — the record declared it a backup of ' +
+        `${oneLine(declaredFor)}, and that identity has since revoked it, so the absence is no ` +
+        'longer expected: the tail may have been dropped (a botched merge), never written (an ' +
+        'empty tail is not versioned), or removed'
+      );
+    }
     return (
       'committed public key has no tail on disk, and the record declares no backup for it — ' +
       'the tail may have been dropped (a botched merge), never written (an empty tail is not ' +

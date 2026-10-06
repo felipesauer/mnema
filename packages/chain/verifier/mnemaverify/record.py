@@ -832,6 +832,14 @@ def _say_keys_without_tail(
                 f"backup of {anchor}, which signs nothing until it is restored",
             )
             continue
+        if anchor is not None:
+            report.note(
+                "6.5",
+                f"the committed key {fingerprint} has no tail on disk, and the record declared it "
+                f"a backup of {anchor}, which that identity has since revoked, so the absence is "
+                "no longer expected: the tail may have been dropped, never written, or removed",
+            )
+            continue
         report.note(
             "6.5",
             f"the committed key {fingerprint} has no tail on disk, and the record declares no "
