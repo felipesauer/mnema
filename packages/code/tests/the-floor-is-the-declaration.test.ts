@@ -678,6 +678,21 @@ describe('the floor is the declaration', () => {
     expect(console.unresolved).toEqual([]);
   });
 
+  it('loads the Sigstore library only for the flag that reads a bundle', () => {
+    // `verify --against-sigstore` is the one reader of `@sigstore/verify`. A bare `verify`, and
+    // the act that signs, must not load a byte of it: the act signs with node:crypto.
+    const sigstore = (path: string) =>
+      eagerClosure(join(SRC, path))
+        .external.map((edge) => edge.specifier)
+        .filter((specifier) => specifier.startsWith('@sigstore/'));
+    expect(sigstore('cli.ts')).toEqual([]);
+    expect(sigstore('commands/verify.ts')).toEqual([]);
+    expect(sigstore('commands/witness.ts')).toEqual([]);
+    expect(sigstore('sigstore/sign.ts')).toEqual([]);
+    // Not vacuous: the reading does load it.
+    expect(sigstore('commands/verify-sigstore.ts')).toContain('@sigstore/verify');
+  });
+
   it('reads an import the way the runtime does', () => {
     // The extractor's own non-vacuity, on input this test owns: each thing it must
     // see, and each thing it must not. The `import type` case is not hypothetical —

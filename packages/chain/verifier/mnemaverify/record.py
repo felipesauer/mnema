@@ -48,6 +48,7 @@ SEGMENT_NAME = re.compile(r"^[0-9]{6}\.jsonl$")
 CHECKPOINTS_FILE = "checkpoints.jsonl"
 TAILPROOF_FILE = "tailproof.json"
 WITNESS_DIR = "witness"
+SIGSTORE_SUFFIX = ".sigstore.json"
 
 
 class Coverage(NamedTuple):
@@ -480,6 +481,15 @@ def _check_witness(
     pending_seen: list[str] = []
 
     for name in sorted(os.listdir(directory)):
+        if name.endswith(SIGSTORE_SUFFIX):
+            report.note(
+                "8",
+                "a Sigstore bundle, NOT CHECKED by this reader: it neither raises nor lowers "
+                "the verdict",
+                f"{tail_id}/{WITNESS_DIR}/{name}",
+                "G26",
+            )
+            continue
         if not name.endswith(".ots"):
             continue
         digest = name[:-4]

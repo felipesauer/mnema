@@ -119,7 +119,8 @@ and has no id:
   in any explorer.
 
 The other unresolved gaps are **findings about a record**, not limits: contiguity between
-checkpoint ranges (G11) and the unit of §8's thousand-step limit (G20). Each is observable,
+checkpoint ranges (G11), the unit of §8's thousand-step limit (G20), and a Sigstore bundle
+beside a checkpoint, which this reader names and does not check (G26). Each is observable,
 and each is reported by name with its location where a record has it — so announcing them
 here, on a record that does not, would say of every record what is true of some.
 `mnema_verify.py gaps` marks which is which.

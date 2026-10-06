@@ -352,6 +352,22 @@ GAPS: tuple[Gap, ...] = (
         "is what the witness-path-bit mutation is for",
         standing="settled",
     ),
+    Gap(
+        "G26",
+        "8",
+        "a Sigstore bundle beside a checkpoint (witness/<checkpoint>.sigstore.json) is the "
+        "ecosystem's own file: an X.509 certificate chain to Fulcio, an ECDSA signature over the "
+        "checkpoint's signed message, and Rekor's signed promise and proof of inclusion. Section 8 "
+        "names it and leaves its checking to Sigstore's specification, and this reader carries "
+        "neither X.509 nor ECDSA - the standard library has neither",
+        "unresolved",
+        "each bundle is named, where it lies, as NOT CHECKED, and the verdict does not move: the "
+        "format's own levels never rest on it. Its absence says the record holds none. To check "
+        "one, write the checkpoint's signed message to a file and run `cosign verify-blob "
+        "--bundle <bundle> --certificate-identity <e-mail or workflow> "
+        "--certificate-oidc-issuer <issuer> <file>`",
+        standing="record-finding",
+    ),
 )
 
 BY_ID = {g.id: g for g in GAPS}
@@ -366,9 +382,9 @@ class Boundary(NamedTuple):
     reader of a VERIFIED verdict still needs to be told, for exactly the reason the gaps
     are told: coverage they assume and did not get.
 
-    It is a separate tuple rather than a twenty-sixth Gap because giving it an id would
-    make the registry's own count a lie: `25 gaps` is a claim about where the document was
-    not enough, and this is not one of those places.
+    It is a separate tuple rather than one more Gap because giving it an id would make the
+    registry's own count a lie: the count is a claim about where the document was not
+    enough, and this is not one of those places.
     """
 
     section: str

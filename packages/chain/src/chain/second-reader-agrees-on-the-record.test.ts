@@ -69,7 +69,15 @@
  */
 
 import { spawnSync } from 'node:child_process';
-import { appendFileSync, cpSync, mkdtempSync, readdirSync, readFileSync, rmSync } from 'node:fs';
+import {
+  appendFileSync,
+  cpSync,
+  mkdtempSync,
+  readdirSync,
+  readFileSync,
+  rmSync,
+  writeFileSync,
+} from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -79,8 +87,11 @@ import { accountLinked, identityFounded } from '../events/build.js';
 import type { CatalogEvent } from '../events/catalog.js';
 import { catalogUpcasters } from '../events/registry.js';
 import { openChainForWriting, verify } from './chain.js';
+import { checkpointHash } from './checkpoint.js';
 import { sealEntry, serializeEntry } from './entry.js';
 import { deriveAnchor } from './keys.js';
+import { witnessSigstorePath } from './layout.js';
+import { readTailCheckpoints } from './store.js';
 
 /** The second reader, and the tool that builds the inputs it has to refuse. */
 const VERIFIER = fileURLToPath(new URL('../../verifier/mnema_verify.py', import.meta.url));
@@ -1243,5 +1254,48 @@ describe('both readers over an identity that names its GitHub account', () => {
     const here = verify(record, catalogUpcasters());
     expect(here.ok).toBe(false);
     expect(here.issues.map((issue) => issue.detail).join('\n')).toContain('payload.account');
+  });
+});
+
+describe('both readers over a Sigstore bundle and the claim that names its identity', () => {
+  /**
+   * A bundle is a file beside the checkpoint, read only by `verify --against-sigstore`; the
+   * claim is an `account.linked` with `service: "sigstore"`, no kind of its own. Neither may move
+   * either verdict, and the second reader says the bundle is there and that it did not check it.
+   */
+  it('reads the same verdict and exit with the bundle as without it, and names the bundle', () => {
+    const record = copyOf('witnessed-record');
+    const before = secondReading(record);
+    const levelBefore = verify(record, catalogUpcasters()).level;
+    const tail = readdirSync(join(record, 'tails'))[0] as string;
+    const head = readTailCheckpoints({ root: record }, tail).at(-1);
+    if (head === undefined) throw new Error('the fixture has no checkpoint');
+    const bundle = witnessSigstorePath({ root: record }, tail, checkpointHash(head));
+    writeFileSync(bundle, '{"mediaType":"application/vnd.dev.sigstore.bundle.v0.3+json"}\n');
+
+    const after = secondReading(record);
+    expect(after.verdict).toBe(before.verdict);
+    expect(after.exit).toBe(before.exit);
+    expect(verify(record, catalogUpcasters()).level).toBe(levelBefore);
+    const named = after.findings.filter((finding) => finding.gap === 'G26');
+    expect(named.map((finding) => finding.where)).toEqual([
+      `${tail}/witness/${checkpointHash(head)}.sigstore.json`,
+    ]);
+    expect(before.findings.some((finding) => finding.gap === 'G26')).toBe(false);
+  });
+
+  it('accepts the claim in both readers, fully signed', () => {
+    const record = join(root, 'sigstore-linked');
+    const writer = openChainForWriting(record, { keyRoot: join(root, 'keys') });
+    const fp = writer.signerFingerprint;
+    const anchor = deriveAnchor(fp);
+    const envelope = { at: '2026-10-06T00:00:00.000Z', who: anchor, signerFp: fp, subject: anchor };
+    writer.append(identityFounded(envelope, { foundingFp: fp }));
+    writer.append(accountLinked(envelope, { service: 'sigstore', account: 'felipe@example.com' }));
+    writer.checkpoint();
+    expect(verify(record, catalogUpcasters()).fullySigned).toBe(true);
+    const there = secondReading(record);
+    expect(refusals(there)).toEqual([]);
+    expect(there.verdict).toBe('VERIFIED');
   });
 });
