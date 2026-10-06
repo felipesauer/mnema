@@ -1,0 +1,42 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="880" height="198" viewBox="0 0 880 198" role="img" aria-label="How mnema works: record, rule, hand over, verify">
+<title>How mnema works</title>
+<rect x="0.5" y="1" width="195" height="196" rx="12" fill="none" stroke="#d1d9e0"/>
+<circle cx="34" cy="37" r="14" fill="none" stroke="#997dbf" stroke-width="2"/>
+<text x="34" y="42" font-family="-apple-system,BlinkMacSystemFont,'Segoe UI','Noto Sans',Helvetica,Arial,sans-serif" font-size="14" font-weight="700" fill="#997dbf" text-anchor="middle">1</text>
+<text x="58" y="43" font-family="-apple-system,BlinkMacSystemFont,'Segoe UI','Noto Sans',Helvetica,Arial,sans-serif" font-size="17" font-weight="600" fill="#1f2328">Record</text>
+<text x="20" y="83" font-family="-apple-system,BlinkMacSystemFont,'Segoe UI','Noto Sans',Helvetica,Arial,sans-serif" font-size="13" fill="#59636e">A decision, why it was</text>
+<text x="20" y="103" font-family="-apple-system,BlinkMacSystemFont,'Segoe UI','Noto Sans',Helvetica,Arial,sans-serif" font-size="13" fill="#59636e">made, and the options</text>
+<text x="20" y="123" font-family="-apple-system,BlinkMacSystemFont,'Segoe UI','Noto Sans',Helvetica,Arial,sans-serif" font-size="13" fill="#59636e">turned down.</text>
+<rect x="20" y="149" width="122.2" height="28" rx="6" fill="#997dbf" fill-opacity="0.12" stroke="#997dbf" stroke-opacity="0.6"/>
+<text x="30" y="167.5" font-family="ui-monospace,SFMono-Regular,'SF Mono',Menlo,Consolas,'Liberation Mono',monospace" font-size="12" fill="#1f2328">mnema decision</text>
+<path d="M204 99H218M213 94L218 99L213 104" fill="none" stroke="#59636e" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+<rect x="228.5" y="1" width="195" height="196" rx="12" fill="none" stroke="#d1d9e0"/>
+<circle cx="262" cy="37" r="14" fill="none" stroke="#997dbf" stroke-width="2"/>
+<text x="262" y="42" font-family="-apple-system,BlinkMacSystemFont,'Segoe UI','Noto Sans',Helvetica,Arial,sans-serif" font-size="14" font-weight="700" fill="#997dbf" text-anchor="middle">2</text>
+<text x="286" y="43" font-family="-apple-system,BlinkMacSystemFont,'Segoe UI','Noto Sans',Helvetica,Arial,sans-serif" font-size="17" font-weight="600" fill="#1f2328">Rule</text>
+<text x="248" y="83" font-family="-apple-system,BlinkMacSystemFont,'Segoe UI','Noto Sans',Helvetica,Arial,sans-serif" font-size="13" fill="#59636e">Accepted by a person,</text>
+<text x="248" y="103" font-family="-apple-system,BlinkMacSystemFont,'Segoe UI','Noto Sans',Helvetica,Arial,sans-serif" font-size="13" fill="#59636e">then linked to the paths</text>
+<text x="248" y="123" font-family="-apple-system,BlinkMacSystemFont,'Segoe UI','Noto Sans',Helvetica,Arial,sans-serif" font-size="13" fill="#59636e">it governs.</text>
+<rect x="248" y="149" width="93" height="28" rx="6" fill="#997dbf" fill-opacity="0.12" stroke="#997dbf" stroke-opacity="0.6"/>
+<text x="258" y="167.5" font-family="ui-monospace,SFMono-Regular,'SF Mono',Menlo,Consolas,'Liberation Mono',monospace" font-size="12" fill="#1f2328">mnema link</text>
+<path d="M432 99H446M441 94L446 99L441 104" fill="none" stroke="#59636e" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+<rect x="456.5" y="1" width="195" height="196" rx="12" fill="none" stroke="#d1d9e0"/>
+<circle cx="490" cy="37" r="14" fill="none" stroke="#997dbf" stroke-width="2"/>
+<text x="490" y="42" font-family="-apple-system,BlinkMacSystemFont,'Segoe UI','Noto Sans',Helvetica,Arial,sans-serif" font-size="14" font-weight="700" fill="#997dbf" text-anchor="middle">3</text>
+<text x="514" y="43" font-family="-apple-system,BlinkMacSystemFont,'Segoe UI','Noto Sans',Helvetica,Arial,sans-serif" font-size="17" font-weight="600" fill="#1f2328">Hand over</text>
+<text x="476" y="83" font-family="-apple-system,BlinkMacSystemFont,'Segoe UI','Noto Sans',Helvetica,Arial,sans-serif" font-size="13" fill="#59636e">The plugin opens every</text>
+<text x="476" y="103" font-family="-apple-system,BlinkMacSystemFont,'Segoe UI','Noto Sans',Helvetica,Arial,sans-serif" font-size="13" fill="#59636e">session with it, and each</text>
+<text x="476" y="123" font-family="-apple-system,BlinkMacSystemFont,'Segoe UI','Noto Sans',Helvetica,Arial,sans-serif" font-size="13" fill="#59636e">edit meets its rules.</text>
+<rect x="476" y="149" width="129.5" height="28" rx="6" fill="#997dbf" fill-opacity="0.12" stroke="#997dbf" stroke-opacity="0.6"/>
+<text x="486" y="167.5" font-family="ui-monospace,SFMono-Regular,'SF Mono',Menlo,Consolas,'Liberation Mono',monospace" font-size="12" fill="#1f2328">refuses-a-write</text>
+<path d="M660 99H674M669 94L674 99L669 104" fill="none" stroke="#59636e" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+<rect x="684.5" y="1" width="195" height="196" rx="12" fill="none" stroke="#d1d9e0"/>
+<circle cx="718" cy="37" r="14" fill="none" stroke="#997dbf" stroke-width="2"/>
+<text x="718" y="42" font-family="-apple-system,BlinkMacSystemFont,'Segoe UI','Noto Sans',Helvetica,Arial,sans-serif" font-size="14" font-weight="700" fill="#997dbf" text-anchor="middle">4</text>
+<text x="742" y="43" font-family="-apple-system,BlinkMacSystemFont,'Segoe UI','Noto Sans',Helvetica,Arial,sans-serif" font-size="17" font-weight="600" fill="#1f2328">Verify</text>
+<text x="704" y="83" font-family="-apple-system,BlinkMacSystemFont,'Segoe UI','Noto Sans',Helvetica,Arial,sans-serif" font-size="13" fill="#59636e">Every fact is signed and</text>
+<text x="704" y="103" font-family="-apple-system,BlinkMacSystemFont,'Segoe UI','Noto Sans',Helvetica,Arial,sans-serif" font-size="13" fill="#59636e">hash-chained; anyone can</text>
+<text x="704" y="123" font-family="-apple-system,BlinkMacSystemFont,'Segoe UI','Noto Sans',Helvetica,Arial,sans-serif" font-size="13" fill="#59636e">check it.</text>
+<rect x="704" y="149" width="107.6" height="28" rx="6" fill="#997dbf" fill-opacity="0.12" stroke="#997dbf" stroke-opacity="0.6"/>
+<text x="714" y="167.5" font-family="ui-monospace,SFMono-Regular,'SF Mono',Menlo,Consolas,'Liberation Mono',monospace" font-size="12" fill="#1f2328">mnema verify</text>
+</svg>
