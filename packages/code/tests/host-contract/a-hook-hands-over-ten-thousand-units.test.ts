@@ -66,7 +66,7 @@ describe('a hook hands over ten thousand units', () => {
     it(`${units} units of ${kind} text arrive whole`, async () => {
       const session = await start({ plugin: false, hooks: aHookOf(units, kind) });
       const block = theOneBlock(session);
-      expect(block).toContain(theTextOf(units, kind));
+      expect(block.includes(theTextOf(units, kind)), 'the text arrived whole').toBe(true);
       expect(block).not.toContain('persisted-output');
     }, 120_000);
   }
@@ -82,13 +82,14 @@ describe('a hook hands over ten thousand units', () => {
       expect(block).toContain('<persisted-output>');
       expect(block).toContain('Output too large');
       // The preview is the first 2,000 units, and not one more.
-      expect(block).toContain(text.slice(0, 2000));
-      expect(block).not.toContain(text.slice(0, 2002));
-      expect(block).not.toContain(text);
+      expect(block.includes(text.slice(0, 2000)), 'the preview is there').toBe(true);
+      expect(block.includes(text.slice(0, 2002)), 'the preview stops at 2,000').toBe(false);
       // And the whole text is where the path says, for the model that opens it.
       const path = block.match(/Full output saved to: (\S+)/)?.[1];
       expect(path).toBeDefined();
-      expect(JSON.stringify(readFileSync(path as string, 'utf-8'))).toContain(text);
+      expect(readFileSync(path as string, 'utf-8').includes(text), 'the file holds it all').toBe(
+        true,
+      );
     }, 120_000);
   }
 
@@ -113,7 +114,7 @@ describe('a hook hands over ten thousand units', () => {
     expect(text).toContain('Left out of this text:');
     // ...and the host handed that text over as it is, not as a path.
     const block = theOneBlock(session);
-    expect(block).toContain(text);
+    expect(block.includes(text), 'the product text arrived whole').toBe(true);
     expect(block).not.toContain('persisted-output');
   }, 240_000);
 });

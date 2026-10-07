@@ -530,3 +530,25 @@ export function theInstructionsThatArrived(
   });
   return found;
 }
+
+/**
+ * The permission decisions the hooks of an event handed the host, as the host reported them in
+ * its own stream: the reply of the plugin read where it was received, not where it was made.
+ */
+export function thePermissionDecisionsOf(session: TheSession, event: string): string[] {
+  return session.stream
+    .filter((entry) => entry['subtype'] === 'hook_response' && entry['hook_event'] === event)
+    .flatMap((entry) => {
+      const output = String(entry['output'] ?? '').trim();
+      if (!output.startsWith('{')) return [];
+      try {
+        const reply = JSON.parse(output) as {
+          hookSpecificOutput?: { permissionDecision?: string };
+        };
+        const decision = reply.hookSpecificOutput?.permissionDecision;
+        return decision === undefined ? [] : [decision];
+      } catch {
+        return [];
+      }
+    });
+}

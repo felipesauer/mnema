@@ -32,7 +32,7 @@ describe("a server's instructions are cut at 2,048 characters", () => {
     expect(arrived['exact']).toBe(aTextOf(2048));
     expect(arrived['over']).toBe(`${aTextOf(2048)}… [truncated]`);
     // The plugin's server is under the number, so what it wrote is what arrived.
-    expect(SERVER_INSTRUCTIONS.length).toBeLessThanOrEqual(2048);
     expect(arrived['plugin:mnema:mnema']).toBe(SERVER_INSTRUCTIONS.trimEnd());
+    expect(SERVER_INSTRUCTIONS.length).toBeLessThanOrEqual(2048);
   }, 120_000);
 });

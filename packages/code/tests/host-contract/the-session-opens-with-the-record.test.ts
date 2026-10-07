@@ -49,9 +49,10 @@ describe('the session opens with the record', () => {
     expect(opened[0]).toContain('Bill in UTC');
 
     // The decision it replaced is in nothing the host sent, not in the opening and not elsewhere.
-    expect(JSON.stringify(session.requests.map((request) => request.body))).not.toContain(
-      'Bill in local time',
+    const reached = session.requests.some((request) =>
+      JSON.stringify(request.body).includes('Bill in local time'),
     );
+    expect(reached, 'the superseded decision reached the host').toBe(false);
   }, 120_000);
 
   it('hands over exactly the text the verb prints, byte for byte', async () => {

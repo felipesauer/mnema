@@ -20,7 +20,11 @@
 import { existsSync } from 'node:fs';
 import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
-import { aHostForEachCase, theResultOfTheCall } from './support/the-host.js';
+import {
+  aHostForEachCase,
+  thePermissionDecisionsOf,
+  theResultOfTheCall,
+} from './support/the-host.js';
 import { alsoAt, decide, ruleAt } from './support/the-record-to-stand-on.js';
 import { writeTo } from './support/the-stand-in-api.js';
 
@@ -40,6 +44,9 @@ describe('a refusal and a pause hold the write', () => {
     expect(result?.isError).toBe(true);
     expect(result?.text).toContain('refuses a write at src/billing/invoice.ts');
     expect(result?.text).toContain(rule);
+    // The plugin answered `deny`, and the host took it as a hook that stopped the call.
+    expect(thePermissionDecisionsOf(session, 'PreToolUse')).toEqual(['deny']);
+    expect(result?.text).toContain('PreToolUse:Write hook error');
     // The limit the product declares reaches the model in the same words as the refusal.
     expect(result?.text).toContain('not the shell');
   }, 120_000);
@@ -58,6 +65,10 @@ describe('a refusal and a pause hold the write', () => {
     expect(result?.text).toContain('asks that a person look at src/ledger/entry.ts');
     expect(result?.text).toContain(rule);
     expect(result?.text).not.toContain('refuses a write');
+    // The plugin answered `ask`, and with nobody to ask the host held the call. That is not a hook
+    // error, so the two answers do not read alike to the model.
+    expect(thePermissionDecisionsOf(session, 'PreToolUse')).toEqual(['ask']);
+    expect(result?.text).not.toContain('hook error');
   }, 120_000);
 
   it('both at one path: the refusal wins, and nobody is named as asked', async () => {
@@ -77,5 +88,6 @@ describe('a refusal and a pause hold the write', () => {
     expect(result?.text).toContain(refusing);
     expect(result?.text).not.toContain(asking);
     expect(result?.text).toContain('refuses a write');
+    expect(thePermissionDecisionsOf(session, 'PreToolUse')).toEqual(['deny']);
   }, 120_000);
 });
