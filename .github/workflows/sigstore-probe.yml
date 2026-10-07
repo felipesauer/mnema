@@ -1,0 +1,91 @@
+name: Sigstore probe
+
+# WHAT THIS IS. The one run of `mnema witness sigstore` against the real Sigstore: Fulcio and
+# Rekor at sigstore.dev, with this job's own OIDC token. The suite drives the act against
+# Sigstore's own test doubles and never reaches the network; this is where the doubles are checked
+# against the service they stand for.
+#
+# WHAT IT DOES. It builds the binary, writes a disposable record in a temporary directory under a
+# temporary HOME (nothing of this repository's own is signed or read), names this workflow as the
+# record's Sigstore identity with `mnema key sigstore`, countersigns the record's checkpoint with
+# `mnema witness sigstore`, and reads the bundle back with `mnema verify --against-sigstore`.
+#
+# WHEN IT FAILS. When `verify` exits non-zero, or when its JSON does not hold exactly what the act
+# promises: at least one bundle, every bundle read as `signed`, by this workflow's identity, and
+# named by an identity of the record. `--against-sigstore` answers in notes and never moves the
+# exit, so the exit alone would be green over a bundle that does not hold; the notes are the
+# criterion, read from `--json`.
+#
+# WHAT LEAVES. This workflow's identity — the repository, the file and the ref — goes into
+# Sigstore's public log, which does not forget. That is why it runs only by hand, and why the act
+# refuses a private repository (it is not worked around here).
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  id-token: write
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  probe:
+    name: countersign a disposable record and read it back
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+
+      - uses: pnpm/action-setup@v6
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version: '24'
+          cache: 'pnpm'
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Build
+        run: pnpm build
+
+      - name: Countersign a disposable record and read it back
+        env:
+          # The identity Fulcio writes into the certificate of a job of this workflow.
+          IDENTITY: https://github.com/${{ github.workflow_ref }}
+        run: |
+          set -euo pipefail
+          bin="$GITHUB_WORKSPACE/packages/code/dist/cli.js"
+          work="$(mktemp -d "$RUNNER_TEMP/sigstore-probe.XXXXXX")"
+          export HOME="$work/home"
+          mkdir -p "$HOME" "$work/record"
+          cd "$work/record"
+          git init -q .
+
+          node "$bin" init
+          node "$bin" memory "A disposable record, written to be countersigned by Sigstore once."
+          node "$bin" key sigstore "$IDENTITY"
+          node "$bin" witness sigstore
+
+          node "$bin" verify --against-sigstore
+          node "$bin" verify --against-sigstore --json > "$work/verify.json"
+
+          node -e '
+            const fs = require("node:fs");
+            const read = JSON.parse(fs.readFileSync(process.argv[1], "utf8"));
+            const identity = process.env.IDENTITY;
+            const findings = read.sigstore?.findings ?? [];
+            const wrong = findings.filter(
+              (f) => f.reading?.kind !== "signed" || f.reading.identity !== identity || f.namedBy === undefined,
+            );
+            if (findings.length === 0 || wrong.length > 0) {
+              console.error(`the bundles do not hold what the act promises (${findings.length} read):`);
+              console.error(JSON.stringify(read.sigstore, null, 2));
+              process.exit(1);
+            }
+            console.log(`${findings.length} bundle(s) signed by ${identity}, named by the record`);
+          ' "$work/verify.json"
