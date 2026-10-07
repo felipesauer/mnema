@@ -33,6 +33,7 @@ import { describe, expect, it } from 'vitest';
 
 import { canonicalStringify } from '../events/canonical.js';
 import { parseCanonicalLine } from '../events/stored-json.js';
+import { publicKeyFromPem, verify as verifySignature } from './keys.js';
 
 const VECTORS = fileURLToPath(new URL('../../conformance/vectors/', import.meta.url));
 const VERIFIER = fileURLToPath(new URL('../../verifier/', import.meta.url));
@@ -103,6 +104,79 @@ describe('the outside vectors are the files that were copied', () => {
     );
     expect(unnamed).toEqual([]);
     expect(sources.sources.every((source) => source.license !== '')).toBe(true);
+  });
+});
+
+// ---- section 6: the strict Ed25519 rule, in the product's own source ------------------------
+
+/**
+ * The product's `verify`, from source, on the two sets that tell the strict rule from
+ * `node:crypto`'s: CCTV, read by its flags, and speccheck, by its "Dalek strict" row. The case
+ * that holds all three verifiers to every vector is
+ * `packages/code/tests/every-verifier-gives-one-ed25519-verdict.test.ts`, which reads the BUILT
+ * package; this one reads the source, so each refusal of `keys.ts` is reached here too.
+ */
+describe('the product refuses what the strict rule refuses, on every Node', () => {
+  const REFUSED_FLAGS = [
+    'low_order_A',
+    'low_order_R',
+    'non_canonical_A',
+    'non_canonical_R',
+    'low_order_residue',
+  ];
+  const pem = (key: string): string =>
+    `-----BEGIN PUBLIC KEY-----\n${Buffer.from(`302a300506032b6570032100${key}`, 'hex').toString('base64')}\n-----END PUBLIC KEY-----\n`;
+  const verdict = (key: string, sig: string, msg: Buffer): boolean =>
+    verifySignature(
+      new Uint8Array(msg),
+      new Uint8Array(Buffer.from(sig, 'hex')),
+      publicKeyFromPem(pem(key)),
+    );
+
+  it('on CCTV, accepting only what its flags say a strict verifier accepts', () => {
+    const vectors = JSON.parse(
+      readFileSync(join(VECTORS, 'cctv/ed25519vectors.json'), 'utf-8'),
+    ) as {
+      number: number;
+      key: string;
+      sig: string;
+      msg: string;
+      flags: string[] | null;
+    }[];
+    const wrong = vectors
+      .filter(
+        (v) =>
+          verdict(v.key, v.sig, Buffer.from(v.msg, 'utf-8')) !==
+          !(v.flags ?? []).some((flag) => REFUSED_FLAGS.includes(flag)),
+      )
+      .map((v) => v.number);
+    expect(wrong).toEqual([]);
+  });
+
+  it('on speccheck, accepting case 3 only', () => {
+    const cases = JSON.parse(readFileSync(join(VECTORS, 'speccheck/cases.json'), 'utf-8')) as {
+      message: string;
+      pub_key: string;
+      signature: string;
+    }[];
+    expect(
+      cases.map((c) => verdict(c.pub_key, c.signature, Buffer.from(c.message, 'hex'))),
+    ).toEqual([false, false, false, true, false, false, false, false, false, false, false, false]);
+  });
+
+  it('refuses a signature of the wrong length, and an S at or past L, before node:crypto', () => {
+    const cases = JSON.parse(readFileSync(join(VECTORS, 'speccheck/cases.json'), 'utf-8')) as {
+      message: string;
+      pub_key: string;
+      signature: string;
+    }[];
+    const good = cases[3] as { message: string; pub_key: string; signature: string };
+    const msg = Buffer.from(good.message, 'hex');
+    expect(verdict(good.pub_key, good.signature, msg)).toBe(true);
+    expect(verdict(good.pub_key, good.signature.slice(0, 126), msg)).toBe(false);
+    // L itself, little-endian: the smallest S the rule refuses.
+    const l = 'edd3f55c1a631258d69cf7a2def9de1400000000000000000000000000000010';
+    expect(verdict(good.pub_key, `${good.signature.slice(0, 64)}${l}`, msg)).toBe(false);
   });
 });
 

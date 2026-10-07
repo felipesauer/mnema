@@ -19,7 +19,7 @@ y >= p and a "-0" x) to points that are NOT OF SMALL ORDER, S < L, and the cofac
 equation. The small-order refusal is new: this reader used to accept a small-order A or R,
 which one Node accepted and another refused, so the three verifiers of a record followed three
 rules. Over the 1,077 Ed25519 vectors of Wycheproof, CCTV and ed25519-speccheck they now give
-one verdict (`packages/code/tests/every-verifier-gives-one-ed25519-verdict.test.ts`).
+one verdict, the one those vectors' publishers give.
 
 THERE IS A SIGNER HERE TOO, and it is not for verifying anything. `mutate` needs to produce
 a checkpoint signed by a key NO ENROLMENT AUTHORIZED - the input that separates "the
