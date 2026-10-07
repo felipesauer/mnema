@@ -12,6 +12,21 @@ tag, with its own changelog.
 
 ### Added
 
+- **A link can be taken back, by the identity that recorded it.** A new event kind,
+  `link.retracted` (`payload.target`, `payload.rel`, `payload.reason`), names an edge the way
+  `knowledge.linked` did and says why. `mnema unlink <subject> <target> --rel <label> --reason`
+  and the `retract_link` tool write it, after resolving an `ADR-<n>` label on either end as
+  `mnema link` does. Nothing is erased: the link's own event stays, and every read of links
+  (`rules`, `before-a-write`, the opening brief, `governing_rules`, the edit census) stops seeing
+  the edge once its only asserter took it back, so a rule addressed at a path stops acting there.
+  Any key of that identity retracts it; another identity is refused with `NOT_THE_AUTHOR`, a
+  retraction it signed anyway is not applied, and `mnema verify` names it in a
+  `census [foreign-link-retraction]` line, informational, exit unchanged. The rule is in
+  `packages/chain/FORMAT.md` §6.4, with a vector; no byte of any existing kind changed.
+  Known limit: a binary from before this change refuses a record holding a `link.retracted` as
+  an unknown kind, so `verify` fails there and every read of that tree stops with
+  `unreadable stored line` until that machine is upgraded.
+
 - **The record says which key is a backup.** A new event kind, `backup.declared`
   (`payload.backupFp`), says that one of an identity's keys is kept off the machine. `mnema init`
   writes it when it enrolls the cold backup. `verify` and the Python reader read it: a declared

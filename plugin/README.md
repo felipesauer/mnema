@@ -116,7 +116,7 @@ document, delivered by the host instead of waited for.
   in the handshake, which a session reads before it has chosen a tool: when a decision or
   a note is worth recording, and what comes back. **Registering the server yourself as
   well** (`claude mcp add`, or an `mcpServers` entry) is redundant: the agent is offered
-  every tool twice, under two prefixes, fifty-two names for twenty-six tools.
+  every tool twice, under two prefixes, fifty-four names for twenty-seven tools.
 
 ## What it does — and what it does not
 

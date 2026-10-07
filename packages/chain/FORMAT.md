@@ -6,7 +6,7 @@ against their implementation, and get the same digests we do.
 
 **Somebody has.** [`verifier/`](./verifier/) beside this file is a second implementation, in
 Python, written from this document and importing nothing of the product it checks. It
-reproduces the 32 published vectors and the four aggregate digests, and checks the frozen
+reproduces the 33 published vectors and the four aggregate digests, and checks the frozen
 records in the test suite beside the product
 (`packages/chain/src/chain/second-reader-agrees-on-the-record.test.ts`), on honest records
 and on every input the format refuses. The two verdicts differ in two pinned cases. With the
@@ -542,9 +542,29 @@ for its own `who`; what it lacks is authority over somebody else's note — so t
 note the tree does not hold has no author to compare with, and is neither applied nor named
 (`packages/core/src/knowledge/only-the-identity-that-wrote-a-note-retracts-it.test.ts`).
 
-A verification of the format does not need this rule — it decides what a reader SERVES, not
-what verifies — and the second reader beside this file does not read retractions at all. A
-binary from before the rule applied every retraction, whoever signed it.
+**A link is taken back the same way.** `link.retracted` (`payload.target`, `payload.rel`,
+`payload.reason`) names the edge a `knowledge.linked` asserted. A link has no id of its own, so
+the retraction names it as the link did: its `subject` is the link's subject, and `target` and
+`rel` are the link's, byte for byte. It is a new kind; no existing kind, field or byte changes.
+
+A reader folds the links in the merged order of §6.2 into the set of ASSERTIONS that stand, one
+per (subject, target, rel, `who`). A `knowledge.linked` makes its `who`'s assertion of the edge
+stand; a `link.retracted` withdraws, at its point in that order, the standing assertion of the
+edge it names whose `who` is its own `who` — the same comparison as a note's, on the anchor, so
+any key of the identity that linked takes the link back. An edge is served while any assertion
+of it stands, and its origin is the first that does; an edge whose only asserter took it back is
+served by nothing, so a rule it addressed at a path stops acting there. A later
+`knowledge.linked` of the same edge by the same identity stands again. A retraction whose `who`
+asserted the edge nowhere in the tree, while another identity did, is not applied, is **not a
+break**, and is named in this product's census for the reason a stranger's note retraction is.
+A retraction of an edge the tree does not hold at all is neither applied nor named
+(`packages/core/src/knowledge/only-the-identity-that-linked-retracts-it.test.ts`).
+
+A verification of the format does not need either rule — they decide what a reader SERVES, not
+what verifies — and the second reader beside this file reads neither retraction: it accepts each
+by its row of `event-schema.json`, as it accepts any kind. A binary from before the note rule
+applied every note retraction, whoever signed it; a binary from before `link.retracted` refuses
+it as a (kind, v) its table does not hold (§4.1), so a record holding one does not verify there.
 
 ### 6.5 A key kept as a backup
 

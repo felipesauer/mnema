@@ -1232,6 +1232,14 @@ any key of it: another identity is refused, and a retraction another identity si
 is not applied — the note is still served, and `mnema verify` names it in a census line,
 informational, not a break.
 
+**A link recorded by mistake can be taken back the same way.** `mnema unlink <subject>
+<target> --rel <label> --reason "<why>"` (the `retract_link` tool) names the edge exactly as
+`mnema link` took it, an `ADR-<n>` label included, and appends a signed fact in the tree the link
+was recorded in. Every read of links stops seeing the edge once nobody else asserts it, so a rule
+it addressed at a path no longer governs, asks or refuses there. Only the identity that recorded
+the link takes it back; a retraction another identity signed anyway is not applied, and
+`mnema verify` names it in a census line.
+
 ### Switching off what mnema hands to a model
 
 Three things arrive without anybody asking: the document a session opens with, the notes
@@ -1297,7 +1305,7 @@ the record.
 Point an agent host at the `mcp` subcommand; it speaks JSON-RPC over stdio. **If you
 installed the Claude Code plugin, it already does this** — the plugin declares this same
 server, and registering it here as well offers every tool twice, under
-`mcp__mnema__*` and `mcp__plugin_mnema_mnema__*`, fifty-two names for twenty-six tools to an
+`mcp__mnema__*` and `mcp__plugin_mnema_mnema__*`, fifty-four names for twenty-seven tools to an
 agent that chooses by name, and hands the session the server's instructions twice. One of
 the two is enough.
 

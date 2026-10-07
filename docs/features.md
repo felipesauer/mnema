@@ -11,6 +11,10 @@ Each line says what it does and what it leaves unproven; the page it points to h
 - **A note can be taken back.** `mnema retract` appends a signed retraction of a memory or an
   observation, with a reason. The note leaves the opening and the search and stays in the record,
   and `verify` still sees both facts: nothing is erased.
+- **A link can be taken back, by whoever recorded it.** `mnema unlink <subject> <target> --rel
+  <label> --reason "<why>"` (the `retract_link` tool, for an agent) appends a signed retraction of
+  the edge. The rule it addressed at a path stops acting there once nobody else asserts the edge;
+  the link stays in the record. Another identity is refused.
 - **A read pays for what arrived, not for the whole record.** A read keeps what it built in each tree's gitignored
   `locks/projection.db` and takes only what was appended since. It is derived, never the record:
   deleting it changes no answer, and a clone does not carry it.
