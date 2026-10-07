@@ -189,14 +189,19 @@ def canonical(value: Any) -> str:
         return _escape(_text(value))
     if isinstance(value, (int, float)):
         return _number(value)
+    # A loop, and not a generator inside the join: a generator is a frame of its own, so each
+    # level of nesting cost two, and a line nested 500 deep - which JSONTestSuite has, and
+    # which the product reads - ran out of Python's stack.
     if isinstance(value, (list, tuple)):
-        return "[" + ",".join(canonical(item) for item in value) + "]"
+        items = []
+        for item in value:
+            items.append(canonical(item))
+        return "[" + ",".join(items) + "]"
     if isinstance(value, dict):
-        return (
-            "{"
-            + ",".join(f"{_escape(key)}:{canonical(val)}" for key, val in _sorted_pairs(value))
-            + "}"
-        )
+        members = []
+        for key, val in _sorted_pairs(value):
+            members.append(_escape(key) + ":" + canonical(val))
+        return "{" + ",".join(members) + "}"
     raise Refusal("1", f"a value the format has no bytes for: {type(value).__name__}")
 
 
@@ -247,6 +252,8 @@ def strict_loads(text: str) -> Any:
         raise
     except json.JSONDecodeError as exc:
         raise Refusal("1", f"not JSON: {exc}") from exc
+    except RecursionError as exc:
+        raise Refusal("1", "nested deeper than this reader can follow") from exc
 
 
 def is_canonical_line(raw: bytes) -> tuple[bool, Any]:
@@ -256,6 +263,16 @@ def is_canonical_line(raw: bytes) -> tuple[bool, Any]:
     is what refuses a forged extra field: a key that no writer of this format would have
     put there moves the bytes (gap G08 - the per-kind declarations are not published, so
     byte identity is the strongest refusal available from outside).
+
+    A line that is not UTF-8 is refused here, as a refusal and not as an exception: rule 6
+    says the bytes are UTF-8, and a reader that raised on them stopped instead of saying so.
     """
-    value = strict_loads(raw.decode("utf-8"))
-    return canonical_bytes(value) == raw, value
+    try:
+        text = raw.decode("utf-8")
+    except UnicodeDecodeError as exc:
+        raise Refusal("1", f"not UTF-8: {exc.reason} at byte {exc.start}") from exc
+    value = strict_loads(text)
+    try:
+        return canonical_bytes(value) == raw, value
+    except RecursionError as exc:
+        raise Refusal("1", "nested deeper than this reader can follow") from exc

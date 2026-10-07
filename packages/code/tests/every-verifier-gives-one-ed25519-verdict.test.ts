@@ -55,7 +55,10 @@ const read = (path: string): string => readFileSync(`${VECTORS}${path}`, 'utf-8'
 /** Wycheproof: the test's own `result`. */
 function wycheproof(): Vector[] {
   const file = JSON.parse(read('wycheproof/ed25519_test.json')) as {
-    testGroups: { publicKey: { pk: string }; tests: { tcId: number; msg: string; sig: string; result: string }[] }[];
+    testGroups: {
+      publicKey: { pk: string };
+      tests: { tcId: number; msg: string; sig: string; result: string }[];
+    }[];
   };
   return file.testGroups.flatMap((group) =>
     group.tests.map((test) => ({
