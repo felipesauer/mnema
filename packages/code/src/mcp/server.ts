@@ -949,10 +949,11 @@ function registerTools(tool: ToolRegistrar, ensureSession: () => Promise<Session
         'Take back a link that was recorded by mistake — a `governs` on the wrong path, a ' +
         'relation that does not hold. Name the edge exactly as `link_knowledge` took it. The ' +
         'link is NOT erased: a signed retraction carrying the `reason` is appended, and every ' +
-        'read of links stops seeing the edge when nobody else asserts it, so a rule it ' +
-        'addressed at a path stops acting there. It follows the link to the tree it was ' +
-        'recorded in. Only the identity that recorded a link retracts it; a link of another ' +
-        'identity, or one already retracted, is refused.' +
+        'read that applies a link stops seeing the edge when nobody else asserts it, so a rule ' +
+        'it addressed at a path stops acting there; `references` still shows it, marked ' +
+        'retracted. It follows the link to the first tree that holds that edge. Only the ' +
+        'identity that recorded a link retracts it; a link of another identity, or one ' +
+        'already retracted, is refused.' +
         RECORD_CONTRACT,
       inputSchema: {
         subject: z.string().min(1).describe('The entity the link originates from.'),

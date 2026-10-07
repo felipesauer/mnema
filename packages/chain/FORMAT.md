@@ -553,7 +553,8 @@ stand; a `link.retracted` withdraws, at its point in that order, the standing as
 edge it names whose `who` is its own `who` — the same comparison as a note's, on the anchor, so
 any key of the identity that linked takes the link back. An edge is served while any assertion
 of it stands, and its origin is the first that does; an edge whose only asserter took it back is
-served by nothing, so a rule it addressed at a path stops acting there. A later
+applied by nothing, so a rule it addressed at a path stops acting there (a reading of the
+history of what names what may still show the link, saying it was taken back). A later
 `knowledge.linked` of the same edge by the same identity stands again. A retraction whose `who`
 asserted the edge nowhere in the tree, while another identity did, is not applied, is **not a
 break**, and is named in this product's census for the reason a stranger's note retraction is.

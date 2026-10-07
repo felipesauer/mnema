@@ -135,6 +135,12 @@ export interface ReferenceLink {
    * string: nothing here reads meaning into it.
    */
   readonly rel?: string;
+  /**
+   * Present, and true, when the edge is a link its own identity took back (`link.retracted`)
+   * and has not linked again: the assertion is history and no longer acts. A graph of what
+   * names what keeps it, marked, rather than hiding a fact the record still holds.
+   */
+  readonly retracted?: true;
   /** ISO-8601 instant of the assertion. */
   readonly at: string;
   /** The kind of event that asserts it. */
@@ -333,11 +339,22 @@ function toLink(edge: ReferenceEdgeRow, asserted: ScopedCache): ReferenceLink {
   // The relation label is read off the asserting event, not off the role: only a
   // knowledge link has one, and it travels verbatim.
   const rel = edge.event.kind === 'knowledge.linked' ? edge.event.payload.rel : undefined;
+  // A link this graph shows as history may no longer act: its identity took it back. The
+  // assertion is asked of the tree that holds it, the same rows every reader of links folds.
+  const retracted =
+    edge.event.kind === 'knowledge.linked' &&
+    !asserted.cache.linkAssertionStands({
+      subject: edge.event.subject,
+      target: edge.event.payload.target,
+      rel: edge.event.payload.rel,
+      who: edge.event.who,
+    });
   return {
     from: edge.from,
     to: edge.to,
     role: edge.role,
     ...(rel !== undefined ? { rel } : {}),
+    ...(retracted ? { retracted: true as const } : {}),
     at: edge.at,
     kind: edge.kind,
     who: edge.who,

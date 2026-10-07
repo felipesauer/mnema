@@ -20,7 +20,7 @@ import { type CliIo, run } from '../src/cli.js';
 import { runBeforeAWrite } from '../src/commands/before-a-write.js';
 import { runUnlink } from '../src/commands/unlink.js';
 import { openSession } from '../src/mcp/session.js';
-import { runRetractLink } from '../src/mcp/tools.js';
+import { runReferencesTool, runRetractLink } from '../src/mcp/tools.js';
 
 let sandbox: string;
 let repo: string;
@@ -119,6 +119,8 @@ describe('mnema unlink', () => {
   it('takes the only link of a rule back, and the hook before a write answers {}', async () => {
     const rule = await ruleAt('src/billing', 'refuses-a-write');
     expect(beforeAWrite('src/billing/total.ts')).not.toEqual({});
+    const RETRACTED = 'target:refuses-a-write (retracted by its author)';
+    expect((await did('refs', rule)).out.join('\n')).not.toContain(RETRACTED);
 
     const said = await did(
       'unlink',
@@ -134,6 +136,8 @@ describe('mnema unlink', () => {
     // Nothing was erased: the link is still on the record, beside the fact that took it back.
     expect(kinds('knowledge.linked')).toBe(1);
     expect(kinds('link.retracted')).toBe(1);
+    // The graph of what names what keeps the link, as history, and says it no longer acts.
+    expect((await did('refs', rule)).out.join('\n')).toContain(RETRACTED);
 
     const again = await mnema(
       'unlink',
@@ -186,6 +190,8 @@ describe('the retract_link tool', () => {
     });
     expect(result).toMatchObject({ ok: true, target: 'src/billing', rel: 'refuses-a-write' });
     expect(beforeAWrite('src/billing/total.ts')).toEqual({});
+    const graph = runReferencesTool(session, { id: 'ADR-1' });
+    expect(graph.ok ? graph.value.links.map((link) => link.retracted) : graph).toEqual([true]);
 
     const unknown = runRetractLink(session, {
       subject: 'ADR-1',

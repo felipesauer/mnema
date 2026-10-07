@@ -364,6 +364,24 @@ export function advanceLinks(db: SqliteDatabase, arrived: readonly CatalogEvent[
   }
 }
 
+/** Whether one identity's assertion of an edge still stands (a row of `link_assertions`). */
+export function linkAssertionStands(
+  db: SqliteDatabase,
+  assertion: {
+    readonly subject: string;
+    readonly target: string;
+    readonly rel: string;
+    readonly who: string;
+  },
+): boolean {
+  const row = db
+    .prepare(
+      'SELECT 1 FROM link_assertions WHERE subject = ? AND target = ? AND rel = ? AND who = ?',
+    )
+    .get(assertion.subject, assertion.target, assertion.rel, assertion.who);
+  return row !== undefined;
+}
+
 /** Lists the edges that link OUT of the given subject, ordered by target then rel. */
 export function listLinksFrom(db: SqliteDatabase, subject: string): LinkEdge[] {
   const rows = db

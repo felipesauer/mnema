@@ -1238,10 +1238,14 @@ informational, not a break.
 **A link recorded by mistake can be taken back the same way.** `mnema unlink <subject>
 <target> --rel <label> --reason "<why>"` (the `retract_link` tool) names the edge exactly as
 the link took it, an `ADR-<n>` label included, and appends a signed fact in the tree the link
-was recorded in. Every read of links stops seeing the edge once nobody else asserts it, so a rule
-it addressed at a path no longer governs, asks or refuses there. Only the identity that recorded
-the link takes it back; a retraction another identity signed anyway is not applied, and
-`mnema verify` names it in a census line.
+was recorded in. Every read that applies a link stops seeing the edge once nobody else asserts
+it, so a rule it addressed at a path no longer governs, asks or refuses there; the history of what
+names what (`refs`, `diagram`, the `references` tool) keeps the link and marks it
+`(retracted by its author)`. Only the identity that recorded the link takes it back; a
+retraction another identity signed anyway is not applied, and `mnema verify` names it in a census
+line. The retraction follows the link to the first tree here that holds a link of that edge, so
+when another identity recorded the same edge in an earlier tree it is refused there, and nothing
+points it at the later one.
 
 ### Switching off what mnema hands to a model
 
