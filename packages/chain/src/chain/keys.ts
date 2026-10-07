@@ -182,6 +182,22 @@ function strictPoint(encoded: Uint8Array): boolean {
 }
 
 /**
+ * Whether a public key's A is one the strict rule admits, asked once per key: exporting the key
+ * to read its 32 bytes cost a third of a verification, and a record checks many signatures by
+ * few keys.
+ */
+const STRICT_KEYS = new WeakMap<KeyObject, boolean>();
+
+function strictKey(publicKey: KeyObject): boolean {
+  let admitted = STRICT_KEYS.get(publicKey);
+  if (admitted === undefined) {
+    admitted = strictPoint(publicKey.export({ type: 'spki', format: 'der' }).subarray(12));
+    STRICT_KEYS.set(publicKey, admitted);
+  }
+  return admitted;
+}
+
+/**
  * Verifies an Ed25519 signature against a public key, under the STRICT rule `FORMAT.md` section
  * 6 states: A and R decode canonically to points that are not of small order, `S < L`, and the
  * equation is the one without the cofactor.
@@ -195,8 +211,7 @@ function strictPoint(encoded: Uint8Array): boolean {
  */
 export function verify(message: Uint8Array, signature: Uint8Array, publicKey: KeyObject): boolean {
   if (signature.length !== 64) return false;
-  const raw = publicKey.export({ type: 'spki', format: 'der' }).subarray(12);
-  if (!strictPoint(raw) || !strictPoint(signature.subarray(0, 32))) return false;
+  if (!strictKey(publicKey) || !strictPoint(signature.subarray(0, 32))) return false;
   if (littleEndian(signature.subarray(32)) >= L) return false;
   return edVerify(null, message, publicKey, signature);
 }
