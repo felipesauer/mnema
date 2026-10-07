@@ -847,6 +847,98 @@ e-mail or workflow in a signature-covered `account.linked` with `service: "sigst
 certificate names. The identity it names is public by construction: it is in Rekor's log and in
 the committed file, in clear; the hash §6.3 records protects the event, not the bundle.
 
+## Reading many tails
+
+A record holds one tail per machine (§4), and nothing in the bytes orders one tail against
+another: each tail is proved in its own `seq` order by its own hash chain (§3), and no event names
+an event of a different tail. A reader that wants ONE sequence of events — to replay them into a
+state — has to choose one. This section says which choice the product's reader makes, and what it
+leaves undecided. It describes what the code does; it is not part of what a verifier checks, and
+another reader may order the tails otherwise without disagreeing about a single byte. Every
+sentence names the case that holds it; all of them are in
+`packages/core/src/projections/many-tails.properties.test.ts` unless another file is named, and
+each compares the reader with a model of the sentence, a few lines long, written in the test.
+
+**The order inside a tail is `seq`, always.** The reader never compares the `at` of two events of
+one tail, so a clock that stepped back between two appends does not move the later-sequenced event
+earlier. A tail's events appear in the merged sequence in `seq` order whatever their `at` says (P1:
+"within a tail the order is seq, even when at runs backwards").
+
+**The order across tails is a selection of heads.** Each tail is a queue, read from `seq` 0. At
+every step the reader looks at the first unread event of each tail that still has one — its head —
+and takes the head with the smallest `at`; a tie goes to the head of the tail with the smaller key,
+the key being the tail id compared as text (by UTF-16 code unit). The tail whose head was taken
+advances by one, and the step repeats until every tail is read. `at` is the text of the field,
+compared as text. This is not a sort of all the events by `(at, tail, seq)`: such a sort would put
+a later-sequenced event of a tail before an earlier one the moment their `at` ran backwards, and
+the selection never does. One consequence is worth stating, because it surprises: an event whose
+`at` is far in the future holds back every event after it in its own tail, since none of them can
+be read until it is ("the optimized merge equals the naive one over generated tails").
+
+**The order does not depend on how the reader met the tails.** The tails read as the same sequence
+whatever order they were written into the directory, copied in, or listed (MR1: "the order the
+tails are written into the directory changes nothing, in the model or on disk"). Of that, the
+model half is held everywhere; the on-disk half is held only where a directory listing does not
+come back sorted, because the reader sorts it. Nothing here holds that a tail copied in a second
+time, byte for byte, changes nothing: the copy lands on the same paths with the same bytes, so
+there is no defect that case could catch. A tail copied under another id is not a second tail:
+each of its entries names the tail it was written to, and the reader reports the break at the
+directory it was found in (MR3: "a tail copied under another id does not read as a second tail";
+the verifier's side of the same fact is in §3).
+
+**Appending never reorders what was read.** An event appended to a tail lands after everything
+that tail already held, and the events read before stay in the same relative order with it there.
+So an event about something else moves neither the state a decision is in nor what is said about
+its divergence (MR4: "appending an event about another subject, on any tail, at any instant,
+leaves X as it was"). Cutting events off the end of a tail leaves a tail whose events are read as
+before; when a signed checkpoint covers the cut, it is no longer a shorter tail but one the
+verifier calls broken (MR5: "a cut above the last checkpoint verifies, reads as the model of the
+prefix, and chains"; "a cut BELOW a checkpoint is the one a verifier calls broken").
+
+**A reader that keeps a cache gets the same sequence as one that replays.** A cache brought
+forward arrival by arrival, or deleted at any point and built again, answers what a replay of the
+whole record answers (P2: "after any arrivals, with the cache deleted at a drawn point, it
+answers what a replay answers"). When an arrival would sort before something the cache already
+holds — a tail from a colleague that carries older facts — the cache is built again rather than
+extended.
+
+**Several trees are merged by the same selection, with the tree's position in the tie.** A reader
+that merges more than one record (a team's committed tree and a person's own) qualifies each
+tail's key with the position of its tree in the list it was given, written as `<position>:<tail
+id>` and compared as text. So a tie between tails of different trees goes to the tree with the
+smaller position written out, and only then to the tail id (MR2: "across trees, a tie goes to the
+tree first and then the tail"). With fewer than ten trees that is the tree listed first. With ten
+or more it is not: `"10:…"` sorts before `"1:…"`, so the eleventh-listed tree (position 10) is
+read before the second (position 1) on a tie. That is how the code behaves today, not a choice anyone made, and it is fixed
+here as it is (across ten trees or more: "today, the tree position in the tie is compared as
+text"). Where no two heads share an instant, the trees merged are the single record holding all
+their tails, whichever order they are listed in (MR2: "with no two heads on the same instant, the
+parts joined are the whole").
+
+**What is detected.** Two moves of one decision, or one skill, out of the same state are two facts
+signed by machines that had not seen each other; the reader names them whichever of the two the
+sequence puts last, and removes neither
+(`packages/core/src/projections/divergent-moves.test.ts`, "says the decision two machines moved
+out of `proposed`, with both moves as evidence"). A task has a state machine with a cycle, so the
+same fact cannot be read from its `from` alone: tasks are read by their position in the sequence
+(`packages/core/src/projections/divergent-moves.test.ts`, "the task table has one — a reopened
+task leaves a state again — so tasks are read by their order"). Two decisions of one record that
+carry the same `ADR-<n>` label are reported as a collision, and neither label is changed
+(`packages/core/src/projections/decision.test.ts`, "adrCollisions — the label collision
+detector").
+
+**What is not resolved.** The sequence does not decide which of two concurrent moves wins. The state
+a projection shows is the one the last move in the sequence leaves, so it is whichever move the
+selection puts last, and the divergence is named beside it (MR4: "what is read of X is what the
+model reads of X"). Nothing here corrects a clock. A machine whose clock is behind sorts its events
+earlier than events it had already read, and for tasks that can make an honest sequence read as a
+divergence; the behaviour is fixed as it is today, not endorsed (clocks that disagree: "today, a
+clock that runs behind sorts an honest task sequence out of its order, and the move is named as a
+divergence"). What does not change under any clock is the order inside a tail, and that two moves
+out of one state of a decision are named (clocks that disagree: "today, a machine with a skewed
+clock keeps its own order, and two moves out of one state are always named"). No causal order across
+tails exists in the record, and none is invented here.
+
 ## What this document does **not** promise
 
 Stated plainly, because a published format invites all three readings:
