@@ -4,8 +4,10 @@ name: Host contract
 # with the plugin of this tree loaded. What the host does with what the plugin hands it — the
 # opening at session start, the rules beside a write, a refusal and a pause, the 10,000 and 2,048
 # ceilings, the shell going round a rule, the hooks failing open — is read off the request the host
-# sends next, and off the file that was or was not written. The cases are
-# `packages/code/tests/host-contract/`; this file only gives them a host.
+# sends next, and off the file that was or was not written. The same is done for VS Code's agent
+# with the real editor under a virtual screen. The cases are `packages/code/tests/host-contract/`;
+# this file only gives them a host. Cursor is not here: it needs an account, and its capture is
+# made by hand (`plugin/captures/`).
 #
 # NO MODEL, NO ACCOUNT, NO KEY, NO MONEY. The model is `the-stand-in-api.ts`; the key the host is
 # handed is made up and names nothing. Nothing in this file asks for a secret, and the only token
@@ -124,13 +126,76 @@ jobs:
 
       # The cases, inside a namespace that holds only loopback.
       - name: Hold the contract, with only loopback
+        env:
+          MNEMA_HOST_CONTRACT_HOST: claude-code
         run: unshare -rn bash -c 'ip link set lo up && exec ./node_modules/.bin/vitest run --config vitest.host-contract.config.ts'
+
+  # THE SAME CONTRACT FOR VS CODE'S AGENT. The editor is the one `@vscode/test-electron` downloads,
+  # under a virtual screen, with the plugin of this tree listed in `chat.pluginLocations` and a
+  # stand-in extension for its model; the chat agent that answers is the one the editor ships, and
+  # it needs no account to be asked to use a model of its own. Its hooks are still a preview.
+  #
+  # WHAT ISOLATES IT IS THE NAMESPACE ALONE. An Electron main process does not start under `strace`
+  # here, so unlike the job above there is no log of where it connected: the editor tries one
+  # address of its own, GitHub's, for a sign-in it is not given, and fails for want of a route.
+  # The pinned version is the last one in the matrix line; a run that is not a pull request or a
+  # push tries `stable`.
+  vscode:
+    name: host contract (vs code ${{ matrix.version }})
+    runs-on: ubuntu-24.04
+    strategy:
+      fail-fast: false
+      matrix:
+        version: ${{ fromJSON(contains(fromJSON('["schedule","workflow_dispatch"]'), github.event_name) && '["stable"]' || '["1.139.0"]') }}
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: pnpm/action-setup@v6
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version: '24'
+          cache: 'pnpm'
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Build
+        run: pnpm build
+
+      # Before the editor starts, outside the namespace: the download of the editor itself.
+      - name: Download VS Code
+        env:
+          WANTED: ${{ matrix.version }}
+        run: |
+          set -euo pipefail
+          node packages/code/tests/host-contract/support/vscode/download.mjs "$WANTED" "$RUNNER_TEMP/vscode" | tee "$RUNNER_TEMP/download.txt"
+          EDITOR=$(sed -n 's/^executable=//p' "$RUNNER_TEMP/download.txt")
+          VERSION=$(sed -n 's/^version=//p' "$RUNNER_TEMP/download.txt")
+          [ -x "$EDITOR" ] && [ -n "$VERSION" ] || { echo "no editor was downloaded"; exit 1; }
+          {
+            echo "MNEMA_HOST_CONTRACT_VSCODE=$EDITOR"
+            echo "MNEMA_HOST_CONTRACT_VSCODE_VERSION=$VERSION"
+          } >> "$GITHUB_ENV"
+          echo "### Editor measured" >> "$GITHUB_STEP_SUMMARY"
+          echo "- VS Code $VERSION (asked for \`$WANTED\`)" >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Install a virtual screen
+        run: sudo apt-get install -y xvfb
+
+      - name: Allow a network namespace of our own
+        run: sudo sysctl -w kernel.apparmor_restrict_unprivileged_userns=0
+
+      - name: Hold the contract, with only loopback
+        env:
+          MNEMA_HOST_CONTRACT_HOST: vscode
+        run: unshare -rn bash -c 'ip link set lo up && exec xvfb-run -a ./node_modules/.bin/vitest run --config vitest.host-contract.config.ts'
 
   # WHEN THE WEEKLY RUN FAILS, SOMEBODY HAS TO KNOW. One issue, opened with the workflow's own token
   # and kept open: a second failure while it is open adds a comment and opens nothing.
   tell-somebody:
     name: open an issue
-    needs: [claude-code]
+    needs: [claude-code, vscode]
     if: ${{ failure() && contains(fromJSON('["schedule","workflow_dispatch"]'), github.event_name) }}
     runs-on: ubuntu-24.04
     permissions:
