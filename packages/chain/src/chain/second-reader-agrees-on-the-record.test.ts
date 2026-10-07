@@ -92,8 +92,8 @@ import { checkpointHash } from './checkpoint.js';
 import { sealEntry, serializeEntry } from './entry.js';
 import { deriveAnchor, generateKeyPair, publicKeyToPem } from './keys.js';
 import { witnessSigstorePath } from './layout.js';
-import { readTailCheckpoints } from './store.js';
 import { meetsRequirement } from './level.js';
+import { readTailCheckpoints } from './store.js';
 import { serializeTailProof, signTailProof } from './tailproof.js';
 
 /** The second reader, and the tool that builds the inputs it has to refuse. */
