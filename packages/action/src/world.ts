@@ -80,7 +80,7 @@ export function worldAt(
       },
     },
     mnema: {
-      verify() {
+      verify(base) {
         const ran = mnema(['verify', '--require=signed', '--since', base]);
         if (ran.error !== undefined) return { passed: false, said: ran.error.message };
         return { passed: ran.status === 0, said: `${ran.stdout}${ran.stderr}` };
