@@ -22,7 +22,7 @@
  * THE NAME OF THE SERVER IS THE MOST FRAGILE THING IN THIS SLICE, and it gets a case of
  * its own for that reason. A hook naming a server the host does not know is not an
  * error: the tool is never called, nothing is injected, and the session proceeds exactly
- * as if the plugin were not installed — measured, four ways. The name the host answers to
+ * as if the plugin were not installed — read on Claude Code 2.1.228, against five spellings. The name the host answers to
  * for a server a PLUGIN declares is `plugin:<plugin>:<server>`, which is documented
  * nowhere and was found by asking `claude mcp list`. So the case below rebuilds that name
  * from `plugin.json` and requires `hooks.json` to hold it: renaming the plugin, or its
@@ -455,7 +455,8 @@ describe('the plugin names the server the host will answer to', () => {
   it('builds the hook’s server name out of the manifest it ships beside', () => {
     // The failure this prevents is invisible by construction: a hook naming a server the
     // host does not know is never called, injects nothing, and produces no error — so the
-    // plugin would look installed and do half of what it says. Measured four ways, and the name that works for a server a PLUGIN
+    // plugin would look installed and do half of what it says. Read on Claude Code 2.1.228,
+    // and the name that works for a server a PLUGIN
     // declares is `plugin:<plugin>:<server>`, which no document states.
     const manifest = JSON.parse(
       readFileSync(join(REPO, 'plugin', '.claude-plugin', 'plugin.json'), 'utf-8'),
