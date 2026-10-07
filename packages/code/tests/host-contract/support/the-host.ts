@@ -151,11 +151,16 @@ function needStrace(): void {
   }
 }
 
-/** Every address the host's `connect`, `sendto` and `sendmsg` named, read off an strace log. */
+/**
+ * Every address the host's `connect`, `sendto`, `sendmsg` and `sendmmsg` named, read off an strace log.
+ *
+ * NOT COVERED: a socket driven through `io_uring` names its address in a call this does not trace.
+ * Whether the host uses it is not known here, so the namespace, not this reader, is what stops it.
+ */
 export function destinationsIn(strace: string): string[] {
   const found = new Set<string>();
   for (const line of strace.split('\n')) {
-    if (!/(connect|sendto|sendmsg)\(/.test(line) || !/AF_INET6?/.test(line)) continue;
+    if (!/(connect|sendto|sendmsg|sendmmsg)\(/.test(line) || !/AF_INET6?/.test(line)) continue;
     const address = line.match(/inet_addr\("([^"]+)"\)|inet_pton\(AF_INET6, "([^"]+)"/);
     found.add(address === null ? line.trim().slice(0, 160) : (address[1] ?? address[2] ?? ''));
   }
@@ -257,7 +262,7 @@ export async function aSession(spec: TheSpec = {}): Promise<TheSession> {
         '-f',
         '-qq',
         '-e',
-        'trace=connect,sendto,sendmsg',
+        'trace=connect,sendto,sendmsg,sendmmsg',
         '-s',
         '120',
         '-o',

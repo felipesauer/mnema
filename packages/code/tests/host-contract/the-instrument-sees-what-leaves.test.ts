@@ -40,7 +40,7 @@ describe('the instrument sees what leaves', () => {
         '-f',
         '-qq',
         '-e',
-        'trace=connect,sendto,sendmsg',
+        'trace=connect,sendto,sendmsg,sendmmsg',
         '-s',
         '120',
         '-o',

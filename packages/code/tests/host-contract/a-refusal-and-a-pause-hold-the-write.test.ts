@@ -89,5 +89,7 @@ describe('a refusal and a pause hold the write', () => {
     expect(result?.text).not.toContain(asking);
     expect(result?.text).toContain('refuses a write');
     expect(thePermissionDecisionsOf(session, 'PreToolUse')).toEqual(['deny']);
+    // And the host took it as a hook that stopped the call, which a pause does not read as.
+    expect(result?.text).toContain('PreToolUse:Write hook error');
   }, 120_000);
 });
