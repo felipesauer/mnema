@@ -86,6 +86,12 @@ host and the version beside it.
 | Claude Code hands a command hook's text to the model whole at 10,000 characters, and as a path with a preview at 10,001 | Claude Code 2.1.281 | not held yet |
 | A call on an open connection costs on the order of a millisecond where a command start costs on the order of a hundred | one machine | not held yet |
 | In Cursor, the server is a namespace named `mnema` and its tools keep their own names | Cursor, 2026-09-23 session | not held yet |
+| The server's own instructions reach the model in the VS Code model families whose prompt carries them, and do not reach it in the Codex families, where the two opening texts are what arrives | VS Code 1.137 with Copilot Chat 0.65, 23 September 2026, offline with a test model | not held yet |
+| In Cursor's command-line agent the server's tool names arrive up front and a tool's own description arrives only when the model looks that tool up | Cursor agent 2026.09.18, free plan, `Auto` model, 23 September 2026 | not held yet |
+| VS Code puts a hook's text inside the result of the tool, as `<PreToolUse-context>` | VS Code 1.137 with Copilot Chat 0.65, 30 September 2026, no model and no network | not held yet |
+| On Cursor's free plan with the `Auto` model, the prompt carries the server's instructions whole, but for the indentation of their continuation lines, and both opening texts, and the model called the server's tools | Cursor agent 2026.09.18, free plan, `Auto` model, sessions of 23 September 2026 | not held yet |
+| VS Code's agent and Cursor's command-line agent do not run a hook of type `mcp_tool`, and run command hooks | VS Code 1.137 with Copilot Chat 0.65 and Cursor agent 2026.09.18, 30 September 2026 | not held yet |
+| Whether VS Code and Cursor offer the plugin's `userConfig` option; for Claude Code it was read from its documentation, not run | not read | not held yet |
 | How VS Code spells the server's name to the model | not read | not held yet |
 | VS Code puts a hook's reason in front of the person who decides; what the person sees in the confirmation | not read from the screen | not held yet |
 | VS Code matches `applyTo` with a leading `**/`; Cursor matches `globs` on its servers; Claude Code's `paths` and whether its `**` reaches a name starting with a dot | not read | not held yet |
