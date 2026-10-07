@@ -7,6 +7,8 @@
 
 import { mkdirSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
+import { catalogUpcasters } from '@mnema/chain';
+import { orderedEvents, resolveTrees } from '@mnema/core';
 
 /** What a case is handed to write a record with. */
 export interface TheProject {
@@ -47,4 +49,16 @@ export function aFile(project: TheProject, path: string, content: string): strin
   mkdirSync(join(project.dir, path, '..'), { recursive: true });
   writeFileSync(join(project.dir, path), content);
   return join(project.dir, path);
+}
+
+/** How many facts of each kind a project's public tree holds, for the kinds a door writes. */
+export function theChannelFactsOf(project: string, home: string): Record<string, number> {
+  const events = orderedEvents(
+    { root: resolveTrees(project, { home }).projectPublic as string },
+    catalogUpcasters(),
+  );
+  const kinds = ['channel.refused', 'channel.asked', 'channel.served'];
+  return Object.fromEntries(
+    kinds.map((kind) => [kind, events.filter((event) => event.kind === kind).length]),
+  );
 }

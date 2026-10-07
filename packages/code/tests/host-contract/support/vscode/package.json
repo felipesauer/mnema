@@ -1,0 +1,12 @@
+{
+  "name": "the-stand-in-model",
+  "publisher": "contract",
+  "version": "0.0.1",
+  "description": "Test-only: a stand-in language model that records what VS Code's chat agent sends it.",
+  "engines": { "vscode": "^1.100.0" },
+  "main": "./extension.js",
+  "activationEvents": ["onStartupFinished"],
+  "contributes": {
+    "languageModelChatProviders": [{ "vendor": "stand-in", "displayName": "Stand-in" }]
+  }
+}
