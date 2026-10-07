@@ -431,6 +431,12 @@ export function registerVerify(program: Command, wiring: Wiring): Declared {
         'level, `--require witnessed` or the exit',
     )
     .option(
+      '--verbose',
+      'also print what is informational and nothing else: the census note about a backup key, ' +
+        'and the line for the private tree when it holds no record. A break, an issue, a ' +
+        'warning and the exit are the same with and without it',
+    )
+    .option(
       '--json',
       'emit the verdict as JSON instead of prose — the whole reading, per tree, plus ' +
         'what NO --require value answers. The exit code is unchanged: this changes the ' +
@@ -445,6 +451,7 @@ export function registerVerify(program: Command, wiring: Wiring): Declared {
         since?: string;
         againstGithub?: boolean;
         againstSigstore?: boolean;
+        verbose?: boolean;
         json?: boolean;
       }) => {
         // Loaded when the verb runs, never while the program is declared: an eager
@@ -454,6 +461,7 @@ export function registerVerify(program: Command, wiring: Wiring): Declared {
         const requirement = parseRequirement(opts.require, wiring);
         if (requirement === INVALID_REQUIREMENT) return;
         const global = opts.global === true;
+        const verbose = opts.verbose === true;
         const allowWithoutRecord = opts.allowNoRecord === true;
         if (opts.workspace !== undefined && opts.since !== undefined) {
           reportUsage(
@@ -496,7 +504,7 @@ export function registerVerify(program: Command, wiring: Wiring): Declared {
             );
             return;
           }
-          reportSet(wiring, set, requiredLevel, oneLine);
+          reportSet(wiring, set, requiredLevel, oneLine, verbose);
           return;
         }
         // A DECLARATION WITH NO SUBJECT IS REFUSED RATHER THAN IGNORED. There are no
@@ -554,7 +562,7 @@ export function registerVerify(program: Command, wiring: Wiring): Declared {
           );
           return;
         }
-        for (const tree of result.trees) report(io, render, tree);
+        for (const tree of result.trees) report(io, render, tree, '', verbose);
         if (compared !== undefined) reportSince(io, render, compared);
         if (github !== undefined) reportGithub(io, render, github);
         if (sigstore !== undefined) reportSigstore(io, render, sigstore);
@@ -795,6 +803,7 @@ function reportSet(
   result: WorkspaceDone,
   requiredLevel: (requirement: LevelRequirement) => ProvenLevel,
   named: Named,
+  verbose: boolean,
 ): void {
   const { io, render } = wiring;
   let covered = 0;
@@ -806,11 +815,11 @@ function reportSet(
       continue;
     }
     covered += 1;
-    for (const tree of project.trees) report(io, render, tree, `${named(project.dir)} `);
+    for (const tree of project.trees) report(io, render, tree, `${named(project.dir)} `, verbose);
   }
   // The global tree is one tree for the whole set and is reported as one, after the
   // projects and named by its role alone — it belongs to none of them.
-  if (result.globalTree !== undefined) report(io, render, result.globalTree);
+  if (result.globalTree !== undefined) report(io, render, result.globalTree, '', verbose);
   io.out('');
   io.out(coverage(result.named, covered, without.length, result.allowWithoutRecord));
   if (result.requirementMet && result.coverageMet) return;
@@ -866,9 +875,19 @@ function reportSet(
  * two invocations. A set of projects passes the project's directory, so each line says
  * which record it is about on both streams.
  */
-function report(io: CliIo, render: Render, tree: TreeReport, where = ''): void {
+function report(
+  io: CliIo,
+  render: Render,
+  tree: TreeReport,
+  where: string,
+  verbose: boolean,
+): void {
   const named = `${where}${tree.scope}`;
   if (tree.kind === 'no-record') {
+    // A private tree that holds nothing is the state of every fresh clone and of every project
+    // nobody has written a private fact in — informational, so it waits for `--verbose`. The
+    // committed tree and the global one holding nothing is still said: that is a different news.
+    if (tree.scope === 'private' && !verbose) return;
     io.out(render(statement(named, NO_RECORD)));
     return;
   }
@@ -881,6 +900,10 @@ function report(io: CliIo, render: Render, tree: TreeReport, where = ''): void {
   // does not move the verdict and it does not move the exit — and stderr on this
   // surface is where the evidence for a failure goes.
   for (const note of tree.result.census) {
+    // The backup key `init` makes signs nothing until it is restored, and the verdict's own clause
+    // already says so; the note naming WHICH key is informational and waits for `--verbose`. Every
+    // other note says a thing a reader may have to act on, and is never behind it.
+    if (note.kind === 'backup-key' && !verbose) continue;
     io.out(
       render(fact(onOneLine`census [${note.kind}] ${named} ${censusLocus(note)}: ${note.detail}`)),
     );

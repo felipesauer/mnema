@@ -1390,6 +1390,11 @@ $ mnema verify --help
 |                          the same e-mail or workflow (`mnema key sigstore`).
 |                          Noted per bundle; never moves the verdict, the level,
 |                          `--require witnessed` or the exit
+|   --verbose              also print what is informational and nothing else: the
+|                          census note about a backup key, and the line for the
+|                          private tree when it holds no record. A break, an
+|                          issue, a warning and the exit are the same with and
+|                          without it
 |   --json                 emit the verdict as JSON instead of prose — the whole
 |                          reading, per tree, plus what NO --require value
 |                          answers. The exit code is unchanged: this changes the
