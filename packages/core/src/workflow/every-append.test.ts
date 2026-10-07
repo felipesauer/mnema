@@ -12,6 +12,7 @@ import {
   linkKnowledge,
   recordHandoff,
   recordObservation,
+  retractLink,
   retractNote,
 } from '../knowledge/operations.js';
 import { orderedEvents } from '../projections/order.js';
@@ -242,6 +243,18 @@ describe('every write refuses what no read could accept', () => {
           note = made.id;
         },
         drive: () => retractNote(ctx, { id: note, reason: '' }),
+      },
+      {
+        // The edge's three names reach no field empty: a link nobody recorded is refused
+        // as unknown before anything is built. Only the reason travels.
+        op: 'retractLink',
+        field: 'reason',
+        names: 'payload.reason',
+        prepare: () => {
+          const made = linkKnowledge(ctx, { subject: 'x', target: 'y', rel: 'r' });
+          if (!made.ok) throw new Error('the link to retract could not be recorded');
+        },
+        drive: () => retractLink(ctx, { subject: 'x', target: 'y', rel: 'r', reason: '' }),
       },
       {
         op: 'declareCheck',
