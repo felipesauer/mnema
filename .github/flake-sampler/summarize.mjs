@@ -125,8 +125,8 @@ function whySaid(thrown) {
   return String(thrown);
 }
 
-/** The name a report file must carry: `run--<label>--<seq>.json`. */
-const REPORT_NAME = /^run--([a-z0-9][a-z0-9-]*)--(\d+)\.json$/;
+/** The name a report file must carry: `run--<label>--<seq>.json`. A label may carry a dot: `node24.15.0-shard1`. */
+const REPORT_NAME = /^run--([a-z0-9][a-z0-9.-]*)--(\d+)\.json$/;
 
 /** The row a file-level failure with no failed assertion under it gets. */
 export const THE_FILE_ITSELF = '(the file itself, a collection or import error)';

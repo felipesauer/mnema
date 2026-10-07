@@ -128,8 +128,6 @@ jobs:
           LABEL: node${{ matrix.node }}-shard${{ matrix.shard }}
         run: |
           set -euo pipefail
-          # The summariser reads a label of lowercase letters, digits and dashes: `24.15.0` is not one.
-          LABEL="${LABEL//./-}"
           N="$REPETITIONS"
           case "$N" in
             ''|*[!0-9]*) echo "REPETITIONS must be a whole number, and it was '$N'"; exit 1 ;;
