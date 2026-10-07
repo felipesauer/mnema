@@ -25,6 +25,7 @@ import {
   linkKnowledge,
   recordHandoff,
   recordObservation,
+  retractLink,
   retractNote,
 } from './knowledge/operations.js';
 import { orderedEvents } from './projections/order.js';
@@ -276,6 +277,16 @@ describe('every kind says where its why is, and the door asks it there', () => {
           note = made.id;
         },
         drive: (said) => retractNote(ctx, { id: note, reason: said }),
+      },
+      {
+        kind: 'link.retracted',
+        site: 'reason',
+        prepare: () => {
+          const made = linkKnowledge(ctx, { subject: note, target: 'src/a', rel: 'governs' });
+          if (!made.ok) throw new Error('no link');
+        },
+        drive: (said) =>
+          retractLink(ctx, { subject: note, target: 'src/a', rel: 'governs', reason: said }),
       },
     ];
   }

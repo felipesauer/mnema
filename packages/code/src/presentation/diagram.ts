@@ -144,7 +144,8 @@ export function referencesDiagram(graph: ReferenceGraph): string[] {
     'flowchart LR',
     ...[...names.keys()].map(nodeLine),
     ...graph.links.map((link) => {
-      const edge = link.rel !== undefined ? `${link.role}:${link.rel}` : link.role;
+      const named = link.rel !== undefined ? `${link.role}:${link.rel}` : link.role;
+      const edge = link.retracted === true ? `${named} (retracted by its author)` : named;
       return `    ${nameOf(link.from)} -->|${quoted(edge)}| ${nameOf(link.to)}`;
     }),
   ];

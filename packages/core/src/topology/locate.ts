@@ -242,6 +242,31 @@ export function locateEntityScope(
 }
 
 /**
+ * Finds the scope of the tree a LINK was recorded in — the first, in the search order every
+ * locate walks, whose chain holds a `knowledge.linked` of this edge (subject, target and
+ * relation, the two ends canonicalized as the write stores them). A link has no id, so the
+ * edge is what is looked for; whose assertion it is, and whether it still stands, is the
+ * retraction's to judge in the tree this names. Undefined when no present tree holds it.
+ */
+export function locateLinkScope(
+  trees: ResolvedTrees,
+  edge: { readonly subject: string; readonly target: string; readonly rel: string },
+  upcasters: UpcasterRegistry,
+): Scope | undefined {
+  const subject = canonicalId(edge.subject) ?? edge.subject;
+  const target = canonicalId(edge.target) ?? edge.target;
+  return firstTreeHolding(trees, (root) =>
+    orderedEvents({ root }, upcasters).some(
+      (event) =>
+        event.kind === 'knowledge.linked' &&
+        event.subject === subject &&
+        event.payload.target === target &&
+        event.payload.rel === edge.rel,
+    ),
+  );
+}
+
+/**
  * One tail a tree here holds: which tree, which tail, what the disk says about it,
  * and whether that tree already carries a waiver authorizing its cut.
  */

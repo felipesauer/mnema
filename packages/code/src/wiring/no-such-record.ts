@@ -48,8 +48,8 @@
 
 import { oneLine } from '../one-line.js';
 
-/** The five kinds of record a verb of this surface refuses to find. */
-export type NoSuchKind = 'task' | 'decision' | 'skill' | 'record' | 'tail';
+/** The six kinds of record a verb of this surface refuses to find — a link named by its edge. */
+export type NoSuchKind = 'task' | 'decision' | 'skill' | 'record' | 'link' | 'tail';
 
 /**
  * Where each kind's refusal says it looked — the clause after the name, TOTAL over the
@@ -67,6 +67,7 @@ const WHERE_IT_LOOKED: Readonly<Record<NoSuchKind, string>> = {
   decision: 'here',
   skill: 'here',
   record: 'here',
+  link: 'here',
   tail: 'holds events in any tree here',
 };
 

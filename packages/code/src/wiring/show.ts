@@ -9,11 +9,10 @@
  */
 
 import type { Command } from 'commander';
-import { fact } from '../presentation/detail.js';
 import { here } from './context.js';
 import { writeLines } from './io.js';
 import { noSuchRecord } from './no-such-record.js';
-import { reportRefusal } from './report.js';
+import { idOrRefuse, reportRefusal } from './report.js';
 import { type Declared, readsTheRecord, type Wiring } from './verb.js';
 
 /** Registers `mnema show` on the program. */
@@ -28,14 +27,11 @@ export function registerShow(program: Command, wiring: Wiring): Declared {
       const { divergenceNotice, linkBreakNotice } = await import('./integrity.js');
       const { runShow } = await import('../commands/show.js');
       const { recordReport } = await import('../presentation/record.js');
-      const result = runShow(here(), { id });
+      const named = await idOrRefuse(wiring, id);
+      if (named === undefined) return;
+      const result = runShow(here(), { id: named });
       if (!result.ok) {
         reportRefusal(wiring, result, { UNKNOWN_RECORD: noSuchRecord('record', id) });
-        if (result.reason === 'UNKNOWN_RECORD') {
-          const { labelAsAddress } = await import('../label-as-address.js');
-          const sentence = labelAsAddress(here(), id);
-          if (sentence !== undefined) io.err(render(fact(sentence)));
-        }
         return;
       }
       // BEFORE the answer, and on the other stream — so it survives a pipe, and so

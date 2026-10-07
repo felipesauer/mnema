@@ -2948,6 +2948,7 @@ describe('mnema CLI — a --which that names nobody', () => {
         'handoff',
         'link',
         'retract',
+        'unlink',
         'run start',
         'run end',
         'skill',

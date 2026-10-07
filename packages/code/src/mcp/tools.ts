@@ -100,6 +100,7 @@ import {
   DECISION_ACTIONS,
   deriveAlias,
   isSearchKind,
+  locateLinkScope,
   type ProjectionCache,
   type ReferenceDirection,
   type ReplacedClass,
@@ -125,6 +126,7 @@ import {
   recordObservation,
   rejectDecision,
   rejectSkill,
+  retractLink,
   retractNote,
   reviewSkill,
   supersedeDecision,
@@ -143,7 +145,8 @@ import {
   type ScopedTree,
   scopedEventsOf,
 } from '../intelligence-source.js';
-import { labelSentence } from '../label-as-address.js';
+import { type Addressed, addressed, resolveLabel } from '../label-as-address.js';
+import { isLabelShaped, linkRefusal } from '../link-target.js';
 import {
   movedDisplay,
   successorOnlyForASupersede,
@@ -421,11 +424,13 @@ export function runRecordObservation(
   session: Session,
   input: { about: string; topic: string; text: string; scope?: Scope; project?: string },
 ): RecordObservationResult {
+  const about = addressedIn(session, input.about);
+  if (!about.ok) return ambiguousLabel(about.message);
   const route = routeWrite(session, 'observation.recorded', input);
   if (!route.ok) return route;
   const { ctx, run } = openWrite(session, route.scope, route.target);
   const recorded = recordObservation(ctx, {
-    about: input.about,
+    about: about.id,
     topic: input.topic,
     text: input.text,
     which: session.which,
@@ -514,8 +519,9 @@ export type LinkRecordedResult =
  * between the project's records, so it travels with them. A link mints NO id (it is an
  * edge), so the result carries no id.
  *
- * Neither `subject` nor `target` is validated — a link is legitimately cross-tree
- * and a dangling reference is honest, resolved on read — which is exactly why the
+ * An `ADR-<n>` label is recorded as the id of the one decision it names, refused when several carry it
+ * and when none does; anything else is not validated — a link is legitimately cross-tree and a
+ * dangling reference is honest, resolved on read — which is exactly why the
  * EDGE's own project has to be said rather than inferred: a link between two
  * projects is a legitimate thing to write, and the tree it is written in is the one
  * that will report it. `rel` is an OPEN string, forwarded verbatim (no enum on the
@@ -530,10 +536,18 @@ export function runLinkKnowledge(
   const route = routeWrite(session, 'knowledge.linked', input);
   if (!route.ok) return route;
   const trees = route.target?.trees ?? session.trees;
+  // Both ends are addresses first, and a label left raw is refused before a writer is opened — the
+  // rule the command line asks, from the same functions (`link-target.ts`).
+  const subject = addressedIn(session, input.subject);
+  if (!subject.ok) return ambiguousLabel(subject.message);
+  const target = addressedIn(session, input.target);
+  if (!target.ok) return ambiguousLabel(target.message);
+  const unresolved = linkRefusal({ subject: subject.id, target: target.id });
+  if (unresolved !== undefined) return { ok: false, code: 'UNKNOWN_TARGET', message: unresolved };
   const { ctx, run } = openWrite(session, route.scope, route.target);
   const recorded = linkKnowledge(ctx, {
-    subject: input.subject,
-    target: input.target,
+    subject: subject.id,
+    target: target.id,
     rel: input.rel,
     which: session.which,
     run,
@@ -548,7 +562,7 @@ export function runLinkKnowledge(
   // whenever the caller named one. A write that landed outside a project has no root
   // for an address to be relative to and reports no reach.
   const root = trees.projectPublic === undefined ? undefined : dirname(trees.projectPublic);
-  const reach = root === undefined ? undefined : reachOfAddress(recorded.rel, input.target, root);
+  const reach = root === undefined ? undefined : reachOfAddress(recorded.rel, target.id, root);
   // WHERE THE RULE THIS LINK NAMES LIVES, asked here for the same reason the command
   // line asks it: a link is accepted with a subject in any tree or in none, and this is
   // the moment the caller can still write the rule where it belongs. The rule is the
@@ -561,7 +575,7 @@ export function runLinkKnowledge(
   // and `mcp-locate-cache.test.ts` refuses any file here that reaches for the core's
   // one-record locate — a second walk is a second rule to keep in step. Written the other
   // way first, and that guard is what caught it.
-  const located = locateEntity(session, input.subject);
+  const located = locateEntity(session, subject.id);
   const subjectScope = located.outcome === 'found' ? located.home.scope : undefined;
   // The relation AS RECORDED — screened, so the echo shows what landed.
   return {
@@ -775,25 +789,21 @@ export function runRecordDecision(
  */
 export function runDecisionTransition(
   session: Session,
-  input: { id: string; action: string; by?: string; note?: string; reason?: string },
+  asked: { id: string; action: string; by?: string; note?: string; reason?: string },
 ): DecisionTransitionResult {
+  // A label one decision carries becomes its id, for the decision and for a successor; one several
+  // carry is refused with their ids.
+  const named = addressedIn(session, asked.id);
+  if (!named.ok) return ambiguousLabel(named.message);
+  const successor = asked.by === undefined ? undefined : addressedIn(session, asked.by);
+  if (successor !== undefined && !successor.ok) return ambiguousLabel(successor.message);
+  const input = { ...asked, id: named.id, ...(successor?.ok ? { by: successor.id } : {}) };
   const upcasters = catalogUpcasters();
   // Route by the decision's home tree, not the session's scope: the move follows
   // the entity so its history stays whole in one tree — in whichever project it is.
   const located = locateEntity(session, input.id);
   if (located.outcome !== 'found') {
-    const refused = refuseUnlocated(session, 'decision', input.id, located);
-    // The `ADR-<n>` label every write prints is no address (a tree numbers its own), so the
-    // refusal says which id or ids carry the one that was typed: the sentence the command line
-    // says, from the same function.
-    const label =
-      located.outcome === 'nowhere'
-        ? labelSentence(
-            input.id,
-            workspaceCaches(session).flatMap(({ cache }) => cache.listDecisions()),
-          )
-        : undefined;
-    return label === undefined ? refused : { ...refused, message: `${refused.message}. ${label}` };
+    return refuseUnlocated(session, 'decision', input.id, located);
   }
 
   // Dispatch on the action to pick the right typed operation (accept/reject vs
@@ -927,6 +937,63 @@ export function runRetractNote(
     id: retracted.id,
     note: retracted.note,
     scope: located.home.scope,
+    ...forwardReplacement(retracted),
+  };
+}
+
+/** A link was retracted, or the retraction was refused. */
+export type RetractLinkResult =
+  | (Replacement &
+      Landed & {
+        readonly ok: true;
+        /** The edge taken back, as it was recorded. */
+        readonly subject: string;
+        readonly target: string;
+        readonly rel: string;
+      })
+  | {
+      readonly ok: false;
+      /** `UNKNOWN_LINK`, `AMBIGUOUS_LABEL`, or the core operation's code. */
+      readonly code: string;
+      readonly message: string;
+    };
+
+/**
+ * `retract_link` — takes a link back, the MCP counterpart of `mnema unlink`, and the same two
+ * steps in the same order: both ends are addresses first (an `ADR-<n>` label becomes the id of
+ * the one decision it names, as `link_knowledge` records it), the link is followed to the tree
+ * it was recorded in ({@link locateLinkScope}), and the write is the core's {@link retractLink},
+ * which refuses any identity but the one that recorded the link, saying whose it is. Attributed
+ * to the connecting agent (`which`) and pinned to the run, as every write of this server is.
+ */
+export function runRetractLink(
+  session: Session,
+  input: { subject: string; target: string; rel: string; reason: string },
+): RetractLinkResult {
+  const subject = addressedIn(session, input.subject);
+  if (!subject.ok) return ambiguousLabel(subject.message);
+  const target = addressedIn(session, input.target);
+  if (!target.ok) return ambiguousLabel(target.message);
+  const edge = { subject: subject.id, target: target.id, rel: input.rel };
+  const scope = locateLinkScope(session.trees, edge, catalogUpcasters());
+  if (scope === undefined) {
+    return {
+      ok: false,
+      code: 'UNKNOWN_LINK',
+      message: `no link ${oneLine(edge.subject)} —${oneLine(edge.rel)}→ ${oneLine(edge.target)} is in this project or the global tree`,
+    };
+  }
+  const { ctx, run } = openWrite(session, scope);
+  const retracted = retractLink(ctx, { ...edge, reason: input.reason, which: session.which, run });
+  if (!retracted.ok) return { ok: false, code: retracted.code, message: retracted.message };
+  // Checkpoint so the retraction is fully signed the moment the tool returns.
+  ctx.writer.checkpoint();
+  return {
+    ok: true,
+    subject: retracted.subject,
+    target: retracted.target,
+    rel: retracted.rel,
+    scope,
     ...forwardReplacement(retracted),
   };
 }
@@ -1373,6 +1440,32 @@ export type WhichDoor = typeof A_READ | typeof A_WRITE;
 export const A_READ = 'a read';
 /** Serving one fact beside an acknowledgement — see {@link WhichDoor}. */
 export const A_WRITE = 'a write';
+
+/**
+ * The `ADR-<n>` label a caller typed where an id goes, turned into the id of the one decision it
+ * names, or refused when several carry it — the same rule the command line asks
+ * (`label-as-address.ts`), over the decisions this session holds warm. Anything else comes back as
+ * typed.
+ */
+function addressedIn(session: Session, named: string): Addressed {
+  if (!isLabelShaped(named)) return { ok: true, id: named };
+  return addressed(
+    named,
+    resolveLabel(
+      named,
+      workspaceCaches(session).flatMap(({ cache }) => cache.listDecisions()),
+    ),
+  );
+}
+
+/** The refusal an ambiguous label is returned as — data, like every refusal on this surface. */
+function ambiguousLabel(message: string): {
+  readonly ok: false;
+  readonly code: 'AMBIGUOUS_LABEL';
+  readonly message: string;
+} {
+  return { ok: false, code: 'AMBIGUOUS_LABEL', message };
+}
 
 /** Every tree of the workspace with its warm projection cache attached. */
 function workspaceCaches(session: Session): ScopedCache[] {
@@ -1918,7 +2011,7 @@ export type ReadRecordResult =
   | {
       readonly ok: false;
       /** `UNKNOWN_RECORD`, or `USE_SKILLS_TOOL` for a pattern's body. */
-      readonly code: 'UNKNOWN_RECORD' | 'USE_SKILLS_TOOL';
+      readonly code: 'UNKNOWN_RECORD' | 'USE_SKILLS_TOOL' | 'AMBIGUOUS_LABEL';
       /** The human-readable reason. */
       readonly message: string;
     };
@@ -1959,7 +2052,9 @@ export type ReadRecordResult =
  * and there is no session there to attribute a consultation to.
  */
 export function runReadRecordTool(session: Session, input: { id: string }): ReadRecordResult {
-  const record = readRecord(workspaceCaches(session), input.id);
+  const named = addressedIn(session, input.id);
+  if (!named.ok) return ambiguousLabel(named.message);
+  const record = readRecord(workspaceCaches(session), named.id);
   if (record === null) {
     return { ok: false, code: 'UNKNOWN_RECORD', message: notInAnyProject(session, input.id) };
   }
@@ -2011,8 +2106,11 @@ type IntelligenceResult<T> =
   | { readonly ok: true; readonly value: T }
   | {
       readonly ok: false;
-      /** There is no project here — an intelligence read is about a project's record. */
-      readonly code: 'NO_PROJECT';
+      /**
+       * There is no project here — an intelligence read is about a project's record — or the
+       * `ADR-<n>` it was asked about names several decisions.
+       */
+      readonly code: 'NO_PROJECT' | 'AMBIGUOUS_LABEL';
       /** The human-readable reason. */
       readonly message: string;
     };
@@ -2077,7 +2175,9 @@ function requireProject(
 export function runTimelineTool(session: Session, input: { id: string }): TimelineToolResult {
   const refused = requireProject(session);
   if (refused !== undefined) return refused;
-  return { ok: true, value: timeline(workspaceCaches(session), input.id) };
+  const named = addressedIn(session, input.id);
+  if (!named.ok) return ambiguousLabel(named.message);
+  return { ok: true, value: timeline(workspaceCaches(session), named.id) };
 }
 
 /** The `audit_refs` result — the graph around an entity, or a refusal. */
@@ -2114,7 +2214,9 @@ export function runReferencesTool(
 ): ReferencesToolResult {
   const refused = requireProject(session);
   if (refused !== undefined) return refused;
-  return { ok: true, value: references(workspaceCaches(session), input) };
+  const named = addressedIn(session, input.id);
+  if (!named.ok) return ambiguousLabel(named.message);
+  return { ok: true, value: references(workspaceCaches(session), { ...input, id: named.id }) };
 }
 
 /** The `governing_rules` result — the rules addressed at a path, or a refusal. */

@@ -24,6 +24,7 @@ import { IN_MEMORY, openDatabase, type SqliteDatabase } from '../db/sqlite.js';
 import { type FoundedBeside, identitiesFoundedBeside } from '../identity/founded-beside.js';
 import { rosterIn, rosterOf } from '../identity/membership.js';
 import { advance } from './advance.js';
+import { readCacheFileFor } from './cache-home.js';
 import {
   type CacheMeta,
   productStamp,
@@ -52,6 +53,7 @@ import type {
 import {
   getMemory,
   getObservation,
+  linkAssertionStands,
   listHandoffs,
   listLinksByRelation,
   listLinksFrom,
@@ -112,14 +114,10 @@ export interface CacheOptions {
    * path, close it, open it again and assert the tables survived are written against
    * (`cache.test.ts`, `advance.test.ts`).
    *
-   * THIS SAID "NO PRODUCTION CALLER SETS IT, and that is a fact rather than a gap waiting to
-   * be filled", for a warm cache the MCP session holds in the process and a file that "would
-   * add an invalidation nobody has to do today". The second half is what stopped being true:
-   * measured at 100 thousand events, a command line that rebuilds in memory on every read
-   * pays 3.3 s and 548 MB for a question a warm cache answers in a millisecond, and the two
-   * hooks that open a session are such reads (`measurements/the-record-at-scale/`). The
-   * invalidation is done now — see {@link persist} — and the production caller is the one
-   * option that does it, not this one.
+   * The command line and the server do not set it: `$MNEMA_CACHE_DIR` chooses a DIRECTORY, and
+   * the file in it is named for the tree it was built from and is a cache like the one the
+   * tree keeps (`cache-home.ts`) — made again when it does not serve, which is the opposite of
+   * what a path named here gets.
    */
   readonly dbPath?: string;
   /**
@@ -251,7 +249,9 @@ export class ProjectionCache {
     // A tree nobody has written to has nothing to keep, and a read must not be what creates its
     // directories: persisting waits for the first tail.
     const keeps = options.persist === true && listTails(layout).length > 0;
-    const path = options.dbPath ?? (keeps ? projectionCachePath(layout) : IN_MEMORY);
+    const chosenFile = options.persist === true ? readCacheFileFor(layout) : undefined;
+    const path =
+      options.dbPath ?? (keeps ? (chosenFile ?? projectionCachePath(layout)) : IN_MEMORY);
     if (path === IN_MEMORY) {
       return new ProjectionCache(openMemory(), layout, upcasters, false);
     }
@@ -654,6 +654,20 @@ export class ProjectionCache {
    */
   linksByRelation(rel: string): LinkEdge[] {
     return listLinksByRelation(this.db, rel);
+  }
+
+  /**
+   * Whether `who`'s assertion of the edge still stands — false once that identity took the
+   * link back (`link.retracted`) and did not link it again. The read a HISTORY of links needs,
+   * to say which of the assertions it shows no longer act.
+   */
+  linkAssertionStands(assertion: {
+    readonly subject: string;
+    readonly target: string;
+    readonly rel: string;
+    readonly who: string;
+  }): boolean {
+    return linkAssertionStands(this.db, assertion);
   }
 
   /** Reads one skill by id, or null if it is not projected. */

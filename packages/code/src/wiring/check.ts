@@ -17,7 +17,7 @@ import { RECORD_CONTRACT_HELP } from '../recorded-content.js';
 import { here } from './context.js';
 import { onOneLine } from './on-one-line.js';
 import { declaredAgent } from './options.js';
-import { reportRecorded, reportRefusal } from './report.js';
+import { idOrRefuse, reportRecorded, reportRefusal } from './report.js';
 import { type Declared, mutatesTheRecord, type Wiring } from './verb.js';
 
 /** How long one check may run before it is stopped and recorded as failed, by default. */
@@ -56,8 +56,10 @@ export function registerCheck(program: Command, wiring: Wiring): Declared {
     .addHelpText('after', RECORD_CONTRACT_HELP)
     .action(async (rule: string, command: string, args: string[], opts: { which?: string }) => {
       const { runCheckDeclare } = await import('../commands/check.js');
+      const named = await idOrRefuse(wiring, rule);
+      if (named === undefined) return;
       const result = runCheckDeclare(here(), {
-        rule,
+        rule: named,
         command,
         args,
         ...(opts.which !== undefined ? { which: opts.which } : {}),

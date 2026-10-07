@@ -76,7 +76,9 @@ export function referenceReport(render: Render, graph: ReferenceGraph): string[]
     // verbatim and nothing here reads meaning into it (see `ReferenceLink.rel`), so
     // it is the one value on an edge's row that a caller wrote. The role beside it is
     // one of three words this walk chose.
-    const rel = link.rel !== undefined ? `${link.role}:${oneLine(link.rel)}` : link.role;
+    const named = link.rel !== undefined ? `${link.role}:${oneLine(link.rel)}` : link.role;
+    // A link its own identity took back is history: shown, and said not to act.
+    const rel = link.retracted === true ? `${named} (retracted by its author)` : named;
     // THE TREE IS THE COLUMN NOBODY READS, on the line of an edge: every edge of a graph
     // resolved from one project answers the same word, and it is the last field of the
     // row (`items.ts`, `asScope`). The brackets are this report's own punctuation and

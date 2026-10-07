@@ -192,6 +192,7 @@ export const UNROUTED_KINDS: { readonly [K in Exclude<EventKind, RoutedKind>]: s
   'decision.transitioned': 'a move follows the entity it moves, to the tree it was born in',
   'skill.transitioned': 'a move follows the entity it moves, to the tree it was born in',
   'note.retracted': 'a retraction follows the note it takes back, to the tree it was written in',
+  'link.retracted': 'a retraction follows the link it takes back, to the tree it was recorded in',
   'check.declared': 'a check is declared beside the rule it checks, in the committed tree',
   'checker.enrolled': 'a checker is enrolled in the committed tree, which the runner reads',
   'checker.retired': 'a checker is retired in the committed tree it was enrolled in',

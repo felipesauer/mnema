@@ -12,6 +12,37 @@ tag, with its own changelog.
 
 ### Added
 
+- **A link can be taken back, by the identity that recorded it.** A new event kind,
+  `link.retracted` (`payload.target`, `payload.rel`, `payload.reason`), names an edge the way
+  `knowledge.linked` did and says why. `mnema unlink <subject> <target> --rel <label> --reason "<why>"`
+  and the `retract_link` tool write it, after resolving an `ADR-<n>` label on either end as
+  linking does. Nothing is erased: the link's own event stays, and every read that applies a link
+  (`rules`, `before-a-write`, the opening brief, `governing_rules`, the edit census) stops seeing
+  the edge once its only asserter took it back, so a rule addressed at a path stops acting there.
+  The graph readings (`refs`, `diagram` and the `references` tool), which show the history of what names
+  what, keep the link and mark it `(retracted by its author)`.
+  Any key of that identity retracts it; another identity is refused with `NOT_THE_AUTHOR`, a
+  retraction it signed anyway is not applied, and `mnema verify` names it in a
+  `census [foreign-link-retraction]` line, informational, exit unchanged. The rule is in
+  `packages/chain/FORMAT.md` §6.4, with a vector; no byte of any existing kind changed.
+  Known limits: a binary from before this change refuses a record holding a `link.retracted` as
+  an unknown kind, so `verify` fails there and every read of that tree stops with
+  `unreadable stored line` until that machine is upgraded. And the retraction follows the link to
+  the FIRST tree, in the order every locate walks, that holds a link of that edge: when another
+  identity also recorded the same edge in an earlier tree, `unlink` is refused there with
+  `NOT_THE_AUTHOR`, and there is no flag to point it at the later tree that holds yours.
+
+- **`mnema doctor` sees what keeps VS Code's agent from loading the plugin, and `--fix vscode`
+  mends it.** The doctor reads the user `settings.json` of VS Code (the places of each platform,
+  the snap's old one included) and says whether `chat.pluginLocations` is set, whether it lists
+  a mnema plugin that exists and is the version of the binary, and what to run. `mnema doctor
+  --fix vscode` is the one thing it writes, and only when asked: it shows the change (`--dry-run`
+  stops there), copies the file aside, edits that one setting without losing the file's comments
+  or trailing commas, and refuses a file it cannot edit safely. It lists the marketplace copy of
+  the plugin, whose path does not change at an update. The doctor also sees the mnema server
+  declared in any project of `~/.claude.json`, one whose directory is gone included, and says
+  how to remove it, and names a script on the `PATH` that shadows the real `mnema`.
+
 - **The record says which key is a backup.** A new event kind, `backup.declared`
   (`payload.backupFp`), says that one of an identity's keys is kept off the machine. `mnema init`
   writes it when it enrolls the cold backup. `verify` and the Python reader read it: a declared
@@ -83,6 +114,14 @@ tag, with its own changelog.
   in it waits on a network.
 
 ### Fixed
+
+- **An `ADR-<n>` label means the same thing in every verb that takes an id.** `decision move`
+  refused the label while `link` accepted it and recorded the text "ADR-1" as one end of an edge
+  pointing at nothing. A label that names exactly one decision in the project is now accepted
+  (`decision move`, `decision supersede`, `show`, `refs`, `timeline`, `observe`, `check declare`,
+  `link`, and their MCP tools and SDK calls) and is turned into that decision's id before anything is
+  looked up or written. A label two trees both carry is refused with the ids that carry it, and a
+  label no decision carries is refused by `link` instead of being recorded.
 
 - **A tail's lock is no longer taken from a live holder.** A waiter used to break a lock a minute
   old even when its process still answered, so a holder that was alive and slow (a stopped process,

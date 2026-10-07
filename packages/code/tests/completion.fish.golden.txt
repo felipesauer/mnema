@@ -12,7 +12,7 @@
 function __mnema_commands --description 'the subcommands one level of the tree offers'
     switch "$argv[1]"
         case ''
-            echo 'init task decision skill memory observe handoff link retract run status focus resume next-actions guard search show timeline accountability antipatterns exposure export site refs diagram rules rules-file check trailer commit-hook commits why aging skills usage brief recall before-a-write tally corrections key tail witness switch inherit doctor verify mcp repl completion help'
+            echo 'init task decision skill memory observe handoff link unlink promote retract run status focus resume next-actions guard search show timeline accountability antipatterns exposure export site refs diagram rules rules-file check trailer commit-hook commits why aging skills usage brief recall before-a-write tally corrections key tail witness switch inherit doctor verify mcp repl completion help'
         case 'task'
             echo 'create move help'
         case 'decision'
@@ -76,6 +76,8 @@ complete -c mnema -f -n '__mnema_at ""' -a 'memory' -d 'capture a memory in the 
 complete -c mnema -f -n '__mnema_at ""' -a 'observe' -d 'record an observation about an entity in the current project'
 complete -c mnema -f -n '__mnema_at ""' -a 'handoff' -d 'record a handoff on a task in the current project'
 complete -c mnema -f -n '__mnema_at ""' -a 'link' -d 'link one piece of knowledge to another in the current project'
+complete -c mnema -f -n '__mnema_at ""' -a 'unlink' -d 'take a link back, keeping it in the record (only the identity that recorded it; follows the link)'
+complete -c mnema -f -n '__mnema_at ""' -a 'promote' -d 'list what recurs across projects, or copy one pattern to the global tree'
 complete -c mnema -f -n '__mnema_at ""' -a 'retract' -d 'take a memory or an observation back, keeping it in the record (follows the note; takes no --scope)'
 complete -c mnema -f -n '__mnema_at ""' -a 'run' -d 'open and close the session an agent works inside'
 complete -c mnema -f -n '__mnema_at ""' -a 'status' -d 'show where things stand: the work, what governs, what awaits a ruling'
@@ -113,7 +115,7 @@ complete -c mnema -f -n '__mnema_at ""' -a 'tail' -d 'authorize a cut in the rec
 complete -c mnema -f -n '__mnema_at ""' -a 'witness' -d 'ask an outside witness to date this record, and read where that stands'
 complete -c mnema -f -n '__mnema_at ""' -a 'switch' -d 'turn off, or back on, what mnema hands to a model unasked, and whether an agent may accept a decision'
 complete -c mnema -f -n '__mnema_at ""' -a 'inherit' -d 'read another repository’s decisions, pinned to one of its commits'
-complete -c mnema -f -n '__mnema_at ""' -a 'doctor' -d 'say how mnema is installed on this machine, and what to do about each thing found (writes nothing)'
+complete -c mnema -f -n '__mnema_at ""' -a 'doctor' -d 'say how mnema is installed on this machine, and what to do about each thing found (writes nothing unless you pass --fix vscode)'
 complete -c mnema -f -n '__mnema_at ""' -a 'verify' -d 'verify this project\'s record — its committed tree and its private one'
 complete -c mnema -f -n '__mnema_at ""' -a 'mcp' -d 'run the mnema MCP server over stdio (for an agent host)'
 complete -c mnema -f -n '__mnema_at ""' -a 'repl' -d 'open an interactive session that reads this project'
@@ -296,6 +298,23 @@ complete -c mnema -f -n '__mnema_at "link"' -s h -l help
 complete -c mnema -f -n '__mnema_at "link"' -s V -l version
 complete -c mnema -f -n '__mnema_at "link"' -l color -x -a 'auto always never'
 complete -c mnema -f -n '__mnema_at "link"' -l identify
+
+# mnema unlink
+complete -c mnema -f -n '__mnema_at "unlink"' -l rel -r
+complete -c mnema -f -n '__mnema_at "unlink"' -l reason -r
+complete -c mnema -f -n '__mnema_at "unlink"' -l which -r
+complete -c mnema -f -n '__mnema_at "unlink"' -s h -l help
+complete -c mnema -f -n '__mnema_at "unlink"' -s V -l version
+complete -c mnema -f -n '__mnema_at "unlink"' -l color -x -a 'auto always never'
+complete -c mnema -f -n '__mnema_at "unlink"' -l identify
+
+# mnema promote
+complete -c mnema -f -n '__mnema_at "promote"' -l workspace -r
+complete -c mnema -f -n '__mnema_at "promote"' -l evidence -r
+complete -c mnema -f -n '__mnema_at "promote"' -s h -l help
+complete -c mnema -f -n '__mnema_at "promote"' -s V -l version
+complete -c mnema -f -n '__mnema_at "promote"' -l color -x -a 'auto always never'
+complete -c mnema -f -n '__mnema_at "promote"' -l identify
 
 # mnema retract
 complete -c mnema -f -n '__mnema_at "retract"' -l reason -r
@@ -767,6 +786,8 @@ complete -c mnema -f -n '__mnema_at "inherit update"' -l color -x -a 'auto alway
 complete -c mnema -f -n '__mnema_at "inherit update"' -l identify
 
 # mnema doctor
+complete -c mnema -f -n '__mnema_at "doctor"' -l fix -r
+complete -c mnema -f -n '__mnema_at "doctor"' -l dry-run
 complete -c mnema -f -n '__mnema_at "doctor"' -s h -l help
 complete -c mnema -f -n '__mnema_at "doctor"' -s V -l version
 complete -c mnema -f -n '__mnema_at "doctor"' -l color -x -a 'auto always never'

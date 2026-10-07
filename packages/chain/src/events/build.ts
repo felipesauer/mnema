@@ -587,6 +587,23 @@ export function noteRetracted(envelope: EnvelopeInput, payload: { reason: string
 }
 
 /**
+ * Builds a `link.retracted` event (subject = the RETRACTED link's subject; the payload names
+ * its target and relation as the link recorded them, and why). Whether this identity asserted
+ * that edge is decided where the record is read, not here.
+ */
+export function linkRetracted(
+  envelope: EnvelopeInput,
+  payload: { target: string; rel: string; reason: string },
+): CatalogEvent {
+  return {
+    v: 1,
+    kind: 'link.retracted',
+    ...envelopeFields(envelope),
+    payload: { target: payload.target, rel: payload.rel, reason: payload.reason },
+  };
+}
+
+/**
  * The consent message a key signs to be enrolled as a CHECKER by the identity `anchor`:
  * `check-enroll:<anchor>:<checkerFp>`. A message of its own, and not
  * {@link enrollmentMessage}'s, so a consent to join an identity and a consent to sign check

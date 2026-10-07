@@ -229,7 +229,21 @@ const INVOCATION: Readonly<Record<string, Invocation>> = {
   },
   handoff: { argv: (f) => ['handoff', f.task, 'agent-alpha', 'agent-beta'] },
   link: { argv: (f) => ['link', f.task, f.task, '--rel', 'relates-to'] },
+  // The listing act, which reads: what makes the verb a write is the copy, and that needs a
+  // second project holding the same pattern, which this fixture is not (`RECORDS_NOTHING`).
+  promote: { argv: () => ['promote', '--workspace', '.'] },
   retract: { argv: (f) => ['retract', f.note, '--reason', 'it turned out to be wrong'] },
+  unlink: {
+    argv: (f) => [
+      'unlink',
+      f.rule,
+      f.task,
+      '--rel',
+      'relates-to',
+      '--reason',
+      'it does not relate',
+    ],
+  },
   run: { argv: () => ['run', 'start', '--which', 'agent-alpha'] },
   // The group's recording half; `check run` needs a key enrolled as a checker and a tree at
   // a commit, and is driven through the binary in `a-rule-carries-its-check.test.ts`.
@@ -333,6 +347,11 @@ const RECORDS_NOTHING: Readonly<Record<string, string>> = {
     'not exercised here: it writes one hook file into a git repository, which the fixture is not ' +
     '— neither an event nor a key; `a-commit-hook-only-suggests.test.ts` drives it over a real ' +
     'repository',
+  promote:
+    'the exercise is its listing act, which reads: the copy is what makes it a write and needs a ' +
+    'second project holding the same pattern in force, which the fixture is not — through the ' +
+    'binary, over two projects, it appends the copy and its links and refuses what the listing ' +
+    'does not show with the global tree untouched',
   'before-a-write':
     'answers a payload a host hands it on the standard input, and in process there is none — ' +
     'its asking is exercised with a payload through the binary',
@@ -483,6 +502,9 @@ async function fixture(name: string): Promise<Fixture> {
   const captured = await mnema(['memory', 'a note somebody will take back']);
   const note = captured.out.join('\n').match(/([0-9a-f]{8}-[0-9a-f-]{27})/);
   if (note?.[1] === undefined) throw new Error(`fixture: memory printed no id: ${captured.out}`);
+  // The edge `unlink` takes back.
+  const linked = await mnema(['link', rule[1], id[1], '--rel', 'relates-to']);
+  if (linked.failed) throw new Error(`fixture: link refused: ${linked.out}`);
   return {
     note: note[1],
     rule: rule[1],
@@ -609,7 +631,7 @@ describe('every verb says if it writes', () => {
     expect(Object.keys(INVOCATION).sort()).toEqual([...EFFECT_BY_VERB.keys()].sort());
   });
 
-  it('counts nineteen writes and thirty reads over the whole surface', () => {
+  it('counts twenty writes and thirty reads over the whole surface', () => {
     // The count in the report, asserted rather than trusted, and the total against the
     // list: a verb that stopped being registered would otherwise leave both halves
     // looking healthy.
@@ -622,6 +644,8 @@ describe('every verb says if it writes', () => {
       'observe',
       'handoff',
       'link',
+      'unlink',
+      'promote',
       'retract',
       'run',
       'check',
@@ -697,6 +721,7 @@ describe('every verb says if it writes', () => {
       'switch',
       'tail',
       'task',
+      'unlink',
     ]);
     // Every one of those is on the write side. The count is the other half: reads and
     // writes were exercised through the same entry, in the same shape of sandbox.
