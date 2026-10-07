@@ -23,9 +23,9 @@ already here ([the table](README.md#in-vs-code-and-cursor)):
 ## 2. Then the hooks, one question at a time
 
 Do not assume a host's hooks work like Claude Code's. Each of these was a fact about one host and a
-guess about the other two until it was measured, and each is a row in
-[`measurements/hooks-by-host/`](../measurements/hooks-by-host/README.md) with the host and version
-it expires with:
+guess about the other two until it was read against the real host, and each is a row of
+[how each claim is held](../docs/evidence.md) with the host and version it expires with. A new
+host adds its rows there, as "not held yet" until a file in the tree holds them:
 
 - Does a hook run **before** a write, and on which tool names and payload fields?
 - Which hook types does it run: `command` only, or also `mcp_tool`?

@@ -130,15 +130,15 @@ key, no network — and prints each verdict verbatim, naming the level it reache
 - **What does not hold.** Nothing proves that nothing was removed: a hash chain shows what changed, never what is gone, and the history a git remote keeps is what covers omission. A record forged whole under a fresh key verifies clean, and a key is not proven to be the person a name says. A refusal of a write covers the editing tools of Claude Code, the VS Code agent (Copilot) and Cursor, and not their shell: `sed -i` on a protected file goes round it.
 - **What a green `verify` means.** That nothing *verifiable* is broken, not that the record is honest, and the gate protects the shape of a change, not who may make it.
 
-The whole table, claim by claim, is in [`docs/what-it-proves.md`](docs/what-it-proves.md); what was
-measured, and what it does not show, is in [`docs/measured.md`](docs/measured.md).
+The whole table, claim by claim, is in [`docs/what-it-proves.md`](docs/what-it-proves.md); how each
+claim about the agent hosts is held, and which are not held yet, is in [`docs/evidence.md`](docs/evidence.md).
 
 ## Docs
 
 [Install](docs/install.md) · [Your first record](docs/first-record.md) · [How it works](docs/how-it-works.md) ·
 [Agent hosts](docs/agent-hosts.md) · [Features](docs/features.md) · [What it proves](docs/what-it-proves.md) ·
 [Verify without installing](docs/verify-without-installing.md) · [The page that verifies itself](docs/site.md) ·
-[What was measured](docs/measured.md) · [Where it fits](docs/where-it-fits.md) · [Packages](docs/packages.md) ·
+[How each claim is held](docs/evidence.md) · [Where it fits](docs/where-it-fits.md) · [Packages](docs/packages.md) ·
 [Build from source](docs/build-from-source.md) · [Contributing](CONTRIBUTING.md)
 
 ## License

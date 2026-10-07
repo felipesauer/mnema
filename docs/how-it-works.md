@@ -80,10 +80,10 @@ notes recorded for the project, the ones near the files it touches first, before
 agent has written anything. At each edit the rules
 addressed at that file are handed over too: they land beside the result of that
 write, in time for every edit after it and for a correction of that one
-([measured](../measurements/mcp-tool-channel/)), and a rule recorded as asking for a
+(read on Claude Code 2.1.228 and 2.1.281; [`the-rule-reaches-the-writing.test.ts`](../packages/code/tests/the-rule-reaches-the-writing.test.ts) holds the product's half), and a rule recorded as asking for a
 person holds the write itself until one decides — in VS Code's agent too, through a hook of its
 own, and not in Cursor's command-line agent, which runs the hook and ignores the pause
-([measured](../measurements/hooks-by-host/)). Each of those channels can be switched off, and
+(read on VS Code 1.137 and Cursor's agent 2026.09.18; [how each claim is held](evidence.md)). Each of those channels can be switched off, and
 switching one off is itself a signed fact.
 
 **It proves itself to a stranger.** Every fact is hash-chained, and every write the

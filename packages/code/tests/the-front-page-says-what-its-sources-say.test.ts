@@ -5,12 +5,11 @@
  * THE PAGE COUNTS AND DRAWS TWO THINGS THAT ARE NOT ITS OWN, and this reads both from where they
  * live:
  *
- *   - THE MEASUREMENT. `docs/measured.md` shows four rates, the tasks and the runs they are
- *     over, the model, the day and the cells — and they are one round's, the report that section
- *     links to. Each is read out of that report here (its capture table, its rates, its task
- *     tables), and the report is found by the page's OWN link, so the page and this case cannot
- *     come to be about two different rounds. A number on the page that the report does not carry
- *     is red, and so is a report the page stopped citing.
+ *   - THE HISTORICAL RESULT. `docs/evidence.md` keeps one round's rates as history, with the day, the
+ *     model and the number of cells, and with no link, because nothing in the tree reruns it. The
+ *     sentence that says what the rates moved from and to is read off the table beside it, and the
+ *     section is held to carrying no link at all: a link there would promise a source the page
+ *     says it does not have.
  *   - THE DECISION'S STATES. `docs/how-it-works.md`, under `## Three things it does`, draws the workflow a decision moves through,
  *     and that workflow is the gate's table (`DECISION_TRANSITIONS`) with the proof each move owes.
  *     The state a decision is born into and the one in force are the core's and the context package's
@@ -21,12 +20,12 @@
  *     document did not suffice off what the second reader itself lists (`mnema_verify.py gaps`).
  *
  * WHAT IT DOES NOT CHECK: the prose between them. "Handing the decision over moves the agent from
- * 33.3% to 100.0%" is held to the rates, but whether the sentence says what they MEAN is a
+ * 33.3% to 100.0%" is held to the table's rates, but whether the sentence says what they MEAN is a
  * reviewer's question; so is every diagram on the page that draws a flow rather than a table.
  */
 
 import { execFileSync } from 'node:child_process';
-import { dirname, join } from 'node:path';
+import { join } from 'node:path';
 import { decisionDisposition } from '@mnema/context';
 import { DECISION_STATES, DECISION_TRANSITIONS, INITIAL_DECISION_STATE } from '@mnema/core';
 import { describe, expect, it } from 'vitest';
@@ -37,7 +36,7 @@ import { linesOf } from './support/reading-a-shell-line.js';
  * The pages this file rules on: each fact lives on the page that carries its section, since the
  * front page keeps only the sentence and the grid and the long form moved under `docs/`.
  */
-const MEASURED = 'docs/measured.md';
+const EVIDENCE = 'docs/evidence.md';
 const HOW_IT_WORKS = 'docs/how-it-works.md';
 const PACKAGES = 'docs/packages.md';
 const VERIFY = 'docs/verify-without-installing.md';
@@ -103,156 +102,38 @@ function inWords(count: number): string {
   return units === 0 ? (TENS[tens] as string) : `${TENS[tens]}-${WORDS[units]}`;
 }
 
-const MONTHS = [
-  'January',
-  'February',
-  'March',
-  'April',
-  'May',
-  'June',
-  'July',
-  'August',
-  'September',
-  'October',
-  'November',
-  'December',
-];
-
-// ---------------------------------------------------------------------------
-// The measurement
-// ---------------------------------------------------------------------------
-
-/** What the page's measurement section says, and what the round's report behind it says. */
-interface Round {
-  /** The rate of every arm, as the report prints it: `33.3%`. */
-  readonly rates: Readonly<Record<string, string>>;
-  readonly headline: number;
-  readonly controls: number;
-  readonly development: number;
-  readonly cells: number;
-  readonly tasks: number;
-  readonly arms: number;
-  readonly runs: number;
-  /** The model, as a reader names it: `Claude Haiku 4.5`. */
-  readonly model: string;
-  /** The day it ran, as the page writes a day: `21 August 2026`. */
-  readonly day: string;
-}
-
-/** The report the section cites for its numbers: the one link it carries that ends in `report.md`. */
-function theReportCited(section: string): string {
-  const cited = [...section.matchAll(/\]\(([^)\s]+\/report\.md)\)/g)].map((link) => link[1]);
-  if (cited.length !== 1) {
-    throw new Error(
-      `the measurement section cites ${cited.length} reports, where it should cite one`,
-    );
-  }
-  return cited[0] as string;
-}
-
-/** The row of a report's key-value table whose key is `key`, or a refusal. */
-function rowOf(lines: readonly string[], key: string): string[] {
-  const row = lines.find((line) => line.startsWith(`| ${key} |`));
-  if (row === undefined) throw new Error(`the report has no "${key}" row`);
-  return cellsOf(row);
-}
-
-/** Everything the page's numbers are measured against, read out of the round's report. */
-function theRound(report: string): Round {
-  const lines = report.split('\n');
-  // THE RATES: the row that says it is the mean over the headline tasks, under the header naming
-  // the arms — which is how the report prints its headline table.
-  const mean = lines.findIndex((line) => line.startsWith('| **mean of the per-task rates** |'));
-  if (mean < 0) throw new Error('the report has no mean over its headline tasks');
-  let header = mean;
-  while (header >= 0 && !(lines[header] as string).startsWith('| task |')) header -= 1;
-  const arms = cellsOf(lines[header] as string)
-    .slice(1)
-    .map(plain);
-  const rates = cellsOf(lines[mean] as string)
-    .slice(1)
-    .map(plain);
-  // THE TASKS: the headline table's rows between its header and its mean, and the other table's
-  // rows marked as a control or as a development task.
-  const headline = lines.slice(header + 2, mean).filter((line) => line.startsWith('| `')).length;
-  const rowsOfTasks = lines.filter((line) => /^\| `[a-z0-9-]+` \(/.test(line));
-  const controls = rowsOfTasks.filter((line) => line.includes('(control)')).length;
-  const development = rowsOfTasks.filter((line) => line.includes('(dev')).length;
-  const capture = /(\d+) cells — (\d+) tasks × (\d+) arms × (\d+) runs/.exec(
-    rowOf(lines, 'capture')[1] as string,
-  );
-  if (capture === null) throw new Error('the report no longer says what its capture is made of');
-  const model = /`claude-([a-z]+)-(\d+)-(\d+)-\d{8}`/.exec(rowOf(lines, 'model')[1] as string);
-  if (model === null) throw new Error('the report no longer names its model');
-  const family = model[1] as string;
-  const ran = /^(\d{4})-(\d{2})-(\d{2})/.exec(rowOf(lines, 'ran')[1] as string);
-  if (ran === null) throw new Error('the report no longer says the day it ran');
-  return {
-    rates: Object.fromEntries(arms.map((arm, at) => [arm, rates[at] as string])),
-    headline,
-    controls,
-    development,
-    cells: Number(capture[1]),
-    tasks: Number(capture[2]),
-    arms: Number(capture[3]),
-    runs: Number(capture[4]),
-    model: `Claude ${family[0]?.toUpperCase()}${family.slice(1)} ${model[2]}.${model[3]}`,
-    day: `${Number(ran[3])} ${MONTHS[Number(ran[2]) - 1]} ${ran[1]}`,
-  };
-}
-
 /** The rates the page shows, by arm: every table row whose first cell names one. */
 function ratesOnThePage(section: string): Record<string, string> {
   return Object.fromEntries(
     section
       .split('\n')
-      .filter((line) => line.startsWith('| `'))
+      .filter((line) => line.startsWith('  | `'))
       .map((row) => {
-        const cells = cellsOf(row);
+        const cells = cellsOf(row.trim());
         return [plain(cells[0] as string), plain(cells[cells.length - 1] as string)];
       }),
   );
 }
 
-describe('the measurement the measured page shows', () => {
-  const section = sectionOf(read(MEASURED), '# What was measured', MEASURED);
-  // The link is the page's own, so it is read from the page's directory.
-  const cited = join(dirname(MEASURED), theReportCited(section));
-  const round = theRound(read(cited));
+describe('the historical result the evidence page keeps', () => {
+  const section = sectionOf(read(EVIDENCE), '## Historical', EVIDENCE);
+  const prose = section.replace(/\s+/g, ' ');
 
-  it('shows every arm of the round, at the rate its report gives it', () => {
-    expect(ratesOnThePage(section)).toEqual(round.rates);
+  it('shows every arm, at the rate the sentence beside it moves from and to', () => {
+    const rates = ratesOnThePage(section);
+    expect(Object.keys(rates)).toEqual(['base', 'host', 'mnema-doc', 'mnema+']);
+    expect(prose).toContain(`from ${rates['base']} to ${rates['mnema-doc']}`);
   });
 
-  it('says what the rates are over — the tasks, the runs, the model, the day and the cells', () => {
-    const prose = section.replace(/\s+/g, ' ');
-    const said = [
-      `${inWords(round.headline).replace(/^./, (first) => first.toUpperCase())} tasks`,
-      `${inWords(round.runs)} runs`,
-      round.model,
-      round.day,
-      `${round.cells} cells`,
-      `the ${inWords(round.controls)} negative controls`,
-      `the ${inWords(round.development)} development tasks`,
-    ];
-    expect(said.filter((phrase) => !prose.includes(phrase))).toEqual([]);
-    // The column says what the rate is over, in the same count.
-    expect(prose).toContain(`over the ${inWords(round.headline)} tasks`);
+  it('says what the rates are over — the day, the model, the cells and the runs', () => {
+    expect(prose).toContain('21 August 2026');
+    expect(prose).toContain('Claude Haiku 4.5');
+    expect(prose).toContain('160 cells');
+    expect(prose).toContain('four runs of each in every arm');
   });
 
-  it('says the rise the table shows, in the table’s own numbers', () => {
-    const prose = section.replace(/\s+/g, ' ');
-    expect(prose).toContain(`from ${round.rates.base} to ${round.rates['mnema-doc']}`);
-  });
-
-  it('reads a report whose own numbers add up, so the page is not agreeing with a broken one', () => {
-    // NON-VACUITY, and a check on the reading: the capture is every task in every arm, four runs
-    // each, and the tasks are the headline, the controls and the development tasks — nothing else.
-    expect(cited).toBe('measurements/p1/results/2026-08-21-full/report.md');
-    expect(round.cells).toBe(round.tasks * round.arms * round.runs);
-    expect(round.tasks).toBe(round.headline + round.controls + round.development);
-    expect(Object.keys(round.rates)).toHaveLength(round.arms);
-    expect(round.model).toBe('Claude Haiku 4.5');
+  it('carries no link, because nothing in the tree reruns it', () => {
+    expect(section.match(/\]\(/g) ?? []).toEqual([]);
   });
 });
 

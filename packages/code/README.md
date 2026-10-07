@@ -124,8 +124,7 @@ identically, because they are the same call.
   the same plugin: the two opening hooks run in both, the rules at each edit are Claude Code's,
   and the pause for a person reaches VS Code too and not Cursor's agent, which runs the hook
   and ignores the pause — the [plugin's page](../../plugin/README.md#in-vs-code-and-cursor) has
-  the table, host by host, and [`measurements/hooks-by-host/`](../../measurements/hooks-by-host/)
-  the captures.
+  the table, host by host, and [how each claim is held](../../docs/evidence.md) says which of it a test holds.
 - **A rules file for a host without the plugin** — `mnema rules-file --host vscode` prints the
   committed rules in force whose address is a file or a directory, as a `.instructions.md` with an `applyTo`,
   `--host cursor` as a `.mdc` with `globs`, and `--host claude` as a `.claude/rules/mnema.md` with
@@ -142,7 +141,7 @@ identically, because they are the same call.
   lands is your choice — the `>` replaces the whole of the file it names. Asserted in
   `tests/a-rules-file-carries-only-what-becomes-a-glob-exactly.test.ts`, against Node's own glob
   matcher; what each host does with the pattern is
-  [`measurements/hooks-by-host/`](../../measurements/hooks-by-host/).
+  [not held yet](../../docs/evidence.md).
 - **A switch for everything it pushes** — `mnema switch` says where each of those
   channels stands and what each carries; `mnema switch off edit-rules-push` stops the
   per-edit push, `mnema switch off brief-document` stops the opening document and `mnema
