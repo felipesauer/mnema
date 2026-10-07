@@ -82,13 +82,6 @@ interface Unreadable {
   readonly text: string;
 }
 
-/**
- * The pages that are EVIDENCE rather than documentation. What their commands say is what was typed
- * in a round that already ran, so rewriting one rewrites the evidence. See
- * {@link NOT_CHECKED}`.MEASUREMENTS_ARE_EVIDENCE`.
- */
-const EVIDENCE = 'measurements/';
-
 /** A code span that opens with the program's name. */
 const SPAN = /`(mnema [^`]*)`/g;
 
@@ -381,8 +374,6 @@ export const THE_VERB_IS_NOT_WRITTEN: Readonly<Record<string, string>> = {
 
 /** What a handed-over command carries that this guard does NOT rule on, and why each one. */
 export const NOT_CHECKED: Readonly<Record<string, string>> = {
-  MEASUREMENTS_ARE_EVIDENCE:
-    'Pages under `measurements/` are the protocols and results of rounds that already ran. What their commands say is what was typed then — `round-3/arms.md` publishes `mnema switch --off edit-rules-push`, which the program never had — and rewriting one rewrites the evidence of what was measured.',
   A_NAME_IS_NOT_A_LINE:
     'A verb’s bare path is read as its NAME, and a name is checked only for naming a verb — the reading cannot tell a name from an instruction to type a bare line (one of the first twenty WAS one: `run start`’s "`mnema run end` closes it", a line now). So every name whose verb requires more than its path is on {@link NAMES_THAT_NEED_MORE}, looked at one by one with the reason it is a name, and reconciled with the corpus both ways: a new one is red until somebody says which it is.',
   A_VALUE_IS_NOT_A_NAME:
@@ -729,7 +720,7 @@ export const HANDED_OVER: Readonly<
 const program = watchedProgram();
 const verbs = new Set(program.commands.map((one) => one.name()));
 
-const pages = trackedPages().filter((page) => !page.startsWith(EVIDENCE));
+const pages = trackedPages();
 const onPages = pages.map((page) => handedOnPage(page, readFileSync(join(ROOT, page), 'utf8')));
 const inSources = speakingSources().map((file) =>
   handedInSource(file, readFileSync(join(ROOT, file), 'utf8'), verbs),
@@ -819,10 +810,8 @@ describe('the readings know what they read', () => {
     expect(counted).toEqual(HANDED_OVER);
   });
 
-  it('the pages it reads are the documentation, and the evidence is left out on purpose', () => {
+  it('the pages it reads are the documentation', () => {
     expect(pages).toContain('packages/code/README.md');
-    expect(pages.some((page) => page.startsWith(EVIDENCE))).toBe(false);
-    expect(trackedPages().some((page) => page.startsWith(EVIDENCE))).toBe(true);
   });
 
   it('every exemption carries a reason', () => {

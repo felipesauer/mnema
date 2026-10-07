@@ -7,8 +7,8 @@
  * to: *"at one site because it is one rule (A3)"*, *"the shape amarra A2 exists to kill"*,
  * *"THE ELO"* over a case proving that an option reaches what it feeds. The definitions live
  * in a `.gitignore`d directory, so `git ls-files` returns none of them and nobody with a
- * clone can find out what `A3` is — asked of every tracked file, `measurements/` included,
- * nothing defines one. Thirteen of those lines were in non-test `src`, across eleven files,
+ * clone can find out what `A3` is — asked of every tracked file, nothing
+ * defines one. Thirteen of those lines were in non-test `src`, across eleven files,
  * and `tsc` keeps comments, so the built `dist/` carried them to every install. It is the
  * class `what-ships-cites-only-what-ships.test.ts` closed for documents — a citation the
  * reader cannot open — and this closes it for labels.
@@ -19,14 +19,10 @@
  * the sentence's only support, the principle is now written out in words: *"a public option
  * with no production caller"* where `A2` stood.
  *
- * A NUMBERED LIST THE REPOSITORY DOES DEFINE IS NOT THIS, and it looks exactly like it.
- * `G1`–`G7` read as the same kind of label, and the first draft of this guard refused them;
- * but `measurements/p1/round-2/arms.md` defines them in a table a clone has, and the harness
- * beside it cites them as *"G5 of `arms.md`"*, which is a citation anybody can open. So they
- * are not a row. Eight lines had used them bare — three of them in shipped `src` and one in
- * the plugin's hook, naming no file at all — and those now say the principle in words, which
- * loses nothing; a case below reads the definitions out of the files that hold them, so a
- * row that would accuse one is refused before it can be written.
+ * A NUMBERED LIST THE REPOSITORY DOES DEFINE IS NOT THIS, and it looks exactly like it. The
+ * format's gap ids (`G06`, `G11`) read as the same kind of label, but `gaps.py` defines them in
+ * a file a clone has, so they are not a row; a case below reads the definitions out of the
+ * file that holds them, so a row that would accuse one is refused before it can be written.
  *
  * THE REACH IS EVERY FILE GIT HANDS OUT, TESTS INCLUDED — the opposite choice from the
  * sibling guard, and for a reason that does not transfer. That guard leaves tests out
@@ -47,8 +43,7 @@
  * row `M9.4` stood in the tree as one-offs, defined nowhere, and were removed by hand in the
  * same change — but nothing here would catch the next one: a single letter and a digit
  * cannot be forbidden without accusing the format's `T1`–`T4`, the Unicode blocks `C0` and
- * `C1`, `P1` (the measurement `measurements/p1/protocol.md` publishes and defines) or the
- * `G1`–`G7` above. And English process words — a delivery, a battery, the bench — are the
+ * `C1`, or the gap ids above. And English process words — a delivery, a battery, the bench — are the
  * sibling's argument, which stands: where they appear, the fact is stated inline.
  */
 
@@ -113,14 +108,6 @@ const WORKBENCH_VOCABULARY: readonly {
 /**
  * WHAT IS NOT SWEPT, each with the reason — a reach with an unargued hole is a reach with a
  * blind spot, and the cases below hold each reason to still being true.
- *
- * `measurements/` WAS A ROW, and it came out the way the row said it would. It read *"carries
- * the same labels and is left for a change of its own"*, with a case that went red the day
- * the directory stopped carrying them. The change of its own wrote each of its thirteen
- * labels, on twelve lines of seven files, out in words — `A6` as *"whoever measures makes and
- * removes its own temporary directory"*, `the elo` as *"the link"* — and that case went red
- * saying to take the row out, which is what was done. The published instrument and its
- * results are swept like everything else.
  */
 const NOT_SWEPT: readonly { readonly path: RegExp; readonly why: string }[] = [
   {
@@ -213,10 +200,6 @@ describe('the repository leans on no label and no word that only the workbench d
         'packages/code/tests/support/screen.ts',
         '.github/the-link-cannot-come-back/scan.mjs',
         'plugin/hooks/session-start.mjs',
-        // The published instrument, which carried thirteen of those labels until it was swept.
-        'measurements/p1/harness/lib/sandbox.mjs',
-        'measurements/p1/harness/tests/which-build.test.mjs',
-        'measurements/opening-read-cost/harness/cost.mjs',
       ]),
     );
   });
@@ -284,7 +267,6 @@ describe('the repository leans on no label and no word that only the workbench d
   it('says nothing about the labels the repository defines, or about words that only contain a forbidden one', () => {
     const LEGITIMATE: readonly string[] = [
       'G06 · G11 · G23 — the gaps the format names',
-      '// G5 OF `measurements/p1/round-2/arms.md` IS WHAT THIS ANSWERS, and the tie is worth',
       '#> public: local integrity verified (T1/T2/T4); 1 tail(s)',
       '## 8. The external witness (T3)',
       ' * Whether a code unit may not appear raw inside a double-quoted YAML scalar: a C0',
@@ -317,35 +299,24 @@ describe('the repository leans on no label and no word that only the workbench d
   });
 
   /**
-   * A LABEL THE REPOSITORY DEFINES IS NEVER A ROW, read from the files that define them. The
-   * format's gap ids come out of `gaps.py`, and `G1`–`G7` out of the table in the P1 round's
-   * `arms.md` — the list the first draft of this guard mistook for the workbench's. A row
-   * written tomorrow that would accuse either goes red HERE, naming the definition it
-   * collides with, rather than as a corpus full of accusations against published words.
+   * A LABEL THE REPOSITORY DEFINES IS NEVER A ROW, read from the file that defines them. The
+   * format's gap ids come out of `gaps.py`. A row written tomorrow that would accuse one goes
+   * red HERE, naming the definition it collides with, rather than as a corpus full of
+   * accusations against published words.
    */
-  it('never accuses a label the repository defines, read from the files that define them', () => {
+  it('never accuses a label the repository defines, read from the file that defines them', () => {
     const gaps = textOf('packages/chain/verifier/mnemaverify/gaps.py');
     const gapIds = [...new Set(gaps.match(/\bG\d+\b/g) ?? [])];
     expect(gapIds.length).toBeGreaterThan(10);
     expect(gapIds.filter((id) => labelsIn(id).length > 0)).toEqual([]);
-
-    const arms = 'measurements/p1/round-2/arms.md';
-    expect(TRACKED).toContain(arms);
-    const ties = [...textOf(arms).matchAll(/^\| \*\*(G\d+)\*\* /gm)].map((match) => match[1]);
-    expect(ties).toEqual(['G1', 'G2', 'G3', 'G4', 'G5', 'G6', 'G7']);
-    expect(ties.filter((id) => labelsIn(`${id} of arms.md`).length > 0)).toEqual([]);
   });
 
   /**
    * EVERY EXCUSE STILL HAS ITS REASON. An exclusion whose reason has lapsed is a hole with a
    * story attached, so each is held to what it says: the lockfile is still the generated file,
-   * and the proofs skipped as binary are tracked and are not text. `measurements/` had a half
-   * of this case, which went red when the directory stopped carrying the labels — the excuse
-   * lapsed exactly as it said it would, and the row it guarded is gone.
+   * and the proofs skipped as binary are tracked and are not text.
    */
   it('excuses only what it argues for, and says when an excuse has stopped being needed', () => {
-    expect(NOT_SWEPT.some(({ path }) => path.test('measurements/p1/protocol.md'))).toBe(false);
-
     expect(TRACKED).toContain('pnpm-lock.yaml');
     expect(textOf('pnpm-lock.yaml')).toMatch(/^lockfileVersion:/);
 
