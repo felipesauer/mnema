@@ -298,7 +298,9 @@ export function openTreeForWriting(
     const seen = privateTreeVisibility(trees);
     if (seen.state === 'visible') throw new PrivateTreeVisibleError(seen);
   }
-  return openChainForWriting(chainRoot, { keyRoot: trees.keyRoot, ...options });
+  // Every product write cites the heads of the other tails it had read (`after`), which is
+  // what orders it after them whatever the clocks of two machines say.
+  return openChainForWriting(chainRoot, { keyRoot: trees.keyRoot, citeHeads: true, ...options });
 }
 
 /**

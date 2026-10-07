@@ -36,21 +36,25 @@
  * costs what it cost: no hash is indexed, and the walk is the plain selection of heads.
  */
 
-/** One tail as the merge reads it: where it sorts in a tie, and its entries in `seq` order. */
-export interface TailToOrder<T> {
+/** One tail as the merge reads it: where it sorts in a tie, and how many entries it holds. */
+export interface TailToOrder {
   /** The position of the tree the tail was read from — first in a tie, compared as a number. */
   readonly tree: number;
   /** The tail id — second in a tie, compared as text (by UTF-16 code unit). */
   readonly tail: string;
-  /** The tail's entries, in `seq` order. */
-  readonly entries: readonly T[];
+  /** How many entries the tail holds, in `seq` order from position 0. */
+  readonly length: number;
 }
 
-/** What the merge needs of an entry: its instant, its entry hash, and what it cites. */
-export interface OrderKeys<T> {
-  at(entry: T): string;
-  hash(entry: T): string;
-  after(entry: T): readonly string[] | undefined;
+/**
+ * What the merge needs of each entry, asked by the index of its tail and its position there:
+ * its instant, its entry hash, and what it cites. By position, so a caller hands over the
+ * arrays it already holds and nothing is built per entry.
+ */
+export interface OrderKeys {
+  at(tail: number, position: number): string;
+  hash(tail: number, position: number): string;
+  after(tail: number, position: number): readonly string[] | undefined;
 }
 
 /** A citation the order ignored because its tree holds no entry with that hash. */
@@ -92,12 +96,14 @@ interface Located {
 }
 
 /** Merges `tails` into one total, deterministic order, honouring every citation it can. */
-export function causalOrder<T>(tails: readonly TailToOrder<T>[], keys: OrderKeys<T>): CausalOrder {
+export function causalOrder(tails: readonly TailToOrder[], keys: OrderKeys): CausalOrder {
   const cursors = tails.map(() => 0);
   const cited = new Set<string>();
-  for (const { entries } of tails) {
-    for (const entry of entries) for (const hash of keys.after(entry) ?? []) cited.add(hash);
-  }
+  tails.forEach(({ length }, tail) => {
+    for (let position = 0; position < length; position += 1) {
+      for (const hash of keys.after(tail, position) ?? []) cited.add(hash);
+    }
+  });
 
   // What each head waits on, by tail index and position. Built only when something cites.
   const waits: (readonly (readonly Located[])[] | undefined)[] = tails.map(() => undefined);
@@ -106,21 +112,22 @@ export function causalOrder<T>(tails: readonly TailToOrder<T>[], keys: OrderKeys
   if (cited.size > 0) {
     // Where each cited hash sits, per tree: a citation resolves in its own tree only.
     const where = new Map<string, Located[]>();
-    tails.forEach(({ tree, entries }, tail) => {
-      entries.forEach((entry, position) => {
-        const hash = keys.hash(entry);
-        if (!cited.has(hash)) return;
+    tails.forEach(({ tree, length }, tail) => {
+      for (let position = 0; position < length; position += 1) {
+        const hash = keys.hash(tail, position);
+        if (!cited.has(hash)) continue;
         const key = `${tree}:${hash}`;
         const found = where.get(key);
         if (found === undefined) where.set(key, [{ tail, position }]);
         else found.push({ tail, position });
-      });
+      }
     });
-    tails.forEach(({ tree, entries }, tail) => {
+    tails.forEach(({ tree, length }, tail) => {
       let any = false;
-      const perEntry = entries.map((entry, position) => {
+      const perEntry: Located[][] = [];
+      for (let position = 0; position < length; position += 1) {
         const on: Located[] = [];
-        for (const hash of keys.after(entry) ?? []) {
+        for (const hash of keys.after(tail, position) ?? []) {
           const found = where.get(`${tree}:${hash}`);
           if (found === undefined) {
             notHeld.push({ tail, position, hash });
@@ -132,8 +139,8 @@ export function causalOrder<T>(tails: readonly TailToOrder<T>[], keys: OrderKeys
           }
         }
         if (on.length > 0) any = true;
-        return on;
-      });
+        perEntry.push(on);
+      }
       if (any) waits[tail] = perEntry;
     });
   }
@@ -163,15 +170,15 @@ export function causalOrder<T>(tails: readonly TailToOrder<T>[], keys: OrderKeys
 }
 
 /** The tail whose head goes next among those `ready` admits (all, when undefined), or -1. */
-function pick<T>(
-  tails: readonly TailToOrder<T>[],
+function pick(
+  tails: readonly TailToOrder[],
   cursors: readonly number[],
-  keys: OrderKeys<T>,
+  keys: OrderKeys,
   ready: ((tail: number) => boolean) | undefined,
 ): number {
   let chosen = -1;
   for (let tail = 0; tail < tails.length; tail += 1) {
-    if ((cursors[tail] as number) >= (tails[tail] as TailToOrder<T>).entries.length) continue;
+    if ((cursors[tail] as number) >= (tails[tail] as TailToOrder).length) continue;
     if (ready !== undefined && !ready(tail)) continue;
     if (chosen < 0 || precedes(tails, cursors, keys, tail, chosen)) chosen = tail;
   }
@@ -179,18 +186,18 @@ function pick<T>(
 }
 
 /** Whether the head of tail `a` goes before the head of tail `b`: `at`, then tree, then tail. */
-function precedes<T>(
-  tails: readonly TailToOrder<T>[],
+function precedes(
+  tails: readonly TailToOrder[],
   cursors: readonly number[],
-  keys: OrderKeys<T>,
+  keys: OrderKeys,
   a: number,
   b: number,
 ): boolean {
-  const ta = tails[a] as TailToOrder<T>;
-  const tb = tails[b] as TailToOrder<T>;
-  const atA = keys.at(ta.entries[cursors[a] as number] as T);
-  const atB = keys.at(tb.entries[cursors[b] as number] as T);
+  const atA = keys.at(a, cursors[a] as number);
+  const atB = keys.at(b, cursors[b] as number);
   if (atA !== atB) return atA < atB;
+  const ta = tails[a] as TailToOrder;
+  const tb = tails[b] as TailToOrder;
   if (ta.tree !== tb.tree) return ta.tree < tb.tree;
   return ta.tail < tb.tail;
 }

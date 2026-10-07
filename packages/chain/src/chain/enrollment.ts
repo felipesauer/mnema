@@ -81,7 +81,7 @@
 import { checkerEnrollmentMessage, enrollmentMessage } from '../events/build.js';
 import type { CatalogEvent } from '../events/catalog.js';
 import { oneLine } from '../one-line.js';
-import { causalOrder, type OrderKeys } from './causal-order.js';
+import { causalOrder } from './causal-order.js';
 import type { Entry } from './entry.js';
 import { deriveAnchor, verify as verifySignature } from './keys.js';
 import type { ChainLayout } from './layout.js';
@@ -515,8 +515,19 @@ function totalOrder(entriesByTail: ReadonlyMap<string, readonly Entry[]>): {
   readonly order: Array<{ tail: string; entry: Entry }>;
   readonly citations: CitationsRead;
 } {
-  const tails = [...entriesByTail].map(([tail, entries]) => ({ tree: 0, tail, entries }));
-  const merged = causalOrder(tails, ENTRY_KEYS);
+  const tails = [...entriesByTail].map(([tail, entries]) => ({
+    tree: 0,
+    tail,
+    entries,
+    length: entries.length,
+  }));
+  const entryAt = (tail: number, position: number): Entry =>
+    (tails[tail] as (typeof tails)[number]).entries[position] as Entry;
+  const merged = causalOrder(tails, {
+    at: (tail, position) => eventAt(entryAt(tail, position)),
+    hash: (tail, position) => entryAt(tail, position).link.hash,
+    after: (tail, position) => (entryAt(tail, position).event as CatalogEvent).after,
+  });
   const cursors = tails.map(() => 0);
   const order: Array<{ tail: string; entry: Entry }> = [];
   for (const step of merged.steps) {
@@ -524,17 +535,15 @@ function totalOrder(entriesByTail: ReadonlyMap<string, readonly Entry[]>): {
     order.push({ tail, entry: entries[cursors[step] as number] as Entry });
     cursors[step] = (cursors[step] as number) + 1;
   }
-  const at = (tail: number, position: number): Entry =>
-    (tails[tail] as (typeof tails)[number]).entries[position] as Entry;
   const notHeld = merged.notHeld.map((citation) => ({
     tail: (tails[citation.tail] as (typeof tails)[number]).tail,
-    seq: at(citation.tail, citation.position).link.seq,
+    seq: entryAt(citation.tail, citation.position).link.seq,
     hash: citation.hash,
   }));
   const behind: CitationsRead['behind'][number][] = [];
   for (const citation of merged.held) {
-    const citing = at(citation.tail, citation.position);
-    const cited = at(citation.citedTail, citation.citedPosition);
+    const citing = entryAt(citation.tail, citation.position);
+    const cited = entryAt(citation.citedTail, citation.citedPosition);
     const byMs = Date.parse(eventAt(cited)) - Date.parse(eventAt(citing));
     if (!(byMs > 0)) continue;
     const tail = (tails[citation.tail] as (typeof tails)[number]).tail;
@@ -548,13 +557,6 @@ function totalOrder(entriesByTail: ReadonlyMap<string, readonly Entry[]>): {
   }
   return { order, citations: { notHeld, behind } };
 }
-
-/** What {@link causalOrder} reads of an entry. */
-const ENTRY_KEYS: OrderKeys<Entry> = {
-  at: (entry) => eventAt(entry),
-  hash: (entry) => entry.link.hash,
-  after: (entry) => (entry.event as CatalogEvent).after,
-};
 
 function eventAt(entry: Entry): string {
   return (entry.event as CatalogEvent).at;

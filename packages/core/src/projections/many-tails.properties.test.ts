@@ -471,9 +471,9 @@ describe('MR2: merging the parts and then the whole is merging the whole', () =>
   );
 });
 
-describe('across ten trees or more: what the merge does TODAY, fixed and not endorsed', () => {
+describe('across ten trees or more: the tree position is a number', () => {
   it(
-    'today, the tree position in the tie is compared as text, so the tree listed eleventh sorts before the one listed second',
+    'the tree position in the tie is compared as a number, so the tree listed eleventh sorts after the one listed second',
     () => {
       const roots: string[] = [];
       try {
@@ -500,10 +500,10 @@ describe('across ten trees or more: what the merge does TODAY, fixed and not end
           roots.map((root) => ({ root })),
           upcasters,
         ).across.map((event) => event.subject);
-        // Every head ties on `at` and on the tail id, so the key is `<index>:<tail>` as text:
-        // "0:", "10:", "1:", "2:", ... — position 10 is read before position 1.
+        // Every head ties on `at` and on the tail id, so the tree's position decides, as a
+        // number: 0, 1, 2, ... 10. Compared as text, `"10:"` sorted before `"1:"`.
         expect(across).toEqual(
-          ['0', '10', '1', '2', '3', '4', '5', '6', '7', '8', '9'].map((tree) => `tree-${tree}`),
+          ['0', '1', '2', '3', '4', '5', '6', '7', '8', '9', '10'].map((tree) => `tree-${tree}`),
         );
       } finally {
         cleanUp(...roots);
