@@ -288,7 +288,7 @@ export function projectLinks(events: readonly CatalogEvent[]): LinkEdge[] {
  * target, rel), the FIRST assertion of it being its origin. The rule the cache applies
  * when it keeps the row of the lowest assertion standing.
  */
-export function edgesOf(assertions: readonly LinkEdge[]): LinkEdge[] {
+function edgesOf(assertions: readonly LinkEdge[]): LinkEdge[] {
   const edges = new Map<string, LinkEdge>();
   for (const assertion of assertions) {
     const key = edgeKey(assertion.subject, assertion.target, assertion.rel);

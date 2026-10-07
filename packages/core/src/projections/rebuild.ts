@@ -47,10 +47,10 @@ import { materializeChannelSwitches } from './channel-store.js';
 import { type DecisionAccumulator, decisionFold } from './decision.js';
 import { materializeDecisions } from './decision-store.js';
 import {
-  edgesOf,
   projectHandoffs,
   projectKnowledge,
   projectLinkAssertions,
+  projectLinks,
   projectObservations,
 } from './knowledge.js';
 import {
@@ -84,7 +84,7 @@ interface Folded {
   readonly memories: ReturnType<typeof projectKnowledge>;
   readonly observations: ReturnType<typeof projectObservations>;
   readonly handoffs: ReturnType<typeof projectHandoffs>;
-  readonly links: ReturnType<typeof edgesOf>;
+  readonly links: ReturnType<typeof projectLinks>;
   readonly linkAssertions: ReturnType<typeof projectLinkAssertions>;
   readonly switches: ReturnType<typeof projectChannelSwitches>;
 }
@@ -100,7 +100,7 @@ type ProjectionOf<F> = F extends { finish(id: string, acc: never): infer P }
  * says. It folds all of them even when only some will be written — a rebuild writes them all.
  */
 function foldAll(events: readonly CatalogEvent[]): Folded {
-  // The edges and who still asserts them are ONE fold, so the two tables cannot disagree.
+  // The edges and who still asserts them, by one rule: `projectLinks` is the edges of the second.
   const linkAssertions = projectLinkAssertions(events);
   return {
     events,
@@ -111,7 +111,7 @@ function foldAll(events: readonly CatalogEvent[]): Folded {
     memories: projectKnowledge(events),
     observations: projectObservations(events),
     handoffs: projectHandoffs(events),
-    links: edgesOf(linkAssertions),
+    links: projectLinks(events),
     linkAssertions,
     switches: projectChannelSwitches(events),
   };

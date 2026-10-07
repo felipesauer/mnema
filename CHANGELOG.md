@@ -14,9 +14,9 @@ tag, with its own changelog.
 
 - **A link can be taken back, by the identity that recorded it.** A new event kind,
   `link.retracted` (`payload.target`, `payload.rel`, `payload.reason`), names an edge the way
-  `knowledge.linked` did and says why. `mnema unlink <subject> <target> --rel <label> --reason`
+  `knowledge.linked` did and says why. `mnema unlink <subject> <target> --rel <label> --reason "<why>"`
   and the `retract_link` tool write it, after resolving an `ADR-<n>` label on either end as
-  `mnema link` does. Nothing is erased: the link's own event stays, and every read of links
+  linking does. Nothing is erased: the link's own event stays, and every read of links
   (`rules`, `before-a-write`, the opening brief, `governing_rules`, the edit census) stops seeing
   the edge once its only asserter took it back, so a rule addressed at a path stops acting there.
   Any key of that identity retracts it; another identity is refused with `NOT_THE_AUTHOR`, a

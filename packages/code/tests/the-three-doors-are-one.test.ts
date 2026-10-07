@@ -241,6 +241,7 @@ const NOT_IN_THE_LIBRARY: Readonly<Record<string, string>> = {
   record_handoff:
     'a handoff is between agents of one host, which a program built on its own does not have',
   link_knowledge: 'a link is written by the person who sets a rule, from the command line',
+  retract_link: 'a link is taken back by the person who set it, as it was written',
   create_task: 'work items are the host’s; the library door records decisions and notes',
   task_transition: 'work items are the host’s; the library door records decisions and notes',
   create_skill: 'a pattern is written by a person and adopted by a person',
@@ -259,6 +260,7 @@ const VERBS_NOT_IN_THE_LIBRARY: Readonly<Record<string, string>> = {
   handoff: 'see `record_handoff`',
   link: 'a link is written by the person who sets a rule',
   retract: 'see `retract_note`',
+  unlink: 'see `retract_link`',
   key: 'keys are a person’s',
   switch: 'a switch is a person’s',
   tail: 'a tail is pruned by a person',

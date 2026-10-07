@@ -649,7 +649,7 @@ export const HANDED_OVER: Readonly<
   // (`mnema link`), and the quick start, which names the verbs it runs.
   // name 140 for the changelog entry that says `mnema init` declares the backup in the record.
   // line 69 for the install page's no-sudo alternative, which ends on `mnema --version`.
-  span: { line: 69, name: 140, flag: 1, unwritten: 0 },
+  span: { line: 72, name: 142, flag: 1, unwritten: 0 },
   // name 18 until the page that says where the key lives named `mnema key protect` in a line of
   // its own.
   // line 35 until the same page showed that question in a block of its own.

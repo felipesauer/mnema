@@ -1237,7 +1237,7 @@ informational, not a break.
 
 **A link recorded by mistake can be taken back the same way.** `mnema unlink <subject>
 <target> --rel <label> --reason "<why>"` (the `retract_link` tool) names the edge exactly as
-`mnema link` took it, an `ADR-<n>` label included, and appends a signed fact in the tree the link
+the link took it, an `ADR-<n>` label included, and appends a signed fact in the tree the link
 was recorded in. Every read of links stops seeing the edge once nobody else asserts it, so a rule
 it addressed at a path no longer governs, asks or refuses there. Only the identity that recorded
 the link takes it back; a retraction another identity signed anyway is not applied, and
