@@ -240,6 +240,7 @@ import { registerMcp } from './mcp.js';
 import { registerMemory } from './memory.js';
 import { registerNextActions } from './next-actions.js';
 import { registerObserve } from './observe.js';
+import { registerPromote } from './promote.js';
 import { registerRecall } from './recall.js';
 import { registerReferences } from './refs.js';
 import { registerRepl } from './repl.js';
@@ -260,6 +261,7 @@ import { registerTally } from './tally.js';
 import { registerTask } from './task.js';
 import { registerTimeline } from './timeline.js';
 import { registerTrailer } from './trailer.js';
+import { registerUnlink } from './unlink.js';
 import { registerUsage } from './usage.js';
 import type { Declared, Verb, Wiring } from './verb.js';
 import { registerVerify } from './verify.js';
@@ -276,6 +278,8 @@ export const VERBS: readonly Verb[] = [
   registerObserve,
   registerHandoff,
   registerLink,
+  registerUnlink,
+  registerPromote,
   registerRetract,
   registerRun,
   registerStatus,

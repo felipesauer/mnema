@@ -13,10 +13,12 @@
  * of it (an enum here would contradict the core). The help suggests the recommended
  * set, read from the catalog rather than repeated here; any string is accepted.
  *
- * Neither `subject` nor `target` is verified to exist. A link is legitimately
- * cross-tree — a private memory may point at a public task — and the writer sees
- * only its own tree, so the core does not refuse a dangling target and neither
- * does the surface. The reference is an asserted fact resolved on read.
+ * Neither `subject` nor `target` is verified to exist: a link is legitimately cross-tree — a
+ * private memory may point at a public task — and an address may name a path the tree does not hold
+ * yet, so the core does not refuse a dangling reference and neither does the surface. What IS
+ * refused is an `ADR-<n>` label: one that names exactly one decision is recorded as that decision's
+ * id, one several carry is refused with their ids, and one no decision carries is refused outright
+ * (`link-target.ts`) — a label is never recorded as it was typed, on either end.
  *
  * The birth scope is a per-action choice: an explicit `scope` wins; when omitted,
  * the KIND decides — a link asserts a relation between records of the project, so
@@ -37,6 +39,8 @@ import {
 } from '@mnema/core';
 import { linkKnowledge, openTreeForWriting } from '@mnema/core/write';
 import { reachOfAddress } from '../governed-tree.js';
+import { resolveAddress } from '../label-as-address.js';
+import { linkRefusal } from '../link-target.js';
 import { forwardReplacement, type Landed, type Replacement } from '../recorded-content.js';
 
 /** What the link command needs — injected so it is testable. */
@@ -101,8 +105,9 @@ export type LinkRefused =
 /**
  * Records a knowledge link, routing its birth to the resolved scope. The scope
  * the one every birth follows: an explicit `scope` wins, else the tree the KIND
- * names (public). Both `subject` and `target` are forwarded to the core as-is and
- * never validated — a dangling target is honest cross-tree, never a refusal. The
+ * names (public). Both ends are resolved first (a label becomes its decision's id) and a label left
+ * raw is refused; what is forwarded to the core is never a raw label. Anything else is forwarded as-is
+ * and never validated — a dangling target is honest cross-tree. The
  * `rel` is an open string, forwarded verbatim. On success it echoes the fact back
  * (subject, rel, target) — there is no minted id — plus the tree it landed in. A
  * declared `which` is recorded on the event and does not move the tree.
@@ -124,6 +129,17 @@ export function runLink(
     return { ok: false, reason: 'NO_PROJECT' };
   }
 
+  // BOTH ENDS ARE ADDRESSES before they are anything else: a label one decision carries becomes
+  // that decision's id, one several carry is refused with their ids, and a label no decision
+  // carries is refused — all before a writer is opened, so a refusal leaves the record as it was.
+  const subject = resolveAddress(ctx, input.subject);
+  if (!subject.ok) return refusedLink('AMBIGUOUS_LABEL', subject.message);
+  const target = resolveAddress(ctx, input.target);
+  if (!target.ok) return refusedLink('AMBIGUOUS_LABEL', target.message);
+  const unresolved = linkRefusal({ subject: subject.id, target: target.id });
+  if (unresolved !== undefined) return refusedLink('UNKNOWN_TARGET', unresolved);
+  const ends = { subject: subject.id, target: target.id };
+
   const writer = openTreeForWriting(trees, scope);
   const recorded = linkKnowledge(
     {
@@ -132,8 +148,8 @@ export function runLink(
       upcasters: catalogUpcasters(),
     },
     {
-      subject: input.subject,
-      target: input.target,
+      subject: ends.subject,
+      target: ends.target,
       rel: input.rel,
       ...(input.which !== undefined ? { which: input.which } : {}),
       ...(input.run !== undefined ? { run: input.run } : {}),
@@ -156,18 +172,23 @@ export function runLink(
   // reply. It costs one replay per tree, on the write path of a verb that already opened
   // a writer and signed a checkpoint — and it buys the only sentence that can be true at
   // the moment it matters (see `LinkRecorded.subjectScope`).
-  const subjectScope = locateEntityScope(trees, input.subject, catalogUpcasters());
+  const subjectScope = locateEntityScope(trees, ends.subject, catalogUpcasters());
   return {
     ok: true,
-    subject: input.subject,
-    target: input.target,
+    subject: ends.subject,
+    target: ends.target,
     ...(subjectScope !== undefined ? { subjectScope } : {}),
     // The relation AS RECORDED — screened, so the echo shows what landed.
     rel: recorded.rel,
     scope,
-    ...(root !== undefined ? withReach(reachOfAddress(recorded.rel, input.target, root)) : {}),
+    ...(root !== undefined ? withReach(reachOfAddress(recorded.rel, ends.target, root)) : {}),
     ...forwardReplacement(recorded),
   };
+}
+
+/** A link refused before anything was written. */
+function refusedLink(code: string, message: string): LinkRefused {
+  return { ok: false, reason: 'REFUSED', code, message };
 }
 
 /** The project root an address is relative to: the PARENT of the project's `.mnema/`. */

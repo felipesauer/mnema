@@ -157,6 +157,11 @@ const PROBES: readonly Probe[] = [
   },
   { key: 'wiring/show.ts record #1', argv: ['show', NAME], says: `No record ${NAME} here.` },
   {
+    key: 'wiring/unlink.ts link #1',
+    argv: ['unlink', NAME, 'a-target', '--rel', 'relates-to', '--reason', 'a reason'],
+    says: `No link ${NAME} —relates-to→ a-target here.`,
+  },
+  {
     key: 'wiring/skill.ts skill #1',
     argv: ['skill', 'move', 'review', NAME],
     says: `No skill ${NAME} here.`,
@@ -284,7 +289,7 @@ describe('the sites are the source’s, not this file’s', () => {
     // would be counted and not keyed, and the reconciliation would pass while the site
     // it belongs to went unprobed.
     expect(FOUND.files).toBeGreaterThan(40);
-    expect(FOUND.sites.length).toBe(10);
+    expect(FOUND.sites.length).toBe(11);
     expect(FOUND.calls).toBe(FOUND.sites.length);
   });
 });

@@ -388,11 +388,11 @@ describe('every tool says if it writes', () => {
     expect(served.slice().sort()).toEqual(tools.map((one) => one.act).sort());
     // The number, said out loud, because it is the non-vacuity of the sweep — and
     // because prose in this repository has twice put it at twenty-four.
-    expect(served).toHaveLength(26);
-    expect(tools).toHaveLength(26);
+    expect(served).toHaveLength(27);
+    expect(tools).toHaveLength(27);
   });
 
-  it('counts thirteen writes and thirteen reads over the whole surface', () => {
+  it('counts fourteen writes and thirteen reads over the whole surface', () => {
     // The classification itself, asserted rather than trusted. The order is registration
     // order, which is the order an agent meets the tools in `tools/list`.
     const { tools } = buildMcpServer({ cwd: sandbox, env, log: () => undefined });
@@ -402,6 +402,7 @@ describe('every tool says if it writes', () => {
       'capture_memory',
       'record_observation',
       'retract_note',
+      'retract_link',
       'record_handoff',
       'link_knowledge',
       'create_task',
@@ -526,6 +527,14 @@ describe('every tool says if it writes', () => {
     // a ruling; the hook channel answers for a file the accepted rule now governs.
     await call('skills', { id: skill });
     await call('rules_before_an_edit', { path: 'src/collate.ts' });
+    // Taken back last, once the hook channel has had the rule to say: the edge this identity
+    // linked above, retracted by it.
+    await call('retract_link', {
+      subject: decision,
+      target: 'src',
+      rel: 'governs',
+      reason: 'it addresses too much',
+    });
 
     // ---- the reads ----
     await call('bootstrap');
@@ -593,6 +602,7 @@ describe('every tool says if it writes', () => {
       'record_decision',
       'record_handoff',
       'record_observation',
+      'retract_link',
       'retract_note',
       'rules_before_an_edit',
       'skill_transition',

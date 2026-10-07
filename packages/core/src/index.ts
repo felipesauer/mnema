@@ -107,6 +107,11 @@ export {
   type MembershipRefusalCode,
 } from './identity/membership.js';
 export { type CacheOptions, ProjectionCache } from './projections/cache.js';
+export {
+  CACHE_DIR_VARIABLE,
+  keepReadCacheIn,
+  readCacheIsChosen,
+} from './projections/cache-home.js';
 export type { ChannelSwitchProjection } from './projections/channel.js';
 export {
   type AdrCollision,
@@ -223,6 +228,7 @@ export {
   type HeldTail,
   locateEntityScope,
   locateEntityScopeWith,
+  locateLinkScope,
   locateTailScope,
   type NoProjectRoot,
   type Origin,

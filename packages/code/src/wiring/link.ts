@@ -7,7 +7,7 @@
  * enforcement, so no enum, and the help says the set by reading it
  * ({@link RECOMMENDED_RELATIONS}). It mints no id (a link is an edge), so the
  * report echoes the fact. Neither reference is validated — a link is legitimately
- * cross-tree.
+ * cross-tree — except that an `ADR-<n>` label is recorded as the id it names, or refused.
  */
 
 import type { Command } from 'commander';

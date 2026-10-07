@@ -49,6 +49,8 @@ import {
   identityFounded,
   keyEnrolled,
   keyRevoked,
+  knowledgeLinked,
+  linkRetracted,
   memoryCaptured,
   noteRetracted,
   taskCreated,
@@ -668,6 +670,107 @@ describe('the two readers agree on records the product itself wrote — a retrac
     expect(productOk).toBe(false);
     expect(verdict).toBe('REFUSED');
     expect(refused.join('\n')).toContain('note.retracted');
+  });
+});
+
+/**
+ * A LINK TAKEN BACK, READ BY BOTH. `link.retracted` reaches the second reader the way
+ * `note.retracted` did — a row of `event-schema.json` and a row of the vectors, and no line of
+ * Python — so the claims are the same: the stranger's reader accepts the retraction exactly
+ * where the product does and refuses it exactly where the product does. And one more, the one
+ * authorship adds: a retraction by an identity that never recorded the link is NOT a break on
+ * either reader — the product names it in its census and does not apply it (FORMAT.md 6.4),
+ * and the format, which decides what verifies and not what is served, accepts it.
+ */
+describe('the two readers agree on records the product itself wrote — a link retraction', () => {
+  const RULE = '019f81f8-e400-7002-8000-000000000002';
+  const EDGE = { target: 'src/billing', rel: 'governs' };
+  const REASON = 'The rule is about the ledger, not billing.';
+
+  function linked(anchor: string, signer: KeyPair, when: number): CatalogEvent {
+    return knowledgeLinked(
+      { at: at(when), who: anchor, signerFp: signer.fingerprint, subject: RULE },
+      EDGE,
+    );
+  }
+
+  function retraction(
+    anchor: string,
+    signer: KeyPair,
+    when: number,
+    payload: Record<string, unknown> = { ...EDGE, reason: REASON },
+    v = 1,
+  ): CatalogEvent {
+    const built = linkRetracted(
+      { at: at(when), who: anchor, signerFp: signer.fingerprint, subject: RULE, which: 'claude' },
+      { ...EDGE, reason: REASON },
+    );
+    return { ...built, v, payload } as unknown as CatalogEvent;
+  }
+
+  /** One identity's founded tail holding `events` after its founding. */
+  function identityWith(events: (anchor: string, kp: KeyPair) => CatalogEvent[]): string {
+    const kp = generateKeyPair();
+    commitPublicKey(kp);
+    const anchor = deriveAnchor(kp.fingerprint);
+    writeTail(`${kp.fingerprint}-i1`, [founding(kp), ...events(anchor, kp)], kp, { residual: 1 });
+    return anchor;
+  }
+
+  it('the author’s retraction, one inside the checkpoint and one above it: green on both', () => {
+    identityWith((anchor, kp) => [
+      linked(anchor, kp, 2),
+      retraction(anchor, kp, 3),
+      retraction(anchor, kp, 4),
+    ]);
+    const { productOk, verdict, refused } = bothReaders();
+    expect(refused, 'the second reader refuses an honest link.retracted').toEqual([]);
+    expect(productOk).toBe(true);
+    expect(verdict).toBe('VERIFIED');
+  });
+
+  it('a stranger’s retraction: green on both, and named only by the product’s census', () => {
+    const author = identityWith((anchor, kp) => [linked(anchor, kp, 2)]);
+    const stranger = identityWith((anchor, kp) => [retraction(anchor, kp, 3)]);
+
+    const { productOk, verdict, refused } = bothReaders();
+    expect(refused).toEqual([]);
+    expect(productOk).toBe(true);
+    expect(verdict).toBe('VERIFIED');
+    const census = verify(root, catalogUpcasters()).census;
+    expect(census.filter((note) => note.kind === 'foreign-link-retraction')).toMatchObject([
+      { link: { subject: RULE, ...EDGE }, by: stranger, authors: [author] },
+    ]);
+  });
+
+  it('a retraction with a forged payload field, above the checkpoint: refused by both', () => {
+    identityWith((anchor, kp) => [
+      linked(anchor, kp, 2),
+      retraction(anchor, kp, 3, { ...EDGE, reason: REASON, erase: true }),
+    ]);
+    const { productOk, verdict, refused } = bothReaders();
+    expect(productOk).toBe(false);
+    expect(verdict).toBe('REFUSED');
+    expect(refused.join('\n')).toContain('erase');
+  });
+
+  it('a retraction that names no relation, above the checkpoint: refused by both', () => {
+    identityWith((anchor, kp) => [
+      linked(anchor, kp, 2),
+      retraction(anchor, kp, 3, { target: EDGE.target, rel: '', reason: REASON }),
+    ]);
+    const { productOk, verdict, refused } = bothReaders();
+    expect(productOk).toBe(false);
+    expect(verdict).toBe('REFUSED');
+    expect(refused.join('\n')).toContain('rel');
+  });
+
+  it('a retraction at a version no row declares: refused by both — what an older reader does', () => {
+    identityWith((anchor, kp) => [linked(anchor, kp, 2), retraction(anchor, kp, 3, undefined, 2)]);
+    const { productOk, verdict, refused } = bothReaders();
+    expect(productOk).toBe(false);
+    expect(verdict).toBe('REFUSED');
+    expect(refused.join('\n')).toContain('link.retracted');
   });
 });
 

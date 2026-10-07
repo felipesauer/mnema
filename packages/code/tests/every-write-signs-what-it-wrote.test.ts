@@ -46,6 +46,7 @@ import { runSwitch } from '../src/commands/switch.js';
 import { runTailPrune } from '../src/commands/tail-prune.js';
 import { runTask } from '../src/commands/task.js';
 import { runTaskTransition } from '../src/commands/task-transition.js';
+import { runUnlink } from '../src/commands/unlink.js';
 import { closeSession, openSession, openWrite, type Session } from '../src/mcp/session.js';
 import {
   runCaptureMemory,
@@ -58,6 +59,7 @@ import {
   runRecordDecision,
   runRecordHandoff,
   runRecordObservation,
+  runRetractLink,
   runRetractNote,
   runRulesBeforeAnEditTool,
   runSkillsTool,
@@ -161,12 +163,13 @@ const CODE_SRC = join(HERE, 'src');
  * `recordChannelAsked` (`recordRuleAtPath`). 36 since a note can be retracted: `retractNote`. 39 since a rule can carry a check: `declareCheck`,
  * `enrollChecker` and `runRuleChecks`. 40 since an identity can name its account: `linkAccount`.
  * 41 since a checker key can be retired: `retireChecker`. 43 since an identity declares its
- * backup: `declareBackup`, and `enrollBackup`, which `init` enrolls and declares it with.
+ * backup: `declareBackup`, and `enrollBackup`, which `init` enrolls and declares it with. 44
+ * since a link can be retracted: `retractLink`.
  */
-const CORE_OPERATIONS_THAT_APPEND = 43;
+const CORE_OPERATIONS_THAT_APPEND = 44;
 
-/** How many paths of the shipped surface reach one of them. 42 since `runKeySigstore`. */
-const SURFACE_WRITE_PATHS = 42;
+/** How many paths of the shipped surface reach one of them. 44 since `runKeySigstore`. */
+const SURFACE_WRITE_PATHS = 44;
 
 /** What `runInit` answered when it did not refuse; a refusal ends the setup. */
 function founded(result: InitResult | InitRefused): InitResult {
@@ -613,6 +616,16 @@ describe('every write path leaves the record fully signed', () => {
           void ok('link', runLink(ctx, { subject: decision, target: task, rel: 'relates-to' })),
       },
       {
+        at: 'commands/unlink.ts:runUnlink',
+        drive: () => {
+          void ok('link', runLink(ctx, { subject: task, target: decision, rel: 'informs' }));
+          void ok(
+            'unlink',
+            runUnlink(ctx, { subject: task, target: decision, rel: 'informs', reason: 'not so' }),
+          );
+        },
+      },
+      {
         at: 'commands/run-start.ts:runRunStart',
         drive: () => {
           run = ok('run start', runRunStart(ctx, { agent: 'agent-alpha' })).id;
@@ -897,6 +910,14 @@ describe('every write path leaves the record fully signed', () => {
             'link_knowledge',
             runLinkKnowledge(on(), { subject: decision, target: task, rel: 'relates-to' }),
           ),
+      },
+      {
+        at: 'mcp/tools.ts:runRetractLink',
+        drive: () => {
+          const edge = { subject: task, target: decision, rel: 'derived-from' };
+          void ok('link_knowledge', runLinkKnowledge(on(), edge));
+          void ok('retract_link', runRetractLink(on(), { ...edge, reason: 'not so' }));
+        },
       },
       {
         // Reached through the `skills` tool, which is the only way in: a consultation

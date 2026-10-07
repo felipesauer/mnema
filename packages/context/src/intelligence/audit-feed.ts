@@ -298,6 +298,13 @@ export const AUDIT_BY_KIND: { readonly [K in EventKind]: AuditMapping } = {
   // `Update` and not `Delete`: a retraction removes nothing — the note's own event stays and
   // is still served by id — it changes what the note is taken to be, as a supersede does.
   'note.retracted': { activity: ACTIVITY.update, entityTypeId: ENTITY_OTHER, entityType: 'note' },
+  // `Update`, for the note's reason: the link's own event stays; what it is taken to be changes.
+  // The subject originates the edge and may be of any kind, as on the link itself.
+  'link.retracted': {
+    activity: ACTIVITY.update,
+    entityTypeId: ENTITY_OTHER,
+    entityType: 'record',
+  },
   // A check declared on a rule changes what the rule carries; its subject is the rule.
   'check.declared': {
     activity: ACTIVITY.update,

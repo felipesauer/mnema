@@ -586,6 +586,10 @@ const CLASSIFIED: Readonly<Record<string, { verdict: Verdict; why: string }>> = 
     verdict: 'collapsed',
     why: 'subject, relation and target — none validated, and the relation is open by design',
   },
+  'unlink.ts «Retracted link {} —{}→ {}» #1': {
+    verdict: 'collapsed',
+    why: 'the edge as the link recorded it — the caller’s three values, which the link never validated',
+  },
   'next-actions.ts «Task {} is terminal — no legal moves.» #1': {
     verdict: 'collapsed',
     why: 'the id positional; not forgeable today, and it heads a list on the next line',
@@ -795,7 +799,8 @@ describe('every line this wiring words is classified', () => {
     // 110 with `key sigstore`, the `verify --against-sigstore` tree line and the five lines
     // `witness sigstore` prints.
     // 111 once `key sigstore` said the hash the record keeps for an e-mail.
-    expect(FOUND.sites.length).toBe(111);
+    // 112 with the line `unlink` prints for the edge it took back.
+    expect(FOUND.sites.length).toBe(112);
   });
 
   it('reads the verdict off the source rather than believing the table', () => {
@@ -815,9 +820,9 @@ describe('every line this wiring words is classified', () => {
   it('found sites of both kinds, and the scanner sees a tag when there is one', () => {
     // Neither arm of the case above may be empty, or half of it is vacuous.
     const verdicts = Object.values(CLASSIFIED).map((said) => said.verdict);
-    expect(verdicts.filter((verdict) => verdict === 'collapsed').length).toBe(52);
+    expect(verdicts.filter((verdict) => verdict === 'collapsed').length).toBe(53);
     expect(verdicts.filter((verdict) => verdict === 'minted').length).toBe(59);
-    expect(FOUND.sites.filter((site) => site.tagged).length).toBe(52);
+    expect(FOUND.sites.filter((site) => site.tagged).length).toBe(53);
   });
 
   it('every reason says where the value comes from', () => {
@@ -943,6 +948,9 @@ describe('a value from outside cannot forge a second line', () => {
  * somebody closed and nobody drove, and the reconciliation below is what says so.
  */
 const UNREACHABLE: Readonly<Record<string, string>> = {
+  'unlink.ts «Retracted link {} —{}→ {}» #1':
+    'needs the edge already linked, so two verbs: `link` then `unlink` — driven in ' +
+    '`tests/a-link-can-be-retracted.test.ts`, through the same collapse as `link`’s line',
   'antipatterns.ts «{}» #1': 'needs a task reopened twice in the record',
   'antipatterns.ts «{} ({})» #1':
     'needs a run that was served one pattern’s body and moved another — the MCP surface',

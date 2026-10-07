@@ -3,7 +3,7 @@
  *
  * `mnema rules-file --host <host>` prints, on stdout, the file another host reads its own rules
  * from — VS Code's `.instructions.md` with `applyTo`, Cursor's `.mdc` with `globs` — carrying the
- * committed rules addressed at a file a glob can name; on stderr, in the same run, how many it
+ * committed rules addressed at a file or a directory a glob can name; on stderr, in the same run, how many it
  * carried, what each host does with the pattern, where the file goes and that `>` replaces the
  * whole of it, and every rule left out with the reason. With nothing that translated it prints no
  * file — an empty pattern is read as every file by some matchers — and says so, exiting 0 the way
@@ -52,7 +52,7 @@ export function registerRulesFile(program: Command, wiring: Wiring): Declared {
       const say = (line: string, depth = 0) => io.err(render(fact(line, depth)));
       if (done.text === undefined) {
         say(
-          'No rule of this project is addressed at a file a glob can name, so no file was printed — a `>` would have left its file empty.',
+          'No rule of this project is addressed at a file or a directory a glob can name, so no file was printed — a `>` would have left its file empty.',
         );
       } else {
         io.out(done.text.replace(/\n$/, ''));

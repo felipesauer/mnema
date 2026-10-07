@@ -913,7 +913,8 @@ function report(io: CliIo, render: Render, tree: TreeReport, where = ''): void {
  * registered — so they name the fingerprint; the third is about a TAIL whose last line
  * was dropped, and another about a TAIL that holds nothing, so they name the tail; the fourth is about a NOTE a stranger's retraction
  * names, so it names the note — the id a person opens to see it is still there; the fifth is
- * about a checker KEY the record retired, so it names the fingerprint.
+ * about a checker KEY the record retired, so it names the fingerprint; and a stranger's
+ * retraction of a LINK names the link's subject, the record the edge originates from.
  */
 function censusLocus(note: CensusNote): string {
   switch (note.kind) {
@@ -926,6 +927,8 @@ function censusLocus(note: CensusNote): string {
       return note.tail;
     case 'foreign-retraction':
       return note.note;
+    case 'foreign-link-retraction':
+      return note.link.subject;
   }
 }
 

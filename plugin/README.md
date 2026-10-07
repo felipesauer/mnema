@@ -82,7 +82,9 @@ document, delivered by the host instead of waited for.
   where a rule asks for a person, the person is asked and the write is not also refused. The server
   remembers the paths it held for as long as the connection lasts, so a session that reconnects is
   held once more. Each hold is recorded as a `channel.asked` citing the rule and the path, before
-  the refusal is made, and the channel's service as one `channel.served` per run. It holds in
+  the refusal is made, and the channel's service as one `channel.served` per run (mnema noting
+  that it delivered the hook's answer, which is not a person's approval: an approval is the host's
+  own prompt, and the record keeps no fact of it). It holds in
   Claude Code, which runs the call; VS Code's command door starts a process per write and has no
   session to remember a path by, so it does not hold. That the host refuses the write on `deny` and
   hands the reason to the model was measured (`measurements/hooks-by-host/`).
@@ -116,7 +118,7 @@ document, delivered by the host instead of waited for.
   in the handshake, which a session reads before it has chosen a tool: when a decision or
   a note is worth recording, and what comes back. **Registering the server yourself as
   well** (`claude mcp add`, or an `mcpServers` entry) is redundant: the agent is offered
-  every tool twice, under two prefixes, fifty-two names for twenty-six tools.
+  every tool twice, under two prefixes, fifty-four names for twenty-seven tools.
 
 ## What it does — and what it does not
 
@@ -263,9 +265,34 @@ What each one runs of it:
 | **A write paused for a person, where a rule asks** | yes, through the same `mcp_tool` hook | **yes**, through the plugin's command hook: the write waits for a person, and the asking is recorded as it is in Claude Code | **no**: the agent runs the hook before its write and **ignores** `ask` — the file was written — while it honors `deny` |
 
 **How each loads it.** VS Code's agent loads it from a folder listed in its
-`chat.pluginLocations` setting, which is the route these rows were measured on. Cursor's
+`chat.pluginLocations` setting, which is the route these rows were measured on. Without that
+setting it loads nothing: no hook runs and the agent works as if mnema were not there. Cursor's
 command-line agent loads it on its own from the Claude Code installation on the same
 machine, with Cursor's import of third-party plugins on, which is how it ships.
+
+**To have VS Code's agent load it,** in this order:
+
+1. Install the plugin in Claude Code (`claude plugin marketplace add felipesauer/mnema`, then
+   `claude plugin install mnema@mnema`). That leaves a copy of the plugin in the marketplace
+   folder, `~/.claude/plugins/marketplaces/mnema/plugin`.
+2. Run `mnema doctor` and read its `vscode` line: it says whether your `settings.json` has
+   `chat.pluginLocations`, and whether it lists a mnema plugin that exists and is this version.
+3. If it says to, run `mnema doctor --fix vscode`. It is the only thing `doctor` writes, it
+   runs only when you type it, and `--dry-run` shows what it would change without writing.
+   It copies `settings.json` to a file beside it first, keeps your comments and the rest of the
+   file as it is, adds the marketplace folder above to `chat.pluginLocations` and removes an
+   entry that points into a versioned folder of Claude Code's plugin cache, and a second run
+   changes nothing. A file it cannot edit safely it refuses, and says why; then add the entry by
+   hand.
+
+That folder is the one listed because its path does not carry the plugin's version, so it is the
+same after an update; a versioned cache path stops working at the next one. After a plugin
+update, `claude plugin marketplace update mnema` brings that folder to the new version, and
+`mnema doctor` says when it is behind. VS Code marks `chat.pluginLocations` as experimental
+(*may be unstable, subject to change or removal*), so the setting itself may change. The path
+was chosen from VS Code 1.137's own code, which resolves each listed folder as a directory and
+recognises a Claude plugin by its `.claude-plugin/plugin.json`; it was not run against a live
+window.
 
 **Where the table stops.** It was measured with VS Code 1.137 and its Copilot Chat 0.65,
 and with Cursor's command-line agent 2026.09.18 — not Cursor's editor. The last row was
@@ -277,7 +304,7 @@ result of the tool; what a person sees in the confirmation was not read from the
 was measured on the free plan with the `Auto` model, the only model used: the server's
 instructions and both opening texts are in the prompt Cursor's servers assembled for the
 model, read back from the chat the agent keeps on the machine
-([the prompt, with everything Cursor and the machine put in it cut out](../measurements/hooks-by-host/results/2026-09-30/cursor-prompt-2026-09-23-session-1.sanitized.txt)) — the instructions whole,
+([the prompt, with everything Cursor and the machine put in it cut out](../measurements/hooks-by-host/results/2026-09-30/cursor-prompt-2026-09-23-session-1.sanitized.txt); [a summary for VS Code and Cursor](../measurements/what-the-editors-hand-the-model/)) — the instructions whole,
 but for the indentation of their continuation lines, which arrives as a single space —
 and the model called the server's tools. That the server there goes by the directory
 Cursor starts it in is this product's rule and is held by a case of its own

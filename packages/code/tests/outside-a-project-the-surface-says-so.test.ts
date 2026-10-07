@@ -204,6 +204,8 @@ const REFUSES_SOMETHING_ELSE_FIRST: Readonly<Record<string, string>> = {
   'commit-hook install':
     'a hook belongs to a git repository, not to a project: outside a repository it refuses with its own sentence',
   'commit-hook uninstall': 'the same: it asks for a git repository, never for a project',
+  promote:
+    'with no id and no --workspace it asks which projects to read or which id to promote, which it says first; its listing needs no project of its own',
   'run end': 'with no id and no MNEMA_RUN there is no session named, which it says first',
   'key protect':
     'with no MNEMA_KEY_PASSPHRASE there is nothing to protect with, which it says first; it needs no project either way',

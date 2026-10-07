@@ -15,7 +15,7 @@ import { REFERENCE_DIRECTIONS } from '../reference-directions.js';
 import { here } from './context.js';
 import { enumeratedOption, listed } from './enumerated.js';
 import { writeLines } from './io.js';
-import { reportRefusal, reportUsage } from './report.js';
+import { idOrRefuse, reportRefusal, reportUsage } from './report.js';
 import { type Declared, readsTheRecord, type Wiring } from './verb.js';
 
 /** Registers `mnema refs` on the program. */
@@ -47,8 +47,10 @@ export function registerReferences(program: Command, wiring: Wiring): Declared {
         reportUsage(wiring, `Not a number of hops: ${opts.depth}`);
         return;
       }
+      const named = await idOrRefuse(wiring, id);
+      if (named === undefined) return;
       const result = runReferences(here(), {
-        id,
+        id: named,
         depth,
         ...(opts.direction !== undefined ? { direction: opts.direction } : {}),
       });

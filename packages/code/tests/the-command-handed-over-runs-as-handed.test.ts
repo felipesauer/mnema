@@ -664,7 +664,12 @@ export const HANDED_OVER: Readonly<
   // the page's table and the format hand over `witness sigstore`, `key sigstore` and
   // `verify --against-sigstore`.
   // name 145 for the row of that table that says the claim keeps an e-mail as its hash.
-  span: { line: 74, name: 145, flag: 1, unwritten: 0 },
+  // line 69 for the install page's no-sudo alternative, which ends on `mnema --version`.
+  // line 74 and name 144 with the pages that say how VS Code's agent is made to load the plugin
+  // (`mnema doctor --fix vscode`, `mnema doctor`) and the doctor's changed paragraphs.
+  // line 77 and name 146 with the pages that hand over `mnema unlink` whole.
+  // line 83 and name 151 with both: the Sigstore countersignature and `mnema unlink`.
+  span: { line: 83, name: 151, flag: 1, unwritten: 0 },
   // name 18 until the page that says where the key lives named `mnema key protect` in a line of
   // its own.
   // line 35 until the same page showed that question in a block of its own.
@@ -678,7 +683,9 @@ export const HANDED_OVER: Readonly<
   // line 48 for the package page's block that retires a checker key.
   // line 49 and name 25 for the front page's quick start, which hands over the first record in a block
   // of its own beside the one on the first-record page.
-  block: { line: 49, name: 25, flag: 1, unwritten: 0 },
+  // name 26 for the package page's block that runs `mnema verify` in a CI workflow with the cache
+  // directory set.
+  block: { line: 49, name: 26, flag: 1, unwritten: 0 },
   // 46 until the refusal an agent's `accept` gets, with the switch off, began naming the command a
   // person accepts with (`agent-accepts.ts`).
   // line 34 until the sentences an agent's accept is answered with began handing whole lines
@@ -710,7 +717,11 @@ export const HANDED_OVER: Readonly<
   // sigstore` and `verify --against-sigstore` name one another, and the act names the claim.
   // name 82 once the help of `key sigstore` said the bundle `mnema witness sigstore` files still
   // names the address the record keeps only as a hash.
-  source: { line: 67, name: 82, flag: 3, unwritten: 3 },
+  // line 75 and flag 4 with the promotion verb's own help and sentences, each a command that parses.
+  // line 76 and name 77 for the help of `mnema doctor`, which names the one thing it writes,
+  // `mnema doctor --fix vscode`, in a line of its own.
+  // line 81 and name 83 with both: the Sigstore help and the promotion and doctor help.
+  source: { line: 81, name: 83, flag: 4, unwritten: 3 },
 };
 
 // ---------------------------------------------------------------------------

@@ -12,7 +12,6 @@ import {
   briefDocument,
   DEFAULT_REQUIREMENT,
   discoveryEnv,
-  labelAsAddress,
   runBrief,
   runDecision,
   runDecisionTransition,
@@ -62,13 +61,11 @@ export interface MnemaRecord {
 }
 
 /**
- * What a move answered. Handed the `ADR-<n>` label a write printed instead of an id, the refusal
- * (`UNKNOWN_DECISION`) carries a `message` naming the id that label stands for: the sentence the
- * command line and the MCP server say.
+ * What a move answered. Handed the `ADR-<n>` label a write printed instead of an id, the move is made
+ * on the one decision that label names; a label two decisions carry is refused (`AMBIGUOUS_LABEL`),
+ * with their ids in the message.
  */
-export type DecisionMoved =
-  | Exclude<ReturnType<typeof runDecisionTransition>, { readonly reason: 'UNKNOWN_DECISION' }>
-  | { readonly ok: false; readonly reason: 'UNKNOWN_DECISION'; readonly message?: string };
+export type DecisionMoved = ReturnType<typeof runDecisionTransition>;
 
 /** The document, or the command's own refusal. */
 export type BriefRead =
@@ -82,17 +79,9 @@ export function openRecord(options: RecordOptions): MnemaRecord {
   return {
     recordDecision: (input) => runDecision(here, { ...input, which }),
     acceptDecision: ({ id, note }) =>
-      namingTheLabel(
-        here,
-        id,
-        runDecisionTransition(here, { id, action: 'accept', proof: { note }, which }),
-      ),
+      runDecisionTransition(here, { id, action: 'accept', proof: { note }, which }),
     rejectDecision: ({ id, note }) =>
-      namingTheLabel(
-        here,
-        id,
-        runDecisionTransition(here, { id, action: 'reject', proof: { note }, which }),
-      ),
+      runDecisionTransition(here, { id, action: 'reject', proof: { note }, which }),
     addNote: (input) => runMemory(here, { ...input, which }),
     brief: () => {
       const result = runBrief(here);
@@ -107,15 +96,4 @@ export function openRecord(options: RecordOptions): MnemaRecord {
         global: input.global === true,
       }),
   };
-}
-
-/** A refusal to find `id` that was an `ADR-<n>` label gains the sentence naming the id behind it. */
-function namingTheLabel(
-  here: Parameters<typeof labelAsAddress>[0],
-  id: string,
-  result: ReturnType<typeof runDecisionTransition>,
-): DecisionMoved {
-  if (result.ok || result.reason !== 'UNKNOWN_DECISION') return result;
-  const message = labelAsAddress(here, id);
-  return message === undefined ? result : { ...result, message };
 }

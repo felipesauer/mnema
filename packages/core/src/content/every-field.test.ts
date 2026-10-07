@@ -18,6 +18,7 @@ import {
   linkKnowledge,
   recordHandoff,
   recordObservation,
+  retractLink,
   retractNote,
 } from '../knowledge/operations.js';
 import { orderedEvents } from '../projections/order.js';
@@ -470,6 +471,20 @@ const DRIVERS: { readonly [K in EventKind]: Driver } = {
       which: text('which'),
       run: text('run'),
     });
+  },
+
+  'link.retracted': (ctx, text) => {
+    // The edge is proved against the record, so this driver records it first, with the very
+    // names and envelope the retraction then carries — a poisoned one refuses the link and the
+    // retraction alike. The subject is an id the retraction proves, NOT poisoned.
+    const edge = {
+      subject: '0198f2a4-0000-7000-8000-0000000000aa',
+      target: text('payload.target'),
+      rel: text('payload.rel'),
+    };
+    const envelope = { which: text('which'), run: text('run') };
+    linkKnowledge(ctx, { ...edge, ...envelope });
+    return retractLink(ctx, { ...edge, reason: text('payload.reason'), ...envelope });
   },
 };
 

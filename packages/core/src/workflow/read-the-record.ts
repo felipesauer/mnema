@@ -16,9 +16,10 @@
  */
 
 import { existsSync } from 'node:fs';
-import { type ChainLayout, projectionCachePath, type UpcasterRegistry } from '@mnema/chain';
+import type { ChainLayout, UpcasterRegistry } from '@mnema/chain';
 import { rosterOf } from '../identity/membership.js';
 import { ProjectionCache } from '../projections/cache.js';
+import { keptCachePath } from '../projections/cache-home.js';
 
 /** Where a write reads from. */
 export interface ReadsTheRecord {
@@ -50,7 +51,7 @@ export function rosterAsTheChainIs(ctx: ReadsTheRecord, anchor: string): Readonl
   // every first write too, and a tree they leave has to be the one they found. With none kept it
   // is the replay, as before — the first reading that keeps one (`asTheChainIs`) is the one that
   // makes the next of these cheap.
-  if (!existsSync(projectionCachePath(ctx.layout))) {
+  if (!existsSync(keptCachePath(ctx.layout))) {
     return rosterOf({ tree: ctx.layout.root, upcasters: ctx.upcasters }, anchor);
   }
   const cache = ProjectionCache.open(ctx.layout.root, { upcasters: ctx.upcasters, persist: true });

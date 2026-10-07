@@ -63,6 +63,7 @@ import {
   linkKnowledge,
   recordHandoff,
   recordObservation,
+  retractLink,
   retractNote,
 } from '../knowledge/operations.js';
 import {
@@ -320,6 +321,20 @@ const ARRIVALS: { readonly [K in EventKind]: Arrival } = {
     setup: (ctx) => landed(captureMemory(ctx, { content: 'a memory to take back' })).id,
     emit: (ctx, note) =>
       landed(retractNote(ctx, { id: note as string, reason: 'it turned out to be wrong' })),
+  },
+  // An edge already projected, and a second one beside it, the first taken back by the
+  // arrival: its row and its assertion leave, the other edge stays.
+  'link.retracted': {
+    setup: (ctx, already) => {
+      const { task, skill } = already;
+      landed(linkKnowledge(ctx, { subject: skill, target: task, rel: 'informs' }));
+      landed(linkKnowledge(ctx, { subject: task, target: skill, rel: 'informs' }));
+      return already;
+    },
+    emit: (ctx, prepared) => {
+      const { task, skill } = prepared as { task: string; skill: string };
+      landed(retractLink(ctx, { subject: skill, target: task, rel: 'informs', reason: 'not so' }));
+    },
   },
 };
 

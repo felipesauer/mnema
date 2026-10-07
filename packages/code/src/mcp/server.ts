@@ -162,6 +162,7 @@ import {
   runRecordObservation,
   runReferencesTool,
   runResumeTool,
+  runRetractLink,
   runRetractNote,
   runRulesBeforeAnEditTool,
   runSearchTool,
@@ -735,8 +736,8 @@ function declaringInto(
  *     each call can leave a signed event behind. The protocol's words are "does not modify
  *     its environment", which is wider than the record, and the wider thing is what is
  *     measured: a read leaves every file and directory of the sandbox as it found them, not
- *     only the chain. The projection it rebuilds is held in memory (`CacheOptions.dbPath` has
- *     no production caller), so there is no cache file for it to write.
+ *     only the chain. The projection it rebuilds is held in memory, so there is no cache file for it
+ *     to write, unless `$MNEMA_CACHE_DIR` names a directory (`core/src/projections/cache-home.ts`).
  *   - `destructiveHint` is false for every tool. The record is append-only and no tool
  *     removes or rewrites what it holds: every byte a file held before a call is where it
  *     was after it. The one byte a write ever takes back is the torn fragment a crashed
@@ -941,6 +942,41 @@ function registerTools(tool: ToolRegistrar, ensureSession: () => Promise<Session
   );
 
   tool(
+    mutatesTheRecord('retract_link'),
+    {
+      title: 'Retract a link',
+      description:
+        'Take back a link that was recorded by mistake — a `governs` on the wrong path, a ' +
+        'relation that does not hold. Name the edge exactly as `link_knowledge` took it. The ' +
+        'link is NOT erased: a signed retraction carrying the `reason` is appended, and every ' +
+        'read that applies a link stops seeing the edge when nobody else asserts it, so a rule ' +
+        'it addressed at a path stops acting there; `references` still shows it, marked ' +
+        'retracted. It follows the link to the first tree that holds that edge. Only the ' +
+        'identity that recorded a link retracts it; a link of another identity, or one ' +
+        'already retracted, is refused.' +
+        RECORD_CONTRACT,
+      inputSchema: {
+        subject: z.string().min(1).describe('The entity the link originates from.'),
+        target: z.string().min(1).describe('What the link points at, as it was linked.'),
+        rel: z.string().min(1).describe('The relation, as it was linked.'),
+        reason: z.string().min(1).describe('Why it is taken back.'),
+      },
+    },
+    async ({ subject, target, rel, reason }) => {
+      const active = await ensureSession();
+      const result = runRetractLink(active, { subject, target, rel, reason });
+      if (!result.ok) {
+        return refused(active, result);
+      }
+      return recorded(
+        active,
+        `Retracted link ${oneLine(result.subject)} —${oneLine(result.rel)}→ ${oneLine(result.target)}`,
+        result,
+      );
+    },
+  );
+
+  tool(
     mutatesTheRecord('record_handoff'),
     {
       title: 'Record a handoff',
@@ -987,8 +1023,10 @@ function registerTools(tool: ToolRegistrar, ensureSession: () => Promise<Session
       description:
         'Link one piece of knowledge to another — a directed edge from a `subject` ' +
         'entity to a `target` entity, labeled by a relation `rel`. The relation is ' +
-        `an OPEN string (${RECOMMENDED_RELATIONS}). Neither endpoint is checked to ` +
-        'exist — a link is legitimately cross-tree, resolved on read. Optionally ' +
+        `an OPEN string (${RECOMMENDED_RELATIONS}). An \`ADR-<n>\` label ` +
+        'is recorded as the id of the one decision it names, and refused when several carry it or ' +
+        'none does. Neither endpoint is checked to exist — a link is legitimately cross-tree, ' +
+        'resolved on read. Optionally ' +
         'pick the scope and the project the EDGE is recorded in; omitted, a link ' +
         'asserts a relation between the project’s records and lands PUBLIC (global ' +
         'outside a project). A link has no id of its own — it is an edge. The reply ' +

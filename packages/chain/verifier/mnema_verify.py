@@ -1,10 +1,10 @@
 #!/usr/bin/env python3
 """A second reader of the mnema chain format. Standard library only.
 
-    python3 mnema_verify.py record <a record directory>
+    python3 mnema_verify.py record <a record directory> [--require signed]
     python3 mnema_verify.py vectors [canonical-vectors.json]
     python3 mnema_verify.py self-test
-    python3 mnema_verify.py all [--record DIR ...]
+    python3 mnema_verify.py all [--record DIR ...] [--require signed]
     python3 mnema_verify.py gaps
 
     --json    the verdict as one JSON object on stdout, for a caller that compares it.
@@ -18,6 +18,10 @@ verifier can honestly say:
     1  REFUSED      a check ran and refused; the report names which
     2  INCOMPLETE   nothing refused, but a check that was planned could not run
     3  BROKEN       nothing was checked at all, or this program failed
+
+`--require signed` on `record` and `all` asks for more than the default `chained`: that every
+event be covered by a checkpoint that verified. An event written after the last checkpoint is
+then a refusal (exit 1) and not the note it is otherwise.
 
 There is no unconditional summary line anywhere in this program. The prototype it grew out
 of printed "T2/T4 ok" after having already recorded a failure, which is the reason the
@@ -51,6 +55,7 @@ def _build_parser() -> argparse.ArgumentParser:
 
     one = subs.add_parser("record", help="verify one record directory")
     one.add_argument("path")
+    _add_require(one)
 
     vecs = subs.add_parser("vectors", help="reproduce the published canonical vectors")
     vecs.add_argument("path", nargs="?", default=DEFAULT_VECTORS)
@@ -65,7 +70,19 @@ def _build_parser() -> argparse.ArgumentParser:
     every = subs.add_parser("all", help="self-test, then the vectors, then every record given")
     every.add_argument("--record", action="append", default=[], dest="records")
     every.add_argument("--vectors", default=DEFAULT_VECTORS)
+    _add_require(every)
     return parser
+
+
+def _add_require(parser: argparse.ArgumentParser) -> None:
+    parser.add_argument(
+        "--require",
+        choices=record.REQUIREMENTS,
+        default="chained",
+        help="the least this run accepts. `chained` (the default) refuses what is broken and "
+        "lets events above the last checkpoint pass with a note; `signed` also refuses them, "
+        "and a record in which no checkpoint verified, with the same exit 1 as any refusal",
+    )
 
 
 def _canonicalize() -> int:
@@ -136,7 +153,7 @@ def main(argv: list[str] | None = None) -> int:
         vectors.verify_vectors(args.path, report)
     elif args.command == "record":
         heading.append(f"RECORD - {args.path}")
-        record.verify_record(args.path, report)
+        record.verify_record(args.path, report, args.require)
     elif args.command == "all":
         heading.append("SELF-TEST, VECTORS, then every record given")
         selftest.run(report)
@@ -145,7 +162,7 @@ def main(argv: list[str] | None = None) -> int:
             report.unchecked("-", "no record was given, so no record was read")
         for path in args.records:
             report.note("-", f"reading the record at {path}")
-            record.verify_record(path, report)
+            record.verify_record(path, report, args.require)
 
     if args.json:
         payload = report.as_dict()

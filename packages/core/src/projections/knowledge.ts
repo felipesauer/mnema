@@ -273,17 +273,96 @@ export interface LinkEdge {
  * No dangling check: an edge whose target (or subject) is not present in the
  * projected entities is an honest cross-tree assertion, kept verbatim. The
  * reader resolves it against the union of trees.
+ *
+ * A RETRACTED LINK IS NOT AN EDGE. The edges are the ones some assertion still stands
+ * for ({@link projectLinkAssertions}), and the origin of each is the first of those —
+ * so every reader of links, which reads this set, stops seeing an edge its only
+ * asserter took back.
  */
 export function projectLinks(events: readonly CatalogEvent[]): LinkEdge[] {
-  const seen = new Map<string, LinkEdge>();
-  for (const event of events) {
-    const edge = linkOf(event);
-    if (edge === undefined) continue;
-    const key = edgeKey(edge.subject, edge.target, edge.rel);
-    if (seen.has(key)) continue; // idempotent: a repeated assertion adds nothing.
-    seen.set(key, edge);
+  return edgesOf(projectLinkAssertions(events));
+}
+
+/**
+ * The edges a list of standing assertions makes, in that list's order: one per (subject,
+ * target, rel), the FIRST assertion of it being its origin. The rule the cache applies
+ * when it keeps the row of the lowest assertion standing.
+ */
+function edgesOf(assertions: readonly LinkEdge[]): LinkEdge[] {
+  const edges = new Map<string, LinkEdge>();
+  for (const assertion of assertions) {
+    const key = edgeKey(assertion.subject, assertion.target, assertion.rel);
+    if (!edges.has(key)) edges.set(key, assertion);
   }
-  return [...seen.values()];
+  return [...edges.values()];
+}
+
+/**
+ * The ASSERTIONS of edges that still stand, in the order they came to stand: one per
+ * (subject, target, rel, who), since an identity asserting an edge twice asserts it once.
+ *
+ * A `link.retracted` ({@link linkRetractionOf}) withdraws, at its point in the stream, the
+ * standing assertions of the edge it names that its identity may retract ({@link
+ * mayRetract} — the ones that identity made). An assertion by another identity stands, so
+ * a stranger's retraction changes nothing; a later assertion by the same identity stands
+ * again, and comes to stand at THAT point, after every assertion already standing.
+ */
+export function projectLinkAssertions(events: readonly CatalogEvent[]): LinkEdge[] {
+  const standing = new Map<string, LinkEdge>();
+  for (const event of events) {
+    const asserted = linkOf(event);
+    if (asserted !== undefined) {
+      const key = assertionKey(asserted);
+      if (!standing.has(key)) standing.set(key, asserted);
+      continue;
+    }
+    const retraction = linkRetractionOf(event);
+    if (retraction === undefined) continue;
+    for (const [key, assertion] of standing) {
+      if (withdraws(retraction, assertion)) standing.delete(key);
+    }
+  }
+  return [...standing.values()];
+}
+
+/** What a `link.retracted` names and who signed it, or undefined for any other kind. */
+export interface LinkRetraction {
+  readonly subject: string;
+  readonly target: string;
+  readonly rel: string;
+  /** The identity that took the link back. */
+  readonly who: string;
+}
+
+/** The retraction one event is, or undefined for any other kind — see {@link linkOf}. */
+export function linkRetractionOf(event: CatalogEvent): LinkRetraction | undefined {
+  if (event.kind !== 'link.retracted') return undefined;
+  return {
+    subject: event.subject,
+    target: event.payload.target,
+    rel: event.payload.rel,
+    who: event.who,
+  };
+}
+
+/**
+ * Whether `retraction` withdraws `assertion`: the same edge, and an identity that may take
+ * that assertion back ({@link mayRetract}) — the one that made it. The one rule the replay
+ * and the cache brought forward both apply.
+ */
+export function withdraws(retraction: LinkRetraction, assertion: LinkEdge): boolean {
+  return (
+    retraction.subject === assertion.subject &&
+    retraction.target === assertion.target &&
+    retraction.rel === assertion.rel &&
+    mayRetract(assertion.who, retraction.who)
+  );
+}
+
+/** The key of one identity's assertion of one edge, framed as {@link edgeKey} is. */
+function assertionKey(assertion: LinkEdge): string {
+  const { subject, target, rel, who } = assertion;
+  return `${edgeKey(subject, target, rel)}|${who.length}:${who}`;
 }
 
 /**

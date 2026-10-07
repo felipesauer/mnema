@@ -241,6 +241,7 @@ const NOT_IN_THE_LIBRARY: Readonly<Record<string, string>> = {
   record_handoff:
     'a handoff is between agents of one host, which a program built on its own does not have',
   link_knowledge: 'a link is written by the person who sets a rule, from the command line',
+  retract_link: 'a link is taken back by the person who set it, as it was written',
   create_task: 'work items are the host’s; the library door records decisions and notes',
   task_transition: 'work items are the host’s; the library door records decisions and notes',
   create_skill: 'a pattern is written by a person and adopted by a person',
@@ -258,7 +259,10 @@ const VERBS_NOT_IN_THE_LIBRARY: Readonly<Record<string, string>> = {
   observe: 'see `record_observation`',
   handoff: 'see `record_handoff`',
   link: 'a link is written by the person who sets a rule',
+  promote:
+    'lifting a pattern to the file every project reads is a person’s gesture, with the evidence typed by them',
   retract: 'see `retract_note`',
+  unlink: 'see `retract_link`',
   key: 'keys are a person’s',
   switch: 'a switch is a person’s',
   tail: 'a tail is pruned by a person',
@@ -509,35 +513,38 @@ async function through(
 }
 
 describe('an ADR label typed where an id belongs', () => {
-  it('is refused on the three doors with the id that carries it', async () => {
-    const said = async (name: Door['name']): Promise<{ id: string; text: string }> => {
+  it('moves the one decision it names, on the three doors', async () => {
+    const said = async (name: Door['name']): Promise<{ id: string; moves: string[] }> => {
       const door = founded(name);
       door.mnema('decision', 'record', 'use postgres', 'why', '--which', AGENT);
-      const born = orderedEvents({ root: join(door.repo, PROJECT_DIR) }, catalogUpcasters()).filter(
+      const root = join(door.repo, PROJECT_DIR);
+      const born = orderedEvents({ root }, catalogUpcasters()).filter(
         (event) => event.kind === 'decision.recorded',
       );
       const id = born[0]?.subject as string;
       if (name === 'cli') {
-        const ran = door.mnema('decision', 'move', 'accept', 'ADR-1', '--note', 'x');
-        return { id, text: ran.err };
-      }
-      if (name === 'mcp') {
+        door.mnema('decision', 'move', 'accept', 'ADR-1', '--note', 'x');
+      } else if (name === 'mcp') {
         const server = await connected(door);
         await server.call('decision_transition', { id: 'ADR-1', action: 'accept', note: 'x' });
-        const text = server.said();
         await server.close();
-        return { id, text };
+      } else {
+        const library = openRecord({ cwd: door.repo, agent: AGENT, env: { home: door.home } });
+        library.acceptDecision({ id: 'ADR-1', note: 'x' });
       }
-      const library = openRecord({ cwd: door.repo, agent: AGENT, env: { home: door.home } });
-      const refused = library.acceptDecision({ id: 'ADR-1', note: 'x' });
-      return { id, text: refused.ok ? '' : ((refused as { message?: string }).message ?? '') };
+      const moves = orderedEvents({ root }, catalogUpcasters())
+        .filter((event) => event.subject === id && event.kind !== 'decision.recorded')
+        .map((event) => event.kind);
+      return { id, moves };
     };
-    for (const name of ['cli', 'mcp', 'sdk'] as const) {
-      const { id, text } = await said(name);
-      expect(text, name).toContain(
-        `ADR-1 is a label, not an id: in this project it names the decision ${id}. Use the id.`,
-      );
-    }
+    const moved = {
+      cli: (await said('cli')).moves,
+      mcp: (await said('mcp')).moves,
+      sdk: (await said('sdk')).moves,
+    };
+    expect(moved.cli.length).toBeGreaterThan(0);
+    expect(moved.mcp).toEqual(moved.cli);
+    expect(moved.sdk).toEqual(moved.cli);
   });
 });
 

@@ -686,7 +686,54 @@ def _check_tail_id(report: Report, tail_id: str, ring: dict[str, PublicKey]) -> 
         )
 
 
-def verify_record(root: str, report: Report) -> None:
+REQUIREMENTS = ("chained", "signed")
+
+
+def _check_requirement(
+    report: Report, require: str, entries_by_tail: dict[str, list[Entry]],
+    covered_by_tail: dict[str, int],
+) -> None:
+    """What the caller said it would accept, held against what the walk above established.
+
+    `chained` is the default and asks for nothing the walk has not already refused on. `signed`
+    asks that a signature cover EVERY event of EVERY tail, and that at least one did: a record
+    with no event above the last checkpoint and none a checkpoint reached is not signed, it is
+    empty, and "signed" over nothing is the sentence this refuses to say. It refuses by
+    `fail`, which is the same exit as any other refusal: a caller that gates on this reader
+    gets one answer for "something is wrong" and one for "what I asked for is not there".
+
+    Both numbers come from the same `covered_through` the section 6.2 note counts with, so
+    the note and this refusal cannot disagree about how many events sit above the last
+    checkpoint that VERIFIED.
+    """
+    if require != "signed":
+        return
+    covered = sum(covered_by_tail[tail] + 1 for tail in entries_by_tail)
+    above = sum(
+        len(entries_by_tail[tail]) - (covered_by_tail[tail] + 1) for tail in entries_by_tail
+    )
+    if covered == 0:
+        report.fail(
+            "6",
+            "requirement not met: --require=signed needs every event covered by a checkpoint "
+            "that verified, and no checkpoint verified over any event, so nothing here is signed",
+        )
+    elif above > 0:
+        report.fail(
+            "6",
+            f"requirement not met: --require=signed needs every event covered by a checkpoint "
+            f"that verified, and {above} event(s) sit above the last one and rest on the hash "
+            "chain alone",
+        )
+    else:
+        report.ok(
+            "6",
+            f"--require=signed is met: all {covered} event(s) are covered by a checkpoint "
+            "that verified",
+        )
+
+
+def verify_record(root: str, report: Report, require: str = "chained") -> None:
     declare_scope(report)
     if not os.path.isdir(root):
         report.break_out(f"there is no record at {root}")
@@ -742,6 +789,7 @@ def verify_record(root: str, report: Report) -> None:
 
     resolution = _check_enrolment(report, entries_by_tail, covered_by_tail, ring)
     _say_keys_without_tail(report, ring, tail_ids, resolution)
+    _check_requirement(report, require, entries_by_tail, covered_by_tail)
 
 
 def _holds_nothing(tail_dir: str) -> bool:

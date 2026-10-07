@@ -95,6 +95,9 @@ export {
   type HandoffOk,
   type LinkInput,
   type LinkOk,
+  type LinkRetractError,
+  type LinkRetractInput,
+  type LinkRetractOk,
   linkKnowledge,
   type ObservationInput,
   type ObservationOk,
@@ -103,6 +106,7 @@ export {
   type RetractOk,
   recordHandoff,
   recordObservation,
+  retractLink,
   retractNote,
 } from './knowledge/operations.js';
 // Opening the correct tree's chain for writing (scope RESOLUTION stays on the

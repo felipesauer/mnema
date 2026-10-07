@@ -409,6 +409,37 @@ export interface NoteRetractedV1 extends Envelope {
 }
 
 /**
+ * A LINK WAS RETRACTED — a `knowledge.linked` taken back out of what the record serves, by
+ * a later fact that says who took it back and why. The note's retraction, for an edge.
+ *
+ * A link has no id of its own: it is the edge (subject, target, rel), and two assertions of
+ * one edge are one edge on read. So the retraction names the edge the way the link did — its
+ * SUBJECT is the link's subject, and the payload carries the `target` and the `rel`, each
+ * exactly as the link recorded them — plus the one thing a retraction adds, the REASON.
+ *
+ * Nothing is erased: the link's own event stays where it was and a verifier still sees it.
+ * What changes is the edge set every reader of links folds (FORMAT.md section 6.4): the
+ * assertion this identity made of that edge, up to this point, no longer stands, and an edge
+ * nobody else asserts stops acting — a rule it addressed at a path no longer governs there.
+ *
+ * ONLY THE IDENTITY THAT LINKED. A retraction withdraws its own `who`'s assertion of the edge
+ * and nobody else's; one by an identity that never asserted the edge is not applied.
+ */
+export interface LinkRetractedV1 extends Envelope {
+  readonly kind: 'link.retracted';
+  readonly v: 1;
+  /** Subject is the retracted link's subject — the entity that originates the edge. */
+  readonly payload: {
+    /** The link's target, as the link recorded it. */
+    readonly target: string;
+    /** The link's relation label, as the link recorded it. */
+    readonly rel: string;
+    /** Why the link was taken back. Never optional, never empty. */
+    readonly reason: string;
+  };
+}
+
+/**
  * A handoff was recorded — a fact that work on a task passed from one agent to
  * another (or restarted with the same agent).
  *
@@ -1143,6 +1174,7 @@ export type CatalogEvent =
   | ChannelAskedV1
   | ChannelRefusedV1
   | NoteRetractedV1
+  | LinkRetractedV1
   | CheckDeclaredV1
   | CheckerEnrolledV1
   | CheckPassedV1
@@ -1181,6 +1213,7 @@ export const LATEST_VERSION: { readonly [K in EventKind]: number } = {
   'channel.asked': 1,
   'channel.refused': 1,
   'note.retracted': 1,
+  'link.retracted': 1,
   'check.declared': 1,
   'checker.enrolled': 1,
   'check.passed': 1,

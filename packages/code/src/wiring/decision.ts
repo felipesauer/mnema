@@ -248,7 +248,7 @@ export function registerDecision(program: Command, wiring: Wiring): Declared {
       ...(given.which !== undefined ? { which: given.which } : {}),
       ...(run !== undefined ? { run } : {}),
     });
-    await reportDecisionMove(result, oldId, wiring, newId);
+    await reportDecisionMove(result, oldId, wiring);
   });
   // `decision import <source>` — propose the decisions this repository already wrote.
   //
@@ -419,7 +419,6 @@ async function reportDecisionMove(
   result: ReturnType<typeof runDecisionTransition>,
   id: string,
   to: Reporter,
-  successor?: string,
 ): Promise<void> {
   if (result.ok) {
     const { movedLine } = await import('../moved-record.js');
@@ -433,24 +432,6 @@ async function reportDecisionMove(
     return;
   }
   reportRefusal(to, result, { UNKNOWN_DECISION: noSuchRecord('decision', id) });
-  if (result.reason === 'UNKNOWN_DECISION') await sayIfALabel(to, id);
-  // The successor of a supersede is an address too, and the label every write printed for it is
-  // refused like the first one (`UNKNOWN_BY`, the dangling successor): the same hint, the same
-  // function.
-  if (result.reason === 'REFUSED' && result.code === 'UNKNOWN_BY' && successor !== undefined) {
-    await sayIfALabel(to, successor);
-  }
-}
-
-/**
- * After a refusal to find the decision `id`: when what was typed is the `ADR-<n>` label a write
- * printed, say so and name the id (or the ids, when more than one tree numbered the same label).
- * The bare refusal is already out; this is the half that tells a person what to type instead.
- */
-async function sayIfALabel(to: Reporter, id: string): Promise<void> {
-  const { labelAsAddress } = await import('../label-as-address.js');
-  const sentence = labelAsAddress(here(), id);
-  if (sentence !== undefined) to.io.err(to.render(fact(sentence)));
 }
 
 /**
