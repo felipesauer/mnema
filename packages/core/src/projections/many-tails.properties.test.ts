@@ -13,8 +13,8 @@
  *
  *   - MR1, a permutation of the tails changes nothing;
  *   - MR2, merging parts and then the whole is merging the whole;
- *   - MR3, the same tail copied twice changes nothing, and a tail copied under another id is
- *     a break the reading names;
+ *   - MR3, a tail copied under another id is a break the reading names (copying the same tail
+ *     in again changes no byte, so there is nothing there to hold);
  *   - MR4, an event appended about something else moves neither a decision's state nor the
  *     divergence reported on it;
  *   - MR5, cutting a tail's suffix leaves its prefix verifying, unless a checkpoint covers
@@ -471,34 +471,54 @@ describe('MR2: merging the parts and then the whole is merging the whole', () =>
   );
 });
 
-describe('MR3: the union of tails is idempotent', () => {
+describe('across ten trees or more: what the merge does TODAY, fixed and not endorsed', () => {
   it(
-    'copying the same tails in again changes neither the order nor the verdict',
+    'today, the tree position in the tie is compared as text, so the tree listed eleventh sorts before the one listed second',
     () => {
-      holds(
-        historyArb,
-        (history) => {
-          const root = freshDir('mr3');
-          const copy = freshDir('mr3-copy');
-          try {
-            write(root, history);
-            const before = read(root);
-            cpSync(join(root, 'tails'), join(copy, 'tails'), { recursive: true });
-            cpSync(join(root, 'keys'), join(copy, 'keys'), { recursive: true });
-            cpSync(join(copy, 'tails'), join(root, 'tails'), { recursive: true });
-            cpSync(join(copy, 'keys'), join(root, 'keys'), { recursive: true });
-            expect(read(root)).toEqual(before);
-            expect(chainReplay({ root }, upcasters).linkBreaks).toEqual([]);
-          } finally {
-            cleanUp(root, copy);
-          }
-        },
-        20,
-      );
+      const roots: string[] = [];
+      try {
+        for (let tree = 0; tree < 11; tree += 1) {
+          const root = freshDir(`ten-${tree}`);
+          roots.push(root);
+          const writer = openChainForWriting(root, {
+            keyRoot: keyRoots[0] as string,
+            maxUnsignedEvents: 10_000,
+          });
+          writer.append(
+            taskCreated(
+              {
+                at: iso(1),
+                who: writer.anchor,
+                signerFp: writer.signerFingerprint,
+                subject: `tree-${tree}`,
+              },
+              { title: `tree ${tree}` },
+            ),
+          );
+        }
+        const across = orderedEventsOfRecord(
+          roots.map((root) => ({ root })),
+          upcasters,
+        ).across.map((event) => event.subject);
+        // Every head ties on `at` and on the tail id, so the key is `<index>:<tail>` as text:
+        // "0:", "10:", "1:", "2:", ... — position 10 is read before position 1.
+        expect(across).toEqual(
+          ['0', '10', '1', '2', '3', '4', '5', '6', '7', '8', '9'].map((tree) => `tree-${tree}`),
+        );
+      } finally {
+        cleanUp(...roots);
+      }
     },
     CASE_TIMEOUT,
   );
+});
 
+// MR3's first half, "copying the same tail in again changes nothing", is NOT held here: the copy
+// lands on the same paths with the same bytes, so the tree does not change and no defect can
+// light it, and the union has no deduplication to test. Nothing in the product merges two
+// copies of one tail read from different places: `orderedEventsOfRecord` says so in its own
+// words (a plain interleave, no de-duplication). What is held is the other half.
+describe('MR3: a tail under another id is not a second tail', () => {
   it(
     'a tail copied under another id does not read as a second tail: the reading names the break',
     () => {

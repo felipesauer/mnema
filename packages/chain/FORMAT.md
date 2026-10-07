@@ -877,12 +877,14 @@ be read until it is ("the optimized merge equals the naive one over generated ta
 
 **The order does not depend on how the reader met the tails.** The tails read as the same sequence
 whatever order they were written into the directory, copied in, or listed (MR1: "the order the
-tails are written into the directory changes nothing, in the model or on disk"), and a tail copied
-in a second time, byte for byte, changes neither the sequence nor the verdict (MR3: "copying the
-same tails in again changes neither the order nor the verdict"). A tail copied under another id is
-not a second tail: each of its entries names the tail it was written to, and the reader reports
-the break at the directory it was found in (MR3: "a tail copied under another id does not read as a
-second tail"; the verifier's side of the same fact is in §3).
+tails are written into the directory changes nothing, in the model or on disk"). Of that, the
+model half is held everywhere; the on-disk half is held only where a directory listing does not
+come back sorted, because the reader sorts it. Nothing here holds that a tail copied in a second
+time, byte for byte, changes nothing: the copy lands on the same paths with the same bytes, so
+there is no defect that case could catch. A tail copied under another id is not a second tail:
+each of its entries names the tail it was written to, and the reader reports the break at the
+directory it was found in (MR3: "a tail copied under another id does not read as a second tail";
+the verifier's side of the same fact is in §3).
 
 **Appending never reorders what was read.** An event appended to a tail lands after everything
 that tail already held, and the events read before stay in the same relative order with it there.
@@ -902,11 +904,16 @@ extended.
 
 **Several trees are merged by the same selection, with the tree's position in the tie.** A reader
 that merges more than one record (a team's committed tree and a person's own) qualifies each
-tail's key with the position of its tree in the list it was given, so a tie between tails of
-different trees goes to the tree listed first, and only then to the tail id (MR2: "across trees, a
-tie goes to the tree first and then the tail"). Where no two heads share an instant, the trees
-merged are the single record holding all their tails, whichever order they are listed in (MR2: "with
-no two heads on the same instant, the parts joined are the whole").
+tail's key with the position of its tree in the list it was given, written as `<position>:<tail
+id>` and compared as text. So a tie between tails of different trees goes to the tree with the
+smaller position written out, and only then to the tail id (MR2: "across trees, a tie goes to the
+tree first and then the tail"). With fewer than ten trees that is the tree listed first. With ten
+or more it is not: `"10:…"` sorts before `"1:…"`, so the eleventh-listed tree (position 10) is
+read before the second (position 1) on a tie. That is how the code behaves today, not a choice anyone made, and it is fixed
+here as it is (across ten trees or more: "today, the tree position in the tie is compared as
+text"). Where no two heads share an instant, the trees merged are the single record holding all
+their tails, whichever order they are listed in (MR2: "with no two heads on the same instant, the
+parts joined are the whole").
 
 **What is detected.** Two moves of one decision, or one skill, out of the same state are two facts
 signed by machines that had not seen each other; the reader names them whichever of the two the
