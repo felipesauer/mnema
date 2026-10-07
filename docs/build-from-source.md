@@ -1,6 +1,6 @@
 # Building it from source
 
-A pnpm workspace on Node 22.22.2 or a later 22, or 24.15.0 or later. `build` comes first because the packages
+A pnpm workspace on Node 24.15.0 or a later 24, or 26.0.0 or later. `build` comes first because the packages
 compile against each other's declarations, and a stale `dist` is how a type
 check goes green over code that no longer exists:
 

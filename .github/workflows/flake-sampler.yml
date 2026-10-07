@@ -85,11 +85,11 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        # BOTH RUNTIMES, because the two known reds landed on node 22 and were green on node 24 in
-        # the same run. Two out of two is one in four by chance if the two are independent, so it
-        # is neither established nor dismissed — and the matrix answers it for free, since it was
-        # going to run both anyway.
-        node: ['22', '24']
+        # THE THREE RUNTIMES OF CI, because the two known reds landed on node 22 and were green on
+        # node 24 in the same run. Two out of two is one in four by chance if the two are
+        # independent, so it was neither established nor dismissed; node 22 is gone from the
+        # support range, and the question now stands between the floor, the current 24 and 26.
+        node: ['24.15.0', '24', '26']
         shard: ['1', '2', '3']
 
     steps:
@@ -128,6 +128,8 @@ jobs:
           LABEL: node${{ matrix.node }}-shard${{ matrix.shard }}
         run: |
           set -euo pipefail
+          # The summariser reads a label of lowercase letters, digits and dashes: `24.15.0` is not one.
+          LABEL="${LABEL//./-}"
           N="$REPETITIONS"
           case "$N" in
             ''|*[!0-9]*) echo "REPETITIONS must be a whole number, and it was '$N'"; exit 1 ;;
@@ -181,7 +183,7 @@ jobs:
       # alone would not notice a shard that never reported at all. The summariser exits 2 and
       # prints RULER BROKEN on either, and prints no rate table when it does.
       #
-      # THE SIX IS THE MATRIX ABOVE: two runtimes times three shards. It is written here as a
+      # THE NINE IS THE MATRIX ABOVE: three runtimes times three shards. It is written here as a
       # constant because a job cannot read the size of another job's matrix, and a constant that
       # drifts from the matrix is the sort of thing that rots quietly. It does not rot quietly
       # here: getting it wrong makes the count disagree with what was read, and the summariser
@@ -190,7 +192,7 @@ jobs:
       - name: Count, or say the ruler broke
         env:
           REPETITIONS: ${{ github.event.inputs.repetitions || 10 }}
-          LABELS: '6'
+          LABELS: '9'
         run: |
           set -euo pipefail
           case "$REPETITIONS" in

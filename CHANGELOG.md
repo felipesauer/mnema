@@ -120,9 +120,10 @@ tag, with its own changelog.
 
 ### Changed
 
-- **Requires Node 22.22.2 or a later 22, or 24.15.0 or later.** The floor was 22.12.0. The
-  library that checks a Sigstore bundle (`@sigstore/verify` 4.1.2) declares this range, and the
-  binary now refuses any Node outside it in one line, a 23 or a 24 below 24.15.0 included.
+- **Requires Node 24.15.0 or a later 24, or 26.0.0 or later.** The floor was 22.12.0; Node 22
+  and Node 25 are out of the range. The library that checks a Sigstore bundle (`@sigstore/verify`
+  4.1.2) declares `^24.15.0`, and the binary refuses any Node outside the range in one line, a 22,
+  a 23, a 25 or a 24 below 24.15.0 included. CI runs the suite on 24.15.0, the current 24 and 26.
 - **The Action's own test has room in its time limit.** Its cases start the real `mnema` binary
   (seven processes of set-up and two per run); the slowest took 4.3 to 4.5 s measured alone against
   the 5 s default, and went red once on a loaded runner. The limit is 20 s for that file; nothing

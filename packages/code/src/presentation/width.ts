@@ -58,7 +58,7 @@ import { createRequire } from 'node:module';
  * not yet imported it (`tests/the-floor-is-the-declaration.test.ts`) — for the sake of lines no
  * verb has measured yet: `--version` and the help of a verb that prints no wide glyph never ask.
  * `widthOfText` is synchronous and its callers are too, so the load is a `require` of the
- * ESM-only package, which every Node the floor admits (22.22.2 or a later 22, or 24.15.0 or later)
+ * ESM-only package, which every Node the floor admits (24.15.0 or a later 24, or 26.0.0 or later)
  * answers synchronously; the answer it gives is the one the import gave, and `width.test.ts` asks
  * it the same corpus.
  */
