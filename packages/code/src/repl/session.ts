@@ -80,6 +80,7 @@
 
 import type { ProvenLevel } from '@mnema/chain';
 import { buildProgram, type CliIo, parseWith } from '../cli.js';
+import { runPromoteList } from '../commands/promote.js';
 import type { TreeReport } from '../commands/verify.js';
 import { runVerify } from '../commands/verify.js';
 import { type CompletionWord, completionTree } from '../completion/tree.js';
@@ -106,6 +107,7 @@ import { insideTheMargin } from './inset.js';
 import type { Leaving } from './leaving.js';
 import { theLibraryIsTold } from './painting.js';
 import { type Opening, openingFor, theShortestScreenFor } from './panel.js';
+import { projectsNamedBy, promotableLine } from './promotable.js';
 import { watchingTheProof } from './proving.js';
 import { whatTheSessionShowed } from './seen.js';
 import { type Standing, standing } from './standing.js';
@@ -919,7 +921,26 @@ export async function typedLine(line: string, session: Session): Promise<AfterLi
       // session already knew it (`asking.ts`). A caller who typed it keeps what they
       // typed, and a session that knows nobody hands the line over untouched.
       await parseWith(built, asTheSession(what.argv, built.verbs, session.identity));
+      await sayWhatRecurs(what.argv, io, render);
       return 'go on';
+  }
+}
+
+/**
+ * After a line that NAMED projects, the one sentence that says some rule recurs across them
+ * (`promotable.ts`: what it says, what it never says, and why these are the only folders it
+ * looks in). A line that named none costs nothing here: no import, no read.
+ */
+async function sayWhatRecurs(argv: readonly string[], io: CliIo, render: Render): Promise<void> {
+  const named = projectsNamedBy(argv);
+  if (named.length === 0) return;
+  // A named project whose chain cannot be read has already been reported by the verb that
+  // just ran; this sentence is an aside, so it says nothing rather than reject the turn.
+  try {
+    const line = promotableLine(runPromoteList(here(), { named }).candidates.length);
+    if (line !== undefined) io.out(render(line));
+  } catch {
+    // nothing to say
   }
 }
 

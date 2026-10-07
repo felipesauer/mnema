@@ -241,6 +241,14 @@ export {
   patternMoveWitness,
 } from './intelligence/pattern-moves.js';
 export {
+  judgePromotion,
+  type PatternInstance,
+  type PromotionCandidate,
+  type PromotionJudgement,
+  type PromotionRefusal,
+  samePattern,
+} from './intelligence/promotion.js';
+export {
   type PatternProvenance,
   patternProvenance,
 } from './intelligence/provenance.js';
