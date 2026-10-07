@@ -1293,7 +1293,11 @@ describe('both readers over a Sigstore bundle and the claim that names its ident
     const anchor = deriveAnchor(fp);
     const envelope = { at: '2026-10-06T00:00:00.000Z', who: anchor, signerFp: fp, subject: anchor };
     writer.append(identityFounded(envelope, { foundingFp: fp }));
-    writer.append(accountLinked(envelope, { service: 'sigstore', account: 'felipe@example.com' }));
+    // The e-mail as the product records it: `sha256:` and the hex of the address, never the
+    // address. The reference reader computes no hash and verifies no Sigstore link; it has to
+    // accept the value as the opaque string it is.
+    const account = 'sha256:12d216f5096c445e7248035ac7d85e586c647ce185aca31774ab10088f7ae51f';
+    writer.append(accountLinked(envelope, { service: 'sigstore', account }));
     writer.checkpoint();
     expect(verify(record, catalogUpcasters()).fullySigned).toBe(true);
     const there = secondReading(record);

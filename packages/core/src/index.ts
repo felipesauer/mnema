@@ -73,6 +73,7 @@ export {
   GITHUB_SERVICE,
   githubLoginRefusal,
   SIGSTORE_SERVICE,
+  sigstoreAccountOf,
   sigstoreIdentityRefusal,
 } from './identity/account.js';
 // An identity founded where others already were — the one reading every surface asks, at the

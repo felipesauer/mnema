@@ -241,12 +241,35 @@ export function registerKey(program: Command, wiring: Wiring): Declared {
       'the e-mail address you sign in to Sigstore with, or a GitHub Actions workflow as ' +
         'https://github.com/<owner>/<repo>/.github/workflows/<file>@<ref>',
     )
+    .addHelpText(
+      'after',
+      [
+        '',
+        'The record keeps an e-mail address as its SHA-256 (`sha256:<hex>` of the address,',
+        'trimmed and in lower case), never the address: the record is append-only and cloned.',
+        'A workflow is kept as it is. The hash protects the record only: the bundle',
+        '`mnema witness sigstore` files, and the public log it goes to, name the address itself.',
+      ].join('\n'),
+    )
     .action(async (identity: string) => {
       const { runKeySigstore } = await import('../commands/key-sigstore.js');
       const result = runKeySigstore(here(), { identity });
       if (result.ok) {
-        io.out(onOneLine`Linked ${result.anchor} to the Sigstore identity ${result.identity}`);
+        io.out(
+          result.recorded === result.identity
+            ? onOneLine`Linked ${result.anchor} to the Sigstore identity ${result.identity}`
+            : onOneLine`Linked ${result.anchor} to the Sigstore identity ${result.identity}, recorded as its hash ${result.recorded}`,
+        );
         reportReplacement(result, io);
+        if (result.recorded !== result.identity) {
+          io.out(
+            render(
+              fact(
+                'The record keeps the SHA-256 of the address, not the address; a reading compares the certificate’s address by the same hash.',
+              ),
+            ),
+          );
+        }
         io.out(
           render(
             fact(

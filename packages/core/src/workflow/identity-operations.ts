@@ -47,7 +47,7 @@ import {
   screenContent,
   screened,
 } from '../content/screen.js';
-import { GITHUB_SERVICE } from '../identity/account.js';
+import { GITHUB_SERVICE, SIGSTORE_SERVICE, sigstoreAccountOf } from '../identity/account.js';
 import {
   IdentityUnavailableError,
   type Membership,
@@ -649,12 +649,18 @@ export interface AccountLinkOk extends ScreenedWrite {
  * WHICH NAMES ARE GITHUB'S IS THE SURFACE'S TO REFUSE, as which channels exist is for a switch:
  * the account goes through the content door like every caller's string, and the verb that takes
  * it, and the reading that puts it in an address, both ask `githubLoginRefusal` first.
+ *
+ * A SIGSTORE E-MAIL IS RECORDED AS ITS HASH, here and not at a surface, so no door that reaches
+ * this one can put a person's address in the record: `sigstoreAccountOf` is what is written, and
+ * what every reading computes from a certificate before it compares.
  */
 export function linkAccount(
   ctx: WriteContext,
   input: { account: string; service?: string },
 ): AccountLinkOk | ScreenRefusal | AppendRefusal {
-  const text = screenContent({ account: input.account });
+  const service = input.service ?? GITHUB_SERVICE;
+  const account = service === SIGSTORE_SERVICE ? sigstoreAccountOf(input.account) : input.account;
+  const text = screenContent({ account });
   if (!text.ok) return text;
 
   const anchor = ensureFounded(ctx);
@@ -663,7 +669,7 @@ export function linkAccount(
     ctx.writer,
     accountLinked(
       { at, who: anchor, signerFp: ctx.writer.signerFingerprint, subject: anchor },
-      { service: input.service ?? GITHUB_SERVICE, account: text.fields.account },
+      { service, account: text.fields.account },
     ),
   );
   if (!appended.ok) return appended;

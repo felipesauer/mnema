@@ -103,6 +103,7 @@ import {
   resolveTrees,
   type Scope,
   SIGSTORE_SERVICE,
+  sigstoreAccountOf,
   treesSearched,
 } from '@mnema/core';
 import type { CheckpointToSign, SigstoreNetwork } from '../sigstore/sign.js';
@@ -683,6 +684,7 @@ export async function runWitnessSigstore(
  */
 function namesSigstoreIdentity(chains: readonly HeldChain[], identity: string): boolean {
   const upcasters = catalogUpcasters();
+  const recorded = sigstoreAccountOf(identity);
   for (const chain of chains) {
     const through = storedCheckpoints(chain).at(-1)?.toSeq ?? -1;
     for (const entry of readTailEntries(chain.layout, chain.tail, upcasters)) {
@@ -692,7 +694,7 @@ function namesSigstoreIdentity(chains: readonly HeldChain[], identity: string): 
         event.kind === 'account.linked' &&
         event.who === event.subject &&
         event.payload.service === SIGSTORE_SERVICE &&
-        event.payload.account === identity
+        event.payload.account === recorded
       ) {
         return true;
       }

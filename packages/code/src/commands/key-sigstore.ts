@@ -9,6 +9,9 @@
  * said, in a signed and covered fact, that the certificate's identity is its own; this writes
  * that fact (`account.linked`, `service: "sigstore"`), and `verify --against-sigstore` reads it.
  *
+ * AN E-MAIL ADDRESS IS RECORDED AS ITS HASH (`sha256:<hex>`, by `sigstoreAccountOf`): the record
+ * is append-only and cloned, and the address is a person's. A workflow is recorded as it is.
+ *
  * It asks nothing of the network, and it is not a kind of its own: the binary before it reads
  * the fact as it reads a GitHub link, and passes it by.
  */
@@ -34,7 +37,10 @@ export interface KeySigstoreContext {
 export interface KeySigstoreLinked extends Replacement {
   readonly ok: true;
   readonly anchor: string;
+  /** The identity as it was given, trimmed. */
   readonly identity: string;
+  /** What the record keeps for it: `sha256:<hex>` for an e-mail address, a workflow as it is. */
+  readonly recorded: string;
 }
 
 /** The claim was refused; nothing was written. */
@@ -54,7 +60,8 @@ export function runKeySigstore(
 ): KeySigstoreLinked | KeySigstoreRefused {
   const trees = resolveTrees(ctx.cwd, ctx.env);
   if (trees.projectPublic === undefined) return { ok: false, reason: 'NO_PROJECT' };
-  const notOne = sigstoreIdentityRefusal(input.identity);
+  const identity = input.identity.trim();
+  const notOne = sigstoreIdentityRefusal(identity);
   if (notOne !== undefined) {
     return { ok: false, reason: 'REFUSED', code: 'NOT_A_SIGSTORE_IDENTITY', message: notOne };
   }
@@ -65,7 +72,7 @@ export function runKeySigstore(
       layout: { root: chainRootForScope(trees, 'public') as string },
       upcasters: catalogUpcasters(),
     },
-    { account: input.identity, service: SIGSTORE_SERVICE },
+    { account: identity, service: SIGSTORE_SERVICE },
   );
   if (!linked.ok) {
     return { ok: false, reason: 'REFUSED', code: linked.code, message: linked.message };
@@ -74,7 +81,8 @@ export function runKeySigstore(
   return {
     ok: true,
     anchor: linked.anchor,
-    identity: linked.account,
+    identity,
+    recorded: linked.account,
     ...forwardReplacement(linked),
   };
 }

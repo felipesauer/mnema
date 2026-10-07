@@ -35,7 +35,7 @@ import {
   readTailEntries,
   witnessDir,
 } from '@mnema/chain';
-import { type Scope, SIGSTORE_SERVICE } from '@mnema/core';
+import { type Scope, SIGSTORE_SERVICE, sigstoreAccountOf } from '@mnema/core';
 import { readSigstoreBundle, type SigstoreReading } from '../sigstore/read.js';
 import type { TreeReport } from './verify.js';
 
@@ -139,7 +139,7 @@ export function readSigstoreReceipts(
     const named =
       finding.reading.kind === 'signed' &&
       signer !== undefined &&
-      (links.get(signer)?.has(finding.reading.identity) ?? false);
+      (links.get(signer)?.has(sigstoreAccountOf(finding.reading.identity)) ?? false);
     findings.push(named && signer !== undefined ? { ...finding, namedBy: signer } : finding);
   }
   return { findings, notRead };

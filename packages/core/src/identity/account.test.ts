@@ -11,6 +11,7 @@ import {
   GITHUB_SERVICE,
   githubLoginRefusal,
   SIGSTORE_SERVICE,
+  sigstoreAccountOf,
   sigstoreIdentityRefusal,
 } from './account.js';
 
@@ -70,5 +71,24 @@ describe('sigstoreIdentityRefusal', () => {
         /not an identity a Sigstore certificate names/,
       );
     }
+  });
+});
+
+describe('sigstoreAccountOf — what the record keeps for a Sigstore identity', () => {
+  // The digests are `printf '%s' felipe@example.com | sha256sum`, computed outside this code.
+  const HASHED = 'sha256:12d216f5096c445e7248035ac7d85e586c647ce185aca31774ab10088f7ae51f';
+
+  it('keeps the SHA-256 of an e-mail address, never the address', () => {
+    expect(sigstoreAccountOf('felipe@example.com')).toBe(HASHED);
+  });
+
+  it('hashes the address as a certificate and a person both write it: case and edges aside', () => {
+    expect(sigstoreAccountOf('  Felipe@Example.COM ')).toBe(HASHED);
+  });
+
+  it('keeps a workflow as it is, because a workflow is not a person', () => {
+    const workflow =
+      'https://github.com/felipesauer/mnema/.github/workflows/witness.yml@refs/heads/main';
+    expect(sigstoreAccountOf(workflow)).toBe(workflow);
   });
 });

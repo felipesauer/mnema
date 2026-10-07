@@ -514,7 +514,13 @@ fold only ever runs over tails whose key owns them
 `account.linked` (`payload.service`, `payload.account`) is an identity saying which account
 it holds — this product writes two services: `github`, an account on the code host, and
 `sigstore`, the identity a Sigstore certificate names (an e-mail address, or a GitHub Actions
-workflow as `https://github.com/<owner>/<repo>/.github/workflows/<file>@<ref>`). It is **not part of
+workflow as `https://github.com/<owner>/<repo>/.github/workflows/<file>@<ref>`). A `sigstore`
+link to an e-mail address carries **`sha256:` and the lower-case hex SHA-256 of the address**,
+trimmed and in lower case, never the address — the record is append-only and cloned, and the
+address is a person's; a workflow is carried as it is. A reader compares a certificate's address
+by computing the same value (`sigstoreAccountOf`, `packages/core/src/identity/account.ts`). The
+value is a string like any other: neither the canonical form, the chaining nor the signature of
+the event treats it differently. It is **not part of
 the fold above**: it adds and removes no key, so a reader authenticates it by the rule every
 other event is authenticated by, and by nothing else. Its `subject` is the anchor and its `who`
 is the same anchor — an identity names only its own account.
@@ -816,8 +822,9 @@ identity. Anybody can countersign the digest of any checkpoint they can read, so
 its own dates the checkpoint, on Rekor's clock and Rekor's key, and says nothing about who
 wrote it. It speaks for an identity of the record only where that identity named the same
 e-mail or workflow in a signature-covered `account.linked` with `service: "sigstore"` (§6.3)
-(`packages/code/src/sigstore/sigstore.test.ts`). The identity it names is public by
-construction: it is in Rekor's log and in the committed file.
+(`packages/code/src/sigstore/sigstore.test.ts`) — for an e-mail, the hash of the one the
+certificate names. The identity it names is public by construction: it is in Rekor's log and in
+the committed file, in clear; the hash §6.3 records protects the event, not the bundle.
 
 ## What this document does **not** promise
 

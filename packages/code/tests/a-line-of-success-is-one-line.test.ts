@@ -494,6 +494,10 @@ const CLASSIFIED: Readonly<Record<string, { verdict: Verdict; why: string }>> = 
     verdict: 'collapsed',
     why: 'the anchor, and the identity the caller typed — refused unless an e-mail or a workflow URI',
   },
+  'key.ts «Linked {} to the Sigstore identity {}, recorded as its hash {}» #1': {
+    verdict: 'collapsed',
+    why: 'the anchor, the e-mail the caller typed, and the sha256 the record keeps in its place',
+  },
   'key.ts «Linked {} to github.com/{}» #1': {
     verdict: 'collapsed',
     why: 'the anchor, and the account name the caller typed — refused unless GitHub would issue it',
@@ -790,7 +794,8 @@ describe('every line this wiring words is classified', () => {
     // 103 once a checker key could be retired.
     // 110 with `key sigstore`, the `verify --against-sigstore` tree line and the five lines
     // `witness sigstore` prints.
-    expect(FOUND.sites.length).toBe(110);
+    // 111 once `key sigstore` said the hash the record keeps for an e-mail.
+    expect(FOUND.sites.length).toBe(111);
   });
 
   it('reads the verdict off the source rather than believing the table', () => {
@@ -810,9 +815,9 @@ describe('every line this wiring words is classified', () => {
   it('found sites of both kinds, and the scanner sees a tag when there is one', () => {
     // Neither arm of the case above may be empty, or half of it is vacuous.
     const verdicts = Object.values(CLASSIFIED).map((said) => said.verdict);
-    expect(verdicts.filter((verdict) => verdict === 'collapsed').length).toBe(51);
+    expect(verdicts.filter((verdict) => verdict === 'collapsed').length).toBe(52);
     expect(verdicts.filter((verdict) => verdict === 'minted').length).toBe(59);
-    expect(FOUND.sites.filter((site) => site.tagged).length).toBe(51);
+    expect(FOUND.sites.filter((site) => site.tagged).length).toBe(52);
   });
 
   it('every reason says where the value comes from', () => {
@@ -962,6 +967,8 @@ const UNREACHABLE: Readonly<Record<string, string>> = {
     'the name is refused unless GitHub would issue it, and no such name holds a newline',
   'key.ts «Linked {} to the Sigstore identity {}» #1':
     'the identity is refused unless it is an e-mail or a workflow URI, neither of which holds a space or a newline',
+  'key.ts «Linked {} to the Sigstore identity {}, recorded as its hash {}» #1':
+    'the same refusal, and a hash is hex',
   'key.ts «private half installed at {}» #1': 'needs a PEM to restore from',
   'key.ts «Your copy at {} was read, not moved — keep it where it is.» #1': 'the same restore',
   'key.ts «recorded in {}» #1': 'needs a request from a second machine',

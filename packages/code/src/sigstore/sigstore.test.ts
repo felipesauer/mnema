@@ -17,7 +17,16 @@ import {
   verify as verifySignature,
   X509Certificate,
 } from 'node:crypto';
-import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
+import {
+  existsSync,
+  mkdirSync,
+  mkdtempSync,
+  readdirSync,
+  readFileSync,
+  rmSync,
+  statSync,
+  writeFileSync,
+} from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { checkpointHash, readTailCheckpoints, witnessSigstorePath } from '@mnema/chain';
@@ -393,6 +402,7 @@ describe('the act, the claim and the reading, over a record', () => {
     const ctx = aProject();
     const claimed = runKeySigstore(ctx, { identity: EMAIL });
     expect(claimed).toMatchObject({ ok: true, identity: EMAIL });
+    expect(claimed.ok && claimed.recorded).toMatch(/^sha256:[0-9a-f]{64}$/);
     const before = verdict(ctx);
 
     const sigstore = await aSigstore();
@@ -429,6 +439,41 @@ describe('the act, the claim and the reading, over a record', () => {
     const again = await runWitnessSigstore(ctx, { fetch: sigstore.fetch, token: async () => '' });
     expect(again.ok && again.outcomes.every((o) => o.did === 'skipped')).toBe(true);
     expect(sigstore.asked.length).toBe(asked);
+  });
+
+  it('keeps the hash of the e-mail address in the record, and the address nowhere in it', () => {
+    const ctx = aProject();
+    const claimed = runKeySigstore(ctx, { identity: ` ${EMAIL.toUpperCase()} ` });
+    if (!claimed.ok) throw new Error('setup: the claim was refused');
+    // `printf '%s' felipe@example.com | sha256sum`, computed outside this code.
+    const HASHED = 'sha256:12d216f5096c445e7248035ac7d85e586c647ce185aca31774ab10088f7ae51f';
+    expect(claimed.recorded).toBe(HASHED);
+
+    const root = join(ctx.cwd, '.mnema');
+    const files = (readdirSync(root, { recursive: true }) as string[])
+      .map((name) => join(root, name))
+      .filter((path) => statSync(path).isFile());
+    const lines = files
+      .filter((path) => path.endsWith('.jsonl'))
+      .flatMap((path) => readFileSync(path, 'utf-8').split('\n'))
+      .filter((line) => line.includes('"account.linked"'));
+    expect(lines).toHaveLength(1);
+    const line = JSON.parse(lines[0] ?? '{}') as { event?: { payload?: unknown } };
+    expect(line.event?.payload).toEqual({ service: 'sigstore', account: HASHED });
+    // Every field of the event, and every byte the claim left in the tree.
+    expect(lines[0]?.toLowerCase()).not.toContain(EMAIL);
+    const holding = files.filter((path) =>
+      readFileSync(path).toString('latin1').toLowerCase().includes(EMAIL),
+    );
+    expect(holding).toEqual([]);
+  });
+
+  it('keeps a workflow in the record as it is: a workflow is not a person', () => {
+    const ctx = aProject();
+    const workflow =
+      'https://github.com/felipesauer/mnema/.github/workflows/witness.yml@refs/heads/main';
+    const claimed = runKeySigstore(ctx, { identity: workflow });
+    expect(claimed).toMatchObject({ ok: true, identity: workflow, recorded: workflow });
   });
 
   it('says a bundle no identity of the record names speaks for nobody', async () => {

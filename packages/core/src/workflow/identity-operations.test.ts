@@ -230,14 +230,18 @@ describe('linkAccount — an identity names its GitHub account', () => {
     expect(verdict.fullySigned).toBe(true);
   });
 
-  it('names a Sigstore identity under the service the caller gives, through the same door', () => {
+  it('names a Sigstore e-mail by its hash, under the service the caller gives, through the same door', () => {
     const tree = openTree('mnema-identity-link-');
     const linked = linkAccount(tree.ctx, { account: 'felipe@example.com', service: 'sigstore' });
     if (!linked.ok) throw new Error(linked.message);
     const link = orderedEvents({ root: tree.root }, upcasters).find(
       (e) => e.kind === 'account.linked',
     );
-    expect(link?.payload).toEqual({ service: 'sigstore', account: 'felipe@example.com' });
+    // `printf '%s' felipe@example.com | sha256sum`: the address is never what is recorded.
+    expect(link?.payload).toEqual({
+      service: 'sigstore',
+      account: 'sha256:12d216f5096c445e7248035ac7d85e586c647ce185aca31774ab10088f7ae51f',
+    });
     expect(verify(tree.root).fullySigned).toBe(true);
   });
 

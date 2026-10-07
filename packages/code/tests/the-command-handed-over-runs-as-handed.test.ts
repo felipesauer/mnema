@@ -526,8 +526,8 @@ export const NAMES_THAT_NEED_MORE: Readonly<
     why: 'the line saying no identity names a bundle’s signer, naming the verb with the signer it would name',
   },
   'docs/what-it-proves.md: mnema key sigstore': {
-    times: 1,
-    why: 'the row that says when a Sigstore signature speaks for an identity, naming the claim by its verb',
+    times: 2,
+    why: 'the row that says when a Sigstore signature speaks for an identity, naming the claim by its verb — and the row that says the claim keeps an e-mail as its hash',
   },
   'packages/code/src/wiring/run.ts: mnema run end': {
     times: 1,
@@ -663,7 +663,8 @@ export const HANDED_OVER: Readonly<
   // line 74 and name 144 for the Sigstore countersignature: the changelog entry, the package page,
   // the page's table and the format hand over `witness sigstore`, `key sigstore` and
   // `verify --against-sigstore`.
-  span: { line: 74, name: 144, flag: 1, unwritten: 0 },
+  // name 145 for the row of that table that says the claim keeps an e-mail as its hash.
+  span: { line: 74, name: 145, flag: 1, unwritten: 0 },
   // name 18 until the page that says where the key lives named `mnema key protect` in a line of
   // its own.
   // line 35 until the same page showed that question in a block of its own.
@@ -707,7 +708,9 @@ export const HANDED_OVER: Readonly<
   // can come from standard input or a file.
   // line 67 and name 81 for the Sigstore countersignature: the help of `witness sigstore`, `key
   // sigstore` and `verify --against-sigstore` name one another, and the act names the claim.
-  source: { line: 67, name: 81, flag: 3, unwritten: 3 },
+  // name 82 once the help of `key sigstore` said the bundle `mnema witness sigstore` files still
+  // names the address the record keeps only as a hash.
+  source: { line: 67, name: 82, flag: 3, unwritten: 3 },
 };
 
 // ---------------------------------------------------------------------------

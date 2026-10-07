@@ -8,11 +8,19 @@
  * says signed, which speaks for this identity only where this identity named the same one. The
  * format takes any service name; this product writes and reads these two.
  *
+ * AN E-MAIL ADDRESS IS KEPT AS ITS HASH. The record is append-only and cloned, so a person's
+ * address written into it is there for good; a `sigstore` link to an e-mail carries
+ * `sha256:<hex>` of the address instead (trimmed, lower case), and every reading compares a
+ * certificate's address by computing the same thing ({@link sigstoreAccountOf}). A workflow is
+ * a repository's, not a person's, and is kept as it is.
+ *
  * ONE RULE, ASKED TWICE. The write refuses a name GitHub would not have issued, and the reading
  * asks the same thing again before it puts a recorded name into an address — the record can
  * hold whatever a writer of the format put there, and a name with a `/` or a `?` in it would
  * send the question somewhere other than that account.
  */
+
+import { createHash } from 'node:crypto';
 
 /** The service an `account.linked` fact names for a GitHub account. */
 export const GITHUB_SERVICE = 'github';
@@ -46,4 +54,15 @@ export function sigstoreIdentityRefusal(identity: string): string | undefined {
     `${JSON.stringify(identity)} is not an identity a Sigstore certificate names — an e-mail ` +
     'address, or a workflow as https://github.com/<owner>/<repo>/.github/workflows/<file>@<ref>'
   );
+}
+
+/**
+ * WHAT THE RECORD KEEPS FOR A SIGSTORE IDENTITY, and what a reading compares against: an e-mail
+ * address as `sha256:<hex>` of the address trimmed and in lower case, a workflow as it is. The
+ * one function the claim writes with and every reading asks, so the two cannot drift apart.
+ */
+export function sigstoreAccountOf(identity: string): string {
+  const said = identity.trim();
+  if (!AN_EMAIL.test(said)) return said;
+  return `sha256:${createHash('sha256').update(said.toLowerCase(), 'utf8').digest('hex')}`;
 }

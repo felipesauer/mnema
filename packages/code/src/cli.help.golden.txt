@@ -1854,6 +1854,11 @@ $ mnema key sigstore --help
 |
 | Options:
 |   -h, --help  display help for command
+|
+| The record keeps an e-mail address as its SHA-256 (`sha256:<hex>` of the address,
+| trimmed and in lower case), never the address: the record is append-only and cloned.
+| A workflow is kept as it is. The hash protects the record only: the bundle
+| `mnema witness sigstore` files, and the public log it goes to, name the address itself.
 
 ### mnema key revoke --help
 $ mnema key revoke --help
