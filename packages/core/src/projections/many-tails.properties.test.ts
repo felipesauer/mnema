@@ -50,14 +50,14 @@ import {
   verify,
 } from '@mnema/chain';
 import fc from 'fast-check';
-import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest';
+import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { ProjectionCache } from './cache.js';
 import { projectDecisions } from './decision.js';
 import { divergentMoves } from './divergent-moves.js';
 import { chainReplay, orderedEvents, orderedEventsOfRecord } from './order.js';
 
-// Each case writes and signs real chains many times over, which a default of five seconds does not hold.
-vi.setConfig({ testTimeout: 120_000 });
+/** Each case writes and signs real chains many times over, which five seconds does not hold. */
+const CASE_TIMEOUT = 120_000;
 
 const SEED = Number(process.env.FC_SEED ?? 20_261_007);
 const upcasters = catalogUpcasters();
@@ -72,7 +72,8 @@ const scratch: string[] = [];
 
 beforeAll(() => {
   for (let slot = 0; slot < SLOTS; slot += 1) {
-    keyRoots.push(mkdtempSync(join(tmpdir(), `mnema-tails-key-${slot}-`)));
+    const keyRoot = mkdtempSync(join(tmpdir(), `mnema-tails-key-${slot}-`));
+    keyRoots.push(keyRoot);
   }
 });
 
@@ -324,70 +325,86 @@ function subsequenceOf(merged: readonly CatalogEvent[], events: readonly Catalog
 // ---------------------------------------------------------------------------------------------
 
 describe('the merge of many tails is its definition', () => {
-  it('the optimized merge equals the naive one over generated tails', () => {
-    holds(historyArb, (history) => {
-      const root = freshDir('merge');
-      try {
-        const { appended } = write(root, history);
-        expect(read(root)).toEqual(modelled(streamsOf(appended)));
-      } finally {
-        cleanUp(root);
-      }
-    });
-  });
-
-  it('MR1: the order the tails are written into the directory changes nothing, in the model or on disk', () => {
-    holds(fc.tuple(historyArb, permutationArb), ([history, permutation]) => {
-      const a = freshDir('mr1a');
-      const b = freshDir('mr1b');
-      try {
-        const first = write(a, history);
-        const second = write(b, history, permutation);
-        const streams = streamsOf(first.appended);
-        expect(read(b)).toEqual(read(a));
-        expect(modelled([...streams].reverse())).toEqual(modelled(streams));
-        expect(read(b)).toEqual(modelled(streamsOf(second.appended)));
-      } finally {
-        cleanUp(a, b);
-      }
-    });
-  });
-
-  it('P1: within a tail the order is seq, even when at runs backwards', () => {
-    holds(historyArb, (history) => {
-      const root = freshDir('p1');
-      try {
-        const { appended } = write(root, history);
-        const merged = orderedEvents({ root }, upcasters);
-        for (const [tail, events] of appended) {
-          expect(subsequenceOf(merged, events), `tail ${tail}`).toEqual(events.map(identity));
-        }
-      } finally {
-        cleanUp(root);
-      }
-    });
-  });
-
-  it('P1: a tail whose at runs strictly backwards is still read forwards', () => {
-    holds(
-      fc.integer({ min: 2, max: 8 }),
-      (length) => {
-        const root = freshDir('p1-down');
+  it(
+    'the optimized merge equals the naive one over generated tails',
+    () => {
+      holds(historyArb, (history) => {
+        const root = freshDir('merge');
         try {
-          const history: Op[] = Array.from({ length }, (_, index) => ({
-            slot: 0,
-            at: length - index,
-            act: { kind: 'task' },
-          }));
           const { appended } = write(root, history);
-          expect(read(root)).toEqual([...appended.values()].flat().map(identity));
+          expect(read(root)).toEqual(modelled(streamsOf(appended)));
         } finally {
           cleanUp(root);
         }
-      },
-      10,
-    );
-  });
+      });
+    },
+    CASE_TIMEOUT,
+  );
+
+  it(
+    'MR1: the order the tails are written into the directory changes nothing, in the model or on disk',
+    () => {
+      holds(fc.tuple(historyArb, permutationArb), ([history, permutation]) => {
+        const a = freshDir('mr1a');
+        const b = freshDir('mr1b');
+        try {
+          const first = write(a, history);
+          const second = write(b, history, permutation);
+          const streams = streamsOf(first.appended);
+          expect(read(b)).toEqual(read(a));
+          expect(modelled([...streams].reverse())).toEqual(modelled(streams));
+          expect(read(b)).toEqual(modelled(streamsOf(second.appended)));
+        } finally {
+          cleanUp(a, b);
+        }
+      });
+    },
+    CASE_TIMEOUT,
+  );
+
+  it(
+    'P1: within a tail the order is seq, even when at runs backwards',
+    () => {
+      holds(historyArb, (history) => {
+        const root = freshDir('p1');
+        try {
+          const { appended } = write(root, history);
+          const merged = orderedEvents({ root }, upcasters);
+          for (const [tail, events] of appended) {
+            expect(subsequenceOf(merged, events), `tail ${tail}`).toEqual(events.map(identity));
+          }
+        } finally {
+          cleanUp(root);
+        }
+      });
+    },
+    CASE_TIMEOUT,
+  );
+
+  it(
+    'P1: a tail whose at runs strictly backwards is still read forwards',
+    () => {
+      holds(
+        fc.integer({ min: 2, max: 8 }),
+        (length) => {
+          const root = freshDir('p1-down');
+          try {
+            const history: Op[] = Array.from({ length }, (_, index) => ({
+              slot: 0,
+              at: length - index,
+              act: { kind: 'task' },
+            }));
+            const { appended } = write(root, history);
+            expect(read(root)).toEqual([...appended.values()].flat().map(identity));
+          } finally {
+            cleanUp(root);
+          }
+        },
+        10,
+      );
+    },
+    CASE_TIMEOUT,
+  );
 });
 
 describe('MR2: merging the parts and then the whole is merging the whole', () => {
@@ -410,83 +427,102 @@ describe('MR2: merging the parts and then the whole is merging the whole', () =>
     return { left, right, whole, l, r };
   }
 
-  it('across trees, a tie goes to the tree first and then the tail: the model of that says it', () => {
-    holds(fc.tuple(historyArb, fc.integer({ min: 1, max: 2 })), ([history, cut]) => {
-      const { left, right, whole, l, r } = parts(history, cut);
-      try {
-        const across = orderedEventsOfRecord([{ root: left }, { root: right }], upcasters).across;
-        const keyed = [
-          ...[...l.appended].map(([key, events]) => ({ key: `0:${key}`, events })),
-          ...[...r.appended].map(([key, events]) => ({ key: `1:${key}`, events })),
-        ];
-        expect(across.map(identity)).toEqual(modelled(keyed));
-      } finally {
-        cleanUp(left, right, whole);
-      }
-    });
-  });
+  it(
+    'across trees, a tie goes to the tree first and then the tail: the model of that says it',
+    () => {
+      holds(fc.tuple(historyArb, fc.integer({ min: 1, max: 2 })), ([history, cut]) => {
+        const { left, right, whole, l, r } = parts(history, cut);
+        try {
+          const across = orderedEventsOfRecord([{ root: left }, { root: right }], upcasters).across;
+          const keyed = [
+            ...[...l.appended].map(([key, events]) => ({ key: `0:${key}`, events })),
+            ...[...r.appended].map(([key, events]) => ({ key: `1:${key}`, events })),
+          ];
+          expect(across.map(identity)).toEqual(modelled(keyed));
+        } finally {
+          cleanUp(left, right, whole);
+        }
+      });
+    },
+    CASE_TIMEOUT,
+  );
 
-  it('with no two heads on the same instant, the parts joined are the whole', () => {
-    holds(fc.tuple(historyArb, fc.integer({ min: 1, max: 2 })), ([history, cut]) => {
-      // An instant owned by one machine: `at * SLOTS + slot`, so no tie can arise between tails.
-      const apart = history.map((op) => ({ ...op, at: op.at * SLOTS + op.slot }));
-      const { left, right, whole } = parts(apart, cut);
-      try {
-        const across = orderedEventsOfRecord([{ root: left }, { root: right }], upcasters).across;
-        const swapped = orderedEventsOfRecord([{ root: right }, { root: left }], upcasters).across;
-        expect(across.map(identity)).toEqual(read(whole));
-        expect(swapped.map(identity)).toEqual(read(whole));
-      } finally {
-        cleanUp(left, right, whole);
-      }
-    });
-  });
+  it(
+    'with no two heads on the same instant, the parts joined are the whole',
+    () => {
+      holds(fc.tuple(historyArb, fc.integer({ min: 1, max: 2 })), ([history, cut]) => {
+        // An instant owned by one machine: `at * SLOTS + slot`, so no tie can arise between tails.
+        const apart = history.map((op) => ({ ...op, at: op.at * SLOTS + op.slot }));
+        const { left, right, whole } = parts(apart, cut);
+        try {
+          const across = orderedEventsOfRecord([{ root: left }, { root: right }], upcasters).across;
+          const swapped = orderedEventsOfRecord(
+            [{ root: right }, { root: left }],
+            upcasters,
+          ).across;
+          expect(across.map(identity)).toEqual(read(whole));
+          expect(swapped.map(identity)).toEqual(read(whole));
+        } finally {
+          cleanUp(left, right, whole);
+        }
+      });
+    },
+    CASE_TIMEOUT,
+  );
 });
 
 describe('MR3: the union of tails is idempotent', () => {
-  it('copying the same tails in again changes neither the order nor the verdict', () => {
-    holds(
-      historyArb,
-      (history) => {
-        const root = freshDir('mr3');
-        const copy = freshDir('mr3-copy');
-        try {
-          write(root, history);
-          const before = read(root);
-          cpSync(join(root, 'tails'), join(copy, 'tails'), { recursive: true });
-          cpSync(join(root, 'keys'), join(copy, 'keys'), { recursive: true });
-          cpSync(join(copy, 'tails'), join(root, 'tails'), { recursive: true });
-          cpSync(join(copy, 'keys'), join(root, 'keys'), { recursive: true });
-          expect(read(root)).toEqual(before);
-          expect(chainReplay({ root }, upcasters).linkBreaks).toEqual([]);
-        } finally {
-          cleanUp(root, copy);
-        }
-      },
-      20,
-    );
-  });
+  it(
+    'copying the same tails in again changes neither the order nor the verdict',
+    () => {
+      holds(
+        historyArb,
+        (history) => {
+          const root = freshDir('mr3');
+          const copy = freshDir('mr3-copy');
+          try {
+            write(root, history);
+            const before = read(root);
+            cpSync(join(root, 'tails'), join(copy, 'tails'), { recursive: true });
+            cpSync(join(root, 'keys'), join(copy, 'keys'), { recursive: true });
+            cpSync(join(copy, 'tails'), join(root, 'tails'), { recursive: true });
+            cpSync(join(copy, 'keys'), join(root, 'keys'), { recursive: true });
+            expect(read(root)).toEqual(before);
+            expect(chainReplay({ root }, upcasters).linkBreaks).toEqual([]);
+          } finally {
+            cleanUp(root, copy);
+          }
+        },
+        20,
+      );
+    },
+    CASE_TIMEOUT,
+  );
 
-  it('a tail copied under another id does not read as a second tail: the reading names the break', () => {
-    holds(
-      historyArb,
-      (history) => {
-        const root = freshDir('mr3-id');
-        try {
-          const { tails } = write(root, history);
-          const original = [...tails.values()][0] as string;
-          const fake = `${original.slice(0, 8)}-fabricated`;
-          cpSync(tailDir({ root }, original), tailDir({ root }, fake), { recursive: true });
-          const broken = chainReplay({ root }, upcasters).linkBreaks.map((b) => b.tail);
-          expect(broken).toContain(fake);
-          expect(broken).not.toContain(original);
-        } finally {
-          cleanUp(root);
-        }
-      },
-      15,
-    );
-  });
+  it(
+    'a tail copied under another id does not read as a second tail: the reading names the break',
+    () => {
+      holds(
+        historyArb,
+        (history) => {
+          const root = freshDir('mr3-id');
+          try {
+            const { tails } = write(root, history);
+            const original = [...tails.values()][0] as string;
+            const fake = `${original.slice(0, 8)}-fabricated`;
+            cpSync(tailDir({ root }, original), tailDir({ root }, fake), { recursive: true });
+            const broken = chainReplay({ root }, upcasters).linkBreaks.map((b) => b.tail);
+            expect(broken).toContain(fake);
+            expect(broken).not.toContain(original);
+          } finally {
+            cleanUp(root);
+          }
+        },
+        15,
+      );
+    },
+    CASE_TIMEOUT,
+  );
 });
 
 describe('MR4: an event about something else moves neither the state nor the divergence', () => {
@@ -520,46 +556,54 @@ describe('MR4: an event about something else moves neither the state nor the div
     };
   };
 
-  it('what is read of X is what the model reads of X', () => {
-    holds(historyArb, (history) => {
-      const root = freshDir('mr4-model');
-      try {
-        const { appended } = write(root, history);
-        expect(viewOfX(root)).toEqual(modelOfX(streamsOf(appended)));
-      } finally {
-        cleanUp(root);
-      }
-    });
-  });
-
-  it('MR4: appending an event about another subject, on any tail, at any instant, leaves X as it was', () => {
-    holds(
-      fc.tuple(historyArb, slotArb, atArb, fc.constantFrom('task', 'birth', 'other-move')),
-      ([history, slot, at, noise]) => {
-        const plain = freshDir('mr4-plain');
-        const noisy = freshDir('mr4-noisy');
+  it(
+    'what is read of X is what the model reads of X',
+    () => {
+      holds(historyArb, (history) => {
+        const root = freshDir('mr4-model');
         try {
-          // The noise is appended LAST on its tail, which is the only place a signed record
-          // can put it: an earlier position would be a different chain, not a longer one.
-          const act: Act =
-            noise === 'task'
-              ? { kind: 'task' }
-              : noise === 'birth'
-                ? { kind: 'birth', decision: 'dec-other' }
-                : { kind: 'move', decision: 'dec-other', to: 'accepted' };
-          write(plain, history);
-          write(noisy, [...history, { slot, at, act }]);
-          expect(viewOfX(noisy)).toEqual(viewOfX(plain));
-          // WHY it holds: an appended event lands after everything its tail already held, so the
-          // events that were read before are read in the same relative order with it there.
-          const before = new Set(read(plain));
-          expect(read(noisy).filter((id) => before.has(id))).toEqual(read(plain));
+          const { appended } = write(root, history);
+          expect(viewOfX(root)).toEqual(modelOfX(streamsOf(appended)));
         } finally {
-          cleanUp(plain, noisy);
+          cleanUp(root);
         }
-      },
-    );
-  });
+      });
+    },
+    CASE_TIMEOUT,
+  );
+
+  it(
+    'MR4: appending an event about another subject, on any tail, at any instant, leaves X as it was',
+    () => {
+      holds(
+        fc.tuple(historyArb, slotArb, atArb, fc.constantFrom('task', 'birth', 'other-move')),
+        ([history, slot, at, noise]) => {
+          const plain = freshDir('mr4-plain');
+          const noisy = freshDir('mr4-noisy');
+          try {
+            // The noise is appended LAST on its tail, which is the only place a signed record
+            // can put it: an earlier position would be a different chain, not a longer one.
+            const act: Act =
+              noise === 'task'
+                ? { kind: 'task' }
+                : noise === 'birth'
+                  ? { kind: 'birth', decision: 'dec-other' }
+                  : { kind: 'move', decision: 'dec-other', to: 'accepted' };
+            write(plain, history);
+            write(noisy, [...history, { slot, at, act }]);
+            expect(viewOfX(noisy)).toEqual(viewOfX(plain));
+            // WHY it holds: an appended event lands after everything its tail already held, so the
+            // events that were read before are read in the same relative order with it there.
+            const before = new Set(read(plain));
+            expect(read(noisy).filter((id) => before.has(id))).toEqual(read(plain));
+          } finally {
+            cleanUp(plain, noisy);
+          }
+        },
+      );
+    },
+    CASE_TIMEOUT,
+  );
 });
 
 /** Keeps the first `keep` entries of a tail, cutting whole lines off the end of its segments. */
@@ -577,52 +621,65 @@ function cutTailTo(root: string, tail: string, keep: number): void {
 }
 
 describe('MR5: cutting the suffix of a tail leaves its prefix', () => {
-  it('a cut above the last checkpoint verifies, reads as the model of the prefix, and chains', () => {
-    holds(
-      fc.tuple(historyArb, fc.nat({ max: 5 }), fc.nat({ max: 5 })),
-      ([history, covered, drop]) => {
-        const root = freshDir('mr5');
-        try {
-          // The checkpoint falls after `covered + 1` events of machine 0 (the founding is one).
-          const { appended, tails } = write(root, history, [0, 1, 2], new Map([[0, covered + 1]]));
-          const tail = tails.get(0) as string;
-          const events = appended.get(tail) as CatalogEvent[];
-          const keep = Math.max(Math.min(covered + 1, events.length), events.length - drop);
-          cutTailTo(root, tail, keep);
-          expect(verify(root).ok).toBe(true);
-          expect(chainReplay({ root }, upcasters).linkBreaks).toEqual([]);
-          const prefixed: Appended = new Map(appended);
-          prefixed.set(tail, events.slice(0, keep));
-          expect(read(root)).toEqual(modelled(streamsOf(prefixed)));
-        } finally {
-          cleanUp(root);
-        }
-      },
-      20,
-    );
-  });
+  it(
+    'a cut above the last checkpoint verifies, reads as the model of the prefix, and chains',
+    () => {
+      holds(
+        fc.tuple(historyArb, fc.nat({ max: 5 }), fc.nat({ max: 5 })),
+        ([history, covered, drop]) => {
+          const root = freshDir('mr5');
+          try {
+            // The checkpoint falls after `covered + 1` events of machine 0 (the founding is one).
+            const { appended, tails } = write(
+              root,
+              history,
+              [0, 1, 2],
+              new Map([[0, covered + 1]]),
+            );
+            const tail = tails.get(0) as string;
+            const events = appended.get(tail) as CatalogEvent[];
+            const keep = Math.max(Math.min(covered + 1, events.length), events.length - drop);
+            cutTailTo(root, tail, keep);
+            expect(verify(root).ok).toBe(true);
+            expect(chainReplay({ root }, upcasters).linkBreaks).toEqual([]);
+            const prefixed: Appended = new Map(appended);
+            prefixed.set(tail, events.slice(0, keep));
+            expect(read(root)).toEqual(modelled(streamsOf(prefixed)));
+          } finally {
+            cleanUp(root);
+          }
+        },
+        20,
+      );
+    },
+    CASE_TIMEOUT,
+  );
 
-  it('a cut BELOW a checkpoint is the one a verifier calls broken', () => {
-    holds(
-      fc.integer({ min: 2, max: 6 }),
-      (count) => {
-        const root = freshDir('mr5-below');
-        try {
-          const history: Op[] = Array.from({ length: count }, (_, index) => ({
-            slot: 0,
-            at: index,
-            act: { kind: 'task' },
-          }));
-          const { tails } = write(root, history, [0, 1, 2], new Map([[0, count]]));
-          cutTailTo(root, tails.get(0) as string, count - 1);
-          expect(verify(root).ok).toBe(false);
-        } finally {
-          cleanUp(root);
-        }
-      },
-      10,
-    );
-  });
+  it(
+    'a cut BELOW a checkpoint is the one a verifier calls broken',
+    () => {
+      holds(
+        fc.integer({ min: 2, max: 6 }),
+        (count) => {
+          const root = freshDir('mr5-below');
+          try {
+            const history: Op[] = Array.from({ length: count }, (_, index) => ({
+              slot: 0,
+              at: index,
+              act: { kind: 'task' },
+            }));
+            const { tails } = write(root, history, [0, 1, 2], new Map([[0, count]]));
+            cutTailTo(root, tails.get(0) as string, count - 1);
+            expect(verify(root).ok).toBe(false);
+          } finally {
+            cleanUp(root);
+          }
+        },
+        10,
+      );
+    },
+    CASE_TIMEOUT,
+  );
 });
 
 describe('P2: a cache brought forward is a replay', () => {
@@ -635,141 +692,153 @@ describe('P2: a cache brought forward is a replay', () => {
     breaks: cache.linkBreaks,
   });
 
-  it('after any arrivals, with the cache deleted at a drawn point, it answers what a replay answers', () => {
-    holds(
-      fc.tuple(
-        historyArb,
-        fc.array(fc.nat({ max: 4 }), { maxLength: 3 }),
-        fc.option(fc.nat({ max: 3 }), { nil: undefined }),
-      ),
-      ([history, cuts, wipeAt]) => {
-        const root = freshDir('p2');
-        try {
-          const scribe = new Scribe(root);
-          let from = 0;
-          let round = 0;
-          for (const cut of [...cuts.map((c) => from + c), history.length]) {
-            const to = Math.min(history.length, Math.max(from, cut));
-            for (const op of history.slice(from, to)) scribe.apply(op);
-            from = to;
-            const cache = ProjectionCache.open(root, { upcasters, persist: true });
-            try {
-              cache.refresh();
-            } finally {
-              cache.close();
-            }
-            // The cache file is deleted after a drawn round: the next open builds it again.
-            if (wipeAt === round) rmSync(projectionCachePath({ root }), { force: true });
-            round += 1;
-          }
-          const live = ProjectionCache.open(root, { upcasters, persist: true });
-          const replay = ProjectionCache.open(root, { upcasters });
+  it(
+    'after any arrivals, with the cache deleted at a drawn point, it answers what a replay answers',
+    () => {
+      holds(
+        fc.tuple(
+          historyArb,
+          fc.array(fc.nat({ max: 4 }), { maxLength: 3 }),
+          fc.option(fc.nat({ max: 3 }), { nil: undefined }),
+        ),
+        ([history, cuts, wipeAt]) => {
+          const root = freshDir('p2');
           try {
-            live.refresh();
-            replay.rebuild();
-            expect(answers(live)).toEqual(answers(replay));
-            // And what both say of X is what the naive merge says it is: the LAST move out.
-            const moved = model(streamsOf(scribe.appended)).filter(
-              (event) => event.kind === 'decision.transitioned' && event.subject === X,
-            );
-            const last = moved[moved.length - 1];
-            expect(live.getDecision(X)?.state).toEqual(
-              last?.kind === 'decision.transitioned' ? last.payload.to : undefined,
-            );
+            const scribe = new Scribe(root);
+            let from = 0;
+            let round = 0;
+            for (const cut of [...cuts.map((c) => from + c), history.length]) {
+              const to = Math.min(history.length, Math.max(from, cut));
+              for (const op of history.slice(from, to)) scribe.apply(op);
+              from = to;
+              const cache = ProjectionCache.open(root, { upcasters, persist: true });
+              try {
+                cache.refresh();
+              } finally {
+                cache.close();
+              }
+              // The cache file is deleted after a drawn round: the next open builds it again.
+              if (wipeAt === round) rmSync(projectionCachePath({ root }), { force: true });
+              round += 1;
+            }
+            const live = ProjectionCache.open(root, { upcasters, persist: true });
+            const replay = ProjectionCache.open(root, { upcasters });
+            try {
+              live.refresh();
+              replay.rebuild();
+              expect(answers(live)).toEqual(answers(replay));
+              // And what both say of X is what the naive merge says it is: the LAST move out.
+              const moved = model(streamsOf(scribe.appended)).filter(
+                (event) => event.kind === 'decision.transitioned' && event.subject === X,
+              );
+              const last = moved[moved.length - 1];
+              expect(live.getDecision(X)?.state).toEqual(
+                last?.kind === 'decision.transitioned' ? last.payload.to : undefined,
+              );
+            } finally {
+              live.close();
+              replay.close();
+            }
           } finally {
-            live.close();
-            replay.close();
+            cleanUp(root);
           }
-        } finally {
-          cleanUp(root);
-        }
-      },
-      20,
-    );
-  });
+        },
+        20,
+      );
+    },
+    CASE_TIMEOUT,
+  );
 });
 
 describe('clocks that disagree: what the merge does TODAY, fixed and not endorsed', () => {
-  it('today, a clock that runs behind sorts an honest task sequence out of its order, and the move is named as a divergence', () => {
-    // Machine 0 births a task, moves it on, and reopens it. Machine 1 pulls the reopened task and
-    // cancels it, but its clock is behind, so the merge puts its move BEFORE the reopening. The
-    // record is honest; the reading of tasks leans on the order and names a divergence.
-    const root = freshDir('skew-task');
-    try {
-      const first = openChainForWriting(root, {
-        keyRoot: keyRoots[0] as string,
-        maxUnsignedEvents: 10_000,
-      });
-      const second = openChainForWriting(root, {
-        keyRoot: keyRoots[1] as string,
-        maxUnsignedEvents: 10_000,
-      });
-      const env = (writer: typeof first, at: number) => ({
-        at: iso(at),
-        who: writer.anchor,
-        signerFp: writer.signerFingerprint,
-        subject: 'task-honest',
-      });
-      for (const event of taskBirth(env(first, 10), { title: 'a task', initial: 'draft' })) {
-        first.append(event);
-      }
-      first.append(
-        taskTransitioned(env(first, 20), { from: 'draft', to: 'ready', action: 'ready' }),
-      );
-      first.append(
-        taskTransitioned(env(first, 30), { from: 'ready', to: 'draft', action: 'reopen' }),
-      );
-      second.append(
-        taskTransitioned(env(second, 25), { from: 'draft', to: 'cancelled', action: 'cancel' }),
-      );
-      const merged = orderedEvents({ root }, upcasters);
-      expect(merged.map((event) => event.at)).toEqual([
-        iso(10),
-        iso(10),
-        iso(20),
-        iso(25),
-        iso(30),
-      ]);
-      const named = divergentMoves(merged).filter((move) => move.entityId === 'task-honest');
-      expect(named).toHaveLength(1);
-      expect(named[0]?.evidence).toHaveLength(2);
-    } finally {
-      cleanUp(root);
-    }
-  });
-
-  it('today, a machine with a skewed clock keeps its own order, and two moves out of one state are always named', () => {
-    holds(
-      fc.tuple(
-        fc.array(fc.integer({ min: -30, max: 30 }), { minLength: SLOTS, maxLength: SLOTS }),
-        historyArb,
-      ),
-      ([skews, history]) => {
-        const root = freshDir('skew');
-        try {
-          const skewed = history.map((op) => ({
-            ...op,
-            at: op.at + (skews[op.slot] as number) + 30,
-          }));
-          const { appended } = write(root, skewed);
-          const merged = orderedEvents({ root }, upcasters);
-          // The order of a tail never changes, whatever the clocks say.
-          for (const [tail, events] of appended) {
-            expect(subsequenceOf(merged, events), tail).toEqual(events.map(identity));
-          }
-          // The divergence is named whichever move the order puts last, and never silently.
-          const moves = skewed.filter((op) => op.act.kind === 'move');
-          const named = divergentMoves(merged).filter((move) => move.entityId === X);
-          if (moves.length > 1) {
-            expect(named).toHaveLength(1);
-            expect(named[0]?.evidence).toHaveLength(moves.length);
-          } else {
-            expect(named).toEqual([]);
-          }
-        } finally {
-          cleanUp(root);
+  it(
+    'today, a clock that runs behind sorts an honest task sequence out of its order, and the move is named as a divergence',
+    () => {
+      // Machine 0 births a task, moves it on, and reopens it. Machine 1 pulls the reopened task and
+      // cancels it, but its clock is behind, so the merge puts its move BEFORE the reopening. The
+      // record is honest; the reading of tasks leans on the order and names a divergence.
+      const root = freshDir('skew-task');
+      try {
+        const first = openChainForWriting(root, {
+          keyRoot: keyRoots[0] as string,
+          maxUnsignedEvents: 10_000,
+        });
+        const second = openChainForWriting(root, {
+          keyRoot: keyRoots[1] as string,
+          maxUnsignedEvents: 10_000,
+        });
+        const env = (writer: typeof first, at: number) => ({
+          at: iso(at),
+          who: writer.anchor,
+          signerFp: writer.signerFingerprint,
+          subject: 'task-honest',
+        });
+        for (const event of taskBirth(env(first, 10), { title: 'a task', initial: 'draft' })) {
+          first.append(event);
         }
-      },
-    );
-  });
+        first.append(
+          taskTransitioned(env(first, 20), { from: 'draft', to: 'ready', action: 'ready' }),
+        );
+        first.append(
+          taskTransitioned(env(first, 30), { from: 'ready', to: 'draft', action: 'reopen' }),
+        );
+        second.append(
+          taskTransitioned(env(second, 25), { from: 'draft', to: 'cancelled', action: 'cancel' }),
+        );
+        const merged = orderedEvents({ root }, upcasters);
+        expect(merged.map((event) => event.at)).toEqual([
+          iso(10),
+          iso(10),
+          iso(20),
+          iso(25),
+          iso(30),
+        ]);
+        const named = divergentMoves(merged).filter((move) => move.entityId === 'task-honest');
+        expect(named).toHaveLength(1);
+        expect(named[0]?.evidence).toHaveLength(2);
+      } finally {
+        cleanUp(root);
+      }
+    },
+    CASE_TIMEOUT,
+  );
+
+  it(
+    'today, a machine with a skewed clock keeps its own order, and two moves out of one state are always named',
+    () => {
+      holds(
+        fc.tuple(
+          fc.array(fc.integer({ min: -30, max: 30 }), { minLength: SLOTS, maxLength: SLOTS }),
+          historyArb,
+        ),
+        ([skews, history]) => {
+          const root = freshDir('skew');
+          try {
+            const skewed = history.map((op) => ({
+              ...op,
+              at: op.at + (skews[op.slot] as number) + 30,
+            }));
+            const { appended } = write(root, skewed);
+            const merged = orderedEvents({ root }, upcasters);
+            // The order of a tail never changes, whatever the clocks say.
+            for (const [tail, events] of appended) {
+              expect(subsequenceOf(merged, events), tail).toEqual(events.map(identity));
+            }
+            // The divergence is named whichever move the order puts last, and never silently.
+            const moves = skewed.filter((op) => op.act.kind === 'move');
+            const named = divergentMoves(merged).filter((move) => move.entityId === X);
+            if (moves.length > 1) {
+              expect(named).toHaveLength(1);
+              expect(named[0]?.evidence).toHaveLength(moves.length);
+            } else {
+              expect(named).toEqual([]);
+            }
+          } finally {
+            cleanUp(root);
+          }
+        },
+      );
+    },
+    CASE_TIMEOUT,
+  );
 });

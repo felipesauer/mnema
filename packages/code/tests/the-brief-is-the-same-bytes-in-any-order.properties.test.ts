@@ -29,10 +29,11 @@ import {
 import { type Brief, brief } from '@mnema/context';
 import { ProjectionCache } from '@mnema/core';
 import fc from 'fast-check';
-import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest';
+import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { briefDocument } from '../src/presentation/brief.js';
 
-vi.setConfig({ testTimeout: 120_000 });
+/** Each case writes and signs real chains many times over, which five seconds does not hold. */
+const CASE_TIMEOUT = 120_000;
 
 const SEED = Number(process.env.FC_SEED ?? 20_261_007);
 const upcasters = catalogUpcasters();
@@ -46,7 +47,8 @@ const CHANNELS = {
 const keyRoots: string[] = [];
 beforeAll(() => {
   for (let machine = 0; machine < MACHINES; machine += 1) {
-    keyRoots.push(mkdtempSync(join(tmpdir(), `mnema-brief-key-${machine}-`)));
+    const keyRoot = mkdtempSync(join(tmpdir(), `mnema-brief-key-${machine}-`));
+    keyRoots.push(keyRoot);
   }
 });
 afterAll(() => {
@@ -138,65 +140,73 @@ function documentOver(roots: readonly string[]): { bytes: string; titles: string
 }
 
 describe('P4: the brief prints the same bytes whatever order the record is met in', () => {
-  it('trees listed either way, machines opened in any order: the same bytes, and the rules that were accepted', () => {
-    fc.assert(
-      fc.property(
-        fc.array(ruleArb, { maxLength: 6 }),
-        fc.array(ruleArb, { maxLength: 6 }),
-        fc.shuffledSubarray([0, 1], { minLength: 2, maxLength: 2 }),
-        fc.shuffledSubarray([0, 1], { minLength: 2, maxLength: 2 }),
-        (first, second, openFirst, openSecond) => {
-          const dirs = [1, 2, 3, 4].map((n) =>
-            mkdtempSync(join(tmpdir(), `mnema-brief-tree-${n}-`)),
-          );
-          try {
-            const [a, b, a2, b2] = dirs as [string, string, string, string];
-            writeTree(a, 0, first, [0, 1]);
-            writeTree(b, 1, second, [0, 1]);
-            // The same two trees again, with the machines opened in another order.
-            writeTree(a2, 0, first, openFirst);
-            writeTree(b2, 1, second, openSecond);
+  it(
+    'trees listed either way, machines opened in any order: the same bytes, and the rules that were accepted',
+    () => {
+      fc.assert(
+        fc.property(
+          fc.array(ruleArb, { maxLength: 6 }),
+          fc.array(ruleArb, { maxLength: 6 }),
+          fc.shuffledSubarray([0, 1], { minLength: 2, maxLength: 2 }),
+          fc.shuffledSubarray([0, 1], { minLength: 2, maxLength: 2 }),
+          (first, second, openFirst, openSecond) => {
+            const a = mkdtempSync(join(tmpdir(), 'mnema-brief-tree-a-'));
+            const b = mkdtempSync(join(tmpdir(), 'mnema-brief-tree-b-'));
+            const a2 = mkdtempSync(join(tmpdir(), 'mnema-brief-tree-a2-'));
+            const b2 = mkdtempSync(join(tmpdir(), 'mnema-brief-tree-b2-'));
+            try {
+              writeTree(a, 0, first, [0, 1]);
+              writeTree(b, 1, second, [0, 1]);
+              // The same two trees again, with the machines opened in another order.
+              writeTree(a2, 0, first, openFirst);
+              writeTree(b2, 1, second, openSecond);
 
-            const forward = documentOver([a, b]);
-            const backward = documentOver([b, a]);
-            const reopened = documentOver([b2, a2]);
+              const forward = documentOver([a, b]);
+              const backward = documentOver([b, a]);
+              const reopened = documentOver([b2, a2]);
 
-            expect(backward.bytes).toBe(forward.bytes);
-            expect(reopened.bytes).toBe(forward.bytes);
+              expect(backward.bytes).toBe(forward.bytes);
+              expect(reopened.bytes).toBe(forward.bytes);
 
-            // What is listed is what was accepted — read off the drawing, not off the reading.
-            const accepted = [
-              ...first.flatMap((rule, index) =>
-                rule.outcome === 'accepted' ? [`Rule 0.${index}`] : [],
-              ),
-              ...second.flatMap((rule, index) =>
-                rule.outcome === 'accepted' ? [`Rule 1.${index}`] : [],
-              ),
-            ];
-            expect([...forward.titles].sort()).toEqual([...accepted].sort());
-          } finally {
-            for (const dir of dirs) rmSync(dir, { recursive: true, force: true });
-          }
-        },
-      ),
-      { seed: SEED, numRuns: 25 },
-    );
-  });
-
-  it('is drawn with ties between trees, which is where an order would get in', () => {
-    // The property above is only as strong as the instants it draws: with four seconds and up to
-    // twelve rules, two decisions settled at the same instant are the rule and not the exception.
-    const drawn = fc.sample(fc.array(ruleArb, { minLength: 6, maxLength: 6 }), {
-      seed: SEED,
-      numRuns: 25,
-    });
-    const tied = drawn.filter((rules) => {
-      const seen = new Set<number>();
-      return rules.some(
-        (rule) =>
-          rule.outcome === 'accepted' && (seen.has(rule.settled) || !seen.add(rule.settled)),
+              // What is listed is what was accepted — read off the drawing, not off the reading.
+              const accepted = [
+                ...first.flatMap((rule, index) =>
+                  rule.outcome === 'accepted' ? [`Rule 0.${index}`] : [],
+                ),
+                ...second.flatMap((rule, index) =>
+                  rule.outcome === 'accepted' ? [`Rule 1.${index}`] : [],
+                ),
+              ];
+              expect([...forward.titles].sort()).toEqual([...accepted].sort());
+            } finally {
+              for (const dir of [a, b, a2, b2]) rmSync(dir, { recursive: true, force: true });
+            }
+          },
+        ),
+        { seed: SEED, numRuns: 25 },
       );
-    });
-    expect(tied.length).toBeGreaterThan(5);
-  });
+    },
+    CASE_TIMEOUT,
+  );
+
+  it(
+    'is drawn with ties between trees, which is where an order would get in',
+    () => {
+      // The property above is only as strong as the instants it draws: with four seconds and up to
+      // twelve rules, two decisions settled at the same instant are the rule and not the exception.
+      const drawn = fc.sample(fc.array(ruleArb, { minLength: 6, maxLength: 6 }), {
+        seed: SEED,
+        numRuns: 25,
+      });
+      const tied = drawn.filter((rules) => {
+        const seen = new Set<number>();
+        return rules.some(
+          (rule) =>
+            rule.outcome === 'accepted' && (seen.has(rule.settled) || !seen.add(rule.settled)),
+        );
+      });
+      expect(tied.length).toBeGreaterThan(5);
+    },
+    CASE_TIMEOUT,
+  );
 });
