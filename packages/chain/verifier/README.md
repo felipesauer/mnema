@@ -5,6 +5,7 @@ document** and importing **nothing** of the product it checks.
 
 ```
 python3 mnema_verify.py record <a record directory>    # T1, T2/T4, T3 over a real record
+python3 mnema_verify.py record <dir> --require signed  # ...and refuse an event no signature covers
 python3 mnema_verify.py vectors                        # reproduce the 33 published vectors
 python3 mnema_verify.py self-test                      # RFC 8032, section 1, section 8's limits
 python3 mnema_verify.py all --record <dir>             # all three
@@ -143,6 +144,27 @@ two readers agree.
 | 1 | `REFUSED` | a check ran and refused; the report names which |
 | 2 | `INCOMPLETE` | nothing refused, but a check that was planned could not run |
 | 3 | `BROKEN` | nothing was checked at all, or this program failed |
+
+### `--require signed`: the same question the product's `verify` asks
+
+By default an event written after the last checkpoint is **not** a refusal, here or in the
+product's own `verify`: it rests on the hash chain alone, the verdict stays `VERIFIED` with
+exit 0, and a note says how many sit there. A consumer that checkpoints on a cadence has such a
+residual all the time, and a gate that always fails is a gate somebody switches off.
+
+`--require signed` is how a caller says it will not accept that. It has the **same meaning and
+the same exit** as the product's flag of the same name: every event of every tail has to be
+covered by a checkpoint that verified, and at least one has to be. An event above the last
+checkpoint, or a record in which no checkpoint verified over anything, is **`REFUSED`, exit 1**
+— the exit of any other refusal, so a gate that tests for non-zero needs nothing more. The
+default is `chained`, which is what a run without the flag has always been, and the default is
+the same in both readers. `--require witnessed` is the product's third value and is not offered
+here: this reader dates a record by its attestation (§8) and reports whether it reaches the
+last event, but does not turn that into a refusal.
+
+Both readers are held to this over the same bytes — an event appended with no key after the
+last checkpoint, with and without the flag — by
+[`second-reader-agrees-on-the-record.test.ts`](../src/chain/second-reader-agrees-on-the-record.test.ts).
 
 `INCOMPLETE` exists because of a defect in this program's own ancestor: a 156-line
 prototype printed `T2/T4 ok` on a line that ran unconditionally, **after** it had already

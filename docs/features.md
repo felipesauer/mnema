@@ -45,7 +45,8 @@ Each line says what it does and what it leaves unproven; the page it points to h
   `proposed`, with a dry run first. Nothing is accepted for you.
 - **By code, in a pull request, in an editor.** [`@mnema/sdk`](../packages/sdk/) records and reads the
   record from a program; [`@mnema/action`](../packages/action/) comments what a pull request does to
-  the record and fails the check when `verify --require=signed` does;
+  the record and fails the check when `verify --require=signed` does (the Python second reader
+  takes `--require signed` as well, and has no `--require witnessed`);
   [`@mnema/vscode`](../packages/vscode/) shows the rules over the open file and rules on waiting
   decisions. **None of the three is published**: they run from a checkout of this repository.
   The SDK calls the same functions as the command line, and a test holds the doors to the same
