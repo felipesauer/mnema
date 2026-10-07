@@ -64,7 +64,7 @@ describe('renderComment', () => {
     expect(text).toContain(
       '- `src/billing/invoice.ts` — governed by Keep money as integer cents (`d1`)',
     );
-    expect(text).toContain('`verify --require=signed`): passed');
+    expect(text).toContain('`verify --require=signed --since <base>`): passed');
   });
 
   it('says so when nothing is added and nothing is governed', () => {

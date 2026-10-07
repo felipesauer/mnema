@@ -140,7 +140,78 @@ export function sign(message: Uint8Array, privateKey: KeyObject): Uint8Array {
   return edSign(null, message, privateKey);
 }
 
-/** Verifies an Ed25519 signature against a public key. */
+/** p = 2^255 - 19, the field; L, the order of the base point (RFC 8032 section 5.1). */
+const P = (1n << 255n) - 19n;
+const L = (1n << 252n) + 27742317777372353535851937790883648493n;
+
+/**
+ * The eight points of small order — [8]P is the identity — in their canonical encodings, as
+ * CCTV's `ed25519/README.md` lists them. Every other encoding of one of them is non-canonical
+ * (`y >= p`, or `x = 0` with the sign bit set), and {@link strictPoint} refuses those first, so
+ * these eight are the whole set left to refuse.
+ */
+const SMALL_ORDER: ReadonlySet<string> = new Set([
+  '0000000000000000000000000000000000000000000000000000000000000000',
+  '0000000000000000000000000000000000000000000000000000000000000080',
+  '0100000000000000000000000000000000000000000000000000000000000000',
+  '26e8958fc2b227b045c3f489f2ef98f0d5dfac05d3c63339b13802886d53fc05',
+  '26e8958fc2b227b045c3f489f2ef98f0d5dfac05d3c63339b13802886d53fc85',
+  'c7176a703d4dd84fba3c0b760d10670f2a2053fa2c39ccc64ec7fd7792ac037a',
+  'c7176a703d4dd84fba3c0b760d10670f2a2053fa2c39ccc64ec7fd7792ac03fa',
+  'ecffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff7f',
+]);
+
+function littleEndian(bytes: Uint8Array): bigint {
+  let n = 0n;
+  for (let i = bytes.length - 1; i >= 0; i -= 1) n = (n << 8n) | BigInt(bytes[i] as number);
+  return n;
+}
+
+/**
+ * Whether a 32-byte point encoding is one the strict rule admits: canonical, and not of small
+ * order. Whether it is a point at all is left to `node:crypto`, which refuses one that is not.
+ */
+function strictPoint(encoded: Uint8Array): boolean {
+  if (encoded.length !== 32) return false;
+  const whole = littleEndian(encoded);
+  const y = whole & ((1n << 255n) - 1n);
+  if (y >= P) return false;
+  // x = 0 only where y = 1 or y = p - 1, and there the sign bit can only be 0: a 1 is "-0".
+  if (whole >> 255n === 1n && (y === 1n || y === P - 1n)) return false;
+  return !SMALL_ORDER.has(Buffer.from(encoded).toString('hex'));
+}
+
+/**
+ * Whether a public key's A is one the strict rule admits, asked once per key: exporting the key
+ * to read its 32 bytes cost a third of a verification, and a record checks many signatures by
+ * few keys.
+ */
+const STRICT_KEYS = new WeakMap<KeyObject, boolean>();
+
+function strictKey(publicKey: KeyObject): boolean {
+  let admitted = STRICT_KEYS.get(publicKey);
+  if (admitted === undefined) {
+    admitted = strictPoint(publicKey.export({ type: 'spki', format: 'der' }).subarray(12));
+    STRICT_KEYS.set(publicKey, admitted);
+  }
+  return admitted;
+}
+
+/**
+ * Verifies an Ed25519 signature against a public key, under the STRICT rule `FORMAT.md` section
+ * 6 states: A and R decode canonically to points that are not of small order, `S < L`, and the
+ * equation is the one without the cofactor.
+ *
+ * The encodings are checked HERE, before `node:crypto`, because `node:crypto` is not one rule:
+ * Node 22 and Node 24 up to 24.18 accept a small-order A or R, and a non-canonical A, which Node
+ * 24.19 and later refuse (nodejs/node#64026). Without this check a record forged with a
+ * small-order key verified under one Node and failed under another. The equation is still
+ * `node:crypto`'s, and it is cofactorless on every version
+ * (`packages/code/tests/every-verifier-gives-one-ed25519-verdict.test.ts`).
+ */
 export function verify(message: Uint8Array, signature: Uint8Array, publicKey: KeyObject): boolean {
+  if (signature.length !== 64) return false;
+  if (!strictKey(publicKey) || !strictPoint(signature.subarray(0, 32))) return false;
+  if (littleEndian(signature.subarray(32)) >= L) return false;
   return edVerify(null, message, publicKey, signature);
 }

@@ -19,8 +19,12 @@ a checkout of this repository, with the `mnema` of the `@mnema/code` that sits b
 - **Which changed files a rule addresses.** For each changed file it runs `mnema rules`, and lists
   the files addressed by a rule in force: an accepted decision linked to the path with `governs`,
   `asks-for-a-person` or `refuses-a-write`, with the rule's name and id.
-- **`verify --require=signed` as the check.** The Action fails when `mnema verify --require=signed`
-  exits non-zero. `--require=signed` is a flag of `verify`; nothing is added to it here.
+- **`verify --require=signed --since <base>` as the check.** The Action fails when
+  `mnema verify --require=signed --since <base>` exits non-zero, `<base>` being the pull request's
+  base commit. Both are flags of `verify`; nothing is added to them here. `--since` is what catches
+  a record cut back to an earlier state that is honest in every byte — the newest events taken
+  with the checkpoint that covered them — which a reading of the record alone cannot see; it also
+  fails a tail removed after a `tail.pruned`, which is the one change a reviewer has to look at.
 - **Optional, off by default: approval for rules that ask for a person.** With
   `require-approval-for-asks: "true"` the Action also fails when a changed file is addressed by an
   accepted `asks-for-a-person` rule and no reviewer other than the author stands approved on the
@@ -132,9 +136,12 @@ token, and `fetch` is a parameter. `world.ts` is `git` and the `mnema` binary as
 
 ## What it proves — and what it does not
 
-- It proves what `mnema verify --require=signed` proves and nothing beyond it: every event of the
-  record is covered by a verified signature. It does not add a second verifier and does not widen
-  that promise; `--require=witnessed` and `--since` are not asked.
+- It proves what `mnema verify --require=signed --since <base>` proves and nothing beyond it: every
+  event of the record is covered by a verified signature, and every file of the record the base
+  commit held still begins with the bytes it held there. It does not add a second verifier and does
+  not widen that promise; `--require=witnessed` is not asked. A cut is caught against the base the
+  pull request names, and a base that is itself already cut is not
+  (`packages/action/src/run.test.ts`).
 - The events it reports as added are the ones the checked-out commit holds in `.mnema/tails/` and
   the pull request's base commit does not, compared by their chain hash. That is a count of lines
   that arrived. It does not say who wrote them, and it does not say the pull request is right to

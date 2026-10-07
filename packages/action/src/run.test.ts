@@ -165,8 +165,40 @@ describe('the Action on a real repository', { timeout: A_REAL_BINARY_PER_CASE },
     const code = await main(environment(baseSha), fetchIt, (line) => said.push(line));
 
     expect(code).toBe(1);
-    expect(said).toContain('::error::the record does not verify as signed');
-    expect(written[0]?.body).toContain('`verify --require=signed`): failed');
+    expect(said).toContain(
+      '::error::the record does not verify as signed, as the base record grown',
+    );
+    expect(written[0]?.body).toContain('`verify --require=signed --since <base>`): failed');
+  });
+
+  it('fails the check when the record was cut back to an earlier state, honest in every byte', async () => {
+    // The newest events cut together with the checkpoint that covered them: what is left is a
+    // shorter record that verifies as signed on its own. Only the base remembers it was longer.
+    git('init', '-q', '-b', 'main');
+    mnema('init');
+    mnema('decision', 'record', 'Keep money as integer cents', 'Floats drift.');
+    git('add', '.');
+    git('commit', '-q', '-m', 'earlier');
+    const earlier = git('rev-parse', 'HEAD');
+    mnema('decision', 'record', 'Round half to even', 'Banker rounding.');
+    git('add', '.');
+    git('commit', '-q', '-m', 'base');
+    const baseSha = git('rev-parse', 'HEAD');
+    git('rm', '-q', '-r', '.mnema');
+    git('checkout', '-q', earlier, '--', '.mnema');
+    git('commit', '-q', '-m', 'head');
+    // The control: the cut record, read alone, is signed and whole.
+    expect(() => mnema('verify', '--require=signed')).not.toThrow();
+
+    const { fetchIt, written } = github([]);
+    const said: string[] = [];
+    const code = await main(environment(baseSha), fetchIt, (line) => said.push(line));
+
+    expect(code).toBe(1);
+    expect(said).toContain(
+      '::error::the record does not verify as signed, as the base record grown',
+    );
+    expect(written[0]?.body).toContain('`verify --require=signed --since <base>`): failed');
   });
 
   it('fails on a rule that asks for a person only when the check is on and nobody else approved', async () => {

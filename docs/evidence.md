@@ -1,7 +1,7 @@
 # How each claim is held
 
-Every claim the pages make about what the agent hosts do, and what the plugin hands them,
-is held by one of three things: a file of this repository that fails when the claim stops
+Every claim the pages make about what the agent hosts do, what the plugin hands them, and what
+the verifiers agree on with vectors other people wrote, is held by one of three things: a file of this repository that fails when the claim stops
 being true, a result that was read once and is kept here as history, or nothing yet. The
 table says which, per claim, and the last column names the file — a test or a specification
 that is in the tree today. Every file named on this page is checked to exist.
@@ -52,6 +52,11 @@ What the verifier proves, and what it does not, is on
 | A write through the shell goes round a rule that refuses it, and the case requires that it does: the limit is a declared one | a test | [`the-shell-goes-round.test.ts`](../packages/code/tests/host-contract/the-shell-goes-round.test.ts) |
 | Without `mnema` on the PATH the plugin's hooks fail open in Claude Code: the session opens with nothing added and a write a rule would refuse goes through | a test | [`without-mnema-the-hooks-fail-open.test.ts`](../packages/code/tests/host-contract/without-mnema-the-hooks-fail-open.test.ts) |
 | The host contract starts the hosts where only loopback exists, reads where Claude Code connected, and refuses a round that measured another binary than the one it names | a test | [`the-instrument-sees-what-leaves.test.ts`](../packages/code/tests/host-contract/the-instrument-sees-what-leaves.test.ts) |
+| The three verifiers of a record — the product on each Node the CI runs, the Python second reader and the page's verifier — give the verdict their publishers give on every Ed25519 vector of Wycheproof, CCTV, ed25519-speccheck and RFC 8032 §7.1, under the strict rule of `FORMAT.md` §6 | a test | [`every-verifier-gives-one-ed25519-verdict.test.ts`](../packages/code/tests/every-verifier-gives-one-ed25519-verdict.test.ts) |
+| Both readers of the format spell a number as RFC 8785's Appendix B does, and as the first 10,000 lines of cyberphone's `numgen.js` do, run unmodified and matched to the SHA-256 its author published | a test | [`outside-vectors.test.ts`](../packages/chain/src/chain/outside-vectors.test.ts) |
+| Both readers refuse every JSONTestSuite `n_` file as a stored line, and decide every `i_` file alike, save ten whose bytes are not UTF-8, which the product reads past and the second reader refuses | a test | [`outside-vectors.test.ts`](../packages/chain/src/chain/outside-vectors.test.ts) |
+| The vectors above are the files their publishers published: each is copied with its license and commit, and its SHA-256 is checked | a test | [`outside-vectors.test.ts`](../packages/chain/src/chain/outside-vectors.test.ts) |
+| The Action fails a pull request whose record was cut back to an earlier state that is honest in every byte, by holding it to the base with `verify --since` | a test | [`run.test.ts`](../packages/action/src/run.test.ts) |
 
 ## Historical
 

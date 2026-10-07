@@ -1,0 +1,76 @@
+{
+  "about": "Test vectors written by other people, copied here byte for byte so that no test needs the network. Each file's SHA-256 is in SHA256SUMS beside this file, and packages/chain/src/chain/outside-vectors.test.ts checks every one of them. None of this is published with the package.",
+  "sources": [
+    {
+      "name": "Wycheproof",
+      "repository": "https://github.com/C2SP/wycheproof",
+      "commit": "12fd3aaf33eb5fa1f52e026912ee00c054f9d984",
+      "license": "Apache-2.0",
+      "files": {
+        "wycheproof/ed25519_test.json": "testvectors_v1/ed25519_test.json",
+        "wycheproof/LICENSE": "LICENSE"
+      }
+    },
+    {
+      "name": "CCTV, the Ed25519 edge cases",
+      "repository": "https://github.com/C2SP/CCTV",
+      "commit": "50a8ecf2a220f4c8bdc4f085789b8e85c26829e7",
+      "license": "BSD-3-Clause",
+      "files": {
+        "cctv/ed25519vectors.json": "ed25519/ed25519vectors.json",
+        "cctv/LICENSE": "ed25519/LICENSE"
+      }
+    },
+    {
+      "name": "ed25519-speccheck",
+      "repository": "https://github.com/novifinancial/ed25519-speccheck",
+      "commit": "65519336fda78a3d016e947df6d82848aca0c9da",
+      "license": "Apache-2.0",
+      "files": {
+        "speccheck/cases.json": "cases.json",
+        "speccheck/LICENSE": "LICENSE"
+      }
+    },
+    {
+      "name": "RFC 8032, Edwards-Curve Digital Signature Algorithm (EdDSA); the vectors are section 7.1",
+      "repository": "https://www.rfc-editor.org/rfc/rfc8032.txt",
+      "license": "The IETF Trust's Legal Provisions (BCP 78), which allow an RFC to be copied and distributed in full and without modification",
+      "files": {
+        "rfc8032/rfc8032.txt": "rfc8032.txt"
+      }
+    },
+    {
+      "name": "RFC 8785, JSON Canonicalization Scheme; the vectors are Appendix B",
+      "repository": "https://www.rfc-editor.org/rfc/rfc8785.txt",
+      "license": "The IETF Trust's Legal Provisions (BCP 78), which allow an RFC to be copied and distributed in full and without modification",
+      "files": {
+        "rfc8785/rfc8785.txt": "rfc8785.txt"
+      }
+    },
+    {
+      "name": "The ES6 number generator of json-canonicalization",
+      "repository": "https://github.com/cyberphone/json-canonicalization",
+      "commit": "19d51d7fe467d4706a3ff08adf8a748f29fc21e0",
+      "license": "Apache-2.0",
+      "files": {
+        "cyberphone/numgen.js": "testdata/numgen.js",
+        "cyberphone/LICENSE": "LICENSE"
+      },
+      "published": {
+        "where": "testdata/README.md, at the same commit",
+        "lines": 10000,
+        "sha256": "b9f7a8e75ef22a835685a52ccba7f7d6bdc99e34b010992cbc5864cd12be6892"
+      }
+    },
+    {
+      "name": "JSONTestSuite, the inputs a parser must refuse (n_) and those it may decide (i_)",
+      "repository": "https://github.com/nst/JSONTestSuite",
+      "commit": "1ef36fa01286573e846ac449e8683f8833c5b26a",
+      "license": "MIT",
+      "files": {
+        "jsontestsuite/test_parsing/": "test_parsing/ (every n_ and i_ file)",
+        "jsontestsuite/LICENSE": "LICENSE"
+      }
+    }
+  ]
+}

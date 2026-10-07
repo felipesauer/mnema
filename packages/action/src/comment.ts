@@ -13,7 +13,7 @@ export const MARKER = '<!-- mnema-record-report -->';
 
 /** What one run found, ready to be written down. */
 export interface Report {
-  /** What `verify --require=signed` said, and whether it passed. */
+  /** What `verify --require=signed --since <base>` said, and whether it passed. */
   readonly verification: { readonly passed: boolean; readonly said: string };
   readonly record: WhatItDoes;
   readonly governed: readonly GovernedFile[];
@@ -111,7 +111,9 @@ export function renderComment(report: Report): string {
   const out: string[] = [MARKER, '### mnema — this pull request and the record', ''];
 
   const { passed, said } = report.verification;
-  out.push(`**Verification** (\`verify --require=signed\`): ${passed ? 'passed' : 'failed'}`);
+  out.push(
+    `**Verification** (\`verify --require=signed --since <base>\`): ${passed ? 'passed' : 'failed'}`,
+  );
   if (!passed && said.trim() !== '') {
     out.push('', '```', said.trim().slice(0, MOST_QUOTED).replaceAll('```', "'''"), '```');
   }
