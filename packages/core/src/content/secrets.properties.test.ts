@@ -125,7 +125,9 @@ const bridgeArb = fc.constantFrom(
 );
 
 /** Text nobody chose, any characters the encoding holds. */
-const textArb = fc.string({ unit: 'binary', maxLength: 40 }).filter((text) => text.isWellFormed());
+const textArb = fc
+  .string({ unit: 'binary', maxLength: 40 })
+  .filter((text) => !/\p{Surrogate}/u.test(text));
 
 const CLASSES = Object.keys(SECRETS) as SecretClass[];
 

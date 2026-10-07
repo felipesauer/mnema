@@ -27,7 +27,7 @@ const SEED = Number(process.env.FC_SEED ?? 20_261_007);
 
 /** Text as people type it: composed and decomposed, astral, and anything the encoding holds. */
 const textArb: fc.Arbitrary<string> = fc.oneof(
-  fc.string({ unit: 'binary', maxLength: 12 }).filter((text) => text.isWellFormed()),
+  fc.string({ unit: 'binary', maxLength: 12 }).filter((text) => !/\p{Surrogate}/u.test(text)),
   fc
     .array(fc.constantFrom('e', 'é', 'é', 'Å', 'Å', 'Å', 'ﬃ', '😀', 'ß', '"', '\\', '\n'), {
       maxLength: 6,
