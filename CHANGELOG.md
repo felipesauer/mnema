@@ -19,7 +19,7 @@ tag, with its own changelog.
   linking does. Nothing is erased: the link's own event stays, and every read that applies a link
   (`rules`, `before-a-write`, the opening brief, `governing_rules`, the edit census) stops seeing
   the edge once its only asserter took it back, so a rule addressed at a path stops acting there.
-  `mnema refs`, `mnema diagram` and the `references` tool, which show the history of what names
+  The graph readings (`refs`, `diagram` and the `references` tool), which show the history of what names
   what, keep the link and mark it `(retracted by its author)`.
   Any key of that identity retracts it; another identity is refused with `NOT_THE_AUTHOR`, a
   retraction it signed anyway is not applied, and `mnema verify` names it in a
@@ -31,6 +31,17 @@ tag, with its own changelog.
   the FIRST tree, in the order every locate walks, that holds a link of that edge: when another
   identity also recorded the same edge in an earlier tree, `unlink` is refused there with
   `NOT_THE_AUTHOR`, and there is no flag to point it at the later tree that holds yours.
+
+- **`mnema doctor` sees what keeps VS Code's agent from loading the plugin, and `--fix vscode`
+  mends it.** The doctor reads the user `settings.json` of VS Code (the places of each platform,
+  the snap's old one included) and says whether `chat.pluginLocations` is set, whether it lists
+  a mnema plugin that exists and is the version of the binary, and what to run. `mnema doctor
+  --fix vscode` is the one thing it writes, and only when asked: it shows the change (`--dry-run`
+  stops there), copies the file aside, edits that one setting without losing the file's comments
+  or trailing commas, and refuses a file it cannot edit safely. It lists the marketplace copy of
+  the plugin, whose path does not change at an update. The doctor also sees the mnema server
+  declared in any project of `~/.claude.json`, one whose directory is gone included, and says
+  how to remove it, and names a script on the `PATH` that shadows the real `mnema`.
 
 - **The record says which key is a backup.** A new event kind, `backup.declared`
   (`payload.backupFp`), says that one of an identity's keys is kept off the machine. `mnema init`

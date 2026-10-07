@@ -476,7 +476,11 @@ describe('every handler that pushes declares the channel it carries', () => {
         expect(channels, `${event} calls \`${tool}\`, which names no channel`).not.toBeUndefined();
         expect((channels ?? []).length, `${tool} names no channel at all`).toBeGreaterThan(0);
         for (const channel of channels ?? []) {
-          expect(FRAMED_CHANNELS as readonly string[], `${tool} → ${channel}`).toContain(channel);
+          // Classified one way or the other: it declares its framing, or says why it owes none.
+          expect(
+            [...FRAMED_CHANNELS, ...Object.keys(UNFRAMED_CHANNELS)] as readonly string[],
+            `${tool} → ${channel}`,
+          ).toContain(channel);
         }
         ruled.push(`${event}:mcp_tool:${tool}:${(channels ?? []).join('+')}`);
         continue;

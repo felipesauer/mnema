@@ -53,8 +53,8 @@ import type {
 import {
   getMemory,
   getObservation,
-  listHandoffs,
   linkAssertionStands,
+  listHandoffs,
   listLinksByRelation,
   listLinksFrom,
   listLinksTo,

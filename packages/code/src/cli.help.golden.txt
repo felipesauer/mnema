@@ -39,6 +39,8 @@ $ mnema
 !   unlink [options] <subject> <target>   take a link back, keeping it in the
 !                                         record (only the identity that recorded
 !                                         it; follows the link)
+!   promote [options] [id]                list what recurs across projects, or
+!                                         copy one pattern to the global tree
 !   retract [options] <id>                take a memory or an observation back,
 !                                         keeping it in the record (follows the
 !                                         note; takes no --scope)
@@ -118,9 +120,10 @@ $ mnema
 !                                         may accept a decision
 !   inherit                               read another repository’s decisions,
 !                                         pinned to one of its commits
-!   doctor                                say how mnema is installed on this
+!   doctor [options]                      say how mnema is installed on this
 !                                         machine, and what to do about each thing
-!                                         found (writes nothing)
+!                                         found (writes nothing unless you pass
+!                                         --fix vscode)
 !   verify [options]                      verify this project's record — its
 !                                         committed tree and its private one
 !   mcp [options]                         run the mnema MCP server over stdio (for
@@ -173,6 +176,8 @@ $ mnema --help
 |   unlink [options] <subject> <target>   take a link back, keeping it in the
 |                                         record (only the identity that recorded
 |                                         it; follows the link)
+|   promote [options] [id]                list what recurs across projects, or
+|                                         copy one pattern to the global tree
 |   retract [options] <id>                take a memory or an observation back,
 |                                         keeping it in the record (follows the
 |                                         note; takes no --scope)
@@ -252,9 +257,10 @@ $ mnema --help
 |                                         may accept a decision
 |   inherit                               read another repository’s decisions,
 |                                         pinned to one of its commits
-|   doctor                                say how mnema is installed on this
+|   doctor [options]                      say how mnema is installed on this
 |                                         machine, and what to do about each thing
-|                                         found (writes nothing)
+|                                         found (writes nothing unless you pass
+|                                         --fix vscode)
 |   verify [options]                      verify this project's record — its
 |                                         committed tree and its private one
 |   mcp [options]                         run the mnema MCP server over stdio (for
@@ -537,6 +543,49 @@ $ mnema unlink --help
 |                    no agent (an unset variable) is refused, never credited to
 |                    you.
 |   -h, --help       display help for command
+|
+| What recording means here:
+|   Permanent — mnema is append-only and nothing deletes a fact. A public record
+|   is committed and reaches every machine that clones the repository.
+|   Do not record credentials: a recognized format is replaced with a placeholder
+|   and reported back, but what mnema does not recognize is written verbatim.
+|   Nor personal data: an email address is replaced with <email>; the mnid already says who wrote.
+|   Each text field holds at most 65536 bytes; a longer one is refused.
+
+### mnema promote --help
+$ mnema promote --help
+| Usage: mnema promote [options] [id]
+|
+| list what recurs across projects, or copy one pattern to the global tree
+|
+| Arguments:
+|   id                     the pattern or decision in this project to copy to the
+|                          global tree
+|
+| Options:
+|   --workspace <path...>  list the patterns and decisions in force, with the same
+|                          words, in the committed record of the projects at these
+|                          paths (writes nothing)
+|   --evidence <path:id>   with <id>: another project and the id of the same
+|                          pattern there (repeatable)
+|   -h, --help             display help for command
+|
+| Two acts:
+|   mnema promote --workspace <path...>
+|       lists what is in force, with the same words, in the committed record of two or
+|       more of the projects you name. It writes nothing. The set is what you name and is
+|       never searched for; a pattern or decision counts only if it is in force (adopted,
+|       accepted) and only through the committed tree — a project’s private tree is
+|       neither counted nor cited, because the copy goes where every project reads.
+|   mnema promote <id> --evidence <path>:<id>
+|       copies <id>, which is in the project you stand in, to this machine’s global tree;
+|       repeat --evidence for each other project.
+|       It is born proposed, carries no address, and cites each id given (and <id>) as
+|       derived-from. It refuses, and appends nothing, anything the listing would not show.
+|       Nothing is moved: the originals stay where they are. Adopt the copy with the verb
+|       that moves a skill or a decision.
+| "Same words" is compared after NFC, trimming and collapsing whitespace, and not after
+| that: a skill is its name and body, a decision its title and rationale.
 |
 | What recording means here:
 |   Permanent — mnema is append-only and nothing deletes a fact. A public record
@@ -1249,17 +1298,25 @@ $ mnema doctor --help
 | Usage: mnema doctor [options]
 |
 | say how mnema is installed on this machine, and what to do about each thing
-| found (writes nothing)
+| found (writes nothing unless you pass --fix vscode)
 |
 | Options:
-|   -h, --help  display help for command
+|   --fix <what>  make the one change a finding asks for, and only that one:
+|                 `vscode` lists the plugin in the chat.pluginLocations setting of
+|                 VS Code’s settings.json, after keeping a copy of the file
+|   --dry-run     with --fix: say what would change and write nothing
+|   -h, --help    display help for command
 |
 | What it looks at, and nothing else:
 |   the `mnema` executables on the PATH and which one is running; Claude Code’s list of
 |   installed plugins; the mnema MCP server declared in .mcp.json, .cursor/mcp.json,
 |   .vscode/mcp.json and ~/.claude.json, the plugin counting as one; and an npm package
-|   named `mnema` installed where the PATH points — the registry is not asked.
-| It writes nothing and exits 0 whatever it finds: each line says what to do.
+|   named `mnema` installed where the PATH points — the registry is not asked; VS Code’s user
+|   settings.json, for whether its agent is told where the plugin is; and the projects of
+|   ~/.claude.json that still declare the server.
+| Asked alone it writes nothing and exits 0 whatever it finds: each line says what to do.
+| `--fix vscode` is the only thing that writes: it shows what it will change, keeps a copy of
+| settings.json beside it, keeps the file’s comments, and refuses a file it cannot edit safely.
 
 ### mnema verify --help
 $ mnema verify --help

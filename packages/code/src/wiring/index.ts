@@ -240,6 +240,7 @@ import { registerMcp } from './mcp.js';
 import { registerMemory } from './memory.js';
 import { registerNextActions } from './next-actions.js';
 import { registerObserve } from './observe.js';
+import { registerPromote } from './promote.js';
 import { registerRecall } from './recall.js';
 import { registerReferences } from './refs.js';
 import { registerRepl } from './repl.js';
@@ -278,6 +279,7 @@ export const VERBS: readonly Verb[] = [
   registerHandoff,
   registerLink,
   registerUnlink,
+  registerPromote,
   registerRetract,
   registerRun,
   registerStatus,
