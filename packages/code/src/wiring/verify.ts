@@ -886,7 +886,7 @@ function report(
   if (tree.kind === 'no-record') {
     // A private tree that holds nothing is the state of every fresh clone and of every project
     // nobody has written a private fact in — informational, so it waits for `--verbose`. The
-    // committed tree and the global one holding nothing is still said: that is a different news.
+    // global tree holding nothing is still said, when it was asked for: that is a different news.
     if (tree.scope === 'private' && !verbose) return;
     io.out(render(statement(named, NO_RECORD)));
     return;

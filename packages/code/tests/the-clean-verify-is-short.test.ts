@@ -7,10 +7,10 @@
  * part of the first verdict a newcomer reads, over a record with nothing wrong in it.
  *
  * WHAT MOVES AND WHAT NEVER DOES. Only what is informational goes behind the flag: the backup-key
- * census note and the private tree's "no record here". A break, an issue, a note that says a tail
- * may have lost its newest line, a tree that cannot be read, and the exit code are the same with the
- * flag and without it — the flag adds lines and never removes a warning, so the cases that must stay
- * loud are here beside the ones that go quiet.
+ * census note and the PRIVATE tree's "no record here". A break with its evidence, a global tree that
+ * holds nothing, and the exit code are the same with the flag and without it — the flag adds
+ * lines and never removes a warning, so the cases that must stay loud are here beside the ones that
+ * go quiet.
  *
  * Every fixture is built by the product (`mnema init`, `mnema task`), then edited on disk the way an
  * adversary would.
@@ -152,5 +152,19 @@ describe('--verbose never carries what is not informational', () => {
     expect(verbose.out[0]).toBe(clean.out[0]);
     expect(verbose.err).toEqual(clean.err);
     expect(verbose.failed).toBe(true);
+  });
+
+  it('says a global tree that holds nothing without the flag, as it does with it', async () => {
+    // Only the PRIVATE tree's empty line waits for --verbose: asked for the global tree, a reader
+    // is told it holds nothing in a clean reading too. (The committed tree is never empty here —
+    // the project is found by it, and an empty one still gets a verdict.)
+    await found();
+
+    const clean = await verify('--global');
+    const verbose = await verify('--global', '--verbose');
+    const line = (said: Said): string | undefined =>
+      said.out.find((one) => one.startsWith('global: no record here'));
+    expect(line(clean)).toBeDefined();
+    expect(line(verbose)).toBe(line(clean));
   });
 });
