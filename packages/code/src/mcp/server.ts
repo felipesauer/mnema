@@ -735,8 +735,8 @@ function declaringInto(
  *     each call can leave a signed event behind. The protocol's words are "does not modify
  *     its environment", which is wider than the record, and the wider thing is what is
  *     measured: a read leaves every file and directory of the sandbox as it found them, not
- *     only the chain. The projection it rebuilds is held in memory (`CacheOptions.dbPath` has
- *     no production caller), so there is no cache file for it to write.
+ *     only the chain. The projection it rebuilds is held in memory, so there is no cache file for it
+ *     to write, unless `$MNEMA_CACHE_DIR` names a directory (`core/src/projections/cache-home.ts`).
  *   - `destructiveHint` is false for every tool. The record is append-only and no tool
  *     removes or rewrites what it holds: every byte a file held before a call is where it
  *     was after it. The one byte a write ever takes back is the torn fragment a crashed

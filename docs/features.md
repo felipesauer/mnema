@@ -14,6 +14,13 @@ Each line says what it does and what it leaves unproven; the page it points to h
 - **A read pays for what arrived, not for the whole record.** A read keeps what it built in each tree's gitignored
   `locks/projection.db` and takes only what was appended since. It is derived, never the record:
   deleting it changes no answer, and a clone does not carry it.
+  `MNEMA_CACHE_DIR` keeps it in a directory you choose instead (a checkout you cannot write to,
+  worktrees that share one, or a CI cache restored between runs); a directory shared by several
+  projects holds a file for each, and it is still only a cache. The SDK honors the variable only when
+  `openRecord` uses the default environment; with an explicit `env` it is ignored, as `MNEMA_HOME` is.
+  When a fresh install creates a tail the project moves to another cache file and the old one stays in
+  the directory: deleting old cache files is safe (it is only cache), and in a cached CI directory it
+  means the directory can grow.
 - **The git log, read against the record.** `mnema trailer`, `commits`, `why` and `aging` print the
   `Mnema-Decision` trailer a commit carries and the commits that cite or touched what a decision
   addresses. They write nothing; a trailer is its author's claim, signed by nobody, and `aging`
@@ -40,6 +47,7 @@ Each line says what it does and what it leaves unproven; the page it points to h
   The SDK calls the same functions as the command line, and a test holds the doors to the same
   events and refusals.
 - **Your machine, checked.** `mnema doctor` says whether a `mnema` is on the `PATH`, whether the
-  plugin is installed and whether the server is declared twice. It writes nothing and does not ask
-  the registry. For skills, the plugin brings `recording-decisions`, `recording-rulings` and
+  plugin is installed, whether VS Code's settings tell its agent where the plugin is, and whether the
+  server is declared twice. Asked alone it writes nothing and does not ask the registry;
+  `mnema doctor --fix vscode` is the one change it makes, and only when you type it. For skills, the plugin brings `recording-decisions`, `recording-rulings` and
   `diagnosing-recording`; `mnema-server-only` is the same server without the hooks and the skills.

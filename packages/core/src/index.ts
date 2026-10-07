@@ -59,6 +59,7 @@ export {
 // a READ — a pure question about a string — so it belongs here, and the audit of
 // an existing record reaches it through this barrel. Only SCREENING (refusing and
 // rewriting on the way to an append) lives on the writing side.
+export { EMAIL_PLACEHOLDER, type ReplacedClass } from './content/personal.js';
 export { FIELD_BYTE_LIMIT } from './content/screen.js';
 export {
   detectSecrets,
@@ -100,6 +101,11 @@ export {
   type MembershipRefusalCode,
 } from './identity/membership.js';
 export { type CacheOptions, ProjectionCache } from './projections/cache.js';
+export {
+  CACHE_DIR_VARIABLE,
+  keepReadCacheIn,
+  readCacheIsChosen,
+} from './projections/cache-home.js';
 export type { ChannelSwitchProjection } from './projections/channel.js';
 export {
   type AdrCollision,

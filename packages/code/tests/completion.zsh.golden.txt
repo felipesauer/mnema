@@ -12,7 +12,7 @@
 
 _mnema_commands() {
   case "$1" in
-    '') echo 'init task decision skill memory observe handoff link retract run status focus resume next-actions guard search show timeline accountability antipatterns exposure export site refs diagram rules rules-file check trailer commit-hook commits why aging skills usage brief recall before-a-write tally corrections key tail witness switch inherit doctor verify mcp repl completion help' ;;
+    '') echo 'init task decision skill memory observe handoff link promote retract run status focus resume next-actions guard search show timeline accountability antipatterns exposure export site refs diagram rules rules-file check trailer commit-hook commits why aging skills usage brief recall before-a-write tally corrections key tail witness switch inherit doctor verify mcp repl completion help' ;;
     'task') echo 'create move help' ;;
     'decision') echo 'record move supersede import help' ;;
     'skill') echo 'create move export help' ;;
@@ -38,6 +38,7 @@ _mnema_described() {
       'observe:record an observation about an entity in the current project' \
       'handoff:record a handoff on a task in the current project' \
       'link:link one piece of knowledge to another in the current project' \
+      'promote:list what recurs across projects, or copy one pattern to the global tree' \
       'retract:take a memory or an observation back, keeping it in the record (follows the note; takes no --scope)' \
       'run:open and close the session an agent works inside' \
       'status:show where things stand: the work, what governs, what awaits a ruling' \
@@ -75,7 +76,7 @@ _mnema_described() {
       'witness:ask an outside witness to date this record, and read where that stands' \
       'switch:turn off, or back on, what mnema hands to a model unasked, and whether an agent may accept a decision' \
       'inherit:read another repository’s decisions, pinned to one of its commits' \
-      'doctor:say how mnema is installed on this machine, and what to do about each thing found (writes nothing)' \
+      'doctor:say how mnema is installed on this machine, and what to do about each thing found (writes nothing unless you pass --fix vscode)' \
       'verify:verify this project'\''s record — its committed tree and its private one' \
       'mcp:run the mnema MCP server over stdio (for an agent host)' \
       'repl:open an interactive session that reads this project' \
@@ -155,6 +156,7 @@ _mnema_flags() {
     'observe') echo '--topic --text --scope --which --stdin --body-file -h --help -V --version --color --identify' ;;
     'handoff') echo '--scope --which -h --help -V --version --color --identify' ;;
     'link') echo '--rel --scope --which -h --help -V --version --color --identify' ;;
+    'promote') echo '--workspace --evidence -h --help -V --version --color --identify' ;;
     'retract') echo '--reason --which -h --help -V --version --color --identify' ;;
     'run') echo '-h --help -V --version --color --identify' ;;
     'run start') echo '--which --goal -h --help -V --version --color --identify' ;;
@@ -214,7 +216,7 @@ _mnema_flags() {
     'inherit') echo '-h --help -V --version --color --identify' ;;
     'inherit set') echo '--at --write -h --help -V --version --color --identify' ;;
     'inherit update') echo '--to --write -h --help -V --version --color --identify' ;;
-    'doctor') echo '-h --help -V --version --color --identify' ;;
+    'doctor') echo '--fix --dry-run -h --help -V --version --color --identify' ;;
     'verify') echo '--global --workspace --allow-no-record --require --since --against-github --json -h --help -V --version --color --identify' ;;
     'mcp') echo '--project -h --help -V --version --color --identify' ;;
     'repl') echo '-h --help -V --version --color --identify' ;;
@@ -257,6 +259,7 @@ _mnema_values() {
     'handoff:--color') echo 'auto always never' ;;
     'link:--scope') echo 'public private global' ;;
     'link:--color') echo 'auto always never' ;;
+    'promote:--color') echo 'auto always never' ;;
     'retract:--color') echo 'auto always never' ;;
     'run:--color') echo 'auto always never' ;;
     'run start:--color') echo 'auto always never' ;;

@@ -190,6 +190,7 @@ const THE_ORDERINGS: readonly Rostered[] = [
   { file: 'context/src/intelligence/exposure.ts', by: 'oldestFirst', means: OLDEST },
   { file: 'context/src/intelligence/exposure.ts', by: 'projectlessLast', means: OTHER },
   { file: 'context/src/intelligence/governance.ts', by: 'bySpecificity', means: OTHER },
+  { file: 'context/src/intelligence/promotion.ts', by: 'byProjectThenId', means: OTHER },
   { file: 'context/src/intelligence/provenance.ts', by: 'byNameThenId', means: OTHER },
   { file: 'context/src/intelligence/references.ts', by: 'byInstantThenEnds', means: OLDEST },
   // By kind, then entity, then the state it left: a property of the content, as the reading

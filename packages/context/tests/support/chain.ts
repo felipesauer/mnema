@@ -287,12 +287,15 @@ export function birthDecision(
   // and harmless everywhere the label is carried rather than compared. A case that
   // compares them passes the number this chain's own count would have frozen.
   adr = `ADR-${id}`,
+  // What the decision says it was decided FOR, when a case is about two decisions that
+  // share a title and differ in what they say. Omitted, it is derived from the title.
+  rationale = `why ${title}`,
 ): string {
   for (const e of decisionBirth(
     { at: b.now(), who: b.who, signerFp: b.writer.signerFingerprint, subject: id },
     {
       title,
-      rationale: `why ${title}`,
+      rationale,
       adr,
       initial,
       // Every bench decision carries what it turned down, and that is deliberate:
@@ -383,6 +386,9 @@ export function birthSkill(
   name: string,
   initial = 'proposed',
   which?: string,
+  // The pattern itself, when a case is about two skills that share a name and differ in
+  // what they say. Omitted, it is derived from the name.
+  body = `body of ${name}`,
 ): string {
   for (const e of skillBirth(
     {
@@ -392,7 +398,7 @@ export function birthSkill(
       subject: id,
       ...(which !== undefined ? { which } : {}),
     },
-    { name, body: `body of ${name}`, initial },
+    { name, body, initial },
   )) {
     b.writer.append(e);
   }

@@ -229,6 +229,9 @@ const INVOCATION: Readonly<Record<string, Invocation>> = {
   },
   handoff: { argv: (f) => ['handoff', f.task, 'agent-alpha', 'agent-beta'] },
   link: { argv: (f) => ['link', f.task, f.task, '--rel', 'relates-to'] },
+  // The listing act, which reads: what makes the verb a write is the copy, and that needs a
+  // second project holding the same pattern, which this fixture is not (`RECORDS_NOTHING`).
+  promote: { argv: () => ['promote', '--workspace', '.'] },
   retract: { argv: (f) => ['retract', f.note, '--reason', 'it turned out to be wrong'] },
   run: { argv: () => ['run', 'start', '--which', 'agent-alpha'] },
   // The group's recording half; `check run` needs a key enrolled as a checker and a tree at
@@ -333,6 +336,11 @@ const RECORDS_NOTHING: Readonly<Record<string, string>> = {
     'not exercised here: it writes one hook file into a git repository, which the fixture is not ' +
     '— neither an event nor a key; `a-commit-hook-only-suggests.test.ts` drives it over a real ' +
     'repository',
+  promote:
+    'the exercise is its listing act, which reads: the copy is what makes it a write and needs a ' +
+    'second project holding the same pattern in force, which the fixture is not — through the ' +
+    'binary, over two projects, it appends the copy and its links and refuses what the listing ' +
+    'does not show with the global tree untouched',
   'before-a-write':
     'answers a payload a host hands it on the standard input, and in process there is none — ' +
     'its asking is exercised with a payload through the binary',
@@ -622,6 +630,7 @@ describe('every verb says if it writes', () => {
       'observe',
       'handoff',
       'link',
+      'promote',
       'retract',
       'run',
       'check',

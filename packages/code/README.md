@@ -96,8 +96,9 @@ identically, because they are the same call.
   addresses, which is why the opening document says how many of the project's rules have
   an address. The two opening hooks are reads: they append nothing and open no run, so the
   record's `channel.served` counts what the per-edit hook pushed and never the opening
-  texts. The per-edit one records that it served, and holds a write for a person only where a rule of
-  your own record asks it to — the plugin's page says how. The fourth is that same pause for a
+  texts. It is mnema noting that it delivered the hook's answer, not a person's approval of
+  anything. The per-edit one records that it served, and holds a write for a person only where a
+  rule of your own record asks it to — the plugin's page says how. The fourth is that same pause for a
   host whose hooks are processes: VS Code's agent runs it as `mnema before-a-write --host vscode`
   before a write, and it asks, and records, exactly where the third would; Claude Code and
   Cursor never run it. The fifth and sixth are one command, `mnema tally`, run at `Stop` and
@@ -126,12 +127,14 @@ identically, because they are the same call.
   the table, host by host, and [`measurements/hooks-by-host/`](../../measurements/hooks-by-host/)
   the captures.
 - **A rules file for a host without the plugin** — `mnema rules-file --host vscode` prints the
-  committed rules in force whose address is a file, as a `.instructions.md` with an `applyTo`,
+  committed rules in force whose address is a file or a directory, as a `.instructions.md` with an `applyTo`,
   `--host cursor` as a `.mdc` with `globs`, and `--host claude` as a `.claude/rules/mnema.md` with
-  the `paths` list Claude Code's documentation names (not measured here). A directory is left out, because no list of
-  globs was found to match exactly what it governs in either host: VS Code puts `**/` before a
-  relative pattern, so `src/billing/**` would also match a `src/billing` anywhere else under the
-  folder it reads, and Cursor matches `globs` on its servers, where it could not be measured. So
+  the `paths` list Claude Code's documentation names (not measured here). A directory is written as
+  `dir/**`, which each of the three fields takes as a glob; it is not exact the way a file is: VS Code puts
+  `**/` before a relative pattern, so `src/billing/**` would also match a `src/billing` anywhere else under the
+  folder it reads, Cursor matches `globs` on its servers, where it could not be measured, and
+  whether Claude Code's `**` reaches a name that starts with a dot was not measured. The output
+  says so beside the file. The project root is left out, and so
   is an address holding a character a glob reads as syntax — `app/[id]` as a glob matches
   `app/i`. The same `**/` reaches a file too — `src/x.ts` also matches `other/src/x.ts` — and the
   output says so where it prints a file for VS Code. Every rule it leaves out is named
@@ -181,6 +184,7 @@ verbatim. The surfaces never upgrade a verdict into a stronger claim.
 | **An exported skill is what the record proves** | The BODY is, byte for byte — `mnema skill export` writes the recorded text verbatim, and nothing summarizes, reformats or improves it. The `description` beside it is **not** signed and is not in the record: the skills specification requires one, the chain has no field for it, so it is derived at export time by a stated rule (the first sentence of the body, cut to 1024 characters) or given with `--description`. **No model produces it.** Only an **adopted** pattern leaves — a proposal dropped into a host's skills directory is read as how the work is done here, and a deprecated one wears a live one's face — and there is no `--force`. The `metadata` carries the record id and the whole identity that adopted it, so a third party with the repository can check the line with `mnema show` and `mnema verify`. Nothing comes back the other way: **there is no import**, because a `SKILL.md` from elsewhere would enter as a body signed by us asserting a provenance we do not have. |
 | **An exported audit feed is the record** | It is a **projection** of it, and it is not the proof. `mnema export` emits one OCSF Entity Management event per line for a SIEM, and it carries the **envelope only** — when, which operation, who authorized it, which agent executed it, in which session, over which entity, signed by which key. **No payload of any kind leaves**: not a memory's text, not a decision's rationale, not an observation's body. The reason is the row below — the record holds credentials mnema does not recognize, and a feed carrying bodies would push them off this machine into somebody's search index, permanently. A line that is **altered in transit is not detectable by the SIEM**: the signature in the record covers mnema's own canonical bytes, not this projection, so nothing here is an attestation and OCSF's `record_integrity` profile is deliberately **not** used. What each line does carry is enough to find the fact back in the record — the subject, the original instant, and the tree — so the answer to *is this line real* is a question you ask `mnema show` and `mnema verify`, never the index. Nothing in mnema ever reads a feed back, and the verb **sends nothing anywhere**: it writes to standard output and whoever forwards it decides the rest. |
 | **Credentials stay out of the record** | Only the ones mnema *recognizes*, and only where the value does not read as a name you chose. A value in a known format — a cloud key, an API token, a PEM private key, a password inside a URL — never reaches the chain, and which of two things happens depends on the field. In a **body** (a memory's text, a decision's reasoning, a note) it is replaced with a typed placeholder and the reply names what was replaced: the fact survives the redaction. In a **name** — a title, a skill's name, an agent, a run, either end of a link — the whole write is **refused** and nothing is recorded, because a name with a placeholder in it is not that thing redacted, it is a different thing under its id, permanently. A proprietary token, a password written out in prose, a base64 blob: those are written verbatim, and nothing deletes a fact afterwards. It reduces the damage; it does not make the record safe to paste secrets into. |
+| **Email addresses stay out of a body** | An email address in a **body** is replaced with `<email>` and the reply says so; the `mnid` already says who wrote, so the record has no use for it. Left alone: the user of a URL (`https://user@host`), an scp-style git remote, a `noreply` address (the kind a commit cited from git carries), and anything in a **name**, which is never rewritten. It reduces the damage; it does not find a person's name, a phone number or an address written another way. |
 
 The honest summary: **local cryptography covers alteration; the history a git
 remote keeps covers omission and gives the signing key a history someone else can
@@ -347,6 +351,10 @@ restored, and `init` declares it in the record (`backup.declared`), so every mac
 restored and used would have left a tail that is not there. A record written before that
 declaration existed does not say which key is a backup: there the key reads as a backup only
 on the machine that made it, and as a committed key without a tail anywhere else.
+A tail that holds nothing — its directory with only its ownership proof, which an older
+version left when a key's first write was refused — is not counted as a tail: `verify` says
+`N empty tail(s), which hold no event and are not counted`, and it moves neither the level nor
+the witness. A tail emptied of its events with its proof kept reads the same way.
 A tail removed *together with its key* is not reported at all — that record reads
 `0 tail(s); no events yet`, indistinguishable from a fresh one, and only a history
 outside this record (the one a git remote keeps) can testify to what was taken
@@ -875,9 +883,20 @@ mnema doctor
 One line to a finding, each with what to do about it: whether a `mnema` is on the `PATH` and which
 one runs, whether the Claude Code plugin is installed and at what version, whether the MCP server is
 declared more than once (a session is offered every tool once per declaration), and whether a second
-`mnema`, or an npm package of that name, is installed. It reads files on this machine and writes
-nothing; it does not ask the registry, so a package that is published and not installed here is
-outside what it can say. The exit status is 0 whatever it found: a script that wants to act on a
+`mnema`, or an npm package of that name, is installed (and, when the first one on the `PATH` is a
+script that shadows the other, which). It also says whether VS Code's user `settings.json` lists the
+plugin under `chat.pluginLocations` — the setting VS Code's agent needs, marked experimental there —
+and which projects of `~/.claude.json` still declare the server, those whose directory no longer
+exists included (`claude mcp remove` does not reach them; the line says what to delete). It reads
+files on this machine and, asked alone, writes nothing; it does not ask the registry, so a package
+that is published and not installed here is outside what it can say.
+
+`mnema doctor --fix vscode` is the one thing it writes, and only when you type it: it shows what it
+will change (`--dry-run` stops there), copies `settings.json` to a file beside it, adds the plugin's
+folder in the Claude Code marketplace to `chat.pluginLocations` and drops an entry that points into
+a versioned folder of the plugin cache, keeps the file's comments and the rest of its text, and a
+second run changes nothing. A file it cannot edit safely it refuses, with the reason, and leaves
+untouched. The exit status is 0 whatever it found: a script that wants to act on a
 finding reads the line.
 
 ### What goes into the record
@@ -1561,6 +1580,35 @@ sits where the tree's own `.gitignore` already looks away, and a clone never car
 A read of a tree nobody has written to creates nothing, and where the file cannot be
 had — a read-only directory, a damaged file — the read builds it in memory and answers
 the same.
+
+`MNEMA_CACHE_DIR` keeps that file somewhere else: set to an absolute directory that exists
+and can be written to, every read — the command line, the MCP server and the library —
+keeps its cache there instead of in the tree. It is for a checkout you cannot write to,
+for several worktrees of one project that should build it once, and for CI, where the
+directory is what the runner's cache step saves and restores between runs, so a job starts
+from the last run's cache instead of rebuilding it:
+
+```yaml
+- uses: actions/cache@v4
+  with:
+    path: ${{ runner.temp }}/mnema-cache
+    key: mnema-cache-${{ github.sha }}
+    restore-keys: mnema-cache-
+- run: mkdir -p "$RUNNER_TEMP/mnema-cache" && mnema verify
+  env:
+    MNEMA_CACHE_DIR: ${{ runner.temp }}/mnema-cache
+```
+
+It is still a cache and never the record. A directory may be shared by any number of
+projects: each file is named for the tree it was built from, so a tree reads only a file
+made from it, and a file that no longer follows the record, or that cannot be opened, is
+built again. A value that is relative, or a directory that does not exist or cannot be
+written to, is refused with what to do rather than ignored.
+
+The SDK honors `MNEMA_CACHE_DIR` only when `openRecord` uses the default environment; with an explicit
+`env` it is ignored, as `MNEMA_HOME` is. When a fresh install creates a tail, the project moves to another
+cache file and the old one stays in the directory: deleting old cache files is safe (it is only cache), and
+in a cached CI directory it means the directory can grow.
 
 `~/.mnema` is this machine's data directory, whatever `$XDG_DATA_HOME` says.
 `MNEMA_HOME` moves it: set to an absolute path, the key root and the global tree live
