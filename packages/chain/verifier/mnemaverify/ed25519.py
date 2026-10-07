@@ -14,6 +14,13 @@ Curve constants and the verification equation are RFC 8032 section 5.1. The equa
 is the cofactorless one, [S]B == R + [k]A, which is the one the RFC states; the cofactored
 variant accepts a strictly larger set and no honest signer produces the difference.
 
+THE RULE IS THE STRICT ONE section 6 writes: A and R decode canonically (the decode refuses
+y >= p and a "-0" x) to points that are NOT OF SMALL ORDER, S < L, and the cofactorless
+equation. The small-order refusal is new: this reader used to accept a small-order A or R,
+which one Node accepted and another refused, so the three verifiers of a record followed three
+rules. Over the 1,077 Ed25519 vectors of Wycheproof, CCTV and ed25519-speccheck they now give
+one verdict (`packages/code/tests/every-verifier-gives-one-ed25519-verdict.test.ts`).
+
 THERE IS A SIGNER HERE TOO, and it is not for verifying anything. `mutate` needs to produce
 a checkpoint signed by a key NO ENROLMENT AUTHORIZED - the input that separates "the
 signature verifies" from "the signer was allowed to sign", which is section 6.2's whole
@@ -100,6 +107,11 @@ def _decode_point(data: bytes) -> tuple[int, int, int, int] | None:
     return (x, y, 1, x * y % P)
 
 
+def _small_order(p: tuple[int, int, int, int]) -> bool:
+    """[8]P is the identity: one of the eight points the strict rule of section 6 refuses."""
+    return _equal(_mul(p, 8), IDENTITY)
+
+
 def verify(public_key: bytes, signature: bytes, message: bytes) -> bool:
     """True only if the signature is a valid Ed25519 signature of `message`.
 
@@ -114,6 +126,8 @@ def verify(public_key: bytes, signature: bytes, message: bytes) -> bool:
         return False
     r = _decode_point(signature[:32])
     if r is None:
+        return False
+    if _small_order(a) or _small_order(r):
         return False
     s = int.from_bytes(signature[32:], "little")
     if s >= L:
