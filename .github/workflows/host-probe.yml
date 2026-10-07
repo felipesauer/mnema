@@ -1,0 +1,147 @@
+name: Host probe
+
+# A throwaway probe branch. It runs only on pushes to this branch and is never merged.
+# It needs no key, no secret and no account.
+
+on:
+  push:
+    branches: [host-contract-zero-cost-probe]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+env:
+  CLAUDE_PIN: '2.1.285'
+
+jobs:
+  claude-code:
+    name: claude code against a fake API, loopback only
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version: '24'
+
+      # Item 1. The only step that talks to an Anthropic host (the release manifest on its
+      # download CDN); it runs before the claude binary is ever started.
+      - name: Install the pinned claude and check its SHA-256 against the release manifest
+        run: |
+          set -euo pipefail
+          mkdir -p "$RUNNER_TEMP/cc" && cd "$RUNNER_TEMP/cc"
+          npm init -y >/dev/null
+          npm install --ignore-scripts "@anthropic-ai/claude-code@${CLAUDE_PIN}"
+          BIN="$PWD/node_modules/@anthropic-ai/claude-code-linux-x64/claude"
+          curl -fsSLO "https://downloads.claude.ai/claude-code-releases/${CLAUDE_PIN}/manifest.json"
+          curl -fsSLO "https://downloads.claude.ai/claude-code-releases/${CLAUDE_PIN}/manifest.json.sig"
+          curl -fsSL https://downloads.claude.ai/keys/claude-code.asc | gpg --import 2>&1 | tail -3
+          gpg --fingerprint 2>&1 | grep -i "31DD DE24 DDFA B679 F42D  7BD2 BAA9 29FF 1A7E CACE" || { echo "FAIL fingerprint"; exit 1; }
+          gpg --verify manifest.json.sig manifest.json 2>&1 | tail -4
+          WANT=$(node -e "console.log(JSON.parse(require('fs').readFileSync('manifest.json','utf8')).platforms['linux-x64'].checksum)")
+          GOT=$(sha256sum "$BIN" | cut -d' ' -f1)
+          echo "manifest linux-x64 sha256: $WANT"
+          echo "installed binary sha256:   $GOT"
+          [ "$WANT" = "$GOT" ] && echo "PASS the installed binary is the one the manifest lists" || { echo "FAIL sha256 differs"; exit 1; }
+          echo "CLAUDE_BIN=$BIN" >> "$GITHUB_ENV"
+          "$BIN" --version
+
+      # Items 2 and 3. A network namespace with only loopback; strace records every connect.
+      - name: Run claude in a loopback-only namespace against the fake API
+        run: |
+          set -uo pipefail
+          sudo apt-get install -y strace >/dev/null 2>&1 || true
+          mkdir -p "$RUNNER_TEMP/out"
+          if unshare -rn true 2>/dev/null; then
+            echo "isolation: unshare -rn works as the runner user"
+          else
+            echo "isolation: unshare -rn refused; relaxing the AppArmor userns restriction (value before below)"
+            sysctl kernel.apparmor_restrict_unprivileged_userns || true
+            sudo sysctl -w kernel.apparmor_restrict_unprivileged_userns=0
+            unshare -rn true && echo "isolation: unshare -rn works after the relaxation"
+          fi
+          unshare -rn bash probe-host/run-claude.sh "$CLAUDE_BIN" "$RUNNER_TEMP/out" 2>&1 | tee "$RUNNER_TEMP/run.log"
+          PINNED="$CLAUDE_PIN" node probe-host/analyze.mjs "$RUNNER_TEMP/out" 2>&1 | tee "$RUNNER_TEMP/analyze.log"
+          exit "${PIPESTATUS[0]}"
+
+      - uses: actions/upload-artifact@v7
+        if: always()
+        with:
+          name: claude-probe-output
+          path: |
+            ${{ runner.temp }}/out/api-requests.json
+            ${{ runner.temp }}/out/api-requests.json.connections
+            ${{ runner.temp }}/out/connect.strace
+            ${{ runner.temp }}/out/debug.txt
+            ${{ runner.temp }}/out/stderr.txt
+            ${{ runner.temp }}/run.log
+            ${{ runner.temp }}/analyze.log
+          if-no-files-found: warn
+
+  vscode:
+    name: vs code with copilot chat, loopback only
+    runs-on: ubuntu-24.04
+    strategy:
+      fail-fast: false
+      matrix:
+        vscode: ['stable', '1.139.0']
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version: '24'
+
+      - name: Download VS Code with @vscode/test-electron
+        working-directory: probe-host/vscode
+        run: |
+          set -euo pipefail
+          npm install --no-save @vscode/test-electron@3.1.0
+          VSCODE_VERSION="${{ matrix.vscode }}" VSCODE_CACHE="$RUNNER_TEMP/vsc" node run.mjs download | tee "$RUNNER_TEMP/dl.log"
+          VER=$(grep -o 'vscode-linux-x64-[0-9.]*' "$RUNNER_TEMP/dl.log" | head -1 | sed 's/vscode-linux-x64-//')
+          echo "RESOLVED=$VER" >> "$GITHUB_ENV"
+          echo "resolved VS Code: $VER"
+
+      - name: Is registerLanguageModelChatProvider in the stable vscode.d.ts?
+        run: |
+          set -uo pipefail
+          curl -fsSL "https://raw.githubusercontent.com/microsoft/vscode/${RESOLVED}/src/vscode-dts/vscode.d.ts" -o "$RUNNER_TEMP/vscode.d.ts"
+          grep -n "export function registerLanguageModelChatProvider" "$RUNNER_TEMP/vscode.d.ts" && echo "PASS in the stable vscode.d.ts of $RESOLVED"
+          curl -fsS -o /dev/null -w "proposed file lookup: %{http_code}\n" "https://raw.githubusercontent.com/microsoft/vscode/${RESOLVED}/src/vscode-dts/vscode.proposed.chatProvider.d.ts" || true
+          APP="$RUNNER_TEMP/vsc/vscode-linux-x64-${RESOLVED}/resources/app"
+          ls "$APP/extensions" | grep -i copilot
+          node -e "const c=require('$APP/extensions/copilot/package.json');const p=require('$APP/product.json');const e=p.extensionEnabledApiProposals||{};const k=Object.keys(e).find(x=>x.toLowerCase()==='github.copilot-chat');console.log('copilot-chat',c.version,'wants',(c.enabledApiProposals||[]).length,'proposals; product.json grants',k?e[k].length:'none');console.log('missing from product.json:',JSON.stringify((c.enabledApiProposals||[]).filter(x=>!(e[k]||[]).includes(x))))"
+
+      - name: Run VS Code under xvfb in a loopback-only namespace
+        run: |
+          set -uo pipefail
+          sudo apt-get install -y xvfb >/dev/null 2>&1 || true
+          OUT=/tmp/vso; mkdir -p "$OUT"
+          if ! unshare -rn true 2>/dev/null; then
+            sudo sysctl -w kernel.apparmor_restrict_unprivileged_userns=0 >/dev/null
+            echo "isolation: unshare -rn after relaxing the AppArmor userns restriction"
+          fi
+          mkdir -p /tmp/xdg; chmod 700 /tmp/xdg
+          cat >"$RUNNER_TEMP/inner.sh" <<EOF
+          ip link set lo up
+          echo "interfaces:"; ip -br addr
+          cd "$GITHUB_WORKSPACE/probe-host/vscode"
+          XDG_RUNTIME_DIR=/tmp/xdg VSCODE_VERSION="$RESOLVED" VSCODE_CACHE="$RUNNER_TEMP/vsc" xvfb-run -a node run.mjs run "$OUT"
+          EOF
+          unshare -rn bash "$RUNNER_TEMP/inner.sh" > "$RUNNER_TEMP/vscode.log" 2>&1 || true
+          grep -v "^\s*at " "$RUNNER_TEMP/vscode.log" | tail -n 40
+          node probe-host/vscode/analyze.mjs "$OUT" 2>&1 | tee "$RUNNER_TEMP/vscode-analyze.log"
+          exit "${PIPESTATUS[0]}"
+
+      - uses: actions/upload-artifact@v7
+        if: always()
+        with:
+          name: vscode-probe-output-${{ matrix.vscode }}
+          path: |
+            /tmp/vso/runner.log
+            /tmp/vso/capture-*.json
+            /tmp/vso/hook-fired.txt
+            ${{ runner.temp }}/vscode.log
+            ${{ runner.temp }}/vscode-analyze.log
+          if-no-files-found: warn

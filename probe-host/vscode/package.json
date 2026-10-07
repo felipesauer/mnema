@@ -1,0 +1,12 @@
+{
+  "name": "host-probe",
+  "publisher": "probe",
+  "version": "0.0.1",
+  "description": "Test-only: a stand-in language model that records what the chat agent sends it.",
+  "engines": { "vscode": "^1.100.0" },
+  "main": "./extension.js",
+  "activationEvents": ["onStartupFinished"],
+  "contributes": {
+    "languageModelChatProviders": [{ "vendor": "probe", "displayName": "Probe" }]
+  }
+}
