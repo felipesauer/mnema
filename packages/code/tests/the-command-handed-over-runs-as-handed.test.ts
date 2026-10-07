@@ -693,7 +693,8 @@ export const HANDED_OVER: Readonly<
   // `mnema verify` and the reads beside it.
   // name 76 once the usage refusal of `skill create` stopped naming the verb, now that the long text
   // can come from standard input or a file.
-  source: { line: 62, name: 76, flag: 3, unwritten: 3 },
+  // line 75 and flag 4 with the promotion verb's own help and sentences, each a command that parses.
+  source: { line: 75, name: 76, flag: 4, unwritten: 3 },
 };
 
 // ---------------------------------------------------------------------------

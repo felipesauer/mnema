@@ -681,6 +681,85 @@ const CLASSIFIED: Readonly<Record<string, { verdict: Verdict; why: string }>> = 
     why: 'the agent that adopted the pattern — a name somebody typed',
   },
 
+  // --- promoted.ts: the candidates a promotion lists, and the copy it made ---------
+  'promoted.ts «It cites {} instances as derived-from:» done.derivedFrom.length #1': {
+    verdict: 'minted',
+    why: 'how many instances the copy cites — a count',
+  },
+  'promoted.ts «Nothing recurs, with the same words and in force, in the committed record of {} project{}.» listed.projects #1':
+    {
+      verdict: 'minted',
+      why: 'how many distinct projects were read — a count',
+    },
+  "promoted.ts «Nothing recurs, with the same words and in force, in the committed record of {} project{}.» listed.projects === 1 ? '' : 's' #1":
+    {
+      verdict: 'minted',
+      why: 'a plural suffix this module chooses by that count',
+    },
+  'promoted.ts «Promoted {} "{}" ({})» done.id #1': {
+    verdict: 'minted',
+    why: 'the id the copy was minted under in the global tree',
+  },
+  'promoted.ts «Promoted {} "{}" ({})» done.kind #1': {
+    verdict: 'minted',
+    why: '`skill` or `decision` — the closed union of what can be promoted',
+  },
+  'promoted.ts «Promoted {} "{}" ({})» oneLine(done.title) #1': {
+    verdict: 'collapsed',
+    why: 'the name or title the pattern was recorded under — text somebody wrote',
+  },
+  'promoted.ts «To put it in force: {}» adopt #1': {
+    verdict: 'composed',
+    why: 'the two verbs that move the copy, composed in this module — each value in them is a minted id, sited below',
+  },
+  'promoted.ts «\\`mnema decision move accept {} --note "<why>"\\`» done.id #1': {
+    verdict: 'minted',
+    why: 'the id the copy was minted under in the global tree',
+  },
+  'promoted.ts «\\`mnema skill move review {} --note "<why>"\\`, then \\`mnema skill move adopt {} --note "<why>"\\`» done.id #1':
+    {
+      verdict: 'minted',
+      why: 'the id the copy was minted under in the global tree',
+    },
+  'promoted.ts «\\`mnema skill move review {} --note "<why>"\\`, then \\`mnema skill move adopt {} --note "<why>"\\`» done.id #2':
+    {
+      verdict: 'minted',
+      why: 'the id the copy was minted under in the global tree',
+    },
+  'promoted.ts «{}  {}» from.id #1': {
+    verdict: 'minted',
+    why: 'the id of an instance the copy cites — minted in the project it was written in',
+  },
+  'promoted.ts «{}  {}» instance.id #1': {
+    verdict: 'minted',
+    why: 'the id of an instance a candidate is in force as — minted in the project it was written in',
+  },
+  'promoted.ts «{}  {}» oneLine(from.project) #1': {
+    verdict: 'collapsed',
+    why: 'the directory of a project the caller named — a value from the command line',
+  },
+  'promoted.ts «{}  {}» oneLine(instance.project) #1': {
+    verdict: 'collapsed',
+    why: 'the directory of a project the caller named — a value from the command line',
+  },
+  'promoted.ts «{} "{}" — in force in {} projects» candidate.kind #1': {
+    verdict: 'minted',
+    why: '`skill` or `decision` — the closed union of what can be promoted',
+  },
+  'promoted.ts «{} "{}" — in force in {} projects» new Set(candidate.instances.map((i) => i.project)).size #1':
+    {
+      verdict: 'minted',
+      why: 'how many distinct projects hold it — a count',
+    },
+  'promoted.ts «{} "{}" — in force in {} projects» oneLine(candidate.title) #1': {
+    verdict: 'collapsed',
+    why: 'the name or title the pattern was recorded under — text somebody wrote',
+  },
+  'promoted.ts «{} holds no record; it was left out.» oneLine(missing) #1': {
+    verdict: 'collapsed',
+    why: 'a path the caller named that holds no record — a value from the command line',
+  },
+
   // --- site.ts: the page `mnema site` wrote --------------------------------------
   'site.ts «Wrote {}» oneLine(done.path) #1': {
     verdict: 'collapsed',
@@ -2105,8 +2184,8 @@ describe('every value this layer puts on a line is classified', () => {
     // values are the start of a memory and an observation's topic, both typed by somebody.
     // The thirtieth is `within-a-hook.ts`, MACHINERY: it words nothing and receives no record —
     // it measures what the two opening texts print for a hook, and cuts them at a whole item.
-    expect(FOUND.composers.length + FOUND.machinery.length).toBe(34);
-    expect(FOUND.composers.length).toBe(22);
+    expect(FOUND.composers.length + FOUND.machinery.length).toBe(35);
+    expect(FOUND.composers.length).toBe(23);
     expect(FOUND.machinery).toContain('items.ts');
     expect(FOUND.machinery).toContain('line.ts');
     expect(FOUND.machinery).toContain('width.ts');
@@ -2117,7 +2196,7 @@ describe('every value this layer puts on a line is classified', () => {
     // composers with its two template values; then 253 until the rules in force began saying who
     // accepted them (`brief.ts`, `record.ts`); 294 until `mnema rules` printed the four numbers
     // of the relation that refuses a write; 301 with the three the trunk added meanwhile; 395 with the lines `mnema site` prints; 306 once the document counts the rules that refuse a write; 367 with the pages of the git bridge; 377 with its shallow sentence and the recipe aging prints; 389 with the section for an inherited record.
-    expect(FOUND.sites.length).toBe(395);
+    expect(FOUND.sites.length).toBe(413);
   });
 
   it('reads the verdict off the source rather than believing the table', () => {
@@ -2138,10 +2217,10 @@ describe('every value this layer puts on a line is classified', () => {
     // No arm of the case above may be empty, or that much of it is vacuous.
     const verdicts = Object.values(CLASSIFIED).map((said) => said.verdict);
     const count = (verdict: Verdict): number => verdicts.filter((said) => said === verdict).length;
-    expect(count('collapsed')).toBe(108);
-    expect(count('minted')).toBe(219);
-    expect(count('composed')).toBe(68);
-    expect(FOUND.sites.filter((site) => /\boneLine\b/.test(site.expression))).toHaveLength(108);
+    expect(count('collapsed')).toBe(113);
+    expect(count('minted')).toBe(231);
+    expect(count('composed')).toBe(69);
+    expect(FOUND.sites.filter((site) => /\boneLine\b/.test(site.expression))).toHaveLength(113);
   });
 
   it('every reason says where the value comes from', () => {
