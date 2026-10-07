@@ -249,17 +249,24 @@ describe('every place that repeats the floor repeats this number', () => {
    * sees. The sentence above is not in it — its words are an image's alt text and its range is
    * in a URL — so a floor raised everywhere else left all seven saying `22.12` and this case
    * green. Both halves are read: the alt in the refusal's words, and the image's message as the
-   * declared range itself, once shields' own escaping (`--` for a dash, `__` for an underscore)
-   * and the URL's are undone.
+   * declared range itself, once shields' own escaping (`--` for a dash, `__` for an underscore,
+   * `_` for a space) and the URL's are undone.
    */
   const BADGE = /!\[([^\]]*)\]\((https:\/\/img\.shields\.io\/badge\/node-[^)\s]*)\)/g;
   const RANGE = DECLARING[0]?.read.engines?.node ?? '';
   const messageOf = (url: string): string => {
     const path = new URL(url).pathname.slice('/badge/node-'.length);
     const message = path.replace(/-[^-]*$/, '');
-    return decodeURIComponent(message.replace(/--/g, '\u0000').replace(/__/g, '\u0001'))
-      .replace(/\u0000/g, '-')
-      .replace(/\u0001/g, '_');
+    const unescaped = message
+      .split('--')
+      .map((part) =>
+        part
+          .split('__')
+          .map((piece) => piece.replace(/_/g, ' '))
+          .join('_'),
+      )
+      .join('-');
+    return decodeURIComponent(unescaped);
   };
   const badges = TRACKED.filter((where) => where.endsWith('README.md')).flatMap((where) => {
     const text = readFileSync(join(ROOT, where), 'utf-8');
