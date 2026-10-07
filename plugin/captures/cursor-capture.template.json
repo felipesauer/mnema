@@ -1,0 +1,52 @@
+{
+  "capturedBy": "by hand",
+  "date": "YYYY-MM-DD",
+  "host": {
+    "name": "Cursor CLI",
+    "command": "cursor-agent",
+    "version": "",
+    "sha256": "",
+    "flagsUsed": ""
+  },
+  "machine": "",
+  "script": {
+    "file": "plugin/captures/cursor-script.md",
+    "commit": ""
+  },
+  "plugin": {
+    "version": "",
+    "commit": "",
+    "installedFrom": "this checkout | the marketplace"
+  },
+  "rules": {
+    "refuses-a-write": { "address": "src/frozen", "id": "" },
+    "asks-for-a-person": { "address": "src/ledger", "id": "" },
+    "governs": { "address": "src/billing", "id": "" }
+  },
+  "cases": [
+    {
+      "id": "refuses-a-write",
+      "expected": "The file is not created, and the transcript shows the rule's id and `refuses a write at src/frozen/x.ts`.",
+      "observed": "",
+      "channelFacts": { "channel.refused": 0, "channel.asked": 0, "channel.served": 0 },
+      "verdict": "held | did-not-hold | not-run",
+      "transcript": []
+    },
+    {
+      "id": "ask-is-ignored",
+      "expected": "The file is created with no pause, and nothing is recorded as asked.",
+      "observed": "",
+      "channelFacts": { "channel.refused": 0, "channel.asked": 0, "channel.served": 0 },
+      "verdict": "held | did-not-hold | not-run",
+      "transcript": []
+    },
+    {
+      "id": "no-rule",
+      "expected": "The file is created, and the plugin said nothing.",
+      "observed": "",
+      "channelFacts": { "channel.refused": 0, "channel.asked": 0, "channel.served": 0 },
+      "verdict": "held | did-not-hold | not-run",
+      "transcript": []
+    }
+  ]
+}

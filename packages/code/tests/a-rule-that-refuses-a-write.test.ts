@@ -4,7 +4,8 @@
  *
  * WHAT IS HELD HERE AND WHAT IS NOT. That each host honours `deny` — the file is not written and
  * the model reads the reason — is the host's, measured against the real binaries
- * (read on 2 Oct 2026, not held by a file of this tree). What a suite holds is this product's half, at each of the three
+ * (read on 2 Oct 2026; for Claude Code and VS Code it is held by the cases in `host-contract/`, which start the
+ * real host, and for Cursor by nothing in this tree). What this file holds is this product's half, at each of the three
  * doors: the MCP tool Claude Code's hook calls, `mnema before-a-write --host vscode` and `--host
  * cursor`. Each answers `deny` and cites the rule; each appends one `channel.refused` per rule
  * BEFORE it answers, and no `channel.served` (the refusal is the fact); each falls to the asking

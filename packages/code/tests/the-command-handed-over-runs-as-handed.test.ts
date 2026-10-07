@@ -660,7 +660,8 @@ export const HANDED_OVER: Readonly<
   // (`mnema doctor --fix vscode`, `mnema doctor`) and the doctor's changed paragraphs.
   // line 77 and name 146 with the pages that hand over `mnema unlink` whole.
   // line 83 and name 151 with both: the Sigstore countersignature and `mnema unlink`.
-  span: { line: 83, name: 151, flag: 1, unwritten: 0 },
+  // line 84 for the row of the evidence page that names what `mnema brief --hook` prints.
+  span: { line: 84, name: 151, flag: 1, unwritten: 0 },
   // name 18 until the page that says where the key lives named `mnema key protect` in a line of
   // its own.
   // line 35 until the same page showed that question in a block of its own.
@@ -676,7 +677,10 @@ export const HANDED_OVER: Readonly<
   // of its own beside the one on the first-record page.
   // name 26 for the package page's block that runs `mnema verify` in a CI workflow with the cache
   // directory set.
-  block: { line: 49, name: 26, flag: 1, unwritten: 0 },
+  // line 52 and name 27 for the script that reads Cursor by hand: it makes a project of its own with
+  // `mnema init`, and records and moves a rule and links it (`mnema decision record`, `mnema decision
+  // move`, `mnema link`).
+  block: { line: 52, name: 27, flag: 1, unwritten: 0 },
   // 46 until the refusal an agent's `accept` gets, with the switch off, began naming the command a
   // person accepts with (`agent-accepts.ts`).
   // line 34 until the sentences an agent's accept is answered with began handing whole lines

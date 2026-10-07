@@ -9,7 +9,11 @@ that is in the tree today. Every file named on this page is checked to exist.
 The words mean one thing each:
 
 - **held by a test** — a case in the suite fails when the claim stops being true. That is the
-  product's half: what `mnema` answers, records and prints.
+  product's half: what `mnema` answers, records and prints. For the hosts that run on a free
+  runner with no model and no account, Claude Code and VS Code, it is the host's half too: the
+  real host is started against a stand-in for its model, and the case reads what the host did.
+  Those cases run on every pull request against one pinned release of the host, and every week
+  against the newest ones, and a round that measured another release than the one it names is red.
 - **historical** — a result read on one day, with one host or model and one number of runs. It
   is stated with those and with no link, because nothing in the tree reruns it.
 - **not held yet** — nothing in the tree holds the claim. It is the host's behaviour, read
@@ -37,6 +41,17 @@ What the verifier proves, and what it does not, is on
 | The plugin's skills say what they carry | a test | [`every-skill-the-plugin-ships-is-what-it-says.test.ts`](../packages/code/tests/every-skill-the-plugin-ships-is-what-it-says.test.ts) |
 | The numbers and tables the pages draw are read off the file they came from | a test | [`the-front-page-says-what-its-sources-say.test.ts`](../packages/code/tests/the-front-page-says-what-its-sources-say.test.ts) |
 | Every file this page names exists | a test | [`the-evidence-page-cites-what-exists.test.ts`](../packages/code/tests/the-evidence-page-cites-what-exists.test.ts) |
+| In Claude Code, the opening document arrives in the first request of a session, at session start, as the text `mnema brief --hook` prints, and without a decision that was superseded | a test | [`the-session-opens-with-the-record.test.ts`](../packages/code/tests/host-contract/the-session-opens-with-the-record.test.ts) |
+| In Claude Code, the host calls the plugin's server at an edit under the name the plugin gave it, and the rules addressed at the path land beside that write's result, in the request that comes next | a test | [`the-rules-arrive-beside-the-write.test.ts`](../packages/code/tests/host-contract/the-rules-arrive-beside-the-write.test.ts) |
+| In Claude Code, a `PreToolUse` hook of type `mcp_tool` that answers `deny` stops the write and the model reads the rule, and one that answers `ask` holds it: with nobody to ask, the call is refused and the model is told which rule asked | a test | [`a-refusal-and-a-pause-hold-the-write.test.ts`](../packages/code/tests/host-contract/a-refusal-and-a-pause-hold-the-write.test.ts) |
+| In VS Code, the agent runs the plugin's `PreToolUse` command before `create_file`: on `deny` the file is not created and the model reads the rule, and on `ask` the agent stops on a confirmation and creates nothing | a test | [`an-editor-holds-or-refuses-the-write.vscode.test.ts`](../packages/code/tests/host-contract/an-editor-holds-or-refuses-the-write.vscode.test.ts) |
+| VS Code's agent loads the plugin from a folder listed in its `chat.pluginLocations` setting, and runs the command its hooks file declares | a test | [`an-editor-holds-or-refuses-the-write.vscode.test.ts`](../packages/code/tests/host-contract/an-editor-holds-or-refuses-the-write.vscode.test.ts) |
+| VS Code puts the text of a command hook that allows a call inside the result of that call, as `<PreToolUse-context>` | a test | [`an-editor-puts-a-hooks-text-in-the-result.vscode.test.ts`](../packages/code/tests/host-contract/an-editor-puts-a-hooks-text-in-the-result.vscode.test.ts) |
+| Claude Code hands a command hook's text to the model whole at 10,000 UTF-16 code units, and as a path with a 2,000-unit preview at one more; the text the product hands over for a record too long for it stops below that, at a whole rule | a test | [`a-hook-hands-over-ten-thousand-units.test.ts`](../packages/code/tests/host-contract/a-hook-hands-over-ten-thousand-units.test.ts) |
+| Claude Code keeps the first 2,048 characters of a server's instructions and cuts the rest, and the plugin's own instructions arrive whole | a test | [`a-servers-instructions-are-cut-at-2048.test.ts`](../packages/code/tests/host-contract/a-servers-instructions-are-cut-at-2048.test.ts) |
+| A write through the shell goes round a rule that refuses it, and the case requires that it does: the limit is a declared one | a test | [`the-shell-goes-round.test.ts`](../packages/code/tests/host-contract/the-shell-goes-round.test.ts) |
+| Without `mnema` on the PATH the plugin's hooks fail open in Claude Code: the session opens with nothing added and a write a rule would refuse goes through | a test | [`without-mnema-the-hooks-fail-open.test.ts`](../packages/code/tests/host-contract/without-mnema-the-hooks-fail-open.test.ts) |
+| The host contract starts the hosts where only loopback exists, reads where Claude Code connected, and refuses a round that measured another binary than the one it names | a test | [`the-instrument-sees-what-leaves.test.ts`](../packages/code/tests/host-contract/the-instrument-sees-what-leaves.test.ts) |
 
 ## Historical
 
@@ -77,19 +92,21 @@ The host's own behaviour. Each was read once against a real host, and each expir
 version it was read on. No file of this repository reruns it, so each page that says it says the
 host and the version beside it.
 
+Cursor's command-line agent needs an account, and an account is not a thing a free runner has, so
+what is read of it is read by hand, from a script kept beside the plugin and a file that says the day,
+the version and the checksum of what ran. [How a capture is made](../plugin/captures/README.md). A
+capture is a dated reading and is never presented here as a test.
+
 | The claim | Read on | Held by |
 |---|---|---|
-| The host calls the plugin's MCP tool at an edit, and the rules land beside that write's result, in time for the edits after it | Claude Code 2.1.228 and 2.1.281 | not held yet |
-| A `PreToolUse` hook of type `mcp_tool` that answers `ask` stops the write until a person decides | Claude Code 2.1.228, 19 August 2026 | not held yet |
-| VS Code's agent runs a plugin's `PreToolUse` command before `create_file`, ignores the hook's matcher, and holds the write when the reply asks | VS Code 1.137 with Copilot Chat 0.65, 30 September 2026, no model and no network | not held yet |
+| In an interactive Claude Code session, a person is shown the rule that asked and decides, and the write waits for that decision | Claude Code 2.1.228, 19 August 2026 | not held yet |
+| VS Code's agent ignores the matcher of a hook: the plugin's command ran before `create_file` whatever the matcher named | VS Code 1.137 with Copilot Chat 0.65, 30 September 2026, no model and no network | not held yet |
 | Cursor's command-line agent runs the hook and ignores the pause; of its tools, only `Write` was read | Cursor agent 2026.09.18, 30 September 2026 | not held yet |
-| Each host refuses the write on `deny` and hands the reason to the model | the three hosts above, `Write` only for Cursor | not held yet |
-| Claude Code hands a command hook's text to the model whole at 10,000 characters, and as a path with a preview at 10,001 | Claude Code 2.1.281 | not held yet |
+| Cursor's command-line agent refuses the write on `deny` and hands the reason to the model; of its tools, only `Write` was read | Cursor agent 2026.09.18, 2 October 2026 | not held yet |
 | A call on an open connection costs on the order of a millisecond where a command start costs on the order of a hundred | one machine | not held yet |
 | In Cursor, the server is a namespace named `mnema` and its tools keep their own names | Cursor, 2026-09-23 session | not held yet |
 | The server's own instructions reach the model in the VS Code model families whose prompt carries them, and do not reach it in the Codex families, where the two opening texts are what arrives | VS Code 1.137 with Copilot Chat 0.65, 23 September 2026, offline with a test model | not held yet |
 | In Cursor's command-line agent the server's tool names arrive up front and a tool's own description arrives only when the model looks that tool up | Cursor agent 2026.09.18, free plan, `Auto` model, 23 September 2026 | not held yet |
-| VS Code puts a hook's text inside the result of the tool, as `<PreToolUse-context>` | VS Code 1.137 with Copilot Chat 0.65, 30 September 2026, no model and no network | not held yet |
 | On Cursor's free plan with the `Auto` model, the prompt carries the server's instructions whole, but for the indentation of their continuation lines, and both opening texts, and the model called the server's tools | Cursor agent 2026.09.18, free plan, `Auto` model, sessions of 23 September 2026 | not held yet |
 | VS Code's agent and Cursor's command-line agent do not run a hook of type `mcp_tool`, and run command hooks | VS Code 1.137 with Copilot Chat 0.65 and Cursor agent 2026.09.18, 30 September 2026 | not held yet |
 | How Claude Code hands the `userConfig` value to the hooks and the server was read from its documentation, not run; whether VS Code and Cursor offer the option | not read | not held yet |
@@ -98,4 +115,4 @@ host and the version beside it.
 | How VS Code spells the server's name to the model | not read | not held yet |
 | VS Code puts a hook's reason in front of the person who decides; what the person sees in the confirmation | not read from the screen | not held yet |
 | VS Code matches `applyTo` with a leading `**/`; Cursor matches `globs` on its servers; Claude Code's `paths` and whether its `**` reaches a name starting with a dot | not read | not held yet |
-| Cursor's agent loads the plugin from the Claude Code installation on the same machine, and VS Code's agent from `chat.pluginLocations` | VS Code 1.137, Cursor agent 2026.09.18 | not held yet |
+| Cursor's agent loads the plugin from the Claude Code installation on the same machine | Cursor agent 2026.09.18 | not held yet |

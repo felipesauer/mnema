@@ -1,0 +1,238 @@
+name: Host contract
+
+# WHAT THIS IS. The real Claude Code binary, unmodified, started against a stand-in for its model,
+# with the plugin of this tree loaded. What the host does with what the plugin hands it — the
+# opening at session start, the rules beside a write, a refusal and a pause, the 10,000 and 2,048
+# ceilings, the shell going round a rule, the hooks failing open — is read off the request the host
+# sends next, and off the file that was or was not written. The same is done for VS Code's agent
+# with the real editor under a virtual screen. The cases are `packages/code/tests/host-contract/`;
+# this file only gives them a host. Cursor is not here: it needs an account, and its capture is
+# made by hand (`plugin/captures/`).
+#
+# NO MODEL, NO ACCOUNT, NO KEY, NO MONEY. The model is `the-stand-in-api.ts`; the key the host is
+# handed is made up and names nothing. Nothing in this file asks for a secret, and the only token
+# in it is the workflow's own, used for one thing: opening an issue when the weekly run fails.
+#
+# NOTHING LEAVES THE RUNNER WHILE THE HOST RUNS, and three things say so instead of one.
+#   1. The cases run in a network namespace that holds only loopback (`unshare -rn`), and the
+#      harness refuses to start the host in a process that can see another interface.
+#   2. The host runs under `strace`, and every address it connected or sent to is read back; one
+#      that is not loopback fails the case that caused it.
+#   3. The host's own traffic that is not the model's — updates, telemetry, the marketplace — is
+#      switched off.
+#
+# THE ONE STEP THAT TALKS TO A HOST OF THE VENDOR is the download of the release manifest, its
+# signature and the signing key from the vendor's download host. It runs BEFORE the binary is ever
+# started, outside the namespace, and it is what proves which binary is about to run: the file's
+# SHA-256 is compared with the one the signed manifest lists, and the job stops if they differ. The
+# binary itself comes from npm.
+#
+# WHICH VERSION. Pull requests and pushes run the PINNED one, which never moves by itself: raising
+# it is the one line in the matrix below. A week-by-week run and `workflow_dispatch` run the same
+# cases against the vendor's `stable` and `latest` and, when one fails, open an issue; that is how
+# this repository learns the host changed without anybody having to read its release notes. The
+# case reads the version off the request, so a round that measured another binary than the one it
+# was started for is red.
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  schedule:
+    # Mondays, 07:00 UTC.
+    - cron: '0 7 * * 1'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+jobs:
+  claude-code:
+    name: host contract (claude code ${{ matrix.version }})
+    runs-on: ubuntu-24.04
+    strategy:
+      fail-fast: false
+      matrix:
+        # THE PIN IS THE LAST VERSION IN THIS LINE. A run that is not a pull request or a push
+        # tries the two moving tags instead.
+        version: ${{ fromJSON(contains(fromJSON('["schedule","workflow_dispatch"]'), github.event_name) && '["stable","latest"]' || '["2.1.285"]') }}
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: pnpm/action-setup@v6
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version: '24'
+          cache: 'pnpm'
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Build
+        run: pnpm build
+
+      # The only step that talks to a host of the vendor, and it runs before the binary starts.
+      - name: Install the host and check its SHA-256 against the signed release manifest
+        env:
+          WANTED: ${{ matrix.version }}
+          # The vendor's release signing key, by the fingerprint of its primary key.
+          SIGNING_KEY: 31DDDE24DDFAB679F42D7BD2BAA929FF1A7ECACE
+        run: |
+          set -euo pipefail
+          case "$WANTED" in
+            stable|latest) VERSION=$(npm view @anthropic-ai/claude-code "dist-tags.$WANTED") ;;
+            *) VERSION="$WANTED" ;;
+          esac
+          [ -n "$VERSION" ] || { echo "no version for $WANTED"; exit 1; }
+          mkdir -p "$RUNNER_TEMP/host" && cd "$RUNNER_TEMP/host"
+          npm init -y >/dev/null
+          npm install --ignore-scripts "@anthropic-ai/claude-code@$VERSION"
+          BIN="$PWD/node_modules/@anthropic-ai/claude-code-linux-x64/claude"
+          curl -fsSLO "https://downloads.claude.ai/claude-code-releases/$VERSION/manifest.json"
+          curl -fsSLO "https://downloads.claude.ai/claude-code-releases/$VERSION/manifest.json.sig"
+          # A keyring of its own that holds only the key just fetched, so nothing else on the runner
+          # can stand in for it; its primary key must be exactly the fingerprint this job knows, and
+          # the signature must be made by that key (VALIDSIG names the primary key last).
+          export GNUPGHOME="$RUNNER_TEMP/gnupg" && mkdir -m 700 "$GNUPGHOME"
+          curl -fsSL https://downloads.claude.ai/keys/claude-code.asc | gpg --batch --import
+          FPRS=$(gpg --batch --with-colons --fingerprint | awk -F: '$1=="pub"{p=1;next} p&&$1=="fpr"{print $10;p=0}')
+          [ "$FPRS" = "$SIGNING_KEY" ] \
+            || { echo "the signing key is $FPRS, not the one this job knows ($SIGNING_KEY)"; exit 1; }
+          gpg --batch --status-fd 1 --verify manifest.json.sig manifest.json | tee verify.status
+          awk '$2=="VALIDSIG"{print $NF}' verify.status | grep -qx "$SIGNING_KEY" \
+            || { echo "the manifest is not signed by $SIGNING_KEY"; exit 1; }
+          WANT=$(node -e "console.log(JSON.parse(require('fs').readFileSync('manifest.json','utf8')).platforms['linux-x64'].checksum)")
+          GOT=$(sha256sum "$BIN" | cut -d' ' -f1)
+          echo "manifest linux-x64 sha256: $WANT"
+          echo "installed binary sha256:   $GOT"
+          [ "$WANT" = "$GOT" ] || { echo "the installed binary is not the one the manifest lists"; exit 1; }
+          REPORTED=$("$BIN" --version)
+          echo "$REPORTED"
+          case "$REPORTED" in "$VERSION "*) ;; *) echo "the binary reports $REPORTED, not $VERSION"; exit 1 ;; esac
+          {
+            echo "MNEMA_HOST_CONTRACT_CLAUDE=$BIN"
+            echo "MNEMA_HOST_CONTRACT_VERSION=$VERSION"
+          } >> "$GITHUB_ENV"
+          {
+            echo "### Host measured"
+            echo "- Claude Code $VERSION (asked for \`$WANTED\`)"
+            echo "- linux-x64 SHA-256 \`$GOT\`, equal to the signed manifest's"
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Install strace
+        run: sudo apt-get install -y strace
+
+      # A runner of this image refuses a user namespace to an unprivileged process; the namespace
+      # is the isolation, so the restriction is lifted for the job and for nothing else.
+      - name: Allow a network namespace of our own
+        run: sudo sysctl -w kernel.apparmor_restrict_unprivileged_userns=0
+
+      # The cases, inside a namespace that holds only loopback.
+      - name: Hold the contract, with only loopback
+        env:
+          MNEMA_HOST_CONTRACT_HOST: claude-code
+        run: unshare -rn bash -c 'ip link set lo up && exec ./node_modules/.bin/vitest run --config vitest.host-contract.config.ts'
+
+  # THE SAME CONTRACT FOR VS CODE'S AGENT. The editor is the one `@vscode/test-electron` downloads,
+  # under a virtual screen, with the plugin of this tree listed in `chat.pluginLocations` and a
+  # stand-in extension for its model; the chat agent that answers is the one the editor ships, and
+  # it needs no account to be asked to use a model of its own. Its hooks are still a preview.
+  #
+  # WHAT ISOLATES IT IS THE NAMESPACE ALONE. An Electron main process does not start under `strace`
+  # here, so unlike the job above there is no log of where it connected: the editor tries one
+  # address of its own, GitHub's, for a sign-in it is not given, and fails for want of a route.
+  # The pinned version is the last one in the matrix line; a run that is not a pull request or a
+  # push tries `stable`.
+  vscode:
+    name: host contract (vs code ${{ matrix.version }})
+    runs-on: ubuntu-24.04
+    strategy:
+      fail-fast: false
+      matrix:
+        version: ${{ fromJSON(contains(fromJSON('["schedule","workflow_dispatch"]'), github.event_name) && '["stable"]' || '["1.139.0"]') }}
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: pnpm/action-setup@v6
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version: '24'
+          cache: 'pnpm'
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Build
+        run: pnpm build
+
+      # Before the editor starts, outside the namespace: the download of the editor itself.
+      - name: Download VS Code
+        env:
+          WANTED: ${{ matrix.version }}
+        run: |
+          set -euo pipefail
+          node packages/code/tests/host-contract/support/vscode/download.mjs "$WANTED" "$RUNNER_TEMP/vscode" | tee "$RUNNER_TEMP/download.txt"
+          EDITOR=$(sed -n 's/^executable=//p' "$RUNNER_TEMP/download.txt")
+          VERSION=$(sed -n 's/^version=//p' "$RUNNER_TEMP/download.txt")
+          [ -x "$EDITOR" ] && [ -n "$VERSION" ] || { echo "no editor was downloaded"; exit 1; }
+          {
+            echo "MNEMA_HOST_CONTRACT_VSCODE=$EDITOR"
+            echo "MNEMA_HOST_CONTRACT_VSCODE_VERSION=$VERSION"
+          } >> "$GITHUB_ENV"
+          echo "### Editor measured" >> "$GITHUB_STEP_SUMMARY"
+          echo "- VS Code $VERSION (asked for \`$WANTED\`)" >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Install a virtual screen
+        run: sudo apt-get install -y xvfb
+
+      - name: Allow a network namespace of our own
+        run: sudo sysctl -w kernel.apparmor_restrict_unprivileged_userns=0
+
+      - name: Hold the contract, with only loopback
+        env:
+          MNEMA_HOST_CONTRACT_HOST: vscode
+        run: unshare -rn bash -c 'ip link set lo up && exec xvfb-run -a ./node_modules/.bin/vitest run --config vitest.host-contract.config.ts'
+
+  # WHEN THE WEEKLY RUN FAILS, SOMEBODY HAS TO KNOW. One issue, opened with the workflow's own token
+  # and kept open: a second failure while it is open adds a comment and opens nothing.
+  tell-somebody:
+    name: open an issue
+    needs: [claude-code, vscode]
+    if: ${{ failure() && contains(fromJSON('["schedule","workflow_dispatch"]'), github.event_name) }}
+    runs-on: ubuntu-24.04
+    permissions:
+      issues: write
+    steps:
+      - name: Open the issue, or add to the one that is open
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RUN: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+          CLAUDE_CODE: ${{ needs.claude-code.result }}
+          VS_CODE: ${{ needs.vscode.result }}
+        run: |
+          set -euo pipefail
+          # One issue per host that failed, named for it.
+          for HOST in "Claude Code:$CLAUDE_CODE" "VS Code:$VS_CODE"; do
+            NAME="${HOST%%:*}"; RESULT="${HOST#*:}"
+            [ "$RESULT" = "failure" ] || continue
+            TITLE="The host contract failed against a newer $NAME"
+            BODY=$(printf '%s\n' \
+              "A run of the host contract against the vendor's newest releases of $NAME failed." \
+              "" \
+              "Run: $RUN" \
+              "" \
+              "A newer release of the host changed something a case holds. Read the failing case in the log: it names what the host did and what the case expected. If the host moved on purpose, the page that states the behaviour and the pinned version in the matrix of the workflow are the lines to change; if the plugin is what broke, this is the report that it did.")
+            OPEN=$(gh issue list --repo "$GITHUB_REPOSITORY" --state open --search "in:title \"$TITLE\"" --json number --jq '.[0].number // empty')
+            if [ -n "$OPEN" ]; then
+              gh issue comment "$OPEN" --repo "$GITHUB_REPOSITORY" --body "$BODY"
+            else
+              gh issue create --repo "$GITHUB_REPOSITORY" --title "$TITLE" --body "$BODY"
+            fi
+          done
