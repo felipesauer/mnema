@@ -211,6 +211,8 @@ const REFUSES_SOMETHING_ELSE_FIRST: Readonly<Record<string, string>> = {
     'with no MNEMA_KEY_PASSPHRASE there is nothing to protect with, which it says first; it needs no project either way',
   'witness stamp':
     'with no tail anywhere it refuses NO_TAIL at its first line, before a fetch is composed',
+  'witness sigstore':
+    'the same as `stamp`: with no tail anywhere it refuses NO_TAIL before a token is asked for',
 };
 
 /** What one invocation did, in the terms the four boxes are decided by. */

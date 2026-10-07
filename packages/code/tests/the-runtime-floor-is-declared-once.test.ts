@@ -47,6 +47,7 @@ import { existsSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { describe, expect, it } from 'vitest';
+import { acceptedBy } from '../src/node-floor.js';
 
 /** The workspace root — this file is `packages/code/tests/…`. */
 const ROOT = fileURLToPath(new URL('../../../', import.meta.url));
@@ -202,19 +203,95 @@ describe('the floor is at least what the dependencies demand', () => {
 });
 
 describe('every place that repeats the floor repeats this number', () => {
-  /** The sentence an adopter reads. The version, not the word `engines`, is the discriminant. */
-  const SAYS_THE_FLOOR = /Requires Node ≥ (\d+(?:\.\d+)*)/g;
+  /**
+   * The sentence an adopter reads. The version, not the word `engines`, is the discriminant —
+   * and the sentence is the one the binary refuses with (`acceptedBy` in `src/node-floor.ts`),
+   * so the page and the refusal cannot say two ranges. The shape the floor had while it was one
+   * number, `Requires Node ≥ X`, is still read, so a page left behind is found rather than
+   * skipped by a pattern that no longer fits it.
+   */
+  const SAYS_THE_FLOOR =
+    /Requires\s+Node\s+(≥\s*\d+(?:\.\d+)*|\d+\.\d+\.\d+\s+or\s+(?:later|a\s+later\s+\d+(?:\.\d+)?)(?:,\s+or\s+\d+\.\d+\.\d+\s+or\s+(?:later|a\s+later\s+\d+(?:\.\d+)?))*)/g;
+
+  /** What the declared range says, in the refusal's words. */
+  const SAID = (acceptedBy(DECLARING[0]?.read.engines?.node ?? '') ?? [])
+    .map((a) => a.said)
+    .join(', or ');
+
+  /**
+   * A RELEASED changelog entry states the floor of THAT release, which is history and is true;
+   * only the part above the first released heading speaks for what is here now.
+   */
+  const current = (where: string, text: string): string => {
+    if (where !== 'CHANGELOG.md') return text;
+    const released = text.search(/\n## \[\d/);
+    return released < 0 ? text : text.slice(0, released);
+  };
 
   const prose = TRACKED.filter((where) => where.endsWith('.md'))
-    .map((where) => ({ where, text: readFileSync(join(ROOT, where), 'utf-8') }))
+    .map((where) => ({ where, text: current(where, readFileSync(join(ROOT, where), 'utf-8')) }))
     .flatMap(({ where, text }) =>
-      [...text.matchAll(SAYS_THE_FLOOR)].map((said) => ({ where, said: said[1] ?? '' })),
+      [...text.matchAll(SAYS_THE_FLOOR)].map((said) => ({
+        where,
+        said: (said[1] ?? '').replace(/\s+/g, ' '),
+      })),
     );
 
   it('is said by the READMEs an adopter actually reads', () => {
+    expect(SAID, 'the declared range is not one the refusal reads').not.toBe('');
     expect(prose.length, 'no shipped prose states the runtime floor').toBeGreaterThan(4);
-    const wrong = prose.filter((p) => p.said !== show(FLOOR)).map((p) => `${p.where}: ${p.said}`);
-    expect(wrong, `prose states a floor other than ${show(FLOOR)}`).toEqual([]);
+    const wrong = prose.filter((p) => p.said !== SAID).map((p) => `${p.where}: ${p.said}`);
+    expect(wrong, `prose states a range other than ${SAID}`).toEqual([]);
+  });
+
+  /**
+   * THE BADGE ON LINE 3 OF EVERY PACKAGE README is the floor too, and the first one an adopter
+   * sees. The sentence above is not in it — its words are an image's alt text and its range is
+   * in a URL — so a floor raised everywhere else left all seven saying `22.12` and this case
+   * green. Both halves are read: the alt in the refusal's words, and the image's message as the
+   * declared range itself, once shields' own escaping (`--` for a dash, `__` for an underscore,
+   * `_` for a space) and the URL's are undone.
+   */
+  const BADGE = /!\[([^\]]*)\]\((https:\/\/img\.shields\.io\/badge\/node-[^)\s]*)\)/g;
+  const RANGE = DECLARING[0]?.read.engines?.node ?? '';
+  const messageOf = (url: string): string => {
+    const path = new URL(url).pathname.slice('/badge/node-'.length);
+    const message = path.replace(/-[^-]*$/, '');
+    const unescaped = message
+      .split('--')
+      .map((part) =>
+        part
+          .split('__')
+          .map((piece) => piece.replace(/_/g, ' '))
+          .join('_'),
+      )
+      .join('-');
+    return decodeURIComponent(unescaped);
+  };
+  const badges = TRACKED.filter((where) => where.endsWith('README.md')).flatMap((where) => {
+    const text = readFileSync(join(ROOT, where), 'utf-8');
+    const found = [...text.matchAll(BADGE)].map((b) => ({
+      where,
+      alt: b[1] ?? '',
+      message: messageOf(b[2] ?? ''),
+    }));
+    // An image that calls itself a Node badge but is not drawn by the pattern above is a badge
+    // this case would otherwise skip.
+    const named = [...text.matchAll(/!\[Node\b[^\]]*\]\(([^)]*)\)/g)].filter(
+      (n) => !(n[1] ?? '').startsWith('https://img.shields.io/badge/node-'),
+    );
+    return [...found, ...named.map((n) => ({ where, alt: n[0], message: '(not read)' }))];
+  });
+
+  it('is said by the badge every package README opens with', () => {
+    const packages = TRACKED.filter((where) => /^packages\/[^/]+\/README\.md$/.test(where));
+    expect(packages.length, 'git found no package README').toBeGreaterThan(6);
+    const without = packages.filter((where) => !badges.some((b) => b.where === where));
+    expect(without, 'a package README has no Node badge').toEqual([]);
+    const wrong = badges
+      .filter((b) => b.alt !== `Node ${SAID}` || b.message !== RANGE)
+      .map((b) => `${b.where}: [${b.alt}] ${b.message}`);
+    expect(wrong, `a badge states a floor other than ${RANGE}`).toEqual([]);
   });
 
   /**

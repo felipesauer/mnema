@@ -32,10 +32,10 @@ completing end-to-end tests as a **precondition** for publishing a technical sta
 Certificate Transparency runs on several implementations checking each other.
 
 What a second reader buys is not redundancy. It is that assumptions which work inside one
-product and are false outside it become **visible**. Twenty-five of them did, and they are
+product and are false outside it become **visible**. Twenty-six of them did, and they are
 the deliverable half of this directory — `mnema_verify.py gaps`.
 
-Three of the twenty-five were places the two readers **disagreed about the same bytes**, and
+Three of the twenty-six were places the two readers **disagreed about the same bytes**, and
 all three are closed. Two were acceptances — a field no kind declares, on an appended event;
 a signer no enrolment authorized — found by *building the input*, because nine mutations both
 readers refused prove nothing about what this one accepts. The third ran the other way and is
@@ -120,7 +120,8 @@ and has no id:
   in any explorer.
 
 The other unresolved gaps are **findings about a record**, not limits: contiguity between
-checkpoint ranges (G11) and the unit of §8's thousand-step limit (G20). Each is observable,
+checkpoint ranges (G11), the unit of §8's thousand-step limit (G20), and a Sigstore bundle
+beside a checkpoint, which this reader names and does not check (G26). Each is observable,
 and each is reported by name with its location where a record has it — so announcing them
 here, on a record that does not, would say of every record what is true of some.
 `mnema_verify.py gaps` marks which is which.
@@ -201,7 +202,7 @@ Only §6.2 refuses it, which is the whole difference between *the signature veri
 ## The honest guarantee
 
 **What this buys.** A verdict on a real record, reached from the document and the bytes, by
-a program that has never seen the implementation. Twenty-five places where the document was
+a program that has never seen the implementation. Twenty-six places where the document was
 not enough for that, each one written down. **A refusal for every mutation in `mutate.py`,
 with no exception** — the exception used to be the one that existed to demonstrate an
 acceptance, and there is no acceptance left to demonstrate. **One disagreement with the

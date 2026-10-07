@@ -19,9 +19,9 @@ _mnema_commands() {
     'run') echo 'start end help' ;;
     'check') echo 'declare run help' ;;
     'commit-hook') echo 'install uninstall suggest help' ;;
-    'key') echo 'restore request enroll github revoke protect unprotect help' ;;
+    'key') echo 'restore request enroll github sigstore revoke protect unprotect help' ;;
     'tail') echo 'list prune help' ;;
-    'witness') echo 'stamp upgrade' ;;
+    'witness') echo 'stamp upgrade sigstore' ;;
     'switch') echo 'off on' ;;
     'inherit') echo 'set update help' ;;
   esac
@@ -116,6 +116,7 @@ _mnema_described() {
       'request:ask to bring this machine into an identity (run this on the joining machine)' \
       'enroll:vouch for a requesting key so it joins this identity (run this on a member)' \
       'github:record that this identity is a GitHub account, so `mnema verify --against-github` can compare the keys that signed with the keys that account publishes' \
+      'sigstore:record that this identity is the one a Sigstore certificate names, so a bundle `mnema witness sigstore` files speaks for it in `mnema verify --against-sigstore`' \
       'revoke:retire a key from this identity, from this point forward' \
       'protect:encrypt this machine'\''s private keys at rest with the passphrase in MNEMA_KEY_PASSPHRASE' \
       'unprotect:write this machine'\''s private keys back in the clear (needs MNEMA_KEY_PASSPHRASE)' \
@@ -126,7 +127,8 @@ _mnema_described() {
       'help:display help for command' ;;
     'witness') printf '%s\n' \
       'stamp:ask an outside witness to date each tail'\''s last checkpoint (T3)' \
-      'upgrade:go back for every attestation this record is waiting on (T3)' ;;
+      'upgrade:go back for every attestation this record is waiting on (T3)' \
+      'sigstore:countersign each tail'\''s last checkpoint with a Sigstore certificate — who signed in, and when Rekor logged it' ;;
     'switch') printf '%s\n' \
       'off:stop a channel handing the record to a model unasked' \
       'on:let a channel hand the record to a model again' ;;
@@ -203,6 +205,7 @@ _mnema_flags() {
     'key request') echo '--anchor --key --checker -h --help -V --version --color --identify' ;;
     'key enroll') echo '--checker -h --help -V --version --color --identify' ;;
     'key github') echo '-h --help -V --version --color --identify' ;;
+    'key sigstore') echo '-h --help -V --version --color --identify' ;;
     'key revoke') echo '--reason --checker -h --help -V --version --color --identify' ;;
     'key protect') echo '-h --help -V --version --color --identify' ;;
     'key unprotect') echo '-h --help -V --version --color --identify' ;;
@@ -212,6 +215,7 @@ _mnema_flags() {
     'witness') echo '--global --json -h --help -V --version --color --identify' ;;
     'witness stamp') echo '--calendar --global -h --help -V --version --color --identify' ;;
     'witness upgrade') echo '--blocks --global -h --help -V --version --color --identify' ;;
+    'witness sigstore') echo '--global -h --help -V --version --color --identify' ;;
     'switch') echo '-h --help -V --version --color --identify' ;;
     'switch off') echo '--reason --scope --which -h --help -V --version --color --identify' ;;
     'switch on') echo '--reason --scope --which -h --help -V --version --color --identify' ;;
@@ -219,7 +223,7 @@ _mnema_flags() {
     'inherit set') echo '--at --write -h --help -V --version --color --identify' ;;
     'inherit update') echo '--to --write -h --help -V --version --color --identify' ;;
     'doctor') echo '--fix --dry-run -h --help -V --version --color --identify' ;;
-    'verify') echo '--global --workspace --allow-no-record --require --since --against-github --json -h --help -V --version --color --identify' ;;
+    'verify') echo '--global --workspace --allow-no-record --require --since --against-github --against-sigstore --json -h --help -V --version --color --identify' ;;
     'mcp') echo '--project -h --help -V --version --color --identify' ;;
     'repl') echo '-h --help -V --version --color --identify' ;;
     'completion') echo '-h --help -V --version --color --identify' ;;
@@ -314,6 +318,7 @@ _mnema_values() {
     'key request:--color') echo 'auto always never' ;;
     'key enroll:--color') echo 'auto always never' ;;
     'key github:--color') echo 'auto always never' ;;
+    'key sigstore:--color') echo 'auto always never' ;;
     'key revoke:--color') echo 'auto always never' ;;
     'key protect:--color') echo 'auto always never' ;;
     'key unprotect:--color') echo 'auto always never' ;;
@@ -323,6 +328,7 @@ _mnema_values() {
     'witness:--color') echo 'auto always never' ;;
     'witness stamp:--color') echo 'auto always never' ;;
     'witness upgrade:--color') echo 'auto always never' ;;
+    'witness sigstore:--color') echo 'auto always never' ;;
     'switch:--color') echo 'auto always never' ;;
     'switch off:--scope') echo 'public private global' ;;
     'switch off:--color') echo 'auto always never' ;;

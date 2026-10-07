@@ -93,8 +93,17 @@ function signedMessage(fields: Omit<Checkpoint, 'sig'>): Uint8Array {
 
 /** The hash of a checkpoint (over its signed message) — what the next one links to. */
 export function checkpointHash(checkpoint: Checkpoint): string {
+  return createHash('sha256').update(checkpointMessage(checkpoint)).digest('hex');
+}
+
+/**
+ * The bytes a checkpoint's signature is over (§6), whose SHA-256 is {@link checkpointHash}. A
+ * countersignature that is not the record's own — a Sigstore bundle — signs these same bytes,
+ * and a reader recomputes them from `checkpoints.jsonl` rather than trusting a copy.
+ */
+export function checkpointMessage(checkpoint: Checkpoint): Uint8Array {
   const { sig: _sig, ...fields } = checkpoint;
-  return createHash('sha256').update(signedMessage(fields)).digest('hex');
+  return signedMessage(fields);
 }
 
 /**

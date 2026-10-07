@@ -1201,6 +1201,10 @@ $ mnema key --help
 |                                   so `mnema verify --against-github` can compare
 |                                   the keys that signed with the keys that
 |                                   account publishes
+|   sigstore <identity>             record that this identity is the one a
+|                                   Sigstore certificate names, so a bundle `mnema
+|                                   witness sigstore` files speaks for it in
+|                                   `mnema verify --against-sigstore`
 |   revoke [options] <fingerprint>  retire a key from this identity, from this
 |                                   point forward
 |   protect                         encrypt this machine's private keys at rest
@@ -1232,19 +1236,22 @@ $ mnema witness --help
 | ask an outside witness to date this record, and read where that stands
 |
 | Options:
-|   --global           also cover this machine's global tree — left out by
-|                      default: it belongs to no project and is present in every
-|                      one, and a witness over a tree no verdict reads is work
-|                      with no reader (default: false)
-|   --json             emit where the proof stands as JSON instead of prose — one
-|                      entry per tail, with the reading as the verifier derived it
-|   -h, --help         display help for command
+|   --global            also cover this machine's global tree — left out by
+|                       default: it belongs to no project and is present in every
+|                       one, and a witness over a tree no verdict reads is work
+|                       with no reader (default: false)
+|   --json              emit where the proof stands as JSON instead of prose — one
+|                       entry per tail, with the reading as the verifier derived
+|                       it
+|   -h, --help          display help for command
 |
 | Commands:
-|   stamp [options]    ask an outside witness to date each tail's last checkpoint
-|                      (T3)
-|   upgrade [options]  go back for every attestation this record is waiting on
-|                      (T3)
+|   stamp [options]     ask an outside witness to date each tail's last checkpoint
+|                       (T3)
+|   upgrade [options]   go back for every attestation this record is waiting on
+|                       (T3)
+|   sigstore [options]  countersign each tail's last checkpoint with a Sigstore
+|                       certificate — who signed in, and when Rekor logged it
 
 ### mnema switch --help
 $ mnema switch --help
@@ -1374,6 +1381,15 @@ $ mnema verify --help
 |                          signed — and it takes github.com’s word for it. Goes to
 |                          the network only when given; what it finds is noted per
 |                          identity and never moves the verdict or the exit
+|   --against-sigstore     also read the Sigstore bundles `mnema witness sigstore`
+|                          filed beside the checkpoints: who signed in to Sigstore
+|                          to countersign each one, and when Rekor logged it.
+|                          Reads no network — it checks against the Sigstore trust
+|                          root this binary carries. A bundle speaks for an
+|                          identity of this record only where that identity named
+|                          the same e-mail or workflow (`mnema key sigstore`).
+|                          Noted per bundle; never moves the verdict, the level,
+|                          `--require witnessed` or the exit
 |   --json                 emit the verdict as JSON instead of prose — the whole
 |                          reading, per tree, plus what NO --require value
 |                          answers. The exit code is unchanged: this changes the
@@ -1916,6 +1932,27 @@ $ mnema key github --help
 | Options:
 |   -h, --help  display help for command
 
+### mnema key sigstore --help
+$ mnema key sigstore --help
+| Usage: mnema key sigstore [options] <identity>
+|
+| record that this identity is the one a Sigstore certificate names, so a bundle
+| `mnema witness sigstore` files speaks for it in `mnema verify
+| --against-sigstore`
+|
+| Arguments:
+|   identity    the e-mail address you sign in to Sigstore with, or a GitHub
+|               Actions workflow as
+|               https://github.com/<owner>/<repo>/.github/workflows/<file>@<ref>
+|
+| Options:
+|   -h, --help  display help for command
+|
+| The record keeps an e-mail address as its SHA-256 (`sha256:<hex>` of the address,
+| trimmed and in lower case), never the address: the record is append-only and cloned.
+| A workflow is kept as it is. The hash protects the record only: the bundle
+| `mnema witness sigstore` files, and the public log it goes to, name the address itself.
+
 ### mnema key revoke --help
 $ mnema key revoke --help
 | Usage: mnema key revoke [options] <fingerprint>
@@ -2068,6 +2105,38 @@ $ mnema witness upgrade --help
 | on the same host. Anything else is reported by name and not contacted — a separate
 | line from the one a calendar that is down gets, because they call for opposite
 | responses.
+
+### mnema witness sigstore --help
+$ mnema witness sigstore --help
+| Usage: mnema witness sigstore [options]
+|
+| countersign each tail's last checkpoint with a Sigstore certificate — who signed
+| in, and when Rekor logged it
+|
+| Options:
+|   --global    also cover this machine's global tree — left out by default: it
+|               belongs to no project and is present in every one, and a witness
+|               over a tree no verdict reads is work with no reader (default:
+|               false)
+|   -h, --help  display help for command
+|
+| What leaves this machine: to Fulcio (fulcio.sigstore.dev), a sign-in token and a key made
+| for this act alone; to Rekor (rekor.sigstore.dev), the SHA-256 of each checkpoint and a
+| signature over it — never the record's events. AND YOUR IDENTITY: the certificate names the
+| e-mail you sign in with or, in GitHub Actions, the repository and the workflow, and it goes
+| into a public log that does not forget, and into the bundle the record commits.
+|
+| Here it opens the browser to sign in at oauth2.sigstore.dev. In GitHub Actions it uses
+| the job's own token (the workflow needs `permissions: id-token: write`), and it refuses
+| in a private repository, whose name the certificate would publish.
+|
+| It refuses a tree that is not fully signed, as `stamp` does, and appends no event: the
+| bundle is a file beside the checkpoint, `witness/<checkpoint>.sigstore.json`.
+|
+| The bundle dates the checkpoint on Rekor’s clock and names who signed in. It speaks for
+| an identity of this record only once that identity names the same e-mail or workflow:
+| `mnema key sigstore <identity>`. It is not a witness level: `verify` reads it only with
+| `--against-sigstore`, as notes.
 
 ### mnema switch off --help
 $ mnema switch off --help

@@ -501,6 +501,10 @@ export const NAMES_THAT_NEED_MORE: Readonly<
     times: 1,
     why: 'answers a line typed outside a project, whole, by naming the verb to run inside one',
   },
+  'packages/code/src/wiring/key.ts: mnema key sigstore': {
+    times: 1,
+    why: 'answers a line typed outside a project, whole, by naming the verb to run inside one',
+  },
   'packages/code/src/wiring/key.ts: mnema key request': {
     times: 1,
     why: 'the help of `key enroll`, naming the verb whose output its argument is',
@@ -516,6 +520,14 @@ export const NAMES_THAT_NEED_MORE: Readonly<
   'packages/code/src/wiring/verify.ts: mnema key github': {
     times: 1,
     why: 'the line saying an identity has no account linked, naming the verb that links one',
+  },
+  'packages/code/src/wiring/verify.ts: mnema key sigstore': {
+    times: 1,
+    why: 'the line saying no identity names a bundle’s signer, naming the verb with the signer it would name',
+  },
+  'docs/what-it-proves.md: mnema key sigstore': {
+    times: 2,
+    why: 'the row that says when a Sigstore signature speaks for an identity, naming the claim by its verb — and the row that says the claim keeps an e-mail as its hash',
   },
   'packages/code/src/wiring/run.ts: mnema run end': {
     times: 1,
@@ -648,11 +660,16 @@ export const HANDED_OVER: Readonly<
   // reader's browser checks the page (`mnema site`, twice), the step that addresses a rule at a path
   // (`mnema link`), and the quick start, which names the verbs it runs.
   // name 140 for the changelog entry that says `mnema init` declares the backup in the record.
+  // line 74 and name 144 for the Sigstore countersignature: the changelog entry, the package page,
+  // the page's table and the format hand over `witness sigstore`, `key sigstore` and
+  // `verify --against-sigstore`.
+  // name 145 for the row of that table that says the claim keeps an e-mail as its hash.
   // line 69 for the install page's no-sudo alternative, which ends on `mnema --version`.
   // line 74 and name 144 with the pages that say how VS Code's agent is made to load the plugin
   // (`mnema doctor --fix vscode`, `mnema doctor`) and the doctor's changed paragraphs.
   // line 77 and name 146 with the pages that hand over `mnema unlink` whole.
-  span: { line: 77, name: 146, flag: 1, unwritten: 0 },
+  // line 83 and name 151 with both: the Sigstore countersignature and `mnema unlink`.
+  span: { line: 83, name: 151, flag: 1, unwritten: 0 },
   // name 18 until the page that says where the key lives named `mnema key protect` in a line of
   // its own.
   // line 35 until the same page showed that question in a block of its own.
@@ -696,10 +713,15 @@ export const HANDED_OVER: Readonly<
   // `mnema verify` and the reads beside it.
   // name 76 once the usage refusal of `skill create` stopped naming the verb, now that the long text
   // can come from standard input or a file.
+  // line 67 and name 81 for the Sigstore countersignature: the help of `witness sigstore`, `key
+  // sigstore` and `verify --against-sigstore` name one another, and the act names the claim.
+  // name 82 once the help of `key sigstore` said the bundle `mnema witness sigstore` files still
+  // names the address the record keeps only as a hash.
   // line 75 and flag 4 with the promotion verb's own help and sentences, each a command that parses.
   // line 76 and name 77 for the help of `mnema doctor`, which names the one thing it writes,
   // `mnema doctor --fix vscode`, in a line of its own.
-  source: { line: 76, name: 77, flag: 4, unwritten: 3 },
+  // line 81 and name 83 with both: the Sigstore help and the promotion and doctor help.
+  source: { line: 81, name: 83, flag: 4, unwritten: 3 },
 };
 
 // ---------------------------------------------------------------------------

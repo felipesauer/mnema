@@ -1,6 +1,6 @@
 # @mnema/chain
 
-[![CI](https://img.shields.io/github/actions/workflow/status/felipesauer/mnema/ci.yml?branch=main&style=flat-square&label=CI&color=997dbf)](https://github.com/felipesauer/mnema/actions/workflows/ci.yml) [![License: Apache-2.0](https://img.shields.io/badge/license-Apache--2.0-997dbf?style=flat-square)](../../LICENSE) ![Node 22.12 or later](https://img.shields.io/badge/node-%E2%89%A522.12-997dbf?style=flat-square)
+[![CI](https://img.shields.io/github/actions/workflow/status/felipesauer/mnema/ci.yml?branch=main&style=flat-square&label=CI&color=997dbf)](https://github.com/felipesauer/mnema/actions/workflows/ci.yml) [![License: Apache-2.0](https://img.shields.io/badge/license-Apache--2.0-997dbf?style=flat-square)](../../LICENSE) ![Node 22.22.2 or a later 22, or 24.15.0 or later](https://img.shields.io/badge/node-%5E22.22.2%20%7C%7C%20%3E%3D24.15.0-997dbf?style=flat-square)
 
 The proof engine at the core of [mnema](https://github.com/felipesauer/mnema): a
 signed, append-only event log for the work of AI agents. It records what happened
@@ -160,7 +160,7 @@ never one designed for somebody else, and they move when it moves. If you want t
 rather than the engine, take `@mnema/code`; this page is for knowing what the engine
 holds and what it proves.
 
-Requires Node ≥ 22.12.0. The package is ESM-only, and it has no runtime dependencies.
+Requires Node 22.22.2 or a later 22, or 24.15.0 or later. The package is ESM-only, and it has no runtime dependencies.
 
 Whether the command above resolves is a fact about the registry rather than about this
 page: `npm view @mnema/chain version` answers it in one line.
@@ -276,7 +276,7 @@ the paragraph above from being a claim about a document nobody ever implemented:
 verifier in Python, written **from** `FORMAT.md`, importing nothing of this package.
 It reproduces the 33 vectors and the four aggregate digests, checks T1, T2/T4 and T3
 over real records, and refuses every mutation in `verifier/mutate.py`. It found
-twenty-five points where the document was not enough to write it from, all of which
+twenty-six points where the document was not enough to write it from, all of which
 are now fixed in the document.
 
 *Refuses every mutation* is a sentence this page carried while it was not quite true.

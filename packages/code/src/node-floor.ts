@@ -1,7 +1,7 @@
 /**
  * The Node this runs on is checked FIRST, before anything that needs it is loaded.
  *
- * THE DEFECT. The package declares `engines.node` (`>=22.12.0`), but `engines` is advice to the
+ * THE DEFECT. The package declares `engines.node`, but `engines` is advice to the
  * installer: npm prints `EBADENGINE` and installs anyway, and the consumer does not inherit the
  * workspace's `engine-strict`. Measured on Node 20.20.2: `mnema init`, `decision record` and
  * `verify` ran, and `mnema search` — the first verb to open the SQLite projection, whose native
@@ -26,13 +26,48 @@ import { readFileSync } from 'node:fs';
 /** A version as the numbers that order it. */
 type Version = readonly [number, number, number];
 
-const FLOOR = /^\s*(?:>=|\^|~)?\s*v?(\d+)(?:\.(\d+))?(?:\.(\d+))?\s*$/;
+/** One alternative of a range: the lowest Node it takes, the first it no longer takes, and how it is said. */
+export interface Accepted {
+  readonly from: Version;
+  /** Exclusive: `^22.22.2` takes no 23. Absent when the alternative has no ceiling. */
+  readonly before?: Version;
+  readonly said: string;
+}
 
-/** The lowest Node a range accepts, or undefined when the range is written in a shape not read. */
-export function floorOf(range: string): Version | undefined {
-  const said = FLOOR.exec(range);
-  if (said === null) return undefined;
-  return [Number(said[1]), Number(said[2] ?? '0'), Number(said[3] ?? '0')];
+const ALTERNATIVE = /^\s*(>=|\^|~)?\s*v?(\d+)(?:\.(\d+))?(?:\.(\d+))?\s*$/;
+
+/** A version as its three numbers, or undefined when it is not one. */
+function versionOf(text: string): Version | undefined {
+  const said = ALTERNATIVE.exec(text);
+  if (said === null || said[1] !== undefined) return undefined;
+  return [Number(said[2]), Number(said[3] ?? '0'), Number(said[4] ?? '0')];
+}
+
+/**
+ * The Nodes a range takes, one entry per `||` alternative — or undefined when any alternative is
+ * written in a shape not read. `^` and `~` carry the ceiling semver gives them; `>=` and a bare
+ * version are a floor with none.
+ */
+export function acceptedBy(range: string): readonly Accepted[] | undefined {
+  const accepted: Accepted[] = [];
+  for (const alternative of range.split('||')) {
+    const said = ALTERNATIVE.exec(alternative);
+    if (said === null) return undefined;
+    const from: Version = [Number(said[2]), Number(said[3] ?? '0'), Number(said[4] ?? '0')];
+    const shown = from.join('.');
+    if (said[1] === '^') {
+      accepted.push({ from, before: [from[0] + 1, 0, 0], said: `${shown} or a later ${from[0]}` });
+    } else if (said[1] === '~') {
+      accepted.push({
+        from,
+        before: [from[0], from[1] + 1, 0],
+        said: `${shown} or a later ${from[0]}.${from[1]}`,
+      });
+    } else {
+      accepted.push({ from, said: `${shown} or later` });
+    }
+  }
+  return accepted;
 }
 
 /** Whether `running` is at or above `floor`. */
@@ -46,15 +81,19 @@ function reaches(running: Version, floor: Version): boolean {
 }
 
 /**
- * The one line to say when `running` is below what `range` asks for, or undefined when it is not
- * (or when either cannot be read — a guard that refuses on a reading it cannot make would refuse
- * a runtime nobody has measured to be wrong).
+ * The one line to say when `running` is a Node `range` does not take, or undefined when it is
+ * taken (or when either cannot be read — a guard that refuses on a reading it cannot make would
+ * refuse a runtime nobody has measured to be wrong).
  */
 export function floorRefusal(running: string, range: string): string | undefined {
-  const floor = floorOf(range);
-  const have = floorOf(running);
-  if (floor === undefined || have === undefined || reaches(have, floor)) return undefined;
-  return `mnema needs Node ${floor.join('.')} or later; this is Node ${running}. Install a newer Node and run it again.`;
+  const accepted = acceptedBy(range);
+  const have = versionOf(running);
+  if (accepted === undefined || have === undefined) return undefined;
+  const taken = accepted.some(
+    (a) => reaches(have, a.from) && (a.before === undefined || !reaches(have, a.before)),
+  );
+  if (taken) return undefined;
+  return `mnema needs Node ${accepted.map((a) => a.said).join(', or ')}; this is Node ${running}. Install a newer Node and run it again.`;
 }
 
 /** The range `engines.node` declares in this package's `package.json`, or undefined. */

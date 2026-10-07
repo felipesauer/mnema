@@ -1,6 +1,6 @@
 # @mnema/code
 
-[![CI](https://img.shields.io/github/actions/workflow/status/felipesauer/mnema/ci.yml?branch=main&style=flat-square&label=CI&color=997dbf)](https://github.com/felipesauer/mnema/actions/workflows/ci.yml) [![License: Apache-2.0](https://img.shields.io/badge/license-Apache--2.0-997dbf?style=flat-square)](../../LICENSE) ![Node 22.12 or later](https://img.shields.io/badge/node-%E2%89%A522.12-997dbf?style=flat-square)
+[![CI](https://img.shields.io/github/actions/workflow/status/felipesauer/mnema/ci.yml?branch=main&style=flat-square&label=CI&color=997dbf)](https://github.com/felipesauer/mnema/actions/workflows/ci.yml) [![License: Apache-2.0](https://img.shields.io/badge/license-Apache--2.0-997dbf?style=flat-square)](../../LICENSE) ![Node 22.22.2 or a later 22, or 24.15.0 or later](https://img.shields.io/badge/node-%5E22.22.2%20%7C%7C%20%3E%3D24.15.0-997dbf?style=flat-square)
 
 Your decisions, handed to your agents' sessions and held at the edits they
 govern — append-only and signed in the repository, and checkable by anyone.
@@ -228,7 +228,7 @@ npm i -g @mnema/code
 pnpm add -g @mnema/code
 ```
 
-Either puts the `mnema` binary on your `PATH`. Requires Node ≥ 22.12.0; the package is
+Either puts the `mnema` binary on your `PATH`. Requires Node 22.22.2 or a later 22, or 24.15.0 or later; the package is
 ESM-only, and it brings the other three with it. `npm view @mnema/code version` says
 whether the publication has happened: a 404 means it has not.
 
@@ -399,6 +399,24 @@ Only a signed claim counts: one in the window above the last checkpoint could ha
 appended with no key at all. It goes to the network only when the flag is given; the
 verdict, the level and the exit are the ones `verify` gives without it, and with no
 network the verdict still stands and each identity reads `could not reach github.com`.
+
+**A Sigstore countersignature, where somebody asked.** `mnema witness sigstore` signs the
+last checkpoint of each tail with a short-lived [Sigstore](https://www.sigstore.dev)
+certificate — through the browser here, or with the job's own token in GitHub Actions
+(`permissions: id-token: write`) — and files the bundle beside the `.ots`. Of the record,
+only the checkpoint's digest leaves. **Your identity leaves too, by design:** the
+certificate names the e-mail you sign in with, or the repository and the workflow, and it
+goes into Sigstore's public log, which does not forget, and into the committed bundle; in
+GitHub Actions the act refuses a private repository. `mnema key sigstore <e-mail or
+workflow>` records the signed claim that this identity is that one — an e-mail as its
+SHA-256, never the address, which protects the record and not the bundle or the log — and `mnema verify
+--against-sigstore` reads every bundle **offline**, against the trust root the binary
+carries, and says who signed in, when Rekor logged it, and whether an identity of the record
+names that signer. **What it proves** is that whoever could sign in as that e-mail (or run
+that workflow) countersigned the checkpoint by then, on Rekor's clock. **What it does not
+prove** is who wrote the record: anybody can countersign the digest of a checkpoint they can
+read. It is no witness level — the verdict, the level, `--require witnessed` and the exit are
+the ones `verify` gives without it.
 
 ### Bold, dim, and what a pipe gets
 

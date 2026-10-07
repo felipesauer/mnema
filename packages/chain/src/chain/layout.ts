@@ -186,6 +186,20 @@ export function witnessProofPath(
 }
 
 /**
+ * A Sigstore bundle over one checkpoint — the ecosystem's own file (bundle v0.3), unaltered, at a
+ * path named by the checkpoint it countersigns. Neither reader of the format reads it: it is read
+ * only when asked (`mnema verify --against-sigstore`), and a reader that only knows `.ots` passes
+ * it by (§8).
+ */
+export function witnessSigstorePath(
+  layout: ChainLayout,
+  tailId: string,
+  checkpointHash: string,
+): string {
+  return join(witnessDir(layout, tailId), `${checkpointHash}.sigstore.json`);
+}
+
+/**
  * The block headers a proof's attestations need — 80 bytes each, one JSON line
  * each, beside the proof they complete.
  *

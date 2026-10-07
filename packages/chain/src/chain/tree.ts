@@ -34,8 +34,10 @@ import { type ChainLayout, gitignorePath } from './layout.js';
  * by NOT ignoring them
  * — lets the proof files through: `keys/*.pub`, and everything under `tails/`
  * (segments, `checkpoints.jsonl`, `tailproof.json`, and the `witness/` directory,
- * whose attestations are public by construction — a digest, a Merkle path and a
- * block header — and useless to a clone that cannot read them). Patterns are anchored with
+ * whose files are useless to a clone that cannot read them: an `.ots` is a digest, a
+ * Merkle path and a block header, and a Sigstore bundle also carries a certificate that
+ * NAMES SOMEBODY — an e-mail, or a repository's workflow — which is already public in
+ * Sigstore's log by the time the file exists). Patterns are anchored with
  * a leading `/` so they match only THIS tree's paths, never a like-named path
  * elsewhere the project might track.
  */

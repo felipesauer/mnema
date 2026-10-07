@@ -69,7 +69,13 @@ export {
 } from './content/secrets.js';
 export { openDatabase, type SqliteDatabase } from './db/sqlite.js';
 // The account an identity names on a code host, and the rule a name has to keep to be one.
-export { GITHUB_SERVICE, githubLoginRefusal } from './identity/account.js';
+export {
+  GITHUB_SERVICE,
+  githubLoginRefusal,
+  SIGSTORE_SERVICE,
+  sigstoreAccountOf,
+  sigstoreIdentityRefusal,
+} from './identity/account.js';
 // An identity founded where others already were — the one reading every surface asks, at the
 // moment of a write and when the record is audited afterwards.
 export {

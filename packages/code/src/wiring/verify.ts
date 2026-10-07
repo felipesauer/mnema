@@ -55,6 +55,7 @@ import type {
 import type { Command } from 'commander';
 import type { TreeReport, WorkspaceDone } from '../commands/verify.js';
 import type { GithubAuthor, GithubReading } from '../commands/verify-github.js';
+import type { SigstoreFinding, SigstoreReceipts } from '../commands/verify-sigstore.js';
 import type { SinceReading } from '../commands/verify-since.js';
 import { oneLine } from '../one-line.js';
 import { fact } from '../presentation/detail.js';
@@ -421,6 +422,15 @@ export function registerVerify(program: Command, wiring: Wiring): Declared {
         'what it finds is noted per identity and never moves the verdict or the exit',
     )
     .option(
+      AGAINST_SIGSTORE,
+      'also read the Sigstore bundles `mnema witness sigstore` filed beside the checkpoints: ' +
+        'who signed in to Sigstore to countersign each one, and when Rekor logged it. Reads no ' +
+        'network — it checks against the Sigstore trust root this binary carries. A bundle ' +
+        'speaks for an identity of this record only where that identity named the same e-mail ' +
+        'or workflow (`mnema key sigstore`). Noted per bundle; never moves the verdict, the ' +
+        'level, `--require witnessed` or the exit',
+    )
+    .option(
       '--json',
       'emit the verdict as JSON instead of prose — the whole reading, per tree, plus ' +
         'what NO --require value answers. The exit code is unchanged: this changes the ' +
@@ -434,6 +444,7 @@ export function registerVerify(program: Command, wiring: Wiring): Declared {
         allowNoRecord?: boolean;
         since?: string;
         againstGithub?: boolean;
+        againstSigstore?: boolean;
         json?: boolean;
       }) => {
         // Loaded when the verb runs, never while the program is declared: an eager
@@ -457,6 +468,14 @@ export function registerVerify(program: Command, wiring: Wiring): Declared {
             wiring,
             `\`${AGAINST_GITHUB}\` rules on the project you stand in, and \`--workspace\` names others`,
             'Run `mnema verify --against-github` inside each project.',
+          );
+          return;
+        }
+        if (opts.workspace !== undefined && opts.againstSigstore === true) {
+          reportUsage(
+            wiring,
+            `\`${AGAINST_SIGSTORE}\` rules on the project you stand in, and \`--workspace\` names others`,
+            'Run `mnema verify --against-sigstore` inside each project.',
           );
           return;
         }
@@ -515,6 +534,12 @@ export function registerVerify(program: Command, wiring: Wiring): Declared {
         const github = asksGithub
           ? await (await import('../commands/verify-github.js')).compareWithGithub(result.trees)
           : undefined;
+        // The Sigstore bundles, only when asked: the library that checks them is loaded with the
+        // flag and never without it. Offline, and its answer is notes, never the exit.
+        const asksSigstore = opts.againstSigstore === true;
+        const sigstore = asksSigstore
+          ? (await import('../commands/verify-sigstore.js')).readSigstoreReceipts(result.trees)
+          : undefined;
         if (opts.json === true) {
           reportAsJson(
             wiring,
@@ -522,6 +547,7 @@ export function registerVerify(program: Command, wiring: Wiring): Declared {
               ...result,
               ...(compared === undefined ? {} : { since: compared }),
               ...(github === undefined ? {} : { github }),
+              ...(sigstore === undefined ? {} : { sigstore }),
             },
             result.requirementMet && grewOnly,
             NOT_ANSWERED_BY_ANY_REQUIREMENT,
@@ -531,6 +557,7 @@ export function registerVerify(program: Command, wiring: Wiring): Declared {
         for (const tree of result.trees) report(io, render, tree);
         if (compared !== undefined) reportSince(io, render, compared);
         if (github !== undefined) reportGithub(io, render, github);
+        if (sigstore !== undefined) reportSigstore(io, render, sigstore);
         if (!grewOnly && result.requirementMet) io.fail();
         if (!result.requirementMet) {
           // A break already said why the exit is non-zero — the FAILED headline and
@@ -600,6 +627,56 @@ function reportSince(io: CliIo, render: Render, since: SinceReading): void {
 
 /** The flag that asks for the comparison with the keys GitHub accounts publish. */
 const AGAINST_GITHUB = '--against-github';
+
+/** The flag that asks for the Sigstore bundles to be read. */
+const AGAINST_SIGSTORE = '--against-sigstore';
+
+/**
+ * WHAT THE SIGSTORE BUNDLES SAY — one line per bundle, then the line that says what a bundle
+ * proves and what it does not. All of it on stdout: none of it is a failure of the verification.
+ */
+function reportSigstore(io: CliIo, render: Render, receipts: SigstoreReceipts): void {
+  for (const scope of receipts.notRead) {
+    io.out(
+      render(
+        fact(
+          `sigstore: the ${scope} tree was not read — its verdict is a break, so which checkpoint a bundle is over is not settled`,
+        ),
+      ),
+    );
+  }
+  if (receipts.findings.length === 0) {
+    io.out(
+      render(
+        fact(
+          'sigstore: not covered — no Sigstore bundle in this record (`mnema witness sigstore` files one)',
+        ),
+      ),
+    );
+    return;
+  }
+  for (const finding of receipts.findings) io.out(render(fact(sigstoreLine(finding))));
+  io.out(
+    render(
+      fact(
+        'sigstore: this says who signed in to Sigstore to countersign a checkpoint, and when ' +
+          'Rekor logged it, on Sigstore’s word; not who wrote the record, and it is no witness level',
+      ),
+    ),
+  );
+}
+
+/** The one line about one bundle. */
+function sigstoreLine(finding: SigstoreFinding): string {
+  const at = onOneLine`sigstore: ${finding.tail} checkpoint ${finding.checkpoint.slice(0, 12)}`;
+  const reading = finding.reading;
+  if (reading.kind === 'not-covered') return onOneLine`${at} — not covered: ${reading.why}`;
+  const signed = onOneLine`${at} — signed by ${reading.identity} (${reading.issuer}), logged by Rekor at ${reading.loggedAt} (entry ${reading.logIndex})`;
+  if (finding.namedBy !== undefined) {
+    return onOneLine`${signed}; ${finding.namedBy} names this identity as its own`;
+  }
+  return onOneLine`${signed}; no identity of this record names it, so it dates the checkpoint and says nothing about who wrote it (\`mnema key sigstore ${reading.identity}\` names it)`;
+}
 
 /**
  * WHAT THE COMPARISON WITH GITHUB FOUND — one line per identity, then the line that says what

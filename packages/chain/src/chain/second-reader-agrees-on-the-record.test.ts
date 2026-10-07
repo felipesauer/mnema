@@ -15,7 +15,7 @@
  * implementations completing end-to-end tests as a PRECONDITION for publishing a
  * standard. Certificate Transparency runs on several implementations checking each other.
  * What that buys is not redundancy — it is that assumptions which work inside one product
- * and are false outside it become visible. Twenty-five of them did; `python3
+ * and are false outside it become visible. Twenty-six of them did; `python3
  * verifier/mnema_verify.py gaps` lists them, and one of them is a place where the two readers,
  * both faithful to the document, DATE THE SAME RECORD DIFFERENTLY.
  *
@@ -88,9 +88,12 @@ import { accountLinked, identityFounded } from '../events/build.js';
 import type { CatalogEvent } from '../events/catalog.js';
 import { catalogUpcasters } from '../events/registry.js';
 import { openChainForWriting, verify } from './chain.js';
+import { checkpointHash } from './checkpoint.js';
 import { sealEntry, serializeEntry } from './entry.js';
 import { deriveAnchor, generateKeyPair, publicKeyToPem } from './keys.js';
+import { witnessSigstorePath } from './layout.js';
 import { meetsRequirement } from './level.js';
+import { readTailCheckpoints } from './store.js';
 import { serializeTailProof, signTailProof } from './tailproof.js';
 
 /** The second reader, and the tool that builds the inputs it has to refuse. */
@@ -1254,6 +1257,53 @@ describe('both readers over an identity that names its GitHub account', () => {
     const here = verify(record, catalogUpcasters());
     expect(here.ok).toBe(false);
     expect(here.issues.map((issue) => issue.detail).join('\n')).toContain('payload.account');
+  });
+});
+
+describe('both readers over a Sigstore bundle and the claim that names its identity', () => {
+  /**
+   * A bundle is a file beside the checkpoint, read only by `verify --against-sigstore`; the
+   * claim is an `account.linked` with `service: "sigstore"`, no kind of its own. Neither may move
+   * either verdict, and the second reader says the bundle is there and that it did not check it.
+   */
+  it('reads the same verdict and exit with the bundle as without it, and names the bundle', () => {
+    const record = copyOf('witnessed-record');
+    const before = secondReading(record);
+    const levelBefore = verify(record, catalogUpcasters()).level;
+    const tail = readdirSync(join(record, 'tails'))[0] as string;
+    const head = readTailCheckpoints({ root: record }, tail).at(-1);
+    if (head === undefined) throw new Error('the fixture has no checkpoint');
+    const bundle = witnessSigstorePath({ root: record }, tail, checkpointHash(head));
+    writeFileSync(bundle, '{"mediaType":"application/vnd.dev.sigstore.bundle.v0.3+json"}\n');
+
+    const after = secondReading(record);
+    expect(after.verdict).toBe(before.verdict);
+    expect(after.exit).toBe(before.exit);
+    expect(verify(record, catalogUpcasters()).level).toBe(levelBefore);
+    const named = after.findings.filter((finding) => finding.gap === 'G26');
+    expect(named.map((finding) => finding.where)).toEqual([
+      `${tail}/witness/${checkpointHash(head)}.sigstore.json`,
+    ]);
+    expect(before.findings.some((finding) => finding.gap === 'G26')).toBe(false);
+  });
+
+  it('accepts the claim in both readers, fully signed', () => {
+    const record = join(root, 'sigstore-linked');
+    const writer = openChainForWriting(record, { keyRoot: join(root, 'keys') });
+    const fp = writer.signerFingerprint;
+    const anchor = deriveAnchor(fp);
+    const envelope = { at: '2026-10-06T00:00:00.000Z', who: anchor, signerFp: fp, subject: anchor };
+    writer.append(identityFounded(envelope, { foundingFp: fp }));
+    // The e-mail as the product records it: `sha256:` and the hex of the address, never the
+    // address. The reference reader computes no hash and verifies no Sigstore link; it has to
+    // accept the value as the opaque string it is.
+    const account = 'sha256:12d216f5096c445e7248035ac7d85e586c647ce185aca31774ab10088f7ae51f';
+    writer.append(accountLinked(envelope, { service: 'sigstore', account }));
+    writer.checkpoint();
+    expect(verify(record, catalogUpcasters()).fullySigned).toBe(true);
+    const there = secondReading(record);
+    expect(refusals(there)).toEqual([]);
+    expect(there.verdict).toBe('VERIFIED');
   });
 });
 

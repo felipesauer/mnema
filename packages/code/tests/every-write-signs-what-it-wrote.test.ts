@@ -33,6 +33,7 @@ import { runCheckerEnroll, runKeyEnroll } from '../src/commands/key-enroll.js';
 import { runKeyGithub } from '../src/commands/key-github.js';
 import { runKeyRequest } from '../src/commands/key-request.js';
 import { runCheckerRetire, runKeyRevoke } from '../src/commands/key-revoke.js';
+import { runKeySigstore } from '../src/commands/key-sigstore.js';
 import { runLink } from '../src/commands/link.js';
 import { runMemory } from '../src/commands/memory.js';
 import { runObserve } from '../src/commands/observe.js';
@@ -167,8 +168,8 @@ const CODE_SRC = join(HERE, 'src');
  */
 const CORE_OPERATIONS_THAT_APPEND = 44;
 
-/** How many paths of the shipped surface reach one of them. */
-const SURFACE_WRITE_PATHS = 43;
+/** How many paths of the shipped surface reach one of them. 44 since `runKeySigstore`. */
+const SURFACE_WRITE_PATHS = 44;
 
 /** What `runInit` answered when it did not refuse; a refusal ends the setup. */
 function founded(result: InitResult | InitRefused): InitResult {
@@ -763,6 +764,11 @@ describe('every write path leaves the record fully signed', () => {
       {
         at: 'commands/key-github.ts:runKeyGithub',
         drive: () => void ok('key github', runKeyGithub(ctx, { account: 'octocat' })),
+      },
+      {
+        at: 'commands/key-sigstore.ts:runKeySigstore',
+        drive: () =>
+          void ok('key sigstore', runKeySigstore(ctx, { identity: 'felipe@example.com' })),
       },
       {
         at: 'commands/tail-prune.ts:runTailPrune',

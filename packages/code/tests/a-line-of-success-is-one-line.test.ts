@@ -484,7 +484,20 @@ const CLASSIFIED: Readonly<Record<string, { verdict: Verdict; why: string }>> = 
       verdict: 'minted',
       why: 'the scope of a tree: one of the three names this product gives its trees',
     },
+  'verify.ts «sigstore: the {} tree was not read — its verdict is a break, so which checkpoint a bundle is over is not settled» #1':
+    {
+      verdict: 'minted',
+      why: 'the scope of a tree: one of the three names this product gives its trees',
+    },
   // --- lines a value from outside reaches ----------------------------------------
+  'key.ts «Linked {} to the Sigstore identity {}» #1': {
+    verdict: 'collapsed',
+    why: 'the anchor, and the identity the caller typed — refused unless an e-mail or a workflow URI',
+  },
+  'key.ts «Linked {} to the Sigstore identity {}, recorded as its hash {}» #1': {
+    verdict: 'collapsed',
+    why: 'the anchor, the e-mail the caller typed, and the sha256 the record keeps in its place',
+  },
   'key.ts «Linked {} to github.com/{}» #1': {
     verdict: 'collapsed',
     why: 'the anchor, and the account name the caller typed — refused unless GitHub would issue it',
@@ -635,6 +648,27 @@ const CLASSIFIED: Readonly<Record<string, { verdict: Verdict; why: string }>> = 
     verdict: 'collapsed',
     why: '`@mnema/chain`’s reading, one of whose states quotes a calendar URI read off a file',
   },
+  'witness.ts «{} ({}): {} — {}» #2': {
+    verdict: 'collapsed',
+    why: 'the TAIL ID again, on the line `witness sigstore` prints per tail',
+  },
+  'witness.ts «{}» #1': {
+    verdict: 'collapsed',
+    why: 'the sign-in address, which carries a redirect on localhost and a state of this act',
+  },
+  'witness.ts «The certificate names {}, vouched for by {}.» #1': {
+    verdict: 'collapsed',
+    why: 'the identity and the issuer as Fulcio’s certificate and the token said them',
+  },
+  'witness.ts «{}» #2': {
+    verdict: 'collapsed',
+    why: 'the sentence about the public log, around the identity the certificate names',
+  },
+  'witness.ts «No identity of this record names it, so the bundle dates the checkpoint and says nothing about who wrote it: \\`mnema key sigstore {}\\` names it.» #1':
+    {
+      verdict: 'collapsed',
+      why: 'the identity the certificate names, inside the command that would claim it',
+    },
   'witness.ts «{} {}: {}» #1': {
     verdict: 'collapsed',
     why:
@@ -762,7 +796,11 @@ describe('every line this wiring words is classified', () => {
     // 82 until `doctor` printed a line to a finding.
     // 99 with the line `commit-hook` prints for where the hook is.
     // 103 once a checker key could be retired.
-    expect(FOUND.sites.length).toBe(104);
+    // 110 with `key sigstore`, the `verify --against-sigstore` tree line and the five lines
+    // `witness sigstore` prints.
+    // 111 once `key sigstore` said the hash the record keeps for an e-mail.
+    // 112 with the line `unlink` prints for the edge it took back.
+    expect(FOUND.sites.length).toBe(112);
   });
 
   it('reads the verdict off the source rather than believing the table', () => {
@@ -782,9 +820,9 @@ describe('every line this wiring words is classified', () => {
   it('found sites of both kinds, and the scanner sees a tag when there is one', () => {
     // Neither arm of the case above may be empty, or half of it is vacuous.
     const verdicts = Object.values(CLASSIFIED).map((said) => said.verdict);
-    expect(verdicts.filter((verdict) => verdict === 'collapsed').length).toBe(46);
-    expect(verdicts.filter((verdict) => verdict === 'minted').length).toBe(58);
-    expect(FOUND.sites.filter((site) => site.tagged).length).toBe(46);
+    expect(verdicts.filter((verdict) => verdict === 'collapsed').length).toBe(53);
+    expect(verdicts.filter((verdict) => verdict === 'minted').length).toBe(59);
+    expect(FOUND.sites.filter((site) => site.tagged).length).toBe(53);
   });
 
   it('every reason says where the value comes from', () => {
@@ -935,6 +973,10 @@ const UNREACHABLE: Readonly<Record<string, string>> = {
   'key.ts «{} {}» #1': 'a path under this machine’s own key root, which no caller names',
   'key.ts «Linked {} to github.com/{}» #1':
     'the name is refused unless GitHub would issue it, and no such name holds a newline',
+  'key.ts «Linked {} to the Sigstore identity {}» #1':
+    'the identity is refused unless it is an e-mail or a workflow URI, neither of which holds a space or a newline',
+  'key.ts «Linked {} to the Sigstore identity {}, recorded as its hash {}» #1':
+    'the same refusal, and a hash is hex',
   'key.ts «private half installed at {}» #1': 'needs a PEM to restore from',
   'key.ts «Your copy at {} was read, not moved — keep it where it is.» #1': 'the same restore',
   'key.ts «recorded in {}» #1': 'needs a request from a second machine',
@@ -967,6 +1009,16 @@ const UNREACHABLE: Readonly<Record<string, string>> = {
     'fingerprint and a random suffix, never typed',
   'witness.ts «external witness (T3): {} — {}» #1':
     'the neighbour of that line, printed in the same breath and about the same tail',
+  'witness.ts «{} ({}): {} — {}» #2':
+    'needs Sigstore to answer `witness sigstore`, which no argv reaches without the network — ' +
+    'the act is driven with doubles of Fulcio and Rekor in `sigstore/sigstore.test.ts`',
+  'witness.ts «{}» #1':
+    'the sign-in address, said only once a browser sign-in starts — the same act',
+  'witness.ts «The certificate names {}, vouched for by {}.» #1':
+    'the same act, once Fulcio answered',
+  'witness.ts «{}» #2': 'the same act, once Fulcio answered',
+  'witness.ts «No identity of this record names it, so the bundle dates the checkpoint and says nothing about who wrote it: \\`mnema key sigstore {}\\` names it.» #1':
+    'the same act, once Fulcio answered',
   'witness.ts «{} {}: {}» #1':
     'needs a proof already on disk whose pending attestation names the address, which ' +
     'no argv puts there: `stamp` writes whatever the calendar ANSWERED with, so reaching ' +

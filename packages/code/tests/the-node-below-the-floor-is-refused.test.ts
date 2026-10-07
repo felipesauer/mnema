@@ -6,9 +6,9 @@
  * and later. See `src/node-floor.ts` for the measurement and the mechanism.
  *
  * WHAT IS RUN. The built binary, on this machine's Node, with the version it reports lowered by a
- * preloaded module — so a floor of `22.12.0` is asked about 22.11.9 and about 22.12.0, the pair
- * that tells the number was read from `engines` and not from somewhere that happens to be near
- * it. Beside it, the shapes of the guard that the binary cannot show: the parse of a range, the
+ * preloaded module — so each alternative of the range is asked about the version just under its
+ * floor and about the floor itself, the pair that tells the number was read from `engines` and not
+ * from somewhere that happens to be near it. Beside it, the shapes of the guard that the binary cannot show: the parse of a range, the
  * sentence, that the declaration is a shape the guard reads (a floor it cannot parse would switch
  * it off without a test noticing), and that it is the FIRST import of `cli.ts`.
  */
@@ -19,7 +19,7 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
-import { declaredRange, floorOf, floorRefusal } from '../src/node-floor.js';
+import { acceptedBy, declaredRange, floorRefusal } from '../src/node-floor.js';
 
 const PACKAGE = fileURLToPath(new URL('../', import.meta.url));
 const BINARY = join(PACKAGE, 'dist', 'cli.js');
@@ -58,23 +58,27 @@ describe('the built binary, under a Node below the floor', () => {
     expect(ran.status).toBe(1);
     expect(ran.stdout).toBe('');
     expect(ran.stderr).toBe(
-      'mnema needs Node 22.12.0 or later; this is Node 20.20.2. Install a newer Node and run it again.\n',
+      'mnema needs Node 22.22.2 or a later 22, or 24.15.0 or later; this is Node 20.20.2. Install a newer Node and run it again.\n',
     );
   });
 
-  it('refuses the version just under the declared floor and takes the floor itself', () => {
-    const [major, minor, patch] = floorOf(DECLARED) as readonly [number, number, number];
-    const under =
-      patch > 0
-        ? [major, minor, patch - 1]
-        : minor > 0
-          ? [major, minor - 1, 99]
-          : [major - 1, 99, 99];
-    const refused = asIfNode(under.join('.'), '--version');
-    expect(refused.status, refused.stdout).toBe(1);
-    const taken = asIfNode(`${major}.${minor}.${patch}`, '--version');
-    expect(taken.stderr).toBe('');
-    expect(taken.status).toBe(0);
+  it('refuses the version just under each declared floor and takes each floor itself', () => {
+    const accepted = acceptedBy(DECLARED) ?? [];
+    expect(accepted.length).toBeGreaterThan(0);
+    for (const { from } of accepted) {
+      const [major, minor, patch] = from;
+      const under =
+        patch > 0
+          ? [major, minor, patch - 1]
+          : minor > 0
+            ? [major, minor - 1, 99]
+            : [major - 1, 99, 99];
+      const refused = asIfNode(under.join('.'), '--version');
+      expect(refused.status, under.join('.')).toBe(1);
+      const taken = asIfNode(from.join('.'), '--version');
+      expect(taken.stderr).toBe('');
+      expect(taken.status).toBe(0);
+    }
   });
 
   it('refuses before any verb is looked at, `--version` and `--help` included', () => {
@@ -88,11 +92,17 @@ describe('the built binary, under a Node below the floor', () => {
 
 describe('the guard’s parts', () => {
   it('reads the floor of the shapes `engines` is written in', () => {
-    expect(floorOf('>=22.12.0')).toEqual([22, 12, 0]);
-    expect(floorOf('^22.12')).toEqual([22, 12, 0]);
-    expect(floorOf('~22')).toEqual([22, 0, 0]);
-    expect(floorOf('v20.20.2')).toEqual([20, 20, 2]);
-    expect(floorOf('>=22 || >=24')).toBeUndefined();
+    expect(acceptedBy('>=22.12.0')).toEqual([{ from: [22, 12, 0], said: '22.12.0 or later' }]);
+    expect(acceptedBy('^22.12')).toEqual([
+      { from: [22, 12, 0], before: [23, 0, 0], said: '22.12.0 or a later 22' },
+    ]);
+    expect(acceptedBy('~22')?.[0]?.before).toEqual([22, 1, 0]);
+    expect(acceptedBy('v20.20.2')?.[0]?.from).toEqual([20, 20, 2]);
+    expect(acceptedBy('^22.22.2 || >=24.15.0')?.map((a) => a.from)).toEqual([
+      [22, 22, 2],
+      [24, 15, 0],
+    ]);
+    expect(acceptedBy('>22 || >=24')).toBeUndefined();
   });
 
   it('compares number by number, not as text', () => {
@@ -102,15 +112,30 @@ describe('the guard’s parts', () => {
     expect(floorRefusal('100.0.0', '>=22.12.0')).toBeUndefined();
   });
 
+  it('takes a Node only inside an alternative, so the gap between two of them is refused', () => {
+    const range = '^22.22.2 || >=24.15.0';
+    expect(floorRefusal('22.22.2', range)).toBeUndefined();
+    expect(floorRefusal('22.22.1', range)).toBeDefined();
+    expect(floorRefusal('23.11.0', range)).toBeDefined();
+    expect(floorRefusal('24.14.0', range)).toBeDefined();
+    expect(floorRefusal('24.15.0', range)).toBeUndefined();
+    expect(floorRefusal('26.0.0', range)).toBeUndefined();
+  });
+
   it('does not refuse on a reading it cannot make', () => {
     expect(floorRefusal('20.0.0', 'anything')).toBeUndefined();
     expect(floorRefusal('not a version', '>=22.12.0')).toBeUndefined();
+    // A running version written as a range is no version either, even one below the floor.
+    expect(floorRefusal('^20.0.0', '>=22.12.0')).toBeUndefined();
+    expect(floorRefusal('>=20', '>=22.12.0')).toBeUndefined();
+    // A version short of its minor and patch reads them as zero, and is refused below the floor.
+    expect(floorRefusal('22', '>=22.12.0')).toBeDefined();
   });
 
   it('reads the number from the package’s own `engines`, and that is a shape it reads', () => {
-    // A floor written as `>=22 || >=24` would pass every case above and switch the guard off.
+    // A floor written as `>22 || >=24` would pass every case above and switch the guard off.
     expect(declaredRange()).toBe(DECLARED);
-    expect(floorOf(DECLARED)).toBeDefined();
+    expect(acceptedBy(DECLARED)).toBeDefined();
   });
 
   it('is the FIRST import of the CLI, so nothing that needs the floor is loaded before it', () => {

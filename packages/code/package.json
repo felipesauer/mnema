@@ -44,7 +44,7 @@
     "url": "https://github.com/felipesauer/mnema/issues"
   },
   "engines": {
-    "node": ">=22.12.0"
+    "node": "^22.22.2 || >=24.15.0"
   },
   "publishConfig": {
     "access": "public",
@@ -55,6 +55,9 @@
     "@mnema/context": "workspace:*",
     "@mnema/core": "workspace:*",
     "@modelcontextprotocol/sdk": "^1.31.0",
+    "@sigstore/bundle": "5.0.0",
+    "@sigstore/protobuf-specs": "0.5.2",
+    "@sigstore/verify": "4.1.2",
     "commander": "^15.0.0",
     "ink": "^7.1.1",
     "react": "^19.3.0",
@@ -62,6 +65,7 @@
     "zod": "^4.6.5"
   },
   "devDependencies": {
+    "@sigstore/mock": "0.13.0",
     "@types/react": "^19.3.0",
     "esbuild": "0.28.1"
   }
