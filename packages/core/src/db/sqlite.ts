@@ -52,8 +52,7 @@ const REMEMBERED_STATEMENTS = 256;
  *
  * Every keyed read of a projection (`getTask`, `getDecision`, …) prepared its SQL on each call, and
  * preparing is most of what a keyed lookup costs: a census that resolves every rule of a record
- * through up to five of them paid it per address, measured in the order of 100 µs each
- * (`measurements/the-record-at-scale/`). A statement is a compiled plan and holds no result, so
+ * through up to five of them paid it per address, measured in the order of 100 µs each. A statement is a compiled plan and holds no result, so
  * running it again is what running it once was; one that was prepared over a table a rebuild then
  * dropped is recompiled by SQLite itself on its next run.
  *

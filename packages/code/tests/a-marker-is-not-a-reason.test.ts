@@ -37,8 +37,7 @@ function theProductsText(): readonly string[] {
   return tracked.filter(
     (path) =>
       (path.endsWith('.md') || /^packages\/[^/]+\/src\/.*\.ts$/.test(path)) &&
-      !path.endsWith('.test.ts') &&
-      !path.startsWith('measurements/'),
+      !path.endsWith('.test.ts'),
   );
 }
 

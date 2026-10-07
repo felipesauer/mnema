@@ -26,13 +26,13 @@ only when the output says what it adds:
  *     written in the pattern. THAT SENTENCE STOPPED THERE, AND VS CODE ADDS A READING: where it
  *     matches an `applyTo` at all — against a file attached to its chat — it puts `**` and a
  *     slash before a relative pattern and matches the file's absolute path, so `src/x.ts` also
- *     matches `other/src/x.ts` (VS Code 1.137's own glob, run on 30 Sep 2026,
- *     `measurements/hooks-by-host/`). A file stays in, and {@link WHO_MATCHES} says so beside it.
+ *     matches `other/src/x.ts` (VS Code 1.137's own glob, run on 30 Sep 2026;
+ *     not held by a file of this tree). A file stays in, and {@link WHO_MATCHES} says so beside it.
  *   - A DIRECTORY becomes `<dir>/**`, in each host: the pattern field of all three takes a glob
  *     (`paths`, `applyTo`, `globs`), and the record's prefix reading is what `<dir>/**` says. It is
  *     not exact in the way a file is, and {@link WHO_MATCHES} says what each host adds: VS Code puts
  *     `**` and a slash before a relative pattern, so `<dir>/**` also matches a directory of that
- *     name elsewhere (VS Code 1.137's own glob, `measurements/hooks-by-host/`); Cursor matches
+ *     name elsewhere (VS Code 1.137's own glob); Cursor matches
  *     `globs` on its servers, which could not be measured; whether Claude Code's `**` reaches a name
  *     that starts with a dot was not measured. The project root does not go in: `**` there would
  *     be every file, and a host that matches by attachment or on a server cannot be shown to mean

@@ -50,8 +50,7 @@
  * cost is a handful of fields per rule, not an argument per rule.
  *
  * THAT LAST SENTENCE HAD NO NUMBER AND NOW HAS ONE — **99.1 bytes per rule in force**,
- * the slope of the document this answer composes, over an envelope of about 359 bytes
- * (`measurements/channel-cost/README.md`). It is what makes "no cut by size" affordable
+ * the slope of the document this answer composes, over an envelope of about 359 bytes. It is what makes "no cut by size" affordable
  * rather than merely principled: a record holding a hundred rules in force pays about
  * ten kilobytes, once, where a session opens. The number belongs to the DOCUMENT's shape
  * rather than to this function, and that shape has already moved once — an earlier

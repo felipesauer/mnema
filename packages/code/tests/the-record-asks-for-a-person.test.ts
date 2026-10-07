@@ -9,7 +9,7 @@
  * that the informing relation alone never gates anything.
  *
  * What they cannot cover was MEASURED instead, against the real binary 2.1.228, with no
- * model called — `measurements/asks-a-person/results/2026-08-19/the-door-exists.json`:
+ * model called, once, on 2026-08-19 and not held by a file of this tree:
  *
  *   - `permissionDecision: "ask"` from a `mcp_tool` hook on `PreToolUse` DOES stop the
  *     write, and `permissionDecisionReason` comes back as the tool result of the refused

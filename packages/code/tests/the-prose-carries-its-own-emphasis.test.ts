@@ -94,7 +94,7 @@ const LAYOUT: readonly number[] = [0x09, 0x0a, 0x0d];
  * the parts of a composite map key — and it is written at four places in three files. Product
  * code writes it as an escape and says why, at `context/src/intelligence/references.ts:248`:
  * "written as an escape and not as a raw byte, so that an editor shows it". The bench harness
- * writes it as an escape twice, at `measurements/p1/harness/run.mjs:269` and `:271`. And
+ * writes it as an escape twice, in a harness since removed from the tree. And
  * `code/tests/support/witnessing.ts:531` wrote it RAW — one byte, inside the instrument of the
  * guard whose whole question is whether anything in this repository names a file. The odd one
  * out was the only one nothing could ask about: that file came back from `file(1)` as `data`

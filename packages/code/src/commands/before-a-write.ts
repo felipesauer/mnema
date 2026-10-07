@@ -6,7 +6,7 @@
  * happen. Claude Code gets both from the MCP tool its hook calls (`rules_before_an_edit`); the
  * agents of VS Code and of Cursor run only command hooks. VS Code 1.137 holds a write for a person
  * when a command answers `ask` and refuses it on `deny`; Cursor's agent ignores `ask` and honours
- * `deny` (`measurements/hooks-by-host/`). This is the command. It reads the payload the host
+ * `deny`. This is the command. It reads the payload the host
  * hands a hook on stdin, and it answers the reply that host reads, on stdout.
  *
  * IT DECIDES NOTHING OF ITS OWN, and the two things it could have decided twice are not here.

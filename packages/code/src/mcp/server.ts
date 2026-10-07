@@ -1342,8 +1342,8 @@ function registerTools(tool: ToolRegistrar, ensureSession: () => Promise<Session
       // the maintainer reads the source. What went sideways rather than up went to a
       // tool THIS TEXT NAMES, and the rule under that is measured rather than assumed:
       // an agent holding this server with nothing naming a tool called none —
-      // `mcp_asked` false in 20 of 20 and then in 40 of 40 instrumented cells
-      // (`measurements/p1/`). So the agent calls what is NAMED: `read_record` now says
+      // `mcp_asked` false in 20 of 20 and then in 40 of 40 instrumented cells.
+      // So the agent calls what is NAMED: `read_record` now says
       // what an ADR-<n> label is, and `search` says its own ordering and that `kind` is
       // the catalog's own word.
       description:
@@ -1848,8 +1848,8 @@ function registerTools(tool: ToolRegistrar, ensureSession: () => Promise<Session
       //
       // NOT THROUGH `served`, AND IT IS THE ONE READ ON THIS SERVER THAT IS NOT. What
       // comes back here is a HOOK REPLY, not an answer to a caller, and the host's
-      // contract for it was measured against the real binary
-      // (`measurements/mcp-tool-channel/`): anything that is not the reply JSON is
+      // contract for it was measured against the real binary:
+      // anything that is not the reply JSON is
       // DISCARDED IN SILENCE — no error, no warning, nothing reaching the model. A
       // notice spliced in here would therefore never be read by anybody, while being
       // paid for on every edit of every session. It is listed in

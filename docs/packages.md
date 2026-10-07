@@ -11,7 +11,6 @@
 | [`packages/vscode`](../packages/vscode/) | A VS Code extension, not published: it shows the rules in force over the open file, lists the decisions waiting for a judgment and records accept or reject (with the note) through the command line's own decision verb, and shows the level `mnema verify` reports. It reads and writes only through the command line. |
 | [`plugin/`](../plugin/) | The Claude Code plugin: eight hooks — two as a session opens, three at each edit (the one Claude Code runs, the one VS Code runs and the one Cursor runs, each skipped by the others), two at the end of a response, one before a compaction — and the MCP server declaration, in one installation. |
 | [`plugin-server-only/`](../plugin-server-only/) | The same marketplace's second plugin: the MCP server declaration and nothing else — no hook, no skill — for whoever wants the server and the command line only. |
-| [`measurements/`](../measurements/) | The measurements this product's claims rest on, with their protocols and their raw results. |
 
 **All four are released, and only one of them is meant to be installed.** This
 paragraph used to say the other three were internal packages that were never

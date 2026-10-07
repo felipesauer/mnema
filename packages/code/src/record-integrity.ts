@@ -328,7 +328,7 @@ export const SERVES_NO_RECORD_CONTENT: { readonly [path: string]: string } = {
  * ONE ENTRY, AND IT IS THERE BECAUSE OF A MEASUREMENT RATHER THAN AN OPINION.
  * `rules_before_an_edit` does not answer a caller: it answers the HOST, as a
  * `PreToolUse` hook, and the host's contract for that reply was measured against the
- * real binary (`measurements/mcp-tool-channel/`) — anything that is not the hook-reply
+ * real binary — anything that is not the hook-reply
  * JSON is discarded in silence, with no error and nothing reaching the model. A notice
  * spliced into that reply would be read by nobody while being paid for on every edit of
  * every session. The same answer asked for rather than pushed is `governing_rules`, and

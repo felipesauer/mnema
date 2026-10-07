@@ -52,7 +52,7 @@
  * them that went looking, "through a door that was not the one designed for it", said to
  * have "concluded there was nothing there". The agent does make the call. The one round
  * that was instrumented counted the arm that held the server with nothing pushed, so no id
- * was in front of it; beside it in `measurements/p1/results/` are the cells whose session
+ * was in front of it; beside it, in rounds read once and not held by a file of this tree, are the cells whose session
  * opened with the document, and 86 of those 321 went after what it named — 62 through
  * `read_record`, 24 through the `mnema` command in their own shell, none through both. The
  * other three rounds counted calls to this product, and the reader that went looking did
@@ -207,8 +207,8 @@ const SUBJECT_OF: { readonly [K in FramedChannel]: ServedSubject } = {
   'edit-rules-push': 'rules',
   // The GATE, and it is framed for a reason that took a measurement to establish: the
   // text of a refusal is not a diagnostic for a person, it comes back to the session as
-  // the tool result of the refused call, byte for byte, where a model reads it
-  // (`measurements/asks-a-person/`). Same subject as the two above, because it is the
+  // the tool result of the refused call, byte for byte, where a model reads it.
+  // Same subject as the two above, because it is the
   // same record saying the same kind of thing — what differs is that this one stops
   // somebody, and what a text says about ITSELF does not change with how hard it lands.
   'edit-asks-a-person': 'rules',
@@ -388,7 +388,7 @@ export const EDIT_PUSH_CHANNEL: CountedChannel = 'edit-rules-push';
  *
  * IT IS ITS OWN SWITCH AND NOT A READING OF {@link EDIT_PUSH_CHANNEL}, and the measurement
  * is why. Asking overrides every permission mode this host has, `bypassPermissions`
- * included (`measurements/asks-a-person/`), so this product's own switch is the ONLY way
+ * included, so this product's own switch is the ONLY way
  * out of a gate somebody inherited with a clone. A single switch covering both grades would
  * force whoever needed the way out to give up the rules as well — charging them the
  * information to escape the charge — and the tie that every charge be switchable would be

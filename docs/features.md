@@ -4,8 +4,8 @@ Each line says what it does and what it leaves unproven; the page it points to h
 
 - **A rule can refuse a write.** An accepted decision linked to a path with `refuses-a-write` stops
   the write there: in Claude Code and VS Code through the host's own hook, in Cursor's agent through
-  a hook of its own that only refuses. It was measured in all three with no model, and of Cursor's
-  tools only `Write` was. It binds an agent that goes through the plugin, not a person with an
+  a hook of its own that only refuses. It was read in all three with no model, and of Cursor's
+  tools only `Write` was; [how each claim is held](evidence.md) says which of it a test holds. It binds an agent that goes through the plugin, not a person with an
   editor, and `mnema switch off edit-refuses-a-write` is the way out — recorded, as a signed
   fact. [The plugin's page](../plugin/README.md#what-it-does--and-what-it-does-not).
 - **A note can be taken back.** `mnema retract` appends a signed retraction of a memory or an

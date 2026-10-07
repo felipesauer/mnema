@@ -290,7 +290,7 @@ function whatHasAnAddress(addressed: number, push: ChannelState): string[] {
  * "When a file is about to be changed, the rules addressed at it arrive on their own", which
  * tells a reader the rules are in front of them before they write the file. The host says
  * otherwise, measured twice against the real binary with the request it sends afterwards as
- * the evidence (`measurements/mcp-tool-channel/`, on 2.1.228 and on 2.1.281): the hook fires
+ * the evidence (on 2.1.228 and on 2.1.281): the hook fires
  * before the write, and the text it hands over reaches the conversation after the result of
  * that write. So it is in time for every edit after it and for a correction of that one, and
  * not for the bytes of the edit that fired it. Only the pause a rule asks for holds a write,

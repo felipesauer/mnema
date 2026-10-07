@@ -1,5 +1,0 @@
-{"wt":"head","N":100000,"op":"busy-warm","busy":0,"ok":9,"wallMs":4846.5}
-{"wt":"head","N":100000,"op":"busy-warm","busy":0,"ok":9,"wallMs":4816.5}
-{"wt":"head","N":100000,"op":"busy-warm","busy":0,"ok":9,"wallMs":4877.7}
-{"wt":"base","N":100000,"op":"busy-warm","busy":4,"ok":5,"wallMs":16370.6}
-{"wt":"base","N":100000,"op":"busy-warm","busy":3,"ok":6,"wallMs":17553.8}

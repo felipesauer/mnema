@@ -31,17 +31,19 @@ sessions. It does not show why, and the row does not claim to know the agent's r
 
 ## "The person said it in the conversation, so it is written down."
 
-`measurements/p1/results/2026-08-27-gate-demand/README.md`, the paragraph that begins "Two of the
-six refusals": on `a25-late-fee` and `a26-freight-band` the arm without the decision wrote nothing
-and ended its turn asking the person for the rule ("I need to know: what's the late fee rate?").
-That capture is 16 cells of one arm, and its own banner says no cell of it measures an arm. What
-it does show is where an agent puts a rule it does not have: to the person, in the conversation.
+On 27 August 2026, in 16 cells of one arm, on two tasks (a late fee and a freight band) the arm
+without the decision wrote nothing and ended its turn asking the person for the rule ("I need to
+know: what's the late fee rate?"). That capture is one arm, and no cell of it measures an arm.
+What it does show is where an agent puts a rule it does not have: to the person, in the
+conversation. It is kept as history in `docs/evidence.md` of the repository, with no file that
+reruns it.
 That a conversation is not part of the project's record is a fact about the conversation, not
 something that capture measured.
 
 ## "I know this project, I do not need to look at what is decided."
 
-`measurements/p1/results/2026-08-21-full/report.md` (the section "The agent asked, and this is the
-first time in three rounds that it did"): mcp_asked was false in every cell of the first two
-rounds (20 of 20 and 40 of 40) and true in 2 of 80 in the third, both on one task that already
-conformed. `plugin/README.md` opens on the same number.
+In the rounds of 18 and 20 August 2026 (Claude Haiku 4.5), mcp_asked was false in every cell
+that had the server to ask (20 of 20 and 40 of 40); in the round of 21 August 2026 it was true in
+2 of 80, both on one task that already conformed. These are kept as history, with their day,
+model and number of runs, in `docs/evidence.md` of the repository, and nothing in the tree
+reruns them. `plugin/README.md` opens on the same number.

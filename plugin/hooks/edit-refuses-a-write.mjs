@@ -6,7 +6,7 @@
  * WHY THIS IS A FILE OF ITS OWN AND NOT `edit-asks-a-person.mjs`. Cursor's command-line agent
  * reads this same plugin, runs only `type: "command"` hooks, and answers a hook's `deny` by not
  * writing the file and handing the model the reason as the write's error — and it IGNORES `ask`
- * (measured on 2026.09.18, `measurements/hooks-by-host/`). So the verb is asked for Cursor
+ * (measured on 2026.09.18). So the verb is asked for Cursor
  * (`--host cursor`), which answers a refusal and nothing else: a write that only asks goes through
  * and records no asking, because a person was not asked.
  *

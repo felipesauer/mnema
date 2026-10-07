@@ -71,15 +71,12 @@ function filesUnder(where: string, deep: boolean): readonly string[] {
 /**
  * Every file the workspace SHIPS, read once — the goldens and the sources both come out of it.
  *
- * The measurements are walked with the packages rather than left out by scope: that tree ships
- * a harness with goldens of its own, and a guard that never looked at it would be saying
- * nothing about it while appearing to. It holds no ranked instant today, and this is what
- * makes that a fact rather than a decision — one landing there tomorrow is covered.
+ * Everything shipped is walked rather than left out by scope, so a ranked instant landing in a
+ * tree nobody thought of is covered.
  */
 const SHIPPED: readonly string[] = [
   ...filesUnder(ROOT, false),
   ...filesUnder(join(ROOT, 'packages'), true),
-  ...filesUnder(join(ROOT, 'measurements'), true),
 ];
 
 /**
@@ -147,13 +144,6 @@ describe('every instant a ranked transcript holds is its own', () => {
       RANKING_GOLDENS.map((file) => file.slice(ROOT.length)),
       'no committed golden ranks an instant — the scan found nothing to be a rule about',
     ).toContain('packages/code/src/cli.reads.golden.txt');
-    // AND THE WALK REACHES THE OTHER TREE THAT SHIPS GOLDENS, so its absence from the list
-    // above is a reading and not a blind spot: the measurements harness pins one, it holds no
-    // ranked instant, and that is why the rule does not reach it today.
-    const reached = SHIPPED.map((file) => file.slice(ROOT.length));
-    expect(reached, 'the measurements harness was not walked').toContain(
-      'measurements/p1/harness/tests/four-arms.golden.json',
-    );
     for (const golden of RANKING_GOLDENS) {
       expect(
         fixturesFor(golden).map((file) => file.slice(ROOT.length)),

@@ -7,7 +7,7 @@
  * (`type: "mcp_tool"`), and its reply is shaped in `mcp/hook-reply.ts`. The other hosts that read
  * the plugin run only `type: "command"`: a process, handed a JSON payload on stdin, answering on
  * stdout. This module is what the command half knows about each of them, measured against the
- * host installed on the day (`measurements/hooks-by-host/`), and nothing here decides what a
+ * host installed on the day, and nothing here decides what a
  * write meets — that is `whatAWriteMeets`, the one site every door passes through.
  *
  * ## Which hosts, and what each can be told
@@ -111,7 +111,7 @@ const WRITES: { readonly [H in HookHost]: { readonly [tool: string]: PathsOf } }
   },
   // ONE TOOL, THE ONE MEASURED. Cursor's agent has other tools that change a file, and none was
   // run: a name here is a claim that a hook was handed it, so the table holds `Write` alone and
-  // the page says which are not covered (`measurements/hooks-by-host/`).
+  // the page says which are not covered.
   cursor: { Write: snakeFilePath },
 };
 

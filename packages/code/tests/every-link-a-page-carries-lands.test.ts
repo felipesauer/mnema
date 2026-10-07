@@ -26,10 +26,6 @@
  *     the repository, which is what is checked here, and that is read rather than measured;
  *   - a heading GitHub would derive from raw HTML other than an `<a name>` or `<a id>`;
  *   - a link whose destination holds a parenthesis, which the reading here stops at.
- *
- * AND WHAT IT FOUND WHEN IT LANDED: five links that do not resolve, every one of them in a
- * round's measurement pages, which stay as they were measured — {@link AS_MEASURED} holds
- * each, with its reason, reconciled in both directions.
  */
 
 import { execFileSync } from 'node:child_process';
@@ -232,28 +228,6 @@ function unlanded(corpus: Corpus): { key: string; why: string }[] {
 }
 
 // ---------------------------------------------------------------------------
-// The links that stay as they are
-// ---------------------------------------------------------------------------
-
-/** What a round's measurement pages are, said once: the reason every entry below shares. */
-const MEASURED =
-  'A page of a measurement round that has already run, which stays as it was measured, the ' +
-  'way `the-shell-a-page-publishes-is-the-shell-that-runs.test.ts` leaves a wrong command on ' +
-  'the same round’s page. ';
-
-/**
- * The links that do not land and stay as they are, each with its reason. Reconciled in both
- * directions: a link that starts landing, or leaves its page, has to leave this table too.
- */
-const AS_MEASURED: Readonly<Record<string, string>> = {
-  'measurements/p1/round-3/arms.md → ../mcp-tool-channel/': `${MEASURED}The measurement it means is \`measurements/mcp-tool-channel/\`, one directory further up than the link climbs.`,
-  'measurements/p1/round-3/arms.md → ../switch-cost/': `${MEASURED}The measurement it means is \`measurements/switch-cost/\`, one directory further up than the link climbs.`,
-  'measurements/p1/round-3/reading.md → ../mcp-tool-channel/': `${MEASURED}The measurement it means is \`measurements/mcp-tool-channel/\`, one directory further up than the link climbs.`,
-  'measurements/p1/round-4/sieve.md → reading.md': `${MEASURED}The sieve names the file the round's comparison would be read in, and the round stopped at its sieve, so that file was never written; the sieve says of itself that it may not be edited once a sieve cell exists.`,
-  'measurements/p1/threshold.md → ../threshold.md': `${MEASURED}The link sits in a passage written to be quoted in a round's own page, one directory down, where it lands; here it climbs one directory too many.`,
-};
-
-// ---------------------------------------------------------------------------
 // The guard
 // ---------------------------------------------------------------------------
 
@@ -269,17 +243,8 @@ const corpus: Corpus = {
 
 describe('every link a page carries lands', () => {
   it('lands every relative link on a tracked path, and every anchor on a heading', () => {
-    const found = unlanded(corpus).filter((one) => !(one.key in AS_MEASURED));
+    const found = unlanded(corpus);
     expect(found.map((one) => one.why)).toEqual([]);
-  });
-
-  it('keeps the links that stay as measured, and no link that stopped needing it', () => {
-    const keys = [...new Set(unlanded(corpus).map((one) => one.key))].sort();
-    expect(keys).toEqual(Object.keys(AS_MEASURED).sort());
-    // Each says what it means where it stands, beyond the reason every entry shares.
-    expect(Object.values(AS_MEASURED).filter((why) => why.length - MEASURED.length < 60)).toEqual(
-      [],
-    );
   });
 
   it('reaches the pages, and asks the anchors a reader follows', () => {

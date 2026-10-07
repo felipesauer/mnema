@@ -17,7 +17,7 @@
  * hooks that open a session are such reads. A cache per tree is kept in the tree now
  * (`CacheOptions.persist`, `locks/projection.db`), the next read takes only what arrived, and
  * deleting the file changes no answer but the time
- * (`measurements/the-record-at-scale/`, `tests/the-record-is-kept-between-reads.test.ts`).
+ * (`tests/the-record-is-kept-between-reads.test.ts`).
  *
  * The order the trees are opened in reaches no answer: every reader over these
  * orders by a property of the CONTENT precisely so the order cannot reshuffle

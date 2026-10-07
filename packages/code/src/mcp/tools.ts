@@ -2296,8 +2296,7 @@ export function runGoverningRulesTool(
  * WHAT IT RETURNS IS A HOOK REPLY, and that is not a leak of the host into the record —
  * it is the price of the channel. On this host a hook of type `mcp_tool` reaches the model
  * only through `hookSpecificOutput.additionalContext`; a tool returning prose is called
- * and DROPPED, silently, which was measured rather than assumed
- * (`measurements/mcp-tool-channel/`). An agent that calls this tool itself gets the same
+ * and DROPPED, silently, which was measured rather than assumed. An agent that calls this tool itself gets the same
  * reply, and the description says so: forging a call to it can only make the record's own
  * rules arrive, which is what the channel is for.
  *
@@ -2339,7 +2338,7 @@ export function runGoverningRulesTool(
  * and the derivation never runs: it is the term that scales with the whole record on every
  * call, and a channel somebody turned off must not keep paying it. They are separate
  * switches because asking overrides every permission mode this host has, `bypassPermissions`
- * included (`measurements/asks-a-person/`) — so this switch is the only way out of an
+ * included — so this switch is the only way out of an
  * inherited gate, and a single switch would charge whoever needed that way out the rules as
  * well.
  *
@@ -2361,7 +2360,7 @@ export function runRulesBeforeAnEditTool(
   const caches = workspaceCaches(session);
   // THE SWITCHES ARE ASKED FIRST, before the path is even resolved, and the order is the
   // whole cost argument. Each is one indexed lookup per tree over a projection the session
-  // keeps warm (measured flat at 0.04 ms, `measurements/switch-cost/`); the derivations
+  // keeps warm (measured flat at 0.04 ms); the derivations
   // behind the notices are the terms that scale with the record (0.79-0.83 ms on a
   // realistic one, 3.2-4.3 ms on a large one), so a channel that was switched off must not
   // keep paying its derivation on every edit of every session. With all off nothing else

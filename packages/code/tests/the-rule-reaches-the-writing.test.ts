@@ -4,8 +4,7 @@
  * in time for every edit after it and for a correction of that one, and not for the bytes of
  * that first write. This sentence used to say "the rule reaches the moment the code is
  * written", and the host falsified it: the request it sends after the write carries the text
- * after that write's result, measured on 2.1.228 and again on 2.1.281
- * (`measurements/mcp-tool-channel/`). Nothing below can hold that either way, for the reason
+ * after that write's result, measured on 2.1.228 and again on 2.1.281. Nothing below can hold that either way, for the reason
  * the next paragraph gives.
  *
  * WHAT IS PROVED HERE AND WHAT CANNOT BE. The host is what dispatches the hook, and no
@@ -15,16 +14,15 @@
  * cannot forge a second rule; that the silence is silence and not an error; and that the
  * two files the plugin ships AGREE about the server the hook names. What they cannot
  * cover — that the host calls the tool at all, and that what it returns arrives in the
- * session, and where — was measured instead, against the real binary, and the captures are
- * `measurements/mcp-tool-channel/results/2026-08-19/channel-exists.json` and, for where the
- * text lands on the host installed on 29 Sep 2026,
- * `measurements/mcp-tool-channel/results/2026-09-29/where-the-rule-lands.json`. A hook only
+ * session, and where — was measured instead, against the real binary (on 2026-08-19, and for where the
+ * text lands, on the host installed on 29 Sep 2026), and the captures are not held by a file
+ * of this tree. A hook only
  * the host dispatches is not testable in CI, and saying so is part of the delivery.
  *
  * THE NAME OF THE SERVER IS THE MOST FRAGILE THING IN THIS SLICE, and it gets a case of
  * its own for that reason. A hook naming a server the host does not know is not an
  * error: the tool is never called, nothing is injected, and the session proceeds exactly
- * as if the plugin were not installed — measured, four ways. The name the host answers to
+ * as if the plugin were not installed — read on Claude Code 2.1.228, against five spellings. The name the host answers to
  * for a server a PLUGIN declares is `plugin:<plugin>:<server>`, which is documented
  * nowhere and was found by asking `claude mcp list`. So the case below rebuilds that name
  * from `plugin.json` and requires `hooks.json` to hold it: renaming the plugin, or its
@@ -457,8 +455,8 @@ describe('the plugin names the server the host will answer to', () => {
   it('builds the hook’s server name out of the manifest it ships beside', () => {
     // The failure this prevents is invisible by construction: a hook naming a server the
     // host does not know is never called, injects nothing, and produces no error — so the
-    // plugin would look installed and do half of what it says. Measured four ways
-    // (`measurements/mcp-tool-channel/`), and the name that works for a server a PLUGIN
+    // plugin would look installed and do half of what it says. Read on Claude Code 2.1.228,
+    // and the name that works for a server a PLUGIN
     // declares is `plugin:<plugin>:<server>`, which no document states.
     const manifest = JSON.parse(
       readFileSync(join(REPO, 'plugin', '.claude-plugin', 'plugin.json'), 'utf-8'),
@@ -581,7 +579,7 @@ describe('the plugin names the server the host will answer to', () => {
 describe('past what a hook carries, the rules stop at a whole one and say so', () => {
   // THE CEILING IS THE HOST'S, measured on this channel: a `PreToolUse` `mcp_tool` hook's
   // text arrives whole up to 10,000 UTF-16 code units, and past it the host hands over a file
-  // path and a preview instead (`measurements/hook-ceiling/`). Four rules whose names are as
+  // path and a preview instead. Four rules whose names are as
   // long as a title the product takes cross it at one path; each is a record the CLI writes.
   const LONG = (n: number): string =>
     `Rule ${n}: ${'every invoice is issued in the currency of the contract, '.repeat(52).trimEnd()}`;
