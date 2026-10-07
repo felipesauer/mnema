@@ -3,7 +3,8 @@ import { defineConfig } from 'vitest/config';
 export default defineConfig({
   test: {
     include: ['packages/**/*.test.ts'],
-    exclude: ['**/dist/**', '**/node_modules/**'],
+    // The host contract starts the real host in a network namespace of its own, with a config of its own.
+    exclude: ['**/dist/**', '**/node_modules/**', 'packages/code/tests/host-contract/**'],
     environment: 'node',
     // EVERY TEST PROCESS RUNS IN A HOME OF ITS OWN, and no process it starts may resolve the
     // machine's: the key root lives under `HOME`, so a case that sees the real one signs with the
