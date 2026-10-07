@@ -26,26 +26,17 @@
  * ever starts; a case cannot, because the binary is already running when it asks.
  */
 
-import { execFileSync, spawn, spawnSync } from 'node:child_process';
-import {
-  existsSync,
-  mkdirSync,
-  mkdtempSync,
-  readFileSync,
-  realpathSync,
-  rmSync,
-  writeFileSync,
-} from 'node:fs';
-import { type NetworkInterfaceInfo, networkInterfaces, tmpdir } from 'node:os';
-import { dirname, join } from 'node:path';
+import { spawn, spawnSync } from 'node:child_process';
+import { existsSync, mkdirSync, readFileSync, realpathSync, writeFileSync } from 'node:fs';
+import { type NetworkInterfaceInfo, networkInterfaces } from 'node:os';
+import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { afterEach } from 'vitest';
+import { decodedWhole } from '../../support/arriving.js';
 import { GIT_WITHOUT_MAINTENANCE } from '../../support/git-without-maintenance.js';
+import { aSandbox, PLUGIN } from './a-sandbox.js';
 import { startTheStandIn, type TheCall, type TheRequest } from './the-stand-in-api.js';
 
-const REPO = fileURLToPath(new URL('../../../../../', import.meta.url));
-const CLI = join(REPO, 'packages', 'code', 'dist', 'cli.js');
-const PLUGIN = join(REPO, 'plugin');
 const A_SERVER_THAT_TALKS = fileURLToPath(
   new URL('./a-server-that-talks-too-much.mjs', import.meta.url),
 );
@@ -68,8 +59,8 @@ export interface TheHostUnderTest {
 
 /** Reads the binary and the version off the environment, and refuses to go on without both. */
 export function theHostUnderTest(): TheHostUnderTest {
-  const binary = process.env['MNEMA_HOST_CONTRACT_CLAUDE'];
-  const version = process.env['MNEMA_HOST_CONTRACT_VERSION'];
+  const binary = process.env.MNEMA_HOST_CONTRACT_CLAUDE;
+  const version = process.env.MNEMA_HOST_CONTRACT_VERSION;
   if (binary === undefined || binary === '' || version === undefined || version === '') {
     throw new Error(
       'the host contract needs MNEMA_HOST_CONTRACT_CLAUDE (the binary) and MNEMA_HOST_CONTRACT_VERSION ' +
@@ -152,21 +143,6 @@ export interface TheSpec {
   readonly env?: Readonly<Record<string, string>>;
 }
 
-/** The environment a `mnema` of the sandbox runs in: its own home, nothing of the machine's. */
-function sandboxEnv(home: string, path: string): NodeJS.ProcessEnv {
-  return {
-    HOME: home,
-    PATH: path,
-    GIT_CONFIG_NOSYSTEM: '1',
-    GIT_CONFIG_GLOBAL: GIT_WITHOUT_MAINTENANCE,
-    GIT_AUTHOR_NAME: 'Contract',
-    GIT_AUTHOR_EMAIL: 'contract@example.invalid',
-    GIT_COMMITTER_NAME: 'Contract',
-    GIT_COMMITTER_EMAIL: 'contract@example.invalid',
-    LANG: 'C.UTF-8',
-  };
-}
-
 /** Whether a `strace` is installed: without it the destinations cannot be read, so nothing starts. */
 function needStrace(): void {
   const found = spawnSync('strace', ['-V'], { encoding: 'utf-8' });
@@ -202,19 +178,14 @@ export async function aSession(spec: TheSpec = {}): Promise<TheSession> {
   refuseUnlessLoopbackOnly();
   needStrace();
 
-  const sandbox = realpathSync(mkdtempSync(join(tmpdir(), 'mnema-host-')));
-  const home = join(sandbox, 'home');
-  const project = join(sandbox, 'project');
+  const box = aSandbox('mnema-host-', spec.project);
+  const { home, project, bin, mnema } = box;
+  const sandbox = box.root;
   const config = join(sandbox, 'claude-config');
-  const bin = join(sandbox, 'bin');
   const out = join(sandbox, 'out');
-  for (const dir of [home, project, config, bin, out, join(project, '.claude')]) {
-    mkdirSync(dir, { recursive: true });
-  }
+  for (const dir of [config, out, join(project, '.claude')]) mkdirSync(dir, { recursive: true });
 
-  const nodeDir = dirname(process.execPath);
-  const base = `${nodeDir}:/usr/bin:/bin`;
-  const pathOfTheHost = spec.mnemaOnThePath === false ? base : `${bin}:${base}`;
+  const pathOfTheHost = spec.mnemaOnThePath === false ? box.base : `${bin}:${box.base}`;
   if (spec.mnemaOnThePath === false) {
     // A machine that has a `mnema` of its own in the node directory would make this a case about
     // that machine: say so rather than measure it.
@@ -223,27 +194,12 @@ export async function aSession(spec: TheSpec = {}): Promise<TheSession> {
       encoding: 'utf-8',
     });
     if (found.status === 0) {
-      rmSync(sandbox, { recursive: true, force: true });
+      box.remove();
       throw new Error(
         `a mnema is on the path the case means to be without one: ${found.stdout.trim()}`,
       );
     }
   }
-  // The shim runs this tree's build, so the host starts the product the suite just built.
-  writeFileSync(join(bin, 'mnema'), `#!/bin/sh\nexec "${process.execPath}" "${CLI}" "$@"\n`, {
-    mode: 0o755,
-  });
-  const mnema = (...args: string[]): string =>
-    execFileSync(process.execPath, [CLI, ...args], {
-      cwd: project,
-      env: sandboxEnv(home, `${bin}:${base}`),
-      encoding: 'utf-8',
-      stdio: ['ignore', 'pipe', 'pipe'],
-    });
-
-  execFileSync('git', ['init', '-q', '-b', 'main'], { cwd: project, env: sandboxEnv(home, base) });
-  mnema('init');
-  spec.project?.({ dir: project, mnema });
 
   const standIn = await startTheStandIn(spec.call?.(project));
   writeFileSync(
@@ -334,13 +290,15 @@ export async function aSession(spec: TheSpec = {}): Promise<TheSession> {
         stdio: ['ignore', 'pipe', 'pipe'],
       },
     );
-    const stdout: Buffer[] = [];
-    child.stdout.on('data', (chunk: Buffer) => stdout.push(chunk));
-    child.stderr.on('data', () => undefined);
+    const stdout = decodedWhole();
+    const stderr = decodedWhole();
+    stdout.from(child.stdout);
+    stderr.from(child.stderr);
     const killer = setTimeout(() => child.kill('SIGKILL'), 100_000);
     child.on('close', (code) => {
       clearTimeout(killer);
-      writeFileSync(join(out, 'stream.jsonl'), Buffer.concat(stdout));
+      writeFileSync(join(out, 'stream.jsonl'), stdout.text());
+      writeFileSync(join(out, 'stderr.txt'), stderr.text());
       resolve(code);
     });
   });
@@ -351,11 +309,11 @@ export async function aSession(spec: TheSpec = {}): Promise<TheSession> {
   const destinations = destinationsIn(read('connect.strace'));
   const outward = destinations.filter((address) => !isLoopback(address));
   if (outward.length > 0) {
-    rmSync(sandbox, { recursive: true, force: true });
+    box.remove();
     throw new Error(`the host reached beyond loopback: ${JSON.stringify(outward)}`);
   }
   if (destinations.length === 0) {
-    rmSync(sandbox, { recursive: true, force: true });
+    box.remove();
     throw new Error(
       'strace saw the host connect nowhere, so it read nothing: the instrument is blind',
     );
@@ -371,7 +329,7 @@ export async function aSession(spec: TheSpec = {}): Promise<TheSession> {
       }
     });
   const callIndex = messages.findIndex((request) =>
-    JSON.stringify(request.body['messages'] ?? []).includes('"tool_use"'),
+    JSON.stringify(request.body.messages ?? []).includes('"tool_use"'),
   );
   const session: TheSession = {
     project,
@@ -384,7 +342,7 @@ export async function aSession(spec: TheSpec = {}): Promise<TheSession> {
     destinations,
     mnema,
     theRequestAfterTheCall: callIndex >= 0 ? messages[callIndex] : undefined,
-    remove: () => rmSync(sandbox, { recursive: true, force: true }),
+    remove: box.remove,
   };
   try {
     expectTheVersionRun(session, host.version);
@@ -397,7 +355,7 @@ export async function aSession(spec: TheSpec = {}): Promise<TheSession> {
 
 /** The version the host's attribution block names, or `undefined` where there is none. */
 export function theVersionTheRequestNames(request: TheRequest): string | undefined {
-  return JSON.stringify(request.body['system'] ?? '').match(/cc_version=([^;\\"]+)/)?.[1];
+  return JSON.stringify(request.body.system ?? '').match(/cc_version=([^;\\"]+)/)?.[1];
 }
 
 /**
@@ -449,7 +407,7 @@ function blocksOf(content: unknown): string[] {
 
 /** The messages of a request, as `{role, content}`. */
 function messagesOf(request: TheRequest): { role: string; content: unknown }[] {
-  const messages = request.body['messages'];
+  const messages = request.body.messages;
   return Array.isArray(messages) ? (messages as { role: string; content: unknown }[]) : [];
 }
 
@@ -537,9 +495,9 @@ export function theInstructionsThatArrived(
  */
 export function thePermissionDecisionsOf(session: TheSession, event: string): string[] {
   return session.stream
-    .filter((entry) => entry['subtype'] === 'hook_response' && entry['hook_event'] === event)
+    .filter((entry) => entry.subtype === 'hook_response' && entry.hook_event === event)
     .flatMap((entry) => {
-      const output = String(entry['output'] ?? '').trim();
+      const output = String(entry.output ?? '').trim();
       if (!output.startsWith('{')) return [];
       try {
         const reply = JSON.parse(output) as {

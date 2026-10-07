@@ -18,6 +18,7 @@
 
 import { createServer, type Server } from 'node:http';
 import type { AddressInfo } from 'node:net';
+import { decodedWhole } from '../../support/arriving.js';
 
 /** One call the stand-in makes in place of a model. */
 export interface TheCall {
@@ -134,15 +135,12 @@ export async function startTheStandIn(call?: TheCall): Promise<TheStandIn> {
   const requests: TheRequest[] = [];
   const peers: string[] = [];
   const server: Server = createServer((req, res) => {
-    const chunks: Buffer[] = [];
-    req.on('data', (chunk: Buffer) => chunks.push(chunk));
+    const received = decodedWhole();
+    received.from(req);
     req.on('end', () => {
       let body: Record<string, unknown> = {};
       try {
-        body = JSON.parse(Buffer.concat(chunks).toString('utf-8') || '{}') as Record<
-          string,
-          unknown
-        >;
+        body = JSON.parse(received.text() || '{}') as Record<string, unknown>;
       } catch {
         body = {};
       }
