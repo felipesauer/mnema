@@ -120,7 +120,7 @@ import {
   chainExtent,
   type UpcasterRegistry,
 } from '@mnema/chain';
-import { ProjectionCache } from '@mnema/core';
+import { ProjectionCache, readCacheIsChosen } from '@mnema/core';
 
 /** A cache retained for one chain root, and whether it still matches the chain. */
 interface Entry {
@@ -224,7 +224,7 @@ export function createCacheRegistry(): CacheRegistry {
         }
         return existing.cache;
       }
-      const cache = ProjectionCache.open(chainRoot, { upcasters });
+      const cache = ProjectionCache.open(chainRoot, { upcasters, persist: readCacheIsChosen() });
       cache.rebuild();
       entries.set(chainRoot, { cache, stale: false, extent });
       return cache;

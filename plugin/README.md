@@ -82,7 +82,9 @@ document, delivered by the host instead of waited for.
   where a rule asks for a person, the person is asked and the write is not also refused. The server
   remembers the paths it held for as long as the connection lasts, so a session that reconnects is
   held once more. Each hold is recorded as a `channel.asked` citing the rule and the path, before
-  the refusal is made, and the channel's service as one `channel.served` per run. It holds in
+  the refusal is made, and the channel's service as one `channel.served` per run (mnema noting
+  that it delivered the hook's answer, which is not a person's approval: an approval is the host's
+  own prompt, and the record keeps no fact of it). It holds in
   Claude Code, which runs the call; VS Code's command door starts a process per write and has no
   session to remember a path by, so it does not hold. That the host refuses the write on `deny` and
   hands the reason to the model was measured (`measurements/hooks-by-host/`).
@@ -277,7 +279,7 @@ result of the tool; what a person sees in the confirmation was not read from the
 was measured on the free plan with the `Auto` model, the only model used: the server's
 instructions and both opening texts are in the prompt Cursor's servers assembled for the
 model, read back from the chat the agent keeps on the machine
-([the prompt, with everything Cursor and the machine put in it cut out](../measurements/hooks-by-host/results/2026-09-30/cursor-prompt-2026-09-23-session-1.sanitized.txt)) — the instructions whole,
+([the prompt, with everything Cursor and the machine put in it cut out](../measurements/hooks-by-host/results/2026-09-30/cursor-prompt-2026-09-23-session-1.sanitized.txt); [a summary for VS Code and Cursor](../measurements/what-the-editors-hand-the-model/)) — the instructions whole,
 but for the indentation of their continuation lines, which arrives as a single space —
 and the model called the server's tools. That the server there goes by the directory
 Cursor starts it in is this product's rule and is held by a case of its own

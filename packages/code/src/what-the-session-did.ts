@@ -11,6 +11,10 @@
  * rather than hidden: a PATH is what a person typed or what the model chose, so it is
  * content, and the module that returns it returns it to a caller that prints a COUNT.
  *
+ * ONLY A WRITE THAT HAPPENED COUNTS. A tool call the host answered with an error — a hook that
+ * refused it, an edit that matched nothing — is an attempt, and its result line says so; it is
+ * not a file written. A call whose result is not in the transcript is counted, as before.
+ *
  * THE TOOLS THAT WRITE ARE A TABLE OF THE HOST'S OWN NAMES ({@link WRITING_TOOLS}) and each
  * names the field its path is in. A tool this table does not know is not counted, so a host
  * that renames one makes the count read low and never makes it read high; the line the
@@ -61,8 +65,11 @@ export interface SessionDid {
 export function whatTheSessionDid(path: string, cwd: string): SessionDid | undefined {
   let lines = 0;
   let openedAt: string | undefined;
-  const edited = new Set<string>();
-  let lastResponseEdited = false;
+  // Each write the tool calls ATTEMPTED, in order, and the ids of the calls the host answered
+  // with an error: a call a hook refused is in the first list and the second, and is not a write.
+  const attempts: { id: string | undefined; file: string; response: number }[] = [];
+  const failed = new Set<string>();
+  let response = 0;
   forEachLine(path, (line) => {
     lines += 1;
     const said = parsed(line);
@@ -70,31 +77,57 @@ export function whatTheSessionDid(path: string, cwd: string): SessionDid | undef
     const at = typeof said.timestamp === 'string' ? said.timestamp : undefined;
     if (at !== undefined && (openedAt === undefined || at < openedAt)) openedAt = at;
     if (said.type === 'user' && isAPrompt(said)) {
-      lastResponseEdited = false;
+      response += 1;
+      return true;
+    }
+    if (said.type === 'user') {
+      for (const id of idsOfFailedCalls(said)) failed.add(id);
       return true;
     }
     if (said.type !== 'assistant') return true;
     const where = typeof said.cwd === 'string' ? said.cwd : cwd;
-    for (const file of filesWritten(said)) {
-      edited.add(isAbsolute(file) ? file : resolve(where, file));
-      lastResponseEdited = true;
+    for (const { id, file } of filesWritten(said)) {
+      attempts.push({ id, file: isAbsolute(file) ? file : resolve(where, file), response });
     }
     return true;
   });
-  return lines === 0 ? undefined : { openedAt, editedFiles: [...edited], lastResponseEdited };
+  const happened = attempts.filter((one) => one.id === undefined || !failed.has(one.id));
+  return lines === 0
+    ? undefined
+    : {
+        openedAt,
+        editedFiles: [...new Set(happened.map((one) => one.file))],
+        lastResponseEdited: happened.some((one) => one.response === response),
+      };
 }
 
-/** The paths the tool calls of one assistant line name, for the tools that write a file. */
-function filesWritten(line: Record<string, unknown>): string[] {
+/** The ids of the tool calls a `user` line says the host answered with an error. */
+function idsOfFailedCalls(line: Record<string, unknown>): string[] {
   const content = asObject(line.message)?.content;
   if (!Array.isArray(content)) return [];
-  const files: string[] = [];
+  const ids: string[] = [];
+  for (const block of content) {
+    const result = asObject(block);
+    if (result?.type === 'tool_result' && result.is_error === true) {
+      if (typeof result.tool_use_id === 'string') ids.push(result.tool_use_id);
+    }
+  }
+  return ids;
+}
+
+/** The writes the tool calls of one assistant line name, for the tools that write a file. */
+function filesWritten(line: Record<string, unknown>): { id: string | undefined; file: string }[] {
+  const content = asObject(line.message)?.content;
+  if (!Array.isArray(content)) return [];
+  const files: { id: string | undefined; file: string }[] = [];
   for (const block of content) {
     const call = asObject(block);
     if (call === undefined || call.type !== 'tool_use' || typeof call.name !== 'string') continue;
     const field = WRITING_TOOLS[call.name];
     const named = field === undefined ? undefined : asObject(call.input)?.[field];
-    if (typeof named === 'string' && named !== '') files.push(named);
+    if (typeof named === 'string' && named !== '') {
+      files.push({ id: typeof call.id === 'string' ? call.id : undefined, file: named });
+    }
   }
   return files;
 }
