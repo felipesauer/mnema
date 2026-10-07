@@ -300,8 +300,8 @@ and with Cursor's command-line agent 2026.09.18 — not Cursor's editor. The las
 measured on 30 Sep 2026 against each host with no model and no network — a stand-in model in
 VS Code, a stand-in backend for Cursor's agent — with the plugin of this repository and the
 built binary; none of it is held by a file of this repository yet ([how each claim is held](../docs/evidence.md)).
-VS Code puts a hook's reason in front of the person who decides and a hook's text inside the
-result of the tool; what a person sees in the confirmation was not read from the screen. On Cursor's side it
+A hook's text lands inside the result of the tool in VS Code; whether the hook's reason is put in
+front of the person who decides, and what the confirmation shows, was not read from the screen. On Cursor's side it
 was measured on the free plan with the `Auto` model, the only model used: the server's
 instructions and both opening texts are in the prompt Cursor's servers assembled for the
 model, read back from the chat the agent keeps on the machine
@@ -351,9 +351,9 @@ when they say nothing is written once, in `hand-over.mjs`. The `PreToolUse` hook
 file at all, and that is its whole shape: it is
 `type: "mcp_tool"`, so the host calls a tool on the server declared right there in
 `plugin.json` instead of starting a process. The one fragile thing about it is the NAME —
-a hook names that server `plugin:mnema:mnema`, which is how this host spells a server a
-plugin declares, and a hook that named it `mnema` would never be called and would say
-nothing about it. Measured four ways, and the two files are checked against each other so
+a hook names that server `plugin:mnema:mnema`, which is how Claude Code 2.1.228 spells a
+server a plugin declares, and a hook that named it `mnema` would never be called and would say
+nothing about it. Read against that host (not held by a file of this repository yet), and the two files are checked against each other so
 that renaming either half is a failing test rather than a plugin that looks installed and
 does half of what it says.
 

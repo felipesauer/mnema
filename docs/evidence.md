@@ -33,6 +33,7 @@ What the verifier proves, and what it does not, is on
 | The server goes by the directory a client starts it in when the client names no workspace | a test | [`a-client-that-names-no-workspace.test.ts`](../packages/code/tests/a-client-that-names-no-workspace.test.ts) |
 | The rules-file verb writes an address as a glob only when it becomes that glob exactly, and names every rule it leaves out | a test | [`a-rules-file-carries-only-what-becomes-a-glob-exactly.test.ts`](../packages/code/tests/a-rules-file-carries-only-what-becomes-a-glob-exactly.test.ts) |
 | The doctor verb says why VS Code's agent loads no plugin | a test | [`doctor-tells-vs-code-where-the-plugin-is.test.ts`](../packages/code/tests/doctor-tells-vs-code-where-the-plugin-is.test.ts) |
+| The plugin's hook and its server declaration name the server alike, so renaming either half fails | a test | [`the-rule-reaches-the-writing.test.ts`](../packages/code/tests/the-rule-reaches-the-writing.test.ts) |
 | The plugin's skills say what they carry | a test | [`every-skill-the-plugin-ships-is-what-it-says.test.ts`](../packages/code/tests/every-skill-the-plugin-ships-is-what-it-says.test.ts) |
 | The numbers and tables the pages draw are read off the file they came from | a test | [`the-front-page-says-what-its-sources-say.test.ts`](../packages/code/tests/the-front-page-says-what-its-sources-say.test.ts) |
 | Every file this page names exists | a test | [`the-evidence-page-cites-what-exists.test.ts`](../packages/code/tests/the-evidence-page-cites-what-exists.test.ts) |
@@ -91,7 +92,9 @@ host and the version beside it.
 | VS Code puts a hook's text inside the result of the tool, as `<PreToolUse-context>` | VS Code 1.137 with Copilot Chat 0.65, 30 September 2026, no model and no network | not held yet |
 | On Cursor's free plan with the `Auto` model, the prompt carries the server's instructions whole, but for the indentation of their continuation lines, and both opening texts, and the model called the server's tools | Cursor agent 2026.09.18, free plan, `Auto` model, sessions of 23 September 2026 | not held yet |
 | VS Code's agent and Cursor's command-line agent do not run a hook of type `mcp_tool`, and run command hooks | VS Code 1.137 with Copilot Chat 0.65 and Cursor agent 2026.09.18, 30 September 2026 | not held yet |
-| Whether VS Code and Cursor offer the plugin's `userConfig` option; for Claude Code it was read from its documentation, not run | not read | not held yet |
+| How Claude Code hands the `userConfig` value to the hooks and the server was read from its documentation, not run; whether VS Code and Cursor offer the option | not read | not held yet |
+| Claude Code and Cursor's command-line agent apply a hook's matcher: a matcher of VS Code's tool names never ran the plugin's VS Code hook in either | Claude Code 2.1.281 and Cursor agent 2026.09.18, 30 September 2026 | not held yet |
+| Claude Code calls a hook's MCP server only under the name `plugin:<plugin>:<server>`; the manifest's own name and three other spellings were not called | Claude Code 2.1.228 | not held yet |
 | How VS Code spells the server's name to the model | not read | not held yet |
 | VS Code puts a hook's reason in front of the person who decides; what the person sees in the confirmation | not read from the screen | not held yet |
 | VS Code matches `applyTo` with a leading `**/`; Cursor matches `globs` on its servers; Claude Code's `paths` and whether its `**` reaches a name starting with a dot | not read | not held yet |
