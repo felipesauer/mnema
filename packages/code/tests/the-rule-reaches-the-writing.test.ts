@@ -4,8 +4,7 @@
  * in time for every edit after it and for a correction of that one, and not for the bytes of
  * that first write. This sentence used to say "the rule reaches the moment the code is
  * written", and the host falsified it: the request it sends after the write carries the text
- * after that write's result, measured on 2.1.228 and again on 2.1.281
- *. Nothing below can hold that either way, for the reason
+ * after that write's result, measured on 2.1.228 and again on 2.1.281. Nothing below can hold that either way, for the reason
  * the next paragraph gives.
  *
  * WHAT IS PROVED HERE AND WHAT CANNOT BE. The host is what dispatches the hook, and no
@@ -15,10 +14,9 @@
  * cannot forge a second rule; that the silence is silence and not an error; and that the
  * two files the plugin ships AGREE about the server the hook names. What they cannot
  * cover — that the host calls the tool at all, and that what it returns arrives in the
- * session, and where — was measured instead, against the real binary, and the captures are
- *  and, for where the
- * text lands on the host installed on 29 Sep 2026,
- * . A hook only
+ * session, and where — was measured instead, against the real binary (on 2026-08-19, and for where the
+ * text lands, on the host installed on 29 Sep 2026), and the captures are not held by a file
+ * of this tree. A hook only
  * the host dispatches is not testable in CI, and saying so is part of the delivery.
  *
  * THE NAME OF THE SERVER IS THE MOST FRAGILE THING IN THIS SLICE, and it gets a case of
@@ -457,8 +455,7 @@ describe('the plugin names the server the host will answer to', () => {
   it('builds the hook’s server name out of the manifest it ships beside', () => {
     // The failure this prevents is invisible by construction: a hook naming a server the
     // host does not know is never called, injects nothing, and produces no error — so the
-    // plugin would look installed and do half of what it says. Measured four ways
-    //, and the name that works for a server a PLUGIN
+    // plugin would look installed and do half of what it says. Measured four ways, and the name that works for a server a PLUGIN
     // declares is `plugin:<plugin>:<server>`, which no document states.
     const manifest = JSON.parse(
       readFileSync(join(REPO, 'plugin', '.claude-plugin', 'plugin.json'), 'utf-8'),

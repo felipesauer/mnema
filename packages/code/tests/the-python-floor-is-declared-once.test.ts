@@ -42,8 +42,8 @@
  *     newest release of that line it knows.
  *   - Whether the floor is too HIGH. Over-declaring is safe, under-declaring is the defect, and
  *     only the defect is guarded.
- *   - , which starts `python3` for fixtures that are not the reader. It
- *     is outside `packages/`, and vitest never runs it.
+ *   - A harness of old rounds, since removed from the tree, that started `python3` for fixtures
+ *     that were not the reader. It was outside `packages/`, and vitest never ran it.
  */
 
 import { execFileSync, spawnSync } from 'node:child_process';

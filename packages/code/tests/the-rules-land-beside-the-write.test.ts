@@ -23,7 +23,7 @@
  *     English: it catches a sentence coming back, and the paraphrase is the first side's.
  *
  * WHAT IT CANNOT HOLD is the host. Where the text lands is a fact about one binary, measured
- * rather than tested: .
+ * rather than tested, and not held by a file of this tree.
  */
 
 import { mkdirSync, mkdtempSync, readFileSync, rmSync } from 'node:fs';

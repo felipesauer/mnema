@@ -5,14 +5,13 @@
  * Claude Code can run a hook as a call into an already-connected MCP server
  * (`type: "mcp_tool"`), which is what makes an injection point affordable: the same
  * work costs 171.5 ms through a spawned process and 1.24 ms through a warm connection
- *. What it costs in exchange is that the tool's REPLY has
+ * (read once, not held by a file of this tree). What it costs in exchange is that the tool's REPLY has
  * to be shaped for the host rather than for a reader, and this module is the one place
  * that knows that shape.
  *
  * ## Every line below was measured against a real host, not read off a document
  *
- *  holds the first capture and
- *  the second: the real binary (2.1.228), a real stdio
+ * Two captures, read once and not held by a file of this tree: the real binary (2.1.228), a real stdio
  * server, and a stand-in for the model API so that the request the host sends AFTER the
  * hook is the evidence for what reached the session. Where the text lands was measured
  * again on 2.1.281, in the first of the two. What they establish, and what each one costs
@@ -56,7 +55,7 @@
  * produced. `deny` is the hold on the FIRST write of a session to a file a rule addresses
  * (`edit-first-write-gate`, off until somebody switches it on): refused once, with the rules in
  * the reason, and the same write repeated is let through. The host's side of it is measured
- * (: the write refused, the reason handed to the model as an
+ * (the write refused, the reason handed to the model as an
  * error). When both a refusal and a hold would be said, the refusal is what is said, and `ask`
  * outranks the hold, since a person is then already asked.
  *

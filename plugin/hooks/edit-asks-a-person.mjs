@@ -7,8 +7,7 @@
  * FOR. Claude Code runs the per-edit hook as a call into the MCP server (`type: "mcp_tool"` in
  * `hooks.json`), which costs a call on an open connection. VS Code's agent reads this same plugin
  * and runs only `type: "command"` — it drops an `mcp_tool` hook in silence — and it holds a write
- * for a person when a command answers `ask` (measured on VS Code 1.137 with Copilot Chat 0.65,
- * ). This handler is that command, and `hooks.json` runs it for VS
+ * for a person when a command answers `ask` (measured on VS Code 1.137 with Copilot Chat 0.65, on 30 Sep 2026). This handler is that command, and `hooks.json` runs it for VS
  * Code alone: it sits under a matcher of VS Code's own tool names, which Claude Code and Cursor
  * apply and never match (measured in both), and which VS Code does not read at all.
  *

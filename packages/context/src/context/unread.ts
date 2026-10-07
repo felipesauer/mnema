@@ -65,8 +65,8 @@
  * **0.142 ms, which is 35% of the whole opening read** (0.402 ms) over the record that
  * module's own budget paragraph is written against — 30 live tasks, 15 decisions, 25
  * adopted patterns, 20 memories, 10 observations. Both orders, against a control that
- * times the same read twice so no gap under the noise floor is reported as a finding:
- * , harness and capture both.
+ * times the same read twice so no gap under the noise floor is reported as a finding
+ * (read once, not held by a file of this tree).
  *
  * THE SHARE IS THAT LARGE AND IT IS WRITTEN HERE RATHER THAN ROUNDED AWAY. A third of a
  * read is not what "two counts" sounds like, and the reason is in the schema: the index

@@ -39,8 +39,7 @@
  * Both reads come from the projection the tree keeps now (`read-the-record.ts`), so what the
  * lock is held for is the arrivals and the append: at 100 thousand events, 27 moves in nine
  * rounds of three refused none on a record that had been read, against 7 of 18 before; on one
- * nobody had read yet it refused 1 of 18, where the first writer builds the projection once
- *.
+ * nobody had read yet it refused 1 of 18, where the first writer builds the projection once.
  *
  * The judgement is handed the earlier reading alongside the new one, so a move
  * whose subject changed under it can say so in words of its own

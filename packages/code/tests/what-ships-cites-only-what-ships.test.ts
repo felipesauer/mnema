@@ -16,8 +16,8 @@
  * WHAT THE FIX WAS, because it is not "delete the reference". Each citation was holding a
  * sentence up. The substantive fact was inline in six of the seven already — the numbers,
  * the falsified premise, the named test — so the sentence stands on its own once the
- * pointer goes; the two that did not (`mcp/server.ts`, `edit-rules-push.ts`) now cite
- * , which this repository DOES publish.
+ * pointer goes; the two that did not (`mcp/server.ts`, `edit-rules-push.ts`) now say it inline,
+ * which is the only place this repository publishes it.
  *
  * THE REACH IS WHAT TRAVELS, AND IT IS ASKED OF GIT. A hand-written list of packages
  * carries whoever wrote it's blind spot — the first sweep of this rule was written against

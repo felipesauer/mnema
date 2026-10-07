@@ -12,8 +12,8 @@
  * evidence. So a rule this module answers with lands beside the result of that write, in
  * time for every edit after it and for a correction of that one, and never in time for the
  * bytes of the edit that fired it. Round 3 of the bench tied the arms with and without this
- * push on tasks decided by their first write, which is what that predicts
- *. What holds a write is the pause a
+ * push on tasks decided by their first write, which is what that predicts (read on 2026-08-21,
+ * not held by a file of this tree). What holds a write is the pause a
  * rule asks for (`edit-asks-a-person.ts`), and nothing here. It is still one event, one
  * path, one text.
  *
@@ -21,8 +21,7 @@
  *
  * A rule arrives as its NAME, its ADDRESS, its ID and where the record says it CAME
  * FROM, and never its body. The measured
- * difference is 3,783 bytes against 401 for one record
- *, and it is paid on
+ * difference is 3,783 bytes against 401 for one record, and it is paid on
  * EVERY edit: the median session of this machine edits 34 files, the p90 edits 121 and
  * the largest seen edited 3,424. There is a second reason the totals hide, and it was
  * measured on this host: the injected text does not replace the previous one, it is
@@ -111,7 +110,7 @@
  * The hook's text has the ceiling the opening texts have, and it was measured on this channel
  * rather than assumed from theirs: on 2.1.281 a `PreToolUse` `mcp_tool` hook's
  * `additionalContext` arrives whole up to 10,000 UTF-16 code units and is replaced by a file
- * path and a 2,000-unit preview past it (, the per-edit table). The
+ * path and a 2,000-unit preview past it (the per-edit table; read once, not held by a file of this tree). The
  * rules addressed at ONE path rarely come near that — nothing held that they never would. So
  * the notice is cut the way the opening document is ({@link fitWhole}): the rules in the
  * derivation's order, most specific first, a whole rule or none, and the text that was cut

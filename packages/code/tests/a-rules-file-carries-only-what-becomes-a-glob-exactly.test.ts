@@ -237,7 +237,7 @@ describe('mnema rules-file, as a person runs it', () => {
 
   it('says beside a VS Code file that the host reads a file pattern more widely than it is written', async () => {
     // VS Code puts "**/" before a relative applyTo and matches the file's absolute path (its own
-    // glob, run:), so a file address is carried and the widening is
+    // glob, run on 30 Sep 2026), so a file address is carried and the widening is
     // said where the file is printed — and for Cursor, which matches on its servers, it is not.
     await governing('Invoices are immutable', 'src/billing/invoice.ts');
     const vscode = cli('rules-file', '--host', 'vscode');

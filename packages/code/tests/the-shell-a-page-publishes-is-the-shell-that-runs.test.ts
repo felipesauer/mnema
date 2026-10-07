@@ -63,7 +63,7 @@
  * shrug — and the reason it gave for not ruling was wrong. Measured on 16/09/2026: 147 inline
  * code spans in tracked Markdown open with `mnema`, outside any fence. Read as commands, five
  * would be accused, and four of those are prose a fence would never have held — `mnema ≈ base`,
- * `mnema answers over MCP`. The fifth is real:  publishes
+ * `mnema answers over MCP`. The fifth was real: a page of a frozen round's protocol, since removed from the tree, published
  * `mnema switch --off edit-rules-push`, and the program has no `--off`; the act is
  * `mnema switch off`. That page is a frozen round's protocol, not product documentation, and
  * it stays as it was measured. The premise for leaving spans out altogether was that a reader

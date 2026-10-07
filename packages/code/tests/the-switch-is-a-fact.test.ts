@@ -39,8 +39,7 @@
  *
  * WHAT THIS FILE CANNOT COVER is what its sibling cannot either: the HOST is what dispatches
  * a hook, and no test here makes it do so. The reply's shape is the evidence, and that the
- * host reads that shape was measured against the real binary
- *.
+ * host reads that shape was measured against the real binary.
  */
 
 import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';

@@ -6,8 +6,7 @@
  * `additionalContext` to the model whole up to 10,000 characters, and over that it saves the
  * text to a file and hands over the path with a preview of the first 2,000 — without asking
  * the model to open the file (code.claude.com/docs/en/hooks, *JSON output*). Measured against
- * the real binary, 2.1.281, with the request it sends afterwards as the evidence
- *: 10,000 arrives whole and 10,001 arrives as a path; the count
+ * the real binary, 2.1.281, with the request it sends afterwards as the evidence: 10,000 arrives whole and 10,001 arrives as a path; the count
  * is the JavaScript string length — UTF-16 code units, so an astral character costs two — and
  * neither code points nor bytes; and each hook of one event is measured on its own, so the two
  * texts a session opens with have a ceiling each.
@@ -24,7 +23,7 @@
  * path, and that is a different size question from a whole record's." The size question is
  * different, and it did not make the ceiling go away: measured on the same host, an `mcp_tool`
  * hook on `PreToolUse` has the same 10,000 units, inclusive, and the same file path past them
- * (, the per-edit table). The rules at one path rarely come near it,
+ * (the per-edit table; read once, not held by a file of this tree). The rules at one path rarely come near it,
  * and nothing held that they never would, so `edit-rules-push.ts` cuts by {@link fitWhole} too.
  *
  * WHY THE PRODUCT CUTS AND THE PLUGIN DOES NOT. The handler hands over byte for byte what the
