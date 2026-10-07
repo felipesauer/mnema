@@ -40,7 +40,7 @@
  * WHAT THIS FILE CANNOT COVER is what its sibling cannot either: the HOST is what dispatches
  * a hook, and no test here makes it do so. The reply's shape is the evidence, and that the
  * host reads that shape was measured against the real binary
- * (`measurements/mcp-tool-channel/`).
+ *.
  */
 
 import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
@@ -189,7 +189,7 @@ function asked(session: Session, path: string): string | undefined {
   if (reply.hookSpecificOutput?.permissionDecision === undefined) return undefined;
   expect(reply.hookSpecificOutput.hookEventName).toBe('PreToolUse');
   // The one value this server can send. A reply naming any other is refused by the host's
-  // schema and DISCARDS the whole reply, injection included (`measurements/asks-a-person/`).
+  // schema and DISCARDS the whole reply, injection included.
   expect(reply.hookSpecificOutput.permissionDecision).toBe('ask');
   return reply.hookSpecificOutput.permissionDecisionReason;
 }
@@ -646,7 +646,7 @@ describe('the document says when the push is switched off', () => {
     // The lines are wrapped by hand. They were the bytes printed before the switch existed,
     // and they moved ONCE, on purpose, when the sentence was found false: it said the rules
     // arrive "when a file is about to be changed", and the host hands them over beside the
-    // result of that write (`measurements/mcp-tool-channel/`). This case was called "prints
+    // result of that write. This case was called "prints
     // the bytes it printed before", and after that move it would have said so of new bytes.
     await ruleAddressedAt('Round money at the boundary', 'src/billing');
     const printed = await document();

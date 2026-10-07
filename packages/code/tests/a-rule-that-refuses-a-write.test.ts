@@ -4,7 +4,7 @@
  *
  * WHAT IS HELD HERE AND WHAT IS NOT. That each host honours `deny` — the file is not written and
  * the model reads the reason — is the host's, measured against the real binaries
- * (`measurements/hooks-by-host/`). What a suite holds is this product's half, at each of the three
+ *. What a suite holds is this product's half, at each of the three
  * doors: the MCP tool Claude Code's hook calls, `mnema before-a-write --host vscode` and `--host
  * cursor`. Each answers `deny` and cites the rule; each appends one `channel.refused` per rule
  * BEFORE it answers, and no `channel.served` (the refusal is the fact); each falls to the asking

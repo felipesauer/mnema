@@ -581,7 +581,7 @@ export const ASKS_FOR_A_PERSON_RELATION = 'asks-for-a-person';
  * they were asserted under.
  *
  * WHY IT EXISTS AT ALL, when asking already did: one of the hosts this product reaches lets
- * its agent write the file it was asked to hold (`measurements/hooks-by-host/`), so on that
+ * its agent write the file it was asked to hold, so on that
  * host a person can only be protected by a refusal. And a refusal is the stronger power, so
  * where both relations address one path, refusing is what the write meets — decided once,
  * where the gate is decided.

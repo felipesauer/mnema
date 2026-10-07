@@ -407,7 +407,7 @@ export class ProjectionCache {
    *
    * THE COST IS THE ARRIVALS' AND NOT THE RECORD'S. Measured at 10, 30 and 100 thousand
    * events with one arrival, the version that folded the whole order again cost 0.056, 0.17
-   * and 0.65 s; this one is flat (`measurements/the-record-at-scale/`).
+   * and 0.65 s; this one is flat.
    */
   refresh(): void {
     this.guarded(() => {

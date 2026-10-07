@@ -66,7 +66,7 @@
  * module's own budget paragraph is written against — 30 live tasks, 15 decisions, 25
  * adopted patterns, 20 memories, 10 observations. Both orders, against a control that
  * times the same read twice so no gap under the noise floor is reported as a finding:
- * `measurements/opening-read-cost/`, harness and capture both.
+ * , harness and capture both.
  *
  * THE SHARE IS THAT LARGE AND IT IS WRITTEN HERE RATHER THAN ROUNDED AWAY. A third of a
  * read is not what "two counts" sounds like, and the reason is in the schema: the index

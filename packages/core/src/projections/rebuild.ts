@@ -27,7 +27,7 @@
  * arrivals cannot have changed. THAT WAS TRUE OF A RECORD OF 207 EVENTS AND IT STOPPED BEING
  * TRUE BEFORE 100 THOUSAND: the first version of the advance still folded the whole order
  * to write the few rows an arrival changed, and a reading of a record that size measured
- * 0.65-0.73 s for one arrival (`measurements/the-record-at-scale/`), where the fold is the
+ * 0.65-0.73 s for one arrival, where the fold is the
  * part that grows. The advance now folds the ARRIVALS alone, from the accumulators this
  * file leaves behind.
  *

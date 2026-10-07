@@ -287,7 +287,7 @@ Requires Node ≥ 22.12.0; the packages are ESM-only.
 - **Invisible characters made visible**, a repeated refusal said once, and a test that private
   notes stay in their project.
 - **Guards on the plugin's hooks and the repository**: hook ids, `AGENTS.md`, a pull request
-  template and no home paths in the measurements.
+  template and no home paths.
 - **The git log read against the record.** Four read-only verbs: `trailer` prints the
   `Mnema-Decision: ADR-n` line for a commit message; `commits` lists the commits that cite a
   decision and, apart, those that touched the paths it addresses; `why` shows the decisions a file

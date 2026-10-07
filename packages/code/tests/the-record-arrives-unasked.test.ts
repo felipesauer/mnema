@@ -668,7 +668,7 @@ describe('the record arrives unasked', () => {
     // WHAT THE HOST DOES PAST ITS CEILING, and why this case exists. A hook's text is handed to
     // the model whole up to a ceiling, and past it ALL of it is replaced by a file path and a
     // preview the model is not asked to open — measured on the binary
-    // (`measurements/hook-ceiling/`). The file's copy of the document has no such reader, so it
+    //. The file's copy of the document has no such reader, so it
     // keeps every rule; the hook's copy stops at a whole one and says how many it left out.
     const file = cliAt(crowded, 'brief');
     expect(file.length).toBeGreaterThan(HOOK_TEXT_CEILING);
@@ -1104,7 +1104,7 @@ describe('the record arrives unasked', () => {
     // READ" is false now, rewritten rather than dropped, and the case is renamed with it so a
     // reader who knew the old name finds a different claim. VS Code runs only command hooks and
     // holds a write for a person when a command answers `ask` (measured,
-    // `measurements/hooks-by-host/`), so the gate reaches it as a process: `mnema before-a-write
+    // ), so the gate reaches it as a process: `mnema before-a-write
     // --host vscode`, which records a `channel.asked` per rule when it asks, exactly as the
     // `mcp_tool` gate does in Claude Code. What this case holds now is the set, and which side
     // each is on: the two opening verbs read, the gate is declared as writing, and a fourth verb

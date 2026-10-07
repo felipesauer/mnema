@@ -6,7 +6,7 @@
  * `PreToolUse` command before `create_file`, ignores the hook's matcher, hands the path as
  * `tool_input.filePath`, and holds the write when the reply carries `permissionDecision: "ask"` —
  * that is the host, and it was measured against the real window, with the real plugin and the
- * built binary (`measurements/hooks-by-host/`). What a suite can hold is this product's half: that
+ * built binary. What a suite can hold is this product's half: that
  * `mnema before-a-write --host vscode` asks exactly where the MCP tool would, records the same
  * facts first, and says nothing everywhere else; that the plugin's command reaches it for a write
  * and not for a read; and that the tools the plugin names are the tools the verb reads.

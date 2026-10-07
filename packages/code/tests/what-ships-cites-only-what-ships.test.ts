@@ -17,7 +17,7 @@
  * sentence up. The substantive fact was inline in six of the seven already — the numbers,
  * the falsified premise, the named test — so the sentence stands on its own once the
  * pointer goes; the two that did not (`mcp/server.ts`, `edit-rules-push.ts`) now cite
- * `measurements/p1/`, which this repository DOES publish.
+ * , which this repository DOES publish.
  *
  * THE REACH IS WHAT TRAVELS, AND IT IS ASKED OF GIT. A hand-written list of packages
  * carries whoever wrote it's blind spot — the first sweep of this rule was written against

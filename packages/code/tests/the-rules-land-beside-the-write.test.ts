@@ -5,7 +5,7 @@
  * listing, and on the plugin's manifest and page, that the rules addressed at a file arrive
  * BEFORE the file is written: "when a file is about to be changed", "just before writing that
  * file", "the rules before each edit". The host says otherwise, measured against the real
- * binary on 2.1.228 and again on 2.1.281 (`measurements/mcp-tool-channel/`): the hook fires
+ * binary on 2.1.228 and again on 2.1.281: the hook fires
  * before the write, and the text it hands over reaches the conversation after the result of
  * that write — in time for every edit after it and for a correction of that one, and not for
  * the bytes of the edit that fired it. Only the pause a rule asks for holds a write. Nothing
@@ -23,7 +23,7 @@
  *     English: it catches a sentence coming back, and the paraphrase is the first side's.
  *
  * WHAT IT CANNOT HOLD is the host. Where the text lands is a fact about one binary, measured
- * rather than tested: `measurements/mcp-tool-channel/results/2026-09-29/where-the-rule-lands.json`.
+ * rather than tested: .
  */
 
 import { mkdirSync, mkdtempSync, readFileSync, rmSync } from 'node:fs';

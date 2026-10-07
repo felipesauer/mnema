@@ -22,7 +22,7 @@
  * A refusal reason looks like a diagnostic and is not one. Measured against the real host:
  * `permissionDecisionReason` comes back to the session as the tool result of the refused
  * call, byte for byte, marked as an error
- * (`measurements/asks-a-person/results/2026-08-19/the-door-exists.json`). So it is text
+ *. So it is text
  * this product pushes at a model, on the same channel class as everything else it pushes,
  * carrying a rule NAME somebody typed into their own record — which makes it the same
  * prompt-injection surface, with the same answer: it says what it is, in the record's

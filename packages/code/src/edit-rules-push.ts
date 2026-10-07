@@ -8,12 +8,12 @@
  * code was written. This paragraph then said "This is that moment", and the host says it is
  * not. The hook fires before the write, and the text it hands over reaches the conversation
  * AFTER the result of that write — measured against the real binary on 2.1.228 and again on
- * 2.1.281 (`measurements/mcp-tool-channel/`), with the request the host sends next as the
+ * 2.1.281, with the request the host sends next as the
  * evidence. So a rule this module answers with lands beside the result of that write, in
  * time for every edit after it and for a correction of that one, and never in time for the
  * bytes of the edit that fired it. Round 3 of the bench tied the arms with and without this
  * push on tasks decided by their first write, which is what that predicts
- * (`measurements/p1/results/2026-08-21-full/report.md`). What holds a write is the pause a
+ *. What holds a write is the pause a
  * rule asks for (`edit-asks-a-person.ts`), and nothing here. It is still one event, one
  * path, one text.
  *
@@ -22,7 +22,7 @@
  * A rule arrives as its NAME, its ADDRESS, its ID and where the record says it CAME
  * FROM, and never its body. The measured
  * difference is 3,783 bytes against 401 for one record
- * (`measurements/channel-cost/results/2026-08-19/injection-size.json`), and it is paid on
+ *, and it is paid on
  * EVERY edit: the median session of this machine edits 34 files, the p90 edits 121 and
  * the largest seen edited 3,424. There is a second reason the totals hide, and it was
  * measured on this host: the injected text does not replace the previous one, it is
@@ -47,7 +47,7 @@
  * counter of the chain — measured on a real project, 241 of 247 labels name a different
  * file from the one the decision came out of — and the id opens through this product
  * alone. This paragraph used to add that the agent does not call `read_record`, on
- * `mcp_asked` false in 20 of 20 and then in 40 of 40 cells (`measurements/p1/`); those are
+ * `mcp_asked` false in 20 of 20 and then in 40 of 40 cells; those are
  * cells of the arm that held the server with nothing pushed, so no id was in front of
  * them, and the cells beside them whose session opened with ids called `read_record` 62
  * times. What the measurement does support is the door: on a real project the reader
@@ -111,7 +111,7 @@
  * The hook's text has the ceiling the opening texts have, and it was measured on this channel
  * rather than assumed from theirs: on 2.1.281 a `PreToolUse` `mcp_tool` hook's
  * `additionalContext` arrives whole up to 10,000 UTF-16 code units and is replaced by a file
- * path and a 2,000-unit preview past it (`measurements/hook-ceiling/`, the per-edit table). The
+ * path and a 2,000-unit preview past it (, the per-edit table). The
  * rules addressed at ONE path rarely come near that — nothing held that they never would. So
  * the notice is cut the way the opening document is ({@link fitWhole}): the rules in the
  * derivation's order, most specific first, a whole rule or none, and the text that was cut

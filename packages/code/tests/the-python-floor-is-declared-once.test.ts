@@ -42,7 +42,7 @@
  *     newest release of that line it knows.
  *   - Whether the floor is too HIGH. Over-declaring is safe, under-declaring is the defect, and
  *     only the defect is guarded.
- *   - `measurements/p1/harness/`, which starts `python3` for fixtures that are not the reader. It
+ *   - , which starts `python3` for fixtures that are not the reader. It
  *     is outside `packages/`, and vitest never runs it.
  */
 

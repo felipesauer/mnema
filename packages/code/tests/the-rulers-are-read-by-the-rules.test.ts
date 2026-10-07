@@ -20,7 +20,7 @@
  *
  * THE UNIVERSE IS TWO DIRECTORIES, AND THAT IS A JUDGEMENT WRITTEN DOWN. `plugin/` is
  * what this repository SHIPS and `.github/` is what it RUNS itself with; both are read
- * off the disk here, never off a list. `measurements/` also holds `.mjs` and is
+ * off the disk here, never off a list.  also holds `.mjs` and is
  * deliberately outside: it is the record of rounds already run, kept as it was when it
  * produced its numbers, and holding a past round to today's options would edit evidence.
  *

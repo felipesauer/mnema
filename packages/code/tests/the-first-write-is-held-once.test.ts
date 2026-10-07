@@ -8,7 +8,7 @@
  * refusal cites each rule as a fact of the record before it is made, that a person already asked
  * is asked and not refused, and that nothing is said where no rule addresses the path. That the
  * host refuses a write on `deny` and hands the reason to the model was measured
- * (`measurements/hooks-by-host/`) and is not asserted here.
+ * and is not asserted here.
  */
 
 import { mkdirSync, mkdtempSync, rmSync, symlinkSync } from 'node:fs';
