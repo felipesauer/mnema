@@ -432,25 +432,29 @@ describe('a cache that cannot be vouched for is replaced, never trusted', () => 
     expect(answersOf(cache)).toEqual(answersOf(replayed()));
   });
 
-  it('a directory that cannot be written: the cache lives in memory and answers the same', () => {
-    const ctx = writing();
-    aRecord(ctx);
-    // The writes above read through the kept projection, so it exists already: the case is the
-    // directory that cannot be written when there is none yet.
-    for (const suffix of ['', '-wal', '-shm']) {
-      rmSync(`${projectionCachePath({ root })}${suffix}`, { force: true });
-    }
-    mkdirSync(join(root, 'locks'), { recursive: true });
-    chmodSync(join(root, 'locks'), 0o555);
-    try {
-      const cache = persisted();
-      cache.refresh();
-      expect(answersOf(cache)).toEqual(answersOf(replayed()));
-      expect(existsSync(projectionCachePath({ root }))).toBe(false);
-    } finally {
-      chmodSync(join(root, 'locks'), 0o755);
-    }
-  });
+  // Root writes into a read-only directory anyway, so there is no directory it cannot write to.
+  it.skipIf(process.getuid?.() === 0)(
+    'a directory that cannot be written: the cache lives in memory and answers the same',
+    () => {
+      const ctx = writing();
+      aRecord(ctx);
+      // The writes above read through the kept projection, so it exists already: the case is the
+      // directory that cannot be written when there is none yet.
+      for (const suffix of ['', '-wal', '-shm']) {
+        rmSync(`${projectionCachePath({ root })}${suffix}`, { force: true });
+      }
+      mkdirSync(join(root, 'locks'), { recursive: true });
+      chmodSync(join(root, 'locks'), 0o555);
+      try {
+        const cache = persisted();
+        cache.refresh();
+        expect(answersOf(cache)).toEqual(answersOf(replayed()));
+        expect(existsSync(projectionCachePath({ root }))).toBe(false);
+      } finally {
+        chmodSync(join(root, 'locks'), 0o755);
+      }
+    },
+  );
 });
 
 describe('a tree nobody has written to keeps nothing', () => {

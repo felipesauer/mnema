@@ -282,15 +282,15 @@ mnema guard reopen "$TASK" --actor "$ME"
 # verdict per tree of the project, under the tree's name.
 mnema verify
 #> public: local integrity verified (T1/T2/T4); 1 tail(s); all events are signature-covered; …
-#>   census [backup-key] public …: the backup key of mnid:c0fc3c71…, as the record declares it — …
-#> private: no record here — nothing has been written to this tree on this machine, …
 # `mnema init` declares the backup in the record, so every clone and CI runner says that
-# key the same way; a `census [key-without-tail]` is a tail to look for.
+# key the same way; a `census [key-without-tail]` is a tail to look for. A clean record is
+# that one line: `--verbose` adds the census note about the backup key and, when the private
+# tree holds nothing, the line that says so. It adds and never takes away — a break, an
+# issue and the exit are the same with it and without it.
 
 # Auditing several projects? Name them, and get ONE verdict over all of them.
 mnema verify --workspace ~/work/api ~/work/web
 #> /home/you/work/api public: local integrity verified (T1/T2/T4); …
-#> …
 #> /home/you/work/web public: local integrity FAILED — see issues; …
 #> …
 #> 2 path(s) named → 2 distinct: 2 project(s) covered. …
@@ -346,7 +346,7 @@ not a break: `verify` crosses the committed keys against the tails on disk and p
 `N committed key(s) without a tail (see census — informational, not a break)`, exit 0.
 One key is said otherwise: the backup `mnema init` creates never signs until it is
 restored, and `init` declares it in the record (`backup.declared`), so every machine reads
-`N backup key(s), which sign nothing until restored` — and its line still says that a backup
+`N backup key(s), which sign nothing until restored` — and its census line (`--verbose`) still says that a backup
 restored and used would have left a tail that is not there. A record written before that
 declaration existed does not say which key is a backup: there the key reads as a backup only
 on the machine that made it, and as a committed key without a tail anywhere else.

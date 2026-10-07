@@ -258,7 +258,7 @@ describe('the surface says exactly what the chain said', () => {
   for (const [what, build] of RECORDS) {
     it(`prints the label, a colon and the chain's own summary — ${what}`, async () => {
       await build();
-      const printed = await verifyLines('--color=never');
+      const printed = await verifyLines('--color=never', '--verbose');
       const said = verdicts();
       expect(said.length).toBeGreaterThan(0);
       for (const tree of said) {
