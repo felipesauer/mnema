@@ -1043,6 +1043,7 @@ const CLAUSES_PER_FILE: Readonly<Record<string, number>> = {
   'packages/code/tests/the-checkout-a-key-left.test.ts': 14,
   'packages/code/tests/the-ci-recipe-catches-what-verify-cannot.test.ts': 8,
   'packages/code/tests/the-citation-that-arrives-opens.test.ts': 13,
+  'packages/code/tests/the-clean-verify-is-short.test.ts': 7,
   'packages/code/tests/the-command-handed-over-runs-as-handed.test.ts': 10,
   'packages/code/tests/the-console-on-ink.test.ts': 19,
   'packages/code/tests/the-console-says-what-recurs-and-not-where.test.ts': 9,

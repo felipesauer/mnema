@@ -260,7 +260,9 @@ describe('a tree with nothing in it', () => {
     // What `git clone` gives you — the gitignored subtree is simply not in the copy.
     rmSync(trees().privateRoot, { recursive: true, force: true });
 
-    const said = await verify();
+    // A clean reading leaves that line out; `--verbose` is where a reader finds it said.
+    expect(lineFor(await verify(), 'private')).toBeUndefined();
+    const said = await verify('--verbose');
     expect(lineFor(said, 'private')).toBe(
       'private: no record here — nothing has been written to this tree on this machine, ' +
         'so there is nothing to rule on',
