@@ -13,6 +13,8 @@
  * the files the repository hands out, and not of the disk, so an untracked file on a machine
  * is not a witness.
  *
+ * Every row that says "a test" holds the claim must name at least one file.
+ *
  * WHAT IT DOES NOT CHECK: that the file holds the claim beside it. That is a reviewer's reading.
  */
 
@@ -71,6 +73,14 @@ describe('the evidence page cites only what exists', () => {
     const asSpan = filesCitedBy(PAGE, `| a claim | a test | \`${missing}\` |`);
     expect(asLink).toEqual([missing]);
     expect(asSpan).toEqual([missing]);
+  });
+
+  it('names at least one file on every row that says a test holds the claim', () => {
+    // A row that says "a test" with its file column left empty claims a holder and names none,
+    // and the existence check above has nothing to look at on it.
+    const held = text.split('\n').filter((line) => /^\|[^|]*\|\s*a test\s*\|/.test(line));
+    expect(held.length).toBeGreaterThan(5);
+    expect(held.filter((line) => filesCitedBy(PAGE, line).length === 0)).toEqual([]);
   });
 
   it('gives each claim it does not hold the words "not held yet", with no file beside them', () => {
