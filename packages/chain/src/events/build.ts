@@ -24,6 +24,7 @@ function envelopeFields(input: EnvelopeInput): EnvelopeInput {
     subject: string;
     which?: string;
     run?: string;
+    after?: readonly string[];
   } = {
     at: input.at,
     who: input.who,
@@ -32,6 +33,7 @@ function envelopeFields(input: EnvelopeInput): EnvelopeInput {
   };
   if (input.which !== undefined) base.which = input.which;
   if (input.run !== undefined) base.run = input.run;
+  if (input.after !== undefined) base.after = input.after;
   return base;
 }
 

@@ -250,6 +250,27 @@
       "sha256": "787730e5b250044ba9453f03009c75aeb08eae240191378b87d6e621e8265c94"
     },
     {
+      "name": "memory.captured, written after reading the heads of two other tails",
+      "kind": "memory.captured",
+      "event": {
+        "v": 1,
+        "kind": "memory.captured",
+        "at": "2026-07-21T00:00:00.000Z",
+        "who": "mnid:1111111111111111111111111111111111111111111111111111111111111111",
+        "signerFp": "2222222222222222222222222222222222222222222222222222222222222222",
+        "subject": "019f81f8-e400-7001-8000-000000000001",
+        "which": "claude",
+        "after": [
+          "7777777777777777777777777777777777777777777777777777777777777777",
+          "8888888888888888888888888888888888888888888888888888888888888888"
+        ],
+        "payload": {
+          "content": "Read on top of two other machines."
+        }
+      },
+      "sha256": "8be60cf16ec94b6dd2fc7bc6e93456dda00761ba21c994ca915a147cda9066bf"
+    },
+    {
       "name": "observation.recorded",
       "kind": "observation.recorded",
       "event": {
@@ -631,6 +652,6 @@
       "vector": "run.ended",
       "entryHash": "bafbebddd9d5ee75b10bdde626c5e36eed44b37d9fe352b4d98f614fa2647b73"
     },
-    "contentRootOverAllVectors": "2f0c20ef32a5063411b86335a20c46c29c3bbb05a5c4a94be9fb0fc170d77b53"
+    "contentRootOverAllVectors": "00703b5537ca906ed71776033aa4d902ab532246394813c13f38e0029814c9bc"
   }
 }
