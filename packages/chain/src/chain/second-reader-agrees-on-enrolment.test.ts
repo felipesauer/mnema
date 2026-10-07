@@ -1204,3 +1204,117 @@ describe('the two readers agree on records the product itself wrote — a declar
     expect(found.second[0]).toContain(b.fingerprint);
   });
 });
+
+/**
+ * The entry hashes of `events` laid on `tailId` from seq 0 — what `writeTail` computes, asked
+ * for here so a case can cite an entry of another tail.
+ */
+function entryHashesOf(tailId: string, events: readonly CatalogEvent[]): string[] {
+  const hashes: string[] = [];
+  let prev: string | null = null;
+  for (let seq = 0; seq < events.length; seq += 1) {
+    prev = entryHash({
+      event: writtenAsBuilt(events[seq] as CatalogEvent),
+      tail: tailId,
+      seq,
+      prev,
+    });
+    hashes.push(prev);
+  }
+  return hashes;
+}
+
+/** The second reader's notes, by their words. */
+function secondNotes(): readonly string[] {
+  return secondReading(root)
+    .findings.filter((f) => f.level === 'note')
+    .map((f) => `${f.section}: ${f.what} (${f.where})`);
+}
+
+describe('the two readers agree on the order a citation gives — a machine whose clock is behind', () => {
+  /**
+   * A enrols B at second 5 by A's clock. B pulls, and writes at second 1 by its own, which is
+   * behind: the honest record of a second machine with a slow clock (the probe on the binary
+   * reproduced it with B 31 s behind). Ordered by `at` alone, B's event comes before the
+   * enrolment that authorizes it.
+   */
+  function enrolledThenWrittenBehind(after?: 'cite' | readonly string[]) {
+    const a = generateKeyPair();
+    const b = generateKeyPair();
+    commitPublicKey(a);
+    commitPublicKey(b);
+    const anchor = deriveAnchor(a.fingerprint);
+    const tailA = `${a.fingerprint}-i1`;
+    const onA = [founding(a), enrolled(anchor, a, b, 5)];
+    const [, enrolment] = entryHashesOf(tailA, onA);
+    writeTail(tailA, onA, a);
+    const cited = after === 'cite' ? [enrolment as string] : after;
+    const behind = taskCreated(
+      {
+        at: at(1),
+        who: anchor,
+        signerFp: b.fingerprint,
+        subject: 't-behind',
+        ...(cited === undefined ? {} : { after: cited }),
+      },
+      { title: 'written on B, after the pull' },
+    );
+    writeTail(`${b.fingerprint}-i2`, [behind], b);
+    return { a, b, enrolment: enrolment as string, tailB: `${b.fingerprint}-i2` };
+  }
+
+  it('without a citation: refused by both, because `at` puts the event before its enrolment', () => {
+    enrolledThenWrittenBehind();
+    const { productOk, verdict, refused } = bothReaders();
+    expect(productOk).toBe(false);
+    expect(productRefused().join('\n')).toContain('is not a key enrolled for');
+    expect(verdict).toBe('REFUSED');
+    expect(refused.join('\n')).toContain('6.2');
+  });
+
+  it('citing the enrolment it was written on top of: verified by both, whatever the clock said', () => {
+    enrolledThenWrittenBehind('cite');
+    const { productOk, verdict, refused } = bothReaders();
+    expect(refused).toEqual([]);
+    expect(productOk).toBe(true);
+    expect(verdict).toBe('VERIFIED');
+  });
+
+  it('the clock that ran behind what it cites is measured and said, informational, by both', () => {
+    const { tailB } = enrolledThenWrittenBehind('cite');
+    const census = verify(root, catalogUpcasters()).census;
+    expect(census.filter((note) => note.kind === 'clock-behind-what-it-read')).toMatchObject([
+      { tail: tailB, events: 1, behindByMs: 4_000 },
+    ]);
+    expect(secondNotes().join('\n')).toMatch(/clock .*behind.* 4\.000 s/);
+  });
+
+  it('a citation of an entry the record does not hold: ignored in the order, said by both', () => {
+    const missing = 'f'.repeat(64);
+    const { tailB } = enrolledThenWrittenBehind([missing]);
+    // Ignored: B's event stays where its `at` puts it, before the enrolment, and is refused
+    // exactly as an event with no citation is — the citation neither helps nor breaks.
+    const { productOk, verdict } = bothReaders();
+    expect(productOk).toBe(false);
+    expect(verdict).toBe('REFUSED');
+    const census = verify(root, catalogUpcasters()).census;
+    expect(census.filter((note) => note.kind === 'citation-not-held')).toMatchObject([
+      { tail: tailB, seq: 0, hash: missing },
+    ]);
+    expect(secondNotes().join('\n')).toContain(`cites ${missing.slice(0, 12)}`);
+  });
+
+  it.each([
+    ['empty', []],
+    ['out of order', ['b'.repeat(64), 'a'.repeat(64)]],
+    ['repeated', ['a'.repeat(64), 'a'.repeat(64)]],
+    ['upper-case hex', ['A'.repeat(64)]],
+    ['63 characters', ['a'.repeat(63)]],
+  ])('a citation list that is %s: refused by both', (_name, after) => {
+    enrolledThenWrittenBehind(after);
+    const { productOk, verdict, refused } = bothReaders();
+    expect(productOk).toBe(false);
+    expect(verdict).toBe('REFUSED');
+    expect(refused.join('\n')).toContain('4.1');
+  });
+});
