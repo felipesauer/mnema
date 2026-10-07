@@ -19,6 +19,8 @@ interface Seen {
   asked: string[];
   warnings: string[];
   checked: string[];
+  /** The base each `verify` was asked to hold the record to. */
+  since: string[];
 }
 
 function worldWith(
@@ -34,14 +36,17 @@ function worldWith(
     checks?: { passed: boolean; said: string };
   } = {},
 ): { world: World; seen: Seen } {
-  const seen: Seen = { comments: [], asked: [], warnings: [], checked: [] };
+  const seen: Seen = { comments: [], asked: [], warnings: [], checked: [], since: [] };
   const world: World = {
     git: {
       hasCommit: () => over.hasCommit ?? true,
       recordAt: (ref) => (over.noRecord ? [] : [ref === 'HEAD' ? grown : (over.base ?? born)]),
     },
     mnema: {
-      verify: () => over.verify ?? { passed: true, said: 'ok' },
+      verify: (base) => {
+        seen.since.push(base);
+        return over.verify ?? { passed: true, said: 'ok' };
+      },
       rules: (path) => {
         seen.asked.push(path);
         return over.rules?.[path] ?? {};
@@ -135,8 +140,12 @@ describe('judge', () => {
     const { world, seen } = worldWith({ verify: { passed: false, said: 'checkpoint missing' } });
     const verdict = await judge(world, pr);
     expect(verdict.failed).toBe(true);
-    expect(verdict.reasons).toEqual(['the record does not verify as signed']);
+    expect(verdict.reasons).toEqual([
+      'the record does not verify as signed, as the base record grown',
+    ]);
     expect(seen.comments[0]?.body).toContain('checkpoint missing');
+    // Held to the pull request's base, so a record cut back to an earlier state is caught too.
+    expect(seen.since).toEqual([pr.baseSha]);
   });
 
   it('refreshes a comment it wrote but adds none when the pull request touches nothing', async () => {
