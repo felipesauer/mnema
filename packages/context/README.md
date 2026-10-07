@@ -1,6 +1,6 @@
 # @mnema/context
 
-[![CI](https://img.shields.io/github/actions/workflow/status/felipesauer/mnema/ci.yml?branch=main&style=flat-square&label=CI&color=997dbf)](https://github.com/felipesauer/mnema/actions/workflows/ci.yml) [![License: Apache-2.0](https://img.shields.io/badge/license-Apache--2.0-997dbf?style=flat-square)](../../LICENSE) ![Node 22.12 or later](https://img.shields.io/badge/node-%E2%89%A522.12-997dbf?style=flat-square)
+[![CI](https://img.shields.io/github/actions/workflow/status/felipesauer/mnema/ci.yml?branch=main&style=flat-square&label=CI&color=997dbf)](https://github.com/felipesauer/mnema/actions/workflows/ci.yml) [![License: Apache-2.0](https://img.shields.io/badge/license-Apache--2.0-997dbf?style=flat-square)](../../LICENSE) ![Node 22.22.2 or a later 22, or 24.15.0 or later](https://img.shields.io/badge/node-%5E22.22.2%20%7C%7C%20%3E%3D24.15.0-997dbf?style=flat-square)
 
 The layer of [mnema](https://github.com/felipesauer/mnema) that guides an agent
 by reading the proof: read-only derivations that turn the recorded work into the

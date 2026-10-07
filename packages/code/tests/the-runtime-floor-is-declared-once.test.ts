@@ -245,6 +245,49 @@ describe('every place that repeats the floor repeats this number', () => {
   });
 
   /**
+   * THE BADGE ON LINE 3 OF EVERY PACKAGE README is the floor too, and the first one an adopter
+   * sees. The sentence above is not in it — its words are an image's alt text and its range is
+   * in a URL — so a floor raised everywhere else left all seven saying `22.12` and this case
+   * green. Both halves are read: the alt in the refusal's words, and the image's message as the
+   * declared range itself, once shields' own escaping (`--` for a dash, `__` for an underscore)
+   * and the URL's are undone.
+   */
+  const BADGE = /!\[([^\]]*)\]\((https:\/\/img\.shields\.io\/badge\/node-[^)\s]*)\)/g;
+  const RANGE = DECLARING[0]?.read.engines?.node ?? '';
+  const messageOf = (url: string): string => {
+    const path = new URL(url).pathname.slice('/badge/node-'.length);
+    const message = path.replace(/-[^-]*$/, '');
+    return decodeURIComponent(message.replace(/--/g, '\u0000').replace(/__/g, '\u0001'))
+      .replace(/\u0000/g, '-')
+      .replace(/\u0001/g, '_');
+  };
+  const badges = TRACKED.filter((where) => where.endsWith('README.md')).flatMap((where) => {
+    const text = readFileSync(join(ROOT, where), 'utf-8');
+    const found = [...text.matchAll(BADGE)].map((b) => ({
+      where,
+      alt: b[1] ?? '',
+      message: messageOf(b[2] ?? ''),
+    }));
+    // An image that calls itself a Node badge but is not drawn by the pattern above is a badge
+    // this case would otherwise skip.
+    const named = [...text.matchAll(/!\[Node\b[^\]]*\]\(([^)]*)\)/g)].filter(
+      (n) => !(n[1] ?? '').startsWith('https://img.shields.io/badge/node-'),
+    );
+    return [...found, ...named.map((n) => ({ where, alt: n[0], message: '(not read)' }))];
+  });
+
+  it('is said by the badge every package README opens with', () => {
+    const packages = TRACKED.filter((where) => /^packages\/[^/]+\/README\.md$/.test(where));
+    expect(packages.length, 'git found no package README').toBeGreaterThan(6);
+    const without = packages.filter((where) => !badges.some((b) => b.where === where));
+    expect(without, 'a package README has no Node badge').toEqual([]);
+    const wrong = badges
+      .filter((b) => b.alt !== `Node ${SAID}` || b.message !== RANGE)
+      .map((b) => `${b.where}: [${b.alt}] ${b.message}`);
+    expect(wrong, `a badge states a floor other than ${RANGE}`).toEqual([]);
+  });
+
+  /**
    * EVERY WORKFLOW THAT PICKS A NODE, NOT `ci.yml` BY NAME. This read one file by its path until
    * a second workflow arrived carrying a node matrix of its own — the flake sampler — and the
    * premise underneath the sentence in this file's header, *"CI'S OWN MATRIX"*, turned out to be
