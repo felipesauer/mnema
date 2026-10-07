@@ -31,6 +31,9 @@ you records it. Then skip the rest of this skill.
 3. A decision is born `proposed`. A person accepts it; it is in force here once accepted, and not before.
 4. Something learnt about this project that its code does not show, and that the next session
    would otherwise work out again, goes to `capture_memory`.
+5. A rule that governs a path is enforced at the host's editing tools, not at its shell. Writing
+   to such a path through the shell (`sed -i`, a redirect) goes round the rule and is not done:
+   if the rule stands in the way, say so to the person.
 
 Not for the record: a credential (a record is permanent, and a public one is committed and
 cloned), personal data such as an email address (the `mnid` already says who wrote), what
