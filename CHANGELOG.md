@@ -18,7 +18,9 @@ tag, with its own changelog.
   checkpoint digest leaves; the e-mail, or the repository and the workflow, goes into Sigstore's
   public log by design, and the help and the act say so. In GitHub Actions it refuses a private
   repository. `mnema key sigstore <identity>` records the claim (`account.linked`,
-  `service: "sigstore"`, no new kind) that lets a bundle speak for an identity of the record, and
+  `service: "sigstore"`, no new kind) that lets a bundle speak for an identity of the record —
+  an e-mail as `sha256:` and the SHA-256 of the address, never the address; a workflow as it is —
+  and
   `mnema verify --against-sigstore` reads every bundle offline against the trust root the binary
   carries, in notes. The Python reader names each bundle as not checked (gap G26).
 - **The record says which key is a backup.** A new event kind, `backup.declared`
