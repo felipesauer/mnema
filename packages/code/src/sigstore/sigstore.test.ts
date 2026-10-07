@@ -451,6 +451,7 @@ describe('when Sigstore answers badly, or not at all', () => {
       [google, 'g@example.com'],
       [other, 'project_path:o/r'],
       [{ iss: 'https://gitlab.example' }, ''],
+      [{ sub: 'no-issuer' }, 'no-issuer'],
     ] as const) {
       const sigstore = await aSigstore();
       const key = P256();
@@ -472,7 +473,7 @@ describe('when Sigstore answers badly, or not at all', () => {
           key.publicKey,
           Buffer.from(proof, 'base64'),
         ),
-        claims.iss,
+        JSON.stringify(claims),
       ).toBe(true);
     }
   });
@@ -806,11 +807,11 @@ describe('the act, the claim and the reading, over a record', () => {
     return { root, tail, dir: join(root, 'tails', tail) };
   }
 
-  it('skips a tail with no checkpoint, and a tree that is not fully signed, and asks nobody', async () => {
-    const unsigned = aProject();
-    // One event more, appended without a key after the last checkpoint: the tree is honest and
-    // no longer fully signed.
-    const { dir } = theTail(unsigned);
+  /** Appends one valid `account.linked` without a key after the last line of the tail in `dir`. */
+  function appendKeyless(
+    dir: string,
+    payload: { service: string; account: string } = { service: 'github', account: 'hubot' },
+  ): void {
     const segment = join(dir, readdirSync(dir).find((name) => /^\d+\.jsonl$/.test(name)) ?? '');
     const lines = readFileSync(segment, 'utf-8')
       .split('\n')
@@ -820,10 +821,7 @@ describe('the act, the claim and the reading, over a record', () => {
       link: { tail: string; seq: number; hash: string };
     };
     const { at, who, signerFp } = last.event;
-    const later = accountLinked(
-      { at, who, signerFp, subject: who },
-      { service: 'github', account: 'hubot' },
-    );
+    const later = accountLinked({ at, who, signerFp, subject: who }, payload);
     const entry = sealEntry({
       event: later,
       tail: last.link.tail,
@@ -831,6 +829,40 @@ describe('the act, the claim and the reading, over a record', () => {
       prev: last.link.hash,
     });
     writeFileSync(segment, `${lines.join('\n')}\n${serializeEntry(entry)}\n`);
+  }
+
+  it('reads only the bundles beside a checkpoint, and only the claims a checkpoint covers', async () => {
+    const ctx = aProject();
+    const sigstore = await aSigstore();
+    const act = await runWitnessSigstore(ctx, {
+      fetch: sigstore.fetch,
+      token: async () => aToken(LOCAL_CLAIMS),
+    });
+    if (!act.ok) throw new Error(act.message);
+    const { dir } = theTail(ctx);
+    // Another witness's file in the same directory is not a bundle, and is not read as one.
+    writeFileSync(join(dir, 'witness', `${'e'.repeat(64)}.ots`), 'not a bundle');
+    // A claim of the signer's address appended after the last checkpoint, keylessly, is no claim
+    // of the record: no checkpoint covers it, so the bundle still speaks for nobody.
+    appendKeyless(dir, {
+      service: 'sigstore',
+      account: 'sha256:12d216f5096c445e7248035ac7d85e586c647ce185aca31774ab10088f7ae51f',
+    });
+    const receipts = readSigstoreReceipts(verdict(ctx).trees, {
+      trustedRoot: sigstore.trustedRoot,
+    });
+    expect(receipts.findings.map((f) => [f.checkpoint.length, f.reading.kind])).toEqual([
+      [64, 'signed'],
+    ]);
+    expect(receipts.findings[0]?.namedBy).toBeUndefined();
+    expect(receipts.notRead).toEqual([]);
+  });
+
+  it('skips a tail with no checkpoint, and a tree that is not fully signed, and asks nobody', async () => {
+    const unsigned = aProject();
+    // One event more, appended without a key after the last checkpoint: the tree is honest and
+    // no longer fully signed.
+    appendKeyless(theTail(unsigned).dir);
 
     sandbox = join(sandbox, 'second');
     mkdirSync(sandbox);
@@ -1031,6 +1063,21 @@ describe('the verbs, as typed', () => {
       ),
     );
     expect(read.out).toContain('it is no witness level');
+
+    // As JSON, the same reading under `sigstore`; and never beside `--workspace`.
+    const json = await typed('verify', '--against-sigstore', '--json');
+    const parsed = JSON.parse(json.out) as {
+      sigstore: { findings: { tail: string; reading: { kind: string } }[]; notRead: string[] };
+    };
+    expect(parsed.sigstore.findings.map((f) => [f.tail, f.reading.kind])).toEqual([
+      [tail, 'not-covered'],
+    ]);
+    expect(parsed.sigstore.notRead).toEqual([]);
+    const both = await typed('verify', '--against-sigstore', '--workspace', repo);
+    expect(both.failed).toBe(true);
+    expect(both.err).toContain(
+      '`--against-sigstore` rules on the project you stand in, and `--workspace` names others',
+    );
   });
 
   it('refuses in Actions without a token to ask for, and sends nothing', async () => {
