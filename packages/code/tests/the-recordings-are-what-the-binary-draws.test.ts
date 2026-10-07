@@ -643,7 +643,7 @@ describe('the console recording', () => {
     // the caller's buffer again, and the last answer is on it.
     const left = screenOf(drawnBy(made.events), columns, rows);
     expect(left.alternate).toBe(false);
-    expect(left.text).toContain('census [backup-key]');
+    expect(left.text).toContain('external witness (T3)');
   });
 
   it('is the record whose opening document the front page quotes, cut only where it says', () => {

@@ -44,7 +44,7 @@
     { "keys": "\r", "waitsFor": "mnema>", "hold": 2.8 },
     { "types": "status", "waitsFor": "where things stand.", "hold": 4.2 },
     { "types": "search money", "waitsFor": "matching \"money\"", "hold": 3.6 },
-    { "types": "verify", "waitsFor": "census [backup-key]", "hold": 4.8 },
+    { "types": "verify", "waitsFor": "external witness (T3)", "hold": 4.8 },
     { "keys": "\u0004", "leaves": true, "hold": 4 }
   ]
 }

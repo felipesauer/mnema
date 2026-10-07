@@ -256,7 +256,8 @@ describe('two sound projects', () => {
     await found('alpha');
     await found('beta');
 
-    const said = await mnema('verify', '--workspace', 'alpha', 'beta');
+    // `--verbose`, because a clean tree-by-tree reading leaves out the line of a tree holding nothing.
+    const said = await mnema('verify', '--workspace', 'alpha', 'beta', '--verbose');
     expect(said.failed, said.issues.join(' / ')).toBe(false);
     expect(lineFor(said, 'alpha', 'public')).toContain('local integrity verified (T1/T2/T4)');
     expect(lineFor(said, 'beta', 'public')).toContain('local integrity verified (T1/T2/T4)');
@@ -470,7 +471,14 @@ describe('naming a path is asserting that it is a project', () => {
     await found('alpha');
     bare('typo');
 
-    const said = await mnema('verify', '--workspace', 'alpha', 'typo', '--allow-no-record');
+    const said = await mnema(
+      'verify',
+      '--workspace',
+      'alpha',
+      'typo',
+      '--allow-no-record',
+      '--verbose',
+    );
     expect(said.failed, said.issues.join(' / ')).toBe(false);
     expect(closing(said)).toContain(
       '`--allow-no-record` said otherwise, so the 1 holding none did not move it',
@@ -648,6 +656,7 @@ describe('a project directory is text from outside the record', () => {
       forgedBare,
       'alpha',
       '--require=signed',
+      '--verbose',
     );
     expect(said.failed).toBe(true);
     // Not one line of either stream is the forged verdict standing on its own.

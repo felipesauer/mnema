@@ -120,6 +120,11 @@ tag, with its own changelog.
 
 ### Changed
 
+- **A clean `mnema verify` is one line.** The census note about the backup key `init` makes and the
+  line saying the private tree holds no record are informational, and now come only with the new
+  `--verbose`. A break, an issue, any other census note and the exit are the same with and without
+  it. `docs/where-it-fits.md` says what a signed commit proves and what a mnema record does.
+
 - **Requires Node 22.22.2 or a later 22, or 24.15.0 or later.** The floor was 22.12.0. The
   library that checks a Sigstore bundle (`@sigstore/verify` 4.1.2) declares this range, and the
   binary now refuses any Node outside it in one line, a 23 or a 24 below 24.15.0 included.
