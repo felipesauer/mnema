@@ -53,6 +53,6 @@ reason, not deleted.
 ## Never commit
 
 Keys, tokens or anything that signs; the contents of a real `~/.mnema` or `.mnema/`; absolute
-paths of a person's machine (`measurements/` is checked for them); build output (`dist/`,
+paths of a person's machine; the output of an eval run; build output (`dist/`,
 `node_modules/`, `coverage/`); local assistant state. Run the product against a throwaway
 `HOME`, never your own.
