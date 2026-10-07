@@ -180,7 +180,6 @@ export type FramedChannel =
   | 'recall-document'
   | 'edit-rules-push'
   | 'edit-asks-a-person'
-  | 'edit-refuses-a-write'
   | 'edit-first-write-gate'
   | 'host-rules-file';
 
@@ -213,9 +212,6 @@ const SUBJECT_OF: { readonly [K in FramedChannel]: ServedSubject } = {
   // same record saying the same kind of thing — what differs is that this one stops
   // somebody, and what a text says about ITSELF does not change with how hard it lands.
   'edit-asks-a-person': 'rules',
-  // THE REFUSAL, framed for the gate's reason: its text is the reason the host hands the agent
-  // whose write did not happen, so it is record text in front of a model, and it says whose.
-  'edit-refuses-a-write': 'rules',
   // A FILE IN ANOTHER HOST'S RULE FORMAT (`mnema rules-file`), and it is framed where the
   // exported skill is not: that one is a recorded body byte for byte, whose provenance rides
   // in the format's own metadata; this one is text this product COMPOSES out of the record —
@@ -276,7 +272,7 @@ export const DECLARES_MODEL_CHANNEL = /^export const MODEL_CHANNEL = '([a-z-]+(?
  * IMPORTS the framing — it is built code, unlike a handler — so the declaration here and
  * the text there cannot drift without one of them failing to compile.
  */
-export const PUSHED_BY_TOOL: { readonly [tool: string]: readonly FramedChannel[] } = {
+export const PUSHED_BY_TOOL: { readonly [tool: string]: readonly ModelChannel[] } = {
   // ONE TOOL, TWO CHANNELS, and the plural is the shape rather than a convenience. This
   // used to map a tool to a single channel, and the assumption under it — that a hook
   // pushing at one moment pushes one kind of thing — was falsified by the grade that asks
@@ -321,6 +317,10 @@ export const UNFRAMED_CHANNELS: {
     'what it carries is the product’s own sentence about an act the agent just made or was turned ' +
     'away from — that its acceptance was recorded as an agent’s, or that the switch is off — and ' +
     'no record text, so there is nobody’s words to say whose they are',
+  'edit-refuses-a-write':
+    'what it hands a host is the reason a write did not happen, and it opens with the rule and ' +
+    'the path it refuses rather than with a sentence about the record in general — the rule ' +
+    'lines that follow carry the record’s words, each with its id',
   'exported-skill':
     'the file is the recorded body byte for byte, which is what the chain proves about ' +
     'it, and its provenance rides in the frontmatter `metadata` the specification ' +

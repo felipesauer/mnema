@@ -80,7 +80,7 @@ which VS Code marks as experimental. In order: install the plugin in Claude Code
 you type it, copies your `settings.json` aside first, keeps its comments, and lists the plugin's
 folder in the marketplace, whose path does not change when the plugin updates.
 Without the plugin, `mnema rules-file --host claude`, `--host vscode` or `--host cursor` prints the committed rules
-addressed at a file in that host's own rules format, and says which rules it left out and why.
+addressed at a file or a directory in that host's own rules format, and says which rules it left out and why.
 
 `mnema doctor` says, one line to a finding and with what to do about it, whether a `mnema` is
 on the `PATH` and which one, whether the Claude Code plugin is installed and at what version,

@@ -127,12 +127,14 @@ identically, because they are the same call.
   the table, host by host, and [`measurements/hooks-by-host/`](../../measurements/hooks-by-host/)
   the captures.
 - **A rules file for a host without the plugin** — `mnema rules-file --host vscode` prints the
-  committed rules in force whose address is a file, as a `.instructions.md` with an `applyTo`,
+  committed rules in force whose address is a file or a directory, as a `.instructions.md` with an `applyTo`,
   `--host cursor` as a `.mdc` with `globs`, and `--host claude` as a `.claude/rules/mnema.md` with
-  the `paths` list Claude Code's documentation names (not measured here). A directory is left out, because no list of
-  globs was found to match exactly what it governs in either host: VS Code puts `**/` before a
-  relative pattern, so `src/billing/**` would also match a `src/billing` anywhere else under the
-  folder it reads, and Cursor matches `globs` on its servers, where it could not be measured. So
+  the `paths` list Claude Code's documentation names (not measured here). A directory is written as
+  `dir/**`, which each of the three fields takes as a glob; it is not exact the way a file is: VS Code puts
+  `**/` before a relative pattern, so `src/billing/**` would also match a `src/billing` anywhere else under the
+  folder it reads, Cursor matches `globs` on its servers, where it could not be measured, and
+  whether Claude Code's `**` reaches a name that starts with a dot was not measured. The output
+  says so beside the file. The project root is left out, and so
   is an address holding a character a glob reads as syntax — `app/[id]` as a glob matches
   `app/i`. The same `**/` reaches a file too — `src/x.ts` also matches `other/src/x.ts` — and the
   output says so where it prints a file for VS Code. Every rule it leaves out is named
@@ -1578,6 +1580,35 @@ sits where the tree's own `.gitignore` already looks away, and a clone never car
 A read of a tree nobody has written to creates nothing, and where the file cannot be
 had — a read-only directory, a damaged file — the read builds it in memory and answers
 the same.
+
+`MNEMA_CACHE_DIR` keeps that file somewhere else: set to an absolute directory that exists
+and can be written to, every read — the command line, the MCP server and the library —
+keeps its cache there instead of in the tree. It is for a checkout you cannot write to,
+for several worktrees of one project that should build it once, and for CI, where the
+directory is what the runner's cache step saves and restores between runs, so a job starts
+from the last run's cache instead of rebuilding it:
+
+```yaml
+- uses: actions/cache@v4
+  with:
+    path: ${{ runner.temp }}/mnema-cache
+    key: mnema-cache-${{ github.sha }}
+    restore-keys: mnema-cache-
+- run: mkdir -p "$RUNNER_TEMP/mnema-cache" && mnema verify
+  env:
+    MNEMA_CACHE_DIR: ${{ runner.temp }}/mnema-cache
+```
+
+It is still a cache and never the record. A directory may be shared by any number of
+projects: each file is named for the tree it was built from, so a tree reads only a file
+made from it, and a file that no longer follows the record, or that cannot be opened, is
+built again. A value that is relative, or a directory that does not exist or cannot be
+written to, is refused with what to do rather than ignored.
+
+The SDK honors `MNEMA_CACHE_DIR` only when `openRecord` uses the default environment; with an explicit
+`env` it is ignored, as `MNEMA_HOME` is. When a fresh install creates a tail, the project moves to another
+cache file and the old one stays in the directory: deleting old cache files is safe (it is only cache), and
+in a cached CI directory it means the directory can grow.
 
 `~/.mnema` is this machine's data directory, whatever `$XDG_DATA_HOME` says.
 `MNEMA_HOME` moves it: set to an absolute path, the key root and the global tree live

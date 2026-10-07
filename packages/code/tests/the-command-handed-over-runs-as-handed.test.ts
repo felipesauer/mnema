@@ -665,7 +665,9 @@ export const HANDED_OVER: Readonly<
   // line 48 for the package page's block that retires a checker key.
   // line 49 and name 25 for the front page's quick start, which hands over the first record in a block
   // of its own beside the one on the first-record page.
-  block: { line: 49, name: 25, flag: 1, unwritten: 0 },
+  // name 26 for the package page's block that runs `mnema verify` in a CI workflow with the cache
+  // directory set.
+  block: { line: 49, name: 26, flag: 1, unwritten: 0 },
   // 46 until the refusal an agent's `accept` gets, with the switch off, began naming the command a
   // person accepts with (`agent-accepts.ts`).
   // line 34 until the sentences an agent's accept is answered with began handing whole lines
@@ -693,9 +695,10 @@ export const HANDED_OVER: Readonly<
   // `mnema verify` and the reads beside it.
   // name 76 once the usage refusal of `skill create` stopped naming the verb, now that the long text
   // can come from standard input or a file.
-  // line 63 and name 77 for the help of `mnema doctor`, which names the one thing it writes,
+  // line 75 and flag 4 with the promotion verb's own help and sentences, each a command that parses.
+  // line 76 and name 77 for the help of `mnema doctor`, which names the one thing it writes,
   // `mnema doctor --fix vscode`, in a line of its own.
-  source: { line: 63, name: 77, flag: 3, unwritten: 3 },
+  source: { line: 76, name: 77, flag: 4, unwritten: 3 },
 };
 
 // ---------------------------------------------------------------------------

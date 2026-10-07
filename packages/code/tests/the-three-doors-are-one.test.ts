@@ -258,6 +258,8 @@ const VERBS_NOT_IN_THE_LIBRARY: Readonly<Record<string, string>> = {
   observe: 'see `record_observation`',
   handoff: 'see `record_handoff`',
   link: 'a link is written by the person who sets a rule',
+  promote:
+    'lifting a pattern to the file every project reads is a person’s gesture, with the evidence typed by them',
   retract: 'see `retract_note`',
   key: 'keys are a person’s',
   switch: 'a switch is a person’s',
