@@ -95,6 +95,14 @@ tag, with its own changelog.
 
 ### Fixed
 
+- **An `ADR-<n>` label means the same thing in every verb that takes an id.** `decision move`
+  refused the label while `link` accepted it and recorded the text "ADR-1" as one end of an edge
+  pointing at nothing. A label that names exactly one decision in the project is now accepted
+  (`decision move`, `decision supersede`, `show`, `refs`, `timeline`, `observe`, `check declare`,
+  `link`, and their MCP tools and SDK calls) and is turned into that decision's id before anything is
+  looked up or written. A label two trees both carry is refused with the ids that carry it, and a
+  label no decision carries is refused by `link` instead of being recorded.
+
 - **A tail's lock is no longer taken from a live holder.** A waiter used to break a lock a minute
   old even when its process still answered, so a holder that was alive and slow (a stopped process,
   a suspended laptop) could end up with a second writer on the same tail. Only a lock whose process

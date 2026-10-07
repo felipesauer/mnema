@@ -71,7 +71,7 @@ function file(relative: string, body = 'x'): void {
 
 /** `mnema link <rule> <path> --rel <rel>` through the real verb. */
 async function address(path: string, rel = 'governs'): Promise<Said> {
-  const said = await mnema('link', 'ADR-1', path, '--rel', rel);
+  const said = await mnema('link', 'rule-1', path, '--rel', rel);
   expect(said.failed, said.err.join(' / ')).toBe(false);
   return said;
 }
@@ -167,7 +167,7 @@ describe('the command line says what an address covers', () => {
   it('says nothing at all when the relation carries no address', async () => {
     file('src/collate/fold.ts');
     for (const rel of ['relates-to', 'supersedes', 'derived-from', 'contradicts']) {
-      const said = await mnema('link', 'ADR-1', 'ADR-2', '--rel', rel);
+      const said = await mnema('link', 'rule-1', 'rule-2', '--rel', rel);
       expect(said.failed).toBe(false);
       expect(reachLine(said), rel).toBeUndefined();
     }
@@ -255,7 +255,7 @@ describe('the agent is told the same thing', () => {
     file('src/billing/charge.ts');
     const session = connect();
     const linked = runLinkKnowledge(session, {
-      subject: 'ADR-1',
+      subject: 'rule-1',
       target: 'src/collate',
       rel: 'governs',
     });
@@ -280,7 +280,7 @@ describe('the agent is told the same thing', () => {
     const client = await connectClient();
     const reply = await client.callTool({
       name: 'link_knowledge',
-      arguments: { subject: 'ADR-1', target: 'src/collate', rel: 'governs' },
+      arguments: { subject: 'rule-1', target: 'src/collate', rel: 'governs' },
     });
     const text = (reply.content as { text: string }[])[0]?.text ?? '';
     expect(text).toContain('src/collate covers 1 of 2 file(s)');
@@ -295,19 +295,19 @@ describe('the agent is told the same thing', () => {
     const client = await connectClient();
     const reply = await client.callTool({
       name: 'link_knowledge',
-      arguments: { subject: 'ADR-1', target: 'ADR-2', rel: 'relates-to' },
+      arguments: { subject: 'rule-1', target: 'rule-2', rel: 'relates-to' },
     });
     const text = (reply.content as { text: string }[])[0]?.text ?? '';
     expect(text).not.toContain('covers');
-    expect(text).toContain('Linked ADR-1');
+    expect(text).toContain('Linked rule-1');
     await client.close();
   });
 
   it('carries none when the relation carries no address', () => {
     const session = connect();
     const linked = runLinkKnowledge(session, {
-      subject: 'ADR-1',
-      target: 'ADR-2',
+      subject: 'rule-1',
+      target: 'rule-2',
       rel: 'relates-to',
     });
     expect(linked.ok).toBe(true);

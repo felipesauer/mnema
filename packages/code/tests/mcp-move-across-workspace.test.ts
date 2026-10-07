@@ -430,24 +430,18 @@ describe('what the sentences may claim once the walk is wider', () => {
 });
 
 describe('a label typed where an id belongs', () => {
-  it('is refused with the id that carries it', () => {
+  it('moves the one decision it names', () => {
     const here = makeProject('here');
     const session = openOn(here);
     const recorded = runRecordDecision(session, { title: 'use the union', rationale: 'why' });
     if (!recorded.ok) throw new Error('setup: record refused');
 
-    const before = factsIn(publicOf(here));
     const moved = runDecisionTransition(session, { id: 'ADR-1', action: 'accept', note: 'agreed' });
-    expect(moved).toMatchObject({ ok: false, code: 'UNKNOWN_DECISION' });
-    if (moved.ok) throw new Error('a label is not an address');
-    expect(moved.message).toContain(
-      `ADR-1 is a label, not an id: in this project it names the decision ${recorded.id}. Use the id.`,
-    );
-    expect(factsIn(publicOf(here))).toEqual(before);
+    expect(moved).toMatchObject({ ok: true, id: recorded.id, adr: 'ADR-1', to: 'accepted' });
     closeSession(session);
   });
 
-  it('names both ids when two projects of the workspace number the same label', () => {
+  it('is refused naming both ids when two projects of the workspace number the same label', () => {
     const here = makeProject('here');
     const there = makeProject('there');
     const session = openOn(here, there);
@@ -455,19 +449,22 @@ describe('a label typed where an id belongs', () => {
     const second = runRecordDecision(session, { title: 'two', rationale: 'why', project: there });
     if (!first.ok || !second.ok) throw new Error('setup: record refused');
 
+    const before = [factsIn(publicOf(here)), factsIn(publicOf(there))];
     const moved = runDecisionTransition(session, { id: 'adr-1', action: 'accept', note: 'agreed' });
-    if (moved.ok) throw new Error('a label is not an address');
-    expect(moved.message).toContain('ADR-1 is a label, not an id, and 2 decisions here carry it');
+    if (moved.ok) throw new Error('a label two decisions carry is not an address');
+    expect(moved.code).toBe('AMBIGUOUS_LABEL');
+    expect(moved.message).toContain('ADR-1 names 2 decisions here');
     expect(moved.message).toContain([first.id, second.id].sort().join(', '));
+    expect([factsIn(publicOf(here)), factsIn(publicOf(there))]).toEqual(before);
     closeSession(session);
   });
 
-  it('adds nothing to a label no decision carries', () => {
+  it('says nothing about a label no decision carries', () => {
     const here = makeProject('here');
     const session = openOn(here);
     const moved = runDecisionTransition(session, { id: 'ADR-9', action: 'accept', note: 'agreed' });
     if (moved.ok) throw new Error('nothing to move');
-    expect(moved.message).not.toContain('is a label');
+    expect(moved.code).toBe('UNKNOWN_DECISION');
     closeSession(session);
   });
 });

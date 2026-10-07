@@ -21,7 +21,7 @@ import { type CatalogEvent, catalogUpcasters } from '@mnema/chain';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { type CliIo, run } from '../src/cli.js';
 import { runDecisionTransition } from '../src/commands/decision-transition.js';
-import { labelAsAddress } from '../src/label-as-address.js';
+import { resolveAddress } from '../src/label-as-address.js';
 import { successorOnlyForASupersede, supersedeLeavesNothingInForce } from '../src/moved-record.js';
 import { occurrenceLine } from '../src/presentation/occurrence.js';
 
@@ -185,20 +185,16 @@ describe('init says what comes next', () => {
 });
 
 describe('ADR-<n> as an address', () => {
-  it('is refused with the id it names', async () => {
+  it('moves the decision it names, on the verbs that take an id', async () => {
     repo();
     await mnema('init');
     const id = idOf((await mnema('decision', 'record', 'Use UTC', 'three zones')).out);
-    for (const argv of [
-      ['show', 'ADR-1'],
-      ['decision', 'move', 'accept', 'ADR-1', '--note', 'agreed'],
-    ]) {
-      const said = await mnema(...argv);
-      expect(said.failed, argv.join(' ')).toBe(true);
-      expect(said.err, argv.join(' ')).toContain(
-        `ADR-1 is a label, not an id: in this project it names the decision ${id}. Use the id.`,
-      );
-    }
+    const shown = await mnema('show', 'ADR-1');
+    expect(shown.failed).toBe(false);
+    expect(shown.out).toContain(id);
+    const moved = await mnema('decision', 'move', 'accept', 'ADR-1', '--note', 'agreed');
+    expect(moved.failed).toBe(false);
+    expect(moved.out).toContain(id);
   });
 
   it('lists every id when two trees number the same label', async () => {
@@ -208,37 +204,42 @@ describe('ADR-<n> as an address', () => {
     const privateId = idOf(
       (await mnema('decision', 'record', 'Use ISO', 'one format', '--scope', 'private')).out,
     );
-    const said = await mnema('show', 'ADR-1');
-    expect(said.err).toContain('2 decisions here carry it');
-    expect(said.err).toContain(publicId);
-    expect(said.err).toContain(privateId);
+    for (const argv of [
+      ['show', 'ADR-1'],
+      ['decision', 'move', 'accept', 'ADR-1', '--note', 'agreed'],
+    ]) {
+      const said = await mnema(...argv);
+      expect(said.failed, argv.join(' ')).toBe(true);
+      expect(said.err, argv.join(' ')).toContain('ADR-1 names 2 decisions here');
+      expect(said.err, argv.join(' ')).toContain(publicId);
+      expect(said.err, argv.join(' ')).toContain(privateId);
+    }
   });
 
-  it('is said for the successor of a supersede too', async () => {
+  it('is taken for the successor of a supersede too', async () => {
     repo();
     await mnema('init');
     const old = idOf((await mnema('decision', 'record', 'Use UTC', 'three zones')).out);
     const next = idOf((await mnema('decision', 'record', 'Use ISO instants', 'one format')).out);
     const said = await mnema('decision', 'supersede', old, 'ADR-2', '--reason', 'newer');
-    expect(said.failed).toBe(true);
-    expect(said.err).toContain('Refused (UNKNOWN_BY)');
-    expect(said.err).toContain(
-      `ADR-2 is a label, not an id: in this project it names the decision ${next}.`,
-    );
+    expect(said.failed).toBe(false);
+    expect(said.out).toContain(old);
+    const shown = await mnema('show', next);
+    expect(shown.out).toContain(old);
   });
 
-  it('is composed in one place, from the record, whoever asks', async () => {
+  it('is decided in one place, from the record, whoever asks', async () => {
     const dir = repo();
     await mnema('init');
     const id = idOf((await mnema('decision', 'record', 'Use UTC', 'three zones')).out);
     const here = { cwd: dir, env: { home } };
-    expect(labelAsAddress(here, 'ADR-1')).toContain(id);
+    expect(resolveAddress(here, 'ADR-1')).toEqual({ ok: true, id });
     // Case does not matter to a person typing it, and a surrounding space is not part of it.
-    expect(labelAsAddress(here, ' adr-1 ')).toContain(id);
-    // A label no decision carries, and anything that is not shaped like one, are not its to say.
-    expect(labelAsAddress(here, 'ADR-2')).toBeUndefined();
-    expect(labelAsAddress(here, 'ADR-1x')).toBeUndefined();
-    expect(labelAsAddress(here, id)).toBeUndefined();
+    expect(resolveAddress(here, ' adr-1 ')).toEqual({ ok: true, id });
+    // A label no decision carries, and anything that is not shaped like one, stand as typed.
+    expect(resolveAddress(here, 'ADR-2')).toEqual({ ok: true, id: 'ADR-2' });
+    expect(resolveAddress(here, 'ADR-1x')).toEqual({ ok: true, id: 'ADR-1x' });
+    expect(resolveAddress(here, id)).toEqual({ ok: true, id });
   });
 
   it('adds nothing to an id that is simply not there, and nothing to a label no decision has', async () => {
@@ -248,7 +249,7 @@ describe('ADR-<n> as an address', () => {
     for (const typed of ['0198f3c1-7a2e-7b41-9c05-3d8e6f2a1b44', 'ADR-9', 'adr-x']) {
       const said = await mnema('show', typed);
       expect(said.failed, typed).toBe(true);
-      expect(said.err, typed).not.toContain('is a label');
+      expect(said.err, typed).not.toContain('names');
     }
   });
 });
