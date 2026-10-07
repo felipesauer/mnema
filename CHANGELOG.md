@@ -12,6 +12,26 @@ tag, with its own changelog.
 
 ### Added
 
+- **A link can be taken back, by the identity that recorded it.** A new event kind,
+  `link.retracted` (`payload.target`, `payload.rel`, `payload.reason`), names an edge the way
+  `knowledge.linked` did and says why. `mnema unlink <subject> <target> --rel <label> --reason "<why>"`
+  and the `retract_link` tool write it, after resolving an `ADR-<n>` label on either end as
+  linking does. Nothing is erased: the link's own event stays, and every read that applies a link
+  (`rules`, `before-a-write`, the opening brief, `governing_rules`, the edit census) stops seeing
+  the edge once its only asserter took it back, so a rule addressed at a path stops acting there.
+  The graph readings (`refs`, `diagram` and the `references` tool), which show the history of what names
+  what, keep the link and mark it `(retracted by its author)`.
+  Any key of that identity retracts it; another identity is refused with `NOT_THE_AUTHOR`, a
+  retraction it signed anyway is not applied, and `mnema verify` names it in a
+  `census [foreign-link-retraction]` line, informational, exit unchanged. The rule is in
+  `packages/chain/FORMAT.md` §6.4, with a vector; no byte of any existing kind changed.
+  Known limits: a binary from before this change refuses a record holding a `link.retracted` as
+  an unknown kind, so `verify` fails there and every read of that tree stops with
+  `unreadable stored line` until that machine is upgraded. And the retraction follows the link to
+  the FIRST tree, in the order every locate walks, that holds a link of that edge: when another
+  identity also recorded the same edge in an earlier tree, `unlink` is refused there with
+  `NOT_THE_AUTHOR`, and there is no flag to point it at the later tree that holds yours.
+
 - **`mnema doctor` sees what keeps VS Code's agent from loading the plugin, and `--fix vscode`
   mends it.** The doctor reads the user `settings.json` of VS Code (the places of each platform,
   the snap's old one included) and says whether `chat.pluginLocations` is set, whether it lists

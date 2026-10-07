@@ -69,7 +69,7 @@ const THE_HOSTS_CEILING = 2048;
 const CEILING_AS_MEASURED = 2048;
 
 /** How many tools the server serves. The sweep's own non-vacuity. */
-const TOOLS_SERVED = 26;
+const TOOLS_SERVED = 27;
 
 let sandbox: string;
 let env: DiscoveryEnv;

@@ -100,6 +100,7 @@ import {
   DECISION_ACTIONS,
   deriveAlias,
   isSearchKind,
+  locateLinkScope,
   type ProjectionCache,
   type ReferenceDirection,
   type ReplacedClass,
@@ -125,6 +126,7 @@ import {
   recordObservation,
   rejectDecision,
   rejectSkill,
+  retractLink,
   retractNote,
   reviewSkill,
   supersedeDecision,
@@ -935,6 +937,63 @@ export function runRetractNote(
     id: retracted.id,
     note: retracted.note,
     scope: located.home.scope,
+    ...forwardReplacement(retracted),
+  };
+}
+
+/** A link was retracted, or the retraction was refused. */
+export type RetractLinkResult =
+  | (Replacement &
+      Landed & {
+        readonly ok: true;
+        /** The edge taken back, as it was recorded. */
+        readonly subject: string;
+        readonly target: string;
+        readonly rel: string;
+      })
+  | {
+      readonly ok: false;
+      /** `UNKNOWN_LINK`, `AMBIGUOUS_LABEL`, or the core operation's code. */
+      readonly code: string;
+      readonly message: string;
+    };
+
+/**
+ * `retract_link` — takes a link back, the MCP counterpart of `mnema unlink`, and the same two
+ * steps in the same order: both ends are addresses first (an `ADR-<n>` label becomes the id of
+ * the one decision it names, as `link_knowledge` records it), the link is followed to the tree
+ * it was recorded in ({@link locateLinkScope}), and the write is the core's {@link retractLink},
+ * which refuses any identity but the one that recorded the link, saying whose it is. Attributed
+ * to the connecting agent (`which`) and pinned to the run, as every write of this server is.
+ */
+export function runRetractLink(
+  session: Session,
+  input: { subject: string; target: string; rel: string; reason: string },
+): RetractLinkResult {
+  const subject = addressedIn(session, input.subject);
+  if (!subject.ok) return ambiguousLabel(subject.message);
+  const target = addressedIn(session, input.target);
+  if (!target.ok) return ambiguousLabel(target.message);
+  const edge = { subject: subject.id, target: target.id, rel: input.rel };
+  const scope = locateLinkScope(session.trees, edge, catalogUpcasters());
+  if (scope === undefined) {
+    return {
+      ok: false,
+      code: 'UNKNOWN_LINK',
+      message: `no link ${oneLine(edge.subject)} —${oneLine(edge.rel)}→ ${oneLine(edge.target)} is in this project or the global tree`,
+    };
+  }
+  const { ctx, run } = openWrite(session, scope);
+  const retracted = retractLink(ctx, { ...edge, reason: input.reason, which: session.which, run });
+  if (!retracted.ok) return { ok: false, code: retracted.code, message: retracted.message };
+  // Checkpoint so the retraction is fully signed the moment the tool returns.
+  ctx.writer.checkpoint();
+  return {
+    ok: true,
+    subject: retracted.subject,
+    target: retracted.target,
+    rel: retracted.rel,
+    scope,
     ...forwardReplacement(retracted),
   };
 }

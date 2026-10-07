@@ -96,7 +96,7 @@ export const FED_BY_KIND: { readonly [K in EventKind]: readonly ProjectionTable[
   'memory.captured': [...EVERY_KIND_FEEDS, 'memories', ...SEARCHED],
   'observation.recorded': [...EVERY_KIND_FEEDS, 'observations', ...SEARCHED],
   'handoff.recorded': [...EVERY_KIND_FEEDS, 'handoffs'],
-  'knowledge.linked': [...EVERY_KIND_FEEDS, 'links'],
+  'knowledge.linked': [...EVERY_KIND_FEEDS, 'links', 'link_assertions'],
   'skill.created': [...EVERY_KIND_FEEDS, 'skills', ...SEARCHED],
   'skill.transitioned': [...EVERY_KIND_FEEDS, 'skills', ...SEARCHED, ...MOVED],
   // A consultation is a skill fact that the skill projection does not read: it moves
@@ -115,6 +115,9 @@ export const FED_BY_KIND: { readonly [K in EventKind]: readonly ProjectionTable[
   // A retraction changes the row of the note it names, in whichever of the two note tables
   // holds it, and takes the note out of the index.
   'note.retracted': [...EVERY_KIND_FEEDS, 'memories', 'observations', ...SEARCHED],
+  // A link retraction withdraws an assertion of the edge it names, and with it the edge, when
+  // nobody else asserts it.
+  'link.retracted': [...EVERY_KIND_FEEDS, 'links', 'link_assertions'],
   'check.declared': [...EVERY_KIND_FEEDS],
   // A checker is a fact about who may sign: the reading of which identities are machines.
   'checker.enrolled': [...EVERY_KIND_FEEDS, ...MEMBERSHIP],

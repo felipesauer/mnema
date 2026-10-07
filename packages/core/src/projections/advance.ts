@@ -14,7 +14,8 @@
  *     entities they touch, and a record ten times larger costs the same;
  *   - the folds that keep no accumulator (a memory, an observation, a handoff, a link, a
  *     switch) are one event each, and the rule of each is the function the replay applies
- *     (`memoryOf`, `linkOf`, …);
+ *     (`memoryOf`, `linkOf`, …), and a link retraction is folded by the rule the replay
+ *     applies (`withdraws`);
  *   - the full-text index replaces the rows of the entities that changed, by rowid;
  *   - the reference index appends, as it always did; the facts about identity append;
  *   - the moves that diverged are read again for the entities an arrival moved, from the
@@ -41,7 +42,6 @@ import { materializeDecisions } from './decision-store.js';
 import { tablesFedBy } from './fed-by.js';
 import {
   handoffOf,
-  linkOf,
   memoryOf,
   type NoteRetraction,
   observationOf,
@@ -49,10 +49,10 @@ import {
   retractionsOf,
 } from './knowledge.js';
 import {
+  advanceLinks,
   getMemory,
   getObservation,
   materializeHandoffs,
-  materializeLinks,
   materializeMemories,
   materializeObservations,
 } from './knowledge-store.js';
@@ -200,13 +200,9 @@ export function advance(
     if (fed.has('handoffs')) {
       materializeHandoffs(db, [arrived.flatMap((event) => handoffOf(event) ?? [])]);
     }
-    // A repeated edge keeps its FIRST assertion, which the table's key enforces.
-    if (fed.has('links'))
-      materializeLinks(
-        db,
-        arrived.flatMap((event) => linkOf(event) ?? []),
-        true,
-      );
+    // A repeated edge keeps its FIRST assertion standing; a retraction withdraws its own
+    // identity's, one event at a time and in order, as the replay does.
+    if (fed.has('links')) advanceLinks(db, arrived);
     if (fed.has('channel_switches')) {
       materializeChannelSwitches(
         db,

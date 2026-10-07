@@ -5,7 +5,7 @@ document** and importing **nothing** of the product it checks.
 
 ```
 python3 mnema_verify.py record <a record directory>    # T1, T2/T4, T3 over a real record
-python3 mnema_verify.py vectors                        # reproduce the 32 published vectors
+python3 mnema_verify.py vectors                        # reproduce the 33 published vectors
 python3 mnema_verify.py self-test                      # RFC 8032, section 1, section 8's limits
 python3 mnema_verify.py all --record <dir>             # all three
 python3 mnema_verify.py gaps                           # where FORMAT.md did not suffice
@@ -51,7 +51,7 @@ rigour, so nobody goes looking for it.
 | **T2** | each checkpoint's content root folds over the events of its range, from their canonical bytes |
 | **T4** | the Ed25519 signature over the checkpoint's signed message, under a key whose material is **recomputed** to the fingerprint that names it |
 | **T3** | the OpenTimestamps proof's subject is the checkpoint's digest, the path folds to the merkle root the stored header carries, and the header's own hash meets the target it declares — with section 8's three declared limits refused by name |
-| **§1** | the 32 published vectors and the four aggregate digests, plus every refusal section 1 lists |
+| **§1** | the 33 published vectors and the four aggregate digests, plus every refusal section 1 lists |
 | **§4** | byte identity: re-serializing what a line holds reproduces that line exactly |
 | **§4.1** | every event rebuilt from the fields its `(kind, v)` contract declares in `event-schema.json`, and any other refused — which catches a forged field on a **newly appended** event, where byte identity cannot |
 | **§6.2** | enrolment: every event's signer is a key **valid for its anchor** at that point in the fold, with a revocation and a restoring re-add taking effect only when signature-covered; a checker key signs check results only, and a retirement of one — signature-covered as well — leaves it signing nothing |

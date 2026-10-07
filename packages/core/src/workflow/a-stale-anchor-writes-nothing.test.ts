@@ -20,6 +20,7 @@ import {
   linkKnowledge,
   recordHandoff,
   recordObservation,
+  retractLink,
   retractNote,
 } from '../knowledge/operations.js';
 import { ProjectionCache } from '../projections/cache.js';
@@ -145,6 +146,9 @@ function thrownBy(drive: () => unknown): unknown {
   return undefined;
 }
 
+/** The edge the member links in the setup, for the retraction to name. */
+const TAKEN_BACK = { subject: 'a link', target: 'to take back', rel: 'r' } as const;
+
 describe('a checkout the key left writes nothing, through every write of the surface', () => {
   /** K founded A and let N in; then N retired K — the shape in which K's checkout hears nothing. */
   function aCheckoutTheKeyLeft() {
@@ -173,6 +177,7 @@ describe('a checkout the key left writes nothing, through every write of the sur
     if (!reviewSkill(member, { id: adopted, fields: { note: 'n' } }).ok) throw new Error('setup');
     if (!adoptSkill(member, { id: adopted, fields: { note: 'n' } }).ok) throw new Error('setup');
     const note = made(captureMemory(member, { content: 'a note to take back' }), 'memory');
+    if (!linkKnowledge(member, TAKEN_BACK).ok) throw new Error('setup: link');
     const run = startRun(member, { agent: 'the member' });
     if (!run.ok) throw new Error('setup: run');
     const joiner = requestEnrollment({ anchor, keyRoot: keyRoot() });
@@ -304,6 +309,11 @@ describe('a checkout the key left writes nothing, through every write of the sur
       op: 'retractNote',
       refusedBy: 'the anchor',
       drive: (as, _, s) => retractNote(as, { id: s.fixtures.note, reason: 'it was wrong' }),
+    },
+    {
+      op: 'retractLink',
+      refusedBy: 'the anchor',
+      drive: (as) => retractLink(as, { ...TAKEN_BACK, reason: 'it was wrong' }),
     },
     {
       op: 'recordHandoff',

@@ -1350,6 +1350,14 @@ const CLASSIFIED: Readonly<Record<string, { verdict: Verdict; why: string }>> = 
     verdict: 'collapsed',
     why: 'the entity id on an edge’s row, read back out of the record',
   },
+  'references.ts «{} (retracted by its author)» named #1': {
+    verdict: 'composed',
+    why: 'the role and relation of an edge, the relation already collapsed where it is composed',
+  },
+  'diagram.ts «{} (retracted by its author)» named #1': {
+    verdict: 'composed',
+    why: 'the role and relation of an edge, quoted for the diagram where the label is written',
+  },
   'references.ts «{}{}» said #1': {
     verdict: 'composed',
     why: 'the parenthesis after the id — a word of the walk’s vocabulary, carrying its own leading space',
@@ -2195,8 +2203,8 @@ describe('every value this layer puts on a line is classified', () => {
     // 251 until the renderer began making an actor's control bytes visible and joined the
     // composers with its two template values; then 253 until the rules in force began saying who
     // accepted them (`brief.ts`, `record.ts`); 294 until `mnema rules` printed the four numbers
-    // of the relation that refuses a write; 301 with the three the trunk added meanwhile; 395 with the lines `mnema site` prints; 306 once the document counts the rules that refuse a write; 367 with the pages of the git bridge; 377 with its shallow sentence and the recipe aging prints; 389 with the section for an inherited record.
-    expect(FOUND.sites.length).toBe(413);
+    // of the relation that refuses a write; 301 with the three the trunk added meanwhile; 395 with the lines `mnema site` prints; 306 once the document counts the rules that refuse a write; 367 with the pages of the git bridge; 377 with its shallow sentence and the recipe aging prints; 389 with the section for an inherited record; 415 with the mark on a link taken back, in the graph and its diagram.
+    expect(FOUND.sites.length).toBe(415);
   });
 
   it('reads the verdict off the source rather than believing the table', () => {
@@ -2219,7 +2227,7 @@ describe('every value this layer puts on a line is classified', () => {
     const count = (verdict: Verdict): number => verdicts.filter((said) => said === verdict).length;
     expect(count('collapsed')).toBe(113);
     expect(count('minted')).toBe(231);
-    expect(count('composed')).toBe(69);
+    expect(count('composed')).toBe(71);
     expect(FOUND.sites.filter((site) => /\boneLine\b/.test(site.expression))).toHaveLength(113);
   });
 

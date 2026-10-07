@@ -274,7 +274,7 @@ guard holds the two byte for byte.
 [`verifier/`](./verifier/) is the other half of the same idea, and it is what stops
 the paragraph above from being a claim about a document nobody ever implemented: a
 verifier in Python, written **from** `FORMAT.md`, importing nothing of this package.
-It reproduces the 32 vectors and the four aggregate digests, checks T1, T2/T4 and T3
+It reproduces the 33 vectors and the four aggregate digests, checks T1, T2/T4 and T3
 over real records, and refuses every mutation in `verifier/mutate.py`. It found
 twenty-five points where the document was not enough to write it from, all of which
 are now fixed in the document.

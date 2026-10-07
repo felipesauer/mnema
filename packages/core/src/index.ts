@@ -222,6 +222,7 @@ export {
   type HeldTail,
   locateEntityScope,
   locateEntityScopeWith,
+  locateLinkScope,
   locateTailScope,
   type NoProjectRoot,
   type Origin,

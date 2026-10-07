@@ -56,6 +56,7 @@ import {
   keyEnrolled,
   keyRevoked,
   knowledgeLinked,
+  linkRetracted,
   memoryCaptured,
   noteRetracted,
   observationRecorded,
@@ -433,6 +434,18 @@ export const CANONICAL_VECTORS: {
       name: 'note.retracted (a memory taken back, with its reason)',
       event: noteRetracted(agent(MEMORY_ID, RUN_ID), {
         reason: 'The load turned out to be a key lookup, not relational.',
+      }),
+    },
+  ],
+  'link.retracted': [
+    {
+      // The edge pinned above, named the way the link named it — its subject, target and
+      // relation — and why it is taken back.
+      name: 'link.retracted (the relates-to edge taken back, with its reason)',
+      event: linkRetracted(agent(MEMORY_ID, RUN_ID), {
+        target: TASK_ID,
+        rel: 'relates-to',
+        reason: 'The memory is about another task.',
       }),
     },
   ],

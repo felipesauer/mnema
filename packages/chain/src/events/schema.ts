@@ -230,6 +230,8 @@ export const PAYLOAD_SCHEMA: { readonly [K in EventKind]: PayloadSchemaOf<K> } =
   // Required for the reason the fact exists: a retraction that cannot say why is a line this
   // reader refuses rather than one that quietly takes a note out of the reads.
   'note.retracted': { reason: 'string' },
+  // The edge as the link recorded it, and why — required for the same reason as a note's.
+  'link.retracted': { target: 'string', rel: 'string', reason: 'string' },
   // A program and its arguments, never a shell line: `args` is a list so that nothing in it
   // is split or interpreted on the way to the program.
   'check.declared': { command: 'string', args: 'string[]?' },

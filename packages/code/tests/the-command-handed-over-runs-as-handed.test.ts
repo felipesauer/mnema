@@ -651,7 +651,8 @@ export const HANDED_OVER: Readonly<
   // line 69 for the install page's no-sudo alternative, which ends on `mnema --version`.
   // line 74 and name 144 with the pages that say how VS Code's agent is made to load the plugin
   // (`mnema doctor --fix vscode`, `mnema doctor`) and the doctor's changed paragraphs.
-  span: { line: 74, name: 144, flag: 1, unwritten: 0 },
+  // line 77 and name 146 with the pages that hand over `mnema unlink` whole.
+  span: { line: 77, name: 146, flag: 1, unwritten: 0 },
   // name 18 until the page that says where the key lives named `mnema key protect` in a line of
   // its own.
   // line 35 until the same page showed that question in a block of its own.

@@ -53,6 +53,7 @@ import type {
 import {
   getMemory,
   getObservation,
+  linkAssertionStands,
   listHandoffs,
   listLinksByRelation,
   listLinksFrom,
@@ -653,6 +654,20 @@ export class ProjectionCache {
    */
   linksByRelation(rel: string): LinkEdge[] {
     return listLinksByRelation(this.db, rel);
+  }
+
+  /**
+   * Whether `who`'s assertion of the edge still stands — false once that identity took the
+   * link back (`link.retracted`) and did not link it again. The read a HISTORY of links needs,
+   * to say which of the assertions it shows no longer act.
+   */
+  linkAssertionStands(assertion: {
+    readonly subject: string;
+    readonly target: string;
+    readonly rel: string;
+    readonly who: string;
+  }): boolean {
+    return linkAssertionStands(this.db, assertion);
   }
 
   /** Reads one skill by id, or null if it is not projected. */
