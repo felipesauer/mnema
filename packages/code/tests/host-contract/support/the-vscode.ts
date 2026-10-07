@@ -3,9 +3,9 @@
  *
  * The editor the run names is started under a virtual screen, in a network namespace that holds
  * only loopback, with the plugin of this tree listed in `chat.pluginLocations` and a `mnema` shim on
- * the PATH its hooks run with. The model is an extension (`support/vscode/extension.js`) that the
+ * the PATH its hooks run with. The model is an extension (`support/vscode/extension.cjs`) that the
  * editor loads from a directory and that answers the chat agent in process, so the model needs no
- * socket. A runner inside the editor (`support/vscode/runner.js`) gets the chat onto that model with
+ * socket. A runner inside the editor (`support/vscode/runner.cjs`) gets the chat onto that model with
  * one prompt, and what a case asserts on is what the editor did: the file that was or was not
  * written, what it handed the model next, and the facts the record holds afterwards.
  *
@@ -18,7 +18,14 @@
  * run that names another version is refused.
  */
 
-import { existsSync, mkdirSync, readdirSync, readFileSync, writeFileSync } from 'node:fs';
+import {
+  copyFileSync,
+  existsSync,
+  mkdirSync,
+  readdirSync,
+  readFileSync,
+  writeFileSync,
+} from 'node:fs';
 import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { runTests } from '@vscode/test-electron';
@@ -26,8 +33,24 @@ import { afterEach } from 'vitest';
 import { aSandbox, PLUGIN, type TheProjectToWrite } from './a-sandbox.js';
 import { refuseUnlessLoopbackOnly } from './the-host.js';
 
-const EXTENSION = fileURLToPath(new URL('./vscode/', import.meta.url));
-const RUNNER = fileURLToPath(new URL('./vscode/runner.js', import.meta.url));
+const STAND_IN_MODEL = fileURLToPath(new URL('./vscode/extension.cjs', import.meta.url));
+const RUNNER = fileURLToPath(new URL('./vscode/runner.cjs', import.meta.url));
+
+/**
+ * The manifest of the stand-in model, written next to a copy of it in each sandbox: a manifest kept
+ * in the tree would be a package of this workspace, and the workspace counts its packages.
+ */
+const STAND_IN_MANIFEST = {
+  name: 'the-stand-in-model',
+  publisher: 'contract',
+  version: '0.0.1',
+  description:
+    "Test-only: a stand-in language model that records what VS Code's chat agent sends it.",
+  engines: { vscode: '^1.100.0' },
+  main: './extension.cjs',
+  activationEvents: ['onStartupFinished'],
+  contributes: { languageModelChatProviders: [{ vendor: 'stand-in', displayName: 'Stand-in' }] },
+} as const;
 
 /** Where the editor reads a workspace's own hook files from. */
 const HOOKS_DIR = join('.github', 'hooks');
@@ -111,7 +134,12 @@ export async function anEditorSession(spec: TheEditorSpec): Promise<TheEditorSes
     const out = join(box.root, 'out');
     const userData = join(box.root, 'user-data');
     const runtime = join(box.root, 'xdg');
-    for (const dir of [out, join(userData, 'User'), runtime]) mkdirSync(dir, { recursive: true });
+    const extension = join(box.root, 'stand-in-model');
+    for (const dir of [out, join(userData, 'User'), runtime, extension]) {
+      mkdirSync(dir, { recursive: true });
+    }
+    writeFileSync(join(extension, 'package.json'), JSON.stringify(STAND_IN_MANIFEST));
+    copyFileSync(STAND_IN_MODEL, join(extension, 'extension.cjs'));
     writeFileSync(
       join(userData, 'User', 'settings.json'),
       JSON.stringify({
@@ -132,7 +160,7 @@ export async function anEditorSession(spec: TheEditorSpec): Promise<TheEditorSes
     try {
       await runTests({
         vscodeExecutablePath: editor.executable,
-        extensionDevelopmentPath: EXTENSION,
+        extensionDevelopmentPath: extension,
         extensionTestsPath: RUNNER,
         launchArgs: [
           box.project,
