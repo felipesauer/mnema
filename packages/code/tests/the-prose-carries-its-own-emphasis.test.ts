@@ -67,14 +67,22 @@ const TEXT = /\.(ts|mts|cts|js|mjs|cjs|json|ya?ml|md|txt)$/;
  *
  * IT CANNOT GO VACUOUS BY FAILING. If this comes back with nothing at all, the counts below say
  * so out loud instead of a scan over an empty list reporting no glyphs anywhere.
+ *
+ * ONE DIRECTORY IS NOT PROSE: the test vectors other people wrote, copied byte for byte. A NUL,
+ * a form feed or a UTF-16 string in them is the input under test, and the RFCs carry the form
+ * feed of a page break; changing a byte would break the SHA-256 that
+ * `packages/chain/src/chain/outside-vectors.test.ts` holds them to. Nothing in it is ours to
+ * write, and nothing else is left out.
  */
+const COPIED_BYTE_FOR_BYTE = 'packages/chain/conformance/vectors/';
+
 const SCANNED: readonly string[] = execFileSync(
   'git',
   ['ls-files', '--cached', '--others', '--exclude-standard'],
   { cwd: ROOT, encoding: 'utf-8', maxBuffer: 32 * 1024 * 1024 },
 )
   .split('\n')
-  .filter((where) => where !== '' && TEXT.test(where))
+  .filter((where) => where !== '' && TEXT.test(where) && !where.startsWith(COPIED_BYTE_FOR_BYTE))
   .map((where) => join(ROOT, where));
 
 /** What each scanned file is, relative to the root, paired with the text it holds. */

@@ -30,8 +30,12 @@ export interface World {
     recordAt(ref: string): string[];
   };
   readonly mnema: {
-    /** `mnema verify --require=signed`: whether it exited zero, and what it said. */
-    verify(): { passed: boolean; said: string };
+    /**
+     * `mnema verify --require=signed --since <base>`: whether it exited zero, and what it said.
+     * `--since` is what catches a record cut back to an earlier, honest state — the newest events
+     * taken with the checkpoint that covered them — which no reading of the record alone can see.
+     */
+    verify(base: string): { passed: boolean; said: string };
     /** `mnema rules <path> --json`, parsed. */
     rules(path: string): unknown;
     /**
@@ -84,8 +88,10 @@ export async function judge(world: World, pr: PullRequest): Promise<Verdict> {
     return { failed: false, reasons };
   }
 
-  const verification = world.mnema.verify();
-  if (!verification.passed) reasons.push('the record does not verify as signed');
+  const verification = world.mnema.verify(pr.baseSha);
+  if (!verification.passed) {
+    reasons.push('the record does not verify as signed, as the base record grown');
+  }
 
   const head = textsOf(headTexts);
   const record = whatItDoes(eventsAdded(textsOf(baseTexts), head), head);

@@ -350,13 +350,21 @@ function littleEndian(bytes: Bytes): bigint {
   return n;
 }
 
-/** Whether `signature` is `publicKey`'s Ed25519 signature over `message`. */
+/** [8]P is the identity: one of the eight points of small order. */
+const smallOrder = (p: Point): boolean => same(multiply(p, 8n), IDENTITY);
+
+/**
+ * Whether `signature` is `publicKey`'s Ed25519 signature over `message`, under the strict rule
+ * of `FORMAT.md` section 6: A and R decode canonically ({@link decode} refuses `y >= p` and a
+ * "-0" x) to points not of small order, `S < L`, and the cofactorless equation.
+ */
 export function ed25519Verify(message: Bytes, signature: Bytes, publicKey: Bytes): boolean {
   if (signature.length !== 64 || publicKey.length !== 32) return false;
   const a = decode(publicKey);
   const r = decode(signature.subarray(0, 32));
   const s = littleEndian(signature.subarray(32));
   if (a === null || r === null || s >= L) return false;
+  if (smallOrder(a) || smallOrder(r)) return false;
   const hashed = new Uint8Array(64 + message.length);
   hashed.set(signature.subarray(0, 32));
   hashed.set(publicKey, 32);

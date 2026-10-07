@@ -14,7 +14,11 @@ public keys removed, the product says broken over a signature it cannot verify, 
 reader, unable to ask, says INCOMPLETE. And on a tail cut in the middle with no
 `tail.pruned`, the product calls the signed range a contradiction and says broken, while
 this reader reports a gap it cannot judge, because §3 leaves a reader of this document alone
-unable to tell an authorized cut from tampering. Twenty-six points
+unable to tell an authorized cut from tampering. The two readings of a stored line part in
+one place more, found by JSONTestSuite: on a line holding bytes that are not UTF-8, the
+product decodes them to U+FFFD and finds the line canonical, while this reader refuses it
+(`packages/chain/src/chain/outside-vectors.test.ts`). §4's byte identity sides with this
+reader; the product does not refuse yet. Twenty-six points
 where this document was **not enough** for that were found in the writing, and every one of
 them has been fixed here — `python3 verifier/mnema_verify.py gaps` lists them, with which
 were resolved by reading a specification, which by experiment against the published bytes,
@@ -92,7 +96,10 @@ The form is JSON, serialized under these rules
    implementation outside JavaScript gets wrong without noticing: Python's default
    spells `1.0` as `1.0` and `1e-7` as `1e-07`, and Go's spells `1e20` as `1e+20`
    (`packages/chain/src/chain/second-reader-agrees-on-the-bytes.test.ts`, which
-   compares the rule against `JSON.stringify` itself over every boundary it has).
+   compares the rule against `JSON.stringify` itself over every boundary it has). It
+   is also RFC 8785's rule, and both readers spell the numbers of its Appendix B and
+   the first 10,000 lines of the generator its authors publish a SHA-256 for exactly
+   as those do (`packages/chain/src/chain/outside-vectors.test.ts`).
 
 And these values are **refused**, rather than coerced — a value that cannot
 round-trip losslessly would let two different facts produce identical bytes:
@@ -361,6 +368,38 @@ part of it**:
   `sig` alongside the fields. The checkpoints of a tail live in
   `checkpoints.jsonl`, one canonical line each — the eight keys, `sig` included,
   sorted by §1 — in chain order.
+- **The Ed25519 rule is the strict one**, and it is the same for every signature
+  this document names (a checkpoint's, a tail proof's, an enrolment's). With A the
+  public key's 32 bytes, R the first 32 bytes of the signature and S the last 32 as a
+  little-endian integer, a signature verifies only if:
+  1. A and R are **canonical** encodings: the 255-bit `y` is below
+     p = 2^255 − 19, and the sign bit is not set where `x` is 0 (`y` = 1 or `y` = p − 1);
+  2. neither A nor R is a point of **small order** ([8]P is the identity). With
+     rule 1 in force there are eight such encodings, the ones CCTV's
+     `ed25519/README.md` lists canonically;
+  3. **S < L**, the order of the base point;
+  4. **[S]B = R + [k]A**, the equation *without* the cofactor, k being SHA-512(R ‖ A ‖
+     message) reduced mod L.
+
+  A point with a small-order *component* that is not itself of small order passes
+  rules 1 and 2. This is the rule of ed25519-dalek's `verify_strict`. It has to be
+  written down because "Ed25519 (RFC 8032)" is not one rule: over the 1,077
+  Ed25519 vectors of Wycheproof, CCTV and ed25519-speccheck, Node 22 and Node 24 up
+  to 24.18 accepted 301 and Node 24.19 and later accepted 132 (nodejs/node#64026),
+  so a record forged with a small-order key verified under one Node and failed
+  under the other. Under this rule all three verifiers of a record — the product,
+  which checks rules 1 to 3 itself before `node:crypto`; the second reader in
+  `verifier/`; and the page's verifier — give the publishers' verdict on every one
+  of those vectors and the five of RFC 8032 §7.1, on every Node the CI runs
+  (`packages/code/tests/every-verifier-gives-one-ed25519-verdict.test.ts`). Of
+  CCTV's 914, the rule accepts these 43 and refuses the other 871: 7, 29, 50, 117,
+  139, 161, 182, 249, 305, 411, 425, 438, 465, 473, 481, 489, 497, 511, 525, 538,
+  565, 573, 581, 589, 597, 611, 625, 638, 665, 673, 681, 689, 697, 711, 725, 738,
+  765, 773, 781, 789, 797, 832, 899. Of speccheck's twelve it accepts case 3 only.
+  The vectors are copied, with their licenses, commits and SHA-256 sums, in
+  `packages/chain/conformance/vectors/`
+  (`packages/chain/src/chain/outside-vectors.test.ts` checks the sums). No honest
+  signature is touched: a key or an R of small order is not what signing produces.
 - **Whether the signer was AUTHORIZED is a layer above this one**, and §6.2 is
   that layer. §6 is satisfied by a signature that verifies under the key its
   `signerFp` names; that the key was *valid for its anchor at that point in the
@@ -643,8 +682,8 @@ The top-level keys of an event are the keys `event-schema.json` declares under
 paragraph used to read *"the seven top-level keys of an event are `at`, `kind`,
 `payload`, `signerFp`, `subject`, `v` and `who`"*, and that sentence was false: it
 was the INTERSECTION of the published vectors, and `which` and `run` were carried
-by sixteen and three of those same vectors respectively (eighteen and five of the
-thirty-two published today). What falsified it is that
+by sixteen and three of the vectors published then (how many carry them now is
+`canonical-vectors.json`'s to say, not this paragraph's). What falsified it is that
 an independent verifier believed it — it took the intersection, as the sentence
 invited, and **refused an honest event for carrying `which`**, on a record this
 product read as fine (§4.1, gap G25). A required field and an optional one look
