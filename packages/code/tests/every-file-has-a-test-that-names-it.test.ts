@@ -895,7 +895,7 @@ const CLAUSES_PER_FILE: Readonly<Record<string, number>> = {
   'packages/code/src/repl/seen.test.ts': 2,
   'packages/code/src/repl/session.test.ts': 9,
   'packages/code/src/served-patterns.test.ts': 4,
-  'packages/code/src/sigstore/sigstore.test.ts': 18,
+  'packages/code/src/sigstore/sigstore.test.ts': 19,
   'packages/code/src/site/browser/buffer.test.ts': 2,
   'packages/code/src/site/browser/crypto.test.ts': 3,
   'packages/code/src/site/browser/entry.test.ts': 2,

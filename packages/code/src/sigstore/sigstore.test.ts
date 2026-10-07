@@ -29,11 +29,19 @@ import {
 } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
-import { checkpointHash, readTailCheckpoints, witnessSigstorePath } from '@mnema/chain';
+import {
+  accountLinked,
+  checkpointHash,
+  readTailCheckpoints,
+  sealEntry,
+  serializeEntry,
+  witnessSigstorePath,
+} from '@mnema/chain';
 import type { DiscoveryEnv } from '@mnema/core';
 import { fulcioHandler, initializeCA, initializeCTLog } from '@sigstore/mock/dist/fulcio/index.js';
 import { initializeTLog, rekorHandler } from '@sigstore/mock/dist/rekor/index.js';
-import { afterEach, beforeEach, describe, expect, it } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { type CliIo, run } from '../cli.js';
 import { runInit } from '../commands/init.js';
 import { runKeySigstore } from '../commands/key-sigstore.js';
 import { runMemory } from '../commands/memory.js';
@@ -41,7 +49,14 @@ import { runVerify } from '../commands/verify.js';
 import { readSigstoreReceipts } from '../commands/verify-sigstore.js';
 import { runWitnessSigstore } from '../commands/witness.js';
 import { readSigstoreBundle } from './read.js';
-import { type Fetch, type KeyPair, signWithSigstore } from './sign.js';
+import {
+  type Fetch,
+  type HttpAnswer,
+  identityOf,
+  type KeyPair,
+  signWithSigstore,
+  tokenClaims,
+} from './sign.js';
 import { PUBLIC_GOOD_TRUSTED_ROOT } from './trusted-root.js';
 
 const P256 = (): KeyPair => generateKeyPairSync('ec', { namedCurve: 'P-256' });
@@ -314,6 +329,253 @@ describe('what leaves the machine', () => {
   });
 });
 
+/** An answer as `fetch` gives it. */
+const reply = (status: number, text: string): HttpAnswer => ({ status, text: async () => text });
+
+/**
+ * The double with the answer to one address replaced: `answer` gets the body sent and a way to
+ * ask the double itself, and says what comes back instead.
+ */
+function replacing(
+  fetch: Fetch,
+  url: string,
+  answer: (body: string, real: () => Promise<HttpAnswer>) => Promise<HttpAnswer>,
+): Fetch {
+  return async (at, init) =>
+    at === url ? answer(init.body ?? '', () => fetch(at, init)) : fetch(at, init);
+}
+
+/** The digest and message of a checkpoint whose message ends on `toSeq`. */
+function aCheckpoint(toSeq: number): { digest: string; message: Buffer } {
+  const message = Buffer.from(MESSAGE.toString('utf-8').replace('"toSeq":3', `"toSeq":${toSeq}`));
+  return { digest: createHash('sha256').update(message).digest('hex'), message };
+}
+
+describe('when Sigstore answers badly, or not at all', () => {
+  it('says why Fulcio issued no certificate, and sends Rekor nothing', async () => {
+    const cases: readonly [
+      string,
+      (real: () => Promise<HttpAnswer>) => Promise<HttpAnswer>,
+      RegExp,
+    ][] = [
+      ['a refusal', async () => reply(500, 'no'), /^fulcio\.sigstore\.dev answered 500$/],
+      [
+        'a network that failed',
+        async () => {
+          throw new Error('getaddrinfo ENOTFOUND fulcio.sigstore.dev');
+        },
+        /^getaddrinfo ENOTFOUND fulcio\.sigstore\.dev$/,
+      ],
+      [
+        'a failure that is not an Error',
+        async () => {
+          throw 'socket hang up';
+        },
+        /^socket hang up$/,
+      ],
+      ['an answer that is not JSON', async () => reply(200, '<html>'), /JSON/],
+      [
+        'a chain without its timestamp',
+        async () => reply(201, '{"signedCertificateChain":{"certificates":["x"]}}'),
+        /without a certificate that carries its own timestamp/,
+      ],
+      [
+        'a chain whose leaf is not a certificate',
+        async () => reply(201, '{"signedCertificateEmbeddedSct":{"chain":{"certificates":[42]}}}'),
+        /without a certificate that carries its own timestamp/,
+      ],
+    ];
+    for (const [what, answer, said] of cases) {
+      const sigstore = await aSigstore();
+      const signed = await signWithSigstore([{ digest: DIGEST, message: MESSAGE }], {
+        fetch: replacing(sigstore.fetch, FULCIO, (_, real) => answer(real)),
+        token: async () => aToken(LOCAL_CLAIMS),
+      });
+      expect(signed, what).toMatchObject({ ok: false, code: 'NO_CERTIFICATE' });
+      expect(signed.ok ? '' : signed.message, what).toMatch(said);
+      expect(
+        sigstore.asked.filter((a) => a.url === REKOR),
+        what,
+      ).toEqual([]);
+    }
+  });
+
+  it('names each checkpoint Rekor would not log, and still signs the others', async () => {
+    const sigstore = await aSigstore();
+    let call = 0;
+    const fetch = replacing(sigstore.fetch, REKOR, async (_, real) => {
+      call += 1;
+      if (call === 1) return reply(500, 'no');
+      if (call === 2) return reply(201, 'null');
+      const answer = JSON.parse(await (await real()).text()) as Record<
+        string,
+        { verification: { signedEntryTimestamp?: string; inclusionProof: Record<string, unknown> } }
+      >;
+      const entry = Object.values(answer)[0];
+      if (entry === undefined) throw new Error('setup: Rekor logged nothing');
+      if (call === 3) {
+        delete (entry.verification as { inclusionProof?: unknown }).inclusionProof;
+      } else {
+        delete entry.verification.signedEntryTimestamp;
+        delete entry.verification.inclusionProof.hashes;
+      }
+      return reply(201, JSON.stringify(answer));
+    });
+    const four = [aCheckpoint(3), aCheckpoint(4), aCheckpoint(5), aCheckpoint(6)];
+    const signed = await signWithSigstore(four, {
+      fetch,
+      token: async () => aToken(LOCAL_CLAIMS),
+    });
+    if (!signed.ok) throw new Error(`expected a signing, got ${signed.message}`);
+    expect(signed.identity).toBe(EMAIL);
+    expect(signed.checkpoints.map((c) => [c.digest, c.ok ? 'signed' : c.why])).toEqual([
+      [four[0]?.digest, 'rekor.sigstore.dev answered 500'],
+      [four[1]?.digest, 'Rekor answered without an entry and its proof of inclusion'],
+      [four[2]?.digest, 'Rekor answered without an entry and its proof of inclusion'],
+      [four[3]?.digest, 'signed'],
+    ]);
+    // An entry without the promise or the hashes is filed as Rekor gave it: no promise, no hash.
+    const last = signed.checkpoints[3];
+    const entry = (last?.ok ? last.bundle.verificationMaterial.tlogEntries[0] : undefined) as {
+      inclusionPromise?: unknown;
+      inclusionProof: { hashes: unknown[] };
+    };
+    expect(entry.inclusionPromise).toBeUndefined();
+    expect(entry.inclusionProof.hashes).toEqual([]);
+  });
+
+  it('proves the key over the e-mail for the issuers that vouch for one, the subject for any other', async () => {
+    const google = { iss: 'https://accounts.google.com', email: 'g@example.com', sub: '1' };
+    const other = { iss: 'https://gitlab.example', sub: 'project_path:o/r' };
+    for (const [claims, challenge] of [
+      [google, 'g@example.com'],
+      [other, 'project_path:o/r'],
+      [{ iss: 'https://gitlab.example' }, ''],
+    ] as const) {
+      const sigstore = await aSigstore();
+      const key = P256();
+      let sent = '';
+      await signWithSigstore([{ digest: DIGEST, message: MESSAGE }], {
+        fetch: replacing(sigstore.fetch, FULCIO, async (body) => {
+          sent = body;
+          return reply(500, 'no');
+        }),
+        generateKey: () => key,
+        token: async () => aToken(claims),
+      });
+      const proof = (JSON.parse(sent) as { publicKeyRequest: { proofOfPossession: string } })
+        .publicKeyRequest.proofOfPossession;
+      expect(
+        verifySignature(
+          'sha256',
+          Buffer.from(challenge),
+          key.publicKey,
+          Buffer.from(proof, 'base64'),
+        ),
+        claims.iss,
+      ).toBe(true);
+    }
+  });
+
+  it('reads a token’s claims without checking them, and an unreadable token as none', () => {
+    expect(tokenClaims(aToken({ iss: 'x', n: 1 }))).toEqual({ iss: 'x', n: 1 });
+    expect(tokenClaims('opaque')).toEqual({});
+    expect(tokenClaims(`a.${Buffer.from('5').toString('base64url')}.c`)).toEqual({});
+    expect(tokenClaims(`a.${Buffer.from('null').toString('base64url')}.c`)).toEqual({});
+  });
+
+  it('names a certificate with no e-mail and no URI as nobody', () => {
+    const named = (subjectAltName: string | undefined) =>
+      identityOf({ subjectAltName } as unknown as X509Certificate);
+    expect(named(undefined)).toBe('');
+    expect(named('DNS:example.com, IP Address:127.0.0.1')).toBe('');
+    expect(named('DNS:example.com, URI:https://github.com/o/r')).toBe('https://github.com/o/r');
+  });
+
+  it('says why the Actions runner gave no token, and sends Sigstore nothing', async () => {
+    const cases: readonly [string, string, HttpAnswer | undefined, RegExp][] = [
+      ['an address that is not https', 'http://runner.example/token', undefined, /not https/],
+      ['a refusal', 'https://runner.example/token', reply(403, ''), /answered 403/],
+      ['no value', 'https://runner.example/token', reply(200, '{"value":7}'), /gave no token/],
+    ];
+    for (const [what, url, answer, said] of cases) {
+      const sigstore = await aSigstore();
+      if (answer !== undefined)
+        sigstore.answers.set(url, async () => ({
+          status: answer.status,
+          text: await answer.text(),
+        }));
+      const signed = await signWithSigstore([{ digest: DIGEST, message: MESSAGE }], {
+        fetch: sigstore.fetch,
+        env: { ACTIONS_ID_TOKEN_REQUEST_URL: url, ACTIONS_ID_TOKEN_REQUEST_TOKEN: 'secret' },
+      });
+      expect(signed, what).toMatchObject({ ok: false, code: 'NO_TOKEN' });
+      expect(signed.ok ? '' : signed.message, what).toMatch(said);
+      expect(
+        sigstore.asked.filter((a) => a.url === FULCIO || a.url === REKOR),
+        what,
+      ).toEqual([]);
+    }
+  });
+
+  it('says a token that could not be had, even when what failed is not an Error', async () => {
+    const signed = await signWithSigstore([{ digest: DIGEST, message: MESSAGE }], {
+      fetch: async () => reply(500, ''),
+      token: () => Promise.reject('cancelled'),
+    });
+    expect(signed).toEqual({ ok: false, code: 'NO_TOKEN', message: 'cancelled' });
+  });
+
+  it('refuses a browser sign-in whose token is missing, refused or not the one it asked for', async () => {
+    const cases: readonly [string, (nonce: string) => HttpAnswer, RegExp][] = [
+      ['a refusal', () => reply(400, ''), /^oauth2\.sigstore\.dev answered 400$/],
+      ['no token', () => reply(200, '{}'), /^oauth2\.sigstore\.dev gave no token$/],
+      [
+        'the token of another sign-in',
+        (nonce) =>
+          reply(200, JSON.stringify({ id_token: aToken({ ...LOCAL_CLAIMS, nonce: `${nonce}x` }) })),
+        /not the one this sign-in asked for/,
+      ],
+    ];
+    for (const [what, answer, said] of cases) {
+      const sigstore = await aSigstore();
+      let nonce = '';
+      sigstore.answers.set(OAUTH_TOKEN, async () => {
+        const given = answer(nonce);
+        return { status: given.status, text: await given.text() };
+      });
+      let elsewhere = 0;
+      const signed = await signWithSigstore([{ digest: DIGEST, message: MESSAGE }], {
+        fetch: sigstore.fetch,
+        env: {},
+        openBrowser: (url) => {
+          const ask = new URL(url);
+          nonce = ask.searchParams.get('nonce') ?? '';
+          const back = new URL(ask.searchParams.get('redirect_uri') ?? '');
+          // Any other path on the loopback is not the callback, and is answered 404.
+          void globalThis
+            .fetch(`${back.origin}/favicon.ico`)
+            .then((r) => {
+              elsewhere = r.status;
+            })
+            .then(() =>
+              globalThis.fetch(
+                `${back.toString()}?code=c&state=${ask.searchParams.get('state') ?? ''}`,
+              ),
+            );
+        },
+      });
+      expect(signed, what).toMatchObject({ ok: false, code: 'NO_TOKEN' });
+      expect(signed.ok ? '' : signed.message, what).toMatch(said);
+      expect(elsewhere, what).toBe(404);
+      expect(
+        sigstore.asked.filter((a) => a.url === FULCIO),
+        what,
+      ).toEqual([]);
+    }
+  });
+});
+
 describe('reading a bundle, offline', () => {
   async function aBundle() {
     const sigstore = await aSigstore();
@@ -346,6 +608,28 @@ describe('reading a bundle, offline', () => {
       kind: 'not-covered',
       why: /another digest/,
     });
+  });
+
+  it('refuses a bundle that signs an envelope, or names no digest, before any check', async () => {
+    const { text, root } = await aBundle();
+    const bundle = JSON.parse(text) as Record<string, unknown>;
+    const { messageSignature, ...rest } = bundle as { messageSignature: { signature: string } };
+    const envelope = {
+      ...rest,
+      dsseEnvelope: {
+        payload: MESSAGE.toString('base64'),
+        payloadType: 'application/vnd.in-toto+json',
+        signatures: [{ sig: messageSignature.signature, keyid: '' }],
+      },
+    };
+    expect(
+      readSigstoreBundle(JSON.stringify(envelope), { digest: DIGEST, message: MESSAGE }, root),
+    ).toEqual({ kind: 'not-covered', why: 'the bundle signs an envelope, not a checkpoint' });
+    // A message signature with no digest is no v0.3 bundle: the parser refuses it first.
+    const noDigest = { ...rest, messageSignature: { signature: messageSignature.signature } };
+    expect(
+      readSigstoreBundle(JSON.stringify(noDigest), { digest: DIGEST, message: MESSAGE }, root),
+    ).toEqual({ kind: 'not-covered', why: 'not a Sigstore bundle: invalid bundle' });
   });
 
   it('carries the public instance’s root: Fulcio and Rekor at sigstore.dev, nothing else', () => {
@@ -515,6 +799,97 @@ describe('the act, the claim and the reading, over a record', () => {
     expect(readFileSync(stray, 'utf-8')).toBe('{}');
   });
 
+  /** The tail of a project's public tree, and where its files are. */
+  function theTail(ctx: { cwd: string }): { root: string; tail: string; dir: string } {
+    const root = join(ctx.cwd, '.mnema');
+    const tail = readdirSync(join(root, 'tails'))[0] as string;
+    return { root, tail, dir: join(root, 'tails', tail) };
+  }
+
+  it('skips a tail with no checkpoint, and a tree that is not fully signed, and asks nobody', async () => {
+    const unsigned = aProject();
+    // One event more, appended without a key after the last checkpoint: the tree is honest and
+    // no longer fully signed.
+    const { dir } = theTail(unsigned);
+    const segment = join(dir, readdirSync(dir).find((name) => /^\d+\.jsonl$/.test(name)) ?? '');
+    const lines = readFileSync(segment, 'utf-8')
+      .split('\n')
+      .filter((line) => line !== '');
+    const last = JSON.parse(lines.at(-1) ?? '{}') as {
+      event: { at: string; who: string; signerFp: string };
+      link: { tail: string; seq: number; hash: string };
+    };
+    const { at, who, signerFp } = last.event;
+    const later = accountLinked(
+      { at, who, signerFp, subject: who },
+      { service: 'github', account: 'hubot' },
+    );
+    const entry = sealEntry({
+      event: later,
+      tail: last.link.tail,
+      seq: last.link.seq + 1,
+      prev: last.link.hash,
+    });
+    writeFileSync(segment, `${lines.join('\n')}\n${serializeEntry(entry)}\n`);
+
+    sandbox = join(sandbox, 'second');
+    mkdirSync(sandbox);
+    const unsealed = aProject();
+    rmSync(join(theTail(unsealed).dir, 'checkpoints.jsonl'));
+
+    const sigstore = await aSigstore();
+    const network = { fetch: sigstore.fetch, token: async () => aToken(LOCAL_CLAIMS) };
+    const first = await runWitnessSigstore(unsigned, network);
+    expect(first.ok && first.outcomes.map((o) => [o.did, o.detail])).toEqual([
+      [
+        'skipped',
+        expect.stringMatching(
+          /^the tree is [a-z-]+, and a witness is only filed under a checkpoint the verifier proves/,
+        ),
+      ],
+    ]);
+    expect(first.ok && first.signer).toBeUndefined();
+    const second = await runWitnessSigstore(unsealed, network);
+    expect(second.ok && second.outcomes.map((o) => [o.did, o.detail])).toEqual([
+      ['skipped', 'the tail has no checkpoint to witness'],
+    ]);
+    expect(sigstore.asked).toEqual([]);
+    expect(existsSync(join(theTail(unsigned).dir, 'witness'))).toBe(false);
+  });
+
+  it('files no bundle for a checkpoint Rekor would not log, and says why', async () => {
+    const ctx = aProject();
+    const sigstore = await aSigstore();
+    const act = await runWitnessSigstore(ctx, {
+      fetch: replacing(sigstore.fetch, REKOR, async () => reply(503, 'busy')),
+      token: async () => aToken(LOCAL_CLAIMS),
+    });
+    if (!act.ok) throw new Error(act.message);
+    const { root, tail, dir } = theTail(ctx);
+    const head = readTailCheckpoints({ root }, tail).at(-1);
+    const digest = head === undefined ? 'no head' : checkpointHash(head);
+    expect(act.outcomes.map((o) => [o.did, o.detail])).toEqual([
+      ['failed', `checkpoint ${digest} was not logged: rekor.sigstore.dev answered 503`],
+    ]);
+    expect(act.signer?.identity).toBe(EMAIL);
+    expect(existsSync(join(dir, 'witness'))).toBe(false);
+  });
+
+  it('answers with the refusal when Fulcio issues no certificate, and files nothing', async () => {
+    const ctx = aProject();
+    const sigstore = await aSigstore();
+    const act = await runWitnessSigstore(ctx, {
+      fetch: replacing(sigstore.fetch, FULCIO, async () => reply(401, 'no')),
+      token: async () => aToken(LOCAL_CLAIMS),
+    });
+    expect(act).toEqual({
+      ok: false,
+      reason: 'NO_CERTIFICATE',
+      message: 'fulcio.sigstore.dev answered 401',
+    });
+    expect(existsSync(join(theTail(ctx).dir, 'witness'))).toBe(false);
+  });
+
   it('refuses a record with nothing in it, and a claim that is not an identity', () => {
     const repo = join(sandbox, 'empty');
     mkdirSync(repo, { recursive: true });
@@ -528,5 +903,172 @@ describe('the act, the claim and the reading, over a record', () => {
       ok: false,
       code: 'NOT_A_SIGSTORE_IDENTITY',
     });
+  });
+});
+
+/**
+ * THE VERBS AS A PERSON TYPES THEM: `witness sigstore`, `key sigstore` and
+ * `verify --against-sigstore` through the program, in GitHub Actions, where the token is the
+ * job's own. Nothing reaches the network: the platform's `fetch` is the doubles of Fulcio and
+ * Rekor and a runner that hands out a token, and nothing else answers.
+ */
+describe('the verbs, as typed', () => {
+  const WORKFLOW = 'https://github.com/o/r/.github/workflows/witness.yml@refs/heads/main';
+  const RUNNER = 'https://runner.example/token';
+  const KEYS = [
+    'HOME',
+    'GITHUB_ACTIONS',
+    'ACTIONS_ID_TOKEN_REQUEST_URL',
+    'ACTIONS_ID_TOKEN_REQUEST_TOKEN',
+  ] as const;
+  let sandbox: string;
+  let repo: string;
+  let cwd: string;
+  let saved: Partial<Record<(typeof KEYS)[number], string>>;
+  beforeEach(() => {
+    sandbox = mkdtempSync(join(tmpdir(), 'mnema-sigstore-cli-'));
+    repo = join(sandbox, 'repo');
+    mkdirSync(repo);
+    cwd = process.cwd();
+    saved = {};
+    for (const key of KEYS) {
+      const value = process.env[key];
+      if (value !== undefined) saved[key] = value;
+      delete process.env[key];
+    }
+    process.env.HOME = join(sandbox, 'home');
+    process.chdir(repo);
+  });
+  afterEach(() => {
+    process.chdir(cwd);
+    for (const key of KEYS) {
+      const value = saved[key];
+      if (value === undefined) delete process.env[key];
+      else process.env[key] = value;
+    }
+    vi.unstubAllGlobals();
+    rmSync(sandbox, { recursive: true, force: true });
+  });
+
+  async function typed(...argv: string[]) {
+    const out: string[] = [];
+    const err: string[] = [];
+    let failed = false;
+    const io: CliIo = {
+      out: (line) => out.push(line),
+      err: (line) => err.push(line),
+      fail: () => {
+        failed = true;
+      },
+    };
+    await run(argv, io);
+    return { out: out.join('\n'), err: err.join('\n'), failed };
+  }
+
+  /** The doubles as the platform's `fetch`, with a runner that hands out the workflow's token. */
+  async function inActions() {
+    const sigstore = await aSigstore('sub');
+    sigstore.answers.set(RUNNER, async () => ({
+      status: 200,
+      text: JSON.stringify({
+        value: aToken({
+          iss: 'https://token.actions.githubusercontent.com',
+          sub: WORKFLOW,
+          repository_visibility: 'public',
+        }),
+      }),
+    }));
+    vi.stubGlobal('fetch', (url: string, init: Parameters<Fetch>[1]) => sigstore.fetch(url, init));
+    process.env.GITHUB_ACTIONS = 'true';
+    process.env.ACTIONS_ID_TOKEN_REQUEST_URL = RUNNER;
+    process.env.ACTIONS_ID_TOKEN_REQUEST_TOKEN = 'runner-secret';
+    return sigstore;
+  }
+
+  it('countersigns, says who is now in the public log, and that nobody of the record names it', async () => {
+    expect((await typed('init')).failed).toBe(false);
+    const sigstore = await inActions();
+    const act = await typed('witness', 'sigstore');
+    expect(act.failed).toBe(false);
+    const tail = readdirSync(join(repo, '.mnema', 'tails'))[0] as string;
+    expect(act.out).toMatch(
+      new RegExp(
+        `^${tail} \\(public\\): signed — countersigned checkpoint [0-9a-f]{64} — Rekor entry \\d+$`,
+        'm',
+      ),
+    );
+    expect(act.out).toContain(
+      `The certificate names ${WORKFLOW}, vouched for by https://token.actions.githubusercontent.com.`,
+    );
+    expect(act.out).toContain(`${WORKFLOW} is now in Sigstore's public log, which does not forget`);
+    expect(act.out).toContain(`\`mnema key sigstore ${WORKFLOW}\` names it.`);
+    expect(act.out).toContain('Commit the bundle with the record');
+
+    // Asked again, the checkpoint is skipped, nobody is asked and no signer is spoken of.
+    const asked = sigstore.asked.length;
+    const again = await typed('witness', 'sigstore');
+    expect(again.out).toMatch(/: skipped — checkpoint [0-9a-f]{64} is already countersigned$/m);
+    expect(again.out).not.toContain('The certificate names');
+    expect(sigstore.asked.length).toBe(asked);
+
+    // A workflow is recorded as it is, so there is no hash to speak of.
+    const claimed = await typed('key', 'sigstore', WORKFLOW);
+    expect(claimed.out).toMatch(
+      new RegExp(
+        `^Linked mnid:[0-9a-f]+ to the Sigstore identity ${WORKFLOW.replace(/[.]/g, '\\.')}$`,
+        'm',
+      ),
+    );
+    expect(claimed.out).not.toContain('recorded as its hash');
+    expect(claimed.out).not.toContain('The record keeps the SHA-256');
+
+    // The binary reads against the public root it carries, which the doubles are not under.
+    const read = await typed('verify', '--against-sigstore');
+    expect(read.out).toMatch(
+      new RegExp(
+        `^ *sigstore: ${tail} checkpoint [0-9a-f]{12} — not covered: Sigstore's checks refused it: `,
+        'm',
+      ),
+    );
+    expect(read.out).toContain('it is no witness level');
+  });
+
+  it('refuses in Actions without a token to ask for, and sends nothing', async () => {
+    expect((await typed('init')).failed).toBe(false);
+    const sigstore = await inActions();
+    delete process.env.ACTIONS_ID_TOKEN_REQUEST_URL;
+    const act = await typed('witness', 'sigstore');
+    expect(act.failed).toBe(true);
+    expect(act.err).toContain('id-token: write');
+    expect(sigstore.asked).toEqual([]);
+    expect(existsSync(join(repo, '.mnema', 'tails'))).toBe(true);
+  });
+
+  it('says the record keeps the hash of an e-mail, and refuses outside a project', async () => {
+    const outside = await typed('key', 'sigstore', EMAIL);
+    expect(outside.failed).toBe(true);
+    expect(outside.err).toContain('Run `mnema key sigstore` inside the project to record it.');
+    expect((await typed('init')).failed).toBe(false);
+    const claimed = await typed('key', 'sigstore', EMAIL);
+    expect(claimed.out).toContain(
+      'recorded as its hash sha256:12d216f5096c445e7248035ac7d85e586c647ce185aca31774ab10088f7ae51f',
+    );
+    expect(claimed.out).toContain('The record keeps the SHA-256 of the address, not the address');
+  });
+
+  it('says a tree it could not read was not read, rather than reading its bundles', async () => {
+    expect((await typed('init')).failed).toBe(false);
+    const tails = join(repo, '.mnema', 'tails');
+    const tail = readdirSync(tails)[0] as string;
+    const segment = join(tails, tail, '000001.jsonl');
+    writeFileSync(
+      segment,
+      readFileSync(segment, 'utf-8').replace(/"at":"[^"]+"/, '"at":"1999-01-01T00:00:00.000Z"'),
+    );
+    const read = await typed('verify', '--against-sigstore');
+    expect(read.failed).toBe(true);
+    expect(read.out).toContain(
+      'sigstore: the public tree was not read — its verdict is a break, so which checkpoint a bundle is over is not settled',
+    );
   });
 });

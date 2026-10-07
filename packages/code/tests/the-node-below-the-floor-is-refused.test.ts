@@ -125,6 +125,11 @@ describe('the guard’s parts', () => {
   it('does not refuse on a reading it cannot make', () => {
     expect(floorRefusal('20.0.0', 'anything')).toBeUndefined();
     expect(floorRefusal('not a version', '>=22.12.0')).toBeUndefined();
+    // A running version written as a range is no version either, even one below the floor.
+    expect(floorRefusal('^20.0.0', '>=22.12.0')).toBeUndefined();
+    expect(floorRefusal('>=20', '>=22.12.0')).toBeUndefined();
+    // A version short of its minor and patch reads them as zero, and is refused below the floor.
+    expect(floorRefusal('22', '>=22.12.0')).toBeDefined();
   });
 
   it('reads the number from the package’s own `engines`, and that is a shape it reads', () => {
