@@ -18,7 +18,9 @@
  *
  * So this is a k-way merge of per-tail streams, each already in `seq` order. At
  * each step it takes the tail whose next event has the smallest `at`, breaking
- * ties by tail id then `seq`. `at` is only ever compared BETWEEN the heads of
+ * ties by the tail's key — its id, and across trees the tree's position before
+ * it. The key is all there is to break on: two heads of one tail never meet,
+ * because `seq` has already put them in order. `at` is only ever compared BETWEEN the heads of
  * different tails — an approximate, human-legible interleaving hint — and never
  * within a tail, so it can never override the proven order. A plain global sort
  * by `(at, tail, seq)` would break that: a non-monotonic `at` inside one tail
