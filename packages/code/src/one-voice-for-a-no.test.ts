@@ -421,18 +421,19 @@ describe('no parent takes a word of its own, and every one refuses a mistyped su
     const all = parents();
     // The non-vacuity guard: a walk that stopped finding parents would report success.
     expect(all.map((p) => p.path)).toEqual([
-      'task',
       'decision',
       'skill',
-      'run',
+      'task',
+      'switch',
+      'inherit',
+      'witness',
       'check',
       'commit-hook',
       'key',
       'tail',
-      'witness',
-      'switch',
-      'inherit',
+      'run',
     ]);
+
     expect(all.filter((p) => p.positionals > 0).map((p) => p.path)).toEqual([]);
   });
 
@@ -450,17 +451,17 @@ describe('no parent takes a word of its own, and every one refuses a mistyped su
     }
     // Both halves of what used to be two answers, so neither side can go empty and pass.
     expect(sentences).toEqual([
-      'task: has no command',
       'decision: has no command',
       'skill: has no command',
-      'run: has no command',
+      'task: has no command',
+      'switch: has no command',
+      'inherit: has no command',
+      'witness: has no command',
       'check: has no command',
       'commit-hook: has no command',
       'key: has no command',
       'tail: has no command',
-      'witness: has no command',
-      'switch: has no command',
-      'inherit: has no command',
+      'run: has no command',
     ]);
   }, 60_000);
 

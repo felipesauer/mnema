@@ -379,9 +379,9 @@ describe('at a terminal the bare name asks, and the doors are the directory’s'
     expect(theMarkedRow(moved), 'one Down did not move the mark to the last door').toContain(
       doors[1]?.word as string,
     );
-    // AND THE CATALOGUE IS WHAT CHOOSING IT PRINTED — every verb, which is what the door said.
+    // AND THE CATALOGUE IS WHAT CHOOSING IT PRINTED — every verb, which is what the door said, down to its last heading.
     expect(ran.bytes, 'the catalogue was not printed').toContain('Usage: mnema');
-    expect(ran.bytes, 'the catalogue is not the whole catalogue').toContain('completion <shell>');
+    expect(ran.bytes, 'the catalogue is not the whole catalogue').toContain('Help:');
     // AND THE CONSOLE WAS NOT OPENED, which is what a Down that wrapped would have produced.
     expect(ran.bytes, 'the second Down wrapped back to the first door').not.toContain(OPENED);
   }, 300_000);
