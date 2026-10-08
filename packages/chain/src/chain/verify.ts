@@ -175,7 +175,9 @@ export type CensusNote =
   | PartialFinalLineNote
   | ForeignRetractionNote
   | ForeignLinkRetractionNote
-  | RetiredCheckerNote;
+  | RetiredCheckerNote
+  | CitationNotHeldNote
+  | ClockBehindNote;
 
 /**
  * A committed public key with no tail on disk.
@@ -377,6 +379,42 @@ export interface RetiredCheckerNote {
   /** Where the retirement sits. */
   readonly tail: string;
   readonly seq: number;
+  readonly detail: string;
+}
+
+/**
+ * A citation (`after`) of an entry hash this record does not hold.
+ *
+ * The order ignores it: the event is placed as if it cited nothing, and nothing is refused
+ * (FORMAT.md, "Reading many tails"). Innocent causes: a clone that lacks the tail the entry is
+ * on, a tail that was cut. A citation cannot make anything less authentic — it can only hold
+ * its own event back — so an unresolved one is said and not judged.
+ */
+export interface CitationNotHeldNote {
+  readonly kind: 'citation-not-held';
+  /** Where the citing event sits. */
+  readonly tail: string;
+  readonly seq: number;
+  /** The entry hash it cites. */
+  readonly hash: string;
+  readonly detail: string;
+}
+
+/**
+ * A tail whose writer had a clock behind what it had read: events whose `at` is earlier than the
+ * `at` of an entry they cite.
+ *
+ * Measured from the record alone and only informational: the order already puts each such event
+ * after what it cites, so nothing is misplaced. It says how far the clock of a machine was off, which
+ * is what every ordering by `at` that has no citation to lean on is exposed to.
+ */
+export interface ClockBehindNote {
+  readonly kind: 'clock-behind-what-it-read';
+  readonly tail: string;
+  /** How many of its events were stamped before something they cite. */
+  readonly events: number;
+  /** The largest gap, in milliseconds. */
+  readonly behindByMs: number;
   readonly detail: string;
 }
 
@@ -635,6 +673,8 @@ export function verifyChain(
     ...foreignRetractions(tails, entriesByTail),
     ...foreignLinkRetractions(tails, entriesByTail),
     ...retiredCheckers(identity.retiredCheckers),
+    ...citationsNotHeld(identity.citations),
+    ...clocksBehind(identity.citations),
   ];
 
   const ok = allIssues.length === 0;
@@ -886,6 +926,38 @@ function foreignLinkRetractions(
     }
   }
   return found;
+}
+
+/** Every citation the order ignored because the record does not hold what it names. */
+function citationsNotHeld(citations: IdentityResolution['citations']): CitationNotHeldNote[] {
+  return citations.notHeld.map(({ tail, seq, hash }) => ({
+    kind: 'citation-not-held',
+    tail,
+    seq,
+    hash,
+    detail:
+      `the event at seq ${seq} cites ${oneLine(hash.slice(0, 12))}…, an entry this record does ` +
+      'not hold — ignored in the order, which places the event as if it cited nothing',
+  }));
+}
+
+/** One note per tail whose events were stamped before something they cite, in tail order. */
+function clocksBehind(citations: IdentityResolution['citations']): ClockBehindNote[] {
+  const byTail = new Map<string, { events: number; behindByMs: number }>();
+  for (const { tail, byMs } of citations.behind) {
+    const seen = byTail.get(tail) ?? { events: 0, behindByMs: 0 };
+    byTail.set(tail, { events: seen.events + 1, behindByMs: Math.max(seen.behindByMs, byMs) });
+  }
+  return [...byTail].map(([tail, { events, behindByMs }]) => ({
+    kind: 'clock-behind-what-it-read',
+    tail,
+    events,
+    behindByMs,
+    detail:
+      `${events} event(s) stamped before an entry they cite, by up to ` +
+      `${(behindByMs / 1000).toFixed(3)} s — the clock of its writer ran behind what it had read; ` +
+      'the order puts each after what it cites',
+  }));
 }
 
 /**
@@ -1451,6 +1523,10 @@ const CENSUS_CLAUSE: Readonly<Record<CensusNote['kind'], (count: number) => stri
     `${count} link retraction(s) by an identity that did not record the link, not applied (see census — informational, not a break)`,
   'retired-checker': (count) =>
     `${count} retired checker key(s) whose earlier check results are no longer vouched for (see census — informational, not a break)`,
+  'citation-not-held': (count) =>
+    `${count} citation(s) of an entry this record does not hold, ignored in the order (see census — informational, not a break)`,
+  'clock-behind-what-it-read': (count) =>
+    `${count} tail(s) whose clock ran behind what it had read (see census — informational, not a break)`,
 };
 
 /** One clause per kind of note present, in the order the kinds are declared in. */

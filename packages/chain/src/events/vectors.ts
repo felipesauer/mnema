@@ -312,6 +312,22 @@ export const CANONICAL_VECTORS: {
         content: 'The cache is SQLite because the load is relational.',
       }),
     },
+    {
+      // The citation `after` is envelope and not payload, so it rides on any kind; one
+      // row pins its bytes. Two heads of other tails, ascending, the one spelling a set
+      // of citations has.
+      name: 'memory.captured, written after reading the heads of two other tails',
+      event: memoryCaptured(
+        {
+          ...agent(MEMORY_ID),
+          after: [
+            '7777777777777777777777777777777777777777777777777777777777777777',
+            '8888888888888888888888888888888888888888888888888888888888888888',
+          ],
+        },
+        { content: 'Read on top of two other machines.' },
+      ),
+    },
   ],
   'observation.recorded': [
     {

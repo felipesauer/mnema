@@ -11,7 +11,8 @@
     "string[]?": "absent, or a non-empty array of non-empty strings",
     "version": "present, and a whole number of at least 1; with kind it selects this contract",
     "kind": "present, and the non-empty string naming this contract",
-    "instant": "present, and the exact spelling Date.prototype.toISOString produces (UTC, millisecond precision, trailing Z) of a real date"
+    "instant": "present, and the exact spelling Date.prototype.toISOString produces (UTC, millisecond precision, trailing Z) of a real date",
+    "hashes?": "absent, or a non-empty array of entry hashes (64 lower-case hex characters each), in ascending order with no repetition"
   },
   "envelope": {
     "v": "version",
@@ -21,7 +22,8 @@
     "signerFp": "string",
     "subject": "string",
     "which": "string?",
-    "run": "string?"
+    "run": "string?",
+    "after": "hashes?"
   },
   "transitionFields": {
     "reason": "string?",

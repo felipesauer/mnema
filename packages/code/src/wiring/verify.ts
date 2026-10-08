@@ -936,8 +936,10 @@ function report(
  * registered — so they name the fingerprint; the third is about a TAIL whose last line
  * was dropped, and another about a TAIL that holds nothing, so they name the tail; the fourth is about a NOTE a stranger's retraction
  * names, so it names the note — the id a person opens to see it is still there; the fifth is
- * about a checker KEY the record retired, so it names the fingerprint; and a stranger's
- * retraction of a LINK names the link's subject, the record the edge originates from.
+ * about a checker KEY the record retired, so it names the fingerprint; a stranger's
+ * retraction of a LINK names the link's subject, the record the edge originates from; and the
+ * two notes about citations are about a TAIL — the one whose event cites what the record does
+ * not hold, or whose clock ran behind what it had read — so they name the tail.
  */
 function censusLocus(note: CensusNote): string {
   switch (note.kind) {
@@ -947,6 +949,8 @@ function censusLocus(note: CensusNote): string {
       return note.fingerprint;
     case 'empty-tail':
     case 'partial-final-line':
+    case 'citation-not-held':
+    case 'clock-behind-what-it-read':
       return note.tail;
     case 'foreign-retraction':
       return note.note;

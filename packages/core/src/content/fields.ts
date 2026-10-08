@@ -187,9 +187,9 @@ type PayloadPath<K extends EventKind> = string extends keyof PayloadOf<K>
  * codebase already rejected for the consultation's skill id: an invariant enforced
  * only where someone remembered it is a habit, not a property.
  *
- * The other four are derived and must survive verbatim: `kind` comes from the
+ * The other five are derived and must survive verbatim: `kind` comes from the
  * builder, `at` from the clock, `who` from the writing key, `signerFp` from that same
- * key. `v` is a number and is no field of this table — there is nothing textual to
+ * key, and `after` from the entry hashes the writer read off the other tails. `v` is a number and is no field of this table — there is nothing textual to
  * screen.
  */
 /**
@@ -207,6 +207,7 @@ export const ENVELOPE_TEXT = {
   signerFp: 'identifier',
   which: 'name',
   run: 'name',
+  after: 'identifier',
 } as const satisfies {
   readonly [P in Exclude<TextPath<Envelope>, 'subject'>]: FieldNature;
 };

@@ -90,8 +90,12 @@ export type FieldRule =
  *   `at` through the clock, which IS `toISOString`, so a well-formed `at` is not
  *   merely "some ISO-8601 string" but this one canonical spelling — which is what
  *   makes the ordering invariant enforceable rather than merely documented.
+ * - `hashes?` — absent, or a non-empty array of entry hashes (64 lower-case hex
+ *   characters each) in ascending order with no repetition. The order is fixed so
+ *   that one set of citations has one spelling: an array's order is part of its
+ *   canonical bytes (section 1), so a free order would give one set two digests.
  */
-export type EnvelopeRule = FieldRule | 'version' | 'kind' | 'instant';
+export type EnvelopeRule = FieldRule | 'version' | 'kind' | 'instant' | 'hashes?';
 
 /**
  * The envelope every kind carries, and the rule on each field.
@@ -117,6 +121,7 @@ export const ENVELOPE_SCHEMA: { readonly [F in keyof Required<Envelope>]: Envelo
   subject: 'string',
   which: 'string?',
   run: 'string?',
+  after: 'hashes?',
 };
 
 /**
@@ -278,6 +283,9 @@ export const RULE_GLOSSARY: { readonly [R in EnvelopeRule]: string } = {
   instant:
     'present, and the exact spelling Date.prototype.toISOString produces ' +
     '(UTC, millisecond precision, trailing Z) of a real date',
+  'hashes?':
+    'absent, or a non-empty array of entry hashes (64 lower-case hex characters each), ' +
+    'in ascending order with no repetition',
 };
 
 /** One published contract: the payload a `(kind, v)` pair declares. */

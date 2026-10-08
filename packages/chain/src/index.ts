@@ -20,6 +20,14 @@ export {
   type RegistrationFault,
   readRegistration,
 } from './chain/backup.js';
+export {
+  type CausalOrder,
+  type CitationHeld,
+  type CitationNotHeld,
+  causalOrder,
+  type OrderKeys,
+  type TailToOrder,
+} from './chain/causal-order.js';
 export { type OpenOptions, openChainForWriting, signerAt, verify } from './chain/chain.js';
 export {
   type Checkpoint,
