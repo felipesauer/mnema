@@ -1,4 +1,4 @@
-import { stackDigest } from './digest.js';
+import { type StackFile, stackDigest } from './digest.js';
 import { readStackFiles } from './files.js';
 import { readFrontmatter } from './frontmatter.js';
 import {
@@ -42,7 +42,18 @@ const text = (bytes: Uint8Array): string => Buffer.from(bytes).toString('utf8');
  * `brings` is not what the files hold.
  */
 export function validateStack(root: string): StackReport {
-  const { files, problems: readProblems } = readStackFiles(root);
+  const { files, problems } = readStackFiles(root);
+  return validateStackFiles(files, problems);
+}
+
+/**
+ * {@link validateStack} over files already read — from a directory by `readStackFiles`, or from
+ * an archive by `readStackArchive` — with the problems the reading found.
+ */
+export function validateStackFiles(
+  files: readonly StackFile[],
+  readProblems: readonly Problem[],
+): StackReport {
   const problems: Problem[] = [...readProblems];
   const add = (code: Problem['code'], path: string | undefined, message: string): void => {
     if (!problems.some((p) => p.code === code && p.path === path && p.message === message)) {
