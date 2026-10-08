@@ -1,9 +1,9 @@
 /**
  * A NODE BELOW THE FLOOR IS REFUSED IN ONE LINE, before anything that needs it is loaded.
  *
- * WHAT WAS WRONG. The package installs on Node 20 with a warning, and then `mnema search` dies with
- * `Segmentation fault` (exit 139, nothing printed): the SQLite addon is built for the ABI of Node 22
- * and later. See `src/node-floor.ts` for the measurement and the mechanism.
+ * WHAT WAS WRONG. The package installs on a Node below its floor with a warning, and then the first
+ * import that needs a newer runtime dies with a stack trace instead of a sentence. See
+ * `src/node-floor.ts` for the mechanism.
  *
  * WHAT IS RUN. The built binary, on this machine's Node, with the version it reports lowered by a
  * preloaded module — so each alternative of the range is asked about the version just under its
@@ -145,7 +145,7 @@ describe('the guard’s parts', () => {
     const source = readFileSync(join(PACKAGE, 'src', 'cli.ts'), 'utf-8');
     const imports = [...source.matchAll(/^import\s.*?['"]([^'"]+)['"];?$/gm)].map((m) => m[1]);
     expect(imports[0]).toBe('./node-floor.js');
-    // And the guard itself imports nothing that loads a native addon: only `node:fs`.
+    // And the guard itself imports nothing that needs a newer Node: only `node:fs`.
     const guard = readFileSync(join(PACKAGE, 'src', 'node-floor.ts'), 'utf-8');
     const guardImports = [...guard.matchAll(/^import\s.*?['"]([^'"]+)['"];?$/gm)].map((m) => m[1]);
     expect(guardImports).toEqual(['node:fs']);

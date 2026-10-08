@@ -40,7 +40,7 @@
 
 import type { CatalogEvent } from '@mnema/chain';
 import { dropProjections, ensureSchema, type ProjectionTable } from '../db/schema.js';
-import type { SqliteDatabase } from '../db/sqlite.js';
+import { inTransaction, type SqliteDatabase } from '../db/sqlite.js';
 import { type Accumulated, accumulate } from './accumulate.js';
 import { projectChannelSwitches } from './channel.js';
 import { materializeChannelSwitches } from './channel-store.js';
@@ -222,7 +222,7 @@ const FOLDED_TABLES: readonly Exclude<ProjectionTable, 'refs'>[] = [
  */
 export function rebuild(db: SqliteDatabase, events: readonly CatalogEvent[]): void {
   const folded = foldAll(events);
-  const replace = db.transaction(() => {
+  inTransaction(db, () => {
     dropProjections(db);
     ensureSchema(db);
     for (const table of FOLDED_TABLES) materialize(db, table, folded);
@@ -232,5 +232,4 @@ export function rebuild(db: SqliteDatabase, events: readonly CatalogEvent[]): vo
     // from a second pass could disagree with the tables about both.
     materializeReferences(db, events);
   });
-  replace();
 }

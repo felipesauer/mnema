@@ -3,15 +3,14 @@
  *
  * THE DEFECT. The package declares `engines.node`, but `engines` is advice to the
  * installer: npm prints `EBADENGINE` and installs anyway, and the consumer does not inherit the
- * workspace's `engine-strict`. Measured on Node 20.20.2: `mnema init`, `decision record` and
- * `verify` ran, and `mnema search` — the first verb to open the SQLite projection, whose native
- * addon is built for the ABI of Node 22 and later — died with `Segmentation fault`, exit 139, and
- * not one word. A person on a runtime the package says it does not support got a crash that looks
- * like the product's.
+ * workspace's `engine-strict`. A person on a runtime the package says it does not support then
+ * gets whatever the first module that needs a newer one throws — a stack trace out of an import,
+ * which looks like the product's fault. The floor is where `node:sqlite` is a release candidate
+ * and where `@sigstore/verify` and the Ed25519 rule of the verifier start to hold.
  *
  * THE GUARD. `cli.ts` imports this module before every other import, and an ES module's
  * dependencies are evaluated in the order they are written, so this runs before `@mnema/core`
- * (which reaches the native addon) and before `commander` (which has a floor of its own). Below
+ * (which imports `node:sqlite`) and before `commander` (which has a floor of its own). Below
  * the floor it says one line and exits 1.
  *
  * THE NUMBER IS NOT HERE. It is `engines.node` in this package's own `package.json`, read at run

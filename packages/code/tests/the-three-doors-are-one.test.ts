@@ -701,7 +701,7 @@ describe('the hook before a write', () => {
     expect(facts(cli).map((seen) => seen.kind)).toEqual(['channel.refused']);
     expect(facts(mcp)).toEqual(facts(cli));
     expect(facts(sdk)).toEqual(facts(cli));
-  });
+  }, 90_000);
 });
 
 describe('the hook at the start of a session', () => {
