@@ -230,7 +230,7 @@ anything waits on it. It reads.
 
 ## Where it runs
 
-The trunk's suite runs it on both runtimes the repository declares, through
+The trunk's suite runs it on each of the three Node cells the repository's CI declares (the floor's exact patch, the current 24 and 26), through
 [`../src/chain/second-reader-agrees-on-the-record.test.ts`](../src/chain/second-reader-agrees-on-the-record.test.ts),
 [`second-reader-agrees-on-the-bytes.test.ts`](../src/chain/second-reader-agrees-on-the-bytes.test.ts)
 and

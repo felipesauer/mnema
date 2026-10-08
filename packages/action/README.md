@@ -75,7 +75,7 @@ jobs:
 ```
 
 `pull-requests: write` is there for the comment alone; `contents: read` is all the checkout needs.
-The action runs on `node24`, and starts the `mnema` binary with that same Node, not with the one `actions/setup-node` puts on the `PATH`.
+The action runs on `node24`, and starts the `mnema` binary with that same Node, not with the one `actions/setup-node` puts on the `PATH`. That Node is the one the runner carries for `node24` actions: GitHub's hosted runner is above the floor, and a self-hosted runner older than v2.334.0 (which carries 24.14.0) refuses to run the binary.
 
 ### Running the checks
 

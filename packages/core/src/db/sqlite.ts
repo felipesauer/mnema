@@ -11,7 +11,30 @@
 
 import { mkdirSync } from 'node:fs';
 import { dirname } from 'node:path';
-import Database, { type Database as SqliteDatabase } from 'better-sqlite3';
+import { DatabaseSync } from 'node:sqlite';
+
+/**
+ * A prepared statement as the stores use it. Rows come back as what the driver makes of them and
+ * each store says what it expects of its own, so `get` and `all` are `unknown` and the one place
+ * that reads a row names its shape; parameters are the driver's own (positional or one object of
+ * named values) and it is the driver that refuses what it cannot bind.
+ */
+export interface SqliteStatement {
+  get(...params: unknown[]): unknown;
+  all(...params: unknown[]): unknown[];
+  run(...params: unknown[]): {
+    readonly changes: number | bigint;
+    readonly lastInsertRowid: number | bigint;
+  };
+}
+
+/**
+ * The handle the cache is held in: `node:sqlite`'s, which the runtime ships, with `prepare`
+ * typed by {@link SqliteStatement}.
+ */
+export type SqliteDatabase = Omit<DatabaseSync, 'prepare'> & {
+  prepare(sql: string): SqliteStatement;
+};
 
 /** How long a blocked writer waits on a busy database before giving up. */
 export const BUSY_TIMEOUT_MS = 5000;
@@ -29,18 +52,19 @@ export const IN_MEMORY = ':memory:';
  *   - `busy_timeout`: tolerate brief writer contention instead of erroring.
  *
  * Creates the parent directory first: the cache lives under a git-ignored state
- * directory that may not exist yet on a fresh checkout, and better-sqlite3
- * throws a bare error when the folder is missing.
+ * directory that may not exist yet on a fresh checkout, and SQLite
+ * fails with a bare error when the folder is missing.
  */
 export function openDatabase(path: string): SqliteDatabase {
   if (path !== IN_MEMORY) {
     mkdirSync(dirname(path), { recursive: true });
   }
-  const db = new Database(path);
-  db.pragma('journal_mode = WAL');
-  db.pragma('synchronous = NORMAL');
-  db.pragma('foreign_keys = ON');
-  db.pragma(`busy_timeout = ${BUSY_TIMEOUT_MS}`);
+  const db = new DatabaseSync(path, {
+    enableForeignKeyConstraints: true,
+    timeout: BUSY_TIMEOUT_MS,
+  });
+  db.exec('PRAGMA journal_mode = WAL');
+  db.exec('PRAGMA synchronous = NORMAL');
   return rememberingStatements(db);
 }
 
@@ -59,19 +83,62 @@ const REMEMBERED_STATEMENTS = 256;
  * The memory is bounded: the statements this package builds are a fixed set plus the search's
  * combinations of conditions, and a handle that somehow saw more than the bound starts again.
  */
-function rememberingStatements(db: SqliteDatabase): SqliteDatabase {
-  const prepare = db.prepare.bind(db) as (sql: string) => ReturnType<SqliteDatabase['prepare']>;
-  const known = new Map<string, ReturnType<SqliteDatabase['prepare']>>();
-  db.prepare = ((sql: string) => {
+function rememberingStatements(db: DatabaseSync): DatabaseSync {
+  const prepare = db.prepare.bind(db);
+  const known = new Map<string, ReturnType<DatabaseSync['prepare']>>();
+  db.prepare = (sql: string) => {
     const remembered = known.get(sql);
     if (remembered !== undefined) return remembered;
     const statement = prepare(sql);
     if (known.size >= REMEMBERED_STATEMENTS) known.clear();
     known.set(sql, statement);
     return statement;
-  }) as SqliteDatabase['prepare'];
+  };
   return db;
 }
 
-/** Re-exported so callers type against the driver without importing it directly. */
-export type { SqliteDatabase };
+/**
+ * Runs `work` as one transaction and returns what it returns; if it throws, everything it wrote
+ * is undone and the error goes up.
+ *
+ * `node:sqlite` has no transaction helper, so this is the one. Called on a handle that is already
+ * inside a transaction (`advance` runs inside the refresh's), it is a savepoint instead — the
+ * inner failure rolls back to where it began and the outer transaction decides what to do with
+ * the error. `immediate` takes the write lock at `BEGIN`, not at the first write: two processes
+ * that mean to write serialize there, rather than one of them finding out mid-way that it
+ * cannot.
+ */
+export function inTransaction<T>(
+  db: SqliteDatabase,
+  work: () => T,
+  options: { readonly immediate?: boolean } = {},
+): T {
+  if (db.isTransaction) {
+    db.exec(`SAVEPOINT ${SAVEPOINT}`);
+    try {
+      const result = work();
+      db.exec(`RELEASE ${SAVEPOINT}`);
+      return result;
+    } catch (error) {
+      // SQLite rolls some failures back whole (`INSERT OR ROLLBACK`, a full disk): the savepoint is
+      // gone with the transaction, and naming it would put its own error in place of this one.
+      if (db.isTransaction) {
+        db.exec(`ROLLBACK TO ${SAVEPOINT}`);
+        db.exec(`RELEASE ${SAVEPOINT}`);
+      }
+      throw error;
+    }
+  }
+  db.exec(options.immediate === true ? 'BEGIN IMMEDIATE' : 'BEGIN');
+  try {
+    const result = work();
+    db.exec('COMMIT');
+    return result;
+  } catch (error) {
+    // SQLite rolls some failures back by itself; there is then nothing left to undo.
+    if (db.isTransaction) db.exec('ROLLBACK');
+    throw error;
+  }
+}
+
+const SAVEPOINT = 'mnema_nested';

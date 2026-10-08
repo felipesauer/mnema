@@ -26,7 +26,7 @@ import {
   taskTransitioned,
 } from '@mnema/chain';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
-import { openDatabase } from '../db/sqlite.js';
+import { inTransaction, openDatabase } from '../db/sqlite.js';
 import { ProjectionCache } from './cache.js';
 
 let chainRoot: string;
@@ -1023,6 +1023,23 @@ describe('openDatabase', () => {
     db.exec('CREATE TABLE t (x)');
     db.prepare('INSERT INTO t VALUES (1)').run();
     expect(db.prepare('SELECT x FROM t').get()).toEqual({ x: 1 });
+    db.close();
+  });
+
+  it('a savepoint SQLite already rolled back with its transaction leaves the original error standing', () => {
+    const db = openDatabase(':memory:');
+    db.exec('CREATE TABLE t (x INTEGER PRIMARY KEY)');
+    db.exec('INSERT INTO t VALUES (1)');
+    let said = '';
+    try {
+      inTransaction(db, () =>
+        inTransaction(db, () => db.prepare('INSERT OR ROLLBACK INTO t VALUES (1)').run()),
+      );
+    } catch (error) {
+      said = (error as Error).message;
+    }
+    expect(said).toMatch(/UNIQUE constraint failed/);
+    expect(db.isTransaction).toBe(false);
     db.close();
   });
 });
