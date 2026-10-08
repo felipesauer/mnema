@@ -663,7 +663,7 @@ export const HANDED_OVER: Readonly<
   // line 84 for the row of the evidence page that names what `mnema brief --hook` prints.
   // line 85 and name 153 for the changelog entry on the one-line `mnema verify` and the page that
   // sets a signed commit beside the record (`mnema verify`, `mnema verify --since`), looked at.
-  span: { line: 85, name: 153, flag: 1, unwritten: 0 },
+  span: { line: 84, name: 153, flag: 1, unwritten: 0 },
   // name 18 until the page that says where the key lives named `mnema key protect` in a line of
   // its own.
   // line 35 until the same page showed that question in a block of its own.
@@ -718,7 +718,8 @@ export const HANDED_OVER: Readonly<
   // line 76 and name 77 for the help of `mnema doctor`, which names the one thing it writes,
   // `mnema doctor --fix vscode`, in a line of its own.
   // line 81 and name 83 with both: the Sigstore help and the promotion and doctor help.
-  source: { line: 81, name: 83, flag: 4, unwritten: 3 },
+  // unwritten 4 once the console named a member of a group by its whole path as well as a verb.
+  source: { line: 81, name: 83, flag: 4, unwritten: 4 },
 };
 
 // ---------------------------------------------------------------------------

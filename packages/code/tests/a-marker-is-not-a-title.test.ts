@@ -202,9 +202,9 @@ describe('a marker the product prints where a reference goes', () => {
       ['link', task, 'src/a.ts', '--rel', marker],
       ['link', marker, 'src/a.ts', '--rel', 'governs'],
       ['observe', marker, '--topic', 'clocks', '--text', 'it was slow'],
-      ['handoff', marker, 'a', 'b'],
-      ['handoff', task, marker, 'b'],
-      ['handoff', task, 'a', marker],
+      ['task', 'handoff', marker, 'a', 'b'],
+      ['task', 'handoff', task, marker, 'b'],
+      ['task', 'handoff', task, 'a', marker],
     ];
   }
 

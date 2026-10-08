@@ -1,29 +1,41 @@
 /**
- * `mnema resume --actor <id>` — where an actor left off: their latest run.
+ * `mnema resume --actor <id>` — where an actor left off: their latest run, and the runs they
+ * still have open.
  *
- * The sibling of `focus`, and the same read-only shape: open a projection cache over
- * every tree of the project, rebuild, and hand them to the context package's PURE `resume`
- * derivation. It opens no writer, emits no event, mints no key. The
- * actor is a required flag for the same reason `focus` requires it — the record
- * has no "current actor", an invocation of this CLI has no session `who`, and
- * deriving one would touch key material the surface must not own. The derivation
- * takes the actor as a parameter, so passing it keeps the read truly read-only.
+ * A read opens the projection cache over every tree of the project, rebuilds it, and hands it
+ * to the context package's PURE `resume` derivation — that is all. It opens NO writer, emits no
+ * event, mints no key: it is read-only in the strict sense the boundary and `verify` mean it.
+ * The derivation is the logic; the adapter only resolves the tree and forwards the actor.
  *
- * IT SAID *THE CLI* HAS NO SESSION `who`, and the console is one: `mnema repl`
- * resolves the identity from local material with no writer opened, and fills this flag
- * in for a caller who would otherwise type back what its own panel shows
- * (`repl/asking.ts`). The declaration and its reason are untouched — see `focus.ts`,
- * where the whole argument is written out.
+ * `resume` answers "where was I" even for a run that ALREADY ENDED — the latest run by start
+ * time, open or not, carries the goal that reminds the actor what it was — and the derivation
+ * CONTAINS the actor's open runs, which is why a verb of their own (`focus`) went into this one.
  *
- * `resume` answers "where was I" even for a run that ALREADY ENDED — the latest
- * run by start time, open or not, carries the goal that reminds the actor what it
- * was — and composes the actor's current `focus` for the "what is still open"
- * half. The adapter adds nothing; it only resolves the tree and forwards.
+ * WHY THE ACTOR IS EXPLICIT. This is always SOMEONE's reading, and the record carries no notion
+ * of a "current actor" — a `who` is only ever stamped on past events. The MCP surface has a
+ * session and reads its `who`; the CLI has none, and the only way to derive the machine's `who`
+ * without a writer is to touch key material — which mints a key on a fresh machine and is
+ * domain logic the surface must not own. So the actor is a required flag (`--actor`): the
+ * derivation already takes it as a parameter, and passing it in keeps the read truly read-only.
+ * A caller reads their identity from `mnema init`, `mnema audit accountability` or the
+ * bootstrap — never from `mnema verify`, which prints no identity at all.
  *
- * It reads runs from every tree, for the reason `focus` does: a run lives in the
- * tree of the fact it authorizes, so one session's runs are spread across the trees
- * it wrote to. And every tree answers a second question either way — the identities
- * the record knows, which decide how short the actor may be written.
+ * IT SAID *THE CLI* HAS NO SESSION `who`, and the console is one: `mnema repl` resolves the
+ * identity from local material with no writer opened (`repl/standing.ts`), and fills this flag
+ * in for a caller who would otherwise type back what its own panel shows (`repl/asking.ts`).
+ * What is unchanged is this declaration and every word of the reason for it: an INVOCATION has
+ * no session, `mnema resume` at a shell asks for the actor exactly as it always has, and nothing
+ * anywhere derives a `who` by touching key material.
+ *
+ * The runs come from EVERY tree the project can see, and that is the correction a run per
+ * destination forced. A run opens in the tree the fact it authorizes lands in, and what a
+ * session records is routed by KIND — so one session's runs are spread across the trees it wrote
+ * to, and asking one of them reported a fraction of the actor's work while looking like the
+ * whole answer. With no project here, there is nothing to read, so it refuses `NO_PROJECT`
+ * rather than reporting a hollow empty answer. Every tree also answers a second question, which
+ * identities this record knows — what decides how short the actor can be written and what a
+ * typed prefix may mean. That set has to be the record's: an identity is not less real for
+ * having written only in the team's tree.
  */
 
 import { type Resume, resume } from '@mnema/context';
@@ -50,7 +62,7 @@ export interface ResumeContext {
 /** Where the actor left off, over the tree that was read. */
 export interface ResumeDone {
   readonly ok: true;
-  /** The derivation's result — the actor's latest run and current focus. */
+  /** The derivation's result — the actor's latest run and the runs they have open. */
   readonly resume: Resume;
   /** How each identity this record knows is written for a person. */
   readonly anchors: AnchorForms;
@@ -86,8 +98,7 @@ export function runResume(
   input: { actor: string },
 ): ResumeDone | ResumeRefused {
   const trees = resolveTrees(ctx.cwd, ctx.env);
-  // The committed tree, for the reason `focus` gives: it is where a command-line run
-  // is born, and both project trees are present or absent together anyway.
+  // The committed tree, because it is where a command-line run is born, and both project trees are present or absent together anyway.
   if (trees.projectPublic === undefined) {
     return { ok: false, reason: 'NO_PROJECT' };
   }
@@ -101,7 +112,7 @@ export function runResume(
       ok: true,
       anchors,
       linkBreaks: linkBreaksOf(sources, THE_READING_THAT_OPENED_THESE),
-      // Empty, like `focus`: a read opens no run, so nothing here is this command's
+      // Empty: a read opens no run, so nothing here is this command's
       // own and the "prefer my own run" rule has nothing to prefer. The answer stays
       // what it was — the actor's latest run — which is the right one for a person
       // asking from the command line about work an agent did.

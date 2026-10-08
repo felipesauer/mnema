@@ -44,7 +44,7 @@
  * facts of one session sorted by it would be precision the record does not have.
  *
  * IT POINTS AND DOES NOT CONCLUDE, like the shapes beside it, and it is not a gate: no
- * move is refused, no exit code changes, and nothing here is written. `mnema antipatterns`
+ * move is refused, no exit code changes, and nothing here is written. `mnema audit antipatterns`
  * is where it surfaces, on the command line only — the agent's surface gets no tool for
  * it, because handing an agent a reading of whether it consulted before it moved inverts
  * the axis the product is built on (the MCP surface is the agent's, the command line is

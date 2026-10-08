@@ -470,14 +470,15 @@ describe('the list of open runs prints one line per run', () => {
   it('prints as many lines as it says there are runs', async () => {
     const actor = await anchorOf(io, lines);
     lines.length = 0;
-    await run(['focus', '--actor', actor], io);
+    await run(['resume', '--actor', actor], io);
 
-    // The header says how many runs are open; the reader counts lines to check it,
-    // so the two must agree even when every field on the line was written to break.
-    const header = lines[0] ?? '';
-    const said = Number(/— (\d+) open run/.exec(header)?.[1]);
+    // The second line says how many runs are open; the reader counts lines to check it,
+    // so the two must agree even when every field on the line was written to break. The
+    // first line is where the actor left off, and it is one line for the same reason.
+    const header = lines[1] ?? '';
+    const said = Number(/(\d+) run\(s\) still open/.exec(header)?.[1]);
     expect(said).toBe(2);
-    expect(lines).toHaveLength(1 + said);
+    expect(lines).toHaveLength(2 + said);
   });
 
   it('is the REPORT that holds the line, not the record — `--json` keeps the break', async () => {
@@ -487,17 +488,17 @@ describe('the list of open runs prints one line per run', () => {
     // exactly as it was written.
     const actor = await anchorOf(io, lines);
     lines.length = 0;
-    await run(['focus', '--actor', actor, '--json'], io);
+    await run(['resume', '--actor', actor, '--json'], io);
 
-    const emitted = JSON.parse(lines.join('\n')) as { openRuns: { agent: string }[] };
-    expect(emitted.openRuns.map((open) => open.agent).join('')).toMatch(/[\n\r]/);
+    const emitted = JSON.parse(lines.join('\n')) as { focus: { openRuns: { agent: string }[] } };
+    expect(emitted.focus.openRuns.map((open) => open.agent).join('')).toMatch(/[\n\r]/);
   });
 });
 
-/** This machine's anchor, read off the record — the actor `focus` takes. */
+/** This machine's anchor, read off the record — the actor `resume` takes. */
 async function anchorOf(io: CliIo, lines: string[]): Promise<string> {
   lines.length = 0;
-  await run(['accountability', '--json'], io);
+  await run(['audit', 'accountability', '--json'], io);
   const anchor = /"who": "(mnid:[0-9a-z]+)"/.exec(lines.join('\n'))?.[1];
   if (anchor === undefined) throw new Error(`no anchor in ${lines.join(' / ')}`);
   return anchor;

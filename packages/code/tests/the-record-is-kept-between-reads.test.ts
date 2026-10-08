@@ -79,9 +79,9 @@ const READS: readonly (readonly string[])[] = [
   ['status'],
   ['brief'],
   ['recall'],
-  ['accountability'],
+  ['audit', 'accountability'],
   ['rules', 'src'],
-  ['skills'],
+  ['skill', 'provenance'],
 ];
 
 /** A project with a handful of facts, founded through the binary. */

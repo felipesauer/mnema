@@ -11,7 +11,7 @@
  * `audit-feed.ts` carried, and it claimed a verification this verb does not perform:
  * `signerFp` names the credential that signed the ORIGINAL fact, while whether a signature
  * covers that fact is a question for `mnema verify`, and nothing in this projection is an
- * attestation. The reason for the envelope is `mnema exposure`'s: the product refuses to
+ * attestation. The reason for the envelope is `mnema audit exposure`'s: the product refuses to
  * print a value that looks like a credential even to the person standing in front of the
  * record, and a feed carrying bodies would push exactly that off the machine and into an
  * index. `@mnema/context`'s `audit-feed.ts` holds the argument in full and enforces it in

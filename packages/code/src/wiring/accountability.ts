@@ -1,7 +1,7 @@
 /**
- * The `mnema accountability` wiring: what it declares, and what it prints.
+ * The `mnema audit accountability` wiring: what it declares, and what it prints.
  *
- * `mnema accountability [--from --to --who --which] [--json]` — who authorized
+ * `mnema audit accountability [--from --to --who --which] [--json]` — who authorized
  * what over the whole record. No filter = everything (git shortlog -sn); the
  * flags only narrow. The human summary is one level (total, and one line per
  * who with their count); the nested byKind/byWhich is in --json. Beside each
@@ -18,7 +18,7 @@ import { ACTOR_HELP } from './options.js';
 import { reportRefusal } from './report.js';
 import { type Declared, readsTheRecord, type Wiring } from './verb.js';
 
-/** Registers `mnema accountability` on the program. */
+/** Registers `mnema audit accountability` on the `audit` group. */
 export function registerAccountability(program: Command, wiring: Wiring): Declared {
   const { io, render } = wiring;
   const accountability = program

@@ -36,7 +36,7 @@
  * A LINE THAT HOLDS A CREDENTIAL IS WITHHELD, AND THIS IS THE ONE PLACE THE PRODUCT DOES IT.
  * Every surface screens what goes IN — a credential in a recognized format is replaced
  * before it is written — and the reads serve the record as it is, because what it held
- * before the door existed is `mnema exposure`'s to find, not a read's to hide. A PUSHED
+ * before the door existed is `mnema audit exposure`'s to find, not a read's to hide. A PUSHED
  * channel is different in the one respect that matters: nobody asked, and the text leaves
  * this machine with every session that opens. So a note whose line still carries a
  * credential the door would have recognized — written before the door, or by anything else

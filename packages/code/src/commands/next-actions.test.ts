@@ -32,7 +32,7 @@ function projectWithTask(): { repo: string; env: DiscoveryEnv; id: string } {
   return { repo, env, id: created.id };
 }
 
-describe('mnema next-actions', () => {
+describe('mnema task next', () => {
   it('lists the legal moves from a DRAFT task’s state', () => {
     const { repo, env, id } = projectWithTask();
     const result = runNextActions({ cwd: repo, env }, { id });

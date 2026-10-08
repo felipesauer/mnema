@@ -24,7 +24,7 @@
  * choice. A pattern appears as its name and a decision as its title and `ADR-<n>`
  * label; neither body is here, and `mnema show <id>` is the second read that serves one
  * (see `context/src/context/bootstrap.ts`). A work item carries no move list for the
- * same reason — `mnema next-actions <id>` is its second read.
+ * same reason — `mnema task next <id>` is its second read.
  *
  * A CUT SAYS IT WAS CUT. Three of the four lists are capped by the derivation and carry
  * their own total, so each header reads `3 of 12` when it was capped and `3` when it was
@@ -313,7 +313,7 @@ function skillLines(render: Render, status: Bootstrap): string[] {
  *
  * The `kind` is a column of its own rather than folded into the title, because it is
  * what says which second read serves the rest of the item — `mnema show <id>` for a
- * decision's argument or a pattern's text, `mnema next-actions <id>` for the pair of
+ * decision's argument or a pattern's text, `mnema task next <id>` for the pair of
  * verdicts a task in review allows, which are different things to go and read.
  */
 function awaitingLines(render: Render, status: Bootstrap): string[] {

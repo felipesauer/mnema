@@ -99,8 +99,8 @@ beforeAll(async () => {
   process.chdir(project);
   await invoke('init');
   await invoke('decision', 'record', 'The first', 'because');
-  // A task and an adopted pattern, because three of the reads take one: `next-actions`
-  // and `guard` are about a task, and `show` is about a record with a body. Every value
+  // A task and an adopted pattern, because three of the reads take one: `task next`
+  // and `task guard` are about a task, and `show` is about a record with a body. Every value
   // here is one the PRODUCT produced — the ids are read back out of what it printed, so
   // no case runs over a state no write can reach.
   const made = await invoke('task', 'create', 'The work');
@@ -114,7 +114,7 @@ beforeAll(async () => {
   // fixture about a record no write can produce.
   await invoke('skill', 'move', 'review', skill, '--note', 'read it');
   await invoke('skill', 'move', 'adopt', skill, '--note', 'this is how');
-  const account = await invoke('accountability', '--json');
+  const account = await invoke('audit', 'accountability', '--json');
   const found = /"who": "(mnid:[0-9a-z]+)"/.exec(account.out.join(LF))?.[1];
   if (found === undefined) throw new Error(`fixture: no identity in ${account.out.join(LF)}`);
   who = found;
@@ -152,15 +152,14 @@ const READS: readonly (readonly [name: string, argv: () => readonly string[]])[]
   ['timeline', () => ['timeline', task]],
   ['refs', () => ['refs', task]],
   ['rules', () => ['rules', 'src/index.ts']],
-  ['skills', () => ['skills']],
-  ['accountability', () => ['accountability']],
-  ['focus', () => ['focus', '--actor', who]],
+  ['skill provenance', () => ['skill', 'provenance']],
+  ['audit accountability', () => ['audit', 'accountability']],
   ['resume', () => ['resume', '--actor', who]],
   ['usage', () => ['usage']],
   ['switch', () => ['switch']],
   ['brief', () => ['brief']],
-  ['next-actions', () => ['next-actions', task]],
-  ['guard', () => ['guard', '--actor', who, 'start', task]],
+  ['task next', () => ['task', 'next', task]],
+  ['task guard', () => ['task', 'guard', '--actor', who, 'start', task]],
   ['decision import', () => ['decision', 'import', '.']],
   ['skill export', () => ['skill', 'export', skill, '--out', '.']],
 ];

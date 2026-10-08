@@ -394,7 +394,7 @@ describe('the script knows every verb the program declares', () => {
     // still owns the vocabulary — so the Tab has a source and this is what it offers.
     // The old promise is dead and is not silently weakened: what is still never offered
     // is an id, which the case above asserts.
-    const levels = ['task move', 'guard'];
+    const levels = ['task move', 'task guard'];
     for (const shell of SHELLS) {
       for (const level of levels) {
         for (const action of TASK_ACTIONS) {

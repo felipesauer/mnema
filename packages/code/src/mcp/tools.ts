@@ -446,7 +446,7 @@ export function runRecordObservation(
 
 /**
  * `record_handoff` — records one handoff on a task, the MCP counterpart of
- * `mnema handoff`. The destination is a per-action choice on top of the session's
+ * `mnema task handoff`. The destination is a per-action choice on top of the session's
  * defaults (`project`, then `scope`). A handoff mints NO id (its subject IS the
  * task), so the result carries no id — only whether it landed.
  *
@@ -1619,7 +1619,7 @@ export type SkillsResult =
  * command line, so a person reading there may well be inside one. The reason the auditor's
  * surface still records nothing is written where that verb lives (`commands/show.ts`), and
  * it is three measurements and one structural fact rather than an absence of sessions. What
- * the command line got instead is a REPORT — `mnema antipatterns` says whether the run that
+ * the command line got instead is a REPORT — `mnema audit antipatterns` says whether the run that
  * moved a pattern had been served its body, and says NOT OBSERVABLE where nothing was
  * listening. It is deliberately not a tool here: an auditor's finding the audited party can
  * query and clear before anyone reads it is not a finding.
@@ -1861,7 +1861,7 @@ export type GuardResult =
 
 /**
  * `guard` — a DRY-RUN of the workflow gate: "would this move be allowed on this
- * task, and if not, why?" — the MCP counterpart of `mnema guard`. Read-only: it
+ * task, and if not, why?" — the MCP counterpart of `mnema task guard`. Read-only: it
  * locates the task's home tree ({@link locateEntity}), takes THAT tree's cache, reads
  * the task's current state as the `from`, and calls the context package's pure
  * {@link guardWithFocus} — no writer, no event. The verdict is the gate's own, the

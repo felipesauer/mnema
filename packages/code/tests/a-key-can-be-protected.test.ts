@@ -139,7 +139,7 @@ describe('signing with a protected key', () => {
     expect(verified.status, verified.out).toBe(0);
     expect(verified.out).toContain('all events are signature-covered');
     // Nor is it a second identity: the same one signed before and after.
-    const who = mnema(undefined, 'accountability').out.match(/mnid:[0-9a-f]{8}/g) ?? [];
+    const who = mnema(undefined, 'audit', 'accountability').out.match(/mnid:[0-9a-f]{8}/g) ?? [];
     expect(new Set(who).size).toBe(1);
   }, 120_000);
 

@@ -1,7 +1,7 @@
 /**
- * The `mnema antipatterns` wiring: what it declares, and what it prints.
+ * The `mnema audit antipatterns` wiring: what it declares, and what it prints.
  *
- * `mnema antipatterns [--json]` — recurring shapes with their evidence. The
+ * `mnema audit antipatterns [--json]` — recurring shapes with their evidence. The
  * human summary is a count per category plus the candidate ids pointed at; the
  * full evidence per finding is in --json. It POINTS, never CONCLUDES.
  *
@@ -39,7 +39,7 @@ import { onOneLine } from './on-one-line.js';
 import { reportRefusal } from './report.js';
 import { type Declared, readsTheRecord, type Wiring } from './verb.js';
 
-/** Registers `mnema antipatterns` on the program. */
+/** Registers `mnema audit antipatterns` on the `audit` group. */
 export function registerAntipatterns(program: Command, wiring: Wiring): Declared {
   const { io, render } = wiring;
   const antipatterns = program

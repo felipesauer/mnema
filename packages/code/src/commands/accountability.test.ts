@@ -48,7 +48,7 @@ function digest(dir: string): string {
   return hash.digest('hex');
 }
 
-describe('mnema accountability (who authorized what)', () => {
+describe('mnema audit accountability (who authorized what)', () => {
   it('with no filter accounts for the whole union — every author, every fact', () => {
     const { repo, env } = setup();
     runInit({ cwd: repo, env });

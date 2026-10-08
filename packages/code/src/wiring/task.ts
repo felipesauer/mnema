@@ -1,9 +1,10 @@
 /**
  * The `mnema task` wiring: what it declares, and what it prints.
  *
- * `task` is a group of two subcommands: one creates (`mnema task create "<title>"`),
- * and one moves an existing task through the workflow
- * (`mnema task move <action> <id>`). The group does nothing on its own: it used to
+ * `task` is a group of five subcommands: one creates (`mnema task create "<title>"`), one
+ * moves an existing task through the workflow (`mnema task move <action> <id>`), one records a
+ * handoff on it (`task handoff`), and two ask the workflow what it allows (`task next` lists the
+ * moves, `task guard` rehearses one). The group does nothing on its own: it used to
  * create with the title typed right after its name, and a group that takes a free
  * word cannot refuse a mistyped subcommand (`mnema task moveZZZ` created a task
  * called `moveZZZ`); `one-voice-for-a-no.test.ts` holds that no group does. Create takes an optional `--scope` — the
@@ -32,7 +33,10 @@ import {
   TASK_ACTIONS,
 } from './enumerated.js';
 import { fromTheGroup, REFUSED, takesFromItsGroup } from './from-the-group.js';
+import { registerGuard } from './guard.js';
+import { registerHandoff } from './handoff.js';
 import { createsBy } from './misuse.js';
+import { registerNextActions } from './next.js';
 import { noSuchRecord } from './no-such-record.js';
 import {
   declaredAgent,
@@ -43,14 +47,14 @@ import {
 } from './options.js';
 import { reportRecorded, reportRefusal, reportReplacement } from './report.js';
 import { PIN_REFUSED } from './run-pin.js';
-import { type Declared, mutatesTheRecord, type Wiring } from './verb.js';
+import { type Declared, groupOf, mutatesTheRecord, type Wiring } from './verb.js';
 
 /** Registers `mnema task` on the program. */
 export function registerTask(program: Command, wiring: Wiring): Declared {
   const { io, pinnedRun } = wiring;
   const task = program
     .command('task')
-    .description('create a task, or move one, in the current project')
+    .description('create a task, move it, hand it over, or ask what the workflow allows next')
     .addOption(
       scopeOption('task', 'Omitted, a task lands in the public tree (the team’s work board).'),
     )
@@ -169,5 +173,13 @@ export function registerTask(program: Command, wiring: Wiring): Declared {
       reportRefusal(wiring, result, { UNKNOWN_TASK: noSuchRecord('task', id) });
     },
   );
-  return mutatesTheRecord(task);
+
+  // The three that used to be verbs of their own: a handoff is recorded on a task, and the other
+  // two ask the task's workflow what it allows. They hang on the group and read its flags the way
+  // `create` and `move` do. Each answers for itself, and the group is a write because three of
+  // its members are (`verb.ts`): the console runs the two that read and refuses the rest.
+  const handoff = registerHandoff(task, wiring);
+  const next = registerNextActions(task, wiring);
+  const guard = registerGuard(task, wiring);
+  return groupOf(task, [mutatesTheRecord(create), mutatesTheRecord(move), handoff, next, guard]);
 }

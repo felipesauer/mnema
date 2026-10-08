@@ -102,7 +102,14 @@ import { asTheSession } from './asking.js';
 import { completerFor } from './complete.js';
 import type { Drawn } from './console.js';
 import { followingTheRecord } from './following.js';
-import { type AfterLine, argvOf, dispositionOf, verbsOffered } from './gate.js';
+import {
+  type AfterLine,
+  argvOf,
+  dispositionOf,
+  membersOffered,
+  pathsOffered,
+  verbsOffered,
+} from './gate.js';
 import { insideTheMargin } from './inset.js';
 import type { Leaving } from './leaving.js';
 import { theLibraryIsTold } from './painting.js';
@@ -566,7 +573,7 @@ export async function openSession(request: SessionRequest): Promise<void> {
   // composer turns it into bytes and counts the rows (`panel.ts`, `openingFor`) — the count
   // asks the fold rather than predicting it, which is what the terminal's own arithmetic
   // used to do here (`presentation/folded.ts`, `rowsAt`).
-  const refuses = whatItRefuses(offered.length);
+  const refuses = whatItRefuses(pathsOffered(built.verbs, self).length);
   // NO PROJECT, NO BADGE. There is no record to name a level of, so the corner says
   // nothing at all — the same posture the line that says where the session is standing
   // takes about a fact it does not have, and the same one the panel's record section takes.
@@ -800,7 +807,13 @@ export async function openSession(request: SessionRequest): Promise<void> {
     // the same event read back by `timeline`. This surface writes nothing, so every one
     // of them is another process's append (`following.ts`).
     happened: () => following.whatHappened().map((event) => render(occurrenceLine(event))),
-    complete: completerFor(completionTree(built.program), offered, vocabulary, seen.matching),
+    complete: completerFor(
+      completionTree(built.program),
+      offered,
+      vocabulary,
+      seen.matching,
+      membersOffered(built.verbs, self),
+    ),
     answer: (line) => typedLine(line, session),
     leaving,
     ...(request.now === undefined ? {} : { now: request.now }),

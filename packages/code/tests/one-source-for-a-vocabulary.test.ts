@@ -3,7 +3,7 @@
  * take, and the two things that read them.
  *
  * Twenty-two declarations used to write a domain vocabulary out by hand — the ten
- * workflow actions in `task move` and again in `guard`, the three scopes in seven
+ * workflow actions in `task move` and again in `task guard`, the three scopes in seven
  * births, the three levels `--require` accepts, and, at nine more, WHICH actions each
  * proof flag is required by. Nothing compared any of those sentences to the machine, so
  * an action added to a workflow would leave every one of them a version behind with the
@@ -213,7 +213,7 @@ describe('a declaration lists the set it takes', () => {
     // Against the machine's own constants, never against a list typed here: a test that
     // wrote the ten actions out again would only move the copy from `src` to `tests`.
     expect(setAt('task move <action>').values).toBe(TASK_ACTIONS);
-    expect(setAt('guard <action>').values).toBe(TASK_ACTIONS);
+    expect(setAt('task guard <action>').values).toBe(TASK_ACTIONS);
     expect(setAt('skill move <action>').values).toBe(SKILL_ACTIONS);
     expect(setAt('search --kind').values).toBe(SEARCH_KINDS);
     expect(setAt('verify --require').values).toBe(LEVEL_REQUIREMENTS);
@@ -233,7 +233,7 @@ describe('a declaration lists the set it takes', () => {
     );
     expect(DECISION_ACTIONS).toContain('supersede');
     // The seven births take one set, and the same one the filter on `search` takes.
-    for (const verb of ['task', 'decision', 'skill', 'memory', 'observe', 'handoff', 'link']) {
+    for (const verb of ['task', 'decision', 'skill', 'memory', 'observe', 'task handoff', 'link']) {
       expect(setAt(`${verb} --scope`).values, verb).toBe(SCOPES);
     }
     // The one birth that takes fewer: `decision import` offers every scope but the
@@ -247,15 +247,15 @@ describe('a declaration lists the set it takes', () => {
     expect([...SCOPES]).toEqual(['public', 'private', 'global']);
   });
 
-  it('offers `task move` and `guard` the very same array — not two equal ones', () => {
+  it('offers `task move` and `task guard` the very same array — not two equal ones', () => {
     // The two sites the inventory called out as one vocabulary typed twice, with two
     // different openings ("the transition" and "the transition to test"). Identity and
     // not equality: two arrays that happen to match today are exactly the defect.
-    expect(setAt('guard <action>').values).toBe(setAt('task move <action>').values);
+    expect(setAt('task guard <action>').values).toBe(setAt('task move <action>').values);
     expect(setAt('task move <action>').description).toBe(
       `the transition (${TASK_ACTIONS.join(', ')})`,
     );
-    expect(setAt('guard <action>').description).toBe(
+    expect(setAt('task guard <action>').description).toBe(
       `the transition to test (${TASK_ACTIONS.join(', ')})`,
     );
   });
@@ -285,13 +285,13 @@ describe('a declaration lists the set it takes', () => {
     expect(optionHelp('task move', '--feedback')).toBe(
       `what must change (required by ${requiring(TRANSITIONS, TASK_ACTIONS, 'feedback')})`,
     );
-    expect(optionHelp('guard', '--reason')).toBe(
+    expect(optionHelp('task guard', '--reason')).toBe(
       `simulate the reason (${requiring(TRANSITIONS, TASK_ACTIONS, 'reason')})`,
     );
-    expect(optionHelp('guard', '--note')).toBe(
+    expect(optionHelp('task guard', '--note')).toBe(
       `simulate the note (${requiring(TRANSITIONS, TASK_ACTIONS, 'note')})`,
     );
-    expect(optionHelp('guard', '--feedback')).toBe(
+    expect(optionHelp('task guard', '--feedback')).toBe(
       `simulate the feedback (${requiring(TRANSITIONS, TASK_ACTIONS, 'feedback')})`,
     );
     expect(optionHelp('decision move', '--note')).toBe(

@@ -128,7 +128,7 @@ describe('foundingSentence — one sentence, both surfaces', () => {
     const founded = foundedBeside(5);
     const said = foundingSentence(founded, 'public');
     expect(said).toContain('beside 5 already there (');
-    expect(said).toContain('and 2 more — `mnema accountability` names them');
+    expect(said).toContain('and 2 more — `mnema audit accountability` names them');
     expect(said).toContain('If one of them is you');
     expect(said).toContain('`mnema key request --anchor <that identity>` here');
   });

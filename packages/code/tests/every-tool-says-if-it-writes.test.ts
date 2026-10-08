@@ -805,11 +805,12 @@ describe('the two surfaces cannot classify the same act differently', () => {
     }
     // Nobody but the owner writes one.
     expect(written).toEqual([]);
-    // NON-VACUITY, both ways. The owner spells them FOUR times — twice in the closed
-    // type and once in each constructor — so a pattern that stopped matching could not
+    // NON-VACUITY, both ways. The owner spells them SEVEN times — twice in the closed
+    // type, once in each constructor and three in the group's — so a pattern that stopped matching could not
     // leave the line above free; and the sweep reaches a file that is not the owner, so a
     // walk that found nothing at all could not either.
-    expect(owned).toBe(4);
+    // Seven since `groupOf`, which says which of the two a group is from its members.
+    expect(owned).toBe(7);
     expect(compared).toBeGreaterThan(0);
   });
 

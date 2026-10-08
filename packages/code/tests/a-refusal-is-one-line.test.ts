@@ -142,12 +142,12 @@ const ACTOR = '<actor>';
 const PROBES: readonly Probe[] = [
   {
     key: 'wiring/guard.ts task #1',
-    argv: ['guard', 'start', NAME, '--actor', ACTOR],
+    argv: ['task', 'guard', 'start', NAME, '--actor', ACTOR],
     says: `No task ${NAME} here.`,
   },
   {
-    key: 'wiring/next-actions.ts task #1',
-    argv: ['next-actions', NAME],
+    key: 'wiring/next.ts task #1',
+    argv: ['task', 'next', NAME],
     says: `No task ${NAME} here.`,
   },
   {
@@ -257,7 +257,7 @@ beforeAll(async () => {
   delete process.env.MNEMA_RUN;
   process.chdir(project);
   await invoke('init');
-  const account = await invoke('accountability', '--json');
+  const account = await invoke('audit', 'accountability', '--json');
   const found = /"who": "(mnid:[0-9a-z]+)"/.exec(account.out.join(LF))?.[1];
   if (found === undefined) throw new Error(`fixture: no identity in ${account.out.join(LF)}`);
   who = found;

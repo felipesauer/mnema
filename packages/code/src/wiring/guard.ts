@@ -1,7 +1,7 @@
 /**
- * The `mnema guard` wiring: what it declares, and what it prints.
+ * The `mnema task guard` wiring: what it declares, and what it prints.
  *
- * `mnema guard <action> <id> --actor <who> [--note/--reason/--feedback/--which]
+ * `mnema task guard <action> <id> --actor <who> [--note/--reason/--feedback/--which]
  * [--json]` — a DRY-RUN of the gate: "would this move be allowed on this task,
  * and if not, why?" It MIRRORS `task move` (the same action and id) but writes
  * nothing: it reads the task's current state, simulates the gate, and prints
@@ -18,22 +18,27 @@
  * without it REFUSED (MISSING_PROOF), the useful "you are only missing the
  * note" answer. `--which` simulates an agent asking on a human's behalf, so a
  * `--which` equal to `--actor` reproduces the WHO_IS_WHICH refusal.
+ *
+ * It is a subcommand of `task`, hung on it by `registerTask`. It takes `--which` from the
+ * group exactly as `task move` does, and refuses `--scope` for the reason `task move` does:
+ * nothing is born, so there is no tree to choose (`from-the-group.ts`).
  */
 
 import type { Command } from 'commander';
 import { statement } from '../presentation/verdict.js';
 import { here } from './context.js';
 import { actionsRequiring, enumeratedArgument, listed, TASK_ACTIONS } from './enumerated.js';
+import { fromTheGroup, REFUSED, takesFromItsGroup } from './from-the-group.js';
 import { noSuchRecord } from './no-such-record.js';
 import { onOneLine } from './on-one-line.js';
-import { ACTOR_HELP, declaredAgent } from './options.js';
+import { ACTOR_HELP } from './options.js';
 import { reportRefusal } from './report.js';
 import { type Declared, readsTheRecord, type Wiring } from './verb.js';
 
-/** Registers `mnema guard` on the program. */
-export function registerGuard(program: Command, wiring: Wiring): Declared {
+/** Registers `mnema task guard` on the `task` group. */
+export function registerGuard(task: Command, wiring: Wiring): Declared {
   const { io, render } = wiring;
-  const guard = program
+  const guard = task
     .command('guard')
     .description('dry-run the gate: would a move be allowed on a task, and if not, why?')
     .addArgument(enumeratedArgument('<action>', 'the transition to test', TASK_ACTIONS))
@@ -48,73 +53,80 @@ export function registerGuard(program: Command, wiring: Wiring): Declared {
       '--feedback <text>',
       `simulate the feedback (${listed(actionsRequiring('task', 'feedback'))})`,
     )
-    // Validated exactly as the real move's `--which` is: a dry-run that accepted a
-    // declaration the move refuses would answer for a move nobody can make.
-    .option('--which <id>', 'simulate an executing agent (must differ from --actor)', declaredAgent)
     .option('--json', 'emit the faithful gate verdict as JSON')
-    .action(
-      async (
-        action: string,
-        id: string,
-        opts: {
-          actor: string;
-          reason?: string;
-          note?: string;
-          feedback?: string;
-          which?: string;
-          json?: boolean;
-        },
-      ) => {
-        const { linkBreakNotice } = await import('./integrity.js');
-        const { runGuard } = await import('../commands/guard.js');
-        const result = runGuard(here(), {
-          id,
-          action,
-          actor: opts.actor,
-          proof: {
-            ...(opts.reason !== undefined ? { reason: opts.reason } : {}),
-            ...(opts.note !== undefined ? { note: opts.note } : {}),
-            ...(opts.feedback !== undefined ? { feedback: opts.feedback } : {}),
-          },
-          ...(opts.which !== undefined ? { which: opts.which } : {}),
-        });
-        if (!result.ok) {
-          reportRefusal(wiring, result, { UNKNOWN_TASK: noSuchRecord('task', id) });
-          return;
-        }
-        // BEFORE the answer, and on the other stream — so it survives a pipe, and so
-        // `--json` stays the machine-readable thing it promises to be.
-        for (const line of linkBreakNotice(result.linkBreaks)) io.err(render(line));
-        if (opts.json === true) {
-          io.out(JSON.stringify(result.verdict, null, 2));
-          return;
-        }
-        // Human summary — the gate's verdict, one line. ALLOWED names the state
-        // the move would reach; REFUSED echoes the gate's own code and reason, so
-        // the dry-run reads exactly as the real move's refusal would.
-        //
-        // THE ONLY TWO PLACES ON THE SURFACE THAT SAY GOOD OR BAD. This verb is a
-        // question with a yes-or-no answer, so it is the one reading where a colour
-        // is a fact rather than a taste — and the words still carry it, which is what
-        // makes `--color=never` and a monochrome terminal lose nothing.
-        //
-        // The id is the positional and nothing narrows it — the action beside it is an
-        // enumerated argument and the state after it is the table's own word, so the id
-        // is the one value on this line that can hold a break (see {@link onOneLine}).
-        io.out(
-          result.verdict.ok
-            ? render(
-                statement('ALLOWED', onOneLine`${action} ${id} → ${result.verdict.to}`, 'good'),
-              )
-            : render(
-                statement(
-                  onOneLine`REFUSED (${result.verdict.code})`,
-                  result.verdict.message,
-                  'bad',
-                ),
-              ),
-        );
-      },
+    .addHelpText(
+      'after',
+      [
+        '',
+        'Also accepted here (declared on the parent group):',
+        '  --which <agent>  simulate an executing agent (must differ from --actor), as the',
+        '                   real move would be asked by an agent acting for that actor.',
+      ].join('\n'),
     );
+  // `--which` is the group's, validated there exactly as the real move's is: a dry-run that
+  // accepted a declaration the move refuses would answer for a move nobody can make.
+  takesFromItsGroup(guard, {
+    takes: ['--which'],
+    refuses: { '--scope': 'it records nothing, so there is no tree to choose.' },
+  });
+  guard.action(
+    async (
+      action: string,
+      id: string,
+      opts: {
+        actor: string;
+        reason?: string;
+        note?: string;
+        feedback?: string;
+        json?: boolean;
+      },
+    ) => {
+      const given = await fromTheGroup<{ which?: string }>(guard, wiring);
+      if (given === REFUSED) return;
+      const { linkBreakNotice } = await import('./integrity.js');
+      const { runGuard } = await import('../commands/guard.js');
+      const result = runGuard(here(), {
+        id,
+        action,
+        actor: opts.actor,
+        proof: {
+          ...(opts.reason !== undefined ? { reason: opts.reason } : {}),
+          ...(opts.note !== undefined ? { note: opts.note } : {}),
+          ...(opts.feedback !== undefined ? { feedback: opts.feedback } : {}),
+        },
+        ...(given.which !== undefined ? { which: given.which } : {}),
+      });
+      if (!result.ok) {
+        reportRefusal(wiring, result, { UNKNOWN_TASK: noSuchRecord('task', id) });
+        return;
+      }
+      // BEFORE the answer, and on the other stream — so it survives a pipe, and so
+      // `--json` stays the machine-readable thing it promises to be.
+      for (const line of linkBreakNotice(result.linkBreaks)) io.err(render(line));
+      if (opts.json === true) {
+        io.out(JSON.stringify(result.verdict, null, 2));
+        return;
+      }
+      // Human summary — the gate's verdict, one line. ALLOWED names the state
+      // the move would reach; REFUSED echoes the gate's own code and reason, so
+      // the dry-run reads exactly as the real move's refusal would.
+      //
+      // THE ONLY TWO PLACES ON THE SURFACE THAT SAY GOOD OR BAD. This verb is a
+      // question with a yes-or-no answer, so it is the one reading where a colour
+      // is a fact rather than a taste — and the words still carry it, which is what
+      // makes `--color=never` and a monochrome terminal lose nothing.
+      //
+      // The id is the positional and nothing narrows it — the action beside it is an
+      // enumerated argument and the state after it is the table's own word, so the id
+      // is the one value on this line that can hold a break (see {@link onOneLine}).
+      io.out(
+        result.verdict.ok
+          ? render(statement('ALLOWED', onOneLine`${action} ${id} → ${result.verdict.to}`, 'good'))
+          : render(
+              statement(onOneLine`REFUSED (${result.verdict.code})`, result.verdict.message, 'bad'),
+            ),
+      );
+    },
+  );
   return readsTheRecord(guard);
 }

@@ -12,13 +12,13 @@
 function __mnema_commands --description 'the subcommands one level of the tree offers'
     switch "$argv[1]"
         case ''
-            echo 'init decision link unlink memory observe retract skill task handoff promote status brief recall rules rules-file switch inherit verify witness check site search show timeline refs diagram accountability antipatterns exposure export skills usage focus resume next-actions guard repl why commits aging trailer commit-hook key tail doctor completion mcp run before-a-write tally corrections help'
+            echo 'init decision link unlink memory observe retract skill task promote status brief recall rules rules-file switch inherit verify witness check site search show timeline refs audit diagram export usage resume repl why commits aging trailer commit-hook key tail doctor completion mcp run before-a-write tally corrections help'
         case 'decision'
             echo 'record move supersede import help'
         case 'skill'
-            echo 'create move export help'
+            echo 'create move export provenance help'
         case 'task'
-            echo 'create move help'
+            echo 'create move handoff next guard help'
         case 'switch'
             echo 'off on'
         case 'inherit'
@@ -27,6 +27,8 @@ function __mnema_commands --description 'the subcommands one level of the tree o
             echo 'stamp upgrade sigstore'
         case 'check'
             echo 'declare run help'
+        case 'audit'
+            echo 'accountability antipatterns exposure help'
         case 'commit-hook'
             echo 'install uninstall suggest help'
         case 'key'
@@ -75,9 +77,8 @@ complete -c mnema -f -n '__mnema_at ""' -a 'unlink' -d 'take a link back, keepin
 complete -c mnema -f -n '__mnema_at ""' -a 'memory' -d 'capture a memory in the current project'
 complete -c mnema -f -n '__mnema_at ""' -a 'observe' -d 'record an observation about an entity in the current project'
 complete -c mnema -f -n '__mnema_at ""' -a 'retract' -d 'take a memory or an observation back, keeping it in the record (follows the note; takes no --scope)'
-complete -c mnema -f -n '__mnema_at ""' -a 'skill' -d 'propose a reusable skill, move one, or export one, in the current project'
-complete -c mnema -f -n '__mnema_at ""' -a 'task' -d 'create a task, or move one, in the current project'
-complete -c mnema -f -n '__mnema_at ""' -a 'handoff' -d 'record a handoff on a task in the current project'
+complete -c mnema -f -n '__mnema_at ""' -a 'skill' -d 'propose, move or export a reusable skill, or show where each came from'
+complete -c mnema -f -n '__mnema_at ""' -a 'task' -d 'create a task, move it, hand it over, or ask what the workflow allows next'
 complete -c mnema -f -n '__mnema_at ""' -a 'promote' -d 'list what recurs across projects, or copy one pattern to the global tree'
 complete -c mnema -f -n '__mnema_at ""' -a 'status' -d 'show where things stand: the work, what governs, what awaits a ruling'
 complete -c mnema -f -n '__mnema_at ""' -a 'brief' -d 'print what governs the work here as markdown, for an agent to read'
@@ -94,17 +95,11 @@ complete -c mnema -f -n '__mnema_at ""' -a 'search' -d 'find what has been recor
 complete -c mnema -f -n '__mnema_at ""' -a 'show' -d 'show one whole record by id (the body a search only pointed at)'
 complete -c mnema -f -n '__mnema_at ""' -a 'timeline' -d 'show an entity\'s history across the trees (subject, about, target)'
 complete -c mnema -f -n '__mnema_at ""' -a 'refs' -d 'show what an entity is connected to across the trees'
+complete -c mnema -f -n '__mnema_at ""' -a 'audit' -d 'ask the record who authorized what, what recurs, and what looks like a credential'
 complete -c mnema -f -n '__mnema_at ""' -a 'diagram' -d 'print a state machine, or an entity’s history or connections, as mermaid'
-complete -c mnema -f -n '__mnema_at ""' -a 'accountability' -d 'show who authorized what across the record (optionally windowed/filtered)'
-complete -c mnema -f -n '__mnema_at ""' -a 'antipatterns' -d 'show recurring shapes in the record (reopens, supersessions, deprecations)'
-complete -c mnema -f -n '__mnema_at ""' -a 'exposure' -d 'show which records hold something shaped like a credential (never the value)'
 complete -c mnema -f -n '__mnema_at ""' -a 'export' -d 'emit the record as an OCSF audit feed (NDJSON, envelope only — never a body)'
-complete -c mnema -f -n '__mnema_at ""' -a 'skills' -d 'show where each pattern came from (who proposed it, who adopted it)'
 complete -c mnema -f -n '__mnema_at ""' -a 'usage' -d 'what each run cost, read from this machine\'s Claude Code transcripts'
-complete -c mnema -f -n '__mnema_at ""' -a 'focus' -d 'show an actor\'s open runs (what they are touching now)'
-complete -c mnema -f -n '__mnema_at ""' -a 'resume' -d 'show where an actor left off (their latest run, open or ended)'
-complete -c mnema -f -n '__mnema_at ""' -a 'next-actions' -d 'show the moves the workflow allows a task next'
-complete -c mnema -f -n '__mnema_at ""' -a 'guard' -d 'dry-run the gate: would a move be allowed on a task, and if not, why?'
+complete -c mnema -f -n '__mnema_at ""' -a 'resume' -d 'show where an actor left off, and the runs they still have open'
 complete -c mnema -f -n '__mnema_at ""' -a 'repl' -d 'open an interactive session that reads this project'
 complete -c mnema -f -n '__mnema_at ""' -a 'why' -d 'show under which decisions a file or a commit stands'
 complete -c mnema -f -n '__mnema_at ""' -a 'commits' -d 'show the commits that cite a decision and those that touched what it addresses'
@@ -226,6 +221,7 @@ complete -c mnema -f -n '__mnema_at "retract"' -l color -x -a 'auto always never
 complete -c mnema -f -n '__mnema_at "skill"' -a 'create' -d 'propose a reusable skill in the current project'
 complete -c mnema -f -n '__mnema_at "skill"' -a 'move' -d 'move a skill through the workflow (follows the skill; takes no --scope)'
 complete -c mnema -f -n '__mnema_at "skill"' -a 'export' -d 'write an adopted pattern as the SKILL.md an agent host reads (records nothing)'
+complete -c mnema -f -n '__mnema_at "skill"' -a 'provenance' -d 'show where each pattern came from (who proposed it, who adopted it)'
 complete -c mnema -f -n '__mnema_at "skill"' -a 'help' -d 'display help for command'
 complete -c mnema -f -n '__mnema_at "skill"' -l body -r
 complete -c mnema -f -n '__mnema_at "skill"' -l scope -x -a 'public private global'
@@ -262,9 +258,18 @@ complete -c mnema -f -n '__mnema_at "skill export"' -s h -l help
 complete -c mnema -f -n '__mnema_at "skill export"' -s V -l version
 complete -c mnema -f -n '__mnema_at "skill export"' -l color -x -a 'auto always never'
 
+# mnema skill provenance
+complete -c mnema -f -n '__mnema_at "skill provenance"' -l json
+complete -c mnema -f -n '__mnema_at "skill provenance"' -s h -l help
+complete -c mnema -f -n '__mnema_at "skill provenance"' -s V -l version
+complete -c mnema -f -n '__mnema_at "skill provenance"' -l color -x -a 'auto always never'
+
 # mnema task
 complete -c mnema -f -n '__mnema_at "task"' -a 'create' -d 'create a task in the current project'
 complete -c mnema -f -n '__mnema_at "task"' -a 'move' -d 'move a task through the workflow (follows the task; takes no --scope)'
+complete -c mnema -f -n '__mnema_at "task"' -a 'handoff' -d 'record a handoff on a task in the current project'
+complete -c mnema -f -n '__mnema_at "task"' -a 'next' -d 'show the moves the workflow allows a task next (records nothing)'
+complete -c mnema -f -n '__mnema_at "task"' -a 'guard' -d 'dry-run the gate: would a move be allowed on a task, and if not, why?'
 complete -c mnema -f -n '__mnema_at "task"' -a 'help' -d 'display help for command'
 complete -c mnema -f -n '__mnema_at "task"' -l scope -x -a 'public private global'
 complete -c mnema -f -n '__mnema_at "task"' -l which -r
@@ -289,12 +294,30 @@ complete -c mnema -f -n '__mnema_at "task move"' -s V -l version
 complete -c mnema -f -n '__mnema_at "task move"' -l color -x -a 'auto always never'
 complete -c mnema -f -n '__mnema_at "task move"' -a 'submit start block unblock submit_review request_changes approve complete cancel reopen'
 
-# mnema handoff
-complete -c mnema -f -n '__mnema_at "handoff"' -l scope -x -a 'public private global'
-complete -c mnema -f -n '__mnema_at "handoff"' -l which -r
-complete -c mnema -f -n '__mnema_at "handoff"' -s h -l help
-complete -c mnema -f -n '__mnema_at "handoff"' -s V -l version
-complete -c mnema -f -n '__mnema_at "handoff"' -l color -x -a 'auto always never'
+# mnema task handoff
+complete -c mnema -f -n '__mnema_at "task handoff"' -l scope -x -a 'public private global'
+complete -c mnema -f -n '__mnema_at "task handoff"' -l which -r
+complete -c mnema -f -n '__mnema_at "task handoff"' -s h -l help
+complete -c mnema -f -n '__mnema_at "task handoff"' -s V -l version
+complete -c mnema -f -n '__mnema_at "task handoff"' -l color -x -a 'auto always never'
+
+# mnema task next
+complete -c mnema -f -n '__mnema_at "task next"' -l json
+complete -c mnema -f -n '__mnema_at "task next"' -s h -l help
+complete -c mnema -f -n '__mnema_at "task next"' -s V -l version
+complete -c mnema -f -n '__mnema_at "task next"' -l color -x -a 'auto always never'
+
+# mnema task guard
+complete -c mnema -f -n '__mnema_at "task guard"' -l actor -r
+complete -c mnema -f -n '__mnema_at "task guard"' -l reason -r
+complete -c mnema -f -n '__mnema_at "task guard"' -l note -r
+complete -c mnema -f -n '__mnema_at "task guard"' -l feedback -r
+complete -c mnema -f -n '__mnema_at "task guard"' -l json
+complete -c mnema -f -n '__mnema_at "task guard"' -s h -l help
+complete -c mnema -f -n '__mnema_at "task guard"' -l which -r
+complete -c mnema -f -n '__mnema_at "task guard"' -s V -l version
+complete -c mnema -f -n '__mnema_at "task guard"' -l color -x -a 'auto always never'
+complete -c mnema -f -n '__mnema_at "task guard"' -a 'submit start block unblock submit_review request_changes approve complete cancel reopen'
 
 # mnema promote
 complete -c mnema -f -n '__mnema_at "promote"' -l workspace -r
@@ -484,33 +507,42 @@ complete -c mnema -f -n '__mnema_at "refs"' -s h -l help
 complete -c mnema -f -n '__mnema_at "refs"' -s V -l version
 complete -c mnema -f -n '__mnema_at "refs"' -l color -x -a 'auto always never'
 
+# mnema audit
+complete -c mnema -f -n '__mnema_at "audit"' -a 'accountability' -d 'show who authorized what across the record (optionally windowed/filtered)'
+complete -c mnema -f -n '__mnema_at "audit"' -a 'antipatterns' -d 'show recurring shapes in the record (reopens, supersessions, deprecations)'
+complete -c mnema -f -n '__mnema_at "audit"' -a 'exposure' -d 'show which records hold something shaped like a credential (never the value)'
+complete -c mnema -f -n '__mnema_at "audit"' -a 'help' -d 'display help for command'
+complete -c mnema -f -n '__mnema_at "audit"' -s h -l help
+complete -c mnema -f -n '__mnema_at "audit"' -s V -l version
+complete -c mnema -f -n '__mnema_at "audit"' -l color -x -a 'auto always never'
+
+# mnema audit accountability
+complete -c mnema -f -n '__mnema_at "audit accountability"' -l from -r
+complete -c mnema -f -n '__mnema_at "audit accountability"' -l to -r
+complete -c mnema -f -n '__mnema_at "audit accountability"' -l who -r
+complete -c mnema -f -n '__mnema_at "audit accountability"' -l which -r
+complete -c mnema -f -n '__mnema_at "audit accountability"' -l json
+complete -c mnema -f -n '__mnema_at "audit accountability"' -s h -l help
+complete -c mnema -f -n '__mnema_at "audit accountability"' -s V -l version
+complete -c mnema -f -n '__mnema_at "audit accountability"' -l color -x -a 'auto always never'
+
+# mnema audit antipatterns
+complete -c mnema -f -n '__mnema_at "audit antipatterns"' -l json
+complete -c mnema -f -n '__mnema_at "audit antipatterns"' -s h -l help
+complete -c mnema -f -n '__mnema_at "audit antipatterns"' -s V -l version
+complete -c mnema -f -n '__mnema_at "audit antipatterns"' -l color -x -a 'auto always never'
+
+# mnema audit exposure
+complete -c mnema -f -n '__mnema_at "audit exposure"' -l json
+complete -c mnema -f -n '__mnema_at "audit exposure"' -s h -l help
+complete -c mnema -f -n '__mnema_at "audit exposure"' -s V -l version
+complete -c mnema -f -n '__mnema_at "audit exposure"' -l color -x -a 'auto always never'
+
 # mnema diagram
 complete -c mnema -f -n '__mnema_at "diagram"' -s h -l help
 complete -c mnema -f -n '__mnema_at "diagram"' -s V -l version
 complete -c mnema -f -n '__mnema_at "diagram"' -l color -x -a 'auto always never'
 complete -c mnema -f -n '__mnema_at "diagram"' -a 'decision skill task timeline refs'
-
-# mnema accountability
-complete -c mnema -f -n '__mnema_at "accountability"' -l from -r
-complete -c mnema -f -n '__mnema_at "accountability"' -l to -r
-complete -c mnema -f -n '__mnema_at "accountability"' -l who -r
-complete -c mnema -f -n '__mnema_at "accountability"' -l which -r
-complete -c mnema -f -n '__mnema_at "accountability"' -l json
-complete -c mnema -f -n '__mnema_at "accountability"' -s h -l help
-complete -c mnema -f -n '__mnema_at "accountability"' -s V -l version
-complete -c mnema -f -n '__mnema_at "accountability"' -l color -x -a 'auto always never'
-
-# mnema antipatterns
-complete -c mnema -f -n '__mnema_at "antipatterns"' -l json
-complete -c mnema -f -n '__mnema_at "antipatterns"' -s h -l help
-complete -c mnema -f -n '__mnema_at "antipatterns"' -s V -l version
-complete -c mnema -f -n '__mnema_at "antipatterns"' -l color -x -a 'auto always never'
-
-# mnema exposure
-complete -c mnema -f -n '__mnema_at "exposure"' -l json
-complete -c mnema -f -n '__mnema_at "exposure"' -s h -l help
-complete -c mnema -f -n '__mnema_at "exposure"' -s V -l version
-complete -c mnema -f -n '__mnema_at "exposure"' -l color -x -a 'auto always never'
 
 # mnema export
 complete -c mnema -f -n '__mnema_at "export"' -l from -r
@@ -522,23 +554,10 @@ complete -c mnema -f -n '__mnema_at "export"' -s h -l help
 complete -c mnema -f -n '__mnema_at "export"' -s V -l version
 complete -c mnema -f -n '__mnema_at "export"' -l color -x -a 'auto always never'
 
-# mnema skills
-complete -c mnema -f -n '__mnema_at "skills"' -l json
-complete -c mnema -f -n '__mnema_at "skills"' -s h -l help
-complete -c mnema -f -n '__mnema_at "skills"' -s V -l version
-complete -c mnema -f -n '__mnema_at "skills"' -l color -x -a 'auto always never'
-
 # mnema usage
 complete -c mnema -f -n '__mnema_at "usage"' -s h -l help
 complete -c mnema -f -n '__mnema_at "usage"' -s V -l version
 complete -c mnema -f -n '__mnema_at "usage"' -l color -x -a 'auto always never'
-
-# mnema focus
-complete -c mnema -f -n '__mnema_at "focus"' -l actor -r
-complete -c mnema -f -n '__mnema_at "focus"' -l json
-complete -c mnema -f -n '__mnema_at "focus"' -s h -l help
-complete -c mnema -f -n '__mnema_at "focus"' -s V -l version
-complete -c mnema -f -n '__mnema_at "focus"' -l color -x -a 'auto always never'
 
 # mnema resume
 complete -c mnema -f -n '__mnema_at "resume"' -l actor -r
@@ -546,24 +565,6 @@ complete -c mnema -f -n '__mnema_at "resume"' -l json
 complete -c mnema -f -n '__mnema_at "resume"' -s h -l help
 complete -c mnema -f -n '__mnema_at "resume"' -s V -l version
 complete -c mnema -f -n '__mnema_at "resume"' -l color -x -a 'auto always never'
-
-# mnema next-actions
-complete -c mnema -f -n '__mnema_at "next-actions"' -l json
-complete -c mnema -f -n '__mnema_at "next-actions"' -s h -l help
-complete -c mnema -f -n '__mnema_at "next-actions"' -s V -l version
-complete -c mnema -f -n '__mnema_at "next-actions"' -l color -x -a 'auto always never'
-
-# mnema guard
-complete -c mnema -f -n '__mnema_at "guard"' -l actor -r
-complete -c mnema -f -n '__mnema_at "guard"' -l reason -r
-complete -c mnema -f -n '__mnema_at "guard"' -l note -r
-complete -c mnema -f -n '__mnema_at "guard"' -l feedback -r
-complete -c mnema -f -n '__mnema_at "guard"' -l which -r
-complete -c mnema -f -n '__mnema_at "guard"' -l json
-complete -c mnema -f -n '__mnema_at "guard"' -s h -l help
-complete -c mnema -f -n '__mnema_at "guard"' -s V -l version
-complete -c mnema -f -n '__mnema_at "guard"' -l color -x -a 'auto always never'
-complete -c mnema -f -n '__mnema_at "guard"' -a 'submit start block unblock submit_review request_changes approve complete cancel reopen'
 
 # mnema repl
 complete -c mnema -f -n '__mnema_at "repl"' -s h -l help

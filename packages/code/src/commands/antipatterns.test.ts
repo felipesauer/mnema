@@ -113,7 +113,7 @@ function reopenTaskTimes(repo: string, env: DiscoveryEnv, times: number): string
   return id;
 }
 
-describe('mnema antipatterns (recurring shapes, with evidence)', () => {
+describe('mnema audit antipatterns (recurring shapes, with evidence)', () => {
   it('counts a task reopened twice and points at it as a skill candidate', () => {
     const { repo, env } = setup();
     runInit({ cwd: repo, env });

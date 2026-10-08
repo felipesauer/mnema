@@ -161,7 +161,7 @@ describe('mnema run end', () => {
 
   it('forwards WHO_IS_WHICH when the closing agent IS the anchor that authorized it', () => {
     // The core's rule, reaching this surface: an agent must not seal a session as the
-    // identity that authorized the work. The anchor is what `mnema accountability`
+    // identity that authorized the work. The anchor is what `mnema audit accountability`
     // prints, so this is typed, not synthesized.
     const { repo, env, id } = openedRun();
     const anchor = runsOf(repo, env).get(id)?.who as string;

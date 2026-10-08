@@ -78,8 +78,62 @@ export type Disposition =
  */
 export function verbsOffered(verbs: readonly Declared[], self: string): readonly string[] {
   return verbs
-    .filter((verb) => verb.effect === 'reads' && verb.act.name() !== self)
+    .filter((verb) => verb.act.name() !== self && theReadsOf(verb).length > 0)
     .map((verb) => verb.act.name());
+}
+
+/**
+ * What a verb offers as a read: its own name when it is one, and for a GROUP whose members
+ * answer for themselves, the members that read — each by its whole path, `task next`.
+ *
+ * A group with members is never offered as itself, whatever its own effect says: the group's
+ * effect is its most powerful member's, and the member is the unit that is run. One that
+ * carries none is the group whole, as it always was.
+ */
+function theReadsOf(verb: Declared): readonly string[] {
+  const name = verb.act.name();
+  if (verb.members === undefined) return verb.effect === 'reads' ? [name] : [];
+  return verb.members
+    .filter((member) => member.effect === 'reads')
+    .map((member) => `${name} ${member.act.name()}`);
+}
+
+/**
+ * Everything the session runs, by path — the number the opening states. A verb counts once, and a
+ * member of a group counts as the verb it is: `task next` is a thing a caller types.
+ */
+export function pathsOffered(verbs: readonly Declared[], self: string): readonly string[] {
+  return verbs
+    .filter((verb) => verb.act.name() !== self)
+    .flatMap((verb) => {
+      // A group that reads whole (`audit`) is the verbs inside it, each one a thing to type — the
+      // same count the surface had when they were verbs of the root.
+      const inside = verb.act.commands.filter((command) => command.name() !== 'help');
+      if (verb.members === undefined && verb.effect === 'reads' && inside.length > 0) {
+        return inside.map((command) => `${verb.act.name()} ${command.name()}`);
+      }
+      return theReadsOf(verb);
+    });
+}
+
+/**
+ * For each group whose members differ, the members the session runs. A completer reads it so
+ * `task <TAB>` offers `next` and `guard` and not `create`: the same answer as the gate's, from
+ * the same declarations.
+ */
+export function membersOffered(
+  verbs: readonly Declared[],
+  self: string,
+): ReadonlyMap<string, readonly string[]> {
+  const found = new Map<string, readonly string[]>();
+  for (const verb of verbs) {
+    if (verb.members === undefined || verb.act.name() === self) continue;
+    found.set(
+      verb.act.name(),
+      verb.members.filter((m) => m.effect === 'reads').map((m) => m.act.name()),
+    );
+  }
+  return found;
 }
 
 /**
@@ -108,6 +162,22 @@ export function dispositionOf(line: string, verbs: readonly Declared[], self: st
   if (first === undefined) return { does: 'nothing' };
   if (first === CLEAR) return excess(first, argv) ?? { does: 'clear' };
 
+  const declared = verbs.find((verb) => verb.act.name() === first);
+  // A GROUP WHOSE MEMBERS ANSWER FOR THEMSELVES is decided by the member the line names, and by
+  // nothing else: a member that reads runs, one that writes is refused by its whole path, and a
+  // line that names no member (a bare group, a flag first, a word that is none) is the group's
+  // own, which is the most powerful of them. The member is read off the SECOND word as typed,
+  // so a flag written before it cannot lead the line into a member it did not name.
+  if (declared?.members !== undefined && first !== self) {
+    const named = declared.members.find((member) => member.act.name() === argv[1]);
+    if (named?.effect === 'reads') return { does: 'run', argv };
+    const path = named === undefined ? first : `${first} ${argv[1]}`;
+    return {
+      does: 'refuse',
+      sentence: `\`${path}\` can change the record, and this session only reads it`,
+      detail: `Leave with ${THE_KEY_THAT_LEAVES} and run \`mnema ${path}\` from your shell.`,
+    };
+  }
   const offered = verbsOffered(verbs, self);
   if (offered.includes(first)) return { does: 'run', argv };
 
@@ -115,7 +185,6 @@ export function dispositionOf(line: string, verbs: readonly Declared[], self: st
   // The DECISION was made above and it is one membership test; what follows only
   // chooses which true sentence to say, so a wording that fell through could never
   // widen what the session runs.
-  const declared = verbs.find((verb) => verb.act.name() === first);
   if (declared?.effect === 'mutates') {
     return {
       does: 'refuse',

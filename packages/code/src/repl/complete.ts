@@ -93,6 +93,7 @@ export function completerFor(
   offered: readonly string[],
   session: readonly CompletionWord[],
   shown: (word: string) => readonly CompletionWord[],
+  members: ReadonlyMap<string, readonly string[]> = new Map(),
 ): Completer {
   const nodes = new Map(tree.nodes.map((node) => [node.path, node]));
   const root = nodes.get('') ?? NOTHING;
@@ -131,6 +132,9 @@ export function completerFor(
       if (word.startsWith('-')) continue;
       // The top level is filtered, and the filter is what stops the walk.
       if (path === '' && !offered.includes(word)) return undefined;
+      // And so is a group's second word, where its members differ: only the ones the gate runs.
+      const only = members.get(path);
+      if (only !== undefined && !only.includes(word)) return undefined;
       const next = nodes.get(path === '' ? word : `${path} ${word}`);
       if (next === undefined) break;
       at = next;
@@ -178,7 +182,12 @@ export function completerFor(
     // keep theirs, in the order the session showed them (`seen.ts`): concatenating two
     // answers rather than sorting one list is what stops a menu of subcommands from
     // being buried under ids that all begin with the same timestamp.
-    const declared = matching([...node.commands, ...unexplained(node.values)], word);
+    const only = members.get(node.path);
+    const subcommands =
+      only === undefined
+        ? node.commands
+        : node.commands.filter((child) => only.includes(child.word));
+    const declared = matching([...subcommands, ...unexplained(node.values)], word);
     return [[...declared, ...shown(word)], word];
   };
 }

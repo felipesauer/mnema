@@ -10,7 +10,7 @@
  * shared repository holds one identity per contributor, and this machine joins the
  * one belonging to ITS person — a choice made on their behalf would be a guess
  * about whose record this is. They already see the value they need: it is what
- * founding a project prints, and what `mnema accountability` lists.
+ * founding a project prints, and what `mnema audit accountability` lists.
  *
  * It may be named whole or by a prefix of an identity the record here knows, and
  * the request is always SIGNED over the whole value — a consent to join half an

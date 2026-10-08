@@ -17,6 +17,7 @@ export const WHAT_A_SUBCOMMAND_READS: Readonly<Record<string, readonly string[]>
   // The births: every flag of the group, which the group declares for them — its own copy is
   // what its `--help` lists, and the value is read off the group where commander put it.
   'task create': ['--scope', '--which'],
+  'task handoff': ['--scope', '--which'],
   'decision record': ['--alternatives', '--body-file', '--scope', '--stdin', '--which'],
   'skill create': ['--body', '--body-file', '--scope', '--stdin', '--which'],
   // The moves name the agent that executed them, and follow the entity to its tree.
@@ -28,6 +29,10 @@ export const WHAT_A_SUBCOMMAND_READS: Readonly<Record<string, readonly string[]>
   'decision import': ['--scope', '--which'],
   // Nothing is born, moved or recorded, so there is nothing to scope or to credit.
   'skill export': [],
+  'skill provenance': [],
+  // A dry run names the executing agent a move would have; the list of moves names nothing.
+  'task guard': ['--which'],
+  'task next': [],
   // The tree an act covers; the reading's `--json` is the reading's.
   'witness sigstore': ['--global'],
   'witness stamp': ['--global'],

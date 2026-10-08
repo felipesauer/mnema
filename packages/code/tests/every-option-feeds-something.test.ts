@@ -95,7 +95,7 @@
  *     option the action ignores. With the clause above it is the second and last way
  *     closing the hole can err, and it errs LOUDLY rather than quietly — the accusation
  *     names the option, and the answer is an entry in {@link NOT_TRACEABLE}. No handler
- *     on this surface reads options that way; `guard`'s three fields are indexed at the
+ *     on this surface reads options that way; `task guard`'s three fields are indexed at the
  *     far end (`fields[field]` in `core/workflow/gate.ts`), not in the action.
  */
 
@@ -653,7 +653,7 @@ const MUST_ENUMERATE = [
   // Its sibling on the other act — the one whose value went nowhere and was removed.
   'mnema witness upgrade --blocks <url>',
   // `.requiredOption(`, which the grep above cannot see at all.
-  'mnema guard --actor <id>',
+  'mnema task guard --actor <id>',
   // Declared on the program, outside `wiring/`.
   'mnema --color <when>',
 ];
@@ -845,6 +845,8 @@ describe('every option the CLI declares feeds something', () => {
       'mnema skill create --which <agent>',
       'mnema task create --scope <scope>',
       'mnema task create --which <agent>',
+      'mnema task handoff --scope <scope>',
+      'mnema task handoff --which <agent>',
       'mnema witness sigstore --global',
       'mnema witness stamp --global',
       'mnema witness upgrade --global',

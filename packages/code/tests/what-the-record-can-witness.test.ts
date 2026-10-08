@@ -1,5 +1,5 @@
 /**
- * `mnema antipatterns` on the pattern moves: the three answers, and the one the whole
+ * `mnema audit antipatterns` on the pattern moves: the three answers, and the one the whole
  * reading exists for.
  *
  * THE SIGNAL A STUDY PROMISED IN PLACE OF A GATE, and the reason it was blocked for a
@@ -109,16 +109,16 @@ interface Reported {
   readonly notObservable: ReportedMove[];
 }
 
-/** `mnema antipatterns --json`, parsed down to the reading this file is about. */
+/** `mnema audit antipatterns --json`, parsed down to the reading this file is about. */
 async function reported(): Promise<Reported> {
-  const said = await mnema('antipatterns', '--json');
+  const said = await mnema('audit', 'antipatterns', '--json');
   expect(said.failed, said.err.join(' / ')).toBe(false);
   return (JSON.parse(said.out.join('\n')) as { patternMoves: Reported }).patternMoves;
 }
 
 /** The page a person gets, as one string. */
 async function page(): Promise<string> {
-  const said = await mnema('antipatterns');
+  const said = await mnema('audit', 'antipatterns');
   expect(said.failed, said.err.join(' / ')).toBe(false);
   return said.out.join('\n');
 }
@@ -373,8 +373,8 @@ describe('the three answers the record can give about a pattern move', () => {
     expect(await page()).toContain(`${ACCUSES}: ${moved} (review)`);
 
     const before = digest(sandbox);
-    await mnema('antipatterns');
-    await mnema('antipatterns', '--json');
+    await mnema('audit', 'antipatterns');
+    await mnema('audit', 'antipatterns', '--json');
     expect(digest(sandbox)).toBe(before);
   });
 });

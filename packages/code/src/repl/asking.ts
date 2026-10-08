@@ -11,7 +11,7 @@
  * only way to derive this machine's `who` from nothing is to ask the key root for this
  * machine's key, which mints one on a machine that has none. That is a write door, an
  * invocation of this CLI has no session to read an identity from, and so the flag is
- * required (see `commands/focus.ts`, where the argument is written out in full). None of
+ * required (see `commands/resume.ts`, where the argument is written out in full). None of
  * that changes here: the declaration is the same declaration, and `mnema status` at a
  * shell refuses exactly as it did.
  *

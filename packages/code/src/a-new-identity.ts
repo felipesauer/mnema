@@ -16,7 +16,7 @@
  * the OTHER trees, before this key writes in them too. It names the symptom, never a cause: which
  * program moved a key is not something the record knows, and a list of culprits would be wrong the
  * day the next one appears. And it is said once per identity per tree, at the moment it happened;
- * the record keeps the founding, and `mnema accountability` names it whenever somebody asks.
+ * the record keeps the founding, and `mnema audit accountability` names it whenever somebody asks.
  *
  * WHAT TO DO WAS ONE CLAUSE, AND FOLLOWED TO THE LETTER IT SAVED NOTHING. It read "then
  * `mnema key enroll` wherever its key is", which says who vouches and not where the vouch lands —
@@ -166,7 +166,7 @@ export function foundingSentence(founded: FoundedBeside, scope: Scope): string {
   const more = founded.besides.length - shown.length;
   const which =
     more > 0
-      ? `${shown.join(', ')}, and ${more} more — \`mnema accountability\` names them`
+      ? `${shown.join(', ')}, and ${more} more — \`mnema audit accountability\` names them`
       : shown.join(', ');
   const one = founded.besides.length === 1;
   // With one identity beside it, the command is the one to copy: `key request` resolves a short

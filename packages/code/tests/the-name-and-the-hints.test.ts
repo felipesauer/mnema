@@ -701,7 +701,7 @@ describe('the drawing stays in the scrollback and the tips stay on the screen', 
     // and every frame draws all three regions. What that buys is the thing the old shape could
     // not have — the banner is on the screen after ten thousand lines, because it is drawn there
     // rather than left there.
-    const page = await openedAt(200, ['verify', 'skills']);
+    const page = await openedAt(200, ['verify', 'audit antipatterns']);
     // It really was a session that did some work, or the counts below are about nothing.
     expect(page).toContain('local integrity verified');
     // ONE NUMBER AGAINST THE OTHER, still — and now they are the SAME number, which is the
@@ -933,8 +933,8 @@ describe('the session resolves who it is when it opens, and never again', () => 
     // line being counted. (This asked `status`, until `status` stopped requiring one: it answers
     // as the identity this machine writes as when no `--actor` is typed, and RESOLVES that itself,
     // on each run, so a typed `status` reads the anchor file — a verb's own work, not the
-    // session's, and not a frame's. `focus` still requires the flag, which the session fills.)
-    const typing = await readingWhileTyping('focus\r', 'no open runs');
+    // session's, and not a frame's. `resume` still requires the flag, which the session fills.)
+    const typing = await readingWhileTyping('resume\r', 'has no runs');
     expect(ofTheIdentity(typing)).toEqual([]);
     // The verb really ran, and it really read: without this the emptiness above could be
     // a session that answered nothing at all.

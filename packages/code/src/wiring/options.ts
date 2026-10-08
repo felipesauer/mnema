@@ -136,7 +136,7 @@ export const WHICH_ON_SUBCOMMAND_HELP = [
  * and what shape it may be written in.
  *
  * One wording on all four, because they take one value and the reader learns it
- * once. It names `mnema accountability` — the read that LISTS the identities of a
+ * once. It names `mnema audit accountability` — the read that LISTS the identities of a
  * record — and not `mnema verify`, which these flags used to point at and which
  * prints no identity at all: a help line naming a command that does not produce the
  * value it asks for is the same broken hand-off this flag now closes on the other
@@ -146,7 +146,7 @@ export const WHICH_ON_SUBCOMMAND_HELP = [
  * print an identity shortened, and every flag that takes one takes it back.
  */
 export const ACTOR_HELP =
-  'the `mnid:…` from `mnema accountability`, or the short form the reads print ' +
+  'the `mnid:…` from `mnema audit accountability`, or the short form the reads print ' +
   '(any prefix that names one identity here)';
 
 /** Returned by {@link parseScope} when the value is not a valid scope. */

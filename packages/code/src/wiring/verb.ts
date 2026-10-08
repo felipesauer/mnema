@@ -94,10 +94,12 @@ export interface Wiring {
  * everything it needs from the module it already imports its own shape from; the rule,
  * the two words and the argument for declaring rather than deriving are over there.
  *
- * The declaration is per TOP-LEVEL verb, which is the unit commander routes and the unit
- * a caller gates. A group is classified by its most powerful member: no group mixes the
- * two today, and one that did would be `mutates` — the safe side for anything reading
- * this to decide what to run. The MCP surface has no groups at all, so it does not
+ * The declaration is per TOP-LEVEL verb, which is the unit commander routes. A group is
+ * classified by its most powerful member, which is `mutates` — the safe side for anything
+ * reading only this. A group whose members differ (`task`, `skill`) ALSO carries them, each
+ * answering for itself (`groupOf`), and the console's gate decides per member: a member that
+ * reads is run, one that writes is refused by its whole path. A group that carries none
+ * (`tail`, `witness`, `switch`) is gated whole. The MCP surface has no groups at all, so it does not
  * inherit this limit; a tool is one act with one input object.
  *
  * `every-verb-says-if-it-writes.test.ts` is what keeps THIS surface's declarations
@@ -106,7 +108,7 @@ export interface Wiring {
  * that writes is accused by the record rather than by a review.
  */
 export type { RecordEffect } from '../record-effect.js';
-export { mutatesTheRecord, readsTheRecord } from '../record-effect.js';
+export { groupOf, mutatesTheRecord, readsTheRecord } from '../record-effect.js';
 
 /**
  * What registering a verb answers with: the command that was hung, and what that command

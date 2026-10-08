@@ -195,6 +195,8 @@ const DECLARED_TWICE: Readonly<Record<string, Reading>> = {
   // so its `--help` lists them, and reads them off the group the way `decision import` does.
   'task create --scope': 'where it was written',
   'task create --which': 'where it was written',
+  'task handoff --scope': 'where it was written',
+  'task handoff --which': 'where it was written',
   'decision record --alternatives': 'where it was written',
   'decision record --body-file': 'where it was written',
   'decision record --stdin': 'where it was written',

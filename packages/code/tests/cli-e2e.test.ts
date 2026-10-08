@@ -483,7 +483,6 @@ describe('mnema CLI — init → task → verify, end to end', () => {
     expect(h.out.join('\n')).toContain('skill');
     expect(h.out.join('\n')).toContain('memory');
     expect(h.out.join('\n')).toContain('observe');
-    expect(h.out.join('\n')).toContain('handoff');
     expect(h.out.join('\n')).toContain('link');
     expect(h.out.join('\n')).toContain('verify');
   });
@@ -501,7 +500,7 @@ describe('mnema CLI — init → task → verify, end to end', () => {
  *
  * Eighteen commands of the shipped CLI accepted an empty argument, wrote a SIGNED
  * event the parser refuses, and reported success. From that moment every read of the
- * project failed — search, show, timeline, focus, resume, verify, all of them, on the
+ * project failed — search, show, timeline, resume, verify, all of them, on the
  * whole tree rather than the one record — and a tail is append-only, so nothing could
  * take the line back out.
  *
@@ -539,9 +538,9 @@ describe('mnema CLI — a record no read could open, end to end', () => {
       [['observe', 'x', '--topic', 'k', '--text', ''], 'payload.text'],
       // The two whose empty argument becomes the envelope's SUBJECT, not a payload
       // field — the pair a payload-shaped check would have missed.
-      [['handoff', '', 'a', 'b'], 'at subject'],
-      [['handoff', 't', '', 'b'], 'payload.fromAgent'],
-      [['handoff', 't', 'a', ''], 'payload.toAgent'],
+      [['task', 'handoff', '', 'a', 'b'], 'at subject'],
+      [['task', 'handoff', 't', '', 'b'], 'payload.fromAgent'],
+      [['task', 'handoff', 't', 'a', ''], 'payload.toAgent'],
       [['link', '', 'y', '--rel', 'r'], 'at subject'],
       [['link', 'x', '', '--rel', 'r'], 'payload.target'],
       [['link', 'x', 'y', '--rel', ''], 'payload.rel'],
@@ -563,7 +562,7 @@ describe('mnema CLI — a record no read could open, end to end', () => {
     for (const argv of [
       ['task', 'create', ''],
       ['memory', ''],
-      ['handoff', '', 'a', 'b'],
+      ['task', 'handoff', '', 'a', 'b'],
       ['link', 'x', 'y', '--rel', ''],
       ['run', 'start', '--which', 'agent-alpha', '--goal', ''],
     ]) {
@@ -594,7 +593,7 @@ describe('mnema CLI — a record no read could open, end to end', () => {
     // not. The short form of an anchor is a prefix of it, so it is the same identity
     // — and it only became typeable when the reads started printing it.
     const accountability = capture();
-    await run(['accountability'], accountability.io);
+    await run(['audit', 'accountability'], accountability.io);
     const short = /mnid:[0-9a-f]+/.exec(accountability.out.join('\n'))?.[0] as string;
     expect(short.length).toBeLessThan('mnid:'.length + 64);
 
@@ -1116,7 +1115,7 @@ describe('mnema CLI — knowledge (memory, observe, handoff, link), end to end',
     await run(['init'], capture().io);
     const c = capture();
     // The same agent from and to — a chat restart, legitimate.
-    await run(['handoff', 'a-task-id', 'claude-code', 'claude-code'], c.io);
+    await run(['task', 'handoff', 'a-task-id', 'claude-code', 'claude-code'], c.io);
     expect(c.failed()).toBe(false);
     expect(c.out.join('\n')).toBe(
       'Recorded handoff on a-task-id: claude-code → claude-code\n' +
@@ -1180,7 +1179,7 @@ describe('mnema CLI — knowledge (memory, observe, handoff, link), end to end',
     expect(o.failed()).toBe(true);
 
     const h = capture();
-    await run(['handoff', 'T', 'a', 'b'], h.io);
+    await run(['task', 'handoff', 'T', 'a', 'b'], h.io);
     expect(h.failed()).toBe(true);
 
     const l = capture();
@@ -1196,14 +1195,14 @@ describe('mnema CLI — knowledge (memory, observe, handoff, link), end to end',
 
     // Human summary lists the moves.
     const human = capture();
-    await run(['next-actions', id], human.io);
+    await run(['task', 'next', id], human.io);
     expect(human.failed()).toBe(false);
     expect(human.out.join('\n')).toContain('submit → READY');
     expect(human.out.join('\n')).toContain('cancel → CANCELED (needs reason)');
 
     // --json emits the faithful array of next actions.
     const json = capture();
-    await run(['next-actions', id, '--json'], json.io);
+    await run(['task', 'next', id, '--json'], json.io);
     const actions = JSON.parse(json.out.join('\n')) as { action: string; to: string }[];
     expect(actions.map((a) => a.action).sort()).toEqual(['cancel', 'submit']);
   });
@@ -1217,47 +1216,45 @@ describe('mnema CLI — knowledge (memory, observe, handoff, link), end to end',
 
     // Terminal task — an existing task with no move (not an error).
     const terminal = capture();
-    await run(['next-actions', id], terminal.io);
+    await run(['task', 'next', id], terminal.io);
     expect(terminal.failed()).toBe(false);
     expect(terminal.out.join('\n')).toContain('terminal — no legal moves');
 
     // Unknown id — an honest refusal, distinct from terminal.
     const unknown = capture();
-    await run(['next-actions', 'not-a-real-id'], unknown.io);
+    await run(['task', 'next', 'not-a-real-id'], unknown.io);
     expect(unknown.failed()).toBe(true);
     expect(unknown.err.join('\n')).toContain('No task not-a-real-id here.');
   });
 
-  it('focus requires --actor and reports an empty focus for the founder (--json faithful)', async () => {
+  it('resume requires --actor and reports an empty focus for the founder (--json faithful)', async () => {
     const who = await foundIdentity();
 
-    // A fresh project has no runs (runs are opened by a session, not the CLI), so
-    // the actor's focus is empty — reported honestly, not as silent output.
-    const human = capture();
-    await run(['focus', '--actor', who], human.io);
-    expect(human.failed()).toBe(false);
-    expect(human.out.join('\n')).toContain('has no open runs');
-    // And it says what a run IS, so an empty answer does not read as a fault.
-    expect(human.out.join('\n')).toContain("A run is an agent's working session");
-
     // --json emits the faithful object — the WHOLE anchor, never the short form:
-    // that channel is data an agent may feed back, not a line a person reads.
+    // that channel is data an agent may feed back, not a line a person reads. A fresh
+    // project has no runs (runs are opened by a session, not the CLI), so the actor's
+    // open runs are empty — reported honestly, not as silent output.
     const json = capture();
-    await run(['focus', '--actor', who, '--json'], json.io);
-    const focus = JSON.parse(json.out.join('\n')) as { actor: string; openRuns: unknown[] };
-    expect(focus.actor).toBe(who);
-    expect(focus.openRuns).toEqual([]);
+    await run(['resume', '--actor', who, '--json'], json.io);
+    const resumed = JSON.parse(json.out.join('\n')) as {
+      actor: string;
+      lastRun: unknown;
+      focus: { openRuns: unknown[] };
+    };
+    expect(resumed.actor).toBe(who);
+    expect(resumed.lastRun).toBeNull();
+    expect(resumed.focus.openRuns).toEqual([]);
 
     // An actor naming no identity here is refused, not answered about: an empty
-    // focus for a stranger reads exactly like an empty focus for a real person.
+    // answer for a stranger reads exactly like an empty one for a real person.
     const stranger = capture();
-    await run(['focus', '--actor', 'whoever'], stranger.io);
+    await run(['resume', '--actor', 'whoever'], stranger.io);
     expect(stranger.failed()).toBe(true);
     expect(stranger.err.join('\n')).toContain('UNKNOWN_ANCHOR');
 
     // Omitting --actor is a usage error the parser reports (nothing read).
     const missing = capture();
-    await run(['focus'], missing.io);
+    await run(['resume'], missing.io);
     expect(missing.failed()).toBe(true);
   });
 
@@ -1520,13 +1517,16 @@ describe('mnema CLI — guard (dry-run of the gate), end to end', () => {
 
     // cancel is legal from DRAFT with a reason → ALLOWED, reaching CANCELED.
     const human = capture();
-    await run(['guard', 'cancel', id, '--actor', who, '--reason', 'dropped'], human.io);
+    await run(['task', 'guard', 'cancel', id, '--actor', who, '--reason', 'dropped'], human.io);
     expect(human.failed()).toBe(false);
     expect(human.out.join('\n')).toContain(`ALLOWED: cancel ${id} → CANCELED`);
 
     // --json emits the gate's own verdict, faithful.
     const json = capture();
-    await run(['guard', 'cancel', id, '--actor', who, '--reason', 'dropped', '--json'], json.io);
+    await run(
+      ['task', 'guard', 'cancel', id, '--actor', who, '--reason', 'dropped', '--json'],
+      json.io,
+    );
     const verdict = JSON.parse(json.out.join('\n')) as {
       ok: boolean;
       to?: string;
@@ -1539,7 +1539,7 @@ describe('mnema CLI — guard (dry-run of the gate), end to end', () => {
     const { id, who } = await taskAndIdentity();
     const c = capture();
     // cancel is legal but needs a reason; without it → REFUSED (MISSING_PROOF).
-    await run(['guard', 'cancel', id, '--actor', who], c.io);
+    await run(['task', 'guard', 'cancel', id, '--actor', who], c.io);
     // A refused verdict is a successful dry-run — it does not signal CLI failure.
     expect(c.failed()).toBe(false);
     expect(c.out.join('\n')).toContain('REFUSED (MISSING_PROOF)');
@@ -1549,7 +1549,7 @@ describe('mnema CLI — guard (dry-run of the gate), end to end', () => {
     const { id, who } = await taskAndIdentity();
     const c = capture();
     // approve is not legal from DRAFT → REFUSED (ILLEGAL_TRANSITION).
-    await run(['guard', 'approve', id, '--actor', who, '--note', 'lgtm'], c.io);
+    await run(['task', 'guard', 'approve', id, '--actor', who, '--note', 'lgtm'], c.io);
     expect(c.failed()).toBe(false);
     expect(c.out.join('\n')).toContain('REFUSED (ILLEGAL_TRANSITION)');
   });
@@ -1557,7 +1557,7 @@ describe('mnema CLI — guard (dry-run of the gate), end to end', () => {
   it('REFUSES WHO_IS_WHICH when --which equals --actor', async () => {
     const { id, who } = await taskAndIdentity();
     const c = capture();
-    await run(['guard', 'submit', id, '--actor', who, '--which', who], c.io);
+    await run(['task', 'guard', 'submit', id, '--actor', who, '--which', who], c.io);
     expect(c.failed()).toBe(false);
     expect(c.out.join('\n')).toContain('REFUSED (WHO_IS_WHICH)');
   });
@@ -1567,12 +1567,12 @@ describe('mnema CLI — guard (dry-run of the gate), end to end', () => {
 
     // Omitting --actor is a usage error the parser reports (nothing read).
     const missing = capture();
-    await run(['guard', 'submit', id], missing.io);
+    await run(['task', 'guard', 'submit', id], missing.io);
     expect(missing.failed()).toBe(true);
 
     // Unknown id → an honest refusal.
     const unknown = capture();
-    await run(['guard', 'submit', 'not-a-real-id', '--actor', who], unknown.io);
+    await run(['task', 'guard', 'submit', 'not-a-real-id', '--actor', who], unknown.io);
     expect(unknown.failed()).toBe(true);
     expect(unknown.err.join('\n')).toContain('No task not-a-real-id here.');
 
@@ -1582,7 +1582,7 @@ describe('mnema CLI — guard (dry-run of the gate), end to end', () => {
     mkdirSync(orphan, { recursive: true });
     process.chdir(orphan);
     const out = capture();
-    await run(['guard', 'submit', 'anything', '--actor', `mnid:${'0'.repeat(64)}`], out.io);
+    await run(['task', 'guard', 'submit', 'anything', '--actor', `mnid:${'0'.repeat(64)}`], out.io);
     expect(out.failed()).toBe(true);
     expect(out.err.join('\n')).toContain('No mnema project here');
   });
@@ -1614,8 +1614,7 @@ describe('mnema CLI — the identity a read prints is the identity a flag takes'
     // Every reading that names an identity, and the form each one printed.
     const reads: Record<string, string[]> = {};
     for (const argv of [
-      ['accountability'],
-      ['focus', '--actor', whole],
+      ['audit', 'accountability'],
       ['resume', '--actor', whole],
     ]) {
       const c = capture();
@@ -1662,16 +1661,15 @@ describe('mnema CLI — the identity a read prints is the identity a flag takes'
     )[1] as string;
 
     const account = capture();
-    await run(['accountability'], account.io);
+    await run(['audit', 'accountability'], account.io);
     const short = printedIdentity(account.out.join('\n'));
 
     // The three reads that take an actor, and the filter over the very read it came
     // from — each given the text the terminal showed, not a value computed here.
     for (const argv of [
-      ['focus', '--actor', short],
       ['resume', '--actor', short],
-      ['guard', 'submit', id, '--actor', short],
-      ['accountability', '--who', short],
+      ['task', 'guard', 'submit', id, '--actor', short],
+      ['audit', 'accountability', '--who', short],
     ]) {
       const c = capture();
       await run(argv, c.io);
@@ -1687,16 +1685,15 @@ describe('mnema CLI — the identity a read prints is the identity a flag takes'
     // The filtered account is the same account: the prefix narrowed to the one
     // identity there is, rather than to nobody.
     const filtered = capture();
-    await run(['accountability', '--who', short], filtered.io);
+    await run(['audit', 'accountability', '--who', short], filtered.io);
     expect(filtered.out).toEqual(account.out);
   });
 
   it('keeps the WHOLE anchor in --json, which is data and not a line to read', async () => {
     const whole = await foundIdentity();
     for (const argv of [
-      ['focus', '--actor', whole, '--json'],
       ['resume', '--actor', whole, '--json'],
-      ['accountability', '--json'],
+      ['audit', 'accountability', '--json'],
     ]) {
       const c = capture();
       await run(argv, c.io);
@@ -1967,7 +1964,7 @@ describe('mnema CLI — a second machine joins one identity, end to end', () => 
 
     // One author across the whole record, read the way a person reads it.
     const acc = capture();
-    await run(['accountability'], acc.io);
+    await run(['audit', 'accountability'], acc.io);
     expect(acc.out[0]).toMatch(/^\d+ fact\(s\) · 1 author\(s\)$/);
 
     // And it is all proven: two tails, ok, every event signature-covered.
@@ -1994,7 +1991,7 @@ describe('mnema CLI — a second machine joins one identity, end to end', () => 
     expect(events.find((event) => event.kind === 'memory.captured')?.who).not.toBe(anchor);
     expect(events.filter((event) => event.kind === 'identity.founded')).toHaveLength(2);
     const acc = capture();
-    await run(['accountability'], acc.io);
+    await run(['audit', 'accountability'], acc.io);
     expect(acc.out[0]).toContain('2 author(s)');
   });
 
@@ -2135,7 +2132,7 @@ describe('mnema CLI — asking with the cold copy while the wrong key is install
     const lost = await loseTheKeyThenWrite();
     // The split is real: two identities in one record.
     const acc = capture();
-    await run(['accountability'], acc.io);
+    await run(['audit', 'accountability'], acc.io);
     expect(acc.out[0]).toContain('2 author(s)');
 
     // The old remedy cannot help: restoring would leave two private keys.
@@ -2269,7 +2266,7 @@ describe('mnema CLI — run (the session), end to end', () => {
       : [];
   }
 
-  it('start → two facts pinned to one session → focus → end → resume, and it all verifies', async () => {
+  it('start → two facts pinned to one session → the open run → end → resume, and it all verifies', async () => {
     const anchor = await initHere();
 
     // 1. The session opens, for a NAMED agent, and hands back the line that pins
@@ -2305,11 +2302,12 @@ describe('mnema CLI — run (the session), end to end', () => {
     expect(session).toMatchObject({ agent: 'claude-code', who: anchor, open: true });
     expect(projectRuns(eventsOf(trees.projectPrivate)).has(started.id)).toBe(false);
 
-    // 4. focus ANSWERS now — the read that was empty forever for a CLI user.
+    // 4. resume ANSWERS now with the run still open — the list that was empty forever for a
+    //    CLI user.
     const f = capture();
-    await run(['focus', '--actor', anchor], f.io);
+    await run(['resume', '--actor', anchor], f.io);
     expect(f.failed()).toBe(false);
-    expect(f.out.join('\n')).toContain('1 open run(s)');
+    expect(f.out.join('\n')).toContain('1 run(s) still open');
     expect(f.out.join('\n')).toContain(started.id);
     expect(f.out.join('\n')).toContain('wire the run into the CLI');
 
@@ -2488,8 +2486,8 @@ describe('mnema CLI — run (the session), end to end', () => {
     expect(scoped.failed()).toBe(true);
   });
 
-  it('an AGENT NAME holding a newline cannot forge a run in `focus`', async () => {
-    // `focus` lists one line per open run, `<id>  <agent>`, and the agent's name
+  it('an AGENT NAME holding a newline cannot forge a run in `resume`', async () => {
+    // `resume` lists one line per open run, `<id>  <agent>`, and the agent's name
     // is text an actor wrote. Split across two lines, its second half would read
     // as a run of its own — an id the record never minted, for an agent that is
     // not this actor's. The goal sits on the same line and is just as writable.
@@ -2499,19 +2497,20 @@ describe('mnema CLI — run (the session), end to end', () => {
     await startRun('other-agent', `a goal\n${forgedLine}`);
 
     const f = capture();
-    await run(['focus', '--actor', anchor], f.io);
+    await run(['resume', '--actor', anchor], f.io);
     expect(f.failed()).toBe(false);
     const lines = f.out.join('\n').split('\n');
-    // The header plus exactly one line per open run — two runs, two lines.
-    expect(lines).toHaveLength(3);
-    expect(lines[0]).toContain('2 open run(s)');
+    // Where the actor left off, the count, and exactly one line per open run — two runs,
+    // two lines.
+    expect(lines).toHaveLength(4);
+    expect(lines[1]).toContain('2 run(s) still open');
     expect(f.out.join('\n')).not.toContain(`\n${forgedLine}`);
 
     // --json stays the faithful object: the agent and the goal as written.
     const j = capture();
-    await run(['focus', '--actor', anchor, '--json'], j.io);
-    const focus = JSON.parse(j.out.join('\n')) as {
-      openRuns: Array<{ agent: string; goal?: string }>;
+    await run(['resume', '--actor', anchor, '--json'], j.io);
+    const { focus } = JSON.parse(j.out.join('\n')) as {
+      focus: { openRuns: Array<{ agent: string; goal?: string }> };
     };
     expect(focus.openRuns.some((r) => r.agent.includes('\n'))).toBe(true);
     expect(focus.openRuns.some((r) => r.goal?.includes('\n') === true)).toBe(true);
@@ -2594,8 +2593,8 @@ describe('mnema CLI — run (the session), end to end', () => {
     expect(c.out.join('\n')).toContain('· wrote nothing');
   });
 
-  it('`focus` says what each open run has written, not only how long it has been open', async () => {
-    // The hole a mutation battery found: `focus` prints the clause and NOTHING held it.
+  it('`resume` says what each open run has written, not only how long it has been open', async () => {
+    // The hole a mutation battery found: `resume` prints the clause and NOTHING held it.
     // Handing the wording function a run that wrote nothing left every case green,
     // because the only fixture that reached this line was a run that had written
     // nothing anyway — a guard blind for want of a value, not for want of a case.
@@ -2614,19 +2613,21 @@ describe('mnema CLI — run (the session), end to end', () => {
     const empty = await startRun('other-agent', 'with nothing in it');
 
     const f = capture();
-    await run(['focus', '--actor', anchor], f.io);
+    await run(['resume', '--actor', anchor], f.io);
     expect(f.failed()).toBe(false);
-    const lines = f.out.join('\n').split('\n');
+    // The first two lines say where the actor left off and how many runs are open; the
+    // runs are what follows.
+    const lines = f.out.join('\n').split('\n').slice(2);
     const forWorked = lines.find((l) => l.includes(worked.id)) ?? '';
     const forEmpty = lines.find((l) => l.includes(empty.id)) ?? '';
     // A task is born as a pair — the creation and the move into its initial state.
     expect(forWorked).toContain('· wrote 1 task.created, 1 task.transitioned');
     expect(forEmpty).toContain('· wrote nothing');
     // Still ONE line per run: the clause rides the run's own line, like the durations.
-    expect(lines).toHaveLength(3);
+    expect(lines).toHaveLength(2);
   });
 
-  it('`focus` says how long each open run has been open and how long since it recorded', async () => {
+  it('`resume` says how long each open run has been open and how long since it recorded', async () => {
     // What makes a list of leftover runs readable. Two runs, one with a fact pinned to
     // it and one with none, and the difference is stated rather than left to a blank:
     // an absent idleness MEANS the run recorded nothing, and a line that only omitted
@@ -2647,12 +2648,12 @@ describe('mnema CLI — run (the session), end to end', () => {
     const empty = await startRun('other-agent', 'with nothing in it');
 
     const f = capture();
-    await run(['focus', '--actor', anchor], f.io);
+    await run(['resume', '--actor', anchor], f.io);
     expect(f.failed()).toBe(false);
     // Still one line per run — the age rides the run's own line, because a reader
-    // counts runs by lines.
-    const lines = f.out.join('\n').split('\n');
-    expect(lines).toHaveLength(3);
+    // counts runs by lines. The first two lines are where the actor left off and the count.
+    const lines = f.out.join('\n').split('\n').slice(2);
+    expect(lines).toHaveLength(2);
     const forWorked = lines.find((l) => l.includes(worked.id)) ?? '';
     const forEmpty = lines.find((l) => l.includes(empty.id)) ?? '';
     expect(forWorked).toMatch(/· open \d+[dhms]/);
@@ -2662,14 +2663,16 @@ describe('mnema CLI — run (the session), end to end', () => {
     // `--json` carries the numbers themselves, and whose run it is: a command-line
     // read opens none, so every one of them is another session's.
     const j = capture();
-    await run(['focus', '--actor', anchor, '--json'], j.io);
-    const focus = JSON.parse(j.out.join('\n')) as {
-      openRuns: Array<{
-        id: string;
-        thisSession: boolean;
-        ageSeconds?: number;
-        idleSeconds?: number;
-      }>;
+    await run(['resume', '--actor', anchor, '--json'], j.io);
+    const { focus } = JSON.parse(j.out.join('\n')) as {
+      focus: {
+        openRuns: Array<{
+          id: string;
+          thisSession: boolean;
+          ageSeconds?: number;
+          idleSeconds?: number;
+        }>;
+      };
     };
     expect(focus.openRuns.every((r) => r.thisSession === false)).toBe(true);
     expect(focus.openRuns.find((r) => r.id === worked.id)?.idleSeconds).toBeTypeOf('number');
@@ -2839,7 +2842,7 @@ describe('mnema CLI — a --which that names nobody', () => {
     const id = (c.out.join('\n').match(/\(([0-9a-f-]{36})\)/) as RegExpMatchArray)[1] as string;
 
     const g = capture();
-    await run(['guard', 'submit', id, '--actor', who, '--which', '   '], g.io);
+    await run(['task', 'guard', 'submit', id, '--actor', who, '--which', '   '], g.io);
     expect(g.failed()).toBe(true);
     expect(g.err.join('\n')).toContain('names no agent');
   });
@@ -2924,7 +2927,7 @@ describe('mnema CLI — a --which that names nobody', () => {
     // Every verb that DECLARES the flag is listed, so a new one shows up here.
     expect(declaring.sort()).toEqual(
       [
-        'accountability',
+        'audit accountability',
         'check declare',
         'export',
         'decision',
@@ -2942,10 +2945,9 @@ describe('mnema CLI — a --which that names nobody', () => {
         'decision record',
         'skill create',
         'task create',
-        'guard',
+        'task handoff',
         'memory',
         'observe',
-        'handoff',
         'link',
         'retract',
         'unlink',
@@ -2962,7 +2964,7 @@ describe('mnema CLI — a --which that names nobody', () => {
     // already acted rather than a declaration of who is acting now. Both are reads that
     // narrow the record by agent; neither attributes anything, so a value naming no
     // recorded agent is an empty answer rather than a refusal.
-    expect(unvalidated.sort()).toEqual(['accountability', 'export']);
+    expect(unvalidated.sort()).toEqual(['audit accountability', 'export']);
   });
 });
 
@@ -3106,7 +3108,7 @@ describe('mnema CLI — what enters the record', () => {
     writer.checkpoint();
 
     const e = capture();
-    await run(['exposure'], e.io);
+    await run(['audit', 'exposure'], e.io);
     expect(e.failed()).toBe(false);
     const printed = e.out.join('\n');
 
@@ -3123,7 +3125,7 @@ describe('mnema CLI — what enters the record', () => {
 
     // The same holds for --json, which is the other path a value could take out.
     const j = capture();
-    await run(['exposure', '--json'], j.io);
+    await run(['audit', 'exposure', '--json'], j.io);
     expect(j.out.join('\n')).not.toContain(SECRET);
     expect(j.out.join('\n')).toContain('aws-access-key');
   });
@@ -3133,7 +3135,7 @@ describe('mnema CLI — what enters the record', () => {
     await run(['memory', 'the staging password is hunter2'], capture().io);
 
     const e = capture();
-    await run(['exposure'], e.io);
+    await run(['audit', 'exposure'], e.io);
     const printed = e.out.join('\n');
     expect(printed).toContain('Nothing recognizable');
     // WHERE it looked, beside the count. A denominator next to an empty list reads as
@@ -3154,7 +3156,7 @@ describe('mnema CLI — what enters the record', () => {
       ['skill'],
       ['memory'],
       ['observe'],
-      ['handoff'],
+      ['task', 'handoff'],
       ['link'],
       ['run'],
       ['task', 'move'],
@@ -3213,7 +3215,7 @@ describe('mnema CLI — skills, the provenance audit', () => {
     await run(['init'], capture().io);
     const id = await adopt('a-habit', 'agent-A', 'agent-A');
 
-    const printed = await output(['skills']);
+    const printed = await output(['skill', 'provenance']);
     expect(printed).toContain('1 pattern(s)');
     expect(printed).toContain(id);
     expect(printed).toContain('proposed by agent-A · adopted by agent-A (the same agent)');
@@ -3227,7 +3229,7 @@ describe('mnema CLI — skills, the provenance audit', () => {
     await run(['init'], capture().io);
     await adopt('two-agents', 'agent-A', 'agent-B');
 
-    const printed = await output(['skills']);
+    const printed = await output(['skill', 'provenance']);
     expect(printed).toContain('proposed by agent-A · adopted by agent-B');
     expect(printed).not.toContain('the same agent');
   });
@@ -3236,7 +3238,7 @@ describe('mnema CLI — skills, the provenance audit', () => {
     await run(['init'], capture().io);
     await adopt('by-hand');
 
-    const printed = await output(['skills']);
+    const printed = await output(['skill', 'provenance']);
     expect(printed).toContain('proposed by a person · adopted by a person');
     // Two absences are not evidence of one actor: a tree can hold two people's
     // facts, so the same-agent line must NOT appear.
@@ -3250,7 +3252,7 @@ describe('mnema CLI — skills, the provenance audit', () => {
       await output(['skill', 'create', '--which', 'agent-A', 'an-idea', '--body', 'maybe']),
     );
 
-    const printed = await output(['skills']);
+    const printed = await output(['skill', 'provenance']);
     expect(printed).toContain(`${id}`);
     expect(printed).toContain('proposed by agent-A');
     expect(printed).not.toContain('adopted by');
@@ -3268,7 +3270,7 @@ describe('mnema CLI — skills, the provenance audit', () => {
     const rejected = idOf(await output(['skill', 'create', 'Middle', '--body', 'no']));
     await output(['skill', 'move', 'reject', rejected, '--note', 'not for us']);
 
-    const lines = (await output(['skills'])).split('\n').slice(1);
+    const lines = (await output(['skill', 'provenance'])).split('\n').slice(1);
     expect(lines).toHaveLength(3);
     expect(lines[0]).toContain('Alpha');
     expect(lines[1]).toContain('Middle');
@@ -3281,7 +3283,7 @@ describe('mnema CLI — skills, the provenance audit', () => {
     await run(['init'], capture().io);
     const id = await adopt('a-habit', 'agent-A', 'agent-B');
 
-    const json = JSON.parse(await output(['skills', '--json'])) as Array<{
+    const json = JSON.parse(await output(['skill', 'provenance', '--json'])) as Array<{
       id: string;
       name: string;
       state: string;
@@ -3310,8 +3312,8 @@ describe('mnema CLI — skills, the provenance audit', () => {
     await adopt('a-habit', 'agent-A', 'agent-A');
     const before = digestOf(join(repo, '.mnema'));
 
-    await output(['skills']);
-    await output(['skills', '--json']);
+    await output(['skill', 'provenance']);
+    await output(['skill', 'provenance', '--json']);
 
     expect(digestOf(join(repo, '.mnema'))).toBe(before);
     const trees = resolveTrees(repo, {
@@ -3328,7 +3330,7 @@ describe('mnema CLI — skills, the provenance audit', () => {
   it('outside a project it answers over the global tree, and empty is an ANSWER', async () => {
     // No init: nothing here. An empty record is a legitimate answer, not a refusal.
     const empty = capture();
-    await run(['skills'], empty.io);
+    await run(['skill', 'provenance'], empty.io);
     expect(empty.failed()).toBe(false);
     expect(empty.out.join('\n')).toContain('No patterns recorded');
 
@@ -3344,7 +3346,7 @@ describe('mnema CLI — skills, the provenance audit', () => {
         'global',
       ]),
     );
-    expect(await output(['skills'])).toContain(id);
+    expect(await output(['skill', 'provenance'])).toContain(id);
   });
 
   it('a name holding a NEWLINE cannot forge a second line in the report', async () => {
@@ -3359,12 +3361,14 @@ describe('mnema CLI — skills, the provenance audit', () => {
       'x',
     ]);
 
-    const lines = (await output(['skills'])).split('\n');
+    const lines = (await output(['skill', 'provenance'])).split('\n');
     // The header plus exactly one line — the count matches the pattern count.
     expect(lines).toHaveLength(2);
     expect(lines[0]).toBe('1 pattern(s):');
     // The name as written is still in --json; the report just keeps it on one line.
-    const json = JSON.parse(await output(['skills', '--json'])) as Array<{ name: string }>;
+    const json = JSON.parse(await output(['skill', 'provenance', '--json'])) as Array<{
+      name: string;
+    }>;
     expect(json[0]?.name).toContain('\n');
   });
 
@@ -3382,7 +3386,7 @@ describe('mnema CLI — skills, the provenance audit', () => {
     // both agents. Three fields, still one line.
     await adopt(`legit-three\n${forgedLine}`, `agente\n${forgedLine}`, `agente\n${forgedLine}`);
 
-    const printed = await output(['skills']);
+    const printed = await output(['skill', 'provenance']);
     const lines = printed.split('\n');
     // The header plus exactly one line per pattern — three patterns, three lines.
     expect(lines).toHaveLength(4);
@@ -3391,7 +3395,7 @@ describe('mnema CLI — skills, the provenance audit', () => {
 
     // --json carries both agent names as written: a JSON field has no line to
     // forge, and collapsing there would make the answer disagree with the chain.
-    const json = JSON.parse(await output(['skills', '--json'])) as Array<{
+    const json = JSON.parse(await output(['skill', 'provenance', '--json'])) as Array<{
       proposedBy?: string;
       adoption?: { by?: string };
     }>;
@@ -3401,7 +3405,7 @@ describe('mnema CLI — skills, the provenance audit', () => {
 
   it('--help says it is the AUDIT, not the tool of the same name', async () => {
     const h = capture();
-    await run(['skills', '--help'], h.io);
+    await run(['skill', 'provenance', '--help'], h.io);
     const help = h.out.join('\n');
     expect(help).toContain('AUDIT');
     expect(help).toContain('serves a pattern');
@@ -3463,7 +3467,7 @@ describe('where a pattern came from — across the two surfaces', () => {
     // 3. The person auditing on the command line sees BOTH acts, and that one
     // agent stands on both ends — the reading the served line does not carry.
     const audit = capture();
-    await run(['skills'], audit.io);
+    await run(['skill', 'provenance'], audit.io);
     expect(audit.failed()).toBe(false);
     expect(audit.out.join('\n')).toContain(
       'proposed by agent-A · adopted by agent-A (the same agent)',
@@ -3507,7 +3511,7 @@ describe('where a pattern came from — across the two surfaces', () => {
     expect(runSkillsTool(c).ok).toBe(true);
 
     const audit = capture();
-    await run(['skills'], audit.io);
+    await run(['skill', 'provenance'], audit.io);
     expect(audit.failed()).toBe(false);
     const lines = audit.out.filter((line) => line.startsWith('  '));
     expect(lines.find((line) => line.includes(live.id))).toContain('consulted in 2 run(s)');
@@ -3543,7 +3547,7 @@ describe('where a pattern came from — across the two surfaces', () => {
     expect(served.skills[0]?.adoptedBy).toBe('agent-B');
 
     const audit = capture();
-    await run(['skills'], audit.io);
+    await run(['skill', 'provenance'], audit.io);
     const printed = audit.out.join('\n');
     expect(printed).toContain('proposed by agent-A · adopted by agent-B');
     expect(printed).not.toContain('the same agent');
@@ -3782,7 +3786,7 @@ describe('mnema CLI — brief, the record as the file an agent reads', () => {
     expect(await output(['brief'])).toBe(document);
     // And the same clash is known WITHOUT generating the file, through a verb this slice
     // reaches by another path entirely.
-    const audited = await output(['antipatterns']);
+    const audited = await output(['audit', 'antipatterns']);
     expect(audited).toContain('label naming more than one rule (ADR-1)');
     expect(audited).toContain(ours);
     expect(audited).toContain(yours);
@@ -3800,7 +3804,7 @@ describe('mnema CLI — brief, the record as the file an agent reads', () => {
     for (const absent of ['more than one rule', 'Cite these by id', '- `ADR-']) {
       expect(document, `the document says ${absent}`).not.toContain(absent);
     }
-    expect(await output(['antipatterns'])).not.toContain('label naming');
+    expect(await output(['audit', 'antipatterns'])).not.toContain('label naming');
   });
 
   it('writes nothing — not an event, not a cache, and not the operator’s file', async () => {

@@ -389,7 +389,7 @@ describe('one gloss, two doors', () => {
     for (const tool of glossing) {
       expect(scopeGlossesIn(toolDescription(tool)), tool).toEqual(one);
     }
-    for (const verb of ['task', 'decision', 'skill', 'memory', 'observe', 'handoff', 'link']) {
+    for (const verb of ['task', 'decision', 'skill', 'memory', 'observe', 'task handoff', 'link']) {
       expect(scopeGlossesIn(cliOptionHelp(verb, '--scope')), verb).toEqual(one);
     }
     // The counts, so neither loop can be satisfied by finding nothing: four MCP tools spell

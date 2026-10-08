@@ -1,7 +1,7 @@
 /**
- * The `mnema exposure` wiring: what it declares, and what it prints.
+ * The `mnema audit exposure` wiring: what it declares, and what it prints.
  *
- * `mnema exposure [--json]` — which records hold something shaped like a
+ * `mnema audit exposure [--json]` — which records hold something shaped like a
  * credential. The fourth intelligence read, and the only one about the record's
  * PAST: everything written before the content door existed was written with no
  * defense, and in a committed tree that past is what decides the damage.
@@ -18,7 +18,7 @@ import { writeLines } from './io.js';
 import { reportRefusal } from './report.js';
 import { type Declared, readsTheRecord, type Wiring } from './verb.js';
 
-/** Registers `mnema exposure` on the program. */
+/** Registers `mnema audit exposure` on the `audit` group. */
 export function registerExposure(program: Command, wiring: Wiring): Declared {
   const { io, render } = wiring;
   const exposure = program

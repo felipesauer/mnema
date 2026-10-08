@@ -175,9 +175,9 @@ describe('mnema check', () => {
     expect(passed?.kind === 'check.passed' ? passed.payload.output : '').toBe('ok;fine');
 
     await did('verify');
-    const account = await did('accountability');
+    const account = await did('audit', 'accountability');
     expect(account.out.join('\n')).toContain('machine (signs check results only)');
-    const json = JSON.parse((await did('accountability', '--json')).out.join('\n')) as {
+    const json = JSON.parse((await did('audit', 'accountability', '--json')).out.join('\n')) as {
       byWho: { who: string; machine: boolean }[];
     };
     expect(json.byWho.filter((w) => w.machine).map((w) => w.who)).toEqual([results[0]?.who]);
@@ -245,7 +245,7 @@ describe('mnema check', () => {
 
     const verified = await did('verify');
     expect(verified.out.join('\n')).toContain('census [retired-checker]');
-    const account = await did('accountability');
+    const account = await did('audit', 'accountability');
     expect(account.out.join('\n')).toContain('retired by');
   });
 });

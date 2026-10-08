@@ -279,14 +279,6 @@ const CLASSIFIED: Readonly<Record<string, { verdict: Verdict; why: string }>> = 
     verdict: 'minted',
     why: 'the state and the topic are words of this verb, and the finding was composed in `commands/doctor.ts` with every path and version it read from the machine closed by `oneLine`',
   },
-  'focus.ts «{} has no open runs.» #1': {
-    verdict: 'minted',
-    why: 'an anchor: `--actor` is resolved to one before the read runs',
-  },
-  'focus.ts «{} — {} open run(s):» #1': {
-    verdict: 'minted',
-    why: 'the same anchor, and a count — the runs under it are the collapsed pair below',
-  },
   'init.ts «identity: {}» #1': {
     verdict: 'minted',
     why: 'an anchor this run derived — `mnid:` and 64 hex, so there is nothing to collapse',
@@ -413,7 +405,7 @@ const CLASSIFIED: Readonly<Record<string, { verdict: Verdict; why: string }>> = 
     verdict: 'minted',
     why: 'the kind of the note the record holds, and its id in the record’s canonical form',
   },
-  'next-actions.ts «{} → {}{}» #1': {
+  'next.ts «{} → {}{}» #1': {
     verdict: 'minted',
     why: 'the transition table’s own words — an action, a state, the proof it requires',
   },
@@ -526,11 +518,11 @@ const CLASSIFIED: Readonly<Record<string, { verdict: Verdict; why: string }>> = 
     verdict: 'collapsed',
     why: 'the id of the subject moved twice and the states each move went to — the record’s',
   },
-  'focus.ts «{}» #1': {
+  'resume.ts «{}» #1': {
     verdict: 'collapsed',
     why: 'the agent a run names — text whoever opened the session wrote',
   },
-  'focus.ts « — {}» #1': {
+  'resume.ts « — {}» #1': {
     verdict: 'collapsed',
     why: 'the run’s goal; the dash is a chunk so the collapse cannot eat its space',
   },
@@ -590,11 +582,11 @@ const CLASSIFIED: Readonly<Record<string, { verdict: Verdict; why: string }>> = 
     verdict: 'collapsed',
     why: 'the edge as the link recorded it — the caller’s three values, which the link never validated',
   },
-  'next-actions.ts «Task {} is terminal — no legal moves.» #1': {
+  'next.ts «Task {} is terminal — no legal moves.» #1': {
     verdict: 'collapsed',
     why: 'the id positional; not forgeable today, and it heads a list on the next line',
   },
-  'next-actions.ts «Task {} — {} legal move(s):» #1': {
+  'next.ts «Task {} — {} legal move(s):» #1': {
     verdict: 'collapsed',
     why: 'the id positional, HEADING the list — reachable only with an id that matched',
   },
@@ -800,7 +792,7 @@ describe('every line this wiring words is classified', () => {
     // `witness sigstore` prints.
     // 111 once `key sigstore` said the hash the record keeps for an e-mail.
     // 112 with the line `unlink` prints for the edge it took back.
-    expect(FOUND.sites.length).toBe(112);
+    expect(FOUND.sites.length).toBe(110);
   });
 
   it('reads the verdict off the source rather than believing the table', () => {
@@ -821,7 +813,7 @@ describe('every line this wiring words is classified', () => {
     // Neither arm of the case above may be empty, or half of it is vacuous.
     const verdicts = Object.values(CLASSIFIED).map((said) => said.verdict);
     expect(verdicts.filter((verdict) => verdict === 'collapsed').length).toBe(53);
-    expect(verdicts.filter((verdict) => verdict === 'minted').length).toBe(59);
+    expect(verdicts.filter((verdict) => verdict === 'minted').length).toBe(57);
     expect(FOUND.sites.filter((site) => site.tagged).length).toBe(53);
   });
 
@@ -891,7 +883,7 @@ const PROBES: readonly Probe[] = [
   },
   {
     keys: ['handoff.ts «Recorded handoff on {}: {} → {}» #1'],
-    argv: ['handoff', 'a-task', VALUE, 'to-agent'],
+    argv: ['task', 'handoff', 'a-task', VALUE, 'to-agent'],
     says: `Recorded handoff on a-task: ${VALUE} → to-agent`,
   },
   {
@@ -960,8 +952,8 @@ const UNREACHABLE: Readonly<Record<string, string>> = {
     'needs two machines moving one decision out of one state, then merged',
   'antipatterns.ts «{}: {}» #1': 'the same divergence',
   'commit-hook.ts «{}: {}» #1': 'needs a repository whose hooks path holds a line break',
-  'focus.ts «{}» #1': 'the run’s own line — driven by `run start`, read back by `focus`',
-  'focus.ts « — {}» #1': 'the same line',
+  'resume.ts «{}» #1': 'the run’s own line — driven by `run start`, read back by `resume`',
+  'resume.ts « — {}» #1': 'the same line',
   'guard.ts «{} {} → {}» #1': 'the id must match a task, so a forged one never reaches it',
   'guard.ts «REFUSED ({})» #1': 'the code is the gate’s, never a caller’s',
   'init.ts «Initialized mnema project at {}» #1': 'needs a directory whose NAME holds a newline',
@@ -984,8 +976,8 @@ const UNREACHABLE: Readonly<Record<string, string>> = {
   'check.ts «failed {}: {}» #1':
     'needs a checker key enrolled in the record, and a program that fails',
   'check.ts «recorded in {}» #1': 'the same checker run',
-  'next-actions.ts «Task {} is terminal — no legal moves.» #1': 'the id must match a task',
-  'next-actions.ts «Task {} — {} legal move(s):» #1': 'the id must match a task',
+  'next.ts «Task {} is terminal — no legal moves.» #1': 'the id must match a task',
+  'next.ts «Task {} — {} legal move(s):» #1': 'the id must match a task',
   'resume.ts «{} {}» #1': 'read back from a run this suite opens through `run start`',
   'run.ts «by {}» #1': 'needs an open run to close',
   'tail.ts «The tail is still on disk at {} — nothing was removed.» #1': 'needs a tail to cut',

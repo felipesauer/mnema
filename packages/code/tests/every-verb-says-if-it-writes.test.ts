@@ -9,7 +9,7 @@
  * declared. It is not in the code:
  *
  *   - `grep writer` over the adapters names FIFTEEN files, and six of them are reads —
- *     `show`, `timeline`, `resume`, `next-actions`, `brief`, `accountability` — because
+ *     `show`, `timeline`, `resume`, `brief`, `audit` — because
  *     the word appears in their PROSE. The usual trap on this bench is a phrase that
  *     under-counts; this one over-counts, which is worse, because the extra names look
  *     like the answer.
@@ -99,6 +99,7 @@ import { Command } from 'commander';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { buildProgram, type CliIo, run } from '../src/cli.js';
 import { renderPlain } from '../src/presentation/plain.js';
+import { dispositionOf, pathsOffered } from '../src/repl/gate.js';
 import { optionsTakenFromTheGroup } from '../src/wiring/from-the-group.js';
 import { registerVerbs } from '../src/wiring/index.js';
 import type { PinnedRun } from '../src/wiring/run-pin.js';
@@ -227,7 +228,6 @@ const INVOCATION: Readonly<Record<string, Invocation>> = {
   observe: {
     argv: (f) => ['observe', f.task, '--topic', 'review', '--text', 'it needs a rollback'],
   },
-  handoff: { argv: (f) => ['handoff', f.task, 'agent-alpha', 'agent-beta'] },
   link: { argv: (f) => ['link', f.task, f.task, '--rel', 'relates-to'] },
   // The listing act, which reads: what makes the verb a write is the copy, and that needs a
   // second project holding the same pattern, which this fixture is not (`RECORDS_NOTHING`).
@@ -277,16 +277,11 @@ const INVOCATION: Readonly<Record<string, Invocation>> = {
   mcp: CANNOT_BE_EXERCISED,
   // The reads.
   status: { argv: (f) => ['status', '--actor', f.anchor] },
-  focus: { argv: (f) => ['focus', '--actor', f.anchor] },
   resume: { argv: (f) => ['resume', '--actor', f.anchor] },
-  'next-actions': { argv: (f) => ['next-actions', f.task] },
-  guard: { argv: (f) => ['guard', 'submit', f.task, '--actor', f.anchor] },
   search: { argv: () => ['search', 'task'] },
   show: { argv: (f) => ['show', f.task] },
   timeline: { argv: (f) => ['timeline', f.task] },
-  accountability: { argv: () => ['accountability'] },
-  antipatterns: { argv: () => ['antipatterns'] },
-  exposure: { argv: () => ['exposure'] },
+  audit: { argv: () => ['audit', 'accountability'] },
   export: { argv: () => ['export'] },
   // It writes ONE file, `index.html`, under the directory it is given, and nothing to the record.
   site: { argv: () => ['site', '--out', join(sandbox, 'site-out')] },
@@ -302,7 +297,6 @@ const INVOCATION: Readonly<Record<string, Invocation>> = {
   commits: { argv: () => ['commits', 'ADR-1'] },
   why: { argv: () => ['why', 'src'] },
   aging: { argv: () => ['aging'] },
-  skills: { argv: () => ['skills'] },
   usage: { argv: () => ['usage'] },
   brief: { argv: () => ['brief'] },
   recall: { argv: () => ['recall'] },
@@ -562,7 +556,7 @@ function offersJson(argv: readonly string[]): boolean {
  * counted as its second form was its first one again ({@link offersJson}). The reading's
  * JSON is `mnema witness --json`, and the row does not run the reading.
  */
-const EXERCISED_IN_BOTH_FORMS = 19;
+const EXERCISED_IN_BOTH_FORMS = 13;
 
 /** Exercises every verb the table names, each in its own project, and measures the record. */
 async function exerciseEverything(): Promise<Exercised[]> {
@@ -645,7 +639,6 @@ describe('every verb says if it writes', () => {
       'retract',
       'skill',
       'task',
-      'handoff',
       'promote',
       'switch',
       'inherit',
@@ -671,17 +664,11 @@ describe('every verb says if it writes', () => {
       'show',
       'timeline',
       'refs',
+      'audit',
       'diagram',
-      'accountability',
-      'antipatterns',
-      'exposure',
       'export',
-      'skills',
       'usage',
-      'focus',
       'resume',
-      'next-actions',
-      'guard',
       'repl',
       'why',
       'commits',
@@ -692,6 +679,78 @@ describe('every verb says if it writes', () => {
       'tally',
     ]);
     expect(verbsThat('mutates').length + verbsThat('reads').length).toBe(DECLARED.length);
+  });
+
+  it('classifies every member of a group that answers for its members, and exercises each reading one', async () => {
+    // A group is exercised by ONE act above, and a group whose members differ in what they can do
+    // (`task`, `skill`) would have its readers measured by nobody. So each such group is asked in
+    // both directions — the members it declares are the subcommands the program holds — and each
+    // member that says it reads is run for real, in both forms, and counted in the chain.
+    const grouped = DECLARED.filter((verb) => verb.members !== undefined);
+    expect(grouped.map((verb) => verb.act.name()).sort()).toEqual(['skill', 'task']);
+    for (const group of grouped) {
+      expect(
+        (group.members ?? []).map((member) => member.act.name()).sort(),
+        group.act.name(),
+      ).toEqual(group.act.commands.map((command) => command.name()).sort());
+    }
+    const READERS: Readonly<Record<string, (f: Fixture) => readonly string[]>> = {
+      'task next': (f) => ['task', 'next', f.task],
+      'task guard': (f) => ['task', 'guard', 'submit', f.task, '--actor', f.anchor],
+      'skill provenance': () => ['skill', 'provenance'],
+    };
+    const declaredReaders = grouped.flatMap((group) =>
+      (group.members ?? [])
+        .filter((member) => member.effect === 'reads')
+        .map((member) => `${group.act.name()} ${member.act.name()}`),
+    );
+    expect(declaredReaders.sort()).toEqual(Object.keys(READERS).sort());
+    for (const [path, argv] of Object.entries(READERS)) {
+      const project = await fixture(path.replace(' ', '-'));
+      const line = argv(project);
+      const forms = offersJson(line) ? [line, [...line, '--json']] : [line];
+      const before = held(sandbox);
+      for (const form of forms) {
+        const outcome = await mnema(form);
+        expect(outcome.failed, `mnema ${form.join(' ')}: ${outcome.out.join(' / ')}`).toBe(false);
+      }
+      const after = held(sandbox);
+      expect(after.events - before.events, path).toBe(0);
+      expect(after.keys, path).toBe(before.keys);
+    }
+  }, 120_000);
+
+  it('has the console run exactly what declared it reads, member by member, and nothing that writes', () => {
+    // THE PROPERTY THE GATE EXISTS FOR, asked of the real surface: a line is run if and only if the
+    // act it reaches declared it reads. A write that was ever offered is the failure.
+    const ran: string[] = [];
+    for (const verb of DECLARED) {
+      const name = verb.act.name();
+      if (name === 'repl') continue;
+      const acts = verb.members ?? [verb];
+      for (const act of acts) {
+        const line = verb.members === undefined ? name : `${name} ${act.act.name()}`;
+        const does = dispositionOf(line, DECLARED, 'repl').does;
+        expect(does === 'run', line).toBe(act.effect === 'reads');
+        if (does === 'run') ran.push(line);
+      }
+    }
+    expect(ran).toContain('task next');
+    expect(ran).toContain('task guard');
+    expect(ran).toContain('skill provenance');
+    expect(ran).not.toContain('task handoff');
+    // The opening counts `audit` as the three readings inside it, which a bare line does not
+    // type; every other path is the line that runs.
+    const typed = new Set(
+      pathsOffered(DECLARED, 'repl').map((path) => {
+        const group = DECLARED.find((verb) => verb.act.name() === path.split(' ')[0]);
+        return group?.members === undefined ? path.split(' ')[0] : path;
+      }),
+    );
+    expect(ran.sort()).toEqual([...typed].sort());
+    expect(pathsOffered(DECLARED, 'repl')).toEqual(
+      expect.arrayContaining(['audit accountability', 'audit antipatterns', 'audit exposure']),
+    );
   });
 
   it('measures every verb against the chain: a read appends nothing', async () => {
@@ -709,7 +768,6 @@ describe('every verb says if it writes', () => {
     expect(wrote.map((one) => one.verb).sort()).toEqual([
       'check',
       'decision',
-      'handoff',
       'init',
       'key',
       'link',

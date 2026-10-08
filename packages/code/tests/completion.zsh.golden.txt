@@ -12,14 +12,15 @@
 
 _mnema_commands() {
   case "$1" in
-    '') echo 'init decision link unlink memory observe retract skill task handoff promote status brief recall rules rules-file switch inherit verify witness check site search show timeline refs diagram accountability antipatterns exposure export skills usage focus resume next-actions guard repl why commits aging trailer commit-hook key tail doctor completion mcp run before-a-write tally corrections help' ;;
+    '') echo 'init decision link unlink memory observe retract skill task promote status brief recall rules rules-file switch inherit verify witness check site search show timeline refs audit diagram export usage resume repl why commits aging trailer commit-hook key tail doctor completion mcp run before-a-write tally corrections help' ;;
     'decision') echo 'record move supersede import help' ;;
-    'skill') echo 'create move export help' ;;
-    'task') echo 'create move help' ;;
+    'skill') echo 'create move export provenance help' ;;
+    'task') echo 'create move handoff next guard help' ;;
     'switch') echo 'off on' ;;
     'inherit') echo 'set update help' ;;
     'witness') echo 'stamp upgrade sigstore' ;;
     'check') echo 'declare run help' ;;
+    'audit') echo 'accountability antipatterns exposure help' ;;
     'commit-hook') echo 'install uninstall suggest help' ;;
     'key') echo 'restore request enroll github sigstore revoke protect unprotect help' ;;
     'tail') echo 'list prune help' ;;
@@ -37,9 +38,8 @@ _mnema_described() {
       'memory:capture a memory in the current project' \
       'observe:record an observation about an entity in the current project' \
       'retract:take a memory or an observation back, keeping it in the record (follows the note; takes no --scope)' \
-      'skill:propose a reusable skill, move one, or export one, in the current project' \
-      'task:create a task, or move one, in the current project' \
-      'handoff:record a handoff on a task in the current project' \
+      'skill:propose, move or export a reusable skill, or show where each came from' \
+      'task:create a task, move it, hand it over, or ask what the workflow allows next' \
       'promote:list what recurs across projects, or copy one pattern to the global tree' \
       'status:show where things stand: the work, what governs, what awaits a ruling' \
       'brief:print what governs the work here as markdown, for an agent to read' \
@@ -56,17 +56,11 @@ _mnema_described() {
       'show:show one whole record by id (the body a search only pointed at)' \
       'timeline:show an entity'\''s history across the trees (subject, about, target)' \
       'refs:show what an entity is connected to across the trees' \
+      'audit:ask the record who authorized what, what recurs, and what looks like a credential' \
       'diagram:print a state machine, or an entity’s history or connections, as mermaid' \
-      'accountability:show who authorized what across the record (optionally windowed/filtered)' \
-      'antipatterns:show recurring shapes in the record (reopens, supersessions, deprecations)' \
-      'exposure:show which records hold something shaped like a credential (never the value)' \
       'export:emit the record as an OCSF audit feed (NDJSON, envelope only — never a body)' \
-      'skills:show where each pattern came from (who proposed it, who adopted it)' \
       'usage:what each run cost, read from this machine'\''s Claude Code transcripts' \
-      'focus:show an actor'\''s open runs (what they are touching now)' \
-      'resume:show where an actor left off (their latest run, open or ended)' \
-      'next-actions:show the moves the workflow allows a task next' \
-      'guard:dry-run the gate: would a move be allowed on a task, and if not, why?' \
+      'resume:show where an actor left off, and the runs they still have open' \
       'repl:open an interactive session that reads this project' \
       'why:show under which decisions a file or a commit stands' \
       'commits:show the commits that cite a decision and those that touched what it addresses' \
@@ -93,10 +87,14 @@ _mnema_described() {
       'create:propose a reusable skill in the current project' \
       'move:move a skill through the workflow (follows the skill; takes no --scope)' \
       'export:write an adopted pattern as the SKILL.md an agent host reads (records nothing)' \
+      'provenance:show where each pattern came from (who proposed it, who adopted it)' \
       'help:display help for command' ;;
     'task') printf '%s\n' \
       'create:create a task in the current project' \
       'move:move a task through the workflow (follows the task; takes no --scope)' \
+      'handoff:record a handoff on a task in the current project' \
+      'next:show the moves the workflow allows a task next (records nothing)' \
+      'guard:dry-run the gate: would a move be allowed on a task, and if not, why?' \
       'help:display help for command' ;;
     'switch') printf '%s\n' \
       'off:stop a channel handing the record to a model unasked' \
@@ -112,6 +110,11 @@ _mnema_described() {
     'check') printf '%s\n' \
       'declare:declare the program that checks a rule (no shell: the program and its arguments)' \
       'run:run the check of every rule in force and record each result (run by a checker key, in CI)' \
+      'help:display help for command' ;;
+    'audit') printf '%s\n' \
+      'accountability:show who authorized what across the record (optionally windowed/filtered)' \
+      'antipatterns:show recurring shapes in the record (reopens, supersessions, deprecations)' \
+      'exposure:show which records hold something shaped like a credential (never the value)' \
       'help:display help for command' ;;
     'commit-hook') printf '%s\n' \
       'install:write the prepare-commit-msg hook in this repository (refuses to replace another one)' \
@@ -157,10 +160,13 @@ _mnema_flags() {
     'skill create') echo '--body --scope --which --stdin --body-file -h --help -V --version --color' ;;
     'skill move') echo '--note --reason -h --help --which -V --version --color' ;;
     'skill export') echo '--out --description -h --help -V --version --color' ;;
+    'skill provenance') echo '--json -h --help -V --version --color' ;;
     'task') echo '--scope --which -h --help -V --version --color' ;;
     'task create') echo '--scope --which -h --help -V --version --color' ;;
     'task move') echo '--reason --note --feedback -h --help --which -V --version --color' ;;
-    'handoff') echo '--scope --which -h --help -V --version --color' ;;
+    'task handoff') echo '--scope --which -h --help -V --version --color' ;;
+    'task next') echo '--json -h --help -V --version --color' ;;
+    'task guard') echo '--actor --reason --note --feedback --json -h --help --which -V --version --color' ;;
     'promote') echo '--workspace --evidence -h --help -V --version --color' ;;
     'status') echo '--actor --json -h --help -V --version --color' ;;
     'brief') echo '--hook -h --help -V --version --color' ;;
@@ -186,17 +192,14 @@ _mnema_flags() {
     'show') echo '--json -h --help -V --version --color' ;;
     'timeline') echo '--json -h --help -V --version --color' ;;
     'refs') echo '--direction --depth --json -h --help -V --version --color' ;;
+    'audit') echo '-h --help -V --version --color' ;;
+    'audit accountability') echo '--from --to --who --which --json -h --help -V --version --color' ;;
+    'audit antipatterns') echo '--json -h --help -V --version --color' ;;
+    'audit exposure') echo '--json -h --help -V --version --color' ;;
     'diagram') echo '-h --help -V --version --color' ;;
-    'accountability') echo '--from --to --who --which --json -h --help -V --version --color' ;;
-    'antipatterns') echo '--json -h --help -V --version --color' ;;
-    'exposure') echo '--json -h --help -V --version --color' ;;
     'export') echo '--from --to --who --which --global -h --help -V --version --color' ;;
-    'skills') echo '--json -h --help -V --version --color' ;;
     'usage') echo '-h --help -V --version --color' ;;
-    'focus') echo '--actor --json -h --help -V --version --color' ;;
     'resume') echo '--actor --json -h --help -V --version --color' ;;
-    'next-actions') echo '--json -h --help -V --version --color' ;;
-    'guard') echo '--actor --reason --note --feedback --which --json -h --help -V --version --color' ;;
     'repl') echo '-h --help -V --version --color' ;;
     'why') echo '--json -h --help -V --version --color' ;;
     'commits') echo '--json -h --help -V --version --color' ;;
@@ -259,14 +262,18 @@ _mnema_values() {
     'skill move:--color') echo 'auto always never' ;;
     'skill move:') echo 'review adopt reject deprecate' ;;
     'skill export:--color') echo 'auto always never' ;;
+    'skill provenance:--color') echo 'auto always never' ;;
     'task:--scope') echo 'public private global' ;;
     'task:--color') echo 'auto always never' ;;
     'task create:--scope') echo 'public private global' ;;
     'task create:--color') echo 'auto always never' ;;
     'task move:--color') echo 'auto always never' ;;
     'task move:') echo 'submit start block unblock submit_review request_changes approve complete cancel reopen' ;;
-    'handoff:--scope') echo 'public private global' ;;
-    'handoff:--color') echo 'auto always never' ;;
+    'task handoff:--scope') echo 'public private global' ;;
+    'task handoff:--color') echo 'auto always never' ;;
+    'task next:--color') echo 'auto always never' ;;
+    'task guard:--color') echo 'auto always never' ;;
+    'task guard:') echo 'submit start block unblock submit_review request_changes approve complete cancel reopen' ;;
     'promote:--color') echo 'auto always never' ;;
     'status:--color') echo 'auto always never' ;;
     'brief:--color') echo 'auto always never' ;;
@@ -301,19 +308,15 @@ _mnema_values() {
     'timeline:--color') echo 'auto always never' ;;
     'refs:--direction') echo 'both out in' ;;
     'refs:--color') echo 'auto always never' ;;
+    'audit:--color') echo 'auto always never' ;;
+    'audit accountability:--color') echo 'auto always never' ;;
+    'audit antipatterns:--color') echo 'auto always never' ;;
+    'audit exposure:--color') echo 'auto always never' ;;
     'diagram:--color') echo 'auto always never' ;;
     'diagram:') echo 'decision skill task timeline refs' ;;
-    'accountability:--color') echo 'auto always never' ;;
-    'antipatterns:--color') echo 'auto always never' ;;
-    'exposure:--color') echo 'auto always never' ;;
     'export:--color') echo 'auto always never' ;;
-    'skills:--color') echo 'auto always never' ;;
     'usage:--color') echo 'auto always never' ;;
-    'focus:--color') echo 'auto always never' ;;
     'resume:--color') echo 'auto always never' ;;
-    'next-actions:--color') echo 'auto always never' ;;
-    'guard:--color') echo 'auto always never' ;;
-    'guard:') echo 'submit start block unblock submit_review request_changes approve complete cancel reopen' ;;
     'repl:--color') echo 'auto always never' ;;
     'why:--color') echo 'auto always never' ;;
     'commits:--color') echo 'auto always never' ;;

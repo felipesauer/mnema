@@ -86,7 +86,7 @@ describe('one person, two launchers, one author', () => {
     const second = mnema(repo, terminal, 'memory', 'from the terminal');
     expect(second.status).toBe(0);
 
-    const account = mnema(repo, terminal, 'accountability');
+    const account = mnema(repo, terminal, 'audit', 'accountability');
     expect(account.stdout).toContain('1 author(s)');
     expect(privateKeysAt(join(home, '.mnema', 'identity'))).toHaveLength(1);
     // And neither launcher's data home was used for anything.

@@ -322,7 +322,7 @@ const UNWITNESSED: Readonly<Record<string, Debt>> = {
   },
   'packages/code/src/commands/skills.ts': {
     reached: 'nobody imports it',
-    why: "The `mnema skills` provenance-audit adapter; no test imports it, and the verb's lazy import means its tree resolution is only ever read back off printed report lines in cli-e2e.",
+    why: "The `mnema skill provenance` provenance-audit adapter; no test imports it, and the verb's lazy import means its tree resolution is only ever read back off printed report lines in cli-e2e.",
   },
   'packages/code/src/commands/status.ts': {
     reached: 'nobody imports it',
@@ -416,6 +416,10 @@ const UNWITNESSED: Readonly<Record<string, Debt>> = {
     reached: 'nobody imports it',
     why: 'Composes the whole antipatterns page, yet the only cases reaching it sit in the brief block and grep it for the label-clash line, leaving its six counts and closing note unread.',
   },
+  'packages/code/src/wiring/audit.ts': {
+    reached: 'nobody imports it',
+    why: 'Hangs the three audit readings under one group; the cases that run them through the program assert what each prints and what a mistyped subcommand is told, not this file.',
+  },
   'packages/code/src/wiring/before-a-write.ts': {
     reached: 'nobody imports it',
     why: "The before-a-write verb's wiring, reading a host's payload through the standard-input port; a-host-that-runs-commands-asks-for-a-person.test.ts runs it through the binary with a payload and through the plugin's own command, and every-verb-says-if-it-writes.test.ts exercises it in process.",
@@ -460,10 +464,6 @@ const UNWITNESSED: Readonly<Record<string, Debt>> = {
     reached: 'nobody imports it',
     why: 'A twenty-line registration that only picks between JSON and the report; every string the exposure cases assert is produced by the command and presenter it defers to, not here.',
   },
-  'packages/code/src/wiring/focus.ts': {
-    reached: 'nobody imports it',
-    why: 'Builds the focus header and one line per open run; the test that reaches it counts those lines against the header number, asserting arity rather than anything the line says.',
-  },
   'packages/code/src/wiring/guard.ts': {
     reached: 'nobody imports it',
     why: "The dry-run gate verb's declaration and its ALLOWED/REFUSED line; only cli-e2e reaches it through run(), and what it asserts there is the gate's verdict, not this adapter.",
@@ -488,7 +488,7 @@ const UNWITNESSED: Readonly<Record<string, Debt>> = {
     reached: 'nobody imports it',
     why: "The memory verb's single positional; cli-e2e and the golden use it everywhere as the cheapest write and assert the captured event, so this adapter is only ever a means to one.",
   },
-  'packages/code/src/wiring/next-actions.ts': {
+  'packages/code/src/wiring/next.ts': {
     reached: 'nobody imports it',
     why: "The next-actions verb's human list and --json branch; cli-e2e asserts 'submit → READY' and 'no legal moves', which are the workflow table's answers rather than this file's.",
   },
@@ -547,10 +547,6 @@ const UNWITNESSED: Readonly<Record<string, Debt>> = {
   'packages/code/src/wiring/skill.ts': {
     reached: 'nobody imports it',
     why: "The `skill` group's declaration; every test that runs `skill export` passes `--out`, so the './skills' default this file declares is exercised by nothing and asserted by nothing.",
-  },
-  'packages/code/src/wiring/skills.ts': {
-    reached: 'nobody imports it',
-    why: "The `skills` audit declaration; cli-e2e's eighteen runs of it assert provenanceReport's rows and runSkills' data, and only its help paragraph is ever read back from this file.",
   },
   'packages/code/src/wiring/status.ts': {
     reached: 'nobody imports it',
@@ -652,7 +648,7 @@ const UNWITNESSED: Readonly<Record<string, Debt>> = {
  * reading, so nothing can fall in two.
  */
 const THE_SHAPE_OF_WHAT_IS_LEFT: Readonly<Record<string, number>> = {
-  wiring: 47,
+  wiring: 46,
   presentation: 11,
   projections: 4,
   completion: 4,
@@ -836,7 +832,6 @@ const CLAUSES_PER_FILE: Readonly<Record<string, number>> = {
   'packages/code/src/commands/decision-transition.test.ts': 11,
   'packages/code/src/commands/decision.test.ts': 8,
   'packages/code/src/commands/exposure.test.ts': 13,
-  'packages/code/src/commands/focus.test.ts': 9,
   'packages/code/src/commands/guard.test.ts': 11,
   'packages/code/src/commands/handoff.test.ts': 8,
   'packages/code/src/commands/inherit.test.ts': 14,
@@ -873,7 +868,7 @@ const CLAUSES_PER_FILE: Readonly<Record<string, number>> = {
   'packages/code/src/completion/lookups.test.ts': 8,
   'packages/code/src/decisions-in-git.test.ts': 2,
   'packages/code/src/env.test.ts': 4,
-  'packages/code/src/every-refusal-is-red.test.ts': 7,
+  'packages/code/src/every-refusal-is-red.test.ts': 8,
   'packages/code/src/git-log.test.ts': 7,
   'packages/code/src/key-file.test.ts': 2,
   'packages/code/src/mcp/hook-reply.test.ts': 2,
@@ -948,6 +943,7 @@ const CLAUSES_PER_FILE: Readonly<Record<string, number>> = {
   'packages/code/tests/a-sticky-pattern-answers-differently-each-call.test.ts': 3,
   'packages/code/tests/a-stopped-import-fails-the-run.test.ts': 1,
   'packages/code/tests/a-terminal-of-its-own.test.ts': 19,
+  'packages/code/tests/a-verb-that-went-under-a-noun-is-not-a-verb-any-more.test.ts': 3,
   'packages/code/tests/a-write-says-what-it-founded.test.ts': 14,
   'packages/code/tests/both-surfaces-one-vocabulary.test.ts': 18,
   'packages/code/tests/cli-e2e.test.ts': 15,
@@ -969,7 +965,7 @@ const CLAUSES_PER_FILE: Readonly<Record<string, number>> = {
   'packages/code/tests/every-skill-the-plugin-ships-is-what-it-says.test.ts': 11,
   'packages/code/tests/every-test-file-is-type-checked.test.ts': 6,
   'packages/code/tests/every-tool-says-if-it-writes.test.ts': 16,
-  'packages/code/tests/every-verb-says-if-it-writes.test.ts': 14,
+  'packages/code/tests/every-verb-says-if-it-writes.test.ts': 15,
   'packages/code/tests/every-verifier-gives-one-ed25519-verdict.test.ts': 6,
   'packages/code/tests/every-write-signs-what-it-wrote.test.ts': 37,
   'packages/code/tests/host-contract/a-hook-hands-over-ten-thousand-units.test.ts': 5,
@@ -1374,7 +1370,6 @@ const PRODUCTION_FILES: readonly string[] = [
   'packages/code/src/commands/doctor.ts',
   'packages/code/src/commands/export.ts',
   'packages/code/src/commands/exposure.ts',
-  'packages/code/src/commands/focus.ts',
   'packages/code/src/commands/guard.ts',
   'packages/code/src/commands/handoff.ts',
   'packages/code/src/commands/inherit.ts',
@@ -1550,6 +1545,7 @@ const PRODUCTION_FILES: readonly string[] = [
   'packages/code/src/wiring/accountability.ts',
   'packages/code/src/wiring/aging.ts',
   'packages/code/src/wiring/antipatterns.ts',
+  'packages/code/src/wiring/audit.ts',
   'packages/code/src/wiring/before-a-write.ts',
   'packages/code/src/wiring/body-source.ts',
   'packages/code/src/wiring/brief.ts',
@@ -1566,7 +1562,6 @@ const PRODUCTION_FILES: readonly string[] = [
   'packages/code/src/wiring/enumerated.ts',
   'packages/code/src/wiring/export.ts',
   'packages/code/src/wiring/exposure.ts',
-  'packages/code/src/wiring/focus.ts',
   'packages/code/src/wiring/from-the-group.ts',
   'packages/code/src/wiring/guard.ts',
   'packages/code/src/wiring/handoff.ts',
@@ -1580,7 +1575,7 @@ const PRODUCTION_FILES: readonly string[] = [
   'packages/code/src/wiring/mcp.ts',
   'packages/code/src/wiring/memory.ts',
   'packages/code/src/wiring/misuse.ts',
-  'packages/code/src/wiring/next-actions.ts',
+  'packages/code/src/wiring/next.ts',
   'packages/code/src/wiring/no-such-decision.ts',
   'packages/code/src/wiring/no-such-record.ts',
   'packages/code/src/wiring/observe.ts',
@@ -1601,7 +1596,6 @@ const PRODUCTION_FILES: readonly string[] = [
   'packages/code/src/wiring/show.ts',
   'packages/code/src/wiring/site.ts',
   'packages/code/src/wiring/skill.ts',
-  'packages/code/src/wiring/skills.ts',
   'packages/code/src/wiring/status.ts',
   'packages/code/src/wiring/switch.ts',
   'packages/code/src/wiring/tail.ts',
@@ -1785,8 +1779,8 @@ describe('every file has a test that names it', () => {
     // 81 once a test of who may retract a note appended through `workflow/append.ts` itself.
     // 82 with the commit-hook group's wiring, which the CLI reaches.
     // 83 with the unlink verb's wiring, which a-link-can-be-retracted drives through the CLI.
-    expect(found.size).toBe(83);
-    expect(byReach('nobody imports it')).toBe(83);
+    expect(found.size).toBe(82);
+    expect(byReach('nobody imports it')).toBe(82);
     expect(byReach('imported, and no assertion observes it')).toBe(0);
   });
 
@@ -1808,7 +1802,7 @@ describe('every file has a test that names it', () => {
     // Announced in the header and, until now, kept by hand. A shared excuse is how a table
     // like this turns into a rubber stamp, and a row drained to a stub is how it starts.
     const reasons = Object.values(UNWITNESSED).map((one) => one.why);
-    expect(reasons).toHaveLength(83);
+    expect(reasons).toHaveLength(82);
     expect(new Set(reasons).size).toBe(reasons.length);
     // The shortest reason standing is 156 characters; the floor is under it and well over
     // anything that could be written without saying what reaches that file.
@@ -1854,7 +1848,7 @@ describe('every file has a test that names it', () => {
     expect(named).toEqual([]);
     // And the ledger really does hold the paths, so the line above is not passing over
     // an empty table.
-    expect(Object.keys(UNWITNESSED)).toContain('packages/code/src/wiring/focus.ts');
+    expect(Object.keys(UNWITNESSED)).toContain('packages/code/src/wiring/accountability.ts');
   });
 });
 

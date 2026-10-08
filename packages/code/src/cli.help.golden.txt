@@ -21,10 +21,10 @@ $ mnema
 !   observe         record an observation about an entity in the current project
 !   retract         take a memory or an observation back, keeping it in the record
 !                   (follows the note; takes no --scope)
-!   skill           propose a reusable skill, move one, or export one, in the
-!                   current project
-!   task            create a task, or move one, in the current project
-!   handoff         record a handoff on a task in the current project
+!   skill           propose, move or export a reusable skill, or show where each
+!                   came from
+!   task            create a task, move it, hand it over, or ask what the workflow
+!                   allows next
 !   promote         list what recurs across projects, or copy one pattern to the
 !                   global tree
 !
@@ -61,25 +61,16 @@ $ mnema
 !   timeline        show an entity's history across the trees (subject, about,
 !                   target)
 !   refs            show what an entity is connected to across the trees
+!   audit           ask the record who authorized what, what recurs, and what
+!                   looks like a credential
 !   diagram         print a state machine, or an entity’s history or connections,
 !                   as mermaid
-!   accountability  show who authorized what across the record (optionally
-!                   windowed/filtered)
-!   antipatterns    show recurring shapes in the record (reopens, supersessions,
-!                   deprecations)
-!   exposure        show which records hold something shaped like a credential
-!                   (never the value)
 !   export          emit the record as an OCSF audit feed (NDJSON, envelope only —
 !                   never a body)
-!   skills          show where each pattern came from (who proposed it, who
-!                   adopted it)
 !   usage           what each run cost, read from this machine's Claude Code
 !                   transcripts
-!   focus           show an actor's open runs (what they are touching now)
-!   resume          show where an actor left off (their latest run, open or ended)
-!   next-actions    show the moves the workflow allows a task next
-!   guard           dry-run the gate: would a move be allowed on a task, and if
-!                   not, why?
+!   resume          show where an actor left off, and the runs they still have
+!                   open
 !   repl            open an interactive session that reads this project
 !
 ! The git log:
@@ -137,10 +128,10 @@ $ mnema --help
 |   observe         record an observation about an entity in the current project
 |   retract         take a memory or an observation back, keeping it in the record
 |                   (follows the note; takes no --scope)
-|   skill           propose a reusable skill, move one, or export one, in the
-|                   current project
-|   task            create a task, or move one, in the current project
-|   handoff         record a handoff on a task in the current project
+|   skill           propose, move or export a reusable skill, or show where each
+|                   came from
+|   task            create a task, move it, hand it over, or ask what the workflow
+|                   allows next
 |   promote         list what recurs across projects, or copy one pattern to the
 |                   global tree
 |
@@ -177,25 +168,16 @@ $ mnema --help
 |   timeline        show an entity's history across the trees (subject, about,
 |                   target)
 |   refs            show what an entity is connected to across the trees
+|   audit           ask the record who authorized what, what recurs, and what
+|                   looks like a credential
 |   diagram         print a state machine, or an entity’s history or connections,
 |                   as mermaid
-|   accountability  show who authorized what across the record (optionally
-|                   windowed/filtered)
-|   antipatterns    show recurring shapes in the record (reopens, supersessions,
-|                   deprecations)
-|   exposure        show which records hold something shaped like a credential
-|                   (never the value)
 |   export          emit the record as an OCSF audit feed (NDJSON, envelope only —
 |                   never a body)
-|   skills          show where each pattern came from (who proposed it, who
-|                   adopted it)
 |   usage           what each run cost, read from this machine's Claude Code
 |                   transcripts
-|   focus           show an actor's open runs (what they are touching now)
-|   resume          show where an actor left off (their latest run, open or ended)
-|   next-actions    show the moves the workflow allows a task next
-|   guard           dry-run the gate: would a move be allowed on a task, and if
-|                   not, why?
+|   resume          show where an actor left off, and the runs they still have
+|                   open
 |   repl            open an interactive session that reads this project
 |
 | The git log:
@@ -433,7 +415,7 @@ $ mnema retract --help
 $ mnema skill --help
 | Usage: mnema skill [options] [command]
 |
-| propose a reusable skill, move one, or export one, in the current project
+| propose, move or export a reusable skill, or show where each came from
 |
 | Options:
 |   --body <text>                 the reusable pattern itself (or give it with
@@ -462,6 +444,8 @@ $ mnema skill --help
 |                                 skill; takes no --scope)
 |   export [options] <id>         write an adopted pattern as the SKILL.md an
 |                                 agent host reads (records nothing)
+|   provenance [options]          show where each pattern came from (who proposed
+|                                 it, who adopted it)
 |   help [command]                display help for command
 |
 | What recording means here:
@@ -476,58 +460,35 @@ $ mnema skill --help
 $ mnema task --help
 | Usage: mnema task [options] [command]
 |
-| create a task, or move one, in the current project
+| create a task, move it, hand it over, or ask what the workflow allows next
 |
 | Options:
-|   --scope <scope>               where the task is born: public (team-visible),
-|                                 private (this machine, this project), or global
-|                                 (personal, cross-project). Omitted, a task lands
-|                                 in the public tree (the team’s work board).
-|   --which <agent>               the agent that executed this, when an agent (a
-|                                 script, a CI step) is driving mnema — omit it
-|                                 when you are acting directly. Declared, never
-|                                 assumed; it names the executor. See --scope for
-|                                 where the fact lands. A value that names no
-|                                 agent (an unset variable) is refused, never
-|                                 credited to you.
-|   -h, --help                    display help for command
+|   --scope <scope>                       where the task is born: public
+|                                         (team-visible), private (this machine,
+|                                         this project), or global (personal,
+|                                         cross-project). Omitted, a task lands in
+|                                         the public tree (the team’s work board).
+|   --which <agent>                       the agent that executed this, when an
+|                                         agent (a script, a CI step) is driving
+|                                         mnema — omit it when you are acting
+|                                         directly. Declared, never assumed; it
+|                                         names the executor. See --scope for
+|                                         where the fact lands. A value that names
+|                                         no agent (an unset variable) is refused,
+|                                         never credited to you.
+|   -h, --help                            display help for command
 |
 | Commands:
-|   create [options] <title>      create a task in the current project
-|   move [options] <action> <id>  move a task through the workflow (follows the
-|                                 task; takes no --scope)
-|   help [command]                display help for command
-|
-| What recording means here:
-|   Permanent — mnema is append-only and nothing deletes a fact. A public record
-|   is committed and reaches every machine that clones the repository.
-|   Do not record credentials: a recognized format is replaced with a placeholder
-|   and reported back, but what mnema does not recognize is written verbatim.
-|   Nor personal data: an email address is replaced with <email>; the mnid already says who wrote.
-|   Each text field holds at most 65536 bytes; a longer one is refused.
-
-### mnema handoff --help
-$ mnema handoff --help
-| Usage: mnema handoff [options] <task> <from> <to>
-|
-| record a handoff on a task in the current project
-|
-| Arguments:
-|   task             the task the handoff is about
-|   from             the agent handing off
-|   to               the agent taking over (may equal <from>: a chat restart)
-|
-| Options:
-|   --scope <scope>  where the handoff is born: public (team-visible), private
-|                    (this machine, this project), or global (personal,
-|                    cross-project). Omitted, a handoff lands in the public tree
-|                    (coordination between actors).
-|   --which <agent>  the agent that executed this, when an agent (a script, a CI
-|                    step) is driving mnema — omit it when you are acting
-|                    directly. Declared, never assumed; it names the executor. See
-|                    --scope for where the fact lands. A value that names no agent
-|                    (an unset variable) is refused, never credited to you.
-|   -h, --help       display help for command
+|   create [options] <title>              create a task in the current project
+|   move [options] <action> <id>          move a task through the workflow
+|                                         (follows the task; takes no --scope)
+|   handoff [options] <task> <from> <to>  record a handoff on a task in the
+|                                         current project
+|   next [options] <task-id>              show the moves the workflow allows a
+|                                         task next (records nothing)
+|   guard [options] <action> <id>         dry-run the gate: would a move be
+|                                         allowed on a task, and if not, why?
+|   help [command]                        display help for command
 |
 | What recording means here:
 |   Permanent — mnema is append-only and nothing deletes a fact. A public record
@@ -588,9 +549,10 @@ $ mnema status --help
 |
 | Options:
 |   --actor <id>  the identity whose session to report — the `mnid:…` from `mnema
-|                 accountability`, or the short form the reads print (any prefix
-|                 that names one identity here). Omitted, it is the identity this
-|                 machine writes as in this project, and the report says so.
+|                 audit accountability`, or the short form the reads print (any
+|                 prefix that names one identity here). Omitted, it is the
+|                 identity this machine writes as in this project, and the report
+|                 says so.
 |   --json        emit the faithful opening context as JSON
 |   -h, --help    display help for command
 
@@ -948,6 +910,25 @@ $ mnema refs --help
 |   --json             emit the faithful graph as JSON
 |   -h, --help         display help for command
 
+### mnema audit --help
+$ mnema audit --help
+| Usage: mnema audit [options] [command]
+|
+| ask the record who authorized what, what recurs, and what looks like a
+| credential
+|
+| Options:
+|   -h, --help                display help for command
+|
+| Commands:
+|   accountability [options]  show who authorized what across the record
+|                             (optionally windowed/filtered)
+|   antipatterns [options]    show recurring shapes in the record (reopens,
+|                             supersessions, deprecations)
+|   exposure [options]        show which records hold something shaped like a
+|                             credential (never the value)
+|   help [command]            display help for command
+
 ### mnema diagram --help
 $ mnema diagram --help
 | Usage: mnema diagram [options] <subject> [id]
@@ -969,46 +950,6 @@ $ mnema diagram --help
 | The three state machines are read from the tables the gate enforces, so a state
 | added there appears here. Text from the record is written so it cannot end a label.
 
-### mnema accountability --help
-$ mnema accountability --help
-| Usage: mnema accountability [options]
-|
-| show who authorized what across the record (optionally windowed/filtered)
-|
-| Options:
-|   --from <iso>     only facts at or after this ISO-8601 instant (inclusive)
-|   --to <iso>       only facts at or before this ISO-8601 instant (inclusive)
-|   --who <id>       count only facts authorized by this identity — the `mnid:…`
-|                    from `mnema accountability`, or the short form the reads
-|                    print (any prefix that names one identity here)
-|   --which <agent>  count only facts executed by this agent
-|   --json           emit the faithful account object as JSON
-|   -h, --help       display help for command
-|
-| The window:
-|   A window (`from`/`to`) selects the FACTS themselves,
-|   by the instant each was recorded.
-
-### mnema antipatterns --help
-$ mnema antipatterns --help
-| Usage: mnema antipatterns [options]
-|
-| show recurring shapes in the record (reopens, supersessions, deprecations)
-|
-| Options:
-|   --json      emit the faithful shapes with their evidence as JSON
-|   -h, --help  display help for command
-
-### mnema exposure --help
-$ mnema exposure --help
-| Usage: mnema exposure [options]
-|
-| show which records hold something shaped like a credential (never the value)
-|
-| Options:
-|   --json      emit the faithful report as JSON (still without any value)
-|   -h, --help  display help for command
-
 ### mnema export --help
 $ mnema export --help
 | Usage: mnema export [options]
@@ -1019,8 +960,8 @@ $ mnema export --help
 |   --from <iso>     only facts at or after this ISO-8601 instant (inclusive)
 |   --to <iso>       only facts at or before this ISO-8601 instant (inclusive)
 |   --who <id>       include only facts authorized by this identity — the `mnid:…`
-|                    from `mnema accountability`, or the short form the reads
-|                    print (any prefix that names one identity here)
+|                    from `mnema audit accountability`, or the short form the
+|                    reads print (any prefix that names one identity here)
 |   --which <agent>  include only facts executed by this agent
 |   --global         also cover this machine's global tree — left out by default:
 |                    it belongs to no project and is present in every one, and
@@ -1031,24 +972,6 @@ $ mnema export --help
 | The window:
 |   A window (`from`/`to`) selects the FACTS themselves,
 |   by the instant each was recorded.
-
-### mnema skills --help
-$ mnema skills --help
-| Usage: mnema skills [options]
-|
-| show where each pattern came from (who proposed it, who adopted it)
-|
-| Options:
-|   --json      emit the faithful provenance as JSON
-|   -h, --help  display help for command
-|
-| This is the AUDIT of the patterns, not the patterns themselves:
-|   The `skills` tool on the MCP surface serves a pattern’s body to an agent.
-|   This verb reads who put each one there. `mnema show <id>` reads a body.
-|   Only an adopted pattern is served to an agent; the other states are not.
-|   An act with no agent behind it was a person acting directly.
-|   A consultation is one run served the body — not that the work followed it,
-|   and counted in this project’s trees and the machine-global one, no other.
 
 ### mnema usage --help
 $ mnema usage --help
@@ -1066,67 +989,18 @@ $ mnema usage --help
 |   None says `no transcript`, never `0` — no record of the cost is not a cost of zero.
 |   Nothing is recorded: the chain has no field for this, and reading writes nothing.
 
-### mnema focus --help
-$ mnema focus --help
-| Usage: mnema focus [options]
-|
-| show an actor's open runs (what they are touching now)
-|
-| Options:
-|   --actor <id>  the identity whose focus to show — the `mnid:…` from `mnema
-|                 accountability`, or the short form the reads print (any prefix
-|                 that names one identity here)
-|   --json        emit the faithful focus object as JSON
-|   -h, --help    display help for command
-
 ### mnema resume --help
 $ mnema resume --help
 | Usage: mnema resume [options]
 |
-| show where an actor left off (their latest run, open or ended)
+| show where an actor left off, and the runs they still have open
 |
 | Options:
-|   --actor <id>  the identity whose last run to show — the `mnid:…` from `mnema
-|                 accountability`, or the short form the reads print (any prefix
-|                 that names one identity here)
+|   --actor <id>  the identity whose last run and open runs to show — the `mnid:…`
+|                 from `mnema audit accountability`, or the short form the reads
+|                 print (any prefix that names one identity here)
 |   --json        emit the faithful resume object as JSON
 |   -h, --help    display help for command
-
-### mnema next-actions --help
-$ mnema next-actions --help
-| Usage: mnema next-actions [options] <task-id>
-|
-| show the moves the workflow allows a task next
-|
-| Arguments:
-|   task-id     the task id (the value shown when it was created)
-|
-| Options:
-|   --json      emit the faithful list of next actions as JSON
-|   -h, --help  display help for command
-
-### mnema guard --help
-$ mnema guard --help
-| Usage: mnema guard [options] <action> <id>
-|
-| dry-run the gate: would a move be allowed on a task, and if not, why?
-|
-| Arguments:
-|   action             the transition to test (submit, start, block, unblock,
-|                      submit_review, request_changes, approve, complete, cancel,
-|                      reopen)
-|   id                 the task id (the value shown when it was created)
-|
-| Options:
-|   --actor <id>       the identity asking (the `who`) — the `mnid:…` from `mnema
-|                      accountability`, or the short form the reads print (any
-|                      prefix that names one identity here)
-|   --reason <text>    simulate the reason (block, cancel, reopen)
-|   --note <text>      simulate the note (approve, complete)
-|   --feedback <text>  simulate the feedback (request_changes)
-|   --which <id>       simulate an executing agent (must differ from --actor)
-|   --json             emit the faithful gate verdict as JSON
-|   -h, --help         display help for command
 
 ### mnema repl --help
 $ mnema repl --help
@@ -1681,6 +1555,25 @@ $ mnema skill export --help
 |   wearing the same face. There is no --force: adopt it, then export it.
 |   It records nothing — no event, no consultation — and it writes nowhere but --out.
 
+### mnema skill provenance --help
+$ mnema skill provenance --help
+| Usage: mnema skill provenance [options]
+|
+| show where each pattern came from (who proposed it, who adopted it)
+|
+| Options:
+|   --json      emit the faithful provenance as JSON
+|   -h, --help  display help for command
+|
+| This is the AUDIT of the patterns, not the patterns themselves:
+|   The `skills` tool on the MCP surface serves a pattern’s body to an agent.
+|   This verb reads who put each one there. `mnema show <id>` reads a body.
+|   Only an adopted pattern is served to an agent; the other states are not.
+|   An act with no agent behind it was a person acting directly.
+|   A consultation is one run served the body — not that the work followed it,
+|   and counted in this project’s trees and the machine-global one, no other.
+|   It records nothing — no event, no consultation.
+
 ### mnema task create --help
 $ mnema task create --help
 | Usage: mnema task create [options] <title>
@@ -1741,6 +1634,76 @@ $ mnema task move --help
 |   and reported back, but what mnema does not recognize is written verbatim.
 |   Nor personal data: an email address is replaced with <email>; the mnid already says who wrote.
 |   Each text field holds at most 65536 bytes; a longer one is refused.
+
+### mnema task handoff --help
+$ mnema task handoff --help
+| Usage: mnema task handoff [options] <task> <from> <to>
+|
+| record a handoff on a task in the current project
+|
+| Arguments:
+|   task             the task the handoff is about
+|   from             the agent handing off
+|   to               the agent taking over (may equal <from>: a chat restart)
+|
+| Options:
+|   --scope <scope>  where the handoff is born: public (team-visible), private
+|                    (this machine, this project), or global (personal,
+|                    cross-project). Omitted, a handoff lands in the public tree
+|                    (coordination between actors).
+|   --which <agent>  the agent that executed this, when an agent (a script, a CI
+|                    step) is driving mnema — omit it when you are acting
+|                    directly. Declared, never assumed; it names the executor. See
+|                    --scope for where the fact lands. A value that names no agent
+|                    (an unset variable) is refused, never credited to you.
+|   -h, --help       display help for command
+|
+| What recording means here:
+|   Permanent — mnema is append-only and nothing deletes a fact. A public record
+|   is committed and reaches every machine that clones the repository.
+|   Do not record credentials: a recognized format is replaced with a placeholder
+|   and reported back, but what mnema does not recognize is written verbatim.
+|   Nor personal data: an email address is replaced with <email>; the mnid already says who wrote.
+|   Each text field holds at most 65536 bytes; a longer one is refused.
+
+### mnema task next --help
+$ mnema task next --help
+| Usage: mnema task next [options] <task-id>
+|
+| show the moves the workflow allows a task next (records nothing)
+|
+| Arguments:
+|   task-id     the task id (the value shown when it was created)
+|
+| Options:
+|   --json      emit the faithful list of next actions as JSON
+|   -h, --help  display help for command
+
+### mnema task guard --help
+$ mnema task guard --help
+| Usage: mnema task guard [options] <action> <id>
+|
+| dry-run the gate: would a move be allowed on a task, and if not, why?
+|
+| Arguments:
+|   action             the transition to test (submit, start, block, unblock,
+|                      submit_review, request_changes, approve, complete, cancel,
+|                      reopen)
+|   id                 the task id (the value shown when it was created)
+|
+| Options:
+|   --actor <id>       the identity asking (the `who`) — the `mnid:…` from `mnema
+|                      audit accountability`, or the short form the reads print
+|                      (any prefix that names one identity here)
+|   --reason <text>    simulate the reason (block, cancel, reopen)
+|   --note <text>      simulate the note (approve, complete)
+|   --feedback <text>  simulate the feedback (request_changes)
+|   --json             emit the faithful gate verdict as JSON
+|   -h, --help         display help for command
+|
+| Also accepted here (declared on the parent group):
+|   --which <agent>  simulate an executing agent (must differ from --actor), as the
+|                    real move would be asked by an agent acting for that actor.
 
 ### mnema switch off --help
 $ mnema switch off --help
@@ -1977,6 +1940,46 @@ $ mnema check run --help
 |   --timeout <seconds>  how long one check may run before it is stopped and
 |                        recorded as failed (default 300)
 |   -h, --help           display help for command
+
+### mnema audit accountability --help
+$ mnema audit accountability --help
+| Usage: mnema audit accountability [options]
+|
+| show who authorized what across the record (optionally windowed/filtered)
+|
+| Options:
+|   --from <iso>     only facts at or after this ISO-8601 instant (inclusive)
+|   --to <iso>       only facts at or before this ISO-8601 instant (inclusive)
+|   --who <id>       count only facts authorized by this identity — the `mnid:…`
+|                    from `mnema audit accountability`, or the short form the
+|                    reads print (any prefix that names one identity here)
+|   --which <agent>  count only facts executed by this agent
+|   --json           emit the faithful account object as JSON
+|   -h, --help       display help for command
+|
+| The window:
+|   A window (`from`/`to`) selects the FACTS themselves,
+|   by the instant each was recorded.
+
+### mnema audit antipatterns --help
+$ mnema audit antipatterns --help
+| Usage: mnema audit antipatterns [options]
+|
+| show recurring shapes in the record (reopens, supersessions, deprecations)
+|
+| Options:
+|   --json      emit the faithful shapes with their evidence as JSON
+|   -h, --help  display help for command
+
+### mnema audit exposure --help
+$ mnema audit exposure --help
+| Usage: mnema audit exposure [options]
+|
+| show which records hold something shaped like a credential (never the value)
+|
+| Options:
+|   --json      emit the faithful report as JSON (still without any value)
+|   -h, --help  display help for command
 
 ### mnema commit-hook install --help
 $ mnema commit-hook install --help

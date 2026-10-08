@@ -51,7 +51,7 @@ function digest(dir: string): string {
   return hash.digest('hex');
 }
 
-describe('mnema exposure — the record scanned for credential shapes', () => {
+describe('mnema audit exposure — the record scanned for credential shapes', () => {
   it('finds NOTHING in a record written through the content door', () => {
     // This is the whole point of the door: what an agent writes today cannot land
     // as a recognized credential, so a report over a record written today is empty

@@ -1,5 +1,5 @@
 /**
- * `mnema handoff <task> <from> <to>` — record a handoff on a task.
+ * `mnema task handoff <task> <from> <to>` — record a handoff on a task.
  *
  * A sibling of `memory` and `observe`, differing in that it mints NO id: a
  * handoff has no standalone identity — its subject IS the task, and it is an

@@ -1,11 +1,10 @@
 /**
  * How a RUN is worded, wherever one is reported.
  *
- * `focus` lists the open runs, `resume` names the last one and `status` says where the
- * actor left off as one half of a wider answer, and all three need the same things said
- * the same way: how long a run has been open, how long since it recorded anything, WHAT
+ * `resume` names the last run and lists the open ones, and `status` says where the actor
+ * left off as one half of a wider answer, and both need the same things said the same way: how long a run has been open, how long since it recorded anything, WHAT
  * was written in it, what the LAST one was, how many are still open, and what a run IS
- * for the reader who has none. Three readings wording that separately is three wordings,
+ * for the reader who has none. Two readings wording that separately is two wordings,
  * and the second one to change would be the one nobody noticed.
  */
 
@@ -16,7 +15,7 @@ import { fact } from './detail.js';
 import type { Line } from './line.js';
 
 /**
- * What `focus` and `resume` add when an actor has no run to report.
+ * What `resume` adds when an actor has no run to report.
  *
  * The empty answer is the TRUTH for most people who use the CLI: a run is an
  * agent's session, and work a person does themselves has none — nor needs one,
@@ -87,8 +86,8 @@ export function lastRunPhrase(run: {
  * How many of the actor's runs are still open — the second half of "where did I leave
  * off", said the same way by both readings that answer it.
  *
- * The count is the whole line on purpose: which runs those are is `focus`'s answer, and
- * repeating them here would be a second list of the same thing with no way to keep the
+ * The count is the whole line on purpose: which runs those are is what `resume` lists under it, and
+ * repeating them in `status` would be a second list of the same thing with no way to keep the
  * two in step.
  */
 export function openRunsPhrase(resume: Resume): string {

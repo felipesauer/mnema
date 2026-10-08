@@ -630,7 +630,7 @@ describe('the CLI is the witness', () => {
     // In `there`, the CLI reads the moved task's legal moves off its own trees.
     process.chdir(there);
     const inThere = capture();
-    await run(['next-actions', created.id, '--json'], inThere.io);
+    await run(['task', 'next', created.id, '--json'], inThere.io);
     expect(inThere.failed()).toBe(false);
     const actions = JSON.parse(inThere.out.join('\n')) as { action: string }[];
     expect(actions.map((entry) => entry.action).sort()).toEqual(['cancel', 'start']);

@@ -488,10 +488,10 @@ describe('every line the CLI writes survives the fold', () => {
    */
   const reads: readonly (readonly string[])[] = [
     ['search'],
-    ['skills'],
-    ['accountability'],
-    ['antipatterns'],
-    ['exposure'],
+    ['skill', 'provenance'],
+    ['audit', 'accountability'],
+    ['audit', 'antipatterns'],
+    ['audit', 'exposure'],
     ['verify'],
     ['brief'],
   ];
@@ -499,8 +499,8 @@ describe('every line the CLI writes survives the fold', () => {
     ['show', id],
     ['refs', id],
     ['timeline', id],
-    ['next-actions', id],
-    ['guard', 'submit', id, '--actor', actor],
+    ['task', 'next', id],
+    ['task', 'guard', 'submit', id, '--actor', actor],
   ];
   let everyRead: readonly (readonly string[])[] = [];
 
@@ -529,10 +529,10 @@ describe('every line the CLI writes survives the fold', () => {
     await invoke(['skill', 'create', 'Write the runbook first', '--body', 'Open the runbook.']);
     await invoke(['memory', 'The runbook lives in the record']);
     await invoke(['observe', id]);
-    const account = await invoke(['accountability', '--json']);
+    const account = await invoke(['audit', 'accountability', '--json']);
     const actor = /"who": "(mnid:[0-9a-z]+)"/.exec(account.join('\n'))?.[1];
     if (actor === undefined) throw new Error(`fixture: no identity in ${account.join(' / ')}`);
-    everyRead = [...reads, ...byId(id, actor), ['focus', '--actor', actor]];
+    everyRead = [...reads, ...byId(id, actor), ['resume', '--actor', actor]];
   }, 60_000);
 
   afterAll(() => {
@@ -577,7 +577,7 @@ describe('every line the CLI writes survives the fold', () => {
     // rather than that no terminal was around.
     const narrow = foldedAt(40, renderStyled);
     expect(await invoke(['brief'], narrow)).toEqual(await invoke(['brief']));
-    for (const argv of [['search'], ['accountability'], ['antipatterns']]) {
+    for (const argv of [['search'], ['audit', 'accountability'], ['audit', 'antipatterns']]) {
       const emitted = (await invoke([...argv, '--json'], narrow)).join('\n');
       expect(emitted, `mnema ${argv.join(' ')} --json`).toBe(
         (await invoke([...argv, '--json'])).join('\n'),
