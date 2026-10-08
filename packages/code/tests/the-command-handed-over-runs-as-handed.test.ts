@@ -665,7 +665,8 @@ export const HANDED_OVER: Readonly<
   // sets a signed commit beside the record (`mnema verify`, `mnema verify --since`), looked at.
   // flag 3 for the rung table's legend, on the front page and the evidence page, which names the
   // file `mnema rules-file --host` prints.
-  span: { line: 84, name: 153, flag: 3, unwritten: 0 },
+  // line 83 once the bug report became a form, which says `mnema --version` in a field of its own.
+  span: { line: 83, name: 153, flag: 3, unwritten: 0 },
   // name 18 until the page that says where the key lives named `mnema key protect` in a line of
   // its own.
   // line 35 until the same page showed that question in a block of its own.
@@ -723,7 +724,8 @@ export const HANDED_OVER: Readonly<
   // line 84 and name 84 with the report verb: its three flags, each read by its own name, and the three
   // lines of its help that name them.
   // unwritten 4 once the console named a member of a group by its whole path as well as a verb.
-  source: { line: 84, name: 84, flag: 4, unwritten: 4 },
+  // name 85 with the sentence the server's instructions hand the agent: the person runs `mnema report`.
+  source: { line: 84, name: 85, flag: 4, unwritten: 4 },
 };
 
 // ---------------------------------------------------------------------------
