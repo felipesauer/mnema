@@ -891,7 +891,7 @@ const PROBES: readonly Probe[] = [
   },
   {
     keys: ['handoff.ts «Recorded handoff on {}: {} → {}» #1'],
-    argv: ['handoff', 'a-task', VALUE, 'to-agent'],
+    argv: ['task', 'handoff', 'a-task', VALUE, 'to-agent'],
     says: `Recorded handoff on a-task: ${VALUE} → to-agent`,
   },
   {

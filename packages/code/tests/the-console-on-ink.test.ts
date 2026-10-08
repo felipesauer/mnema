@@ -618,7 +618,7 @@ describe('the same verbs, the same lines, another place', () => {
     // THE CRITERION OF THE DELIVERY, proved by comparison rather than by reading. Two of
     // these verbs separate their sections with BLANK LINES, which is the shape a layout
     // silently drops: text with nothing in it occupies no row unless it is told to.
-    const verbs = ['verify', 'accountability', 'skills', 'brief', 'search'];
+    const verbs = ['verify', 'audit accountability', 'audit antipatterns', 'brief', 'search'];
     for (const verb of verbs) {
       const outside = await shell(...verb.split(' '));
       // The verb really said something: an empty answer would satisfy any equality.

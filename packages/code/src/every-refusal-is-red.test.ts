@@ -60,6 +60,7 @@ import { fileURLToPath } from 'node:url';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { codeOnly } from '../tests/support/reading-source.js';
 import { buildProgram, type CliIo, run } from './cli.js';
+import { everyCommandOf } from './wiring/misuse.js';
 
 const HERE = fileURLToPath(new URL('.', import.meta.url));
 
@@ -295,7 +296,9 @@ describe('every verb that can refuse routes through that one place', () => {
     // a refusal no caller can reach, and a verb renamed away from its file would leave
     // the scan enumerating a name the program does not answer to.
     const { program } = buildProgram({ out: () => {}, err: () => {}, fail: () => {} });
-    const declared = new Set(program.commands.map((command) => command.name()));
+    // At any depth: `accountability` is declared under `audit` and `handoff` under `task`, and the
+    // module is still named for the command it hangs.
+    const declared = new Set(everyCommandOf(program).map((command) => command.name()));
     const orphaned = refusing()
       .map((file) => file.replace(/\.ts$/, ''))
       .filter((verb) => !declared.has(verb));
@@ -397,14 +400,38 @@ describe('and what it refuses comes out red, with the words still on the line', 
     // The verdict is the one reading with two outcomes, so it is where losing the
     // colour would cost the most. Asked both ways, with the paint off: the two answers
     // are different lines, and each names itself.
-    const allowed = await invoke('--color=never', 'guard', 'submit', taskId, '--actor', actor());
-    const refused = await invoke('--color=never', 'guard', 'complete', taskId, '--actor', actor());
+    const allowed = await invoke(
+      '--color=never',
+      'task',
+      'guard',
+      'submit',
+      taskId,
+      '--actor',
+      actor(),
+    );
+    const refused = await invoke(
+      '--color=never',
+      'task',
+      'guard',
+      'complete',
+      taskId,
+      '--actor',
+      actor(),
+    );
     expect(allowed).not.toBe(refused);
     expect(allowed).toContain('ALLOWED');
     expect(refused).toContain('REFUSED');
     // And with the paint on, the same two words are still there — the hue was added,
     // nothing was taken away.
-    const painted = await invoke('--color=always', 'guard', 'submit', taskId, '--actor', actor());
+    const painted = await invoke(
+      '--color=always',
+      'task',
+      'guard',
+      'submit',
+      taskId,
+      '--actor',
+      actor(),
+    );
     expect(painted).toContain('ALLOWED');
     expect(painted).toContain('\u001b[32m');
   });
@@ -413,7 +440,7 @@ describe('and what it refuses comes out red, with the words still on the line', 
   let who = '';
   const actor = (): string => who;
   beforeAll(async () => {
-    const account = await invoke('accountability', '--json');
+    const account = await invoke('audit', 'accountability', '--json');
     const found = /"who": "(mnid:[0-9a-z]+)"/.exec(account)?.[1];
     if (found === undefined) throw new Error(`fixture: no identity in ${account}`);
     who = found;

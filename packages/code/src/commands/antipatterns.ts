@@ -1,5 +1,5 @@
 /**
- * `mnema antipatterns` — recurring shapes in the record, with their evidence.
+ * `mnema audit antipatterns` — recurring shapes in the record, with their evidence.
  *
  * The third INTELLIGENCE read: it folds the present trees ({@link recordEvents}) and
  * surfaces the shapes that recur — tasks reopened, decisions superseded, skills

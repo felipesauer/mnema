@@ -37,7 +37,7 @@
  * That is also what kills a gate of the shape "you may only move what you have
  * consulted" — it would not be one rule across both surfaces, it would be a rule the
  * auditor's surface cannot obey. What stands in its place is a REPORT that declares its
- * own scope: `mnema antipatterns` says whether the run that MOVED a pattern had been
+ * own scope: `mnema audit antipatterns` says whether the run that MOVED a pattern had been
  * served its body, and answers NOT OBSERVABLE — never "did not consult" — for every move
  * whose run recorded no consultation at all, which is the state every move following a
  * read through this verb is in. `tests/what-the-record-can-witness.test.ts` drives that

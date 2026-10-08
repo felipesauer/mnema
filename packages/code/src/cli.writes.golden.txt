@@ -58,7 +58,7 @@ $ mnema memory 'my own note about the runbook' --scope global
 $ mnema observe <task-runbook> --topic review --text 'the runbook needs a rollback section'
 | Recorded observation <observation-rollback> about <task-runbook>
 |   Landed in the public tree — committed with the repository, so it reaches every clone.
-$ mnema handoff <task-runbook> agent-alpha agent-beta
+$ mnema task handoff <task-runbook> agent-alpha agent-beta
 | Recorded handoff on <task-runbook>: agent-alpha → agent-beta
 |   Landed in the public tree — committed with the repository, so it reaches every clone.
 $ mnema link <decision-runbook> <task-runbook> --rel relates-to
@@ -216,13 +216,13 @@ $ mnema show no-such-id
 [exit 1]
 $ mnema timeline no-such-id
 | No history recorded for no-such-id.
-$ mnema next-actions no-such-id
+$ mnema task next no-such-id
 ! No task no-such-id here.
 [exit 1]
 $ mnema key enroll not-a-request
 ! Refused (MALFORMED_REQUEST): that is not a key request — hand over the whole line the joining machine printed, unedited, with nothing added or trimmed
 [exit 1]
-$ mnema focus --actor whoever
+$ mnema resume --actor whoever
 ! Refused (UNKNOWN_ANCHOR): "whoever" names no identity in this record — these are: <anchor-short>
 [exit 1]
 $ mnema key request --anchor whoever
@@ -336,7 +336,7 @@ $ mnema memory ''
 $ mnema observe <task-runbook> --topic '' --text 'a note with no topic'
 ! Refused (UNREADABLE_EVENT): event "observation.recorded" needs a non-empty string at payload.topic. The fact was NOT recorded — an entry no read could open would leave every later read of this project failing, and a tail cannot be edited.
 [exit 1]
-$ mnema handoff '' agent-alpha agent-beta
+$ mnema task handoff '' agent-alpha agent-beta
 ! Refused (UNREADABLE_EVENT): event "handoff.recorded" needs a non-empty string at subject. The fact was NOT recorded — an entry no read could open would leave every later read of this project failing, and a tail cannot be edited.
 [exit 1]
 $ mnema link <task-runbook> <decision-runbook> --rel ''

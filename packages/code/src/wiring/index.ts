@@ -17,9 +17,13 @@
  * `task`, `decision` and `skill` are GROUPS — a create and a `move` under one name —
  * because each is a workflow entity with a state the gate moves it through. The
  * create takes a birth `--scope`; the move takes none, because a move follows the
- * entity to the tree it was born in.
+ * entity to the tree it was born in. What is ABOUT the entity is under its name too: a
+ * handoff is recorded on a task and the workflow's own questions are asked of one
+ * (`task handoff`, `task next`, `task guard`), and where each skill came from is read
+ * under `skill` (`skill provenance`). A group is classified by its most powerful member
+ * (`verb.ts`), so those readings are not offered by the read-only console.
  *
- * The four KNOWLEDGE verbs — `memory`, `observe`, `handoff`, `link`. Unlike
+ * The three KNOWLEDGE verbs — `memory`, `observe`, `link`. Unlike
  * task/decision/skill they are not groups: each is a single top-level verb (the
  * `git commit` / `init` / `verify` shape), because a knowledge fact is one
  * atomic append with no CRUD family and no `move` — there is no state to
@@ -28,7 +32,7 @@
  * NONE validates the ids it references — the core resolves a dangling reference
  * on read (an honest cross-tree assertion), and the surface only forwards.
  *
- * The four CONTEXT reads — `status`, `focus`, `resume`, `next-actions`. Like
+ * The two CONTEXT reads — `status` and `resume`. Like
  * init/verify they are top-level verbs (heterogeneous shapes, not an
  * interchangeable resource family), and unlike every write above they are strictly
  * READ-ONLY: each opens the projection cache, rebuilds, and calls a PURE context
@@ -39,17 +43,17 @@
  * `status` LEADS THEM because it is the OPENING read: it answers where things
  * stand — where the actor left off, what work is live, which patterns are adopted,
  * which decisions govern, and what is waiting on somebody to rule on it — and the
- * other three narrow one part of that. It is the same derivation the agent surface
+ * other narrows one part of that, and lists the runs the actor still has open. It is the same derivation the agent surface
  * opens on (`bootstrap`, over MCP), which until it was declared here was reachable
  * from that surface alone: an agent could ask where things stood and the person
  * whose record it is could not.
  *
- * status/focus/resume are always SOMEONE's context, and the record has no "current
+ * status/resume are always SOMEONE's context, and the record has no "current
  * actor" — a `who` is only stamped on past events. An invocation has no session to
  * read a `who` from, and deriving one would touch key material (minting a key
  * on a fresh machine) that the surface must not own. So the actor is a REQUIRED
  * `--actor` flag: the derivation takes it as a parameter, and passing it keeps
- * the read truly read-only. (next-actions needs no actor — its answer is a
+ * the read truly read-only. (`task next` needs no actor — its answer is a
  * property of the task's state, not of who asks.) THIS SAID *THE CLI* HAS NO
  * SESSION, and `mnema repl` is one: it resolves that identity from local material
  * with no writer opened and fills the flag in at its own prompt
@@ -64,17 +68,17 @@
  * other. Neither takes `--actor`: what matches is a property of the record.
  * Neither refuses outside a project either — the global tree is a record too.
  *
- * The INTELLIGENCE reads — `timeline`, `accountability`, `antipatterns`, `exposure`,
- * `refs`, `skills`, `export`. Top-level verbs like the context reads, but the AUDITOR's
+ * The INTELLIGENCE reads — `timeline`, `refs`, `audit accountability`, `audit antipatterns`,
+ * `audit exposure` and `export`. Reads like the context ones (three of them under `audit`), but the AUDITOR's
  * view: each covers EVERY present tree (public/private/global) rather than one tree's
  * slice — a story crosses trees, and authorship and recurrence are properties of
  * everything. HOW they take those trees differs, and the difference is the answer's:
- * most fold the union, while `exposure` and `export` keep the trees APART and label what
+ * most fold the union, while `audit exposure` and `export` keep the trees APART and label what
  * they report, because a fact that is committed and clones to every machine and a fact
  * that is on one disk are the same finding in two situations. Strictly READ-ONLY: each
  * reads the present trees' tails and folds them with a PURE context derivation — no
  * cache rebuilt to disk, no writer, no key. So none takes `--actor` (the answer
- * is a property of the record, not of who asks); accountability's and `export`'s
+ * is a property of the record, not of who asks); `audit accountability`'s and `export`'s
  * `--who`/`--which` are FILTERS over who already acted, not the asker's identity.
  * `--json` emits the faithful object, on every one of them but `export`, whose whole
  * output is already the machine's and which therefore has no second shape to ask for.
@@ -82,7 +86,7 @@
  *
  * `export` IS THE ONE WHOSE ANSWER IS MEANT TO LEAVE THE MACHINE, which is what decides
  * everything about it: it emits the ENVELOPE of each fact and no payload of any kind,
- * because `exposure` refuses to print a value that looks like a credential even to the
+ * because `audit exposure` refuses to print a value that looks like a credential even to the
  * person holding the record, and a feed carrying bodies would push exactly that into
  * somebody's search index. It sends nothing anywhere — the feed goes to standard output
  * and whoever forwards it decides the rest.
@@ -215,9 +219,8 @@
  */
 
 import type { Command } from 'commander';
-import { registerAccountability } from './accountability.js';
 import { registerAging } from './aging.js';
-import { registerAntipatterns } from './antipatterns.js';
+import { registerAudit } from './audit.js';
 import { registerBeforeAWrite } from './before-a-write.js';
 import { registerBrief } from './brief.js';
 import { registerCheck } from './check.js';
@@ -229,17 +232,12 @@ import { registerDecision } from './decision.js';
 import { registerDiagram } from './diagram.js';
 import { registerDoctor } from './doctor.js';
 import { registerExport } from './export.js';
-import { registerExposure } from './exposure.js';
-import { registerFocus } from './focus.js';
-import { registerGuard } from './guard.js';
-import { registerHandoff } from './handoff.js';
 import { registerInherit } from './inherit.js';
 import { registerInit } from './init.js';
 import { registerKey } from './key.js';
 import { registerLink } from './link.js';
 import { registerMcp } from './mcp.js';
 import { registerMemory } from './memory.js';
-import { registerNextActions } from './next-actions.js';
 import { registerObserve } from './observe.js';
 import { registerPromote } from './promote.js';
 import { registerRecall } from './recall.js';
@@ -254,7 +252,6 @@ import { registerSearch } from './search.js';
 import { registerShow } from './show.js';
 import { registerSite } from './site.js';
 import { registerSkill } from './skill.js';
-import { registerSkills } from './skills.js';
 import { registerStatus } from './status.js';
 import { registerSwitch } from './switch.js';
 import { registerTail } from './tail.js';
@@ -296,7 +293,6 @@ export const GROUPS: readonly Group[] = [
       registerRetract,
       registerSkill,
       registerTask,
-      registerHandoff,
       registerPromote,
     ],
   },
@@ -323,17 +319,11 @@ export const GROUPS: readonly Group[] = [
       registerShow,
       registerTimeline,
       registerReferences,
+      registerAudit,
       registerDiagram,
-      registerAccountability,
-      registerAntipatterns,
-      registerExposure,
       registerExport,
-      registerSkills,
       registerUsage,
-      registerFocus,
       registerResume,
-      registerNextActions,
-      registerGuard,
       registerRepl,
     ],
   },

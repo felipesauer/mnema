@@ -79,8 +79,9 @@
  * wording earn its place, and it is the sharpest case on either surface: the `skills`
  * TOOL serves a pattern's body and records that a run was served it, so a reading that
  * mints a fact belongs on the `mutates` side. Its namesake on the command line,
- * `mnema skills`, lists patterns and records nothing, and is a `reads`. The two are not
- * one act under two names, and the classification is what says so out loud.
+ * `mnema skill provenance`, lists patterns and records nothing, so it reads — though it hangs
+ * under `skill`, a group declared a write for its other members (`wiring/verb.ts`). The two are
+ * not one act under two names, and the classification is what says so out loud.
  *
  * TWO FILES KEEP THE DECLARATIONS HONEST, one per surface, and both do it the same way:
  * they enumerate what is registered from the thing that registers it, and then EXERCISE

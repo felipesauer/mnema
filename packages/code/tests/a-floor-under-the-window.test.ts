@@ -93,7 +93,7 @@ const OPENED = 'a session over this project';
  * line is a statement, so a renderer that paints wraps the label in escapes and the colon after
  * it is on the far side of them. What is contiguous on the wire is the label's own text.
  */
-const A_READ = 'antipatterns';
+const A_READ = 'audit antipatterns';
 const CLOSES_THE_ANSWER = 'deprecated skills';
 
 /** The key that leaves, as a terminal sends it. Spelled by its code point, like every other. */

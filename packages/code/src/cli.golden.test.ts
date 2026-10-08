@@ -303,7 +303,7 @@ function assertNothingVolatile(text: string): void {
  *
  * It is the only fixture step that does not go through the CLI, and it has to be:
  * every field the surface writes is screened, so a finding is UNREACHABLE from
- * here. That is not a gap in the fixture, it is what `exposure` is for — the read
+ * here. That is not a gap in the fixture, it is what `audit exposure` is for — the read
  * exists for the record's past, when there was no door, and this is the only way
  * to reproduce that past in a fixture built today.
  *
@@ -374,21 +374,21 @@ async function readEverything(label: string, ids: Record<string, string>): Promi
   await mnema('reads', 'why', 'docs/runbook/rollback.md', '--json');
   await mnema('reads', 'aging');
   await mnema('reads', 'aging', '--json');
-  await mnema('reads', 'exposure');
-  await mnema('reads', 'exposure', '--json');
+  await mnema('reads', 'audit', 'exposure');
+  await mnema('reads', 'audit', 'exposure', '--json');
   await mnema('reads', 'timeline', ids.task ?? 'no-such-id');
   await mnema('reads', 'timeline', ids.task ?? 'no-such-id', '--json');
-  await mnema('reads', 'accountability');
+  await mnema('reads', 'audit', 'accountability');
   // Every author's entry carries `foundedBeside`, the foundings the line above prints beside it:
   // `[]` here, because the one author of this fixture founded first. It is pinned empty rather
   // than left out, so the day it went missing from the JSON the diff would say so.
-  await mnema('reads', 'accountability', '--json');
+  await mnema('reads', 'audit', 'accountability', '--json');
   // The other half of the promise: the value the line above PRINTS, typed back into
   // the flag that filters by it. A short form the reads emit and the flags refuse
   // would be the defect this shortening exists not to create.
-  await mnema('reads', 'accountability', '--who', ids.short as string);
-  await mnema('reads', 'antipatterns');
-  await mnema('reads', 'antipatterns', '--json');
+  await mnema('reads', 'audit', 'accountability', '--who', ids.short as string);
+  await mnema('reads', 'audit', 'antipatterns');
+  await mnema('reads', 'audit', 'antipatterns', '--json');
   // The OPENING read, over both records the fixture reaches: the empty one, where
   // every half has to say it is empty rather than print a heading with nothing under
   // it, and the populated one. What it cannot reach here is a full FIVE cells — the
@@ -396,16 +396,23 @@ async function readEverything(label: string, ids: Record<string, string>): Promi
   // a pattern waiting is `where-things-stand.test.ts`'s.
   await mnema('reads', 'status', '--actor', ids.anchor as string);
   await mnema('reads', 'status', '--actor', ids.anchor as string, '--json');
-  await mnema('reads', 'focus', '--actor', ids.short as string);
-  await mnema('reads', 'focus', '--actor', ids.anchor as string);
-  await mnema('reads', 'focus', '--actor', ids.anchor as string, '--json');
+  await mnema('reads', 'resume', '--actor', ids.short as string);
   await mnema('reads', 'resume', '--actor', ids.anchor as string);
   await mnema('reads', 'resume', '--actor', ids.anchor as string, '--json');
-  await mnema('reads', 'next-actions', ids.task ?? 'no-such-id');
-  await mnema('reads', 'next-actions', ids.task ?? 'no-such-id', '--json');
-  await mnema('reads', 'guard', 'start', ids.task ?? 'no-such-id', '--actor', ids.anchor as string);
+  await mnema('reads', 'task', 'next', ids.task ?? 'no-such-id');
+  await mnema('reads', 'task', 'next', ids.task ?? 'no-such-id', '--json');
   await mnema(
     'reads',
+    'task',
+    'guard',
+    'start',
+    ids.task ?? 'no-such-id',
+    '--actor',
+    ids.anchor as string,
+  );
+  await mnema(
+    'reads',
+    'task',
     'guard',
     'complete',
     ids.task ?? 'no-such-id',
@@ -415,6 +422,7 @@ async function readEverything(label: string, ids: Record<string, string>): Promi
   // The verdict that ALLOWS, which only the proof the action requires reaches.
   await mnema(
     'reads',
+    'task',
     'guard',
     'complete',
     ids.task ?? 'no-such-id',
@@ -425,6 +433,7 @@ async function readEverything(label: string, ids: Record<string, string>): Promi
   );
   await mnema(
     'reads',
+    'task',
     'guard',
     'complete',
     ids.task ?? 'no-such-id',
@@ -434,8 +443,8 @@ async function readEverything(label: string, ids: Record<string, string>): Promi
     'it is done',
     '--json',
   );
-  await mnema('reads', 'skills');
-  await mnema('reads', 'skills', '--json');
+  await mnema('reads', 'skill', 'provenance');
+  await mnema('reads', 'skill', 'provenance', '--json');
   // The one read whose whole output is meant to become a file, so the golden is where
   // its bytes are pinned for a person to read as a document — over an empty record and
   // over a full one, which are the two things it has to say honestly.
@@ -504,7 +513,7 @@ beforeAll(async () => {
   // ── The reads with nothing recorded anywhere: no project, no trees.
   section('reads', 'outside a project');
   await mnema('reads', 'search');
-  await mnema('reads', 'exposure');
+  await mnema('reads', 'audit', 'exposure');
   await mnema('reads', 'brief');
   await mnema('reads', 'recall');
   await mnema('reads', 'usage');
@@ -647,7 +656,7 @@ beforeAll(async () => {
     'observation-rollback',
   );
 
-  await mnema('writes', 'handoff', taskId, 'agent-alpha', 'agent-beta');
+  await mnema('writes', 'task', 'handoff', taskId, 'agent-alpha', 'agent-beta');
   await mnema('writes', 'link', decisionId, taskId, '--rel', 'relates-to');
   await mnema('writes', 'link', taskId, choreId, '--rel', 'derived-from');
   // THE RELATIONS THAT CARRY AN ADDRESS — a decision given an address, and a second
@@ -827,11 +836,11 @@ beforeAll(async () => {
   await mnema('writes', 'refs', taskId, '--direction', 'sideways');
   await mnema('writes', 'show', 'no-such-id');
   await mnema('writes', 'timeline', 'no-such-id');
-  await mnema('writes', 'next-actions', 'no-such-id');
+  await mnema('writes', 'task', 'next', 'no-such-id');
   await mnema('writes', 'key', 'enroll', 'not-a-request');
   // What a value naming no identity earns, on a read and on a write: the refusal
   // names the identities there are, in the form that can be pasted straight back.
-  await mnema('writes', 'focus', '--actor', 'whoever');
+  await mnema('writes', 'resume', '--actor', 'whoever');
   await mnema('writes', 'key', 'request', '--anchor', 'whoever');
 
   // The two nos authorizing a cut earns, each named by the id the record spells a
@@ -913,7 +922,7 @@ beforeAll(async () => {
   await mnema('writes', 'skill', 'create', '', '--body', 'a body with no name');
   await mnema('writes', 'memory', '');
   await mnema('writes', 'observe', taskId, '--topic', '', '--text', 'a note with no topic');
-  await mnema('writes', 'handoff', '', 'agent-alpha', 'agent-beta');
+  await mnema('writes', 'task', 'handoff', '', 'agent-alpha', 'agent-beta');
   await mnema('writes', 'link', taskId, decisionId, '--rel', '');
   await mnema('writes', 'run', 'start', '--which', 'agent-gamma', '--goal', '');
   await mnema('writes', 'run', 'end', run2, '--which', 'agent-beta', '--outcome', '');

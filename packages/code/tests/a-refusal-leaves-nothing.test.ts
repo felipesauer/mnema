@@ -336,7 +336,7 @@ describe('a refusal from the operation’s own door leaves nothing a clone recei
     ['task create', 'CONTENT_TOO_LARGE', () => ['task', 'create', BIG]],
     ['decision record', 'CONTENT_TOO_LARGE', () => ['decision', 'record', BIG, 'why']],
     ['skill create', 'CONTENT_TOO_LARGE', () => ['skill', 'create', BIG, '--body', 'x']],
-    ['handoff', 'NAME_HOLDS_A_SECRET', () => ['handoff', taskOfA, SECRET, 'bob']],
+    ['task handoff', 'NAME_HOLDS_A_SECRET', () => ['task', 'handoff', taskOfA, SECRET, 'bob']],
     [
       'link',
       'NAME_HOLDS_A_SECRET',

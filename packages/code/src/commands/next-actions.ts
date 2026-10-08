@@ -1,5 +1,5 @@
 /**
- * `mnema next-actions <task-id>` — the moves the workflow allows a task next.
+ * `mnema task next <task-id>` — the moves the workflow allows a task next.
  *
  * The third context read, and the one keyed by an ENTITY rather than an actor.
  * It answers "what can I do to this task now" by reading the task's current

@@ -95,7 +95,7 @@ function mnema(
 
 /** How many authors the record at `dir` counts, read as a home that wrote nothing. */
 function authors(dir: string): string {
-  const said = mnemaIn(dir, auditor, 'accountability');
+  const said = mnemaIn(dir, auditor, 'audit', 'accountability');
   expect(said.status, said.stderr).toBe(0);
   return /\d+ author\(s\)/.exec(said.stdout)?.[0] ?? `no count in: ${said.stdout}`;
 }
@@ -145,7 +145,9 @@ describe('the command line says it on stderr, once, after the answer', () => {
 
   it('says nothing for a machine that joined by the handshake — it adopts, and founds nothing', () => {
     expect(mnema(homeA, 'init').status).toBe(0);
-    const who = /(mnid:[0-9a-f]+)/.exec(mnema(homeA, 'accountability').stdout)?.[1] as string;
+    const who = /(mnid:[0-9a-f]+)/.exec(
+      mnema(homeA, 'audit', 'accountability').stdout,
+    )?.[1] as string;
     const request = mnema(homeB, 'key', 'request', '--anchor', who);
     expect(request.status, request.stderr).toBe(0);
     const line = request.stdout.split('\n').find((one) => one.startsWith('mnema-key-request:'));
@@ -155,7 +157,7 @@ describe('the command line says it on stderr, once, after the answer', () => {
     const joined = mnema(homeB, 'memory', 'first note from the laptop');
     expect(joined.status).toBe(0);
     expect(founded(joined.stderr)).toEqual([]);
-    expect(mnema(homeA, 'accountability').stdout).toContain('1 author(s)');
+    expect(mnema(homeA, 'audit', 'accountability').stdout).toContain('1 author(s)');
   }, 60_000);
 
   it('gives a tree kept on one machine its own words — the identity beside it was written from here', () => {
@@ -510,7 +512,7 @@ describe('accountability names it, whenever somebody asks', () => {
   it('beside the author whose identity was founded where another already was', () => {
     expect(mnema(homeA, 'init').status).toBe(0);
     expect(mnema(homeB, 'memory', 'second').status).toBe(0);
-    const lines = mnema(homeA, 'accountability').stdout.split('\n');
+    const lines = mnema(homeA, 'audit', 'accountability').stdout.split('\n');
     expect(lines[0]).toContain('2 author(s)');
     const marked = lines.filter((line) => line.includes('founded beside'));
     expect(marked).toHaveLength(1);
@@ -520,7 +522,7 @@ describe('accountability names it, whenever somebody asks', () => {
   it('and in --json, from the same reading: the tree, the instant, and who was already there', () => {
     expect(mnema(homeA, 'init').status).toBe(0);
     expect(mnema(homeB, 'memory', 'second').status).toBe(0);
-    const account = JSON.parse(mnema(homeA, 'accountability', '--json').stdout) as {
+    const account = JSON.parse(mnema(homeA, 'audit', 'accountability', '--json').stdout) as {
       byWho: {
         who: string;
         foundedBeside: { scope: string; at: string; besides: string[] }[];
@@ -537,7 +539,7 @@ describe('accountability names it, whenever somebody asks', () => {
 
     // The line says the same thing beside the same author.
     const mark = second?.foundedBeside[0];
-    const line = mnema(homeA, 'accountability')
+    const line = mnema(homeA, 'audit', 'accountability')
       .stdout.split('\n')
       .find((one) => one.includes('founded beside'));
     expect(line).toContain(`founded beside 1 other(s) in the public tree, ${mark?.at}`);
@@ -576,7 +578,7 @@ describe('accountability names it, whenever somebody asks', () => {
     const agents = served.byProject.find((entry) => entry.project === repo)?.byWho ?? [];
 
     const printed = (
-      JSON.parse(mnema(auditor, 'accountability', '--json').stdout) as { byWho: Author[] }
+      JSON.parse(mnema(auditor, 'audit', 'accountability', '--json').stdout) as { byWho: Author[] }
     ).byWho;
     const marks = (authors: Author[]) =>
       authors

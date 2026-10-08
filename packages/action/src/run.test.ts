@@ -257,7 +257,9 @@ describe('the Action with a checker key', () => {
     const id = idOf(mnema('decision', 'record', 'Keep money as integer cents', 'Floats drift.'));
     mnema('decision', 'move', 'accept', id, '--note', 'agreed');
     mnema('check', 'declare', id, 'node', '--', '-e', program);
-    const account = JSON.parse(mnema('accountability', '--json')) as { byWho: { who: string }[] };
+    const account = JSON.parse(mnema('audit', 'accountability', '--json')) as {
+      byWho: { who: string }[];
+    };
     const anchor = account.byWho[0]?.who ?? '';
     const runner = join(sandbox, 'runner');
     const asked = execFileSync(

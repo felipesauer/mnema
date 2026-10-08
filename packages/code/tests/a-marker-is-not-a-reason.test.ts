@@ -107,7 +107,7 @@ describe('a marker the product prints where a reason goes', () => {
       expect(said.said, `${marker} (printed in ${where})`).toContain('Refused (NOT_A_REASON)');
     }
     // The task is still where it was born: nothing above moved it.
-    const next = await mnema('next-actions', task);
+    const next = await mnema('task', 'next', task);
     expect(next.said).toContain('cancel');
   }, 60_000);
 

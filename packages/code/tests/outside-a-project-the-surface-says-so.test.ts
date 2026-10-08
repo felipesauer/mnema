@@ -7,7 +7,7 @@
  * verbs overriding the way BACK because a machine recovering an identity is not a machine
  * founding a project. Nothing checked THE RULE. What that cost was measured: of the
  * thirty-eight places on this surface that report a refusal, four had never been reached
- * by any test — `accountability`, `antipatterns`, `timeline` and `witness` — and for three
+ * by any test — `audit accountability`, `audit antipatterns`, `timeline` and `witness` — and for three
  * of them the reason is one reason, not three: their ONLY refusal is this one.
  *
  * WHAT WAS ALREADY RUN OUTSIDE A PROJECT, because the sentence above once said nothing
@@ -100,7 +100,7 @@ const NAMES_ITS_OWN_WAY_BACK: Readonly<Record<string, string>> = {
 const ANSWERS_ANYWAY: Readonly<Record<string, string>> = {
   init: 'it is the verb whose subject is that there is no project here yet',
   search: 'it searches whatever trees are visible, and the global one is a record',
-  skills: 'the patterns it lists are read from every visible tree, global included',
+  'skill provenance': 'the patterns it lists are read from every visible tree, global included',
   switch: 'where a channel stands is a question about the trees there are, not about a project',
   doctor:
     'it asks the machine how mnema is installed, which is true wherever it is run, and it reads no record',
@@ -285,7 +285,7 @@ describe('outside a project the surface says so', () => {
     expect(missedTheProject.filter((one) => !one.failed).map((one) => one.path)).toEqual([]);
     // The three uncovered reads this file was written for are in it, by name — a rename
     // that quietly dropped one of them from the walk would not be caught by a count.
-    for (const read of ['accountability', 'antipatterns', 'timeline']) {
+    for (const read of ['audit accountability', 'audit antipatterns', 'timeline']) {
       expect(missedTheProject.map((one) => one.path)).toContain(read);
     }
 

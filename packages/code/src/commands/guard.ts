@@ -1,5 +1,5 @@
 /**
- * `mnema guard <action> <id>` — a DRY-RUN of the workflow gate: "would this move
+ * `mnema task guard <action> <id>` — a DRY-RUN of the workflow gate: "would this move
  * be allowed on this task, and if not, why?" — asked, never done.
  *
  * The fourth read on the surface, and the sibling of `task move`: it takes the

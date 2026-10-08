@@ -45,7 +45,7 @@
  *
  * The provenance is ONE FACT, never a case. Who proposed it, whether both ends are
  * the same agent, which tree it lives in: that is the reading a PERSON does on the
- * command line (`mnema skills`), where there is context to judge with. Handing an
+ * command line (`mnema skill provenance`), where there is context to judge with. Handing an
  * agent the whole account in the middle of its task would be asking it for a verdict
  * it has no way to reach, with metadata crowding out the pattern it describes.
  *

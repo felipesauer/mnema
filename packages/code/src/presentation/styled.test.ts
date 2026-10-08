@@ -312,18 +312,18 @@ describe('every line the CLI writes says the same thing either way', () => {
   /**
    * The reads of the surface, over a record that holds one of each kind.
    *
-   * WHAT IS NOT HERE: the two reads that word a duration relative to NOW (`focus`
-   * and `resume` on an actor WITH a run — see `runAgeSuffix`). Two invocations of
-   * those cannot be compared byte for byte, because the clock moves between them and
-   * the difference would be the age, not the style. Both are still driven, over an
-   * actor with no run, which is where they print the hint that says what a run is.
+   * WHAT IS NOT HERE: the read that words a duration relative to NOW (`resume` on an
+   * actor WITH a run — see `runAgeSuffix`). Two invocations of it cannot be compared
+   * byte for byte, because the clock moves between them and the difference would be the
+   * age, not the style. It is still driven, over an actor with no run, which is where it
+   * prints the hint that says what a run is.
    */
   const reads: readonly (readonly string[])[] = [
     ['search'],
-    ['skills'],
-    ['accountability'],
-    ['antipatterns'],
-    ['exposure'],
+    ['skill', 'provenance'],
+    ['audit', 'accountability'],
+    ['audit', 'antipatterns'],
+    ['audit', 'exposure'],
     ['verify'],
     ['brief'],
   ];
@@ -332,8 +332,8 @@ describe('every line the CLI writes says the same thing either way', () => {
     ['show', id],
     ['refs', id],
     ['timeline', id],
-    ['next-actions', id],
-    ['guard', 'submit', id, '--actor', actor],
+    ['task', 'next', id],
+    ['task', 'guard', 'submit', id, '--actor', actor],
   ];
   let everyRead: readonly (readonly string[])[] = [];
 
@@ -363,20 +363,15 @@ describe('every line the CLI writes says the same thing either way', () => {
       'It is what a reader asks for',
     ]);
     // `--body` is REQUIRED and this call used to omit it, so the fixture refused
-    // silently and `skills` had nothing to list — which is why a read that composes
+    // silently and `skill provenance` had nothing to list — which is why a read that composes
     // an id column sat outside the corpus of the slice that measured what paints.
     await invoke(['skill', 'create', 'Write the runbook first', '--body', 'Open the runbook.']);
     await invoke(['memory', 'The runbook lives in the record']);
     await invoke(['observe', id]);
-    const account = await invoke(['accountability', '--json']);
+    const account = await invoke(['audit', 'accountability', '--json']);
     const actor = /"who": "(mnid:[0-9a-z]+)"/.exec(account.join('\n'))?.[1];
     if (actor === undefined) throw new Error(`fixture: no identity in ${account.join(' / ')}`);
-    everyRead = [
-      ...reads,
-      ...byId(id, actor),
-      ['focus', '--actor', actor],
-      ['resume', '--actor', actor],
-    ];
+    everyRead = [...reads, ...byId(id, actor), ['resume', '--actor', actor]];
   }, 60_000);
 
   afterAll(() => {
@@ -398,7 +393,12 @@ describe('every line the CLI writes says the same thing either way', () => {
       // to be inferred from the default of a pipe. Same lines, in the same order.
       expect(await invoke(['--color=never', ...argv]), `never: ${argv.join(' ')}`).toEqual(plain);
       compared += plain.length;
-      if (styled.some((line, at) => line !== plain[at])) painting.push(argv[0] as string);
+      if (styled.some((line, at) => line !== plain[at]))
+        painting.push(
+          ['audit', 'skill', 'task'].includes(argv[0] as string)
+            ? argv.slice(0, 2).join(' ')
+            : (argv[0] as string),
+        );
     }
     // A corpus that turned out empty would pass the loop above without comparing a
     // line, and a fixture that stopped recording anything is how that happens.
@@ -412,19 +412,19 @@ describe('every line the CLI writes says the same thing either way', () => {
     // `statement` or a `subjectLine`; the four that joined are the LISTS whose call
     // site now says which column is an id and which is an instant. What is still
     // unpainted is measured too, and each for a reason a reader can check:
-    // `accountability` and `next-actions` compose every column out of several values
-    // and have no bare id to say; `brief` is facts; `exposure` and `focus` do have a
+    // `audit accountability` and `task next` compose every column out of several values
+    // and have no bare id to say; `brief` is facts; `audit exposure` and `resume` do have a
     // said column, and print none in this fixture — nothing here holds a credential
-    // format, and the actor has no open run. `resume` is facts and a hint.
+    // format, and the actor has no open run.
     expect(painting).toEqual([
       'search',
-      'skills',
-      'antipatterns',
+      'skill provenance',
+      'audit antipatterns',
       'verify',
       'show',
       'refs',
       'timeline',
-      'guard',
+      'task guard',
     ]);
   }, 60_000);
 
@@ -433,7 +433,12 @@ describe('every line the CLI writes says the same thing either way', () => {
     // reads return their object before a line is ever composed, so there is nothing
     // for a renderer to reach — asserted rather than assumed, because the two are one
     // `if` apart in every one of these verbs.
-    for (const argv of [['search'], ['refs', 'nobody'], ['accountability'], ['antipatterns']]) {
+    for (const argv of [
+      ['search'],
+      ['refs', 'nobody'],
+      ['audit', 'accountability'],
+      ['audit', 'antipatterns'],
+    ]) {
       const emitted = await invoke(['--color=always', ...argv, '--json']);
       expect(emitted.join('\n'), `mnema ${argv.join(' ')} --json`).not.toContain('\u001b');
     }

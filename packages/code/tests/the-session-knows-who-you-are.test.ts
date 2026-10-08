@@ -6,7 +6,7 @@
  * <id>* (IT IS NOT, ANY MORE, AND THAT IS A PREMISE THIS FILE HELD THAT A FIRST WALKTHROUGH
  * FALSIFIED: `status` takes the identity this machine writes as when no `--actor` is typed, so
  * the verb these cases were first written over no longer asks. The cases that need a verb that
- * still asks are written over `focus`, which does), two rows under a box naming `mnid:…`. The value the verb wanted was on the
+ * still asks are written over `resume`, which does), two rows under a box naming `mnid:…`. The value the verb wanted was on the
  * screen, put there by the session itself, resolved from local material with no writer
  * opened (`repl/standing.ts`) — so the surface was asking a question it had already
  * answered.
@@ -25,7 +25,7 @@
  *     names no single key, there is nothing to fill and the verb has to ask exactly as it
  *     did. Asserted BYTE FOR BYTE against the same verb at a shell, because "the same
  *     message" is the kind of promise that decays into "a similar message".
- *   - AND THE COMMAND LINE IS UNTOUCHED. `mnema focus` in the very directory where a
+ *   - AND THE COMMAND LINE IS UNTOUCHED. `mnema resume` in the very directory where a
  *     session would have filled the flag in still refuses. The argument for the flag is
  *     about an INVOCATION having no session, and it is untouched by a session having one.
  *
@@ -46,6 +46,7 @@ import { buildProgram, type CliIo, run } from '../src/cli.js';
 import { renderPlain } from '../src/presentation/plain.js';
 import { asTheSession } from '../src/repl/asking.js';
 import { THE_FLOOR } from '../src/repl/floor.js';
+import { verbsOffered } from '../src/repl/gate.js';
 import { typedLine } from '../src/repl/session.js';
 import { everyCommandOf } from '../src/wiring/misuse.js';
 import { ACTOR_HELP } from '../src/wiring/options.js';
@@ -331,15 +332,15 @@ describe('the identity the caller names is the one that is answered for', () => 
 
 describe('with no identity to speak as, the verb asks exactly as it did', () => {
   it('says what the same verb says at a shell, byte for byte', async () => {
-    const atThePrompt = await prompt('focus', undefined);
-    const atTheShell = await shell('focus');
+    const atThePrompt = await prompt('resume', undefined);
+    const atTheShell = await shell('resume');
     // THE WHOLE REFUSAL, both streams: the same sentence, the same detail, the same order.
     expect(atThePrompt.err).toEqual(atTheShell.err);
     expect(atThePrompt.out).toEqual(atTheShell.out);
     // NOT VACUOUS: it really is the refusal, and it still names where an identity comes
     // from — the promise that sentence makes to a reader who has none.
     expect(atThePrompt.err.join('\n')).toContain(ASKS_FOR_ONE);
-    expect(atThePrompt.err.join('\n')).toContain('mnema accountability');
+    expect(atThePrompt.err.join('\n')).toContain('mnema audit accountability');
   }, 120_000);
 });
 
@@ -348,18 +349,18 @@ describe('with no identity to speak as, the verb asks exactly as it did', () => 
 // ---------------------------------------------------------------------------
 
 describe('the command line still asks, in the very project where a session would not', () => {
-  it('refuses `mnema focus` here, and answers it when the actor is written out', async () => {
+  it('refuses `mnema resume` here, and answers it when the actor is written out', async () => {
     // O-d. The argument for the required flag is about an INVOCATION having no session,
     // and this is the same directory, the same record and the same identity the console
     // fills in one word away.
-    const refused = await shell('focus');
+    const refused = await shell('resume');
     expect(refused.out).toEqual([]);
     expect(refused.err.join('\n')).toContain(ASKS_FOR_ONE);
     // And it is a refusal about the FLAG rather than about the project: written out, the
     // same verb in the same directory answers.
-    const answered = await shell('focus', '--actor', mine);
+    const answered = await shell('resume', '--actor', mine);
     expect(answered.err).toEqual([]);
-    expect(answered.out.join('\n')).toContain('has no open runs');
+    expect(answered.out.join('\n')).toContain('has no runs');
   }, 120_000);
 });
 
@@ -391,7 +392,7 @@ function pathOf(command: Command): string[] {
  * blind spot the list of verbs would: a fifth verb, or a fourth argument on one of these,
  * and the case would be typing a line the parser refuses for a reason that has nothing to
  * do with an identity. An argument that enumerates its values gets one of its own
- * (`guard`'s action does); anything else gets a value that names nothing, which is enough
+ * (`task guard`'s action does); anything else gets a value that names nothing, which is enough
  * to get past the parser and into the verb.
  */
 function invocationOf(command: Command): string[] {
@@ -438,7 +439,7 @@ describe('every command that requires an identity is served, and nothing else is
     // assertion above is an equality and not this list.
     expect(commands.length).toBeGreaterThan(20);
     expect(requires.length).toBeGreaterThanOrEqual(3);
-    for (const verb of ['focus', 'guard', 'resume']) expect(requires).toContain(verb);
+    for (const verb of ['task guard', 'resume']) expect(requires).toContain(verb);
     // AND `status` is NOT among them, said once so the day it asks again this goes red.
     expect(requires).not.toContain('status');
     // And each one really gets the value, in the shape a parser reads.
@@ -456,11 +457,17 @@ describe('every command that requires an identity is served, and nothing else is
     // parser receives, and this is about what a caller gets back. Each command that
     // requires an identity is really run at a prompt, with the arguments it declares, and
     // whatever it then says, it does not ask for the identity.
-    const { program } = registered();
-    const requires = everyCommandOf(program).filter((command) =>
+    const { program, verbs } = registered();
+    // The verbs the console OFFERS: `task guard` requires an identity and is served one by the
+    // function above, but it sits in a group the gate refuses whole, because a group is a write
+    // when any member is (`wiring/verb.ts`) — so what the console says to it is that refusal.
+    const offered = verbsOffered(verbs, REPL_VERB);
+    const requiring = everyCommandOf(program).filter((command) =>
       command.options.some((option) => option.mandatory && option.description.includes(ACTOR_HELP)),
     );
-    expect(requires.length).toBeGreaterThanOrEqual(3);
+    const requires = requiring.filter((command) => offered.includes(pathOf(command)[0] as string));
+    expect(requires.length).toBeGreaterThanOrEqual(1);
+    expect(requiring.length - requires.length).toBeGreaterThanOrEqual(1);
     for (const command of requires) {
       const line = invocationOf(command).join(' ');
       const knowing = await prompt(line, mine);
@@ -477,7 +484,7 @@ describe('every command that requires an identity is served, and nothing else is
     // A MANDATORY option that is not an identity — a question only the caller can answer.
     // `link --rel <label>` is one, and a surface that filled it would invent an argument.
     expect(asTheSession(['link', 'a', 'b'], verbs, ME)).toEqual(['link', 'a', 'b']);
-    // AND AN IDENTITY THAT IS NOT REQUIRED. `accountability --who` takes an anchor and its
+    // AND AN IDENTITY THAT IS NOT REQUIRED. `audit accountability --who` takes an anchor and its
     // default is EVERYBODY, so filling it would quietly turn "who authorized these facts"
     // into "which of them are mine" — in the caller's name, with nothing on screen saying
     // so. It is the shape closest to the rule and the one it must not touch.
@@ -487,7 +494,10 @@ describe('every command that requires an identity is served, and nothing else is
     // mutation that dropped the requirement it stayed green. The half about a flag that
     // asks for the ASKER and is merely optional is exercised where such a declaration can
     // exist at all: `repl/asking.test.ts`, on a verb of its own.
-    expect(asTheSession(['accountability'], verbs, ME)).toEqual(['accountability']);
+    expect(asTheSession(['audit', 'accountability'], verbs, ME)).toEqual([
+      'audit',
+      'accountability',
+    ]);
     // Both are really there to be got wrong: each declares a flag of the kind above.
     const { program } = registered();
     const declares = (name: string, flag: string): boolean =>

@@ -212,8 +212,8 @@ describe('the session offers the reads and refuses the writes', () => {
       'verify',
       'search',
       `show ${task}`,
-      `focus --actor ${anchor}`,
-      'accountability',
+      `resume --actor ${anchor}`,
+      'audit accountability',
     ]) {
       const said = await prompt(line);
       expect(said.out.length, line).toBeGreaterThan(0);
@@ -310,7 +310,13 @@ describe('the session prints through the surface’s own renderer', () => {
     // here against the same command run outside the session, which resolves to plain by
     // the rule and not by a fixture asking for it.
     let painted = 0;
-    for (const line of ['verify', 'accountability', `show ${task}`, 'skills', 'brief']) {
+    for (const line of [
+      'verify',
+      'audit accountability',
+      `show ${task}`,
+      'audit antipatterns',
+      'brief',
+    ]) {
       const inside = await prompt(line, renderStyled);
       const outside = await shell(...line.split(' '));
       expect(inside.out.map(stripped), line).toEqual(outside.out);
@@ -318,7 +324,7 @@ describe('the session prints through the surface’s own renderer', () => {
     }
     // Some of them come out IDENTICAL, and that is the renderer working rather than a
     // gap: a list of plain columns opens nothing, so its styled line is byte for byte
-    // its plain one (`accountability` is one). What the case needs is that the
+    // its plain one (`audit accountability` is one). What the case needs is that the
     // comparison is not vacuous — that painting happened at all — and `verify`'s
     // verdict is the shape that carries both a weight and a hue.
     expect(painted).toBeGreaterThan(0);

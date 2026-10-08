@@ -1,5 +1,5 @@
 /**
- * `mnema skills` — where each pattern came from.
+ * `mnema skill provenance` — where each pattern came from.
  *
  * The audit of the one thing mnema serves as INSTRUCTION. A skill's body is read
  * into the prompt of every session that reaches the tree it was adopted in, and

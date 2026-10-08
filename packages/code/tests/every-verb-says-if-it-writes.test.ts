@@ -9,7 +9,7 @@
  * declared. It is not in the code:
  *
  *   - `grep writer` over the adapters names FIFTEEN files, and six of them are reads —
- *     `show`, `timeline`, `resume`, `next-actions`, `brief`, `accountability` — because
+ *     `show`, `timeline`, `resume`, `brief`, `audit` — because
  *     the word appears in their PROSE. The usual trap on this bench is a phrase that
  *     under-counts; this one over-counts, which is worse, because the extra names look
  *     like the answer.
@@ -227,7 +227,6 @@ const INVOCATION: Readonly<Record<string, Invocation>> = {
   observe: {
     argv: (f) => ['observe', f.task, '--topic', 'review', '--text', 'it needs a rollback'],
   },
-  handoff: { argv: (f) => ['handoff', f.task, 'agent-alpha', 'agent-beta'] },
   link: { argv: (f) => ['link', f.task, f.task, '--rel', 'relates-to'] },
   // The listing act, which reads: what makes the verb a write is the copy, and that needs a
   // second project holding the same pattern, which this fixture is not (`RECORDS_NOTHING`).
@@ -277,16 +276,11 @@ const INVOCATION: Readonly<Record<string, Invocation>> = {
   mcp: CANNOT_BE_EXERCISED,
   // The reads.
   status: { argv: (f) => ['status', '--actor', f.anchor] },
-  focus: { argv: (f) => ['focus', '--actor', f.anchor] },
   resume: { argv: (f) => ['resume', '--actor', f.anchor] },
-  'next-actions': { argv: (f) => ['next-actions', f.task] },
-  guard: { argv: (f) => ['guard', 'submit', f.task, '--actor', f.anchor] },
   search: { argv: () => ['search', 'task'] },
   show: { argv: (f) => ['show', f.task] },
   timeline: { argv: (f) => ['timeline', f.task] },
-  accountability: { argv: () => ['accountability'] },
-  antipatterns: { argv: () => ['antipatterns'] },
-  exposure: { argv: () => ['exposure'] },
+  audit: { argv: () => ['audit', 'accountability'] },
   export: { argv: () => ['export'] },
   // It writes ONE file, `index.html`, under the directory it is given, and nothing to the record.
   site: { argv: () => ['site', '--out', join(sandbox, 'site-out')] },
@@ -302,7 +296,6 @@ const INVOCATION: Readonly<Record<string, Invocation>> = {
   commits: { argv: () => ['commits', 'ADR-1'] },
   why: { argv: () => ['why', 'src'] },
   aging: { argv: () => ['aging'] },
-  skills: { argv: () => ['skills'] },
   usage: { argv: () => ['usage'] },
   brief: { argv: () => ['brief'] },
   recall: { argv: () => ['recall'] },
@@ -645,7 +638,6 @@ describe('every verb says if it writes', () => {
       'retract',
       'skill',
       'task',
-      'handoff',
       'promote',
       'switch',
       'inherit',
@@ -671,17 +663,11 @@ describe('every verb says if it writes', () => {
       'show',
       'timeline',
       'refs',
+      'audit',
       'diagram',
-      'accountability',
-      'antipatterns',
-      'exposure',
       'export',
-      'skills',
       'usage',
-      'focus',
       'resume',
-      'next-actions',
-      'guard',
       'repl',
       'why',
       'commits',
@@ -709,7 +695,6 @@ describe('every verb says if it writes', () => {
     expect(wrote.map((one) => one.verb).sort()).toEqual([
       'check',
       'decision',
-      'handoff',
       'init',
       'key',
       'link',

@@ -4,7 +4,8 @@
  * `skill` is a group, shaped like `task` and `decision`: one subcommand proposes a
  * skill (`mnema skill create "<name>" --body "<text>"`), one moves an
  * existing one, and one WRITES AN ADOPTED ONE OUT as the file an agent host reads
- * (`skill export`, whose own reasons are in `commands/skill-export.ts`). A skill needs
+ * (`skill export`, whose own reasons are in `commands/skill-export.ts`), and one READS WHERE
+ * EACH CAME FROM (`skill provenance`, below). A skill needs
  * BOTH a name and a body; the name is a short positional, the body a flag (`--body`) —
  * content that big never goes in a positional (the `git commit -m` / `gh --body`
  * convention).
@@ -17,16 +18,16 @@
  * move takes none (it follows the entity). A skill has no alias — propose prints
  * its `name` and its `id` (the key).
  *
- * THE GROUP IS STILL DECLARED A WRITE, and `export` does not change that: a group is
- * classified by its most powerful member (`verb.ts`), and what `export` can do to the
- * RECORD is nothing at all — it writes a file, under a directory the caller named, and
+ * THE GROUP IS STILL DECLARED A WRITE, and `export` and `provenance` do not change that: a
+ * group is classified by its most powerful member (`verb.ts`), and what those two can do to
+ * the RECORD is nothing at all — it writes a file, under a directory the caller named, and
  * appends no event. The two questions are not the same one, which is the distinction
  * `RecordEffect` exists to make.
  *
  * IT IS ON THIS SURFACE AND NOT ON THE AGENT'S. Exporting is an act of whoever
  * administers the repository — deciding that a pattern of this project should be a
  * skill in some host's directory — and there is no MCP tool for it. That is the same
- * division `skills` and `tail prune` already draw: the agent's surface records and
+ * division `skill provenance` and `tail prune` already draw: the agent's surface records and
  * reads the record, the command line is the auditor's.
  */
 
@@ -108,7 +109,7 @@ export function registerSkill(program: Command, wiring: Wiring): Declared {
   const { io, pinnedRun, render } = wiring;
   const skill = program
     .command('skill')
-    .description('propose a reusable skill, move one, or export one, in the current project')
+    .description('propose, move or export a reusable skill, or show where each came from')
     .option('--body <text>', BODY_HELP)
     .addOption(
       scopeOption(
@@ -292,6 +293,52 @@ export function registerSkill(program: Command, wiring: Wiring): Declared {
     for (const line of linkBreakNotice(result.linkBreaks)) io.err(render(line));
     writeLines(io, exportReport(render, result));
     for (const line of exportWarning(result)) io.err(render(line));
+  });
+  // `skill provenance` — where each pattern came from: its state, the tree it lives in, who
+  // proposed it and who adopted it. The agent's `skills` TOOL does something else — it serves a
+  // pattern's body to an agent about to work by it, and this audits the provenance for a person
+  // deciding whether it should be — and the help says so, because a reader has every reason to
+  // assume one verb per tool. It takes none of its group's flags: nothing is born, nothing moves
+  // and nothing is recorded.
+  const provenance = skill
+    .command('provenance')
+    .description('show where each pattern came from (who proposed it, who adopted it)')
+    .option('--json', 'emit the faithful provenance as JSON')
+    .addHelpText(
+      'after',
+      [
+        '',
+        'This is the AUDIT of the patterns, not the patterns themselves:',
+        '  The `skills` tool on the MCP surface serves a pattern’s body to an agent.',
+        '  This verb reads who put each one there. `mnema show <id>` reads a body.',
+        '  Only an adopted pattern is served to an agent; the other states are not.',
+        '  An act with no agent behind it was a person acting directly.',
+        '  A consultation is one run served the body — not that the work followed it,',
+        '  and counted in this project’s trees and the machine-global one, no other.',
+        '  It records nothing — no event, no consultation.',
+      ].join('\n'),
+    );
+  takesFromItsGroup(provenance, {
+    refuses: {
+      '--body': nothingIsRecorded,
+      '--scope': nothingIsRecorded,
+      '--which': nothingIsRecorded,
+    },
+  });
+  provenance.action(async (opts: { json?: boolean }) => {
+    if ((await fromTheGroup(provenance, wiring)) === REFUSED) return;
+    const { linkBreakNotice } = await import('./integrity.js');
+    const { runSkills } = await import('../commands/skills.js');
+    const { provenanceReport } = await import('../presentation/provenance.js');
+    const result = runSkills(here());
+    // BEFORE the answer, and on the other stream — so it survives a pipe, and so
+    // `--json` stays the machine-readable thing it promises to be.
+    for (const line of linkBreakNotice(result.linkBreaks)) io.err(render(line));
+    if (opts.json === true) {
+      io.out(JSON.stringify(result.patterns, null, 2));
+      return;
+    }
+    writeLines(io, provenanceReport(render, result.patterns, result.consultations));
   });
   return mutatesTheRecord(skill);
 }

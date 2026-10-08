@@ -10,7 +10,7 @@
  * of the record leaves the machine at all, and it is the whole reason this module reads
  * an {@link AuditEnvelope} and not an event.
  *
- * THE PRODUCT ALREADY SAID WHERE THE LINE IS. `mnema exposure` reports which records
+ * THE PRODUCT ALREADY SAID WHERE THE LINE IS. `mnema audit exposure` reports which records
  * hold something shaped like a credential and prints *"never the value — not truncated,
  * not partly masked, and not in `--json`"*, because a command that printed one would
  * turn the remedy into a second disclosure. The content door (`core/src/content/screen.ts`)

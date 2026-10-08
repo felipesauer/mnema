@@ -412,7 +412,6 @@ describe('the refused run is refused everywhere', () => {
       'decision move',
       'decision record',
       'decision supersede',
-      'handoff',
       'link',
       'memory',
       'observe',
@@ -423,6 +422,7 @@ describe('the refused run is refused everywhere', () => {
       'switch on',
       'tail prune',
       'task create',
+      'task handoff',
       'task move',
       'unlink',
     ]);

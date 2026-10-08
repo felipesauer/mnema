@@ -122,7 +122,7 @@ function idOf(printed: string): string {
 
 /** The identity `homeDir` writes as, in the short form the readings print. */
 function shortIdentity(dir: string, homeDir: string): string {
-  const listed = mnema(dir, homeDir, 'accountability');
+  const listed = mnema(dir, homeDir, 'audit', 'accountability');
   const all = [...listed.out.matchAll(/mnid:[0-9a-f]{8}/g)].map((one) => one[0]);
   expect(all.length, listed.out).toBeGreaterThan(0);
   return all[0] as string;

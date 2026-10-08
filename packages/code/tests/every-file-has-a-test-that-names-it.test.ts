@@ -488,7 +488,7 @@ const UNWITNESSED: Readonly<Record<string, Debt>> = {
     reached: 'nobody imports it',
     why: "The memory verb's single positional; cli-e2e and the golden use it everywhere as the cheapest write and assert the captured event, so this adapter is only ever a means to one.",
   },
-  'packages/code/src/wiring/next-actions.ts': {
+  'packages/code/src/wiring/next.ts': {
     reached: 'nobody imports it',
     why: "The next-actions verb's human list and --json branch; cli-e2e asserts 'submit → READY' and 'no legal moves', which are the workflow table's answers rather than this file's.",
   },
@@ -1579,7 +1579,7 @@ const PRODUCTION_FILES: readonly string[] = [
   'packages/code/src/wiring/mcp.ts',
   'packages/code/src/wiring/memory.ts',
   'packages/code/src/wiring/misuse.ts',
-  'packages/code/src/wiring/next-actions.ts',
+  'packages/code/src/wiring/next.ts',
   'packages/code/src/wiring/no-such-decision.ts',
   'packages/code/src/wiring/no-such-record.ts',
   'packages/code/src/wiring/observe.ts',

@@ -1,5 +1,5 @@
 /**
- * `mnema accountability [--from --to --who --which]` — who authorized what, and
+ * `mnema audit accountability [--from --to --who --which]` — who authorized what, and
  * which agent carried it out, over the whole record.
  *
  * The second INTELLIGENCE read: the derivation the proof exists FOR. It counts

@@ -190,7 +190,7 @@ describe('a home tree written before this — passed over, named, and left as it
     writtenAsTheOldWalkDid(join(data, 'mnema'), 'a second one');
     const plain = dir('home', 'work', 'unrelated');
 
-    const ran = mnema({ cwd: plain, home, relocated: join(data, 'mnema') }, 'skills');
+    const ran = mnema({ cwd: plain, home, relocated: join(data, 'mnema') }, 'skill', 'provenance');
 
     expect(ran.status).toBe(0);
     const said = ran.stderr.split('\n').filter((line) => line !== '');
@@ -214,7 +214,7 @@ describe('a home tree written before this — passed over, named, and left as it
     mnema({ ...at, cwd: plain }, 'memory', 'a note', '--scope', 'global');
     mnema({ ...at, cwd: plain }, 'memory', 'a note meant for a project');
     mnema({ ...at, cwd: plain }, 'task', 'a task created in the wrong place');
-    mnema({ ...at, cwd: plain }, 'skills');
+    mnema({ ...at, cwd: plain }, 'skill', 'provenance');
     mnema({ ...at, cwd: plain }, 'recall');
     mnema({ ...at, cwd: plain }, 'verify');
     mnema({ ...at, cwd: home }, 'init');
@@ -235,7 +235,7 @@ describe('a home tree written before this — passed over, named, and left as it
     const app = dir('home', 'code', 'app');
     const tree = join(home, PROJECT_DIR);
     const before = filesIn(tree);
-    const named = (): string => mnema({ cwd: plain, home }, 'skills').stderr;
+    const named = (): string => mnema({ cwd: plain, home }, 'skill', 'provenance').stderr;
     const saidBefore = named();
 
     mnema({ cwd: plain, home }, 'memory', 'a note', '--scope', 'global');
@@ -264,7 +264,7 @@ describe('a home tree written before this — passed over, named, and left as it
     const plain = dir('home', 'work', 'unrelated');
     const at = { cwd: plain, home, relocated: join(data, 'mnema') };
 
-    const empty = mnema(at, 'skills');
+    const empty = mnema(at, 'skill', 'provenance');
     expect(empty.status).toBe(0);
     expect(empty.stdout).toContain('No patterns recorded');
 
@@ -279,7 +279,7 @@ describe('a home tree written before this — passed over, named, and left as it
       'global',
     );
     expect(recorded.status).toBe(0);
-    expect(mnema(at, 'skills').stdout).toContain('my-own');
+    expect(mnema(at, 'skill', 'provenance').stdout).toContain('my-own');
   }, 60_000);
 
   it('draws no line for a data directory that holds only its key and its global tree', () => {
@@ -291,7 +291,7 @@ describe('a home tree written before this — passed over, named, and left as it
     );
     expect(existsSync(join(home, PROJECT_DIR, 'global'))).toBe(true);
 
-    const ran = mnema({ cwd: plain, home }, 'skills');
+    const ran = mnema({ cwd: plain, home }, 'skill', 'provenance');
     expect(ran.status).toBe(0);
     expect(ran.stderr).toBe('');
   }, 60_000);

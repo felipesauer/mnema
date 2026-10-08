@@ -1,5 +1,5 @@
 /**
- * `mnema exposure` — which records hold something shaped like a credential.
+ * `mnema audit exposure` — which records hold something shaped like a credential.
  *
  * The one read that is about the record's PAST rather than its content. The
  * content door defends what arrives; everything written before it existed was

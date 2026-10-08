@@ -701,7 +701,7 @@ describe('the drawing stays in the scrollback and the tips stay on the screen', 
     // and every frame draws all three regions. What that buys is the thing the old shape could
     // not have — the banner is on the screen after ten thousand lines, because it is drawn there
     // rather than left there.
-    const page = await openedAt(200, ['verify', 'skills']);
+    const page = await openedAt(200, ['verify', 'audit antipatterns']);
     // It really was a session that did some work, or the counts below are about nothing.
     expect(page).toContain('local integrity verified');
     // ONE NUMBER AGAINST THE OTHER, still — and now they are the SAME number, which is the
