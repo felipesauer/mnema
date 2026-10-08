@@ -185,6 +185,8 @@ export function noteInternalError(
     readonly version: string;
     readonly argv: readonly string[];
     readonly verbs: readonly string[];
+    /** A person is at this invocation. Without one the error is logged and no offer is spent. */
+    readonly aPersonIsHere: boolean;
   },
 ): Noted {
   try {
@@ -205,7 +207,8 @@ export function noteInternalError(
       return { offer: false };
     }
     appendDiagnostic(dir, diagnostic);
-    if (!mayOffer(state, diagnostic.fingerprint, run.now)) return { offer: false };
+    if (!run.aPersonIsHere || !mayOffer(state, diagnostic.fingerprint, run.now))
+      return { offer: false };
     writeState(dir, {
       ...state,
       offered: [...state.offered, { fingerprint: diagnostic.fingerprint, day: dayOf(run.now) }],

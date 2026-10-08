@@ -67,6 +67,9 @@
  *     switched off —
  *     `the-record-arrives-unasked.test.ts` for both handlers the plugin declares, and
  *     `the-switch-is-a-fact.test.ts` for the switch.
+ *   - that no tool here reports, sends or accepts a report of an internal error, and that the
+ *     report is the person's to run — `a-report-needs-a-person.test.ts`, against `tools/list`
+ *     and the binary.
  * It does NOT claim that the plugin is installed, because a server cannot see how it was
  * connected — so the sentence about what comes back says "with the mnema plugin".
  */
@@ -103,6 +106,9 @@ const LINES = [
   'Not for the record: a credential (a record is permanent, and a public one is committed and',
   'cloned), personal data such as an email address (the mnid already says who wrote), what',
   'the code or its history already says, or a log of every step.',
+  '',
+  'If mnema fails with an internal error, tell the person they can run `mnema report`: it is',
+  'theirs to run, and no tool here reports, sends or accepts one.',
   '',
   'With the mnema plugin, a session here opens with the decisions in force, the adopted',
   'patterns and the memories and observations this machine holds for the project, those near',
