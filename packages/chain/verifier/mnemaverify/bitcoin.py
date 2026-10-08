@@ -112,13 +112,13 @@ def read_blocks_sidecar(raw: bytes) -> dict[int, Header]:
     record has one `.ots` and two headers - and the document does not say that, nor that
     the pairing is by the height the attestation declares.
     """
-    from .canonical import canonical_bytes, strict_loads
+    from .canonical import canonical_bytes, strict_loads, utf8_text
 
     headers: dict[int, Header] = {}
     for number, line in enumerate(raw.split(b"\n"), start=1):
         if not line.strip():
             continue
-        stored = strict_loads(line.decode("utf-8"))
+        stored = strict_loads(utf8_text(line))
         if not isinstance(stored, dict) or set(stored) != {"header", "height"}:
             raise Refusal("8", f"a .blocks line whose keys are not header and height (line {number})")
         if canonical_bytes(stored) != line:

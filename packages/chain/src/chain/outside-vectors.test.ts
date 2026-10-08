@@ -16,7 +16,8 @@
  *     spell every one of those numbers the same way.
  *   - THE STORED LINE (section 4) against JSONTestSuite: every `n_` file, which a JSON parser
  *     must refuse, is refused by both readers, and on every `i_` file, which a parser may
- *     decide either way, the two readers decide the same — except where named below.
+ *     decide either way, the two readers decide the same; and every file that is not UTF-8,
+ *     both refuse for that, naming the same byte.
  *
  * The Ed25519 vectors of the same directory are run against the three signature verifiers in
  * `packages/code/tests/every-verifier-gives-one-ed25519-verdict.test.ts`, which needs the page's
@@ -34,6 +35,7 @@ import { describe, expect, it } from 'vitest';
 import { canonicalStringify } from '../events/canonical.js';
 import { parseCanonicalLine } from '../events/stored-json.js';
 import { publicKeyFromPem, verify as verifySignature } from './keys.js';
+import { parseStoredLine, UnreadableLineError } from './lines.js';
 
 const VECTORS = fileURLToPath(new URL('../../conformance/vectors/', import.meta.url));
 const VERIFIER = fileURLToPath(new URL('../../verifier/', import.meta.url));
@@ -323,35 +325,46 @@ describe('the number spelling of section 1 against numgen.js, 10,000 lines', () 
 const SUITE = join(VECTORS, 'jsontestsuite/test_parsing');
 
 /**
- * THE ONE PLACE THE TWO READERS PART, said rather than hidden. The product reads a stored line
- * as UTF-8 the way `readFileSync(file, 'utf-8')` does, which replaces a byte sequence that is not
- * UTF-8 with U+FFFD and reads on, and then finds the line canonical, because the replacement
- * character is. The second reader refuses the line. Section 4's byte identity says the line is
- * not the canonical bytes of what it holds, so the second reader is the one the format agrees
- * with; making the product refuse is a change to what `verify` accepts, and is not made here.
+ * THE FILES THAT ARE NOT UTF-8. The product used to read a stored line as UTF-8 the way
+ * `readFileSync(file, 'utf-8')` does, which replaces a byte sequence that is not UTF-8 with
+ * U+FFFD and reads on, and then found the line canonical, because the replacement character
+ * is. The second reader refused those lines. Both refuse them now, at the decode, and name the
+ * same cause: the offset of the first byte that does not begin a UTF-8 character. The list is
+ * written out, not derived, so a decoder that let one of them through cannot shrink it.
  */
-const THE_PRODUCT_READS_PAST_BYTES_THAT_ARE_NOT_UTF8 = [
-  'i_string_UTF-8_invalid_sequence.json',
-  'i_string_UTF8_surrogate_U+D800.json',
-  'i_string_invalid_utf-8.json',
-  'i_string_iso_latin_1.json',
-  'i_string_lone_utf8_continuation_byte.json',
-  'i_string_not_in_unicode_range.json',
-  'i_string_overlong_sequence_2_bytes.json',
-  'i_string_overlong_sequence_6_bytes.json',
-  'i_string_overlong_sequence_6_bytes_null.json',
-  'i_string_truncated-utf-8.json',
-];
+const NOT_UTF8: Readonly<Record<string, number>> = {
+  'i_string_UTF-16LE_with_BOM.json': 0,
+  'i_string_UTF-8_invalid_sequence.json': 7,
+  'i_string_UTF8_surrogate_U+D800.json': 2,
+  'i_string_invalid_utf-8.json': 2,
+  'i_string_iso_latin_1.json': 2,
+  'i_string_lone_utf8_continuation_byte.json': 2,
+  'i_string_not_in_unicode_range.json': 2,
+  'i_string_overlong_sequence_2_bytes.json': 2,
+  'i_string_overlong_sequence_6_bytes.json': 2,
+  'i_string_overlong_sequence_6_bytes_null.json': 2,
+  'i_string_truncated-utf-8.json': 2,
+  'i_string_utf16BE_no_BOM.json': 5,
+  'i_string_utf16LE_no_BOM.json': 4,
+};
+
+interface Reading {
+  readonly verdict: 'accepted' | 'refused';
+  readonly cause: string;
+}
 
 describe('the stored line of section 4 against JSONTestSuite', () => {
   const names = readdirSync(SUITE).sort();
-  const product = new Map(
+  // Read the way every reader of a line of the record reads one: as BYTES, through the one
+  // function that decodes and parses it.
+  const product = new Map<string, Reading>(
     names.map((name) => {
       try {
-        parseCanonicalLine(readFileSync(join(SUITE, name)).toString('utf-8'));
-        return [name, 'accepted'] as const;
-      } catch {
-        return [name, 'refused'] as const;
+        parseStoredLine(readFileSync(join(SUITE, name)), false, parseCanonicalLine, () => name);
+        return [name, { verdict: 'accepted', cause: '' }];
+      } catch (error) {
+        const cause = error instanceof UnreadableLineError ? error.reason : String(error);
+        return [name, { verdict: 'refused', cause }];
       }
     }),
   );
@@ -365,13 +378,15 @@ describe('the stored line of section 4 against JSONTestSuite', () => {
       '    with open(path, "rb") as handle:',
       '        raw = handle.read()',
       '    try:',
-      '        out[os.path.basename(path)] = "accepted" if is_canonical_line(raw)[0] else "refused"',
-      '    except Refusal:',
-      '        out[os.path.basename(path)] = "refused"',
+      '        ok = is_canonical_line(raw)[0]',
+      '        out[os.path.basename(path)] = {"verdict": "accepted" if ok else "refused", "cause": ""}',
+      '    except Refusal as refusal:',
+      '        out[os.path.basename(path)] = {"verdict": "refused", "cause": refusal.what}',
       'print(json.dumps(out))',
     ],
     names.map((name) => join(SUITE, name)),
-  ) as Record<string, string>;
+  ) as Record<string, Reading>;
+  const verdict = (name: string) => [product.get(name)?.verdict, second[name]?.verdict];
 
   it('reads 188 n_ and 35 i_ files', () => {
     expect(names.filter((name) => name.startsWith('n_'))).toHaveLength(188);
@@ -381,24 +396,49 @@ describe('the stored line of section 4 against JSONTestSuite', () => {
   it('refuses every n_ file, in both readers', () => {
     const accepted = names
       .filter((name) => name.startsWith('n_'))
-      .filter((name) => product.get(name) !== 'refused' || second[name] !== 'refused');
+      .filter((name) => verdict(name).some((said) => said !== 'refused'));
     expect(accepted).toEqual([]);
   });
 
-  it('decides every i_ file the same way in both readers, but the bytes that are not UTF-8', () => {
+  it('decides every i_ file the same way in both readers', () => {
     const parted = names
       .filter((name) => name.startsWith('i_'))
-      .filter((name) => product.get(name) !== second[name]);
-    expect(parted).toEqual(THE_PRODUCT_READS_PAST_BYTES_THAT_ARE_NOT_UTF8);
-    for (const name of parted) {
-      expect([name, product.get(name), second[name]]).toEqual([name, 'accepted', 'refused']);
+      .filter((name) => verdict(name)[0] !== verdict(name)[1]);
+    expect(parted).toEqual([]);
+  });
+
+  it('refuses every file that is not UTF-8, in both, for that and at the same byte', () => {
+    const strict = new TextDecoder('utf-8', { fatal: true });
+    const undecodable = names.filter((name) => {
+      try {
+        strict.decode(readFileSync(join(SUITE, name)));
+        return false;
+      } catch {
+        return true;
+      }
+    });
+    expect(undecodable.filter((name) => name.startsWith('i_'))).toEqual(
+      Object.keys(NOT_UTF8).sort(),
+    );
+    for (const [name, at] of Object.entries(NOT_UTF8)) {
+      const refused = { verdict: 'refused', cause: `not UTF-8 at byte ${at}` };
+      expect([name, product.get(name)]).toEqual([name, refused]);
+      expect([name, second[name]]).toEqual([name, refused]);
+    }
+    // And the n_ files that are not UTF-8 either: the same cause, at the same byte, in both.
+    const n = undecodable.filter((name) => name.startsWith('n_'));
+    expect(n.length).toBeGreaterThan(0);
+    for (const name of n) {
+      expect([name, product.get(name)?.cause]).toEqual([name, second[name]?.cause]);
+      expect(product.get(name)?.cause).toMatch(/^not UTF-8 at byte \d+$/);
     }
   });
 
   it('accepts, in both, the two i_ files that are canonical lines', () => {
     // A number past 2**53 that is still the double it spells, and arrays nested 500 deep.
-    expect(
-      names.filter((name) => product.get(name) === 'accepted' && second[name] === 'accepted'),
-    ).toEqual(['i_number_too_big_pos_int.json', 'i_structure_500_nested_arrays.json']);
+    expect(names.filter((name) => verdict(name).every((said) => said === 'accepted'))).toEqual([
+      'i_number_too_big_pos_int.json',
+      'i_structure_500_nested_arrays.json',
+    ]);
   });
 });

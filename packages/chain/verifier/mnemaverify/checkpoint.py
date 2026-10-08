@@ -28,7 +28,7 @@ from __future__ import annotations
 import hashlib
 from typing import Any, NamedTuple
 
-from .canonical import canonical_bytes, strict_loads
+from .canonical import canonical_bytes, strict_loads, utf8_text
 from .verdict import Refusal
 
 CHECKPOINT_SCHEME = "mnema-checkpoint/1"
@@ -67,7 +67,7 @@ class Checkpoint(NamedTuple):
 
 
 def read_checkpoint(raw: bytes, index: int) -> Checkpoint:
-    stored = strict_loads(raw.decode("utf-8"))
+    stored = strict_loads(utf8_text(raw))
     if not isinstance(stored, dict):
         raise Refusal("6", "a checkpoint line that is not a JSON object")
     scheme = stored.get("scheme")
@@ -103,7 +103,7 @@ class TailProof(NamedTuple):
 
 
 def read_tailproof(raw: bytes) -> TailProof:
-    stored = strict_loads(raw.decode("utf-8"))
+    stored = strict_loads(utf8_text(raw))
     if not isinstance(stored, dict):
         raise Refusal("-", "a tail proof that is not a JSON object")
     if stored.get("scheme") != TAILPROOF_SCHEME:

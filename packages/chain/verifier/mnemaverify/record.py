@@ -102,6 +102,30 @@ def _lines(path: str) -> list[tuple[int, bytes]]:
     return out
 
 
+def _torn_line(path: str) -> int | None:
+    """The number of the file's last line when no newline ends it - the piece a crash leaves.
+
+    THE ONE TOLERANCE AN APPEND-ONLY FILE EARNS, and the product's rule (`parseStoredLine`):
+    every complete append ends in a newline, so an interrupted one leaves exactly an
+    unterminated last piece. A caller drops that piece when it does not read - and only then,
+    and only in the file whose end is the end of the stream (the tail's last segment, the
+    checkpoints). Any other line that does not read, terminated or not, is still refused.
+    It holds when the crash cut the piece inside a multi-byte character: those bytes are a
+    torn write, not a line that is not UTF-8.
+    """
+    with open(path, "rb") as handle:
+        raw = handle.read()
+    if raw == b"" or raw.endswith(b"\n"):
+        return None
+    return raw.count(b"\n") + 1
+
+
+TORN = (
+    "ends in a partial line that was dropped - the mark of a write interrupted mid-append, "
+    "and indistinguishable from an appended fragment"
+)
+
+
 def _read_entries(
     report: Report, tail_dir: str, tail_id: str, declarations: schema.Schema | None
 ) -> tuple[list[Entry], list[str]]:
@@ -132,11 +156,19 @@ def _read_entries(
     entries: list[Entry] = []
     refused: list[str] = []
     for name in segments:
-        for number, raw in _lines(os.path.join(tail_dir, name)):
+        path = os.path.join(tail_dir, name)
+        # Only the LAST segment's end is the tail's end: an earlier one's is a seal.
+        torn = _torn_line(path) if name == segments[-1] else None
+        for number, raw in _lines(path):
             where = f"{name}:{number}"
             try:
                 entry = read_line(raw, where)
+                if number == torn and not entry.line_is_canonical:
+                    raise Refusal("4", "not canonical")
             except Refusal as refusal:
+                if number == torn:
+                    report.note("4", f"the tail {TORN}", where)
+                    continue
                 report.fail(refusal.section, refusal.what, where)
                 refused.append(where)
                 continue
@@ -301,11 +333,17 @@ def _check_checkpoints(
     previous_to: int | None = None
     readings: set[str] = set()
 
+    torn = _torn_line(path)
     for number, raw in _lines(path):
         where = f"{CHECKPOINTS_FILE}:{number}"
         try:
             checkpoint = read_checkpoint(raw, number)
+            if number == torn and not checkpoint.line_is_canonical:
+                raise Refusal("6", "not canonical")
         except Refusal as refusal:
+            if number == torn:
+                report.note("6", f"the checkpoints file {TORN}", where)
+                continue
             report.fail(refusal.section, refusal.what, where)
             continue
         checkpoints.append(checkpoint)
@@ -739,7 +777,9 @@ def verify_record(root: str, report: Report, require: str = "chained") -> None:
         report.break_out(f"there is no record at {root}")
         return
 
-    ring, misnamed = load_keyring(root)
+    ring, misnamed, undecodable = load_keyring(root)
+    for name, refusal in undecodable:
+        report.fail(refusal.section, refusal.what, f"keys/{name}")
     for name in misnamed:
         report.fail(
             "6",
