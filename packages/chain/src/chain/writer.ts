@@ -793,7 +793,7 @@ function ensureDir(filePath: string): void {
  */
 function healTornTail(segmentPath: string): number {
   for (const line of linesFromEnd(segmentPath)) {
-    if (line.text.length === 0) return line.start; // ends in a newline: intact
+    if (line.bytes.length === 0) return line.start; // ends in a newline: intact
     truncateSync(segmentPath, line.start);
     return line.start;
   }

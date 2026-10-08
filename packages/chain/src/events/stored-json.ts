@@ -38,6 +38,72 @@ const OPEN_ARRAY = 0x5b;
 const CLOSE_ARRAY = 0x5d;
 const COMMA = 0x2c;
 
+/**
+ * Strict: a byte sequence that is not UTF-8 throws instead of becoming U+FFFD, and a leading
+ * byte-order mark is kept as the character it is rather than swallowed. Node's
+ * `buffer.toString('utf-8')` and a default `TextDecoder` each do one of those two things.
+ */
+const UTF8 = new TextDecoder('utf-8', { fatal: true, ignoreBOM: true });
+
+/**
+ * The offset of the first byte that does not begin a well-formed UTF-8 character (Unicode
+ * 16.0, table 3-7), or -1 when every byte does. The offset is the one Python's decoder
+ * reports as `start`, so the two readers name the same byte: an overlong form, a surrogate,
+ * a code point past U+10FFFF and a sequence cut short are each placed at their FIRST byte.
+ */
+function firstByteNotUtf8(bytes: Uint8Array): number {
+  let i = 0;
+  while (i < bytes.length) {
+    const lead = bytes[i] as number;
+    if (lead < 0x80) {
+      i += 1;
+      continue;
+    }
+    // How many bytes follow the lead, and the range the FIRST of them must fall in — the
+    // narrowed ranges are what refuse an overlong form, a surrogate and a code point too large.
+    let follow = 0;
+    let low = 0x80;
+    let high = 0xbf;
+    if (lead >= 0xc2 && lead <= 0xdf) follow = 1;
+    else if (lead >= 0xe0 && lead <= 0xef) follow = 2;
+    else if (lead >= 0xf0 && lead <= 0xf4) follow = 3;
+    else return i;
+    if (lead === 0xe0) low = 0xa0;
+    if (lead === 0xed) high = 0x9f;
+    if (lead === 0xf0) low = 0x90;
+    if (lead === 0xf4) high = 0x8f;
+    for (let k = 1; k <= follow; k += 1) {
+      const next = bytes[i + k];
+      if (next === undefined || next < low || next > high) return i;
+      low = 0x80;
+      high = 0xbf;
+    }
+    i += follow + 1;
+  }
+  return -1;
+}
+
+/**
+ * The text of a line of the record, refusing bytes that are not UTF-8.
+ *
+ * Section 1, rule 6: the canonical bytes ARE UTF-8. A decode that replaced a bad sequence with
+ * U+FFFD and read on would hand the parser a line whose characters are not the bytes on disk,
+ * and the replacement character is canonical, so the line passed the byte-identity check of
+ * section 4 over bytes no writer of the format produces. Every reader of the record decodes
+ * through here. Throws {@link StoredJsonError}, naming the offset of the first bad byte.
+ *
+ * The decoder decides and the walk only places the refusal, so an honest line costs one
+ * native decode and no loop over its bytes in this language.
+ */
+export function decodeStoredBytes(bytes: Uint8Array): string {
+  try {
+    return UTF8.decode(bytes);
+  } catch {
+    const at = firstByteNotUtf8(bytes);
+    throw new StoredJsonError(at >= 0 ? `not UTF-8 at byte ${at}` : 'not UTF-8');
+  }
+}
+
 /** The longest key a refusal repeats back; a key is untrusted text from a stored line. */
 const KEY_SHOWN = 80;
 

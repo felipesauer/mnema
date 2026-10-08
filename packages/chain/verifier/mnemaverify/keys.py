@@ -67,26 +67,39 @@ def parse_pem(text: str, filename: str = "") -> PublicKey:
     )
 
 
-def load_keyring(record_root: str) -> tuple[dict[str, PublicKey], list[str]]:
+def load_keyring(
+    record_root: str,
+) -> tuple[dict[str, PublicKey], list[str], list[tuple[str, Refusal]]]:
     """Every `keys/*.pub` under the record root, indexed by recomputed fingerprint.
 
     Gap G03: that `keys/` is where they live is inferred from the frozen records, not from
-    the document. Returns the ring and the list of files whose name disagrees with their
-    contents - which is a refusal the caller reports, not one this function raises, so one
-    bad key does not hide a good record.
+    the document. Returns the ring, the list of files whose name disagrees with their
+    contents, and the files whose bytes are not UTF-8, each with its refusal - all of them
+    refusals the caller reports, not ones this function raises, so one bad key does not hide
+    a good record. A file that is not UTF-8 holds no key this reader puts in the ring, as the
+    product reads no key out of it.
     """
+    from .canonical import utf8_text
+
     directory = os.path.join(record_root, "keys")
     ring: dict[str, PublicKey] = {}
     misnamed: list[str] = []
+    undecodable: list[tuple[str, Refusal]] = []
     if not os.path.isdir(directory):
-        return ring, misnamed
+        return ring, misnamed, undecodable
     for name in sorted(os.listdir(directory)):
         if not name.endswith(".pub"):
             continue
         path = os.path.join(directory, name)
-        with open(path, encoding="utf-8") as handle:
-            key = parse_pem(handle.read(), path)
+        with open(path, "rb") as handle:
+            raw = handle.read()
+        try:
+            text = utf8_text(raw)
+        except Refusal as refusal:
+            undecodable.append((name, refusal))
+            continue
+        key = parse_pem(text, path)
         if not key.name_matches_material:
             misnamed.append(name)
         ring[key.fingerprint] = key
-    return ring, misnamed
+    return ring, misnamed, undecodable

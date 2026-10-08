@@ -14,11 +14,10 @@ public keys removed, the product says broken over a signature it cannot verify, 
 reader, unable to ask, says INCOMPLETE. And on a tail cut in the middle with no
 `tail.pruned`, the product calls the signed range a contradiction and says broken, while
 this reader reports a gap it cannot judge, because §3 leaves a reader of this document alone
-unable to tell an authorized cut from tampering. The two readings of a stored line part in
-one place more, found by JSONTestSuite: on a line holding bytes that are not UTF-8, the
-product decodes them to U+FFFD and finds the line canonical, while this reader refuses it
-(`packages/chain/src/chain/outside-vectors.test.ts`). §4's byte identity sides with this
-reader; the product does not refuse yet. Twenty-six points
+unable to tell an authorized cut from tampering. On a line holding bytes that are not UTF-8,
+found by JSONTestSuite, the two used to part: the product decoded them to U+FFFD and found the
+line canonical, while this reader refused it. Both refuse it now, naming the same byte (§4,
+`packages/chain/src/chain/outside-vectors.test.ts`). Twenty-six points
 where this document was **not enough** for that were found in the writing, and every one of
 them has been fixed here — `python3 verifier/mnema_verify.py gaps` lists them, with which
 were resolved by reading a specification, which by experiment against the published bytes,
@@ -247,6 +246,27 @@ whole sidecar, which is a difference in what is left uncheckable, not in what is
 accepted. A genesis link is a `null`
 `prev`, never an empty string, and the top-level keys are `event` and `link` with
 no insignificant whitespace between them — the same file holds both.
+
+**A stored line is UTF-8, and a line that is not is refused** (§1.6). A reader decodes
+the bytes strictly: a sequence that is not well-formed UTF-8 — a lone continuation byte,
+an overlong form, a surrogate, a code point past U+10FFFF, a sequence cut short — is not
+replaced with U+FFFD and read on, which would hand the parser canonical text the bytes on
+disk are not. Both readers refuse the line and name the offset, within the line, of the
+first byte that does not begin a character (`not UTF-8 at byte N`); a byte-order mark is
+kept as the character it is, so a line that begins with one is not canonical. The same
+holds for a checkpoint line, the tail proof and a committed public key, whose bytes hold
+no key when they are not UTF-8; a stored block header is ASCII by construction, and one
+that is not is not read, as above
+(`packages/chain/src/chain/every-reader-refuses-bytes-that-are-not-utf8.test.ts`).
+
+**The one piece both readers forgive is the torn last line.** Every complete append ends in
+a newline, so a write a crash interrupted leaves exactly one unterminated piece at the end of
+the stream: the end of the tail's LAST segment, or the end of the checkpoints. When that piece
+does not read, both readers drop it and say so as a note (`partial-final-line`), and the
+verdict is the one the record without it earns. That holds when the crash cut the piece
+inside a multi-byte character: those bytes are a torn write, not a line that is not UTF-8.
+The same bytes anywhere else — ended by a newline, or at the end of an earlier segment —
+are a line, and are refused (same test).
 
 A reader **rebuilds** the event from the fields its kind declares and rejects any
 other, so a forged extra field cannot ride along into the signed bytes

@@ -218,6 +218,7 @@ jobs:
         run: >-
           pnpm exec vitest run
           packages/chain/src/chain/both-readers-read-the-same-bytes.test.ts
+          packages/chain/src/chain/every-reader-refuses-bytes-that-are-not-utf8.test.ts
           packages/chain/src/chain/outside-vectors.test.ts
           packages/chain/src/chain/second-reader-agrees-on-enrolment.test.ts
           packages/chain/src/chain/second-reader-agrees-on-the-bytes.test.ts
