@@ -25,7 +25,6 @@
  */
 import { IdentityUnavailableError, resolveTrees } from '@mnema/core';
 import { Command, CommanderError, Help, Option } from 'commander';
-import { describeInternal, INTERNAL_ERROR_EXIT, isInternalError } from './internal-error.js';
 import { fact } from './presentation/detail.js';
 import type { Render } from './presentation/render.js';
 import { PRODUCT_PROMISE } from './promise.js';
@@ -411,6 +410,11 @@ export async function parseWith(built: BuiltProgram, argv: readonly string[]): P
     // A throw the product did not write for anybody — an engine error out of its own code, a
     // value that is not an Error — is a FAULT, not a no, and it is said as one with its own
     // exit (`internal-error.ts` decides which is which).
+    // Loaded here, not at the top: it is only ever wanted by a throw, and the floor every
+    // command starts on does not grow an edge for a failure (`the-floor-is-the-declaration.test.ts`).
+    const { describeInternal, INTERNAL_ERROR_EXIT, isInternalError } = await import(
+      './internal-error.js'
+    );
     if (isInternalError(error)) {
       io.err(render(internalErrorSentence(describeInternal(error))));
       io.fail(INTERNAL_ERROR_EXIT);
