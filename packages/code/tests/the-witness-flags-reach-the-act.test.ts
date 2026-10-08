@@ -29,7 +29,7 @@ import { mkdirSync, mkdtempSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
-import { run } from '../src/cli.js';
+import { run } from '../src/program.js';
 
 let sandbox: string;
 const cwdBefore = process.cwd();

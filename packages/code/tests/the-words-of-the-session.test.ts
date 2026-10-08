@@ -33,7 +33,7 @@ import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { Command } from 'commander';
 import { describe, expect, it } from 'vitest';
-import { type CliIo, run } from '../src/cli.js';
+import { type CliIo, run } from '../src/program.js';
 import { dispositionOf } from '../src/repl/gate.js';
 import { PREFIX, SESSION_WORDS, WHAT_EACH_WORD_DOES } from '../src/session-words.js';
 import { REPL_VERB } from '../src/wiring/repl.js';

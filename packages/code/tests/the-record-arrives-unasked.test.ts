@@ -53,8 +53,8 @@ import { fileURLToPath } from 'node:url';
 import { excerptOf } from '@mnema/core';
 import type { Command } from 'commander';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
-import { buildProgram } from '../src/cli.js';
 import { HOOK_TEXT_CEILING } from '../src/presentation/within-a-hook.js';
+import { buildProgram } from '../src/program.js';
 import {
   DECLARES_MODEL_CHANNEL,
   FRAMED_CHANNELS,

@@ -47,7 +47,7 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
-import { type CliIo, run } from '../src/cli.js';
+import { type CliIo, run } from '../src/program.js';
 import { erasesTheScreen, withoutTheHistoryErase } from '../src/repl/erasing.js';
 import { THE_FLOOR } from '../src/repl/floor.js';
 import { fromTheMouse, THE_WHEEL_BACK, WATCHING_THE_WHEEL } from '../src/repl/pointing.js';

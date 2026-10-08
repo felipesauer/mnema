@@ -53,7 +53,7 @@ import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { Argument, Command, CommanderError, Option } from 'commander';
 import { describe, expect, it } from 'vitest';
-import { buildProgram, type CliIo } from '../src/cli.js';
+import { buildProgram, type CliIo } from '../src/program.js';
 import { everyCommandOf } from '../src/wiring/misuse.js';
 import { ROOT } from './support/published-examples.js';
 import { invocationsIn, linesOf, trackedPages, unquoted } from './support/reading-a-shell-line.js';

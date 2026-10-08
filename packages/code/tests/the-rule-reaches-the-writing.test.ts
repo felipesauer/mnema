@@ -37,12 +37,12 @@ import { fileURLToPath, pathToFileURL } from 'node:url';
 import type { RulesAtPath } from '@mnema/context';
 import type { DiscoveryEnv } from '@mnema/core';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
-import { type CliIo, run } from '../src/cli.js';
 import { editRulesNotice, editRulesTold, ourWordsIn } from '../src/edit-rules-push.js';
 import { buildMcpServer } from '../src/mcp/server.js';
 import { openSession, type Session } from '../src/mcp/session.js';
 import { runGoverningRulesTool, runRulesBeforeAnEditTool } from '../src/mcp/tools.js';
 import { HOOK_TEXT_CEILING } from '../src/presentation/within-a-hook.js';
+import { type CliIo, run } from '../src/program.js';
 import { tellsWhatToDo } from '../src/record-framing.js';
 
 /** The clause that says who accepted a rule — held where the lines say it, ignored where they are not about it. */

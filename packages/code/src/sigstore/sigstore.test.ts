@@ -41,13 +41,13 @@ import type { DiscoveryEnv } from '@mnema/core';
 import { fulcioHandler, initializeCA, initializeCTLog } from '@sigstore/mock/dist/fulcio/index.js';
 import { initializeTLog, rekorHandler } from '@sigstore/mock/dist/rekor/index.js';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { type CliIo, run } from '../cli.js';
 import { runInit } from '../commands/init.js';
 import { runKeySigstore } from '../commands/key-sigstore.js';
 import { runMemory } from '../commands/memory.js';
 import { runVerify } from '../commands/verify.js';
 import { readSigstoreReceipts } from '../commands/verify-sigstore.js';
 import { runWitnessSigstore } from '../commands/witness.js';
+import { type CliIo, run } from '../program.js';
 import { readSigstoreBundle } from './read.js';
 import {
   type Fetch,

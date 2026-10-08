@@ -89,7 +89,7 @@
  * a byte of it is loaded ({@link paintsAtAll}, and `repl/painting.ts` for the channel).
  *
  * NOTHING HERE READS THE ENVIRONMENT. The inputs arrive as a value ({@link
- * Capability}), read at the entry where the process actually is (`cli.ts`), which is
+ * Capability}), read at the entry where the process actually is (`program.ts`), which is
  * what lets the precedence be asserted case by case as a pure function — and what lets
  * the golden drive the whole program with output injected and land on plain BY THIS
  * RULE rather than by a fixture forcing it.

@@ -47,7 +47,6 @@ import {
 } from '@mnema/chain';
 import { resolveTrees } from '@mnema/core';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
-import { type CliIo, run } from '../src/cli.js';
 import {
   runVerify,
   type TreeReport,
@@ -57,6 +56,7 @@ import {
 import { SEVERITIES, type Severity } from '../src/presentation/line.js';
 import { renderStyled } from '../src/presentation/styled.js';
 import { clauseStatement } from '../src/presentation/verdict.js';
+import { type CliIo, run } from '../src/program.js';
 import { levelSeverity } from '../src/wiring/verify.js';
 
 const HERE = dirname(fileURLToPath(import.meta.url));

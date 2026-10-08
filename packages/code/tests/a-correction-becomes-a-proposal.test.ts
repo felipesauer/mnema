@@ -19,9 +19,9 @@ import { type CatalogEvent, catalogUpcasters } from '@mnema/chain';
 import { type DiscoveryEnv, orderedEvents, resolveTrees } from '@mnema/core';
 import { Command } from 'commander';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
-import { type CliIo, run } from '../src/cli.js';
 import { MOST_PER_STOP, runCorrections } from '../src/commands/corrections.js';
 import { renderPlain } from '../src/presentation/plain.js';
+import { type CliIo, run } from '../src/program.js';
 import { CORRECTION_SHAPES, correctionsIn } from '../src/user-corrections.js';
 import { registerCorrections } from '../src/wiring/corrections.js';
 

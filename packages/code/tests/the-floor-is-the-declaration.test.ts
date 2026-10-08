@@ -278,7 +278,7 @@ const EAGER_DOMAIN: Readonly<Record<string, string>> = {
     'two modules that want it here — `wiring/no-such-record.ts` and ' +
     '`presentation/runs.ts` — are on this floor, and a curative at their call sites is ' +
     'exactly what two earlier slices paid and this one removed.',
-  'cli.ts @mnema/core':
+  'program.ts @mnema/core':
     'the last-resort catch recognizes the domain’s own refusal by its class, and resolves ' +
     'the key root where that refusal’s way out is a restore of this machine’s key file ' +
     '(the path helper itself is imported inside the catch, from `@mnema/chain`). NOT a ' +
@@ -354,7 +354,7 @@ const EAGER_DOMAIN: Readonly<Record<string, string>> = {
  * this file would have said a word about it.
  */
 const EAGER_EXTERNAL: Readonly<Record<string, string>> = {
-  'cli.ts commander':
+  'program.ts commander':
     'the entry BUILDS the program with it. It is the floor by definition — commander is ' +
     'what routes the word, so nothing can be decided before it is loaded.',
   'wiring/completion.ts commander':
@@ -364,30 +364,6 @@ const EAGER_EXTERNAL: Readonly<Record<string, string>> = {
   'wiring/options.ts commander':
     'the shared options are commander’s own `Option` objects, which is what makes one ' +
     'declaration serve every verb that takes them.',
-  'cli.ts node:fs':
-    '`realpathSync`, to follow `process.argv[1]` to what is on disk before asking whether ' +
-    'it is this module. The entry cannot defer it: the question is answered at module ' +
-    'scope, because the answer is WHETHER to run. Concatenating `file://` instead — which ' +
-    'is what stood here until the binary was measured through the symlink every global ' +
-    'install creates — cost nothing on the floor and cost the whole program: no output, no ' +
-    'stderr, exit 0. Measured at 40 alternated pairs of `--version` against the same entry ' +
-    'without it: 174 ms against 172 ms of median, inside a spread of 49 to 76 ms. Both are ' +
-    'builtins the loader has already brought in — `process.moduleLoadList` names `fs` and ' +
-    '`url` among the 123 modules standing before a line of this package runs.',
-  'cli.ts node:url':
-    '`pathToFileURL`, the other half of the same comparison and the half a hand-rolled ' +
-    'one gets wrong: `import.meta.url` percent-encodes and string concatenation does not, ' +
-    'so a space or an accent in any parent directory was enough to mute the binary with ' +
-    'no symlink anywhere. The escaping is a table this product does not keep, which is the ' +
-    'same argument `presentation/width.ts` makes for `string-width`. Same measurement as ' +
-    '`node:fs` above; the two arrived together.',
-  'node-floor.ts node:fs':
-    "`readFileSync`, to read `engines.node` out of this package's own `package.json` — the one " +
-    'place the Node floor is declared. The guard runs before anything below it is loaded, so ' +
-    'it cannot wait for a verb. One read of a file of about 2 KB. Measured on `--version`, 60 ' +
-    'pairs alternated in order against the entry without the guard: median 211.2 ms against ' +
-    '213.4 ms, where the same binary against itself in the same alternation read 213.9 ms ' +
-    'against 215.1 ms — the difference is inside the spread of the control.',
   'env.ts node:os':
     '`homedir()` and `userInfo()`, for the discovery environment every verb is handed. A builtin, and ' +
     'the one the entry cannot defer: the environment is resolved before a verb runs.',
@@ -420,13 +396,8 @@ const EAGER_EXTERNAL: Readonly<Record<string, string>> = {
  * It reaches no adapter and no record; the walk above is what says so.
  */
 const FLOOR_MODULES: readonly string[] = [
-  'cli.ts',
+  'program.ts',
   'env.ts',
-  // I PUT THIS ON THE FLOOR: the check that the Node under the binary is one it can run on.
-  // It is the FIRST import of `cli.ts` and has to be — it exists to say a line and exit before
-  // a module below it needs a newer Node, so it cannot be deferred to a verb. ONE file,
-  // importing only `node:fs`, which is what `the-node-below-the-floor-is-refused.test.ts` holds.
-  'node-floor.ts',
   'one-line.ts',
   'pinned-run.ts',
   // Reached BY `pinned-run.ts`, which was already here: it owns the open-and-close pair
@@ -444,7 +415,7 @@ const FLOOR_MODULES: readonly string[] = [
   // I PUT THIS ON THE FLOOR: the sentence this product promises, which commander needs
   // before it can print a word of help — `.description()` is read as the program is
   // built, so there is no later moment to defer it to. It is here rather than typed into
-  // `cli.ts` because it was typed into NINE places and nothing held them together, and a
+  // `program.ts` because it was typed into NINE places and nothing held them together, and a
   // tenth spelling in the entry is the shape the module exists to have ended
   // (`the-sentence-reaches-every-door.test.ts`). What it costs is ONE file with no
   // imports at all — two string constants, reaching no adapter, no record and no
@@ -578,7 +549,7 @@ function reconcile(found: readonly string[], declared: readonly string[]): Recon
 // The walk, once
 // ---------------------------------------------------------------------------
 
-const FLOOR = eagerClosure(join(SRC, 'cli.ts'));
+const FLOOR = eagerClosure(join(SRC, 'program.ts'));
 
 /** Every `<module> <specifier>` edge from the floor into the domain. */
 const DOMAIN_EDGES = FLOOR.external
@@ -648,7 +619,7 @@ describe('the floor is the declaration', () => {
     // that stopped at the entry — a specifier shape this parser stopped recognizing,
     // a rename — would have to be met by deleting the declarations rather than by
     // going green on its own; these are the anchors that say the walk arrived.
-    expect(FLOOR.modules).toContain('cli.ts');
+    expect(FLOOR.modules).toContain('program.ts');
     expect(FLOOR.modules).toContain('wiring/index.ts');
     // Every verb's DECLARATION is in the floor, which is the other half of the rule:
     // commander cannot route a word or print `--help` without them. Read off the map
@@ -694,7 +665,7 @@ describe('the floor is the declaration', () => {
       eagerClosure(join(SRC, path))
         .external.map((edge) => edge.specifier)
         .filter((specifier) => specifier.startsWith('@sigstore/'));
-    expect(sigstore('cli.ts')).toEqual([]);
+    expect(sigstore('program.ts')).toEqual([]);
     expect(sigstore('commands/verify.ts')).toEqual([]);
     expect(sigstore('commands/witness.ts')).toEqual([]);
     expect(sigstore('sigstore/sign.ts')).toEqual([]);

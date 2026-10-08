@@ -30,7 +30,7 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { PassThrough } from 'node:stream';
 import { describe, expect, it, vi } from 'vitest';
-import { buildProgram } from '../cli.js';
+import { buildProgram } from '../program.js';
 import { type Keystroke, keystrokesOf } from '../repl/editing.js';
 import type { Leaving } from '../repl/leaving.js';
 import { PICK } from '../repl/palette.js';

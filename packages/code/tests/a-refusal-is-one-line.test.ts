@@ -38,7 +38,7 @@ import { tmpdir } from 'node:os';
 import { join, relative } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
-import { run } from '../src/cli.js';
+import { run } from '../src/program.js';
 import { sourceFiles } from './support/reading-source.js';
 
 /** `packages/code/src` — the surface that owns this sentence. */

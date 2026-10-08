@@ -49,12 +49,12 @@ import { fileURLToPath, pathToFileURL } from 'node:url';
 import { type CatalogEvent, catalogUpcasters } from '@mnema/chain';
 import { type DiscoveryEnv, orderedEvents, resolveTrees } from '@mnema/core';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
-import { type CliIo, run } from '../src/cli.js';
 import { runCorrections } from '../src/commands/corrections.js';
 import { runSessionTally } from '../src/commands/tally.js';
 import { buildMcpServer } from '../src/mcp/server.js';
 import { openSession, type Session } from '../src/mcp/session.js';
 import { runDecisionTransition, runRulesBeforeAnEditTool } from '../src/mcp/tools.js';
+import { type CliIo, run } from '../src/program.js';
 import {
   AGENT_ACCEPTS_CHANNEL,
   ASKS_A_PERSON_CHANNEL,

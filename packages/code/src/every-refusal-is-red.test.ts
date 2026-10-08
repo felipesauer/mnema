@@ -59,7 +59,7 @@ import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { codeOnly } from '../tests/support/reading-source.js';
-import { buildProgram, type CliIo, run } from './cli.js';
+import { buildProgram, type CliIo, run } from './program.js';
 import { everyCommandOf } from './wiring/misuse.js';
 
 const HERE = fileURLToPath(new URL('.', import.meta.url));
@@ -121,7 +121,7 @@ describe('a refusal is worded in exactly one place', () => {
     // throw to (`reportIdentityRefusal`), because that door is also the one that says where the
     // key file is when the way out is a restore of it. THIS ASSERTED the entry rendered the line
     // itself; it hands it over now, and renders nothing of its own.
-    const entry = readFileSync(join(HERE, 'cli.ts'), 'utf-8');
+    const entry = readFileSync(join(HERE, 'program.ts'), 'utf-8');
     expect(entry).toContain('reportIdentityRefusal(');
     expect(entry).not.toContain('refusalLine(');
     expect(entry).not.toContain(WORDS_A_REFUSAL);

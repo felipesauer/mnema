@@ -32,7 +32,7 @@ import { mkdirSync, mkdtempSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
-import { type CliIo, run } from '../cli.js';
+import { type CliIo, run } from '../program.js';
 import { badgeLine, tips } from '../repl/session.js';
 import { aside, fact, statedFact, subjectLine } from './detail.js';
 import { foldedAt, rowsAt } from './folded.js';

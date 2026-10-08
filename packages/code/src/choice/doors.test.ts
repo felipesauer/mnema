@@ -13,8 +13,8 @@
  */
 
 import { describe, expect, it } from 'vitest';
-import { buildProgram } from '../cli.js';
 import { renderPlain } from '../presentation/plain.js';
+import { buildProgram } from '../program.js';
 import { PICK, theNextPicked } from '../repl/palette.js';
 import { INIT_VERB } from '../wiring/init.js';
 import type { CliIo } from '../wiring/io.js';

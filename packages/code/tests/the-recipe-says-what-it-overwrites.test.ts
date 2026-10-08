@@ -50,8 +50,8 @@
 
 import type { Brief } from '@mnema/context';
 import { describe, expect, it } from 'vitest';
-import { buildProgram, type CliIo } from '../src/cli.js';
 import { briefDocument } from '../src/presentation/brief.js';
+import { buildProgram, type CliIo } from '../src/program.js';
 import { REACHES_AN_AGENT, THE_LINE_IN_THEIRS } from '../src/wiring/init.js';
 import { everyCommandOf, pathOf } from '../src/wiring/misuse.js';
 import { read } from './support/published-examples.js';

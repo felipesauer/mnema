@@ -30,7 +30,7 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { checkpointToWitness } from '@mnema/chain';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
-import { run } from '../src/cli.js';
+import { run } from '../src/program.js';
 
 /** An address a proof can name, and that names no timestamp calendar operator. */
 const NOT_AN_OPERATOR = 'https://calendar.attacker.test';

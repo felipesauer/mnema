@@ -49,7 +49,6 @@ import {
 } from '@mnema/core';
 import { openTreeForWriting } from '@mnema/core/write';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
-import { type CliIo, run } from '../src/cli.js';
 import { recordTrees } from '../src/intelligence-source.js';
 import { closeSession, openSession, type Session } from '../src/mcp/session.js';
 import {
@@ -63,6 +62,7 @@ import {
   runTaskTransition,
   workspaceTrees,
 } from '../src/mcp/tools.js';
+import { type CliIo, run } from '../src/program.js';
 
 let sandbox: string;
 let env: DiscoveryEnv;

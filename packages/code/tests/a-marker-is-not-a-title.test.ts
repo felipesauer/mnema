@@ -20,7 +20,7 @@ import { mkdirSync, mkdtempSync, readdirSync, readFileSync, rmSync, writeFileSyn
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
-import { type CliIo, run } from '../src/cli.js';
+import { type CliIo, run } from '../src/program.js';
 import { ROOT } from './support/published-examples.js';
 
 /** A marker written where a title goes: `task create "<title>"`, `--topic "<t>"`. */

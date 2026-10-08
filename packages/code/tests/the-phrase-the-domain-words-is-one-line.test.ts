@@ -62,7 +62,7 @@ import { join, relative } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { verify } from '@mnema/chain';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
-import { run } from '../src/cli.js';
+import { run } from '../src/program.js';
 import { sourceFiles } from './support/reading-source.js';
 
 /** The two packages that word a sentence before the surface ever sees it. */
@@ -1645,7 +1645,7 @@ const NOT_A_SENTENCE: Readonly<Record<string, string>> = {
   '@mnema/chain chain/verify.ts «{} empty tail(s), which hold no event and are not counted (see census — informational, not a break)» count':
     'a clause of the verdict sentence, worded through a table of wordings per kind of note ' +
     'that this walk does not enter. It interpolates a COUNT and nothing else.',
-  '@mnema/chain chain/verify.ts «{} backup key(s), which sign nothing until restored (see census — informational, not a break)» count':
+  '@mnema/chain chain/verify.ts «{} backup key(s), which sign nothing until restored (informational, not a break; --verbose names the key)» count':
     'another clause of that same table, and a count on the same terms',
   '@mnema/chain chain/verify.ts «{} tail(s) ending in a dropped partial line (see census — informational, not a break)» count':
     'another clause of that same table, and a count on the same terms',

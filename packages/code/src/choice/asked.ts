@@ -32,7 +32,7 @@
  * (`tests/one-authority-over-colour.test.ts`).
  */
 
-import { buildProgram } from '../cli.js';
+import { buildProgram } from '../program.js';
 import { type Keystroke, keystrokesOf } from '../repl/editing.js';
 import type { Leaving } from '../repl/leaving.js';
 import { theLibraryIsTold } from '../repl/painting.js';

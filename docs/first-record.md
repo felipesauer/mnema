@@ -42,7 +42,7 @@ mnema search
 # it. The backup key `init` made, which signs nothing until you restore it, is counted in that
 # line; `mnema verify --verbose` also names it, and says the private tree holds nothing yet.
 mnema verify
-#> public: local integrity verified (T1/T2/T4); 1 tail(s); all events are signature-covered; 1 backup key(s), which sign nothing until restored (see census — informational, not a break); external witness (T3): not covered — nothing outside this machine attests this record
+#> public: local integrity verified (T1/T2/T4); 1 tail(s); all events are signature-covered; 1 backup key(s), which sign nothing until restored (informational, not a break; --verbose names the key); external witness (T3): not covered — nothing outside this machine attests this record
 ```
 
 `.mnema/` is written in the repository and is meant to be committed: that is what

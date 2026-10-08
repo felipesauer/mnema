@@ -28,11 +28,11 @@ import { Client } from '@modelcontextprotocol/sdk/client/index.js';
 import { InMemoryTransport } from '@modelcontextprotocol/sdk/inMemory.js';
 import { ListRootsRequestSchema } from '@modelcontextprotocol/sdk/types.js';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
-import { type CliIo, run } from '../src/cli.js';
 import { NOT_HAND_WRITTEN, reachOfAddress, WALK_CEILING } from '../src/governed-tree.js';
 import { buildMcpServer } from '../src/mcp/server.js';
 import { openSession, type Session } from '../src/mcp/session.js';
 import { runLinkKnowledge } from '../src/mcp/tools.js';
+import { type CliIo, run } from '../src/program.js';
 
 let sandbox: string;
 let repo: string;

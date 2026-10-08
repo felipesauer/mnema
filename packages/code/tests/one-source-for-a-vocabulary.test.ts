@@ -63,8 +63,8 @@ import {
 } from '@mnema/core';
 import { Command, type Option } from 'commander';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
-import { buildProgram, type CliIo } from '../src/cli.js';
 import { completionScript } from '../src/completion/script.js';
+import { buildProgram, type CliIo } from '../src/program.js';
 import { SWITCHABLE_CHANNELS } from '../src/record-framing.js';
 import { REFERENCE_DIRECTIONS } from '../src/reference-directions.js';
 import { SCOPES as OPENED_IN_ORDER } from '../src/tree-sources.js';

@@ -29,7 +29,7 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import type { Brief, PatternProvenance, RecordSearch } from '@mnema/context';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
-import { type CliIo, run } from '../cli.js';
+import { type CliIo, run } from '../program.js';
 import { briefDocument } from './brief.js';
 import { renderPlain } from './plain.js';
 import { provenanceReport } from './provenance.js';

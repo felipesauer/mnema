@@ -15,7 +15,7 @@
  */
 
 import { describe, expect, it } from 'vitest';
-import { buildProgram, type CliIo } from '../src/cli.js';
+import { buildProgram, type CliIo } from '../src/program.js';
 
 const silent: CliIo = { out: () => {}, err: () => {}, fail: () => {} };
 

@@ -68,7 +68,7 @@ import {
   taskDisposition,
 } from '@mnema/core';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
-import { type CliIo, run } from '../src/cli.js';
+import { type CliIo, run } from '../src/program.js';
 
 /**
  * The byte every sequence below opens with, written as its ESCAPE and never as itself: a

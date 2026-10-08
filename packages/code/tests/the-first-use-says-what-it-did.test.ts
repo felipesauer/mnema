@@ -19,11 +19,11 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { type CatalogEvent, catalogUpcasters } from '@mnema/chain';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
-import { type CliIo, run } from '../src/cli.js';
 import { runDecisionTransition } from '../src/commands/decision-transition.js';
 import { resolveAddress } from '../src/label-as-address.js';
 import { successorOnlyForASupersede, supersedeLeavesNothingInForce } from '../src/moved-record.js';
 import { occurrenceLine } from '../src/presentation/occurrence.js';
+import { type CliIo, run } from '../src/program.js';
 
 let sandbox: string;
 let home: string;

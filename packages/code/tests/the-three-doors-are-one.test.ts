@@ -32,7 +32,6 @@ import { Command } from 'commander';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { mnemaHooks } from '../../sdk/src/hooks.js';
 import { type MnemaRecord, openRecord } from '../../sdk/src/record.js';
-import type { CliIo } from '../src/cli.js';
 import { runBeforeAPath as beforeAPath } from '../src/commands/before-a-write.js';
 import { runBrief as brief } from '../src/commands/brief.js';
 import { runDecision as decision } from '../src/commands/decision.js';
@@ -54,6 +53,7 @@ import {
 import { buildMcpServer } from '../src/mcp/server.js';
 import { renderPlain } from '../src/presentation/plain.js';
 import { HOOK_TEXT_CEILING } from '../src/presentation/within-a-hook.js';
+import type { CliIo } from '../src/program.js';
 import { registerVerbs } from '../src/wiring/index.js';
 import { NO_PROJECT } from '../src/wiring/report.js';
 import type { PinnedRun } from '../src/wiring/run-pin.js';

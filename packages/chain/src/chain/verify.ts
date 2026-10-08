@@ -1509,12 +1509,17 @@ function coverageClause(facts: VerdictFacts): string {
  * kinds, so a third observation cannot be counted into a sentence written for
  * another one. A note is not an integrity failure, and each clause says so where a
  * reader meets it.
+ *
+ * WHERE THE NOTE CAN BE SEEN IS PART OF THE CLAUSE. "See census" sends a reader to lines
+ * `mnema verify` prints under the verdict, and that holds for every kind but the backup key:
+ * its note waits for `--verbose` (`wiring/verify.ts`), so its clause names the flag instead of
+ * pointing at lines the short answer does not print.
  */
 const CENSUS_CLAUSE: Readonly<Record<CensusNote['kind'], (count: number) => string>> = {
   'key-without-tail': (count) =>
     `${count} committed key(s) without a tail (see census — informational, not a break)`,
   'backup-key': (count) =>
-    `${count} backup key(s), which sign nothing until restored (see census — informational, not a break)`,
+    `${count} backup key(s), which sign nothing until restored (informational, not a break; --verbose names the key)`,
   'empty-tail': (count) =>
     `${count} empty tail(s), which hold no event and are not counted (see census — informational, not a break)`,
   'partial-final-line': (count) =>

@@ -445,7 +445,7 @@ export function openConsole(request: ConsoleRequest): OpenConsole {
    * where the question is asked, and a second reading feeding any of those would be a
    * second answer on the frame after a resize.
    *
-   * IT SAID *THE ONE PLACE ANYTHING DOES*, and the entry falsified it: `cli.ts` reads
+   * IT SAID *THE ONE PLACE ANYTHING DOES*, and the entry falsified it: `program.ts` reads
    * the width beside the `isTTY` it already read, because whether a line folds is part of
    * the capability every verb is handed and that is resolved once, where the process is
    * (`wiring/color.ts`). Nothing here comes from that reading and nothing there comes from

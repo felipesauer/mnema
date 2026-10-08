@@ -16,11 +16,11 @@ import { pathToFileURL } from 'node:url';
 import { type CatalogEvent, catalogUpcasters } from '@mnema/chain';
 import { type DiscoveryEnv, orderedEvents, resolveTrees } from '@mnema/core';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
-import { type CliIo, run } from '../src/cli.js';
 import { runBeforeAWrite } from '../src/commands/before-a-write.js';
 import { runUnlink } from '../src/commands/unlink.js';
 import { openSession } from '../src/mcp/session.js';
 import { runReferencesTool, runRetractLink } from '../src/mcp/tools.js';
+import { type CliIo, run } from '../src/program.js';
 
 let sandbox: string;
 let repo: string;

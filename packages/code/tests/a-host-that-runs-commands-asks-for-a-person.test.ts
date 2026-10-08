@@ -32,10 +32,10 @@ import { fileURLToPath } from 'node:url';
 import { type CatalogEvent, catalogUpcasters } from '@mnema/chain';
 import { type DiscoveryEnv, orderedEvents, resolveTrees } from '@mnema/core';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
-import { type CliIo, run } from '../src/cli.js';
 import { runBeforeAWrite } from '../src/commands/before-a-write.js';
 import { pathsOfAWrite, writeToolsOf } from '../src/host-hook.js';
 import { HOOK_HOSTS } from '../src/host-names.js';
+import { type CliIo, run } from '../src/program.js';
 
 const REPO = fileURLToPath(new URL('../../../', import.meta.url));
 const CLI = join(REPO, 'packages', 'code', 'dist', 'cli.js');

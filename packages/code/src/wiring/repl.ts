@@ -9,7 +9,7 @@
  *
  * THE PREMISE THAT FELL IS *`mnema` PRINTS THE HELP*, AND ONLY HALF OF IT DID. The bare
  * name asks now — two doors, one of which opens this session — but only at a TERMINAL, and
- * the sentence above is exactly what the other side of that question is (`cli.ts`, `start`):
+ * the sentence above is exactly what the other side of that question is (`program.ts`, `start`):
  * a pipe, a script and a CI job get the same bytes on the same stream with the same exit
  * code, and that is what the pipeline and the script depended on. What the agent in a pty
  * depended on is untouched for a different reason: it lands on a QUESTION rather than on a

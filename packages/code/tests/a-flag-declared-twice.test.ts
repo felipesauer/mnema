@@ -33,7 +33,7 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { Command } from 'commander';
 import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest';
-import { buildProgram, type CliIo } from '../src/cli.js';
+import { buildProgram, type CliIo } from '../src/program.js';
 import { everyCommandOf, pathOf } from '../src/wiring/misuse.js';
 import { ownFlagsWrittenBefore } from '../src/wiring/written-before.js';
 import { codeOnly } from './support/reading-source.js';

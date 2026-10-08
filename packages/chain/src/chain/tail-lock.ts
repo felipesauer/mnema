@@ -107,7 +107,7 @@ const POLL_MS = 5;
  * promise: the writes that used to race now either serialize or land here, and which
  * of the two happens is decided by a clock budget rather than by who won a read. The
  * surfaces turn a throw into a reported failure with a non-zero exit (see the
- * catch-all in `code/src/cli.ts`), so the sentence below is what a person reads.
+ * catch-all in `code/src/program.ts`), so the sentence below is what a person reads.
  *
  * It names the holder's pid because the only useful next move is to find it — the
  * common cause is a second window of the same host open on the same project.

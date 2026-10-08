@@ -34,7 +34,7 @@ vi.mock('../src/mcp/server.js', () => ({
   },
 }));
 
-const { run } = await import('../src/cli.js');
+const { run } = await import('../src/program.js');
 
 /** Drives `mnema <argv>` with the output discarded, and returns what was built. */
 async function mnema(...argv: string[]): Promise<Record<string, unknown>> {

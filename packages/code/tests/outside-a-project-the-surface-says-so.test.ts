@@ -59,7 +59,7 @@ import { mkdirSync, mkdtempSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
-import { type CliIo, run } from '../src/cli.js';
+import { type CliIo, run } from '../src/program.js';
 import { NO_PROJECT } from '../src/wiring/report.js';
 import { RUN_ENV } from '../src/wiring/run-pin.js';
 import {

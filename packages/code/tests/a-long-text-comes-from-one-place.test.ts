@@ -8,7 +8,7 @@ import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
-import { type CliIo, run } from '../src/cli.js';
+import { type CliIo, run } from '../src/program.js';
 import { bodyFrom } from '../src/wiring/body-source.js';
 import { REFUSED } from '../src/wiring/from-the-group.js';
 import type { Wiring } from '../src/wiring/verb.js';

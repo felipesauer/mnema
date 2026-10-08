@@ -10,11 +10,11 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { Command } from 'commander';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
-import { type CliIo, run } from '../src/cli.js';
 import { runPromote, runPromoteList } from '../src/commands/promote.js';
 import { discoveryEnv } from '../src/env.js';
 import { renderPlain } from '../src/presentation/plain.js';
 import { promotionCandidates, promotionDone } from '../src/presentation/promoted.js';
+import { type CliIo, run } from '../src/program.js';
 import { registerPromote } from '../src/wiring/promote.js';
 import type { Wiring } from '../src/wiring/verb.js';
 

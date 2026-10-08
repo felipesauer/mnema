@@ -18,9 +18,9 @@ import { fileURLToPath } from 'node:url';
 import type { PushedRule } from '@mnema/context';
 import type { DiscoveryEnv } from '@mnema/core';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
-import { type CliIo, run } from '../src/cli.js';
 import { runRulesFile } from '../src/commands/rules-file.js';
 import { type AddressedForAFile, globFor, rulesFileText } from '../src/host-rules-file.js';
+import { type CliIo, run } from '../src/program.js';
 
 const REPO = fileURLToPath(new URL('../../../', import.meta.url));
 const CLI = join(REPO, 'packages', 'code', 'dist', 'cli.js');

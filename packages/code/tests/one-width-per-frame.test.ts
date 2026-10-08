@@ -55,12 +55,12 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
-import { buildProgram, type CliIo, run } from '../src/cli.js';
 import { fact } from '../src/presentation/detail.js';
 import { foldedAt } from '../src/presentation/folded.js';
 import type { Line } from '../src/presentation/line.js';
 import { indentOf, renderPlain, widthOf } from '../src/presentation/plain.js';
 import { renderStyled } from '../src/presentation/styled.js';
+import { buildProgram, type CliIo, run } from '../src/program.js';
 import { openConsole } from '../src/repl/console.js';
 import { THE_FLOOR } from '../src/repl/floor.js';
 import { dispositionOf } from '../src/repl/gate.js';
@@ -1024,7 +1024,7 @@ describe('two files ask a device for its size, and a third would be a third answ
       .filter((file) => ASKS_A_DEVICE.test(codeOnly(readFileSync(file, 'utf-8'))))
       .map((file) => file.slice(SRC.length + 1))
       .sort();
-    expect(asking).toEqual(['cli.ts', 'repl/console.ts']);
+    expect(asking).toEqual(['program.ts', 'repl/console.ts']);
     // Read, rather than absent: the walk really did reach this surface's files.
     expect(sourceFiles(SRC).length).toBeGreaterThan(50);
   });

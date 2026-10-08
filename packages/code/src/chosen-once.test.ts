@@ -23,11 +23,11 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { afterAll, afterEach, beforeAll, describe, expect, it } from 'vitest';
-import { type CliIo, run } from './cli.js';
 import { fact } from './presentation/detail.js';
 import { renderPlain } from './presentation/plain.js';
 import type { Render } from './presentation/render.js';
 import { renderStyled } from './presentation/styled.js';
+import { type CliIo, run } from './program.js';
 import { type Capability, type ColorWhen, chooseRenderer } from './wiring/color.js';
 
 const HERE = fileURLToPath(new URL('.', import.meta.url));

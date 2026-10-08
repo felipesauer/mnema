@@ -33,7 +33,7 @@ import { catalogUpcasters, openChainForWriting } from '@mnema/chain';
 import { PROJECT_DIR, resolveTrees } from '@mnema/core';
 import { createTask } from '@mnema/core/write';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
-import { type CliIo, run } from '../src/cli.js';
+import { type CliIo, run } from '../src/program.js';
 
 let sandbox: string;
 let repo: string;

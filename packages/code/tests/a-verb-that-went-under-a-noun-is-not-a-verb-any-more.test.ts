@@ -9,7 +9,7 @@
  */
 
 import { describe, expect, it } from 'vitest';
-import { buildProgram } from '../src/cli.js';
+import { buildProgram } from '../src/program.js';
 import { everyCommandOf, pathOf } from '../src/wiring/misuse.js';
 
 /** Old root name, and the path it became. `focus` became part of `resume`, so it has none of its own. */

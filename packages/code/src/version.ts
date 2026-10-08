@@ -1,7 +1,7 @@
 /**
  * WHICH VERSION OF THIS PRODUCT THIS IS — one string, and every surface says the same one.
  *
- * It was typed twice: once for the flag that prints it (`cli.ts`) and once for the
+ * It was typed twice: once for the flag that prints it (`program.ts`) and once for the
  * handshake an MCP client reads (`mcp/server.ts`). Two literals is two answers the day one
  * of them is bumped and the other is not, and nothing would have said so — a client would
  * have been told one number while the caller at a shell was told another.

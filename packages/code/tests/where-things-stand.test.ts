@@ -42,9 +42,9 @@ import { dirname, join, sep } from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 import type { DiscoveryEnv } from '@mnema/core';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
-import { buildProgram, type CliIo, run } from '../src/cli.js';
 import { closeSession, openSession, type Session } from '../src/mcp/session.js';
 import { runBootstrap } from '../src/mcp/tools.js';
+import { buildProgram, type CliIo, run } from '../src/program.js';
 import { verbsOffered } from '../src/repl/gate.js';
 import { codeOnly, sourceFiles } from './support/reading-source.js';
 

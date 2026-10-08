@@ -17,7 +17,6 @@ import { pathToFileURL } from 'node:url';
 import { type CatalogEvent, catalogUpcasters } from '@mnema/chain';
 import { type DiscoveryEnv, orderedEvents, resolveTrees } from '@mnema/core';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
-import { type CliIo, run } from '../src/cli.js';
 import { runRetract } from '../src/commands/retract.js';
 import { openSession, type Session } from '../src/mcp/session.js';
 import {
@@ -26,6 +25,7 @@ import {
   runRetractNote,
   runSearchTool,
 } from '../src/mcp/tools.js';
+import { type CliIo, run } from '../src/program.js';
 
 let sandbox: string;
 let repo: string;

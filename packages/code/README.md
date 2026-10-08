@@ -1666,7 +1666,9 @@ moves the key is this product's own, `MNEMA_HOME`, and nothing sets it for you.
 
 ## What lives here
 
-- **`cli.ts`** — the command surface: one verb per capability, argument parsing,
+- **`cli.ts`** — the binary: it checks the Node it runs on and only then loads the program,
+  so a Node below the floor is told so instead of failing in an import.
+- **`program.ts`** — the command surface: one verb per capability, argument parsing,
   and the printing. Every action resolves the trees, calls one function, prints.
 - **`commands/`** — one module per verb, each a pure function from a context to
   a result, so a command can be tested without a terminal.
