@@ -55,6 +55,9 @@ const CLI = new URL('../dist/cli.js', import.meta.url).pathname;
 
 /** What the caller types in front of, as the layout writes it: trimmed at the end. */
 const PROMPT = 'mnema>';
+
+/** The mark of the line under an answer, by code point. */
+const DONE = '\u273b';
 /** Ctrl-C, which abandons the row being typed. Spelled as an escape, never typed. */
 const CLEARS_THE_LINE = '\u0003';
 /** Tab, likewise. */
@@ -343,8 +346,13 @@ const leaves: Step = {
 function searches(): Step {
   return {
     types: `search ${NAMED}\r`,
+    // AND FOR THE LINE UNDER THE ANSWER, which lands in a frame of its own after the last row: a step
+    // that ended on the answer let the next one begin while that frame was in flight, and the next
+    // step's own wait was then met by the stale one (`presentation/echo.ts`, `doneLine`).
     until: (bytes, since) =>
-      aFrameSince(PROMPT)(bytes, since) && shown.some((record) => bytes.includes(record.id)),
+      aFrameSince(PROMPT)(bytes, since) &&
+      bytes.slice(since).includes(`${DONE} search`) &&
+      shown.some((record) => bytes.includes(record.id)),
     what: 'answered with the records',
   };
 }
