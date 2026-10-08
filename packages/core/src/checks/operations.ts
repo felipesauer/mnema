@@ -239,23 +239,25 @@ export function enrollChecker(
   }
 
   const write = openedContext(ctx);
-  const who = ensureFounded(write);
-  materializePublicKey(write.layout, request.key);
-  const appended = appendEvent(
-    write.writer,
-    checkerEnrolled(
-      {
-        at: (write.clock ?? systemClock)(),
-        who,
-        signerFp: write.writer.signerFingerprint,
-        subject: checker,
-      },
-      { checkerFp: fingerprint, reverseSig: request.reverseSig },
-    ),
-  );
-  if (!appended.ok) return appended;
-  write.writer.checkpoint();
-  return { ok: true, fingerprint, checker, vouchedBy: who, alreadyChecker: false };
+  return write.writer.exclusively(() => {
+    const who = ensureFounded(write);
+    materializePublicKey(write.layout, request.key);
+    const appended = appendEvent(
+      write.writer,
+      checkerEnrolled(
+        {
+          at: (write.clock ?? systemClock)(),
+          who,
+          signerFp: write.writer.signerFingerprint,
+          subject: checker,
+        },
+        { checkerFp: fingerprint, reverseSig: request.reverseSig },
+      ),
+    );
+    if (!appended.ok) return appended;
+    write.writer.checkpoint();
+    return { ok: true, fingerprint, checker, vouchedBy: who, alreadyChecker: false };
+  });
 }
 
 // ---------------------------------------------------------------------------------------
@@ -386,17 +388,19 @@ export function runRuleChecks(
   }
 
   const write = openedContext(ctx);
-  for (const { event } of built) {
-    const appended = appendEvent(write.writer, event);
-    if (!appended.ok) return appended;
-  }
-  write.writer.checkpoint();
-  return {
-    ok: true,
-    checker,
-    results: built.map((b) => b.result),
-    ...screened(replaced.flatMap((r) => r ?? [])),
-  };
+  return write.writer.exclusively(() => {
+    for (const { event } of built) {
+      const appended = appendEvent(write.writer, event);
+      if (!appended.ok) return appended;
+    }
+    write.writer.checkpoint();
+    return {
+      ok: true,
+      checker,
+      results: built.map((b) => b.result),
+      ...screened(replaced.flatMap((r) => r ?? [])),
+    };
+  });
 }
 
 /**
@@ -527,27 +531,29 @@ export function retireChecker(
   if (!text.ok) return text;
 
   const write = openedContext(ctx);
-  const who = ensureFounded(write);
-  const appended = appendEvent(
-    write.writer,
-    checkerRetired(
-      {
-        at: (write.clock ?? systemClock)(),
-        who,
-        signerFp: write.writer.signerFingerprint,
-        subject: checker,
-      },
-      { checkerFp: fingerprint, reason: text.fields.reason },
-    ),
-  );
-  if (!appended.ok) return appended;
-  write.writer.checkpoint();
-  return {
-    ok: true,
-    fingerprint,
-    checker,
-    retiredBy: who,
-    alreadyRetired: false,
-    ...screened(text.replaced),
-  };
+  return write.writer.exclusively(() => {
+    const who = ensureFounded(write);
+    const appended = appendEvent(
+      write.writer,
+      checkerRetired(
+        {
+          at: (write.clock ?? systemClock)(),
+          who,
+          signerFp: write.writer.signerFingerprint,
+          subject: checker,
+        },
+        { checkerFp: fingerprint, reason: text.fields.reason },
+      ),
+    );
+    if (!appended.ok) return appended;
+    write.writer.checkpoint();
+    return {
+      ok: true,
+      fingerprint,
+      checker,
+      retiredBy: who,
+      alreadyRetired: false,
+      ...screened(text.replaced),
+    };
+  });
 }

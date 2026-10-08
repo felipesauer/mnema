@@ -206,36 +206,38 @@ export function runDecisionTransition(
     ...(input.which !== undefined ? { which: input.which } : {}),
     ...(input.run !== undefined ? { run: input.run } : {}),
   };
-  const moved =
-    input.action === 'supersede'
-      ? supersedeDecision(opCtx, {
-          id: input.id,
-          ...stamp,
-          // A missing `by` becomes '', which the gate reads as no successor and
-          // refuses MISSING_BY — the honest refusal. The CLI's supersede verb
-          // makes `by` a required positional so this only bites the MCP tool,
-          // where `by` is optional and its absence on a supersede is a caller
-          // error the gate reports.
-          by: input.by ?? '',
-          ...(fields !== undefined ? { fields } : {}),
-        })
-      : input.action === 'reject'
-        ? rejectDecision(opCtx, {
+  const moved = writer.exclusively(() => {
+    const written =
+      input.action === 'supersede'
+        ? supersedeDecision(opCtx, {
             id: input.id,
             ...stamp,
+            // A missing `by` becomes '', which the gate reads as no successor and
+            // refuses MISSING_BY — the honest refusal. The CLI's supersede verb
+            // makes `by` a required positional so this only bites the MCP tool,
+            // where `by` is optional and its absence on a supersede is a caller
+            // error the gate reports.
+            by: input.by ?? '',
             ...(fields !== undefined ? { fields } : {}),
           })
-        : acceptDecision(opCtx, {
-            id: input.id,
-            ...stamp,
-            ...(fields !== undefined ? { fields } : {}),
-          });
+        : input.action === 'reject'
+          ? rejectDecision(opCtx, {
+              id: input.id,
+              ...stamp,
+              ...(fields !== undefined ? { fields } : {}),
+            })
+          : acceptDecision(opCtx, {
+              id: input.id,
+              ...stamp,
+              ...(fields !== undefined ? { fields } : {}),
+            });
+    // Checkpoint so the transition is signature-covered at once.
+    if (written.ok) writer.checkpoint();
+    return written;
+  });
   if (!moved.ok) {
     return { ok: false, reason: 'REFUSED', code: moved.code, message: moved.message };
   }
-
-  // Checkpoint so the transition is signature-covered at once.
-  writer.checkpoint();
 
   // Resolve the ADR from the projection: a decision has no alias, so its human
   // name is the frozen `ADR-<n>` label. Read after the append so the projection

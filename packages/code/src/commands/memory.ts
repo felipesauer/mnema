@@ -89,25 +89,27 @@ export function runMemory(
   }
 
   const writer = openTreeForWriting(trees, scope);
-  const captured = captureMemory(
-    {
-      writer,
-      layout: { root: chainRootForScope(trees, scope) as string },
-      upcasters: catalogUpcasters(),
-    },
-    {
-      content: input.content,
-      ...(input.which !== undefined ? { which: input.which } : {}),
-      ...(input.run !== undefined ? { run: input.run } : {}),
-    },
-  );
+  const captured = writer.exclusively(() => {
+    const written = captureMemory(
+      {
+        writer,
+        layout: { root: chainRootForScope(trees, scope) as string },
+        upcasters: catalogUpcasters(),
+      },
+      {
+        content: input.content,
+        ...(input.which !== undefined ? { which: input.which } : {}),
+        ...(input.run !== undefined ? { run: input.run } : {}),
+      },
+    );
+    // Checkpoint so the new memory is signature-covered at once — the tree stays
+    // fully signed after every command, the same posture init leaves it in.
+    if (written.ok) writer.checkpoint();
+    return written;
+  });
   if (!captured.ok) {
     return { ok: false, reason: 'REFUSED', code: captured.code, message: captured.message };
   }
-
-  // Checkpoint so the new memory is signature-covered at once — the tree stays
-  // fully signed after every command, the same posture init leaves it in.
-  writer.checkpoint();
 
   return { ok: true, id: captured.id, scope, ...forwardReplacement(captured) };
 }

@@ -100,27 +100,29 @@ export function runDecision(
   }
 
   const writer = openTreeForWriting(trees, scope);
-  const recorded = recordDecision(
-    {
-      writer,
-      layout: { root: chainRootForScope(trees, scope) as string },
-      upcasters: catalogUpcasters(),
-    },
-    {
-      title: input.title,
-      rationale: input.rationale,
-      ...(input.alternatives !== undefined ? { alternatives: input.alternatives } : {}),
-      ...(input.which !== undefined ? { which: input.which } : {}),
-      ...(input.run !== undefined ? { run: input.run } : {}),
-    },
-  );
+  const recorded = writer.exclusively(() => {
+    const written = recordDecision(
+      {
+        writer,
+        layout: { root: chainRootForScope(trees, scope) as string },
+        upcasters: catalogUpcasters(),
+      },
+      {
+        title: input.title,
+        rationale: input.rationale,
+        ...(input.alternatives !== undefined ? { alternatives: input.alternatives } : {}),
+        ...(input.which !== undefined ? { which: input.which } : {}),
+        ...(input.run !== undefined ? { run: input.run } : {}),
+      },
+    );
+    // Checkpoint so the new decision is signature-covered at once — the tree stays
+    // fully signed after every command, the same posture init leaves it in.
+    if (written.ok) writer.checkpoint();
+    return written;
+  });
   if (!recorded.ok) {
     return { ok: false, reason: 'REFUSED', code: recorded.code, message: recorded.message };
   }
-
-  // Checkpoint so the new decision is signature-covered at once — the tree stays
-  // fully signed after every command, the same posture init leaves it in.
-  writer.checkpoint();
 
   return { ok: true, id: recorded.id, adr: recorded.adr, scope, ...forwardReplacement(recorded) };
 }
