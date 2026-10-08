@@ -1073,6 +1073,7 @@ const CLAUSES_PER_FILE: Readonly<Record<string, number>> = {
   'packages/code/tests/the-front-page-is-drawn-from-the-console.test.ts': 6,
   'packages/code/tests/the-front-page-says-what-its-sources-say.test.ts': 7,
   'packages/code/tests/the-gate-is-decided-once.test.ts': 5,
+  'packages/code/tests/the-help-is-grouped-by-the-flow.test.ts': 2,
   'packages/code/tests/the-home-is-not-a-project.test.ts': 14,
   'packages/code/tests/the-hooks-file-says-only-what-the-host-reads.test.ts': 5,
   'packages/code/tests/the-hooks-have-stable-ids.test.ts': 4,

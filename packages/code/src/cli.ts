@@ -28,7 +28,7 @@ import './node-floor.js';
 import { realpathSync } from 'node:fs';
 import { pathToFileURL } from 'node:url';
 import { IdentityUnavailableError, resolveTrees } from '@mnema/core';
-import { Command, CommanderError, Option } from 'commander';
+import { Command, CommanderError, Help, Option } from 'commander';
 import { fact } from './presentation/detail.js';
 import type { Render } from './presentation/render.js';
 import { PRODUCT_PROMISE } from './promise.js';
@@ -104,7 +104,10 @@ export interface BuiltProgram {
   readonly verbs: readonly Declared[];
 }
 
-/** What `mnema --help` says about `--identify`. */
+/** commander's own help, for the pages whose column keeps what it always listed. */
+const STOCK_HELP = new Help();
+
+/** What `mnema --identify` is for. It is not listed by `--help`. */
 const IDENTIFY_HELP =
   'print this program’s package name and version — how the mnema plugin tells this `mnema` ' +
   'from another program of the same name on the PATH';
@@ -149,10 +152,21 @@ export function buildProgram(
     // before it runs a verb, to tell this `mnema` from another program of the same name first on
     // the PATH (`version.ts`, {@link IDENTITY}). Thrown as commander throws for `--version`, so
     // {@link parseWith} reads a clean zero exit and the verb is never reached.
-    .addOption(new Option('--identify', IDENTIFY_HELP))
+    //
+    // NOT LISTED BY `--help`: it is the plugin's question and not a person's, and the page it
+    // would sit on is the first one a person reads. It is declared all the same, so it answers.
+    .addOption(new Option('--identify', IDENTIFY_HELP).hideHelp())
     .on('option:identify', () => {
       io.out(IDENTITY);
       throw new CommanderError(0, 'mnema.identify', IDENTITY);
+    })
+    // THE COLUMN OF THE ROOT PAGE HOLDS THE NAME AND NOTHING ELSE. A verb's usage (`task
+    // [options]`) was most of what made the list long, and it is on the verb's own page, where
+    // whoever needs it goes next. Only the root: the pages of `decision`, `key` and the rest
+    // list their subcommands with the arguments, and there the arguments are the point.
+    .configureHelp({
+      subcommandTerm: (sub) =>
+        sub.parent === program ? sub.name() : STOCK_HELP.subcommandTerm(sub),
     })
     // Throw instead of calling process.exit, so the whole program can be driven
     // in a test — {@link run} turns the thrown CommanderError into an exit code.
@@ -214,6 +228,11 @@ export function buildProgram(
   const pinnedRun = pinnedRunResolver({ io, render: resolved });
 
   const verbs = registerVerbs(program, { io, render: resolved, renderingAt, pinnedRun });
+
+  // commander's own `help` is added lazily, under a bare "Commands:" heading of its own, and
+  // that heading would sit alone after the last group. Named here, it is a group of one.
+  program.commandsGroup('Help:');
+  program.helpCommand('help', 'display help for command');
 
   // AFTER the verbs, and over all of them at once: the parser's own refusals, said
   // the way this surface says every other one (see `wiring/misuse.ts`). It walks what

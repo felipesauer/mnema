@@ -116,6 +116,8 @@ function accepted(command: Command): readonly string[] {
   for (let at: Command | null = command; at !== null; at = at.parent) {
     const aGroup = at !== command && at.parent !== null;
     for (const option of at.options) {
+      // A hidden option is not advertised anywhere, and so not completed either.
+      if (option.hidden) continue;
       if (aGroup && !reads.includes(option.long ?? option.flags)) continue;
       if (option.short !== undefined) names.add(option.short);
       if (option.long !== undefined) names.add(option.long);
@@ -307,17 +309,18 @@ describe('the script knows every verb the program declares', () => {
     expect(offered('bash', 'decision move')).not.toContain('--alternatives');
   });
 
-  it('and this program declares no HIDDEN option, which is what makes the case above right', () => {
-    // The case above derives from `.options`, which holds a hidden option too, while the
-    // generator reads the help's `visibleOptions`, which does not. The two agree today
-    // because nothing on this surface is hidden — and the day something is, the rule to
-    // write is that a hidden option is NOT completed (it is not advertised anywhere else
-    // either), and the case above is the one to narrow. Stated here so the disagreement
-    // arrives as a red line naming it rather than as a puzzling coverage failure.
+  it('and the one HIDDEN option is the plugin’s question, which no shell offers', () => {
+    // The case above skips what the help does not list, and the generator reads the help's
+    // `visibleOptions`, so the two agree. What this holds is WHICH option that is: a second
+    // hidden option would be a second word no shell completes and no page lists, and it
+    // arrives here as a red line naming it rather than as a puzzling coverage failure.
     const hidden = everyCommandOf(declared).flatMap((command) =>
       command.options.filter((option) => option.hidden).map((option) => option.flags),
     );
-    expect(hidden).toEqual([]);
+    expect(hidden).toEqual(['--identify']);
+    for (const shell of SHELLS) {
+      expect(offered(shell, ''), `${shell}: mnema --identify`).not.toContain('--identify');
+    }
   });
 
   it('offers the implicit `help` command, which lives in neither .commands nor .options', () => {
@@ -494,7 +497,7 @@ describe('the generated script is a file its shell can read', () => {
       ['task', 'mo'],
       ['task', 'move', '--n'],
     ]);
-    expect(asked.get('ta')).toEqual(['task', 'tally', 'tail']);
+    expect(asked.get('ta')).toEqual(['task', 'tail', 'tally']);
     expect(asked.get('tai')).toEqual(['tail']);
     expect(asked.get('task mo')).toEqual(['move']);
     expect(asked.get('task move --n')).toEqual(['--note']);

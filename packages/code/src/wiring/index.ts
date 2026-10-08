@@ -2,12 +2,14 @@
  * The map of the surface: which verbs there are, in which families, in the order a
  * person meets them in `mnema --help`.
  *
- * THE ORDER IS THE OUTPUT. commander lists commands in registration order, so this
- * array is what a reader sees when they ask what mnema does — the writes first, from
- * founding a project to the four knowledge facts, then the session, then every read,
- * then the machine's keys, then the record's own tails, then verification.
- * Reordering the list reorders the help, which is why it lives in one place and not
- * in the sequence of thirty calls inside one function.
+ * THE GROUPS AND THEIR ORDER ARE THE OUTPUT. commander lists commands under a heading in
+ * registration order, and the headings in the order they first appear, so {@link GROUPS} is
+ * what a reader sees when they ask what mnema does: what is recorded, what is handed over,
+ * what is verified, what is read, the git log, this machine, and last what a host calls.
+ * A verb is registered INSIDE a group and nowhere else — there is no list of verbs beside
+ * the groups, so none can arrive without a heading — and reordering a group reorders the
+ * help, which is why it lives in one place and not in the sequence of thirty calls inside
+ * one function.
  *
  * The FAMILIES are the shape of the surface, and each one exists for a reason worth
  * keeping next to the list rather than inside one of its members:
@@ -187,14 +189,13 @@
  * two is a committed document and never machine-local, and the other is machine-local and
  * never a file; neither can be a flag of the other without breaking the half it is for.
  *
- * And the LAST THREE read no record at all, because they are not about one: they are the
- * three DOORS onto everything above them. `mcp` serves this surface to an agent host;
- * `repl` opens an interactive session for a person, which is the same surface with the
+ * And three more read no record at all, because they are not about one: they are the
+ * three DOORS onto everything else. `mcp` serves this surface to an agent host; `repl`
+ * opens an interactive session for a person, which is the same surface with the
  * hundred-millisecond floor paid once instead of once per command; and `completion`
- * writes the script a shell needs to finish a verb somebody is typing. They come last
- * for that reason — a reader looking for what mnema records has found it before reaching
- * them — and `completion` comes last of all because it is generated FROM this list: it
- * is the one verb whose answer changes when any line above it does.
+ * writes the script a shell needs to finish a verb somebody is typing. `completion` is
+ * generated FROM the groups: it is the one verb whose answer changes when any line of them
+ * does.
  *
  * The three do not agree about the record, and the disagreement is the classification
  * doing its job. `mcp` is a WRITE, because it serves every write tool there is to whoever
@@ -207,7 +208,7 @@
  *
  * EVERY SENTENCE ABOVE THAT SAYS "READ" OR "WRITE" IS NOW A DECLARATION IN THE CODE. The
  * order of this list is the help; it is NOT the classification, and reading it as one is
- * how a reader ends up believing the eight writes at the top are all of them. Each verb
+ * how a reader ends up believing the writes under "Record" are all of them. Each verb
  * answers for itself (`verb.ts`), the type makes the answer compulsory, and
  * `every-verb-says-if-it-writes.test.ts` exercises the ones that claim to read and counts
  * what reached the chain.
@@ -268,61 +269,90 @@ import { registerVerify } from './verify.js';
 import { registerWhy } from './why.js';
 import { registerWitness } from './witness.js';
 
-/** Every verb, in the order `mnema --help` lists them. */
-export const VERBS: readonly Verb[] = [
-  registerInit,
-  registerTask,
-  registerDecision,
-  registerSkill,
-  registerMemory,
-  registerObserve,
-  registerHandoff,
-  registerLink,
-  registerUnlink,
-  registerPromote,
-  registerRetract,
-  registerRun,
-  registerStatus,
-  registerFocus,
-  registerResume,
-  registerNextActions,
-  registerGuard,
-  registerSearch,
-  registerShow,
-  registerTimeline,
-  registerAccountability,
-  registerAntipatterns,
-  registerExposure,
-  registerExport,
-  registerSite,
-  registerReferences,
-  registerDiagram,
-  registerRules,
-  registerRulesFile,
-  registerCheck,
-  registerTrailer,
-  registerCommitHook,
-  registerCommits,
-  registerWhy,
-  registerAging,
-  registerSkills,
-  registerUsage,
-  registerBrief,
-  registerRecall,
-  registerBeforeAWrite,
-  registerTally,
-  registerCorrections,
-  registerKey,
-  registerTail,
-  registerWitness,
-  registerSwitch,
-  registerInherit,
-  registerDoctor,
-  registerVerify,
-  registerMcp,
-  registerRepl,
-  registerCompletion,
+/** A heading of `mnema --help` and the verbs listed under it, in the order they are listed. */
+export interface Group {
+  readonly heading: string;
+  readonly verbs: readonly Verb[];
+}
+
+/**
+ * The groups of `mnema --help`, in the order of the work: record, hand over, verify, read,
+ * the git log, this machine, and what a host calls.
+ *
+ * The last group is VISIBLE on purpose. Those verbs are for a host and not for a person, but
+ * two of them write (`before-a-write` records the refusal, `corrections` records what was
+ * proposed), and a help that hid them would stop showing where the record can change.
+ */
+export const GROUPS: readonly Group[] = [
+  {
+    heading: 'Record:',
+    verbs: [
+      registerInit,
+      registerDecision,
+      registerLink,
+      registerUnlink,
+      registerMemory,
+      registerObserve,
+      registerRetract,
+      registerSkill,
+      registerTask,
+      registerHandoff,
+      registerPromote,
+    ],
+  },
+  {
+    heading: 'Hand over:',
+    verbs: [
+      registerStatus,
+      registerBrief,
+      registerRecall,
+      registerRules,
+      registerRulesFile,
+      registerSwitch,
+      registerInherit,
+    ],
+  },
+  {
+    heading: 'Verify:',
+    verbs: [registerVerify, registerWitness, registerCheck, registerSite],
+  },
+  {
+    heading: 'Read:',
+    verbs: [
+      registerSearch,
+      registerShow,
+      registerTimeline,
+      registerReferences,
+      registerDiagram,
+      registerAccountability,
+      registerAntipatterns,
+      registerExposure,
+      registerExport,
+      registerSkills,
+      registerUsage,
+      registerFocus,
+      registerResume,
+      registerNextActions,
+      registerGuard,
+      registerRepl,
+    ],
+  },
+  {
+    heading: 'The git log:',
+    verbs: [registerWhy, registerCommits, registerAging, registerTrailer, registerCommitHook],
+  },
+  {
+    heading: 'This machine:',
+    verbs: [registerKey, registerTail, registerDoctor, registerCompletion],
+  },
+  {
+    heading: 'Called by a host:',
+    verbs: [registerMcp, registerRun, registerBeforeAWrite, registerTally, registerCorrections],
+  },
 ];
+
+/** Every verb, in the order `mnema --help` lists them. */
+export const VERBS: readonly Verb[] = GROUPS.flatMap((group) => group.verbs);
 
 /**
  * Hangs every verb on the program, in order, and answers with what each one may do to
@@ -335,5 +365,13 @@ export const VERBS: readonly Verb[] = [
  * it. The entry ignores the answer, having nothing to decide (see `cli.ts`).
  */
 export function registerVerbs(program: Command, wiring: Wiring): readonly Declared[] {
-  return VERBS.map((verb) => verb(program, wiring));
+  const declared = GROUPS.flatMap((group) => {
+    // The heading every command added from here on is listed under, until the next one.
+    program.commandsGroup(group.heading);
+    return group.verbs.map((verb) => verb(program, wiring));
+  });
+  // And no heading after the last group: a command hung on the program by any other path is
+  // listed under commander's bare "Commands:", where the page's own test finds it.
+  program.commandsGroup('');
+  return declared;
 }

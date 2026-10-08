@@ -124,10 +124,7 @@ export type ColorWhen = (typeof COLOR_WHENS)[number];
  * verbs instead, it would be one flag per verb with one name between them, and the
  * reader of one verb's help would have no reason to think the next verb agreed.
  */
-export const COLOR_HELP =
-  'when to use bold, dim and color: auto (a terminal only), always (also in a pipe), ' +
-  'never. NO_COLOR and FORCE_COLOR are honored; an explicit --color beats both. Style ' +
-  'never changes what a line says.';
+export const COLOR_HELP = 'auto, always or never; NO_COLOR and FORCE_COLOR are honored';
 
 /**
  * WHAT A TERMINAL SAYS WHEN IT CANNOT DO ANYTHING BUT PRINT TEXT.
