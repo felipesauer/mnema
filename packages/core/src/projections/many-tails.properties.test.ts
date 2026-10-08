@@ -22,8 +22,13 @@
  *   - P1, within a tail the order is `seq` even when `at` runs backwards;
  *   - P2, a cache brought forward arrival by arrival, and one deleted at a drawn point, answers
  *     what a replay answers;
- *   - and the behaviour of today under clocks that disagree, which is FIXED here and not
- *     endorsed: the study of a clock that knows before it is told may change it.
+ *   - the behaviour under clocks that disagree when nothing is cited, which is FIXED here and
+ *     not endorsed: it is what a record written before citations existed still reads as;
+ *   - and with every machine citing the heads it read, as the product's writer does: R5, the
+ *     merge is a model that re-sorts the READY heads at every step; R6, a cache brought forward
+ *     is a replay, including when an arrival is what a covered event cited and could not find.
+ *     The pure half of the citation properties (R1-R4, R8) is in `chain/src/chain/
+ *     causal-order.properties.test.ts`.
  *
  * The seed is fixed so the CI is the same run every time; `FC_SEED` explores another. A
  * counterexample is printed by fast-check with the seed and the path that replays it.
@@ -40,9 +45,11 @@ import {
   decisionBirth,
   decisionTransitioned,
   identityFounded,
+  listTails,
   openChainForWriting,
   orderedSegments,
   projectionCachePath,
+  readTail,
   tailDir,
   taskBirth,
   taskCreated,
@@ -54,7 +61,7 @@ import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { ProjectionCache } from './cache.js';
 import { projectDecisions } from './decision.js';
 import { divergentMoves } from './divergent-moves.js';
-import { chainReplay, orderedEvents, orderedEventsOfRecord } from './order.js';
+import { chainArrivals, chainReplay, orderedEvents, orderedEventsOfRecord } from './order.js';
 
 /** Each case writes and signs real chains many times over, which five seconds does not hold. */
 const CASE_TIMEOUT = 120_000;
@@ -182,6 +189,8 @@ class Scribe {
   constructor(
     private readonly root: string,
     private readonly checkpointAfter: ReadonlyMap<number, number> = new Map(),
+    /** Whether each machine cites the heads it read, as the product's writer does. */
+    private readonly cite = false,
   ) {}
 
   private put(slot: number, event: CatalogEvent): void {
@@ -202,6 +211,7 @@ class Scribe {
       writer = openChainForWriting(this.root, {
         keyRoot: keyRoots[slot] as string,
         maxUnsignedEvents: 10_000,
+        citeHeads: this.cite,
       });
       this.writers.set(slot, writer);
       this.tails.set(slot, writer.tail);
@@ -770,9 +780,9 @@ describe('P2: a cache brought forward is a replay', () => {
   );
 });
 
-describe('clocks that disagree: what the merge does TODAY, fixed and not endorsed', () => {
+describe('clocks that disagree, with nothing cited: fixed and not endorsed', () => {
   it(
-    'today, a clock that runs behind sorts an honest task sequence out of its order, and the move is named as a divergence',
+    'uncited, a clock that runs behind sorts an honest task sequence out of its order, and the move is named as a divergence',
     () => {
       // Machine 0 births a task, moves it on, and reopens it. Machine 1 pulls the reopened task and
       // cancels it, but its clock is behind, so the merge puts its move BEFORE the reopening. The
@@ -824,7 +834,7 @@ describe('clocks that disagree: what the merge does TODAY, fixed and not endorse
   );
 
   it(
-    'today, a machine with a skewed clock keeps its own order, and two moves out of one state are always named',
+    'uncited, a machine with a skewed clock keeps its own order, and two moves out of one state are always named',
     () => {
       holds(
         fc.tuple(
@@ -858,6 +868,281 @@ describe('clocks that disagree: what the merge does TODAY, fixed and not endorse
           }
         },
       );
+    },
+    CASE_TIMEOUT,
+  );
+});
+
+// ---------------------------------------------------------------------------------------------
+// With citations: every machine cites the heads it read, as the product's writer does
+// ---------------------------------------------------------------------------------------------
+
+/** Every tail of `root` as read back, each entry with its hash: what the causal model needs. */
+function tailsOnDisk(root: string) {
+  return listTails({ root }).map((tail) => ({
+    key: tail,
+    entries: readTail({ root }, tail, upcasters).entries.map((entry) => ({
+      id: identity(entry.event),
+      at: entry.event.at,
+      hash: entry.link.hash,
+      after: entry.event.after ?? [],
+    })),
+  }));
+}
+
+/**
+ * THE CAUSAL MODEL. Re-sorts, at every step, the heads whose citations have all been taken
+ * (a citation of a hash the record does not hold is no citation), by `at` and then tail id.
+ * Quadratic, and it shares nothing with `causalOrder` but the sentence it restates.
+ */
+function causalModel(root: string): string[] {
+  const queues = tailsOnDisk(root).map((tail) => ({ key: tail.key, left: [...tail.entries] }));
+  const held = new Set(queues.flatMap((queue) => queue.left.map((entry) => entry.hash)));
+  const taken = new Set<string>();
+  const out: string[] = [];
+  for (;;) {
+    const live = queues.filter((queue) => queue.left.length > 0);
+    if (live.length === 0) return out;
+    const ready = live.filter((queue) =>
+      (queue.left[0] as (typeof queue.left)[number]).after.every(
+        (hash) => !held.has(hash) || taken.has(hash),
+      ),
+    );
+    ready.sort((a, b) => {
+      const atA = (a.left[0] as (typeof a.left)[number]).at;
+      const atB = (b.left[0] as (typeof b.left)[number]).at;
+      if (atA !== atB) return atA < atB ? -1 : 1;
+      return a.key < b.key ? -1 : a.key > b.key ? 1 : 0;
+    });
+    const next = (
+      ready[0] as (typeof ready)[number]
+    ).left.shift() as (typeof queues)[number]['left'][number];
+    taken.add(next.hash);
+    out.push(next.id);
+  }
+}
+
+/** A history with each machine's clock skewed by a drawn amount: clocks that disagree. */
+const skewedArb = fc
+  .tuple(
+    fc.array(fc.integer({ min: -6, max: 6 }), { minLength: SLOTS, maxLength: SLOTS }),
+    historyArb,
+  )
+  .map(([skews, history]) =>
+    history.map((op) => ({ ...op, at: op.at + (skews[op.slot] as number) + 6 })),
+  );
+
+describe('with citations: every machine cites the heads it read, as the product writes', () => {
+  it(
+    'R5: under clocks that disagree, the merge is the causal model, and every tail is read in seq order',
+    () => {
+      holds(skewedArb, (history) => {
+        const root = freshDir('cited');
+        try {
+          const scribe = new Scribe(root, new Map(), true);
+          for (const slot of [0, 1, 2])
+            if (history.some((op) => op.slot === slot)) scribe.open(slot);
+          for (const op of history) scribe.apply(op);
+          expect(read(root)).toEqual(causalModel(root));
+          const merged = orderedEvents({ root }, upcasters);
+          for (const tail of tailsOnDisk(root)) {
+            const mine = new Set(tail.entries.map((entry) => entry.id));
+            expect(merged.map(identity).filter((id) => mine.has(id))).toEqual(
+              tail.entries.map((entry) => entry.id),
+            );
+          }
+        } finally {
+          cleanUp(root);
+        }
+      });
+    },
+    CASE_TIMEOUT,
+  );
+
+  it(
+    'R6: a cache brought forward is a replay, with citations and clocks that disagree',
+    () => {
+      holds(
+        fc.tuple(skewedArb, fc.array(fc.nat({ max: 4 }), { maxLength: 3 })),
+        ([history, cuts]) => {
+          const root = freshDir('cited-p2');
+          try {
+            const scribe = new Scribe(root, new Map(), true);
+            let from = 0;
+            for (const cut of [...cuts.map((c) => from + c), history.length]) {
+              const to = Math.min(history.length, Math.max(from, cut));
+              for (const op of history.slice(from, to)) scribe.apply(op);
+              from = to;
+              const cache = ProjectionCache.open(root, { upcasters, persist: true });
+              try {
+                cache.refresh();
+              } finally {
+                cache.close();
+              }
+            }
+            const live = ProjectionCache.open(root, { upcasters, persist: true });
+            const replay = ProjectionCache.open(root, { upcasters });
+            try {
+              live.refresh();
+              replay.rebuild();
+              expect(live.listDecisions()).toEqual(replay.listDecisions());
+              expect(live.listTasks()).toEqual(replay.listTasks());
+              expect(live.divergentMoves()).toEqual(replay.divergentMoves());
+            } finally {
+              live.close();
+              replay.close();
+            }
+          } finally {
+            cleanUp(root);
+          }
+        },
+      );
+    },
+    CASE_TIMEOUT,
+  );
+
+  it(
+    'R6: an arrival that a covered event cited, and could not find, is not a suffix — the cache reads again',
+    () => {
+      const elsewhere = freshDir('cited-elsewhere');
+      const root = freshDir('cited-arrives');
+      try {
+        const writerOf = (at: string, slot: number) => {
+          const writer = openChainForWriting(at, {
+            keyRoot: keyRoots[slot] as string,
+            maxUnsignedEvents: 10_000,
+          });
+          const task = (second: number, id: string, after?: readonly string[]) =>
+            writer.append(
+              taskCreated(
+                {
+                  at: iso(second),
+                  who: writer.anchor,
+                  signerFp: writer.signerFingerprint,
+                  subject: id,
+                  ...(after === undefined ? {} : { after }),
+                },
+                { title: id },
+              ),
+            );
+          return { writer, task };
+        };
+        // C writes on a clone this record has not pulled yet; B has, and cites C's head.
+        const c = writerOf(elsewhere, 2);
+        const cited = c.task(5, 'on-c').link.hash;
+        writerOf(root, 0).task(1, 'on-a');
+        writerOf(root, 1).task(2, 'on-b', [cited]);
+
+        const covered = chainReplay({ root }, upcasters).frontier;
+        expect(covered.unresolved).toEqual([cited]);
+        const cache = ProjectionCache.open(root, { upcasters, persist: true });
+        try {
+          cache.refresh();
+        } finally {
+          cache.close();
+        }
+
+        // C's tail arrives. Its entry is LATER than everything covered, so by `at` alone it would
+        // follow; but B cited it, so B moves after it, and what was covered is not a prefix.
+        cpSync(tailDir({ root: elsewhere }, c.writer.tail), tailDir({ root }, c.writer.tail), {
+          recursive: true,
+        });
+        expect(chainArrivals({ root }, upcasters, covered)).toMatchObject({
+          suffix: false,
+          why: 'AN_ARRIVAL_IS_NOT_LATER',
+        });
+        expect(orderedEvents({ root }, upcasters).map((event) => event.subject)).toEqual([
+          'on-a',
+          'on-c',
+          'on-b',
+        ]);
+        const live = ProjectionCache.open(root, { upcasters, persist: true });
+        const replay = ProjectionCache.open(root, { upcasters });
+        try {
+          live.refresh();
+          replay.rebuild();
+          expect(live.listTasks()).toEqual(replay.listTasks());
+        } finally {
+          live.close();
+          replay.close();
+        }
+      } finally {
+        cleanUp(elsewhere, root);
+      }
+    },
+    CASE_TIMEOUT,
+  );
+
+  it(
+    'R6: an ARRIVAL citing what the record does not hold yet still waits for it when it comes, read incrementally',
+    () => {
+      const elsewhere = freshDir('cited-later');
+      const root = freshDir('cited-incremental');
+      try {
+        const open = (at: string, slot: number) =>
+          openChainForWriting(at, { keyRoot: keyRoots[slot] as string, maxUnsignedEvents: 10_000 });
+        const env = (
+          writer: ReturnType<typeof open>,
+          second: number,
+          after?: readonly string[],
+        ) => ({
+          at: iso(second),
+          who: writer.anchor,
+          signerFp: writer.signerFingerprint,
+          subject: X,
+          ...(after === undefined ? {} : { after }),
+        });
+        const a = open(root, 0);
+        for (const event of decisionBirth(env(a, 1), {
+          title: 'x',
+          rationale: 'because',
+          adr: 'ADR-1',
+          initial: 'proposed',
+        })) {
+          a.append(event);
+        }
+        // C accepts X on a clone this record has not pulled.
+        const c = open(elsewhere, 2);
+        const accepted = c.append(
+          decisionTransitioned(env(c, 5), { from: 'proposed', to: 'accepted', action: 'accept' }),
+        ).link.hash;
+        const refreshed = () => {
+          const cache = ProjectionCache.open(root, { upcasters, persist: true });
+          try {
+            cache.refresh();
+          } finally {
+            cache.close();
+          }
+        };
+        refreshed();
+        // B had pulled C's acceptance on its own clone and rejects X on top of it, with a clock
+        // behind; this record receives B's tail first, and C's only later.
+        const b = open(root, 1);
+        b.append(
+          decisionTransitioned(env(b, 2, [accepted]), {
+            from: 'accepted',
+            to: 'rejected',
+            action: 'reject',
+          }),
+        );
+        refreshed();
+        cpSync(tailDir({ root: elsewhere }, c.tail), tailDir({ root }, c.tail), {
+          recursive: true,
+        });
+        const live = ProjectionCache.open(root, { upcasters, persist: true });
+        const replay = ProjectionCache.open(root, { upcasters });
+        try {
+          live.refresh();
+          replay.rebuild();
+          expect(replay.getDecision(X)?.state).toBe('rejected');
+          expect(live.getDecision(X)?.state).toBe('rejected');
+        } finally {
+          live.close();
+          replay.close();
+        }
+      } finally {
+        cleanUp(elsewhere, root);
+      }
     },
     CASE_TIMEOUT,
   );

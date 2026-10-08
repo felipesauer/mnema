@@ -36,6 +36,7 @@ import { appendFileSync, mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'n
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import fc from 'fast-check';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 
 import {
@@ -1238,7 +1239,7 @@ describe('the two readers agree on the order a citation gives — a machine whos
    * reproduced it with B 31 s behind). Ordered by `at` alone, B's event comes before the
    * enrolment that authorizes it.
    */
-  function enrolledThenWrittenBehind(after?: 'cite' | readonly string[]) {
+  function enrolledThenWrittenBehind(after?: 'cite' | readonly string[], second = 1) {
     const a = generateKeyPair();
     const b = generateKeyPair();
     commitPublicKey(a);
@@ -1251,7 +1252,7 @@ describe('the two readers agree on the order a citation gives — a machine whos
     const cited = after === 'cite' ? [enrolment as string] : after;
     const behind = taskCreated(
       {
-        at: at(1),
+        at: at(second),
         who: anchor,
         signerFp: b.fingerprint,
         subject: 't-behind',
@@ -1260,8 +1261,31 @@ describe('the two readers agree on the order a citation gives — a machine whos
       { title: 'written on B, after the pull' },
     );
     writeTail(`${b.fingerprint}-i2`, [behind], b);
-    return { a, b, enrolment: enrolment as string, tailB: `${b.fingerprint}-i2` };
+    return { a, b, enrolment: enrolment as string, tailA, tailB: `${b.fingerprint}-i2` };
   }
+
+  it('R7: over any skew, citing the enrolment is verified by both, and not citing is what `at` alone says', () => {
+    const outer = root;
+    fc.assert(
+      fc.property(fc.integer({ min: 1, max: 9 }), fc.boolean(), (second, cite) => {
+        root = mkdtempSync(join(tmpdir(), 'mnema-two-readers-r7-'));
+        try {
+          const { tailA, tailB } = enrolledThenWrittenBehind(cite ? 'cite' : undefined, second);
+          // The enrolment is at second 5. Uncited, B's event follows it only when its `at` is
+          // later, or ties and B's tail id sorts after A's: the order of before citations.
+          const byAt = second > 5 || (second === 5 && tailA < tailB);
+          const expected = cite || byAt;
+          const { productOk, verdict } = bothReaders();
+          expect(productOk).toBe(expected);
+          expect(verdict).toBe(expected ? 'VERIFIED' : 'REFUSED');
+        } finally {
+          rmSync(root, { recursive: true, force: true });
+        }
+      }),
+      { seed: Number(process.env.FC_SEED ?? 20_261_007), numRuns: 16 },
+    );
+    root = outer;
+  });
 
   it('without a citation: refused by both, because `at` puts the event before its enrolment', () => {
     enrolledThenWrittenBehind();
