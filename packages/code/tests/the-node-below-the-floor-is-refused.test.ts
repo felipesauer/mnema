@@ -58,7 +58,7 @@ describe('the built binary, under a Node below the floor', () => {
     expect(ran.status).toBe(1);
     expect(ran.stdout).toBe('');
     expect(ran.stderr).toBe(
-      'mnema needs Node 22.22.2 or a later 22, or 24.15.0 or later; this is Node 20.20.2. Install a newer Node and run it again.\n',
+      'mnema needs Node 24.15.0 or a later 24, or 26.0.0 or later; this is Node 20.20.2. Install a newer Node and run it again.\n',
     );
   });
 
@@ -98,9 +98,9 @@ describe('the guard’s parts', () => {
     ]);
     expect(acceptedBy('~22')?.[0]?.before).toEqual([22, 1, 0]);
     expect(acceptedBy('v20.20.2')?.[0]?.from).toEqual([20, 20, 2]);
-    expect(acceptedBy('^22.22.2 || >=24.15.0')?.map((a) => a.from)).toEqual([
-      [22, 22, 2],
+    expect(acceptedBy('^24.15.0 || >=26.0.0')?.map((a) => a.from)).toEqual([
       [24, 15, 0],
+      [26, 0, 0],
     ]);
     expect(acceptedBy('>22 || >=24')).toBeUndefined();
   });
@@ -113,12 +113,15 @@ describe('the guard’s parts', () => {
   });
 
   it('takes a Node only inside an alternative, so the gap between two of them is refused', () => {
-    const range = '^22.22.2 || >=24.15.0';
-    expect(floorRefusal('22.22.2', range)).toBeUndefined();
-    expect(floorRefusal('22.22.1', range)).toBeDefined();
+    const range = '^24.15.0 || >=26.0.0';
+    // The last 22 and the 22 a runner image still ships: both are below the floor now.
+    expect(floorRefusal('22.22.2', range)).toBeDefined();
+    expect(floorRefusal('22.23.3', range)).toBeDefined();
     expect(floorRefusal('23.11.0', range)).toBeDefined();
     expect(floorRefusal('24.14.0', range)).toBeDefined();
     expect(floorRefusal('24.15.0', range)).toBeUndefined();
+    expect(floorRefusal('24.99.0', range)).toBeUndefined();
+    expect(floorRefusal('25.9.0', range)).toBeDefined();
     expect(floorRefusal('26.0.0', range)).toBeUndefined();
   });
 

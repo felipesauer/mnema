@@ -15,7 +15,7 @@
     "url": "https://github.com/felipesauer/mnema/issues"
   },
   "engines": {
-    "node": "^22.22.2 || >=24.15.0"
+    "node": "^24.15.0 || >=26.0.0"
   },
   "dependencies": {
     "@mnema/code": "workspace:*",

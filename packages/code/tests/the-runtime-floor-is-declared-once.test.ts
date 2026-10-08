@@ -326,9 +326,14 @@ describe('every place that repeats the floor repeats this number', () => {
     ).toContain('.github/workflows/ci.yml');
 
     const misses = matrices
-      .filter((file) => !file.versions.includes(String(FLOOR[0])))
+      .filter((file) => !file.versions.includes(FLOOR.join('.')))
       .map((file) => `${file.where}: ${file.versions.join(', ')}`);
-    expect(misses, 'a workflow matrix never runs the floor this workspace declares').toEqual([]);
+    // The patch, not the major: a matrix that says `'24'` runs whatever 24 the runner resolves
+    // today, and the floor itself (the 24 below the one that settled the Ed25519 rule) would be
+    // declared and never run.
+    expect(misses, 'a workflow matrix never runs the exact floor this workspace declares').toEqual(
+      [],
+    );
   });
 
   it('is never undercut by a node pinned anywhere in a workflow', () => {
