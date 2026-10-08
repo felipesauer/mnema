@@ -179,6 +179,13 @@ describe('the envelope the file declares is the envelope the reader takes', () =
     expect(unreadableReason(withWhich?.event as CatalogEvent)).toBeUndefined();
   });
 
+  it('accepts the citation `after`, which one vector carries, under the rule `hashes?`', () => {
+    const cited = canonicalVectors().find((v) => 'after' in v.event);
+    expect(cited, 'no vector carries `after`, so this case checks nothing').toBeDefined();
+    expect(artifact.envelope.after).toBe('hashes?');
+    expect(unreadableReason(cited?.event as CatalogEvent)).toBeUndefined();
+  });
+
   it('refuses a top-level field the envelope does not declare', () => {
     const forged = JSON.stringify({ ...canonicalVectors()[0]?.event, notDeclared: 'x' });
     expect(() => parseEvent(forged, reg)).toThrow(/unknown event field "notDeclared"/);

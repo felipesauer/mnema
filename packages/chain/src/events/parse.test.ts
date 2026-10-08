@@ -846,3 +846,39 @@ describe("unreadableReason — the reader's verdict, before anything is sealed",
     expect(() => unreadableReason(hostile as unknown as CatalogEvent)).toThrow(RangeError);
   });
 });
+
+describe('parseEvent — the citation `after` (hashes?)', () => {
+  const h = (digit: string): string => digit.repeat(64);
+  const cited = (after: unknown): string =>
+    JSON.stringify({
+      ...JSON.parse(line(taskCreated({ ...envelope, subject: 't-1' }, { title: 'x' }))),
+      after,
+    });
+
+  it('reads an ascending list of entry hashes, and rebuilds it to the same bytes', () => {
+    const event = taskCreated(
+      { ...envelope, subject: 't-1', after: [h('1'), h('a')] },
+      { title: 'x' },
+    );
+    const once = line(event);
+    expect(parseEvent(once, reg)).toEqual(event);
+    expect(canonicalStringify(toCanonical(parseEvent(once, reg)))).toBe(once);
+  });
+
+  it('leaves an event without it exactly as it was', () => {
+    const event = taskCreated({ ...envelope, subject: 't-1' }, { title: 'x' });
+    expect(Object.keys(parseEvent(line(event), reg))).not.toContain('after');
+  });
+
+  it.each([
+    ['empty', []],
+    ['out of order', [h('b'), h('a')]],
+    ['repeated', [h('a'), h('a')]],
+    ['upper-case hex', [h('A')]],
+    ['63 characters', ['a'.repeat(63)]],
+    ['not a list', h('a')],
+    ['null', null],
+  ])('refuses one that is %s', (_name, after) => {
+    expect(() => parseEvent(cited(after), reg)).toThrow(EventParseError);
+  });
+});

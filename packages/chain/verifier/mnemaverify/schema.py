@@ -41,6 +41,9 @@ DEFAULT_SCHEMA = os.path.normpath(
 # instants any clock produced.
 _INSTANT = re.compile(r"^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}Z$")
 
+# Section 4.1's `hashes?`: an entry hash is 64 lower-case hex characters, and nothing else.
+_ENTRY_HASH = re.compile(r"^[0-9a-f]{64}\Z")
+
 # Every rule name section 4.1 defines. A file naming one that is not here is a file this
 # reader is too old for, and it says so rather than skipping the field.
 KNOWN_RULES = frozenset(
@@ -55,6 +58,7 @@ KNOWN_RULES = frozenset(
         "version",
         "kind",
         "instant",
+        "hashes?",
     }
 )
 
@@ -264,6 +268,10 @@ def _apply(kind: str, field: str, rule: str, value: Any, schema: Schema | None =
         return _require_string(kind, field, value)
     if rule == "instant":
         return _require_instant(kind, field, value)
+    if rule == "hashes?":
+        if value is _MISSING:
+            return _MISSING
+        return _require_hashes(kind, field, value)
     raise Refusal("4.1", f"event {kind!r} declares {field} under rule {rule!r}, which this reader does not know")
 
 
@@ -289,6 +297,20 @@ def _require_string(kind: str, field: str, value: Any) -> str:
     if not isinstance(value, str) or not value:
         raise Refusal("4.1", f"event {kind!r} needs a non-empty string at {field}")
     return value
+
+
+def _require_hashes(kind: str, field: str, value: Any) -> list[str]:
+    """Entry hashes, ascending and without repetition: one set has one spelling (section 1.2)."""
+    if not isinstance(value, list) or not value:
+        raise Refusal("4.1", f"event {kind!r} needs a non-empty array at {field}")
+    for at, item in enumerate(value):
+        if not isinstance(item, str) or not _ENTRY_HASH.match(item):
+            raise Refusal("4.1", f"event {kind!r} needs an entry hash at {field}[{at}]")
+        if at > 0 and not value[at - 1] < item:
+            raise Refusal(
+                "4.1", f"event {kind!r} needs {field} in ascending order with no repetition, at {field}[{at}]"
+            )
+    return list(value)
 
 
 def _require_instant(kind: str, field: str, value: Any) -> str:

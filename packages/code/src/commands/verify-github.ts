@@ -28,7 +28,8 @@
  * a party holding no key could append a link there naming an account of their own, on which
  * they had published this identity's public key — the one forgery this reading could be made
  * to say yes to. A later covered link for the same identity replaces an earlier one, in the
- * order the record is merged in (`at`, then the tail, then `seq`).
+ * order the record is merged in: `seq` within a tail, and across tails the smallest `at` among
+ * the heads whose citations (`after`) have been taken, then the tree, then the tail.
  *
  * THE COMPARISON IS BY THE RAW 32-BYTE KEY. A committed key is a PEM `spki`; a published one is
  * an OpenSSH line, `ssh-ed25519 <base64 of the wire blob> [comment]`. Each is decoded to the 32
@@ -39,7 +40,15 @@
 
 import { createHash } from 'node:crypto';
 import { readFileSync } from 'node:fs';
-import { catalogUpcasters, publicKeyFromPem, publicKeyPath, readTailEntries } from '@mnema/chain';
+import {
+  type CatalogEvent,
+  catalogUpcasters,
+  causalOrder,
+  type Entry,
+  publicKeyFromPem,
+  publicKeyPath,
+  readTailEntries,
+} from '@mnema/chain';
 import { GITHUB_SERVICE, githubLoginRefusal, type Scope } from '@mnema/core';
 import type { TreeReport } from './verify.js';
 
@@ -155,13 +164,14 @@ export function rawEd25519Of(pem: string, fingerprint?: string): string | undefi
 /** The `fetch` this reading uses when none is handed in: the platform's, asked at call time. */
 const platformFetch: FetchKeys = (url, init) => globalThis.fetch(url, init);
 
-/** A link from the record, with where it sits in the merged order. */
-interface Link {
-  readonly anchor: string;
-  readonly account: string;
-  readonly at: string;
+/**
+ * One signature-covered tail of a verified tree, and the position of that tree in the list —
+ * what the merged order is taken over.
+ */
+interface CoveredTail {
+  readonly tree: number;
   readonly tail: string;
-  readonly seq: number;
+  readonly entries: readonly Entry[];
 }
 
 /**
@@ -177,7 +187,8 @@ export async function compareWithGithub(
   const upcasters = catalogUpcasters();
   /** Each author's keys: fingerprint → raw hex (undefined when the committed file holds none). */
   const authors = new Map<string, Map<string, string | undefined>>();
-  const links: Link[] = [];
+  const covered: CoveredTail[] = [];
+  const roots: string[] = [];
   const notCompared: Scope[] = [];
 
   for (const tree of trees) {
@@ -187,38 +198,55 @@ export async function compareWithGithub(
       continue;
     }
     const layout = { root: tree.root };
+    roots.push(tree.root);
     for (const tail of tree.result.tails) {
+      const entries: Entry[] = [];
       for (const entry of readTailEntries(layout, tail.tail, upcasters)) {
         if (entry.link.seq > tail.checkpointedThrough) break;
-        const event = entry.event;
-        let keys = authors.get(event.who);
-        if (keys === undefined) {
-          keys = new Map();
-          authors.set(event.who, keys);
-        }
-        if (!keys.has(event.signerFp)) {
-          keys.set(event.signerFp, committedRaw(layout, event.signerFp));
-        }
-        if (
-          event.kind === 'account.linked' &&
-          event.who === event.subject &&
-          event.payload.service === GITHUB_SERVICE
-        ) {
-          links.push({
-            anchor: event.who,
-            account: event.payload.account,
-            at: event.at,
-            tail: tail.tail,
-            seq: entry.link.seq,
-          });
-        }
+        entries.push(entry);
       }
+      covered.push({ tree: roots.length - 1, tail: tail.tail, entries });
     }
   }
 
-  links.sort(byMergedOrder);
+  // THE ORDER THE RECORD IS MERGED IN — the chain's own (`causalOrder`): `seq` within a tail,
+  // and across tails the smallest `at` among the heads whose citations have been taken, so the
+  // last link of an identity in it is the one that stands, as the projection reads it. A sort
+  // by `(at, tail, seq)` would let a machine whose clock is behind put a link it wrote on top
+  // of another BEFORE that other, and name the account the identity had moved away from.
+  const entryAt = (tail: number, position: number): Entry =>
+    (covered[tail] as CoveredTail).entries[position] as Entry;
+  const merged = causalOrder(
+    covered.map(({ tree, tail, entries }) => ({ tree, tail, length: entries.length })),
+    {
+      at: (tail, position) => (entryAt(tail, position).event as CatalogEvent).at,
+      hash: (tail, position) => entryAt(tail, position).link.hash,
+      after: (tail, position) => (entryAt(tail, position).event as CatalogEvent).after,
+    },
+  );
+  const cursors = covered.map(() => 0);
   const accountOf = new Map<string, string>();
-  for (const link of links) accountOf.set(link.anchor, link.account);
+  for (const step of merged.steps) {
+    const position = cursors[step] as number;
+    cursors[step] = position + 1;
+    const event = entryAt(step, position).event as CatalogEvent;
+    const layout = { root: roots[(covered[step] as CoveredTail).tree] as string };
+    let keys = authors.get(event.who);
+    if (keys === undefined) {
+      keys = new Map();
+      authors.set(event.who, keys);
+    }
+    if (!keys.has(event.signerFp)) {
+      keys.set(event.signerFp, committedRaw(layout, event.signerFp));
+    }
+    if (
+      event.kind === 'account.linked' &&
+      event.who === event.subject &&
+      event.payload.service === GITHUB_SERVICE
+    ) {
+      accountOf.set(event.who, event.payload.account);
+    }
+  }
 
   const asked = new Map<string, Promise<Published>>();
   const ask = (account: string): Promise<Published> => {
@@ -305,12 +333,4 @@ function committedRaw(layout: { readonly root: string }, fingerprint: string): s
 /** Two strings by code unit — the order ids and fingerprints are listed in. */
 function byCodeUnit(a: string, b: string): number {
   return a < b ? -1 : a > b ? 1 : 0;
-}
-
-/**
- * The order the record is merged in across tails, OLDEST first: the instant, then the tail id,
- * then `seq` — so the last link of an identity is the one that stands.
- */
-function byMergedOrder(a: Link, b: Link): number {
-  return byCodeUnit(a.at, b.at) || byCodeUnit(a.tail, b.tail) || a.seq - b.seq;
 }

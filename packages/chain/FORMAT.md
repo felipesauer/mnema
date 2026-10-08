@@ -6,7 +6,7 @@ against their implementation, and get the same digests we do.
 
 **Somebody has.** [`verifier/`](./verifier/) beside this file is a second implementation, in
 Python, written from this document and importing nothing of the product it checks. It
-reproduces the 33 published vectors and the four aggregate digests, and checks the frozen
+reproduces the 34 published vectors and the four aggregate digests, and checks the frozen
 records in the test suite beside the product
 (`packages/chain/src/chain/second-reader-agrees-on-the-record.test.ts`), on honest records
 and on every input the format refuses. The two verdicts differ in two pinned cases. With the
@@ -54,9 +54,10 @@ compile until it has one.
 To check an implementation: canonicalize each `event` by the rules in §1, SHA-256
 the bytes, and compare with the row's `sha256`.
 
-The vectors are **exemplars, not a schema** — one event per kind, from which a
-required field and an optional one that happens to be present look identical. The
-schema is the other artifact, `event-schema.json`, described in §4.1.
+The vectors are **exemplars, not a schema** — one event per kind, and a second
+`memory.captured` that carries the citation `after` (§4.1), from which a required
+field and an optional one that happens to be present look identical. The schema is
+the other artifact, `event-schema.json`, described in §4.1.
 
 ## 1. Canonicalization: an event becomes bytes
 
@@ -163,6 +164,13 @@ have its events counted a second time with everything verifying. A verifier
 refuses a tail whose fingerprint prefix is not a committed key
 (`packages/chain/src/chain/second-reader-agrees-on-the-record.test.ts`), and the
 locally chosen suffix is bound by the tail proof below.
+
+An entry hash is also what a CITATION names. The envelope's optional `after` (§4.1)
+lists the entry hashes of the heads of other tails that the writer had read when it
+wrote, so a reader can place the event after them ("Reading many tails"). It is in
+the envelope, and so in the content a checkpoint signs (§5, §6); it is not in the
+link, because the link is protected by this hash alone, which takes no key, and a
+citation there could be swapped by whoever can write the repository.
 
 Sequence numbers start at 0 and are contiguous within a tail; a verifier that
 meets a gap reports it and names where
@@ -279,8 +287,9 @@ schema.
   at. A kind that gains a second version gains a second row; the file's shape does
   not change, which is what makes such a change one visible row in a diff.
 - **The top-level keys of an event are the keys of `envelope`, plus `payload`.**
-  Six envelope fields are required and two — `which` and `run` — are optional, and
-  an event carrying one of those is an ordinary event rather than an anomaly.
+  Six envelope fields are required and three — `which`, `run` and `after` — are
+  optional, and an event carrying one of those is an ordinary event rather than an
+  anomaly.
 - **Every object here is CLOSED.** A key that the matching declaration does not
   name is refused, in the envelope, in the payload, and inside `transitionFields`.
   The reader rebuilds each object from exactly the declared keys and never returns
@@ -304,6 +313,7 @@ vocabulary:
 | `string[]?` | absent, or a non-empty array of non-empty strings |
 | `version` | (envelope only) present, and a whole number of at least 1; with `kind` it selects the contract |
 | `kind` | (envelope only) present, and the non-empty string naming the contract |
+| `hashes?` | (envelope only) absent, or a non-empty array of entry hashes (§3) — 64 lower-case hex characters each — in strictly ascending order. Strictly, because an array's order is part of its canonical bytes (§1): any other order, or a repetition, would be a second spelling of the same set. `after` is the one field under it |
 | `instant` | (envelope only) present, and the exact spelling `Date.prototype.toISOString` produces — UTC, millisecond precision, trailing `Z` — of a real date. Every producer stamps `at` through the clock, which IS `toISOString`, so a timezone offset or a missing sub-second digit is a corrupt or forged line rather than a differently-spelled one |
 
 An implementation that applies this table refuses what this product refuses: the
@@ -461,9 +471,26 @@ them.
 **The order the facts are folded in.** Enrolment spans tails — a key enrolled on
 one machine authorizes events on another — so the fold runs over **every tail
 merged into one order**: within a tail, `seq` order, which the hash chain proves
-and which nothing may override; across tails, the head with the smallest `at` goes
-next, ties broken by tail id ascending. That is the same k-way merge a reader uses
-for anything else that has to be deterministic across tails.
+and which nothing may override; across tails, among the heads whose citations
+(`after`) have all been taken, the one with the smallest `at` goes next, ties broken by
+tail id ascending. That is the same merge a reader uses for anything else that has to be
+deterministic across tails ("Reading many tails").
+
+So a key's first event follows its enrolment whatever the two machines' clocks said, as
+long as it cites the head of the enroller's tail it had read — which is at or after the
+enrolment, since it was read after it. This product's writer always cites. An event that
+cites nothing is placed by its `at` alone, as every event was before citations existed:
+then a second machine whose clock is behind the enroller's stamps its first event before
+the enrolment, and the fold refuses an honest record. Both halves are held over drawn
+skews, by both readers (`packages/chain/src/chain/second-reader-agrees-on-enrolment.test.ts`,
+"R7: over any skew, citing the enrolment is verified by both, and not citing is what `at`
+alone says").
+
+A citation of an entry hash the record does not hold is ignored in the order and named
+in this product's census, informational; so is an event stamped before an entry it cites,
+which is a writer's clock measured from the record alone. Neither is a break (same file,
+"a citation of an entry the record does not hold: ignored in the order, said by both";
+"the clock that ran behind what it cites is measured and said, informational, by both").
 
 **Three facts change the set**, and each is refused as an operation — not merely
 recorded — when its own conditions do not hold. `subject` is always the anchor.
@@ -678,7 +705,7 @@ codebase it is about. The first kind to gain a `v2` should gain a published vect
 for the old `v` alongside it.
 
 The top-level keys of an event are the keys `event-schema.json` declares under
-`envelope`, plus `payload` — **eight names, of which two are optional**. This
+`envelope`, plus `payload` — **nine envelope names, of which three are optional**. This
 paragraph used to read *"the seven top-level keys of an event are `at`, `kind`,
 `payload`, `signerFp`, `subject`, `v` and `who`"*, and that sentence was false: it
 was the INTERSECTION of the published vectors, and `which` and `run` were carried
@@ -689,6 +716,10 @@ invited, and **refused an honest event for carrying `which`**, on a record this
 product read as fine (§4.1, gap G25). A required field and an optional one look
 identical in an exemplar, which is the whole reason the declarations are now
 published rather than described.
+
+**`after` moved no `v`.** It is envelope, not a payload contract, and both digests are
+taken over the written form as they always were. A reader from before it refuses a record
+that carries one, because the envelope is closed (§4.1): the consequence a new kind has too.
 
 ## 8. The external witness (T3)
 
@@ -888,31 +919,69 @@ the committed file, in clear; the hash §6.3 records protects the event, not the
 
 ## Reading many tails
 
-A record holds one tail per machine (§4), and nothing in the bytes orders one tail against
-another: each tail is proved in its own `seq` order by its own hash chain (§3), and no event names
-an event of a different tail. A reader that wants ONE sequence of events — to replay them into a
-state — has to choose one. This section says which choice the product's reader makes, and what it
-leaves undecided. It describes what the code does; it is not part of what a verifier checks, and
-another reader may order the tails otherwise without disagreeing about a single byte. Every
-sentence names the case that holds it; all of them are in
-`packages/core/src/projections/many-tails.properties.test.ts` unless another file is named, and
-each compares the reader with a model of the sentence, a few lines long, written in the test.
+A record holds one tail per machine (§4), and each tail is proved in its own `seq` order by its own
+hash chain (§3). Across tails, the bytes carry one kind of order and only one: a CITATION. The
+envelope's optional `after` (§4.1) names the entry hashes of the heads of other tails that the
+writer had read when it wrote. A reader that wants ONE sequence of events — to replay them into a
+state — has to choose the rest. This section says which choice the product's reader makes, and what
+it leaves undecided. Apart from §6.2, which folds enrolment in this same order, it describes what
+the code does and is not part of what a verifier checks: another reader may order the tails
+otherwise without disagreeing about a single byte. Every sentence names the case that holds it.
+Unless another file is named, a case named P or MR is in
+`packages/core/src/projections/many-tails.properties.test.ts`, and a case named R1 to R4 or R8 in
+`packages/chain/src/chain/causal-order.properties.test.ts`; each compares the reader with a model of
+the sentence, a few lines long, written in the test.
 
 **The order inside a tail is `seq`, always.** The reader never compares the `at` of two events of
 one tail, so a clock that stepped back between two appends does not move the later-sequenced event
 earlier. A tail's events appear in the merged sequence in `seq` order whatever their `at` says (P1:
-"within a tail the order is seq, even when at runs backwards").
+"within a tail the order is seq, even when at runs backwards"), and whatever they cite (R5: "under
+clocks that disagree, the merge is the causal model, and every tail is read in seq order").
 
 **The order across tails is a selection of heads.** Each tail is a queue, read from `seq` 0. At
 every step the reader looks at the first unread event of each tail that still has one — its head —
-and takes the head with the smallest `at`; a tie goes to the head of the tail with the smaller key,
+and keeps the heads that are READY: every entry the head cites has already been taken. Among those
+it takes the head with the smallest `at`; a tie goes to the head of the tail with the smaller key,
 the key being the tail id compared as text (by UTF-16 code unit). The tail whose head was taken
 advances by one, and the step repeats until every tail is read. `at` is the text of the field,
-compared as text. This is not a sort of all the events by `(at, tail, seq)`: such a sort would put
-a later-sequenced event of a tail before an earlier one the moment their `at` ran backwards, and
-the selection never does. One consequence is worth stating, because it surprises: an event whose
-`at` is far in the future holds back every event after it in its own tail, since none of them can
-be read until it is ("the optimized merge equals the naive one over generated tails").
+compared as text. So an event is never taken before what it cites, whatever the two clocks said (R1:
+"an entry is never taken before what it cites, whatever the instants say"). With no citation every
+head is ready, and the order is exactly the selection by `at` that every record was read in before
+citations existed (R2: "with no citation, the order is exactly the selection of heads by at of
+before"; and over records on disk, "the optimized merge equals the naive one over generated tails").
+This is not a sort of all the events by `(at, tail, seq)`: such a sort would put a later-sequenced
+event of a tail before an earlier one the moment their `at` ran backwards, and the selection never
+does. One consequence is worth stating, because it surprises: an event whose `at` is far in the
+future holds back every event after it in its own tail, since none of them can be read until it is
+(the same case).
+
+**A citation only ever holds its own event back.** It never moves anything earlier: adding a
+citation to an event moves that event, the events after it in its tail, and whatever cites those,
+and leaves the order of everything else as it was (R3: "a citation added to an entry moves nothing
+that does not depend on that entry"). The writer controls its own `at` already, which moves its
+events either way, so a citation gives no capability a writer did not have. A citation of a hash
+the record does not hold — a clone that lacks a tail, a tail that was cut — is ignored: the order is
+the one the event would have without it (R4: "a citation of a hash the tree does not hold changes
+nothing, and is returned"), and this product's `verify` names it in its census, informational (§6.2).
+If no head is ready, which takes a cycle of citations and so a SHA-256 collision — a cited hash
+existed before the entry citing it was written — the head with the smallest `at` is taken anyway,
+so the order is total whatever the bytes say; that case is not held by a test, because an honest
+writer cannot produce it.
+
+**What this product's writer cites.** At every append, the head of each other tail of the same
+record that its own tail has not cited yet, read off the disk as it writes — what existed when it
+wrote, and so nothing it cannot back. Nothing new to cite, no field
+(`packages/chain/src/chain/cited-heads.test.ts`, "cites the head of another tail the first time,
+and not again until that tail moves"). A writer cites the tails of its own record only.
+
+**What a citation fixes.** Three honest records the selection by `at` alone read wrong, each
+written by a machine whose clock is an hour behind, on top of what it had pulled
+(`packages/core/src/projections/the-order-follows-what-was-read.test.ts`): a decision superseded
+there read as still in force; a task cancelled there read as reopened, with the cancellation named
+as a divergence; a link retracted there went on standing. With the citation each reads as it
+happened ("with the citation it reads superseded, and its successor in force"; "with the citation
+it reads cancelled, and nothing is named"; "with the citation the link is retracted"). The fourth is
+§6.2's: an enrolled machine's first event refused by `verify` on an honest record.
 
 **The order does not depend on how the reader met the tails.** The tails read as the same sequence
 whatever order they were written into the directory, copied in, or listed (MR1: "the order the
@@ -937,22 +1006,28 @@ prefix, and chains"; "a cut BELOW a checkpoint is the one a verifier calls broke
 **A reader that keeps a cache gets the same sequence as one that replays.** A cache brought
 forward arrival by arrival, or deleted at any point and built again, answers what a replay of the
 whole record answers (P2: "after any arrivals, with the cache deleted at a drawn point, it
-answers what a replay answers"). When an arrival would sort before something the cache already
-holds — a tail from a colleague that carries older facts — the cache is built again rather than
-extended.
+answers what a replay answers"; and with every machine citing, R6: "a cache brought forward is a
+replay, with citations and clocks that disagree"). When an arrival would sort before something the
+cache already holds — a tail from a colleague that carries older facts — the cache is built again
+rather than extended. So it is when an arrival is an entry a covered event cited and could not find,
+since that event now waits for it (R6: "an arrival that a covered event cited, and could not find,
+is not a suffix — the cache reads again"), and when an arrival cites an entry the cache cannot
+place without reading the record again (R6: "an ARRIVAL citing what the record does not hold yet
+still waits for it when it comes, read incrementally").
 
 **Several trees are merged by the same selection, with the tree's position in the tie.** A reader
-that merges more than one record (a team's committed tree and a person's own) qualifies each
-tail's key with the position of its tree in the list it was given, written as `<position>:<tail
-id>` and compared as text. So a tie between tails of different trees goes to the tree with the
-smaller position written out, and only then to the tail id (MR2: "across trees, a tie goes to the
-tree first and then the tail"). With fewer than ten trees that is the tree listed first. With ten
-or more it is not: `"10:…"` sorts before `"1:…"`, so the eleventh-listed tree (position 10) is
-read before the second (position 1) on a tie. That is how the code behaves today, not a choice anyone made, and it is fixed
-here as it is (across ten trees or more: "today, the tree position in the tie is compared as
-text"). Where no two heads share an instant, the trees merged are the single record holding all
-their tails, whichever order they are listed in (MR2: "with no two heads on the same instant, the
-parts joined are the whole").
+that merges more than one record (a team's committed tree and a person's own) breaks a tie between
+tails of different trees by the position of each tree in the list it was given, compared as a
+NUMBER, and only then by the tail id (MR2: "across trees, a tie goes to the tree first and then the
+tail: the model of that says it"). So with ten trees or more the eleventh listed is read after the
+second on a tie, as with fewer (across ten trees or more: "the tree position in the tie is compared
+as a number, so the tree listed eleventh sorts after the one listed second"). It used to be
+compared as text, which put `"10:…"` before `"1:…"`; nothing was written that depended on it. A
+citation resolves inside its own tree, so it reorders a tree against itself and nothing else, and
+merging the trees is merging each tree and then the trees by `at` and position (R8: "merging the
+trees is merging each tree and then the trees, by at and then position"). Where no two heads share
+an instant, the trees merged are the single record holding all their tails, whichever order they
+are listed in (MR2: "with no two heads on the same instant, the parts joined are the whole").
 
 **What is detected.** Two moves of one decision, or one skill, out of the same state are two facts
 signed by machines that had not seen each other; the reader names them whichever of the two the
@@ -966,17 +1041,20 @@ carry the same `ADR-<n>` label are reported as a collision, and neither label is
 (`packages/core/src/projections/decision.test.ts`, "adrCollisions — the label collision
 detector").
 
-**What is not resolved.** The sequence does not decide which of two concurrent moves wins. The state
-a projection shows is the one the last move in the sequence leaves, so it is whichever move the
-selection puts last, and the divergence is named beside it (MR4: "what is read of X is what the
-model reads of X"). Nothing here corrects a clock. A machine whose clock is behind sorts its events
-earlier than events it had already read, and for tasks that can make an honest sequence read as a
-divergence; the behaviour is fixed as it is today, not endorsed (clocks that disagree: "today, a
-clock that runs behind sorts an honest task sequence out of its order, and the move is named as a
-divergence"). What does not change under any clock is the order inside a tail, and that two moves
-out of one state of a decision are named (clocks that disagree: "today, a machine with a skewed
-clock keeps its own order, and two moves out of one state are always named"). No causal order across
-tails exists in the record, and none is invented here.
+**What is not resolved.** The sequence does not decide which of two concurrent moves wins — two
+moves neither of which cites the other. The state a projection shows is the one the last move in
+the sequence leaves, so it is whichever move the selection puts last, and the divergence is named
+beside it (MR4: "what is read of X is what the model reads of X"). Nothing here corrects a clock:
+`at` stays the wall clock its writer stamped. Where nothing is cited, a machine whose clock is
+behind still sorts its events earlier than events it had already read, and for tasks that can make
+an honest sequence read as a divergence; that is what a record written before citations reads as,
+fixed and not endorsed (clocks that disagree, with nothing cited: "uncited, a clock that runs
+behind sorts an honest task sequence out of its order, and the move is named as a divergence").
+What does not change under any clock is the order inside a tail, and that two moves out of one
+state of a decision are named (the same: "uncited, a machine with a skewed clock keeps its own
+order, and two moves out of one state are always named"). Whether two moves of a task that do not
+cite each other were concurrent is not yet read from the citations: tasks are still read by their
+position.
 
 ## What this document does **not** promise
 

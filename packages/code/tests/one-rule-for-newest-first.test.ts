@@ -165,7 +165,6 @@ interface Rostered {
 const THE_ORDERINGS: readonly Rostered[] = [
   { file: 'code/src/commands/usage.ts', by: 'byStartedDesc', means: NEWEST },
   { file: 'code/src/commands/verify-github.ts', by: 'byCodeUnit', means: OTHER },
-  { file: 'code/src/commands/verify-github.ts', by: 'byMergedOrder', means: OLDEST },
   { file: 'code/src/repl/complete.ts', by: 'theOrder', means: OTHER },
   { file: 'code/src/transcripts.ts', by: 'oldestSessionFirst', means: OLDEST },
   { file: 'context/src/context/bootstrap.ts', by: 'byUpdatedDesc', means: NEWEST },
@@ -482,7 +481,7 @@ describe('one rule for newest first', () => {
     expect(INSTALLED.length).toBeGreaterThanOrEqual(44);
     expect(NAMED.length).toBeGreaterThanOrEqual(20);
     expect(THE_ORDERINGS.filter((each) => each.means === NEWEST)).toHaveLength(7);
-    expect(THE_ORDERINGS.filter((each) => each.means === OLDEST)).toHaveLength(5);
+    expect(THE_ORDERINGS.filter((each) => each.means === OLDEST)).toHaveLength(4);
   });
 
   it('installs no ordering that is not on the roster', () => {
@@ -564,11 +563,10 @@ describe('one rule for newest first', () => {
   it('leaves the oldest-first orderings alone — the control', () => {
     const oldest = THE_ORDERINGS.filter((each) => each.means === OLDEST);
 
-    // These five order from the OLDEST, where an ascending tie-break is the one that
+    // These four order from the OLDEST, where an ascending tie-break is the one that
     // agrees with the instant. If a tightening of this file ever reddens one of them,
     // the tightening reached past what it was for.
     expect(oldest.map((each) => each.file).sort()).toEqual([
-      'code/src/commands/verify-github.ts',
       'code/src/transcripts.ts',
       'context/src/context/switches.ts',
       'context/src/intelligence/exposure.ts',
