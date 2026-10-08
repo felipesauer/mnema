@@ -5,7 +5,8 @@ name: Host contract
 # opening at session start, the rules beside a write, a refusal and a pause, the 10,000 and 2,048
 # ceilings, the shell going round a rule, the hooks failing open — is read off the request the host
 # sends next, and off the file that was or was not written. The same is done for VS Code's agent
-# with the real editor under a virtual screen. The cases are `packages/code/tests/host-contract/`;
+# with the real editor under a virtual screen, and for Codex with its real binary against a stand-in
+# that speaks the Responses API. The cases are `packages/code/tests/host-contract/`;
 # this file only gives them a host. Cursor is not here: it needs an account, and its capture is
 # made by hand (`plugin/captures/`).
 #
@@ -200,11 +201,93 @@ jobs:
           MNEMA_HOST_CONTRACT_HOST: vscode
         run: unshare -rn bash -c 'ip link set lo up && exec xvfb-run -a ./node_modules/.bin/vitest run --config vitest.host-contract.config.ts'
 
+  # THE SAME CONTRACT FOR CODEX. The binary is the one npm installs from `@openai/codex` (Apache-2.0),
+  # and before it runs, npm checks the registry's signature of each package and the provenance
+  # attestation that says which repository and which tag built it; the job stops unless that is
+  # `openai/codex` at the tag of the version asked for. The model is a stand-in that speaks the
+  # Responses API, reached through a model provider of Codex's config with a made-up key: no
+  # account, no key, no secret. Codex installs the plugin from this checkout, as a person would
+  # (`codex plugin marketplace add`), inside the namespace. The pinned version is the last one in
+  # the matrix line; a run that is not a pull request or a push tries `latest`.
+  codex:
+    name: host contract (codex ${{ matrix.version }})
+    runs-on: ubuntu-24.04
+    strategy:
+      fail-fast: false
+      matrix:
+        version: ${{ fromJSON(contains(fromJSON('["schedule","workflow_dispatch"]'), github.event_name) && '["latest"]' || '["0.161.0"]') }}
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: pnpm/action-setup@v6
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version: '24'
+          cache: 'pnpm'
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Build
+        run: pnpm build
+
+      # The only step that talks to the registry, and it runs before the binary starts.
+      - name: Install the host and check its signatures and its provenance
+        env:
+          WANTED: ${{ matrix.version }}
+        run: |
+          set -euo pipefail
+          case "$WANTED" in
+            latest) VERSION=$(npm view @openai/codex dist-tags.latest) ;;
+            *) VERSION="$WANTED" ;;
+          esac
+          [ -n "$VERSION" ] || { echo "no version for $WANTED"; exit 1; }
+          mkdir -p "$RUNNER_TEMP/codex" && cd "$RUNNER_TEMP/codex"
+          npm init -y >/dev/null
+          npm install --ignore-scripts "@openai/codex@$VERSION"
+          npm audit signatures
+          # The provenance of the package that carries the binary names the repository and the tag.
+          curl -fsSL "https://registry.npmjs.org/-/npm/v1/attestations/@openai%2fcodex@$VERSION-linux-x64" > attestations.json
+          BUILT=$(node -e "
+            const j = JSON.parse(require('fs').readFileSync('attestations.json', 'utf8'));
+            const a = j.attestations.find((x) => x.predicateType === 'https://slsa.dev/provenance/v1');
+            const p = JSON.parse(Buffer.from(a.bundle.dsseEnvelope.payload, 'base64'));
+            const w = p.predicate.buildDefinition.externalParameters.workflow;
+            console.log(w.repository + ' ' + w.ref);
+          ")
+          echo "built by: $BUILT"
+          [ "$BUILT" = "https://github.com/openai/codex refs/tags/rust-v$VERSION" ] \
+            || { echo "the binary was not built by openai/codex at rust-v$VERSION"; exit 1; }
+          BIN="$PWD/node_modules/@openai/codex-linux-x64/vendor/x86_64-unknown-linux-musl/bin/codex"
+          REPORTED=$("$BIN" --version)
+          echo "$REPORTED"
+          [ "$REPORTED" = "codex-cli $VERSION" ] || { echo "the binary reports $REPORTED, not $VERSION"; exit 1; }
+          {
+            echo "MNEMA_HOST_CONTRACT_CODEX=$BIN"
+            echo "MNEMA_HOST_CONTRACT_CODEX_VERSION=$VERSION"
+          } >> "$GITHUB_ENV"
+          {
+            echo "### Host measured"
+            echo "- Codex $VERSION (asked for \`$WANTED\`), built by $BUILT"
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Install strace
+        run: sudo apt-get install -y strace
+
+      - name: Allow a network namespace of our own
+        run: sudo sysctl -w kernel.apparmor_restrict_unprivileged_userns=0
+
+      - name: Hold the contract, with only loopback
+        env:
+          MNEMA_HOST_CONTRACT_HOST: codex
+        run: unshare -rn bash -c 'ip link set lo up && exec ./node_modules/.bin/vitest run --config vitest.host-contract.config.ts'
+
   # WHEN THE WEEKLY RUN FAILS, SOMEBODY HAS TO KNOW. One issue, opened with the workflow's own token
   # and kept open: a second failure while it is open adds a comment and opens nothing.
   tell-somebody:
     name: open an issue
-    needs: [claude-code, vscode]
+    needs: [claude-code, vscode, codex]
     if: ${{ failure() && contains(fromJSON('["schedule","workflow_dispatch"]'), github.event_name) }}
     runs-on: ubuntu-24.04
     permissions:
@@ -216,10 +299,11 @@ jobs:
           RUN: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
           CLAUDE_CODE: ${{ needs.claude-code.result }}
           VS_CODE: ${{ needs.vscode.result }}
+          CODEX: ${{ needs.codex.result }}
         run: |
           set -euo pipefail
           # One issue per host that failed, named for it.
-          for HOST in "Claude Code:$CLAUDE_CODE" "VS Code:$VS_CODE"; do
+          for HOST in "Claude Code:$CLAUDE_CODE" "VS Code:$VS_CODE" "Codex:$CODEX"; do
             NAME="${HOST%%:*}"; RESULT="${HOST#*:}"
             [ "$RESULT" = "failure" ] || continue
             TITLE="The host contract failed against a newer $NAME"

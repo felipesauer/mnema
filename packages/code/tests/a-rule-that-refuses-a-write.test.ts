@@ -119,7 +119,12 @@ function counts(): Record<string, number> {
  * relative to the session's directory.
  */
 function aPatchAdding(relative: string): string {
-  return ['*** Begin Patch', `*** Add File: ${relative}`, '+export const probe = 1;', '*** End Patch'].join('\n');
+  return [
+    '*** Begin Patch',
+    `*** Add File: ${relative}`,
+    '+export const probe = 1;',
+    '*** End Patch',
+  ].join('\n');
 }
 
 /** The payload a host hands its hook before a write of `relative`. */
