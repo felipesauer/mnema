@@ -51,7 +51,7 @@ import type { Render } from '../src/presentation/render.js';
 import { renderStyled } from '../src/presentation/styled.js';
 import { statement } from '../src/presentation/verdict.js';
 import { erasesTheScreen } from '../src/repl/erasing.js';
-import { BEFORE_THE_BAR, THE_INSET } from '../src/repl/inset.js';
+import { THE_INSET } from '../src/repl/inset.js';
 import { type PanelForm, panelFor } from '../src/repl/panel.js';
 import { openSession, tips } from '../src/repl/session.js';
 
@@ -317,13 +317,11 @@ function openingRows(page: string): string[] {
  *     PAGE'S OWN. A rule of a frame runs down; a vertical of the art is in a different column on
  *     every row of it, and a row of text holds none.
  *
- *     THE EXCEPTION IS NEW AND IT IS NAMED RATHER THAN LOOSENED. The page draws a GUIDE down the
- *     margin of what the session says — the line an editor runs down the left of a file
- *     (`repl/region.ts`, `bar`; `repl/inset.ts`) — and it is a vertical in one column of every
- *     row of the roll, which is exactly the shape this rule was written to catch. What tells the
- *     two apart is the column: the guide is at the page's own edge and never anywhere else, so a
- *     box drawn around anything still puts a side somewhere this accuses, and its corners are
- *     caught by the rule above whatever it does.
+ *     THE EXCEPTION IS GONE, AND THE RULE IS WHOLE AGAIN. The page drew a GUIDE down the margin of
+ *     what the session says, a vertical in one column of every row of the roll — which is exactly
+ *     the shape this rule was written to catch — and this named its column as the one place a
+ *     vertical may be. The guide is not drawn any more (`repl/inset.ts`), so there is no column
+ *     that is let through: a box drawn around anything puts a side somewhere this accuses.
  *
  * A run of {@link RUN} is NOT accused, and that is deliberate rather than an omission: an edge
  * made of it ends at corners, which the first rule already catches, and the two rules the
@@ -340,7 +338,6 @@ function theFrameOn(rows: readonly string[]): string[] {
     const above = [...(rows[at - 1] as string)];
     const below = [...(rows[at] as string)];
     for (let column = 0; column < Math.min(above.length, below.length); column++) {
-      if (column === BEFORE_THE_BAR) continue;
       if (above[column] === RULE && below[column] === RULE) {
         found.push(`a side down column ${column} of rows ${at - 1} and ${at}`);
       }
