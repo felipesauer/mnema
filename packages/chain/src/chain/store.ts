@@ -9,6 +9,7 @@
 
 import { existsSync, readdirSync, readFileSync, statSync } from 'node:fs';
 
+import { decodeStoredBytes } from '../events/stored-json.js';
 import type { UpcasterRegistry } from '../events/upcaster.js';
 import { type Checkpoint, parseCheckpoint } from './checkpoint.js';
 import { describeLinkBreak, type Entry, linkBreakAt, parseEntry } from './entry.js';
@@ -23,7 +24,9 @@ import {
   tailDir,
   tailsDir,
 } from './layout.js';
-import { locatedFromEnd, parsedFromEnd, parseStoredLine } from './lines.js';
+import { locatedFromEnd, parsedFromEnd, parseStoredLine, splitLines } from './lines.js';
+
+const NEWLINE = 0x0a;
 
 /** Lists the tail ids present in a chain (each is one machine's directory). */
 export function listTails(layout: ChainLayout): string[] {
@@ -111,7 +114,8 @@ function committedKey(layout: ChainLayout, fingerprint: string): CommittedKey | 
   if (!existsSync(path)) return null;
   let key: KeyObject;
   try {
-    key = publicKeyFromPem(readFileSync(path, 'utf-8'));
+    // A file of the record like a line of it: bytes that are not UTF-8 are no key.
+    key = publicKeyFromPem(decodeStoredBytes(readFileSync(path)));
   } catch {
     return null;
   }
@@ -180,9 +184,11 @@ interface SegmentRead {
  * disagree with this one.
  */
 function entriesOfSegment(file: string, upcasters: UpcasterRegistry, isLast: boolean): SegmentRead {
-  const raw = readFileSync(file, 'utf-8');
-  const endsWithNewline = raw.endsWith('\n');
-  const lines = raw.split('\n');
+  // Read as BYTES: each line is decoded by {@link parseStoredLine}, which refuses one
+  // that is not UTF-8 instead of reading U+FFFD in its place.
+  const raw = readFileSync(file);
+  const endsWithNewline = raw.at(-1) === NEWLINE;
+  const lines = splitLines(raw);
   const entries: Entry[] = [];
   let partialFinalLine = false;
   // Hoisted over the loop: the locus costs nothing per line and is read only when
@@ -196,10 +202,10 @@ function entriesOfSegment(file: string, upcasters: UpcasterRegistry, isLast: boo
   let offset = 0;
   let bytes = 0;
   for (let i = 0; i < lines.length; i += 1) {
-    const line = lines[i] as string;
-    // In BYTES, which `line.length` is not: a single non-ASCII character in a title
-    // would put every offset after it past where the entry really ends.
-    const size = Buffer.byteLength(line, 'utf-8');
+    const line = lines[i] as Uint8Array;
+    // In BYTES, which a decoded line's length is not: a single non-ASCII character in a
+    // title would put every offset after it past where the entry really ends.
+    const size = line.length;
     const start = offset;
     offset += size + 1;
     if (line.length === 0) continue;
@@ -530,14 +536,15 @@ export function readTailSince(
 export function readTailCheckpoints(layout: ChainLayout, tailId: string): Checkpoint[] {
   const file = checkpointsPath(layout, tailId);
   if (!existsSync(file)) return [];
-  const raw = readFileSync(file, 'utf-8');
-  const endsWithNewline = raw.endsWith('\n');
-  const lines = raw.split('\n');
+  // As bytes, for the reason {@link entriesOfSegment} reads a segment so.
+  const raw = readFileSync(file);
+  const endsWithNewline = raw.at(-1) === NEWLINE;
+  const lines = splitLines(raw);
   const checkpoints: Checkpoint[] = [];
   let at = 0;
   const where = (): string => `${file} line ${at}`;
   for (let i = 0; i < lines.length; i += 1) {
-    const line = lines[i] as string;
+    const line = lines[i] as Uint8Array;
     if (line.length === 0) continue;
     const couldBeTorn = !endsWithNewline && i === lines.length - 1;
     at = i + 1;

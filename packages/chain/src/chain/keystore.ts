@@ -36,6 +36,7 @@ import {
   writeFileSync,
   writeSync,
 } from 'node:fs';
+import { decodeStoredBytes } from '../events/stored-json.js';
 import { CodedError } from './coded-error.js';
 import {
   isProtected,
@@ -350,7 +351,8 @@ export function committedPublicKey(
   if (!existsSync(path)) return null;
   let publicKey: KeyObject;
   try {
-    publicKey = publicKeyFromPem(readFileSync(path, 'utf-8'));
+    // Strictly, as the verifier reads it: bytes that are not UTF-8 are no key.
+    publicKey = publicKeyFromPem(decodeStoredBytes(readFileSync(path)));
   } catch {
     return null;
   }

@@ -103,6 +103,7 @@
 
 import { existsSync, readFileSync } from 'node:fs';
 import { mayRetract } from '../events/retraction.js';
+import { decodeStoredBytes } from '../events/stored-json.js';
 import type { UpcasterRegistry } from '../events/upcaster.js';
 import { oneLine } from '../one-line.js';
 import { isBackupRegistration, listRegistrations } from './backup.js';
@@ -1350,8 +1351,9 @@ function verifyTailOwnership(
   let proof: ReturnType<typeof parseTailProof>;
   try {
     // The file is one canonical line and the newline that ends it, which is not part of
-    // the line: the second reader strips it the same way before it compares bytes.
-    proof = parseTailProof(readFileSync(path, 'utf-8').replace(/\n+$/, ''));
+    // the line: the second reader strips it the same way before it compares bytes. Decoded
+    // strictly, so bytes that are not UTF-8 are a malformed proof and not U+FFFD.
+    proof = parseTailProof(decodeStoredBytes(readFileSync(path)).replace(/\n+$/, ''));
   } catch (error) {
     push(
       `tail ${oneLine(tail)} has a malformed ownership proof: ${oneLine((error as Error).message)}`,

@@ -739,7 +739,9 @@ def verify_record(root: str, report: Report, require: str = "chained") -> None:
         report.break_out(f"there is no record at {root}")
         return
 
-    ring, misnamed = load_keyring(root)
+    ring, misnamed, undecodable = load_keyring(root)
+    for name, refusal in undecodable:
+        report.fail(refusal.section, refusal.what, f"keys/{name}")
     for name in misnamed:
         report.fail(
             "6",

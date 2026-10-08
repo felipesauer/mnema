@@ -44,6 +44,7 @@ import {
   type CatalogEvent,
   catalogUpcasters,
   causalOrder,
+  decodeStoredBytes,
   type Entry,
   publicKeyFromPem,
   publicKeyPath,
@@ -324,7 +325,9 @@ async function publishedKeys(
 /** The raw key a tree commits for `fingerprint`, or undefined when it commits none. */
 function committedRaw(layout: { readonly root: string }, fingerprint: string): string | undefined {
   try {
-    return rawEd25519Of(readFileSync(publicKeyPath(layout, fingerprint), 'utf-8'), fingerprint);
+    // Strictly, as the verifier reads the same file: bytes that are not UTF-8 are no key.
+    const pem = decodeStoredBytes(readFileSync(publicKeyPath(layout, fingerprint)));
+    return rawEd25519Of(pem, fingerprint);
   } catch {
     return undefined;
   }

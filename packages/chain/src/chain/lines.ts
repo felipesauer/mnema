@@ -15,14 +15,35 @@
  * has no newline before it, reaching offset 0 ends a line too.
  *
  * Newlines are found at the BYTE level, which is what makes this safe for UTF-8:
- * 0x0A never appears inside a multi-byte sequence, so a line is decoded only once
- * every one of its bytes is in hand, and a character split across a chunk
- * boundary is never seen half-decoded.
+ * 0x0A never appears inside a multi-byte sequence, so a line is handed on as the
+ * bytes it is and decoded only by {@link parseStoredLine}, every one of its bytes
+ * in hand — a character split across a chunk boundary is never seen half-decoded,
+ * and bytes that are not UTF-8 are refused there rather than read past here.
  */
 
 import { closeSync, fstatSync, openSync, readSync } from 'node:fs';
 
+import { decodeStoredBytes } from '../events/stored-json.js';
+
 const NEWLINE = 0x0a;
+
+/**
+ * A whole file's lines, as bytes — exactly the pieces `content.split('\n')` would produce,
+ * so a file that ends in a newline ends in an empty piece. Split on the byte and not on a
+ * decoded string, so that what each piece is decoded as is {@link parseStoredLine}'s to say.
+ */
+export function splitLines(bytes: Uint8Array): Uint8Array[] {
+  const lines: Uint8Array[] = [];
+  let start = 0;
+  for (;;) {
+    const newline = bytes.indexOf(NEWLINE, start);
+    if (newline < 0) break;
+    lines.push(bytes.subarray(start, newline));
+    start = newline + 1;
+  }
+  lines.push(bytes.subarray(start));
+  return lines;
+}
 
 /**
  * How many bytes one backward read pulls in. Sized so the common line — an entry
@@ -34,14 +55,16 @@ const CHUNK_BYTES = 64 * 1024;
 
 /** One line of a stored file, as the backward walk found it. */
 export interface StoredLine {
-  /** The line's text, without its terminating newline. */
-  readonly text: string;
+  /**
+   * The line's bytes, without its terminating newline — NOT its text: what they decode to,
+   * and whether they decode at all, is {@link parseStoredLine}'s to say.
+   */
+  readonly bytes: Uint8Array;
   /** The offset, in bytes, of the line's first byte in the file. */
   readonly start: number;
   /**
    * The offset, in bytes, just past the line's last byte — the newline that ends it,
-   * where there is one. `end - start` is therefore the line's length in BYTES, which
-   * `text.length` is not for anything outside ASCII.
+   * where there is one. `end - start` is therefore the line's length in bytes.
    */
   readonly end: number;
 }
@@ -83,18 +106,14 @@ export function* linesFromEnd(file: string, chunkBytes = CHUNK_BYTES): Generator
       while (end > 0) {
         const newline = buf.lastIndexOf(NEWLINE, end - 1);
         if (newline < 0) break;
-        yield {
-          text: buf.toString('utf-8', newline + 1, end),
-          start: pos + newline + 1,
-          end: pos + end,
-        };
+        yield { bytes: buf.subarray(newline + 1, end), start: pos + newline + 1, end: pos + end };
         end = newline;
       }
       carry = buf.subarray(0, end);
     }
     // Offset 0 reached: whatever is left is the file's first line, which has no
     // newline before it to find.
-    if (carry.length > 0) yield { text: carry.toString('utf-8'), start: 0, end: carry.length };
+    if (carry.length > 0) yield { bytes: carry, start: 0, end: carry.length };
   } finally {
     closeSync(fd);
   }
@@ -150,15 +169,20 @@ export class UnreadableLineError extends Error {
  * again, and the type is what stops a fourth call site from being the one that
  * forgets. Called only on the failing path, so naming a position costs a walk
  * nothing — a caller hoists one closure over its own loop counter.
+ *
+ * THE LINE ARRIVES AS BYTES, and is decoded here, inside the tolerance: bytes that
+ * are not UTF-8 are a line that does not parse, refused like any other — and a
+ * torn fragment that a crash cut in the middle of a multi-byte character is still
+ * the torn fragment it is, and still dropped.
  */
 export function parseStoredLine<T>(
-  line: string,
+  line: Uint8Array,
   couldBeTorn: boolean,
-  parse: (line: string) => T,
+  parse: (text: string) => T,
   where: () => string,
 ): T | null {
   try {
-    return parse(line);
+    return parse(decodeStoredBytes(line));
   } catch (error) {
     if (couldBeTorn) return null; // torn last write from a crash — drop it
     throw new UnreadableLineError(where(), error instanceof Error ? error.message : String(error));
@@ -218,9 +242,9 @@ export function* locatedFromEnd<T>(
     // exactly a non-empty first line.
     const couldBeTorn = atPhysicalEnd && endsTheStream;
     atPhysicalEnd = false;
-    if (line.text.length === 0) continue;
+    if (line.bytes.length === 0) continue;
     at = line.start;
-    const parsed = parseStoredLine(line.text, couldBeTorn, parse, where);
+    const parsed = parseStoredLine(line.bytes, couldBeTorn, parse, where);
     if (parsed !== null) yield { value: parsed, start: line.start, end: line.end };
   }
 }

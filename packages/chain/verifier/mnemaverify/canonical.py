@@ -256,6 +256,21 @@ def strict_loads(text: str) -> Any:
         raise Refusal("1", "nested deeper than this reader can follow") from exc
 
 
+def utf8_text(raw: bytes) -> str:
+    """The text of bytes read from the record, or a refusal when they are not UTF-8.
+
+    Rule 6 says the bytes are UTF-8. Every file of the record this reader decodes - a line, a
+    checkpoint, the tail proof, a block-header sidecar, a public key - is decoded here, so a
+    byte that is not UTF-8 is refused under section 1 wherever it sits, instead of escaping
+    as an exception that stops the reading without a verdict. The cause names the offset of
+    the first byte that does not begin a UTF-8 character, which is the one the product names.
+    """
+    try:
+        return raw.decode("utf-8")
+    except UnicodeDecodeError as exc:
+        raise Refusal("1", f"not UTF-8 at byte {exc.start}") from exc
+
+
 def is_canonical_line(raw: bytes) -> tuple[bool, Any]:
     """Section 4's byte identity: re-serializing what a line holds reproduces the line.
 
@@ -267,11 +282,7 @@ def is_canonical_line(raw: bytes) -> tuple[bool, Any]:
     A line that is not UTF-8 is refused here, as a refusal and not as an exception: rule 6
     says the bytes are UTF-8, and a reader that raised on them stopped instead of saying so.
     """
-    try:
-        text = raw.decode("utf-8")
-    except UnicodeDecodeError as exc:
-        raise Refusal("1", f"not UTF-8: {exc.reason} at byte {exc.start}") from exc
-    value = strict_loads(text)
+    value = strict_loads(utf8_text(raw))
     try:
         return canonical_bytes(value) == raw, value
     except RecursionError as exc:
