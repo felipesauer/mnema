@@ -943,6 +943,7 @@ const CLAUSES_PER_FILE: Readonly<Record<string, number>> = {
   'packages/code/tests/a-sticky-pattern-answers-differently-each-call.test.ts': 3,
   'packages/code/tests/a-stopped-import-fails-the-run.test.ts': 1,
   'packages/code/tests/a-terminal-of-its-own.test.ts': 19,
+  'packages/code/tests/a-verb-that-went-under-a-noun-is-not-a-verb-any-more.test.ts': 3,
   'packages/code/tests/a-write-says-what-it-founded.test.ts': 14,
   'packages/code/tests/both-surfaces-one-vocabulary.test.ts': 18,
   'packages/code/tests/cli-e2e.test.ts': 15,
