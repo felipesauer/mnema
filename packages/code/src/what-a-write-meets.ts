@@ -20,7 +20,7 @@
  *
  * IT IS PURE OVER WHAT IT IS HANDED: the trees' caches and the paths. It records nothing; the
  * caller appends one `channel.refused` (or `channel.asked`) per rule of {@link WriteVerdict.at}
- * before it answers the host, so a record that cannot be written refuses nobody.
+ * before it answers the host, and answers the same whether or not they land ({@link recordTheCharge}).
  */
 
 import { TailBusyError } from '@mnema/chain';

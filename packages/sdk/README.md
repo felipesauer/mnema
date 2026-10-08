@@ -67,9 +67,10 @@ turns that test red.
   agent makes through a tool other than `Write`, `Edit` or `NotebookEdit` (a `Bash` redirection, a
   patch tool of your own). A rule that asks for a person holds a write only where the program
   answers the Agent SDK's permission flow for `ask`.
-- The hooks never block the session for a failure of their own: a project that is not there, a
-  channel that is switched off and a record that cannot take the fact are all `{}`. A write that
-  was meant to be refused and whose refusal could not be recorded is not refused.
+- The hooks never block the session for a failure of their own: a project that is not there and a
+  channel that is switched off are `{}`. A rule that refuses or asks does so whether or not its fact
+  can be recorded: the hook waits up to about 6 s for a busy record, and if the fact still cannot
+  be written, the reason says so and the record does not show that refusal or asking.
 - It reads the record at and above `cwd` and, as the command line does, the private and the global
   tree of the machine's `HOME`. It never calls a model and never touches the network.
 - The surface is not stable: it is private, and a change to it needs no notice.

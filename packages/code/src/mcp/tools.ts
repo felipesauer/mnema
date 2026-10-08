@@ -2367,10 +2367,11 @@ export function runGoverningRulesTool(
  *   - `channel.asked`, once per asking, citing the rule and the path — or `channel.refused`, once
  *     per rule that refuses, in the place of both of the above: a refusal is the fact itself, so
  *     it records no service.
- * The ASKING IS APPENDED BEFORE THE REPLY IS COMPOSED. A charge outside the record is the
- * product acting outside its own record, so if the fact cannot be written the reply carries
- * no charge — the write failing means nobody is stopped, which is the only direction a
- * failure here may fall. It is the order a waiver already has with the cut it authorizes.
+ * The ASKING IS APPENDED BEFORE THE REPLY IS COMPOSED, and the reply does not wait on it
+ * landing. If the fact cannot be written — the record busy past about 6 s, or a field the
+ * content door refuses — the charge still stands and its reason says the fact is missing
+ * (`recordTheCharge`): a charge that fell open whenever the fact could not be written let any
+ * process holding the tail switch every rule of the project off.
  *
  * NOTHING TO SAY IS SAID AS NOTHING. When no rule in force addresses the path the reply
  * is `{}`, which the host treats as no injection and no diagnostic. Why silence rather
@@ -2429,8 +2430,7 @@ export function runRulesBeforeAnEditTool(
   // REFUSAL ENDS THE CALL: the fact is appended first, then the reply is `deny` and the reason,
   // and nothing else is pushed — there is no write for the rules to ride beside, and no service
   // to count, because each `channel.refused` is the refusal itself. A refusal whose fact cannot
-  // be written refuses nobody, and the call goes on as if nothing had refused: the edit goes
-  // through, which is the only direction a failure here may fall. A RULE'S REFUSAL OUTRANKS THE
+  // be written still refuses, and says so in its reason. A RULE'S REFUSAL OUTRANKS THE
   // HOLD ON A FIRST WRITE below: it is returned before the hold is looked at, so a write a rule
   // refuses is refused every time and the once-only hold never spends its one pass on it.
   const met =
@@ -2482,10 +2482,6 @@ export function runRulesBeforeAnEditTool(
       ? firstWriteNotice(rulesAt)
       : undefined;
   if (deny !== undefined && heldKey !== undefined) session.held.add(heldKey);
-  // A RECORD THAT CANNOT BE WRITTEN CHARGES NOTHING, and the silence is not this line's to
-  // explain: the tool still answers `ok` with whatever text it had, so the edit goes
-  // through and nobody's afternoon is spent on a refusal that was never recorded. What says
-  // the gate was live is `channel.served`, and its absence from a run is the evidence.
   // SERVICE IS RECORDED FOR WHAT ACTUALLY SPOKE, per channel, once per run — never for a
   // channel that was switched off and never for one that had nothing to say. A fact saying
   // a channel served on a call where it said nothing would be the fact reading backwards.
@@ -2530,11 +2526,9 @@ export function runRulesBeforeAnEditTool(
  * They share one write context and one checkpoint: they are one act of asking, and signing
  * once is cheaper than signing each — the same arrangement the consultations have.
  *
- * A REFUSAL HERE IS NOT REPORTED TO THE HOST, and that is deliberate. The caller's answer
- * to a refused append is to charge nothing, so what a reader needs is `ok` or not `ok`;
- * turning a write failure into a tool error would make the host see `isError`, which it
- * treats as non-blocking anyway, at the cost of a diagnostic nobody reads in a channel that
- * must never make somebody's session worse.
+ * A FAILURE HERE IS NEVER A TOOL ERROR: the host reads `isError` as non-blocking, so an error
+ * would let through the write the rule refuses. The caller runs this through `recordTheCharge`,
+ * which retries a busy tail and turns any failure into words the reason carries.
  */
 function recordWhatItMet(session: Session, met: WriteVerdict): { readonly ok: boolean } {
   return recordFacts(

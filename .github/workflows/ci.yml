@@ -225,6 +225,7 @@ jobs:
           packages/chain/src/chain/second-reader-agrees-on-the-record.test.ts
           packages/chain/src/chain/second-reader-says-what-it-does-not-check.test.ts
           packages/code/tests/every-verifier-gives-one-ed25519-verdict.test.ts
+          packages/code/tests/ten-writers-one-record.test.ts
           packages/code/tests/the-front-page-says-what-its-sources-say.test.ts
           packages/code/tests/the-python-floor-is-declared-once.test.ts
           packages/code/tests/the-verifier-a-page-publishes-runs.test.ts
