@@ -61,6 +61,11 @@ export interface Host {
    * others would also run — the command starts nothing where it is unset.
    */
   readonly saysItIsTheHost?: string;
+  /**
+   * The plugin's hooks file this host reads INSTEAD of `hooks/hooks.json`, for a host whose
+   * manifest names one of its own: its hooks are in that file alone, and no other host reads it.
+   */
+  readonly hooksFile?: string;
   /** What it does with each {@link Capability}. */
   readonly cells: { readonly [C in Capability]: Cell };
 }
@@ -73,7 +78,12 @@ const HELD = {
   claudeGate: 'packages/code/tests/host-contract/a-refusal-and-a-pause-hold-the-write.test.ts',
   vscodeGate:
     'packages/code/tests/host-contract/an-editor-holds-or-refuses-the-write.vscode.test.ts',
+  codexContract: 'packages/code/tests/host-contract/codex-opens-and-refuses.codex.test.ts',
 } as const;
+
+/** The Codex source every cell of Codex's row that is read rather than run was read at. */
+const CODEX_SOURCE =
+  'https://github.com/openai/codex/blob/979011409de0a60b52f179721948e65531d26144';
 
 /** The day the hosts below that this product does not port were read. */
 const READ_ON = '8 October 2026';
@@ -81,7 +91,7 @@ const READ_ON = '8 October 2026';
 /**
  * Every host, in the order the pages list them and the lists of a `--host` enumerate them.
  *
- * THE FIRST THREE ARE PORTED; THE OTHER FIVE WERE ONLY READ. Each of the five documents an MCP
+ * THE FIRST FOUR ARE PORTED; THE OTHER FIVE WERE ONLY READ. Each of the five documents an MCP
  * client and reads an `AGENTS.md`, at the commit the link names, and no hook of this plugin's
  * reaches any of them. Aider was read too and is not here: it has no MCP client.
  */
@@ -126,6 +136,27 @@ export const HOSTS = {
       opens: { does: true, held: 'not yet', read: 'Cursor agent 2026.09.18, 23 September 2026' },
       refuses: { does: true, held: 'not yet', read: 'Cursor agent 2026.09.18, 2 October 2026' },
       asks: { does: false, held: 'not yet', read: 'Cursor agent 2026.09.18, 30 September 2026' },
+    },
+  },
+  codex: {
+    title: 'Codex',
+    door: 'command',
+    // Codex reads the plugin through a manifest of its own (`.codex-plugin/plugin.json`) that
+    // names this hooks file, so no other host runs its command and none of theirs runs in Codex —
+    // which they would: Codex matches `apply_patch` by `Write` and `Edit` too, and VS Code's
+    // matcher names `apply_patch`. No variable has to say which host this is.
+    hooksFile: 'hooks/codex.json',
+    cells: {
+      server: { does: true, held: 'a test', by: HELD.codexContract },
+      rulesFile: {
+        does: true,
+        held: 'documentation',
+        at: `${CODEX_SOURCE}/codex-rs/core/src/agents_md.rs`,
+        read: READ_ON,
+      },
+      opens: { does: true, held: 'a test', by: HELD.codexContract },
+      refuses: { does: true, held: 'a test', by: HELD.codexContract },
+      asks: { does: false, held: 'a test', by: HELD.codexContract },
     },
   },
   droid: {

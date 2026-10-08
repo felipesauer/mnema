@@ -1,0 +1,13 @@
+{
+  "name": "mnema",
+  "version": "0.1.0-beta",
+  "description": "Puts the project's committed mnema record into the session's opening context without the agent asking, with the notes recorded for it on this machine beside it, refuses a patch where a rule of that record refuses the write, and connects the mnema MCP server so the agent can record its own work.",
+  "keywords": ["audit-trail", "append-only", "accountability", "adr", "local-first"],
+  "mcpServers": {
+    "mnema": {
+      "command": "mnema",
+      "args": ["mcp"]
+    }
+  },
+  "hooks": "./hooks/codex.json"
+}

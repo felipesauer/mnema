@@ -12,18 +12,21 @@
  *
  * ## Which hosts, and what each can be told
  *
- * {@link HookHost} is a union of TWO, `vscode` and `cursor`, and the reason is a measurement
- * rather than a backlog. VS Code 1.137 with Copilot Chat 0.65 runs a plugin's `PreToolUse`
+ * {@link HookHost} is a union of THREE, `vscode`, `cursor` and `codex`, and the reason is a
+ * measurement rather than a backlog. VS Code 1.137 with Copilot Chat 0.65 runs a plugin's `PreToolUse`
  * command before the tool, and a reply carrying `permissionDecision: "ask"` holds the write for
  * a person (the host's own log: *"requires confirmation (preToolUse hook returned 'ask')"*; the
  * file stayed unwritten); `deny` refuses it. Cursor's command-line agent 2026.09.18 runs the
  * same hook before its write — and IGNORES `ask`: the file was written, from its own hook file
  * and from the plugin alike, while `deny` was honored, with the reason as the write's error.
  *
- * So the two differ in exactly one thing, and {@link asksAPerson} is the table that says it. A
+ * Codex 0.161.0 does what Cursor does, held by its host contract: `deny` refuses, and `ask` is
+ * rejected as unsupported and the write goes on.
+ *
+ * So they differ in exactly one thing, and {@link asksAPerson} is the table that says it. A
  * host that does not ask cannot be told to, and recording that it asked would be the fact
- * reading backwards: where a write only asks, the Cursor door answers silence and records
- * nothing. Where a rule refuses, both answer `deny`.
+ * reading backwards: where a write only asks, the Cursor and Codex doors answer silence and
+ * record nothing. Where a rule refuses, all answer `deny`.
  *
 ## What the host hands over, and the two shapes that differ from Claude Code's
  *
@@ -84,15 +87,22 @@ const replacements: PathsOf = (input) => {
  */
 const PATCH_HEADER = /^\*\*\* (?:Add File|Update File|Delete File|Move to): (.+)$/;
 
-/** The files a patch touches, read off its headers, each once. */
-const patch: PathsOf = (input) => {
-  const text = typeof input['input'] === 'string' ? input['input'] : '';
-  const paths = text.split(/\r?\n/).flatMap((line) => {
-    const named = PATCH_HEADER.exec(line)?.[1]?.trim();
-    return named === undefined || named === '' ? [] : [named];
-  });
-  return [...new Set(paths)];
-};
+/**
+ * The files a patch touches, read off its headers, each once — the patch under the field a host
+ * hands it in: VS Code's `apply_patch` names it `input`, Codex's names it `command` (Codex 0.161.0,
+ * `codex-rs/core/src/tools/handlers/apply_patch.rs`). One format, one reader; the field is the
+ * host's.
+ */
+const patchIn =
+  (field: string): PathsOf =>
+  (input) => {
+    const text = typeof input[field] === 'string' ? input[field] : '';
+    const paths = text.split(/\r?\n/).flatMap((line) => {
+      const named = PATCH_HEADER.exec(line)?.[1]?.trim();
+      return named === undefined || named === '' ? [] : [named];
+    });
+    return [...new Set(paths)];
+  };
 
 /**
  * The tools each host writes a file through, and where each one's path is.
@@ -107,12 +117,17 @@ const WRITES: { readonly [H in HookHost]: { readonly [tool: string]: PathsOf } }
     insert_edit_into_file: filePath,
     edit_notebook_file: filePath,
     multi_replace_string_in_file: replacements,
-    apply_patch: patch,
+    apply_patch: patchIn('input'),
   },
   // ONE TOOL, THE ONE MEASURED. Cursor's agent has other tools that change a file, and none was
   // run: a name here is a claim that a hook was handed it, so the table holds `Write` alone and
   // the page says which are not covered.
   cursor: { Write: snakeFilePath },
+  // ONE TOOL, AND THE ONLY NAME CODEX HANDS A HOOK FOR A FILE EDIT. Its matcher also takes `Write`
+  // and `Edit` as aliases of `apply_patch`, but the payload keeps `apply_patch`
+  // (`codex-rs/core/src/tools/hook_names.rs`, 0.161.0). A file written by a shell command is not a
+  // tool this table can name, on Codex as on every other host.
+  codex: { apply_patch: patchIn('command') },
 };
 
 /**
@@ -161,6 +176,10 @@ export function replyFor(host: HookHost, said: HookSaid): object {
     // Cursor read the same nested reply from a Claude Code plugin's hook: the `deny` below it
     // refused the write and its reason came back as the write's error.
     cursor: (s) => hookReply('PreToolUse', s),
+    // Codex reads the same nested reply: `deny` with a reason blocks the call and hands the model
+    // the reason; `ask` is parsed and rejected as unsupported, and the write goes on — which is
+    // why the Codex door never answers it (`codex-rs/hooks/src/engine/output_parser.rs`, 0.161.0).
+    codex: (s) => hookReply('PreToolUse', s),
   };
   return reply[host](said);
 }
