@@ -42,9 +42,9 @@
   "steps": [
     { "waitsFor": "what would you like to do here?", "hold": 2.2 },
     { "keys": "\r", "waitsFor": "mnema>", "hold": 2.8 },
-    { "types": "status", "waitsFor": "where things stand.", "hold": 4.2 },
-    { "types": "search money", "waitsFor": "matching \"money\"", "hold": 3.6 },
-    { "types": "verify", "waitsFor": "external witness (T3)", "hold": 4.8 },
+    { "types": "status", "waitsFor": "✻ status", "hold": 4.2 },
+    { "types": "search money", "waitsFor": "✻ search", "hold": 3.6 },
+    { "types": "verify", "waitsFor": "✻ verify", "hold": 4.8 },
     { "keys": "\u0004", "leaves": true, "hold": 4 }
   ]
 }
