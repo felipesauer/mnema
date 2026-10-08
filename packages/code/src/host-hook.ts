@@ -44,10 +44,10 @@
  * apply a matcher, and neither has a tool by those names, so neither runs it (measured, both).
  * VS Code runs a plugin's command on EVERY tool call whatever the matcher says (measured: a
  * matcher naming no tool at all still ran), which is why this module answers "not a write" for
- * every other tool, and why the plugin puts a filter in front of the process.
+ * every other tool, and why the plugin's handler starts no `mnema` for one.
  */
 
-import type { HookHost } from './host-names.js';
+import { does, type HookHost } from './host-names.js';
 import { type HookSaid, hookReply } from './mcp/hook-reply.js';
 
 /** How to read the paths out of one write tool's input. */
@@ -117,12 +117,11 @@ const WRITES: { readonly [H in HookHost]: { readonly [tool: string]: PathsOf } }
 
 /**
  * Whether a host holds a write for a person when a hook answers `ask` — the one thing the two
- * command hosts measured differently. Total over {@link HookHost}, so a host added to the union
- * does not compile until somebody has said what it does with `ask`.
+ * command hosts measured differently. Read off the host table (`host-names.ts`), where every host
+ * has an `asks` cell and says how it is known.
  */
 export function asksAPerson(host: HookHost): boolean {
-  const asks: { readonly [H in HookHost]: boolean } = { vscode: true, cursor: false };
-  return asks[host];
+  return does(host, 'asks');
 }
 
 /** The tool names a host writes through — what the plugin's filter and matcher name. */

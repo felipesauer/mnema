@@ -1,8 +1,10 @@
 # Taking mnema to a host that is not here yet
 
-Three hosts run mnema today: Claude Code, VS Code's agent and Cursor's command-line agent. This page
-is the order of work for a fourth. It points at the code and the measurements rather than copying
-them, because both change faster than a page about them does.
+Which hosts run mnema, and how far, is [the rung table](../docs/evidence.md#each-hosts-rung): one row
+per host, one cell per rung, each saying how it is known. It is generated from the host table in
+[`host-names.ts`](../packages/code/src/host-names.ts), and so are the plugin's hooks file and its
+manifests. This page is the order of work for a new host. It points at the code and the
+measurements rather than copying them, because both change faster than a page about them does.
 
 ## 1. Start with the MCP server
 
@@ -33,8 +35,10 @@ host adds its rows there, as "not held yet" until a file in the tree holds them:
 - Where does a hook's text land for the model: beside the tool result, inside it, or elsewhere?
 - Can a hook **ask a person**, can it **refuse**, and what does the model read afterwards?
 
-Measure with the real host, a stand-in for the model and no network, as that page describes. Write
-the new column into its table before writing any code that stands on it.
+Measure with the real host, a stand-in for the model and no network, as that page describes. The
+answers are the host's row in `host-names.ts`: how a hook before a write reaches it, whether it
+asks, the variable it sets if the other hosts would run its hook too, and a cell per rung with how
+that cell is known. Write the row before any code that stands on it.
 
 ## 3. What the product already does with the answers
 
@@ -44,9 +48,11 @@ and puts its text before the model can use unchanged. A host whose hooks are pro
 runs a command before a write reuses the verb behind
 [`edit-asks-a-person.mjs`](hooks/edit-asks-a-person.mjs) and
 [`edit-refuses-a-write.mjs`](hooks/edit-refuses-a-write.mjs), the binary's before-a-write verb, told the host by name.
-The host is a name in [`host-names.ts`](../packages/code/src/host-names.ts), and what the verb
-reads from its payload and how it answers is
-[`host-hook.ts`](../packages/code/src/host-hook.ts). Which rules a write meets is decided in one
+The host is a row of [`host-names.ts`](../packages/code/src/host-names.ts), and the hooks file
+names it to the handler (`--host`), so adding the row and regenerating the files
+([`the-host-files-are-generated.test.ts`](../packages/code/tests/the-host-files-are-generated.test.ts),
+with `-u`) is the whole of the plugin's side. What the verb reads from its payload and how it
+answers is [`host-hook.ts`](../packages/code/src/host-hook.ts). Which rules a write meets is decided in one
 place, whatever the door, so a new host cannot come to stop different writes than the others.
 
 A host that cannot be told to ask must not be answered as if it had asked: a recorded asking for a
@@ -58,7 +64,9 @@ prints the file in that host's format ([`host-rules-file.ts`](../packages/code/s
 
 ## 4. What you leave behind
 
-A table row in [the plugin page](README.md#in-vs-code-and-cursor) and one in the hooks measurement,
-both naming the host version; a case that runs the real plugin and the built binary; and the
-sentence for what the host does **not** do. A host that ignores `ask` is not a lesser port, it is a
+The host's row, which puts it in the rung table: a cell the documentation says and nothing ran is
+"documented, not measured", and one a real host showed names the version and the day until a case
+of this tree holds it. Then a column in [the plugin page](README.md#in-vs-code-and-cursor) and the
+host's rows in the hooks measurement, both naming the host version; a case that runs the real
+plugin and the built binary; and the sentence for what the host does **not** do. A host that ignores `ask` is not a lesser port, it is a
 port that says so.

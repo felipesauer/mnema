@@ -338,19 +338,16 @@ describe('the plugin command VS Code runs', () => {
 
   it('names, in its matcher and in its filter, exactly the tools the verb reads — both ways', () => {
     // THREE PLACES HOLD ONE LIST — the verb's table, the matcher Claude Code and Cursor apply and
-    // never match, and the filter in front of the process that VS Code, which ignores the
-    // matcher, runs on every tool — so the three are reconciled here in both directions. A tool
-    // missing from the filter is a write that is never asked about, in silence.
+    // never match, and the tools the handler lets through, since VS Code ignores the matcher and
+    // runs the command on every tool — so the three are reconciled here in both directions. A
+    // tool missing from the filter is a write that is never asked about, in silence.
     const tools = [...writeToolsOf('vscode')].sort();
     const { matcher, command } = declared();
     expect(/^\^\((.*)\)\$$/.exec(matcher)?.[1]?.split('|').sort()).toEqual(tools);
-    const filtered = [...command.matchAll(/\*'"([a-z_]+)"'\*/g)].map((m) => m[1]).sort();
+    const filtered = (/ --tools ([a-z_,]+)/.exec(command)?.[1] ?? '').split(',').sort();
     expect(filtered).toEqual(tools);
-    // And the host the handler declares is one the verb takes.
-    const handler = readFileSync(join(PLUGIN, 'hooks', 'edit-asks-a-person.mjs'), 'utf-8');
-    expect(HOOK_HOSTS.filter((host) => handler.includes(`'--host', '${host}'`))).toEqual([
-      'vscode',
-    ]);
+    // And the host the command declares is one the verb takes.
+    expect(HOOK_HOSTS.filter((host) => command.includes(` --host ${host} `))).toEqual(['vscode']);
   });
 
   it('reaches the verb on a write and asks; on a read it starts no process at all', () => {

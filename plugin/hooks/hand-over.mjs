@@ -277,6 +277,63 @@ export function whatTheVerbAnswers(argv, cwd, input) {
 }
 
 /**
+ * What the gate before a write answers, in a host whose hooks are processes — told by the hooks
+ * file which host it is in and what starts it, or `null` when it starts nothing.
+ *
+ * THE HOOKS FILE SAYS IT, AND THE HANDLER DOES NOT GUESS. The file is generated from the host
+ * table, and each command line names its host (`--host`) and one of two things that start it:
+ * `--where <VARIABLE>`, for a host that applies the matcher Claude Code applies too and sets a
+ * variable no other host sets — the gate starts nothing where it is unset, and reads no stdin
+ * there — or `--tools <a,b,…>`, for a host that runs a plugin's command on every tool whatever
+ * the matcher says — the gate starts nothing for a tool the host does not write through. Either
+ * way no `mnema` runs, as the shell in front of the handler used to see to. Everything else is
+ * {@link whatTheVerbAnswers}: the payload to the verb and its answer back, byte for byte.
+ *
+ * @param {readonly string[]} argv The handler's own arguments, from the hooks file.
+ * @param {Readonly<Record<string, string | undefined>>} env The host's environment.
+ * @param {string} cwd Where to run the verb.
+ * @param {() => Promise<string>} payload Reads what the host handed this hook.
+ * @returns {Promise<string | null>}
+ */
+export async function whatTheGateAnswers(argv, env, cwd, payload) {
+  const host = flagValue(argv, '--host');
+  if (host === undefined) return null;
+  const where = flagValue(argv, '--where');
+  if (where !== undefined && (env[where] ?? '') === '') return null;
+  const input = await payload();
+  const tools = flagValue(argv, '--tools');
+  if (tools !== undefined && !tools.split(',').includes(toolNameOf(input))) return null;
+  return whatTheVerbAnswers(['before-a-write', '--host', host], cwd, input);
+}
+
+/**
+ * The value after `flag` in `argv`, or `undefined` where it is not there.
+ *
+ * @param {readonly string[]} argv
+ * @param {string} flag
+ * @returns {string | undefined}
+ */
+function flagValue(argv, flag) {
+  const at = argv.indexOf(flag);
+  return at === -1 ? undefined : argv[at + 1];
+}
+
+/**
+ * The tool a payload names, or `''` where it names none or is not JSON.
+ *
+ * @param {string} input
+ * @returns {string}
+ */
+function toolNameOf(input) {
+  try {
+    const parsed = JSON.parse(input);
+    return typeof parsed?.tool_name === 'string' ? parsed.tool_name : '';
+  } catch {
+    return '';
+  }
+}
+
+/**
  * One run of `verb` with `flags`, both streams kept.
  *
  * @param {string} verb
