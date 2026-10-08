@@ -1,40 +1,33 @@
 /**
  * THE PAGE'S LEFT EDGE — how many columns the console keeps to the left of everything it
- * SAYS.
+ * SAYS, which is THE SAME NUMBER IT KEEPS TO THE RIGHT: none.
  *
- * IT IS ONE STATEMENT WITH THREE READERS, and that is the whole reason it is a module of
- * its own rather than three numbers in the layout. The margin is DRAWN by the layout
- * (`region.ts`), the roll is folded and measured against what is left of the width
- * (`console.ts`), and the arrangement at the top is chosen against the same number
- * (`session.ts`) — so a column the drawing spends and the arithmetic does not know about
- * is a row of the page folded where nobody expected it, which is the defect this surface
- * has paid for once already in the other direction (`area.ts`, `ABOVE_THE_PALETTE`).
+ * IT IS ONE STATEMENT WITH THREE READERS, and that is the reason it is a module of its own
+ * rather than a number in the layout. The margin is DRAWN by the layout (`region.ts`), the roll
+ * is folded and measured against what is left of the width (`console.ts`), and the arrangement
+ * at the top is chosen against the same number (`session.ts`) — so a column the drawing spends
+ * and the arithmetic does not know about is a row of the page folded where nobody expected it,
+ * which is the defect this surface has paid for once already in the other direction (`area.ts`,
+ * `ABOVE_THE_PALETTE`).
  *
- * WHAT IT IS FOR is a page whose text is not jammed against the edge of the terminal. THERE
- * WAS A GUIDE DOWN IT: a purple line the width of one column, drawn beside every row of the roll,
- * marking the region a caller was reading. It is gone, and the margin is the width it had with
- * the guide in it, so not a column of the page moved: what marks where a caller's own words
- * begin is now a band behind each command, and what marks where an answer begins is a glyph on
- * its first row (`echo.ts`, `region.ts`).
+ * WHY IT IS ZERO. The margin was six columns because a purple guide ran down it, drawn beside
+ * every row of the roll, marking the region a caller was reading. The guide is gone — what marks
+ * where a caller's own words begin is a band behind each command, and what marks where an answer
+ * begins is a glyph on its first row (`echo.ts`, `region.ts`) — and the six columns stayed as a
+ * space nothing was drawn in, wider than the nothing there is on the right, where a row runs to
+ * the edge the terminal gives it. The left edge is now the right one: the roll, the opening, the
+ * rules and the row being typed all begin in the first column, so what a caller reads is aligned
+ * on one line, and the transcript handed back to the shell is as wide as the page was.
  *
- * WHICH REGIONS IT REACHES, and why the third is left out. The top region and the middle
- * one are what the session SAYS — the arrangement it opens with and the roll of everything
- * after — so both sit inside the margin and share one width. The input area does not: its
- * two rules are drawn corner to corner, which is what makes the length of one the width
- * the process read off its device (`tests/support/screen.ts`), and the row being typed
- * begins at the left edge because the caret is a COLUMN into it — an inset there would be
- * arithmetic on the one number that has to be exact (`console.ts`, `Shown.column`).
+ * WHAT IT COSTS the page at the floor is nothing, and the arithmetic stays the expression it
+ * was: the shortest window this console draws on is eighty columns (`floor.ts`) and the widest
+ * thing drawn there is the drawing of the name at fifty (`presentation/banner.ts`).
  *
- * SIX, AND IT WAS FOUR PLUS THE GUIDE PLUS ONE. Four is the column the row under the prompt
- * begins at plus one level, which is the step this page moves by and the only unit of
- * horizontal distance it has: the hint is an `aside`, so it sits one indent in
- * (`presentation/plain.ts`, `INDENT`), and what the page says begins clear of it rather than on
- * it. It costs the page nothing at the floor, which is the half a number chosen for its looks
- * would not have: the shortest window this console draws on is eighty columns (`floor.ts`), the
- * widest thing drawn inside the margin there is the drawing of the name at fifty
- * (`presentation/banner.ts`), and the margin leaves seventy-four.
+ * `tests/the-margins-are-the-same-width.test.ts` holds the two sides equal, measured on the
+ * pseudo-terminal at widths from eighty to two hundred; a margin put back on one side only
+ * turns it red.
  */
-export const THE_INSET = 6;
+export const THE_INSET = 0;
 
 /**
  * How far an ANSWER sits in from the edge of the roll, which is one level of the step this page

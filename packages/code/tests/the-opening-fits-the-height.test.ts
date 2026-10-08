@@ -364,7 +364,7 @@ const THE_GEOMETRIES: readonly {
   // the title is wider than at 0.1.0 and 101 columns by 24 rows no longer holds the
   // arrangement (the first width that does is 105, measured at 24 and at 30 rows); the last row moved with it.
   // The widths in this table are what `panelFor` is asked, which is the width INSIDE the margin
-  // (`insideTheMargin` takes six off the terminal), not the terminal's columns; and 24 rows is
+  // (`insideTheMargin`, which is the terminal's columns less the margin), not the terminal's columns; and 24 rows is
   // below the floor, so these are the rule's answers and not a screen the console opens on.
   { columns: 105, rows: 24, form: 'columns' },
   { columns: 120, rows: 30, form: 'columns' },

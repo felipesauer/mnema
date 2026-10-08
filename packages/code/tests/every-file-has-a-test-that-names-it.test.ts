@@ -1083,6 +1083,7 @@ const CLAUSES_PER_FILE: Readonly<Record<string, number>> = {
   'packages/code/tests/the-key-lives-in-one-place.test.ts': 8,
   'packages/code/tests/the-line-a-reading-words-is-one-line.test.ts': 7,
   'packages/code/tests/the-link-cannot-come-back.test.ts': 8,
+  'packages/code/tests/the-margins-are-the-same-width.test.ts': 9,
   'packages/code/tests/the-moves-say-what-they-said.test.ts': 18,
   'packages/code/tests/the-name-and-the-hints.test.ts': 17,
   'packages/code/tests/the-name-in-full-blocks.test.ts': 10,

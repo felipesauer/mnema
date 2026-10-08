@@ -452,7 +452,7 @@ describe('the word in the list carries the accent, and the description does not'
 // The margin takes columns of the page and no character of a line
 // ---------------------------------------------------------------------------
 
-describe('the margin keeps the width it had with the guide in it, and it eats nothing', () => {
+describe('the margin is none, and it eats nothing', () => {
   it('puts the widest thing the page draws on it whole, at the floor', async () => {
     // WHAT THE CALLER ASKED FOR: *the bar should pull back a little into the side margin*. What
     // a margin may never do is cost a line a character — a value a reader cannot check is the
@@ -483,31 +483,29 @@ describe('the margin keeps the width it had with the guide in it, and it eats no
         `a row ran past the edge of the window: ${row}`,
       ).toBeLessThanOrEqual(THE_FLOOR.columns);
     }
-    // AND THE MARGIN CLEARS THE ROW UNDER THE PROMPT, which is WHY it is as wide as it is and the
-    // only thing here that a number written down could not have answered. At two columns the guide
-    // that used to stand in it landed on column three and column three is where the hint begins —
-    // the hint is an `aside`, so it sits one indent in — and the page had two different things at
-    // one left edge. THE GUIDE IS GONE and the width is not: what begins at the margin is the
-    // roll itself, and it still has to begin clear of the hint's edge. BOTH COLUMNS ARE READ OFF
-    // THE PAGE: a case that asked the constant would agree with itself at any value it took.
+    // AND THE ROLL BEGINS WHERE THE INPUT AREA DOES. The margin was six columns because a guide
+    // stood in it; the guide is gone and so is the margin, so what the session says begins at the
+    // first column, the column the row being typed begins at and the one the rules are drawn from.
+    // BOTH COLUMNS ARE READ OFF THE PAGE: a case that asked the constant would agree with itself
+    // at any value it took. Only the hint is one indent in, because it is an `aside`.
     expect(
       screen.rows.filter((row) => row.includes(THE_GUIDE)),
       'a guide is drawn down the margin',
     ).toEqual([]);
+    const beginsAt = (row: string): number => [...row].findIndex((glyph) => glyph !== ' ');
+    const typedRow = screen.rows.find((row) => row.includes(PROMPT)) as string;
+    expect(typedRow, 'the row being typed is not on the page').toBeDefined();
+    const mark = screen.rows.find((row) => row.includes(AN_UNMISTAKABLE_ROW.trimEnd())) as string;
+    expect(mark, 'the drawing is not on the page').toBeDefined();
+    expect(beginsAt(mark), 'the roll does not begin where the row being typed does').toBe(
+      beginsAt(typedRow),
+    );
+    expect(beginsAt(typedRow), 'the row being typed does not begin at the first column').toBe(0);
     const hint = renderPlain(tips());
     const hintRow = screen.rows.find((row) => row.includes(hint.trim())) as string;
     expect(hintRow, 'the row under the prompt is not on the page').toBeDefined();
-    const hintAt = [...hintRow].findIndex((glyph) => glyph !== ' ');
-    expect(hintAt, 'the row under the prompt begins nowhere').toBeGreaterThanOrEqual(0);
-    const rollAt = screen.rows
-      .map((row) => [...row].findIndex((glyph) => glyph !== ' '))
-      .filter((at) => at > 0 && at < THE_INSET + 4);
-    expect(rollAt.length, 'no row of the roll is on the page').toBeGreaterThan(0);
-    expect(
-      Math.min(...rollAt.filter((at) => at >= THE_INSET)),
-      'the roll does not begin clear of the edge the row under the prompt begins at',
-    ).toBeGreaterThan(hintAt);
-    expect(THE_INSET, 'the margin is not six columns').toBe(6);
+    expect(beginsAt(hintRow), 'the hint is not one indent in').toBeGreaterThan(0);
+    expect(THE_INSET, 'the margin is not none').toBe(0);
   }, 240_000);
 });
 
