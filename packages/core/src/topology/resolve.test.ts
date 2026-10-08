@@ -2,6 +2,7 @@ import { spawnSync } from 'node:child_process';
 import { mkdirSync, mkdtempSync, realpathSync, rmSync, symlinkSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
+import { fileURLToPath } from 'node:url';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { type DiscoveryEnv, discover, resolveTrees, whyNoProjectRootAt } from './resolve.js';
 
@@ -140,15 +141,25 @@ describe('resolveTrees — project discovery', () => {
   });
 });
 
+/**
+ * The file that turns git's automatic maintenance off, which the product's suite hands every git
+ * it starts to write a repository (`every-git-that-writes-runs-without-maintenance.test.ts`).
+ * Named by path and not imported: this package does not import the product's tests.
+ */
+const GIT_WITHOUT_MAINTENANCE = fileURLToPath(
+  new URL('../../../code/tests/support/without-maintenance.gitconfig', import.meta.url),
+);
+
 /** Runs git in `cwd` with no user or system configuration, and fails the test if git does. */
 function git(cwd: string, ...args: string[]): void {
   const ran = spawnSync('git', ['-c', 'init.defaultBranch=main', ...args], {
     cwd,
     encoding: 'utf-8',
     env: {
-      ...process.env,
+      PATH: process.env.PATH ?? '',
+      HOME: sandbox,
       GIT_CONFIG_NOSYSTEM: '1',
-      GIT_CONFIG_GLOBAL: '/dev/null',
+      GIT_CONFIG_GLOBAL: GIT_WITHOUT_MAINTENANCE,
       GIT_AUTHOR_NAME: 't',
       GIT_AUTHOR_EMAIL: 't@t',
       GIT_COMMITTER_NAME: 't',

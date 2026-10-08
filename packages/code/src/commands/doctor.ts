@@ -1,9 +1,10 @@
 /**
  * `mnema doctor` — what this machine says about how mnema is installed, and what to do about
- * each thing it finds. It reads and writes NOTHING: not the record, not a configuration, not a
- * cache, and it asks nobody over a network.
+ * each thing it finds. Asked alone it reads and writes NOTHING: not the record, not a
+ * configuration, not a cache, and it asks nobody over a network. `--fix vscode` and
+ * `--fix private-tree` are the two things it writes, each only when a person asks.
  *
- * FOUR QUESTIONS, each answered by files that were read and named in the answer:
+ * FIVE QUESTIONS, each answered by files that were read and named in the answer:
  *   - is a `mnema` on the `PATH`, which one, and is it the one running now;
  *   - is the Claude Code plugin installed, and at what version (Claude Code's own list of
  *     installed plugins — a file of the host's that this product does not own, so a list that is
@@ -12,7 +13,10 @@
  *     plugin counting as one declaration — a session is offered every tool once per declaration;
  *   - is there a namesake: a second “mnema” on the `PATH`, or an npm package named “mnema”
  *     installed where this machine's `PATH` points. THE REGISTRY IS NOT ASKED: a package that is
- *     published but not installed here is outside what this can know, and it says so.
+ *     published but not installed here is outside what this can know, and it says so;
+ *   - and, in a project inside a git repository, does a worktree still hold a private tree where
+ *     it lived before it moved into the repository's git directory — notes nothing reads there,
+ *     and that removing the worktree deletes.
  *
  * Each finding is ONE line: what was found, then what to do. A finding that needs nothing to be
  * done says so. The verb's exit status is 0 whatever it found — it reports, and a script that
@@ -31,7 +35,13 @@ import {
   writeFileSync,
 } from 'node:fs';
 import { basename, delimiter, dirname, join } from 'node:path';
-import { type DiscoveryEnv, resolveTrees } from '@mnema/core';
+import {
+  type DiscoveryEnv,
+  movePrivateTree,
+  type PrivateTreesLeftBehind,
+  privateTreesLeftBehind,
+  resolveTrees,
+} from '@mnema/core';
 import { oneLine } from '../one-line.js';
 import { VERSION } from '../version.js';
 import { type Plan, planFix, readLocations, SETTING, settingsCandidates } from './doctor-vscode.js';
@@ -50,7 +60,7 @@ export interface DoctorContext {
 
 /** `attention` is a finding with something to do; `fine` needs nothing. */
 export interface Finding {
-  readonly topic: 'binary' | 'plugin' | 'vscode' | 'mcp' | 'namesake';
+  readonly topic: 'binary' | 'plugin' | 'vscode' | 'mcp' | 'namesake' | 'private-tree';
   readonly state: 'fine' | 'attention';
   /** One line: what was found, then what to do. */
   readonly line: string;
@@ -586,7 +596,79 @@ export function fixVscode(
   return { lines, refused };
 }
 
-/** Reads the machine and answers, in the order the four questions are asked above. */
+const FIX_PRIVATE = '`mnema doctor --fix private-tree`';
+
+/** The old private trees of the project the doctor runs in, or undefined outside a repository. */
+function leftBehind(ctx: DoctorContext): PrivateTreesLeftBehind | undefined {
+  const trees = resolveTrees(ctx.cwd, ctx.env);
+  if (trees.projectPublic === undefined) return undefined;
+  return privateTreesLeftBehind(dirname(trees.projectPublic));
+}
+
+/**
+ * A private tree still where it lived before it moved into the repository's git directory: what
+ * it holds is read by nothing, and removing the worktree that holds it deletes it.
+ */
+function privateTreeFindings(ctx: DoctorContext): Finding[] {
+  const found = leftBehind(ctx);
+  if (found === undefined) return [];
+  return found.left.map((left) => ({
+    topic: 'private-tree' as const,
+    state: 'attention' as const,
+    line: `${oneLine(left.tree)} holds ${left.tails} tail(s) of private notes from before this project's private tree moved to ${oneLine(found.to)}: nothing reads them where they are, and removing that worktree deletes them — run ${FIX_PRIVATE} to move them.`,
+  }));
+}
+
+/**
+ * `mnema doctor --fix private-tree`: moves every old private tree of this project into the one
+ * the repository keeps (`privateTreesLeftBehind`, `movePrivateTree`, `@mnema/core`), and says
+ * what it moved. With `dryRun`, it says what it would move and writes nothing.
+ */
+export function fixPrivateTree(
+  ctx: DoctorContext,
+  options: { readonly dryRun: boolean },
+): FixResult {
+  const found = leftBehind(ctx);
+  if (found === undefined) {
+    return {
+      refused: true,
+      lines: [
+        'nothing changed: this is no project in a git repository, and outside one the private tree has not moved.',
+      ],
+    };
+  }
+  if (found.left.length === 0) {
+    return {
+      refused: false,
+      lines: [`nothing to move: no worktree holds a private tree outside ${oneLine(found.to)}.`],
+    };
+  }
+  const lines: string[] = [];
+  for (const left of found.left) {
+    const where = oneLine(left.tree);
+    if (options.dryRun) {
+      lines.push(
+        `${where}: would move ${left.tails} tail(s) to ${oneLine(found.to)}; nothing was written.`,
+      );
+      continue;
+    }
+    const moved = movePrivateTree(left, found.to);
+    const closed =
+      moved.closed.length === 0
+        ? ''
+        : `; ${moved.closed.length} of them closed, since that worktree already writes a tail of its own there`;
+    const kept =
+      moved.kept.length === 0
+        ? ''
+        : `; left where they were, because the same name holds other bytes there: ${moved.kept.map(oneLine).join(', ')}`;
+    lines.push(
+      `${where}: moved ${moved.tails.length} tail(s) to ${oneLine(found.to)}${closed}${kept}.`,
+    );
+  }
+  return { refused: false, lines };
+}
+
+/** Reads the machine and answers, in the order the five questions are asked above. */
 export function runDoctor(ctx: DoctorContext): { readonly findings: readonly Finding[] } {
   const plugins = installedPlugins(ctx);
   return {
@@ -596,6 +678,7 @@ export function runDoctor(ctx: DoctorContext): { readonly findings: readonly Fin
       ...vscodeFindings(ctx),
       ...mcpFindings(ctx, plugins),
       ...namesakeFindings(ctx),
+      ...privateTreeFindings(ctx),
     ],
   };
 }

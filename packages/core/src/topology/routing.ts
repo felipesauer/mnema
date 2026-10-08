@@ -270,7 +270,9 @@ export interface OpenTreeOptions {
  * write happened to create the `.gitignore`. This is the lazy, write-time
  * hygiene that no separate `init` step is trusted to have run. The private tree
  * needs no `.gitignore` of its own (it is already ignored in full); the global
- * tree needs none either (it lives outside any repo).
+ * tree needs none either (it lives outside any repo). Inside a repository the private
+ * tree is not under `.mnema/` at all but in the git directory (`git-place.ts`), and the
+ * `/private/` line then guards only the place it used to be.
  *
  * Throws {@link TreeUnavailableError} if the scope's tree is not present, so a
  * caller cannot silently write a project-scoped capture with no project.

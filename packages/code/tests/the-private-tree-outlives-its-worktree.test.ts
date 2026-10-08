@@ -48,7 +48,11 @@ function mnema(cwd: string, ...argv: string[]) {
 }
 
 function git(cwd: string, ...args: string[]) {
-  const ran = spawnSync('git', args, { cwd, encoding: 'utf-8', env: ENV() });
+  const ran = spawnSync('git', args, {
+    cwd,
+    encoding: 'utf-8',
+    env: { ...ENV(), GIT_CONFIG_GLOBAL: GIT_WITHOUT_MAINTENANCE },
+  });
   return { status: ran.status, out: `${ran.stdout}${ran.stderr}` };
 }
 

@@ -169,7 +169,7 @@ verbatim. The surfaces never upgrade a verdict into a stronger claim.
 | **`verify` passes** | Nothing *verifiable* is broken: the hash chain holds and every signature it found checks out. It is **not** a claim that every event is signed — the verdict names the **level** it reached (`verified (T1/T2/T4)`, `… up to the last checkpoint`, or `verified (T1 only) — no signature was checked`), and only the first of those means every event is covered. |
 | **`verify` covered the record** | Both trees of the project: the committed one and this machine's private one, each with its own verdict under its own name. The exit code is the **weakest** of them, so a gate cannot pass because one tree is healthy. It used to cover the committed tree alone, which said nothing about signed facts written `--scope private`. This machine's **global** tree is a third record, shared by every project on the disk; `mnema verify --global` covers it, and nothing does by default. |
 | **`verify` covered every project** | Only the ones you **named**: `mnema verify --workspace <path...>` gives one verdict over the projects at those paths, and a bare `verify` covers the project you are standing in. The set is never searched for — nothing walks the disk looking for a `.mnema/`, so no verdict of yours covers a project you did not name. Two names of one record (the same path twice, a subdirectory of one already named, a symlink) count **once**; a named path with no record is reported, left **out** of the level, counted at the end, and makes the exit non-zero — naming a path is asserting that it is a project, so a typo in a CI step is news rather than a silent pass, and `--allow-no-record` is how a caller declares otherwise. The aggregate is the weakest project's, so nothing passes on another project's proof — and a set in which no path holds a record exits non-zero rather than reading as a pass over nothing. Costs one full replay per project. |
-| **A tree with no record** | Reported as exactly that, and it moves neither the verdict nor the exit. The private tree is gitignored, so a fresh clone has none — and *absent* is not *broken*. |
+| **A tree with no record** | Reported as exactly that, and it moves neither the verdict nor the exit. The private tree never travels with a clone, so a fresh clone has none — and *absent* is not *broken*. |
 | **Events are signed** | True up to the last checkpoint. Events written after it rest on the hash chain alone, and `verify` reports that count separately rather than folding it into a pass. A record with **no** verified checkpoint at all is reported as `T1 only`: the hash chain held and no signature was checked. |
 | **The record could be read** | Part of the verdict, not an assumption. A stored line that will not parse is reported as an `UNREADABLE` issue naming the tail and the position — never a green over bytes nobody can interpret, and never a parser message with no address in it. |
 | **An edit is caught** | An edit made *without* the signing key is caught, because signatures cover a root recomputed from the event content. Someone holding the key can rewrite and re-sign — detecting that needs a witness outside this machine, and `mnema witness stamp` asks for one. What it attests is that a checkpoint EXISTED at an instant, so a chain rebuilt this morning cannot claim a history; it is opt-in, and a record nobody stamped reads `not covered` exactly as every record did before. |
@@ -911,12 +911,20 @@ exists included (`claude mcp remove` does not reach them; the line says what to 
 files on this machine and, asked alone, writes nothing; it does not ask the registry, so a package
 that is published and not installed here is outside what it can say.
 
-`mnema doctor --fix vscode` is the one thing it writes, and only when you type it: it shows what it
+In a project inside a git repository it also names each worktree that still holds private notes
+in `.mnema/private/`, where they lived before the private tree moved into the repository's git
+directory: nothing reads them there, and removing that worktree deletes them.
+
+`mnema doctor --fix vscode` is one of the two things it writes, and only when you type it: it shows what it
 will change (`--dry-run` stops there), copies `settings.json` to a file beside it, adds the plugin's
 folder in the Claude Code marketplace to `chat.pluginLocations` and drops an entry that points into
 a versioned folder of the plugin cache, keeps the file's comments and the rest of its text, and a
 second run changes nothing. A file it cannot edit safely it refuses, with the reason, and leaves
-untouched. The exit status is 0 whatever it found: a script that wants to act on a
+untouched. `mnema doctor --fix private-tree` is the other: it moves each of those tails, as it is,
+into the repository's private tree (`--dry-run` says what it would move), drops the writers'
+`locks/`, and leaves where it was anything whose name there already holds other bytes. A worktree
+that had written again since keeps the tail it writes now, and its old tail is moved as a closed
+one. The exit status is 0 whatever it found: a script that wants to act on a
 finding reads the line.
 
 ### What goes into the record
@@ -1599,8 +1607,11 @@ key really signed.
 ```
 <repo>/.mnema/              the project record — commit this, the team shares it
   tails/<id>/witness/       external attestations over this tail's checkpoints (T3)
-  private/                  gitignored: this machine, this project only
   locks/                    gitignored: writers' locks, and the projection a read keeps
+<git common dir>/mnema/<path>/private/
+                            this machine, this project only: beside the repository's
+                            objects, shared by its worktrees, kept when one is removed;
+                            <repo>/.mnema/private/ (gitignored) outside a repository
 ~/.mnema/global/            this machine, across every project
 ~/.mnema/identity/          the signing key — referenced, never copied into a chain
 ```

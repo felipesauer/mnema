@@ -3,9 +3,11 @@
  *
  * `mnema doctor` — what this machine says about how mnema is installed: the binary on the
  * `PATH`, the Claude Code plugin, the VS Code agent's plugin setting, the MCP server declared
- * twice, a namesake. One line to a finding, each ending in what to do. Asked alone it reads and
- * writes nothing; `--fix vscode` is the one thing it writes, to one setting of VS Code's
- * `settings.json`, and only when a person asks (`commands/doctor.ts`).
+ * twice, a namesake, a private tree left where it lived before it moved into the repository's
+ * git directory. One line to a finding, each ending in what to do. Asked alone it reads and
+ * writes nothing; `--fix vscode` writes one setting of VS Code's `settings.json`, and
+ * `--fix private-tree` moves those private trees — each only when a person asks
+ * (`commands/doctor.ts`).
  */
 
 import type { Command } from 'commander';
@@ -21,11 +23,11 @@ export function registerDoctor(program: Command, wiring: Wiring): Declared {
   const verb = program
     .command('doctor')
     .description(
-      'say how mnema is installed on this machine, and what to do about each thing found (writes nothing unless you pass --fix vscode)',
+      'say how mnema is installed on this machine, and what to do about each thing found (writes nothing unless you pass --fix)',
     )
     .option(
       '--fix <what>',
-      'make the one change a finding asks for, and only that one: `vscode` lists the plugin in the chat.pluginLocations setting of VS Code’s settings.json, after keeping a copy of the file',
+      'make the one change a finding asks for, and only that one: `vscode` lists the plugin in the chat.pluginLocations setting of VS Code’s settings.json, after keeping a copy of the file; `private-tree` moves the private notes a worktree still holds in .mnema/private/ into the repository’s git directory',
     )
     .option('--dry-run', 'with --fix: say what would change and write nothing')
     .addHelpText(
@@ -38,14 +40,18 @@ export function registerDoctor(program: Command, wiring: Wiring): Declared {
         '  .vscode/mcp.json and ~/.claude.json, the plugin counting as one; and an npm package',
         '  named `mnema` installed where the PATH points — the registry is not asked; VS Code’s user',
         '  settings.json, for whether its agent is told where the plugin is; and the projects of',
-        '  ~/.claude.json that still declare the server.',
+        '  ~/.claude.json that still declare the server; and, in a project inside a git repository,',
+        '  each worktree’s .mnema/private/, where private notes lived before they moved into the',
+        '  repository’s git directory.',
         'Asked alone it writes nothing and exits 0 whatever it finds: each line says what to do.',
-        '`--fix vscode` is the only thing that writes: it shows what it will change, keeps a copy of',
-        'settings.json beside it, keeps the file’s comments, and refuses a file it cannot edit safely.',
+        '`--fix vscode` writes: it shows what it will change, keeps a copy of settings.json beside',
+        'it, keeps the file’s comments, and refuses a file it cannot edit safely.',
+        '`--fix private-tree` writes: it moves each tail, as it is, into the repository’s private',
+        'tree, and leaves where it was anything whose name there holds other bytes.',
       ].join('\n'),
     )
     .action(async (options: { fix?: string; dryRun?: boolean }) => {
-      const { fixVscode, runDoctor } = await import('../commands/doctor.js');
+      const { fixPrivateTree, fixVscode, runDoctor } = await import('../commands/doctor.js');
       const ctx = {
         ...here(),
         env: discoveryEnv(),
@@ -53,12 +59,14 @@ export function registerDoctor(program: Command, wiring: Wiring): Declared {
         running: { file: process.argv[1] ?? '', version: VERSION },
       };
       if (options.fix !== undefined) {
-        if (options.fix !== 'vscode') {
-          io.err(render(fact('the one thing `--fix` knows how to fix is `vscode`.')));
+        if (options.fix !== 'vscode' && options.fix !== 'private-tree') {
+          io.err(render(fact('`--fix` knows how to fix two things: `vscode` and `private-tree`.')));
           io.fail();
           return;
         }
-        const fixed = fixVscode(ctx, { dryRun: options.dryRun === true });
+        const dryRun = options.dryRun === true;
+        const fixed =
+          options.fix === 'vscode' ? fixVscode(ctx, { dryRun }) : fixPrivateTree(ctx, { dryRun });
         for (const line of fixed.lines) io.out(line);
         if (fixed.refused) io.fail();
         return;
@@ -66,9 +74,7 @@ export function registerDoctor(program: Command, wiring: Wiring): Declared {
       if (options.dryRun === true) {
         io.err(
           render(
-            fact(
-              '`--dry-run` goes with `--fix vscode`; asked alone, `mnema doctor` writes nothing.',
-            ),
+            fact('`--dry-run` goes with `--fix`; asked alone, `mnema doctor` writes nothing.'),
           ),
         );
         io.fail();

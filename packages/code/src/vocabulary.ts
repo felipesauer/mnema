@@ -146,8 +146,9 @@ export function glossedList<T extends string>(
  * the language guarantees for string keys).
  *
  * WHY `private` SAYS TWO THINGS. It used to say `this machine` on the CLI and `this
- * machine, this project` on the MCP, and the second one is the true one: the private
- * tree is `.mnema/private/` INSIDE a project, so a machine with four projects has four
+ * machine, this project` on the MCP, and the second one is the true one: there is a private
+ * tree PER PROJECT (in its repository's git directory, or `.mnema/private/` outside a
+ * repository), so a machine with four projects has four
  * private trees and a fact written in one is not in the others. The CLI's shorter wording
  * was not a summary of that, it was a different claim — a reader who had it would expect
  * a private memory to follow them to the next repository. The more precise gloss won on

@@ -69,7 +69,7 @@ _mnema_described() {
       'commit-hook:install or remove an optional git hook that suggests the Mnema-Decision trailer' \
       'key:manage this machine'\''s signing keys' \
       'tail:authorize a cut in the record'\''s own tails' \
-      'doctor:say how mnema is installed on this machine, and what to do about each thing found (writes nothing unless you pass --fix vscode)' \
+      'doctor:say how mnema is installed on this machine, and what to do about each thing found (writes nothing unless you pass --fix)' \
       'completion:print the tab-completion script for a shell' \
       'mcp:run the mnema MCP server over stdio (for an agent host)' \
       'run:open and close the session an agent works inside' \
