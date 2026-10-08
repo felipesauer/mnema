@@ -100,6 +100,9 @@ const CLI = fileURLToPath(new URL('../dist/cli.js', import.meta.url));
 /** What the caller types in front of, as the layout writes it: trimmed at the end. */
 const PROMPT = 'mnema>';
 
+/** The mark a command that was SENT carries on the roll, where the row being typed carries {@link PROMPT}. */
+const SENT = '\u276f';
+
 /** What the opening always says, whatever the terminal is like — a row of the TOP region. */
 const OPENED = 'a session over this project';
 
@@ -753,7 +756,7 @@ describe('the console takes the screen and draws three regions on it', () => {
     // AND THE PRINTING REALLY DID OUTGROW THE MIDDLE, or the two assertions above are about a
     // page nothing happened to: what the first run said is no longer reachable without scrolling.
     expect(
-      printed.text.includes(`${PROMPT} ${says(0)}`),
+      printed.text.includes(`${SENT} ${says(0)}`),
       'nothing was pushed out of the window, so the case proves nothing',
     ).toBe(false);
     // AND THE CALLER'S OWN BUFFER IS STILL WHOLE.
@@ -786,9 +789,9 @@ describe('the console takes the screen and draws three regions on it', () => {
     const said = theFirstScreenWith(ran.bytes, says(0), columns, rows);
     const cleared = theScreenBeforeLeaving(ran.bytes, columns, rows);
     // WHAT THE SESSION SAID IS GONE FROM THE PAGE, which is what the word means.
-    expect(said.text, 'the session never said anything to clear').toContain(`${PROMPT} ${says(0)}`);
+    expect(said.text, 'the session never said anything to clear').toContain(`${SENT} ${says(0)}`);
     expect(cleared.text, 'what the session said survived the clean page').not.toContain(
-      `${PROMPT} ${says(0)}`,
+      `${SENT} ${says(0)}`,
     );
     // AND THE OPENING IS BACK, both halves of it: the arrangement at the top, which never left,
     // and the line it lands, which is put back on the roll (`src/repl/panel.ts`, `Opening.above`).
@@ -982,7 +985,7 @@ describe('the middle region scrolls, and the two fixed regions do not', () => {
     expect(
       wheeled.text,
       'the oldest line is on the page alone: the window did not fill under it',
-    ).toContain(`${PROMPT} ${says(0)}`);
+    ).toContain(`${SENT} ${says(0)}`);
     // AND THE TAIL IS STILL THERE TO COME BACK TO, so the walk above is a window that moved
     // rather than a roll that stopped growing.
     expect(tail.rows, 'End did not come back to the page the session had printed').toEqual(
@@ -1269,7 +1272,7 @@ describe('the way out gives the screen back and the transcript with it', () => {
     const unpainted = ran.bytes.replace(/\u001b\[[0-9;]*m/g, '');
     const gaveItBack = unpainted.lastIndexOf(GIVES_THE_SCREEN_BACK);
     expect(gaveItBack, 'the screen was never given back').toBeGreaterThan(0);
-    const echo = `${PROMPT} verify`;
+    const echo = `${SENT} verify`;
     expect(
       unpainted.lastIndexOf(echo),
       'the transcript was written before the screen was given back',

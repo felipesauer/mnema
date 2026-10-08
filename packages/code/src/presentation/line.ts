@@ -59,6 +59,16 @@
  *     columns above are: what a renderer does with them is what it already does with
  *     something else, and what they buy is a call site saying which half of the row is
  *     the product's own mark and which half is the caller's words.
+ *   - `sentmark` and `sent` — the two parts of a command the console keeps on the roll once it
+ *     has been sent (`echo.ts`, `sentLine`): the mark that says *this is what you asked*, and
+ *     the words. They are not `prompt` and `typed`, which are the row being TYPED: a sent
+ *     command is a band across the page in a terminal that paints, and a mark and a line in
+ *     one that does not, and what a renderer does with them is a table of its own.
+ *   - `sentmark` and `sent` — the two parts of a command the console keeps on the roll once it
+ *     has been sent (`echo.ts`, `sentLine`): the mark that says *this is what you asked*, and
+ *     the words. They are not `prompt` and `typed`, which are the row being TYPED: a sent
+ *     command is a band across the page in a terminal that paints and a mark and a line in
+ *     one that does not, and what a renderer does with them is a table of its own.
  *   - `state` — a record's position in its workflow, wherever a reading shows one. THIS
  *     USED TO SAY A TASK'S, and what falsified it is `state.ts` reaching the other two
  *     machines: a decision's and a pattern's position ride this same role in this same
@@ -150,6 +160,8 @@ export const ROLES = [
   'subject',
   'prompt',
   'typed',
+  'sentmark',
+  'sent',
   'pick',
   'word',
 ] as const;

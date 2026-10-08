@@ -69,9 +69,11 @@ import { fact } from '../src/presentation/detail.js';
 import { renderPlain, widthOf } from '../src/presentation/plain.js';
 import { openConsole } from '../src/repl/console.js';
 import { THE_FLOOR } from '../src/repl/floor.js';
+import { THE_INSET } from '../src/repl/inset.js';
 import { alreadyOnThePage, belowThePage } from '../src/repl/session.js';
 import { CLEAR } from '../src/session-words.js';
 import { REPL_VERB } from '../src/wiring/repl.js';
+import { asMinted } from './support/a-page-held-to-a-run.js';
 import { ENDS_THE_INPUT, fakeTerminal, hooksNothing, until } from './support/console.js';
 import { lastIndexWhere } from './support/last-index-where.js';
 import {
@@ -92,6 +94,9 @@ const CLI = fileURLToPath(new URL('../dist/cli.js', import.meta.url));
 /** What the caller types in front of, as the layout writes it: trimmed at the end. */
 const PROMPT = 'mnema>';
 
+/** The mark a command that was SENT carries on the roll, where the row being typed carries {@link PROMPT}. */
+const SENT = '\u276f';
+
 /**
  * THE LONGEST ANSWER THIS SESSION GIVES — a read of the record, and the same document every time
  * it is asked over a record that did not move.
@@ -101,8 +106,8 @@ const PROMPT = 'mnema>';
  */
 const THE_LONGEST_READ = 'brief';
 
-/** The line a read was asked on, as the roll holds it: the prompt and the word. */
-const ASKED = `${PROMPT} ${THE_LONGEST_READ}`;
+/** The line a read was asked on, as the roll holds it: the mark of a sent command and the word. */
+const ASKED = `${SENT} ${THE_LONGEST_READ}`;
 
 /** The heading that closes the answer — on the page whenever its end is. */
 const CLOSES_THE_ANSWER = '## Patterns adopted';
@@ -128,10 +133,11 @@ const THE_ROW = renderPlain(alreadyOnThePage());
 const THE_ROW_BELOW = renderPlain(belowThePage());
 
 /**
- * The glyph the guide down the margin of the roll is drawn out of (`src/repl/region.ts`, `bar`) —
- * spelled by code point, like every other unusual byte in this repository.
+ * HOW FAR IN A ROW OF THE ROLL BEGINS — the margin, and the deepest indent an answer carries on
+ * the page (`src/repl/inset.ts`). A row that begins further in is not the roll's: it is the badge
+ * in the corner, which is set against the far edge.
  */
-const THE_GUIDE = '│';
+const THE_DEEPEST_ROW = THE_INSET + 12;
 
 /** The keys that move the window, as a terminal sends them. */
 const PAGE_UP = '\u001b[5~';
@@ -204,9 +210,32 @@ function drive(columns: number, rows: number, steps: readonly Step[]): Promise<R
   );
 }
 
-/** The rows of a page that are rows of the roll — the ones with the guide down their margin. */
+/** Whether a row of the page is drawn in the roll's own columns: not blank, and not set against the far edge. */
+function isOfTheRoll(row: string): boolean {
+  const begins = row.search(/\S/);
+  return begins >= THE_INSET && begins <= THE_DEEPEST_ROW && !row.includes(THE_ROW);
+}
+
+/**
+ * The rows of a page that are rows of the roll — what the session said, between the seam under the
+ * opening and the row at the foot, with the machine's own measurements read as what they are.
+ *
+ * THERE IS NO GUIDE DOWN ITS MARGIN TO FIND THEM BY, so they are found by where they are: under the
+ * seam and its row of breath, over the seam the input area opens with, and not the badge set against
+ * the far edge nor the row at the foot. A blank row of the roll is a row of it, and the emptiness the
+ * window leaves under a short roll is not, so the blanks at the end are left out. The line under an
+ * answer says how long it took and the hour it was done (`presentation/echo.ts`, `doneLine`), which
+ * a clock mints, so it is read the way an id is (`support/a-page-held-to-a-run.ts`).
+ */
 function rowsOfTheRoll(page: Screen): readonly string[] {
-  return page.rows.filter((row) => row.includes(THE_GUIDE));
+  const seams = page.rows.flatMap((row, at) => (/^─+$/.test(row.trim()) ? [at] : []));
+  const [top, bottom] = [seams[0] ?? 0, seams[1] ?? page.rows.length];
+  const within = page.rows
+    .slice(top + 2, bottom)
+    .filter((row) => row.trim() === '' || isOfTheRoll(row))
+    .map((row) => asMinted(row).trimEnd());
+  while (within.length > 0 && (within.at(-1) as string).trim() === '') within.pop();
+  return within;
 }
 
 /** How many times `what` is on a page. */
@@ -261,9 +290,16 @@ function aPageHolding(
 
 /** The step that asks for the answer and waits until its end is on the page. */
 function asks(columns: number, rows: number, times = 1): Step {
+  const held = aPageHolding(columns, rows, CLOSES_THE_ANSWER, times);
   return {
     types: `${THE_LONGEST_READ}\r`,
-    until: aPageHolding(columns, rows, CLOSES_THE_ANSWER, times),
+    // AND THE ANSWER IS OVER ONLY WHEN THE LINE UNDER IT IS: that line lands after the last row the
+    // answer printed, so a page holding the end of the answer may be the page a frame early.
+    until: (bytes, since) => {
+      if (!held(bytes, since)) return false;
+      const page = thePageNow(bytes, columns, rows);
+      return page !== undefined && /^\s*✻ /.test(rowsOfTheRoll(page).at(-1) ?? '');
+    },
     what: times === 1 ? `asked ${THE_LONGEST_READ}` : `asked ${THE_LONGEST_READ} again`,
   };
 }
@@ -334,7 +370,12 @@ function theSameRollLessItsTop(
   whole: readonly string[],
   what: string,
 ): void {
-  expect(shorter.length, `${what}: the window is not shorter than it was`).toBeLessThan(
+  // NOT LONGER, AND NOT NECESSARILY SHORTER: a window gives up whole lines at its top, so the row at
+  // the foot costs it a row only when the roll's lines fall so that the row is a row it was not
+  // already leaving spare — a fold that leaves a row over (the answer folds to two columns less
+  // than the page, `src/repl/inset.ts`) takes the row's from that one. What it may never be is
+  // taller, and what it may never lose is the end (below).
+  expect(shorter.length, `${what}: the window is taller than it was`).toBeLessThanOrEqual(
     whole.length,
   );
   expect(shorter, `${what}: the window is not the same tail`).toEqual(
@@ -391,7 +432,7 @@ describe('a read asked again is seen, on the page or on a row saying the page di
       THE_ROW_BELOW,
     );
     const at = again.rows.findIndex((row) => row.includes(THE_ROW));
-    const lastOfTheRoll = lastIndexWhere(again.rows, (row) => row.includes(THE_GUIDE));
+    const lastOfTheRoll = lastIndexWhere(again.rows, isOfTheRoll);
     expect(at, 'the row is not under the window').toBeGreaterThan(lastOfTheRoll);
     expect(at, 'the row is not over the row being typed').toBeLessThan(promptRow(again, PROMPT));
     // AND THE ROLL IS THE SAME ROLL: the second answer's end is the end the first one left, and all
@@ -495,9 +536,10 @@ describe('a read asked again is seen, on the page or on a row saying the page di
     const endOfTheFirst = rowsOfTheRoll(first).at(-1);
     const secondAsked = lastIndexWhere(again.rows, (row) => row.includes(ASKED));
     expect(secondAsked, 'the second read is not on the page').toBeGreaterThan(0);
-    expect(again.rows[secondAsked - 1], 'the second read does not follow the first answer').toBe(
-      endOfTheFirst,
-    );
+    expect(
+      asMinted(again.rows[secondAsked - 1] as string).trimEnd(),
+      'the second read does not follow the first answer',
+    ).toBe(endOfTheFirst);
     // AND THERE IS NO ROW, because a page that moved is an answer a reader saw land: the row is for
     // the page that did not, and nowhere else.
     saysNeither(again, 'a row said the page did not move, on a page that moved');
@@ -521,7 +563,7 @@ describe('a read asked again is seen, on the page or on a row saying the page di
     const other = theSettledScreen(asFarAs(ran, 2), columns, rows);
     outgrowsTheWindow(first);
     expect(other.text, 'the different read is not on the page').toContain(
-      `${PROMPT} ${A_DIFFERENT_READ}`,
+      `${SENT} ${A_DIFFERENT_READ}`,
     );
     saysNeither(other, 'a row said the page did not move, on a page that moved');
   }, 240_000);
@@ -551,7 +593,7 @@ describe('a read asked again is seen, on the page or on a row saying the page di
     // foot took one of those and not a line of what the session says.
     expect(rowsOfTheRoll(cleared), 'the clear left another roll').toEqual(rowsOfTheRoll(opened));
     expect(cleared.text, 'the clear left its own line on the roll').not.toContain(
-      `${PROMPT} ${CLEAR}`,
+      `${SENT} ${CLEAR}`,
     );
   }, 240_000);
 
@@ -574,7 +616,7 @@ describe('a read asked again is seen, on the page or on a row saying the page di
     ]);
     const pasted = theSettledScreen(asFarAs(ran, 2), columns, rows);
     expect(pasted.text, 'the read behind it is not on the page').toContain(
-      `${PROMPT} ${A_DIFFERENT_READ}`,
+      `${SENT} ${A_DIFFERENT_READ}`,
     );
     saysNeither(pasted, 'a row said the page did not move, over the answer that moved it');
     // AND BOTH LINES WERE ANSWERED, in the order they were pasted: the transcript is the roll.
@@ -586,7 +628,7 @@ describe('a read asked again is seen, on the page or on a row saying the page di
     expect(
       handedBack.lastIndexOf(ASKED),
       'the pasted lines were answered out of order',
-    ).toBeLessThan(handedBack.indexOf(`${PROMPT} ${A_DIFFERENT_READ}`));
+    ).toBeLessThan(handedBack.indexOf(`${SENT} ${A_DIFFERENT_READ}`));
   }, 240_000);
 });
 
@@ -696,7 +738,7 @@ describe("an answer that lands below a reader who has walked back is told, in th
       'a reader who had walked back was told the end was on the page',
     ).not.toContain(THE_ROW);
     const at = told.rows.findIndex((row) => row.includes(THE_ROW_BELOW));
-    const lastOfTheRoll = lastIndexWhere(told.rows, (row) => row.includes(THE_GUIDE));
+    const lastOfTheRoll = lastIndexWhere(told.rows, isOfTheRoll);
     expect(at, 'the row is not under the window').toBeGreaterThan(lastOfTheRoll);
     expect(at, 'the row is not over the row being typed').toBeLessThan(promptRow(told, PROMPT));
     // AND THE READER IS WHERE THEY WERE READING. The answer is not on their page, and the window is
@@ -706,7 +748,7 @@ describe("an answer that lands below a reader who has walked back is told, in th
     expect(
       told.text,
       'the answer was brought onto the page of a reader who had walked back',
-    ).not.toContain(`${PROMPT} ${A_DIFFERENT_READ}`);
+    ).not.toContain(`${SENT} ${A_DIFFERENT_READ}`);
     theSameRollToItsLastRow(rowsOfTheRoll(told), rowsOfTheRoll(walked), 'with the row up');
     // AND END GOES THERE: the answer is on the page, and the row that said it was below is gone.
     expect(tail.text, 'End did not bring the answer onto the page').toContain(THE_DIFFERENT_ANSWER);
@@ -751,7 +793,7 @@ describe("an answer that lands below a reader who has walked back is told, in th
       },
       {
         types: PAGE_DOWN.repeat(8),
-        until: aPageHolding(columns, rows, `${PROMPT} ${A_DIFFERENT_READ}`, 2),
+        until: aPageHolding(columns, rows, `${SENT} ${A_DIFFERENT_READ}`, 2),
         what: 'walked forward to the tail a page at a time',
       },
       leavesTheSession,

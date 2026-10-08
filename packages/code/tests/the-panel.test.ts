@@ -57,7 +57,7 @@ import { openSession, tips } from '../src/repl/session.js';
 
 import { here } from '../src/wiring/context.js';
 import { REPL_VERB } from '../src/wiring/repl.js';
-import { DEFAULT_REQUIREMENT, treeHeadline } from '../src/wiring/verify.js';
+import { DEFAULT_REQUIREMENT, holdsNothingToSay, treeHeadline } from '../src/wiring/verify.js';
 import {
   ENDS_THE_INPUT,
   ESC,
@@ -686,7 +686,7 @@ describe('what the panel says about a tree is a prefix of what verify says', () 
     // the panel says that tree too — the whole reading is the one the panel is a prefix of.
     const said = (await shell('verify', '--verbose')).map(stripped);
     let shortened = 0;
-    for (const tree of trees) {
+    for (const tree of trees.filter((one) => !holdsNothingToSay(one))) {
       const short = renderPlain(treeHeadline(tree, UNDER_A_HEADING)).trimStart();
       const whole = said.find((line) => line.startsWith(tree.scope));
       expect(whole, tree.scope).toBeDefined();
@@ -703,8 +703,18 @@ describe('what the panel says about a tree is a prefix of what verify says', () 
     // because a panel that composed its record section any other way would satisfy it and
     // still print something else.
     const page = stripped(withoutLayout(await openedAt(200)));
-    for (const tree of everyTree()) {
+    const trees = everyTree();
+    for (const tree of trees.filter((one) => !holdsNothingToSay(one))) {
       expect(page, tree.scope).toContain(renderPlain(treeHeadline(tree, UNDER_A_HEADING)).trim());
+    }
+    // AND THE ONE THE VERB LEAVES OUT UNLESS ASKED IS NOT ON THE PAGE EITHER: the fixture really has a
+    // private tree holding nothing, so the absence is about the panel and not about a record without one.
+    const left = trees.filter(holdsNothingToSay);
+    expect(left.length, 'the fixture has no tree that holds nothing').toBeGreaterThan(0);
+    for (const tree of left) {
+      expect(page, tree.scope).not.toContain(
+        renderPlain(treeHeadline(tree, UNDER_A_HEADING)).trim(),
+      );
     }
   }, 120_000);
 });

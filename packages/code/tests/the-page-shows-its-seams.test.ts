@@ -6,8 +6,11 @@
  * a page a reader can find their way around. Under the banner there was nothing saying the
  * banner had ended; the roll started against the left edge of the terminal; and the line a
  * caller had TYPED read at exactly the weight of the answer to it, so scrolling a session meant
- * hunting for it. What answers all three is chrome — a rule, a margin with a guide down it, and
- * the echo composed like every other line so a renderer can weigh it.
+ * hunting for it. What answers all three is chrome — a rule, a margin, and the echo composed like
+ * every other line so a renderer can weigh it. THE MARGIN HAD A GUIDE DOWN IT, A PURPLE LINE BESIDE
+ * EVERY ROW, AND IT IS GONE: what tells a caller's words from the answer to them is a band behind
+ * the command and a dot that opens the answer, and the purple is left to the places that say *this
+ * is mnema* (the top, the rules, the row being typed).
  *
  * WHAT IS ASSERTED HERE, and every one of them is a measurement off a page rather than a
  * picture:
@@ -18,13 +21,14 @@
  *   - THE BREATH IS ONE ROW, and the top region still fits inside the third of the screen the
  *     chrome is allowed. This delivery SPENDS rows on a screen where every row is somebody's
  *     answer, so the bound is asked where it is tightest: eighty by twenty-four.
- *   - THE ECHO IS TOLD FROM THE ANSWER, with colour and without it. The prompt carries the
- *     accent this product is marked by and the words carry a weight; with colour off the row is
- *     still the caller's, because the prompt is still there in words.
+ *   - THE ECHO IS TOLD FROM THE ANSWER, with colour and without it. A sent command carries a mark
+ *     and its words in greys, and none of the accent; with colour off the row is still the
+ *     caller's, because the mark is still there.
  *   - THE TREE STOPS COMPETING WITH THE TITLE, in the list a reader actually reads.
- *   - AND THE GUIDE COSTS A COLUMN AND NOT A CHARACTER. The margin takes four columns of the
- *     page and everything the session says is folded to what is left, so nothing is cut and
- *     nothing is broken mid-word at the narrowest window there is.
+ *   - AND THE MARGIN COSTS COLUMNS AND NOT A CHARACTER. It takes six columns of the page, an answer
+ *     takes two more, and everything the session says is folded to what is left, so nothing is
+ *     cut and nothing is broken mid-word at the narrowest window there is. THE GUIDE IS GONE and
+ *     the page is held not to draw it.
  *
  * WHY THE ACCENT IS ASKED FOR HERE RATHER THAN CLEARED, against what most of this bench does:
  * the paint IS the subject of two of the cases. A stream that said it took no colour would make
@@ -50,7 +54,7 @@ import { renderPlain, widthOf } from '../src/presentation/plain.js';
 import { renderStyled } from '../src/presentation/styled.js';
 import { THE_FLOOR } from '../src/repl/floor.js';
 import { dispositionOf } from '../src/repl/gate.js';
-import { BEFORE_THE_BAR, insideTheMargin, THE_INSET } from '../src/repl/inset.js';
+import { insideAnAnswer, insideTheMargin, THE_INSET } from '../src/repl/inset.js';
 import { openSession } from '../src/repl/session.js';
 import { REPL_VERB } from '../src/wiring/repl.js';
 import { refusalSentence } from '../src/wiring/report.js';
@@ -87,6 +91,10 @@ const OPENED = 'a session over this project';
 /** The glyph a rule is drawn out of, and the one the guide is — both by code point. */
 const RUN = '\u2500';
 const GUIDE = '\u2502';
+
+/** The mark a command that was SENT carries on the roll, and the dot an answer opens with. */
+const SENT = '\u276f';
+const ANSWERED = '\u25cf';
 
 /** The verb the caller types, and the first words of what it answers. */
 const A_VERB = 'search';
@@ -211,7 +219,7 @@ async function drivenHere(typed: readonly string[]): Promise<string> {
   await until(() => terminal.bytes().includes(PROMPT), 'opened');
   for (const line of typed) {
     terminal.type(`${line}\r`);
-    await until(() => stripped(terminal.bytes()).includes(`${PROMPT} ${line}`), `typed ${line}`);
+    await until(() => stripped(terminal.bytes()).includes(`${SENT} ${line}`), `typed ${line}`);
   }
   terminal.type(ENDS_THE_INPUT);
   await closed;
@@ -253,7 +261,7 @@ describe('the page has three rules, and they are the same drawing in the same hu
     }
   }, 240_000);
 
-  it('draws all three out of one function, in one hue, and the guide in the same one', async () => {
+  it('draws all three out of one function, in one hue, and no guide beside the roll', async () => {
     // THE BYTES, in this process, where the paint survives. Three rows of a page cannot be
     // compared for colour on a replayed screen: a screen model answers what is on the page.
     const page = await drivenHere([A_VERB]);
@@ -264,14 +272,13 @@ describe('the page has three rules, and they are the same drawing in the same hu
     // nothing composed it — it is an edge the library drew (`repl/region.ts`, `rule`).
     const escapes = sgrOf(rule);
     expect(escapes, 'a rule carries something other than one hue').toHaveLength(2);
-    const [accent, closer] = escapes as [string, string];
-    // AND THE GUIDE DOWN THE MARGIN CARRIES THE SAME PAIR. It is the other edge this page draws
-    // ({@link GUIDE}), and one accent means one accent whichever way the line runs.
-    const guided = rowsOf(page).find((row) => stripped(row).includes(GUIDE)) as string;
-    expect(guided, 'nothing on the page draws the guide').toBeDefined();
-    expect(guided, 'the guide is not in the accent the rules are').toContain(
-      `${accent}${GUIDE}${closer}`,
-    );
+    const [accent] = escapes as [string, string];
+    // AND THE GUIDE IS NOT DRAWN: no row of the page, and no byte of the stream, holds the
+    // glyph a purple line down the margin was made of.
+    expect(
+      rowsOf(page).filter((row) => stripped(row).includes(GUIDE)),
+      'a guide is drawn beside the roll',
+    ).toEqual([]);
     // AND THE ACCENT IS NONE OF THE THREE A VERDICT CARRIES, which is the rule the whole
     // surface's colour rests on: hue means news, and this one means the product.
     for (const severity of ['\u001b[31m', '\u001b[32m', '\u001b[33m']) {
@@ -300,11 +307,11 @@ describe('the banner ends in a rule and one row of breath', () => {
     const blank = (row: number): boolean => (screen.rows[row] as string).trim().length === 0;
     expect(blank(seam + 1), 'there is no row of breath under the seam').toBe(true);
     expect(blank(seam + 2), 'the breath is more than one row').toBe(false);
-    // AND WHAT IS ON THE ROW UNDER IT IS THE SESSION'S, drawn inside the margin with the guide
-    // beside it — so the breath separates the banner from the roll rather than from nothing.
-    expect([...(screen.rows[seam + 2] as string)][BEFORE_THE_BAR], 'the roll has no guide').toBe(
-      GUIDE,
-    );
+    // AND WHAT IS ON THE ROW UNDER IT IS THE SESSION'S, drawn inside the margin and with nothing
+    // in the margin — the breath separates the banner from the roll rather than from nothing, and
+    // there is no guide beside it.
+    const first = [...(screen.rows[seam + 2] as string)];
+    expect(first.slice(0, THE_INSET).join('').trim(), 'something is drawn in the margin').toBe('');
   }, 240_000);
 
   it('keeps the whole top region inside a third of the screen it never moves on', async () => {
@@ -335,41 +342,33 @@ describe('the banner ends in a rule and one row of breath', () => {
 // ---------------------------------------------------------------------------
 
 describe('the line a caller sent is told from the answer to it', () => {
-  it('paints the prompt in the accent and weighs the words, where an answer has neither', async () => {
+  it('paints the sent command in greys and no accent, where an answer has neither', async () => {
     const page = await drivenHere([A_VERB]);
     const rows = rowsOf(page);
-    const echo = rows.find((row) => stripped(row).includes(`${PROMPT} ${A_VERB}`)) as string;
+    const echo = rows.find((row) => stripped(row).includes(`${SENT} ${A_VERB}`)) as string;
     expect(echo, 'the caller’s line is nowhere on the page').toBeDefined();
     const answer = rows.find((row) => stripped(row).includes(THE_ANSWER)) as string;
     expect(answer, 'the answer to it is nowhere on the page').toBeDefined();
-    // THE PROMPT IS WRAPPED IN THE VERY PAIR A RULE CARRIES, which is the link between the two
-    // alphabets one accent is now spelled in: the layout says a word to its library and the
-    // renderer writes an escape (`repl/region.ts`, `presentation/styled.ts`).
-    const rule = rowsOf(page).find(isRule) as string;
-    const [accent, closer] = sgrOf(rule) as [string, string];
-    expect(echo, 'the prompt does not carry the accent').toContain(`${accent}${PROMPT} ${closer}`);
-    // AND WHAT WAS TYPED CARRIES A WEIGHT OF ITS OWN, which is the half that survives a
-    // colour-blind reader and a theme nobody expected.
-    expect(echo, 'what the caller typed carries no weight').toContain(`\u001b[1m${A_VERB}`);
-    // AND THE ANSWER CARRIES NEITHER, which is what makes the echo an anchor rather than a
-    // second thing shouting on the same page.
-    //
-    // ASKED OF THE LINE AND NOT OF THE ROW, because every row of the roll begins with the guide
-    // and the guide is in the accent — a reading over the whole row would find the page's own
-    // edge and call it paint on the answer. What is taken off is exactly the guide and its
-    // wrapping; what is left is the line the session composed.
-    const withoutTheGuide = (row: string): string =>
-      row.slice(row.indexOf(`${accent}${GUIDE}${closer}`) + `${accent}${GUIDE}${closer}`.length);
-    expect(
-      sgrOf(withoutTheGuide(answer)),
-      'the answer is painted like the line that asked for it',
-    ).not.toContain(accent);
-    expect(stripped(answer), 'the answer is not the answer').toContain(THE_ANSWER);
-    // AND THE ECHO'S OWN LINE IS PAINTED, past the same guide — so the comparison above is
-    // between two lines rather than between a line and a row that lost its paint.
-    expect(sgrOf(withoutTheGuide(echo)), 'the echo lost its accent with the guide').toContain(
+    // THE ACCENT IS THE PAIR A RULE CARRIES, and it is the product's hue: a rule, the top and the
+    // row being typed say *this is mnema*, and what a caller asked is not that.
+    const rule = rows.find(isRule) as string;
+    const [accent] = sgrOf(rule) as [string, string];
+    expect(sgrOf(echo), 'a sent command carries the accent').not.toContain(accent);
+    // IT IS PAINTED, THOUGH, in a mark and a line of its own: both are greys, the mark quieter than
+    // the words, so what was asked reads as a thing the session said back.
+    expect(echo, 'the mark of a sent command is not painted').toContain(`\u001b[38;5;246m${SENT} `);
+    expect(echo, 'what was sent is not painted').toContain(`\u001b[38;5;253m${A_VERB}`);
+    // AND THE ANSWER OPENS WITH A DOT, NEITHER PAINTED NOR WEIGHED, which is what makes the echo
+    // an anchor rather than a second thing shouting on the same page. Asked of the row's own
+    // beginning: the dot is the first thing on it after the margin, and nothing wraps it.
+    const beginning = stripped(answer).slice(THE_INSET);
+    expect(beginning.startsWith(`${ANSWERED} `), 'the answer does not open with a dot').toBe(true);
+    const beforeTheDot = answer.slice(0, answer.indexOf(ANSWERED));
+    expect(beforeTheDot, 'the dot is painted').toBe(stripped(beforeTheDot));
+    expect(sgrOf(answer), 'the answer is painted like the line that asked for it').not.toContain(
       accent,
     );
+    expect(stripped(answer), 'the answer is not the answer').toContain(THE_ANSWER);
   }, 120_000);
 
   it('is still the caller’s line when there is no colour at all', async () => {
@@ -407,33 +406,37 @@ describe('the line a caller sent is told from the answer to it', () => {
     // THE ROW IS THERE AND IT SAYS WHOSE IT IS, in words: the prompt is the carrier and the
     // colour only ever repeated it.
     expect(screen.text, 'the echo is not on the page without colour').toContain(
-      `${PROMPT} ${A_VERB}`,
+      `${SENT} ${A_VERB}`,
     );
-    // AND THE PAGE IS THE SAME PAGE: the guide still holds its column, so what went is the tone
-    // and never the structure.
-    const echoed = screen.rows.find((row) => row.includes(`${PROMPT} ${A_VERB}`)) as string;
-    expect([...echoed][BEFORE_THE_BAR], 'the roll lost its guide with the colour').toBe(GUIDE);
+    // AND THE PAGE IS THE SAME PAGE: the row is the margin and the mark and the words, and
+    // NOTHING ELSE — what went with the colour is the band, which was never anything but tone, and
+    // what is left is the mark a reader without colour finds their own line by.
+    const echoed = screen.rows.find((row) => row.includes(`${SENT} ${A_VERB}`)) as string;
+    expect(echoed.slice(THE_INSET).trimEnd(), 'the sent line is not the mark and the words').toBe(
+      `${SENT} ${A_VERB}`,
+    );
     // AND NOT ONE BYTE OF COLOUR IS LEFT on the frame — ours OR the library's. It used to let
     // the layout's own accent and its closer through, and that pair was the half of the page
     // that was not obeying the caller.
     const frame = ran.bytes.slice(ran.at[0] as number, ran.at[1] as number);
     const left = [...new Set(sgrOf(frame))].sort();
     expect(left, `the frame still carries colour: ${left.join(' ')}`).toEqual([]);
-    const painted = rowsOf(ran.bytes).find((row) => stripped(row).includes(`${PROMPT} ${A_VERB}`));
+    const painted = rowsOf(ran.bytes).find((row) => stripped(row).includes(`${SENT} ${A_VERB}`));
+    expect(painted, 'the sent line is not on the quiet page at all').toBeDefined();
     expect(
-      sgrOf((painted as string).slice((painted as string).indexOf(PROMPT))),
+      sgrOf((painted as string).slice((painted as string).indexOf(SENT))),
       'the echo is still painted with NO_COLOR set',
     ).toEqual([]);
     // NOT VACUOUS: the same session with colour on paints that same frame, and paints the echo.
     const loud = await inPty({ columns, rows, steps: [opens, asks, leaves] });
     const shown = loud.bytes.slice(loud.at[0] as number, loud.at[1] as number);
     expect(sgrOf(shown).length, 'nothing is painted even with colour on').toBeGreaterThan(0);
-    const echo = rowsOf(shown).find((row) => stripped(row).includes(`${PROMPT} ${A_VERB}`));
+    const echo = rowsOf(shown).find((row) => stripped(row).includes(`${SENT} ${A_VERB}`));
     // FROM THE SAME PLACE ON THE ROW as the reading above, so the pair is one measurement taken
     // twice rather than two questions: past the prompt, the quiet page has no escape and the
     // painted one has the weight what was typed carries.
     expect(
-      sgrOf((echo as string).slice((echo as string).indexOf(PROMPT))).length,
+      sgrOf((echo as string).slice((echo as string).indexOf(SENT))).length,
       'the echo carries no paint with colour on either',
     ).toBeGreaterThan(0);
   }, 300_000);
@@ -509,7 +512,7 @@ describe('the margin takes columns of the page and never a character of a line',
     expect(widthOf(widest), 'the widest line already fits inside the margin').toBeGreaterThan(
       insideTheMargin(columns),
     );
-    const broken = foldedAt(insideTheMargin(columns), renderPlain)(widest).split('\n');
+    const broken = foldedAt(insideAnAnswer(columns), renderPlain)(widest).split('\n');
     expect(broken.length, 'the widest line does not fold here').toBeGreaterThan(1);
 
     const ran = await inPty({
@@ -526,8 +529,13 @@ describe('the margin takes columns of the page and never a character of a line',
     // nothing was cut, nothing was clipped, and the break is the product's own rather than the
     // terminal's.
     const page = screen.rows.map((row) => row.slice(THE_INSET).replace(/ +$/, ''));
+    // AND THE ANSWER IS FRAMED: its first row opens with the dot and every row after it recedes by
+    // the two columns the dot and its space take, which is what the fold above left room for.
+    const framed = broken.map((wanted, step) =>
+      `${step === 0 ? `${ANSWERED} ` : '  '}${wanted}`.replace(/ +$/, ''),
+    );
     const found = page.findIndex((_row, at) =>
-      broken.every((wanted, step) => page[at + step] === wanted.replace(/ +$/, '')),
+      framed.every((wanted, step) => page[at + step] === wanted),
     );
     expect(found, `the widest answer is not on the page whole:\n${screen.text}`).toBeGreaterThan(0);
     // AND NOT ONE ROW OF THE PAGE IS WIDER THAN THE WINDOW, margin and guide included: the
@@ -569,17 +577,21 @@ describe('every site that echoes, every site that draws an edge, every site that
       'a prompt is glued to a line somewhere',
     ).toEqual([]);
     // AND BOTH PLACES ASK ONE FUNCTION FOR THE SHAPE, with the shape somewhere else entirely.
-    const echoing = sources().filter((file) => /echoLine\(/.test(file.code));
-    expect(echoing.map((file) => file.where).sort()).toEqual([
-      'presentation/echo.ts',
-      'repl/console.ts',
-    ]);
-    // TWICE, AND THE TWO ARE THE TWO ROWS: the echo that lands on the roll when a line leaves the
-    // input, and the row the caller is still writing. A third would be a third idea of what a
-    // prompt and a line look like together.
-    const console_ = (echoing.find((file) => file.where === 'repl/console.ts') as { code: string })
-      .code;
-    expect((console_.match(/echoLine\(/g) ?? []).length, 'a third row is composed').toBe(2);
+    // THE ROW BEING TYPED asks for the echo, and the line that landed on the roll when it was sent
+    // asks for the sent command — two shapes in `presentation/echo.ts`, one call each in the console.
+    for (const shape of ['echoLine', 'sentLine']) {
+      const asking = sources().filter((file) => new RegExp(`${shape}\\(`).test(file.code));
+      expect(asking.map((file) => file.where).sort(), shape).toEqual([
+        'presentation/echo.ts',
+        'repl/console.ts',
+      ]);
+      const console_ = (asking.find((file) => file.where === 'repl/console.ts') as { code: string })
+        .code;
+      expect(
+        (console_.match(new RegExp(`${shape}\\(`, 'g')) ?? []).length,
+        `a second ${shape} is composed`,
+      ).toBe(1);
+    }
   });
 
   it('draws every edge of the page out of one module, and composes none of them', () => {
@@ -588,8 +600,8 @@ describe('every site that echoes, every site that draws an edge, every site that
     const drawing = sources().filter((file) => /borderStyle/.test(file.code));
     expect(drawing.map((file) => file.where)).toEqual(['repl/region.ts']);
     const region = (drawing[0] as { code: string }).code;
-    expect((region.match(/borderStyle/g) ?? []).length, 'the page draws more than two edges').toBe(
-      2,
+    expect((region.match(/borderStyle/g) ?? []).length, 'the page draws more than one edge').toBe(
+      1,
     );
     // AND NOTHING ANYWHERE COMPOSES ONE OUT OF GLYPHS, which is what keeps the run the
     // library's: a row of dashes typed into a source would be a third way to draw a line.

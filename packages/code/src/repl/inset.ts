@@ -1,6 +1,6 @@
 /**
  * THE PAGE'S LEFT EDGE — how many columns the console keeps to the left of everything it
- * SAYS, and what is drawn in them.
+ * SAYS.
  *
  * IT IS ONE STATEMENT WITH THREE READERS, and that is the whole reason it is a module of
  * its own rather than three numbers in the layout. The margin is DRAWN by the layout
@@ -10,16 +10,12 @@
  * is a row of the page folded where nobody expected it, which is the defect this surface
  * has paid for once already in the other direction (`area.ts`, `ABOVE_THE_PALETTE`).
  *
- * WHAT IT IS FOR is the thing a caller asked for by drawing it on a screenshot: a page
- * whose text is not jammed against the edge of the terminal, and a line down the margin
- * marking the region they are READING — the guide an editor draws down the left of a file.
- * The two are one decision, because the bar has to live somewhere and the somewhere is the
- * margin.
- *
- * THE BAR IS CHROME, AND CHROME OBEYS THE RENDERER. It carries the accent, so a terminal
- * that takes no colour — `NO_COLOR`, a pipe, a stream that says no — draws it with no hue
- * at all, and it still occupies its column. That is the same posture the rest of the
- * surface takes: what a reader without colour loses is the tone, never the structure.
+ * WHAT IT IS FOR is a page whose text is not jammed against the edge of the terminal. THERE
+ * WAS A GUIDE DOWN IT: a purple line the width of one column, drawn beside every row of the roll,
+ * marking the region a caller was reading. It is gone, and the margin is the width it had with
+ * the guide in it, so not a column of the page moved: what marks where a caller's own words
+ * begin is now a band behind each command, and what marks where an answer begins is a glyph on
+ * its first row (`echo.ts`, `region.ts`).
  *
  * WHICH REGIONS IT REACHES, and why the third is left out. The top region and the middle
  * one are what the session SAYS — the arrangement it opens with and the roll of everything
@@ -28,46 +24,26 @@
  * the process read off its device (`tests/support/screen.ts`), and the row being typed
  * begins at the left edge because the caret is a COLUMN into it — an inset there would be
  * arithmetic on the one number that has to be exact (`console.ts`, `Shown.column`).
- */
-
-/**
- * The blank columns before the bar — the margin proper.
  *
- * FOUR, and IT WAS TWO. The sentence here read: *one column reads as an accident of the
- * terminal and three is a page that has given away four percent of the narrowest window this
- * console draws on*. WHAT FALSIFIED IT IS THE PAGE ITSELF, printed and measured rather than
- * argued about: at two columns the bar landed on column three, and column three is where the
- * row under the prompt begins — the hint is an `aside`, so it sits one indent in
- * (`presentation/plain.ts`, `INDENT`). Two different things had one left edge, and the guide
- * down the margin was the one that looked like an accident of the terminal. The old sentence
- * was arithmetic about the width; it was never a reading of what the page shows.
- *
- * FOUR IS THAT COLUMN PLUS ONE LEVEL, which is the step this page moves by and the only unit
- * of horizontal distance it has: the bar clears the hint's edge rather than sitting on it, and
- * it clears it by the same two columns every indent of this product is worth.
- *
- * AND IT COSTS THE PAGE NOTHING AT THE FLOOR, which is the half a number chosen for its looks
- * would not have. The shortest window this console draws on is eighty columns (`floor.ts`), the
+ * SIX, AND IT WAS FOUR PLUS THE GUIDE PLUS ONE. Four is the column the row under the prompt
+ * begins at plus one level, which is the step this page moves by and the only unit of
+ * horizontal distance it has: the hint is an `aside`, so it sits one indent in
+ * (`presentation/plain.ts`, `INDENT`), and what the page says begins clear of it rather than on
+ * it. It costs the page nothing at the floor, which is the half a number chosen for its looks
+ * would not have: the shortest window this console draws on is eighty columns (`floor.ts`), the
  * widest thing drawn inside the margin there is the drawing of the name at fifty
- * (`presentation/banner.ts`), and the margin leaves seventy-four — so the widest row on the
- * page has twenty-four columns to spare and nothing folds that did not fold before.
+ * (`presentation/banner.ts`), and the margin leaves seventy-four.
  */
-export const BEFORE_THE_BAR = 4;
-
-/** The bar's own column. One, because a rule is one glyph wide however tall it is. */
-export const THE_BAR = 1;
+export const THE_INSET = 6;
 
 /**
- * The column between the bar and the text.
- *
- * ONE, and it is the difference between a guide and a prefix: text against the bar reads
- * as though the bar were a character of it, which is what a quote block looks like and is
- * not what this is.
+ * How far an ANSWER sits in from the edge of the roll, which is one level of the step this page
+ * moves by (`presentation/plain.ts`, `INDENT`): the glyph that opens an answer takes the first
+ * of the columns and the words after it begin on the second, and every row after the first sits
+ * under those words. What an answer is folded to is the width inside the margin less these two,
+ * so a row of it never reaches the edge the terminal would break it at.
  */
-export const AFTER_THE_BAR = 1;
-
-/** How many columns of every page are the margin, whatever is drawn in them. */
-export const THE_INSET = BEFORE_THE_BAR + THE_BAR + AFTER_THE_BAR;
+export const THE_ANSWER_INDENT = 2;
 
 /**
  * How wide the page is INSIDE the margin — what a line of the session is folded to,
@@ -80,4 +56,13 @@ export const THE_INSET = BEFORE_THE_BAR + THE_BAR + AFTER_THE_BAR;
  */
 export function insideTheMargin(columns: number): number {
   return Math.max(0, columns - THE_INSET);
+}
+
+/**
+ * How wide an ANSWER may be: the page inside its margin, less the indent every row of an answer
+ * carries. The same rule about a width nobody reported — zero stays zero.
+ */
+export function insideAnAnswer(columns: number): number {
+  const inside = insideTheMargin(columns);
+  return inside === 0 ? 0 : Math.max(1, inside - THE_ANSWER_INDENT);
 }

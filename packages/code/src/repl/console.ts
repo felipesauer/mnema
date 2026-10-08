@@ -108,7 +108,7 @@
 
 import { render } from 'ink';
 import { createElement, type ReactElement } from 'react';
-import { echoLine } from '../presentation/echo.js';
+import { ANSWER_MARK, doneLine, echoLine, sentLine } from '../presentation/echo.js';
 import type { Line } from '../presentation/line.js';
 import type { Render } from '../presentation/render.js';
 import { widthOfText } from '../presentation/width.js';
@@ -119,7 +119,7 @@ import { type Editing, type Keystroke, keystrokesOf, NOTHING_TYPED, typeKey } fr
 import { withoutTheHistoryErase } from './erasing.js';
 import { theFloorScreenFor, theWindowServes } from './floor.js';
 import type { AfterLine } from './gate.js';
-import { insideTheMargin } from './inset.js';
+import { insideAnAnswer, insideTheMargin, THE_ANSWER_INDENT } from './inset.js';
 import { armLeaving, type Leaving } from './leaving.js';
 import { offeredBy, paletteFor, paletteRowsFor } from './palette.js';
 import type { Opening } from './panel.js';
@@ -138,6 +138,7 @@ import {
   toTheTail,
   toTheTop,
 } from './scrolling.js';
+import { firstWordOf, hourWords, tookWords, withoutTheDoneLines } from './turn.js';
 
 /**
  * How wide the terminal is taken to be when the device does not say.
@@ -381,6 +382,13 @@ export interface ConsoleRequest {
   readonly complete: Completer;
   /** What the session does with one submitted line, and whether it goes on. */
   readonly answer: (line: string) => Promise<AfterLine>;
+  /**
+   * THE CLOCK, in milliseconds since the epoch — what the line under an answer measures how long
+   * it took and what hour it was done by. A parameter and not a call to the system's, so a case
+   * that holds the line asserts on the numbers it handed in; a session left to itself reads the
+   * machine's.
+   */
+  readonly now?: () => number;
   /** Every way this process can stop, so the terminal is given back in all of them. */
   readonly leaving: Leaving;
 }
@@ -427,6 +435,7 @@ export function openConsole(request: ConsoleRequest): OpenConsole {
   // behind it, which is what makes "a frame reads nothing" a property of this file.
   let badge: Drawn = request.badge();
   const { openingFor, saw, happened, complete, answer, leaving } = request;
+  const now = request.now ?? Date.now;
 
   /**
    * How wide the page is, asked of the DEVICE — the one place anything on the FRAME does.
@@ -630,6 +639,16 @@ export function openConsole(request: ConsoleRequest): OpenConsole {
    * bottom rather than the oldest at the top.
    */
   const renderOnTheRoll: Render = (line) => renderingAt(insideTheMargin(drawnAt.columns))(line);
+
+  /**
+   * HOW A LINE OF AN ANSWER BECOMES BYTES — the same rule, for the width inside the margin LESS
+   * the indent every row of an answer carries ({@link landAnswer}). What a verb prints goes
+   * through this ({@link OpenConsole.render}), so it is folded to the room it will have once the
+   * glyph and the indent are put in front of it; folded to the width of the roll it would reach
+   * the terminal's margin two columns early and be broken there, mid-word, with its continuation
+   * at the edge.
+   */
+  const renderOnAnAnswer: Render = (line) => renderingAt(insideAnAnswer(drawnAt.columns))(line);
 
   /**
    * HOW THE ROW BEING TYPED BECOMES BYTES — the same rule as every other line on this page,
@@ -972,7 +991,40 @@ export function openConsole(request: ConsoleRequest): OpenConsole {
     for (const watcher of watchers) watcher();
   }
 
+  /**
+   * WHETHER THE ANSWER TO THE SUBMITTED LINE HAS OPENED YET — has put its first row, the one the
+   * glyph is on. Absent between answers, which is what keeps a line that lands outside one (the
+   * opening, an occurrence) exactly what it was.
+   */
+  let answering: { opened: boolean } | undefined;
+
+  /**
+   * ONE LINE OF AN ANSWER, with what makes it one: the first row that says anything is opened by
+   * the glyph and every other row recedes by the same two columns, so an answer reads as one
+   * block with a head. A row with nothing on it stays nothing — a blank row on this page is blank
+   * — and a line the renderer already broke is several rows, each one indented.
+   */
+  function landAnswer(line: string, answer: { opened: boolean }): void {
+    const step = ' '.repeat(THE_ANSWER_INDENT);
+    const rows = line.split('\n').map((row) => {
+      if (row === '') return row;
+      if (answer.opened) return `${step}${row}`;
+      answer.opened = true;
+      return `${ANSWER_MARK}${row}`;
+    });
+    put(rows.join('\n'));
+  }
+
+  /**
+   * THE ONE DOOR ONTO THE PAGE, as the session knows it: a line a verb printed lands as part of
+   * the answer being given, and anything else lands as it is.
+   */
   function land(line: string): void {
+    if (answering === undefined) put(line);
+    else landAnswer(line, answering);
+  }
+
+  function put(line: string): void {
     // WHAT THE PAGE SAID, NOTICED WHERE IT IS SAID. A record named on this row can be
     // named back by the caller from here on, and this is the row's one door — so a line
     // that reached the screen without passing here would be a record the session showed
@@ -1010,7 +1062,7 @@ export function openConsole(request: ConsoleRequest): OpenConsole {
    * them has a caret in it — and only one of them is left for the terminal to fold.
    */
   function echoed(typed: string): void {
-    land(renderOnTheRoll(echoLine(prompt, typed)));
+    put(renderOnTheRoll(sentLine(typed)));
   }
 
   /**
@@ -1083,7 +1135,7 @@ export function openConsole(request: ConsoleRequest): OpenConsole {
     if (occurrences.length === 0) return;
     turn = turn.then(() => {
       if (left) return;
-      for (const line of occurrences) land(line);
+      for (const line of occurrences) put(line);
     });
   }
 
@@ -1277,7 +1329,28 @@ export function openConsole(request: ConsoleRequest): OpenConsole {
           // answer, and a window taken after it would be compared with the answer less a line.
           const found = theWindowNow();
           echoed(line);
-          switch (await answer(line)) {
+          // THE ANSWER IS TIMED ON THE CLOCK THE CONSOLE WAS HANDED, from the line landing to the
+          // session saying it is done. What it prints between is its own: every line is opened or
+          // indented as one of the answer ({@link land}), and the line under it is put on only if
+          // there was an answer to put it under.
+          const said = { opened: false };
+          answering = said;
+          const began = now();
+          let after: AfterLine;
+          try {
+            after = await answer(line);
+          } finally {
+            answering = undefined;
+          }
+          const finished = now();
+          if (said.opened) {
+            put(
+              renderOnTheRoll(
+                doneLine(firstWordOf(line), tookWords(finished - began), hourWords(finished)),
+              ),
+            );
+          }
+          switch (after) {
             case 'clear':
               cleared();
               break;
@@ -1352,7 +1425,7 @@ export function openConsole(request: ConsoleRequest): OpenConsole {
   function judged(asked: number, found: readonly string[]): void {
     if (asked !== submitted) return;
     if (followingTheTail(scrolling)) {
-      if (!theSameWindow(found, theWindowNow())) return;
+      if (!theSameWindow(withoutTheDoneLines(found), withoutTheDoneLines(theWindowNow()))) return;
       theRowSays = 'onThePage';
     } else {
       theRowSays = 'belowThePage';
@@ -1504,5 +1577,5 @@ export function openConsole(request: ConsoleRequest): OpenConsole {
   // reference that does not exist yet.
   mounted = app;
 
-  return { land, closed, render: renderOnTheRoll };
+  return { land, closed, render: renderOnAnAnswer };
 }

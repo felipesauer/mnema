@@ -28,7 +28,7 @@ import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { describe, expect, it } from 'vitest';
 import { aside, fact, statedFact, subjectLine } from './detail.js';
-import { echoLine } from './echo.js';
+import { doneLine, echoLine, sentLine } from './echo.js';
 import { asId, asPick, asScope, asWhen, asWord, itemLine } from './items.js';
 import { type Line, ROLES, type Role, SEVERITIES, type Severity } from './line.js';
 import { renderPlain } from './plain.js';
@@ -68,6 +68,12 @@ describe('every role has something that produces it', () => {
     echoLine('mnema> ', 'search'),
     echoLine('mnema> ', 'sear'),
     echoLine('mnema> ', ''),
+    // A command once it has been SENT, as the roll keeps it, and the line under its answer: the
+    // only producers of the two roles a band is laid under, and of a detail with no label before
+    // it (`echo.ts`).
+    sentLine('search money'),
+    sentLine(''),
+    doneLine('search', '22ms', '20:28'),
     // THE MARK ON A PICKED ROW, which is the second part of a line that is chrome rather
     // than a fact. It arrives PADDED, the way the console composes it (`repl/palette.ts`),
     // because what the role says is what the column IS and not how wide it is drawn.

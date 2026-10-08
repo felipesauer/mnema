@@ -78,6 +78,16 @@ const PACKAGES = fileURLToPath(new URL('../..', import.meta.url));
 /** What the caller types in front of, as the layout writes it: trimmed at the end. */
 const PROMPT = 'mnema>';
 
+/**
+ * What a command that was SENT is kept under on the roll, and the two glyphs an answer is
+ * framed by: the mark a sent line opens with, the dot an answer's first row opens with, and the
+ * one the line under it does (`presentation/echo.ts`). The row being TYPED still ends in
+ * {@link PROMPT}; it is the transcript that carries these.
+ */
+const SENT = '\u276f';
+const ANSWERED = '\u25cf';
+const DONE = '\u273b';
+
 /** Taking the caret away, and giving it back. */
 const CARET_HIDDEN = `${ESC}[?25l`;
 const CARET_SHOWN = `${ESC}[?25h`;
@@ -527,10 +537,34 @@ function saidAbout(all: string, line: string): string[] {
   // themselves, escapes and all, because the comparison this feeds is about those bytes.
   // biome-ignore lint/suspicious/noControlCharactersInRegex: the escape IS what is taken out.
   const bare = rows.map((row) => row.replace(/\u001b\[[0-9;]*m/g, ''));
-  const echoed = bare.indexOf(`${PROMPT} ${line}`);
+  const echoed = bare.indexOf(`${SENT} ${line}`);
   expect(echoed, `the transcript does not hold the echo of ${line}`).toBeGreaterThanOrEqual(0);
-  const next = bare.findIndex((row, at) => at > echoed && row.startsWith(PROMPT));
-  return rows.slice(echoed + 1, next < 0 ? rows.length : next);
+  // THE ANSWER ENDS AT THE LINE UNDER IT, which is the console's own and is not what the verb said.
+  const next = bare.findIndex((row, at) => at > echoed && row.startsWith(`${DONE} `));
+  expect(next, `the answer to ${line} is not closed by the line under it`).toBeGreaterThan(echoed);
+  return unframed(rows.slice(echoed + 1, next));
+}
+
+/**
+ * AN ANSWER AS THE VERB SAID IT: the dot that opens its first row taken off, and the two
+ * columns every other row recedes by. What is left is what the shell would have printed, which is
+ * the comparison the cases below make — so the frame is stripped here, once, and asserted on
+ * where it is its own subject.
+ */
+function unframed(rows: readonly string[]): string[] {
+  let opened = false;
+  return rows.map((row) => {
+    if (row === '') return row;
+    if (!opened) {
+      expect(row.startsWith(`${ANSWERED} `), `the answer does not open with its dot: ${row}`).toBe(
+        true,
+      );
+      opened = true;
+      return row.slice(2);
+    }
+    expect(row.startsWith('  '), `a row of the answer does not recede: ${row}`).toBe(true);
+    return row.slice(2);
+  });
 }
 
 /** Drives a console over `typed` in this process and answers with what it drew. */
@@ -597,7 +631,7 @@ describe('the same verbs, the same lines, another place', () => {
       expect(outside.out.at(-1), `${verb}: the shell's answer ends with a blank line`).not.toBe('');
       expect(inside.answers, verb).toEqual(outside.out);
       // And the caller's own line is on the page, the way a terminal shows what you sent.
-      expect(inside.all, verb).toContain(`${PROMPT} ${verb}`);
+      expect(inside.all, verb).toContain(`${SENT} ${verb}`);
     }
     // At least one of them really carried a blank line: without that, the case above
     // would pass on a layout that drops them.
@@ -666,13 +700,13 @@ describe('the same verbs, the same lines, another place', () => {
     });
     await until(() => terminal.bytes().includes('a session over this project'), 'opened');
     terminal.type('verify\raccountability\r');
-    await until(() => terminal.bytes().includes(`${PROMPT} accountability`), 'answered the paste');
+    await until(() => terminal.bytes().includes(`${SENT} accountability`), 'answered the paste');
     terminal.type(ENDS_THE_INPUT);
     await closed;
     const page = terminal.bytes();
-    expect(page).toContain(`${PROMPT} verify`);
-    expect(page).toContain(`${PROMPT} accountability`);
-    expect(page.indexOf(`${PROMPT} verify`)).toBeLessThan(page.indexOf(`${PROMPT} accountability`));
+    expect(page).toContain(`${SENT} verify`);
+    expect(page).toContain(`${SENT} accountability`);
+    expect(page.indexOf(`${SENT} verify`)).toBeLessThan(page.indexOf(`${SENT} accountability`));
     expect(page).toContain('local integrity verified');
   }, 120_000);
 

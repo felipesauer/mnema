@@ -112,6 +112,10 @@ export function indentOf(depth: number): string {
  * a glyph of it — pinned on the plain rendering of a palette row, which is byte for byte
  * what it was before the role existed.
  *
+ * `sentmark` and `sent` take NOTHING, for `prompt`'s reason: the mark carries the space it ends
+ * in inside its own text, so the plain rendering of a sent command is the mark and the words
+ * and no byte between them (`echo.ts`, `sentLine`).
+ *
  * `clause` is the ONE entry that is not punctuation this surface chose. The chain's
  * one-line verdict is a sentence of clauses separated by `; `, and it hands `verify`
  * those clauses rather than the string; the `; ` here is what puts them back in the
@@ -132,6 +136,8 @@ const PRECEDED_BY: { readonly [R in Role]: string } = {
   subject: '  ·  ',
   prompt: '',
   typed: '',
+  sentmark: '',
+  sent: '',
   pick: '',
   word: '  ',
 };

@@ -77,3 +77,60 @@ export function echoLine(prompt: string, typed: string): Line {
     ],
   };
 }
+
+/**
+ * The mark a command carries on the roll once it has been sent, with the space it ends in
+ * inside its own text for the reason a prompt does. One glyph, measured by the one authority
+ * over columns (`width.ts`): a single column at every width the console is drawn at.
+ */
+export const SENT_MARK = '❯ ';
+
+/**
+ * A command that has been SENT, as the roll keeps it: the mark, then the words.
+ *
+ * IT IS NOT {@link echoLine}, AND THE TWO ARE ON THE PAGE AT ONCE. The echo is the row being
+ * TYPED — the product's prompt, in the product's hue, under the caller's fingers. Once the row
+ * is sent it is something the session shows back, and in a terminal that paints it is a band
+ * across the page: what a reader scrolling a long session looks for is where each of their
+ * questions began, and a band is what the eye finds. The purple stays on the row being typed,
+ * on the rules and on the top — the places that say *this is mnema* — and a sent command
+ * carries none of it (`styled.ts`).
+ *
+ * The words are the caller's own, so they are neutralized like every other part's; a line with
+ * NOTHING typed is the mark alone, because a terminal shows what you sent.
+ */
+export function sentLine(typed: string): Line {
+  return {
+    indent: 0,
+    parts: [
+      { role: 'sentmark', text: SENT_MARK },
+      { role: 'sent', text: typed },
+    ],
+  };
+}
+
+/**
+ * The glyph that opens an answer on the roll, with the space after it. It is NEUTRAL: no hue and
+ * no weight, because the purple on this page belongs to the places that say *this is mnema* and
+ * an answer is not one of them. One column, measured by the authority over columns (`width.ts`).
+ */
+export const ANSWER_MARK = '● ';
+
+/** The glyph that opens the line saying an answer is done, with the space after it. */
+export const DONE_MARK = '✻ ';
+
+/**
+ * THE LINE UNDER AN ANSWER: the mark, the verb that was typed, how long it took and the hour it
+ * finished — `✻ status · 12ms · done 16:32`. Only what was measured: the console calls no model,
+ * so there is no word on it about thinking, and the verb is the first word the caller typed,
+ * which is a fact about the line and not a reading of it.
+ *
+ * IT IS HANDED THE TWO MEASUREMENTS AS WORDS, because what a clock says is not this layer's to
+ * ask (`repl/turn.ts` reads one and words it): a line built here is the same line whenever it is
+ * built. It is ONE part with the weight of everything the page says that a reader may skip, and
+ * it stands at the edge, under the glyph that opened the answer.
+ */
+export function doneLine(verb: string, took: string, hour: string): Line {
+  const words = [verb, took, `done ${hour}`];
+  return { indent: 0, parts: [{ role: 'detail', text: `${DONE_MARK}${words.join(' · ')}` }] };
+}

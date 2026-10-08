@@ -281,7 +281,11 @@ describe('a verb that asks for an identity is answered by the session that has o
     // is what a READER sees, which is what this case was always about.
     // biome-ignore lint/suspicious/noControlCharactersInRegex: the escape IS what is taken out.
     const said = ran.bytes.replace(/\u001b\[[0-9;]*m/g, '');
-    expect(said).toContain(`${PROMPT} status`);
+    //
+    // AND ON THE ROLL IT IS THE MARK A SENT COMMAND CARRIES, not the prompt it was typed after:
+    // the prompt is the row under the caller's fingers, and what they sent is kept as a band
+    // (`presentation/echo.ts`, `sentLine`).
+    expect(said).toContain('\u276f status');
     // And the flag is nowhere on the page at all — not in the echo, not in a refusal.
     expect(ran.bytes).not.toContain('--actor');
   }, 180_000);
