@@ -191,6 +191,36 @@ describe('the verdict a page computes', () => {
     expect(out).not.toBe(join(sandbox, 'tampered'));
   });
 
+  it('refuses a line holding a byte that is not UTF-8 where mnema verify refuses it', () => {
+    // A page has no `Buffer`: a decoder that replaced the byte with U+FFFD, or one that read
+    // it as Latin-1, would hand this line on as canonical text. It is one byte in the title,
+    // with every hash around it left alone. `mnema site` refuses to publish a tree it cannot
+    // read, so the byte is set in the files the honest page embeds, and on disk beside them.
+    const out = honestRecord();
+    const honest = readFileSync(join(out, 'index.html'), 'utf-8');
+    const embedded = /id="record-files">(.*?)<\/script>/s.exec(honest)?.[1] as string;
+    const files = JSON.parse(embedded) as Record<string, string>;
+    const segment = segmentOf(repo);
+    const name = Object.keys(files).find((file) => segment.endsWith(file)) as string;
+    const bytes = readFileSync(segment);
+    const at = bytes.indexOf('Store dates in UTC');
+    expect(at).toBeGreaterThan(0);
+    bytes[at] = 0xff;
+    writeFileSync(segment, bytes);
+    files[name] = bytes.toString('base64');
+    const cli = theCliSays();
+    expect(cli.level).toBe('unreadable');
+
+    const page = honest.replace(embedded, JSON.stringify(files));
+    expect(page).not.toBe(honest);
+    const shown = runInAPage(page, scriptOf(page));
+    expect({ summary: shown.summary, lines: shown.lines.length }).toEqual({
+      summary: cli.summary,
+      lines: cli.notes,
+    });
+    expect(shown.lines.join('\n')).toMatch(/not UTF-8 at byte \d+/);
+  });
+
   it('breaks where mnema verify breaks when a checkpoint signature is altered', () => {
     honestRecord();
     const checkpoints = join(dirname(segmentOf(repo)), 'checkpoints.jsonl');
