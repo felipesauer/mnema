@@ -25,7 +25,7 @@
  *     and its words in greys, and none of the accent; with colour off the row is still the
  *     caller's, because the mark is still there.
  *   - THE TREE STOPS COMPETING WITH THE TITLE, in the list a reader actually reads.
- *   - AND THE MARGIN COSTS COLUMNS AND NOT A CHARACTER. It takes six columns of the page, an answer
+ *   - AND THE MARGIN COSTS COLUMNS AND NOT A CHARACTER. It takes the columns of the page the margin is (none now), an answer
  *     takes two more, and everything the session says is folded to what is left, so nothing is
  *     cut and nothing is broken mid-word at the narrowest window there is. THE GUIDE IS GONE and
  *     the page is held not to draw it.

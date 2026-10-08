@@ -1022,9 +1022,14 @@ async function openedAt(
  * the panel is seventy-six columns and the page has seventy-six inside its margin, so at that
  * one size it folds onto a second row. Both are what the seams cost, and both are here rather
  * than in a sentence about them.
+ *
+ * AND THE FLOOR LOST ONE ROW WHEN THE MARGIN WENT. The sentence the session lands under the panel
+ * is seventy-eight columns with its indent, and the page had seventy-four inside a margin of six,
+ * so at eighty columns it folded onto a second row; with no margin the page is eighty wide and it
+ * is one. The other two sizes were already wide enough, and they did not move.
  */
 const THE_SCREEN: readonly { columns: number; rows: number; takes: number }[] = [
-  { columns: THE_FLOOR.columns, rows: THE_FLOOR.rows, takes: 19 },
+  { columns: THE_FLOOR.columns, rows: THE_FLOOR.rows, takes: 18 },
   { columns: 100, rows: 55, takes: 18 },
   { columns: 120, rows: 60, takes: 13 },
 ];

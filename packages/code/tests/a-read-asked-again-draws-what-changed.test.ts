@@ -136,6 +136,10 @@ const THE_ROW_BELOW = renderPlain(belowThePage());
  * HOW FAR IN A ROW OF THE ROLL BEGINS — the margin, and the deepest indent an answer carries on
  * the page (`src/repl/inset.ts`). A row that begins further in is not the roll's: it is the badge
  * in the corner, which is set against the far edge.
+ *
+ * THE MARGIN IS NONE, so the lower bound no longer tells the roll from the input area under it:
+ * the row being typed and the hint begin in the first columns too. They are told apart by where
+ * they are ({@link lastOfTheRoll}), not by how far in they begin.
  */
 const THE_DEEPEST_ROW = THE_INSET + 12;
 
@@ -146,6 +150,13 @@ const TO_THE_TAIL = '\u001b[F';
 
 /** A notch of the wheel towards the tail, as a terminal reporting the mouse in SGR sends it. */
 const WHEEL_DOWN = '\u001b[<65;10;5M';
+
+/**
+ * A notch of the wheel away from the tail: a notch, not a page, where a case walks back FURTHER
+ * than a page. With no margin the page is wide enough that two pages back is the beginning of
+ * this roll, and a window at the beginning has no row above it to be walked into.
+ */
+const WHEEL_UP = '\u001b[<64;10;5M';
 
 /** The key that erases the character before the caret, as a terminal sends it. */
 const ERASE = '\u007f';
@@ -213,7 +224,20 @@ function drive(columns: number, rows: number, steps: readonly Step[]): Promise<R
 /** Whether a row of the page is drawn in the roll's own columns: not blank, and not set against the far edge. */
 function isOfTheRoll(row: string): boolean {
   const begins = row.search(/\S/);
-  return begins >= THE_INSET && begins <= THE_DEEPEST_ROW && !row.includes(THE_ROW);
+  return (
+    begins >= THE_INSET &&
+    begins <= THE_DEEPEST_ROW &&
+    !row.includes(THE_ROW) &&
+    !row.includes(THE_ROW_BELOW)
+  );
+}
+
+/**
+ * The last row of the roll on a page: the last row of it above the rule the input area opens with,
+ * which is the one over the row being typed.
+ */
+function lastOfTheRoll(page: Screen): number {
+  return lastIndexWhere(page.rows.slice(0, promptRow(page, PROMPT) - 1), isOfTheRoll);
 }
 
 /**
@@ -432,8 +456,7 @@ describe('a read asked again is seen, on the page or on a row saying the page di
       THE_ROW_BELOW,
     );
     const at = again.rows.findIndex((row) => row.includes(THE_ROW));
-    const lastOfTheRoll = lastIndexWhere(again.rows, isOfTheRoll);
-    expect(at, 'the row is not under the window').toBeGreaterThan(lastOfTheRoll);
+    expect(at, 'the row is not under the window').toBeGreaterThan(lastOfTheRoll(again));
     expect(at, 'the row is not over the row being typed').toBeLessThan(promptRow(again, PROMPT));
     // AND THE ROLL IS THE SAME ROLL: the second answer's end is the end the first one left, and all
     // that moved is the row the window gave up at its top for the row at the foot. This is the
@@ -738,8 +761,7 @@ describe("an answer that lands below a reader who has walked back is told, in th
       'a reader who had walked back was told the end was on the page',
     ).not.toContain(THE_ROW);
     const at = told.rows.findIndex((row) => row.includes(THE_ROW_BELOW));
-    const lastOfTheRoll = lastIndexWhere(told.rows, isOfTheRoll);
-    expect(at, 'the row is not under the window').toBeGreaterThan(lastOfTheRoll);
+    expect(at, 'the row is not under the window').toBeGreaterThan(lastOfTheRoll(told));
     expect(at, 'the row is not over the row being typed').toBeLessThan(promptRow(told, PROMPT));
     // AND THE READER IS WHERE THEY WERE READING. The answer is not on their page, and the window is
     // the page they walked back to less what the row took from its top — the same last row, which is
@@ -779,7 +801,7 @@ describe("an answer that lands below a reader who has walked back is told, in th
         until: aPageHolding(columns, rows, THE_ROW_BELOW),
         what: `asked ${A_DIFFERENT_READ} while walked back`,
       },
-      presses('walked another page back', PAGE_UP),
+      presses('walked further back', WHEEL_UP),
       {
         types: 'x',
         until: aPageWithout(PROMPT, columns, rows, THE_ROW_BELOW),

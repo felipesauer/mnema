@@ -33,7 +33,7 @@
  *   - AND THE CONTENT IS THE CALLER'S. A record titled in characters that take two cells each is
  *     ordinary, and the frame's arithmetic was wrong about it in every terminal there is: the
  *     width was a count of CODE POINTS, so a row of eighty-eight cells was handed to the layout
- *     for a page with seventy-four columns inside its margin. What that produces on a screen is
+ *     for a page of eighty columns. What that produces on a screen is
  *     not an overflow — the library wraps what our fold left too wide — it is the LIBRARY's break
  *     instead of the product's, at the margin, with the continuation at column zero. Measured at
  *     the floor, on the instrument.
@@ -130,7 +130,7 @@ const AND_IT_REFUSES = 'shell.';
  * AND ITS LENGTH IS CHOSEN SO THAT THE OLD COUNT LET IT THROUGH. Measured on the built binary:
  * the row `search` prints for it is the continuation of a folded item — four columns of hanging
  * indent, the title, and ` (DRAFT)` — which is FIFTY code points and EIGHTY-EIGHT cells on a page
- * with seventy-four columns inside its margin. So the fold this delivery replaced measured it as
+ * of eighty columns. So the fold this delivery replaced measured it as
  * fitting and handed the terminal a row fourteen columns wider than the page, while the fold that
  * measures cells breaks it. A shorter title would fit on both counts and this case would pass
  * against the defect.
@@ -296,7 +296,7 @@ function foldedInto(
 /**
  * A row of the page with the margin taken off — what the row SAYS, without the page's own edge.
  *
- * Every row of the roll begins with the same six blank columns (`src/repl/inset.ts`). They are
+ * Every row of the roll begins after the same blank columns (`src/repl/inset.ts`; none now). They are
  * chrome and no part of the line, so a comparison against a composed line has to take them off —
  * and only off the rows that HAVE them, because a row of the input area never did.
  */
@@ -794,7 +794,7 @@ describe('a record titled in two-cell characters is folded by the product', () =
     // THE CASE THE FUNCTION-LEVEL ONES CANNOT ANSWER (`src/presentation/width.test.ts` holds
     // those): the ARITHMETIC OF THE FRAME, on a real pseudo-terminal at the floor. The fold asked
     // how wide a row was, got a count of code points, decided it fitted, and handed the layout a
-    // row of eighty-eight cells for a page with seventy-four columns inside its margin.
+    // row of eighty-eight cells for a page of eighty columns.
     //
     // AND WHAT THAT PRODUCES ON THE SCREEN IS NOT AN OVERFLOW, WHICH IS THE FINDING THIS CASE WAS
     // REWRITTEN AROUND. The layout library measures correctly and wraps whatever our fold left
@@ -855,9 +855,10 @@ describe('a record titled in two-cell characters is folded by the product', () =
       ).toBeLessThanOrEqual(columns);
     }
 
-    // AND THE TITLE REALLY IS WIDER THAN THE PAGE HAS ROOM FOR, in cells and not in code points:
-    // the old count saw fifty where the page has seventy-four and let it through.
-    expect(CELLS_OF_THE_TITLE).toBeGreaterThan(insideTheMargin(columns) - THE_INSET);
+    // AND THE ROW REALLY IS WIDER THAN THE PAGE HAS ROOM FOR, in cells and not in code points: the
+    // old count saw fifty where the page has eighty and let it through. A row is the hanging
+    // indent, the title and ` (DRAFT)`.
+    expect(4 + CELLS_OF_THE_TITLE + ' (DRAFT)'.length).toBeGreaterThan(insideTheMargin(columns));
     expect([...A_TITLE_IN_JAPANESE].length).toBeLessThan(insideTheMargin(columns));
   }, 240_000);
 });

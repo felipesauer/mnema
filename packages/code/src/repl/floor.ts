@@ -128,11 +128,11 @@ export interface Floor {
  * to define a floor with.
  *
  * AND THE COLUMNS ARE DERIVED TOO, which they were not while they were a number. The drawing
- * has to be inside the page, and the page keeps a margin (`inset.ts`), so the width has to be at
- * least the art plus that margin: forty-eight and six is fifty-four, which is under the width
- * everything else was measured at ({@link MEASURED_ACROSS}), so eighty is what comes back. A
- * drawing wider than seventy-four would move it, and nothing about this sentence is a promise —
- * it is the expression.
+ * has to be inside the page, and the page may keep a margin (`inset.ts`), so the width has to be
+ * at least the art plus that margin: forty-eight and none is forty-eight, which is under the
+ * width everything else was measured at ({@link MEASURED_ACROSS}), so eighty is what comes back.
+ * A drawing wider than eighty would move it, and nothing about this sentence is a promise — it
+ * is the expression.
  *
  * WHAT THE FLOOR COSTS IS DECLARED. A window of twenty-four or thirty rows — a tmux pane, an
  * editor's embedded terminal, a default ssh session — draws no console at all: it draws the
