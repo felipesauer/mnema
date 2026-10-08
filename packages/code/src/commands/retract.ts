@@ -71,21 +71,24 @@ export function runRetract(
   }
 
   const writer = openTreeForWriting(trees, scope);
-  const retracted = retractNote(
-    { writer, layout: { root: chainRootForScope(trees, scope) as string }, upcasters },
-    {
-      id: input.id,
-      reason: input.reason,
-      ...(input.which !== undefined ? { which: input.which } : {}),
-      ...(input.run !== undefined ? { run: input.run } : {}),
-    },
-  );
+  const retracted = writer.exclusively(() => {
+    const written = retractNote(
+      { writer, layout: { root: chainRootForScope(trees, scope) as string }, upcasters },
+      {
+        id: input.id,
+        reason: input.reason,
+        ...(input.which !== undefined ? { which: input.which } : {}),
+        ...(input.run !== undefined ? { run: input.run } : {}),
+      },
+    );
+    // Checkpoint so the retraction is signature-covered at once.
+    if (written.ok) writer.checkpoint();
+    return written;
+  });
   if (!retracted.ok) {
     return { ok: false, reason: 'REFUSED', code: retracted.code, message: retracted.message };
   }
 
-  // Checkpoint so the retraction is signature-covered at once.
-  writer.checkpoint();
   return {
     ok: true,
     id: retracted.id,

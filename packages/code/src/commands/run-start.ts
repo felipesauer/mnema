@@ -94,20 +94,22 @@ export function runRunStart(
   }
 
   const writer = openTreeForWriting(trees, 'public');
-  const started = startRun(
-    { writer, layout: { root }, upcasters: catalogUpcasters() },
-    {
-      agent,
-      ...(input.goal !== undefined ? { goal: input.goal } : {}),
-    },
-  );
+  const started = writer.exclusively(() => {
+    const written = startRun(
+      { writer, layout: { root }, upcasters: catalogUpcasters() },
+      {
+        agent,
+        ...(input.goal !== undefined ? { goal: input.goal } : {}),
+      },
+    );
+    // Checkpoint so the run is signature-covered at once — the same posture every
+    // other writing verb leaves the tree in.
+    if (written.ok) writer.checkpoint();
+    return written;
+  });
   if (!started.ok) {
     return { ok: false, reason: 'REFUSED', code: started.code, message: started.message };
   }
-
-  // Checkpoint so the run is signature-covered at once — the same posture every
-  // other writing verb leaves the tree in.
-  writer.checkpoint();
 
   return {
     ok: true,

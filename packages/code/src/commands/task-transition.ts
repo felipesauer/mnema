@@ -109,27 +109,29 @@ export function runTaskTransition(
 
   const writer = openTreeForWriting(trees, scope);
   const fields = proofToFields(input.proof);
-  const moved = transitionTask(
-    {
-      writer,
-      layout: { root: chainRootForScope(trees, scope) as string },
-      upcasters,
-    },
-    {
-      id: input.id,
-      action: input.action,
-      ...(fields !== undefined ? { fields } : {}),
-      ...(input.which !== undefined ? { which: input.which } : {}),
-      ...(input.run !== undefined ? { run: input.run } : {}),
-    },
-  );
+  const moved = writer.exclusively(() => {
+    const written = transitionTask(
+      {
+        writer,
+        layout: { root: chainRootForScope(trees, scope) as string },
+        upcasters,
+      },
+      {
+        id: input.id,
+        action: input.action,
+        ...(fields !== undefined ? { fields } : {}),
+        ...(input.which !== undefined ? { which: input.which } : {}),
+        ...(input.run !== undefined ? { run: input.run } : {}),
+      },
+    );
+    // Checkpoint so the transition is signature-covered at once — the same posture
+    // create leaves the tree in.
+    if (written.ok) writer.checkpoint();
+    return written;
+  });
   if (!moved.ok) {
     return { ok: false, reason: 'REFUSED', code: moved.code, message: moved.message };
   }
-
-  // Checkpoint so the transition is signature-covered at once — the same posture
-  // create leaves the tree in.
-  writer.checkpoint();
 
   return {
     ok: true,

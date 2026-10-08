@@ -427,6 +427,12 @@ export function runDecisionImport(
       return {
         write: () => {
           const imported = importOne(document);
+          // SIGNED IN THE SAME HOLD. This was one checkpoint for the whole directory, after
+          // the last file: a signature asked for under a lock of its own, which a busy tail
+          // could refuse with every decision of the directory already on it, and the refusal
+          // read "not appended". A signature per file costs milliseconds; a refusal that
+          // denies what landed costs the record its word.
+          writer.checkpoint();
           // This run's own writes moved the tree, and they are known: the edge it just
           // appended. The extent is taken here, still under the lock, so nothing another
           // session appends after the lock is let go can be folded into it unread.
@@ -448,10 +454,6 @@ export function runDecisionImport(
     }
     proposals.push(outcome.proposal);
   }
-  // One checkpoint for the whole directory: the tree is left fully signed, at the
-  // cost of one signature rather than one per decision.
-  writer.checkpoint();
-
   return {
     ok: true,
     linkBreaks: derived.linkBreaks,

@@ -92,26 +92,28 @@ export function runObserve(
   }
 
   const writer = openTreeForWriting(trees, scope);
-  const recorded = recordObservation(
-    {
-      writer,
-      layout: { root: chainRootForScope(trees, scope) as string },
-      upcasters: catalogUpcasters(),
-    },
-    {
-      about: input.about,
-      topic: input.topic,
-      text: input.text,
-      ...(input.which !== undefined ? { which: input.which } : {}),
-      ...(input.run !== undefined ? { run: input.run } : {}),
-    },
-  );
+  const recorded = writer.exclusively(() => {
+    const written = recordObservation(
+      {
+        writer,
+        layout: { root: chainRootForScope(trees, scope) as string },
+        upcasters: catalogUpcasters(),
+      },
+      {
+        about: input.about,
+        topic: input.topic,
+        text: input.text,
+        ...(input.which !== undefined ? { which: input.which } : {}),
+        ...(input.run !== undefined ? { run: input.run } : {}),
+      },
+    );
+    // Checkpoint so the new observation is signature-covered at once.
+    if (written.ok) writer.checkpoint();
+    return written;
+  });
   if (!recorded.ok) {
     return { ok: false, reason: 'REFUSED', code: recorded.code, message: recorded.message };
   }
-
-  // Checkpoint so the new observation is signature-covered at once.
-  writer.checkpoint();
 
   return { ok: true, id: recorded.id, scope, ...forwardReplacement(recorded) };
 }

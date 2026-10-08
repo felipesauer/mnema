@@ -94,26 +94,28 @@ export function runSkill(
   }
 
   const writer = openTreeForWriting(trees, scope);
-  const created = createSkill(
-    {
-      writer,
-      layout: { root: chainRootForScope(trees, scope) as string },
-      upcasters: catalogUpcasters(),
-    },
-    {
-      name: input.name,
-      body: input.body,
-      ...(input.which !== undefined ? { which: input.which } : {}),
-      ...(input.run !== undefined ? { run: input.run } : {}),
-    },
-  );
+  const created = writer.exclusively(() => {
+    const written = createSkill(
+      {
+        writer,
+        layout: { root: chainRootForScope(trees, scope) as string },
+        upcasters: catalogUpcasters(),
+      },
+      {
+        name: input.name,
+        body: input.body,
+        ...(input.which !== undefined ? { which: input.which } : {}),
+        ...(input.run !== undefined ? { run: input.run } : {}),
+      },
+    );
+    // Checkpoint so the new skill is signature-covered at once — the tree stays
+    // fully signed after every command, the same posture init leaves it in.
+    if (written.ok) writer.checkpoint();
+    return written;
+  });
   if (!created.ok) {
     return { ok: false, reason: 'REFUSED', code: created.code, message: created.message };
   }
-
-  // Checkpoint so the new skill is signature-covered at once — the tree stays
-  // fully signed after every command, the same posture init leaves it in.
-  writer.checkpoint();
 
   // The name AS RECORDED — screened, so the echo shows what landed.
   return { ok: true, id: created.id, name: created.name, scope, ...forwardReplacement(created) };

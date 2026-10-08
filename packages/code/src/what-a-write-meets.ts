@@ -20,9 +20,10 @@
  *
  * IT IS PURE OVER WHAT IT IS HANDED: the trees' caches and the paths. It records nothing; the
  * caller appends one `channel.refused` (or `channel.asked`) per rule of {@link WriteVerdict.at}
- * before it answers the host, so a record that cannot be written refuses nobody.
+ * before it answers the host, and answers the same whether or not they land ({@link recordTheCharge}).
  */
 
+import { DEFAULT_WAIT_MS, TailBusyError } from '@mnema/chain';
 import { channelIsOn, type RulesAtPath, type ScopedCache } from '@mnema/context';
 import { whatAWriteAsks } from './edit-asks-a-person.js';
 import { editRefusesNotice } from './edit-refuses-a-write.js';
@@ -140,4 +141,68 @@ function verdict(
     reason: met.map((one) => one.notice).join('\n\n'),
     notices: met.map((one) => one.notice),
   };
+}
+
+/**
+ * How long a charge's facts may take, in all, before the reply goes to the host without them: a
+ * new try starts only if one more of the tail lock's own waits ({@link DEFAULT_WAIT_MS}, 2 s) would
+ * end inside it. So the command hook tries three times, at about 0, 2 and 4 s, and gives up at 6.
+ *
+ * THE RULE REFUSES WHETHER OR NOT ITS FACT LANDS. The refusal and the asking are decided by
+ * reading the record, which takes no lock; only the fact that a write was refused or held is an
+ * append. This used to fall the other way — a fact that could not be written refused nobody — and
+ * that made any live process holding the tail a way around every rule of the project for as long
+ * as it held it: measured, the write went through at 2.3 s with the lock held by a live pid. So
+ * the fact gets more patience than an ordinary write, and its absence is said in the reason.
+ *
+ * A BUDGET IN TIME, NOT A COUNT OF TRIES. The first try in the server can take two waits — it
+ * opens the session's run, then appends the facts, each under a hold of its own — so a count of
+ * three let one call wait 8 s and more. No later try opens the run again, so no try can end past
+ * this budget: 7 s is the worst, however the waits fall. Measured on the binary with the tail held
+ * by a live pid: the command hook answered `deny` in 6.3 s, the server's refusal and asking in
+ * 6.0 s each (they were 8.1 s for the asking before the service fact stopped being tried after a
+ * charge that did not land).
+ *
+ * It stays well under the hook's timeout because a host that times the hook out lets the write
+ * through: every host this plugin wires gives the hook 15 s (`plugin/hooks/hooks.json`), and a
+ * hook that waited as long as it takes would reopen the write by that road.
+ */
+export const A_CHARGE_WAITS_MS = 7_000;
+
+/** Whether a charge's facts are on the chain, and if not, why — in words the reason can carry. */
+export type ChargeRecorded = { readonly ok: true } | { readonly ok: false; readonly why: string };
+
+/**
+ * Appends a charge's facts with up to {@link A_CHARGE_WAITS_MS} of patience, and never throws: the
+ * reply to the host is composed whatever this answers.
+ */
+export function recordTheCharge(
+  record: () => { readonly ok: boolean; readonly why?: string },
+): ChargeRecorded {
+  const started = Date.now();
+  for (;;) {
+    try {
+      const done = record();
+      if (done.ok) return { ok: true };
+      return { ok: false, why: done.why ?? 'the record would not take the fact' };
+    } catch (error) {
+      const endsInside = Date.now() - started + DEFAULT_WAIT_MS <= A_CHARGE_WAITS_MS;
+      if (error instanceof TailBusyError && endsInside) continue;
+      return { ok: false, why: whyNotRecorded(error) };
+    }
+  }
+}
+
+function whyNotRecorded(error: unknown): string {
+  if (error instanceof TailBusyError) {
+    const holder = error.heldBy === undefined ? 'another process' : `process ${error.heldBy}`;
+    return `${holder} was writing the record for longer than this could wait (lock: ${oneLine(error.tailLock)})`;
+  }
+  return oneLine(error instanceof Error ? error.message : String(error));
+}
+
+/** The sentence a reason carries when the charge it states could not be recorded. */
+export function unrecordedCharge(grade: WriteVerdict['grade'], why: string): string {
+  const what = grade === 'refuse' ? 'This refusal' : 'This request for a person';
+  return `${what} could not be recorded in the project's record, so the record does not show it: ${why}.`;
 }

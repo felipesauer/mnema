@@ -151,11 +151,10 @@ export function switchChannel(ctx: WriteContext, input: SwitchInput): SwitchOk |
  *
  * WHY THE ASKING IS WRITTEN BEFORE THE HOST IS ANSWERED, and it is the sharpest rule
  * here. A charge that is not in the record is the product acting outside its own record —
- * so the fact is appended FIRST, and the reply that stops somebody's edit is composed
- * only if it landed. It is the order a waiver already has with the cut it authorizes
- * (`unprovenWaiverReason`), and it makes the failure fall the safe way: a record that
- * cannot be written charges nothing, which is the direction that cannot trap somebody
- * else's work.
+ * so the fact is appended FIRST, and the reply is composed after. The reply no longer waits
+ * on the fact landing: a charge that fell open whenever the fact could not be written let any
+ * process holding the tail switch every rule off, so the surfaces answer the charge either
+ * way and say in its reason when the fact is missing (`recordTheCharge`, `@mnema/code`).
  */
 
 /** The service was recorded: this channel was live at an edit of this run. */

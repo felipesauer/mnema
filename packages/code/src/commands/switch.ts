@@ -214,29 +214,31 @@ export function runSwitch(
   }
 
   const writer = openTreeForWriting(trees, scope);
-  const recorded = switchChannel(
-    {
-      writer,
-      layout: { root: chainRootForScope(trees, scope) as string },
-      upcasters: catalogUpcasters(),
-    },
-    {
-      channel: input.channel,
-      on: input.on,
-      ...(input.reason !== undefined ? { reason: input.reason } : {}),
-      ...(input.which !== undefined ? { which: input.which } : {}),
-      ...(input.run !== undefined ? { run: input.run } : {}),
-    },
-  );
+  const recorded = writer.exclusively(() => {
+    const written = switchChannel(
+      {
+        writer,
+        layout: { root: chainRootForScope(trees, scope) as string },
+        upcasters: catalogUpcasters(),
+      },
+      {
+        channel: input.channel,
+        on: input.on,
+        ...(input.reason !== undefined ? { reason: input.reason } : {}),
+        ...(input.which !== undefined ? { which: input.which } : {}),
+        ...(input.run !== undefined ? { run: input.run } : {}),
+      },
+    );
+    // Checkpoint so the switch is signature-covered at once, the posture every write here
+    // leaves the tree in. It earns it twice over: this is the one fact that says why the
+    // product went quiet, and an unsigned one would be the easiest thing in the record to
+    // disown.
+    if (written.ok) writer.checkpoint();
+    return written;
+  });
   if (!recorded.ok) {
     return { ok: false, reason: 'REFUSED', code: recorded.code, message: recorded.message };
   }
-
-  // Checkpoint so the switch is signature-covered at once, the posture every write here
-  // leaves the tree in. It earns it twice over: this is the one fact that says why the
-  // product went quiet, and an unsigned one would be the easiest thing in the record to
-  // disown.
-  writer.checkpoint();
 
   // Read back across every tree, AFTER the write, because the answer is not the switch:
   // off wins between trees that cannot be ordered, so switching one on may change
