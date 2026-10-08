@@ -403,6 +403,12 @@ function unwired(): string[] {
  * here: this table stays auto-pruning over the real surface.
  */
 const UNWIRED: Readonly<Record<string, string>> = {
+  '@mnema/stacks STACK_SCHEMA':
+    'what an author or an editor reads as stack.schema.json; nothing in this workspace installs a stack yet. ' +
+    'the-schema-file-is-the-schema.test.ts holds the file to it.',
+  '@mnema/stacks validateStack':
+    'what a program that checks or installs a stack imports; nothing in this workspace is that program yet. ' +
+    'the stacks package cases call it over the hello-stack fixture and over every refusal.',
   '@mnema/sdk mnemaHooks':
     'what a program built on the Agent SDK imports; the package is a library door and nothing in ' +
     'this workspace is that program. the-three-doors-are-one.test.ts calls it.',
@@ -473,6 +479,8 @@ const SURFACE_FLOOR: Readonly<Record<string, number>> = {
   '@mnema/core': 90,
   '@mnema/core/write': 25,
   '@mnema/sdk': 4,
+  // The stack contract, a pure library with no consumer inside this workspace yet.
+  '@mnema/stacks': 10,
 };
 
 // ---------------------------------------------------------------------------

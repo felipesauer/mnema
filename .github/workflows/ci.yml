@@ -316,6 +316,42 @@ jobs:
       - name: The built binary refuses it in one line
         run: bash .github/the-binary-runs/it-refuses-an-old-node.sh
 
+  # THE SKILLS ORACLE. A stack carries skills written by somebody else, and what makes one valid is
+  # the Agent Skills specification, which publishes a validator of its own, `skills-ref` (PyPI; its
+  # command is `agentskills`). This repository checks skills with a validator of its own too, and
+  # two validators are worth having only if they are held to each other: the cases of
+  # `the-skills-ref-oracle-agrees` run both over the same skills and require the same verdict.
+  # The oracle is from outside and is installed here, pinned, for that and nothing else; it is
+  # never a dependency of the product. `SKILLS_REF_IS_THE_ORACLE` makes an absent oracle a red
+  # instead of a skip. It needs no secret and no account: a pinned package from the public index.
+  the-skills-oracle:
+    name: the skills oracle
+    runs-on: ubuntu-24.04
+    env:
+      SKILLS_REF_IS_THE_ORACLE: '1'
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: pnpm/action-setup@v6
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version: '24'
+          cache: 'pnpm'
+
+      - uses: actions/setup-python@v7
+        with:
+          python-version: '3.12'
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Install the oracle, pinned
+        run: python3 -m pip install skills-ref==0.1.1
+
+      - name: Both validators, the same verdict
+        run: pnpm vitest run packages/stacks/tests/the-skills-ref-oracle-agrees.test.ts
+
   # THE LINK CANNOT COME BACK. This repository does not credit the tool that wrote a change in
   # the change's own record, and for 243 pull requests that held because somebody remembered it.
   # A sweep on 2026-09-11 found the trunk carrying one co-author trailer and thirteen

@@ -4,6 +4,7 @@
     { "path": "packages/chain" },
     { "path": "packages/core" },
     { "path": "packages/context" },
+    { "path": "packages/stacks" },
     { "path": "packages/code" },
     { "path": "packages/action" },
     { "path": "packages/sdk" },
