@@ -352,7 +352,7 @@ export const VERBS: readonly Verb[] = GROUPS.flatMap((group) => group.verbs);
  * only worth declaring if it can be ASKED: a caller that decides what it is willing to
  * run — this list is what a read-only session is allowed to offer — has to read it off
  * the same registration the parser routes with, never off a list of names kept beside
- * it. The entry ignores the answer, having nothing to decide (see `cli.ts`).
+ * it. The entry ignores the answer, having nothing to decide (see `program.ts`).
  */
 export function registerVerbs(program: Command, wiring: Wiring): readonly Declared[] {
   const declared = GROUPS.flatMap((group) => {

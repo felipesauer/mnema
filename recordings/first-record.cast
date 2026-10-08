@@ -332,4 +332,4 @@
 [21.04239, "o", "f"]
 [21.068814, "o", "y"]
 [21.095266, "o", "\r\n"]
-[21.685433, "o", "public: local integrity verified (T1/T2/T4); 1 tail(s); all events are signature-covered; 1 \r\nbackup key(s), which sign nothing until restored (see census — informational, not a break); \r\nexternal witness (T3): not covered — nothing outside this machine attests this record\r\n"]
+[21.685433, "o", "public: local integrity verified (T1/T2/T4); 1 tail(s); all events are signature-covered; 1 \r\nbackup key(s), which sign nothing until restored (informational, not a break; --verbose names \r\nthe key); external witness (T3): not covered — nothing outside this machine attests this \r\nrecord\r\n"]

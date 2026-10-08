@@ -33,7 +33,6 @@ import { tmpdir } from 'node:os';
 import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
-import { type CliIo, run } from '../src/cli.js';
 import {
   HOOK_SCRIPT,
   installCommitHook,
@@ -41,6 +40,7 @@ import {
   uninstallCommitHook,
 } from '../src/commands/commit-hook.js';
 import { discoveryEnv } from '../src/env.js';
+import { type CliIo, run } from '../src/program.js';
 import { GIT_WITHOUT_MAINTENANCE } from './support/git-without-maintenance.js';
 
 const CLI = resolve(dirname(fileURLToPath(import.meta.url)), '..', 'dist', 'cli.js');

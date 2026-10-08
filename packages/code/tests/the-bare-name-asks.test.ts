@@ -32,7 +32,7 @@ import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { theDoors } from '../src/choice/doors.js';
-import { buildProgram, type CliIo, run, start } from '../src/cli.js';
+import { buildProgram, type CliIo, run, start } from '../src/program.js';
 import { THE_FLOOR } from '../src/repl/floor.js';
 import { PICK } from '../src/repl/palette.js';
 import { INIT_VERB } from '../src/wiring/init.js';
@@ -500,9 +500,9 @@ describe('every site that rules on the bare name, and every one that asks for a 
       .filter((module) => RULES_ON_THE_BARE_NAME.test(module.code))
       .map((module) => module.where)
       .sort();
-    expect(ruling).toEqual(['cli.ts']);
+    expect(ruling).toEqual(['program.ts']);
     // AND IT IS ASKED ONCE THERE, counted rather than looked at.
-    const entry = modules().find((module) => module.where === 'cli.ts');
+    const entry = modules().find((module) => module.where === 'program.ts');
     expect((entry?.code.match(RULES_ON_THE_BARE_NAME) ?? []).length).toBe(1);
     // Read, rather than absent: the walk really did reach this surface's files.
     expect(sourceFiles(SRC).length).toBeGreaterThan(50);

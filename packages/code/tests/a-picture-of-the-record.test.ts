@@ -23,8 +23,8 @@ import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { DECISION_TRANSITIONS, SKILL_TRANSITIONS, TRANSITIONS } from '@mnema/core';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
-import { run } from '../src/cli.js';
 import { quoted } from '../src/presentation/diagram.js';
+import { run } from '../src/program.js';
 
 const LF = String.fromCharCode(10);
 const ESC = String.fromCharCode(27);

@@ -22,7 +22,7 @@ import { join } from 'node:path';
 import { listTails, orderedSegments } from '@mnema/chain';
 import { resolveTrees } from '@mnema/core';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
-import { type CliIo, run } from '../src/cli.js';
+import { type CliIo, run } from '../src/program.js';
 
 let sandbox: string;
 let repo: string;
@@ -114,6 +114,25 @@ describe('a clean verify says the verdict and stops', () => {
     expect(said.out.some((line) => line.startsWith('private: no record here'))).toBe(true);
     expect(said.err).toEqual([]);
     expect(said.failed).toBe(false);
+  });
+
+  it('points the backup-key clause at what the reader can see, which is behind --verbose', async () => {
+    // The clause used to say "see census" over an answer that printed no census. A pointer is
+    // true only where the thing pointed at is printed: the short answer names the flag, and
+    // the flag prints the note. (The second reader never says this clause: it reads a backup
+    // from the record and words it as a note of its own, so there is no second line to keep
+    // in step — the two differ by construction, and only the product's carries a pointer.)
+    await found();
+    await record('write the runbook');
+
+    const short = await verify();
+    expect(short.out).toHaveLength(1);
+    expect(short.out[0]).toContain('backup key(s), which sign nothing until restored');
+    expect(short.out[0]).not.toContain('see census');
+    expect(short.out[0]).toContain('--verbose');
+
+    const verbose = await verify('--verbose');
+    expect(verbose.out.some((line) => line.startsWith('  census [backup-key] public '))).toBe(true);
   });
 
   it('puts the verdict first, with or without --verbose', async () => {

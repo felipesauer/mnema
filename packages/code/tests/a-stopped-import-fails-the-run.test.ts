@@ -34,7 +34,7 @@ vi.mock('../src/commands/decision-import.js', () => ({
   }),
 }));
 
-const { run } = await import('../src/cli.js');
+const { run } = await import('../src/program.js');
 
 /** Runs the verb in-process and says what it printed and whether it failed. */
 async function importing(): Promise<{ out: string[]; failed: boolean }> {

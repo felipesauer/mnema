@@ -14,7 +14,7 @@
  *     directly. IT SAID *and never the bare invocation. `mnema` with no verb prints the
  *     help and exits, byte for byte as it always has* — and the second sentence is now
  *     true of a PIPE and false of a terminal: the bare name asks what you want there, and
- *     one of the two doors it offers is this session (`cli.ts`, `start`). The half that
+ *     one of the two doors it offers is this session (`program.ts`, `start`). The half that
  *     mattered is the half that held. Every shell pipeline, script and CI job that has
  *     ever run this binary with no arguments gets the same bytes on the same stream with
  *     the same exit code, and the agent that ran it in a pty lands on a QUESTION rather
@@ -79,7 +79,6 @@
  */
 
 import type { ProvenLevel } from '@mnema/chain';
-import { buildProgram, type CliIo, parseWith } from '../cli.js';
 import { runPromoteList } from '../commands/promote.js';
 import type { TreeReport } from '../commands/verify.js';
 import { runVerify } from '../commands/verify.js';
@@ -91,6 +90,7 @@ import { occurrenceLine } from '../presentation/occurrence.js';
 import { widthOf } from '../presentation/plain.js';
 import type { Render } from '../presentation/render.js';
 import { statement } from '../presentation/verdict.js';
+import { buildProgram, type CliIo, parseWith } from '../program.js';
 import { PREFIX, THE_KEY_THAT_LEAVES, WHAT_EACH_WORD_DOES } from '../session-words.js';
 import { VERSION } from '../version.js';
 import { paintsAtAll, type RenderingAt } from '../wiring/color.js';

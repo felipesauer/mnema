@@ -275,6 +275,47 @@ jobs:
       - name: Install it in VS Code and check that it starts
         run: xvfb-run -a pnpm --filter @mnema/vscode install-check
 
+  # THE BINARY SAYS WHY, ON A NODE IT CANNOT RUN ON. The suite runs on a Node that has `node:sqlite`,
+  # and a Node that has it cannot show what one that lacks it does: the module graph is linked before
+  # the first line of the first module runs, so a floor check that is merely the first import of an
+  # entry linking the whole program speaks after the link has failed (a Node before 22.13 throws
+  # `ERR_UNKNOWN_BUILTIN_MODULE` and says nothing of the floor) or after the builtin has warned (a 24
+  # before 24.15 prints `ExperimentalWarning` first). A version faked on a Node that has the module
+  # was blind to both. So this job builds with a Node the floor accepts, then runs the built
+  # `--version` under real Nodes below it, one each: 20 (no `node:sqlite` at all), 22.12 (the module
+  # is behind a flag) and 24.14 (the module warns). Each must exit 1 with the floor's one sentence on
+  # stderr and nothing before or after it. It needs no secret and no network beyond `setup-node`.
+  the-binary-refuses-an-old-node:
+    name: the binary refuses an old Node (node ${{ matrix.node }})
+    runs-on: ubuntu-24.04
+    strategy:
+      fail-fast: false
+      matrix:
+        node: ['20.20.2', '22.12.0', '24.14.0']
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: pnpm/action-setup@v6
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version: '24.15.0'
+          cache: 'pnpm'
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Build
+        run: pnpm build
+
+      # The Node under the binary changes here, after the build and for nothing else.
+      - uses: actions/setup-node@v7
+        with:
+          node-version: ${{ matrix.node }}
+
+      - name: The built binary refuses it in one line
+        run: bash .github/the-binary-runs/it-refuses-an-old-node.sh
+
   # THE LINK CANNOT COME BACK. This repository does not credit the tool that wrote a change in
   # the change's own record, and for 243 pull requests that held because somebody remembered it.
   # A sweep on 2026-09-11 found the trunk carrying one co-author trailer and thirteen

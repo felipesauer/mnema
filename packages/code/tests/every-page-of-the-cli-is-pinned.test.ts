@@ -36,7 +36,7 @@ import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import type { Command } from 'commander';
 import { describe, expect, it } from 'vitest';
-import { buildProgram, type CliIo } from '../src/cli.js';
+import { buildProgram, type CliIo } from '../src/program.js';
 import { everyCommandOf, pathOf } from '../src/wiring/misuse.js';
 
 /** A silent port: nothing here runs a verb, it only reads what they declare. */

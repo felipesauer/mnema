@@ -691,7 +691,7 @@ type ToolRegistrar = <Input extends ZodRawShapeCompat | undefined = undefined>(
  *
  * The declarations travel back rather than being discarded, for the reason the command
  * line's do: a classification is only worth declaring if it can be ASKED. The entry
- * ignores the answer, having nothing to decide with it today — the same as `cli.ts`,
+ * ignores the answer, having nothing to decide with it today — the same as `program.ts`,
  * where `registerVerbs` has returned the verbs' declarations since before anything read
  * them, and where the first production reader (the read-only session) arrived afterwards.
  * What reads these now is the guard, and a reviewer.

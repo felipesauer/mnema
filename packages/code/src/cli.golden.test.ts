@@ -46,7 +46,7 @@ import { listTails, memoryCaptured } from '@mnema/chain';
 import { PROJECT_DIR, resolveTrees } from '@mnema/core';
 import { openTreeForWriting } from '@mnema/core/write';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
-import { buildProgram, type CliIo, run } from './cli.js';
+import { buildProgram, type CliIo, run } from './program.js';
 import { everyCommandOf, pathOf } from './wiring/misuse.js';
 
 /** Where the fixture lives for the length of this file. */

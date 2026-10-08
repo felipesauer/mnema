@@ -28,11 +28,11 @@ import {
 import { tmpdir } from 'node:os';
 import { join, relative } from 'node:path';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
-import { type CliIo, run } from '../src/cli.js';
 import { runAging } from '../src/commands/aging.js';
 import { runCommits } from '../src/commands/commits.js';
 import { runTrailer } from '../src/commands/trailer.js';
 import { runWhy } from '../src/commands/why.js';
+import { type CliIo, run } from '../src/program.js';
 import { GIT_WITHOUT_MAINTENANCE } from './support/git-without-maintenance.js';
 import { isTheDerivedCache } from './support/the-cache-is-not-the-record.js';
 

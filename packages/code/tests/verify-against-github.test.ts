@@ -10,9 +10,9 @@ import { join } from 'node:path';
 import { catalogUpcasters, publicKeyPath, verify } from '@mnema/chain';
 import { orderedEvents, resolveTrees } from '@mnema/core';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { type CliIo, run } from '../src/cli.js';
 import { runKeyGithub } from '../src/commands/key-github.js';
 import { rawEd25519Of } from '../src/commands/verify-github.js';
+import { type CliIo, run } from '../src/program.js';
 
 let sandbox: string;
 let repo: string;

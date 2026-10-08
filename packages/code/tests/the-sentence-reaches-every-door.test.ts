@@ -47,7 +47,7 @@ import { existsSync, readFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { describe, expect, it } from 'vitest';
-import { buildProgram } from '../src/cli.js';
+import { buildProgram } from '../src/program.js';
 import { PRODUCT_PROMISE, PRODUCT_PROMISE_CAVEAT } from '../src/promise.js';
 
 /**

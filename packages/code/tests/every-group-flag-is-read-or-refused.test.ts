@@ -33,8 +33,8 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import type { Command, Option } from 'commander';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
-import { buildProgram, type CliIo, run } from '../src/cli.js';
 import { completionTree } from '../src/completion/tree.js';
+import { buildProgram, type CliIo, run } from '../src/program.js';
 import { everyCommandOf, pathOf } from '../src/wiring/misuse.js';
 import { WHAT_A_SUBCOMMAND_READS } from './support/what-a-subcommand-reads.js';
 

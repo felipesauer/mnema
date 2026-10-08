@@ -43,7 +43,7 @@ import { appendFileSync, mkdirSync, mkdtempSync, readdirSync, readFileSync, rmSy
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
-import { run } from '../src/cli.js';
+import { run } from '../src/program.js';
 // STATIC, not `await import()`: the ledger that asks whether any assertion observes a
 // file follows import BINDINGS, and a subject fetched dynamically inside a case is a
 // subject it cannot trace back. The verb wirings load lazily because the CLI's floor

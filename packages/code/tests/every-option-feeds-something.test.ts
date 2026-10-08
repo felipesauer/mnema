@@ -104,7 +104,7 @@ import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { Command } from 'commander';
 import { describe, expect, it } from 'vitest';
-import { buildProgram, type CliIo } from '../src/cli.js';
+import { buildProgram, type CliIo } from '../src/program.js';
 import { everyCommandOf, pathOf } from '../src/wiring/misuse.js';
 import { codeOnly, sourceFiles } from './support/reading-source.js';
 

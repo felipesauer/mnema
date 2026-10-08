@@ -12,8 +12,8 @@ import { appendFileSync, mkdirSync, mkdtempSync, readdirSync, rmSync } from 'nod
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
-import { type CliIo, run } from '../src/cli.js';
 import { renderPlain } from '../src/presentation/plain.js';
+import { type CliIo, run } from '../src/program.js';
 import { projectsNamedBy } from '../src/repl/promotable.js';
 import { typedLine } from '../src/repl/session.js';
 import { REPL_VERB } from '../src/wiring/repl.js';

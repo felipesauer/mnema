@@ -23,7 +23,7 @@ import { join } from 'node:path';
 import { catalogUpcasters } from '@mnema/chain';
 import { orderedEvents, resolveTrees } from '@mnema/core';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
-import { type CliIo, run } from '../src/cli.js';
+import { type CliIo, run } from '../src/program.js';
 
 let sandbox: string;
 let repo: string;

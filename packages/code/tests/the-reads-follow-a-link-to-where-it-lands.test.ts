@@ -13,9 +13,9 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { type DiscoveryEnv, resolveTrees } from '@mnema/core';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
-import { type CliIo, run } from '../src/cli.js';
 import { runRules } from '../src/commands/rules.js';
 import { runWhy } from '../src/commands/why.js';
+import { type CliIo, run } from '../src/program.js';
 import { withScopedCaches } from '../src/tree-sources.js';
 import { whatAWriteMeets } from '../src/what-a-write-meets.js';
 

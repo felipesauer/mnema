@@ -39,9 +39,9 @@ import { join, relative } from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 import type { DiscoveryEnv } from '@mnema/core';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
-import { type CliIo, run } from '../src/cli.js';
 import { openSession, type Session } from '../src/mcp/session.js';
 import { runGoverningRulesTool } from '../src/mcp/tools.js';
+import { type CliIo, run } from '../src/program.js';
 import { isTheDerivedCache } from './support/the-cache-is-not-the-record.js';
 
 /**

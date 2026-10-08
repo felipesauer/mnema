@@ -42,7 +42,6 @@ import { join, relative } from 'node:path';
 import { pathToFileURL } from 'node:url';
 import type { DiscoveryEnv } from '@mnema/core';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
-import { type CliIo, run } from '../src/cli.js';
 import { openSession, type Session } from '../src/mcp/session.js';
 import {
   runAntipatternsTool,
@@ -50,6 +49,7 @@ import {
   runSkillsTool,
   runSkillTransition,
 } from '../src/mcp/tools.js';
+import { type CliIo, run } from '../src/program.js';
 
 let sandbox: string;
 let repo: string;

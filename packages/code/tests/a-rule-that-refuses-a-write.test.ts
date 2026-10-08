@@ -32,7 +32,6 @@ import { fileURLToPath, pathToFileURL } from 'node:url';
 import { type CatalogEvent, catalogUpcasters } from '@mnema/chain';
 import { type DiscoveryEnv, orderedEvents, resolveTrees } from '@mnema/core';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
-import { type CliIo, run } from '../src/cli.js';
 import { runBeforeAWrite } from '../src/commands/before-a-write.js';
 import { asksAPerson, pathsOfAWrite } from '../src/host-hook.js';
 import { HOOK_HOSTS, type HookHost } from '../src/host-names.js';
@@ -40,6 +39,7 @@ import { hookReply } from '../src/mcp/hook-reply.js';
 import { openSession } from '../src/mcp/session.js';
 import { runGoverningRulesTool, runRulesBeforeAnEditTool } from '../src/mcp/tools.js';
 import { acceptedBy } from '../src/presentation/accepted-by.js';
+import { type CliIo, run } from '../src/program.js';
 
 const REPO = fileURLToPath(new URL('../../../', import.meta.url));
 const CLI = join(REPO, 'packages', 'code', 'dist', 'cli.js');

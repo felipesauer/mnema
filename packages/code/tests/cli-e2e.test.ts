@@ -45,9 +45,9 @@ import {
 } from '@mnema/core';
 import { openTreeForWriting } from '@mnema/core/write';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
-import { buildProgram, type CliIo, run } from '../src/cli.js';
 import { closeSession, openSession } from '../src/mcp/session.js';
 import { runCreateSkill, runSkillsTool, runSkillTransition } from '../src/mcp/tools.js';
+import { buildProgram, type CliIo, run } from '../src/program.js';
 import { patternsFraming } from '../src/served-patterns.js';
 import { everyCommandOf, pathOf } from '../src/wiring/misuse.js';
 import { isTheDerivedCache } from './support/the-cache-is-not-the-record.js';

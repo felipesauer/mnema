@@ -21,9 +21,9 @@ import { fileURLToPath } from 'node:url';
 import type { DiscoveryEnv } from '@mnema/core';
 import { Command } from 'commander';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
-import { type CliIo, run } from '../src/cli.js';
 import { runSessionTally } from '../src/commands/tally.js';
 import { renderPlain } from '../src/presentation/plain.js';
+import { type CliIo, run } from '../src/program.js';
 import { WRITING_TOOLS, whatTheSessionDid } from '../src/what-the-session-did.js';
 import { registerTally } from '../src/wiring/tally.js';
 

@@ -29,7 +29,7 @@
 
 import { Command, Option } from 'commander';
 import { describe, expect, it } from 'vitest';
-import { buildProgram } from '../cli.js';
+import { buildProgram } from '../program.js';
 import { enumeratedArgument, enumeratedOption } from '../wiring/enumerated.js';
 import { takesFromItsGroup } from '../wiring/from-the-group.js';
 import type { CliIo } from '../wiring/io.js';

@@ -30,7 +30,7 @@
  */
 
 import type { Argument, Command, Option } from 'commander';
-import { buildProgram, type CliIo } from '../../src/cli.js';
+import { buildProgram, type CliIo } from '../../src/program.js';
 import { valuesDeclaredOn } from '../../src/wiring/enumerated.js';
 import { everyCommandOf, pathOf, usageOf } from '../../src/wiring/misuse.js';
 

@@ -39,12 +39,12 @@ import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import type { ProvenLevel } from '@mnema/chain';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
-import { type CliIo, run } from '../src/cli.js';
 import { runVerify } from '../src/commands/verify.js';
 import { type Line, SEVERITIES, type Severity } from '../src/presentation/line.js';
 import { renderPlain, widthOf } from '../src/presentation/plain.js';
 import { renderStyled } from '../src/presentation/styled.js';
 import { statement } from '../src/presentation/verdict.js';
+import { type CliIo, run } from '../src/program.js';
 import { areaFor } from '../src/repl/area.js';
 import { THE_FLOOR } from '../src/repl/floor.js';
 import {

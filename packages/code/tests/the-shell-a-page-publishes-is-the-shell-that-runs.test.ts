@@ -74,7 +74,7 @@
 
 import type { Command, Option } from 'commander';
 import { describe, expect, it } from 'vitest';
-import { buildProgram, type CliIo } from '../src/cli.js';
+import { buildProgram, type CliIo } from '../src/program.js';
 import { read } from './support/published-examples.js';
 import {
   commandsOn,
