@@ -95,12 +95,37 @@ const CLAUDE_WRITES = 'Write|Edit|NotebookEdit';
 
 /** A command hook that runs one handler of the plugin, with its arguments. */
 function command(handler: string, args: readonly string[] = []): Json {
+  return { type: 'command', command: nodeRuns(handler, args), timeout: TIMEOUT };
+}
+
+/** The line that runs one handler of the plugin with its arguments. */
+function nodeRuns(handler: string, args: readonly string[] = []): string {
   const tail = args.length === 0 ? '' : ` ${args.join(' ')}`;
-  return {
-    type: 'command',
-    command: `node "\${CLAUDE_PLUGIN_ROOT}/hooks/${handler}"${tail}`,
-    timeout: TIMEOUT,
-  };
+  return `node "\${CLAUDE_PLUGIN_ROOT}/hooks/${handler}"${tail}`;
+}
+
+/**
+ * The shell in front of a gate's handler, generated from the host's row: it starts no process
+ * where the gate has nothing to do, which is most of the time.
+ *
+ * WHY A SHELL AND NOT ONLY THE HANDLER. The handler filters too (`whatTheGateAnswers`), as a
+ * second line; but a filter in the handler costs a `node` start at every call it turns away, and
+ * VS Code runs every command of the plugin on every tool call, whatever its matcher says — a read
+ * would start two. So a host that sets a variable of its own is asked for it before anything
+ * starts (`[ -n "$VAR" ] && …; exit 0`), and a host that reads no matcher has its payload passed
+ * on only when it names one of the tools it writes through (`case`). Neither is written by hand:
+ * both come from the row, and `the-host-files-are-generated.test.ts` holds what they say.
+ */
+function gate(
+  handler: string,
+  args: readonly string[],
+  env: string | undefined,
+  tools: readonly string[],
+): string {
+  const run = nodeRuns(handler, args);
+  if (env !== undefined) return `[ -n "$${env}" ] && ${run}; exit 0`;
+  const named = tools.map((tool) => `*'"${tool}"'*`).join('|');
+  return `IN=$(cat); case "$IN" in ${named}) printf '%s' "$IN" | ${run};; esac`;
 }
 
 /**
@@ -142,11 +167,20 @@ function beforeAWrite(name: HostName): readonly Json[] {
     {
       matcher: env === undefined ? `^(${tools.join('|')})$` : CLAUDE_WRITES,
       hooks: [
-        command(handler, [
-          '--host',
-          hookHost,
-          ...(env === undefined ? ['--tools', tools.join(',')] : ['--where', env]),
-        ]),
+        {
+          type: 'command',
+          command: gate(
+            handler,
+            [
+              '--host',
+              hookHost,
+              ...(env === undefined ? ['--tools', tools.join(',')] : ['--where', env]),
+            ],
+            env,
+            tools,
+          ),
+          timeout: TIMEOUT,
+        },
       ],
     },
   ];

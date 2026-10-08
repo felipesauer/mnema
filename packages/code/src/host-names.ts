@@ -198,7 +198,7 @@ export const HOSTS = {
       server: {
         does: true,
         held: 'documentation',
-        at: 'https://github.com/continuedev/continue/blob/5522c6f/extensions/cli/AGENTS.md',
+        at: 'https://github.com/continuedev/continue/blob/5522c6f/extensions/cli/src/services/MCPService.ts',
         read: READ_ON,
       },
       rulesFile: {

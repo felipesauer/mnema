@@ -11,12 +11,13 @@
  * Code alone: it sits under a matcher of VS Code's own tool names, which Claude Code and Cursor
  * apply and never match (measured in both), and which VS Code does not read at all.
  *
- * THAT LAST FACT IS WHY IT FILTERS BEFORE IT RUNS ANYTHING. VS Code runs a plugin's command on
- * every tool call — a read, a search, a terminal — whatever its matcher says (measured: a matcher
- * that names no tool still ran). So `hooks.json`, generated from the host table, hands this
- * handler its host and the tools that host writes through (`--host vscode --tools …`), and it
- * starts no `mnema` for any other tool (`hand-over.mjs`, `whatTheGateAnswers`); everything else
- * costs a `node` start.
+ * THAT LAST FACT IS WHY THERE IS A FILTER IN FRONT OF IT. VS Code runs a plugin's command on every
+ * tool call — a read, a search, a terminal — whatever its matcher says (measured: a matcher that
+ * names no tool still ran). So `hooks.json`, generated from the host table, passes the payload here
+ * only when it names one of the tools that write, in the shell and before any process starts;
+ * everything else costs a shell. It also hands this handler its host and those tools (`--host
+ * vscode --tools …`), and the handler checks them again before it runs `mnema`
+ * (`hand-over.mjs`, `whatTheGateAnswers`): a second line, not the first.
  *
  * IT DECIDES NOTHING, AND IT CARRIES NO TEXT OF ITS OWN. The payload goes to `mnema
  * before-a-write --host <host>` byte for byte and its answer comes back byte for byte; which rules

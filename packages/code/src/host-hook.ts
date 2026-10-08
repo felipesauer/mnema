@@ -44,7 +44,7 @@
  * apply a matcher, and neither has a tool by those names, so neither runs it (measured, both).
  * VS Code runs a plugin's command on EVERY tool call whatever the matcher says (measured: a
  * matcher naming no tool at all still ran), which is why this module answers "not a write" for
- * every other tool, and why the plugin's handler starts no `mnema` for one.
+ * every other tool, and why the plugin puts a filter in front of the process.
  */
 
 import { does, type HookHost } from './host-names.js';

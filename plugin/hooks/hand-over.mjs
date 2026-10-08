@@ -286,7 +286,9 @@ export function whatTheVerbAnswers(argv, cwd, input) {
  * variable no other host sets — the gate starts nothing where it is unset, and reads no stdin
  * there — or `--tools <a,b,…>`, for a host that runs a plugin's command on every tool whatever
  * the matcher says — the gate starts nothing for a tool the host does not write through. Either
- * way no `mnema` runs, as the shell in front of the handler used to see to. Everything else is
+ * way no `mnema` runs. It is the SECOND line: the hooks file puts a shell generated from the same
+ * row in front of the handler, so where that shell turns a call away no process starts at all,
+ * and this check holds only for a handler run some other way. Everything else is
  * {@link whatTheVerbAnswers}: the payload to the verb and its answer back, byte for byte.
  *
  * @param {readonly string[]} argv The handler's own arguments, from the hooks file.

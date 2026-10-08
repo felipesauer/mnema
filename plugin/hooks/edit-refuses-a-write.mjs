@@ -12,11 +12,11 @@
  *
  * `hooks.json` runs it for Cursor alone, and by the host's own environment rather than by a
  * matcher: Cursor and Claude Code both apply the matcher `Write|Edit|NotebookEdit` — Claude Code
- * runs the per-edit call into the server there — so `hooks.json`, generated from the host table,
- * hands this handler its host and the variable that says it is there (`--host cursor --where
- * CURSOR_VERSION`), which Cursor sets for every hook (measured) and Claude Code does not, and where
- * it is unset the handler reads nothing and starts no `mnema` (`hand-over.mjs`,
- * `whatTheGateAnswers`). In Claude Code that costs a `node` start at each write, and nothing else.
+ * runs the per-edit call into the server there — so the shell `hooks.json` generates from the
+ * host table asks for `$CURSOR_VERSION`, which Cursor sets for every hook (measured) and Claude
+ * Code does not, before any process starts. It also hands this handler its host and that variable
+ * (`--host cursor --where CURSOR_VERSION`), and the handler checks it again before it runs `mnema`
+ * (`hand-over.mjs`, `whatTheGateAnswers`): a second line, not the first.
  *
  * IT DECIDES NOTHING, AND IT CARRIES NO TEXT OF ITS OWN. The payload goes to `mnema
  * before-a-write --host <host>` byte for byte and its answer comes back byte for byte; which

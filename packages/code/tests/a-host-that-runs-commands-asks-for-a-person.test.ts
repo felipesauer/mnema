@@ -337,15 +337,17 @@ describe('the plugin command VS Code runs', () => {
   }
 
   it('names, in its matcher and in its filter, exactly the tools the verb reads — both ways', () => {
-    // THREE PLACES HOLD ONE LIST — the verb's table, the matcher Claude Code and Cursor apply and
-    // never match, and the tools the handler lets through, since VS Code ignores the matcher and
-    // runs the command on every tool — so the three are reconciled here in both directions. A
-    // tool missing from the filter is a write that is never asked about, in silence.
+    // FOUR PLACES HOLD ONE LIST — the verb's table, the matcher Claude Code and Cursor apply and
+    // never match, the filter in the shell in front of the process that VS Code, which ignores the
+    // matcher, runs on every tool, and the tools the handler checks again — so they are reconciled
+    // here in both directions. A tool missing from a filter is a write never asked about, in silence.
     const tools = [...writeToolsOf('vscode')].sort();
     const { matcher, command } = declared();
     expect(/^\^\((.*)\)\$$/.exec(matcher)?.[1]?.split('|').sort()).toEqual(tools);
-    const filtered = (/ --tools ([a-z_,]+)/.exec(command)?.[1] ?? '').split(',').sort();
+    const filtered = [...command.matchAll(/\*'"([a-z_]+)"'\*/g)].map((m) => m[1]).sort();
     expect(filtered).toEqual(tools);
+    const checked = (/ --tools ([a-z_,]+)/.exec(command)?.[1] ?? '').split(',').sort();
+    expect(checked).toEqual(tools);
     // And the host the command declares is one the verb takes.
     expect(HOOK_HOSTS.filter((host) => command.includes(` --host ${host} `))).toEqual(['vscode']);
   });
@@ -400,6 +402,59 @@ describe('the plugin command VS Code runs', () => {
       'before-a-write --host vscode',
       'before-a-write --host vscode',
     ]);
+  });
+
+  it('starts no process at all — not even node — on a VS Code read, or for a write outside Cursor', () => {
+    // VS Code runs EVERY command of the plugin on every tool call, whatever the matcher says, so a
+    // read meets both gates; Claude Code runs Cursor's gate at each of its own writes. A filter in
+    // the handler would still start `node` each time, so the shell the hooks file generates in
+    // front of each gate is what this holds: `node` itself is a shim here, and it is never called.
+    const bin = join(sandbox, 'bin');
+    mkdirSync(bin);
+    const calls = join(sandbox, 'calls.txt');
+    for (const name of ['node', 'mnema']) {
+      const real = name === 'node' ? process.execPath : `${process.execPath}" "${CLI}`;
+      writeFileSync(
+        join(bin, name),
+        ['#!/bin/sh', `printf '%s\\n' "${name} $*" >> "$CALLS"`, `exec "${real}" "$@"`, ''].join(
+          '\n',
+        ),
+      );
+      chmodSync(join(bin, name), 0o755);
+    }
+    const config = JSON.parse(readFileSync(HOOKS, 'utf-8')) as {
+      hooks: Record<string, { hooks: { type: string; command?: string }[] }[]>;
+    };
+    const gates = (config.hooks['PreToolUse'] ?? []).flatMap((group) =>
+      group.hooks.flatMap((hook) => (hook.type === 'command' ? [hook.command ?? ''] : [])),
+    );
+    expect(gates.length).toBe(2);
+    const host = (command: string, payload: string) =>
+      spawnSync('/bin/sh', ['-c', command], {
+        cwd: repo,
+        input: payload,
+        encoding: 'utf-8',
+        env: {
+          HOME: join(sandbox, 'home'),
+          PATH: `${bin}:/usr/bin:/bin`,
+          CALLS: calls,
+          CLAUDE_PLUGIN_ROOT: PLUGIN,
+        },
+      });
+    const read = JSON.stringify({ tool_name: 'read_file', tool_input: { filePath: 'src/x.ts' } });
+    const write = JSON.stringify({ tool_name: 'Write', tool_input: { file_path: 'src/x.ts' } });
+    for (const command of gates) {
+      for (const payload of [read, write]) {
+        const ran = host(command, payload);
+        expect(ran.status).toBe(0);
+        expect(ran.stdout).toBe('');
+      }
+    }
+    expect(existsSync(calls)).toBe(false);
+    // NON-VACUITY: the shim is on the path the gates use — a VS Code write does start it.
+    const vscode = gates.find((command) => command.includes('edit-asks-a-person.mjs')) ?? '';
+    host(vscode, createFile('src/other/ledger.ts'));
+    expect(readFileSync(calls, 'utf-8')).toContain('node ');
   });
 
   it('refuses a host it does not know, rather than reading a payload in the wrong shape', () => {
