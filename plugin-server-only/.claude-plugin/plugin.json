@@ -22,10 +22,7 @@
   "mcpServers": {
     "mnema": {
       "command": "node",
-      "args": [
-        "${CLAUDE_PLUGIN_ROOT}/server/launch.mjs",
-        "mcp"
-      ],
+      "args": ["${CLAUDE_PLUGIN_ROOT}/server/launch.mjs", "mcp"],
       "env": {
         "MNEMA_PLUGIN_BINARY": "${user_config.mnema_path}"
       }

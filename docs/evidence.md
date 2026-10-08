@@ -22,6 +22,35 @@ The words mean one thing each:
 What the verifier proves, and what it does not, is on
 [What it proves](what-it-proves.md), not here.
 
+## Each host's rung
+
+The same table the README carries, with the same words: what each host does with mnema, and how
+each cell is known.
+
+<!-- The rung table below is generated from packages/code/src/host-names.ts: edit the table there. -->
+
+| Host | (a) The MCP server | (a) Rules in a file | (b) The opening of a session | (c) A refusal before a write | (d) A pause for a person | Rung |
+| --- | --- | --- | --- | --- | --- | --- |
+| Claude Code | yes, [held by a test](../packages/code/tests/host-contract/the-rules-arrive-beside-the-write.test.ts) | yes, [held by a test](../packages/code/tests/a-rules-file-carries-only-what-becomes-a-glob-exactly.test.ts) | yes, [held by a test](../packages/code/tests/host-contract/the-session-opens-with-the-record.test.ts) | yes, [held by a test](../packages/code/tests/host-contract/a-refusal-and-a-pause-hold-the-write.test.ts) | yes, [held by a test](../packages/code/tests/host-contract/a-refusal-and-a-pause-hold-the-write.test.ts) | (d) |
+| VS Code's agent | yes, read on VS Code 1.137 with Copilot Chat 0.65, 23 September 2026 | yes, [held by a test](../packages/code/tests/a-rules-file-carries-only-what-becomes-a-glob-exactly.test.ts) | yes, read on VS Code 1.137 with Copilot Chat 0.65, 23 September 2026 | yes, [held by a test](../packages/code/tests/host-contract/an-editor-holds-or-refuses-the-write.vscode.test.ts) | yes, [held by a test](../packages/code/tests/host-contract/an-editor-holds-or-refuses-the-write.vscode.test.ts) | (d) |
+| Cursor's command-line agent | yes, read on Cursor agent 2026.09.18, 23 September 2026 | yes, [held by a test](../packages/code/tests/a-rules-file-carries-only-what-becomes-a-glob-exactly.test.ts) | yes, read on Cursor agent 2026.09.18, 23 September 2026 | yes, read on Cursor agent 2026.09.18, 2 October 2026 | no, read on Cursor agent 2026.09.18, 30 September 2026 | (c) |
+| Factory Droid | documented, not measured ([read 8 October 2026](https://github.com/Factory-AI/factory/blob/c6ea470/docs/cli/configuration/mcp.mdx)) | documented, not measured ([read 8 October 2026](https://github.com/Factory-AI/factory/blob/c6ea470/docs/cli/configuration/agents-md.mdx)) | not ported | not ported | not ported | (a), documented, not measured |
+| Qwen Code | documented, not measured ([read 8 October 2026](https://github.com/QwenLM/qwen-code/blob/cbbb0a5/docs/users/features/mcp.md)) | documented, not measured ([read 8 October 2026](https://github.com/QwenLM/qwen-code/blob/cbbb0a5/docs/users/features/memory.md)) | not ported | not ported | not ported | (a), documented, not measured |
+| Goose | documented, not measured ([read 8 October 2026](https://github.com/aaif-goose/goose/blob/a4189ec/README.md)) | documented, not measured ([read 8 October 2026](https://github.com/aaif-goose/goose/blob/a4189ec/crates/goose/src/hints/load_hints.rs)) | not ported | not ported | not ported | (a), documented, not measured |
+| Continue's command line (`cn`) | documented, not measured ([read 8 October 2026](https://github.com/continuedev/continue/blob/5522c6f/extensions/cli/src/services/MCPService.ts)) | documented, not measured ([read 8 October 2026](https://github.com/continuedev/continue/blob/5522c6f/core/config/markdown/loadMarkdownRules.ts)) | not ported | not ported | not ported | (a), documented, not measured |
+| Warp's agent | documented, not measured ([read 8 October 2026](https://github.com/warpdotdev/warp/blob/325d4d4/app/src/ai/agent_sdk/driver/mcp_startup.rs)) | documented, not measured ([read 8 October 2026](https://github.com/warpdotdev/warp/blob/325d4d4/app/src/ai/agent_tips.rs)) | not ported | not ported | not ported | (a), documented, not measured |
+
+Each cell says how it is known: **held by a test** of this repository; **read** once against the
+real host, on the version and the day it names, and held by no file yet; or **documented, not
+measured**: the host's own documentation or code says the host does it, at the commit the link
+names, and nothing was run. **Not ported**: the plugin hands that host nothing for it. For the
+first three hosts, the rules file is the one `mnema rules-file --host` prints in the host's
+format, and the test holds what it prints, not how the host matches its globs; for the others,
+it is `AGENTS.md`, which the host's documentation says it reads. A host reaches a rung when every
+rung before it is a yes; Aider was read too, and is not here, because it has no MCP client.
+
+<!-- End of the generated rung table. -->
+
 ## Held by a file of this repository
 
 | The claim | Held by | File |

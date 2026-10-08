@@ -52,7 +52,9 @@
             "type": "mcp_tool",
             "server": "plugin:mnema:mnema",
             "tool": "rules_before_an_edit",
-            "input": { "path": "${tool_input.file_path}" },
+            "input": {
+              "path": "${tool_input.file_path}"
+            },
             "timeout": 15
           }
         ]
@@ -62,17 +64,17 @@
         "hooks": [
           {
             "type": "command",
-            "command": "[ -n \"$CURSOR_VERSION\" ] && node \"${CLAUDE_PLUGIN_ROOT}/hooks/edit-refuses-a-write.mjs\"; exit 0",
+            "command": "[ -n \"$CURSOR_VERSION\" ] && node \"${CLAUDE_PLUGIN_ROOT}/hooks/edit-refuses-a-write.mjs\" --host cursor --where CURSOR_VERSION; exit 0",
             "timeout": 15
           }
         ]
       },
       {
-        "matcher": "^(create_file|replace_string_in_file|multi_replace_string_in_file|insert_edit_into_file|edit_notebook_file|apply_patch)$",
+        "matcher": "^(create_file|replace_string_in_file|insert_edit_into_file|edit_notebook_file|multi_replace_string_in_file|apply_patch)$",
         "hooks": [
           {
             "type": "command",
-            "command": "IN=$(cat); case \"$IN\" in *'\"create_file\"'*|*'\"replace_string_in_file\"'*|*'\"multi_replace_string_in_file\"'*|*'\"insert_edit_into_file\"'*|*'\"edit_notebook_file\"'*|*'\"apply_patch\"'*) printf '%s' \"$IN\" | node \"${CLAUDE_PLUGIN_ROOT}/hooks/edit-asks-a-person.mjs\";; esac",
+            "command": "IN=$(cat); case \"$IN\" in *'\"create_file\"'*|*'\"replace_string_in_file\"'*|*'\"insert_edit_into_file\"'*|*'\"edit_notebook_file\"'*|*'\"multi_replace_string_in_file\"'*|*'\"apply_patch\"'*) printf '%s' \"$IN\" | node \"${CLAUDE_PLUGIN_ROOT}/hooks/edit-asks-a-person.mjs\" --host vscode --tools create_file,replace_string_in_file,insert_edit_into_file,edit_notebook_file,multi_replace_string_in_file,apply_patch;; esac",
             "timeout": 15
           }
         ]
