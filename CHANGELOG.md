@@ -134,7 +134,7 @@ tag, with its own changelog.
   install script and no prebuilt binary to miss. The record, its format, the locks and the cache's
   tables are the same, and a cache written by the older build is replaced on the next read, as any
   cache of another build is. Measured on a 1,500-event record against the build before, no verb
-  was slower.
+  is more than 1.04 times what it was.
 - **The Action's own test has room in its time limit.** Its cases start the real `mnema` binary
   (seven processes of set-up and two per run); the slowest took 4.3 to 4.5 s measured alone against
   the 5 s default, and went red once on a loaded runner. The limit is 20 s for that file; nothing

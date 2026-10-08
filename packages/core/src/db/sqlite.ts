@@ -120,8 +120,12 @@ export function inTransaction<T>(
       db.exec(`RELEASE ${SAVEPOINT}`);
       return result;
     } catch (error) {
-      db.exec(`ROLLBACK TO ${SAVEPOINT}`);
-      db.exec(`RELEASE ${SAVEPOINT}`);
+      // SQLite rolls some failures back whole (`INSERT OR ROLLBACK`, a full disk): the savepoint is
+      // gone with the transaction, and naming it would put its own error in place of this one.
+      if (db.isTransaction) {
+        db.exec(`ROLLBACK TO ${SAVEPOINT}`);
+        db.exec(`RELEASE ${SAVEPOINT}`);
+      }
       throw error;
     }
   }
