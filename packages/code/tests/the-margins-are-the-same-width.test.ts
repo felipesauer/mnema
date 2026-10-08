@@ -45,6 +45,9 @@ const PROMPT = 'mnema>';
 /** The mark a command that was SENT carries on the roll. */
 const SENT = '❯';
 
+/** The dot an answer opens with. */
+const ANSWERED = '●';
+
 /** The widths asked: the shortest the console draws on, ones in between, and a wide one. */
 const THE_WIDTHS = [80, 97, 120, 163, 200] as const;
 
@@ -115,9 +118,13 @@ describe('the console leaves as much empty to the left as to the right', () => {
       const sent = screen.rows.findIndex((row) => row.includes(SENT));
       expect(sent, `no command was sent:\n${screen.text}`).toBeGreaterThanOrEqual(0);
       const left = beginsAt(screen.rows[sent] as string);
-      // THE ROWS THE FOLD BROKE THE WORD INTO: the ones made of nothing else. The last of them is
-      // the remainder, so the widest is what the page allows.
-      const ofTheWord = screen.rows.filter((row) => /^\s*(?:❯\s)?x{10,}\s*$/.test(row));
+      // THE ROWS THE PRODUCT'S OWN FOLD BROKE THE COMMAND INTO: the echo of the sent line, from its
+      // mark down to the row the answer opens on. NOT the answer's rows: the answer repeats the
+      // word and the layout library breaks it at the full width of the terminal, which would make
+      // the right margin none whatever the fold did. The widest echo row is what the page allows.
+      const answered = screen.rows.findIndex((row, at) => at > sent && row.includes(ANSWERED));
+      expect(answered, `the answer did not open:\n${screen.text}`).toBeGreaterThan(sent);
+      const ofTheWord = screen.rows.slice(sent, answered).filter((row) => /x{10,}/.test(row));
       expect(
         ofTheWord.length,
         `the word was not broken across rows:\n${screen.text}`,

@@ -33,7 +33,7 @@
  *   - AND THE CONTENT IS THE CALLER'S. A record titled in characters that take two cells each is
  *     ordinary, and the frame's arithmetic was wrong about it in every terminal there is: the
  *     width was a count of CODE POINTS, so a row of eighty-eight cells was handed to the layout
- *     for a page with seventy-four columns inside its margin. What that produces on a screen is
+ *     for a page of eighty columns. What that produces on a screen is
  *     not an overflow — the library wraps what our fold left too wide — it is the LIBRARY's break
  *     instead of the product's, at the margin, with the continuation at column zero. Measured at
  *     the floor, on the instrument.
@@ -794,7 +794,7 @@ describe('a record titled in two-cell characters is folded by the product', () =
     // THE CASE THE FUNCTION-LEVEL ONES CANNOT ANSWER (`src/presentation/width.test.ts` holds
     // those): the ARITHMETIC OF THE FRAME, on a real pseudo-terminal at the floor. The fold asked
     // how wide a row was, got a count of code points, decided it fitted, and handed the layout a
-    // row of eighty-eight cells for a page with seventy-four columns inside its margin.
+    // row of eighty-eight cells for a page of eighty columns.
     //
     // AND WHAT THAT PRODUCES ON THE SCREEN IS NOT AN OVERFLOW, WHICH IS THE FINDING THIS CASE WAS
     // REWRITTEN AROUND. The layout library measures correctly and wraps whatever our fold left

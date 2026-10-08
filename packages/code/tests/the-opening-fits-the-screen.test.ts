@@ -1026,8 +1026,7 @@ async function openedAt(
  * AND THE FLOOR LOST ONE ROW WHEN THE MARGIN WENT. The sentence the session lands under the panel
  * is seventy-eight columns with its indent, and the page had seventy-four inside a margin of six,
  * so at eighty columns it folded onto a second row; with no margin the page is eighty wide and it
- * is one. The
- * other two sizes were already wide enough, and they did not move.
+ * is one. The other two sizes were already wide enough, and they did not move.
  */
 const THE_SCREEN: readonly { columns: number; rows: number; takes: number }[] = [
   { columns: THE_FLOOR.columns, rows: THE_FLOOR.rows, takes: 18 },
