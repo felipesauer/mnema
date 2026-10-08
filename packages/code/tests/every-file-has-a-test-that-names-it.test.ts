@@ -864,7 +864,7 @@ const CLAUSES_PER_FILE: Readonly<Record<string, number>> = {
   'packages/code/src/commands/task.test.ts': 8,
   'packages/code/src/commands/timeline.test.ts': 13,
   'packages/code/src/commands/usage.test.ts': 10,
-  'packages/code/src/commands/verify-github.test.ts': 8,
+  'packages/code/src/commands/verify-github.test.ts': 9,
   'packages/code/src/commands/verify-since.test.ts': 7,
   'packages/code/src/commands/verify.test.ts': 8,
   'packages/code/src/commands/witness-stamp-judges-each-tree-once.test.ts': 9,

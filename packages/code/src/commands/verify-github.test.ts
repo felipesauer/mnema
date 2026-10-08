@@ -9,6 +9,7 @@
  * code agree on what the two spellings of one key are; the parser has to agree with both.
  */
 
+import { createPrivateKey, createPublicKey } from 'node:crypto';
 import { mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
@@ -16,12 +17,15 @@ import {
   accountLinked,
   type ChainWriter,
   catalogUpcasters,
+  enrollmentMessage,
+  materializePublicKey,
   openChainForWriting,
   publicKeyPath,
+  sign,
   taskCreated,
   verify,
 } from '@mnema/chain';
-import { ensureFounded, linkAccount } from '@mnema/core/write';
+import { enrollKey, ensureFounded, linkAccount } from '@mnema/core/write';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import type { TreeReport } from './verify.js';
 import { compareWithGithub, ed25519KeysIn, type FetchKeys, rawEd25519Of } from './verify-github.js';
@@ -271,5 +275,50 @@ describe('compareWithGithub', () => {
     const reading = await compareWithGithub(treesOf(root), { fetch });
     expect(reading).toEqual({ authors: [], notCompared: ['public'] });
     expect(fetch).not.toHaveBeenCalled();
+  });
+
+  it('takes the link a second machine wrote on top of the first, even with its clock behind', async () => {
+    // A links `octocat` and enrols B. B, an hour behind by its clock, links `hubber` on top of
+    // what it pulled, and its writer cites A's head. Merged as the record is — by citation —
+    // B's link is the last; sorted by `at`, it would come first and `octocat` would stand.
+    const { root, writer: a } = aRecord();
+    const anchor = a.anchor;
+    const bKeys = tmp('mnema-github-keys-b-');
+    const b = openChainForWriting(root, { keyRoot: bKeys, citeHeads: true });
+    const bPrivate = createPrivateKey(
+      readFileSync(join(bKeys, 'keys', `${b.signerFingerprint}.key`), 'utf-8'),
+    );
+    const bPublic = createPublicKey(
+      readFileSync(join(bKeys, 'keys', `${b.signerFingerprint}.pub`), 'utf-8'),
+    );
+    materializePublicKey({ root }, { publicKey: bPublic, fingerprint: b.signerFingerprint });
+    const enrolled = enrollKey(
+      { writer: a, layout: { root }, upcasters: catalogUpcasters() },
+      {
+        newFp: b.signerFingerprint,
+        reverseSig: Buffer.from(
+          sign(enrollmentMessage(anchor, b.signerFingerprint), bPrivate),
+        ).toString('hex'),
+      },
+    );
+    if (!enrolled.ok) throw new Error(enrolled.message);
+    const linked = b.append(
+      accountLinked(
+        {
+          at: new Date(Date.now() - 3_600_000).toISOString(),
+          who: anchor,
+          signerFp: b.signerFingerprint,
+          subject: anchor,
+        },
+        { service: 'github', account: 'hubber' },
+      ),
+    );
+    b.checkpoint();
+    expect(linked.event.after).toBeDefined();
+
+    const fetch = github('');
+    const reading = await compareWithGithub(treesOf(root), { fetch });
+    expect(fetch.mock.calls.map((call) => call[0])).toEqual(['https://github.com/hubber.keys']);
+    expect(reading.authors.map((author) => author.anchor)).toEqual([anchor]);
   });
 });
