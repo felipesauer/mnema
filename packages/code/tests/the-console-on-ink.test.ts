@@ -70,6 +70,10 @@ import { screenOf } from './support/screen.js';
 
 /** The built CLI — the same file the `mnema` bin points at. */
 const CLI = fileURLToPath(new URL('../dist/cli.js', import.meta.url));
+
+/** The built program, which `run` is imported from where a case needs the same entry without the binary's checks. */
+const PROGRAM = fileURLToPath(new URL('../dist/program.js', import.meta.url));
+
 /** `packages/code/src`, for the guards that read the console's own source. */
 const SRC = fileURLToPath(new URL('../src', import.meta.url));
 /** `packages/`, for the guard that asks what the layers below can see. */
@@ -451,7 +455,7 @@ describe('the console gives the terminal back, whichever way the session ends', 
     writeFileSync(
       crashing,
       [
-        `import { run } from '${CLI}';`,
+        `import { run } from '${PROGRAM}';`,
         "process.on('SIGUSR2', () => {",
         "  throw new Error('a probe threw while the console was open');",
         '});',
