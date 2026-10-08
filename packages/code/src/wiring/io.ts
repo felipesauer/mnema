@@ -35,7 +35,9 @@ export interface CliIo {
   readonly input?: () => Promise<string>;
   /**
    * Whether a PERSON is at this invocation: standard input and standard error are both a
-   * terminal. A host's hook, an agent's shell and a script are none of that. Absent is false —
+   * terminal. A host's hook, a pipe and a script are none of that. It is a SIGNAL, not a lock: a
+   * caller that fakes a terminal looks like a person, and what that gains is a link, which sends
+   * nothing — the send is the person's Submit on GitHub. Absent is false —
    * the in-process harness has no person, and the only things that ask are the ones that
    * must not happen without one (the offer of a report, and the link that sends it).
    */

@@ -194,6 +194,9 @@ describe('the person is a terminal', () => {
     const lines = whereToSend({ title, body }, '/draft.md', true, 10);
     expect(lines.join('\n')).toContain(emptyForm());
     expect(lines.join('\n')).toContain('/draft.md');
+    // The draft's first line is the title: the person is told where it goes, not to paste it twice.
+    expect(lines.join('\n')).toContain('first line of /draft.md in its title');
+    expect(lines.join('\n')).not.toMatch(/Paste the saved file/);
     expect(lines.some((line) => line.includes('&title='))).toBe(false);
   });
 
@@ -271,6 +274,18 @@ describe('the agent is told, and can do nothing about it', () => {
     expect(carrying.length).toBeGreaterThan(0);
     for (const name of carrying) {
       expect(SERVER_INSTRUCTIONS.length, name).toBeLessThanOrEqual(INSTRUCTIONS_CEILING);
+    }
+  });
+
+  it('lets no file of the MCP server reach the report, the link or the log', () => {
+    const root = fileURLToPath(new URL('../src/mcp/', import.meta.url));
+    const files = readdirSync(root, { recursive: true, withFileTypes: true })
+      .filter((entry) => entry.isFile() && entry.name.endsWith('.ts'))
+      .map((entry) => join(entry.parentPath, entry.name));
+    expect(files.length).toBeGreaterThan(3);
+    for (const file of files) {
+      const text = readFileSync(file, 'utf8');
+      expect(text, file).not.toMatch(/report-link|commands\/report|diagnostic-log|problem-report/);
     }
   });
 

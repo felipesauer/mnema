@@ -114,8 +114,9 @@ export function runReport(
 
 /**
  * The way to send the report, said only to a person. The link is the one thing that carries the
- * report toward anyone, so it is printed where somebody is at a terminal — an agent's shell, a
- * hook or a script is shown the report and the saved file, and no link to follow for its user.
+ * report toward anyone, so it is printed where standard input and error are a terminal, which is
+ * the common case of a person. It is a signal and not a lock: a caller that fakes a terminal gets
+ * the link too, and that sends nothing — the send is the person pressing Submit on GitHub.
  */
 export function whereToSend(
   report: { readonly title: string; readonly body: string },
@@ -129,8 +130,8 @@ export function whereToSend(
   const link = issueLink(report, limit);
   if (link === undefined) {
     return [
-      `It is too long for a link. Paste the saved file into the form instead: ${emptyForm()}`,
-      `(the file is ${draft}).`,
+      `It is too long for a link. Open the empty form ${emptyForm()}`,
+      `and put the first line of ${draft} in its title and everything after the blank line in its Report field.`,
     ];
   }
   return [
