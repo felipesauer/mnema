@@ -65,7 +65,7 @@ for a third party and they move when the product moves. If you want the tool, ta
 with the format and an independent verifier in the tarball — take `@mnema/chain`.
 Read on to know what this one holds and what it proves.
 
-Requires Node 24.15.0 or a later 24, or 26.0.0 or later. ESM-only. Depends on `@mnema/chain` and `better-sqlite3`.
+Requires Node 24.15.0 or a later 24, or 26.0.0 or later. ESM-only. Depends on `@mnema/chain`; the cache is `node:sqlite`, which the Node it runs on ships.
 
 Whether the command above resolves is a fact about the registry rather than about this
 page: `npm view @mnema/core version` answers it in one line.

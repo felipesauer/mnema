@@ -26,8 +26,8 @@
  * thing — which is the hole `cache.test.ts` fell into by writing `t-1` before `t-2`.
  */
 
+import { DatabaseSync } from 'node:sqlite';
 import { type CatalogEvent, taskBirth, taskTransitioned } from '@mnema/chain';
-import Database from 'better-sqlite3';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { ensureSchema } from '../db/schema.js';
 import type { SqliteDatabase } from '../db/sqlite.js';
@@ -39,7 +39,7 @@ import { getTask, listTasks, listTasksByState, materializeTasks } from './task-s
 let db: SqliteDatabase;
 
 beforeEach(() => {
-  db = new Database(':memory:');
+  db = new DatabaseSync(':memory:');
   ensureSchema(db);
 });
 

@@ -1,4 +1,4 @@
-import Database from 'better-sqlite3';
+import { DatabaseSync } from 'node:sqlite';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { ensureSchema } from '../db/schema.js';
 import type { SqliteDatabase } from '../db/sqlite.js';
@@ -21,7 +21,7 @@ import type { TaskProjection } from './task.js';
 let db: SqliteDatabase;
 
 beforeEach(() => {
-  db = new Database(':memory:');
+  db = new DatabaseSync(':memory:');
   ensureSchema(db);
 });
 

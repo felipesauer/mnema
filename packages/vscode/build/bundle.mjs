@@ -2,8 +2,9 @@
  * Bundles the extension into the one CommonJS file the editor loads.
  *
  * The extension reads the record only through the `mnema` command line, so nothing of the
- * database may ride along: `@mnema/core`'s entry opens `better-sqlite3`, a native addon built for
- * one Node ABI, and the editor runs extensions in Electron's. `bundle` returns the files whose code is
+ * database may ride along: `@mnema/core`'s entry opens `node:sqlite`, a module of the Node the
+ * runtime ships, and the editor runs extensions in Electron's Node, which is not the one the
+ * `mnema` command runs on and may not have it. `bundle` returns the files whose code is
  * in the file, so a test can say which packages the file is made of.
  */
 

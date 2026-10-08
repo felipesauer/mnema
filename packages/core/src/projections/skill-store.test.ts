@@ -27,8 +27,8 @@
  * ordering cases below would be satisfied by the wrong thing.
  */
 
+import { DatabaseSync } from 'node:sqlite';
 import { type CatalogEvent, skillCreated, skillTransitioned } from '@mnema/chain';
-import Database from 'better-sqlite3';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { ensureSchema } from '../db/schema.js';
 import type { SqliteDatabase } from '../db/sqlite.js';
@@ -39,7 +39,7 @@ import { getSkill, listSkills, listSkillsByState, materializeSkills } from './sk
 let db: SqliteDatabase;
 
 beforeEach(() => {
-  db = new Database(':memory:');
+  db = new DatabaseSync(':memory:');
   ensureSchema(db);
 });
 

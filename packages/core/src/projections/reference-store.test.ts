@@ -1,5 +1,5 @@
+import { DatabaseSync } from 'node:sqlite';
 import type { CatalogEvent } from '@mnema/chain';
-import Database from 'better-sqlite3';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { ensureSchema } from '../db/schema.js';
 import type { SqliteDatabase } from '../db/sqlite.js';
@@ -18,7 +18,7 @@ import {
 let db: SqliteDatabase;
 
 beforeEach(() => {
-  db = new Database(':memory:');
+  db = new DatabaseSync(':memory:');
   ensureSchema(db);
 });
 
@@ -112,7 +112,7 @@ describe('materializeReferences — where in the stream the events sit', () => {
     materializeReferences(db, whole);
     const inOnePass = db.prepare('SELECT ord, entity, role FROM refs ORDER BY ord, role').all();
 
-    const other: SqliteDatabase = new Database(':memory:');
+    const other: SqliteDatabase = new DatabaseSync(':memory:');
     try {
       ensureSchema(other);
       materializeReferences(other, whole.slice(0, 1));

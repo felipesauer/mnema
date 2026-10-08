@@ -1,12 +1,13 @@
 /**
  * THE EXTENSION'S FILE HOLDS NO DATABASE.
  *
- * The editor runs an extension in Electron, whose native ABI is not the one `better-sqlite3` was
- * built for, so a bundle that reaches `@mnema/core`'s entry installs fine and fails to start. This
+ * The editor runs an extension in Electron's Node, which is not the one the `mnema` command runs
+ * on and may not carry `node:sqlite`, so a bundle that reaches `@mnema/core`'s entry installs fine
+ * and fails to start. This
  * builds the file the way `package` does and reads what it is made of: the source files whose code
  * is in it, and every module it asks the runtime for. Putting `import ... from '@mnema/core'` (or
  * `@mnema/context`) back in `rules.ts` in place of the two functions it uses today pulls the whole
- * barrel in, and this goes red on `better-sqlite3`.
+ * barrel in, and this goes red on the core entry.
  */
 
 import { mkdtempSync, readFileSync, rmSync } from 'node:fs';
@@ -41,11 +42,9 @@ describe('the bundled extension', () => {
     expect(asked.filter((name) => name !== 'vscode' && !builtins.has(name))).toEqual([]);
   });
 
-  it('carries no database, not the native addon and not the core entry that opens it', () => {
-    expect(text).not.toContain('better-sqlite3');
-    expect(sources.filter((file) => /better-sqlite3|\/core\/dist\/index\.js$/.test(file))).toEqual(
-      [],
-    );
+  it('carries no database, not the driver and not the core entry that opens it', () => {
+    expect(text).not.toContain('node:sqlite');
+    expect(sources.filter((file) => /\/core\/dist\/index\.js$/.test(file))).toEqual([]);
   });
 
   it('is its own sources and the two pure functions it asks of the workspace packages', () => {
