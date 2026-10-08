@@ -24,8 +24,8 @@ const OUR_PAINT = new RegExp(
 export interface CliIo {
   readonly out: (line: string) => void;
   readonly err: (line: string) => void;
-  /** Records a non-zero exit intent without killing the process under test. */
-  readonly fail: () => void;
+  /** Records a non-zero exit intent (1 unless a code is given) without killing the process under test. */
+  readonly fail: (code?: number) => void;
   /**
    * Everything on the standard input, for the one verb a host feeds a payload to
    * (`before-a-write`). Absent is empty — the in-process harness has no input to give, and a
@@ -85,8 +85,8 @@ function printable(line: string, painted: boolean): string {
 export const processIo: CliIo = {
   out: (line) => process.stdout.write(`${line}\n`),
   err: (line) => process.stderr.write(`${line}\n`),
-  fail: () => {
-    process.exitCode = 1;
+  fail: (code) => {
+    process.exitCode = code ?? 1;
   },
   input: async () => {
     const chunks: Buffer[] = [];
