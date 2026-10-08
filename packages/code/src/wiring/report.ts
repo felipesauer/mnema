@@ -120,6 +120,18 @@ export function refusalSentence(sentence: string, detail?: string): Line {
 }
 
 /**
+ * The sentence for a FAULT in the product, which is not a no: the same red, because the
+ * command did not do what was asked, and a label that says whose fault it is.
+ */
+export function internalErrorSentence(what: string): Line {
+  return statement(
+    `mnema hit an internal error: ${what}`,
+    'this is a fault in mnema, not a refusal of the command',
+    'bad',
+  );
+}
+
+/**
  * Reports a refusal and records the non-zero exit.
  *
  * `said` gives the verb its own wording for the reasons only it knows about — the

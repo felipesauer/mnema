@@ -25,6 +25,7 @@
  */
 import { IdentityUnavailableError, resolveTrees } from '@mnema/core';
 import { Command, CommanderError, Help, Option } from 'commander';
+import { describeInternal, INTERNAL_ERROR_EXIT, isInternalError } from './internal-error.js';
 import { fact } from './presentation/detail.js';
 import type { Render } from './presentation/render.js';
 import { PRODUCT_PROMISE } from './promise.js';
@@ -43,7 +44,7 @@ import { registerVerbs } from './wiring/index.js';
 import { type CliIo, neutralizing, processIo } from './wiring/io.js';
 import { MCP_VERB } from './wiring/mcp.js';
 import { speakUsageErrors } from './wiring/misuse.js';
-import { refusalSentence, reportIdentityRefusal } from './wiring/report.js';
+import { internalErrorSentence, refusalSentence, reportIdentityRefusal } from './wiring/report.js';
 import { pinnedRunResolver } from './wiring/run-pin.js';
 import type { Declared } from './wiring/verb.js';
 
@@ -407,12 +408,20 @@ export async function parseWith(built: BuiltProgram, argv: readonly string[]): P
       reportIdentityRefusal({ io, render }, error, whereTheKeyIs);
       return;
     }
+    // A throw the product did not write for anybody — an engine error out of its own code, a
+    // value that is not an Error — is a FAULT, not a no, and it is said as one with its own
+    // exit (`internal-error.ts` decides which is which).
+    if (isInternalError(error)) {
+      io.err(render(internalErrorSentence(describeInternal(error))));
+      io.fail(INTERNAL_ERROR_EXIT);
+      return;
+    }
     // Any other throw — e.g. a read whose replay meets a stored line no parser
     // can open — is an honest failure, not an uncaught stack trace that could
     // read as "nothing wrong". (`verify` no longer arrives here for that: it
-    // answers with a verdict naming the tail and the line.) It is rendered like
-    // every other no on this surface: the command did not do what was asked, and a
-    // reader has no use for the distinction between the ways it did not.
+    // answers with a verdict naming the tail and the line.) It is a message somebody wrote
+    // for a reader, so it is rendered like every other no on this surface: the command did
+    // not do what was asked.
     io.err(render(refusalSentence(error instanceof Error ? error.message : String(error))));
     io.fail();
   }
