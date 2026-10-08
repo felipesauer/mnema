@@ -103,6 +103,40 @@ describe('whether git would stage the private tree', () => {
     expect(privateTreeVisibility(resolved).state).toBe('visible');
   });
 
+  it('still says visible where .git is a symbolic link to a directory inside the worktree', () => {
+    // Asked by its spelling (`.git/mnema/…`), git refuses the path as "beyond a symbolic link"
+    // and exits 128 — which must not be read as "cannot tell" once the git directory is known
+    // to be inside the worktree.
+    git('init', '-q', '--separate-git-dir', join(repo, 'realgd'));
+    rmSync(join(repo, '.git'));
+    symlinkSync('realgd', join(repo, '.git'));
+    writeFileSync(join(repo, '.mnema', '.gitignore'), '/private/\n');
+    const resolved = resolveTrees(repo, { home: join(repo, 'home') });
+    expect(privateTreeVisibility(resolved)).toEqual({
+      state: 'visible',
+      path: 'realgd/mnema/%2E/private',
+      gitignore: '.mnema/.gitignore',
+    });
+  });
+
+  it('asks git by the resolved path: behind a .git link, a git directory the repository ignores is ignored', () => {
+    // The neighbour that tells asking by spelling from asking by the resolved path: by spelling,
+    // git exits 128 and the guard fails closed; by the resolved path, git finds the rule.
+    git('init', '-q', '--separate-git-dir', join(repo, 'realgd'));
+    rmSync(join(repo, '.git'));
+    symlinkSync('realgd', join(repo, '.git'));
+    writeFileSync(join(repo, 'realgd', 'info', 'exclude'), '/realgd/\n');
+    const resolved = resolveTrees(repo, { home: join(repo, 'home') });
+    expect(privateTreeVisibility(resolved)).toEqual({ state: 'ignored' });
+  });
+
+  it('fails closed where the git directory is inside the worktree and git cannot answer', () => {
+    git('init', '-q', '--separate-git-dir', join(repo, 'realgd'));
+    const resolved = resolveTrees(repo, { home: join(repo, 'home') });
+    process.env.PATH = join(repo, 'no-such-directory');
+    expect(privateTreeVisibility(resolved).state).toBe('visible');
+  });
+
   it('still says visible where a commondir reached through a symbolic link leads back into the worktree', () => {
     const outside = mkdtempSync(join(tmpdir(), 'mnema-private-tree-outside-'));
     try {

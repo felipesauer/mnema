@@ -27,13 +27,17 @@
  * answer (it exits 128, or runs out of time), the answer is `unknown` and the write goes on as
  * it did: there is no commit to leak into when there is no repository, and a refusal on a
  * guess would stop everyone whose git is merely unusual. `a-private-write-asks-git.test.ts`
- * holds all four.
+ * holds all four. ONE EXCEPTION FAILS CLOSED: where the tree is under a git directory already
+ * known to be inside the working tree, any answer but "ignored" — 128, a timeout, no git — is
+ * `visible`, because the tree is then where `git add` reaches. Git is asked about the path as
+ * the file system resolves it, since it refuses a path spelled through a `.git` link.
  *
  * COST: one `git` process per private write; measured in the delivery's report.
  */
 
 import { spawnSync } from 'node:child_process';
-import { dirname, join, relative } from 'node:path';
+import { realpathSync } from 'node:fs';
+import { basename, dirname, join, relative } from 'node:path';
 import { CodedError } from '@mnema/chain';
 import { commonDirIsOutsideTheWorktree, gitPlaceOf, isWithin } from './git-place.js';
 import type { ResolvedTrees } from './resolve.js';
@@ -68,28 +72,52 @@ export function privateTreeVisibility(trees: ResolvedTrees): PrivateTreeVisibili
   }
   const project = dirname(trees.projectPublic);
   const place = gitPlaceOf(project);
-  if (
-    place !== undefined &&
-    isWithin(trees.projectPrivate, place.commonDir) &&
-    commonDirIsOutsideTheWorktree(place)
-  ) {
+  const inGitDir = place !== undefined && isWithin(trees.projectPrivate, place.commonDir);
+  if (inGitDir && commonDirIsOutsideTheWorktree(place)) {
     return { state: 'outside-the-worktree' };
   }
-  const inside = relative(project, join(trees.projectPrivate, 'a-private-record'));
+  // ASKED AS THE FILE SYSTEM RESOLVES IT: a `.git` that is a link to a directory of the working
+  // tree spells the tree `.git/mnema/…`, and git refuses that path as "beyond a symbolic link".
+  const realProject = realOfMaybeMissing(project);
+  const realPrivate = realOfMaybeMissing(trees.projectPrivate);
+  const visible: PrivateTreeVisibility = {
+    state: 'visible',
+    path: relative(realProject, realPrivate),
+    gitignore: relative(project, join(trees.projectPublic, '.gitignore')),
+  };
+  const inside = relative(realProject, join(realPrivate, 'a-private-record'));
   const asked = spawnSync('git', ['check-ignore', '-q', '--', inside], {
-    cwd: project,
+    cwd: realProject,
     stdio: 'ignore',
     timeout: GIT_BUDGET_MS,
     env: { ...process.env, GIT_OPTIONAL_LOCKS: '0' },
   });
-  if (asked.error !== undefined || asked.status === null) return { state: 'unknown' };
   if (asked.status === 0) return { state: 'ignored' };
+  // FAIL CLOSED where the git directory is already known to be inside the working tree: git
+  // could not say it is ignored, and the tree is where `git add` reaches.
+  if (inGitDir) return visible;
+  if (asked.error !== undefined || asked.status === null) return { state: 'unknown' };
   if (asked.status !== 1) return { state: 'unknown' };
-  return {
-    state: 'visible',
-    path: relative(project, trees.projectPrivate),
-    gitignore: relative(project, join(trees.projectPublic, '.gitignore')),
-  };
+  return visible;
+}
+
+/**
+ * `path` as the file system resolves it, for a path whose last parts may not exist yet: the
+ * nearest ancestor that exists is resolved, and the rest is joined to it as written.
+ */
+function realOfMaybeMissing(path: string): string {
+  let head = path;
+  const rest: string[] = [];
+  for (;;) {
+    try {
+      return join(realpathSync.native(head), ...rest);
+    } catch {
+      const parent = dirname(head);
+      if (parent === head) return path;
+      rest.unshift(basename(head));
+      head = parent;
+    }
+  }
 }
 
 /** A write to the private tree was turned away because git would commit what it writes. */

@@ -33,6 +33,7 @@ import {
   mkdtempSync,
   readFileSync,
   rmSync,
+  symlinkSync,
   writeFileSync,
 } from 'node:fs';
 import { tmpdir } from 'node:os';
@@ -191,6 +192,22 @@ describe('a private tree inside the working tree that nothing ignores', () => {
     expect(
       git('init', '-q', '-b', 'main', '--separate-git-dir', join(project, 'realgd')).status,
     ).toBe(0);
+    expect(mnema(undefined, 'init').status).toBe(0);
+    const wrote = mnema(undefined, 'memory', '--scope', 'private', 'a note for this machine');
+    expect(wrote.status, wrote.out).toBe(1);
+    expect(wrote.out).toContain('git would stage realgd/mnema/');
+    expect(wrote.out).toContain('Nothing was written.');
+    expect(git('add', '-A', '-n').stdout).not.toContain('private');
+  }, 120_000);
+
+  it('is refused on the command line where .git is a symbolic link to a directory inside the worktree', () => {
+    // Asked by its spelling, git answers "beyond a symbolic link" with exit 128; read as "cannot
+    // tell", the write went on and `git add -A` staged six files of the private tree.
+    expect(
+      git('init', '-q', '-b', 'main', '--separate-git-dir', join(project, 'realgd')).status,
+    ).toBe(0);
+    rmSync(join(project, '.git'));
+    symlinkSync('realgd', join(project, '.git'));
     expect(mnema(undefined, 'init').status).toBe(0);
     const wrote = mnema(undefined, 'memory', '--scope', 'private', 'a note for this machine');
     expect(wrote.status, wrote.out).toBe(1);
