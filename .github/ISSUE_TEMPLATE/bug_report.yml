@@ -1,0 +1,35 @@
+name: Bug report
+description: Something broke or behaved unexpectedly
+labels: [bug]
+body:
+  - type: input
+    id: version
+    attributes:
+      label: Version
+      description: Output of `mnema --version`.
+    validations:
+      required: true
+  - type: textarea
+    id: steps
+    attributes:
+      label: Steps to reproduce
+      description: Ideally from a clean temporary directory (`pnpm smoke:bootstrap` sets one up).
+      placeholder: |
+        1.
+        2.
+        3.
+    validations:
+      required: true
+  - type: textarea
+    id: expected-vs-actual
+    attributes:
+      label: Expected vs actual
+      description: What you expected to happen, and what happened instead. Paste the exact command output or error message.
+    validations:
+      required: true
+  - type: markdown
+    attributes:
+      value: |
+        Please leave out the contents of your record and anything that names you or your machine:
+        paths, e-mail addresses, keys and tokens. The output of the failing command is usually
+        enough to show what happened.

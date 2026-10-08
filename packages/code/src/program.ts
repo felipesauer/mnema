@@ -433,6 +433,7 @@ export async function parseWith(built: BuiltProgram, argv: readonly string[]): P
         version: VERSION,
         argv,
         verbs: program.commands.map((command) => command.name()),
+        aPersonIsHere: io.aPersonIsHere === true,
       });
       if (noted.offer) io.err(render(reportOfferSentence()));
       io.fail(INTERNAL_ERROR_EXIT);
