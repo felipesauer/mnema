@@ -89,6 +89,16 @@ describe('the port writes to the process', () => {
     ]);
   });
 
+  it('records the exit code it is given, so an internal error leaves the process at 70', () => {
+    let observed: typeof process.exitCode;
+    withTheProcessBorrowed(() => {
+      process.exitCode = undefined;
+      processIo.fail(70);
+      observed = process.exitCode;
+    });
+    expect(observed).toBe(70);
+  });
+
   it('records a non-zero exit rather than throwing, and nothing is printed by failing', () => {
     let observed: typeof process.exitCode;
     const written = withTheProcessBorrowed(() => {
