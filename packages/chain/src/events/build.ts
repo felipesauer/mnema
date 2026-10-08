@@ -728,6 +728,44 @@ export function accountLinked(
 }
 
 /**
+ * Builds a `stack.adopted` event (subject = the name the stack is installed under).
+ *
+ * All four fields are required and none is checked here: that each is a closed form — a stack
+ * name, a version label, 64 hex characters, one of three scopes — is the write door's rule, not
+ * the format's, the division `tailPruned` has with its door. The payload is rebuilt from the
+ * four named fields alone, so nothing else a caller's object holds reaches the signed bytes.
+ */
+export function stackAdopted(
+  envelope: EnvelopeInput,
+  payload: { name: string; version: string; digest: string; scope: string },
+): CatalogEvent {
+  return {
+    v: 1,
+    kind: 'stack.adopted',
+    ...envelopeFields(envelope),
+    payload: {
+      name: payload.name,
+      version: payload.version,
+      digest: payload.digest,
+      scope: payload.scope,
+    },
+  };
+}
+
+/** Builds a `stack.removed` event (subject = the name the stack was installed under). */
+export function stackRemoved(
+  envelope: EnvelopeInput,
+  payload: { version: string; digest: string; scope: string },
+): CatalogEvent {
+  return {
+    v: 1,
+    kind: 'stack.removed',
+    ...envelopeFields(envelope),
+    payload: { version: payload.version, digest: payload.digest, scope: payload.scope },
+  };
+}
+
+/**
  * Builds the pair of events a skill's birth always emits, in order: the
  * `skill.created` that proves it exists, then the birth `skill.transitioned`
  * (`from: null`, `action: "create"`) that establishes its initial state. The two

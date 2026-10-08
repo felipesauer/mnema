@@ -13,11 +13,14 @@
  *
  * THAT LAST FACT IS WHY THERE IS A FILTER IN FRONT OF IT. VS Code runs a plugin's command on every
  * tool call — a read, a search, a terminal — whatever its matcher says (measured: a matcher that
- * names no tool still ran). So `hooks.json` passes the payload here only when it names one of the
- * tools that write, in the shell and before any process starts; everything else costs a shell.
+ * names no tool still ran). So `hooks.json`, generated from the host table, passes the payload here
+ * only when it names one of the tools that write, in the shell and before any process starts;
+ * everything else costs a shell. It also hands this handler its host and those tools (`--host
+ * vscode --tools …`), and the handler checks them again before it runs `mnema`
+ * (`hand-over.mjs`, `whatTheGateAnswers`): a second line, not the first.
  *
  * IT DECIDES NOTHING, AND IT CARRIES NO TEXT OF ITS OWN. The payload goes to `mnema
- * before-a-write --host vscode` byte for byte and its answer comes back byte for byte; which rules
+ * before-a-write --host <host>` byte for byte and its answer comes back byte for byte; which rules
  * ask, what the reason says and which facts are recorded are the verb's, decided in the one place
  * the MCP tool decides them too. The rule for running a verb is `hand-over.mjs`'s.
  *
@@ -34,17 +37,17 @@
  */
 export const MODEL_CHANNEL = 'edit-asks-a-person+edit-refuses-a-write';
 
-/** The verb and its flags: the host is declared, never guessed from the payload. */
-const VERB = ['before-a-write', '--host', 'vscode'];
-
 try {
-  const { whatTheVerbAnswers, whereTheSessionIs } = await import('./hand-over.mjs');
-  const chunks = [];
-  for await (const chunk of process.stdin) chunks.push(chunk);
-  const answer = whatTheVerbAnswers(
-    VERB,
+  const { whatTheGateAnswers, whereTheSessionIs } = await import('./hand-over.mjs');
+  const answer = await whatTheGateAnswers(
+    process.argv.slice(2),
+    process.env,
     whereTheSessionIs(),
-    Buffer.concat(chunks).toString('utf-8'),
+    async () => {
+      const chunks = [];
+      for await (const chunk of process.stdin) chunks.push(chunk);
+      return Buffer.concat(chunks).toString('utf-8');
+    },
   );
   if (answer !== null) process.stdout.write(answer);
 } catch {

@@ -635,6 +635,43 @@
         }
       },
       "sha256": "072da5cb6fcfd8f051e077af4a3cc88ed75d93000f744b9bc687c756ffcdfddd"
+    },
+    {
+      "name": "stack.adopted (a person adopts a stack for the project, by its digest)",
+      "kind": "stack.adopted",
+      "event": {
+        "v": 1,
+        "kind": "stack.adopted",
+        "at": "2026-07-21T00:00:00.000Z",
+        "who": "mnid:1111111111111111111111111111111111111111111111111111111111111111",
+        "signerFp": "2222222222222222222222222222222222222222222222222222222222222222",
+        "subject": "evidence-first",
+        "payload": {
+          "name": "evidence-first",
+          "version": "1.0.0",
+          "digest": "8888888888888888888888888888888888888888888888888888888888888888",
+          "scope": "public"
+        }
+      },
+      "sha256": "dff2e8a9b6a8a25f8dab01cbbdab31788d991cbeb86b1b968befc5e53ea1fe1f"
+    },
+    {
+      "name": "stack.removed (a person removes a stack they had adopted)",
+      "kind": "stack.removed",
+      "event": {
+        "v": 1,
+        "kind": "stack.removed",
+        "at": "2026-07-21T00:00:00.000Z",
+        "who": "mnid:1111111111111111111111111111111111111111111111111111111111111111",
+        "signerFp": "2222222222222222222222222222222222222222222222222222222222222222",
+        "subject": "evidence-first",
+        "payload": {
+          "version": "1.0.0",
+          "digest": "8888888888888888888888888888888888888888888888888888888888888888",
+          "scope": "public"
+        }
+      },
+      "sha256": "c4ffbc4609aa4f6a8d7832afa77230884f47e616d6363257d8f94ca8713198d5"
     }
   ],
   "chain": {
@@ -652,6 +689,6 @@
       "vector": "run.ended",
       "entryHash": "bafbebddd9d5ee75b10bdde626c5e36eed44b37d9fe352b4d98f614fa2647b73"
     },
-    "contentRootOverAllVectors": "00703b5537ca906ed71776033aa4d902ab532246394813c13f38e0029814c9bc"
+    "contentRootOverAllVectors": "2937178de1e23d20c07aee30efdb7f5b199671e8f18d4b8f142767dfefa7433e"
   }
 }

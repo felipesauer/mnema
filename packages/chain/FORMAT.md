@@ -6,7 +6,7 @@ against their implementation, and get the same digests we do.
 
 **Somebody has.** [`verifier/`](./verifier/) beside this file is a second implementation, in
 Python, written from this document and importing nothing of the product it checks. It
-reproduces the 34 published vectors and the four aggregate digests, and checks the frozen
+reproduces the 36 published vectors and the four aggregate digests, and checks the frozen
 records in the test suite beside the product
 (`packages/chain/src/chain/second-reader-agrees-on-the-record.test.ts`), on honest records
 and on every input the format refuses. The two verdicts differ in two pinned cases. With the
@@ -703,6 +703,51 @@ refuses to read a record that holds one, as it does any kind it does not know (�
 What it does not answer: a backup that WAS restored and signed would have a tail of its own, so
 a declared backup with no tail is also what a restored backup whose tail was removed looks like.
 The note says so.
+
+### 6.6 A stack adopted, and removed
+
+A stack is a directory of skills and agent definitions identified by its **digest**: the SHA-256
+of one line per file, `path NUL sha256(file) LF`, in byte order of the path. `@mnema/stacks`
+publishes the rule and a shell reproducer. Two kinds say which stacks govern the work in a tree:
+
+| kind | subject | payload |
+|---|---|---|
+| `stack.adopted` | the name the stack is installed under | `name`, `version`, `digest`, `scope` |
+| `stack.removed` | the same name | `version`, `digest`, `scope`, the adoption's own |
+
+`name` is the name the stack declares. The subject differs from it only when the person renamed the
+stack to settle a collision. `version` is the author's label and is not the identity; `digest` is
+the identity. `scope` names the tree the fact is written in: `public` (the project, shared:
+committed and cloned), `private` (the project, this person's only), or `global` (every project of
+this person). A stack installed into a folder of its own governs nothing and records no fact.
+Nothing about their bytes, their chaining or their signature differs from any other kind, and they
+are **not part of the fold of §6.2**.
+
+**Neither carries a path, a source address or a credential, by construction.** The payload is
+closed (§4.1), so a field like `source` is refused by the readers. This product's write door admits
+only closed forms and refuses anything else before appending:
+
+- the subject and `name` are the stack-name form: lower-case ASCII letters, digits and single
+  hyphens, at most 64;
+- `digest` is 64 lower-case hex characters;
+- `scope` is one of the three words above;
+- `version` uses ASCII letters, digits, `.`, `+` and `-`, starts with a letter or a digit, and is at
+  most 64 long. It is screened for a credential first, because a key id fits those characters.
+
+None of these forms can hold a separator, `~`, `:` or `@`. A removal copies its version, digest
+and scope from the adoption standing under its subject in the same tree, and is refused when none
+stands. The writer appends either fact and signs a checkpoint over it in one hold of the tail's
+lock, so each is covered by a signature as soon as it lands
+(`packages/core/src/workflow/stack-operations.test.ts`).
+
+These forms are the WRITE side's. A reader of the format applies §4.1 alone: a `stack.adopted`
+whose fields are non-empty strings is a valid line whatever they hold, as a line of any kind is.
+Which adoption stands, and whether the files on a disk still hash to its digest, is a reading of
+this product, not a verification of the format. The second reader beside this file accepts both
+kinds by their rows of `event-schema.json`, with no code of its own for them. A binary from before
+these kinds refuses them as a (kind, v) its table does not hold (§4.1), so a record holding one
+does not verify there
+(`packages/chain/src/chain/second-reader-agrees-on-enrolment.test.ts`).
 
 ## 7. Versions, and why a proof is never recomputed over a reading
 
