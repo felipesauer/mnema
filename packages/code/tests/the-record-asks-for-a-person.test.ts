@@ -435,21 +435,18 @@ describe('the asking is a FACT, and the service is one too', () => {
     expect(services()).toEqual(['edit-rules-push']);
   });
 
-  it('charges NOTHING when the asking cannot be recorded', async () => {
-    // THE ORDER RULE, AND THE CASE THE MUTATION ASKED FOR. Removing the `charged.ok` from the
-    // reply left every test green: nothing here made an append fail, so "charge only if the
-    // fact landed" and "charge always" were the same behaviour and the rule was a comment.
+  it('asks even when the asking cannot be recorded, and the reason says the fact is missing', async () => {
+    // THE ORDER RULE, AS IT STANDS NOW. This case said the opposite — "charges NOTHING when the
+    // asking cannot be recorded" — and that was the bypass: any live process holding the tail
+    // opened every write a rule asks a person about. The asking is decided by reading, so it is
+    // answered whatever the append does; what a failed append changes is the reason, which says
+    // the fact is missing.
     //
-    // It is reachable through the front door, with no seam. A gate addressed at the project
-    // root covers every path, and the tool takes whatever string the host hands it — so a path
-    // over the field limit matches the gate, composes a notice, and is REFUSED by the content
-    // door when the fact is written. What must happen then is that nobody is stopped: a record
-    // that cannot be written charges nothing, which is the only direction a failure on this
-    // channel may fall.
+    // Reachable through the front door, with no seam: a gate addressed at the project root
+    // covers every path, and a path over the field limit is REFUSED by the content door when the
+    // fact is written.
     const rule = await ruleInForce('Nobody touches anything alone');
     await askingAt(rule, '.');
-    // A second rule that only INFORMS, so the last assertion of this case is about a channel
-    // that had something to say rather than about two silences at once.
     const informs = await ruleInForce('Round money at the boundary');
     await governing(informs, '.');
     const session = connect();
@@ -459,15 +456,19 @@ describe('the asking is a FACT, and the service is one too', () => {
 
     const tooLong = `src/billing/${'a'.repeat(70_000)}.ts`;
     const said = decision(session, tooLong);
-    // No charge — and the tool still answered `ok`, so the host is told nothing and the edit
-    // goes through. The evidence that the gate was live in this run is `channel.served`.
-    expect(said).toEqual({});
+    expect(said.value).toBe('ask');
+    expect(said.reason).toContain('This request for a person could not be recorded');
     // And no asking was appended for it: the refusal happened before anything was signed.
     expect(askings()).toHaveLength(1);
-    // The INFORMING half still arrived, which is the other half of the claim: a gate that
-    // could not record itself must not take the rules down with it.
+    // The INFORMING half still arrived beside it: a gate that could not record itself does not
+    // take the rules down with it.
     const specific = replyFor(session, tooLong)['hookSpecificOutput'] as Record<string, string>;
-    expect(Object.keys(specific).sort()).toEqual(['additionalContext', 'hookEventName']);
+    expect(Object.keys(specific).sort()).toEqual([
+      'additionalContext',
+      'hookEventName',
+      'permissionDecision',
+      'permissionDecisionReason',
+    ]);
   });
 
   it('writes nothing at all when nothing was said', async () => {

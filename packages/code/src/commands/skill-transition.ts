@@ -151,20 +151,22 @@ export function runSkillTransition(
     ...(input.which !== undefined ? { which: input.which } : {}),
     ...(input.run !== undefined ? { run: input.run } : {}),
   };
-  const moved =
-    input.action === 'review'
-      ? reviewSkill(opCtx, args)
-      : input.action === 'adopt'
-        ? adoptSkill(opCtx, args)
-        : input.action === 'reject'
-          ? rejectSkill(opCtx, args)
-          : deprecateSkill(opCtx, args);
+  const moved = writer.exclusively(() => {
+    const written =
+      input.action === 'review'
+        ? reviewSkill(opCtx, args)
+        : input.action === 'adopt'
+          ? adoptSkill(opCtx, args)
+          : input.action === 'reject'
+            ? rejectSkill(opCtx, args)
+            : deprecateSkill(opCtx, args);
+    // Checkpoint so the transition is signature-covered at once.
+    if (written.ok) writer.checkpoint();
+    return written;
+  });
   if (!moved.ok) {
     return { ok: false, reason: 'REFUSED', code: moved.code, message: moved.message };
   }
-
-  // Checkpoint so the transition is signature-covered at once.
-  writer.checkpoint();
 
   // Resolve the name from the projection to orient the human — a skill has no
   // alias, so its display handle is the name. Read after the append so the

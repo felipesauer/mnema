@@ -520,16 +520,20 @@ export function enrollKey(
   ctx: WriteContext,
   input: { newFp: string; reverseSig: string },
 ): IdentityOk | AppendRefusal {
-  const anchor = ensureFounded(ctx);
-  // Through the door like every other write, even though both fields are derived
-  // (a fingerprint computed from the joining key, a signature `decodeKeyRequest`
-  // already rejected as absent). This is an EXPORT of the writing surface, so a
-  // caller outside the two surfaces can hand it a value the real callers never
-  // produce, and it owes that caller a refusal it can read rather than a throw.
-  const appended = appendEvent(ctx.writer, enrollment(ctx, anchor, input));
-  if (!appended.ok) return appended;
-  ctx.writer.checkpoint();
-  return { ok: true, anchor };
+  // ONE HOLD for the founding, the fact and its signature: a checkpoint taken under a lock of
+  // its own could be refused after the fact landed, and the refusal would say nothing was.
+  return ctx.writer.exclusively(() => {
+    const anchor = ensureFounded(ctx);
+    // Through the door like every other write, even though both fields are derived
+    // (a fingerprint computed from the joining key, a signature `decodeKeyRequest`
+    // already rejected as absent). This is an EXPORT of the writing surface, so a
+    // caller outside the two surfaces can hand it a value the real callers never
+    // produce, and it owes that caller a refusal it can read rather than a throw.
+    const appended = appendEvent(ctx.writer, enrollment(ctx, anchor, input));
+    if (!appended.ok) return appended;
+    ctx.writer.checkpoint();
+    return { ok: true, anchor };
+  });
 }
 
 /**
@@ -541,13 +545,15 @@ function enrollBackup(
   ctx: WriteContext,
   input: { newFp: string; reverseSig: string },
 ): IdentityOk | AppendRefusal {
-  const anchor = ensureFounded(ctx);
-  const enrolledHere = appendEvent(ctx.writer, enrollment(ctx, anchor, input));
-  if (!enrolledHere.ok) return enrolledHere;
-  const declared = appendEvent(ctx.writer, declaration(ctx, anchor, input.newFp));
-  ctx.writer.checkpoint();
-  if (!declared.ok) return declared;
-  return { ok: true, anchor };
+  return ctx.writer.exclusively(() => {
+    const anchor = ensureFounded(ctx);
+    const enrolledHere = appendEvent(ctx.writer, enrollment(ctx, anchor, input));
+    if (!enrolledHere.ok) return enrolledHere;
+    const declared = appendEvent(ctx.writer, declaration(ctx, anchor, input.newFp));
+    ctx.writer.checkpoint();
+    if (!declared.ok) return declared;
+    return { ok: true, anchor };
+  });
 }
 
 function enrollment(
@@ -582,11 +588,13 @@ export function declareBackup(
   ctx: WriteContext,
   input: { backupFp: string },
 ): IdentityOk | AppendRefusal {
-  const anchor = ensureFounded(ctx);
-  const appended = appendEvent(ctx.writer, declaration(ctx, anchor, input.backupFp));
-  if (!appended.ok) return appended;
-  ctx.writer.checkpoint();
-  return { ok: true, anchor };
+  return ctx.writer.exclusively(() => {
+    const anchor = ensureFounded(ctx);
+    const appended = appendEvent(ctx.writer, declaration(ctx, anchor, input.backupFp));
+    if (!appended.ok) return appended;
+    ctx.writer.checkpoint();
+    return { ok: true, anchor };
+  });
 }
 
 /**
@@ -613,18 +621,20 @@ export function revokeKey(
   const text = screenContent({ reason: input.reason });
   if (!text.ok) return text;
 
-  const anchor = ensureFounded(ctx);
-  const at = (ctx.clock ?? systemClock)();
-  const appended = appendEvent(
-    ctx.writer,
-    keyRevoked(
-      { at, who: anchor, signerFp: ctx.writer.signerFingerprint, subject: anchor },
-      { revokedFp: input.revokedFp, reason: text.fields.reason },
-    ),
-  );
-  if (!appended.ok) return appended;
-  ctx.writer.checkpoint();
-  return { ok: true, anchor, ...screened(text.replaced) };
+  return ctx.writer.exclusively(() => {
+    const anchor = ensureFounded(ctx);
+    const at = (ctx.clock ?? systemClock)();
+    const appended = appendEvent(
+      ctx.writer,
+      keyRevoked(
+        { at, who: anchor, signerFp: ctx.writer.signerFingerprint, subject: anchor },
+        { revokedFp: input.revokedFp, reason: text.fields.reason },
+      ),
+    );
+    if (!appended.ok) return appended;
+    ctx.writer.checkpoint();
+    return { ok: true, anchor, ...screened(text.replaced) };
+  });
 }
 
 /** The account was named: this identity now says it is that GitHub account. */
@@ -663,18 +673,20 @@ export function linkAccount(
   const text = screenContent({ account });
   if (!text.ok) return text;
 
-  const anchor = ensureFounded(ctx);
-  const at = (ctx.clock ?? systemClock)();
-  const appended = appendEvent(
-    ctx.writer,
-    accountLinked(
-      { at, who: anchor, signerFp: ctx.writer.signerFingerprint, subject: anchor },
-      { service, account: text.fields.account },
-    ),
-  );
-  if (!appended.ok) return appended;
-  ctx.writer.checkpoint();
-  return { ok: true, anchor, account: text.fields.account, ...screened(text.replaced) };
+  return ctx.writer.exclusively(() => {
+    const anchor = ensureFounded(ctx);
+    const at = (ctx.clock ?? systemClock)();
+    const appended = appendEvent(
+      ctx.writer,
+      accountLinked(
+        { at, who: anchor, signerFp: ctx.writer.signerFingerprint, subject: anchor },
+        { service, account: text.fields.account },
+      ),
+    );
+    if (!appended.ok) return appended;
+    ctx.writer.checkpoint();
+    return { ok: true, anchor, account: text.fields.account, ...screened(text.replaced) };
+  });
 }
 
 /**

@@ -99,19 +99,21 @@ export function runRunEnd(
   }
 
   const writer = openTreeForWriting(trees, 'public');
-  const ended = endRun(
-    { writer, layout: { root }, upcasters: catalogUpcasters() },
-    {
-      run: input.run,
-      which,
-      ...(input.outcome !== undefined ? { outcome: input.outcome } : {}),
-    },
-  );
+  const ended = writer.exclusively(() => {
+    const written = endRun(
+      { writer, layout: { root }, upcasters: catalogUpcasters() },
+      {
+        run: input.run,
+        which,
+        ...(input.outcome !== undefined ? { outcome: input.outcome } : {}),
+      },
+    );
+    if (written.ok) writer.checkpoint();
+    return written;
+  });
   if (!ended.ok) {
     return { ok: false, reason: 'REFUSED', code: ended.code, message: ended.message };
   }
-
-  writer.checkpoint();
 
   return {
     ok: true,

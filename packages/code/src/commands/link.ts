@@ -141,26 +141,28 @@ export function runLink(
   const ends = { subject: subject.id, target: target.id };
 
   const writer = openTreeForWriting(trees, scope);
-  const recorded = linkKnowledge(
-    {
-      writer,
-      layout: { root: chainRootForScope(trees, scope) as string },
-      upcasters: catalogUpcasters(),
-    },
-    {
-      subject: ends.subject,
-      target: ends.target,
-      rel: input.rel,
-      ...(input.which !== undefined ? { which: input.which } : {}),
-      ...(input.run !== undefined ? { run: input.run } : {}),
-    },
-  );
+  const recorded = writer.exclusively(() => {
+    const written = linkKnowledge(
+      {
+        writer,
+        layout: { root: chainRootForScope(trees, scope) as string },
+        upcasters: catalogUpcasters(),
+      },
+      {
+        subject: ends.subject,
+        target: ends.target,
+        rel: input.rel,
+        ...(input.which !== undefined ? { which: input.which } : {}),
+        ...(input.run !== undefined ? { run: input.run } : {}),
+      },
+    );
+    // Checkpoint so the new link is signature-covered at once.
+    if (written.ok) writer.checkpoint();
+    return written;
+  });
   if (!recorded.ok) {
     return { ok: false, reason: 'REFUSED', code: recorded.code, message: recorded.message };
   }
-
-  // Checkpoint so the new link is signature-covered at once.
-  writer.checkpoint();
 
   // What the address covers, computed AFTER the write and off the relation AS
   // RECORDED — the label that landed is the one a reader will later compare by, and a
