@@ -192,6 +192,8 @@ export const REASONS: { readonly [K in EventKind]: readonly ReasonSite<K>[] } = 
   'checker.retired': ['reason'],
   'account.linked': [],
   'backup.declared': [],
+  'stack.adopted': [],
+  'stack.removed': [],
 };
 
 /** The refusal the first reason of `event` that says nothing earns, or undefined. */
@@ -253,6 +255,8 @@ export const TITLES: { readonly [K in EventKind]: readonly TextField<K>[] } = {
   'checker.retired': [],
   'account.linked': [],
   'backup.declared': [],
+  'stack.adopted': [],
+  'stack.removed': [],
 };
 
 /** The refusal the title of `event` earns when it is a marker, or undefined. */
@@ -325,6 +329,12 @@ export const REFERENCES: { readonly [K in EventKind]: readonly ReferenceSite<K>[
   'checker.retired': [],
   'account.linked': ['account'],
   'backup.declared': [],
+  // The version is the one caller's string, and its form (letters, digits, `.`, `+`, `-`) is
+  // refused before the append for anything a marker is spelled with, so there is no marker left
+  // for this door to ask about; the rest of an adoption is closed forms.
+  'stack.adopted': [],
+  // Everything a removal carries is copied from the adoption the record holds.
+  'stack.removed': [],
 };
 
 /**

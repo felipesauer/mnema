@@ -65,6 +65,8 @@ import {
   skillConsulted,
   skillCreated,
   skillTransitioned,
+  stackAdopted,
+  stackRemoved,
   tailPruned,
   taskCreated,
   taskTransitioned,
@@ -177,6 +179,9 @@ const VECTOR_CHECKER_WHO = 'mnid:66666666666666666666666666666666666666666666666
 
 /** The commit a check result names in the vectors: a full object name. */
 const VECTOR_COMMIT = '7777777777777777777777777777777777777777';
+
+/** The digest a stack is adopted and removed by in the vectors: 64 lower-case hex characters. */
+const VECTOR_STACK_DIGEST = '8888888888888888888888888888888888888888888888888888888888888888';
 
 /** The envelope of a check result: the checker's own anchor, signed by the checker's key. */
 const checker = (
@@ -531,6 +536,30 @@ export const CANONICAL_VECTORS: {
       // An identity declares one of its own keys its cold backup: the subject is the anchor.
       name: 'backup.declared (an identity declares a key its backup)',
       event: backupDeclared(person(VECTOR_WHO), { backupFp: VECTOR_NEW_FP }),
+    },
+  ],
+  'stack.adopted': [
+    {
+      // A person adopts a stack for the whole project: the subject is the name it is installed
+      // under, and nothing in the payload is a path or an address.
+      name: 'stack.adopted (a person adopts a stack for the project, by its digest)',
+      event: stackAdopted(person('evidence-first'), {
+        name: 'evidence-first',
+        version: '1.0.0',
+        digest: VECTOR_STACK_DIGEST,
+        scope: 'public',
+      }),
+    },
+  ],
+  'stack.removed': [
+    {
+      // The adoption's version, digest and scope, repeated, so the removal names its bytes.
+      name: 'stack.removed (a person removes a stack they had adopted)',
+      event: stackRemoved(person('evidence-first'), {
+        version: '1.0.0',
+        digest: VECTOR_STACK_DIGEST,
+        scope: 'public',
+      }),
     },
   ],
 };

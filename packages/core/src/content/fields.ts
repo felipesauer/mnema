@@ -295,6 +295,12 @@ export const SUBJECT_TEXT = {
   'account.linked': 'identifier',
   // DERIVED: the anchor of the key that signs it — an identity declares only its own keys.
   'backup.declared': 'identifier',
+  // PROVED here against the stack-name form (lower-case ASCII letters, digits and single
+  // hyphens, at most 64), a closed form that holds no path separator — the same form a stack's
+  // own name and a skill's are held to. A removal's is also proved against the record: only a
+  // stack this tree holds as adopted is removed.
+  'stack.adopted': 'identifier',
+  'stack.removed': 'identifier',
 } as const satisfies { readonly [K in EventKind]: FieldNature };
 
 /**
@@ -446,6 +452,21 @@ export const PAYLOAD_TEXT = {
   'account.linked': { service: 'identifier', account: 'name' },
   // A fingerprint computed from the backup's own key, never typed by a caller.
   'backup.declared': { backupFp: 'identifier' },
+  // Three of the four are closed forms the write door proves before anything is appended — the
+  // stack-name form, 64 lower-case hex characters, one of the three scopes — so none of them is
+  // text a door could clean, and a credential or a path does not fit in any of them. `version`
+  // is the stack author's label, the caller's string and a NAME (a reading shows `name@version`
+  // and compares it by exact string): the door refuses a credential in it, and the operation
+  // refuses anything outside a version's characters, which holds no path separator either.
+  'stack.adopted': {
+    name: 'identifier',
+    version: 'name',
+    digest: 'identifier',
+    scope: 'identifier',
+  },
+  // All three are copied from the adoption the record holds, never handed in, as a check
+  // result's program is copied from its declaration.
+  'stack.removed': { version: 'identifier', digest: 'identifier', scope: 'identifier' },
 } as const satisfies {
   readonly [K in EventKind]: { readonly [P in PayloadPath<K>]: FieldNature };
 };

@@ -253,6 +253,25 @@
       }
     },
     {
+      "kind": "stack.adopted",
+      "v": 1,
+      "payload": {
+        "name": "string",
+        "version": "string",
+        "digest": "string",
+        "scope": "string"
+      }
+    },
+    {
+      "kind": "stack.removed",
+      "v": 1,
+      "payload": {
+        "version": "string",
+        "digest": "string",
+        "scope": "string"
+      }
+    },
+    {
       "kind": "tail.pruned",
       "v": 1,
       "payload": {
