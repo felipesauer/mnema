@@ -138,7 +138,7 @@ const PACKED: ReadonlyMap<string, readonly string[]> = new Map(
 const carried = (name: string): readonly string[] => PACKED.get(name) ?? [];
 
 describe('the workspace knows which packages it publishes', () => {
-  it('finds seven, and every one but the Action, the SDK and the editor extension is meant to go', () => {
+  it('finds eight, and every one but the Action, the SDK, the stacks contract and the editor extension is meant to go', () => {
     // NON-VACUITY of everything below, which is a reduction over this list. Exact rather
     // than a floor: a floor is a number anyone can lower to swallow a package that stopped
     // being read. `@mnema/action` and `@mnema/sdk` are the two that stay: each is `private`,
@@ -151,6 +151,7 @@ describe('the workspace knows which packages it publishes', () => {
       '@mnema/context',
       '@mnema/core',
       '@mnema/sdk',
+      '@mnema/stacks',
       '@mnema/vscode',
     ]);
     expect(PUBLISHABLE.map((m) => m.name).sort()).toEqual([
@@ -163,7 +164,7 @@ describe('the workspace knows which packages it publishes', () => {
       ALL.filter((m) => m.private === true)
         .map((m) => m.name)
         .sort(),
-    ).toEqual(['@mnema/action', '@mnema/sdk', '@mnema/vscode']);
+    ).toEqual(['@mnema/action', '@mnema/sdk', '@mnema/stacks', '@mnema/vscode']);
     expect(ALL.find((m) => m.name === '@mnema/action')?.license).toBe('Apache-2.0');
     expect(ALL.find((m) => m.name === '@mnema/sdk')?.license).toBe('Apache-2.0');
     expect(ALL.find((m) => m.name === '@mnema/vscode')?.license).toBe('Apache-2.0');
@@ -303,6 +304,7 @@ describe('every package carries the licence its manifest claims', () => {
     expect(notPacked.map((m) => m.name).sort()).toEqual([
       '@mnema/action',
       '@mnema/sdk',
+      '@mnema/stacks',
       '@mnema/vscode',
     ]);
     const root = readFileSync(join(ROOT, 'NOTICE'), 'utf-8');

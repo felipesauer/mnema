@@ -1,0 +1,35 @@
+{
+  "name": "@mnema/stacks",
+  "version": "0.1.0-beta",
+  "private": true,
+  "description": "The stack contract: the stack.json schema, the validator, and the canonical digest a stack is identified by. A pure library; it runs nothing. Private for now: nothing is published from it.",
+  "author": "Felipe Sauer (https://github.com/felipesauer)",
+  "license": "Apache-2.0",
+  "type": "module",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    }
+  },
+  "types": "./dist/index.d.ts",
+  "main": "./dist/index.js",
+  "files": [
+    "dist/",
+    "!dist/.tsbuildinfo",
+    "stack.schema.json",
+    "digest.sh",
+    "NOTICE"
+  ],
+  "homepage": "https://github.com/felipesauer/mnema",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/felipesauer/mnema.git"
+  },
+  "bugs": {
+    "url": "https://github.com/felipesauer/mnema/issues"
+  },
+  "engines": {
+    "node": "^24.15.0 || >=26.0.0"
+  }
+}

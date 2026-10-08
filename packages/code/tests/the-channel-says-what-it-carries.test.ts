@@ -189,7 +189,7 @@ describe('one declaration, and one place that decides it', () => {
         .filter((name): name is string => name !== undefined),
     );
     expect(packages).toEqual(
-      new Set(['action', 'chain', 'code', 'context', 'core', 'sdk', 'vscode']),
+      new Set(['action', 'chain', 'code', 'context', 'core', 'sdk', 'stacks', 'vscode']),
     );
   });
 
