@@ -30,10 +30,10 @@
 
 import { type CatalogEvent, stackAdopted, stackRemoved } from '@mnema/chain';
 import {
+  type ScreenedWrite,
   type ScreenRefusal,
   screenContent,
   screened,
-  type ScreenedWrite,
 } from '../content/screen.js';
 import { resolveExecutingAgent, type SelfAuthorizedErr } from '../identity/authority.js';
 import { oneLine } from '../one-line.js';
