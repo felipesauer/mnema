@@ -96,13 +96,7 @@ import { VERSION } from '../version.js';
 import { paintsAtAll, type RenderingAt } from '../wiring/color.js';
 import { here } from '../wiring/context.js';
 import { reportUsage } from '../wiring/report.js';
-import {
-  DEFAULT_REQUIREMENT,
-  holdsNothingToSay,
-  levelSeverity,
-  treeHeadline,
-  VERIFY_VERB,
-} from '../wiring/verify.js';
+import { DEFAULT_REQUIREMENT, levelSeverity, treeHeadline, VERIFY_VERB } from '../wiring/verify.js';
 import { areaFor } from './area.js';
 import { asTheSession } from './asking.js';
 import { completerFor } from './complete.js';
@@ -887,15 +881,7 @@ interface TheRecord {
  */
 function recordSection(trees: readonly TreeReport[] | undefined): readonly Line[] {
   if (trees === undefined) return [];
-  // WHAT `verify` LEAVES OUT UNLESS ASKED, THE PANEL LEAVES OUT: a private tree that holds nothing is
-  // not news, and the panel's line for a tree is a prefix of the verb's (`wiring/verify.ts`,
-  // `holdsNothingToSay`).
-  return [
-    subjectLine(THE_RECORD),
-    ...trees
-      .filter((tree) => !holdsNothingToSay(tree))
-      .map((tree) => treeHeadline(tree, UNDER_A_HEADING)),
-  ];
+  return [subjectLine(THE_RECORD), ...trees.map((tree) => treeHeadline(tree, UNDER_A_HEADING))];
 }
 
 /**

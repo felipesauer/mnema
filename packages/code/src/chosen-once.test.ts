@@ -484,6 +484,7 @@ describe('nothing else decides which renderer', () => {
       'seen.ts',
       'session.ts',
       'standing.ts',
+      'turn.ts',
     ]);
     // AND THE WITNESS THAT IT PRINTS USED TO BE `writeLines(io,`, which was the report
     // `/help` wrote. That word is gone — the list under the prompt answers it now — so the

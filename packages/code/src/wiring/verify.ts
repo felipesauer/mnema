@@ -884,10 +884,10 @@ function report(
 ): void {
   const named = `${where}${tree.scope}`;
   if (tree.kind === 'no-record') {
-    // A tree that holds nothing and has nothing to say about it ({@link holdsNothingToSay}) waits
-    // for `--verbose`. The global tree holding nothing is still said, when it was asked for: that
-    // is a different news.
-    if (holdsNothingToSay(tree) && !verbose) return;
+    // A private tree that holds nothing is the state of every fresh clone and of every project
+    // nobody has written a private fact in — informational, so it waits for `--verbose`. The
+    // global tree holding nothing is still said, when it was asked for: that is a different news.
+    if (tree.scope === 'private' && !verbose) return;
     io.out(render(statement(named, NO_RECORD)));
     return;
   }
@@ -1032,21 +1032,6 @@ function news(result: VerifyResult): (clause: VerdictClause) => Clause {
     clause.of === 'level'
       ? { text: clause.text, severity: levelSeverity(result.level) }
       : { text: clause.text };
-}
-
-/**
- * A TREE THAT HOLDS NOTHING, AND WHOSE HOLDING NOTHING IS NOT NEWS: the private tree with no record
- * in it, which is the state of every fresh clone and of every project nobody has written a private
- * fact in. Informational, so the full reading says it only when asked (`--verbose`) and the console's
- * opening panel does not say it at all (`repl/session.ts`) — ONE predicate for both, because the
- * panel's line is a prefix of the reading's and a surface that said what the other left out would
- * be saying more than the verb does.
- *
- * It is the private tree and no other: the committed tree always gets a verdict, and the global
- * tree holding nothing is news when it was asked for.
- */
-export function holdsNothingToSay(tree: TreeReport): boolean {
-  return tree.kind === 'no-record' && tree.scope === 'private';
 }
 
 /**
