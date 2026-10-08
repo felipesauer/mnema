@@ -104,6 +104,8 @@ const ANSWERS_ANYWAY: Readonly<Record<string, string>> = {
   switch: 'where a channel stands is a question about the trees there are, not about a project',
   doctor:
     'it asks the machine how mnema is installed, which is true wherever it is run, and it reads no record',
+  report:
+    'it shows what this machine logged about mnema’s own faults, from a file of the machine’s beside the record and not in it',
   'tail list': 'the tails it lists are the ones held here, in whichever trees exist',
   'key request': 'a request to be enrolled is composed from this machine’s key, not from a project',
   diagram:

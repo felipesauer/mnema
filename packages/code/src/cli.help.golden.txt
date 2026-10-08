@@ -88,6 +88,8 @@ $ mnema
 !   tail            authorize a cut in the record's own tails
 !   doctor          say how mnema is installed on this machine, and what to do
 !                   about each thing found (writes nothing unless you pass --fix)
+!   report          show, whole, what mnema would say about its own last internal
+!                   error, and keep your answer to it (sends nothing)
 !   completion      print the tab-completion script for a shell
 !
 ! Called by a host:
@@ -194,6 +196,8 @@ $ mnema --help
 |   tail            authorize a cut in the record's own tails
 |   doctor          say how mnema is installed on this machine, and what to do
 |                   about each thing found (writes nothing unless you pass --fix)
+|   report          show, whole, what mnema would say about its own last internal
+|                   error, and keep your answer to it (sends nothing)
 |   completion      print the tab-completion script for a shell
 |
 | Called by a host:
@@ -1181,6 +1185,26 @@ $ mnema doctor --help
 | it, keeps the file’s comments, and refuses a file it cannot edit safely.
 | `--fix private-tree` writes: it moves each tail, as it is, into the repository’s private
 | tree, and leaves where it was anything whose name there holds other bytes.
+
+### mnema report --help
+$ mnema report --help
+| Usage: mnema report [options]
+|
+| show, whole, what mnema would say about its own last internal error, and keep
+| your answer to it (sends nothing)
+|
+| Options:
+|   --decline   refuse reports of this kind of error: it is not offered again
+|   --off       switch reporting off on this machine: nothing is logged or offered
+|   --on        switch reporting back on
+|   -h, --help  display help for command
+|
+| The report is built from a short list of facts — mnema’s version, Node’s, the platform, the name
+| of the verb, the kind of error, where in mnema it happened — and from nothing else: no record
+| content, no path, no name, no address, no message. It is refused whole if it would carry any.
+| mnema makes no network request: the text is shown and saved to a file, and sending it is yours.
+| What was logged, what you declined and the switch live in the global tree’s directory, beside
+| the record and not in it.
 
 ### mnema completion --help
 $ mnema completion --help

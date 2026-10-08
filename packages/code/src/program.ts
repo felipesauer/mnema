@@ -43,7 +43,12 @@ import { registerVerbs } from './wiring/index.js';
 import { type CliIo, neutralizing, processIo } from './wiring/io.js';
 import { MCP_VERB } from './wiring/mcp.js';
 import { speakUsageErrors } from './wiring/misuse.js';
-import { internalErrorSentence, refusalSentence, reportIdentityRefusal } from './wiring/report.js';
+import {
+  internalErrorSentence,
+  refusalSentence,
+  reportIdentityRefusal,
+  reportOfferSentence,
+} from './wiring/report.js';
 import { pinnedRunResolver } from './wiring/run-pin.js';
 import type { Declared } from './wiring/verb.js';
 
@@ -417,6 +422,19 @@ export async function parseWith(built: BuiltProgram, argv: readonly string[]): P
     );
     if (isInternalError(error)) {
       io.err(render(internalErrorSentence(describeInternal(error))));
+      // Logged to this machine's own file, outside the record, and offered at most once per kind
+      // of error and three times a day. It sends nothing; a failure here never replaces the error.
+      const { noteInternalError } = await import('./diagnostic-log.js');
+      const { cwd, env } = here();
+      const noted = noteInternalError(error, {
+        cwd,
+        env,
+        now: new Date(),
+        version: VERSION,
+        argv,
+        verbs: program.commands.map((command) => command.name()),
+      });
+      if (noted.offer) io.err(render(reportOfferSentence()));
       io.fail(INTERNAL_ERROR_EXIT);
       return;
     }
