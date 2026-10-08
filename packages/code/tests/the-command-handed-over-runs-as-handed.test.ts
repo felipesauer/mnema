@@ -720,8 +720,10 @@ export const HANDED_OVER: Readonly<
   // line 76 and name 77 for the help of `mnema doctor`, which names the one thing it writes,
   // `mnema doctor --fix vscode`, in a line of its own.
   // line 81 and name 83 with both: the Sigstore help and the promotion and doctor help.
+  // line 84 and name 84 with the report verb: its three flags, each read by its own name, and the three
+  // lines of its help that name them.
   // unwritten 4 once the console named a member of a group by its whole path as well as a verb.
-  source: { line: 81, name: 83, flag: 4, unwritten: 4 },
+  source: { line: 84, name: 84, flag: 4, unwritten: 4 },
 };
 
 // ---------------------------------------------------------------------------
