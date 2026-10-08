@@ -721,7 +721,9 @@ export const HANDED_OVER: Readonly<
   // `mnema doctor --fix vscode`, in a line of its own.
   // line 81 and name 83 with both: the Sigstore help and the promotion and doctor help.
   // unwritten 4 once the console named a member of a group by its whole path as well as a verb.
-  source: { line: 81, name: 83, flag: 4, unwritten: 4 },
+  // line 82 once `before-a-write --help` named the second host that only refuses, and the switch
+  // of the asking went to a line of its own.
+  source: { line: 82, name: 83, flag: 4, unwritten: 4 },
 };
 
 // ---------------------------------------------------------------------------

@@ -45,8 +45,8 @@ export function registerBeforeAWrite(program: Command, wiring: Wiring): Declared
         '  linked with `asks-for-a-person` — citing the rules. For --host cursor and --host',
         '  codex only `deny` is answered: those hosts do not hold a write for a person. Each',
         '  refusal or asking is recorded as a fact before the reply is printed. They can be',
-        '  switched off with `mnema switch off edit-refuses-a-write` and `mnema switch off',
-        '  edit-asks-a-person`.',
+        '  switched off with `mnema switch off edit-refuses-a-write` and',
+        '  `mnema switch off edit-asks-a-person`.',
       ].join('\n'),
     )
     .action(async (opts: { host: string }) => {

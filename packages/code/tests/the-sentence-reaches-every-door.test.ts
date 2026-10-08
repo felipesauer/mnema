@@ -332,7 +332,7 @@ describe('no manifest sells the gate as more than it is', () => {
           : [];
       });
 
-  it('finds the manifests that describe themselves — eleven of them', () => {
+  it('finds the manifests that describe themselves — twelve of them', () => {
     // The non-vacuity of the case below, which is otherwise true of an empty list.
     expect(
       described()
@@ -350,6 +350,7 @@ describe('no manifest sells the gate as more than it is', () => {
       'packages/vscode/package.json',
       'plugin-server-only/.claude-plugin/plugin.json',
       'plugin/.claude-plugin/plugin.json',
+      'plugin/.codex-plugin/plugin.json',
     ]);
   });
 
