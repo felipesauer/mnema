@@ -18,6 +18,7 @@ import { decisionTransitioned } from '@mnema/chain';
 import type { Brief, ChannelState } from '@mnema/context';
 import type { DivergentMove } from '@mnema/core';
 import { describe, expect, it } from 'vitest';
+import { hookTextOf } from '../host-names.js';
 import { briefDocument, briefWithin } from './brief.js';
 import {
   CLAUDE_CODE_CEILING,
@@ -921,14 +922,14 @@ describe('the hook’s copy for a host that counts in its own unit', () => {
   const bytes = (lines: readonly string[]) =>
     Buffer.byteLength(lines.map((line) => `${line}\n`).join(''), 'utf8');
   const bullets = (lines: readonly string[]) => lines.filter((line) => line.startsWith('- **'));
-  const codex = hookCeilingOf('codex');
+  const codex = hookCeilingOf(hookTextOf('codex'));
   const forCodex = () => briefWithin(crowded, roomBeside([], codex), undefined, undefined, codex);
 
   it('reads Codex’s ceiling off the host table, and Claude Code’s for every host that names none', () => {
     expect(codex.most).toBe(10_000);
     expect(codex.lengthOf('ç·—')).toBe(7);
     expect(hookCeilingOf(undefined)).toBe(CLAUDE_CODE_CEILING);
-    expect(hookCeilingOf('cursor')).toBe(CLAUDE_CODE_CEILING);
+    expect(hookCeilingOf(hookTextOf('cursor'))).toBe(CLAUDE_CODE_CEILING);
     expect(CLAUDE_CODE_CEILING.most).toBe(HOOK_TEXT_CEILING);
   });
 

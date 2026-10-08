@@ -83,7 +83,7 @@
  */
 
 import type { Command } from 'commander';
-import { HOOK_TEXT_HOSTS, type HostName } from '../host-names.js';
+import { HOOK_TEXT_HOSTS, type HostName, hookTextOf } from '../host-names.js';
 import { here } from './context.js';
 import { enumeratedOption, listed } from './enumerated.js';
 import { writeLines } from './io.js';
@@ -218,7 +218,7 @@ export function registerBrief(program: Command, wiring: Wiring): Declared {
       const { runBrief } = await import('../commands/brief.js');
       const { briefDocument, briefWithin } = await import('../presentation/brief.js');
       const { hookCeilingOf, roomBeside } = await import('../presentation/within-a-hook.js');
-      const ceiling = hookCeilingOf(host ?? undefined);
+      const ceiling = hookCeilingOf(host === null ? undefined : hookTextOf(host));
       const result = runBrief(here(), { outside: opts.hook === true });
       if (!result.ok) {
         reportRefusal(

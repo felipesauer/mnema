@@ -335,6 +335,12 @@ export const RULES_FILE_HOSTS = HOST_NAMES.filter(
  */
 export const HOOK_TEXT_HOSTS = HOST_NAMES.filter((name) => 'hookText' in HOSTS[name]);
 
+/** The ceiling a host's row names for a hook's text, or `undefined` where it names none. */
+export function hookTextOf(host: HostName): Host['hookText'] {
+  const row: Host = HOSTS[host];
+  return row.hookText;
+}
+
 /** Whether a host does a capability with this product — a cell that says yes, however known. */
 export function does(host: HostName, capability: Capability): boolean {
   const cell: Cell = HOSTS[host].cells[capability];

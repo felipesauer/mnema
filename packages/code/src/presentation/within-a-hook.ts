@@ -41,8 +41,6 @@
  * generates for it (`--host`), never by guessing.
  */
 
-import { HOSTS, type HostName } from '../host-names.js';
-
 /**
  * The most a hook's text may hold and still arrive as text, in the host's own unit — see
  * this module's header for the measurement.
@@ -95,15 +93,18 @@ export interface HookCeiling {
   readonly most: number;
   /** A text's length, in the unit of {@link most}; additive over the lines of a text. */
   readonly lengthOf: (text: string) => number;
-  /** The ceiling in words, as the paragraph that declares a cut prints it. */
-  readonly inWords: string;
+  /**
+   * The ceiling as the paragraph that declares a cut words it: a count of characters, or of
+   * tokens of so many bytes — the words are the composer's, the numbers are these.
+   */
+  readonly said: { readonly count: number; readonly bytesPerToken?: number };
 }
 
 /** Claude Code's ceiling, and every host's that the host table names none for. */
 export const CLAUDE_CODE_CEILING: HookCeiling = {
   most: HOOK_TEXT_CEILING,
   lengthOf: unitsOf,
-  inWords: `${HOOK_CEILING_IN_WORDS} characters`,
+  said: { count: HOOK_TEXT_CEILING },
 };
 
 /**
@@ -119,17 +120,18 @@ export const CLAUDE_CODE_CEILING: HookCeiling = {
 const TOKEN_MARGIN_BYTES = 0;
 
 /**
- * The ceiling of a hook's text on `host`, from the host table (`host-names.ts`, `hookText`), or
- * Claude Code's where the table names none.
+ * The ceiling of a hook's text for a host whose row of the host table names one (`host-names.ts`,
+ * `hookText`, read by the caller with `hookTextOf`), or Claude Code's where it names none.
  */
-export function hookCeilingOf(host: HostName | undefined): HookCeiling {
-  const row = host === undefined ? undefined : HOSTS[host];
-  if (row === undefined || !('hookText' in row)) return CLAUDE_CODE_CEILING;
-  const { tokens, bytesPerToken } = row.hookText;
+export function hookCeilingOf(
+  hookText: { readonly tokens: number; readonly bytesPerToken: number } | undefined,
+): HookCeiling {
+  if (hookText === undefined) return CLAUDE_CODE_CEILING;
+  const { tokens, bytesPerToken } = hookText;
   return {
     most: tokens * bytesPerToken - TOKEN_MARGIN_BYTES,
     lengthOf: bytesOf,
-    inWords: `${tokens.toLocaleString('en-US')} tokens of ${bytesPerToken} bytes`,
+    said: { count: tokens, bytesPerToken },
   };
 }
 

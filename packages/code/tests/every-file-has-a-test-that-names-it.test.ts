@@ -886,7 +886,7 @@ const CLAUSES_PER_FILE: Readonly<Record<string, number>> = {
   'packages/code/src/one-voice-for-a-no.test.ts': 11,
   'packages/code/src/outside-the-record.test.ts': 13,
   'packages/code/src/pinned-run.test.ts': 9,
-  'packages/code/src/presentation/brief.test.ts': 6,
+  'packages/code/src/presentation/brief.test.ts': 7,
   'packages/code/src/presentation/folded.test.ts': 15,
   'packages/code/src/presentation/forms.test.ts': 6,
   'packages/code/src/presentation/git-bridge.test.ts': 6,

@@ -34,6 +34,7 @@
  */
 
 import type { Command } from 'commander';
+import { hookTextOf } from '../host-names.js';
 import { hookHostOf, hookHostOption, switchedOff } from './brief.js';
 import { here } from './context.js';
 import { writeLines } from './io.js';
@@ -83,7 +84,7 @@ export function registerRecall(program: Command, wiring: Wiring): Declared {
       const { runRecall } = await import('../commands/recall.js');
       const { recallDocument, recallWithin } = await import('../presentation/recall.js');
       const { hookCeilingOf, roomBeside } = await import('../presentation/within-a-hook.js');
-      const ceiling = hookCeilingOf(host ?? undefined);
+      const ceiling = hookCeilingOf(host === null ? undefined : hookTextOf(host));
       const result = runRecall(here());
       if (!result.ok) {
         reportRefusal(
