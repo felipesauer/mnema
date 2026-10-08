@@ -50,9 +50,15 @@ export interface ReportState {
   readonly declined: readonly string[];
   /** One entry per offer made: the fingerprint and the UTC day. */
   readonly offered: readonly { readonly fingerprint: string; readonly day: string }[];
+  /**
+   * The file is there and cannot be read. The state then FAILS CLOSED: it reads as off, and
+   * nothing writes over the file, so a person's refusals are not forgotten by a bad byte.
+   */
+  readonly unreadable?: true;
 }
 
 export const EMPTY_STATE: ReportState = { off: false, declined: [], offered: [] };
+const UNREADABLE: ReportState = { off: true, declined: [], offered: [], unreadable: true };
 
 const FINGERPRINT = /^[0-9a-f]{8}$/;
 const DAY = /^\d{4}-\d{2}-\d{2}$/;
@@ -60,10 +66,17 @@ const DAY = /^\d{4}-\d{2}-\d{2}$/;
 /** The state the file holds, tolerant: whatever does not have its shape is not read. */
 export function readState(dir: string): ReportState {
   try {
-    const parsed = JSON.parse(readFileSync(join(dir, STATE_FILE), 'utf8')) as Record<
-      string,
-      unknown
-    >;
+    const file = join(dir, STATE_FILE);
+    if (!existsSync(file)) return EMPTY_STATE;
+    const parsed = JSON.parse(readFileSync(file, 'utf8')) as Record<string, unknown>;
+    const wellFormed =
+      typeof parsed === 'object' &&
+      parsed !== null &&
+      !Array.isArray(parsed) &&
+      (parsed.off === undefined || typeof parsed.off === 'boolean') &&
+      (parsed.declined === undefined || Array.isArray(parsed.declined)) &&
+      (parsed.offered === undefined || Array.isArray(parsed.offered));
+    if (!wellFormed) return UNREADABLE;
     const declined = Array.isArray(parsed.declined)
       ? parsed.declined.filter((f): f is string => typeof f === 'string' && FINGERPRINT.test(f))
       : [];
@@ -80,12 +93,13 @@ export function readState(dir: string): ReportState {
       : [];
     return { off: parsed.off === true, declined, offered };
   } catch {
-    return EMPTY_STATE;
+    return UNREADABLE;
   }
 }
 
 /** Writes the state whole, beside its final name first so a reader never sees half of it. */
 export function writeState(dir: string, state: ReportState): void {
+  if (state.unreadable === true) return;
   mkdirSync(dir, { recursive: true });
   const bounded: ReportState = {
     off: state.off,

@@ -64,9 +64,12 @@ const SHAPES = {
   node: /^v\d{1,3}\.\d{1,3}\.\d{1,3}$/,
   platform: /^[a-z0-9]{2,16}-[a-z0-9_]{2,16}$/,
   command: /^[a-z][a-z-]{0,31}$/,
-  code: /^[A-Za-z][A-Za-z0-9_]{0,63}$/,
+  // A CLOSED SET, not a shape: a shape lets a name or a key through (`JOE_SMITH`, a base64 run).
+  // Node's own `ERR_*` constants and the engine's classes, and `other` for all the rest.
+  code: /^(?:ERR_[A-Z0-9_]{1,56}|TypeError|RangeError|ReferenceError|EvalError|URIError|InternalError|NonError|Error|other)$/,
   fingerprint: /^[0-9a-f]{8}$/,
-  frame: /^@mnema\/[a-z-]{1,32}\/[\w./-]{1,160}:\d{1,6}$/,
+  frame:
+    /^@mnema\/(?:chain|core|context|code|action|sdk|vscode|stacks)\/(?!.*\.\.)[\w./-]{1,160}:\d{1,6}$/,
 } as const;
 
 /** The Diagnostic `value` is, or undefined when any field is not in its shape. */
@@ -98,7 +101,7 @@ export function asDiagnostic(value: unknown): Diagnostic | undefined {
 // A frame inside the product: the installed package, or the workspace. Whatever sits above
 // `@mnema/<package>/` or `packages/<package>/` is never read into the match.
 const PRODUCT_FRAME =
-  /[\\/](?:node_modules[\\/]@mnema|packages)[\\/]([a-z-]+)[\\/](?:dist|build|src)[\\/]([\w./\\-]+?\.(?:[cm]?js|ts)):(\d+):\d+/;
+  /[\\/](?:node_modules[\\/]@mnema|packages)[\\/](chain|core|context|code|action|sdk|vscode|stacks)[\\/](?:dist|build|src)[\\/]([\w./\\-]+?\.(?:[cm]?js|ts)):(\d+):\d+/;
 
 /** The product frames of `stack`, innermost first, reduced to `@mnema/<package>/<file>:<line>`. */
 export function productFrames(stack: string | undefined): string[] {
@@ -116,8 +119,8 @@ export function productFrames(stack: string | undefined): string[] {
 function codeOf(error: unknown): string {
   if (!(error instanceof Error)) return 'NonError';
   const { code } = error as { code?: unknown };
-  if (typeof code === 'string' && /^[A-Z][A-Z0-9_]{1,63}$/.test(code)) return code;
-  return SHAPES.code.test(error.name) ? error.name : 'Error';
+  if (typeof code === 'string' && code.startsWith('ERR_') && SHAPES.code.test(code)) return code;
+  return SHAPES.code.test(error.name) ? error.name : 'other';
 }
 
 /**

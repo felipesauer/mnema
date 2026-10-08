@@ -15,6 +15,7 @@ import {
   DRAFT_FILE,
   readDiagnostics,
   readState,
+  STATE_FILE,
   withheldPlaces,
   writeState,
 } from '../diagnostic-log.js';
@@ -43,6 +44,15 @@ export function runReport(run: { cwd: string; env: DiscoveryEnv }, ask: ReportAs
   }
   const dir = resolveTrees(run.cwd, run.env).global;
   const state = readState(dir);
+  if (state.unreadable === true) {
+    const file = join(dir, STATE_FILE);
+    return {
+      lines: [
+        `The state file ${file} cannot be read, so reporting is treated as off and nothing is written over it. Delete that file to start over (your refusals in it are forgotten then).`,
+      ],
+      refused: true,
+    };
+  }
 
   if (ask.off === true) {
     writeState(dir, { ...state, off: true });

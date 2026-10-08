@@ -112,6 +112,44 @@ describe('the report is made of an allowlist', () => {
     expect(diagnose('a thrown string', CONTEXT)?.code).toBe('NonError');
   });
 
+  it('keeps a code or a class only from a closed set, and says `other` for the rest', () => {
+    for (const hostile of [
+      'GHP_ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789',
+      'JOE_SMITH',
+      'MCOWBQYDK2VWAYEA',
+    ]) {
+      const error = Object.assign(new TypeError('x'), { code: hostile });
+      expect(diagnose(error, CONTEXT)?.code, hostile).toBe('TypeError');
+    }
+    for (const name of ['felipe', 'JoeSmith', 'ZXhhbXBsZXRva2VuMTIzNDU2Nzg5MGFiY2RlZjEyMzQ1Ng']) {
+      const error = Object.assign(new Error('x'), { name });
+      expect(diagnose(error, CONTEXT)?.code, name).toBe('other');
+    }
+    expect(diagnose(new RangeError('x'), CONTEXT)?.code).toBe('RangeError');
+    const base = diagnose(new TypeError('x'), CONTEXT) as Diagnostic;
+    expect(asDiagnostic({ ...base, code: 'JOE_SMITH' })).toBeUndefined();
+  });
+
+  it("keeps a frame only inside mnema's own packages, and never one that climbs out", () => {
+    const framed = (line: string) => {
+      const error = new TypeError('x');
+      error.stack = `TypeError: x\n    at f (${line})`;
+      return diagnose(error, CONTEXT)?.frames;
+    };
+    expect(
+      framed('/home/joe/acme/packages/billing-secret/src/clients/joe-smith/acme.ts:7:1'),
+    ).toEqual([]);
+    expect(framed('/opt/node_modules/@mnema/code/dist/../../../home/joe/.ssh/id.js:3:1')).toEqual(
+      [],
+    );
+    expect(framed('/opt/node_modules/@mnema/core/dist/read.js:9:1')).toEqual([
+      '@mnema/core/read.js:9',
+    ]);
+    const base = diagnose(new TypeError('x'), CONTEXT) as Diagnostic;
+    expect(asDiagnostic({ ...base, frames: ['@mnema/billing-secret/x.ts:7'] })).toBeUndefined();
+    expect(asDiagnostic({ ...base, frames: ['@mnema/code/../etc/passwd:1'] })).toBeUndefined();
+  });
+
   it('refuses the whole report when a field turned out to carry what it must not', () => {
     const base = diagnose(new TypeError('x'), CONTEXT) as Diagnostic;
     const withCredential = renderReport({ ...base, code: TOKEN });
@@ -235,14 +273,32 @@ describe('the local log and the limits', () => {
     }
   });
 
-  it('makes no report of a line that, read back, carries a credential, and leaves no draft', () => {
+  it('makes no report that carries a place of this machine, and leaves no draft', () => {
     const base = diagnose(fault(1), CONTEXT) as Diagnostic;
-    appendDiagnostic(globalDir(), { ...base, code: TOKEN });
-    const made = runReport({ cwd: env.home, env }, {});
+    appendDiagnostic(globalDir(), base);
+    // a working directory that spells something the report says: the place is withheld
+    const made = runReport({ cwd: env.home, env: { ...env, accountHome: 'linux-x64' } }, {});
     expect(made.refused).toBe(true);
-    expect(made.lines.join(' ')).toContain('github-token');
-    expect(made.lines.join(' ')).not.toContain(TOKEN);
+    expect(made.lines.join(' ')).toContain('place');
     expect(existsSync(join(globalDir(), 'report-draft.md'))).toBe(false);
+  });
+
+  it('fails closed on a state it cannot read: off, untouched, and said by the verb', () => {
+    expect(note(fault(1)).offer).toBe(true);
+    writeState(globalDir(), { ...readState(globalDir()), declined: ['0123abcd'] });
+    const file = join(globalDir(), STATE_FILE);
+    writeFileSync(file, '{ not json');
+    expect(readState(globalDir()).unreadable).toBe(true);
+    expect(note(fault(2)).offer).toBe(false);
+    expect(readDiagnostics(globalDir())).toHaveLength(1);
+    for (const ask of [{}, { on: true }, { off: true }, { decline: true }]) {
+      const said = runReport({ cwd: env.home, env }, ask);
+      expect(said.refused, JSON.stringify(ask)).toBe(true);
+      expect(said.lines.join(' ')).toContain('Delete that file');
+    }
+    expect(readFileSync(file, 'utf8')).toBe('{ not json');
+    writeFileSync(file, '{"off":"yes"}');
+    expect(readState(globalDir()).unreadable).toBe(true);
   });
 
   it('does not let a log it cannot write replace the error', () => {
@@ -323,9 +379,7 @@ describe('the verb, end to end through the program', () => {
     const shownToThePerson = await run(['report']);
     expect(shownToThePerson.exit).toBeUndefined();
     const text = shownToThePerson.out.join('\n');
-    for (const leaked of [PERSON_HOME, EMAIL, TOKEN, 'cannot read', dir]) {
-      // the draft's path is printed to the person, and the report itself never holds it
-      if (leaked === dir) continue;
+    for (const leaked of [PERSON_HOME, EMAIL, TOKEN, 'cannot read']) {
       expect(text, leaked).not.toContain(leaked);
     }
     const draft = readFileSync(join(dir, 'data', 'global', 'report-draft.md'), 'utf8');
