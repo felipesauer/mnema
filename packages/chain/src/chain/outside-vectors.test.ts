@@ -436,8 +436,9 @@ describe('the stored line of section 4 against JSONTestSuite', () => {
 
   it('accepts, in both, the two i_ files that are canonical lines', () => {
     // A number past 2**53 that is still the double it spells, and arrays nested 500 deep.
-    expect(
-      names.filter((name) => verdict(name).every((said) => said === 'accepted')),
-    ).toEqual(['i_number_too_big_pos_int.json', 'i_structure_500_nested_arrays.json']);
+    expect(names.filter((name) => verdict(name).every((said) => said === 'accepted'))).toEqual([
+      'i_number_too_big_pos_int.json',
+      'i_structure_500_nested_arrays.json',
+    ]);
   });
 });

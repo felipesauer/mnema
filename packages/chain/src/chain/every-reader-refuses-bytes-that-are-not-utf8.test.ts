@@ -205,7 +205,10 @@ describe('one byte that is not UTF-8, in the middle of a file of the record', ()
 
 describe('the torn final fragment, cut inside a multi-byte character', () => {
   /** An append that stopped between the two bytes of `é`: no newline, and half a character. */
-  const torn = Buffer.concat([Buffer.from('{"event":{"kind":"memory.captured","title":"caf'), Buffer.from([0xc3])]);
+  const torn = Buffer.concat([
+    Buffer.from('{"event":{"kind":"memory.captured","title":"caf'),
+    Buffer.from([0xc3]),
+  ]);
 
   it('is dropped from the end of the last segment, as any torn write is', () => {
     appendFileSync(join(tailDir, '000001.jsonl'), torn);
