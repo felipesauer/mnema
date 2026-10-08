@@ -337,39 +337,50 @@ describe('every place that repeats the floor repeats this number', () => {
   });
 
   /**
-   * THE ONE JOB THAT RUNS BELOW THE FLOOR ON PURPOSE. `the-binary-refuses-an-old-node` runs the
+   * THE ONE MATRIX THAT RUNS BELOW THE FLOOR ON PURPOSE. `the-binary-refuses-an-old-node` runs the
    * built binary under Nodes the floor refuses, because that is the only way to see what a person
-   * on one is told (`.github/the-binary-runs/it-refuses-an-old-node.sh`). It is left out of the
-   * scan BY NAME, so any other pin below the floor — in this job's neighbours, or in a job that
-   * merely resembles it — still reddens; and the job is checked to exist and to run that script,
-   * so the exemption cannot outlive the thing it excuses.
+   * on one is told (`.github/the-binary-runs/it-refuses-an-old-node.sh`). What is excused is ONE
+   * LINE: the `node: [...]` of that job's matrix, in `ci.yml` and nowhere else. Every
+   * `node-version:` pin — the build step of that same job included — and every other matrix is
+   * still scanned, so a Node below the floor under the build still reddens. The job is checked to
+   * exist and to run that script, so the excuse cannot outlive the thing it excuses.
    */
   const REFUSES_AN_OLD_NODE = 'the-binary-refuses-an-old-node';
-  const withoutTheJobThatRefusesAnOldNode = (text: string): string => {
-    const lines = text.split('\n');
+  const WHERE_IT_RUNS = '.github/workflows/ci.yml';
+  const MATRIX_LINE = /^\s*node: \[(.+)\]\s*$/;
+  const withoutTheMatrixThatRefusesAnOldNode = (file: { where: string; text: string }): string => {
+    if (file.where !== WHERE_IT_RUNS) return file.text;
+    const lines = file.text.split('\n');
     const from = lines.findIndex((line) => line === `  ${REFUSES_AN_OLD_NODE}:`);
-    if (from < 0) return text;
+    if (from < 0) return file.text;
     const length = lines.slice(from + 1).findIndex((line) => /^ {2}[A-Za-z]/.test(line));
-    return lines.filter((_, at) => at < from || (length >= 0 && at > from + length)).join('\n');
+    const to = length < 0 ? lines.length : from + 1 + length;
+    return lines.filter((line, at) => at <= from || at >= to || !MATRIX_LINE.test(line)).join('\n');
   };
 
-  it('exempts the job that refuses an old Node only while it runs that script', () => {
-    const ci = WORKFLOWS.find((file) => file.where === '.github/workflows/ci.yml');
+  it('excuses the matrix that refuses an old Node only while its job runs that script', () => {
+    const ci = WORKFLOWS.find((file) => file.where === WHERE_IT_RUNS);
     expect(ci?.text).toContain(`\n  ${REFUSES_AN_OLD_NODE}:\n`);
     expect(ci?.text).toContain('run: bash .github/the-binary-runs/it-refuses-an-old-node.sh');
-    const stripped = withoutTheJobThatRefusesAnOldNode(ci?.text ?? '');
-    expect(stripped).not.toContain(REFUSES_AN_OLD_NODE);
-    expect(stripped).toContain('\n  the-link-cannot-come-back:\n');
-    expect(stripped).toContain('\n  the-extension-as-a-file:\n');
-    // And the job really does pin Nodes below the floor, or there would be nothing to exempt.
-    expect(pinned(ci?.text ?? '', /^\s*node: \[(.+)\]\s*$/gm)).toContain('20.20.2');
+    const text = ci?.text ?? '';
+    // And the matrix really does pin Nodes below the floor, or there would be nothing to excuse.
+    expect(pinned(text, /^\s*node: \[(.+)\]\s*$/gm)).toContain('20.20.2');
+    const kept = pinned(
+      withoutTheMatrixThatRefusesAnOldNode({ where: WHERE_IT_RUNS, text }),
+      /^\s*node: \[(.+)\]\s*$/gm,
+    );
+    expect(kept).not.toContain('20.20.2');
+    expect(kept, 'the main matrix is still scanned').toContain(FLOOR.join('.'));
+    // The same text under another workflow's name is excused nowhere.
+    const elsewhere = { where: '.github/workflows/other.yml', text };
+    expect(withoutTheMatrixThatRefusesAnOldNode(elsewhere)).toBe(text);
   });
 
   it('is never undercut by a node pinned anywhere in a workflow', () => {
     const below = WORKFLOWS.flatMap((file) =>
       [
-        ...pinned(withoutTheJobThatRefusesAnOldNode(file.text), /^\s*node: \[(.+)\]\s*$/gm),
-        ...pinned(withoutTheJobThatRefusesAnOldNode(file.text), /^\s*node-version:\s*(\S+)\s*$/gm),
+        ...pinned(withoutTheMatrixThatRefusesAnOldNode(file), /^\s*node: \[(.+)\]\s*$/gm),
+        ...pinned(file.text, /^\s*node-version:\s*(\S+)\s*$/gm),
       ]
         .filter((entry) => Number(entry.split('.')[0]) < FLOOR[0])
         .map((entry) => `${file.where}: ${entry}`),

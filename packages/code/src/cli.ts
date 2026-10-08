@@ -12,7 +12,8 @@
  * never came. The program is therefore loaded by a dynamic `import()` that is reached only past
  * the guard, and this file imports nothing but `node:fs` and `node:url` (and `node-floor.ts`,
  * which imports `node:fs`), which every Node a person can have carries.
- * `tests/the-binary-refuses-an-old-node-before-it-loads-anything.test.ts` holds it on a real Node.
+ * The CI job `the binary refuses an old Node` (`.github/the-binary-runs/it-refuses-an-old-node.sh`)
+ * holds it on real Nodes, and `tests/the-node-below-the-floor-is-refused.test.ts` holds it here.
  *
  * The program is a module of its own so a test can build it without running it; this file is
  * the one that runs.
@@ -45,8 +46,9 @@ import { pathToFileURL } from 'node:url';
  * disk, and turned into a URL by the function that does the escaping.
  *
  * WHY THE FAILURE IS SWALLOWED. `realpathSync` THROWS when the path is not there, and a
- * throw at module scope is worse than a mute binary: over twenty test files import this
- * module for {@link buildProgram}, and they do it counting on this block to stay quiet. The
+ * throw at module scope is worse than a mute binary: a test that imports this
+ * module (`tests/the-node-below-the-floor-is-refused.test.ts` does, for this very function)
+ * counts on this block to stay quiet. The
  * answer for a path with nothing behind it is the honest one anyway — a file that is not on
  * disk is not the file this module is — so it is `false`, not an exception. Same shape as
  * `identityOf` in `commands/verify.ts`, and the same reason.
