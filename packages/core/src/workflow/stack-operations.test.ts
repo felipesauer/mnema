@@ -46,6 +46,8 @@ describe('an adoption lands as the four closed fields, and nothing else', () => 
   it('records the digest, the version and the scope, under the name the stack declares', () => {
     const adopted = adoptStack(ctx, honest);
     expect(adopted.ok).toBe(true);
+    // Signed in the hold that wrote it: a further checkpoint finds nothing left to sign.
+    expect(ctx.writer.checkpoint()).toBeNull();
 
     const [fact] = stackFacts();
     expect(fact?.kind).toBe('stack.adopted');

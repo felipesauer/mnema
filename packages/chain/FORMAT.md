@@ -736,8 +736,8 @@ only closed forms and refuses anything else before appending:
 
 None of these forms can hold a separator, `~`, `:` or `@`. A removal copies its version, digest
 and scope from the adoption standing under its subject in the same tree, and is refused when none
-stands. The writer signs a checkpoint right after either fact, so each is covered by a signature as
-soon as it lands
+stands. The writer appends either fact and signs a checkpoint over it in one hold of the tail's
+lock, so each is covered by a signature as soon as it lands
 (`packages/core/src/workflow/stack-operations.test.ts`).
 
 These forms are the WRITE side's. A reader of the format applies §4.1 alone: a `stack.adopted`

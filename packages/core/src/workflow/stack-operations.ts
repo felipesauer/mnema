@@ -171,29 +171,33 @@ export function adoptStack(
   const agent = resolveExecutingAgent(who, input.which);
   if (!agent.ok) return agent;
 
-  ensureFounded(ctx);
-  const appended = appendEvent(
-    ctx.writer,
-    stackAdopted(
-      {
-        at: (ctx.clock ?? systemClock)(),
-        who,
-        signerFp: ctx.writer.signerFingerprint,
-        subject,
-        ...(agent.which !== undefined ? { which: agent.which } : {}),
-        ...(text.fields.run !== undefined ? { run: text.fields.run } : {}),
-      },
-      {
-        name: input.name,
-        version: text.fields.version,
-        digest: input.digest,
-        scope: input.scope,
-      },
-    ),
-  );
-  if (!appended.ok) return appended;
-  ctx.writer.checkpoint();
-  return { ok: true, subject, ...screened([...text.replaced, ...agent.replaced]) };
+  // Appended and signed in ONE hold of the tail's lock, so no other session can take the tail
+  // between the fact landing and its signature.
+  return ctx.writer.exclusively(() => {
+    ensureFounded(ctx);
+    const appended = appendEvent(
+      ctx.writer,
+      stackAdopted(
+        {
+          at: (ctx.clock ?? systemClock)(),
+          who,
+          signerFp: ctx.writer.signerFingerprint,
+          subject,
+          ...(agent.which !== undefined ? { which: agent.which } : {}),
+          ...(text.fields.run !== undefined ? { run: text.fields.run } : {}),
+        },
+        {
+          name: input.name,
+          version: text.fields.version,
+          digest: input.digest,
+          scope: input.scope,
+        },
+      ),
+    );
+    if (!appended.ok) return appended;
+    ctx.writer.checkpoint();
+    return { ok: true, subject, ...screened([...text.replaced, ...agent.replaced]) };
+  });
 }
 
 /** What the caller asks to remove: the name the stack is installed under. */
