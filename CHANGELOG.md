@@ -12,6 +12,14 @@ tag, with its own changelog.
 
 ### Added
 
+- **The record can say which stacks govern the work.** Two new event kinds, `stack.adopted`
+  (`payload.name`, `payload.version`, `payload.digest`, `payload.scope`) and `stack.removed`
+  (`payload.version`, `payload.digest`, `payload.scope`), name a stack by its digest and say in
+  which tree it governs: `public`, `private` or `global`. Neither carries a path, a source
+  address or a credential: the write door admits only closed forms, and a reader refuses any
+  field the contract does not declare. No command writes them yet. The Python reader takes them
+  from `event-schema.json` with no code of its own (`packages/chain/FORMAT.md`, section 6.6).
+
 - **A Sigstore countersignature.** `mnema witness sigstore` signs the last checkpoint of each
   tail with a short-lived Sigstore certificate (the browser here; the job's own token in GitHub
   Actions) and files the bundle at `witness/<checkpoint>.sigstore.json`. Of the record only the
@@ -168,6 +176,10 @@ tag, with its own changelog.
   another port is refused and not contacted.
 
 ### Known limits
+
+- A binary from before `stack.adopted` and `stack.removed` stops reading the whole record once
+  one is in a tree it reads, as it does for any kind it does not know (`packages/chain/FORMAT.md`,
+  section 4.1).
 
 - A binary from before `checker.retired` stops reading the whole record once a retirement is in
   the committed tree, as it does for any kind it does not know (`packages/chain/FORMAT.md`,

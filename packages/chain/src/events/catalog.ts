@@ -1147,6 +1147,65 @@ export interface AccountLinkedV1 extends Envelope {
 }
 
 /**
+ * A person ADOPTED A STACK: the files whose digest is `digest` govern the work in the tree this
+ * fact is written in.
+ *
+ * WHAT IT IS: "I adopted exactly these bytes, under this name, in this scope", signed by the
+ * person's key. The digest is the stack's identity — the SHA-256 any reader can recompute over
+ * the files with three lines of shell — so the claim is checkable against a disk without
+ * trusting the version or anybody's word. It is not a claim about the stack's author, and it
+ * does not say the stack is safe.
+ *
+ * WHAT IT DELIBERATELY DOES NOT CARRY: a path, a source address, or anything a credential could
+ * ride in. The record is append-only and, in the public tree, cloned; where a stack was copied
+ * from is a machine's (a folder names its owner) or a URL's (a URL can hold a token), and the
+ * digest already says WHICH stack without either. Every field is a closed form the write door
+ * proves before appending.
+ *
+ * Subject is the name the stack is installed under. It differs from `payload.name` only when
+ * the person renamed it to settle a collision, which is how a reader tells a renamed stack from
+ * one installed as published. A later adoption under the same subject replaces an earlier one,
+ * in the order the record is merged in.
+ */
+export interface StackAdoptedV1 extends Envelope {
+  readonly kind: 'stack.adopted';
+  readonly v: 1;
+  /** Subject is the name the stack is installed under. */
+  readonly payload: {
+    /** The name the stack's own `stack.json` declares. */
+    readonly name: string;
+    /** The version the stack's own `stack.json` declares — a label, not its identity. */
+    readonly version: string;
+    /** The stack's digest: 64 lower-case hex characters, the SHA-256 of its file list. */
+    readonly digest: string;
+    /** Which tree governs: `public` (the project, shared), `private` (the project, mine), or `global`. */
+    readonly scope: string;
+  };
+}
+
+/**
+ * A person REMOVED A STACK they had adopted: the adoption its subject names stops governing.
+ *
+ * It repeats the adoption's version, digest and scope rather than pointing at the adoption's
+ * event, so the fact says on its own which bytes were let go, and a reader pairs the two by
+ * subject and digest. Nothing is erased: the adoption's event stays. Like the adoption, it
+ * carries no path and no reason — the bytes it lets go are named by their digest.
+ */
+export interface StackRemovedV1 extends Envelope {
+  readonly kind: 'stack.removed';
+  readonly v: 1;
+  /** Subject is the name the stack was installed under. */
+  readonly payload: {
+    /** The removed adoption's version. */
+    readonly version: string;
+    /** The removed adoption's digest. */
+    readonly digest: string;
+    /** The removed adoption's scope. */
+    readonly scope: string;
+  };
+}
+
+/**
  * The catalog: every event the chain may contain. `kind` + `v` together select
  * exactly one arm, so a producer and a consumer can never disagree on a
  * payload shape without the compiler saying so.
@@ -1181,7 +1240,9 @@ export type CatalogEvent =
   | CheckFailedV1
   | CheckerRetiredV1
   | AccountLinkedV1
-  | BackupDeclaredV1;
+  | BackupDeclaredV1
+  | StackAdoptedV1
+  | StackRemovedV1;
 
 /** The `kind` discriminators present in the catalog. */
 export type EventKind = CatalogEvent['kind'];
@@ -1221,4 +1282,6 @@ export const LATEST_VERSION: { readonly [K in EventKind]: number } = {
   'checker.retired': 1,
   'account.linked': 1,
   'backup.declared': 1,
+  'stack.adopted': 1,
+  'stack.removed': 1,
 };

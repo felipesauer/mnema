@@ -460,6 +460,10 @@ const UNWITNESSED: Readonly<Record<string, Debt>> = {
     reached: 'nobody imports it',
     why: 'The doctor verb\u2019s declaration and the one line it prints per finding; doctor-says-how-mnema-is-installed.test.ts runs the verb on the binary and asserts the lines, and the findings themselves are asserted on commands/doctor.ts.',
   },
+  'packages/code/src/wiring/problem-report.ts': {
+    reached: 'nobody imports it',
+    why: 'The report verb\u2019s declaration and the lines it prints; a-report-is-built-from-an-allowlist.test.ts runs the verb through the program and asserts what it shows, and the values behind it are asserted on commands/report.ts.',
+  },
   'packages/code/src/wiring/export.ts': {
     reached: 'nobody imports it',
     why: "The only read with no --json and no summary; the feed test driving it is about context's OCSF mapping, and this verb appears in no golden and its adapter has no test of its own.",
@@ -652,7 +656,7 @@ const UNWITNESSED: Readonly<Record<string, Debt>> = {
  * reading, so nothing can fall in two.
  */
 const THE_SHAPE_OF_WHAT_IS_LEFT: Readonly<Record<string, number>> = {
-  wiring: 46,
+  wiring: 47,
   presentation: 11,
   projections: 4,
   completion: 4,
@@ -938,6 +942,7 @@ const CLAUSES_PER_FILE: Readonly<Record<string, number>> = {
   'packages/code/tests/a-refusal-is-one-line.test.ts': 7,
   'packages/code/tests/a-refusal-leaves-nothing.test.ts': 13,
   'packages/code/tests/a-refused-group-flag-leaves-the-record.test.ts': 7,
+  'packages/code/tests/a-report-is-built-from-an-allowlist.test.ts': 10,
   'packages/code/tests/a-rule-carries-its-check.test.ts': 9,
   'packages/code/tests/a-rule-says-who-ruled-it.test.ts': 11,
   'packages/code/tests/a-rule-that-refuses-a-write.test.ts': 17,
@@ -1207,7 +1212,7 @@ const CLAUSES_PER_FILE: Readonly<Record<string, number>> = {
   'packages/core/src/boundaries.test.ts': 4,
   'packages/core/src/checks/a-rule-carries-its-check.test.ts': 14,
   'packages/core/src/content/every-door.test.ts': 14,
-  'packages/core/src/content/every-field.test.ts': 19,
+  'packages/core/src/content/every-field.test.ts': 20,
   'packages/core/src/content/personal.test.ts': 2,
   'packages/core/src/content/screen.test.ts': 3,
   'packages/core/src/content/secrets.properties.test.ts': 6,
@@ -1231,7 +1236,7 @@ const CLAUSES_PER_FILE: Readonly<Record<string, number>> = {
   'packages/core/src/knowledge/only-the-identity-that-wrote-a-note-retracts-it.test.ts': 12,
   'packages/core/src/knowledge/operations.test.ts': 11,
   'packages/core/src/projections/accumulate.test.ts': 7,
-  'packages/core/src/projections/advance.test.ts': 22,
+  'packages/core/src/projections/advance.test.ts': 23,
   'packages/core/src/projections/cache-home.test.ts': 8,
   'packages/core/src/projections/cache-meta.test.ts': 8,
   'packages/core/src/projections/cache.test.ts': 7,
@@ -1279,6 +1284,7 @@ const CLAUSES_PER_FILE: Readonly<Record<string, number>> = {
   'packages/core/src/workflow/skill-operations.test.ts': 9,
   'packages/core/src/workflow/skill-states.test.ts': 2,
   'packages/core/src/workflow/skill-transitions.test.ts': 3,
+  'packages/core/src/workflow/stack-operations.test.ts': 8,
   'packages/core/src/workflow/states.test.ts': 2,
   'packages/core/src/workflow/the-anchor-follows-the-founding.test.ts': 12,
   'packages/core/src/workflow/the-second-move-sees-the-first.test.ts': 14,
@@ -1405,6 +1411,7 @@ const PRODUCTION_FILES: readonly string[] = [
   'packages/code/src/commands/promote.ts',
   'packages/code/src/commands/recall.ts',
   'packages/code/src/commands/references.ts',
+  'packages/code/src/commands/report.ts',
   'packages/code/src/commands/resume.ts',
   'packages/code/src/commands/retract.ts',
   'packages/code/src/commands/rules-file.ts',
@@ -1443,6 +1450,7 @@ const PRODUCTION_FILES: readonly string[] = [
   'packages/code/src/completion/tree.ts',
   'packages/code/src/completion/zsh.ts',
   'packages/code/src/decisions-in-git.ts',
+  'packages/code/src/diagnostic-log.ts',
   'packages/code/src/edit-asks-a-person.ts',
   'packages/code/src/edit-refuses-a-write.ts',
   'packages/code/src/edit-rules-push.ts',
@@ -1510,6 +1518,7 @@ const PRODUCTION_FILES: readonly string[] = [
   'packages/code/src/presentation/width.ts',
   'packages/code/src/presentation/within-a-hook.ts',
   'packages/code/src/presentation/witness.ts',
+  'packages/code/src/problem-report.ts',
   'packages/code/src/program.ts',
   'packages/code/src/promise.ts',
   'packages/code/src/provenance.ts',
@@ -1600,6 +1609,7 @@ const PRODUCTION_FILES: readonly string[] = [
   'packages/code/src/wiring/observe.ts',
   'packages/code/src/wiring/on-one-line.ts',
   'packages/code/src/wiring/options.ts',
+  'packages/code/src/wiring/problem-report.ts',
   'packages/code/src/wiring/promote.ts',
   'packages/code/src/wiring/recall.ts',
   'packages/code/src/wiring/refs.ts',
@@ -1734,6 +1744,7 @@ const PRODUCTION_FILES: readonly string[] = [
   'packages/core/src/workflow/skill-operations.ts',
   'packages/core/src/workflow/skill-states.ts',
   'packages/core/src/workflow/skill-transitions.ts',
+  'packages/core/src/workflow/stack-operations.ts',
   'packages/core/src/workflow/states.ts',
   'packages/core/src/workflow/transitions.ts',
   'packages/core/src/write.ts',
@@ -1805,8 +1816,9 @@ describe('every file has a test that names it', () => {
     // 81 once a test of who may retract a note appended through `workflow/append.ts` itself.
     // 82 with the commit-hook group's wiring, which the CLI reaches.
     // 83 with the unlink verb's wiring, which a-link-can-be-retracted drives through the CLI.
-    expect(found.size).toBe(83);
-    expect(byReach('nobody imports it')).toBe(83);
+    // 84 with the report verb's wiring, which a-report-is-built-from-an-allowlist drives through the program.
+    expect(found.size).toBe(84);
+    expect(byReach('nobody imports it')).toBe(84);
     expect(byReach('imported, and no assertion observes it')).toBe(0);
   });
 
@@ -1828,7 +1840,7 @@ describe('every file has a test that names it', () => {
     // Announced in the header and, until now, kept by hand. A shared excuse is how a table
     // like this turns into a rubber stamp, and a row drained to a stub is how it starts.
     const reasons = Object.values(UNWITNESSED).map((one) => one.why);
-    expect(reasons).toHaveLength(83);
+    expect(reasons).toHaveLength(84);
     expect(new Set(reasons).size).toBe(reasons.length);
     // The shortest reason standing is 156 characters; the floor is under it and well over
     // anything that could be written without saying what reaches that file.

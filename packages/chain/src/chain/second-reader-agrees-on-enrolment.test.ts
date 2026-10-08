@@ -54,6 +54,8 @@ import {
   linkRetracted,
   memoryCaptured,
   noteRetracted,
+  stackAdopted,
+  stackRemoved,
   taskCreated,
 } from '../events/build.js';
 import { canonicalStringify } from '../events/canonical.js';
@@ -563,6 +565,106 @@ describe('the two readers agree on records the product itself wrote — a refusa
     expect(productOk).toBe(false);
     expect(verdict).toBe('REFUSED');
     expect(refused.join('\n')).toContain('channel.refused');
+  });
+});
+
+/**
+ * A STACK ADOPTED AND REMOVED, READ BY BOTH. The two kinds reached the second reader the way
+ * every kind since `channel.refused` has — a row of `event-schema.json` each and a row of the
+ * vectors each, and no line of Python — so the claim is the same: the stranger's reader accepts
+ * the facts exactly where the product does, and refuses them exactly where the product does.
+ */
+describe('the two readers agree on records the product itself wrote — a stack adopted', () => {
+  const DIGEST = 'b'.repeat(64);
+  const HONEST = { name: 'evidence-first', version: '1.0.0', digest: DIGEST, scope: 'public' };
+
+  function adopted(
+    anchor: string,
+    signer: KeyPair,
+    when: number,
+    payload: Record<string, unknown> = HONEST,
+    v = 1,
+  ): CatalogEvent {
+    const built = stackAdopted(
+      { at: at(when), who: anchor, signerFp: signer.fingerprint, subject: 'evidence-first' },
+      { name: 'evidence-first', version: '1.0.0', digest: DIGEST, scope: 'public' },
+    );
+    return { ...built, v, payload } as unknown as CatalogEvent;
+  }
+
+  function removed(anchor: string, signer: KeyPair, when: number): CatalogEvent {
+    return stackRemoved(
+      { at: at(when), who: anchor, signerFp: signer.fingerprint, subject: 'evidence-first' },
+      { version: '1.0.0', digest: DIGEST, scope: 'public' },
+    );
+  }
+
+  it('an adoption and its removal, signed and above the checkpoint: green on both', () => {
+    // The last two sit in the residual window, where the per-kind rebuild of section 4.1 is
+    // all that stands between a forger and the record.
+    const kp = generateKeyPair();
+    commitPublicKey(kp);
+    const anchor = deriveAnchor(kp.fingerprint);
+    writeTail(
+      `${kp.fingerprint}-i1`,
+      [founding(kp), adopted(anchor, kp, 2), adopted(anchor, kp, 3), removed(anchor, kp, 4)],
+      kp,
+      { residual: 2 },
+    );
+
+    const { productOk, verdict, refused } = bothReaders();
+    expect(refused, 'the second reader refuses an honest stack adoption').toEqual([]);
+    expect(productOk).toBe(true);
+    expect(verdict).toBe('VERIFIED');
+  });
+
+  it('an adoption carrying where it came from, above the checkpoint: refused by both', () => {
+    // The field a careless writer would add — the folder the stack was copied from — is no
+    // field the contract declares, so a line carrying it is refused rather than read past.
+    const kp = generateKeyPair();
+    commitPublicKey(kp);
+    const anchor = deriveAnchor(kp.fingerprint);
+    const withAPath = { ...HONEST, source: '/home/someone/stacks/evidence-first' };
+    writeTail(`${kp.fingerprint}-i1`, [founding(kp), adopted(anchor, kp, 2, withAPath)], kp, {
+      residual: 1,
+    });
+
+    const { productOk, verdict, refused } = bothReaders();
+    expect(productOk).toBe(false);
+    expect(verdict).toBe('REFUSED');
+    expect(refused.join('\n')).toContain('source');
+    expect(productRefused().join('\n')).toContain('source');
+  });
+
+  it('an adoption that names no digest, above the checkpoint: refused by both', () => {
+    const kp = generateKeyPair();
+    commitPublicKey(kp);
+    const anchor = deriveAnchor(kp.fingerprint);
+    const { digest: _, ...noDigest } = HONEST;
+    writeTail(`${kp.fingerprint}-i1`, [founding(kp), adopted(anchor, kp, 2, noDigest)], kp, {
+      residual: 1,
+    });
+
+    const { productOk, verdict, refused } = bothReaders();
+    expect(productOk).toBe(false);
+    expect(verdict).toBe('REFUSED');
+    expect(refused.join('\n')).toContain('digest');
+  });
+
+  it('an adoption at a version no row declares: refused by both — what an older reader does', () => {
+    // A reader from before this kind meets `stack.adopted` v1 exactly as this one meets v2: a
+    // (kind, v) its table does not hold, refused rather than guessed at (section 4.1).
+    const kp = generateKeyPair();
+    commitPublicKey(kp);
+    const anchor = deriveAnchor(kp.fingerprint);
+    writeTail(`${kp.fingerprint}-i1`, [founding(kp), adopted(anchor, kp, 2, HONEST, 2)], kp, {
+      residual: 1,
+    });
+
+    const { productOk, verdict, refused } = bothReaders();
+    expect(productOk).toBe(false);
+    expect(verdict).toBe('REFUSED');
+    expect(refused.join('\n')).toContain('stack.adopted');
   });
 });
 

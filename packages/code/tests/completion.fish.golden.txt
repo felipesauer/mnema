@@ -12,7 +12,7 @@
 function __mnema_commands --description 'the subcommands one level of the tree offers'
     switch "$argv[1]"
         case ''
-            echo 'init decision link unlink memory observe retract skill task promote status brief recall rules rules-file switch inherit verify witness check site search show timeline refs audit diagram export usage resume repl why commits aging trailer commit-hook key tail doctor completion mcp run before-a-write tally corrections help'
+            echo 'init decision link unlink memory observe retract skill task promote status brief recall rules rules-file switch inherit verify witness check site search show timeline refs audit diagram export usage resume repl why commits aging trailer commit-hook key tail doctor report completion mcp run before-a-write tally corrections help'
         case 'decision'
             echo 'record move supersede import help'
         case 'skill'
@@ -109,6 +109,7 @@ complete -c mnema -f -n '__mnema_at ""' -a 'commit-hook' -d 'install or remove a
 complete -c mnema -f -n '__mnema_at ""' -a 'key' -d 'manage this machine\'s signing keys'
 complete -c mnema -f -n '__mnema_at ""' -a 'tail' -d 'authorize a cut in the record\'s own tails'
 complete -c mnema -f -n '__mnema_at ""' -a 'doctor' -d 'say how mnema is installed on this machine, and what to do about each thing found (writes nothing unless you pass --fix vscode)'
+complete -c mnema -f -n '__mnema_at ""' -a 'report' -d 'show, whole, what mnema would say about its own last internal error, and keep your answer to it (sends nothing)'
 complete -c mnema -f -n '__mnema_at ""' -a 'completion' -d 'print the tab-completion script for a shell'
 complete -c mnema -f -n '__mnema_at ""' -a 'mcp' -d 'run the mnema MCP server over stdio (for an agent host)'
 complete -c mnema -f -n '__mnema_at ""' -a 'run' -d 'open and close the session an agent works inside'
@@ -707,6 +708,14 @@ complete -c mnema -f -n '__mnema_at "doctor"' -l dry-run
 complete -c mnema -f -n '__mnema_at "doctor"' -s h -l help
 complete -c mnema -f -n '__mnema_at "doctor"' -s V -l version
 complete -c mnema -f -n '__mnema_at "doctor"' -l color -x -a 'auto always never'
+
+# mnema report
+complete -c mnema -f -n '__mnema_at "report"' -l decline
+complete -c mnema -f -n '__mnema_at "report"' -l off
+complete -c mnema -f -n '__mnema_at "report"' -l on
+complete -c mnema -f -n '__mnema_at "report"' -s h -l help
+complete -c mnema -f -n '__mnema_at "report"' -s V -l version
+complete -c mnema -f -n '__mnema_at "report"' -l color -x -a 'auto always never'
 
 # mnema completion
 complete -c mnema -f -n '__mnema_at "completion"' -s h -l help

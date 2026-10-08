@@ -40,6 +40,7 @@ import { createTask, transitionTask, type WriteContext } from '../workflow/opera
 import { authorizeTailPrune } from '../workflow/prune-operations.js';
 import { endRun, startRun } from '../workflow/session-operations.js';
 import { createSkill, recordConsultation, reviewSkill } from '../workflow/skill-operations.js';
+import { adoptStack, removeStack } from '../workflow/stack-operations.js';
 import {
   ENVELOPE_TEXT,
   type FieldNature,
@@ -276,6 +277,32 @@ const DRIVERS: { readonly [K in EventKind]: Driver } = {
 
   // A fingerprint, an identifier like an enrolment's: nothing a caller types reaches it.
   'backup.declared': (ctx) => declareBackup(ctx, { backupFp: 'a'.repeat(64) }),
+
+  // The version is the author's label and the one caller's string the door is owed; the name,
+  // the digest and the scope are closed forms the operation proves, so they are literals here
+  // and the sweep's other half checks they came through untouched.
+  'stack.adopted': (ctx, text) =>
+    adoptStack(ctx, {
+      name: 'evidence-first',
+      version: text('payload.version'),
+      digest: 'b'.repeat(64),
+      scope: 'public',
+      which: text('which'),
+      run: text('run'),
+    }),
+
+  // Everything a removal carries is copied from the adoption this driver records first.
+  'stack.removed': (ctx, text) => {
+    landed(
+      adoptStack(ctx, {
+        name: 'evidence-first',
+        version: '1.0.0',
+        digest: 'b'.repeat(64),
+        scope: 'public',
+      }),
+    );
+    return removeStack(ctx, { name: 'evidence-first', which: text('which'), run: text('run') });
+  },
 
   'memory.captured': (ctx, text) =>
     captureMemory(ctx, {
