@@ -164,7 +164,9 @@ describe('one byte that is not UTF-8, in the middle of a file of the record', ()
     const byte = spoil(join(tailDir, 'witness', `${BLOCKS}.blocks`), 2, '"header":"');
 
     // As a header that is not canonical is not read: the attestation it would check is
-    // left uncheckable, which is not a refusal of the record.
+    // left uncheckable, which is not a refusal of the record. The product needs no strict
+    // decode for that — a header line is ASCII by construction, and U+FFFD in place of a bad
+    // byte fails the 160-hex check all the same, so the decode there was left as it was.
     expect(readStoredWitness({ root: record }, tail, BLOCKS)?.headers.size).toBe(1);
 
     const there = secondReading(record);

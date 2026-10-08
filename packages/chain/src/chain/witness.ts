@@ -71,14 +71,13 @@
 import { existsSync, mkdirSync, readdirSync, readFileSync, statSync, writeFileSync } from 'node:fs';
 
 import { canonicalStringify } from '../events/canonical.js';
-import { decodeStoredBytes, parseCanonicalLine } from '../events/stored-json.js';
+import { parseCanonicalLine } from '../events/stored-json.js';
 import { oneLine } from '../one-line.js';
 import { headerCarriesRealWork, parseBlockHeader } from './bitcoin.js';
 import { checkpointHash } from './checkpoint.js';
 import type { ChainLayout } from './layout.js';
 import { witnessBlocksPath, witnessDir, witnessProofPath } from './layout.js';
 import type { WitnessStatus } from './level.js';
-import { splitLines } from './lines.js';
 import {
   MAX_PROOF_BYTES,
   parseOtsProof,
@@ -220,8 +219,8 @@ export function readStoredWitness(
   // The sidecar is one line per block a proof reaches, and a proof is capped, so a file
   // past this holds lines no attestation will ever ask for.
   if (existsSync(blocksPath) && statSync(blocksPath).size <= MAX_BLOCKS_BYTES) {
-    for (const line of splitLines(readFileSync(blocksPath))) {
-      if (line.length === 0) continue;
+    for (const line of readFileSync(blocksPath, 'utf-8').split('\n')) {
+      if (line.trim() === '') continue;
       const stored = parseStoredHeader(line);
       if (stored !== null) headers.set(stored.height, Buffer.from(stored.header, 'hex'));
     }
@@ -252,11 +251,11 @@ const MAX_BLOCKS_BYTES = 1 << 16;
  * what the reading does with the absence: a missing header leaves the attestation
  * `pending` — the honest "an anchor exists and this record cannot check it here" —
  * whereas an exception would take down a verdict about the chain over a sidecar
- * that is not part of the chain at all. A line that is not UTF-8 is one it cannot read.
+ * that is not part of the chain at all.
  */
-function parseStoredHeader(line: Uint8Array): StoredHeader | null {
+function parseStoredHeader(line: string): StoredHeader | null {
   try {
-    const parsed: unknown = parseCanonicalLine(decodeStoredBytes(line));
+    const parsed: unknown = parseCanonicalLine(line);
     if (typeof parsed !== 'object' || parsed === null) return null;
     const { height, header } = parsed as Partial<StoredHeader>;
     if (typeof height !== 'number' || !Number.isInteger(height)) return null;
