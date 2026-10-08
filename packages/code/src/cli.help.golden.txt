@@ -6,133 +6,112 @@ $ mnema
 ! govern — append-only and signed in the repository, and checkable by anyone.
 !
 ! Options:
-!   -V, --version                         output the version number
-!   --color <when>                        when to use bold, dim and color: auto (a
-!                                         terminal only), always (also in a pipe),
-!                                         never. NO_COLOR and FORCE_COLOR are
-!                                         honored; an explicit --color beats both.
-!                                         Style never changes what a line says.
-!                                         (choices: "auto", "always", "never",
-!                                         default: "auto")
-!   --identify                            print this program’s package name and
-!                                         version — how the mnema plugin tells
-!                                         this `mnema` from another program of the
-!                                         same name on the PATH
-!   -h, --help                            display help for command
+!   -V, --version   output the version number
+!   --color <when>  auto, always or never; NO_COLOR and FORCE_COLOR are honored
+!                   (choices: "auto", "always", "never", default: "auto")
+!   -h, --help      display help for command
 !
-! Commands:
-!   init                                  establish a mnema project in the current
-!                                         directory
-!   task [options]                        create a task, or move one, in the
-!                                         current project
-!   decision [options]                    record a decision, or move one, in the
-!                                         current project
-!   skill [options]                       propose a reusable skill, move one, or
-!                                         export one, in the current project
-!   memory [options] [content]            capture a memory in the current project
-!   observe [options] <about>             record an observation about an entity in
-!                                         the current project
-!   handoff [options] <task> <from> <to>  record a handoff on a task in the
-!                                         current project
-!   link [options] <subject> <target>     link one piece of knowledge to another
-!                                         in the current project
-!   unlink [options] <subject> <target>   take a link back, keeping it in the
-!                                         record (only the identity that recorded
-!                                         it; follows the link)
-!   promote [options] [id]                list what recurs across projects, or
-!                                         copy one pattern to the global tree
-!   retract [options] <id>                take a memory or an observation back,
-!                                         keeping it in the record (follows the
-!                                         note; takes no --scope)
-!   run                                   open and close the session an agent
-!                                         works inside
-!   status [options]                      show where things stand: the work, what
-!                                         governs, what awaits a ruling
-!   focus [options]                       show an actor's open runs (what they are
-!                                         touching now)
-!   resume [options]                      show where an actor left off (their
-!                                         latest run, open or ended)
-!   next-actions [options] <task-id>      show the moves the workflow allows a
-!                                         task next
-!   guard [options] <action> <id>         dry-run the gate: would a move be
-!                                         allowed on a task, and if not, why?
-!   search [options] [term]               find what has been recorded, or list the
-!                                         most recent (no term)
-!   show [options] <id>                   show one whole record by id (the body a
-!                                         search only pointed at)
-!   timeline [options] <id>               show an entity's history across the
-!                                         trees (subject, about, target)
-!   accountability [options]              show who authorized what across the
-!                                         record (optionally windowed/filtered)
-!   antipatterns [options]                show recurring shapes in the record
-!                                         (reopens, supersessions, deprecations)
-!   exposure [options]                    show which records hold something shaped
-!                                         like a credential (never the value)
-!   export [options]                      emit the record as an OCSF audit feed
-!                                         (NDJSON, envelope only — never a body)
-!   site [options]                        write the project's committed record as
-!                                         one HTML page that verifies itself in
-!                                         the browser (records nothing)
-!   refs [options] <id>                   show what an entity is connected to
-!                                         across the trees
-!   diagram <subject> [id]                print a state machine, or an entity’s
-!                                         history or connections, as mermaid
-!   rules [options] <path>                show which recorded rules govern a path,
-!                                         and which address nothing
-!   rules-file [options]                  print the rules addressed at a file as
-!                                         another host’s rules file, and why the
-!                                         rest are not
-!   check                                 give a rule a program that checks it,
-!                                         and record whether it held at a commit
-!   trailer [options] <decision>          print the commit trailer that ties a
-!                                         commit to a decision
-!   commit-hook                           install or remove an optional git hook
-!                                         that suggests the Mnema-Decision trailer
-!   commits [options] <decision>          show the commits that cite a decision
-!                                         and those that touched what it addresses
-!   why [options] <file|commit>           show under which decisions a file or a
-!                                         commit stands
-!   aging [options]                       show accepted decisions whose addressed
-!                                         paths changed in many commits since
-!   skills [options]                      show where each pattern came from (who
-!                                         proposed it, who adopted it)
-!   usage                                 what each run cost, read from this
-!                                         machine's Claude Code transcripts
-!   brief [options]                       print what governs the work here as
-!                                         markdown, for an agent to read
-!   recall [options]                      print the notes recorded here as
-!                                         markdown, near ones first, for an agent
-!                                         to read
-!   before-a-write [options]              answer a host’s hook before a file is
-!                                         written: refuse or ask where a rule says
-!   tally                                 answer a host’s Stop or PreCompact hook
-!                                         with what the session wrote and recorded
-!   corrections                           record what a person corrected in a
-!                                         session as proposed decisions, for a
-!                                         Stop hook
-!   key                                   manage this machine's signing keys
-!   tail                                  authorize a cut in the record's own
-!                                         tails
-!   witness [options]                     ask an outside witness to date this
-!                                         record, and read where that stands
-!   switch                                turn off, or back on, what mnema hands
-!                                         to a model unasked, and whether an agent
-!                                         may accept a decision
-!   inherit                               read another repository’s decisions,
-!                                         pinned to one of its commits
-!   doctor [options]                      say how mnema is installed on this
-!                                         machine, and what to do about each thing
-!                                         found (writes nothing unless you pass
-!                                         --fix vscode)
-!   verify [options]                      verify this project's record — its
-!                                         committed tree and its private one
-!   mcp [options]                         run the mnema MCP server over stdio (for
-!                                         an agent host)
-!   repl                                  open an interactive session that reads
-!                                         this project
-!   completion <shell>                    print the tab-completion script for a
-!                                         shell
-!   help [command]                        display help for command
+! Record:
+!   init            establish a mnema project in the current directory
+!   decision        record a decision, or move one, in the current project
+!   link            link one piece of knowledge to another in the current project
+!   unlink          take a link back, keeping it in the record (only the identity
+!                   that recorded it; follows the link)
+!   memory          capture a memory in the current project
+!   observe         record an observation about an entity in the current project
+!   retract         take a memory or an observation back, keeping it in the record
+!                   (follows the note; takes no --scope)
+!   skill           propose a reusable skill, move one, or export one, in the
+!                   current project
+!   task            create a task, or move one, in the current project
+!   handoff         record a handoff on a task in the current project
+!   promote         list what recurs across projects, or copy one pattern to the
+!                   global tree
+!
+! Hand over:
+!   status          show where things stand: the work, what governs, what awaits a
+!                   ruling
+!   brief           print what governs the work here as markdown, for an agent to
+!                   read
+!   recall          print the notes recorded here as markdown, near ones first,
+!                   for an agent to read
+!   rules           show which recorded rules govern a path, and which address
+!                   nothing
+!   rules-file      print the rules addressed at a file as another host’s rules
+!                   file, and why the rest are not
+!   switch          turn off, or back on, what mnema hands to a model unasked, and
+!                   whether an agent may accept a decision
+!   inherit         read another repository’s decisions, pinned to one of its
+!                   commits
+!
+! Verify:
+!   verify          verify this project's record — its committed tree and its
+!                   private one
+!   witness         ask an outside witness to date this record, and read where
+!                   that stands
+!   check           give a rule a program that checks it, and record whether it
+!                   held at a commit
+!   site            write the project's committed record as one HTML page that
+!                   verifies itself in the browser (records nothing)
+!
+! Read:
+!   search          find what has been recorded, or list the most recent (no term)
+!   show            show one whole record by id (the body a search only pointed
+!                   at)
+!   timeline        show an entity's history across the trees (subject, about,
+!                   target)
+!   refs            show what an entity is connected to across the trees
+!   diagram         print a state machine, or an entity’s history or connections,
+!                   as mermaid
+!   accountability  show who authorized what across the record (optionally
+!                   windowed/filtered)
+!   antipatterns    show recurring shapes in the record (reopens, supersessions,
+!                   deprecations)
+!   exposure        show which records hold something shaped like a credential
+!                   (never the value)
+!   export          emit the record as an OCSF audit feed (NDJSON, envelope only —
+!                   never a body)
+!   skills          show where each pattern came from (who proposed it, who
+!                   adopted it)
+!   usage           what each run cost, read from this machine's Claude Code
+!                   transcripts
+!   focus           show an actor's open runs (what they are touching now)
+!   resume          show where an actor left off (their latest run, open or ended)
+!   next-actions    show the moves the workflow allows a task next
+!   guard           dry-run the gate: would a move be allowed on a task, and if
+!                   not, why?
+!   repl            open an interactive session that reads this project
+!
+! The git log:
+!   why             show under which decisions a file or a commit stands
+!   commits         show the commits that cite a decision and those that touched
+!                   what it addresses
+!   aging           show accepted decisions whose addressed paths changed in many
+!                   commits since
+!   trailer         print the commit trailer that ties a commit to a decision
+!   commit-hook     install or remove an optional git hook that suggests the
+!                   Mnema-Decision trailer
+!
+! This machine:
+!   key             manage this machine's signing keys
+!   tail            authorize a cut in the record's own tails
+!   doctor          say how mnema is installed on this machine, and what to do
+!                   about each thing found (writes nothing unless you pass --fix
+!                   vscode)
+!   completion      print the tab-completion script for a shell
+!
+! Called by a host:
+!   mcp             run the mnema MCP server over stdio (for an agent host)
+!   run             open and close the session an agent works inside
+!   before-a-write  answer a host’s hook before a file is written: refuse or ask
+!                   where a rule says
+!   tally           answer a host’s Stop or PreCompact hook with what the session
+!                   wrote and recorded
+!   corrections     record what a person corrected in a session as proposed
+!                   decisions, for a Stop hook
+!
+! Help:
+!   help            display help for command
 [exit 1]
 
 ### the program
@@ -143,133 +122,112 @@ $ mnema --help
 | govern — append-only and signed in the repository, and checkable by anyone.
 |
 | Options:
-|   -V, --version                         output the version number
-|   --color <when>                        when to use bold, dim and color: auto (a
-|                                         terminal only), always (also in a pipe),
-|                                         never. NO_COLOR and FORCE_COLOR are
-|                                         honored; an explicit --color beats both.
-|                                         Style never changes what a line says.
-|                                         (choices: "auto", "always", "never",
-|                                         default: "auto")
-|   --identify                            print this program’s package name and
-|                                         version — how the mnema plugin tells
-|                                         this `mnema` from another program of the
-|                                         same name on the PATH
-|   -h, --help                            display help for command
+|   -V, --version   output the version number
+|   --color <when>  auto, always or never; NO_COLOR and FORCE_COLOR are honored
+|                   (choices: "auto", "always", "never", default: "auto")
+|   -h, --help      display help for command
 |
-| Commands:
-|   init                                  establish a mnema project in the current
-|                                         directory
-|   task [options]                        create a task, or move one, in the
-|                                         current project
-|   decision [options]                    record a decision, or move one, in the
-|                                         current project
-|   skill [options]                       propose a reusable skill, move one, or
-|                                         export one, in the current project
-|   memory [options] [content]            capture a memory in the current project
-|   observe [options] <about>             record an observation about an entity in
-|                                         the current project
-|   handoff [options] <task> <from> <to>  record a handoff on a task in the
-|                                         current project
-|   link [options] <subject> <target>     link one piece of knowledge to another
-|                                         in the current project
-|   unlink [options] <subject> <target>   take a link back, keeping it in the
-|                                         record (only the identity that recorded
-|                                         it; follows the link)
-|   promote [options] [id]                list what recurs across projects, or
-|                                         copy one pattern to the global tree
-|   retract [options] <id>                take a memory or an observation back,
-|                                         keeping it in the record (follows the
-|                                         note; takes no --scope)
-|   run                                   open and close the session an agent
-|                                         works inside
-|   status [options]                      show where things stand: the work, what
-|                                         governs, what awaits a ruling
-|   focus [options]                       show an actor's open runs (what they are
-|                                         touching now)
-|   resume [options]                      show where an actor left off (their
-|                                         latest run, open or ended)
-|   next-actions [options] <task-id>      show the moves the workflow allows a
-|                                         task next
-|   guard [options] <action> <id>         dry-run the gate: would a move be
-|                                         allowed on a task, and if not, why?
-|   search [options] [term]               find what has been recorded, or list the
-|                                         most recent (no term)
-|   show [options] <id>                   show one whole record by id (the body a
-|                                         search only pointed at)
-|   timeline [options] <id>               show an entity's history across the
-|                                         trees (subject, about, target)
-|   accountability [options]              show who authorized what across the
-|                                         record (optionally windowed/filtered)
-|   antipatterns [options]                show recurring shapes in the record
-|                                         (reopens, supersessions, deprecations)
-|   exposure [options]                    show which records hold something shaped
-|                                         like a credential (never the value)
-|   export [options]                      emit the record as an OCSF audit feed
-|                                         (NDJSON, envelope only — never a body)
-|   site [options]                        write the project's committed record as
-|                                         one HTML page that verifies itself in
-|                                         the browser (records nothing)
-|   refs [options] <id>                   show what an entity is connected to
-|                                         across the trees
-|   diagram <subject> [id]                print a state machine, or an entity’s
-|                                         history or connections, as mermaid
-|   rules [options] <path>                show which recorded rules govern a path,
-|                                         and which address nothing
-|   rules-file [options]                  print the rules addressed at a file as
-|                                         another host’s rules file, and why the
-|                                         rest are not
-|   check                                 give a rule a program that checks it,
-|                                         and record whether it held at a commit
-|   trailer [options] <decision>          print the commit trailer that ties a
-|                                         commit to a decision
-|   commit-hook                           install or remove an optional git hook
-|                                         that suggests the Mnema-Decision trailer
-|   commits [options] <decision>          show the commits that cite a decision
-|                                         and those that touched what it addresses
-|   why [options] <file|commit>           show under which decisions a file or a
-|                                         commit stands
-|   aging [options]                       show accepted decisions whose addressed
-|                                         paths changed in many commits since
-|   skills [options]                      show where each pattern came from (who
-|                                         proposed it, who adopted it)
-|   usage                                 what each run cost, read from this
-|                                         machine's Claude Code transcripts
-|   brief [options]                       print what governs the work here as
-|                                         markdown, for an agent to read
-|   recall [options]                      print the notes recorded here as
-|                                         markdown, near ones first, for an agent
-|                                         to read
-|   before-a-write [options]              answer a host’s hook before a file is
-|                                         written: refuse or ask where a rule says
-|   tally                                 answer a host’s Stop or PreCompact hook
-|                                         with what the session wrote and recorded
-|   corrections                           record what a person corrected in a
-|                                         session as proposed decisions, for a
-|                                         Stop hook
-|   key                                   manage this machine's signing keys
-|   tail                                  authorize a cut in the record's own
-|                                         tails
-|   witness [options]                     ask an outside witness to date this
-|                                         record, and read where that stands
-|   switch                                turn off, or back on, what mnema hands
-|                                         to a model unasked, and whether an agent
-|                                         may accept a decision
-|   inherit                               read another repository’s decisions,
-|                                         pinned to one of its commits
-|   doctor [options]                      say how mnema is installed on this
-|                                         machine, and what to do about each thing
-|                                         found (writes nothing unless you pass
-|                                         --fix vscode)
-|   verify [options]                      verify this project's record — its
-|                                         committed tree and its private one
-|   mcp [options]                         run the mnema MCP server over stdio (for
-|                                         an agent host)
-|   repl                                  open an interactive session that reads
-|                                         this project
-|   completion <shell>                    print the tab-completion script for a
-|                                         shell
-|   help [command]                        display help for command
+| Record:
+|   init            establish a mnema project in the current directory
+|   decision        record a decision, or move one, in the current project
+|   link            link one piece of knowledge to another in the current project
+|   unlink          take a link back, keeping it in the record (only the identity
+|                   that recorded it; follows the link)
+|   memory          capture a memory in the current project
+|   observe         record an observation about an entity in the current project
+|   retract         take a memory or an observation back, keeping it in the record
+|                   (follows the note; takes no --scope)
+|   skill           propose a reusable skill, move one, or export one, in the
+|                   current project
+|   task            create a task, or move one, in the current project
+|   handoff         record a handoff on a task in the current project
+|   promote         list what recurs across projects, or copy one pattern to the
+|                   global tree
+|
+| Hand over:
+|   status          show where things stand: the work, what governs, what awaits a
+|                   ruling
+|   brief           print what governs the work here as markdown, for an agent to
+|                   read
+|   recall          print the notes recorded here as markdown, near ones first,
+|                   for an agent to read
+|   rules           show which recorded rules govern a path, and which address
+|                   nothing
+|   rules-file      print the rules addressed at a file as another host’s rules
+|                   file, and why the rest are not
+|   switch          turn off, or back on, what mnema hands to a model unasked, and
+|                   whether an agent may accept a decision
+|   inherit         read another repository’s decisions, pinned to one of its
+|                   commits
+|
+| Verify:
+|   verify          verify this project's record — its committed tree and its
+|                   private one
+|   witness         ask an outside witness to date this record, and read where
+|                   that stands
+|   check           give a rule a program that checks it, and record whether it
+|                   held at a commit
+|   site            write the project's committed record as one HTML page that
+|                   verifies itself in the browser (records nothing)
+|
+| Read:
+|   search          find what has been recorded, or list the most recent (no term)
+|   show            show one whole record by id (the body a search only pointed
+|                   at)
+|   timeline        show an entity's history across the trees (subject, about,
+|                   target)
+|   refs            show what an entity is connected to across the trees
+|   diagram         print a state machine, or an entity’s history or connections,
+|                   as mermaid
+|   accountability  show who authorized what across the record (optionally
+|                   windowed/filtered)
+|   antipatterns    show recurring shapes in the record (reopens, supersessions,
+|                   deprecations)
+|   exposure        show which records hold something shaped like a credential
+|                   (never the value)
+|   export          emit the record as an OCSF audit feed (NDJSON, envelope only —
+|                   never a body)
+|   skills          show where each pattern came from (who proposed it, who
+|                   adopted it)
+|   usage           what each run cost, read from this machine's Claude Code
+|                   transcripts
+|   focus           show an actor's open runs (what they are touching now)
+|   resume          show where an actor left off (their latest run, open or ended)
+|   next-actions    show the moves the workflow allows a task next
+|   guard           dry-run the gate: would a move be allowed on a task, and if
+|                   not, why?
+|   repl            open an interactive session that reads this project
+|
+| The git log:
+|   why             show under which decisions a file or a commit stands
+|   commits         show the commits that cite a decision and those that touched
+|                   what it addresses
+|   aging           show accepted decisions whose addressed paths changed in many
+|                   commits since
+|   trailer         print the commit trailer that ties a commit to a decision
+|   commit-hook     install or remove an optional git hook that suggests the
+|                   Mnema-Decision trailer
+|
+| This machine:
+|   key             manage this machine's signing keys
+|   tail            authorize a cut in the record's own tails
+|   doctor          say how mnema is installed on this machine, and what to do
+|                   about each thing found (writes nothing unless you pass --fix
+|                   vscode)
+|   completion      print the tab-completion script for a shell
+|
+| Called by a host:
+|   mcp             run the mnema MCP server over stdio (for an agent host)
+|   run             open and close the session an agent works inside
+|   before-a-write  answer a host’s hook before a file is written: refuse or ask
+|                   where a rule says
+|   tally           answer a host’s Stop or PreCompact hook with what the session
+|                   wrote and recorded
+|   corrections     record what a person corrected in a session as proposed
+|                   decisions, for a Stop hook
+|
+| Help:
+|   help            display help for command
 $ mnema --version
 | 0.1.0-beta
 
@@ -281,40 +239,6 @@ $ mnema init --help
 |
 | Options:
 |   -h, --help  display help for command
-
-### mnema task --help
-$ mnema task --help
-| Usage: mnema task [options] [command]
-|
-| create a task, or move one, in the current project
-|
-| Options:
-|   --scope <scope>               where the task is born: public (team-visible),
-|                                 private (this machine, this project), or global
-|                                 (personal, cross-project). Omitted, a task lands
-|                                 in the public tree (the team’s work board).
-|   --which <agent>               the agent that executed this, when an agent (a
-|                                 script, a CI step) is driving mnema — omit it
-|                                 when you are acting directly. Declared, never
-|                                 assumed; it names the executor. See --scope for
-|                                 where the fact lands. A value that names no
-|                                 agent (an unset variable) is refused, never
-|                                 credited to you.
-|   -h, --help                    display help for command
-|
-| Commands:
-|   create [options] <title>      create a task in the current project
-|   move [options] <action> <id>  move a task through the workflow (follows the
-|                                 task; takes no --scope)
-|   help [command]                display help for command
-|
-| What recording means here:
-|   Permanent — mnema is append-only and nothing deletes a fact. A public record
-|   is committed and reaches every machine that clones the repository.
-|   Do not record credentials: a recognized format is replaced with a placeholder
-|   and reported back, but what mnema does not recognize is written verbatim.
-|   Nor personal data: an email address is replaced with <email>; the mnid already says who wrote.
-|   Each text field holds at most 65536 bytes; a longer one is refused.
 
 ### mnema decision --help
 $ mnema decision --help
@@ -345,40 +269,61 @@ $ mnema decision --help
 |   Nor personal data: an email address is replaced with <email>; the mnid already says who wrote.
 |   Each text field holds at most 65536 bytes; a longer one is refused.
 
-### mnema skill --help
-$ mnema skill --help
-| Usage: mnema skill [options] [command]
+### mnema link --help
+$ mnema link --help
+| Usage: mnema link [options] <subject> <target>
 |
-| propose a reusable skill, move one, or export one, in the current project
+| link one piece of knowledge to another in the current project
+|
+| Arguments:
+|   subject          the entity that originates the link
+|   target           what it points at: another id, or a path (an address, under
+|                    --rel governs, asks-for-a-person or refuses-a-write)
 |
 | Options:
-|   --body <text>                 the reusable pattern itself (or give it with
-|                                 --stdin or --body-file)
-|   --scope <scope>               where the skill is born: public (team-visible),
-|                                 private (this machine, this project), or global
-|                                 (personal, cross-project). Omitted, a skill
-|                                 lands in the public tree (a declaration about
-|                                 the project).
-|   --which <agent>               the agent that executed this, when an agent (a
-|                                 script, a CI step) is driving mnema — omit it
-|                                 when you are acting directly. Declared, never
-|                                 assumed; it names the executor. See --scope for
-|                                 where the fact lands. A value that names no
-|                                 agent (an unset variable) is refused, never
-|                                 credited to you.
-|   --stdin                       read the pattern from standard input instead of
-|                                 the line
-|   --body-file <path>            read the pattern from this file instead of the
-|                                 line
-|   -h, --help                    display help for command
+|   --rel <label>    the relation (recommended: supersedes, relates-to,
+|                    derived-from, contradicts, governs, asks-for-a-person,
+|                    refuses-a-write; any label is accepted)
+|   --scope <scope>  where the link is born: public (team-visible), private (this
+|                    machine, this project), or global (personal, cross-project).
+|                    Omitted, a link lands in the public tree (an assertion about
+|                    the project’s records).
+|   --which <agent>  the agent that executed this, when an agent (a script, a CI
+|                    step) is driving mnema — omit it when you are acting
+|                    directly. Declared, never assumed; it names the executor. See
+|                    --scope for where the fact lands. A value that names no agent
+|                    (an unset variable) is refused, never credited to you.
+|   -h, --help       display help for command
 |
-| Commands:
-|   create [options] <name>       propose a reusable skill in the current project
-|   move [options] <action> <id>  move a skill through the workflow (follows the
-|                                 skill; takes no --scope)
-|   export [options] <id>         write an adopted pattern as the SKILL.md an
-|                                 agent host reads (records nothing)
-|   help [command]                display help for command
+| What recording means here:
+|   Permanent — mnema is append-only and nothing deletes a fact. A public record
+|   is committed and reaches every machine that clones the repository.
+|   Do not record credentials: a recognized format is replaced with a placeholder
+|   and reported back, but what mnema does not recognize is written verbatim.
+|   Nor personal data: an email address is replaced with <email>; the mnid already says who wrote.
+|   Each text field holds at most 65536 bytes; a longer one is refused.
+
+### mnema unlink --help
+$ mnema unlink --help
+| Usage: mnema unlink [options] <subject> <target>
+|
+| take a link back, keeping it in the record (only the identity that recorded it;
+| follows the link)
+|
+| Arguments:
+|   subject          the entity the link originates from
+|   target           what the link points at, as it was linked
+|
+| Options:
+|   --rel <label>    the relation, as it was linked
+|   --reason <text>  why it is taken back
+|   --which <agent>  the agent that executed this, when an agent (a script, a CI
+|                    step) is driving mnema — omit it when you are acting
+|                    directly. It names the executor only: a retraction follows
+|                    the link to the tree it was recorded in. A value that names
+|                    no agent (an unset variable) is refused, never credited to
+|                    you.
+|   -h, --help       display help for command
 |
 | What recording means here:
 |   Permanent — mnema is append-only and nothing deletes a fact. A public record
@@ -457,6 +402,110 @@ $ mnema observe --help
 |   Nor personal data: an email address is replaced with <email>; the mnid already says who wrote.
 |   Each text field holds at most 65536 bytes; a longer one is refused.
 
+### mnema retract --help
+$ mnema retract --help
+| Usage: mnema retract [options] <id>
+|
+| take a memory or an observation back, keeping it in the record (follows the
+| note; takes no --scope)
+|
+| Arguments:
+|   id               the id of the note to retract
+|
+| Options:
+|   --reason <text>  why it is taken back
+|   --which <agent>  the agent that executed this, when an agent (a script, a CI
+|                    step) is driving mnema — omit it when you are acting
+|                    directly. It names the executor only: a retraction follows
+|                    the note to the tree it was written in. A value that names no
+|                    agent (an unset variable) is refused, never credited to you.
+|   -h, --help       display help for command
+|
+| What recording means here:
+|   Permanent — mnema is append-only and nothing deletes a fact. A public record
+|   is committed and reaches every machine that clones the repository.
+|   Do not record credentials: a recognized format is replaced with a placeholder
+|   and reported back, but what mnema does not recognize is written verbatim.
+|   Nor personal data: an email address is replaced with <email>; the mnid already says who wrote.
+|   Each text field holds at most 65536 bytes; a longer one is refused.
+
+### mnema skill --help
+$ mnema skill --help
+| Usage: mnema skill [options] [command]
+|
+| propose a reusable skill, move one, or export one, in the current project
+|
+| Options:
+|   --body <text>                 the reusable pattern itself (or give it with
+|                                 --stdin or --body-file)
+|   --scope <scope>               where the skill is born: public (team-visible),
+|                                 private (this machine, this project), or global
+|                                 (personal, cross-project). Omitted, a skill
+|                                 lands in the public tree (a declaration about
+|                                 the project).
+|   --which <agent>               the agent that executed this, when an agent (a
+|                                 script, a CI step) is driving mnema — omit it
+|                                 when you are acting directly. Declared, never
+|                                 assumed; it names the executor. See --scope for
+|                                 where the fact lands. A value that names no
+|                                 agent (an unset variable) is refused, never
+|                                 credited to you.
+|   --stdin                       read the pattern from standard input instead of
+|                                 the line
+|   --body-file <path>            read the pattern from this file instead of the
+|                                 line
+|   -h, --help                    display help for command
+|
+| Commands:
+|   create [options] <name>       propose a reusable skill in the current project
+|   move [options] <action> <id>  move a skill through the workflow (follows the
+|                                 skill; takes no --scope)
+|   export [options] <id>         write an adopted pattern as the SKILL.md an
+|                                 agent host reads (records nothing)
+|   help [command]                display help for command
+|
+| What recording means here:
+|   Permanent — mnema is append-only and nothing deletes a fact. A public record
+|   is committed and reaches every machine that clones the repository.
+|   Do not record credentials: a recognized format is replaced with a placeholder
+|   and reported back, but what mnema does not recognize is written verbatim.
+|   Nor personal data: an email address is replaced with <email>; the mnid already says who wrote.
+|   Each text field holds at most 65536 bytes; a longer one is refused.
+
+### mnema task --help
+$ mnema task --help
+| Usage: mnema task [options] [command]
+|
+| create a task, or move one, in the current project
+|
+| Options:
+|   --scope <scope>               where the task is born: public (team-visible),
+|                                 private (this machine, this project), or global
+|                                 (personal, cross-project). Omitted, a task lands
+|                                 in the public tree (the team’s work board).
+|   --which <agent>               the agent that executed this, when an agent (a
+|                                 script, a CI step) is driving mnema — omit it
+|                                 when you are acting directly. Declared, never
+|                                 assumed; it names the executor. See --scope for
+|                                 where the fact lands. A value that names no
+|                                 agent (an unset variable) is refused, never
+|                                 credited to you.
+|   -h, --help                    display help for command
+|
+| Commands:
+|   create [options] <title>      create a task in the current project
+|   move [options] <action> <id>  move a task through the workflow (follows the
+|                                 task; takes no --scope)
+|   help [command]                display help for command
+|
+| What recording means here:
+|   Permanent — mnema is append-only and nothing deletes a fact. A public record
+|   is committed and reaches every machine that clones the repository.
+|   Do not record credentials: a recognized format is replaced with a placeholder
+|   and reported back, but what mnema does not recognize is written verbatim.
+|   Nor personal data: an email address is replaced with <email>; the mnid already says who wrote.
+|   Each text field holds at most 65536 bytes; a longer one is refused.
+
 ### mnema handoff --help
 $ mnema handoff --help
 | Usage: mnema handoff [options] <task> <from> <to>
@@ -478,70 +527,6 @@ $ mnema handoff --help
 |                    directly. Declared, never assumed; it names the executor. See
 |                    --scope for where the fact lands. A value that names no agent
 |                    (an unset variable) is refused, never credited to you.
-|   -h, --help       display help for command
-|
-| What recording means here:
-|   Permanent — mnema is append-only and nothing deletes a fact. A public record
-|   is committed and reaches every machine that clones the repository.
-|   Do not record credentials: a recognized format is replaced with a placeholder
-|   and reported back, but what mnema does not recognize is written verbatim.
-|   Nor personal data: an email address is replaced with <email>; the mnid already says who wrote.
-|   Each text field holds at most 65536 bytes; a longer one is refused.
-
-### mnema link --help
-$ mnema link --help
-| Usage: mnema link [options] <subject> <target>
-|
-| link one piece of knowledge to another in the current project
-|
-| Arguments:
-|   subject          the entity that originates the link
-|   target           what it points at: another id, or a path (an address, under
-|                    --rel governs, asks-for-a-person or refuses-a-write)
-|
-| Options:
-|   --rel <label>    the relation (recommended: supersedes, relates-to,
-|                    derived-from, contradicts, governs, asks-for-a-person,
-|                    refuses-a-write; any label is accepted)
-|   --scope <scope>  where the link is born: public (team-visible), private (this
-|                    machine, this project), or global (personal, cross-project).
-|                    Omitted, a link lands in the public tree (an assertion about
-|                    the project’s records).
-|   --which <agent>  the agent that executed this, when an agent (a script, a CI
-|                    step) is driving mnema — omit it when you are acting
-|                    directly. Declared, never assumed; it names the executor. See
-|                    --scope for where the fact lands. A value that names no agent
-|                    (an unset variable) is refused, never credited to you.
-|   -h, --help       display help for command
-|
-| What recording means here:
-|   Permanent — mnema is append-only and nothing deletes a fact. A public record
-|   is committed and reaches every machine that clones the repository.
-|   Do not record credentials: a recognized format is replaced with a placeholder
-|   and reported back, but what mnema does not recognize is written verbatim.
-|   Nor personal data: an email address is replaced with <email>; the mnid already says who wrote.
-|   Each text field holds at most 65536 bytes; a longer one is refused.
-
-### mnema unlink --help
-$ mnema unlink --help
-| Usage: mnema unlink [options] <subject> <target>
-|
-| take a link back, keeping it in the record (only the identity that recorded it;
-| follows the link)
-|
-| Arguments:
-|   subject          the entity the link originates from
-|   target           what the link points at, as it was linked
-|
-| Options:
-|   --rel <label>    the relation, as it was linked
-|   --reason <text>  why it is taken back
-|   --which <agent>  the agent that executed this, when an agent (a script, a CI
-|                    step) is driving mnema — omit it when you are acting
-|                    directly. It names the executor only: a retraction follows
-|                    the link to the tree it was recorded in. A value that names
-|                    no agent (an unset variable) is refused, never credited to
-|                    you.
 |   -h, --help       display help for command
 |
 | What recording means here:
@@ -595,56 +580,6 @@ $ mnema promote --help
 |   Nor personal data: an email address is replaced with <email>; the mnid already says who wrote.
 |   Each text field holds at most 65536 bytes; a longer one is refused.
 
-### mnema retract --help
-$ mnema retract --help
-| Usage: mnema retract [options] <id>
-|
-| take a memory or an observation back, keeping it in the record (follows the
-| note; takes no --scope)
-|
-| Arguments:
-|   id               the id of the note to retract
-|
-| Options:
-|   --reason <text>  why it is taken back
-|   --which <agent>  the agent that executed this, when an agent (a script, a CI
-|                    step) is driving mnema — omit it when you are acting
-|                    directly. It names the executor only: a retraction follows
-|                    the note to the tree it was written in. A value that names no
-|                    agent (an unset variable) is refused, never credited to you.
-|   -h, --help       display help for command
-|
-| What recording means here:
-|   Permanent — mnema is append-only and nothing deletes a fact. A public record
-|   is committed and reaches every machine that clones the repository.
-|   Do not record credentials: a recognized format is replaced with a placeholder
-|   and reported back, but what mnema does not recognize is written verbatim.
-|   Nor personal data: an email address is replaced with <email>; the mnid already says who wrote.
-|   Each text field holds at most 65536 bytes; a longer one is refused.
-
-### mnema run --help
-$ mnema run --help
-| Usage: mnema run [options] [command]
-|
-| open and close the session an agent works inside
-|
-| Options:
-|   -h, --help          display help for command
-|
-| Commands:
-|   start [options]     open a session for an agent (facts written in it are
-|                       pinned to it)
-|   end [options] [id]  close a session (by default the one MNEMA_RUN names)
-|   help [command]      display help for command
-|
-| What recording means here:
-|   Permanent — mnema is append-only and nothing deletes a fact. A public record
-|   is committed and reaches every machine that clones the repository.
-|   Do not record credentials: a recognized format is replaced with a placeholder
-|   and reported back, but what mnema does not recognize is written verbatim.
-|   Nor personal data: an email address is replaced with <email>; the mnid already says who wrote.
-|   Each text field holds at most 65536 bytes; a longer one is refused.
-
 ### mnema status --help
 $ mnema status --help
 | Usage: mnema status [options]
@@ -658,391 +593,6 @@ $ mnema status --help
 |                 machine writes as in this project, and the report says so.
 |   --json        emit the faithful opening context as JSON
 |   -h, --help    display help for command
-
-### mnema focus --help
-$ mnema focus --help
-| Usage: mnema focus [options]
-|
-| show an actor's open runs (what they are touching now)
-|
-| Options:
-|   --actor <id>  the identity whose focus to show — the `mnid:…` from `mnema
-|                 accountability`, or the short form the reads print (any prefix
-|                 that names one identity here)
-|   --json        emit the faithful focus object as JSON
-|   -h, --help    display help for command
-
-### mnema resume --help
-$ mnema resume --help
-| Usage: mnema resume [options]
-|
-| show where an actor left off (their latest run, open or ended)
-|
-| Options:
-|   --actor <id>  the identity whose last run to show — the `mnid:…` from `mnema
-|                 accountability`, or the short form the reads print (any prefix
-|                 that names one identity here)
-|   --json        emit the faithful resume object as JSON
-|   -h, --help    display help for command
-
-### mnema next-actions --help
-$ mnema next-actions --help
-| Usage: mnema next-actions [options] <task-id>
-|
-| show the moves the workflow allows a task next
-|
-| Arguments:
-|   task-id     the task id (the value shown when it was created)
-|
-| Options:
-|   --json      emit the faithful list of next actions as JSON
-|   -h, --help  display help for command
-
-### mnema guard --help
-$ mnema guard --help
-| Usage: mnema guard [options] <action> <id>
-|
-| dry-run the gate: would a move be allowed on a task, and if not, why?
-|
-| Arguments:
-|   action             the transition to test (submit, start, block, unblock,
-|                      submit_review, request_changes, approve, complete, cancel,
-|                      reopen)
-|   id                 the task id (the value shown when it was created)
-|
-| Options:
-|   --actor <id>       the identity asking (the `who`) — the `mnid:…` from `mnema
-|                      accountability`, or the short form the reads print (any
-|                      prefix that names one identity here)
-|   --reason <text>    simulate the reason (block, cancel, reopen)
-|   --note <text>      simulate the note (approve, complete)
-|   --feedback <text>  simulate the feedback (request_changes)
-|   --which <id>       simulate an executing agent (must differ from --actor)
-|   --json             emit the faithful gate verdict as JSON
-|   -h, --help         display help for command
-
-### mnema search --help
-$ mnema search --help
-| Usage: mnema search [options] [term]
-|
-| find what has been recorded, or list the most recent (no term)
-|
-| Arguments:
-|   term             words to look for; omit to list the most recent records
-|
-| Options:
-|   --kind <kind>    only this kind of record: memory, observation, decision,
-|                    task, skill
-|   --scope <scope>  only this tree: public, private, global
-|   --state <state>  only records in this state NOW (excludes kinds that have
-|                    none)
-|   --from <iso>     only records at or after this ISO-8601 instant (inclusive)
-|   --to <iso>       only records at or before this ISO-8601 instant (inclusive)
-|   --limit <n>      how many to return (default 20, max 200)
-|   --json           emit the faithful index as JSON (one ordered list)
-|   -h, --help       display help for command
-|
-| The window:
-|   A window (`from`/`to`) selects RECORDS by the instant each was RECORDED —
-|   never by when one last moved, and never by the state it is in now.
-
-### mnema show --help
-$ mnema show --help
-| Usage: mnema show [options] <id>
-|
-| show one whole record by id (the body a search only pointed at)
-|
-| Arguments:
-|   id          the record id (from `mnema search`)
-|
-| Options:
-|   --json      emit the faithful record as JSON
-|   -h, --help  display help for command
-
-### mnema timeline --help
-$ mnema timeline --help
-| Usage: mnema timeline [options] <id>
-|
-| show an entity's history across the trees (subject, about, target)
-|
-| Arguments:
-|   id          the entity id (a task, decision, skill, memory, …)
-|
-| Options:
-|   --json      emit the faithful timeline entries as JSON
-|   -h, --help  display help for command
-
-### mnema accountability --help
-$ mnema accountability --help
-| Usage: mnema accountability [options]
-|
-| show who authorized what across the record (optionally windowed/filtered)
-|
-| Options:
-|   --from <iso>     only facts at or after this ISO-8601 instant (inclusive)
-|   --to <iso>       only facts at or before this ISO-8601 instant (inclusive)
-|   --who <id>       count only facts authorized by this identity — the `mnid:…`
-|                    from `mnema accountability`, or the short form the reads
-|                    print (any prefix that names one identity here)
-|   --which <agent>  count only facts executed by this agent
-|   --json           emit the faithful account object as JSON
-|   -h, --help       display help for command
-|
-| The window:
-|   A window (`from`/`to`) selects the FACTS themselves,
-|   by the instant each was recorded.
-
-### mnema antipatterns --help
-$ mnema antipatterns --help
-| Usage: mnema antipatterns [options]
-|
-| show recurring shapes in the record (reopens, supersessions, deprecations)
-|
-| Options:
-|   --json      emit the faithful shapes with their evidence as JSON
-|   -h, --help  display help for command
-
-### mnema exposure --help
-$ mnema exposure --help
-| Usage: mnema exposure [options]
-|
-| show which records hold something shaped like a credential (never the value)
-|
-| Options:
-|   --json      emit the faithful report as JSON (still without any value)
-|   -h, --help  display help for command
-
-### mnema export --help
-$ mnema export --help
-| Usage: mnema export [options]
-|
-| emit the record as an OCSF audit feed (NDJSON, envelope only — never a body)
-|
-| Options:
-|   --from <iso>     only facts at or after this ISO-8601 instant (inclusive)
-|   --to <iso>       only facts at or before this ISO-8601 instant (inclusive)
-|   --who <id>       include only facts authorized by this identity — the `mnid:…`
-|                    from `mnema accountability`, or the short form the reads
-|                    print (any prefix that names one identity here)
-|   --which <agent>  include only facts executed by this agent
-|   --global         also cover this machine's global tree — left out by default:
-|                    it belongs to no project and is present in every one, and
-|                    this is the only read that leaves the machine (default:
-|                    false)
-|   -h, --help       display help for command
-|
-| The window:
-|   A window (`from`/`to`) selects the FACTS themselves,
-|   by the instant each was recorded.
-
-### mnema site --help
-$ mnema site --help
-| Usage: mnema site [options]
-|
-| write the project's committed record as one HTML page that verifies itself in
-| the browser (records nothing)
-|
-| Options:
-|   --out <dir>  the directory index.html is written under
-|   -h, --help   display help for command
-|
-| The page holds the committed (public) tree and nothing else: no private tree, no
-| machine-global tree — and all of that tree's text, so publish it only where the
-| repository itself may be read. It lists the decisions in force (a control shows the
-| rest), their history and who authorized them, and the stored events. It also carries
-| the files the record is made of, and the browser runs the same verifier as
-| `mnema verify` over them, with no request and no key: the sentence on the page is the
-| one `mnema verify` gives a fresh clone. It checks the chain and the checkpoint
-| signatures; it does not check the lists on the page against the files. Everything is
-| inside the one file: no script or style comes from elsewhere.
-|
-| Examples:
-|   mnema site --out dist/record     write dist/record/index.html
-
-### mnema refs --help
-$ mnema refs --help
-| Usage: mnema refs [options] <id>
-|
-| show what an entity is connected to across the trees
-|
-| Arguments:
-|   id                 the entity id (a task, decision, memory, skill, …)
-|
-| Options:
-|   --direction <way>  which way to follow edges: both, out, in (default: "both")
-|   --depth <n>        how many hops (max 10) (default: "1")
-|   --json             emit the faithful graph as JSON
-|   -h, --help         display help for command
-
-### mnema diagram --help
-$ mnema diagram --help
-| Usage: mnema diagram [options] <subject> [id]
-|
-| print a state machine, or an entity’s history or connections, as mermaid
-|
-| Arguments:
-|   subject     what to draw (decision, skill, task, timeline, refs)
-|   id          the entity id, for `timeline` and `refs`
-|
-| Options:
-|   -h, --help  display help for command
-|
-| It prints mermaid text to stdout and writes nothing — GitHub and most editors draw it:
-|   mnema diagram decision                 the states a decision moves through
-|   mnema diagram task > task-states.md    the redirection is yours
-|   mnema diagram timeline <id>            one entity’s events, in order
-|   mnema diagram refs <id>                what one entity is connected to
-| The three state machines are read from the tables the gate enforces, so a state
-| added there appears here. Text from the record is written so it cannot end a label.
-
-### mnema rules --help
-$ mnema rules --help
-| Usage: mnema rules [options] <path>
-|
-| show which recorded rules govern a path, and which address nothing
-|
-| Arguments:
-|   path        the path to ask about, relative to here or absolute
-|
-| Options:
-|   --json      emit the faithful reading as JSON
-|   -h, --help  display help for command
-
-### mnema rules-file --help
-$ mnema rules-file --help
-| Usage: mnema rules-file [options]
-|
-| print the rules addressed at a file as another host’s rules file, and why the
-| rest are not
-|
-| Options:
-|   --host <host>  the host whose rules-file format to print: claude, vscode,
-|                  cursor
-|   -h, --help     display help for command
-
-### mnema check --help
-$ mnema check --help
-| Usage: mnema check [options] [command]
-|
-| give a rule a program that checks it, and record whether it held at a commit
-|
-| Options:
-|   -h, --help                                    display help for command
-|
-| Commands:
-|   declare [options] <rule> <program> [args...]  declare the program that checks a rule (no shell: the program and its arguments)
-|   run [options]                                 run the check of every rule in force and record each result (run by a checker key, in CI)
-|   help [command]                                display help for command
-
-### mnema trailer --help
-$ mnema trailer --help
-| Usage: mnema trailer [options] <decision>
-|
-| print the commit trailer that ties a commit to a decision
-|
-| Arguments:
-|   decision    the decision, by id or by ADR label
-|
-| Options:
-|   --id        carry the id instead of the label
-|   --json      emit the line as JSON
-|   -h, --help  display help for command
-
-### mnema commit-hook --help
-$ mnema commit-hook --help
-| Usage: mnema commit-hook [options] [command]
-|
-| install or remove an optional git hook that suggests the Mnema-Decision trailer
-|
-| Options:
-|   -h, --help                       display help for command
-|
-| Commands:
-|   install                          write the prepare-commit-msg hook in this
-|                                    repository (refuses to replace another one)
-|   uninstall                        remove the prepare-commit-msg hook, only if
-|                                    mnema wrote it
-|   suggest <message-file> [source]  what the hook calls: append the suggestion to
-|                                    a commit message file
-|   help [command]                   display help for command
-|
-| The hook is a prepare-commit-msg script. It appends a few # comment lines to the message
-| of a commit made in an editor, naming the decisions in force that govern the staged files;
-| git drops them if you leave them, and removing the "# " in front of a line cites it.
-| It runs only where `install` put it, never overwrites a hook that is not its own, follows
-| core.hooksPath, and never fails a commit.
-
-### mnema commits --help
-$ mnema commits --help
-| Usage: mnema commits [options] <decision>
-|
-| show the commits that cite a decision and those that touched what it addresses
-|
-| Arguments:
-|   decision    the decision, by id or by ADR label
-|
-| Options:
-|   --json      emit the faithful reading as JSON
-|   -h, --help  display help for command
-
-### mnema why --help
-$ mnema why --help
-| Usage: mnema why [options] <file|commit>
-|
-| show under which decisions a file or a commit stands
-|
-| Arguments:
-|   file|commit  a path (it wins when it exists) or a commit name
-|
-| Options:
-|   --json       emit the faithful reading as JSON
-|   -h, --help   display help for command
-
-### mnema aging --help
-$ mnema aging --help
-| Usage: mnema aging [options]
-|
-| show accepted decisions whose addressed paths changed in many commits since
-|
-| Options:
-|   --min-commits <n>  commits on its paths since acceptance to be listed (default
-|                      20)
-|   --json             emit the faithful reading as JSON
-|   -h, --help         display help for command
-
-### mnema skills --help
-$ mnema skills --help
-| Usage: mnema skills [options]
-|
-| show where each pattern came from (who proposed it, who adopted it)
-|
-| Options:
-|   --json      emit the faithful provenance as JSON
-|   -h, --help  display help for command
-|
-| This is the AUDIT of the patterns, not the patterns themselves:
-|   The `skills` tool on the MCP surface serves a pattern’s body to an agent.
-|   This verb reads who put each one there. `mnema show <id>` reads a body.
-|   Only an adopted pattern is served to an agent; the other states are not.
-|   An act with no agent behind it was a person acting directly.
-|   A consultation is one run served the body — not that the work followed it,
-|   and counted in this project’s trees and the machine-global one, no other.
-
-### mnema usage --help
-$ mnema usage --help
-| Usage: mnema usage [options]
-|
-| what each run cost, read from this machine's Claude Code transcripts
-|
-| Options:
-|   -h, --help  display help for command
-|
-| What each line says, and what it does not:
-|   Tokens and the model id. Never dollars — no price table is carried here.
-|   One host session in the run's window is attributed and named, so you can check it.
-|   More than one is named and NOT attributed: there is no tie-break that is not invented.
-|   None says `no transcript`, never `0` — no record of the cost is not a cost of zero.
-|   Nothing is recorded: the chain has no field for this, and reading writes nothing.
 
 ### mnema brief --help
 $ mnema brief --help
@@ -1122,136 +672,30 @@ $ mnema recall --help
 | It prints NOTHING when nothing is recorded, so a session opens with nothing added.
 | It can be switched off (`mnema switch off recall-document`), and then it refuses.
 
-### mnema before-a-write --help
-$ mnema before-a-write --help
-| Usage: mnema before-a-write [options]
+### mnema rules --help
+$ mnema rules --help
+| Usage: mnema rules [options] <path>
 |
-| answer a host’s hook before a file is written: refuse or ask where a rule says
+| show which recorded rules govern a path, and which address nothing
+|
+| Arguments:
+|   path        the path to ask about, relative to here or absolute
 |
 | Options:
-|   --host <host>  the host whose hook runs this, and whose payload arrives on
-|                  stdin: vscode, cursor
+|   --json      emit the faithful reading as JSON
+|   -h, --help  display help for command
+
+### mnema rules-file --help
+$ mnema rules-file --help
+| Usage: mnema rules-file [options]
+|
+| print the rules addressed at a file as another host’s rules file, and why the
+| rest are not
+|
+| Options:
+|   --host <host>  the host whose rules-file format to print: claude, vscode,
+|                  cursor
 |   -h, --help     display help for command
-|
-| What it reads and what it prints:
-|   The JSON a host hands a hook before a tool runs, on stdin. On stdout, the reply the
-|   host reads: {} unless a rule of this project addresses a path the write touches —
-|   `deny` where it is linked with `refuses-a-write`, which wins, and `ask` where it is
-|   linked with `asks-for-a-person` — citing the rules. For --host cursor only `deny` is
-|   answered: that host does not hold a write for a person. Each refusal or asking is
-|   recorded as a fact before the reply is printed. They can be switched off with `mnema
-|   switch off edit-refuses-a-write` and `mnema switch off edit-asks-a-person`.
-
-### mnema tally --help
-$ mnema tally --help
-| Usage: mnema tally [options]
-|
-| answer a host’s Stop or PreCompact hook with what the session wrote and recorded
-|
-| Options:
-|   -h, --help  display help for command
-|
-| What it reads and what it prints:
-|   The JSON a host hands a hook on stdin, with the transcript it names. On stdout, the reply
-|   the host reads: a `systemMessage` saying how many files this session’s own tool calls
-|   wrote and how many decisions were recorded in this project since it opened, or {} when
-|   the hook is not Stop or PreCompact, the session wrote no file (at Stop: no file in the
-|   last response), there is no project here, or the transcript cannot be read.
-|   It reads, and writes nothing. It can be switched off with `mnema switch off session-tally`.
-
-### mnema corrections --help
-$ mnema corrections --help
-| Usage: mnema corrections [options]
-|
-| record what a person corrected in a session as proposed decisions, for a Stop
-| hook
-|
-| Options:
-|   -h, --help  display help for command
-|
-| What it reads and what it does:
-|   The JSON a host hands a Stop hook on stdin, with the transcript it names. It finds the
-|   prompts that open by correcting the agent — "no, …", "stop …", "do not …", "that is
-|   wrong", "use … instead", in English and Portuguese — and records each as a proposed
-|   decision in this machine’s private tree, citing the session and the line, at most five
-|   at a time and never the same line twice. No model is called; a match is a guess that a
-|   person accepts or rejects.
-|   On stdout, the reply the host reads: a `systemMessage` saying how many were recorded and
-|   under which labels, or {}.
-|   It does nothing until `mnema switch on user-corrections`, because it reads what a person
-|   typed. With the channel off, or outside a project, it records nothing.
-
-### mnema key --help
-$ mnema key --help
-| Usage: mnema key [options] [command]
-|
-| manage this machine's signing keys
-|
-| Options:
-|   -h, --help                      display help for command
-|
-| Commands:
-|   restore <file>                  restore this machine's identity from a copy of
-|                                   a key's private half
-|   request [options]               ask to bring this machine into an identity
-|                                   (run this on the joining machine)
-|   enroll [options] <request>      vouch for a requesting key so it joins this
-|                                   identity (run this on a member)
-|   github <name>                   record that this identity is a GitHub account,
-|                                   so `mnema verify --against-github` can compare
-|                                   the keys that signed with the keys that
-|                                   account publishes
-|   sigstore <identity>             record that this identity is the one a
-|                                   Sigstore certificate names, so a bundle `mnema
-|                                   witness sigstore` files speaks for it in
-|                                   `mnema verify --against-sigstore`
-|   revoke [options] <fingerprint>  retire a key from this identity, from this
-|                                   point forward
-|   protect                         encrypt this machine's private keys at rest
-|                                   with the passphrase in MNEMA_KEY_PASSPHRASE
-|   unprotect                       write this machine's private keys back in the
-|                                   clear (needs MNEMA_KEY_PASSPHRASE)
-|   help [command]                  display help for command
-
-### mnema tail --help
-$ mnema tail --help
-| Usage: mnema tail [options] [command]
-|
-| authorize a cut in the record's own tails
-|
-| Options:
-|   -h, --help              display help for command
-|
-| Commands:
-|   list                    list the tails that hold events here — the ones a cut
-|                           can name — with the id `prune` takes
-|   prune [options] <tail>  record that one whole tail was authorized to be cut
-|                           (it removes nothing)
-|   help [command]          display help for command
-
-### mnema witness --help
-$ mnema witness --help
-| Usage: mnema witness [options] [command]
-|
-| ask an outside witness to date this record, and read where that stands
-|
-| Options:
-|   --global            also cover this machine's global tree — left out by
-|                       default: it belongs to no project and is present in every
-|                       one, and a witness over a tree no verdict reads is work
-|                       with no reader (default: false)
-|   --json              emit where the proof stands as JSON instead of prose — one
-|                       entry per tail, with the reading as the verifier derived
-|                       it
-|   -h, --help          display help for command
-|
-| Commands:
-|   stamp [options]     ask an outside witness to date each tail's last checkpoint
-|                       (T3)
-|   upgrade [options]   go back for every attestation this record is waiting on
-|                       (T3)
-|   sigstore [options]  countersign each tail's last checkpoint with a Sigstore
-|                       certificate — who signed in, and when Rekor logged it
 
 ### mnema switch --help
 $ mnema switch --help
@@ -1299,31 +743,6 @@ $ mnema inherit --help
 | commit; the commit never moves unless `inherit update --write` moves it.
 | The copy is kept under the mnema home, outside the project. Only `set` and `update`
 | use the network; the brief reads this machine’s copy and says when the commit is not there yet.
-
-### mnema doctor --help
-$ mnema doctor --help
-| Usage: mnema doctor [options]
-|
-| say how mnema is installed on this machine, and what to do about each thing
-| found (writes nothing unless you pass --fix vscode)
-|
-| Options:
-|   --fix <what>  make the one change a finding asks for, and only that one:
-|                 `vscode` lists the plugin in the chat.pluginLocations setting of
-|                 VS Code’s settings.json, after keeping a copy of the file
-|   --dry-run     with --fix: say what would change and write nothing
-|   -h, --help    display help for command
-|
-| What it looks at, and nothing else:
-|   the `mnema` executables on the PATH and which one is running; Claude Code’s list of
-|   installed plugins; the mnema MCP server declared in .mcp.json, .cursor/mcp.json,
-|   .vscode/mcp.json and ~/.claude.json, the plugin counting as one; and an npm package
-|   named `mnema` installed where the PATH points — the registry is not asked; VS Code’s user
-|   settings.json, for whether its agent is told where the plugin is; and the projects of
-|   ~/.claude.json that still declare the server.
-| Asked alone it writes nothing and exits 0 whatever it finds: each line says what to do.
-| `--fix vscode` is the only thing that writes: it shows what it will change, keeps a copy of
-| settings.json beside it, keeps the file’s comments, and refuses a file it cannot edit safely.
 
 ### mnema verify --help
 $ mnema verify --help
@@ -1401,17 +820,313 @@ $ mnema verify --help
 |                          shape of the answer, never the answer
 |   -h, --help             display help for command
 
-### mnema mcp --help
-$ mnema mcp --help
-| Usage: mnema mcp [options]
+### mnema witness --help
+$ mnema witness --help
+| Usage: mnema witness [options] [command]
 |
-| run the mnema MCP server over stdio (for an agent host)
+| ask an outside witness to date this record, and read where that stands
 |
 | Options:
-|   --project <dir>  the project to serve — an ABSOLUTE path; omitted, the project
-|                    comes from the host workspace roots, or from the working
-|                    directory when the host declares none
+|   --global            also cover this machine's global tree — left out by
+|                       default: it belongs to no project and is present in every
+|                       one, and a witness over a tree no verdict reads is work
+|                       with no reader (default: false)
+|   --json              emit where the proof stands as JSON instead of prose — one
+|                       entry per tail, with the reading as the verifier derived
+|                       it
+|   -h, --help          display help for command
+|
+| Commands:
+|   stamp [options]     ask an outside witness to date each tail's last checkpoint
+|                       (T3)
+|   upgrade [options]   go back for every attestation this record is waiting on
+|                       (T3)
+|   sigstore [options]  countersign each tail's last checkpoint with a Sigstore
+|                       certificate — who signed in, and when Rekor logged it
+
+### mnema check --help
+$ mnema check --help
+| Usage: mnema check [options] [command]
+|
+| give a rule a program that checks it, and record whether it held at a commit
+|
+| Options:
+|   -h, --help                                    display help for command
+|
+| Commands:
+|   declare [options] <rule> <program> [args...]  declare the program that checks a rule (no shell: the program and its arguments)
+|   run [options]                                 run the check of every rule in force and record each result (run by a checker key, in CI)
+|   help [command]                                display help for command
+
+### mnema site --help
+$ mnema site --help
+| Usage: mnema site [options]
+|
+| write the project's committed record as one HTML page that verifies itself in
+| the browser (records nothing)
+|
+| Options:
+|   --out <dir>  the directory index.html is written under
+|   -h, --help   display help for command
+|
+| The page holds the committed (public) tree and nothing else: no private tree, no
+| machine-global tree — and all of that tree's text, so publish it only where the
+| repository itself may be read. It lists the decisions in force (a control shows the
+| rest), their history and who authorized them, and the stored events. It also carries
+| the files the record is made of, and the browser runs the same verifier as
+| `mnema verify` over them, with no request and no key: the sentence on the page is the
+| one `mnema verify` gives a fresh clone. It checks the chain and the checkpoint
+| signatures; it does not check the lists on the page against the files. Everything is
+| inside the one file: no script or style comes from elsewhere.
+|
+| Examples:
+|   mnema site --out dist/record     write dist/record/index.html
+
+### mnema search --help
+$ mnema search --help
+| Usage: mnema search [options] [term]
+|
+| find what has been recorded, or list the most recent (no term)
+|
+| Arguments:
+|   term             words to look for; omit to list the most recent records
+|
+| Options:
+|   --kind <kind>    only this kind of record: memory, observation, decision,
+|                    task, skill
+|   --scope <scope>  only this tree: public, private, global
+|   --state <state>  only records in this state NOW (excludes kinds that have
+|                    none)
+|   --from <iso>     only records at or after this ISO-8601 instant (inclusive)
+|   --to <iso>       only records at or before this ISO-8601 instant (inclusive)
+|   --limit <n>      how many to return (default 20, max 200)
+|   --json           emit the faithful index as JSON (one ordered list)
 |   -h, --help       display help for command
+|
+| The window:
+|   A window (`from`/`to`) selects RECORDS by the instant each was RECORDED —
+|   never by when one last moved, and never by the state it is in now.
+
+### mnema show --help
+$ mnema show --help
+| Usage: mnema show [options] <id>
+|
+| show one whole record by id (the body a search only pointed at)
+|
+| Arguments:
+|   id          the record id (from `mnema search`)
+|
+| Options:
+|   --json      emit the faithful record as JSON
+|   -h, --help  display help for command
+
+### mnema timeline --help
+$ mnema timeline --help
+| Usage: mnema timeline [options] <id>
+|
+| show an entity's history across the trees (subject, about, target)
+|
+| Arguments:
+|   id          the entity id (a task, decision, skill, memory, …)
+|
+| Options:
+|   --json      emit the faithful timeline entries as JSON
+|   -h, --help  display help for command
+
+### mnema refs --help
+$ mnema refs --help
+| Usage: mnema refs [options] <id>
+|
+| show what an entity is connected to across the trees
+|
+| Arguments:
+|   id                 the entity id (a task, decision, memory, skill, …)
+|
+| Options:
+|   --direction <way>  which way to follow edges: both, out, in (default: "both")
+|   --depth <n>        how many hops (max 10) (default: "1")
+|   --json             emit the faithful graph as JSON
+|   -h, --help         display help for command
+
+### mnema diagram --help
+$ mnema diagram --help
+| Usage: mnema diagram [options] <subject> [id]
+|
+| print a state machine, or an entity’s history or connections, as mermaid
+|
+| Arguments:
+|   subject     what to draw (decision, skill, task, timeline, refs)
+|   id          the entity id, for `timeline` and `refs`
+|
+| Options:
+|   -h, --help  display help for command
+|
+| It prints mermaid text to stdout and writes nothing — GitHub and most editors draw it:
+|   mnema diagram decision                 the states a decision moves through
+|   mnema diagram task > task-states.md    the redirection is yours
+|   mnema diagram timeline <id>            one entity’s events, in order
+|   mnema diagram refs <id>                what one entity is connected to
+| The three state machines are read from the tables the gate enforces, so a state
+| added there appears here. Text from the record is written so it cannot end a label.
+
+### mnema accountability --help
+$ mnema accountability --help
+| Usage: mnema accountability [options]
+|
+| show who authorized what across the record (optionally windowed/filtered)
+|
+| Options:
+|   --from <iso>     only facts at or after this ISO-8601 instant (inclusive)
+|   --to <iso>       only facts at or before this ISO-8601 instant (inclusive)
+|   --who <id>       count only facts authorized by this identity — the `mnid:…`
+|                    from `mnema accountability`, or the short form the reads
+|                    print (any prefix that names one identity here)
+|   --which <agent>  count only facts executed by this agent
+|   --json           emit the faithful account object as JSON
+|   -h, --help       display help for command
+|
+| The window:
+|   A window (`from`/`to`) selects the FACTS themselves,
+|   by the instant each was recorded.
+
+### mnema antipatterns --help
+$ mnema antipatterns --help
+| Usage: mnema antipatterns [options]
+|
+| show recurring shapes in the record (reopens, supersessions, deprecations)
+|
+| Options:
+|   --json      emit the faithful shapes with their evidence as JSON
+|   -h, --help  display help for command
+
+### mnema exposure --help
+$ mnema exposure --help
+| Usage: mnema exposure [options]
+|
+| show which records hold something shaped like a credential (never the value)
+|
+| Options:
+|   --json      emit the faithful report as JSON (still without any value)
+|   -h, --help  display help for command
+
+### mnema export --help
+$ mnema export --help
+| Usage: mnema export [options]
+|
+| emit the record as an OCSF audit feed (NDJSON, envelope only — never a body)
+|
+| Options:
+|   --from <iso>     only facts at or after this ISO-8601 instant (inclusive)
+|   --to <iso>       only facts at or before this ISO-8601 instant (inclusive)
+|   --who <id>       include only facts authorized by this identity — the `mnid:…`
+|                    from `mnema accountability`, or the short form the reads
+|                    print (any prefix that names one identity here)
+|   --which <agent>  include only facts executed by this agent
+|   --global         also cover this machine's global tree — left out by default:
+|                    it belongs to no project and is present in every one, and
+|                    this is the only read that leaves the machine (default:
+|                    false)
+|   -h, --help       display help for command
+|
+| The window:
+|   A window (`from`/`to`) selects the FACTS themselves,
+|   by the instant each was recorded.
+
+### mnema skills --help
+$ mnema skills --help
+| Usage: mnema skills [options]
+|
+| show where each pattern came from (who proposed it, who adopted it)
+|
+| Options:
+|   --json      emit the faithful provenance as JSON
+|   -h, --help  display help for command
+|
+| This is the AUDIT of the patterns, not the patterns themselves:
+|   The `skills` tool on the MCP surface serves a pattern’s body to an agent.
+|   This verb reads who put each one there. `mnema show <id>` reads a body.
+|   Only an adopted pattern is served to an agent; the other states are not.
+|   An act with no agent behind it was a person acting directly.
+|   A consultation is one run served the body — not that the work followed it,
+|   and counted in this project’s trees and the machine-global one, no other.
+
+### mnema usage --help
+$ mnema usage --help
+| Usage: mnema usage [options]
+|
+| what each run cost, read from this machine's Claude Code transcripts
+|
+| Options:
+|   -h, --help  display help for command
+|
+| What each line says, and what it does not:
+|   Tokens and the model id. Never dollars — no price table is carried here.
+|   One host session in the run's window is attributed and named, so you can check it.
+|   More than one is named and NOT attributed: there is no tie-break that is not invented.
+|   None says `no transcript`, never `0` — no record of the cost is not a cost of zero.
+|   Nothing is recorded: the chain has no field for this, and reading writes nothing.
+
+### mnema focus --help
+$ mnema focus --help
+| Usage: mnema focus [options]
+|
+| show an actor's open runs (what they are touching now)
+|
+| Options:
+|   --actor <id>  the identity whose focus to show — the `mnid:…` from `mnema
+|                 accountability`, or the short form the reads print (any prefix
+|                 that names one identity here)
+|   --json        emit the faithful focus object as JSON
+|   -h, --help    display help for command
+
+### mnema resume --help
+$ mnema resume --help
+| Usage: mnema resume [options]
+|
+| show where an actor left off (their latest run, open or ended)
+|
+| Options:
+|   --actor <id>  the identity whose last run to show — the `mnid:…` from `mnema
+|                 accountability`, or the short form the reads print (any prefix
+|                 that names one identity here)
+|   --json        emit the faithful resume object as JSON
+|   -h, --help    display help for command
+
+### mnema next-actions --help
+$ mnema next-actions --help
+| Usage: mnema next-actions [options] <task-id>
+|
+| show the moves the workflow allows a task next
+|
+| Arguments:
+|   task-id     the task id (the value shown when it was created)
+|
+| Options:
+|   --json      emit the faithful list of next actions as JSON
+|   -h, --help  display help for command
+
+### mnema guard --help
+$ mnema guard --help
+| Usage: mnema guard [options] <action> <id>
+|
+| dry-run the gate: would a move be allowed on a task, and if not, why?
+|
+| Arguments:
+|   action             the transition to test (submit, start, block, unblock,
+|                      submit_review, request_changes, approve, complete, cancel,
+|                      reopen)
+|   id                 the task id (the value shown when it was created)
+|
+| Options:
+|   --actor <id>       the identity asking (the `who`) — the `mnid:…` from `mnema
+|                      accountability`, or the short form the reads print (any
+|                      prefix that names one identity here)
+|   --reason <text>    simulate the reason (block, cancel, reopen)
+|   --note <text>      simulate the note (approve, complete)
+|   --feedback <text>  simulate the feedback (request_changes)
+|   --which <id>       simulate an executing agent (must differ from --actor)
+|   --json             emit the faithful gate verdict as JSON
+|   -h, --help         display help for command
 
 ### mnema repl --help
 $ mnema repl --help
@@ -1440,6 +1155,155 @@ $ mnema repl --help
 | `mnema --color`, the environment and the terminal — so a `--color` typed on a line
 | inside it changes nothing.
 
+### mnema why --help
+$ mnema why --help
+| Usage: mnema why [options] <file|commit>
+|
+| show under which decisions a file or a commit stands
+|
+| Arguments:
+|   file|commit  a path (it wins when it exists) or a commit name
+|
+| Options:
+|   --json       emit the faithful reading as JSON
+|   -h, --help   display help for command
+
+### mnema commits --help
+$ mnema commits --help
+| Usage: mnema commits [options] <decision>
+|
+| show the commits that cite a decision and those that touched what it addresses
+|
+| Arguments:
+|   decision    the decision, by id or by ADR label
+|
+| Options:
+|   --json      emit the faithful reading as JSON
+|   -h, --help  display help for command
+
+### mnema aging --help
+$ mnema aging --help
+| Usage: mnema aging [options]
+|
+| show accepted decisions whose addressed paths changed in many commits since
+|
+| Options:
+|   --min-commits <n>  commits on its paths since acceptance to be listed (default
+|                      20)
+|   --json             emit the faithful reading as JSON
+|   -h, --help         display help for command
+
+### mnema trailer --help
+$ mnema trailer --help
+| Usage: mnema trailer [options] <decision>
+|
+| print the commit trailer that ties a commit to a decision
+|
+| Arguments:
+|   decision    the decision, by id or by ADR label
+|
+| Options:
+|   --id        carry the id instead of the label
+|   --json      emit the line as JSON
+|   -h, --help  display help for command
+
+### mnema commit-hook --help
+$ mnema commit-hook --help
+| Usage: mnema commit-hook [options] [command]
+|
+| install or remove an optional git hook that suggests the Mnema-Decision trailer
+|
+| Options:
+|   -h, --help                       display help for command
+|
+| Commands:
+|   install                          write the prepare-commit-msg hook in this
+|                                    repository (refuses to replace another one)
+|   uninstall                        remove the prepare-commit-msg hook, only if
+|                                    mnema wrote it
+|   suggest <message-file> [source]  what the hook calls: append the suggestion to
+|                                    a commit message file
+|   help [command]                   display help for command
+|
+| The hook is a prepare-commit-msg script. It appends a few # comment lines to the message
+| of a commit made in an editor, naming the decisions in force that govern the staged files;
+| git drops them if you leave them, and removing the "# " in front of a line cites it.
+| It runs only where `install` put it, never overwrites a hook that is not its own, follows
+| core.hooksPath, and never fails a commit.
+
+### mnema key --help
+$ mnema key --help
+| Usage: mnema key [options] [command]
+|
+| manage this machine's signing keys
+|
+| Options:
+|   -h, --help                      display help for command
+|
+| Commands:
+|   restore <file>                  restore this machine's identity from a copy of
+|                                   a key's private half
+|   request [options]               ask to bring this machine into an identity
+|                                   (run this on the joining machine)
+|   enroll [options] <request>      vouch for a requesting key so it joins this
+|                                   identity (run this on a member)
+|   github <name>                   record that this identity is a GitHub account,
+|                                   so `mnema verify --against-github` can compare
+|                                   the keys that signed with the keys that
+|                                   account publishes
+|   sigstore <identity>             record that this identity is the one a
+|                                   Sigstore certificate names, so a bundle `mnema
+|                                   witness sigstore` files speaks for it in
+|                                   `mnema verify --against-sigstore`
+|   revoke [options] <fingerprint>  retire a key from this identity, from this
+|                                   point forward
+|   protect                         encrypt this machine's private keys at rest
+|                                   with the passphrase in MNEMA_KEY_PASSPHRASE
+|   unprotect                       write this machine's private keys back in the
+|                                   clear (needs MNEMA_KEY_PASSPHRASE)
+|   help [command]                  display help for command
+
+### mnema tail --help
+$ mnema tail --help
+| Usage: mnema tail [options] [command]
+|
+| authorize a cut in the record's own tails
+|
+| Options:
+|   -h, --help              display help for command
+|
+| Commands:
+|   list                    list the tails that hold events here — the ones a cut
+|                           can name — with the id `prune` takes
+|   prune [options] <tail>  record that one whole tail was authorized to be cut
+|                           (it removes nothing)
+|   help [command]          display help for command
+
+### mnema doctor --help
+$ mnema doctor --help
+| Usage: mnema doctor [options]
+|
+| say how mnema is installed on this machine, and what to do about each thing
+| found (writes nothing unless you pass --fix vscode)
+|
+| Options:
+|   --fix <what>  make the one change a finding asks for, and only that one:
+|                 `vscode` lists the plugin in the chat.pluginLocations setting of
+|                 VS Code’s settings.json, after keeping a copy of the file
+|   --dry-run     with --fix: say what would change and write nothing
+|   -h, --help    display help for command
+|
+| What it looks at, and nothing else:
+|   the `mnema` executables on the PATH and which one is running; Claude Code’s list of
+|   installed plugins; the mnema MCP server declared in .mcp.json, .cursor/mcp.json,
+|   .vscode/mcp.json and ~/.claude.json, the plugin counting as one; and an npm package
+|   named `mnema` installed where the PATH points — the registry is not asked; VS Code’s user
+|   settings.json, for whether its agent is told where the plugin is; and the projects of
+|   ~/.claude.json that still declare the server.
+| Asked alone it writes nothing and exits 0 whatever it finds: each line says what to do.
+| `--fix vscode` is the only thing that writes: it shows what it will change, keeps a copy of
+| settings.json beside it, keeps the file’s comments, and refuses a file it cannot edit safely.
+
 ### mnema completion --help
 $ mnema completion --help
 | Usage: mnema completion [options] <shell>
@@ -1465,26 +1329,32 @@ $ mnema completion --help
 | The script is generated from this program, so a verb added to it is completed
 | the same day. Print it again after an upgrade.
 
-### mnema task create --help
-$ mnema task create --help
-| Usage: mnema task create [options] <title>
+### mnema mcp --help
+$ mnema mcp --help
+| Usage: mnema mcp [options]
 |
-| create a task in the current project
-|
-| Arguments:
-|   title            the task title
+| run the mnema MCP server over stdio (for an agent host)
 |
 | Options:
-|   --scope <scope>  where the task is born: public (team-visible), private (this
-|                    machine, this project), or global (personal, cross-project).
-|                    Omitted, a task lands in the public tree (the team’s work
-|                    board).
-|   --which <agent>  the agent that executed this, when an agent (a script, a CI
-|                    step) is driving mnema — omit it when you are acting
-|                    directly. Declared, never assumed; it names the executor. See
-|                    --scope for where the fact lands. A value that names no agent
-|                    (an unset variable) is refused, never credited to you.
+|   --project <dir>  the project to serve — an ABSOLUTE path; omitted, the project
+|                    comes from the host workspace roots, or from the working
+|                    directory when the host declares none
 |   -h, --help       display help for command
+
+### mnema run --help
+$ mnema run --help
+| Usage: mnema run [options] [command]
+|
+| open and close the session an agent works inside
+|
+| Options:
+|   -h, --help          display help for command
+|
+| Commands:
+|   start [options]     open a session for an agent (facts written in it are
+|                       pinned to it)
+|   end [options] [id]  close a session (by default the one MNEMA_RUN names)
+|   help [command]      display help for command
 |
 | What recording means here:
 |   Permanent — mnema is append-only and nothing deletes a fact. A public record
@@ -1494,37 +1364,64 @@ $ mnema task create --help
 |   Nor personal data: an email address is replaced with <email>; the mnid already says who wrote.
 |   Each text field holds at most 65536 bytes; a longer one is refused.
 
-### mnema task move --help
-$ mnema task move --help
-| Usage: mnema task move [options] <action> <id>
+### mnema before-a-write --help
+$ mnema before-a-write --help
+| Usage: mnema before-a-write [options]
 |
-| move a task through the workflow (follows the task; takes no --scope)
-|
-| Arguments:
-|   action             the transition (submit, start, block, unblock,
-|                      submit_review, request_changes, approve, complete, cancel,
-|                      reopen)
-|   id                 the task id (the value shown when it was created)
+| answer a host’s hook before a file is written: refuse or ask where a rule says
 |
 | Options:
-|   --reason <text>    why (required by block, cancel, reopen)
-|   --note <text>      what was done (required by approve, complete)
-|   --feedback <text>  what must change (required by request_changes)
-|   -h, --help         display help for command
+|   --host <host>  the host whose hook runs this, and whose payload arrives on
+|                  stdin: vscode, cursor
+|   -h, --help     display help for command
 |
-| Also accepted here (declared on the parent group):
-|   --which <agent>  the agent that executed this move, when an agent (a script,
-|                    a CI step) is driving mnema — omit it when you are acting
-|                    directly. It names the executor only: a move always follows
-|                    the entity to the tree it was born in.
+| What it reads and what it prints:
+|   The JSON a host hands a hook before a tool runs, on stdin. On stdout, the reply the
+|   host reads: {} unless a rule of this project addresses a path the write touches —
+|   `deny` where it is linked with `refuses-a-write`, which wins, and `ask` where it is
+|   linked with `asks-for-a-person` — citing the rules. For --host cursor only `deny` is
+|   answered: that host does not hold a write for a person. Each refusal or asking is
+|   recorded as a fact before the reply is printed. They can be switched off with `mnema
+|   switch off edit-refuses-a-write` and `mnema switch off edit-asks-a-person`.
+
+### mnema tally --help
+$ mnema tally --help
+| Usage: mnema tally [options]
 |
-| What recording means here:
-|   Permanent — mnema is append-only and nothing deletes a fact. A public record
-|   is committed and reaches every machine that clones the repository.
-|   Do not record credentials: a recognized format is replaced with a placeholder
-|   and reported back, but what mnema does not recognize is written verbatim.
-|   Nor personal data: an email address is replaced with <email>; the mnid already says who wrote.
-|   Each text field holds at most 65536 bytes; a longer one is refused.
+| answer a host’s Stop or PreCompact hook with what the session wrote and recorded
+|
+| Options:
+|   -h, --help  display help for command
+|
+| What it reads and what it prints:
+|   The JSON a host hands a hook on stdin, with the transcript it names. On stdout, the reply
+|   the host reads: a `systemMessage` saying how many files this session’s own tool calls
+|   wrote and how many decisions were recorded in this project since it opened, or {} when
+|   the hook is not Stop or PreCompact, the session wrote no file (at Stop: no file in the
+|   last response), there is no project here, or the transcript cannot be read.
+|   It reads, and writes nothing. It can be switched off with `mnema switch off session-tally`.
+
+### mnema corrections --help
+$ mnema corrections --help
+| Usage: mnema corrections [options]
+|
+| record what a person corrected in a session as proposed decisions, for a Stop
+| hook
+|
+| Options:
+|   -h, --help  display help for command
+|
+| What it reads and what it does:
+|   The JSON a host hands a Stop hook on stdin, with the transcript it names. It finds the
+|   prompts that open by correcting the agent — "no, …", "stop …", "do not …", "that is
+|   wrong", "use … instead", in English and Portuguese — and records each as a proposed
+|   decision in this machine’s private tree, citing the session and the line, at most five
+|   at a time and never the same line twice. No model is called; a match is a guess that a
+|   person accepts or rejects.
+|   On stdout, the reply the host reads: a `systemMessage` saying how many were recorded and
+|   under which labels, or {}.
+|   It does nothing until `mnema switch on user-corrections`, because it reads what a person
+|   typed. With the channel off, or outside a project, it records nothing.
 
 ### mnema decision record --help
 $ mnema decision record --help
@@ -1784,32 +1681,264 @@ $ mnema skill export --help
 |   wearing the same face. There is no --force: adopt it, then export it.
 |   It records nothing — no event, no consultation — and it writes nowhere but --out.
 
-### mnema run start --help
-$ mnema run start --help
-| Usage: mnema run start [options]
+### mnema task create --help
+$ mnema task create --help
+| Usage: mnema task create [options] <title>
 |
-| open a session for an agent (facts written in it are pinned to it)
-|
-| Options:
-|   --which <agent>  the agent this session is for — required: a run with no agent
-|                    authorizes nothing
-|   --goal <text>    what this session sets out to do
-|   -h, --help       display help for command
-
-### mnema run end --help
-$ mnema run end --help
-| Usage: mnema run end [options] [id]
-|
-| close a session (by default the one MNEMA_RUN names)
+| create a task in the current project
 |
 | Arguments:
-|   id                the run to close; omitted, the one MNEMA_RUN names
+|   title            the task title
 |
 | Options:
-|   --which <agent>   the agent closing this session — required: a close with no
-|                     agent is credited to you
-|   --outcome <text>  a short note on how the session went
-|   -h, --help        display help for command
+|   --scope <scope>  where the task is born: public (team-visible), private (this
+|                    machine, this project), or global (personal, cross-project).
+|                    Omitted, a task lands in the public tree (the team’s work
+|                    board).
+|   --which <agent>  the agent that executed this, when an agent (a script, a CI
+|                    step) is driving mnema — omit it when you are acting
+|                    directly. Declared, never assumed; it names the executor. See
+|                    --scope for where the fact lands. A value that names no agent
+|                    (an unset variable) is refused, never credited to you.
+|   -h, --help       display help for command
+|
+| What recording means here:
+|   Permanent — mnema is append-only and nothing deletes a fact. A public record
+|   is committed and reaches every machine that clones the repository.
+|   Do not record credentials: a recognized format is replaced with a placeholder
+|   and reported back, but what mnema does not recognize is written verbatim.
+|   Nor personal data: an email address is replaced with <email>; the mnid already says who wrote.
+|   Each text field holds at most 65536 bytes; a longer one is refused.
+
+### mnema task move --help
+$ mnema task move --help
+| Usage: mnema task move [options] <action> <id>
+|
+| move a task through the workflow (follows the task; takes no --scope)
+|
+| Arguments:
+|   action             the transition (submit, start, block, unblock,
+|                      submit_review, request_changes, approve, complete, cancel,
+|                      reopen)
+|   id                 the task id (the value shown when it was created)
+|
+| Options:
+|   --reason <text>    why (required by block, cancel, reopen)
+|   --note <text>      what was done (required by approve, complete)
+|   --feedback <text>  what must change (required by request_changes)
+|   -h, --help         display help for command
+|
+| Also accepted here (declared on the parent group):
+|   --which <agent>  the agent that executed this move, when an agent (a script,
+|                    a CI step) is driving mnema — omit it when you are acting
+|                    directly. It names the executor only: a move always follows
+|                    the entity to the tree it was born in.
+|
+| What recording means here:
+|   Permanent — mnema is append-only and nothing deletes a fact. A public record
+|   is committed and reaches every machine that clones the repository.
+|   Do not record credentials: a recognized format is replaced with a placeholder
+|   and reported back, but what mnema does not recognize is written verbatim.
+|   Nor personal data: an email address is replaced with <email>; the mnid already says who wrote.
+|   Each text field holds at most 65536 bytes; a longer one is refused.
+
+### mnema switch off --help
+$ mnema switch off --help
+| Usage: mnema switch off [options] <channel>
+|
+| stop a channel handing the record to a model unasked
+|
+| Arguments:
+|   channel          the channel to switch (brief-document, recall-document,
+|                    edit-rules-push, edit-asks-a-person, edit-refuses-a-write,
+|                    agent-accepts, edit-first-write-gate, user-corrections,
+|                    session-tally)
+|
+| Options:
+|   --reason <text>  why (recorded in the fact; never required)
+|   --scope <scope>  where the switch is born: public (team-visible), private
+|                    (this machine, this project), or global (personal,
+|                    cross-project). Defaults to public — the switch travels with
+|                    the repository, so the team reads it and the document a
+|                    session opens with says so. A private switch governs only
+|                    this machine and no committed file can report it.
+|   --which <agent>  the agent that executed this, when an agent (a script, a CI
+|                    step) is driving mnema — omit it when you are acting
+|                    directly. Declared, never assumed; it names the executor. See
+|                    --scope for where the fact lands. A value that names no agent
+|                    (an unset variable) is refused, never credited to you.
+|   -h, --help       display help for command
+|
+| What recording means here:
+|   Permanent — mnema is append-only and nothing deletes a fact. A public record
+|   is committed and reaches every machine that clones the repository.
+|   Do not record credentials: a recognized format is replaced with a placeholder
+|   and reported back, but what mnema does not recognize is written verbatim.
+|   Nor personal data: an email address is replaced with <email>; the mnid already says who wrote.
+|   Each text field holds at most 65536 bytes; a longer one is refused.
+
+### mnema switch on --help
+$ mnema switch on --help
+| Usage: mnema switch on [options] <channel>
+|
+| let a channel hand the record to a model again
+|
+| Arguments:
+|   channel          the channel to switch (brief-document, recall-document,
+|                    edit-rules-push, edit-asks-a-person, edit-refuses-a-write,
+|                    agent-accepts, edit-first-write-gate, user-corrections,
+|                    session-tally)
+|
+| Options:
+|   --reason <text>  why (recorded in the fact; never required)
+|   --scope <scope>  where the switch is born: public (team-visible), private
+|                    (this machine, this project), or global (personal,
+|                    cross-project). Defaults to public — the switch travels with
+|                    the repository, so the team reads it and the document a
+|                    session opens with says so. A private switch governs only
+|                    this machine and no committed file can report it.
+|   --which <agent>  the agent that executed this, when an agent (a script, a CI
+|                    step) is driving mnema — omit it when you are acting
+|                    directly. Declared, never assumed; it names the executor. See
+|                    --scope for where the fact lands. A value that names no agent
+|                    (an unset variable) is refused, never credited to you.
+|   -h, --help       display help for command
+|
+| What recording means here:
+|   Permanent — mnema is append-only and nothing deletes a fact. A public record
+|   is committed and reaches every machine that clones the repository.
+|   Do not record credentials: a recognized format is replaced with a placeholder
+|   and reported back, but what mnema does not recognize is written verbatim.
+|   Nor personal data: an email address is replaced with <email>; the mnid already says who wrote.
+|   Each text field holds at most 65536 bytes; a longer one is refused.
+
+### mnema inherit set --help
+$ mnema inherit set --help
+| Usage: mnema inherit set [options] <origin>
+|
+| point this project at a repository of decisions, at one commit
+|
+| Arguments:
+|   origin           a git URL, or a path to a repository (relative to the project
+|                    root)
+|
+| Options:
+|   --at <revision>  a branch or commit of the origin (its HEAD when omitted)
+|   --write          record the pointer. Omitted, it prints what would be
+|                    inherited and writes nothing.
+|   -h, --help       display help for command
+
+### mnema inherit update --help
+$ mnema inherit update --help
+| Usage: mnema inherit update [options]
+|
+| move the pointer to a newer commit, showing what changes first
+|
+| Options:
+|   --to <revision>  a branch or commit of the origin (its HEAD when omitted)
+|   --write          record the new pointer. Omitted, it prints what would change
+|                    and writes nothing.
+|   -h, --help       display help for command
+
+### mnema witness stamp --help
+$ mnema witness stamp --help
+| Usage: mnema witness stamp [options]
+|
+| ask an outside witness to date each tail's last checkpoint (T3)
+|
+| Options:
+|   --calendar <url...>  the timestamp calendars to ask — several, because any one
+|                        of them is enough and a proof asked of one server is a
+|                        proof that stops completing when that server does.
+|                        Defaults to the public OpenTimestamps calendars.
+|   --global             also cover this machine's global tree — left out by
+|                        default: it belongs to no project and is present in every
+|                        one, and a witness over a tree no verdict reads is work
+|                        with no reader (default: false)
+|   -h, --help           display help for command
+|
+| What leaves this machine: the SHA-256 of one checkpoint's signed message, and
+| nothing else — no id, no title, no body, no count. Each calendar is handed a hash
+| of that digest with a nonce of its own, so no two of them see the same value.
+|
+| It refuses a tree that is not fully signed: an attestation is filed under the
+| digest of a checkpoint, and the verifier looks for one under the checkpoint IT
+| proved. Below that level the two can be different checkpoints.
+|
+| The answer is a PROMISE, not a proof. It confirms when a Bitcoin block carries it,
+| which is minutes to hours later; `mnema witness upgrade` is the return visit, and
+| until then `verify` reads PENDING, which is not coverage.
+
+### mnema witness upgrade --help
+$ mnema witness upgrade --help
+| Usage: mnema witness upgrade [options]
+|
+| go back for every attestation this record is waiting on (T3)
+|
+| Options:
+|   --blocks <url>  where a block header is read from once an attestation
+|                   confirms. Asked ONCE per block: the 80 bytes are then part of
+|                   the record, and every verification after that is arithmetic on
+|                   this machine. Defaults to a public block explorer.
+|   --global        also cover this machine's global tree — left out by default:
+|                   it belongs to no project and is present in every one, and a
+|                   witness over a tree no verdict reads is work with no reader
+|                   (default: false)
+|   -h, --help      display help for command
+|
+| It goes back for EVERY request the tail still has open, not only the newest one.
+| Proofs stay under the checkpoint they were filed under and the head moves on, so a
+| request made this morning is usually no longer the head by the time a calendar has
+| an answer for it. Newest first, and it stops at the first one that confirms: below
+| that point a proof dates less of the record at a later instant, so no reading would
+| ever quote it. One that cannot be carried through is reported and the rest go on.
+|
+| Safe to repeat: a calendar with nothing yet answers so, and the proof comes back
+| as it went in. A header this fetches is checked against the block it claims to be
+| — it hashes to that block's id — so a substituted one is not a matter of trust.
+|
+| There is no --calendar here, and the reason is that there is nothing to choose:
+| every request the walk finds NAMES the calendar that took it. Only `stamp` picks,
+| because only `stamp` sends something nobody holds yet.
+|
+| The address a request names is checked before it is asked, because it was read off
+| a FILE and a proof can arrive from anywhere: it has to be an https address at one
+| of the public timestamp operators, and a redirect is followed only while it stays
+| on the same host. Anything else is reported by name and not contacted — a separate
+| line from the one a calendar that is down gets, because they call for opposite
+| responses.
+
+### mnema witness sigstore --help
+$ mnema witness sigstore --help
+| Usage: mnema witness sigstore [options]
+|
+| countersign each tail's last checkpoint with a Sigstore certificate — who signed
+| in, and when Rekor logged it
+|
+| Options:
+|   --global    also cover this machine's global tree — left out by default: it
+|               belongs to no project and is present in every one, and a witness
+|               over a tree no verdict reads is work with no reader (default:
+|               false)
+|   -h, --help  display help for command
+|
+| What leaves this machine: to Fulcio (fulcio.sigstore.dev), a sign-in token and a key made
+| for this act alone; to Rekor (rekor.sigstore.dev), the SHA-256 of each checkpoint and a
+| signature over it — never the record's events. AND YOUR IDENTITY: the certificate names the
+| e-mail you sign in with or, in GitHub Actions, the repository and the workflow, and it goes
+| into a public log that does not forget, and into the bundle the record commits.
+|
+| Here it opens the browser to sign in at oauth2.sigstore.dev. In GitHub Actions it uses
+| the job's own token (the workflow needs `permissions: id-token: write`), and it refuses
+| in a private repository, whose name the certificate would publish.
+|
+| It refuses a tree that is not fully signed, as `stamp` does, and appends no event: the
+| bundle is a file beside the checkpoint, `witness/<checkpoint>.sigstore.json`.
+|
+| The bundle dates the checkpoint on Rekor’s clock and names who signed in. It speaks for
+| an identity of this record only once that identity names the same e-mail or workflow:
+| `mnema key sigstore <identity>`. It is not a witness level: `verify` reads it only with
+| `--against-sigstore`, as notes.
 
 ### mnema check declare --help
 $ mnema check declare --help
@@ -2043,200 +2172,29 @@ $ mnema tail prune --help
 |   Nor personal data: an email address is replaced with <email>; the mnid already says who wrote.
 |   Each text field holds at most 65536 bytes; a longer one is refused.
 
-### mnema witness stamp --help
-$ mnema witness stamp --help
-| Usage: mnema witness stamp [options]
+### mnema run start --help
+$ mnema run start --help
+| Usage: mnema run start [options]
 |
-| ask an outside witness to date each tail's last checkpoint (T3)
-|
-| Options:
-|   --calendar <url...>  the timestamp calendars to ask — several, because any one
-|                        of them is enough and a proof asked of one server is a
-|                        proof that stops completing when that server does.
-|                        Defaults to the public OpenTimestamps calendars.
-|   --global             also cover this machine's global tree — left out by
-|                        default: it belongs to no project and is present in every
-|                        one, and a witness over a tree no verdict reads is work
-|                        with no reader (default: false)
-|   -h, --help           display help for command
-|
-| What leaves this machine: the SHA-256 of one checkpoint's signed message, and
-| nothing else — no id, no title, no body, no count. Each calendar is handed a hash
-| of that digest with a nonce of its own, so no two of them see the same value.
-|
-| It refuses a tree that is not fully signed: an attestation is filed under the
-| digest of a checkpoint, and the verifier looks for one under the checkpoint IT
-| proved. Below that level the two can be different checkpoints.
-|
-| The answer is a PROMISE, not a proof. It confirms when a Bitcoin block carries it,
-| which is minutes to hours later; `mnema witness upgrade` is the return visit, and
-| until then `verify` reads PENDING, which is not coverage.
-
-### mnema witness upgrade --help
-$ mnema witness upgrade --help
-| Usage: mnema witness upgrade [options]
-|
-| go back for every attestation this record is waiting on (T3)
+| open a session for an agent (facts written in it are pinned to it)
 |
 | Options:
-|   --blocks <url>  where a block header is read from once an attestation
-|                   confirms. Asked ONCE per block: the 80 bytes are then part of
-|                   the record, and every verification after that is arithmetic on
-|                   this machine. Defaults to a public block explorer.
-|   --global        also cover this machine's global tree — left out by default:
-|                   it belongs to no project and is present in every one, and a
-|                   witness over a tree no verdict reads is work with no reader
-|                   (default: false)
-|   -h, --help      display help for command
-|
-| It goes back for EVERY request the tail still has open, not only the newest one.
-| Proofs stay under the checkpoint they were filed under and the head moves on, so a
-| request made this morning is usually no longer the head by the time a calendar has
-| an answer for it. Newest first, and it stops at the first one that confirms: below
-| that point a proof dates less of the record at a later instant, so no reading would
-| ever quote it. One that cannot be carried through is reported and the rest go on.
-|
-| Safe to repeat: a calendar with nothing yet answers so, and the proof comes back
-| as it went in. A header this fetches is checked against the block it claims to be
-| — it hashes to that block's id — so a substituted one is not a matter of trust.
-|
-| There is no --calendar here, and the reason is that there is nothing to choose:
-| every request the walk finds NAMES the calendar that took it. Only `stamp` picks,
-| because only `stamp` sends something nobody holds yet.
-|
-| The address a request names is checked before it is asked, because it was read off
-| a FILE and a proof can arrive from anywhere: it has to be an https address at one
-| of the public timestamp operators, and a redirect is followed only while it stays
-| on the same host. Anything else is reported by name and not contacted — a separate
-| line from the one a calendar that is down gets, because they call for opposite
-| responses.
+|   --which <agent>  the agent this session is for — required: a run with no agent
+|                    authorizes nothing
+|   --goal <text>    what this session sets out to do
+|   -h, --help       display help for command
 
-### mnema witness sigstore --help
-$ mnema witness sigstore --help
-| Usage: mnema witness sigstore [options]
+### mnema run end --help
+$ mnema run end --help
+| Usage: mnema run end [options] [id]
 |
-| countersign each tail's last checkpoint with a Sigstore certificate — who signed
-| in, and when Rekor logged it
-|
-| Options:
-|   --global    also cover this machine's global tree — left out by default: it
-|               belongs to no project and is present in every one, and a witness
-|               over a tree no verdict reads is work with no reader (default:
-|               false)
-|   -h, --help  display help for command
-|
-| What leaves this machine: to Fulcio (fulcio.sigstore.dev), a sign-in token and a key made
-| for this act alone; to Rekor (rekor.sigstore.dev), the SHA-256 of each checkpoint and a
-| signature over it — never the record's events. AND YOUR IDENTITY: the certificate names the
-| e-mail you sign in with or, in GitHub Actions, the repository and the workflow, and it goes
-| into a public log that does not forget, and into the bundle the record commits.
-|
-| Here it opens the browser to sign in at oauth2.sigstore.dev. In GitHub Actions it uses
-| the job's own token (the workflow needs `permissions: id-token: write`), and it refuses
-| in a private repository, whose name the certificate would publish.
-|
-| It refuses a tree that is not fully signed, as `stamp` does, and appends no event: the
-| bundle is a file beside the checkpoint, `witness/<checkpoint>.sigstore.json`.
-|
-| The bundle dates the checkpoint on Rekor’s clock and names who signed in. It speaks for
-| an identity of this record only once that identity names the same e-mail or workflow:
-| `mnema key sigstore <identity>`. It is not a witness level: `verify` reads it only with
-| `--against-sigstore`, as notes.
-
-### mnema switch off --help
-$ mnema switch off --help
-| Usage: mnema switch off [options] <channel>
-|
-| stop a channel handing the record to a model unasked
+| close a session (by default the one MNEMA_RUN names)
 |
 | Arguments:
-|   channel          the channel to switch (brief-document, recall-document,
-|                    edit-rules-push, edit-asks-a-person, edit-refuses-a-write,
-|                    agent-accepts, edit-first-write-gate, user-corrections,
-|                    session-tally)
+|   id                the run to close; omitted, the one MNEMA_RUN names
 |
 | Options:
-|   --reason <text>  why (recorded in the fact; never required)
-|   --scope <scope>  where the switch is born: public (team-visible), private
-|                    (this machine, this project), or global (personal,
-|                    cross-project). Defaults to public — the switch travels with
-|                    the repository, so the team reads it and the document a
-|                    session opens with says so. A private switch governs only
-|                    this machine and no committed file can report it.
-|   --which <agent>  the agent that executed this, when an agent (a script, a CI
-|                    step) is driving mnema — omit it when you are acting
-|                    directly. Declared, never assumed; it names the executor. See
-|                    --scope for where the fact lands. A value that names no agent
-|                    (an unset variable) is refused, never credited to you.
-|   -h, --help       display help for command
-|
-| What recording means here:
-|   Permanent — mnema is append-only and nothing deletes a fact. A public record
-|   is committed and reaches every machine that clones the repository.
-|   Do not record credentials: a recognized format is replaced with a placeholder
-|   and reported back, but what mnema does not recognize is written verbatim.
-|   Nor personal data: an email address is replaced with <email>; the mnid already says who wrote.
-|   Each text field holds at most 65536 bytes; a longer one is refused.
-
-### mnema switch on --help
-$ mnema switch on --help
-| Usage: mnema switch on [options] <channel>
-|
-| let a channel hand the record to a model again
-|
-| Arguments:
-|   channel          the channel to switch (brief-document, recall-document,
-|                    edit-rules-push, edit-asks-a-person, edit-refuses-a-write,
-|                    agent-accepts, edit-first-write-gate, user-corrections,
-|                    session-tally)
-|
-| Options:
-|   --reason <text>  why (recorded in the fact; never required)
-|   --scope <scope>  where the switch is born: public (team-visible), private
-|                    (this machine, this project), or global (personal,
-|                    cross-project). Defaults to public — the switch travels with
-|                    the repository, so the team reads it and the document a
-|                    session opens with says so. A private switch governs only
-|                    this machine and no committed file can report it.
-|   --which <agent>  the agent that executed this, when an agent (a script, a CI
-|                    step) is driving mnema — omit it when you are acting
-|                    directly. Declared, never assumed; it names the executor. See
-|                    --scope for where the fact lands. A value that names no agent
-|                    (an unset variable) is refused, never credited to you.
-|   -h, --help       display help for command
-|
-| What recording means here:
-|   Permanent — mnema is append-only and nothing deletes a fact. A public record
-|   is committed and reaches every machine that clones the repository.
-|   Do not record credentials: a recognized format is replaced with a placeholder
-|   and reported back, but what mnema does not recognize is written verbatim.
-|   Nor personal data: an email address is replaced with <email>; the mnid already says who wrote.
-|   Each text field holds at most 65536 bytes; a longer one is refused.
-
-### mnema inherit set --help
-$ mnema inherit set --help
-| Usage: mnema inherit set [options] <origin>
-|
-| point this project at a repository of decisions, at one commit
-|
-| Arguments:
-|   origin           a git URL, or a path to a repository (relative to the project
-|                    root)
-|
-| Options:
-|   --at <revision>  a branch or commit of the origin (its HEAD when omitted)
-|   --write          record the pointer. Omitted, it prints what would be
-|                    inherited and writes nothing.
-|   -h, --help       display help for command
-
-### mnema inherit update --help
-$ mnema inherit update --help
-| Usage: mnema inherit update [options]
-|
-| move the pointer to a newer commit, showing what changes first
-|
-| Options:
-|   --to <revision>  a branch or commit of the origin (its HEAD when omitted)
-|   --write          record the new pointer. Omitted, it prints what would change
-|                    and writes nothing.
-|   -h, --help       display help for command
+|   --which <agent>   the agent closing this session — required: a close with no
+|                     agent is credited to you
+|   --outcome <text>  a short note on how the session went
+|   -h, --help        display help for command

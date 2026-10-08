@@ -430,6 +430,9 @@ mnema --color=always verify | less -R
 NO_COLOR=1 mnema verify      # and FORCE_COLOR, both as everywhere else
 ```
 
+An explicit `--color` beats both variables. `mnema --help` says only the three values and the
+two variables, to keep the first page short; this is the rest of it.
+
 **Style never changes what a line says.** Strip the escapes and the styled output is
 the plain output, byte for byte — the same text a redirected file holds, so a verdict
 quoted from a terminal is the verdict.
