@@ -295,7 +295,6 @@ export { EventParseError, parseEvent, toCanonical, unreadableReason } from './ev
 export { PROOF_FIELDS, proofFields, transitionProse } from './events/proof.js';
 export { catalogUpcasters } from './events/registry.js';
 export { mayRetract } from './events/retraction.js';
-export { decodeStoredBytes } from './events/stored-json.js';
 export {
   type LatestVersions,
   type Upcaster,
