@@ -30,7 +30,8 @@ import { type ChainLayout, gitignorePath } from './layout.js';
 /**
  * The chain's own `.gitignore`, self-contained at the tree root. It ignores the
  * private subtree, every local key-material file, and the writers' lock directory
- * (`locks/`, which holds machinery rather than record — see `tailLockPath`), and —
+ * (`locks/`, which holds machinery rather than record — the locks, `tailLockPath`,
+ * and two files that persist, `projectionCachePath` and `citedHeadsPath`), and —
  * by NOT ignoring them
  * — lets the proof files through: `keys/*.pub`, and everything under `tails/`
  * (segments, `checkpoints.jsonl`, `tailproof.json`, and the `witness/` directory,
@@ -50,8 +51,9 @@ const GITIGNORE_CONTENT = [
   '/keys/*.key',
   '/keys/*.inst',
   '/keys/*.anchor',
-  '# Machinery, not record: the lock a writer holds while it appends. It is unlinked',
-  '# on the way out, and only a killed holder leaves one behind.',
+  '# Machinery, not record: the lock a writer holds while it appends, unlinked on the',
+  '# way out; the projection a reader keeps; the heads a tail last cited. These two',
+  '# persist, and losing them costs a rebuild or one repeated citation, never a proof.',
   '/locks/',
   '',
 ].join('\n');
