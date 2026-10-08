@@ -32,7 +32,7 @@ my-stack/
 
 `validateStack(directory)` returns the problems it found, each with a code, and the digest. A stack is refused when it:
 
-- carries an MCP server in any form: a `.mcp.json`, an `.mcpb` bundle, or `mcpServers` in any JSON file;
+- carries an MCP server in any form: a `.mcp.json`, an `.mcpb` bundle, `mcpServers` in any `.json` or `.jsonc` file (parsed, so an escaped key counts), or an `mcp_servers` table in a `.toml` file;
 - has a hook that is not declared in `stack.json`, whose file is missing, or that says it is enabled;
 - has a `brings` that is not what the files hold;
 - has a skill whose `name` is not its directory, that lacks a description, or that has a field the specification
@@ -51,7 +51,7 @@ are not normalized. It needs no mnema:
 sh digest.sh path/to/my-stack
 ```
 
-which is, in full, `find`, `sort` and `sha256sum` (see `digest.sh`, which is one line). `hello-stack` is
+which is, in full, `find`, `sort` and `sha256sum` or `shasum -a 256` (see `digest.sh`, two lines). `hello-stack` is
 `df9d8d71cdc13bd89b45af349e677ecfcbe98949805278bd42f16e6c0498f9ed`, and a case holds the library and the shell to
 that number.
 
@@ -63,7 +63,7 @@ that number.
   instructions are good, or that a script under `scripts/` or `hooks/` does what its description says; it never
   runs one.
 - `brings` is checked against the files, but the check does not read what a skill's text tells an agent to do.
-- It refuses an MCP server by name and by file. It does not detect a server described in some other way.
+- It refuses an MCP server by file name and by the key or table that configures one, in JSON, JSONC and TOML. It does not detect a server described in any other format or by prose.
 - The frontmatter reader is small on purpose and is not a YAML parser. It reads top-level `key: value` lines and
   refuses a document it cannot place. Where `skills-ref`, the validator the specification publishes, is on the
   path, a case holds the two to the same verdict over a set of skills; it is not a dependency, and it takes

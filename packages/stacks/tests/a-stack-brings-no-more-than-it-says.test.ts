@@ -1,4 +1,4 @@
-import { rmSync } from 'node:fs';
+import { rmSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { afterEach, describe, expect, it } from 'vitest';
 import type { StackManifest } from '../src/manifest.js';
@@ -38,6 +38,14 @@ describe('an MCP server is refused in every form it takes', () => {
     ['a .mcp.json inside a skill', 'skills/hello/.mcp.json', '{}'],
     ['an .mcpb bundle', 'tools/server.mcpb', 'zip'],
     ['mcpServers in a plugin manifest', '.claude-plugin/plugin.json', '{"mcpServers":{"a":{}}}'],
+    ['an escaped mcpServers key', 'conf/a.json', '{"mcp\\u0053ervers":{"a":{}}}'],
+    [
+      'mcpServers in a .jsonc with comments',
+      'conf/a.jsonc',
+      '// servers\n{"x":{"mcpServers":{}},}\n',
+    ],
+    ['an mcp_servers table in a .toml', 'conf/config.toml', '[mcp_servers.docs]\ncommand = "x"\n'],
+    ['a nested mcp_servers table in a .toml', 'conf/config.toml', '[tool.mcp_servers]\n'],
   ])('%s', (_what, path, content) => {
     const dir = scratchStack();
     put(dir, path, content);
@@ -200,5 +208,32 @@ describe('the rest of the contract', () => {
       put(dir, 'stack.json', manifestWith({ name }));
       expect(codes(validateStack(dir).problems), name).toContain('manifest-invalid');
     }
+  });
+});
+
+describe('what the digest cannot see is refused, not read past', () => {
+  it('a stack.sigstore.json that is a directory is refused, with its contents', () => {
+    const dir = scratchStack();
+    put(dir, 'stack.sigstore.json/x', 'hidden');
+    const report = validateStack(dir);
+    expect(report.ok).toBe(false);
+    expect(codes(report.problems)).toContain('signature-not-a-file');
+  });
+
+  it('a name that is not UTF-8 is a problem, not an exception', () => {
+    const dir = scratchStack();
+    writeFileSync(
+      Buffer.concat([Buffer.from(`${dir}/n`), Buffer.from([0xff]), Buffer.from('ame.txt')]),
+      'x',
+    );
+    const report = validateStack(dir);
+    expect(report.ok).toBe(false);
+    expect(codes(report.problems)).toContain('path-refused');
+  });
+
+  it('a .toml that merely mentions the word is left alone', () => {
+    const dir = scratchStack();
+    put(dir, 'conf/a.toml', '# mcp_servers are not here\n[tool]\nx = 1\n');
+    expect(validateStack(dir).problems).toEqual([]);
   });
 });

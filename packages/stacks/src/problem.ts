@@ -12,6 +12,7 @@ export type ProblemCode =
   | 'skill-invalid'
   | 'agent-invalid'
   | 'symlink'
+  | 'signature-not-a-file'
   | 'not-a-file'
   | 'path-refused';
 

@@ -69,6 +69,44 @@ export function namesAnMcpServer(value: unknown): boolean {
   return Object.entries(value).some(([k, v]) => k === 'mcpServers' || namesAnMcpServer(v));
 }
 
+const stripJsonc = (source: string): string => {
+  let out = '';
+  for (let i = 0; i < source.length; i += 1) {
+    const c = source[i] as string;
+    if (c === '"') {
+      let j = i + 1;
+      while (j < source.length && source[j] !== '"') j += source[j] === '\\' ? 2 : 1;
+      out += source.slice(i, j + 1);
+      i = j;
+    } else if (c === '/' && source[i + 1] === '/') {
+      while (i < source.length && source[i] !== '\n') i += 1;
+      out += '\n';
+    } else if (c === '/' && source[i + 1] === '*') {
+      const end = source.indexOf('*/', i + 2);
+      i = end === -1 ? source.length : end + 1;
+    } else out += c;
+  }
+  return out.replace(/,(\s*[}\]])/g, '$1');
+};
+
+/**
+ * Does this file configure an MCP server? A `.json` or `.jsonc` file is parsed (comments and
+ * trailing commas allowed) and asked for the key at any depth, so an escaped key is the key; one
+ * that does not parse is refused if it spells the word anywhere. A `.toml` file is refused if a
+ * table header names `mcp_servers`, which is how Codex configures them.
+ */
+export function configuresAnMcpServer(path: string, text: string): boolean {
+  if (/\.jsonc?$/.test(path)) {
+    try {
+      return namesAnMcpServer(JSON.parse(stripJsonc(text)));
+    } catch {
+      return /mcpServers|mcp\\u|mcp_servers/i.test(text);
+    }
+  }
+  if (path.endsWith('.toml')) return /^\s*\[+\s*(?:[\w."'-]*\.)?mcp_servers\b/m.test(text);
+  return false;
+}
+
 /**
  * Checks a parsed `stack.json` against the contract. Unknown keys are refused, not ignored: a
  * manifest that says more than the contract reads is a manifest nobody has checked.

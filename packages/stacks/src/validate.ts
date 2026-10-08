@@ -1,7 +1,12 @@
 import { stackDigest } from './digest.js';
 import { readStackFiles } from './files.js';
 import { readFrontmatter } from './frontmatter.js';
-import { checkName, type StackManifest, validateManifest } from './manifest.js';
+import {
+  checkName,
+  configuresAnMcpServer,
+  type StackManifest,
+  validateManifest,
+} from './manifest.js';
 import type { Problem } from './problem.js';
 
 export interface StackReport {
@@ -27,7 +32,6 @@ const SKILL_FIELDS = [
   'compatibility',
 ];
 const AGENT_FIELDS = ['name', 'description', 'tools', 'model'];
-const MCP_SERVERS = /mcpServers/;
 const text = (bytes: Uint8Array): string => Buffer.from(bytes).toString('utf8');
 
 /**
@@ -75,8 +79,8 @@ export function validateStack(root: string): StackReport {
       add('mcp-server', f.path, `${f.path} configures an MCP server; a stack never carries one`);
     else if (base.endsWith('.mcpb'))
       add('mcp-server', f.path, `${f.path} is an MCP bundle; a stack never carries one`);
-    else if (base.endsWith('.json') && MCP_SERVERS.test(text(f.bytes))) {
-      add('mcp-server', f.path, `${f.path} names mcpServers; a stack never carries a server`);
+    else if (configuresAnMcpServer(f.path, text(f.bytes))) {
+      add('mcp-server', f.path, `${f.path} configures an MCP server; a stack never carries one`);
     }
   }
 
