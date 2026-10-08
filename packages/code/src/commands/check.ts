@@ -67,21 +67,25 @@ export function runCheckDeclare(
   input: { rule: string; command: string; args: readonly string[]; which?: string },
 ): CheckDeclared | CheckRefused {
   const trees = resolveTrees(ctx.cwd, ctx.env);
-  if (trees.projectPublic === undefined) return { ok: false, reason: 'NO_PROJECT' };
+  const root = trees.projectPublic;
+  if (root === undefined) return { ok: false, reason: 'NO_PROJECT' };
   const writer = openTreeForWriting(trees, 'public');
-  const declared = declareCheck(
-    { writer, layout: { root: trees.projectPublic }, upcasters: catalogUpcasters() },
-    {
-      rule: input.rule,
-      command: input.command,
-      ...(input.args.length > 0 ? { args: input.args } : {}),
-      ...(input.which !== undefined ? { which: input.which } : {}),
-    },
-  );
+  const declared = writer.exclusively(() => {
+    const written = declareCheck(
+      { writer, layout: { root }, upcasters: catalogUpcasters() },
+      {
+        rule: input.rule,
+        command: input.command,
+        ...(input.args.length > 0 ? { args: input.args } : {}),
+        ...(input.which !== undefined ? { which: input.which } : {}),
+      },
+    );
+    if (written.ok) writer.checkpoint();
+    return written;
+  });
   if (!declared.ok) {
     return { ok: false, reason: 'REFUSED', code: declared.code, message: declared.message };
   }
-  writer.checkpoint();
   return { ok: true, rule: declared.rule, scope: 'public', ...forwardReplacement(declared) };
 }
 

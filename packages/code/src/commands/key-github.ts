@@ -61,19 +61,22 @@ export function runKeyGithub(
     return { ok: false, reason: 'REFUSED', code: 'NOT_A_GITHUB_ACCOUNT', message: notAName };
   }
   const writer = openTreeForWriting(trees, 'public');
-  const linked = linkAccount(
-    {
-      writer,
-      layout: { root: chainRootForScope(trees, 'public') as string },
-      upcasters: catalogUpcasters(),
-    },
-    { account: input.account },
-  );
+  const linked = writer.exclusively(() => {
+    const written = linkAccount(
+      {
+        writer,
+        layout: { root: chainRootForScope(trees, 'public') as string },
+        upcasters: catalogUpcasters(),
+      },
+      { account: input.account },
+    );
+    // The claim signs its own checkpoint, so this only covers a founding the operation made.
+    if (written.ok) writer.checkpoint();
+    return written;
+  });
   if (!linked.ok) {
     return { ok: false, reason: 'REFUSED', code: linked.code, message: linked.message };
   }
-  // The claim signs its own checkpoint, so this only covers a founding the operation made.
-  writer.checkpoint();
   return {
     ok: true,
     anchor: linked.anchor,

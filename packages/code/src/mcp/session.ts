@@ -827,7 +827,12 @@ function ensureRun(session: Session, trees: ResolvedTrees, scope: Scope): string
   session.founding.opened(root, scope);
   session.writesBegun.add(root);
   const ctx = writeContext(trees, scope, session.caches);
-  const started = startRun(ctx, { agent: session.which });
+  // The opening and its signature in ONE hold of the tail's lock: see SIGNED HERE below.
+  const started = ctx.writer.exclusively(() => {
+    const opened = startRun(ctx, { agent: session.which });
+    if (opened.ok) ctx.writer.checkpoint();
+    return opened;
+  });
   if (!started.ok) {
     throw new Error(`could not open a session run: ${started.code} — ${started.message}`);
   }
@@ -846,8 +851,7 @@ function ensureRun(session: Session, trees: ResolvedTrees, scope: Scope): string
   //
   // It costs ONE checkpoint per session per tree, not one per call: the map lookup
   // above returns early for every later write to this tree. See
-  // `every-write-signs-what-it-wrote.test.ts`.
-  ctx.writer.checkpoint();
+  // `every-write-signs-what-it-wrote.test.ts`. Signed inside the hold that opened it, above.
   // The moment a reading connection became a writing one — in this tree, which the
   // line names, because a connection now opens a run per project it writes to and a
   // line that named only the run would leave a reader counting runs with no way to
@@ -931,7 +935,11 @@ export function closeSession(session: Session): SessionClose {
         // surface the connection is both. Taken from the session rather than asked
         // of the client: it is already in hand, and a close whose executor came from
         // the wire could name an agent other than the one that did the work.
-        const ended = endRun(ctx, { run: run.id, which: session.which });
+        const ended = ctx.writer.exclusively(() => {
+          const closing = endRun(ctx, { run: run.id, which: session.which });
+          if (closing.ok) ctx.writer.checkpoint();
+          return closing;
+        });
         // Signed here, and this is the last chance anything has: the connection is
         // over, so no later write will come back to cover this `run.ended`. Measured
         // before this line existed: a session that recorded a task and then closed
@@ -940,7 +948,6 @@ export function closeSession(session: Session): SessionClose {
         // back below that by the act of closing, permanently and silently. Signing
         // only what landed: a refused close leaves nothing pending, so this is a
         // no-op there rather than a second signature over the same range.
-        if (ended.ok) ctx.writer.checkpoint();
         if (ended.ok) replaced.push(...(ended.replaced ?? []));
         (ended.ok ? closed : leftOpen).push(run.id);
       } catch {

@@ -91,26 +91,28 @@ export function runHandoff(
   }
 
   const writer = openTreeForWriting(trees, scope);
-  const recorded = recordHandoff(
-    {
-      writer,
-      layout: { root: chainRootForScope(trees, scope) as string },
-      upcasters: catalogUpcasters(),
-    },
-    {
-      task: input.task,
-      fromAgent: input.fromAgent,
-      toAgent: input.toAgent,
-      ...(input.which !== undefined ? { which: input.which } : {}),
-      ...(input.run !== undefined ? { run: input.run } : {}),
-    },
-  );
+  const recorded = writer.exclusively(() => {
+    const written = recordHandoff(
+      {
+        writer,
+        layout: { root: chainRootForScope(trees, scope) as string },
+        upcasters: catalogUpcasters(),
+      },
+      {
+        task: input.task,
+        fromAgent: input.fromAgent,
+        toAgent: input.toAgent,
+        ...(input.which !== undefined ? { which: input.which } : {}),
+        ...(input.run !== undefined ? { run: input.run } : {}),
+      },
+    );
+    // Checkpoint so the new handoff is signature-covered at once.
+    if (written.ok) writer.checkpoint();
+    return written;
+  });
   if (!recorded.ok) {
     return { ok: false, reason: 'REFUSED', code: recorded.code, message: recorded.message };
   }
-
-  // Checkpoint so the new handoff is signature-covered at once.
-  writer.checkpoint();
 
   return {
     ok: true,

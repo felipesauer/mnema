@@ -6,12 +6,13 @@ import {
   readdirSync,
   readFileSync,
   rmSync,
+  unlinkSync,
   writeFileSync,
 } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join, relative } from 'node:path';
 import { pathToFileURL } from 'node:url';
-import { catalogUpcasters, ensureTree, verify } from '@mnema/chain';
+import { ChainWriter, catalogUpcasters, ensureTree, verify } from '@mnema/chain';
 import {
   chainRootForScope,
   type DiscoveryEnv,
@@ -459,12 +460,16 @@ function mergeAForeignTail(into: string): string {
   try {
     const trees = { keyRoot: machine, projectPublic: machine } as unknown as ResolvedTrees;
     const writer = openTreeForWriting(trees, 'public');
-    const made = createTask(
-      { writer, layout: { root: machine }, upcasters },
-      { title: 'work another machine did' },
-    );
+    // Signed in the hold that wrote it, as every write of the product is.
+    const made = writer.exclusively(() => {
+      const created = createTask(
+        { writer, layout: { root: machine }, upcasters },
+        { title: 'work another machine did' },
+      );
+      writer.checkpoint();
+      return created;
+    });
     if (!made.ok) throw new Error('the other machine wrote nothing to cut');
-    writer.checkpoint();
     for (const tail of readdirSync(join(machine, 'tails'))) {
       cpSync(join(machine, 'tails', tail), join(into, 'tails', tail), { recursive: true });
     }
@@ -1021,6 +1026,26 @@ describe('every write path leaves the record fully signed', () => {
     expect(end.levels).toContain('fully-signed');
   });
 
+  it('signs every CLI write under the hold that wrote it, so a refusal never follows the fact', () => {
+    const project = join(sandbox, 'repo');
+    const trap = armTheGapBetweenTheFactAndItsSignature();
+    try {
+      for (const row of cliSweep()) holdsOrSaysSo(row, project, trap);
+    } finally {
+      trap.disarm();
+    }
+  });
+
+  it('signs every MCP write under the hold that wrote it, so a refusal never follows the fact', () => {
+    const project = join(sandbox, 'served');
+    const trap = armTheGapBetweenTheFactAndItsSignature();
+    try {
+      for (const row of mcpSweep()) holdsOrSaysSo(row, project, trap);
+    } finally {
+      trap.disarm();
+    }
+  });
+
   it('keeps the cadence at one signature per act of writing', () => {
     // The non-regression the delivery owes: this is what the cadence WAS before any
     // of it, measured on the binary (30 writes to a fresh record — 32 events, 31
@@ -1060,42 +1085,154 @@ describe('every write path leaves the record fully signed', () => {
 describe('the ceiling the writer holds on its own', () => {
   it('fires on a real act too big to wait for, with nobody calling checkpoint', () => {
     // THE LINK, and the case that took `DEFAULT_MAX_UNSIGNED_EVENTS` off the list of
-    // inert exports. `mnema decision import --write` puts TWO events on the tail per
-    // ADR — the decision and the link that records where it came from — through a
-    // single writer, and signs once at the end. So a directory of 33 ADRs crosses 64
-    // in one act, the writer signs on its own before the command asks, and the record
-    // has more checkpoints than the command wrote.
+    // inert exports. One write that touches many files under a path a rule refuses puts
+    // one `channel.refused` per path on the tail, in ONE hold of the lock, and signs once
+    // at the end. So a multi-file write over 70 such paths crosses 64 in one act, the
+    // writer signs on its own before the command asks, and the act leaves two
+    // checkpoints where it signed once.
+    //
+    // (This was `decision import --write` over 33 ADRs, which crossed 64 in one act while
+    // the import signed once for the whole directory. The import now signs each file in
+    // the hold that wrote it — a signature asked for under a lock of its own could be
+    // refused after the decisions landed — so it never leaves 64 open any more.)
     //
     // What this measures is the CEILING, not the cadence: the ceiling caps how much
     // one act may leave open, the cadence is one signature per act, and this is the
-    // only shape in which the two are distinguishable.
+    // shape in which the two are distinguishable.
     const project = join(sandbox, 'bulk');
-    const adrs = join(project, 'docs', 'adr');
-    mkdirSync(adrs, { recursive: true });
-    runInit({ cwd: project, env });
-    const COUNT = 33;
-    for (let i = 0; i < COUNT; i += 1) {
-      writeFileSync(
-        join(adrs, `${String(i + 1).padStart(4, '0')}-choice.md`),
-        `# Choice number ${i}\n\n- **Status:** Accepted\n\n## Context\n\nit had to be settled\n`,
-        'utf-8',
-      );
-    }
-    const imported = runDecisionImport({ cwd: project, env }, { from: 'docs/adr', write: true });
-    expect(imported.ok).toBe(true);
-    if (!imported.ok) return;
-    expect(imported.proposals).toHaveLength(COUNT);
+    mkdirSync(project, { recursive: true });
+    const ctx = { cwd: project, env };
+    runInit(ctx);
+    const made = runDecision(ctx, {
+      title: 'the ledger is not written by hand',
+      rationale: 'audit',
+    });
+    if (!made.ok) throw new Error('the decision was refused');
+    const accepted = runDecisionTransition(ctx, {
+      id: made.id,
+      action: 'accept',
+      proof: { note: 'we ship it' },
+    });
+    if (!accepted.ok) throw new Error('the acceptance was refused');
+    const linked = runLink(ctx, { subject: made.id, target: 'src/ledger', rel: 'refuses-a-write' });
+    if (!linked.ok) throw new Error('the link was refused');
 
     const root = chainRootForScope(resolveTrees(project, env), 'public') as string;
-    let checkpoints = 0;
-    for (const tail of readdirSync(join(root, 'tails'))) {
-      const path = join(root, 'tails', tail, 'checkpoints.jsonl');
-      checkpoints += readFileSync(path, 'utf-8').split('\n').filter(Boolean).length;
-    }
-    // `init` signed once and the import signed once at the end; a THIRD checkpoint is
-    // one nobody asked for, and only the ceiling can have made it. Fewer than three
-    // means the ceiling did not fire, which is what this case exists to refuse.
-    expect(checkpoints).toBe(3);
+    const signatures = (): number => {
+      let checkpoints = 0;
+      for (const tail of readdirSync(join(root, 'tails'))) {
+        const path = join(root, 'tails', tail, 'checkpoints.jsonl');
+        checkpoints += readFileSync(path, 'utf-8').split('\n').filter(Boolean).length;
+      }
+      return checkpoints;
+    };
+    const before = signatures();
+    const COUNT = 70;
+    const refused = runBeforeAWrite(ctx, {
+      host: 'vscode',
+      payload: JSON.stringify({
+        tool_name: 'multi_replace_string_in_file',
+        tool_input: {
+          replacements: Array.from({ length: COUNT }, (_, i) => ({
+            filePath: `src/ledger/entry-${i}.ts`,
+          })),
+        },
+      }),
+    });
+    expect(JSON.stringify(refused.reply)).toContain('"permissionDecision":"deny"');
+    expect(refused.notes).toEqual([]);
+    // The act signed once at its end; a SECOND checkpoint from it is one nobody asked for,
+    // and only the ceiling can have made it. One means the ceiling did not fire.
+    expect(signatures() - before).toBe(2);
     expect(verify(root).level).toBe('fully-signed');
   });
 });
+
+// ---------------------------------------------------------------------------
+// The gap between the fact and its signature
+// ---------------------------------------------------------------------------
+
+/** The writer as this file's trap reads it: the fields the class keeps to itself. */
+interface WriterInside {
+  readonly holding: boolean;
+  readonly pending: readonly unknown[];
+  readonly layout: { readonly root: string };
+  readonly tail: string;
+  underTailLock(act: () => unknown): unknown;
+}
+
+interface Trap {
+  /** The tails a hold let go of with events in it that nobody had signed yet. */
+  readonly releasedUnsigned: string[];
+  /** Removes the locks the trap planted, so the next row starts with the tail free. */
+  clear(): void;
+  disarm(): void;
+}
+
+/**
+ * THE REFUSAL THAT LIED, recreated on purpose at the one instant it can happen.
+ *
+ * A write that appends under one hold of the tail's lock and signs under a second one has a
+ * moment, between the two, when the tail is free and the fact is already on it. Measured under
+ * load with twenty agents: another session takes the lock in that moment, the signature waits
+ * its two seconds and is refused, and the reply says "this write was not appended" about a fact
+ * that is on the chain. The timing of a real race cannot be scheduled in a test, so this puts a
+ * LIVE holder there instead: whenever a hold ends with events of this writer still unsigned, the
+ * trap writes the tail's lock file naming this process — a pid that answers, so no waiter may
+ * break it — exactly as the other session would have held it.
+ *
+ * A path that signs inside the hold that wrote never trips it, and a path that does not trips it
+ * every time, whatever the machine's speed.
+ */
+function armTheGapBetweenTheFactAndItsSignature(): Trap {
+  const proto = ChainWriter.prototype as unknown as WriterInside;
+  const original = proto.underTailLock;
+  const releasedUnsigned: string[] = [];
+  const planted: string[] = [];
+  proto.underTailLock = function (this: WriterInside, act: () => unknown): unknown {
+    if (this.holding) return original.call(this, act);
+    const result = original.call(this, act);
+    if (this.pending.length > 0) {
+      releasedUnsigned.push(this.tail);
+      const lock = join(this.layout.root, 'locks', `${this.tail}.lock`);
+      writeFileSync(lock, `${process.pid} ${Date.now()}\n`, { flag: 'wx' });
+      planted.push(lock);
+    }
+    return result;
+  };
+  return {
+    releasedUnsigned,
+    clear: () => {
+      for (const lock of planted.splice(0)) unlinkSync(lock);
+    },
+    disarm: () => {
+      proto.underTailLock = original;
+      for (const lock of planted.splice(0)) unlinkSync(lock);
+    },
+  };
+}
+
+/**
+ * Drives one row with the trap armed, and holds the reply to what the chain gained: a row that
+ * says it was refused added nothing, and a row that says it wrote left nothing unsigned.
+ */
+function holdsOrSaysSo(row: Driven, project: string, trap: Trap): void {
+  const before = acrossTrees(project, env);
+  let refusal: unknown;
+  try {
+    row.drive();
+  } catch (error) {
+    refusal = error;
+  }
+  trap.clear();
+  const after = acrossTrees(project, env);
+  if (refusal !== undefined) {
+    // THE LIE THIS FILE NOW GUARDS: a reply of "not appended" over a chain that grew.
+    expect(after.events, `${row.at} was refused and the chain gained: ${String(refusal)}`).toBe(
+      before.events,
+    );
+  }
+  expect(trap.releasedUnsigned.splice(0), `${row.at} let the tail go before signing`).toEqual([]);
+  expect(refusal, row.at).toBeUndefined();
+  expect(after.uncovered, row.at).toEqual([]);
+}

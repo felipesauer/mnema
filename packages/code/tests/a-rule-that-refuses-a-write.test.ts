@@ -22,6 +22,7 @@ import {
   existsSync,
   mkdirSync,
   mkdtempSync,
+  readdirSync,
   readFileSync,
   rmSync,
   writeFileSync,
@@ -40,6 +41,7 @@ import { openSession } from '../src/mcp/session.js';
 import { runGoverningRulesTool, runRulesBeforeAnEditTool } from '../src/mcp/tools.js';
 import { acceptedBy } from '../src/presentation/accepted-by.js';
 import { type CliIo, run } from '../src/program.js';
+import { A_CHARGE_WAITS_MS } from '../src/what-a-write-meets.js';
 
 const REPO = fileURLToPath(new URL('../../../', import.meta.url));
 const CLI = join(REPO, 'packages', 'code', 'dist', 'cli.js');
@@ -140,6 +142,20 @@ function verb(
     reply: JSON.parse(JSON.stringify(done.reply)) as Record<string, unknown>,
     notes: done.notes,
   };
+}
+
+/**
+ * Holds this machine's tail of the public tree as a live process would — this one, whose pid
+ * answers, so no waiter may break it — and returns the lock file to remove.
+ */
+function holdTheTail(): string {
+  const root = resolveTrees(repo, env).projectPublic as string;
+  const tails = readdirSync(join(root, 'tails'));
+  expect(tails).toHaveLength(1);
+  const lock = join(root, 'locks', `${tails[0]}.lock`);
+  mkdirSync(dirname(lock), { recursive: true });
+  writeFileSync(lock, `${process.pid} ${Date.now()}\n`, { flag: 'wx' });
+  return lock;
 }
 
 /** The permission decision of a reply. */
@@ -260,15 +276,50 @@ describe('the verb a command host runs', () => {
     expect(counts()['channel.asked']).toBe(1);
   });
 
-  it('refuses nobody when the refusal cannot be recorded, and says so on the second stream', () => {
-    // A rule at the root covers every path, and a path over the field limit is refused by the
-    // content door when the fact is written: the only direction a failure may fall is the write.
+  it('refuses even when the refusal cannot be recorded, and says so in the reason and on the second stream', () => {
+    // A path over the field limit is refused by the content door when the fact is written. The
+    // refusal is decided by reading, so it stands; what is missing is the fact, and it is said.
     const tooLong = `src/billing/${'a'.repeat(70_000)}.ts`;
     const before = publicEvents().length;
     const { reply, notes } = verb('cursor', tooLong);
-    expect(reply).toEqual({});
-    expect(notes.join('\n')).toContain('could not be recorded, so nothing was refused');
+    const { value, reason } = decided(reply);
+    expect(value).toBe('deny');
+    expect(reason).toContain(refusing);
+    expect(reason).toContain('This refusal could not be recorded in the project');
+    expect(notes.join('\n')).toContain('This refusal could not be recorded in the project');
     expect(publicEvents().length).toBe(before);
+  });
+
+  it('refuses while a live process holds the record, within the hook\u2019s time, and says the fact is missing', {
+    timeout: 30_000,
+  }, () => {
+    const before = publicEvents().length;
+    const lock = holdTheTail();
+    const started = Date.now();
+    const { reply, notes } = verb('cursor', 'src/billing/invoice.ts');
+    const waited = Date.now() - started;
+    rmSync(lock);
+    const { value, reason } = decided(reply);
+    expect(value).toBe('deny');
+    expect(reason).toContain(refusing);
+    expect(reason).toContain(`process ${process.pid} was writing the record`);
+    expect(notes).toHaveLength(1);
+    expect(publicEvents().length).toBe(before);
+    // Three of the lock's 2 s waits, inside the charge's budget and well under the hook's 15 s.
+    expect(waited).toBeGreaterThanOrEqual(6_000);
+    expect(waited).toBeLessThan(A_CHARGE_WAITS_MS + 500);
+  });
+
+  it('asks while a live process holds the record, and says the fact is missing', {
+    timeout: 30_000,
+  }, () => {
+    const lock = holdTheTail();
+    const { reply } = verb('vscode', 'src/other/refund.ts');
+    rmSync(lock);
+    const { value, reason } = decided(reply);
+    expect(value).toBe('ask');
+    expect(reason).toContain('This request for a person could not be recorded');
+    expect(counts()['channel.asked']).toBe(0);
   });
 
   it('reads the path of Cursor’s write, and of no other tool it was not measured on', () => {
@@ -342,12 +393,51 @@ describe('the MCP tool Claude Code’s hook calls', () => {
     expect(tool('src/billing/invoice.ts')).toEqual({});
   });
 
-  it('refuses nobody when the refusal cannot be recorded: the rules still arrive', () => {
+  it('refuses even when the refusal cannot be recorded, and the reason says so', () => {
     const tooLong = `src/billing/${'a'.repeat(70_000)}.ts`;
     const specific = tool(tooLong)['hookSpecificOutput'] as Record<string, string> | undefined;
-    expect(specific?.['permissionDecision']).toBeUndefined();
+    expect(specific?.['permissionDecision']).toBe('deny');
+    expect(specific?.['permissionDecisionReason']).toContain(
+      'This refusal could not be recorded in the project',
+    );
     expect(refusals()).toEqual([]);
   });
+
+  it('refuses while a live process holds the record, as a reply and never as an error', {
+    timeout: 30_000,
+  }, () => {
+    const before = publicEvents().length;
+    const lock = holdTheTail();
+    const started = Date.now();
+    const specific = tool('src/billing/invoice.ts')['hookSpecificOutput'] as Record<string, string>;
+    const waited = Date.now() - started;
+    rmSync(lock);
+    expect(specific['permissionDecision']).toBe('deny');
+    expect(specific['permissionDecisionReason']).toContain(refusing);
+    expect(specific['permissionDecisionReason']).toContain(
+      `process ${process.pid} was writing the record`,
+    );
+    expect(publicEvents().length).toBe(before);
+    expect(waited).toBeLessThan(A_CHARGE_WAITS_MS + 500);
+  });
+
+  it('asks while a live process holds the record, inside the charge\u2019s budget, pushing no service fact', async () => {
+    // A rule that informs at the same path, so the push has a service fact to record: tried after
+    // a charge the tail kept out, it was one more lock wait (8.1 s for the whole answer).
+    await did('link', governing, 'src/other', '--rel', 'governs');
+    const before = publicEvents().length;
+    const lock = holdTheTail();
+    const started = Date.now();
+    const specific = tool('src/other/refund.ts')['hookSpecificOutput'] as Record<string, string>;
+    const waited = Date.now() - started;
+    rmSync(lock);
+    expect(specific['permissionDecision']).toBe('ask');
+    expect(specific['permissionDecisionReason']).toContain(
+      'This request for a person could not be recorded',
+    );
+    expect(publicEvents().length).toBe(before);
+    expect(waited).toBeLessThan(A_CHARGE_WAITS_MS + 500);
+  }, 30_000);
 });
 
 describe('the same rule, said again in one session', () => {

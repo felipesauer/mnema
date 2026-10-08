@@ -73,19 +73,22 @@ export function runUnlink(
   }
 
   const writer = openTreeForWriting(trees, scope);
-  const retracted = retractLink(
-    { writer, layout: { root: chainRootForScope(trees, scope) as string }, upcasters },
-    {
-      ...edge,
-      reason: input.reason,
-      ...(input.which !== undefined ? { which: input.which } : {}),
-      ...(input.run !== undefined ? { run: input.run } : {}),
-    },
-  );
+  const retracted = writer.exclusively(() => {
+    const written = retractLink(
+      { writer, layout: { root: chainRootForScope(trees, scope) as string }, upcasters },
+      {
+        ...edge,
+        reason: input.reason,
+        ...(input.which !== undefined ? { which: input.which } : {}),
+        ...(input.run !== undefined ? { run: input.run } : {}),
+      },
+    );
+    // Checkpoint so the retraction is signature-covered at once.
+    if (written.ok) writer.checkpoint();
+    return written;
+  });
   if (!retracted.ok) return refused(retracted.code, retracted.message);
 
-  // Checkpoint so the retraction is signature-covered at once.
-  writer.checkpoint();
   return {
     ok: true,
     subject: retracted.subject,

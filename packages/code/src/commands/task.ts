@@ -99,25 +99,27 @@ export function runTask(
   }
 
   const writer = openTreeForWriting(trees, scope);
-  const created = createTask(
-    {
-      writer,
-      layout: { root: chainRootForScope(trees, scope) as string },
-      upcasters: catalogUpcasters(),
-    },
-    {
-      title: input.title,
-      ...(input.which !== undefined ? { which: input.which } : {}),
-      ...(input.run !== undefined ? { run: input.run } : {}),
-    },
-  );
+  const created = writer.exclusively(() => {
+    const written = createTask(
+      {
+        writer,
+        layout: { root: chainRootForScope(trees, scope) as string },
+        upcasters: catalogUpcasters(),
+      },
+      {
+        title: input.title,
+        ...(input.which !== undefined ? { which: input.which } : {}),
+        ...(input.run !== undefined ? { run: input.run } : {}),
+      },
+    );
+    // Checkpoint so the new task is signature-covered at once — the tree stays
+    // fully signed after every command, the same posture init leaves it in.
+    if (written.ok) writer.checkpoint();
+    return written;
+  });
   if (!created.ok) {
     return { ok: false, reason: 'REFUSED', code: created.code, message: created.message };
   }
-
-  // Checkpoint so the new task is signature-covered at once — the tree stays
-  // fully signed after every command, the same posture init leaves it in.
-  writer.checkpoint();
 
   return {
     ok: true,
