@@ -44,15 +44,15 @@ identically, because they are the same call.
   tree it landed in.
 - **Reads that answer questions** — where things stand (`status`: the live work, the
   adopted patterns, the decisions in force, and what is still waiting on somebody to
-  rule on it), what is in flight (`focus`), where you left off (`resume`), what the
-  workflow allows next (`next-actions`), and whether a move would be allowed at all
-  (`guard`, a dry run that records nothing).
+  rule on it), where you left off and what is still in flight (`resume`: the last run,
+  and the runs the actor has open), what the workflow allows next (`task next`), and
+  whether a move would be allowed at all (`task guard`, a dry run that records nothing).
 - **Audit reads** — an entity's history across trees (`timeline`), what it is
-  connected to (`refs`), who authorized what (`accountability`), recurring
-  shapes like reopens and supersessions (`antipatterns`), and where each adopted
-  pattern came from (`skills`). `diagram` prints the three state machines, or an
+  connected to (`refs`), who authorized what (`audit accountability`), recurring
+  shapes like reopens and supersessions (`audit antipatterns`), what looks like a
+  credential (`audit exposure`), and where each adopted pattern came from (`skill provenance`). `diagram` prints the three state machines, or an
   entity's history or connections, as mermaid text for a page or an editor to draw. They
-  report; they do not judge. `antipatterns` also
+  report; they do not judge. `audit antipatterns` also
   says whether the run that MOVED a pattern had been served its body — and answers
   *not observable*, never *did not consult*, for every move whose run recorded no
   reading at all, which is the state a move made by a person is always in. It is on
@@ -61,7 +61,7 @@ identically, because they are the same call.
   Management events, one JSON object per line, for Security Lake, Splunk, or anything
   else that speaks the schema. It carries the **envelope only** — who authorized what,
   over which entity, in which session, signed by which key — and never a payload, for
-  the reason `mnema exposure` exists. It writes to standard output and sends nothing
+  the reason `mnema audit exposure` exists. It writes to standard output and sends nothing
   anywhere; what it does and does not promise is in the table below.
 - **A page of the record that verifies itself** — `mnema site --out <dir>` writes one
   `index.html` from the committed (public) tree: the decisions in force, with a control
@@ -177,7 +177,7 @@ verbatim. The surfaces never upgrade a verdict into a stronger claim.
 | **A cut can be told from a tampering** | When it was authorized in advance, and for a WHOLE tail. A `tail.pruned` written while the tail is still there records which tail, how many events it held and the head it held them through — all three checked against the disk before the fact is signed — and `verify` then reports that account instead of listing the three reasons a key might have no tail. Cutting PART of a tail is not covered and stays loud: removing one line from a 402-event tail produces 102 findings. A waiver is not permission (anyone who can write can sign one, and it names who did), it is not a cure (a tail that is present and broken keeps every issue it had), and it does not remove anything — once the record is pushed, the events are in every clone and on the remote. `mnema tail prune` is what writes one, on the CLI alone; the cut itself stays yours to make. |
 | **Gates protect the record** | They protect its *shape*, not its contents. A gate refuses an illegal transition; it is not access control. Anyone who can run the CLI writes as this machine's identity. |
 | **A lost key can be restored** | Only from the backup key `mnema init` makes, and only where the record proves that key a member: the **committed project tree**. `mnema key restore` is that path — local, offline, no service to ask, because anything able to hand your identity back could forge it. The private and global trees are born knowing one key, so a lost key cannot be replaced in them; they are uncommitted, so the disk that takes the key takes them anyway. |
-| **Your machines are one author** | True for machines the record proves belong to one identity — which is what enrolling a second machine records. A machine nobody vouched for writes as a *different* identity, honestly and permanently; that is not a bug to fix later, it is what an unvouched key means — and the write that founds it says so, once, naming the identities already there, while the public trees of your other projects can still be spared: by an enrollment made inside each of them, from a machine already in that identity, and pulled before the new key writes there — never in the project that split, where an enrollment alone joins nothing. `mnema accountability` names it afterwards, in `--json` too. When the record proves a key belongs to **two** identities, no command picks one for you: the write is refused, and the refusal names the ways out the record shows — the identity that should not have the key retires it (`mnema key revoke <fingerprint> --reason "<why>"` inside the project, from a machine that writes as that identity, then commit and share the record), and the key speaks for the other from then on. Where the key is that identity's last — as a key that founded an identity by writing is — another key joins it first, from the checkout that still writes as it: pull the record, `mnema key enroll <the line>` (where the other key is a copy this machine keeps, such as the backup key an `init` made, its line comes from `mnema key request --anchor <that identity> --key "<its file>"`), the revocation, then `mnema key restore "<the key file>"` in that checkout, which still records the identity the key has left — and until the restore, every write to the public tree there is refused rather than signed with a key that identity no longer counts. Where the record shows the key writing as neither identity, it names no checkout that could separate them, and the refusal says so rather than promise. |
+| **Your machines are one author** | True for machines the record proves belong to one identity — which is what enrolling a second machine records. A machine nobody vouched for writes as a *different* identity, honestly and permanently; that is not a bug to fix later, it is what an unvouched key means — and the write that founds it says so, once, naming the identities already there, while the public trees of your other projects can still be spared: by an enrollment made inside each of them, from a machine already in that identity, and pulled before the new key writes there — never in the project that split, where an enrollment alone joins nothing. `mnema audit accountability` names it afterwards, in `--json` too. When the record proves a key belongs to **two** identities, no command picks one for you: the write is refused, and the refusal names the ways out the record shows — the identity that should not have the key retires it (`mnema key revoke <fingerprint> --reason "<why>"` inside the project, from a machine that writes as that identity, then commit and share the record), and the key speaks for the other from then on. Where the key is that identity's last — as a key that founded an identity by writing is — another key joins it first, from the checkout that still writes as it: pull the record, `mnema key enroll <the line>` (where the other key is a copy this machine keeps, such as the backup key an `init` made, its line comes from `mnema key request --anchor <that identity> --key "<its file>"`), the revocation, then `mnema key restore "<the key file>"` in that checkout, which still records the identity the key has left — and until the restore, every write to the public tree there is refused rather than signed with a key that identity no longer counts. Where the record shows the key writing as neither identity, it names no checkout that could separate them, and the refusal says so rather than promise. |
 | **What a run cost** | Not proven at all, and `mnema usage` says so on its own last line. The record holds no cost — deliberately: the number lives in Claude Code's transcripts, which the host deletes on a retention it decides, so a cost recorded in the chain would be a signed figure whose only witness is gone in weeks. So the verb crosses the two readings when you ask, reports **tokens and a model id — never dollars, and never a price table**, and names the host session it read so you can check the same file. Which session belongs to which run is that command's **inference from two clocks**, not a fact the record states: one session in a run's window is attributed, more than one is named and *not* attributed, and none says `no transcript` rather than `0`. |
 | **A page's verdict is `mnema verify`'s** | For what it says: the page runs the chain's own verifier over the public tree's files it carries, in the browser, and prints the verifier's own sentence — the same one `mnema verify` prints in a fresh clone of the repository. It differs from the author's machine by at most one clause, the census note about a backup key, which only a machine holding that key can word. It checks the hash chain and every checkpoint signature against the public keys carried with the files, and nothing else: it does not say a key belongs to the person a list names, and it does **not** check the lists on the page against the files — `mnema site` wrote the lists from them, and the page does not derive them again. A reader who is handed the page by the party being checked is trusting the page itself; the verdict is worth most when the page is rebuilt from a clone. It publishes **every word of the committed tree** — rationales, notes, raw events — so what is in git is on the page, and a repository that must not be read should not publish one. |
 | **An exported skill is what the record proves** | The BODY is, byte for byte — `mnema skill export` writes the recorded text verbatim, and nothing summarizes, reformats or improves it. The `description` beside it is **not** signed and is not in the record: the skills specification requires one, the chain has no field for it, so it is derived at export time by a stated rule (the first sentence of the body, cut to 1024 characters) or given with `--description`. **No model produces it.** Only an **adopted** pattern leaves — a proposal dropped into a host's skills directory is read as how the work is done here, and a deprecated one wears a live one's face — and there is no `--force`. The `metadata` carries the record id and the whole identity that adopted it, so a third party with the repository can check the line with `mnema show` and `mnema verify`. Nothing comes back the other way: **there is no import**, because a `SKILL.md` from elsewhere would enter as a body signed by us asserting a provenance we do not have. |
@@ -269,13 +269,13 @@ mnema task move complete "$TASK" --note "parser ships"
 #> Task t-0b76 (0198f3c1-7a2e-7b41-9c05-3d8e6f2a1b44) → DONE
 
 # Ask what the workflow allows next.
-mnema next-actions "$TASK"
+mnema task next "$TASK"
 #> Task 0198f3c1-… — 1 legal move(s):
 #>   reopen → IN_PROGRESS (needs reason)
 
 # Or dry-run a move without writing anything. The actor is an anchor id — the
 # identity `mnema init` printed above.
-mnema guard reopen "$TASK" --actor "$ME"
+mnema task guard reopen "$TASK" --actor "$ME"
 #> REFUSED (MISSING_PROOF): "reopen" requires a non-empty "reason"
 
 # Verify the record: hash links, signatures, and what is not yet covered — one
@@ -501,7 +501,7 @@ mnema completion fish > ~/.config/fish/completions/mnema.fish  # every fish
 It completes **verbs, subcommands and option names** — including an option a parent group
 declares, where the subcommand reads it (`mnema task move --which`); one it does not read is
 refused there, and not offered — and a **value only where the declaration enumerates one**. That last one now covers every closed set the
-domain owns: the ten workflow actions of `task move` and `guard`, the two of `decision
+domain owns: the ten workflow actions of `task move` and `task guard`, the two of `decision
 move`, the four of `skill move`, the three scopes of every `--scope` (two on `decision
 import`, which leaves out the machine-global tree), the levels of
 `verify --require`, the kinds of `search --kind`, the directions of `refs --direction`.
@@ -532,7 +532,7 @@ mnema task create "Regenerate the fixtures" --which release-bot
 mnema task move complete "$TASK" --note "fixtures regenerated" --which release-bot
 ```
 
-`mnema accountability` then separates its work from yours instead of crediting
+`mnema audit accountability` then separates its work from yours instead of crediting
 both to you. It does not change where the work lands: a decision an agent records is
 the project's decision, the same as yours. (`mnema memory` and `mnema observe` are
 the exception — for those two, declaring an agent still sends the capture to this
@@ -572,8 +572,8 @@ mnema run end --which release-bot --outcome "fixtures regenerated"
 unset MNEMA_RUN
 ```
 
-While it is open, `mnema focus --actor "$ME"` shows the session; afterwards
-`mnema resume --actor "$ME"` shows where it left off. Two rules keep the record
+While it is open, `mnema resume --actor "$ME"` lists it among the runs still open;
+afterwards the same command shows where it left off. Two rules keep the record
 honest: a run always names an agent (one that named nobody would prove no
 delegation), and the id in `MNEMA_RUN` is checked against the record before
 anything is written — a run this project has no record of, or one already ended,
@@ -583,7 +583,7 @@ An MCP session ends its run when the connection ends — the client hanging up, 
 host asking the process to stop. A process killed outright records nothing on the way
 out, so its run stays open, and nothing here closes a run it did not open: no rule can
 tell an abandoned session from a live one that is idle, and two sessions running at
-once make every such rule wrong. So `focus` reports what can be known — how long each
+once make every such rule wrong. So `resume` reports what can be known — how long each
 open run has been open, and how long since anything was recorded in it — and
 `mnema run end <id> --which <agent>` is how you close one yourself.
 
@@ -658,7 +658,7 @@ values, so it is safe to paste into a chat or a ticket. It proves consent to joi
 only a member's vouch turns it into a fact. And a machine never admits itself:
 that is why the middle step runs somewhere else.
 
-`mnema accountability` is the check that it worked — one author, not two.
+`mnema audit accountability` is the check that it worked — one author, not two.
 
 To take a key back out (a stolen laptop, a leaked backup copy):
 
@@ -789,7 +789,7 @@ working tree, where the caller commits them; nothing here pushes.
 **The key can say that a check passed, and nothing else.** A checker key is enrolled by a member
 of an identity, and a key that is already a member of one is refused. `mnema verify` refuses a
 `check.passed` or `check.failed` signed by any other key, and refuses any other fact signed by a
-checker key, so a leaked runner secret cannot decide a rule or write a note. `mnema accountability`
+checker key, so a leaked runner secret cannot decide a rule or write a note. `mnema audit accountability`
 lists the checker as a machine, apart from the people.
 
 **A leaked key is retired.** Any member of an identity can take the role away, as any member can
@@ -804,7 +804,7 @@ verify` refuses a result the old key signs, any other fact it signs, and an enro
 `check run` refuses to run with it. The results it signed before still verify, because the key held
 the role when it signed them, and `verify` names them in its census
 (`census [retired-checker] …`): a leaked key can date a result before its own
-retirement, so the record no longer vouches for them. `mnema accountability` says who retired it.
+retirement, so the record no longer vouches for them. `mnema audit accountability` says who retired it.
 
 What it does not promise: a result says that a key your team enrolled reported the rule held at that
 commit. It does not say the program ran as it was declared on that machine, and it does not say
@@ -970,7 +970,7 @@ dropped without your knowing.
 For everything written before that door existed:
 
 ```sh
-mnema exposure
+mnema audit exposure
 #> 1 of 4 record(s) hold a credential format:
 #>   public  2026-01-01  memory.captured  019fa8b7-0410-717b-9af2-cfeb013fc4ac  aws-access-key, url-password
 #>
@@ -1213,7 +1213,7 @@ The number is frozen from the writer's view of the chain, so two people who deci
 while apart both mint `ADR-7`, and the labels meet when the branches do — legitimately,
 with nothing to refuse and nothing to renumber. When a label in this document is
 answered to by more than one rule, the document **says so** above the list, names every
-id that carries it, and tells you to cite by id. `mnema antipatterns` reports the same
+id that carries it, and tells you to cite by id. `mnema audit antipatterns` reports the same
 thing about the whole record, chain by chain, without anyone generating the file.
 
 ### The notes a session opens with
@@ -1467,7 +1467,7 @@ worked by.
 
 ```bash
 # The terminal side of the same name: not the patterns, but where they came from.
-mnema skills
+mnema skill provenance
 #> 2 pattern(s):
 #>   019faa06-30e1-…  adopted     public   stacked-prs  ·  proposed by claude-code · adopted by claude-code (the same agent)
 #>   019faa06-335f-…  adopted     public   trunk-based  ·  proposed by a person · adopted by a person

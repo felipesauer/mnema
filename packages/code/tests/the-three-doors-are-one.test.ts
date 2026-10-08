@@ -254,10 +254,9 @@ const NOT_IN_THE_LIBRARY: Readonly<Record<string, string>> = {
 /** Every verb that writes the record and the library door has no method for, and why not. */
 const VERBS_NOT_IN_THE_LIBRARY: Readonly<Record<string, string>> = {
   init: 'founding an identity is a person’s act, on their machine',
-  task: 'work items are the host’s',
+  task: 'work items are the host’s, and so is the handoff recorded on one (see `record_handoff`)',
   skill: 'a pattern is written by a person and adopted by a person',
   observe: 'see `record_observation`',
-  handoff: 'see `record_handoff`',
   link: 'a link is written by the person who sets a rule',
   promote:
     'lifting a pattern to the file every project reads is a person’s gesture, with the evidence typed by them',

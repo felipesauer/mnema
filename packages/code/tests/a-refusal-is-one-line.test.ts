@@ -146,7 +146,7 @@ const PROBES: readonly Probe[] = [
     says: `No task ${NAME} here.`,
   },
   {
-    key: 'wiring/next-actions.ts task #1',
+    key: 'wiring/next.ts task #1',
     argv: ['task', 'next', NAME],
     says: `No task ${NAME} here.`,
   },

@@ -327,8 +327,8 @@ describe('a record nothing moves leaves the corner exactly where it was', () => 
           // THE SESSION IS LEFT WATCHING. The record is asked ten times a second, so this
           // is many rounds of the question over a record nobody is writing. A corner that
           // degraded on its own would do it here.
-          types: 'skills\r',
-          until: arrivedSince('No patterns'),
+          types: 'audit exposure\r',
+          until: arrivedSince('Nothing recognizable'),
           what: 'answered a second verb, some ticks later',
         },
         {

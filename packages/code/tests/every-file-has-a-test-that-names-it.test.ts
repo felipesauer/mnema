@@ -416,6 +416,10 @@ const UNWITNESSED: Readonly<Record<string, Debt>> = {
     reached: 'nobody imports it',
     why: 'Composes the whole antipatterns page, yet the only cases reaching it sit in the brief block and grep it for the label-clash line, leaving its six counts and closing note unread.',
   },
+  'packages/code/src/wiring/audit.ts': {
+    reached: 'nobody imports it',
+    why: 'Hangs the three audit readings under one group; the cases that run them through the program assert what each prints and what a mistyped subcommand is told, not this file.',
+  },
   'packages/code/src/wiring/before-a-write.ts': {
     reached: 'nobody imports it',
     why: "The before-a-write verb's wiring, reading a host's payload through the standard-input port; a-host-that-runs-commands-asks-for-a-person.test.ts runs it through the binary with a payload and through the plugin's own command, and every-verb-says-if-it-writes.test.ts exercises it in process.",
@@ -459,10 +463,6 @@ const UNWITNESSED: Readonly<Record<string, Debt>> = {
   'packages/code/src/wiring/exposure.ts': {
     reached: 'nobody imports it',
     why: 'A twenty-line registration that only picks between JSON and the report; every string the exposure cases assert is produced by the command and presenter it defers to, not here.',
-  },
-  'packages/code/src/wiring/focus.ts': {
-    reached: 'nobody imports it',
-    why: 'Builds the focus header and one line per open run; the test that reaches it counts those lines against the header number, asserting arity rather than anything the line says.',
   },
   'packages/code/src/wiring/guard.ts': {
     reached: 'nobody imports it',
@@ -547,10 +547,6 @@ const UNWITNESSED: Readonly<Record<string, Debt>> = {
   'packages/code/src/wiring/skill.ts': {
     reached: 'nobody imports it',
     why: "The `skill` group's declaration; every test that runs `skill export` passes `--out`, so the './skills' default this file declares is exercised by nothing and asserted by nothing.",
-  },
-  'packages/code/src/wiring/skills.ts': {
-    reached: 'nobody imports it',
-    why: "The `skills` audit declaration; cli-e2e's eighteen runs of it assert provenanceReport's rows and runSkills' data, and only its help paragraph is ever read back from this file.",
   },
   'packages/code/src/wiring/status.ts': {
     reached: 'nobody imports it',
@@ -836,7 +832,6 @@ const CLAUSES_PER_FILE: Readonly<Record<string, number>> = {
   'packages/code/src/commands/decision-transition.test.ts': 11,
   'packages/code/src/commands/decision.test.ts': 8,
   'packages/code/src/commands/exposure.test.ts': 13,
-  'packages/code/src/commands/focus.test.ts': 9,
   'packages/code/src/commands/guard.test.ts': 11,
   'packages/code/src/commands/handoff.test.ts': 8,
   'packages/code/src/commands/inherit.test.ts': 14,
@@ -1374,7 +1369,6 @@ const PRODUCTION_FILES: readonly string[] = [
   'packages/code/src/commands/doctor.ts',
   'packages/code/src/commands/export.ts',
   'packages/code/src/commands/exposure.ts',
-  'packages/code/src/commands/focus.ts',
   'packages/code/src/commands/guard.ts',
   'packages/code/src/commands/handoff.ts',
   'packages/code/src/commands/inherit.ts',
@@ -1550,6 +1544,7 @@ const PRODUCTION_FILES: readonly string[] = [
   'packages/code/src/wiring/accountability.ts',
   'packages/code/src/wiring/aging.ts',
   'packages/code/src/wiring/antipatterns.ts',
+  'packages/code/src/wiring/audit.ts',
   'packages/code/src/wiring/before-a-write.ts',
   'packages/code/src/wiring/body-source.ts',
   'packages/code/src/wiring/brief.ts',
@@ -1566,7 +1561,6 @@ const PRODUCTION_FILES: readonly string[] = [
   'packages/code/src/wiring/enumerated.ts',
   'packages/code/src/wiring/export.ts',
   'packages/code/src/wiring/exposure.ts',
-  'packages/code/src/wiring/focus.ts',
   'packages/code/src/wiring/from-the-group.ts',
   'packages/code/src/wiring/guard.ts',
   'packages/code/src/wiring/handoff.ts',
@@ -1601,7 +1595,6 @@ const PRODUCTION_FILES: readonly string[] = [
   'packages/code/src/wiring/show.ts',
   'packages/code/src/wiring/site.ts',
   'packages/code/src/wiring/skill.ts',
-  'packages/code/src/wiring/skills.ts',
   'packages/code/src/wiring/status.ts',
   'packages/code/src/wiring/switch.ts',
   'packages/code/src/wiring/tail.ts',
@@ -1854,7 +1847,7 @@ describe('every file has a test that names it', () => {
     expect(named).toEqual([]);
     // And the ledger really does hold the paths, so the line above is not passing over
     // an empty table.
-    expect(Object.keys(UNWITNESSED)).toContain('packages/code/src/wiring/focus.ts');
+    expect(Object.keys(UNWITNESSED)).toContain('packages/code/src/wiring/accountability.ts');
   });
 });
 

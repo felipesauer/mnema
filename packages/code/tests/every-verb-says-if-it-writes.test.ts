@@ -555,7 +555,7 @@ function offersJson(argv: readonly string[]): boolean {
  * counted as its second form was its first one again ({@link offersJson}). The reading's
  * JSON is `mnema witness --json`, and the row does not run the reading.
  */
-const EXERCISED_IN_BOTH_FORMS = 19;
+const EXERCISED_IN_BOTH_FORMS = 13;
 
 /** Exercises every verb the table names, each in its own project, and measures the record. */
 async function exerciseEverything(): Promise<Exercised[]> {

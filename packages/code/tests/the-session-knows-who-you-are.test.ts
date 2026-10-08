@@ -154,7 +154,7 @@ async function asAnotherMachine(...argv: string[]): Promise<Said> {
 
 /** Every identity the record knows, whole — read back through the verb that lists them. */
 async function identitiesOfTheRecord(): Promise<string[]> {
-  const said = await shell('accountability', '--json');
+  const said = await shell('audit', 'accountability', '--json');
   const account = JSON.parse(said.out.join('\n')) as { byWho: { who: string }[] };
   return account.byWho.map((one) => one.who);
 }

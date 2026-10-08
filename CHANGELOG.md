@@ -111,7 +111,7 @@ tag, with its own changelog.
   `check.failed` the key signs after it, any other fact it signs, and a `checker.enrolled` naming it
   again; `check run` and `key enroll --checker` refuse the key. The results it signed before stay
   valid and `verify` names them in its census, informational, because a leaked key can date a
-  result before its own retirement. `mnema accountability` says who retired the machine. The
+  result before its own retirement. `mnema audit accountability` says who retired the machine. The
   Python reader folds the same rule, and the two readers agree on it.
 - **The Action runs the checks.** `@mnema/action` takes a `checker-key` input, the private half of
   a checker key from a repository secret: after its other steps it runs `mnema check run` with it,
@@ -119,6 +119,16 @@ tag, with its own changelog.
   is started without the Action's inputs in its environment.
 
 ### Changed
+
+- **Eight verbs went under the noun they belong to; the old names are gone, with no alias.**
+  `mnema skills` is `mnema skill provenance`. `mnema focus` is part of `mnema resume`, which lists
+  the runs the actor has open under the last one (`--json` already carried them as `focus`).
+  `mnema accountability`, `antipatterns` and `exposure` are `mnema audit accountability`,
+  `audit antipatterns` and `audit exposure`. `mnema handoff`, `next-actions` and `guard` are
+  `mnema task handoff`, `task next` and `task guard`. The tools of the MCP server keep their names.
+  The console, which offers only the verbs that cannot change the record, no longer runs
+  `task next`, `task guard` and `skill provenance`, because a group is classified by its most
+  powerful member.
 
 - **A clean `mnema verify` is one line.** The census note about the backup key `init` makes and the
   line saying the private tree holds no record are informational, and now come only with the new
@@ -214,7 +224,7 @@ Requires Node ≥ 22.12.0; the packages are ESM-only.
   checks it, and a machine with a key of its own records, at a commit, whether the rule held. That
   key is enrolled by a member of an identity (the `--checker` form of the key request and enroll
   commands) and signs check results only: `mnema verify` refuses a check result from any other key
-  and any other fact from that key, and `mnema accountability` lists it as a machine. Four new event
+  and any other fact from that key, and `mnema audit accountability` lists it as a machine. Four new event
   kinds, read by both verifiers.
 - **A GitHub Action over the record** (`packages/action`, not published): on a pull request it keeps
   one comment saying which events the pull request adds to the record and which changed files an

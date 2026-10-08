@@ -448,6 +448,7 @@ describe('the refused run is refused everywhere', () => {
         .map((one) => one.path)
         .sort(),
     ).toEqual([
+      'audit',
       'check',
       'commit-hook',
       'decision',

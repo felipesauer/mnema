@@ -124,7 +124,7 @@ async function aRecordFullOfBodies(): Promise<{ anchor: string; task: string }> 
   await mnema('skill', 'move', 'review', skill, '--note', BODY);
   await mnema('memory', BODY);
   await mnema('observe', task, '--topic', BODY, '--text', BODY);
-  await mnema('handoff', task, `from-${BODY}`, `to-${BODY}`);
+  await mnema('task', 'handoff', task, `from-${BODY}`, `to-${BODY}`);
   await mnema('link', task, decision, '--rel', 'relates-to');
   await mnema('switch', 'off', 'edit-rules-push', '--reason', BODY);
   await mnema('run', 'end', '--which', 'agent-alpha', '--outcome', BODY);
@@ -249,7 +249,7 @@ describe('mnema export — the feed leaves the bodies behind', () => {
     ];
     for (const window of windows) {
       const counted = JSON.parse(
-        (await mnema('accountability', '--json', ...window)).join('\n'),
+        (await mnema('audit', 'accountability', '--json', ...window)).join('\n'),
       ) as {
         total: number;
       };
