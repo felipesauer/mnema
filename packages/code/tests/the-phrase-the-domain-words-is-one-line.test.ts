@@ -1622,6 +1622,21 @@ const CLASSIFIED: Readonly<Record<string, { verdict: Verdict; why: string }>> = 
     verdict: 'collapsed',
     why: 'the id a caller typed for a skill this tree has no record of',
   },
+  '@mnema/core workflow/stack-operations.ts «no stack "{}" stands adopted in this record. Nothing was appended.» oneLine(input.name) #1':
+    {
+      verdict: 'collapsed',
+      why: 'the name a caller typed for a stack this tree holds no standing adoption of',
+    },
+  "@mnema/core workflow/stack-operations.ts «the stack's {} is refused: {}. Nothing was appended.» field #1":
+    {
+      verdict: 'minted',
+      why: 'the name of a field of an adoption, one of the five the refusal type lists',
+    },
+  "@mnema/core workflow/stack-operations.ts «the stack's {} is refused: {}. Nothing was appended.» rule #1":
+    {
+      verdict: 'composed',
+      why: 'the rule `fieldRefusal` words for that field, a literal of the same module',
+    },
 };
 
 /**
@@ -1684,9 +1699,9 @@ describe('every value the domain puts in a sentence is classified', () => {
     // are equal. The scale is stated, and so is what the HANDOFF said — twenty-three
     // sites, twelve in `core` and eleven in `chain` — because it counted sentences
     // written at a `message:` or a `detail:` directly, and a value is not a sentence.
-    expect(SITES.length).toBe(214);
+    expect(SITES.length).toBe(217);
     expect(FOUND[0]?.sites.length).toBe(74);
-    expect(FOUND[1]?.sites.length).toBe(140);
+    expect(FOUND[1]?.sites.length).toBe(143);
     expect(FOUND.flatMap((layer) => layer.wording).length).toBeGreaterThan(15);
   });
 
@@ -1736,11 +1751,11 @@ describe('every value the domain puts in a sentence is classified', () => {
     // No arm of the case above may be empty, or that much of it is vacuous.
     const verdicts = Object.values(CLASSIFIED).map((said) => said.verdict);
     const count = (verdict: Verdict): number => verdicts.filter((said) => said === verdict).length;
-    expect(count('collapsed')).toBe(136);
-    expect(count('minted')).toBe(56);
-    expect(count('composed')).toBe(22);
+    expect(count('collapsed')).toBe(137);
+    expect(count('minted')).toBe(57);
+    expect(count('composed')).toBe(23);
     expect(SITES.filter((site) => new RegExp(`\\b${DOOR}\\b`).test(site.expression))).toHaveLength(
-      136,
+      137,
     );
   });
 

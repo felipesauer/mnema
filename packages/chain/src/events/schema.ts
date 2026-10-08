@@ -258,6 +258,12 @@ export const PAYLOAD_SCHEMA: { readonly [K in EventKind]: PayloadSchemaOf<K> } =
   'account.linked': { service: 'string', account: 'string' },
   // Required: a declaration that names no key says nothing a reader could cross.
   'backup.declared': { backupFp: 'string' },
+  // All four required: an adoption that does not say which bytes, under which name and version,
+  // in which scope, names nothing a disk could be compared with. The table is closed, so a path
+  // or a source address riding along is a key no row declares, and the line is refused.
+  'stack.adopted': { name: 'string', version: 'string', digest: 'string', scope: 'string' },
+  // The adoption's three, repeated, so a removal says on its own which bytes were let go.
+  'stack.removed': { version: 'string', digest: 'string', scope: 'string' },
 };
 
 /**

@@ -184,12 +184,14 @@ describe('the published vectors carry only values this product can produce', () 
       const subject = row.event.subject;
       if (SUBJECTS_NO_OPERATION_MINTS.has(subject)) continue;
       // What is left must be something an operation produces: an anchor id, a
-      // minted id, or a channel name. Anything else is a placeholder somebody
+      // minted id, a channel name, or — on a stack's two facts — a stack name in the
+      // form the adoption's door admits. Anything else is a placeholder somebody
       // added after the exceptions were closed.
       const produced =
         subject.startsWith('mnid:') ||
         mintedIdsIn(subject).length === 1 ||
-        (SWITCHABLE_CHANNELS as readonly string[]).includes(subject);
+        (SWITCHABLE_CHANNELS as readonly string[]).includes(subject) ||
+        (row.kind.startsWith('stack.') && /^[a-z0-9]+(-[a-z0-9]+)*$/.test(subject));
       if (!produced) offenders.push(`${row.name}: "${subject}"`);
     }
     expect(offenders, 'a vector carries a subject no operation of this product mints').toEqual([]);

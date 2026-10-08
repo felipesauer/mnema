@@ -84,6 +84,7 @@ import { createTask, transitionTask, type WriteContext } from '../workflow/opera
 import { authorizeTailPrune } from '../workflow/prune-operations.js';
 import { endRun, startRun } from '../workflow/session-operations.js';
 import { createSkill, recordConsultation, reviewSkill } from '../workflow/skill-operations.js';
+import { adoptStack, removeStack } from '../workflow/stack-operations.js';
 import { advance } from './advance.js';
 import { ProjectionCache } from './cache.js';
 import { tablesFedBy } from './fed-by.js';
@@ -197,6 +198,29 @@ const ARRIVALS: { readonly [K in EventKind]: Arrival } = {
   },
   'backup.declared': {
     emit: (ctx) => landed(declareBackup(ctx, { backupFp: 'a'.repeat(64) })),
+  },
+  'stack.adopted': {
+    emit: (ctx) =>
+      landed(
+        adoptStack(ctx, {
+          name: 'a-stack',
+          version: '1.0.0',
+          digest: 'b'.repeat(64),
+          scope: 'public',
+        }),
+      ),
+  },
+  'stack.removed': {
+    setup: (ctx) =>
+      landed(
+        adoptStack(ctx, {
+          name: 'a-stack',
+          version: '1.0.0',
+          digest: 'b'.repeat(64),
+          scope: 'public',
+        }),
+      ),
+    emit: (ctx) => landed(removeStack(ctx, { name: 'a-stack' })),
   },
   'memory.captured': {
     emit: (ctx) => landed(captureMemory(ctx, { content: 'a memory that arrived' })),
