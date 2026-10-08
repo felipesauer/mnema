@@ -44,7 +44,14 @@ const instant = (second: number): string =>
   new Date(Date.UTC(2026, 9, 7, 10, 0, second)).toISOString();
 
 /** One write: which tree, which tail of it, when by the writer's clock, and whether it cites. */
-const writeArb = fc.record({
+interface Write {
+  readonly tree: number;
+  readonly tail: number;
+  readonly at: number;
+  readonly cites: boolean;
+}
+
+const writeArb: fc.Arbitrary<Write> = fc.record({
   tree: fc.nat({ max: 1 }),
   tail: fc.nat({ max: 2 }),
   at: fc.nat({ max: 5 }),
@@ -52,7 +59,7 @@ const writeArb = fc.record({
 });
 
 /** Plays a history of writes into tails, each citing the heads it saw when it chose to. */
-function play(writes: readonly fc.RecordValue<typeof writeArb>[]): DrawnTail[] {
+function play(writes: readonly Write[]): DrawnTail[] {
   const tails = new Map<string, DrawnTail>();
   let n = 0;
   for (const write of writes) {
