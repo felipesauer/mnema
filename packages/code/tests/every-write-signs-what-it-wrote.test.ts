@@ -165,9 +165,10 @@ const CODE_SRC = join(HERE, 'src');
  * `enrollChecker` and `runRuleChecks`. 40 since an identity can name its account: `linkAccount`.
  * 41 since a checker key can be retired: `retireChecker`. 43 since an identity declares its
  * backup: `declareBackup`, and `enrollBackup`, which `init` enrolls and declares it with. 44
- * since a link can be retracted: `retractLink`.
+ * since a link can be retracted: `retractLink`. 46 since a stack can be adopted and removed:
+ * `adoptStack` and `removeStack`, which no path of the surface reaches yet.
  */
-const CORE_OPERATIONS_THAT_APPEND = 44;
+const CORE_OPERATIONS_THAT_APPEND = 46;
 
 /** How many paths of the shipped surface reach one of them. 44 since `runKeySigstore`. */
 const SURFACE_WRITE_PATHS = 44;
