@@ -471,12 +471,15 @@ describe('the sampler reads exactly the names its workflow writes', () => {
     }
 
     expect(written).toEqual([
-      'node22-shard1',
-      'node22-shard2',
-      'node22-shard3',
+      'node24.15.0-shard1',
+      'node24.15.0-shard2',
+      'node24.15.0-shard3',
       'node24-shard1',
       'node24-shard2',
       'node24-shard3',
+      'node26-shard1',
+      'node26-shard2',
+      'node26-shard3',
     ]);
   });
 

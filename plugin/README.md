@@ -177,7 +177,7 @@ The plugin connects the MCP server itself. If you had registered it yourself bef
 entry is now redundant — with both, a session is offered every tool twice, under two
 prefixes.
 
-Requires Node 22.22.2 or a later 22, or 24.15.0 or later. Nothing here reaches the network, and nothing here writes.
+Requires Node 24.15.0 or a later 24, or 26.0.0 or later. Nothing here reaches the network, and nothing here writes.
 
 ## Check that it worked
 

@@ -29,7 +29,7 @@ type Version = readonly [number, number, number];
 /** One alternative of a range: the lowest Node it takes, the first it no longer takes, and how it is said. */
 export interface Accepted {
   readonly from: Version;
-  /** Exclusive: `^22.22.2` takes no 23. Absent when the alternative has no ceiling. */
+  /** Exclusive: `^24.15.0` takes no 25. Absent when the alternative has no ceiling. */
   readonly before?: Version;
   readonly said: string;
 }

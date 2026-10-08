@@ -1,6 +1,6 @@
 # @mnema/code
 
-[![CI](https://img.shields.io/github/actions/workflow/status/felipesauer/mnema/ci.yml?branch=main&style=flat-square&label=CI&color=997dbf)](https://github.com/felipesauer/mnema/actions/workflows/ci.yml) [![License: Apache-2.0](https://img.shields.io/badge/license-Apache--2.0-997dbf?style=flat-square)](../../LICENSE) ![Node 22.22.2 or a later 22, or 24.15.0 or later](https://img.shields.io/badge/node-%5E22.22.2%20%7C%7C%20%3E%3D24.15.0-997dbf?style=flat-square)
+[![CI](https://img.shields.io/github/actions/workflow/status/felipesauer/mnema/ci.yml?branch=main&style=flat-square&label=CI&color=997dbf)](https://github.com/felipesauer/mnema/actions/workflows/ci.yml) [![License: Apache-2.0](https://img.shields.io/badge/license-Apache--2.0-997dbf?style=flat-square)](../../LICENSE) ![Node 24.15.0 or a later 24, or 26.0.0 or later](https://img.shields.io/badge/node-%5E24.15.0%20%7C%7C%20%3E%3D26.0.0-997dbf?style=flat-square)
 
 Your decisions, handed to your agents' sessions and held at the edits they
 govern — append-only and signed in the repository, and checkable by anyone.
@@ -227,7 +227,7 @@ npm i -g @mnema/code
 pnpm add -g @mnema/code
 ```
 
-Either puts the `mnema` binary on your `PATH`. Requires Node 22.22.2 or a later 22, or 24.15.0 or later; the package is
+Either puts the `mnema` binary on your `PATH`. Requires Node 24.15.0 or a later 24, or 26.0.0 or later; the package is
 ESM-only, and it brings the other three with it. `npm view @mnema/code version` says
 whether the publication has happened: a 404 means it has not.
 

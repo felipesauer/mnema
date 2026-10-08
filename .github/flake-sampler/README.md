@@ -11,7 +11,7 @@ green, and it repairs no flake it finds. It produces a **rate**.
 ## What runs
 
 [`../workflows/flake-sampler.yml`](../workflows/flake-sampler.yml) runs the suite ten times in
-each of six jobs — two runtimes times three shards — for **N=30 per runtime**, and hands every
+each of nine jobs — three runtimes times three shards — for **N=30 per runtime**, and hands every
 report to [`summarize.mjs`](summarize.mjs), which publishes one row per case: how many of those
 runs it failed in.
 

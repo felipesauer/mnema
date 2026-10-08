@@ -28,9 +28,12 @@ jobs:
       fail-fast: false
       matrix:
         # The floor comes from `engines.node`, and `the-runtime-floor-is-declared-once` fails
-        # if this list stops covering it. 24 is what development runs on: a CI that never runs
-        # the runtime the code is written on is not checking what is being written.
-        node: ['22', '24']
+        # if this list stops naming it to the patch. 24.15.0 is that floor, and below 24.19 Node
+        # still accepts a small-order Ed25519 point on its own, so it is the cell that proves the
+        # strict rule is the product's and not the runtime's. 24 is what development runs on: a CI
+        # that never runs the runtime the code is written on is not checking what is being
+        # written. 26 is the open end of the range.
+        node: ['24.15.0', '24', '26']
 
     steps:
       - uses: actions/checkout@v7
@@ -111,10 +114,10 @@ jobs:
       # five-second ceiling (2412 ms against 1635 ms) while costing only 11.6% of wall clock.
       # Folding the two steps together would save around two minutes of runner time and spend a
       # third of that ceiling's headroom to buy it. Keeping them apart also means the matrix runs
-      # the suite both instrumented (here) and plain (node 24), which is worth more than the two
+      # the suite both instrumented (here) and plain (the other cells), which is worth more than the two
       # minutes.
       - name: Coverage gate
-        if: matrix.node == '22'
+        if: matrix.node == '24'
         run: pnpm test:coverage
 
       # …and half two, which is why it sits at the END of the job rather than beside the test
