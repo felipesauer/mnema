@@ -121,6 +121,8 @@ importers:
         specifier: workspace:*
         version: link:../core
 
+  packages/stacks: {}
+
   packages/vscode:
     devDependencies:
       '@mnema/context':
