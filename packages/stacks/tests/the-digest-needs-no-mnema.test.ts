@@ -2,7 +2,9 @@ import { execFileSync } from 'node:child_process';
 import { mkdirSync, symlinkSync } from 'node:fs';
 import { join } from 'node:path';
 import { afterEach, describe, expect, it } from 'vitest';
-import { readStackFiles, stackDigest, validateStack } from '../src/index.js';
+import { stackDigest } from '../src/digest.js';
+import { readStackFiles } from '../src/files.js';
+import { validateStack } from '../src/validate.js';
 import { cleanScratch, DIGEST_SH, HELLO_STACK, put, scratchStack } from './support.js';
 
 /** The golden: a literal, computed once with `digest.sh` and written here. Not recomputed by the code under test. */

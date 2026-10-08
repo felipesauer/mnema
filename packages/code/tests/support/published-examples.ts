@@ -159,6 +159,10 @@ export const NO_RUNNABLE_EXAMPLE: readonly { pkg: string; why: string }[] = [
     why: 'Its page describes the methods in a table and the hooks in prose, and carries no ```ts block: an example of a program that opens a project and writes to it cannot be run verbatim here without founding an identity in this repository. What holds the page to the code is `the-three-doors-are-one.test.ts`, which calls every method and both hooks.',
   },
   {
+    pkg: 'stacks',
+    why: 'Its page describes a directory contract and a digest anyone reproduces with `sh digest.sh`, and carries no ```ts block: what holds the page to the code is the golden digest of the hello-stack fixture, which the library and the shell script must both reach.',
+  },
+  {
     pkg: 'vscode',
     why: 'It is the page of an editor extension, installed as a local .vsix: its one block is ```sh and there is no ```ts block in it to run. The comparison is about a library example, and this package exports no library.',
   },

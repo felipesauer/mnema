@@ -1,7 +1,7 @@
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
-import { STACK_SCHEMA } from '../src/index.js';
+import { STACK_SCHEMA } from '../src/schema.js';
 import { HELLO_STACK, PACKAGE_ROOT } from './support.js';
 
 describe('stack.schema.json', () => {

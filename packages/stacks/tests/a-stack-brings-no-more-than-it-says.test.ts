@@ -1,7 +1,9 @@
 import { rmSync } from 'node:fs';
 import { join } from 'node:path';
 import { afterEach, describe, expect, it } from 'vitest';
-import { type Problem, type StackManifest, validateStack } from '../src/index.js';
+import type { StackManifest } from '../src/manifest.js';
+import type { Problem } from '../src/problem.js';
+import { validateStack } from '../src/validate.js';
 import { cleanScratch, HELLO_STACK, put, scratchStack } from './support.js';
 
 afterEach(cleanScratch);

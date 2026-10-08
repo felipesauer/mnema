@@ -1,7 +1,7 @@
 import { spawnSync } from 'node:child_process';
 import { join } from 'node:path';
 import { afterEach, describe, expect, it } from 'vitest';
-import { validateStack } from '../src/index.js';
+import { validateStack } from '../src/validate.js';
 import { cleanScratch, HELLO_STACK, put, scratchStack } from './support.js';
 
 /**

@@ -1,7 +1,8 @@
 {
   "name": "@mnema/stacks",
   "version": "0.1.0-beta",
-  "description": "The stack contract: the stack.json schema, the validator, and the canonical digest a stack is identified by. A pure library; it runs nothing.",
+  "private": true,
+  "description": "The stack contract: the stack.json schema, the validator, and the canonical digest a stack is identified by. A pure library; it runs nothing. Private for now: nothing is published from it.",
   "author": "Felipe Sauer (https://github.com/felipesauer)",
   "license": "Apache-2.0",
   "type": "module",
@@ -30,9 +31,5 @@
   },
   "engines": {
     "node": "^24.15.0 || >=26.0.0"
-  },
-  "publishConfig": {
-    "access": "public",
-    "registry": "https://registry.npmjs.org/"
   }
 }

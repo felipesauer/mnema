@@ -1,5 +1,7 @@
 # @mnema/stacks
 
+[![CI](https://img.shields.io/github/actions/workflow/status/felipesauer/mnema/ci.yml?branch=main&style=flat-square&label=CI&color=997dbf)](https://github.com/felipesauer/mnema/actions/workflows/ci.yml) [![License: Apache-2.0](https://img.shields.io/badge/license-Apache--2.0-997dbf?style=flat-square)](../../LICENSE) ![Node 24.15.0 or a later 24, or 26.0.0 or later](https://img.shields.io/badge/node-%5E24.15.0%20%7C%7C%20%3E%3D26.0.0-997dbf?style=flat-square) ![Not published: run from a checkout](https://img.shields.io/badge/npm-not%20published-997dbf?style=flat-square)
+
 The contract of a **stack** for [mnema](https://github.com/felipesauer/mnema): a directory that brings skills,
 agents and declared hooks to an agent, the validator that checks it, and the digest that identifies it. A pure
 library: it reads a directory and runs nothing in it.
