@@ -33,7 +33,7 @@
 
 import type { CatalogEvent } from '@mnema/chain';
 import type { ProjectionTable } from '../db/schema.js';
-import type { SqliteDatabase } from '../db/sqlite.js';
+import { inTransaction, type SqliteDatabase } from '../db/sqlite.js';
 import type { AccumulatorFold } from './accumulate.js';
 import { switchOf } from './channel.js';
 import { materializeChannelSwitches } from './channel-store.js';
@@ -157,7 +157,7 @@ export function advance(
   from: number,
   fed: ReadonlySet<ProjectionTable> = tablesFedBy(arrived.map((event) => event.kind)),
 ): void {
-  const bring = db.transaction(() => {
+  inTransaction(db, () => {
     // The one thing about `from` that can be checked here, and it is the direction that
     // corrupts: a position the reference index already covers would be indexed twice, under
     // events that are not the ones it holds. A `from` that is too LARGE leaves a gap nothing
@@ -234,5 +234,4 @@ export function advance(
       reindexDivergences(db, moved);
     }
   });
-  bring();
 }

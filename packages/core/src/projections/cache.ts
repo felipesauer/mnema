@@ -20,7 +20,7 @@ import {
   type UpcasterRegistry,
 } from '@mnema/chain';
 import { dropProjections, ensureSchema } from '../db/schema.js';
-import { IN_MEMORY, openDatabase, type SqliteDatabase } from '../db/sqlite.js';
+import { IN_MEMORY, inTransaction, openDatabase, type SqliteDatabase } from '../db/sqlite.js';
 import { type FoundedBeside, identitiesFoundedBeside } from '../identity/founded-beside.js';
 import { rosterIn, rosterOf } from '../identity/membership.js';
 import { advance } from './advance.js';
@@ -147,10 +147,16 @@ export interface CacheOptions {
   readonly upcasters?: UpcasterRegistry;
 }
 
-/** A SQLite failure — a busy file, a corrupt one, a full disk — as opposed to one of the chain's. */
+/**
+ * A SQLite failure — a busy file, a corrupt one, a full disk — as opposed to one of the chain's.
+ *
+ * `node:sqlite` raises every one of them as `ERR_SQLITE_ERROR` and puts SQLite's own result code
+ * in `errcode`, a number. It is the `errcode` that says the failure came from the database: the
+ * `code` alone is the same string the module uses for its own refusals of a call.
+ */
 function isSqliteFailure(error: unknown): boolean {
-  const code = (error as { code?: unknown } | null)?.code;
-  return typeof code === 'string' && code.startsWith('SQLITE_');
+  const failure = error as { code?: unknown; errcode?: unknown } | null;
+  return failure?.code === 'ERR_SQLITE_ERROR' && typeof failure.errcode === 'number';
 }
 
 export class ProjectionCache {
@@ -428,13 +434,17 @@ export class ProjectionCache {
         if (arrived.events.length === 0) return;
         const from = this.frontier.events;
         const expected = this.generation;
-        const moved = this.db.transaction(() => {
-          if (readGeneration(this.db) !== expected) return false;
-          advance(this.db, arrived.events, from);
-          this.store(arrived.frontier, this.breaks, expected + 1);
-          return true;
-        });
-        if (moved.immediate()) {
+        const moved = inTransaction(
+          this.db,
+          () => {
+            if (readGeneration(this.db) !== expected) return false;
+            advance(this.db, arrived.events, from);
+            this.store(arrived.frontier, this.breaks, expected + 1);
+            return true;
+          },
+          { immediate: true },
+        );
+        if (moved) {
           this.frontier = arrived.frontier;
           this.generation = expected + 1;
           return;
@@ -448,13 +458,16 @@ export class ProjectionCache {
   /** Replays the chain whole into the tables — the one place a rebuild is written. */
   private replay(): void {
     const replay = chainReplay(this.layout, this.upcasters);
-    const write = this.db.transaction(() => {
-      const generation = readGeneration(this.db) + 1;
-      rebuild(this.db, replay.events);
-      this.store(replay.frontier, replay.linkBreaks, generation);
-      return generation;
-    });
-    this.generation = write.immediate();
+    this.generation = inTransaction(
+      this.db,
+      () => {
+        const generation = readGeneration(this.db) + 1;
+        rebuild(this.db, replay.events);
+        this.store(replay.frontier, replay.linkBreaks, generation);
+        return generation;
+      },
+      { immediate: true },
+    );
     this.frontier = replay.frontier;
     this.breaks = replay.linkBreaks;
   }
@@ -832,8 +845,8 @@ export class ProjectionCache {
     return walkReferences(this.db, seeds, direction, maxDepth);
   }
 
-  /** Closes the underlying database. */
+  /** Closes the underlying database. Closing a cache already closed is nothing to do. */
   close(): void {
-    this.db.close();
+    if (this.db.isOpen) this.db.close();
   }
 }

@@ -41,7 +41,7 @@ import {
 } from '@mnema/chain';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { ensureSchema, PROJECTION_TABLES } from '../db/schema.js';
-import { IN_MEMORY, openDatabase } from '../db/sqlite.js';
+import { IN_MEMORY, openDatabase, type SqliteDatabase } from '../db/sqlite.js';
 import { captureMemory, recordObservation, retractNote } from '../knowledge/operations.js';
 import { switchChannel } from '../workflow/channel-operations.js';
 import { acceptDecision, recordDecision } from '../workflow/decision-operations.js';
@@ -430,6 +430,63 @@ describe('a cache that cannot be vouched for is replaced, never trusted', () => 
     cache.refresh();
     expect(cache.listTasks().map((task) => task.title)).toEqual(['a task that was already here']);
     expect(answersOf(cache)).toEqual(answersOf(replayed()));
+  });
+
+  it('a database of another shape is made again, in the file, not given up for memory', () => {
+    const ctx = writing();
+    aRecord(ctx);
+    // The writes above read through the kept projection, so a file exists already: it is
+    // replaced by one that is a database all the same, whose `tasks` this code cannot create over.
+    for (const suffix of ['', '-wal', '-shm']) {
+      rmSync(`${projectionCachePath({ root })}${suffix}`, { force: true });
+    }
+    const other = openDatabase(projectionCachePath({ root }));
+    other.exec('CREATE TABLE tasks (only_column TEXT)');
+    other.close();
+    const cache = persisted();
+    cache.refresh();
+    expect(cache.listTasks().map((task) => task.title)).toEqual(['a task that was already here']);
+    // Kept in the file: a cache that had fallen back to memory would leave the other shape there.
+    const file = openDatabase(projectionCachePath({ root }));
+    try {
+      expect(file.prepare('SELECT title FROM tasks').all()).toEqual([
+        { title: 'a task that was already here' },
+      ]);
+    } finally {
+      file.close();
+    }
+  });
+
+  it('a file another process holds past the wait: the cache gives it up and answers the same', () => {
+    const ctx = writing();
+    aRecord(ctx);
+    const cache = persisted();
+    cache.refresh();
+    // The wait is five seconds in production; a case cannot hold one that long.
+    (cache as unknown as { db: SqliteDatabase }).db.exec('PRAGMA busy_timeout = 20');
+    landed(captureMemory(ctx, { content: 'arrived while another process held the file' }));
+    ctx.writer.checkpoint();
+    const holder = openDatabase(projectionCachePath({ root }));
+    holder.exec('BEGIN IMMEDIATE');
+    try {
+      cache.refresh();
+    } finally {
+      holder.exec('ROLLBACK');
+      holder.close();
+    }
+    expect(cache.listMemories().map((memory) => memory.content)).toContain(
+      'arrived while another process held the file',
+    );
+    expect(answersOf(cache)).toEqual(answersOf(replayed()));
+    // It was given up, not waited out: the file never saw the arrival.
+    const file = openDatabase(projectionCachePath({ root }));
+    try {
+      expect(file.prepare('SELECT content FROM memories').all()).not.toContainEqual({
+        content: 'arrived while another process held the file',
+      });
+    } finally {
+      file.close();
+    }
   });
 
   // Root writes into a read-only directory anyway, so there is no directory it cannot write to.
