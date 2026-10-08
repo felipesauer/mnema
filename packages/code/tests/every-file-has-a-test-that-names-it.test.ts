@@ -1027,7 +1027,7 @@ const CLAUSES_PER_FILE: Readonly<Record<string, number>> = {
   'packages/code/tests/support/the-record-held.ts': 3,
   'packages/code/tests/support/what-a-subcommand-reads.ts': 0,
   'packages/code/tests/support/witnessing.ts': 0,
-  'packages/code/tests/ten-writers-one-record.test.ts': 9,
+  'packages/code/tests/ten-writers-one-record.test.ts': 10,
   'packages/code/tests/the-address-a-proof-names-is-checked.test.ts': 6,
   'packages/code/tests/the-address-names-a-rule-a-reader-can-open.test.ts': 13,
   'packages/code/tests/the-address-says-what-it-covers.test.ts': 14,
