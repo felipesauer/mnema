@@ -28,11 +28,39 @@ const quiet = { out: () => undefined, err: () => undefined, fail: () => undefine
 
 describe('a verb that went under a noun is not a verb any more', () => {
   const { program } = buildProgram(quiet);
-  const root = program.commands.map((command) => command.name());
+  // EVERY SPELLING A COMMAND ANSWERS TO, at any depth: its name and its aliases. A `.alias('focus')`
+  // on `resume` keeps the old verb alive under another command, and `name()` alone would not see it.
+  const spellings = everyCommandOf(program).flatMap((command) => [
+    command.name(),
+    ...command.aliases(),
+  ]);
+  const root = program.commands.flatMap((command) => [command.name(), ...command.aliases()]);
   const paths = everyCommandOf(program).map((command) => pathOf(command).join(' '));
 
-  it.each(Object.keys(WENT_UNDER))('%s is not a command of the root', (old) => {
-    expect(root).not.toContain(old);
+  it.each(Object.keys(WENT_UNDER))(
+    '%s is not a command of the root, nor an alias of any',
+    (old) => {
+      expect(root).not.toContain(old);
+    },
+  );
+
+  it('is not the name or alias of any command at any depth, unless it is the new one’s own', () => {
+    // `focus` and `skills` and the rest answer to nothing; the only old name that is also a
+    // new command's own name is `guard`/`exposure`/`accountability`/`antipatterns`, which are
+    // the LAST word of a path under their group, and that is allowed — what is not is a spelling
+    // that routes to a different place than the table says.
+    for (const [old, now] of Object.entries(WENT_UNDER)) {
+      const where = everyCommandOf(program)
+        .filter((command) => [command.name(), ...command.aliases()].includes(old))
+        .map((command) => pathOf(command).join(' '));
+      expect(
+        where.filter((path) => path !== now),
+        old,
+      ).toEqual([]);
+    }
+    expect(spellings).not.toContain('focus');
+    expect(spellings).not.toContain('skills');
+    expect(spellings).not.toContain('next-actions');
   });
 
   it.each(Object.entries(WENT_UNDER))('%s is typed as `%s`', (_old, now) => {

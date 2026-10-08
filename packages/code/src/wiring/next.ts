@@ -17,10 +17,10 @@ import { fromTheGroup, REFUSED, takesFromItsGroup } from './from-the-group.js';
 import { noSuchRecord } from './no-such-record.js';
 import { onOneLine } from './on-one-line.js';
 import { reportRefusal } from './report.js';
-import type { Wiring } from './verb.js';
+import { type Declared, readsTheRecord, type Wiring } from './verb.js';
 
 /** Registers `mnema task next` on the `task` group. */
-export function registerNextActions(task: Command, wiring: Wiring): void {
+export function registerNextActions(task: Command, wiring: Wiring): Declared {
   const { io, render } = wiring;
   const next = task
     .command('next')
@@ -62,4 +62,5 @@ export function registerNextActions(task: Command, wiring: Wiring): void {
       io.out(render(itemLine([`${action.action} → ${action.to}${needs}`])));
     }
   });
+  return readsTheRecord(next);
 }

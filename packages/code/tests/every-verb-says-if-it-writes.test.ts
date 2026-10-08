@@ -99,6 +99,7 @@ import { Command } from 'commander';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { buildProgram, type CliIo, run } from '../src/cli.js';
 import { renderPlain } from '../src/presentation/plain.js';
+import { dispositionOf, pathsOffered } from '../src/repl/gate.js';
 import { optionsTakenFromTheGroup } from '../src/wiring/from-the-group.js';
 import { registerVerbs } from '../src/wiring/index.js';
 import type { PinnedRun } from '../src/wiring/run-pin.js';
@@ -678,6 +679,67 @@ describe('every verb says if it writes', () => {
       'tally',
     ]);
     expect(verbsThat('mutates').length + verbsThat('reads').length).toBe(DECLARED.length);
+  });
+
+  it('classifies every member of a group that answers for its members, and exercises each reading one', async () => {
+    // A group is exercised by ONE act above, and a group whose members differ in what they can do
+    // (`task`, `skill`) would have its readers measured by nobody. So each such group is asked in
+    // both directions — the members it declares are the subcommands the program holds — and each
+    // member that says it reads is run for real, in both forms, and counted in the chain.
+    const grouped = DECLARED.filter((verb) => verb.members !== undefined);
+    expect(grouped.map((verb) => verb.act.name()).sort()).toEqual(['skill', 'task']);
+    for (const group of grouped) {
+      expect(
+        (group.members ?? []).map((member) => member.act.name()).sort(),
+        group.act.name(),
+      ).toEqual(group.act.commands.map((command) => command.name()).sort());
+    }
+    const READERS: Readonly<Record<string, (f: Fixture) => readonly string[]>> = {
+      'task next': (f) => ['task', 'next', f.task],
+      'task guard': (f) => ['task', 'guard', 'submit', f.task, '--actor', f.anchor],
+      'skill provenance': () => ['skill', 'provenance'],
+    };
+    const declaredReaders = grouped.flatMap((group) =>
+      (group.members ?? [])
+        .filter((member) => member.effect === 'reads')
+        .map((member) => `${group.act.name()} ${member.act.name()}`),
+    );
+    expect(declaredReaders.sort()).toEqual(Object.keys(READERS).sort());
+    for (const [path, argv] of Object.entries(READERS)) {
+      const project = await fixture(path.replace(' ', '-'));
+      const line = argv(project);
+      const forms = offersJson(line) ? [line, [...line, '--json']] : [line];
+      const before = held(sandbox);
+      for (const form of forms) {
+        const outcome = await mnema(form);
+        expect(outcome.failed, `mnema ${form.join(' ')}: ${outcome.out.join(' / ')}`).toBe(false);
+      }
+      const after = held(sandbox);
+      expect(after.events - before.events, path).toBe(0);
+      expect(after.keys, path).toBe(before.keys);
+    }
+  }, 120_000);
+
+  it('has the console run exactly what declared it reads, member by member, and nothing that writes', () => {
+    // THE PROPERTY THE GATE EXISTS FOR, asked of the real surface: a line is run if and only if the
+    // act it reaches declared it reads. A write that was ever offered is the failure.
+    const ran: string[] = [];
+    for (const verb of DECLARED) {
+      const name = verb.act.name();
+      if (name === 'repl') continue;
+      const acts = verb.members ?? [verb];
+      for (const act of acts) {
+        const line = verb.members === undefined ? name : `${name} ${act.act.name()}`;
+        const does = dispositionOf(line, DECLARED, 'repl').does;
+        expect(does === 'run', line).toBe(act.effect === 'reads');
+        if (does === 'run') ran.push(line);
+      }
+    }
+    expect(ran).toContain('task next');
+    expect(ran).toContain('task guard');
+    expect(ran).toContain('skill provenance');
+    expect(ran).not.toContain('task handoff');
+    expect(ran.sort()).toEqual([...pathsOffered(DECLARED, 'repl')].sort());
   });
 
   it('measures every verb against the chain: a read appends nothing', async () => {

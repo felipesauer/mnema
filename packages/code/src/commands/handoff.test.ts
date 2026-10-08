@@ -35,7 +35,7 @@ function handoffsOf(root: string) {
   return projectHandoffs(orderedEvents({ root }, catalogUpcasters()));
 }
 
-describe('mnema handoff', () => {
+describe('mnema task handoff', () => {
   it('records a handoff on a task, echoing the fact (there is no id)', () => {
     const { repo, env } = setup();
     runInit({ cwd: repo, env });
@@ -126,7 +126,7 @@ describe('mnema handoff', () => {
   });
 });
 
-describe('mnema handoff --which — the agent that RECORDED it', () => {
+describe('mnema task handoff --which — the agent that RECORDED it', () => {
   /** Every `handoff.recorded` in a tree, with the agent each one names. */
   function handoffsIn(root: string): { subject: string | undefined; which?: string }[] {
     return orderedEvents({ root }, catalogUpcasters())

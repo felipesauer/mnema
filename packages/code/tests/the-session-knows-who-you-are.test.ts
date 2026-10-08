@@ -46,7 +46,6 @@ import { buildProgram, type CliIo, run } from '../src/cli.js';
 import { renderPlain } from '../src/presentation/plain.js';
 import { asTheSession } from '../src/repl/asking.js';
 import { THE_FLOOR } from '../src/repl/floor.js';
-import { verbsOffered } from '../src/repl/gate.js';
 import { typedLine } from '../src/repl/session.js';
 import { everyCommandOf } from '../src/wiring/misuse.js';
 import { ACTOR_HELP } from '../src/wiring/options.js';
@@ -457,17 +456,12 @@ describe('every command that requires an identity is served, and nothing else is
     // parser receives, and this is about what a caller gets back. Each command that
     // requires an identity is really run at a prompt, with the arguments it declares, and
     // whatever it then says, it does not ask for the identity.
-    const { program, verbs } = registered();
-    // The verbs the console OFFERS: `task guard` requires an identity and is served one by the
-    // function above, but it sits in a group the gate refuses whole, because a group is a write
-    // when any member is (`wiring/verb.ts`) — so what the console says to it is that refusal.
-    const offered = verbsOffered(verbs, REPL_VERB);
-    const requiring = everyCommandOf(program).filter((command) =>
+    const { program } = registered();
+    const requires = everyCommandOf(program).filter((command) =>
       command.options.some((option) => option.mandatory && option.description.includes(ACTOR_HELP)),
     );
-    const requires = requiring.filter((command) => offered.includes(pathOf(command)[0] as string));
-    expect(requires.length).toBeGreaterThanOrEqual(1);
-    expect(requiring.length - requires.length).toBeGreaterThanOrEqual(1);
+    // `focus` went into `resume`, so what asks is `task guard` and `resume`: two, where it was three.
+    expect(requires.length).toBeGreaterThanOrEqual(2);
     for (const command of requires) {
       const line = invocationOf(command).join(' ');
       const knowing = await prompt(line, mine);

@@ -56,7 +56,7 @@ import {
 } from './options.js';
 import { reportRecorded, reportRefusal, reportReplacement } from './report.js';
 import { PIN_REFUSED } from './run-pin.js';
-import { type Declared, mutatesTheRecord, type Wiring } from './verb.js';
+import { type Declared, groupOf, mutatesTheRecord, readsTheRecord, type Wiring } from './verb.js';
 
 /**
  * Where an exported skill goes when the caller names nowhere — declared HERE, on the
@@ -340,5 +340,12 @@ export function registerSkill(program: Command, wiring: Wiring): Declared {
     }
     writeLines(io, provenanceReport(render, result.patterns, result.consultations));
   });
-  return mutatesTheRecord(skill);
+  // `export` writes a file and nothing of the record, and is still a write to the console: a session
+  // advertised as read-only does not put files on a disk. `provenance` records nothing at all.
+  return groupOf(skill, [
+    mutatesTheRecord(create),
+    mutatesTheRecord(skillMove),
+    mutatesTheRecord(skillExport),
+    readsTheRecord(provenance),
+  ]);
 }

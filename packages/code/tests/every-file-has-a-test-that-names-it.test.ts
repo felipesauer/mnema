@@ -322,7 +322,7 @@ const UNWITNESSED: Readonly<Record<string, Debt>> = {
   },
   'packages/code/src/commands/skills.ts': {
     reached: 'nobody imports it',
-    why: "The `mnema skills` provenance-audit adapter; no test imports it, and the verb's lazy import means its tree resolution is only ever read back off printed report lines in cli-e2e.",
+    why: "The `mnema skill provenance` provenance-audit adapter; no test imports it, and the verb's lazy import means its tree resolution is only ever read back off printed report lines in cli-e2e.",
   },
   'packages/code/src/commands/status.ts': {
     reached: 'nobody imports it',

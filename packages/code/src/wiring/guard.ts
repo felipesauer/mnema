@@ -33,10 +33,10 @@ import { noSuchRecord } from './no-such-record.js';
 import { onOneLine } from './on-one-line.js';
 import { ACTOR_HELP } from './options.js';
 import { reportRefusal } from './report.js';
-import type { Wiring } from './verb.js';
+import { type Declared, readsTheRecord, type Wiring } from './verb.js';
 
 /** Registers `mnema task guard` on the `task` group. */
-export function registerGuard(task: Command, wiring: Wiring): void {
+export function registerGuard(task: Command, wiring: Wiring): Declared {
   const { io, render } = wiring;
   const guard = task
     .command('guard')
@@ -128,4 +128,5 @@ export function registerGuard(task: Command, wiring: Wiring): void {
       );
     },
   );
+  return readsTheRecord(guard);
 }

@@ -47,7 +47,7 @@ import {
 } from './options.js';
 import { reportRecorded, reportRefusal, reportReplacement } from './report.js';
 import { PIN_REFUSED } from './run-pin.js';
-import { type Declared, mutatesTheRecord, type Wiring } from './verb.js';
+import { type Declared, groupOf, mutatesTheRecord, type Wiring } from './verb.js';
 
 /** Registers `mnema task` on the program. */
 export function registerTask(program: Command, wiring: Wiring): Declared {
@@ -176,10 +176,10 @@ export function registerTask(program: Command, wiring: Wiring): Declared {
 
   // The three that used to be verbs of their own: a handoff is recorded on a task, and the other
   // two ask the task's workflow what it allows. They hang on the group and read its flags the way
-  // `create` and `move` do. The group stays a write, though two of its members read: a group is
-  // classified by its most powerful one (`verb.ts`).
-  registerHandoff(task, wiring);
-  registerNextActions(task, wiring);
-  registerGuard(task, wiring);
-  return mutatesTheRecord(task);
+  // `create` and `move` do. Each answers for itself, and the group is a write because three of
+  // its members are (`verb.ts`): the console runs the two that read and refuses the rest.
+  const handoff = registerHandoff(task, wiring);
+  const next = registerNextActions(task, wiring);
+  const guard = registerGuard(task, wiring);
+  return groupOf(task, [mutatesTheRecord(create), mutatesTheRecord(move), handoff, next, guard]);
 }

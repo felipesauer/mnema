@@ -75,7 +75,7 @@ function digest(dir: string): string {
   return hash.digest('hex');
 }
 
-describe('mnema guard (dry-run of the gate)', () => {
+describe('mnema task guard (dry-run of the gate)', () => {
   it('ALLOWS a legal move whose required proof is present (→ the state it reaches)', () => {
     const { repo, env, id, who } = projectWithTask();
     // approve is not legal from DRAFT; a legal proof-bearing move from DRAFT is

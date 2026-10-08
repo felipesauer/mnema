@@ -1,5 +1,5 @@
 /**
- * `mnema antipatterns` on the pattern moves: the three answers, and the one the whole
+ * `mnema audit antipatterns` on the pattern moves: the three answers, and the one the whole
  * reading exists for.
  *
  * THE SIGNAL A STUDY PROMISED IN PLACE OF A GATE, and the reason it was blocked for a
@@ -109,7 +109,7 @@ interface Reported {
   readonly notObservable: ReportedMove[];
 }
 
-/** `mnema antipatterns --json`, parsed down to the reading this file is about. */
+/** `mnema audit antipatterns --json`, parsed down to the reading this file is about. */
 async function reported(): Promise<Reported> {
   const said = await mnema('audit', 'antipatterns', '--json');
   expect(said.failed, said.err.join(' / ')).toBe(false);

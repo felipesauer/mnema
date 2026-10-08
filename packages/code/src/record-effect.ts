@@ -103,6 +103,19 @@ export interface Declared<Act> {
   readonly act: Act;
   /** What invoking it can do to the record. */
   readonly effect: RecordEffect;
+  /**
+   * The members of a group, each answering for itself — present only where a group's members
+   * differ in what they can do (`task`, `skill`). The group's own `effect` is then the most
+   * powerful of theirs, which is what everything that does not look at members still reads;
+   * a caller that decides per member (the console's gate) reads these.
+   */
+  readonly members?: readonly Declared<Act>[];
+}
+
+/** A group whose members answer for themselves: it mutates if any member does, and carries them. */
+export function groupOf<Act>(act: Act, members: readonly Declared<Act>[]): Declared<Act> {
+  const effect = members.some((member) => member.effect === 'mutates') ? 'mutates' : 'reads';
+  return { act, effect, members };
 }
 
 /**

@@ -16,7 +16,7 @@ import { completionTree } from '../completion/tree.js';
 import { CLEAR, PREFIX, SESSION_WORDS } from '../session-words.js';
 import type { Declared } from '../wiring/verb.js';
 import { completerFor } from './complete.js';
-import { argvOf, dispositionOf, verbsOffered } from './gate.js';
+import { argvOf, dispositionOf, membersOffered, pathsOffered, verbsOffered } from './gate.js';
 import { whatTheSessionShowed } from './seen.js';
 import { theSessionsOwnWords } from './session.js';
 
@@ -83,6 +83,54 @@ describe('a line becomes the words a parser receives', () => {
     expect(argvOf('search $HOME')).toEqual(['search', '$HOME']);
     expect(argvOf('search foo | head')).toEqual(['search', 'foo', '|', 'head']);
     expect(argvOf('search *.md')).toEqual(['search', '*.md']);
+  });
+});
+
+/**
+ * A group whose members answer for themselves: `bundle` has two members that read and one that
+ * writes, as `task` has `next` and `guard` beside `handoff`. The group itself is a write.
+ */
+const BUNDLE: Declared = (() => {
+  const group = new Command('bundle').description('what bundle does');
+  const member = (name: string, effect: Declared['effect']): Declared => ({
+    act: group.command(name).description(`what ${name} does`),
+    effect,
+  });
+  return {
+    act: group,
+    effect: 'mutates',
+    members: [member('peek', 'reads'), member('scan', 'reads'), member('put', 'mutates')],
+  };
+})();
+
+describe('a group whose members answer for themselves is gated by the member', () => {
+  const verbs = [...VERBS, BUNDLE];
+  const onGroup = (line: string) => dispositionOf(line, verbs, SELF);
+
+  it('runs a member that reads, and refuses one that writes by its whole path', () => {
+    expect(onGroup('bundle peek one')).toEqual({ does: 'run', argv: ['bundle', 'peek', 'one'] });
+    const said = onGroup('bundle put one');
+    expect(said).toMatchObject({
+      does: 'refuse',
+      sentence: '`bundle put` can change the record, and this session only reads it',
+    });
+    // And the line it points at is the whole path too.
+    expect(said.does === 'refuse' && said.detail).toContain('`mnema bundle put`');
+  });
+
+  it('refuses the group bare, a flag in the member’s place, and a word that is no member', () => {
+    for (const line of ['bundle', 'bundle --scope x peek', 'bundle nothing', 'bundle --help']) {
+      expect(onGroup(line), line).toMatchObject({
+        does: 'refuse',
+        sentence: '`bundle` can change the record, and this session only reads it',
+      });
+    }
+  });
+
+  it('counts the members that read as verbs, and the group as none of its own', () => {
+    expect(verbsOffered(verbs, SELF)).toEqual(['look', 'read', 'bundle']);
+    expect(pathsOffered(verbs, SELF)).toEqual(['look', 'read', 'bundle peek', 'bundle scan']);
+    expect(membersOffered(verbs, SELF).get('bundle')).toEqual(['peek', 'scan']);
   });
 });
 
