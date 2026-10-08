@@ -65,6 +65,7 @@ import {
   validateStackFiles,
 } from '@mnema/stacks';
 import { HOST_NAMES, HOSTS, type Place } from '../host-names.js';
+import { oneLine } from '../one-line.js';
 import type { SourceRead } from './stack-source.js';
 
 /** The three trees a stack is adopted into. */
@@ -192,6 +193,15 @@ function whereOf(ctx: StackContext, target: StackTarget): Where | StackRefused {
     neighbours: [receiptsOf('public'), receiptsOf('private')],
     trees,
   };
+}
+
+/**
+ * Whether the target can be written at all from here — a project scope with no project is the
+ * one way it cannot — asked before a source is read, so that is what is said first.
+ */
+export function targetRefusal(ctx: StackContext, target: StackTarget): StackRefused | undefined {
+  const where = whereOf(ctx, target);
+  return 'ok' in where ? where : undefined;
 }
 
 /** What a receipt keeps: what was installed, and every file written with its SHA-256. */
@@ -396,6 +406,57 @@ export function planStackInstall(
     hooks: manifest.hooks ?? [],
   };
   return checkTheWay(plan, where) ?? plan;
+}
+
+/** Where a plan writes, in the words the plan prints. */
+function intoWords(plan: StackPlan): string {
+  if ('to' in plan.target) return `${plan.base}, a folder of your own; nothing is recorded`;
+  switch (plan.target.scope) {
+    case 'public':
+      return `${plan.base}, the files to be committed with the project; recorded in the public tree`;
+    case 'private':
+      return `${plan.base}, the files kept out of git; recorded in the private tree`;
+    case 'global':
+      return `${plan.base}, your home, for every project; recorded in the global tree`;
+  }
+}
+
+/**
+ * The plan, whole, as a person reads it before anything is written: what the stack is, where it
+ * comes from, every file and the hosts that read it, who receives nothing, and the hooks, apart.
+ */
+export function planLines(plan: StackPlan): string[] {
+  // Every value a stack wrote is closed to one line: a newline in a description would
+  // otherwise print a line of the plan the stack chose.
+  const one = (text: string): string => oneLine(text);
+  const width = Math.max(...plan.files.map((f) => f.path.length), 0);
+  const named = plan.installedAs === plan.name ? plan.name : `${plan.installedAs} (${plan.name})`;
+  const lines = [
+    `Stack ${named} ${plan.version}: ${one(plan.description)}`,
+    `  digest   ${plan.digest}`,
+    `  source   ${one(plan.source)}`,
+    `  license  ${one(plan.license)}`,
+    `  author   ${one(plan.author)} (as the stack says; nothing proves it)`,
+    `  into     ${one(intoWords(plan))}`,
+    `Files (${plan.files.length}), copied as they are and none of them executable:`,
+    ...plan.files.map((f) => `  ${f.path.padEnd(width)}  ${f.kind}, read by ${f.hosts.join(', ')}`),
+  ];
+  if (plan.unserved.skills.length > 0) {
+    lines.push(`No skill is written for: ${plan.unserved.skills.join(', ')}.`);
+  }
+  if (plan.unserved.agents.length > 0) {
+    lines.push(`No agent is written for: ${plan.unserved.agents.join(', ')}.`);
+  }
+  if (plan.hooks.length === 0) lines.push('Hooks: none.');
+  else {
+    lines.push(
+      `Hooks (${plan.hooks.length}), declared by the stack and off: none is written, and turning one on is a separate act of yours:`,
+      ...plan.hooks.map(
+        (h) => `  ${one(h.name)}  on ${one(h.event)}  ${one(h.file)}  ${one(h.description)}`,
+      ),
+    );
+  }
+  return lines;
 }
 
 /**
@@ -603,6 +664,9 @@ export function applyStackInstall(
       ]);
       return refuse(adopted.code, `${adopted.message} The files were taken back.`);
     }
+    // The door signed the fact in this hold; asked again here, so the tree is fully signed
+    // whatever the door does tomorrow.
+    writer.checkpoint();
     return { ok: true, plan, recorded: true };
   });
 }
@@ -726,6 +790,7 @@ export function removeInstalledStack(
       { name: receipt.installedAs },
     );
     if (!removedFact.ok) return refuse(removedFact.code, removedFact.message);
+    writer.checkpoint();
     deleteFiles();
     return report(true);
   });

@@ -6,6 +6,7 @@ import { tmpdir } from 'node:os';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
+import { GIT_WITHOUT_MAINTENANCE } from '../../tests/support/git-without-maintenance.js';
 import { readStackSource } from './stack-source.js';
 
 /**
@@ -22,7 +23,13 @@ let elsewhere: Server;
 let elsewhereAsked = 0;
 let base: string;
 
-const quiet = { stdio: 'ignore' as const, env: { ...process.env, GIT_CONFIG_NOSYSTEM: '1' } };
+const git = (cwd: string, ...args: string[]): void => {
+  execFileSync('git', args, {
+    cwd,
+    stdio: 'ignore',
+    env: { ...process.env, GIT_CONFIG_NOSYSTEM: '1', GIT_CONFIG_GLOBAL: GIT_WITHOUT_MAINTENANCE },
+  });
+};
 
 function listen(server: Server): Promise<number> {
   return new Promise((done) =>
@@ -56,15 +63,11 @@ beforeAll(async () => {
   );
   const work = join(dir, 'work');
   cpSync(HELLO, work, { recursive: true });
-  execFileSync('git', ['init', '-q', '-b', 'main'], { cwd: work, ...quiet });
-  execFileSync('git', ['add', '.'], { cwd: work, ...quiet });
-  execFileSync(
-    'git',
-    ['-c', 'user.name=a', '-c', 'user.email=a@example.com', 'commit', '-q', '-m', 'hello'],
-    { cwd: work, ...quiet },
-  );
+  git(work, 'init', '-q', '-b', 'main');
+  git(work, 'add', '.');
+  git(work, '-c', 'user.name=a', '-c', 'user.email=a@example.com', 'commit', '-q', '-m', 'hello');
   mkdirSync(join(dir, 'served'));
-  execFileSync('git', ['clone', '-q', '--bare', work, join(dir, 'served', 'hello.git')], quiet);
+  git(dir, 'clone', '-q', '--bare', work, join(dir, 'served', 'hello.git'));
   const tls = { key: readFileSync(join(dir, 'key.pem')), cert: readFileSync(caFile) };
 
   elsewhere = createServer(tls, (_, res) => {

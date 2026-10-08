@@ -21,6 +21,7 @@ import { fileURLToPath } from 'node:url';
 import { catalogUpcasters } from '@mnema/chain';
 import { type DiscoveryEnv, orderedEvents, resolveTrees } from '@mnema/core';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
+import { GIT_WITHOUT_MAINTENANCE } from '../../tests/support/git-without-maintenance.js';
 import { runInit } from './init.js';
 import {
   applyStackInstall,
@@ -45,7 +46,7 @@ const git = (cwd: string, ...args: string[]): void => {
   execFileSync('git', args, {
     cwd,
     stdio: 'ignore',
-    env: { ...process.env, GIT_CONFIG_NOSYSTEM: '1' },
+    env: { ...process.env, GIT_CONFIG_NOSYSTEM: '1', GIT_CONFIG_GLOBAL: GIT_WITHOUT_MAINTENANCE },
   });
 };
 

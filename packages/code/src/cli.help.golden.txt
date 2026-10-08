@@ -23,6 +23,8 @@ $ mnema
 !                   (follows the note; takes no --scope)
 !   skill           propose, move or export a reusable skill, or show where each
 !                   came from
+!   stack           install a stack of skills and agents into the folders each
+!                   host reads
 !   task            create a task, move it, hand it over, or ask what the workflow
 !                   allows next
 !   promote         list what recurs across projects, or copy one pattern to the
@@ -130,6 +132,8 @@ $ mnema --help
 |                   (follows the note; takes no --scope)
 |   skill           propose, move or export a reusable skill, or show where each
 |                   came from
+|   stack           install a stack of skills and agents into the folders each
+|                   host reads
 |   task            create a task, move it, hand it over, or ask what the workflow
 |                   allows next
 |   promote         list what recurs across projects, or copy one pattern to the
@@ -455,6 +459,22 @@ $ mnema skill --help
 |   and reported back, but what mnema does not recognize is written verbatim.
 |   Nor personal data: an email address is replaced with <email>; the mnid already says who wrote.
 |   Each text field holds at most 65536 bytes; a longer one is refused.
+
+### mnema stack --help
+$ mnema stack --help
+| Usage: mnema stack [options] [command]
+|
+| install a stack of skills and agents into the folders each host reads
+|
+| Options:
+|   -h, --help               display help for command
+|
+| Commands:
+|   add [options] <source>   show the plan of a stack, and write it when --expect
+|                            names its digest
+|   remove [options] <name>  remove an installed stack, keeping every file changed
+|                            since it was written
+|   help [command]           display help for command
 
 ### mnema task --help
 $ mnema task --help
@@ -1573,6 +1593,50 @@ $ mnema skill provenance --help
 |   A consultation is one run served the body — not that the work followed it,
 |   and counted in this project’s trees and the machine-global one, no other.
 |   It records nothing — no event, no consultation.
+
+### mnema stack add --help
+$ mnema stack add --help
+| Usage: mnema stack add [options] <source>
+|
+| show the plan of a stack, and write it when --expect names its digest
+|
+| Arguments:
+|   source             a folder, a tar archive, or an https:// git address
+|
+| Options:
+|   --scope <scope>    the tree that records the adoption, and so where the files
+|                      go: public (team-visible), private (this machine, this
+|                      project), or global (personal, cross-project). Defaults to
+|                      public: the files go into the project to be committed with
+|                      it; private keeps them out of git, and global puts them in
+|                      the home.
+|   --to <folder>      write the files into this folder instead, and record
+|                      nothing
+|   --as <name>        install it under this name, when its own is taken
+|   --expect <digest>  write it, if its digest is this one — the one the plan
+|                      showed
+|   --dry-run          show the plan and write nothing
+|   -h, --help         display help for command
+
+### mnema stack remove --help
+$ mnema stack remove --help
+| Usage: mnema stack remove [options] <name>
+|
+| remove an installed stack, keeping every file changed since it was written
+|
+| Arguments:
+|   name             the name the stack is installed under
+|
+| Options:
+|   --scope <scope>  the tree that records the adoption, and so where the files
+|                    go: public (team-visible), private (this machine, this
+|                    project), or global (personal, cross-project). Defaults to
+|                    public: the files go into the project to be committed with
+|                    it; private keeps them out of git, and global puts them in
+|                    the home.
+|   --to <folder>    the folder it was written into with --to
+|   --dry-run        say what would be removed and remove nothing
+|   -h, --help       display help for command
 
 ### mnema task create --help
 $ mnema task create --help

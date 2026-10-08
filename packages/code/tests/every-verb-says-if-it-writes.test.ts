@@ -94,6 +94,7 @@
 import { mkdirSync, mkdtempSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { basename, join } from 'node:path';
+import { fileURLToPath } from 'node:url';
 import { PROJECT_DIR } from '@mnema/core';
 import { Command } from 'commander';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
@@ -106,6 +107,10 @@ import type { PinnedRun } from '../src/wiring/run-pin.js';
 import type { Declared, RecordEffect } from '../src/wiring/verb.js';
 import { mergeAForeignTail } from './support/a-tail-from-another-machine.js';
 import { held } from './support/the-record-held.js';
+
+/** The stack every package's cases install, and its digest (`@mnema/stacks`' golden). */
+const HELLO_STACK = fileURLToPath(new URL('../../stacks/fixtures/hello-stack', import.meta.url));
+const HELLO_STACK_DIGEST = 'df9d8d71cdc13bd89b45af349e677ecfcbe98949805278bd42f16e6c0498f9ed';
 
 // ---------------------------------------------------------------------------
 // What the program declares
@@ -224,6 +229,8 @@ const INVOCATION: Readonly<Record<string, Invocation>> = {
   task: { argv: () => ['task', 'create', 'a second task'] },
   decision: { argv: () => ['decision', 'record', 'a title', 'a rationale'] },
   skill: { argv: () => ['skill', 'create', 'a pattern', '--body', 'the pattern itself'] },
+  // The write that records: the plan written, with the digest the fixture's stack has.
+  stack: { argv: () => ['stack', 'add', HELLO_STACK, '--expect', HELLO_STACK_DIGEST] },
   memory: { argv: () => ['memory', 'something worth keeping'] },
   observe: {
     argv: (f) => ['observe', f.task, '--topic', 'review', '--text', 'it needs a rollback'],
@@ -638,6 +645,7 @@ describe('every verb says if it writes', () => {
       'observe',
       'retract',
       'skill',
+      'stack',
       'task',
       'promote',
       'switch',
@@ -776,6 +784,7 @@ describe('every verb says if it writes', () => {
       'retract',
       'run',
       'skill',
+      'stack',
       'switch',
       'tail',
       'task',

@@ -11,7 +11,7 @@ import {
 } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join, relative } from 'node:path';
-import { pathToFileURL } from 'node:url';
+import { fileURLToPath, pathToFileURL } from 'node:url';
 import { ChainWriter, catalogUpcasters, ensureTree, verify } from '@mnema/chain';
 import {
   chainRootForScope,
@@ -22,6 +22,7 @@ import {
   type Scope,
 } from '@mnema/core';
 import { createTask, openTreeForWriting } from '@mnema/core/write';
+import { readStackFiles } from '@mnema/stacks';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { runBeforeAWrite } from '../src/commands/before-a-write.js';
 import { runCheckDeclare, runCheckRun } from '../src/commands/check.js';
@@ -43,6 +44,11 @@ import { runRunEnd } from '../src/commands/run-end.js';
 import { runRunStart } from '../src/commands/run-start.js';
 import { runSkill } from '../src/commands/skill.js';
 import { runSkillTransition } from '../src/commands/skill-transition.js';
+import {
+  applyStackInstall,
+  planStackInstall,
+  removeInstalledStack,
+} from '../src/commands/stack-install.js';
 import { runSwitch } from '../src/commands/switch.js';
 import { runTailPrune } from '../src/commands/tail-prune.js';
 import { runTask } from '../src/commands/task.js';
@@ -166,12 +172,18 @@ const CODE_SRC = join(HERE, 'src');
  * 41 since a checker key can be retired: `retireChecker`. 43 since an identity declares its
  * backup: `declareBackup`, and `enrollBackup`, which `init` enrolls and declares it with. 44
  * since a link can be retracted: `retractLink`. 46 since a stack can be adopted and removed:
- * `adoptStack` and `removeStack`, which no path of the surface reaches yet.
+ * `adoptStack` and `removeStack`.
  */
 const CORE_OPERATIONS_THAT_APPEND = 46;
 
-/** How many paths of the shipped surface reach one of them. 44 since `runKeySigstore`. */
-const SURFACE_WRITE_PATHS = 44;
+/** The stack the cases install. */
+const HELLO_STACK = fileURLToPath(new URL('../../stacks/fixtures/hello-stack', import.meta.url));
+
+/**
+ * How many paths of the shipped surface reach one of them. 44 since `runKeySigstore`; 46 since a
+ * stack is installed and removed (`applyStackInstall`, `removeInstalledStack`).
+ */
+const SURFACE_WRITE_PATHS = 46;
 
 /** What `runInit` answered when it did not refuse; a refusal ends the setup. */
 function founded(result: InitResult | InitRefused): InitResult {
@@ -590,6 +602,22 @@ describe('every write path leaves the record fully signed', () => {
           void ok(
             'review',
             runSkillTransition(ctx, { id: skill, action: 'review', proof: { note: 'seen' } }),
+          ),
+      },
+      {
+        at: 'commands/stack-install.ts:applyStackInstall',
+        drive: () => {
+          const read = { ok: true as const, ...readStackFiles(HELLO_STACK), shown: 'a folder' };
+          const plan = ok('plan', planStackInstall(ctx, read, { target: { scope: 'public' } }));
+          ok('stack add', applyStackInstall(ctx, plan, plan.digest));
+        },
+      },
+      {
+        at: 'commands/stack-install.ts:removeInstalledStack',
+        drive: () =>
+          void ok(
+            'stack remove',
+            removeInstalledStack(ctx, { name: 'hello-stack', target: { scope: 'public' } }),
           ),
       },
       {

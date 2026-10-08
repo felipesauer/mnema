@@ -94,6 +94,9 @@ const MAY_REACH_THE_NETWORK: readonly string[] = [
   // decisions — a network call only when that location is a URL, and only from `inherit set`,
   // `inherit update` and the one read that finds its pinned commit missing; never a model.
   'packages/code/src/inherited-record.ts',
+  // `mnema stack add <https://…>`: one shallow `git clone` of the address the person typed,
+  // following no redirect and over HTTPS only, to read a stack's files; never a model.
+  'packages/code/src/commands/stack-source.ts',
   // `mnema witness sigstore`: Fulcio and Rekor at the public Sigstore instance, the sign-in at
   // oauth2.sigstore.dev (and its callback on localhost), or the Actions runner's token endpoint.
   // What leaves of the record is a checkpoint digest; the identity leaves by design. Only when
