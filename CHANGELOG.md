@@ -128,6 +128,13 @@ tag, with its own changelog.
   and Node 25 are out of the range. The library that checks a Sigstore bundle (`@sigstore/verify`
   4.1.2) declares `^24.15.0`, and the binary refuses any Node outside the range in one line, a 22,
   a 23, a 25 or a 24 below 24.15.0 included. CI runs the suite on 24.15.0, the current 24 and 26.
+- **The cache is `node:sqlite`, and nothing is built at install.** The projection cache used
+  `better-sqlite3`, a native addon downloaded or compiled per platform and ABI; it now uses the
+  `node:sqlite` the Node ships (a release candidate from 24.15.0, no warning there), so there is no
+  install script and no prebuilt binary to miss. The record, its format, the locks and the cache's
+  tables are the same, and a cache written by the older build is replaced on the next read, as any
+  cache of another build is. Measured on a 1,500-event record against the build before, no verb
+  was slower.
 - **The Action's own test has room in its time limit.** Its cases start the real `mnema` binary
   (seven processes of set-up and two per run); the slowest took 4.3 to 4.5 s measured alone against
   the 5 s default, and went red once on a loaded runner. The limit is 20 s for that file; nothing

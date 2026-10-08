@@ -24,8 +24,8 @@
  * sides from drifting together.
  */
 
+import { DatabaseSync } from 'node:sqlite';
 import { type CatalogEvent, memoryCaptured, runEnded, runStarted, taskCreated } from '@mnema/chain';
-import Database from 'better-sqlite3';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { ensureSchema } from '../db/schema.js';
 import type { SqliteDatabase } from '../db/sqlite.js';
@@ -35,7 +35,7 @@ import { getRun, listOpenRuns, listRuns, materializeRuns } from './run-store.js'
 let db: SqliteDatabase;
 
 beforeEach(() => {
-  db = new Database(':memory:');
+  db = new DatabaseSync(':memory:');
   ensureSchema(db);
 });
 

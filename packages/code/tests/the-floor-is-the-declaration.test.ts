@@ -424,7 +424,7 @@ const FLOOR_MODULES: readonly string[] = [
   'env.ts',
   // I PUT THIS ON THE FLOOR: the check that the Node under the binary is one it can run on.
   // It is the FIRST import of `cli.ts` and has to be — it exists to say a line and exit before
-  // a module below it loads the native addon, so it cannot be deferred to a verb. ONE file,
+  // a module below it needs a newer Node, so it cannot be deferred to a verb. ONE file,
   // importing only `node:fs`, which is what `the-node-below-the-floor-is-refused.test.ts` holds.
   'node-floor.ts',
   'one-line.ts',
