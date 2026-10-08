@@ -203,24 +203,52 @@ describe('one byte that is not UTF-8, in the middle of a file of the record', ()
   });
 });
 
-describe('the torn final fragment, cut inside a multi-byte character', () => {
-  /** An append that stopped between the two bytes of `é`: no newline, and half a character. */
-  const torn = Buffer.concat([
-    Buffer.from('{"event":{"kind":"memory.captured","title":"caf'),
-    Buffer.from([0xc3]),
-  ]);
+describe('the torn final fragment, in both readers', () => {
+  /**
+   * Three appends a crash stopped: on an ASCII byte, between the bytes of `€` (e2 82 ac) and
+   * between the bytes of an emoji (f0 9f 94 92). None ends in a newline.
+   */
+  const head = Buffer.from('{"event":{"kind":"memory.captured","title":"cost in ');
+  const CUTS = [
+    { cut: 'on an ASCII byte', bytes: Buffer.concat([head, Buffer.from('eur')]) },
+    { cut: 'inside a euro sign', bytes: Buffer.concat([head, Buffer.from([0xe2, 0x82])]) },
+    { cut: 'inside an emoji', bytes: Buffer.concat([head, Buffer.from([0xf0, 0x9f, 0x94])]) },
+  ];
 
-  it('is dropped from the end of the last segment, as any torn write is', () => {
-    appendFileSync(join(tailDir, '000001.jsonl'), torn);
-    const here = verify(record, catalogUpcasters());
-    expect(here.ok).toBe(true);
-    expect(here.census.map((note) => note.kind)).toContain('partial-final-line');
-    expect(readTailTip({ root: record }, tail, catalogUpcasters(), -1)).toHaveLength(4);
-  });
+  it.each(CUTS)(
+    'drops it, cut $cut, from the end of the last segment, and both say so',
+    ({ bytes }) => {
+      appendFileSync(join(tailDir, '000001.jsonl'), bytes);
+      const here = verify(record, catalogUpcasters());
+      expect(here.ok).toBe(true);
+      expect(here.census.map((note) => note.kind)).toContain('partial-final-line');
+      expect(readTailTip({ root: record }, tail, catalogUpcasters(), -1)).toHaveLength(4);
 
-  it('is dropped from the end of the checkpoints, as any torn write is', () => {
-    appendFileSync(join(tailDir, 'checkpoints.jsonl'), torn);
+      const there = secondReading(record);
+      expect(there.verdict).toBe('VERIFIED');
+      expect(there.findings).toContainEqual(
+        expect.objectContaining({
+          level: 'note',
+          what: expect.stringContaining('ends in a partial line that was dropped'),
+          where: '000001.jsonl:5',
+        }),
+      );
+    },
+  );
+
+  it.each(CUTS)('drops it, cut $cut, from the end of the checkpoints, in both', ({ bytes }) => {
+    appendFileSync(join(tailDir, 'checkpoints.jsonl'), bytes);
     expect(verify(record, catalogUpcasters()).ok).toBe(true);
     expect(lastTailCheckpoint({ root: record }, tail)).toBeDefined();
+    expect(secondReading(record).verdict).toBe('VERIFIED');
   });
+
+  it.each(CUTS)(
+    'refuses the same bytes, cut $cut, once a newline ends them, in both',
+    ({ bytes }) => {
+      appendFileSync(join(tailDir, '000001.jsonl'), Buffer.concat([bytes, Buffer.from('\n')]));
+      expect(verify(record, catalogUpcasters()).level).toBe('unreadable');
+      expect(secondReading(record).verdict).toBe('REFUSED');
+    },
+  );
 });

@@ -257,11 +257,16 @@ kept as the character it is, so a line that begins with one is not canonical. Th
 holds for a checkpoint line, the tail proof and a committed public key, whose bytes hold
 no key when they are not UTF-8; a stored block header is ASCII by construction, and one
 that is not is not read, as above
-(`packages/chain/src/chain/every-reader-refuses-bytes-that-are-not-utf8.test.ts`). What
-the product forgives at the end of a tail is unchanged: the unterminated last line of the
-last segment, or of the checkpoints, that a crash left mid-append is dropped and reported,
-and that holds when the crash cut it inside a multi-byte character — those bytes are a torn
-write, not a line. The second reader forgives no such fragment, as before.
+(`packages/chain/src/chain/every-reader-refuses-bytes-that-are-not-utf8.test.ts`).
+
+**The one piece both readers forgive is the torn last line.** Every complete append ends in
+a newline, so a write a crash interrupted leaves exactly one unterminated piece at the end of
+the stream: the end of the tail's LAST segment, or the end of the checkpoints. When that piece
+does not read, both readers drop it and say so as a note (`partial-final-line`), and the
+verdict is the one the record without it earns. That holds when the crash cut the piece
+inside a multi-byte character: those bytes are a torn write, not a line that is not UTF-8.
+The same bytes anywhere else — ended by a newline, or at the end of an earlier segment —
+are a line, and are refused (same test).
 
 A reader **rebuilds** the event from the fields its kind declares and rejects any
 other, so a forged extra field cannot ride along into the signed bytes
