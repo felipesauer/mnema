@@ -544,7 +544,10 @@ function totalOrder(entriesByTail: ReadonlyMap<string, readonly Entry[]>): {
   for (const citation of merged.held) {
     const citing = entryAt(citation.tail, citation.position);
     const cited = entryAt(citation.citedTail, citation.citedPosition);
-    const byMs = Date.parse(eventAt(cited)) - Date.parse(eventAt(citing));
+    // A gap, not an ordering: how far the citing clock ran behind what it cites.
+    const citedMs = Date.parse(eventAt(cited));
+    const citingMs = Date.parse(eventAt(citing));
+    const byMs = citedMs - citingMs;
     if (!(byMs > 0)) continue;
     const tail = (tails[citation.tail] as (typeof tails)[number]).tail;
     const last = behind[behind.length - 1];

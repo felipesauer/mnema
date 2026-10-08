@@ -401,11 +401,11 @@ export interface CitationNotHeldNote {
 }
 
 /**
- * A tail whose writer's clock ran behind what it had read: events whose `at` is earlier than the
+ * A tail whose writer had a clock behind what it had read: events whose `at` is earlier than the
  * `at` of an entry they cite.
  *
  * Measured from the record alone and only informational: the order already puts each such event
- * after what it cites, so nothing is misplaced. It says how far a machine's clock was off, which
+ * after what it cites, so nothing is misplaced. It says how far the clock of a machine was off, which
  * is what every ordering by `at` that has no citation to lean on is exposed to.
  */
 export interface ClockBehindNote {
@@ -955,7 +955,7 @@ function clocksBehind(citations: IdentityResolution['citations']): ClockBehindNo
     behindByMs,
     detail:
       `${events} event(s) stamped before an entry they cite, by up to ` +
-      `${(behindByMs / 1000).toFixed(3)} s — the writer's clock ran behind what it had read; ` +
+      `${(behindByMs / 1000).toFixed(3)} s — the clock of its writer ran behind what it had read; ` +
       'the order puts each after what it cites',
   }));
 }
