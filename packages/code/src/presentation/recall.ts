@@ -286,8 +286,12 @@ export function recallDocument(notes: Notes): string[] {
  * day the lines or the counts grow, the text shortens at a whole note and says so in the words
  * each section already has ({@link cutAt}), instead of being replaced whole by a file path.
  */
-export function recallWithin(notes: Notes, room: number): string[] {
-  return fitWhole(notesIn(notes), room, (shown) => composed(notes, shown));
+export function recallWithin(
+  notes: Notes,
+  room: number,
+  lengthOf?: (text: string) => number,
+): string[] {
+  return fitWhole(notesIn(notes), room, (shown) => composed(notes, shown), lengthOf);
 }
 
 /** How many notes the index handed over, both kinds together. */

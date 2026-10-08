@@ -83,10 +83,47 @@
  */
 
 import type { Command } from 'commander';
+import { HOOK_TEXT_HOSTS, type HostName } from '../host-names.js';
 import { here } from './context.js';
+import { enumeratedOption, listed } from './enumerated.js';
 import { writeLines } from './io.js';
-import { reportRefusal } from './report.js';
+import { reportRefusal, reportUsage } from './report.js';
 import { type Declared, readsTheRecord, type Wiring } from './verb.js';
+
+/** The `--host` a verb that prints for a hook takes: the hosts with a ceiling of their own. */
+export function hookHostOption(what: string) {
+  return enumeratedOption(
+    '--host <host>',
+    `with --hook, the host whose own ceiling to cut ${what} to: ${listed(HOOK_TEXT_HOSTS)}; ` +
+      'without it, Claude Code’s',
+    HOOK_TEXT_HOSTS,
+  );
+}
+
+/**
+ * The host a `--hook` run cuts for, `null` for Claude Code's ceiling, or `false` when the words
+ * were refused (the refusal is already reported).
+ */
+export function hookHostOf(
+  wiring: Wiring,
+  hook: boolean,
+  named: string | undefined,
+): HostName | null | false {
+  if (named === undefined) return null;
+  const host = HOOK_TEXT_HOSTS.find((one) => one === named);
+  if (host === undefined) {
+    reportUsage(wiring, `--host takes one of ${listed(HOOK_TEXT_HOSTS)}, not "${named}".`);
+    return false;
+  }
+  if (!hook) {
+    reportUsage(
+      wiring,
+      '--host says whose ceiling a --hook copy is cut to, and is read with --hook only.',
+    );
+    return false;
+  }
+  return host;
+}
 
 /**
  * What a caller is told when the channel this verb produces is switched OFF.
@@ -173,11 +210,15 @@ export function registerBrief(program: Command, wiring: Wiring): Declared {
       'print it for a Claude Code hook: whole rules up to what a hook carries, and a ' +
         'closing paragraph saying how many were left out and what serves them',
     )
-    .action(async (opts: { hook?: boolean }) => {
+    .addOption(hookHostOption('the rules'))
+    .action(async (opts: { hook?: boolean; host?: string }) => {
+      const host = hookHostOf(wiring, opts.hook === true, opts.host);
+      if (host === false) return;
       const { linkBreakNotice } = await import('./integrity.js');
       const { runBrief } = await import('../commands/brief.js');
       const { briefDocument, briefWithin } = await import('../presentation/brief.js');
-      const { roomBeside } = await import('../presentation/within-a-hook.js');
+      const { hookCeilingOf, roomBeside } = await import('../presentation/within-a-hook.js');
+      const ceiling = hookCeilingOf(host ?? undefined);
       const result = runBrief(here(), { outside: opts.hook === true });
       if (!result.ok) {
         reportRefusal(
@@ -200,9 +241,13 @@ export function registerBrief(program: Command, wiring: Wiring): Declared {
         opts.hook === true
           ? briefWithin(
               result.brief,
-              roomBeside(notice.map((line) => render(line))),
+              roomBeside(
+                notice.map((line) => render(line)),
+                ceiling,
+              ),
               result.outside,
               result.inherited,
+              ceiling,
             )
           : briefDocument(result.brief, result.inherited),
       );

@@ -57,6 +57,10 @@ export interface TheCodexSpec {
   readonly patch?: string;
   /** A hooks file of the person's own, in Codex's home, beside the plugin's. */
   readonly ownHooks?: Readonly<Record<string, unknown>>;
+  /** Which plugin of the marketplace to install: the full one unless a case says otherwise. */
+  readonly plugin?: 'mnema' | 'mnema-server-only';
+  /** Whether the session's PATH holds a `mnema` at all; a case that takes it away sets `false`. */
+  readonly mnemaOnPath?: boolean;
 }
 
 /** What one session left behind. */
@@ -67,6 +71,8 @@ export interface TheCodexSession {
   readonly requests: readonly TheCodexRequest[];
   /** What Codex printed on its second stream: its hook lines and its errors. */
   readonly stderr: string;
+  /** What `codex mcp get mnema --json` printed once the plugin was installed. */
+  readonly server: string;
 }
 
 /** Reads the binary and its version off the environment, and refuses to go on without both. */
@@ -223,25 +229,27 @@ async function aCodexSession(
   const env = {
     HOME: box.home,
     CODEX_HOME: codexHome,
-    PATH: `${box.bin}:${box.base}`,
+    PATH: spec.mnemaOnPath === false ? box.base : `${box.bin}:${box.base}`,
     LANG: 'C.UTF-8',
     TERM: 'dumb',
     STAND_IN_KEY: KEY,
     GIT_CONFIG_NOSYSTEM: '1',
     GIT_CONFIG_GLOBAL: GIT_WITHOUT_MAINTENANCE,
   };
-  const codexSays = (...args: string[]): void => {
+  const codexSays = (...args: string[]): string => {
     const ran = spawnSync(codex.binary, args, { cwd: box.project, env, encoding: 'utf-8' });
     if (ran.status !== 0) {
       throw new Error(`codex ${args.join(' ')} failed: ${ran.stderr}${ran.stdout}`);
     }
+    return ran.stdout;
   };
   const reported = spawnSync(codex.binary, ['--version'], { env, encoding: 'utf-8' }).stdout;
   if (!reported.includes(codex.version)) {
     throw new Error(`the binary reports ${reported.trim()}, not ${codex.version}`);
   }
   codexSays('plugin', 'marketplace', 'add', REPO);
-  codexSays('plugin', 'add', 'mnema@mnema');
+  codexSays('plugin', 'add', `${spec.plugin ?? 'mnema'}@mnema`);
+  const server = codexSays('mcp', 'get', 'mnema', '--json');
 
   const out = join(box.root, 'out');
   mkdirSync(out, { recursive: true });
@@ -295,7 +303,7 @@ async function aCodexSession(
       );
     }
   }
-  return { project: box.project, home: box.home, requests: standIn.requests, stderr };
+  return { project: box.project, home: box.home, requests: standIn.requests, stderr, server };
 }
 
 /** A session per case, each in a sandbox of its own that is removed after the case. */

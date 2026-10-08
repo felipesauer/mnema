@@ -8,7 +8,7 @@
  */
 
 import { execFileSync } from 'node:child_process';
-import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs';
+import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -52,6 +52,8 @@ export interface TheSandbox {
   readonly project: string;
   /** A directory holding the `mnema` shim. */
   readonly bin: string;
+  /** Every command line the host ran the shim with, one to a line, in order. */
+  calls(): string[];
   /** The PATH of a process that has node, git and the shell, and no `mnema`. */
   readonly base: string;
   /** `mnema <args>` in the project, as the sandbox's own user. */
@@ -68,10 +70,14 @@ export function aSandbox(prefix: string, write?: (project: TheProjectToWrite) =>
   const bin = join(root, 'bin');
   for (const dir of [home, project, bin]) mkdirSync(dir, { recursive: true });
   const base = `${dirname(process.execPath)}:/usr/bin:/bin`;
-  // The shim runs this tree's build, so the host starts the product the suite just built.
-  writeFileSync(join(bin, 'mnema'), `#!/bin/sh\nexec "${process.execPath}" "${CLI}" "$@"\n`, {
-    mode: 0o755,
-  });
+  // The shim runs this tree's build, so the host starts the product the suite just built, and
+  // it writes down each command line it was run with, so a case can say which door ran.
+  const log = join(root, 'calls.log');
+  writeFileSync(
+    join(bin, 'mnema'),
+    `#!/bin/sh\nprintf '%s\\n' "$*" >> "${log}"\nexec "${process.execPath}" "${CLI}" "$@"\n`,
+    { mode: 0o755 },
+  );
   const mnema = (...args: string[]): string =>
     execFileSync(process.execPath, [CLI, ...args], {
       cwd: project,
@@ -85,6 +91,7 @@ export function aSandbox(prefix: string, write?: (project: TheProjectToWrite) =>
     project,
     bin,
     base,
+    calls: () => (existsSync(log) ? readFileSync(log, 'utf-8').split('\n').filter(Boolean) : []),
     mnema,
     remove: () => rmSync(root, { recursive: true, force: true }),
   };

@@ -106,6 +106,8 @@ What each agent host does with mnema, one rung at a time: (a) the MCP server and
 | Continue's command line (`cn`) | documented, not measured ([read 8 October 2026](https://github.com/continuedev/continue/blob/5522c6f/extensions/cli/src/services/MCPService.ts)) | documented, not measured ([read 8 October 2026](https://github.com/continuedev/continue/blob/5522c6f/core/config/markdown/loadMarkdownRules.ts)) | not ported | not ported | not ported | (a), documented, not measured |
 | Warp's agent | documented, not measured ([read 8 October 2026](https://github.com/warpdotdev/warp/blob/325d4d4/app/src/ai/agent_sdk/driver/mcp_startup.rs)) | documented, not measured ([read 8 October 2026](https://github.com/warpdotdev/warp/blob/325d4d4/app/src/ai/agent_tips.rs)) | not ported | not ported | not ported | (a), documented, not measured |
 
+**Codex.** The refusal fails open, as on every host: a gate that cannot answer — no `mnema` on the PATH (held by its test), an error, or a hook past its 15 seconds (read in [`pre_tool_use.rs`](https://github.com/openai/codex/blob/979011409de0a60b52f179721948e65531d26144/codex-rs/hooks/src/events/pre_tool_use.rs#L205-L288)) — lets the patch through. The opening is cut to Codex’s own ceiling, 2,500 tokens of 4 UTF-8 bytes ([`output_spill.rs`](https://github.com/openai/codex/blob/979011409de0a60b52f179721948e65531d26144/codex-rs/hooks/src/output_spill.rs#L12)), at a whole rule, held by the same test.
+
 Each cell says how it is known: **held by a test** of this repository; **read** once against the
 real host, on the version and the day it names, and held by no file yet; or **documented, not
 measured**: the host's own documentation or code says the host does it, at the commit the link

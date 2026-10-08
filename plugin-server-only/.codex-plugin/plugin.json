@@ -1,0 +1,12 @@
+{
+  "name": "mnema-server-only",
+  "version": "0.1.0-beta",
+  "description": "Connects the mnema MCP server so the agent can record its own work, and runs no hook: nothing is handed to a session as it opens or before a patch.",
+  "keywords": ["audit-trail", "append-only", "accountability", "adr", "local-first"],
+  "mcpServers": {
+    "mnema": {
+      "command": "mnema",
+      "args": ["mcp"]
+    }
+  }
+}

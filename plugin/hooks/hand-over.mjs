@@ -226,14 +226,18 @@ export function aStranger(stranger) {
  * @param {{ readonly namesAStranger?: boolean }} [options] Whether a `mnema` that is another
  *   program is named to the session ({@link aStranger}) rather than met with silence — the one
  *   handler that hands over the document says it, so a session is told once.
+ * @param {readonly string[]} [handed] The handler's own arguments, from the hooks file: a
+ *   `--host <name>` there is passed on, so the verb cuts to that host's ceiling rather than
+ *   Claude Code's ({@link hostFlags}).
  * @returns {string | null}
  */
-export function whatTheVerbSays(verb, cwd, { namesAStranger = false } = {}) {
+export function whatTheVerbSays(verb, cwd, { namesAStranger = false } = {}, handed = []) {
   const who = whoAnswers(cwd);
   if (who.kind === 'absent') return null;
   if (who.kind === 'stranger') return namesAStranger ? aStranger(who) : null;
-  const asked = running(verb, [FOR_A_HOOK], cwd);
-  const ran = refusesTheFlag(asked) ? running(verb, [], cwd) : asked;
+  const flags = [FOR_A_HOOK, ...hostFlags(handed)];
+  const asked = running(verb, flags, cwd);
+  const ran = refusesTheFlag(asked, flags) ? running(verb, [], cwd) : asked;
   // EVERY NON-ZERO OUTCOME IS STILL SILENCE, and the refusal on stderr goes with it: it
   // is addressed to a person who typed a verb, and nobody typed this one.
   if (ran.error !== undefined || ran.status !== 0) return null;
@@ -309,6 +313,19 @@ export async function whatTheGateAnswers(argv, env, cwd, payload) {
 }
 
 /**
+ * The `--host <name>` among a handler's own arguments, as flags for the verb, or none. The hooks
+ * file generated for a host whose ceiling is not Claude Code's names it (`hooks/codex.json`), and
+ * this passes it on as it was written; it guesses nothing from the environment.
+ *
+ * @param {readonly string[]} handed
+ * @returns {string[]}
+ */
+function hostFlags(handed) {
+  const host = flagValue(handed, '--host');
+  return host === undefined ? [] : ['--host', host];
+}
+
+/**
  * The value after `flag` in `argv`, or `undefined` where it is not there.
  *
  * @param {readonly string[]} argv
@@ -361,11 +378,17 @@ function running(verb, flags, cwd) {
  * otherwise. So a project that is not there, or a record that will not read, is asked ONCE and
  * stays silent, and only a binary that could not read the flag is asked a second time.
  *
+ * A `mnema` older than `--host` refuses that option by name the same way, and is asked again
+ * with neither, as one older than `--hook` is.
+ *
  * @param {import('node:child_process').SpawnSyncReturns<string>} ran
+ * @param {readonly string[]} flags The options it was asked with.
  * @returns {boolean}
  */
-function refusesTheFlag(ran) {
-  return ran.error === undefined && ran.status !== 0 && (ran.stderr ?? '').includes(FOR_A_HOOK);
+function refusesTheFlag(ran, flags) {
+  if (ran.error !== undefined || ran.status === 0) return false;
+  const said = ran.stderr ?? '';
+  return flags.some((flag) => flag.startsWith('--') && said.includes(flag));
 }
 
 /**

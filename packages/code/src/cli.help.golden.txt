@@ -567,10 +567,12 @@ $ mnema brief --help
 | print what governs the work here as markdown, for an agent to read
 |
 | Options:
-|   --hook      print it for a Claude Code hook: whole rules up to what a hook
-|               carries, and a closing paragraph saying how many were left out and
-|               what serves them
-|   -h, --help  display help for command
+|   --hook         print it for a Claude Code hook: whole rules up to what a hook
+|                  carries, and a closing paragraph saying how many were left out
+|                  and what serves them
+|   --host <host>  with --hook, the host whose own ceiling to cut the rules to:
+|                  codex; without it, Claude Code’s
+|   -h, --help     display help for command
 |
 | It prints to stdout and writes nothing — the redirection is yours, and `>`
 | REPLACES the whole of the file it names:
@@ -615,9 +617,11 @@ $ mnema recall --help
 | print the notes recorded here as markdown, near ones first, for an agent to read
 |
 | Options:
-|   --hook      print it for a Claude Code hook: whole notes up to what a hook
-|               carries, each section saying how many it left out
-|   -h, --help  display help for command
+|   --hook         print it for a Claude Code hook: whole notes up to what a hook
+|                  carries, each section saying how many it left out
+|   --host <host>  with --hook, the host whose own ceiling to cut the notes to:
+|                  codex; without it, Claude Code’s
+|   -h, --help     display help for command
 |
 | It prints to stdout and writes nothing. It is what a session opens with beside the
 | document `mnema brief` prints: the memories and the observations recorded for this

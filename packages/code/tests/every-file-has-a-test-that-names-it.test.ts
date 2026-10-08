@@ -983,7 +983,7 @@ const CLAUSES_PER_FILE: Readonly<Record<string, number>> = {
   'packages/code/tests/host-contract/a-servers-instructions-are-cut-at-2048.test.ts': 3,
   'packages/code/tests/host-contract/an-editor-holds-or-refuses-the-write.vscode.test.ts': 3,
   'packages/code/tests/host-contract/an-editor-puts-a-hooks-text-in-the-result.vscode.test.ts': 2,
-  'packages/code/tests/host-contract/codex-opens-and-refuses.codex.test.ts': 5,
+  'packages/code/tests/host-contract/codex-opens-and-refuses.codex.test.ts': 6,
   'packages/code/tests/host-contract/support/a-sandbox.ts': 6,
   'packages/code/tests/host-contract/support/the-codex.ts': 11,
   'packages/code/tests/host-contract/support/the-host.ts': 10,

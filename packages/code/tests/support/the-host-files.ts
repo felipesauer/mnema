@@ -25,6 +25,7 @@ import {
   HOST_NAMES,
   HOSTS,
   type HookHost,
+  type Host,
   type HostName,
 } from '../../src/host-names.js';
 
@@ -37,6 +38,7 @@ export const GENERATED = [
   'plugin/.claude-plugin/plugin.json',
   'plugin/.codex-plugin/plugin.json',
   'plugin-server-only/.claude-plugin/plugin.json',
+  'plugin-server-only/.codex-plugin/plugin.json',
   'README.md',
   'docs/evidence.md',
 ] as const;
@@ -228,7 +230,15 @@ export function codexHooksJson(): string {
   const file: Json = {
     description: CODEX_HOOKS_DESCRIPTION,
     hooks: {
-      SessionStart: SESSION_START,
+      // The opening is cut to Codex's own ceiling, so the handlers name the host to the verb.
+      SessionStart: [
+        {
+          hooks: [
+            command('session-start.mjs', ['--host', 'codex']),
+            command('session-recall.mjs', ['--host', 'codex']),
+          ],
+        },
+      ],
       PreToolUse: [
         {
           matcher: tools.join('|'),
@@ -304,14 +314,40 @@ export function serverOnlyPluginJson(): string {
  * And the hooks are the file Codex alone reads (`hooks`, a path that starts with `./`).
  */
 export function codexPluginJson(): string {
+  return codexManifest(
+    'mnema',
+    "Puts the project's committed mnema record into the session's opening context without the agent asking, with the notes recorded for it on this machine beside it, refuses a patch where a rule of that record refuses the write, and connects the mnema MCP server so the agent can record its own work.",
+    { hooks: `./${HOSTS.codex.hooksFile}` },
+  );
+}
+
+/**
+ * The server-only plugin's manifest as Codex reads it: the same server, and no hooks file — the
+ * directory has none, so Codex's default (`hooks/hooks.json`) finds nothing either. Without it,
+ * Codex read the Claude Code manifest and started the server with `${CLAUDE_PLUGIN_ROOT}` left
+ * as it was written.
+ */
+export function codexServerOnlyPluginJson(): string {
+  return codexManifest(
+    'mnema-server-only',
+    'Connects the mnema MCP server so the agent can record its own work, and runs no hook: nothing is handed to a session as it opens or before a patch.',
+    {},
+  );
+}
+
+/** What both of Codex's manifests declare alike. */
+function codexManifest(
+  name: string,
+  description: string,
+  rest: { readonly [key: string]: Json },
+): string {
   const file: Json = {
-    name: 'mnema',
+    name,
     version: version(),
-    description:
-      "Puts the project's committed mnema record into the session's opening context without the agent asking, with the notes recorded for it on this machine beside it, refuses a patch where a rule of that record refuses the write, and connects the mnema MCP server so the agent can record its own work.",
+    description,
     keywords: ['audit-trail', 'append-only', 'accountability', 'adr', 'local-first'],
     mcpServers: { mnema: { command: 'mnema', args: ['mcp'] } },
-    hooks: `./${HOSTS.codex.hooksFile}`,
+    ...rest,
   };
   return `${printed(file)}\n`;
 }
@@ -393,7 +429,12 @@ function withTheTable(page: string, base: string, path: string): string {
   const from = page.indexOf(BEGIN);
   const to = page.indexOf(END);
   if (from === -1 || to < from) throw new Error(`${path} has no generated rung table`);
-  return `${page.slice(0, from)}${BEGIN}\n\n${rungTable(base)}\n\n${LEGEND}\n\n${page.slice(to)}`;
+  const notes = HOST_NAMES.flatMap((name) => {
+    const host: Host = HOSTS[name];
+    return host.note === undefined ? [] : [`**${host.title}.** ${host.note}`];
+  });
+  const under = notes.length === 0 ? '' : `${notes.join('\n\n')}\n\n`;
+  return `${page.slice(0, from)}${BEGIN}\n\n${rungTable(base)}\n\n${under}${LEGEND}\n\n${page.slice(to)}`;
 }
 
 /** What `path` is once generated, given its committed text — a page keeps its own prose. */
@@ -407,6 +448,8 @@ export function generated(path: (typeof GENERATED)[number], committed: string): 
       return pluginJson();
     case 'plugin/.codex-plugin/plugin.json':
       return codexPluginJson();
+    case 'plugin-server-only/.codex-plugin/plugin.json':
+      return codexServerOnlyPluginJson();
     case 'plugin-server-only/.claude-plugin/plugin.json':
       return serverOnlyPluginJson();
     case 'README.md':

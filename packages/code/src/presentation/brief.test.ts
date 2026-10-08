@@ -19,7 +19,13 @@ import type { Brief, ChannelState } from '@mnema/context';
 import type { DivergentMove } from '@mnema/core';
 import { describe, expect, it } from 'vitest';
 import { briefDocument, briefWithin } from './brief.js';
-import { HOOK_TEXT_CEILING, printedLength } from './within-a-hook.js';
+import {
+  CLAUDE_CODE_CEILING,
+  HOOK_TEXT_CEILING,
+  hookCeilingOf,
+  printedLength,
+  roomBeside,
+} from './within-a-hook.js';
 
 /**
  * What governs, as the composition hands it over.
@@ -902,5 +908,47 @@ describe('the hook’s copy stops at a whole rule, and says so', () => {
     for (const room of [3_000, 4_500, 6_000, 7_777, HOOK_TEXT_CEILING]) {
       expect(printedLength(briefWithin(crowded, room)), `room ${room}`).toBeLessThanOrEqual(room);
     }
+  });
+});
+
+describe('the hook’s copy for a host that counts in its own unit', () => {
+  /** Titles whose letters take two bytes each, so a text runs to more bytes than units. */
+  const accented = (n: number) =>
+    `Decisão número ${n} sobre a emissão e as retenções ${'ação '.repeat(20)}`;
+  const crowded = governance({
+    decisions: Array.from({ length: 80 }, (_, at) => decision(at + 1, accented(at + 1))),
+  });
+  const bytes = (lines: readonly string[]) =>
+    Buffer.byteLength(lines.map((line) => `${line}\n`).join(''), 'utf8');
+  const bullets = (lines: readonly string[]) => lines.filter((line) => line.startsWith('- **'));
+  const codex = hookCeilingOf('codex');
+  const forCodex = () => briefWithin(crowded, roomBeside([], codex), undefined, undefined, codex);
+
+  it('reads Codex’s ceiling off the host table, and Claude Code’s for every host that names none', () => {
+    expect(codex.most).toBe(10_000);
+    expect(codex.lengthOf('ç·—')).toBe(7);
+    expect(hookCeilingOf(undefined)).toBe(CLAUDE_CODE_CEILING);
+    expect(hookCeilingOf('cursor')).toBe(CLAUDE_CODE_CEILING);
+    expect(CLAUDE_CODE_CEILING.most).toBe(HOOK_TEXT_CEILING);
+  });
+
+  it('cuts Codex’s copy to 2,500 of its tokens, where Claude Code’s cut would cross them', () => {
+    const forClaude = briefWithin(crowded, roomBeside([]));
+    // The cut every other host gets is the one it got before: 10,000 units, untouched.
+    expect(printedLength(forClaude)).toBeLessThanOrEqual(HOOK_TEXT_CEILING);
+    expect(forClaude).toEqual(briefWithin(crowded, HOOK_TEXT_CEILING));
+    // In Codex's unit it would not fit — the defect this cut is for — and Codex's own does.
+    expect(Math.ceil(bytes(forClaude) / 4)).toBeGreaterThan(2_500);
+    expect(Math.ceil(bytes(forCodex()) / 4)).toBeLessThanOrEqual(2_500);
+  });
+
+  it('stops Codex’s copy at a whole rule, the file’s first ones, and says it in Codex’s unit', () => {
+    const handed = bullets(forCodex());
+    expect(handed.length).toBeGreaterThan(0);
+    expect(handed).toEqual(bullets(briefDocument(crowded)).slice(0, handed.length));
+    const text = forCodex().join('\n');
+    expect(text).toContain(`Left out of this text: ${80 - handed.length} decisions in force`);
+    expect(text).toContain('A hook hands a session at most 2,500 tokens of 4 bytes');
+    expect(text).toContain('so this one stops at a whole rule instead.');
   });
 });

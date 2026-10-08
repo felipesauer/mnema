@@ -122,7 +122,7 @@ import { DERIVED_FROM } from '../provenance.js';
 import { recordFraming } from '../record-framing.js';
 import { acceptedBy } from './accepted-by.js';
 import { toImport } from './status.js';
-import { fitWhole, HOOK_CEILING_IN_WORDS } from './within-a-hook.js';
+import { CLAUDE_CODE_CEILING, fitWhole, type HookCeiling } from './within-a-hook.js';
 
 /**
  * The marker that says what this file is, to a reader and to a `grep`.
@@ -721,9 +721,15 @@ export function briefWithin(
   room: number,
   outside: NonNullable<BriefDone['outside']> = { drift: [], arrival: [] },
   inherited?: InheritedReading,
+  ceiling: HookCeiling = CLAUDE_CODE_CEILING,
 ): string[] {
   const late = [...notInTheRecord(outside), ...inheritedSection(inherited)];
-  return fitWhole(rulesIn(governance), room, (shown) => [...composed(governance, shown), ...late]);
+  return fitWhole(
+    rulesIn(governance),
+    room,
+    (shown) => [...composed(governance, shown, ceiling), ...late],
+    ceiling.lengthOf,
+  );
 }
 
 /**
@@ -827,7 +833,7 @@ function rulesIn(governance: Brief): number {
  * It is a FACT and not a request, the voice every line of this document is held to: it says
  * what the text is and what serves the rest, and nothing about whether to ask.
  */
-function leftOut(decisions: number, patterns: number): string[] {
+function leftOut(decisions: number, patterns: number, ceiling: HookCeiling): string[] {
   if (decisions + patterns === 0) return [];
   const parts = [
     ...(decisions > 0 ? [counted(decisions, 'decision in force', 'decisions in force')] : []),
@@ -836,7 +842,7 @@ function leftOut(decisions: number, patterns: number): string[] {
   return [
     '',
     `Left out of this text: ${parts} — the last ${decisions + patterns === 1 ? 'one' : 'ones'} in the order above.`,
-    `A hook hands a session at most ${HOOK_CEILING_IN_WORDS} characters, and a file path in place of a longer`,
+    `A hook hands a session at most ${ceiling.inWords}, and a file path in place of a longer`,
     'text, so this one stops at a whole rule instead. `search` with `kind` `decision` and',
     '`state` `accepted`, or `kind` `skill` and `state` `adopted`, serves every one of them.',
   ];
@@ -852,7 +858,11 @@ function counted(n: number, one: string, many: string): string {
  * print, so the two can differ only by where the list stops and by the paragraph that says
  * it stopped.
  */
-function composed(governance: Brief, shown: number): string[] {
+function composed(
+  governance: Brief,
+  shown: number,
+  ceiling: HookCeiling = CLAUDE_CODE_CEILING,
+): string[] {
   const decisions = governance.decisions.slice(0, shown);
   const skills = governance.skills.slice(0, Math.max(0, shown - governance.decisions.length));
   return [
@@ -908,6 +918,7 @@ function composed(governance: Brief, shown: number): string[] {
     ...leftOut(
       governance.decisions.length - decisions.length,
       governance.skills.length - skills.length,
+      ceiling,
     ),
   ];
 }

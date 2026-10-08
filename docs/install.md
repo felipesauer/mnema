@@ -79,6 +79,21 @@ which VS Code marks as experimental. In order: install the plugin in Claude Code
 (`--dry-run` shows the change first). That verb is the one thing `doctor` writes: it runs only when
 you type it, copies your `settings.json` aside first, keeps its comments, and lists the plugin's
 folder in the marketplace, whose path does not change when the plugin updates.
+**In Codex**, the plugin comes from the same marketplace, and Codex reads a manifest of its own
+in it (`.codex-plugin/plugin.json`):
+
+```bash
+codex plugin marketplace add felipesauer/mnema
+codex plugin add mnema@mnema
+```
+
+It starts the first `mnema` on the `PATH` as its MCP server, opens each session with the
+document and the notes cut to Codex's own ceiling, and refuses a patch where a rule refuses the
+write. Codex does not pause a write for a person, so a rule that only asks is let through. Codex
+runs a plugin's hooks only once you have marked them trusted in its own review of hooks; until
+then the plugin gives the server alone. `mnema-server-only@mnema` connects the server and runs no
+hook.
+
 Without the plugin, `mnema rules-file --host claude`, `--host vscode` or `--host cursor` prints the committed rules
 addressed at a file or a directory in that host's own rules format, and says which rules it left out and why.
 

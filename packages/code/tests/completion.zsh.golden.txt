@@ -170,8 +170,8 @@ _mnema_flags() {
     'task guard') echo '--actor --reason --note --feedback --json -h --help --which -V --version --color' ;;
     'promote') echo '--workspace --evidence -h --help -V --version --color' ;;
     'status') echo '--actor --json -h --help -V --version --color' ;;
-    'brief') echo '--hook -h --help -V --version --color' ;;
-    'recall') echo '--hook -h --help -V --version --color' ;;
+    'brief') echo '--hook --host -h --help -V --version --color' ;;
+    'recall') echo '--hook --host -h --help -V --version --color' ;;
     'rules') echo '--json -h --help -V --version --color' ;;
     'rules-file') echo '--host -h --help -V --version --color' ;;
     'switch') echo '-h --help -V --version --color' ;;
@@ -278,7 +278,9 @@ _mnema_values() {
     'task guard:') echo 'submit start block unblock submit_review request_changes approve complete cancel reopen' ;;
     'promote:--color') echo 'auto always never' ;;
     'status:--color') echo 'auto always never' ;;
+    'brief:--host') echo 'codex' ;;
     'brief:--color') echo 'auto always never' ;;
+    'recall:--host') echo 'codex' ;;
     'recall:--color') echo 'auto always never' ;;
     'rules:--color') echo 'auto always never' ;;
     'rules-file:--host') echo 'claude vscode cursor' ;;
