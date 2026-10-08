@@ -438,7 +438,7 @@ describe('every command that requires an identity is served, and nothing else is
     // that REQUIRES one). A fourth arrives covered rather than listed, which is why the
     // assertion above is an equality and not this list.
     expect(commands.length).toBeGreaterThan(20);
-    expect(requires.length).toBeGreaterThanOrEqual(3);
+    expect(requires.length).toBeGreaterThanOrEqual(2);
     for (const verb of ['task guard', 'resume']) expect(requires).toContain(verb);
     // AND `status` is NOT among them, said once so the day it asks again this goes red.
     expect(requires).not.toContain('status');

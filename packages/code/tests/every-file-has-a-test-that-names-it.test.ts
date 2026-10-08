@@ -648,7 +648,7 @@ const UNWITNESSED: Readonly<Record<string, Debt>> = {
  * reading, so nothing can fall in two.
  */
 const THE_SHAPE_OF_WHAT_IS_LEFT: Readonly<Record<string, number>> = {
-  wiring: 47,
+  wiring: 46,
   presentation: 11,
   projections: 4,
   completion: 4,
@@ -868,7 +868,7 @@ const CLAUSES_PER_FILE: Readonly<Record<string, number>> = {
   'packages/code/src/completion/lookups.test.ts': 8,
   'packages/code/src/decisions-in-git.test.ts': 2,
   'packages/code/src/env.test.ts': 4,
-  'packages/code/src/every-refusal-is-red.test.ts': 7,
+  'packages/code/src/every-refusal-is-red.test.ts': 8,
   'packages/code/src/git-log.test.ts': 7,
   'packages/code/src/key-file.test.ts': 2,
   'packages/code/src/mcp/hook-reply.test.ts': 2,
@@ -1125,7 +1125,7 @@ const CLAUSES_PER_FILE: Readonly<Record<string, number>> = {
   'packages/code/tests/the-screen-says-what-it-was-drawn-at.test.ts': 10,
   'packages/code/tests/the-sentence-reaches-every-door.test.ts': 7,
   'packages/code/tests/the-server-only-plugin-runs-no-hook.test.ts': 4,
-  'packages/code/tests/the-session-knows-who-you-are.test.ts': 15,
+  'packages/code/tests/the-session-knows-who-you-are.test.ts': 16,
   'packages/code/tests/the-session-learns-where-it-is.test.ts': 12,
   'packages/code/tests/the-session-the-manual-shows-is-the-one-printed.test.ts': 8,
   'packages/code/tests/the-shell-a-page-publishes-is-the-shell-that-runs.test.ts': 5,
@@ -1778,8 +1778,8 @@ describe('every file has a test that names it', () => {
     // 81 once a test of who may retract a note appended through `workflow/append.ts` itself.
     // 82 with the commit-hook group's wiring, which the CLI reaches.
     // 83 with the unlink verb's wiring, which a-link-can-be-retracted drives through the CLI.
-    expect(found.size).toBe(83);
-    expect(byReach('nobody imports it')).toBe(83);
+    expect(found.size).toBe(82);
+    expect(byReach('nobody imports it')).toBe(82);
     expect(byReach('imported, and no assertion observes it')).toBe(0);
   });
 
@@ -1801,7 +1801,7 @@ describe('every file has a test that names it', () => {
     // Announced in the header and, until now, kept by hand. A shared excuse is how a table
     // like this turns into a rubber stamp, and a row drained to a stub is how it starts.
     const reasons = Object.values(UNWITNESSED).map((one) => one.why);
-    expect(reasons).toHaveLength(83);
+    expect(reasons).toHaveLength(82);
     expect(new Set(reasons).size).toBe(reasons.length);
     // The shortest reason standing is 156 characters; the floor is under it and well over
     // anything that could be written without saying what reaches that file.

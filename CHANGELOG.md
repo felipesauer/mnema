@@ -121,14 +121,13 @@ tag, with its own changelog.
 ### Changed
 
 - **Eight verbs went under the noun they belong to; the old names are gone, with no alias.**
-  `mnema skills` is `mnema skill provenance`. `mnema focus` is part of `mnema resume`, which lists
-  the runs the actor has open under the last one (`--json` already carried them as `focus`).
-  `mnema accountability`, `antipatterns` and `exposure` are `mnema audit accountability`,
-  `audit antipatterns` and `audit exposure`. `mnema handoff`, `next-actions` and `guard` are
-  `mnema task handoff`, `task next` and `task guard`. The tools of the MCP server keep their names.
-  The console, which offers only the verbs that cannot change the record, no longer runs
-  `task next`, `task guard` and `skill provenance`, because a group is classified by its most
-  powerful member.
+  `skills` is now `skill provenance`. `focus` is part of `resume`, which lists the runs the actor
+  has open under the last one (`--json` already carried them as `focus`). `accountability`,
+  `antipatterns` and `exposure` are now `audit accountability`, `audit antipatterns` and
+  `audit exposure`. `handoff`, `next-actions` and `guard` are now `task handoff`, `task next` and
+  `task guard`. The tools of the MCP server keep their names. The console, which offers only the
+  verbs that cannot change the record, no longer runs `task next`, `task guard` and
+  `skill provenance`, because a group is classified by its most powerful member.
 
 - **A clean `mnema verify` is one line.** The census note about the backup key `init` makes and the
   line saying the private tree holds no record are informational, and now come only with the new

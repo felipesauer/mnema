@@ -106,7 +106,13 @@ function flagOf(option: Option): string {
 
 /** The words that satisfy a subcommand's required operands — nothing here gets that far. */
 function operandsOf(sub: Command): string[] {
-  return sub.registeredArguments.filter((argument) => argument.required).map(() => 'x');
+  const needed = sub.registeredArguments.filter((argument) => argument.required).map(() => 'x');
+  // A flag the subcommand cannot run without is part of what satisfies it (`task guard --actor`):
+  // commander refuses its absence before the action, and the action is where a group's flag is read.
+  const mandatory = sub.options
+    .filter((option) => option.mandatory)
+    .flatMap((option) => [flagOf(option), 'x']);
+  return [...needed, ...mandatory];
 }
 
 /** The flag as typed, with a value when it takes one. */

@@ -259,8 +259,8 @@ describe('the session the manual shows from the terminal', () => {
       'task move',
       'task move',
       'task move',
-      'next-actions $TASK',
-      'guard reopen',
+      'task next',
+      'task guard',
       'verify',
       'verify --workspace',
     ]);

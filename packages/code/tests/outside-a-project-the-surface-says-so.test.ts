@@ -183,7 +183,7 @@ const THE_PARSER_ANSWERED_FIRST =
 /**
  * A path whose own refusal arrives before the project is ever missed — with what it says.
  *
- * ALL OF THEM ARE STRUCTURE. `task`, `decision`, `skill`, `run`, `key`, `tail` and `inherit` are groups
+ * ALL OF THEM ARE STRUCTURE. `task`, `decision`, `skill`, `audit`, `run`, `key`, `tail` and `inherit` are groups
  * whose bare form routes nothing, so the parser answers before any action runs (the first
  * three created with a title typed after their name, until creating became a subcommand),
  * and `run end` with neither an id nor a variable has no session to be missing a project
@@ -195,6 +195,7 @@ const REFUSES_SOMETHING_ELSE_FIRST: Readonly<Record<string, string>> = {
   task: THE_PARSER_ANSWERED_FIRST,
   decision: THE_PARSER_ANSWERED_FIRST,
   skill: THE_PARSER_ANSWERED_FIRST,
+  audit: THE_PARSER_ANSWERED_FIRST,
   run: THE_PARSER_ANSWERED_FIRST,
   check: THE_PARSER_ANSWERED_FIRST,
   key: THE_PARSER_ANSWERED_FIRST,
