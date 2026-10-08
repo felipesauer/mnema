@@ -33,6 +33,13 @@ export interface CliIo {
    * (it did: the suite hung on the first run of that verb in process).
    */
   readonly input?: () => Promise<string>;
+  /**
+   * Whether a PERSON is at this invocation: standard input and standard error are both a
+   * terminal. A host's hook, an agent's shell and a script are none of that. Absent is false —
+   * the in-process harness has no person, and the only things that ask are the ones that
+   * must not happen without one (the offer of a report, and the link that sends it).
+   */
+  readonly aPersonIsHere?: boolean;
 }
 
 /**
@@ -88,6 +95,7 @@ export const processIo: CliIo = {
   fail: (code) => {
     process.exitCode = code ?? 1;
   },
+  aPersonIsHere: process.stdin.isTTY === true && process.stderr.isTTY === true,
   input: async () => {
     const chunks: Buffer[] = [];
     for await (const chunk of process.stdin) chunks.push(Buffer.from(chunk as Buffer));

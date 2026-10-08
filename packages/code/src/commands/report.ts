@@ -20,6 +20,7 @@ import {
   writeState,
 } from '../diagnostic-log.js';
 import { renderReport } from '../problem-report.js';
+import { emptyForm, issueLink } from '../report-link.js';
 
 /** What the person asked of this run. At most one of the three. */
 export interface ReportAsk {
@@ -35,7 +36,10 @@ export interface ReportOutcome {
 }
 
 /** Runs the verb against the global tree `cwd` and `env` resolve to. */
-export function runReport(run: { cwd: string; env: DiscoveryEnv }, ask: ReportAsk): ReportOutcome {
+export function runReport(
+  run: { cwd: string; env: DiscoveryEnv; aPersonIsHere: boolean },
+  ask: ReportAsk,
+): ReportOutcome {
   if ([ask.decline, ask.off, ask.on].filter(Boolean).length > 1) {
     return {
       lines: ['`--decline`, `--off` and `--on` are three answers: give one.'],
@@ -100,9 +104,37 @@ export function runReport(run: { cwd: string; env: DiscoveryEnv }, ask: ReportAs
     lines: [
       report.text,
       '',
-      `That is the whole report, and it is saved as ${draft}. mnema sends nothing: it is yours to read, and to send or not.`,
+      `That is the whole report, and it is saved as ${draft}. mnema sends nothing and opens nothing: it is yours to read, and to send or not.`,
+      ...whereToSend(report, draft, run.aPersonIsHere),
       'To stop hearing about this kind of error: `mnema report --decline`. To stop all reports: `mnema report --off`.',
     ],
     refused: false,
   };
+}
+
+/**
+ * The way to send the report, said only to a person. The link is the one thing that carries the
+ * report toward anyone, so it is printed where somebody is at a terminal — an agent's shell, a
+ * hook or a script is shown the report and the saved file, and no link to follow for its user.
+ */
+export function whereToSend(
+  report: { readonly title: string; readonly body: string },
+  draft: string,
+  aPersonIsHere: boolean,
+  limit?: number,
+): string[] {
+  if (!aPersonIsHere) {
+    return ['The link to send it is printed only at a terminal, for the person it is meant for.'];
+  }
+  const link = issueLink(report, limit);
+  if (link === undefined) {
+    return [
+      `It is too long for a link. Paste the saved file into the form instead: ${emptyForm()}`,
+      `(the file is ${draft}).`,
+    ];
+  }
+  return [
+    'To send it, open this link: GitHub shows the form with the report in it, and nothing is sent until you press Submit there.',
+    link,
+  ];
 }

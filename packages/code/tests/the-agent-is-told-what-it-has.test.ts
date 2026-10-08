@@ -35,6 +35,7 @@ import { ListRootsRequestSchema } from '@modelcontextprotocol/sdk/types.js';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { SERVER_INSTRUCTIONS } from '../src/mcp/instructions.js';
 import { buildMcpServer } from '../src/mcp/server.js';
+import { buildProgram } from '../src/program.js';
 import { tellsWhatToDo } from '../src/record-framing.js';
 
 /** The built binary — what `npm i -g @mnema/code` puts on a PATH. */
@@ -116,8 +117,16 @@ describe('the server says what its tools are for, before any is chosen', () => {
     const toolNames = new Set(tools.map((tool) => tool.name));
     const fields = new Set(tools.flatMap((tool) => Object.keys(tool.inputSchema.properties ?? {})));
     const words = named(SERVER_INSTRUCTIONS);
+    // A command the text sends the PERSON to is a verb the program declares, not a tool.
+    const verbs = new Set(
+      buildProgram().program.commands.map((command) => `mnema ${command.name()}`),
+    );
     const unserved = words.filter(
-      (word) => !toolNames.has(word) && !fields.has(word) && word !== INITIAL_DECISION_STATE,
+      (word) =>
+        !toolNames.has(word) &&
+        !fields.has(word) &&
+        !verbs.has(word) &&
+        word !== INITIAL_DECISION_STATE,
     );
     expect(unserved).toEqual([]);
     // Non-vacuity, and the doors the text exists for: both writes it invites, and the reads
