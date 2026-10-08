@@ -33,7 +33,7 @@ import { completionTree } from '../src/completion/tree.js';
 import { renderPlain } from '../src/presentation/plain.js';
 import { renderStyled } from '../src/presentation/styled.js';
 import { completerFor } from '../src/repl/complete.js';
-import { dispositionOf, verbsOffered } from '../src/repl/gate.js';
+import { dispositionOf, membersOffered, pathsOffered, verbsOffered } from '../src/repl/gate.js';
 import { whatTheSessionShowed } from '../src/repl/seen.js';
 import { openSession, theSessionsOwnWords, typedLine } from '../src/repl/session.js';
 import { SESSION_WORDS } from '../src/session-words.js';
@@ -191,6 +191,31 @@ describe('the session offers the reads and refuses the writes', () => {
       expect(answered.out, verb).toEqual([]);
     }
   });
+
+  it('refuses every member of a group that declared it writes, by its whole path, typed for real', async () => {
+    // The groups whose members differ run the members that read and refuse the others — and the
+    // refusal names the path, and the line to type outside is the path too.
+    const written = DECLARED.flatMap((verb) =>
+      (verb.members ?? [])
+        .filter((member) => member.effect === 'mutates')
+        .map((member) => `${verb.act.name()} ${member.act.name()}`),
+    );
+    expect(written).toEqual(
+      expect.arrayContaining([
+        'task create',
+        'task move',
+        'task handoff',
+        'skill create',
+        'skill export',
+      ]),
+    );
+    for (const path of written) {
+      const answered = await prompt(`${path} x`);
+      expect(answered.err.join('\n'), path).toContain(`\`${path}\` can change the record`);
+      expect(answered.err.join('\n'), path).toContain(`mnema ${path}`);
+      expect(answered.out, path).toEqual([]);
+    }
+  }, 60_000);
 
   it('leaves nothing in the record after the whole surface is typed at its prompt', async () => {
     // The measurement. Every verb there is goes through the session — the reads for
@@ -362,6 +387,7 @@ describe('tab offers what the session runs, over the real tree', () => {
       offered,
       theSessionsOwnWords(),
       seen.matching,
+      membersOffered(DECLARED, REPL_VERB),
     );
     // The WORDS of what is offered — each offer also carries what it is, which is what the
     // palette draws its second column from and is asserted where the palette is
@@ -373,14 +399,30 @@ describe('tab offers what the session runs, over the real tree', () => {
     // and a slash sorts ahead of every letter, so that put the session's word at the head of a
     // list whose first four rows are all a caller sees (`src/repl/complete.ts`, `theOrder`).
     expect(hits).toEqual([...[...offered].sort(), ...[...SESSION_WORDS].sort()]);
-    for (const write of verbsThat('mutates')) expect(hits, write).not.toContain(write);
+    // A write is never offered as a verb of its own. The two groups whose members differ are on
+    // the top level for the reads inside them, and only for those (below).
+    const groups = DECLARED.filter((verb) => verb.members !== undefined).map((v) => v.act.name());
+    for (const write of verbsThat('mutates')) {
+      if (!groups.includes(write)) expect(hits, write).not.toContain(write);
+    }
     // A LINE DOES NOT START WITH AN ID, so the top level offers none however many the
     // session has named.
     expect(hits, 'the top level offered a record').not.toContain(task);
     // And it does not descend into a write either: the level under one is a level this
     // session cannot reach, so offering its subcommands — or the records it has seen —
     // would be a menu of a place the next line refuses to go.
-    expect(complete('task ')).toEqual([[], '']);
+    expect(complete('tail ')).toEqual([[], '']);
+    // A GROUP WHOSE MEMBERS DIFFER offers the members the gate runs, and not the others: the menu
+    // under `task` is the two reads and never `create`, `move` or `handoff`.
+    const underTask = complete('task ')[0].map((hit) => hit.word);
+    expect(underTask).toEqual(expect.arrayContaining(['guard', 'next']));
+    for (const write of ['create', 'move', 'handoff'])
+      expect(underTask, write).not.toContain(write);
+    expect(complete('task h')).toEqual([[], 'h']);
+    const underSkill = complete('skill ')[0].map((hit) => hit.word);
+    expect(underSkill).toContain('provenance');
+    for (const write of ['create', 'move', 'export'])
+      expect(underSkill, write).not.toContain(write);
     // WHERE IT DOES OFFER ONE: under a read, which is where an argument goes.
     expect(complete('show ')[0].map((hit) => hit.word)).toContain(task);
   }, 60_000);
@@ -574,7 +616,7 @@ describe('the loop is wired to the gate and to the tree', () => {
     // The banner is the session's own, and it counts the reads it offers rather than
     // stating a number that would go stale.
     expect(page).toContain('a session over this project');
-    expect(page).toContain(`${verbsOffered(DECLARED, REPL_VERB).length} verbs`);
+    expect(page).toContain(`${pathsOffered(DECLARED, REPL_VERB).length} verbs`);
     // And NOT ONE line went to the port the process would have written on: inside a
     // session every line lands on the page, which is the whole of what changed.
     expect(aside).toEqual([]);
