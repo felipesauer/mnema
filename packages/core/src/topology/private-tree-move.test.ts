@@ -42,20 +42,20 @@ describe('privateTreesLeftBehind', () => {
     put(join(wt, '.mnema', 'private', 'tails', 'fp-b', 'x'), 'b');
     for (const from of [repo, wt]) {
       const found = privateTreesLeftBehind(from);
-      expect(found?.to).toBe(join(common, 'mnema', 'private'));
+      expect(found?.to).toBe(join(common, 'mnema', '%2E', 'private'));
       expect([...(found?.left ?? [])].sort((x, y) => x.worktree.localeCompare(y.worktree))).toEqual(
         [
           {
             worktree: repo,
             tree: join(repo, '.mnema', 'private'),
             tails: 1,
-            installation: join(common, 'mnema', 'private'),
+            installation: join(common, 'mnema', '%2E', 'private'),
           },
           {
             worktree: wt,
             tree: join(wt, '.mnema', 'private'),
             tails: 1,
-            installation: join(own, 'mnema', 'private'),
+            installation: join(own, 'mnema', '%2E', 'private'),
           },
         ],
       );

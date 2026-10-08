@@ -69,7 +69,7 @@ function writtenTheOldWay(top: string, text: string): void {
   }
 }
 
-const shared = () => join(repo, '.git', 'mnema', 'private');
+const shared = () => join(repo, '.git', 'mnema', '%2E', 'private');
 const oldTree = (top: string) => join(top, '.mnema', 'private');
 
 beforeEach(() => {

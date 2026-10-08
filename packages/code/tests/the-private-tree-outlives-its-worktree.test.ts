@@ -58,7 +58,7 @@ function git(cwd: string, ...args: string[]) {
 
 /** The private tree every worktree of the repository shares. */
 function sharedTree(): string {
-  return join(repo, '.git', 'mnema', 'private');
+  return join(repo, '.git', 'mnema', '%2E', 'private');
 }
 
 beforeEach(() => {
@@ -107,6 +107,22 @@ describe('a private note taken in a linked worktree', () => {
   }, 120_000);
 });
 
+describe('a project nested where the top project’s tree keeps its tails', () => {
+  it('keeps its private tree beside the top’s, and the top still verifies', () => {
+    // Keyed by the relative path WITH its slashes, the tree of a project at `private/tails`
+    // was `<git dir>/mnema/private/tails/private` — inside the top's `tails/`.
+    const nested = join(repo, 'private', 'tails');
+    mkdirSync(nested, { recursive: true });
+    expect(mnema(nested, 'init').status).toBe(0);
+    expect(mnema(nested, 'memory', '--scope', 'private', 'from the nested one').status).toBe(0);
+    expect(mnema(repo, 'memory', '--scope', 'private', 'from the top').status).toBe(0);
+
+    const verified = mnema(repo, 'verify');
+    expect(verified.status, verified.out).toBe(0);
+    expect(readdirSync(join(repo, '.git', 'mnema')).sort()).toEqual(['%2E', 'private%2Ftails']);
+  }, 120_000);
+});
+
 describe('two worktrees writing privately at the same time', () => {
   it('write two tails, and one holding its lock does not stop the other', () => {
     expect(mnema(repo, 'memory', '--scope', 'private', 'from the checkout').status).toBe(0);
@@ -123,8 +139,8 @@ describe('two worktrees writing privately at the same time', () => {
     expect(wrote.status, wrote.out).toBe(0);
     expect(readdirSync(join(sharedTree(), 'tails')).sort()).toHaveLength(2);
     // The worktree's installation id lives in its own git directory, beside nothing it shares.
-    expect(readdirSync(join(repo, '.git', 'worktrees', 'wt', 'mnema', 'private', 'keys'))).toEqual(
-      expect.arrayContaining([expect.stringMatching(/\.inst$/)]),
-    );
+    expect(
+      readdirSync(join(repo, '.git', 'worktrees', 'wt', 'mnema', '%2E', 'private', 'keys')),
+    ).toEqual(expect.arrayContaining([expect.stringMatching(/\.inst$/)]));
   }, 120_000);
 });

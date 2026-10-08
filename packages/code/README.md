@@ -1608,7 +1608,7 @@ key really signed.
 <repo>/.mnema/              the project record — commit this, the team shares it
   tails/<id>/witness/       external attestations over this tail's checkpoints (T3)
   locks/                    gitignored: writers' locks, and the projection a read keeps
-<git common dir>/mnema/<path>/private/
+<git common dir>/mnema/<encoded path>/private/
                             this machine, this project only: beside the repository's
                             objects, shared by its worktrees, kept when one is removed;
                             <repo>/.mnema/private/ (gitignored) outside a repository

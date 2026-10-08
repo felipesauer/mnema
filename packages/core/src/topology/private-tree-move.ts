@@ -41,7 +41,7 @@ import {
   statSync,
 } from 'node:fs';
 import { basename, dirname, join, relative, resolve } from 'node:path';
-import { gitPlaceOf, privateTreePlace } from './git-place.js';
+import { gitPlaceOf, privateTreePlace, privateTreeUnder } from './git-place.js';
 import { PRIVATE_DIR, PROJECT_DIR } from './resolve.js';
 
 /** A private tree a worktree holds where the private tree used to live. */
@@ -101,7 +101,7 @@ export function privateTreesLeftBehind(projectDir: string): PrivateTreesLeftBehi
       worktree,
       tree,
       tails: listed(join(tree, 'tails')).length,
-      installation: join(gitDir, 'mnema', within, PRIVATE_DIR),
+      installation: privateTreeUnder(gitDir, within),
     });
   }
   return { to: here.tree, left };

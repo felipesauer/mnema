@@ -185,12 +185,12 @@ function repoWithACommit(dir: string): string {
  * the working tree>/private`. Without git it stays where it was.
  */
 describe('resolveTrees — the private tree lives in the repository, not in a working tree', () => {
-  it('puts it under .git/mnema/private for a project at the top of a repository', () => {
+  it('puts it under .git/mnema/%2E/private for a project at the top of a repository', () => {
     const repo = repoWithACommit(join(realpathSync(sandbox), 'repo'));
     mkdirSync(join(repo, '.mnema'));
     const trees = resolveTrees(repo, { home: home() });
     expect(trees.projectPublic).toBe(join(repo, '.mnema'));
-    expect(trees.projectPrivate).toBe(join(repo, '.git', 'mnema', 'private'));
+    expect(trees.projectPrivate).toBe(join(repo, '.git', 'mnema', '%2E', 'private'));
   });
 
   it('gives a linked worktree the SAME private tree as the checkout it was made from', () => {
@@ -200,7 +200,7 @@ describe('resolveTrees — the private tree lives in the repository, not in a wo
     for (const top of [repo, wt]) {
       mkdirSync(join(top, '.mnema'), { recursive: true });
       expect(resolveTrees(top, { home: home() }).projectPrivate, top).toBe(
-        join(repo, '.git', 'mnema', 'private'),
+        join(repo, '.git', 'mnema', '%2E', 'private'),
       );
     }
   });
@@ -211,7 +211,7 @@ describe('resolveTrees — the private tree lives in the repository, not in a wo
     git(realpathSync(sandbox), 'clone', '-q', repo, clone);
     mkdirSync(join(clone, '.mnema'));
     expect(resolveTrees(clone, { home: home() }).projectPrivate).toBe(
-      join(clone, '.git', 'mnema', 'private'),
+      join(clone, '.git', 'mnema', '%2E', 'private'),
     );
   });
 
@@ -220,7 +220,7 @@ describe('resolveTrees — the private tree lives in the repository, not in a wo
     const nested = join(repo, 'sub', 'proj');
     mkdirSync(join(nested, '.mnema'), { recursive: true });
     expect(resolveTrees(join(nested, '.mnema'), { home: home() }).projectPrivate).toBe(
-      join(repo, '.git', 'mnema', 'sub', 'proj', 'private'),
+      join(repo, '.git', 'mnema', 'sub%2Fproj', 'private'),
     );
   });
 
@@ -230,7 +230,7 @@ describe('resolveTrees — the private tree lives in the repository, not in a wo
     git(outer, '-c', 'protocol.file.allow=always', 'submodule', 'add', '-q', inner, 'mod');
     mkdirSync(join(outer, 'mod', '.mnema'));
     expect(resolveTrees(join(outer, 'mod'), { home: home() }).projectPrivate).toBe(
-      join(outer, '.git', 'modules', 'mod', 'mnema', 'private'),
+      join(outer, '.git', 'modules', 'mod', 'mnema', '%2E', 'private'),
     );
   });
 
@@ -241,7 +241,7 @@ describe('resolveTrees — the private tree lives in the repository, not in a wo
     git(sep, 'init', '-q', '--separate-git-dir', join(base, 'sep.git'));
     mkdirSync(join(sep, '.mnema'));
     expect(resolveTrees(sep, { home: home() }).projectPrivate).toBe(
-      join(base, 'sep.git', 'mnema', 'private'),
+      join(base, 'sep.git', 'mnema', '%2E', 'private'),
     );
 
     const origin = repoWithACommit(join(base, 'origin'));
@@ -249,7 +249,7 @@ describe('resolveTrees — the private tree lives in the repository, not in a wo
     git(join(base, 'bare.git'), 'worktree', 'add', '-q', join(base, 'bwt'));
     mkdirSync(join(base, 'bwt', '.mnema'));
     expect(resolveTrees(join(base, 'bwt'), { home: home() }).projectPrivate).toBe(
-      join(base, 'bare.git', 'mnema', 'private'),
+      join(base, 'bare.git', 'mnema', '%2E', 'private'),
     );
   });
 
@@ -260,10 +260,10 @@ describe('resolveTrees — the private tree lives in the repository, not in a wo
     mkdirSync(join(repo, '.mnema'));
     mkdirSync(join(wt, '.mnema'), { recursive: true });
     expect(resolveTrees(repo, { home: home() }).projectPrivateInstallation).toBe(
-      join(repo, '.git', 'mnema', 'private'),
+      join(repo, '.git', 'mnema', '%2E', 'private'),
     );
     expect(resolveTrees(wt, { home: home() }).projectPrivateInstallation).toBe(
-      join(repo, '.git', 'worktrees', 'wt', 'mnema', 'private'),
+      join(repo, '.git', 'worktrees', 'wt', 'mnema', '%2E', 'private'),
     );
   });
 

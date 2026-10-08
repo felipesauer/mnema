@@ -62,7 +62,8 @@ export function gitPlaceOf(dir: string): GitPlace | undefined {
  * for it — or undefined when the project is in no repository, and the tree stays in
  * `.mnema/private/`.
  *
- * The tree is `<common git dir>/mnema/<project, relative to the top>/private`: one per project
+ * The tree is `<common git dir>/mnema/<project, relative to the top, encoded>/private` ({@link
+ * privateTreeUnder}): one per project
  * per repository, so every worktree reads and writes the same one and a separate clone has its
  * own. The installation id is the same path under THIS worktree's git directory: each worktree
  * writes its own tail and none waits on another's lock, and when a worktree is removed git
@@ -75,9 +76,24 @@ export function privateTreePlace(
   if (place === undefined) return undefined;
   const within = relative(place.top, resolve(projectDir));
   return {
-    tree: join(place.commonDir, IN_GIT_DIR, within, 'private'),
-    installation: join(place.gitDir, IN_GIT_DIR, within, 'private'),
+    tree: privateTreeUnder(place.commonDir, within),
+    installation: privateTreeUnder(place.gitDir, within),
   };
+}
+
+/**
+ * `<gitDir>/mnema/<one component>/private` for the project at `within` (relative to the top).
+ *
+ * THE PATH IS ONE COMPONENT, ENCODED, and not the relative path as it is: with its slashes, a
+ * project nested at `<top>/private/tails` had its tree inside the top project's `tails/`, and the
+ * top's `verify` read the nested tree's files as a tail of its own and failed. Encoded,
+ * every project's tree is a sibling of every other's, and the encoding cannot be taken back to
+ * two different paths (`encodeURIComponent` is one to one). The top itself, whose relative
+ * path is empty, is `%2E` — an encoded `.`, which no relative path spells.
+ */
+export function privateTreeUnder(gitDir: string, within: string): string {
+  const component = encodeURIComponent(within.split(sep).join('/'));
+  return join(gitDir, IN_GIT_DIR, component === '' ? '%2E' : component, 'private');
 }
 
 /**

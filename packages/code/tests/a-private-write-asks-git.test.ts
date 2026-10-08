@@ -109,7 +109,7 @@ function withoutThePrivateLine(): void {
 
 /** Where the private tree of the project at the top of a repository lives. */
 function inTheRepository(): string {
-  return join(project, '.git', 'mnema', 'private');
+  return join(project, '.git', 'mnema', '%2E', 'private');
 }
 
 describe('the ordinary project', () => {

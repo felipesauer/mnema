@@ -6,8 +6,8 @@
  * places their events live:
  *
  *   - PROJECT-PUBLIC  `<repo>/.mnema/`          committed; the team sees it.
- *   - PROJECT-PRIVATE `<git common dir>/mnema/<project>/private/`  only this machine, only
- *                     this project — beside the repository's objects, where removing a
+ *   - PROJECT-PRIVATE `<git common dir>/mnema/<project path, encoded>/private/`  only this
+ *                     machine, only this project — beside the repository's objects, where removing a
  *                     worktree does not reach and no `git add` stages; `<repo>/.mnema/private/`
  *                     (gitignored) outside a repository ({@link privateTreePlace}).
  *   - GLOBAL-PRIVATE  `<data>/global/`          only this machine, ACROSS all
@@ -89,7 +89,7 @@ export interface ResolvedTrees {
   /** `<repo>/.mnema` — committed, team-visible. Absent outside a project. */
   readonly projectPublic?: string;
   /**
-   * `<git common dir>/mnema/<project>/private` in a repository, `<repo>/.mnema/private`
+   * `<git common dir>/mnema/<project path, encoded>/private` in a repository, `<repo>/.mnema/private`
    * (gitignored) outside one — this machine. Absent outside a project.
    */
   readonly projectPrivate?: string;
