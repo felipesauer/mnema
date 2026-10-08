@@ -47,6 +47,30 @@ export type Cell =
     }
   | { readonly held: 'not ported' };
 
+/**
+ * Where a host reads the skills, or the agents, a stack brings — the folder under a project's root
+ * and the one under the home — and how that is known.
+ *
+ *   - `documentation`: the host's own documentation says it reads that folder, read at `at` on the
+ *     day `read` names. Nothing was run: documented, not measured. An agent's folder is given only
+ *     where the host reads an agent in the format a stack's `agents/<name>.md` already is (`name`,
+ *     `description`, `tools`, `model`, then the prompt), the format Claude Code documents.
+ *   - `not ported`: nothing of a stack is written for that host, because no folder it reads was
+ *     read, or because it reads its agents in another format (other fields, other tool names).
+ *     The plan of an installation says which hosts receive nothing.
+ */
+export type Place =
+  | {
+      readonly held: 'documentation';
+      /** The folder, relative to the project's root. */
+      readonly project: string;
+      /** The folder, relative to the home. */
+      readonly user: string;
+      readonly at: string;
+      readonly read: string;
+    }
+  | { readonly held: 'not ported' };
+
 /** One host: its name on a page, how the plugin's hook before a write reaches it, and its cells. */
 export interface Host {
   /** The host's name as the pages write it. */
@@ -63,6 +87,8 @@ export interface Host {
   readonly saysItIsTheHost?: string;
   /** What it does with each {@link Capability}. */
   readonly cells: { readonly [C in Capability]: Cell };
+  /** Where it reads the skills and the agents a stack brings. */
+  readonly places: { readonly skills: Place; readonly agents: Place };
 }
 
 /** Where the cells of the three ported hosts that a case of this tree holds are held. */
@@ -77,6 +103,18 @@ const HELD = {
 
 /** The day the hosts below that this product does not port were read. */
 const READ_ON = '8 October 2026';
+
+/** A folder of Claude Code's, which two other hosts read too, as the documentation `at` says. */
+const claudeFolder = (kind: 'skills' | 'agents', at: string): Place => ({
+  held: 'documentation',
+  project: `.claude/${kind}`,
+  user: `.claude/${kind}`,
+  at,
+  read: READ_ON,
+});
+
+/** No folder of this host's was read, or it reads agents in another format. */
+const NOT_PORTED: Place = { held: 'not ported' };
 
 /**
  * Every host, in the order the pages list them and the lists of a `--host` enumerate them.
@@ -95,6 +133,10 @@ export const HOSTS = {
       opens: { does: true, held: 'a test', by: HELD.claudeOpens },
       refuses: { does: true, held: 'a test', by: HELD.claudeGate },
       asks: { does: true, held: 'a test', by: HELD.claudeGate },
+    },
+    places: {
+      skills: claudeFolder('skills', 'https://code.claude.com/docs/en/skills.md'),
+      agents: claudeFolder('agents', 'https://code.claude.com/docs/en/sub-agents.md'),
     },
   },
   vscode: {
@@ -115,6 +157,16 @@ export const HOSTS = {
       refuses: { does: true, held: 'a test', by: HELD.vscodeGate },
       asks: { does: true, held: 'a test', by: HELD.vscodeGate },
     },
+    places: {
+      skills: claudeFolder(
+        'skills',
+        'https://code.visualstudio.com/docs/agent-customization/agent-skills',
+      ),
+      agents: claudeFolder(
+        'agents',
+        'https://code.visualstudio.com/docs/agent-customization/custom-agents',
+      ),
+    },
   },
   cursor: {
     title: "Cursor's command-line agent",
@@ -126,6 +178,10 @@ export const HOSTS = {
       opens: { does: true, held: 'not yet', read: 'Cursor agent 2026.09.18, 23 September 2026' },
       refuses: { does: true, held: 'not yet', read: 'Cursor agent 2026.09.18, 2 October 2026' },
       asks: { does: false, held: 'not yet', read: 'Cursor agent 2026.09.18, 30 September 2026' },
+    },
+    places: {
+      skills: claudeFolder('skills', 'https://cursor.com/docs/context/skills'),
+      agents: claudeFolder('agents', 'https://cursor.com/docs/context/subagents'),
     },
   },
   droid: {
@@ -148,6 +204,16 @@ export const HOSTS = {
       refuses: { held: 'not ported' },
       asks: { held: 'not ported' },
     },
+    places: {
+      skills: {
+        held: 'documentation',
+        project: '.factory/skills',
+        user: '.factory/skills',
+        at: 'https://github.com/Factory-AI/factory/blob/c6ea470/docs/cli/configuration/skills.mdx',
+        read: READ_ON,
+      },
+      agents: NOT_PORTED,
+    },
   },
   qwen: {
     title: 'Qwen Code',
@@ -168,6 +234,16 @@ export const HOSTS = {
       opens: { held: 'not ported' },
       refuses: { held: 'not ported' },
       asks: { held: 'not ported' },
+    },
+    places: {
+      skills: {
+        held: 'documentation',
+        project: '.qwen/skills',
+        user: '.qwen/skills',
+        at: 'https://github.com/QwenLM/qwen-code/blob/cbbb0a5/docs/users/features/skills.md',
+        read: READ_ON,
+      },
+      agents: NOT_PORTED,
     },
   },
   goose: {
@@ -190,6 +266,7 @@ export const HOSTS = {
       refuses: { held: 'not ported' },
       asks: { held: 'not ported' },
     },
+    places: { skills: NOT_PORTED, agents: NOT_PORTED },
   },
   continue: {
     title: "Continue's command line (`cn`)",
@@ -211,6 +288,7 @@ export const HOSTS = {
       refuses: { held: 'not ported' },
       asks: { held: 'not ported' },
     },
+    places: { skills: NOT_PORTED, agents: NOT_PORTED },
   },
   warp: {
     title: "Warp's agent",
@@ -232,6 +310,7 @@ export const HOSTS = {
       refuses: { held: 'not ported' },
       asks: { held: 'not ported' },
     },
+    places: { skills: NOT_PORTED, agents: NOT_PORTED },
   },
 } as const satisfies Record<string, Host>;
 

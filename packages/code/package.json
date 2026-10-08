@@ -54,6 +54,7 @@
     "@mnema/chain": "workspace:*",
     "@mnema/context": "workspace:*",
     "@mnema/core": "workspace:*",
+    "@mnema/stacks": "workspace:*",
     "@modelcontextprotocol/sdk": "^1.31.0",
     "@sigstore/bundle": "5.0.0",
     "@sigstore/protobuf-specs": "0.5.2",
