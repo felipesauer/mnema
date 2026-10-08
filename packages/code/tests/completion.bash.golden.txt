@@ -110,7 +110,7 @@ _mnema_flags() {
     'inherit set') echo '--at --write -h --help -V --version --color --identify' ;;
     'inherit update') echo '--to --write -h --help -V --version --color --identify' ;;
     'doctor') echo '--fix --dry-run -h --help -V --version --color --identify' ;;
-    'verify') echo '--global --workspace --allow-no-record --require --since --against-github --against-sigstore --json -h --help -V --version --color --identify' ;;
+    'verify') echo '--global --workspace --allow-no-record --require --since --against-github --against-sigstore --verbose --json -h --help -V --version --color --identify' ;;
     'mcp') echo '--project -h --help -V --version --color --identify' ;;
     'repl') echo '-h --help -V --version --color --identify' ;;
     'completion') echo '-h --help -V --version --color --identify' ;;

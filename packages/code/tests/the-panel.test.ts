@@ -682,7 +682,9 @@ describe('what the panel says about a tree is a prefix of what verify says', () 
     expect(trees.length).toBeGreaterThan(1);
     // Stripped, because this fixture forces colour on and what is compared is the words:
     // that the two renderings say the same thing is the promise of another file.
-    const said = (await shell('verify')).map(stripped);
+    // `--verbose`, because a clean `verify` leaves out the line for a tree that holds nothing and
+    // the panel says that tree too — the whole reading is the one the panel is a prefix of.
+    const said = (await shell('verify', '--verbose')).map(stripped);
     let shortened = 0;
     for (const tree of trees) {
       const short = renderPlain(treeHeadline(tree, UNDER_A_HEADING)).trimStart();

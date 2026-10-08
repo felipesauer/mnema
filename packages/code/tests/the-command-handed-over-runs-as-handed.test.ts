@@ -661,7 +661,9 @@ export const HANDED_OVER: Readonly<
   // line 77 and name 146 with the pages that hand over `mnema unlink` whole.
   // line 83 and name 151 with both: the Sigstore countersignature and `mnema unlink`.
   // line 84 for the row of the evidence page that names what `mnema brief --hook` prints.
-  span: { line: 84, name: 151, flag: 1, unwritten: 0 },
+  // line 85 and name 153 for the changelog entry on the one-line `mnema verify` and the page that
+  // sets a signed commit beside the record (`mnema verify`, `mnema verify --since`), looked at.
+  span: { line: 85, name: 153, flag: 1, unwritten: 0 },
   // name 18 until the page that says where the key lives named `mnema key protect` in a line of
   // its own.
   // line 35 until the same page showed that question in a block of its own.
