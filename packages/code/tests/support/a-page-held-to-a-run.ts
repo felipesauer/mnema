@@ -48,12 +48,22 @@ const AN_ALIAS = new RegExp(
 /** The day a run happened, as the record prints it. */
 const A_DATE = /\b\d{4}-\d{2}-\d{2}\b/g;
 
+/**
+ * What the line under a console's answer says that the machine measured — how long it took and
+ * the hour it was done: `✻ status · 56ms · done 20:28`. Both are a clock's, so they are minted
+ * like an id and read as what they are. Matched on the whole of the line's shape, never on a
+ * duration or an hour alone, so a `30s` or a `12:00` somewhere in a record's own words is left as
+ * the record wrote it.
+ */
+const A_DONE_LINE = /(\u273b \S+ \u00b7 )(?:\d+ms|\d+\.\ds|\d+m \d{2}s)( \u00b7 done )\d{2}:\d{2}/g;
+
 /** A key's fingerprint, an identity, a digest — any run of lower-case hex eight long or longer. */
 const HEX = /[0-9a-f]{8,}/g;
 
-/** Some text with what the machine minted replaced by what it is: `<uuid>`, `<date>`, `<hex>`. */
+/** Some text with what the machine minted replaced by what it is: `<uuid>`, `<date>`, `<hex>`, `<took>`, `<hour>`. */
 export function asMinted(text: string): string {
   return text
+    .replace(A_DONE_LINE, '$1<took>$2<hour>')
     .replace(AN_ID, '<uuid>')
     .replace(AN_ID_CUT, '<uuid>')
     .replace(AN_ALIAS, '$1-<alias>')

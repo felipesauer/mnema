@@ -81,11 +81,12 @@
  * say what the product is and nothing about the record.
  *
  * AND THE EDGES ARE THE SEAMS OF THE PAGE, WHICH USED TO BE *the frame's last surviving
- * siblings*: two rules around the input row, and nothing else. There are four edges now and
+ * siblings*: two rules around the input row, and nothing else. There are three edges now and
  * every one of them says where a region begins or what a region holds — a rule closing the top
- * region ({@link theTop}), the two the input area sits between, and the guide down the margin
- * of what the session says ({@link bar}). They are all the same two drawings in the same hue,
- * which is what keeps four edges from being four decisions. The count that matters did not
+ * region ({@link theTop}) and the two the input area sits between. A FOURTH WAS A GUIDE DOWN THE
+ * MARGIN OF WHAT THE SESSION SAYS, and it is gone: what marks the roll now is not an edge but a
+ * band behind each command and a glyph that opens each answer, neither of them drawn here and
+ * neither of them purple (`presentation/styled.ts`, `echo.ts`). The count that matters did not
  * move: ONE hue, spent in this file, and none of the three severities.
  *
  * AND THE PAGE HAS A LEFT EDGE NOW. What the session says — the arrangement at the top and the
@@ -126,7 +127,7 @@ import type { Keystroke } from './editing.js';
 // form reads them. THEY WERE COPIED, and the copy was defended in as many words — *two
 // copies of these numbers is two panels, one of which fits* — which named the risk and then
 // took it. One constant, two readers.
-import { AFTER_THE_BAR, BEFORE_THE_BAR, THE_INSET } from './inset.js';
+import { THE_INSET } from './inset.js';
 import { BETWEEN_COLUMNS, BETWEEN_SECTIONS, type Panel } from './panel.js';
 
 /**
@@ -669,29 +670,20 @@ function Header({ panel }: { readonly panel: Panel }): ReactNode {
  *     would be this file deciding where a sentence divides. Same glyphs on the same rows, and a
  *     library that knows how many rows there are.
  *
- * AND THE BAR IS BESIDE IT, which is the one thing this function gained. The row is the bar
- * and the line, in that order, with a column between them ({@link bar}, `inset.ts`) — and the
- * bar is as tall as the row rather than one row tall, because a line the roll handed over
- * already folded is two rows on the page and a guide that stopped half way down one would be
- * pointing at the first half of a sentence.
- *
- * IT IS DRAWN PER LINE AND NOT DOWN THE REGION, and that is the difference between a guide and
- * a border. What is below the last line of the window is ROOM TO SPARE — the region is as tall
- * as the two fixed ones leave, whatever the session has said — and a bar running through it
- * would be the page claiming the emptiness is transcript. It is also what keeps a blank row on
- * this page blank, which is how everything that measures this surface tells the page from the
- * space under it.
+ * AND THERE IS NOTHING BESIDE IT. THIS FUNCTION DREW A GUIDE DOWN THE MARGIN OF EVERY ROW, the run of
+ * a rule turned, as tall as the row; what tells a caller where their own words begin and where an
+ * answer does is in the line itself now — a band behind the command and a glyph on the first row
+ * of the answer — so the layout draws no more of the roll than the line it was handed. That is
+ * also what keeps a blank row on this page blank, which is how everything that measures this
+ * surface tells the page from the space under it: the region is as tall as the two fixed ones
+ * leave, whatever the session has said, and what is below the last line of the window is ROOM TO
+ * SPARE and not transcript.
  */
 function landed(line: string, index: number): ReactNode {
   return node(
     Box,
     { key: String(index), minHeight: 1 },
-    bar(),
-    node(
-      Box,
-      { paddingLeft: AFTER_THE_BAR, flexGrow: 1, flexShrink: 1 },
-      node(Text, { wrap: THE_MARGIN }, line),
-    ),
+    node(Box, { flexGrow: 1, flexShrink: 1 }, node(Text, { wrap: THE_MARGIN }, line)),
   );
 }
 
@@ -729,15 +721,14 @@ function Middle({ window }: { readonly window: readonly string[] }): ReactNode {
     // input, so the first thing there was to read was the last thing on the screen.
     //
     // AND THE MARGIN IS THE REGION'S, not each row's: it is the page's left edge and the whole
-    // of what the session says sits inside it (`inset.ts`). What is drawn IN it is the bar, and
-    // that is a row's ({@link landed}) — the margin is where the page begins and the bar is
-    // beside what there is to read.
+    // of what the session says sits inside it (`inset.ts`). Nothing is drawn IN it: the margin is
+    // where the page begins, and what there is to read is a row's ({@link landed}).
     {
       flexDirection: 'column',
       flexGrow: 1,
       flexShrink: 1,
       overflow: 'hidden',
-      paddingLeft: BEFORE_THE_BAR,
+      paddingLeft: THE_INSET,
     },
     ...window.map((line, index) => landed(line, index)),
   );
@@ -894,8 +885,7 @@ function theRecord(panel: Panel): ReactNode {
  * *exactly as the one inside the panel is* and *like the frame they are the siblings of*, and
  * the panel has neither: the frame went. IT THEN SAID THESE TWO WERE *the only edges left on
  * the surface*, and what falsified that is the page showing its seams — the top region is
- * closed by a rule of its own and the roll has a guide down its margin, both drawn by the
- * functions these two are drawn by ({@link theTop}, {@link bar}).
+ * closed by a rule of its own, drawn by the function these two are drawn by ({@link theTop}).
  *
  * AND THE FIRST ROW OF ALL IS ONE THAT IS USUALLY NOT THERE: what the session says when the last
  * answer left the page exactly as it was. It is the TOP of the area because what it is about is
@@ -988,33 +978,6 @@ function rule(): ReactNode {
     borderColor: ACCENT,
     borderBottom: false,
     borderLeft: false,
-    borderRight: false,
-  });
-}
-
-/**
- * The guide down the margin of one landed row: a box with nothing in it and its LEFT edge on.
- *
- * IT IS THE RULE TURNED, and it is drawn the same way for the same reason: the run of glyphs
- * is the library's, out of the same set of edges ({@link BORDER}) and in the same accent, so a
- * page has one idea of what a line the console draws looks like. A string of pipes typed here
- * would be text a component put on the page.
- *
- * AS TALL AS THE ROW IT IS IN, by construction rather than by a number: a child of a row takes
- * the row's height unless it is told otherwise, and the row is as tall as the line beside it —
- * one for most, two for a line the fold broke. Nothing here counts a row.
- *
- * WHAT IT IS FOR is what a caller asked for by drawing it on a screenshot: the guide an editor
- * runs down the left of a file, marking the region that is theirs to read. It says nothing
- * about the record and carries no fact, which is what makes it CHROME and lets it take the one
- * accent this file spends.
- */
-function bar(): ReactNode {
-  return node(Box, {
-    borderStyle: BORDER,
-    borderColor: ACCENT,
-    borderTop: false,
-    borderBottom: false,
     borderRight: false,
   });
 }

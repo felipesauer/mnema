@@ -34,7 +34,8 @@
  * THE BASIC EIGHT, never RGB and never a 256-colour index. A terminal's red is the red
  * of the theme its reader chose; a fixed `38;2;220;50;47` is a red that can land
  * unreadable on a light background, and nobody would be able to fix it from their side.
- * It is what git and gh do, and it is the same argument as using SGR at all.
+ * It is what git and gh do, and it is the same argument as using SGR at all. (ONE EXCEPTION,
+ * and it says why where it is: the band behind a command that has been sent, {@link SHADE}.)
  *
  * The escapes are SGR: `1` is bold, `2` is faint, and `22` returns to normal
  * intensity — one closer for both, because it is the ANSI code for "neither bold nor
@@ -46,6 +47,7 @@
 import type { Part, Role, Severity } from './line.js';
 import { renderWith } from './plain.js';
 import type { Render } from './render.js';
+import { widthOfText } from './width.js';
 
 /** Bold: SGR 1. */
 const BOLD = '\u001b[1m';
@@ -62,6 +64,27 @@ const GREEN = '\u001b[32m';
 const YELLOW = '\u001b[33m';
 /** Back to the terminal's own foreground: SGR 39, the closer for every hue. */
 const DEFAULT_HUE = '\u001b[39m';
+
+/**
+ * THE BAND A SENT COMMAND SITS ON, and the two foregrounds drawn over it: the 256-colour greys 238
+ * (the band, `48;5;238`), 246 (the mark) and 253 (the words), closed by SGR 49 and by
+ * {@link DEFAULT_HUE}.
+ *
+ * IT IS THE ONE PLACE THIS FILE LEAVES THE BASIC EIGHT, and the rule it leaves is about a colour
+ * landing unreadable on a theme its reader cannot change: *a fixed red can land unreadable on a
+ * light background*. A band is a background and a background is half of a pair, so the pair is
+ * fixed at BOTH ends — a mid-dark grey with light text on it — and what a theme can change is only
+ * the page around it. Measured by drawing the same recording on a dark and on a light theme: on
+ * the dark one it is a quiet band, on the light one a darker band with its words still on top of
+ * it, legible on both. The basic eight cannot say a quiet grey at all (the theme's own bright
+ * black is a loud mid-grey on the dark theme and a theme-dependent one elsewhere), and a band
+ * with no foreground of its own would be the terminal's default text over a colour nobody checked
+ * it against. A terminal that cannot take the indexes ignores all three and shows the words.
+ */
+const SHADE = '\u001b[48;5;238m';
+const MARK_HUE = '\u001b[38;5;246m';
+const SENT_HUE = '\u001b[38;5;253m';
+const UNSHADE = '\u001b[49m';
 
 /**
  * THE ACCENT: SGR 35, magenta — the one hue on this surface that is not news, and the
@@ -139,6 +162,10 @@ const ACCENT = '\u001b[35m';
  *     the point rather than a duplication to collapse. A caller scrolling a session is
  *     looking for the line they asked, in among the answer to it, and that is the same
  *     thing a reader scanning a log for a refusal is doing.
+ *   - `sentmark` and `sent` — a command the caller has sent, as the roll keeps it: a quiet grey
+ *     mark and the words in a lighter grey, on the band {@link shadedAcross} lays under the whole
+ *     row. They carry no hue and no weight, because the accent says *this is mnema* and what a
+ *     caller asked is not that; they are painted as a PAIR with the band ({@link SHADE}).
  *   - `word` — bare, and the THIRD role that carries a HUE of its own ({@link TINTED_BY}).
  *     A word a caller could type is the product's own vocabulary offered back rather than a
  *     fact about the record, so it takes the accent; what it does not take is a weight, for
@@ -160,6 +187,10 @@ export const PAINTING: readonly string[] = [
   YELLOW,
   DEFAULT_HUE,
   ACCENT,
+  SHADE,
+  UNSHADE,
+  MARK_HUE,
+  SENT_HUE,
 ];
 
 const OPENED_BY: { readonly [R in Role]: string } = {
@@ -174,6 +205,8 @@ const OPENED_BY: { readonly [R in Role]: string } = {
   state: '',
   prompt: '',
   typed: BOLD,
+  sentmark: '',
+  sent: '',
   pick: '',
   word: '',
 };
@@ -221,6 +254,8 @@ const TINTED_BY: { readonly [R in Role]: string } = {
   state: '',
   prompt: ACCENT,
   typed: '',
+  sentmark: MARK_HUE,
+  sent: SENT_HUE,
   pick: ACCENT,
   word: ACCENT,
 };
@@ -297,3 +332,30 @@ function painted(part: Part): string {
  * nothing in `presentation/` may ask).
  */
 export const renderStyled: Render = renderWith(painted);
+
+/**
+ * THE BAND, laid across the width of the page: every row of a sent command, shaded from its
+ * first column to the last, whatever the words took of it.
+ *
+ * IT IS A WRAPPER AND NOT A PART because what fills a row is the width, and a part carries no
+ * width (`line.ts`). It is applied AFTER the fold, row by row, so a command long enough to
+ * break is a band as tall as it is and not a band on its first row alone — and it is applied
+ * only to a line that begins with the mark, which is the one discriminant there is for a sent
+ * command. What it adds is spaces and the two escapes that open and close the shade; the plain
+ * rendering of the same line is untouched, which is what leaves a reader without colour only
+ * the mark (`wiring/color.ts` chooses which renderer is wrapped, and never wraps the plain one).
+ *
+ * A row is padded to `columns` and never past it: a row already that wide is shaded as it is.
+ */
+export function shadedAcross(columns: number, render: Render): Render {
+  return (line) => {
+    const bytes = render(line);
+    if (line.parts[0]?.role !== 'sentmark') return bytes;
+    return bytes
+      .split('\n')
+      .map(
+        (row) => `${SHADE}${row}${' '.repeat(Math.max(0, columns - widthOfText(row)))}${UNSHADE}`,
+      )
+      .join('\n');
+  };
+}

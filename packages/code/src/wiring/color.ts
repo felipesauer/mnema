@@ -108,7 +108,7 @@ import { foldedAt } from '../presentation/folded.js';
 import type { Line } from '../presentation/line.js';
 import { renderPlain } from '../presentation/plain.js';
 import type { Render } from '../presentation/render.js';
-import { renderStyled } from '../presentation/styled.js';
+import { renderStyled, shadedAcross } from '../presentation/styled.js';
 
 /** What `--color` accepts. Closed, and commander refuses anything else. */
 export const COLOR_WHENS = ['auto', 'always', 'never'] as const;
@@ -208,7 +208,13 @@ function paintingFor(capability: Capability): Render {
 export function chooseRenderer(capability: Capability): Render {
   const painting = paintingFor(capability);
   const { isTty, columns } = capability;
-  return isTty && columns > 0 ? foldedAt(columns, painting) : painting;
+  if (!(isTty && columns > 0)) return painting;
+  const folded = foldedAt(columns, painting);
+  // THE BAND A SENT COMMAND SITS ON is the one thing painted ACROSS the width, so it is the one
+  // thing that needs it: it goes on the renderer that paints and on no other, which is what
+  // leaves a caller who asked for no colour — a flag, `NO_COLOR`, a terminal that cannot — the
+  // mark and the words and nothing behind them (`presentation/styled.ts`, `shadedAcross`).
+  return painting === renderStyled ? shadedAcross(columns, folded) : folded;
 }
 
 /**

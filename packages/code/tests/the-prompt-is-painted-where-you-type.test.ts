@@ -54,6 +54,9 @@ import { screenOf } from './support/screen.js';
 
 /** The built CLI — the same file the `mnema` bin points at. */
 const CLI = fileURLToPath(new URL('../dist/cli.js', import.meta.url));
+
+/** The mark a command that was SENT carries on the roll — the row being typed carries the prompt. */
+const SENT = '\u276f';
 /** `packages/code/src`, for the guard that reads the surface's own source. */
 const SRC = fileURLToPath(new URL('../src', import.meta.url));
 
@@ -201,7 +204,7 @@ describe('the prompt under the caller’s fingers carries the accent the transcr
         { types: typed, until: arrivedUnpainted(`${PROMPT}${typed}`), what: 'typed a word' },
         {
           types: SENDS_THE_LINE,
-          until: arrivedUnpainted(`${PROMPT}${typed}`),
+          until: arrivedUnpainted(`${SENT} ${typed}`),
           what: 'sent the line',
         },
         leavesTheSession,
@@ -223,24 +226,34 @@ describe('the prompt under the caller’s fingers carries the accent the transcr
     expect(accent, 'the accent is not an escape at all').toContain(ESC);
     expect(underTheFingers, 'the row being typed reached the terminal unpainted').toContain(accent);
 
-    // AND THE ECHO SAYS THE SAME THING. What arrived since the line was sent holds the echo on
-    // the roll — and the input row, now empty — so what is compared is the SET of spellings the
-    // whole session used, which is one.
+    // AND THE ROLL DOES NOT CARRY IT. The line that was sent is kept under a mark of its own and
+    // in greys: the accent belongs to the places that say *this is mnema* — the top, the rules and
+    // the row being typed — and a command a caller has already sent is not one of them. What
+    // arrived since the line was sent holds that row, and the input row, now empty and painted as
+    // it was, so the set of spellings of the prompt is still the one.
     const sinceTheLineWasSent = ran.bytes.slice(ran.at[1] as number, ran.at[2] as number);
-    const onTheRoll = new Set(paintAroundThePrompt(sinceTheLineWasSent));
-    expect([...onTheRoll], 'the echo and the row being typed are painted differently').toEqual([
-      underTheFingers,
-    ]);
+    expect(
+      [...new Set(paintAroundThePrompt(sinceTheLineWasSent))],
+      'the prompt is painted another way once the line is sent',
+    ).toEqual([underTheFingers]);
+    const sentAt = sinceTheLineWasSent.indexOf(SENT);
+    expect(sentAt, 'the sent line did not land on the roll').toBeGreaterThan(0);
+    expect(
+      sinceTheLineWasSent.slice(Math.max(0, sentAt - 24), sentAt + SENT.length + typed.length + 2),
+      'the sent line is painted in the accent',
+    ).not.toContain(accent);
 
     // AND BOTH ROWS ARE ON THE PAGE, which is what says the comparison was between two things
     // rather than one thing twice: the words are above the row they were typed on.
     const screen = screenOf(ran.bytes.slice(0, ran.at[2] as number), columns, rows);
+    const sent = screen.rows.findIndex((row) => row.includes(`${SENT} ${typed}`));
+    expect(sent, `the sent line is not on the page:\n${screen.text}`).toBeGreaterThanOrEqual(0);
     const rowsWithThePrompt = screen.rows
       .map((row, at) => (row.includes(ON_THE_PAGE) ? at : -1))
       .filter((at) => at >= 0);
-    expect(rowsWithThePrompt.length, 'the echo did not land above the input').toBe(2);
-    const [echoed, input] = rowsWithThePrompt as [number, number];
-    expect((screen.rows[echoed] as string).includes(typed), screen.text).toBe(true);
+    expect(rowsWithThePrompt.length, 'the prompt is on more than the input row').toBe(1);
+    const [input] = rowsWithThePrompt as [number];
+    expect(sent, 'the sent line is not above the input').toBeLessThan(input);
     expect((screen.rows[input] as string).trimEnd(), screen.text).toBe(ON_THE_PAGE);
   }, 240_000);
 });
@@ -557,13 +570,14 @@ describe('everything that puts the row being typed together, and everything that
       'presentation/echo.ts',
       'repl/console.ts',
     ]);
-    // AND THE CONSOLE ASKS FOR IT TWICE, WHICH IS THE TWO ROWS: the echo that lands on the roll
-    // when a line leaves the input, and the row the caller is still writing. A third would be a
-    // third place that decides what a prompt and a line look like together.
+    // AND THE CONSOLE ASKS FOR IT ONCE, WHICH IS THE ROW THE CALLER IS STILL WRITING: what lands on
+    // the roll when a line leaves the input is a SENT command and has a shape of its own
+    // (`sentLine`, asked for once, in `tests/the-page-shows-its-seams.test.ts`). A second here would be
+    // a second place that decides what a prompt and a line look like together.
     const console_ = (
       composing.find((file) => file.where === 'repl/console.ts') as { code: string }
     ).code;
-    expect((console_.match(/echoLine\(/g) ?? []).length, 'a third row is composed').toBe(2);
+    expect((console_.match(/echoLine\(/g) ?? []).length, 'a second row is composed').toBe(1);
 
     // AND NOTHING ANYWHERE CONCATENATES THE TWO. This is the site the delivery removed, and it
     // is looked for over the whole surface rather than in the file it was in.

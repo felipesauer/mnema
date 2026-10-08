@@ -64,7 +64,7 @@ import { renderStyled } from '../src/presentation/styled.js';
 import { openConsole } from '../src/repl/console.js';
 import { THE_FLOOR } from '../src/repl/floor.js';
 import { dispositionOf } from '../src/repl/gate.js';
-import { BEFORE_THE_BAR, insideTheMargin, THE_INSET } from '../src/repl/inset.js';
+import { insideAnAnswer, insideTheMargin, THE_INSET } from '../src/repl/inset.js';
 import { standingLine } from '../src/repl/session.js';
 import { standing } from '../src/repl/standing.js';
 import { CLEAR } from '../src/session-words.js';
@@ -267,32 +267,41 @@ function theWordsItPrints(): readonly Line[] {
  * The rows the product's own fold breaks a line into on a terminal of a given width.
  *
  * THE WIDTH IT FOLDS AT IS NOT THE TERMINAL'S, and that is what the page's own margin cost this
- * helper. What the session says is drawn inside a margin with a guide down it
- * (`src/repl/inset.ts`), so the columns a line really has are the terminal's less that — and the
- * console folds to exactly this number (`src/repl/console.ts`, `renderOnTheRoll`). A case that
- * folded at the terminal's width would be asserting a break no window produces, which is the
- * shape of red that says nothing about the product.
+ * helper. What the session says is drawn inside a margin (`src/repl/inset.ts`), so the columns a
+ * line really has are the terminal's less that — and the console folds to exactly this number
+ * (`src/repl/console.ts`, `renderOnTheRoll`). A case that folded at the terminal's width would be
+ * asserting a break no window produces, which is the shape of red that says nothing about the
+ * product.
+ *
+ * AND AN ANSWER IS FOLDED TO LESS, AND FRAMED. What a verb prints lands as one block: its first
+ * row opens with a dot and every row after it recedes by the two columns the dot and its space
+ * take (`src/repl/console.ts`, `landAnswer`), so it is folded to the room that leaves
+ * (`renderOnAnAnswer`) and the rows this returns carry the frame. A line the PAGE opens with is
+ * not an answer, and is asked for as `'roll'`.
  */
-function foldedInto(line: Line, columns: number): readonly string[] {
-  return foldedAt(insideTheMargin(columns), renderPlain)(line).split('\n');
+function foldedInto(
+  line: Line,
+  columns: number,
+  of: 'answer' | 'roll' = 'answer',
+): readonly string[] {
+  if (of === 'roll') return foldedAt(insideTheMargin(columns), renderPlain)(line).split('\n');
+  return foldedAt(
+    insideAnAnswer(columns),
+    renderPlain,
+  )(line)
+    .split('\n')
+    .map((row, step) => `${step === 0 ? '\u25cf ' : '  '}${row}`);
 }
-
-/**
- * The glyph the guide down the margin is drawn out of — spelled by code point, like every other
- * unusual byte in this repository.
- */
-const THE_GUIDE = '\u2502';
 
 /**
  * A row of the page with the margin taken off — what the row SAYS, without the page's own edge.
  *
- * Every row of the roll begins with the same four columns: two blank, the guide, and one more
- * blank (`src/repl/inset.ts`). They are chrome and no part of the line, so a comparison against a
- * composed line has to take them off — and only off the rows that HAVE them, because a row of the
- * input area and a row with nothing on it never did.
+ * Every row of the roll begins with the same six blank columns (`src/repl/inset.ts`). They are
+ * chrome and no part of the line, so a comparison against a composed line has to take them off —
+ * and only off the rows that HAVE them, because a row of the input area never did.
  */
 function withoutTheMargin(row: string): string {
-  return [...row][BEFORE_THE_BAR] === THE_GUIDE ? row.slice(THE_INSET) : row;
+  return row.slice(0, THE_INSET).trim() === '' ? row.slice(THE_INSET) : row;
 }
 
 /** A screen's rows, margin off and trailing blanks off — what a reader sees on each. */
@@ -436,7 +445,9 @@ describe('the fold follows the window the caller is looking at', () => {
     // lost the lines would not pass. Every one of them fits two hundred columns.
     const page = rowsOf(maximised);
     for (const line of theWordsItPrints()) {
-      expect(page, `not on the page whole: ${renderPlain(line)}`).toContain(renderPlain(line));
+      expect(page, `not on the page whole: ${renderPlain(line)}`).toContain(
+        `\u25cf ${renderPlain(line)}`,
+      );
     }
     // AND THE CASE HAS SOMETHING TO SAY: at least one of those lines is wider than the terminal
     // the session opened at, so it could not have passed before this delivery.
@@ -492,7 +503,7 @@ describe('the fold follows the window the caller is looking at', () => {
     process.chdir(deep);
     const row = standingLine(standing())[0] as Line;
     process.chdir(project);
-    const broken = foldedInto(row, narrow);
+    const broken = foldedInto(row, narrow, 'roll');
     expect(
       broken.length,
       'the row saying where it stands does not fold at the floor',
@@ -980,6 +991,7 @@ describe('one authority over how wide text is, and nothing on the surface counts
       'presentation/items.ts',
       'presentation/plain.ts',
       'presentation/status.ts',
+      'presentation/styled.ts',
       'repl/console.ts',
       'repl/palette.ts',
       'repl/scrolling.ts',

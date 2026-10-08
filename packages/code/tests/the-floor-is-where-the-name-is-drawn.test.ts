@@ -57,7 +57,7 @@ import { renderPlain } from '../src/presentation/plain.js';
 import { renderStyled } from '../src/presentation/styled.js';
 import { THE_FLOOR } from '../src/repl/floor.js';
 import { verbsOffered } from '../src/repl/gate.js';
-import { AFTER_THE_BAR, BEFORE_THE_BAR, insideTheMargin, THE_INSET } from '../src/repl/inset.js';
+import { insideTheMargin, THE_INSET } from '../src/repl/inset.js';
 import { CUT, PICK } from '../src/repl/palette.js';
 import { theShortestScreenFor } from '../src/repl/panel.js';
 import { theSessionsOwnWords, tips } from '../src/repl/session.js';
@@ -452,7 +452,7 @@ describe('the word in the list carries the accent, and the description does not'
 // The margin takes columns of the page and no character of a line
 // ---------------------------------------------------------------------------
 
-describe('the margin before the bar grew, and it eats nothing', () => {
+describe('the margin keeps the width it had with the guide in it, and it eats nothing', () => {
   it('puts the widest thing the page draws on it whole, at the floor', async () => {
     // WHAT THE CALLER ASKED FOR: *the bar should pull back a little into the side margin*. What
     // a margin may never do is cost a line a character — a value a reader cannot check is the
@@ -483,29 +483,31 @@ describe('the margin before the bar grew, and it eats nothing', () => {
         `a row ran past the edge of the window: ${row}`,
       ).toBeLessThanOrEqual(THE_FLOOR.columns);
     }
-    // AND THE BAR CLEARS THE ROW UNDER THE PROMPT, which is WHY the margin grew and the only
-    // thing here that a number written down could not have answered. At two columns the guide
-    // landed on column three and column three is where the hint begins — the hint is an `aside`,
-    // so it sits one indent in — and the page had two different things at one left edge. BOTH
-    // COLUMNS ARE READ OFF THE PAGE: a case that asked the constant would agree with itself at
-    // any value it took (measured: mutating the margin back to two left this file green).
-    const guideAt = screen.rows
-      .map((row) => [...row].indexOf(THE_GUIDE))
-      .find((at) => at >= 0) as number;
-    expect(guideAt, 'no row of the roll carries the guide at all').toBeGreaterThanOrEqual(0);
-    expect(guideAt, 'the guide is not drawn where the margin says').toBe(BEFORE_THE_BAR);
+    // AND THE MARGIN CLEARS THE ROW UNDER THE PROMPT, which is WHY it is as wide as it is and the
+    // only thing here that a number written down could not have answered. At two columns the guide
+    // that used to stand in it landed on column three and column three is where the hint begins —
+    // the hint is an `aside`, so it sits one indent in — and the page had two different things at
+    // one left edge. THE GUIDE IS GONE and the width is not: what begins at the margin is the
+    // roll itself, and it still has to begin clear of the hint's edge. BOTH COLUMNS ARE READ OFF
+    // THE PAGE: a case that asked the constant would agree with itself at any value it took.
+    expect(
+      screen.rows.filter((row) => row.includes(THE_GUIDE)),
+      'a guide is drawn down the margin',
+    ).toEqual([]);
     const hint = renderPlain(tips());
     const hintRow = screen.rows.find((row) => row.includes(hint.trim())) as string;
     expect(hintRow, 'the row under the prompt is not on the page').toBeDefined();
     const hintAt = [...hintRow].findIndex((glyph) => glyph !== ' ');
     expect(hintAt, 'the row under the prompt begins nowhere').toBeGreaterThanOrEqual(0);
+    const rollAt = screen.rows
+      .map((row) => [...row].findIndex((glyph) => glyph !== ' '))
+      .filter((at) => at > 0 && at < THE_INSET + 4);
+    expect(rollAt.length, 'no row of the roll is on the page').toBeGreaterThan(0);
     expect(
-      guideAt,
-      'the guide sits in the same column the row under the prompt begins in',
+      Math.min(...rollAt.filter((at) => at >= THE_INSET)),
+      'the roll does not begin clear of the edge the row under the prompt begins at',
     ).toBeGreaterThan(hintAt);
-    expect(THE_INSET, 'the margin is not the three parts it is made of').toBe(
-      BEFORE_THE_BAR + 1 + AFTER_THE_BAR,
-    );
+    expect(THE_INSET, 'the margin is not six columns').toBe(6);
   }, 240_000);
 });
 
@@ -532,7 +534,7 @@ describe('the four rules this delivery touched hold at every site, found by the 
       for (const [, value] of code.matchAll(/paddingLeft\s*:\s*([A-Za-z0-9_]+)/g)) {
         sites.push(`${path}: ${value}`);
         expect(
-          ['THE_INSET', 'BEFORE_THE_BAR', 'AFTER_THE_BAR'],
+          ['THE_INSET'],
           `a component indents by a number of its own: ${path} (${value})`,
         ).toContain(value);
       }

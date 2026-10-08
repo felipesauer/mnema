@@ -474,6 +474,12 @@ export interface SessionRequest extends Omit<Session, 'identity' | 'render'> {
   readonly interactive: boolean;
   /** Every way this process can stop, so the terminal is given back in all of them. */
   readonly leaving: Leaving;
+  /**
+   * THE CLOCK THE LINE UNDER EACH ANSWER IS MEASURED ON, in milliseconds since the epoch: how long
+   * the answer took and the hour it was done (`console.ts`, `ConsoleRequest.now`). A case hands it
+   * numbers it chose, so the line says exactly those; a session left to itself reads the machine's.
+   */
+  readonly now?: () => number;
 }
 
 export type { AfterLine };
@@ -797,6 +803,7 @@ export async function openSession(request: SessionRequest): Promise<void> {
     complete: completerFor(completionTree(built.program), offered, vocabulary, seen.matching),
     answer: (line) => typedLine(line, session),
     leaving,
+    ...(request.now === undefined ? {} : { now: request.now }),
   });
   land = page.land;
   // AND HOW A LINE BECOMES BYTES, for the same reason the door onto the page is taken from

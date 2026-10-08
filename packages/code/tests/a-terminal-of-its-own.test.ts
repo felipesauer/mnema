@@ -509,6 +509,7 @@ describe('the session writes no history anywhere', () => {
       'seen.ts',
       'session.ts',
       'standing.ts',
+      'turn.ts',
     ]);
     expect(readdirSync(join(SRC, 'repl')).filter((file) => !file.endsWith('.ts'))).toEqual([]);
   });

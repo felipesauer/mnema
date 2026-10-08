@@ -84,6 +84,9 @@ const SRC = new URL('../src', import.meta.url).pathname;
 
 /** What the caller types in front of, as the layout writes it: trimmed at the end. */
 const PROMPT = 'mnema>';
+
+/** The mark a command that was SENT carries on the roll, where the row being typed carries {@link PROMPT}. */
+const SENT = '\u276f';
 /** Ctrl-C, which abandons the row being typed. Spelled as an escape, never typed. */
 const CLEARS_THE_LINE = '\u0003';
 /** Tab, likewise. */
@@ -1441,7 +1444,7 @@ describe('the two keys open one list, and it stands off the row under it', () =>
             // WITH THE PAINT OUT, because what this waits for is the line LANDING rather than
             // the row being typed: an echo is composed and painted (`src/presentation/echo.ts`),
             // so its bytes are not a run on the wire ({@link arrivedUnpainted}).
-            until: arrivedUnpainted(`${PROMPT} ${typed}`),
+            until: arrivedUnpainted(`${SENT} ${typed}`),
             what: 'landed the abandoned line',
           },
           {
@@ -1499,9 +1502,15 @@ describe('the two keys open one list, and it stands off the row under it', () =>
 // The picker, on a real device: the mark moves, Return takes, Escape shuts
 // ---------------------------------------------------------------------------
 
-/** The row of a screen the mark is on, and nothing when no row carries one. */
+/**
+ * The row of a screen the mark is on, and nothing when no row carries one.
+ *
+ * THE MARK IS A COLUMN OF ITS OWN: the glyph and the two spaces that column ends in, before the
+ * word. A command that was SENT begins with the same glyph and ONE space (`presentation/echo.ts`,
+ * `SENT_MARK`), so the glyph alone says nothing about which of the two a row is.
+ */
 function markedOn(screen: Screen): string | undefined {
-  return screen.rows.find((row) => row.trimStart().startsWith(PICK));
+  return screen.rows.find((row) => row.trimStart().startsWith(`${PICK}  `));
 }
 
 /** The word on the marked row — the first column after the mark. */
@@ -1784,7 +1793,7 @@ describe('a list of one, a list of none, and the arrows in both', () => {
           types: `${CLEARS_THE_ROW}xyzzy\r`,
           // AND THIS ONE WAITS FOR THE ECHO TOO: a submitted line clears the row it was typed
           // on, so the only place those words are is the roll, painted.
-          until: arrivedUnpainted(`${PROMPT} xyzzy`),
+          until: arrivedUnpainted(`${SENT} xyzzy`),
           what: 'submitted a line nothing answers to',
         },
         { types: MOVES_UP, until: arrivedUnpainted(`${PROMPT} xyzzy`), what: 'browsed back to it' },
@@ -1840,7 +1849,10 @@ describe('the mark survives what changes around it', () => {
     // on a loaded machine an index reads the page from BEFORE the resize — and the red then says
     // *the resize lost what the caller had picked*, which is an accusation against the product
     // for something the instrument did (`support/screen.ts`, {@link theSettledScreen}).
-    const after = theSettledScreen(ran.bytes, narrower, rows, PICK);
+    // AND BY THE MARK AS THE ACCENT CLOSES IT, which is how the frame carries it: the glyph alone
+    // is also what a command that was sent begins with, and the screen the session leaves holds one.
+    // A sent command's mark is closed after the space inside it, and the pick's before the column.
+    const after = theSettledScreen(ran.bytes, narrower, rows, `${PICK}${ESC}[39m`);
     expect(pickedOn(after), 'the resize lost what the caller had picked').toBe(first);
     fillsTheScreen(after, rows, 'the page after a resize with a pick on it');
   }, 240_000);
