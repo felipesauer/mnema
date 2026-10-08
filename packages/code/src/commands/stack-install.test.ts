@@ -68,8 +68,8 @@ function stack(): string {
 }
 
 /** Plans and writes the stack at `source`, as a person who read the plan would. */
-function install(ctx: StackContext, source: string, target: StackTarget, as?: string) {
-  const read = readStackSource(source, ctx.cwd);
+async function install(ctx: StackContext, source: string, target: StackTarget, as?: string) {
+  const read = await readStackSource(source, ctx.cwd);
   if (!read.ok) return read;
   const plan = planStackInstall(ctx, read, { target, ...(as !== undefined ? { as } : {}) });
   if (!plan.ok) return plan;
@@ -98,9 +98,9 @@ const HOST_FILES = [
 ];
 
 describe('a stack is installed into the folders the host table names', () => {
-  it('writes the skill byte for byte and the agent into every documented folder, and records the adoption', () => {
+  it('writes the skill byte for byte and the agent into every documented folder, and records the adoption', async () => {
     const ctx = project();
-    const result = install(ctx, stack(), { scope: 'public' });
+    const result = await install(ctx, stack(), { scope: 'public' });
     expect(result.ok).toBe(true);
     for (const path of HOST_FILES) expect(existsSync(join(ctx.repo, path))).toBe(true);
     expect(readFileSync(join(ctx.repo, '.claude/skills/hello/SKILL.md'))).toEqual(
@@ -110,7 +110,7 @@ describe('a stack is installed into the folders the host table names', () => {
     expect(kinds(root)).toEqual(['stack.adopted']);
   });
 
-  it('names the hosts that receive nothing of a kind, and lists a hook apart without writing it', () => {
+  it('names the hosts that receive nothing of a kind, and lists a hook apart without writing it', async () => {
     const ctx = project();
     const source = stack();
     mkdirSync(join(source, 'hooks'));
@@ -121,7 +121,7 @@ describe('a stack is installed into the folders the host table names', () => {
     ];
     manifest.brings.hooks = ['check'];
     writeFileSync(join(source, 'stack.json'), JSON.stringify(manifest));
-    const read = readStackSource(source, ctx.cwd);
+    const read = await readStackSource(source, ctx.cwd);
     if (!read.ok) throw new Error(read.message);
     const plan = planStackInstall(ctx, read, { target: { scope: 'public' } });
     if (!plan.ok) throw new Error(plan.message);
@@ -139,47 +139,47 @@ describe('a stack is installed into the folders the host table names', () => {
     expect(plan.files.some((f) => f.path.includes('hooks'))).toBe(false);
   });
 
-  it('writes every file without the execute bit, whatever mode the source gave it', () => {
+  it('writes every file without the execute bit, whatever mode the source gave it', async () => {
     const ctx = project();
     const source = stack();
     mkdirSync(join(source, 'skills/hello/scripts'));
     writeFileSync(join(source, 'skills/hello/scripts/run.sh'), '#!/bin/sh\n');
     chmodSync(join(source, 'skills/hello/scripts/run.sh'), 0o755);
-    expect(install(ctx, source, { scope: 'public' }).ok).toBe(true);
+    expect((await install(ctx, source, { scope: 'public' })).ok).toBe(true);
     const mode = statSync(join(ctx.repo, '.claude/skills/hello/scripts/run.sh')).mode;
     expect(mode & 0o111).toBe(0);
   });
 
-  it('into a folder of the person’s, records nothing', () => {
+  it('into a folder of the person’s, records nothing', async () => {
     const ctx = project();
     const to = join(sandbox, 'free');
-    expect(install(ctx, stack(), { to }).ok).toBe(true);
+    expect((await install(ctx, stack(), { to })).ok).toBe(true);
     expect(existsSync(join(to, '.claude/skills/hello/SKILL.md'))).toBe(true);
     const root = resolveTrees(ctx.repo, ctx.env).projectPublic as string;
     expect(kinds(root)).toEqual([]);
   });
 
-  it('globally, into the home’s folders, recorded in the global tree', () => {
+  it('globally, into the home’s folders, recorded in the global tree', async () => {
     const ctx = project();
-    expect(install(ctx, stack(), { scope: 'global' }).ok).toBe(true);
+    expect((await install(ctx, stack(), { scope: 'global' })).ok).toBe(true);
     expect(existsSync(join(ctx.env.home, '.claude/agents/greeter.md'))).toBe(true);
     expect(kinds(resolveTrees(ctx.repo, ctx.env).global)).toEqual(['stack.adopted']);
   });
 });
 
 describe('the plan writes nothing, and a digest the person did not see writes nothing', () => {
-  it('a plan leaves the disk and the record as they were', () => {
+  it('a plan leaves the disk and the record as they were', async () => {
     const ctx = project();
     const before = filesUnder(ctx.repo).sort();
-    const read = readStackSource(stack(), ctx.cwd);
+    const read = await readStackSource(stack(), ctx.cwd);
     if (!read.ok) throw new Error(read.message);
     expect(planStackInstall(ctx, read, { target: { scope: 'public' } }).ok).toBe(true);
     expect(filesUnder(ctx.repo).sort()).toEqual(before);
   });
 
-  it('refuses a digest that is not the plan’s', () => {
+  it('refuses a digest that is not the plan’s', async () => {
     const ctx = project();
-    const read = readStackSource(stack(), ctx.cwd);
+    const read = await readStackSource(stack(), ctx.cwd);
     if (!read.ok) throw new Error(read.message);
     const plan = planStackInstall(ctx, read, { target: { scope: 'public' } });
     if (!plan.ok) throw new Error(plan.message);
@@ -190,33 +190,33 @@ describe('the plan writes nothing, and a digest the person did not see writes no
 });
 
 describe('what the stack says is held to the record’s forms and to the credential screen', () => {
-  it('refuses a version the record would not admit', () => {
+  it('refuses a version the record would not admit', async () => {
     const ctx = project();
     const source = stack();
     const manifest = JSON.parse(readFileSync(join(source, 'stack.json'), 'utf8'));
     manifest.version = '1.0/../../x';
     writeFileSync(join(source, 'stack.json'), JSON.stringify(manifest));
-    const result = install(ctx, source, { scope: 'public' });
+    const result = await install(ctx, source, { scope: 'public' });
     expect(result.ok ? 'written' : result.code).toBe('STACK_VERSION_REFUSED');
   });
 
-  it('refuses a credential in the description, without repeating it', () => {
+  it('refuses a credential in the description, without repeating it', async () => {
     const ctx = project();
     const source = stack();
     const manifest = JSON.parse(readFileSync(join(source, 'stack.json'), 'utf8'));
     const key = `AKIA${'Q'.repeat(16)}`;
     manifest.description = `uses ${key}`;
     writeFileSync(join(source, 'stack.json'), JSON.stringify(manifest));
-    const result = install(ctx, source, { scope: 'public' });
+    const result = await install(ctx, source, { scope: 'public' });
     expect(result.ok ? 'written' : result.code).toBe('STACK_TEXT_HOLDS_A_SECRET');
     expect(JSON.stringify(result)).not.toContain(key);
   });
 });
 
 describe('a collision is refused, naming both, with --as offered', () => {
-  it('refuses a second stack under a name already installed, and installs it under --as', () => {
+  it('refuses a second stack under a name already installed, and installs it under --as', async () => {
     const ctx = project();
-    expect(install(ctx, stack(), { scope: 'public' }).ok).toBe(true);
+    expect((await install(ctx, stack(), { scope: 'public' })).ok).toBe(true);
     const other = join(sandbox, 'other');
     cpSync(HELLO, other, { recursive: true });
     rmSync(join(other, 'skills'), { recursive: true });
@@ -225,30 +225,30 @@ describe('a collision is refused, naming both, with --as offered', () => {
     manifest.version = '2.0.0';
     manifest.brings = { skills: [], agents: [], hooks: [] };
     writeFileSync(join(other, 'stack.json'), JSON.stringify(manifest));
-    const refused = install(ctx, other, { scope: 'public' });
+    const refused = await install(ctx, other, { scope: 'public' });
     expect(refused.ok ? 'written' : refused.code).toBe('STACK_NAME_TAKEN');
     expect(refused.ok ? '' : refused.message).toMatch(
       /hello-stack@1\.0\.0.*hello-stack@2\.0\.0.*--as/,
     );
-    expect(install(ctx, other, { scope: 'public' }, 'hello-two').ok).toBe(true);
+    expect((await install(ctx, other, { scope: 'public' }, 'hello-two')).ok).toBe(true);
   });
 
-  it('refuses the same bytes twice', () => {
+  it('refuses the same bytes twice', async () => {
     const ctx = project();
-    expect(install(ctx, stack(), { scope: 'public' }).ok).toBe(true);
-    const again = install(ctx, join(sandbox, 'source', 'hello-stack'), { scope: 'public' });
+    expect((await install(ctx, stack(), { scope: 'public' })).ok).toBe(true);
+    const again = await install(ctx, join(sandbox, 'source', 'hello-stack'), { scope: 'public' });
     expect(again.ok ? 'written' : again.code).toBe('STACK_ALREADY_INSTALLED');
   });
 
-  it('refuses a file another stack wrote, naming that stack', () => {
+  it('refuses a file another stack wrote, naming that stack', async () => {
     const ctx = project();
-    expect(install(ctx, stack(), { scope: 'public' }).ok).toBe(true);
+    expect((await install(ctx, stack(), { scope: 'public' })).ok).toBe(true);
     const other = join(sandbox, 'other');
     cpSync(HELLO, other, { recursive: true });
     const manifest = JSON.parse(readFileSync(join(other, 'stack.json'), 'utf8'));
     manifest.name = 'other-stack';
     writeFileSync(join(other, 'stack.json'), JSON.stringify(manifest));
-    const result = install(ctx, other, { scope: 'public' });
+    const result = await install(ctx, other, { scope: 'public' });
     expect(result.ok ? 'written' : result.code).toBe('STACK_DESTINATION_TAKEN');
     expect(!result.ok && 'lines' in result ? result.lines : []).toContain(
       '.claude/agents/greeter.md belongs to the stack hello-stack@1.0.0 (' +
@@ -258,18 +258,20 @@ describe('a collision is refused, naming both, with --as offered', () => {
 });
 
 describe('the disk refuses every hostile entry, and nothing is written', () => {
-  const refusedAt = (setup: (ctx: StackContext & { repo: string }) => void): string => {
+  const refusedAt = async (
+    setup: (ctx: StackContext & { repo: string }) => void,
+  ): Promise<string> => {
     const ctx = project();
     setup(ctx);
     const before = filesUnder(ctx.repo).sort();
-    const result = install(ctx, stack(), { scope: 'public' });
+    const result = await install(ctx, stack(), { scope: 'public' });
     expect(filesUnder(ctx.repo).sort()).toEqual(before);
     return result.ok ? 'written' : result.code;
   };
 
-  it('a destination folder that is a symbolic link', () => {
+  it('a destination folder that is a symbolic link', async () => {
     expect(
-      refusedAt(({ repo }) => {
+      await refusedAt(({ repo }) => {
         mkdirSync(join(sandbox, 'elsewhere'));
         symlinkSync(join(sandbox, 'elsewhere'), join(repo, '.claude'));
       }),
@@ -277,35 +279,35 @@ describe('the disk refuses every hostile entry, and nothing is written', () => {
     expect(readdirSync(join(sandbox, 'elsewhere'))).toEqual([]);
   });
 
-  it('a destination file that is a symbolic link', () => {
+  it('a destination file that is a symbolic link', async () => {
     expect(
-      refusedAt(({ repo }) => {
+      await refusedAt(({ repo }) => {
         mkdirSync(join(repo, '.claude/agents'), { recursive: true });
         symlinkSync('/etc/hostname', join(repo, '.claude/agents/greeter.md'));
       }),
     ).toBe('STACK_DESTINATION_TAKEN');
   });
 
-  it('a destination that is already a folder', () => {
+  it('a destination that is already a folder', async () => {
     expect(
-      refusedAt(({ repo }) => {
+      await refusedAt(({ repo }) => {
         mkdirSync(join(repo, '.claude/agents/greeter.md'), { recursive: true });
       }),
     ).toBe('STACK_DESTINATION_TAKEN');
   });
 
-  it('a file of the person’s in the place', () => {
+  it('a file of the person’s in the place', async () => {
     expect(
-      refusedAt(({ repo }) => {
+      await refusedAt(({ repo }) => {
         mkdirSync(join(repo, '.qwen/skills/hello'), { recursive: true });
         writeFileSync(join(repo, '.qwen/skills/hello/SKILL.md'), 'mine');
       }),
     ).toBe('STACK_DESTINATION_TAKEN');
   });
 
-  it('a file where a folder has to be', () => {
+  it('a file where a folder has to be', async () => {
     expect(
-      refusedAt(({ repo }) => {
+      await refusedAt(({ repo }) => {
         writeFileSync(join(repo, '.factory'), 'a file');
       }),
     ).toBe('STACK_DESTINATION_TAKEN');
@@ -313,39 +315,41 @@ describe('the disk refuses every hostile entry, and nothing is written', () => {
 });
 
 describe('the source refuses every hostile entry', () => {
-  const sourceRefusal = (change: (source: string) => void): string => {
+  const sourceRefusal = async (change: (source: string) => void): Promise<string> => {
     const ctx = project();
     const source = stack();
     change(source);
-    const result = install(ctx, source, { scope: 'public' });
+    const result = await install(ctx, source, { scope: 'public' });
     expect(existsSync(join(ctx.repo, '.claude'))).toBe(false);
     return result.ok ? 'written' : result.code;
   };
 
-  it('a symbolic link inside the stack', () => {
-    expect(sourceRefusal((s) => symlinkSync('/etc/passwd', join(s, 'skills/hello/notes.md')))).toBe(
-      'STACK_INVALID',
-    );
+  it('a symbolic link inside the stack', async () => {
+    expect(
+      await sourceRefusal((s) => symlinkSync('/etc/passwd', join(s, 'skills/hello/notes.md'))),
+    ).toBe('STACK_INVALID');
   });
 
-  it('the stack’s folder itself a symbolic link', () => {
+  it('the stack’s folder itself a symbolic link', async () => {
     const ctx = project();
     const link = join(sandbox, 'linked');
     symlinkSync(stack(), link);
-    const read = readStackSource(link, ctx.cwd);
+    const read = await readStackSource(link, ctx.cwd);
     expect(read.ok ? 'read' : read.code).toBe('STACK_SOURCE_REFUSED');
   });
 
-  it('a name that is not UTF-8', () => {
+  it('a name that is not UTF-8', async () => {
     expect(
-      sourceRefusal((s) => writeFileSync(Buffer.from(`${s}/skills/hello/\xff.md`, 'latin1'), 'x')),
+      await sourceRefusal((s) =>
+        writeFileSync(Buffer.from(`${s}/skills/hello/\xff.md`, 'latin1'), 'x'),
+      ),
     ).toBe('STACK_INVALID');
   });
 
   it.each([
     ['climbs out', '../escape.md'],
     ['is absolute', '/tmp/escape.md'],
-  ])('an archive entry that %s', (_, name) => {
+  ])('an archive entry that %s', async (_, name) => {
     const ctx = project();
     const files = ['stack.json', 'LICENSE', 'skills/hello/SKILL.md', 'agents/greeter.md'];
     const tar = join(sandbox, 'hostile.tar');
@@ -356,7 +360,7 @@ describe('the source refuses every hostile entry', () => {
         { name, body: Buffer.from('x') },
       ]),
     );
-    const result = install(ctx, tar, { scope: 'public' });
+    const result = await install(ctx, tar, { scope: 'public' });
     expect(result.ok ? 'written' : result.code).toBe('STACK_INVALID');
     expect(existsSync(join(ctx.repo, '.claude'))).toBe(false);
   });
@@ -387,33 +391,33 @@ function tarOf(entries: readonly { name: string; body: Buffer }[]): Buffer {
 }
 
 describe('the scope decides which side of a commit the files are on', () => {
-  it('a private stack is refused while git would stage it, and lands once excluded', () => {
+  it('a private stack is refused while git would stage it, and lands once excluded', async () => {
     const ctx = project();
-    const first = install(ctx, stack(), { scope: 'private' });
+    const first = await install(ctx, stack(), { scope: 'private' });
     expect(first.ok ? 'written' : first.code).toBe('STACK_WOULD_BE_COMMITTED');
     const lines = !first.ok && 'lines' in first ? (first.lines ?? []) : [];
     expect(lines).toContain('/.claude/skills/hello/');
     appendFileSync(join(ctx.repo, '.git/info/exclude'), `${lines.join('\n')}\n`);
-    expect(install(ctx, join(sandbox, 'source', 'hello-stack'), { scope: 'private' }).ok).toBe(
-      true,
-    );
+    expect(
+      (await install(ctx, join(sandbox, 'source', 'hello-stack'), { scope: 'private' })).ok,
+    ).toBe(true);
     const trees = resolveTrees(ctx.repo, ctx.env);
     expect(kinds(trees.projectPrivate as string)).toEqual(['stack.adopted']);
     expect(kinds(trees.projectPublic as string)).toEqual([]);
   });
 
-  it('a public stack is refused where git ignores the files', () => {
+  it('a public stack is refused where git ignores the files', async () => {
     const ctx = project();
     writeFileSync(join(ctx.repo, '.gitignore'), '.qwen/\n');
-    const result = install(ctx, stack(), { scope: 'public' });
+    const result = await install(ctx, stack(), { scope: 'public' });
     expect(result.ok ? 'written' : result.code).toBe('STACK_NOT_COMMITTABLE');
   });
 });
 
 describe('removing keeps what the person changed', () => {
-  it('deletes the files still as written, keeps a changed one, and records the removal', () => {
+  it('deletes the files still as written, keeps a changed one, and records the removal', async () => {
     const ctx = project();
-    expect(install(ctx, stack(), { scope: 'public' }).ok).toBe(true);
+    expect((await install(ctx, stack(), { scope: 'public' })).ok).toBe(true);
     writeFileSync(join(ctx.repo, '.qwen/skills/hello/SKILL.md'), 'edited by the person');
     const removed = removeInstalledStack(ctx, { name: 'hello-stack', target: { scope: 'public' } });
     if (!removed.ok) throw new Error(removed.message);
@@ -427,9 +431,9 @@ describe('removing keeps what the person changed', () => {
     expect(kinds(root)).toEqual(['stack.adopted', 'stack.removed']);
   });
 
-  it('a dry run deletes nothing and records nothing', () => {
+  it('a dry run deletes nothing and records nothing', async () => {
     const ctx = project();
-    expect(install(ctx, stack(), { scope: 'public' }).ok).toBe(true);
+    expect((await install(ctx, stack(), { scope: 'public' })).ok).toBe(true);
     const removed = removeInstalledStack(ctx, {
       name: 'hello-stack',
       target: { scope: 'public' },
@@ -445,9 +449,9 @@ describe('removing keeps what the person changed', () => {
   it.each([
     ['outside the folders a host reads', 'precious.txt'],
     ['out of them by climbing', '.claude/skills/../../precious.txt'],
-  ])('refuses a receipt that points %s, even with the right bytes', (_, path) => {
+  ])('refuses a receipt that points %s, even with the right bytes', async (_, path) => {
     const ctx = project();
-    expect(install(ctx, stack(), { scope: 'public' }).ok).toBe(true);
+    expect((await install(ctx, stack(), { scope: 'public' })).ok).toBe(true);
     writeFileSync(join(ctx.repo, 'precious.txt'), 'keep me');
     const receiptPath = join(
       resolveTrees(ctx.repo, ctx.env).projectPublic as string,

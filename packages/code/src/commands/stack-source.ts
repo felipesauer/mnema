@@ -26,10 +26,11 @@
  * dropping it would turn a company's own certificate into a refusal.
  */
 
-import { spawnSync } from 'node:child_process';
+import { execFile } from 'node:child_process';
 import { lstatSync, mkdtempSync, readFileSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { isAbsolute, join, resolve } from 'node:path';
+import { promisify } from 'node:util';
 import { type Problem, readStackArchive, readStackFiles, type StackFile } from '@mnema/stacks';
 
 /** A stack read from its source. */
@@ -90,7 +91,10 @@ const refused = (message: string): SourceRefused => ({
 });
 
 /** Reads a git repository over HTTPS, fenced as the module comment says. */
-function readGit(address: string, base: NodeJS.ProcessEnv): SourceRead | SourceRefused {
+async function readGit(
+  address: string,
+  base: NodeJS.ProcessEnv,
+): Promise<SourceRead | SourceRefused> {
   let url: URL;
   try {
     url = new URL(address);
@@ -110,27 +114,39 @@ function readGit(address: string, base: NodeJS.ProcessEnv): SourceRead | SourceR
   const into = mkdtempSync(join(tmpdir(), 'mnema-stack-'));
   try {
     const env = fencedEnv(base);
-    const clone = spawnSync(
-      'git',
-      [...FENCE, 'clone', '--quiet', '--depth', '1', '--no-tags', '--', url.href, join(into, 's')],
-      { env, timeout: CLONE_BUDGET_MS, encoding: 'utf8', stdio: ['ignore', 'pipe', 'pipe'] },
-    );
-    if (clone.error !== undefined || clone.status !== 0) {
-      const said = (clone.stderr ?? '').trim().split('\n').at(-1) ?? '';
+    const run = promisify(execFile);
+    try {
+      await run(
+        'git',
+        [
+          ...FENCE,
+          'clone',
+          '--quiet',
+          '--depth',
+          '1',
+          '--no-tags',
+          '--',
+          url.href,
+          join(into, 's'),
+        ],
+        { env, timeout: CLONE_BUDGET_MS },
+      );
+    } catch (error) {
+      const said = String((error as { stderr?: unknown }).stderr ?? '')
+        .trim()
+        .split('\n')
+        .at(-1);
       return refused(
-        `git could not fetch ${url.host}${url.pathname}${said === '' ? '' : ` (${said.replace(/^fatal: /, '')})`}. ` +
+        `git could not fetch ${url.host}${url.pathname}${said ? ` (${said.replace(/^fatal: /, '')})` : ''}. ` +
           'A redirect is not followed, to any host. Nothing was written.',
       );
     }
-    const head = spawnSync('git', [...FENCE, '-C', join(into, 's'), 'rev-parse', 'HEAD'], {
-      env,
-      encoding: 'utf8',
-    });
+    const head = await run('git', [...FENCE, '-C', join(into, 's'), 'rev-parse', 'HEAD'], { env });
     const read = readStackFiles(join(into, 's'));
     return {
       ok: true,
       ...read,
-      shown: `git ${url.host}${url.pathname} at ${(head.stdout ?? '').trim() || 'an unknown commit'}`,
+      shown: `git ${url.host}${url.pathname} at ${head.stdout.trim()}`,
     };
   } finally {
     rmSync(into, { recursive: true, force: true });
@@ -141,11 +157,11 @@ function readGit(address: string, base: NodeJS.ProcessEnv): SourceRead | SourceR
  * Reads the stack `source` names: an `https://` address is a git repository, and anything else is
  * a path, relative to `cwd` — a folder, or a tar archive (gzipped or not).
  */
-export function readStackSource(
+export async function readStackSource(
   source: string,
   cwd: string,
   env: NodeJS.ProcessEnv = process.env,
-): SourceRead | SourceRefused {
+): Promise<SourceRead | SourceRefused> {
   if (/^[A-Za-z][A-Za-z0-9+.-]*:\/\//.test(source)) return readGit(source, env);
   const path = isAbsolute(source) ? source : resolve(cwd, source);
   let stat: ReturnType<typeof lstatSync>;
