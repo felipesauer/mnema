@@ -148,7 +148,7 @@ function validateAndRebuild(event: CatalogEvent): CatalogEvent {
  * nothing else. Typed loosely on purpose — the shape is the schema's, and naming
  * the fields a second time here is the second list this delivery removed.
  */
-type RebuiltEnvelope = Record<string, string | number>;
+type RebuiltEnvelope = Record<string, string | number | readonly string[]>;
 
 /**
  * A rebuilt payload value: scalars, the valued `null` of a birth, or nested fields.
@@ -213,6 +213,9 @@ function applyRule(
     case 'instant':
       requireIso8601(kind, field, value);
       return value as string;
+    case 'hashes?':
+      if (value === undefined) return ABSENT;
+      return requireHashes(kind, field, value);
     default:
       // Exhaustiveness: a rule added to the vocabulary without an arm fails the build,
       // which is what keeps the published vocabulary and this reader the same size.
@@ -231,7 +234,7 @@ function validateEnvelope(event: CatalogEvent): RebuiltEnvelope {
   const rebuilt: RebuiltEnvelope = {};
   for (const [field, rule] of Object.entries(ENVELOPE_SCHEMA)) {
     const value = applyRule(event.kind, field, rule, raw[field]);
-    if (value !== ABSENT) rebuilt[field] = value as string | number;
+    if (value !== ABSENT) rebuilt[field] = value as string | number | readonly string[];
   }
   return rebuilt;
 }
@@ -295,6 +298,33 @@ function requireStringArray(kind: string, field: string, value: unknown): string
   return value.map((item, i) => {
     if (typeof item !== 'string' || item.length === 0) {
       throw new EventParseError(`event "${kind}" needs a non-empty string at ${field}[${i}]`);
+    }
+    return item;
+  });
+}
+
+/** An entry hash as the chain spells one: 64 lower-case hex characters. */
+const ENTRY_HASH = /^[0-9a-f]{64}$/;
+
+/**
+ * Requires the `hashes?` shape: a non-empty array of entry hashes in strictly ascending
+ * order. Strictly, because a repeated hash is a second spelling of the same set, and so
+ * is any other order: the array's order is part of its canonical bytes.
+ */
+function requireHashes(kind: string, field: string, value: unknown): string[] {
+  if (!Array.isArray(value) || value.length === 0) {
+    throw new EventParseError(`event "${kind}" needs a non-empty array at ${field}`);
+  }
+  return value.map((item, i) => {
+    if (typeof item !== 'string' || !ENTRY_HASH.test(item)) {
+      throw new EventParseError(
+        `event "${kind}" needs an entry hash (64 lower-case hex characters) at ${field}[${i}]`,
+      );
+    }
+    if (i > 0 && !((value[i - 1] as string) < item)) {
+      throw new EventParseError(
+        `event "${kind}" needs ${field} in ascending order with no repetition, at ${field}[${i}]`,
+      );
     }
     return item;
   });

@@ -835,6 +835,26 @@ const CLASSIFIED: Readonly<Record<string, { verdict: Verdict; why: string }>> = 
       verdict: 'collapsed',
       why: 'the identity a stored retirement names as its signer',
     },
+  '@mnema/chain chain/verify.ts «the event at seq {} cites {}…, an entry this record does » seq #1':
+    {
+      verdict: 'minted',
+      why: 'a stored seq, which the catalog requires to be a whole number',
+    },
+  '@mnema/chain chain/verify.ts «the event at seq {} cites {}…, an entry this record does » oneLine(hash.slice(0, 12)) #1':
+    {
+      verdict: 'collapsed',
+      why: 'the head of a hash a stored citation names; the rule `hashes?` makes it hex, and it is collapsed anyway',
+    },
+  '@mnema/chain chain/verify.ts «{} event(s) stamped before an entry they cite, by up to » events #1':
+    {
+      verdict: 'minted',
+      why: 'a count the fold kept, of events stamped before what they cite',
+    },
+  '@mnema/chain chain/verify.ts «{} s — the clock of its writer ran behind what it had read; » (behindByMs / 1000).toFixed(3) #1':
+    {
+      verdict: 'minted',
+      why: 'a number of seconds the fold computed from two stored instants',
+    },
   '@mnema/chain chain/enrollment.ts «{} is signed by {}, which is not enrolled as a checker at this point» event.kind #1':
     {
       verdict: 'minted',
@@ -1635,6 +1655,10 @@ const NOT_A_SENTENCE: Readonly<Record<string, string>> = {
     'another clause of that same table, and a count on the same terms',
   '@mnema/chain chain/verify.ts «{} retired checker key(s) whose earlier check results are no longer vouched for (see census — informational, not a break)» count':
     'another clause of that same table, and a count on the same terms',
+  '@mnema/chain chain/verify.ts «{} citation(s) of an entry this record does not hold, ignored in the order (see census — informational, not a break)» count':
+    'another clause of that same table, and a count on the same terms',
+  '@mnema/chain chain/verify.ts «{} tail(s) whose clock ran behind what it had read (see census — informational, not a break)» count':
+    'another clause of that same table, and a count on the same terms',
   '@mnema/chain chain/verify.ts «{}/» layout.root':
     'the prefix `withinChain` STRIPS — what makes the locus a path inside the chain rather ' +
     'than wherever this clone sits. It is never printed.',
@@ -1660,8 +1684,8 @@ describe('every value the domain puts in a sentence is classified', () => {
     // are equal. The scale is stated, and so is what the HANDOFF said — twenty-three
     // sites, twelve in `core` and eleven in `chain` — because it counted sentences
     // written at a `message:` or a `detail:` directly, and a value is not a sentence.
-    expect(SITES.length).toBe(210);
-    expect(FOUND[0]?.sites.length).toBe(70);
+    expect(SITES.length).toBe(214);
+    expect(FOUND[0]?.sites.length).toBe(74);
     expect(FOUND[1]?.sites.length).toBe(140);
     expect(FOUND.flatMap((layer) => layer.wording).length).toBeGreaterThan(15);
   });
@@ -1712,11 +1736,11 @@ describe('every value the domain puts in a sentence is classified', () => {
     // No arm of the case above may be empty, or that much of it is vacuous.
     const verdicts = Object.values(CLASSIFIED).map((said) => said.verdict);
     const count = (verdict: Verdict): number => verdicts.filter((said) => said === verdict).length;
-    expect(count('collapsed')).toBe(135);
-    expect(count('minted')).toBe(53);
+    expect(count('collapsed')).toBe(136);
+    expect(count('minted')).toBe(56);
     expect(count('composed')).toBe(22);
     expect(SITES.filter((site) => new RegExp(`\\b${DOOR}\\b`).test(site.expression))).toHaveLength(
-      135,
+      136,
     );
   });
 

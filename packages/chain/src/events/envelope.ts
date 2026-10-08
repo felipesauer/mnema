@@ -62,4 +62,16 @@ export interface Envelope {
   readonly run?: string;
   /** Id of the primary entity this fact moves. */
   readonly subject: string;
+  /**
+   * The entry hashes of the heads of OTHER tails that the writer had read when it wrote
+   * this, and that its own tail had not cited yet — ascending, without repetition, and
+   * absent rather than empty when there is nothing new to cite.
+   *
+   * It is what lets a reader of many tails put this event after what it was written on
+   * top of, whatever the two clocks said (FORMAT.md, "Reading many tails"). It is in the
+   * envelope, and not in the link, because the link is protected by the entry hash alone,
+   * which takes no key: a citation there could be swapped by whoever can write the
+   * repository, even under a checkpoint. Here it is part of the content a checkpoint signs.
+   */
+  readonly after?: readonly string[];
 }

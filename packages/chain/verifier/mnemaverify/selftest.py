@@ -389,6 +389,7 @@ def _declarations(report: Report) -> None:
         "version": (1, 0),
         "kind": ("memory.captured", ""),
         "instant": ("2026-07-21T00:00:00.000Z", "2026-07-21T00:00:00Z"),
+        "hashes?": (["a" * 64, "b" * 64], ["b" * 64, "a" * 64]),
     }
     unexercised = sorted(schema.KNOWN_RULES - set(cases))
     if unexercised:

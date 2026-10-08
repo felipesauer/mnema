@@ -890,6 +890,25 @@ def _check_enrolment(
     if total == 0:
         return None
     resolution = enrolment.resolve(entries_by_tail, covered_by_tail, ring)
+    # "Reading many tails": what the order made of the citations, said and never judged.
+    for tail, seq, cited in resolution.not_held:
+        report.note(
+            "6.2",
+            f"the event cites {cited[:12]}..., an entry this record does not hold - ignored in "
+            "the order, which places the event as if it cited nothing",
+            f"{tail[:20]}... seq {seq}",
+        )
+    behind_by_tail: dict[str, list[int]] = {}
+    for tail, _seq, gap in resolution.behind:
+        behind_by_tail.setdefault(tail, []).append(gap)
+    for tail, gaps in behind_by_tail.items():
+        report.note(
+            "6.2",
+            f"{len(gaps)} event(s) stamped before an entry they cite: the writer's clock ran "
+            f"behind what it had read, by up to {max(gaps) / 1000:.3f} s - the order puts each "
+            "after what it cites",
+            f"{tail[:20]}...",
+        )
     issues = resolution.issues
     for issue in issues:
         report.fail("6.2", issue.detail, f"{issue.tail[:20]}... seq {issue.seq}", "G21")

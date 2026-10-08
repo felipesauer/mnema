@@ -134,12 +134,24 @@ export function writeMeta(db: SqliteDatabase, meta: CacheMeta): void {
 }
 
 function encodeFrontier(frontier: ChainFrontier): string {
-  return JSON.stringify({ events: frontier.events, tails: [...frontier.tails] });
+  return JSON.stringify({
+    events: frontier.events,
+    tails: [...frontier.tails],
+    unresolved: frontier.unresolved,
+  });
 }
 
 function decodeFrontier(stored: string): ChainFrontier {
-  const parsed = JSON.parse(stored) as { events: number; tails: [string, TailReach][] };
-  return { events: parsed.events, tails: new Map(parsed.tails) };
+  const parsed = JSON.parse(stored) as {
+    events: number;
+    tails: [string, TailReach][];
+    unresolved?: string[];
+  };
+  return {
+    events: parsed.events,
+    tails: new Map(parsed.tails),
+    unresolved: parsed.unresolved ?? [],
+  };
 }
 
 /**

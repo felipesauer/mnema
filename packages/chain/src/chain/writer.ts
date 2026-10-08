@@ -62,6 +62,7 @@ import {
   serializeCheckpoint,
   signCheckpoint,
 } from './checkpoint.js';
+import { type Cited, HeadsToCite } from './cited-heads.js';
 import { appendDurably } from './durable.js';
 import { type Entry, sealEntry, serializeEntry } from './entry.js';
 import type { WrittenEvent } from './hash.js';
@@ -112,6 +113,12 @@ export interface WriterOptions {
   readonly maxSegmentBytes?: number;
   /** The ceiling above; see {@link DEFAULT_MAX_UNSIGNED_EVENTS}. */
   readonly maxUnsignedEvents?: number;
+  /**
+   * Whether an append cites, in the envelope's `after`, the heads of the other tails of the
+   * record that this tail has not cited yet ({@link HeadsToCite}). The product's writes do;
+   * left out, the writer writes exactly the event it was handed.
+   */
+  readonly citeHeads?: boolean;
 }
 
 /**
@@ -203,6 +210,8 @@ export class ChainWriter {
 
   private readonly maxSegmentBytes: number;
   private readonly maxUnsignedEvents: number;
+  /** What an append cites, when this writer cites at all. */
+  private readonly heads: HeadsToCite | undefined;
 
   private readonly tailId: string;
 
@@ -216,6 +225,7 @@ export class ChainWriter {
     this.maxSegmentBytes = options.maxSegmentBytes ?? DEFAULT_MAX_SEGMENT_BYTES;
     this.maxUnsignedEvents = options.maxUnsignedEvents ?? DEFAULT_MAX_UNSIGNED_EVENTS;
     this.tailId = `${keyPair.fingerprint}-${installationId}`;
+    this.heads = options.citeHeads ? new HeadsToCite(layout, this.tailId, upcasters) : undefined;
     // NOTHING IS WRITTEN HERE. Both the recovery and the birth happen in the first act,
     // under the tail's lock.
     //
@@ -502,7 +512,10 @@ export class ChainWriter {
     return this.underTailLock(() => this.appendLocked(event));
   }
 
-  private appendLocked(event: CatalogEvent): Entry {
+  private appendLocked(handed: CatalogEvent): Entry {
+    // The citations are read under the lock, so the heads are the ones on disk as this lands.
+    const cited = this.cite(handed);
+    const event = cited.event;
     refuseUnreadable(event);
     this.refuseUnprovenWaiver(event);
     this.ensureBorn();
@@ -527,6 +540,7 @@ export class ChainWriter {
     // not leave behind an event that a later checkpoint would sign and no reader
     // could ever find.
     this.pending.push(entry.written);
+    cited.remember();
 
     this.capUnsignedWindow();
     return entry;
@@ -559,7 +573,10 @@ export class ChainWriter {
     return this.underTailLock(() => this.appendAllLocked(events));
   }
 
-  private appendAllLocked(events: readonly CatalogEvent[]): Entry[] {
+  private appendAllLocked(handed: readonly CatalogEvent[]): Entry[] {
+    // The batch is one act: its first event cites, and the rest follow it by `seq`.
+    const cited = this.cite(handed[0] as CatalogEvent);
+    const events = [cited.event, ...handed.slice(1)];
     for (const event of events) {
       refuseUnreadable(event);
       this.refuseUnprovenWaiver(event);
@@ -589,9 +606,15 @@ export class ChainWriter {
     this.segmentBytes += Buffer.byteLength(lines, 'utf-8');
     // Same rule as the single append: buffered only after the write landed.
     for (const entry of entries) this.pending.push(entry.written);
+    cited.remember();
 
     this.capUnsignedWindow();
     return entries;
+  }
+
+  /** `event` as this writer writes it: citing what it read, when it cites ({@link HeadsToCite}). */
+  private cite(event: CatalogEvent): Cited {
+    return this.heads?.cite(event) ?? { event, remember: () => undefined };
   }
 
   /**

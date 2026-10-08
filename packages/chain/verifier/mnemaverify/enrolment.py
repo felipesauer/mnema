@@ -46,13 +46,14 @@ signed removal. A first enrolment restores nothing and is not gated.
 
 WHY THE FOLD RUNS OVER EVERY TAIL AT ONCE: a key enrolled on one machine authorizes events
 on another, so the order is the merge the document specifies - `seq` within a tail, which
-the hash chain proves and which nothing may override, and the smallest `at` across tails,
-ties broken by tail id ascending.
+the hash chain proves and which nothing may override, and across tails the smallest `at`
+among the heads whose citations (`after`) have been taken, ties broken by tail id ascending.
 """
 
 from __future__ import annotations
 
 import hashlib
+from datetime import datetime, timezone
 from typing import Any, NamedTuple
 
 from .ed25519 import verify as ed25519_verify
@@ -91,28 +92,115 @@ class Resolution(NamedTuple):
     members: dict[str, set[str]]
     # Section 6.5: the keys a COVERED backup.declared names, each with its anchor.
     backups: dict[str, str]
+    # "Reading many tails": (tail, seq, hash) of every citation of an entry the record lacks.
+    not_held: list[tuple[str, int, str]]
+    # (tail, seq, milliseconds) of every event stamped before an entry it cites.
+    behind: list[tuple[str, int, int]]
 
 
-def _merged(entries_by_tail: dict[str, list[Entry]]) -> list[tuple[str, Entry]]:
-    """Section 6.2's order: `seq` within a tail, smallest `at` across tails, then tail id."""
-    cursors = {tail: 0 for tail, entries in entries_by_tail.items() if entries}
-    merged: list[tuple[str, Entry]] = []
-    while cursors:
+def _merged(entries_by_tail: dict[str, list[Entry]]) -> Merged:
+    """Section 6.2's order, "Reading many tails" in full: `seq` within a tail; across tails the
+    smallest `at` among the heads whose citations (`after`) have all been taken, then tail id.
+
+    A citation resolves among the record's own entries; one naming a hash the record does not
+    hold is ignored and returned. If no head is ready - a cycle, which takes a SHA-256
+    collision - the smallest `at` among all heads goes anyway, so the order is total.
+    """
+    tails = sorted(tail for tail, entries in entries_by_tail.items() if entries)
+    cited = {
+        hash_
+        for tail in tails
+        for entry in entries_by_tail[tail]
+        for hash_ in _after(entry)
+    }
+    where: dict[str, list[tuple[str, int]]] = {}
+    if cited:
+        for tail in tails:
+            for position, entry in enumerate(entries_by_tail[tail]):
+                if entry.stored_hash in cited:
+                    where.setdefault(entry.stored_hash, []).append((tail, position))
+    waits: dict[tuple[str, int], list[tuple[str, int]]] = {}
+    not_held: list[tuple[str, int, str]] = []
+    held: list[tuple[str, int, str, int]] = []
+    for tail in tails:
+        for position, entry in enumerate(entries_by_tail[tail]):
+            for hash_ in _after(entry):
+                found = where.get(hash_)
+                if found is None:
+                    not_held.append((tail, entry.seq, hash_))
+                    continue
+                for cited_at in found:
+                    waits.setdefault((tail, position), []).append(cited_at)
+                    held.append((tail, position, cited_at[0], cited_at[1]))
+    cursors = {tail: 0 for tail in tails}
+
+    def ready(tail: str) -> bool:
+        return all(
+            cursors.get(other, len(entries_by_tail[other])) > position
+            for other, position in waits.get((tail, cursors[tail]), [])
+        )
+
+    def first(candidates: list[str]) -> str | None:
         chosen: str | None = None
-        for tail in sorted(cursors):
-            entry = entries_by_tail[tail][cursors[tail]]
-            if chosen is None:
+        for tail in candidates:  # already in tail-id order, so a tie keeps the smaller id
+            if chosen is None or _at(entries_by_tail[tail][cursors[tail]]) < _at(
+                entries_by_tail[chosen][cursors[chosen]]
+            ):
                 chosen = tail
-                continue
-            head = entries_by_tail[chosen][cursors[chosen]]
-            if _at(entry) < _at(head):
-                chosen = tail
+        return chosen
+
+    merged: list[tuple[str, Entry]] = []
+    forced = 0
+    while cursors:
+        live = sorted(cursors)
+        chosen = first([tail for tail in live if ready(tail)])
+        if chosen is None:
+            chosen = first(live)
+            forced += 1
         assert chosen is not None  # noqa: S101 - the loop condition guarantees it
         merged.append((chosen, entries_by_tail[chosen][cursors[chosen]]))
         cursors[chosen] += 1
         if cursors[chosen] >= len(entries_by_tail[chosen]):
             del cursors[chosen]
-    return merged
+
+    behind: dict[tuple[str, int], int] = {}
+    for tail, position, cited_tail, cited_position in held:
+        citing = entries_by_tail[tail][position]
+        cited_ms = _millis(_at(entries_by_tail[cited_tail][cited_position]))
+        citing_ms = _millis(_at(citing))
+        if cited_ms is None or citing_ms is None:
+            continue
+        gap = cited_ms - citing_ms
+        if gap > 0:
+            key = (tail, citing.seq)
+            behind[key] = max(gap, behind.get(key, 0))
+    return Merged(merged, not_held, [(t, s, g) for (t, s), g in behind.items()], forced)
+
+
+class Merged(NamedTuple):
+    """The order, and what it made of the citations: ignored ones, and clocks behind."""
+
+    order: list[tuple[str, Entry]]
+    # (tail, seq, hash) of every citation of an entry the record does not hold.
+    not_held: list[tuple[str, int, str]]
+    # (tail, seq, milliseconds) of every event stamped before an entry it cites.
+    behind: list[tuple[str, int, int]]
+    forced: int
+
+
+def _after(entry: Entry) -> list[str]:
+    value = entry.event.get("after")
+    return [item for item in value if isinstance(item, str)] if isinstance(value, list) else []
+
+
+def _millis(at: str) -> int | None:
+    """An instant in section 4.1's one spelling, as milliseconds since the epoch."""
+    try:
+        moment = datetime.strptime(at, "%Y-%m-%dT%H:%M:%S.%fZ").replace(tzinfo=timezone.utc)
+    except ValueError:
+        return None
+    since = moment - datetime(1970, 1, 1, tzinfo=timezone.utc)
+    return since.days * 86_400_000 + since.seconds * 1000 + since.microseconds // 1000
 
 
 def _at(entry: Entry) -> str:
@@ -160,7 +248,8 @@ def resolve(
             covered_revoked.discard(token)
         keys_of(anchor).add(fp)
 
-    for tail, entry in _merged(entries_by_tail):
+    merged = _merged(entries_by_tail)
+    for tail, entry in merged.order:
         event = entry.event
         seq = entry.seq
         kind = event.get("kind")
@@ -329,7 +418,7 @@ def resolve(
                     f"{str(who)[:20]}... at this point",
                 )
             )
-    return Resolution(issues, valid, backups)
+    return Resolution(issues, valid, backups, merged.not_held, merged.behind)
 
 
 def _reverse_signature_ok(

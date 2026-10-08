@@ -33,6 +33,7 @@ afterEach(() => {
 function frontierOver(segments: readonly string[]): ChainFrontier {
   return {
     events: 12,
+    unresolved: [],
     tails: new Map([
       [
         'a-tail',
