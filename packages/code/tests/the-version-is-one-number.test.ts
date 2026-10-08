@@ -84,7 +84,7 @@ const DECLARING: readonly Declared[] = TRACKED.filter(
 });
 
 describe('the manifests this workspace ships agree on one version', () => {
-  it('finds the manifests that declare one, and there are ten', () => {
+  it('finds the manifests that declare one, and there are eleven', () => {
     // NON-VACUITY, and it is the case that matters most here: every assertion below is a
     // reduction over this list, so a sweep that found nothing would leave all of them true
     // while checking no file at all. The number is exact rather than a floor, because a
@@ -97,6 +97,7 @@ describe('the manifests this workspace ships agree on one version', () => {
       'packages/context/package.json',
       'packages/core/package.json',
       'packages/sdk/package.json',
+      'packages/stacks/package.json',
       'packages/vscode/package.json',
       'plugin-server-only/.claude-plugin/plugin.json',
       'plugin/.claude-plugin/plugin.json',

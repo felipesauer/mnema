@@ -360,6 +360,10 @@ const UNWITNESSED: Readonly<Record<string, Debt>> = {
     reached: 'nobody imports it',
     why: "Builds the exposure report's rows and closing facts; the cases that drive it are about the credential value NOT being printed, so its column order and date cut go unobserved.",
   },
+  'packages/stacks/src/problem.ts': {
+    reached: 'nobody imports it',
+    why: 'A types-only module (Problem, ProblemCode): every importer uses import type, so it emits no runtime code and the codes it names are observed through the validator that produces them.',
+  },
   'packages/code/src/presentation/render.ts': {
     reached: 'nobody imports it',
     why: 'A type-only module whose one export is the `Render` alias: it emits no runtime code, and the two tests naming it use `import type`, so there is no value to observe.',
@@ -658,7 +662,7 @@ const THE_SHAPE_OF_WHAT_IS_LEFT: Readonly<Record<string, number>> = {
   completion: 4,
   commands: 2,
   barrels: 3,
-  scattered: 12,
+  scattered: 13,
 };
 
 /** Which group of the shape above a debt row belongs to. One reading, so nothing falls in two. */
@@ -1283,6 +1287,13 @@ const CLAUSES_PER_FILE: Readonly<Record<string, number>> = {
   'packages/core/tests/integration/enrollment-e2e.test.ts': 8,
   'packages/core/tests/integration/gated-transition.test.ts': 9,
   'packages/core/tests/readme-example.test.ts': 7,
+  'packages/stacks/tests/a-manifest-says-no-more-than-the-contract.test.ts': 2,
+  'packages/stacks/tests/a-stack-brings-no-more-than-it-says.test.ts': 7,
+  'packages/stacks/tests/support.ts': 4,
+  'packages/stacks/tests/the-digest-needs-no-mnema.test.ts': 8,
+  'packages/stacks/tests/the-frontmatter-reader-places-or-refuses.test.ts': 2,
+  'packages/stacks/tests/the-schema-file-is-the-schema.test.ts': 5,
+  'packages/stacks/tests/the-skills-ref-oracle-agrees.test.ts': 5,
   'packages/vscode/src/cli.test.ts': 2,
   'packages/vscode/src/extension.test.ts': 3,
   'packages/vscode/src/manifest.test.ts': 2,
@@ -1732,6 +1743,13 @@ const PRODUCTION_FILES: readonly string[] = [
   'packages/core/src/write.ts',
   'packages/sdk/src/hooks.ts',
   'packages/sdk/src/record.ts',
+  'packages/stacks/src/digest.ts',
+  'packages/stacks/src/files.ts',
+  'packages/stacks/src/frontmatter.ts',
+  'packages/stacks/src/manifest.ts',
+  'packages/stacks/src/problem.ts',
+  'packages/stacks/src/schema.ts',
+  'packages/stacks/src/validate.ts',
   'packages/vscode/src/cli.ts',
   'packages/vscode/src/extension.ts',
   'packages/vscode/src/proposed.ts',
@@ -1791,9 +1809,9 @@ describe('every file has a test that names it', () => {
     // 81 once a test of who may retract a note appended through `workflow/append.ts` itself.
     // 82 with the commit-hook group's wiring, which the CLI reaches.
     // 83 with the unlink verb's wiring, which a-link-can-be-retracted drives through the CLI.
-    // 83 again, with the report verb's wiring, which a-report-is-built-from-an-allowlist drives through the program.
-    expect(found.size).toBe(83);
-    expect(byReach('nobody imports it')).toBe(83);
+    // 84 with the report verb's wiring, which a-report-is-built-from-an-allowlist drives through the program.
+    expect(found.size).toBe(84);
+    expect(byReach('nobody imports it')).toBe(84);
     expect(byReach('imported, and no assertion observes it')).toBe(0);
   });
 
@@ -1815,7 +1833,7 @@ describe('every file has a test that names it', () => {
     // Announced in the header and, until now, kept by hand. A shared excuse is how a table
     // like this turns into a rubber stamp, and a row drained to a stub is how it starts.
     const reasons = Object.values(UNWITNESSED).map((one) => one.why);
-    expect(reasons).toHaveLength(83);
+    expect(reasons).toHaveLength(84);
     expect(new Set(reasons).size).toBe(reasons.length);
     // The shortest reason standing is 156 characters; the floor is under it and well over
     // anything that could be written without saying what reaches that file.
@@ -1844,7 +1862,16 @@ describe('every file has a test that names it', () => {
 
   it('names a package with no src/ instead of dying while it collects', () => {
     expect(WITHOUT_SOURCE).toEqual([]);
-    expect(READABLE).toEqual(['action', 'chain', 'code', 'context', 'core', 'sdk', 'vscode']);
+    expect(READABLE).toEqual([
+      'action',
+      'chain',
+      'code',
+      'context',
+      'core',
+      'sdk',
+      'stacks',
+      'vscode',
+    ]);
   });
 
   it('cannot be dissolved by the ledger that describes it', () => {
