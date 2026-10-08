@@ -53,12 +53,14 @@ import {
   chainRootForScope,
   type DiscoveryEnv,
   detectSecrets,
+  orderedEvents,
   type ResolvedTrees,
   resolveTrees,
 } from '@mnema/core';
 import { adoptStack, openTreeForWriting, removeStack } from '@mnema/core/write';
 import {
   checkName,
+  readFrontmatter,
   refusePath,
   type StackFile,
   type StackHook,
@@ -112,6 +114,11 @@ export interface StackPlan {
   readonly unserved: { readonly skills: readonly string[]; readonly agents: readonly string[] };
   /** The hooks the stack declares — listed, never written, never on. */
   readonly hooks: readonly StackHook[];
+  /**
+   * The tools each skill's `allowed-tools` asks a host to let it use without asking — not run at
+   * installation, but a permission the stack brings, so the plan shows it.
+   */
+  readonly tools: readonly { readonly skill: string; readonly tools: string }[];
 }
 
 /** Why a stack is not installed, or not removed. Nothing was written. */
@@ -213,17 +220,57 @@ interface Receipt {
   readonly files: readonly { readonly path: string; readonly sha256: string }[];
 }
 
-function readReceipt(path: string): Receipt | undefined {
+/** A SHA-256 in lower-case hex: a receipt's digest and every file's hash. */
+const HEX64 = /^[0-9a-f]{64}$/;
+
+/**
+ * The receipt kept as `<name>.json`, held to every form the record's door holds an adoption to:
+ * `undefined` when there is none, a reason when the file is not a receipt OF THAT NAME. A receipt
+ * of the public tree is committed, so it is read as a claim somebody may have written by hand —
+ * one whose `installedAs` is not its own file name would make a removal speak for another stack.
+ */
+function readReceipt(
+  path: string,
+  name: string,
+): Receipt | { readonly refused: string } | undefined {
+  let value: unknown;
   try {
-    const value = JSON.parse(readFileSync(path, 'utf8')) as Receipt;
-    if (typeof value.name !== 'string' || !Array.isArray(value.files)) return undefined;
-    return value;
-  } catch {
-    return undefined;
+    value = JSON.parse(readFileSync(path, 'utf8'));
+  } catch (error) {
+    if ((error as NodeJS.ErrnoException).code === 'ENOENT') return undefined;
+    return { refused: 'it is not JSON' };
   }
+  const r = value as Partial<Record<keyof Receipt, unknown>>;
+  if (typeof value !== 'object' || value === null) return { refused: 'it is not an object' };
+  if (r.installedAs !== name)
+    return { refused: `it says it is of "${String(r.installedAs)}", not of "${name}"` };
+  if (typeof r.name !== 'string' || checkName(r.name) !== undefined) {
+    return { refused: 'its "name" is not a stack name' };
+  }
+  if (typeof r.version !== 'string' || !VERSION.test(r.version)) {
+    return { refused: 'its "version" is not one the record admits' };
+  }
+  if (typeof r.digest !== 'string' || !HEX64.test(r.digest)) {
+    return { refused: 'its "digest" is not a SHA-256' };
+  }
+  const files = r.files;
+  if (
+    !Array.isArray(files) ||
+    !files.every(
+      (f: unknown) =>
+        typeof f === 'object' &&
+        f !== null &&
+        typeof (f as { path?: unknown }).path === 'string' &&
+        typeof (f as { sha256?: unknown }).sha256 === 'string' &&
+        HEX64.test((f as { sha256: string }).sha256),
+    )
+  ) {
+    return { refused: 'its "files" is not a list of paths with their SHA-256' };
+  }
+  return value as Receipt;
 }
 
-/** Every receipt in the given folders, by the name it is installed under. */
+/** Every receipt in the given folders that is the receipt its file name says, by that name. */
 function receiptsIn(dirs: readonly string[]): Map<string, Receipt> {
   const all = new Map<string, Receipt>();
   for (const dir of dirs) {
@@ -233,9 +280,10 @@ function receiptsIn(dirs: readonly string[]): Map<string, Receipt> {
     } catch {
       continue;
     }
-    for (const name of names) {
-      const receipt = readReceipt(join(dir, name));
-      if (receipt !== undefined) all.set(receipt.installedAs, receipt);
+    for (const file of names) {
+      const name = file.slice(0, -'.json'.length);
+      const receipt = readReceipt(join(dir, file), name);
+      if (receipt !== undefined && !('refused' in receipt)) all.set(name, receipt);
     }
   }
   return all;
@@ -404,6 +452,13 @@ export function planStackInstall(
     files,
     unserved: { skills: skills.none, agents: agents.none },
     hooks: manifest.hooks ?? [],
+    tools: read.files.flatMap((f) => {
+      const skill = /^skills\/([^/]+)\/SKILL\.md$/.exec(f.path)?.[1];
+      if (skill === undefined) return [];
+      const front = readFrontmatter(Buffer.from(f.bytes).toString('utf8'));
+      const tools = front.ok ? front.fields['allowed-tools'] : undefined;
+      return tools === undefined || tools === '' ? [] : [{ skill, tools }];
+    }),
   };
   return checkTheWay(plan, where) ?? plan;
 }
@@ -446,6 +501,13 @@ export function planLines(plan: StackPlan): string[] {
   }
   if (plan.unserved.agents.length > 0) {
     lines.push(`No agent is written for: ${plan.unserved.agents.join(', ')}.`);
+  }
+  if (plan.tools.length === 0) lines.push('Tools a skill asks to use without asking: none.');
+  else {
+    lines.push(
+      'Tools a skill asks the host to let it use without asking (allowed-tools):',
+      ...plan.tools.map((t) => `  ${t.skill}: ${one(t.tools)}`),
+    );
   }
   if (plan.hooks.length === 0) lines.push('Hooks: none.');
   else {
@@ -686,6 +748,17 @@ export interface StackRemoval {
   readonly recorded: boolean;
 }
 
+/** The adoption standing under `name` in the tree at `root`: the last, unless removed since. */
+function standingAdoption(root: string, name: string): { digest: string } | undefined {
+  let standing: { digest: string } | undefined;
+  for (const event of orderedEvents({ root }, catalogUpcasters())) {
+    if (event.subject !== name) continue;
+    if (event.kind === 'stack.adopted') standing = { digest: event.payload.digest };
+    else if (event.kind === 'stack.removed') standing = undefined;
+  }
+  return standing;
+}
+
 /** Every folder a target may hold a stack's files in — what a receipt's path has to sit under. */
 function placeFolders(side: 'project' | 'user'): string[] {
   return [...folders('skills', side).folders.keys(), ...folders('agents', side).folders.keys()];
@@ -705,13 +778,21 @@ export function removeInstalledStack(
   const where = whereOf(ctx, input.target);
   if ('ok' in where) return where;
   const receiptPath = join(where.receipts, `${input.name}.json`);
-  const receipt = checkName(input.name) === undefined ? readReceipt(receiptPath) : undefined;
-  if (receipt === undefined) {
+  const read =
+    checkName(input.name) === undefined ? readReceipt(receiptPath, input.name) : undefined;
+  if (read === undefined) {
     return refuse(
       'STACK_NOT_INSTALLED',
       `no stack is installed here as ${JSON.stringify(input.name)}. Nothing was removed.`,
     );
   }
+  if ('refused' in read) {
+    return refuse(
+      'STACK_RECEIPT_REFUSED',
+      `the receipt of ${input.name} is refused: ${read.refused}. Nothing is deleted on its word. Nothing was removed.`,
+    );
+  }
+  const receipt = read;
   const allowed = placeFolders(where.side);
   const bad = receipt.files
     .map((f) => f.path)
@@ -747,7 +828,7 @@ export function removeInstalledStack(
   }
   const report = (recorded: boolean): StackRemoval => ({
     ok: true,
-    name: receipt.installedAs,
+    name: input.name,
     version: receipt.version,
     digest: receipt.digest,
     removed,
@@ -781,17 +862,29 @@ export function removeInstalledStack(
   const trees = where.trees;
   const writer = openTreeForWriting(trees, scope);
   return writer.exclusively((): StackRemoval | StackRefused => {
+    // The fact is the record's, never the receipt's: the adoption standing under this name has to
+    // be the bytes the receipt says were written, or the receipt is somebody else's word.
+    const root = chainRootForScope(trees, scope) as string;
+    const standing = standingAdoption(root, input.name);
+    if (standing === undefined || standing.digest !== receipt.digest) {
+      return refuse(
+        'STACK_RECEIPT_REFUSED',
+        standing === undefined
+          ? `no adoption of ${input.name} stands in the ${scope} tree, so its receipt is nobody's. Nothing was removed.`
+          : `the receipt of ${input.name} names ${short(receipt.digest)} and the ${scope} tree adopted ${short(standing.digest)}. Nothing was removed.`,
+      );
+    }
     const removedFact = removeStack(
       {
         writer,
         layout: { root: chainRootForScope(trees, scope) as string },
         upcasters: catalogUpcasters(),
       },
-      { name: receipt.installedAs },
+      { name: input.name },
     );
     if (!removedFact.ok) return refuse(removedFact.code, removedFact.message);
     writer.checkpoint();
     deleteFiles();
-    return report(true);
+    return { ...report(true), version: removedFact.version, digest: removedFact.digest };
   });
 }

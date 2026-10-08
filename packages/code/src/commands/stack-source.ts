@@ -21,7 +21,8 @@
  *     keeps a submodule from being fetched over another transport, and no submodule is asked for;
  *   - no configuration of the person's or the system's is read (`GIT_CONFIG_GLOBAL=/dev/null`,
  *     `GIT_CONFIG_NOSYSTEM=1`, every other `GIT_*` variable dropped), so no filter, hook, helper or
- *     rewrite configured there runs; `core.hooksPath` points nowhere, and no prompt is opened.
+ *     rewrite configured there runs; `core.hooksPath` points nowhere, and no prompt is opened:
+ *     `GIT_TERMINAL_PROMPT=0`, and `GIT_ASKPASS` and `SSH_ASKPASS` are not passed on.
  * `GIT_SSL_CAINFO` is the one variable kept: it says which authorities a machine trusts, and
  * dropping it would turn a company's own certificate into a refusal.
  */
@@ -60,6 +61,7 @@ const CLONE_BUDGET_MS = 120_000;
 function fencedEnv(base: NodeJS.ProcessEnv): NodeJS.ProcessEnv {
   const env: NodeJS.ProcessEnv = {};
   for (const [key, value] of Object.entries(base)) {
+    if (key === 'SSH_ASKPASS') continue;
     if (!key.startsWith('GIT_') || key === 'GIT_SSL_CAINFO') env[key] = value;
   }
   return {

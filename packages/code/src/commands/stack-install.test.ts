@@ -25,6 +25,7 @@ import { GIT_WITHOUT_MAINTENANCE } from '../../tests/support/git-without-mainten
 import { runInit } from './init.js';
 import {
   applyStackInstall,
+  planLines,
   planStackInstall,
   removeInstalledStack,
   type StackContext,
@@ -465,5 +466,64 @@ describe('removing keeps what the person changed', () => {
     expect(removed.ok ? 'removed' : removed.code).toBe('STACK_RECEIPT_REFUSED');
     expect(existsSync(join(ctx.repo, 'precious.txt'))).toBe(true);
     expect(existsSync(join(ctx.repo, '.claude/agents/greeter.md'))).toBe(true);
+  });
+
+  it.each([
+    ['says it is of another stack than its file', (r: Record<string, unknown>) => r],
+    [
+      'holds a file that is not one',
+      (r: Record<string, unknown>) => ({ ...r, installedAs: 'ghost', files: [null] }),
+    ],
+    [
+      'carries a digest that is not one',
+      (r: Record<string, unknown>) => ({ ...r, installedAs: 'ghost', digest: 'x' }),
+    ],
+  ])('refuses a receipt that %s, and removes nothing', async (_, forge) => {
+    const ctx = project();
+    expect((await install(ctx, stack(), { scope: 'public' })).ok).toBe(true);
+    const dir = join(resolveTrees(ctx.repo, ctx.env).projectPublic as string, 'stacks');
+    const real = JSON.parse(readFileSync(join(dir, 'hello-stack.json'), 'utf8'));
+    writeFileSync(join(dir, 'ghost.json'), JSON.stringify(forge(real)));
+    const removed = removeInstalledStack(ctx, { name: 'ghost', target: { scope: 'public' } });
+    expect(removed.ok ? 'removed' : removed.code).toBe('STACK_RECEIPT_REFUSED');
+    expect(kinds(resolveTrees(ctx.repo, ctx.env).projectPublic as string)).toEqual([
+      'stack.adopted',
+    ]);
+    expect(existsSync(join(ctx.repo, '.claude/agents/greeter.md'))).toBe(true);
+  });
+
+  it('refuses a receipt whose digest is not the adoption the record holds', async () => {
+    const ctx = project();
+    expect((await install(ctx, stack(), { scope: 'public' })).ok).toBe(true);
+    const path = join(
+      resolveTrees(ctx.repo, ctx.env).projectPublic as string,
+      'stacks/hello-stack.json',
+    );
+    const receipt = JSON.parse(readFileSync(path, 'utf8'));
+    writeFileSync(path, JSON.stringify({ ...receipt, digest: 'b'.repeat(64) }));
+    const removed = removeInstalledStack(ctx, {
+      name: 'hello-stack',
+      target: { scope: 'public' },
+    });
+    expect(removed.ok ? 'removed' : removed.code).toBe('STACK_RECEIPT_REFUSED');
+    expect(existsSync(join(ctx.repo, '.claude/agents/greeter.md'))).toBe(true);
+  });
+});
+
+describe('the plan shows the tools a skill asks to use without asking', () => {
+  it('lists allowed-tools per skill', async () => {
+    const ctx = project();
+    const source = stack();
+    const skill = join(source, 'skills/hello/SKILL.md');
+    writeFileSync(
+      skill,
+      readFileSync(skill, 'utf8').replace('---\n', '---\nallowed-tools: Bash(rm:*) Read\n'),
+    );
+    const read = await readStackSource(source, ctx.cwd);
+    if (!read.ok) throw new Error(read.message);
+    const plan = planStackInstall(ctx, read, { target: { scope: 'public' } });
+    if (!plan.ok) throw new Error(plan.message);
+    expect(plan.tools).toEqual([{ skill: 'hello', tools: 'Bash(rm:*) Read' }]);
+    expect(planLines(plan)).toContain('  hello: Bash(rm:*) Read');
   });
 });

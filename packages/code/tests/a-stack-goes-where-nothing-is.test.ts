@@ -110,4 +110,25 @@ describe('mnema stack, on the built binary', () => {
     expect(existsSync(join(project, '.claude/skills/hello'))).toBe(false);
     expect(mnema('verify').status).toBe(0);
   });
+
+  it('refuses a receipt planted under another name, and records nothing on its word', () => {
+    const digest = digestOf(mnema('stack', 'add', HELLO, '--dry-run').out);
+    expect(mnema('stack', 'add', HELLO, '--expect', digest).status).toBe(0);
+    const stacks = join(project, '.mnema', 'stacks');
+    writeFileSync(join(stacks, 'ghost.json'), readFileSync(join(stacks, 'hello-stack.json')));
+    const ghost = mnema('stack', 'remove', 'ghost');
+    expect(ghost.status).toBe(1);
+    expect(ghost.err).toContain('STACK_RECEIPT_REFUSED');
+    expect(ghost.out).not.toContain('Removed');
+    const real = JSON.parse(readFileSync(join(stacks, 'hello-stack.json'), 'utf8'));
+    writeFileSync(
+      join(stacks, 'ghost.json'),
+      JSON.stringify({ ...real, installedAs: 'ghost', files: [null] }),
+    );
+    const broken = mnema('stack', 'remove', 'ghost');
+    expect(broken.status).toBe(1);
+    expect(broken.err).toContain('STACK_RECEIPT_REFUSED');
+    expect(mnema('stack', 'remove', 'hello-stack').status).toBe(0);
+    expect(mnema('verify').status).toBe(0);
+  });
 });
