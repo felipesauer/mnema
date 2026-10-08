@@ -1,11 +1,11 @@
 import { spawnSync } from 'node:child_process';
-import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs';
+import { mkdirSync, mkdtempSync, renameSync, rmSync, symlinkSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { CodedError } from '@mnema/chain';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { PrivateTreeVisibleError, privateTreeVisibility } from './private-tree.js';
-import type { ResolvedTrees } from './resolve.js';
+import { type ResolvedTrees, resolveTrees } from './resolve.js';
 
 let repo: string;
 let trees: ResolvedTrees;
@@ -90,6 +90,39 @@ describe('whether git would stage the private tree', () => {
     git('init', '-q');
     writeFileSync(join(repo, '.mnema', '.gitignore'), '/locks/\n');
     expect(privateTreeVisibility(trees).state).toBe('visible');
+  });
+
+  it('still says visible where the git directory a .git file names lies INSIDE the worktree', () => {
+    // `gitdir: realgd`, with `realgd` in the working tree: the private tree discovery puts under
+    // the git directory is then a path `git add -A` stages. Being under the git directory is not
+    // being out of the worktree.
+    git('init', '-q', '--separate-git-dir', join(repo, 'realgd'));
+    writeFileSync(join(repo, '.mnema', '.gitignore'), '/private/\n');
+    const resolved = resolveTrees(repo, { home: join(repo, 'home') });
+    expect(resolved.projectPrivate?.startsWith(join(repo, 'realgd'))).toBe(true);
+    expect(privateTreeVisibility(resolved).state).toBe('visible');
+  });
+
+  it('still says visible where a commondir reached through a symbolic link leads back into the worktree', () => {
+    const outside = mkdtempSync(join(tmpdir(), 'mnema-private-tree-outside-'));
+    try {
+      // A real repository moved inside the worktree, named as the common directory of a linked
+      // worktree's git directory that lives outside it, through a link that also lives outside.
+      git('init', '-q');
+      renameSync(join(repo, '.git'), join(repo, 'hidden'));
+      symlinkSync(join(repo, 'hidden'), join(outside, 'link'));
+      mkdirSync(join(outside, 'own'));
+      writeFileSync(join(outside, 'own', 'HEAD'), 'ref: refs/heads/main\n');
+      writeFileSync(join(outside, 'own', 'commondir'), `${join(outside, 'link')}\n`);
+      writeFileSync(join(outside, 'own', 'gitdir'), `${join(repo, '.git')}\n`);
+      writeFileSync(join(repo, '.git'), `gitdir: ${join(outside, 'own')}\n`);
+      writeFileSync(join(repo, '.mnema', '.gitignore'), '/private/\n');
+      const resolved = resolveTrees(repo, { home: join(repo, 'home') });
+      expect(resolved.projectPrivate?.startsWith(join(outside, 'link'))).toBe(true);
+      expect(privateTreeVisibility(resolved).state).not.toBe('outside-the-worktree');
+    } finally {
+      rmSync(outside, { recursive: true, force: true });
+    }
   });
 
   it('says unknown outside a project, which has no private tree', () => {

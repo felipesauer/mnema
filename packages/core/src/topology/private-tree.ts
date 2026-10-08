@@ -15,8 +15,11 @@
  * parent's, `.git/info/exclude`, the user's global file), which a read of one file never did.
  *
  * INSIDE A REPOSITORY THE TREE IS NO LONGER IN THE WORKING TREE: discovery puts it under the
- * repository's common git directory (`git-place.ts`), and no `git add` stages a path there. A
- * tree found there is answered `outside-the-worktree` without asking git, and the write goes on.
+ * repository's common git directory (`git-place.ts`), and no `git add` stages a path there — when
+ * that directory is the top's own `.git`, or lies outside the working tree as the file system
+ * resolves it. A tree found there is answered `outside-the-worktree` without asking git, and the
+ * write goes on. A git directory a `.git` file or a link places INSIDE the working tree is not
+ * out of reach of `git add`, and is asked of git like any other path.
  * Anywhere else — the old `.mnema/private/`, or any private tree inside a working tree — git is
  * asked as before, and a tree it would stage is still refused.
  *
@@ -32,7 +35,7 @@
 import { spawnSync } from 'node:child_process';
 import { dirname, join, relative } from 'node:path';
 import { CodedError } from '@mnema/chain';
-import { gitPlaceOf, isWithin } from './git-place.js';
+import { commonDirIsOutsideTheWorktree, gitPlaceOf, isWithin } from './git-place.js';
 import type { ResolvedTrees } from './resolve.js';
 
 /** What git says of the private tree. */
@@ -65,7 +68,11 @@ export function privateTreeVisibility(trees: ResolvedTrees): PrivateTreeVisibili
   }
   const project = dirname(trees.projectPublic);
   const place = gitPlaceOf(project);
-  if (place !== undefined && isWithin(trees.projectPrivate, place.commonDir)) {
+  if (
+    place !== undefined &&
+    isWithin(trees.projectPrivate, place.commonDir) &&
+    commonDirIsOutsideTheWorktree(place)
+  ) {
     return { state: 'outside-the-worktree' };
   }
   const inside = relative(project, join(trees.projectPrivate, 'a-private-record'));

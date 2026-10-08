@@ -185,6 +185,20 @@ describe('a private tree inside the working tree that nothing ignores', () => {
     };
   }
 
+  it('is refused on the command line where the git directory itself lies inside the worktree', () => {
+    // `.git` is a file naming `realgd`, a directory of the working tree: the private tree under
+    // it is a path `git add -A` stages, whatever is or is not in `.mnema/.gitignore`.
+    expect(
+      git('init', '-q', '-b', 'main', '--separate-git-dir', join(project, 'realgd')).status,
+    ).toBe(0);
+    expect(mnema(undefined, 'init').status).toBe(0);
+    const wrote = mnema(undefined, 'memory', '--scope', 'private', 'a note for this machine');
+    expect(wrote.status, wrote.out).toBe(1);
+    expect(wrote.out).toContain('git would stage realgd/mnema/');
+    expect(wrote.out).toContain('Nothing was written.');
+    expect(git('add', '-A', '-n').stdout).not.toContain('private');
+  }, 120_000);
+
   it('is still refused, names the file the way out is in, and writes nothing', () => {
     aRepository();
     withoutThePrivateLine();

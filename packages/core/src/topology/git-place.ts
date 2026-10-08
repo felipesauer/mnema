@@ -18,7 +18,7 @@
  * that points git elsewhere with them is answered from the `.git` on disk.
  */
 
-import { readFileSync, statSync } from 'node:fs';
+import { readFileSync, realpathSync, statSync } from 'node:fs';
 import { dirname, isAbsolute, join, relative, resolve, sep } from 'node:path';
 
 /** The directory name, under a git directory, that holds this product's private trees. */
@@ -78,6 +78,28 @@ export function privateTreePlace(
     tree: join(place.commonDir, IN_GIT_DIR, within, 'private'),
     installation: join(place.gitDir, IN_GIT_DIR, within, 'private'),
   };
+}
+
+/**
+ * Whether the repository's common git directory is out of reach of `git add` in this working
+ * tree: it is the top's own `.git` directory, or it lies outside the top altogether — compared as
+ * the file system resolves both, so a symbolic link or a `commondir` that leads back into the
+ * working tree is not taken for "outside". Anything else (a `gitdir:` naming a directory inside
+ * the worktree, a link into it) is a path git may stage, and is asked of git like any other.
+ */
+export function commonDirIsOutsideTheWorktree(place: GitPlace): boolean {
+  const top = realOrUndefined(place.top);
+  const common = realOrUndefined(place.commonDir);
+  if (top === undefined || common === undefined) return false;
+  return common === join(top, '.git') || !isWithin(common, top);
+}
+
+function realOrUndefined(path: string): string | undefined {
+  try {
+    return realpathSync.native(path);
+  } catch {
+    return undefined;
+  }
 }
 
 /** Whether `path` is `dir` or lies under it, by spelling. */
