@@ -592,11 +592,11 @@ describe('the command Cursor runs from the plugin', () => {
       group.hooks.some((hook) => hook.type === 'mcp_tool'),
     );
     // Cursor applies the matcher and names its write tool as Claude Code does; the shell then
-    // keeps the process from starting anywhere that is not Cursor.
+    // keeps the process from starting anywhere that is not Cursor, and the handler checks again.
     expect(declared().matcher).toBe(tooled?.matcher);
-    expect(declared().command).toContain('[ -n "$CURSOR_VERSION" ]');
-    const handler = readFileSync(join(PLUGIN, 'hooks', 'edit-refuses-a-write.mjs'), 'utf-8');
-    expect(HOOK_HOSTS.filter((host) => handler.includes(`'--host', '${host}'`))).toEqual([
+    expect(declared().command).toContain('[ -n "$CURSOR_VERSION" ] && node ');
+    expect(declared().command).toContain(' --where CURSOR_VERSION');
+    expect(HOOK_HOSTS.filter((host) => declared().command.includes(` --host ${host} `))).toEqual([
       'cursor',
     ]);
   });

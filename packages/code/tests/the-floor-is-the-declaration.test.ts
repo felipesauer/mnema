@@ -445,7 +445,7 @@ const FLOOR_MODULES: readonly string[] = [
   'session-words.ts',
   'version.ts',
   'vocabulary.ts',
-  // The two host lists `--host` enumerates, and nothing a host needs beyond its name.
+  // The host table the lists a `--host` enumerates are read off: data, and no imports.
   'host-names.ts',
   'wiring/accountability.ts',
   'wiring/aging.ts',
