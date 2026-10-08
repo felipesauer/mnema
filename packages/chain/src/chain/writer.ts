@@ -352,14 +352,7 @@ export class ChainWriter {
    * them. The cheap question that keeps the expensive one rare — see {@link TailMark}.
    */
   private resyncIfMoved(): void {
-    const now = this.readMark();
-    if (
-      now.segmentBytes === this.mark.segmentBytes &&
-      now.nextSegment === this.mark.nextSegment &&
-      now.checkpointBytes === this.mark.checkpointBytes
-    ) {
-      return;
-    }
+    if (this.unmovedSinceLastHold()) return;
     this.recover();
   }
 
@@ -689,7 +682,25 @@ export class ChainWriter {
    * Nothing is signed.
    */
   checkpoint(): Checkpoint | null {
+    // NOTHING TO SIGN TAKES NO LOCK. A write signs inside the hold that wrote it, and a caller
+    // that signs once more afterwards — to cover a founding it cannot see, say — would otherwise
+    // queue for the lock a second time with its fact already on the tail: refused there, it
+    // reported "not appended" about a fact that was. With nothing of this writer's unsigned and
+    // the tail's files exactly where its last hold left them, there is provably nothing to sign
+    // (the buffer is every event above the last checkpoint, as of that hold), so the answer is
+    // the one the lock would have given, without asking for it. A tail that moved since, or a
+    // writer that never held it, still goes through the lock and signs what it finds.
+    if (!this.holding && this.pending.length === 0 && this.unmovedSinceLastHold()) return null;
     return this.underTailLock(() => this.signLocked());
+  }
+
+  private unmovedSinceLastHold(): boolean {
+    const now = this.readMark();
+    return (
+      now.segmentBytes === this.mark.segmentBytes &&
+      now.nextSegment === this.mark.nextSegment &&
+      now.checkpointBytes === this.mark.checkpointBytes
+    );
   }
 
   private signLocked(): Checkpoint | null {

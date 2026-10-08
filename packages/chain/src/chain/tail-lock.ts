@@ -43,7 +43,15 @@
  * wrote one tail, which is the corruption the lock exists to prevent. The cost of the
  * choice made now is the other case: a reused pid keeps the tail busy, with nobody to
  * clear it, so the refusal names the pid and the lock file and says what to do.
- * `tail-lock.test.ts` fixes both judgements as cases. Breaking is itself a race — two waiters could both
+ * `tail-lock.test.ts` fixes both judgements as cases.
+ *
+ * A lock file that names NO pid is judged by its age instead. A holder writes its record in
+ * the instant after it creates the file, so an empty or unreadable one is a holder that died
+ * in that instant, or a file a power cut left at zero bytes. This said nothing about it and
+ * the waiter judged nothing: measured, an empty lock refused every write at 2 s, and again
+ * five seconds later, and would have for ever. Now one older than
+ * {@link UNREADABLE_LOCK_ABANDONED_MS} is broken as abandoned, through the same claim below,
+ * which puts it back if the holder wrote its record meanwhile. Breaking is itself a race — two waiters could both
  * decide to break, and the second could unlink a lock the first had just taken
  * fresh — so a breaker first `rename`s the file away, which the kernel gives to
  * exactly one of them, and then confirms the bytes it moved are the bytes it judged.
@@ -62,6 +70,7 @@ import {
   openSync,
   readFileSync,
   renameSync,
+  statSync,
   unlinkSync,
   writeSync,
 } from 'node:fs';
@@ -96,6 +105,17 @@ import { sleepSync } from './sleep.js';
  * wait out is a budget nothing checks.
  */
 export const DEFAULT_WAIT_MS = 2_000;
+
+/**
+ * How old a lock file that names no pid must be before a waiter breaks it as abandoned.
+ *
+ * The holder it could wrong is one stopped between creating the file and writing the line
+ * after it — a window of microseconds — for longer than this. Ten seconds is far past any
+ * stall of a live process in that window, and the cost of the margin is said plainly: after
+ * a crash in that instant, writes wait and refuse for up to ten seconds before the next one
+ * heals the tail. Wronging a live holder would put two writers on one tail; waiting does not.
+ */
+export const UNREADABLE_LOCK_ABANDONED_MS = 10_000;
 
 /** How long a waiter sleeps between attempts. */
 const POLL_MS = 5;
@@ -204,36 +224,47 @@ function release(fd: number, path: string): void {
   }
 }
 
-/** What a lock file says about its holder, or undefined if it cannot be read. */
+/** What a lock file says about its holder, or undefined if it is gone. */
 interface Holder {
-  readonly pid: number;
+  /** The holder's pid, or undefined when the file names none (empty, or not a record). */
+  readonly pid: number | undefined;
   readonly since: number;
   /** The exact bytes read, so a breaker can prove it is destroying what it judged. */
   readonly record: string;
+  /** How long ago the file was last written, by its mtime: what judges a file with no pid. */
+  readonly ageMs: number;
 }
 
 function holderOf(path: string): Holder | undefined {
   let record: string;
+  let written: number;
   try {
+    // Read, THEN stat: a holder that writes its record between the two leaves a fresh mtime,
+    // so an empty read is never judged old on the strength of a stamp taken before it.
     record = readFileSync(path, 'utf-8');
+    written = statSync(path).mtimeMs;
   } catch {
     return undefined; // vanished between the failed create and this read: retry
   }
+  const ageMs = Date.now() - written;
   const [pidText, sinceText] = record.trim().split(' ');
   const pid = Number.parseInt(pidText ?? '', 10);
   const since = Number.parseInt(sinceText ?? '', 10);
-  if (!Number.isFinite(pid)) return undefined;
-  return { pid, since: Number.isFinite(since) ? since : 0, record };
+  if (!Number.isFinite(pid)) return { pid: undefined, since: 0, record, ageMs };
+  return { pid, since: Number.isFinite(since) ? since : 0, record, ageMs };
 }
 
 /**
- * Breaks a lock whose holder's pid is gone, and no other. A pid that answers is a live
- * holder however old its record is: taking the lock from it would put two writers on one tail.
+ * Breaks a lock whose holder's pid is gone, or whose file names no pid and is older than
+ * {@link UNREADABLE_LOCK_ABANDONED_MS}, and no other. A pid that answers is a live holder however
+ * old its record is: taking the lock from it would put two writers on one tail.
  * Returns true if the caller should try to take it again — either because this broke it, or
  * because it moved under us and the situation is worth re-reading.
  */
 function breakIfAbandoned(path: string, held: Holder): boolean {
-  if (alive(held.pid)) return false;
+  const abandoned =
+    held.pid === undefined ? held.ageMs >= UNREADABLE_LOCK_ABANDONED_MS : !alive(held.pid);
+  if (!abandoned) return false;
   // `rename` is the atomic claim: of two waiters that both judged this lock
   // abandoned, exactly one moves the file, and the other's rename fails.
   const claim = `${path}.${process.pid}.breaking`;

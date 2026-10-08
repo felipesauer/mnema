@@ -108,23 +108,25 @@ export function runTailPrune(
 
   const root = chainRootForScope(trees, scope) as string;
   const writer = openTreeForWriting(trees, scope);
-  const authorized = authorizeTailPrune(
-    { writer, layout: { root }, upcasters },
-    {
-      tail: input.tail,
-      reason: input.reason,
-      ...(input.which !== undefined ? { which: input.which } : {}),
-      ...(input.run !== undefined ? { run: input.run } : {}),
-    },
-  );
+  const authorized = writer.exclusively(() => {
+    const written = authorizeTailPrune(
+      { writer, layout: { root }, upcasters },
+      {
+        tail: input.tail,
+        reason: input.reason,
+        ...(input.which !== undefined ? { which: input.which } : {}),
+        ...(input.run !== undefined ? { run: input.run } : {}),
+      },
+    );
+    // Checkpoint so the waiver is signature-covered at once. It matters more here than
+    // anywhere else: an unsigned waiver is the one fact whose whole purpose is to be
+    // believed about something that is no longer on disk to check it against.
+    if (written.ok) writer.checkpoint();
+    return written;
+  });
   if (!authorized.ok) {
     return { ok: false, reason: 'REFUSED', code: authorized.code, message: authorized.message };
   }
-
-  // Checkpoint so the waiver is signature-covered at once. It matters more here than
-  // anywhere else: an unsigned waiver is the one fact whose whole purpose is to be
-  // believed about something that is no longer on disk to check it against.
-  writer.checkpoint();
 
   return {
     ok: true,

@@ -209,19 +209,22 @@ export function runInit(ctx: InitContext): InitResult | InitRefused {
 
   const writer = openTreeForWriting(trees, 'public');
 
-  const identity = establishIdentity(
-    {
-      writer,
-      layout: { root: chainRootForScope(trees, 'public') as string },
-      upcasters: catalogUpcasters(),
-    },
-    { keyRoot: trees.keyRoot },
-  );
-  // Checkpoint now so an anonymous verify sees the founding fully signed the
-  // moment init returns — the tree is born proven, not pending a later write.
-  // (An enrollment checkpoints itself, so this covers the founding when the
-  // roster added nothing.)
-  writer.checkpoint();
+  const identity = writer.exclusively(() => {
+    const written = establishIdentity(
+      {
+        writer,
+        layout: { root: chainRootForScope(trees, 'public') as string },
+        upcasters: catalogUpcasters(),
+      },
+      { keyRoot: trees.keyRoot },
+    );
+    // Checkpoint now so an anonymous verify sees the founding fully signed the
+    // moment init returns — the tree is born proven, not pending a later write.
+    // (An enrollment checkpoints itself, so this covers the founding when the
+    // roster added nothing.)
+    writer.checkpoint();
+    return written;
+  });
 
   const gitRoot = nearestGitRoot(ctx.cwd);
   return {

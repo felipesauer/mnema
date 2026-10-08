@@ -13,7 +13,8 @@
  * WHAT a write meets is `whatAWriteMeets`, the one site the MCP tool passes through too, which
  * puts a refusal over an asking. WHAT is recorded is the same facts in the same order: one
  * `channel.refused` or `channel.asked` per rule, citing the rule and the path, appended and
- * signed BEFORE the reply is composed, so a record that cannot be written stops nobody. What
+ * signed BEFORE the reply is composed. A record that cannot take them in time still refuses or
+ * asks, and the reason says the fact is missing (`recordTheCharge`). What
  * differs is only the door: the host's payload is read by `host-hook.ts`, and the reply is
  * shaped there.
  *
@@ -34,8 +35,7 @@
  * EVERY OUTCOME THAT IS NOT A REFUSAL OR AN ASKING IS THE EMPTY REPLY `{}`, which the host reads
  * as nothing to say: a tool that is not a write (VS Code runs this hook for every tool), no
  * project here, the channels switched off (`mnema switch off edit-asks-a-person`, `mnema switch
- * off edit-refuses-a-write`), no rule asking or refusing at the path, a record that would not
- * take the fact. The notes beside it are for a person who ran the verb by hand and
+ * off edit-refuses-a-write`), no rule asking or refusing at the path. The notes beside it are for a person who ran the verb by hand and
  * for the host's own log; nothing reads them to decide.
  */
 
@@ -54,7 +54,12 @@ import type { HookHost } from '../host-names.js';
 import type { HookSaid } from '../mcp/hook-reply.js';
 import { ASKS_A_PERSON_CHANNEL, REFUSES_A_WRITE_CHANNEL } from '../record-framing.js';
 import { withScopedCaches } from '../tree-sources.js';
-import { type WriteVerdict, whatAWriteMeets } from '../what-a-write-meets.js';
+import {
+  recordTheCharge,
+  unrecordedCharge,
+  type WriteVerdict,
+  whatAWriteMeets,
+} from '../what-a-write-meets.js';
 
 /** What the command needs — injected so it is testable. */
 export interface BeforeAWriteContext {
@@ -146,22 +151,15 @@ export function runBeforeAPath(
   // THE ORDER IS THE MCP TOOL'S: the facts are appended, and only then does the reply carry the
   // charge. What the write founded, if it was this key's first in the tree, rides in the reason —
   // the one field of the reply anybody reads; the line on the second stream would be dropped.
+  // THE CHARGE STANDS WHETHER ITS FACTS LAND OR NOT ({@link recordTheCharge}): decided by reading,
+  // it is answered whatever the append does, and a fact that could not be written is said in the
+  // reason and on the second stream, never by letting the write through.
   const before = anchorsBefore(treesOf(trees));
-  let recorded: { readonly ok: true } | { readonly ok: false; readonly why: string };
-  try {
-    recorded = recordWhatItMet(trees, met, input.which);
-  } catch (error) {
-    recorded = { ok: false, why: error instanceof Error ? error.message : String(error) };
-  }
-  if (!recorded.ok) {
-    const did = met.grade === 'refuse' ? 'refused' : 'asked';
-    return silent([
-      `The ${did} write could not be recorded, so nothing was ${did}: ${recorded.why}`,
-    ]);
-  }
-  const reason = [met.reason, ...foundingsSince(before)].join('\n\n');
+  const recorded = recordTheCharge(() => recordWhatItMet(trees, met, input.which));
+  const unrecorded = recorded.ok ? [] : [unrecordedCharge(met.grade, recorded.why)];
+  const reason = [met.reason, ...unrecorded, ...foundingsSince(before)].join('\n\n');
   const said = met.grade === 'refuse' ? { refuse: reason } : { ask: reason };
-  return { ok: true, reply: input.reply(said), notes: [] };
+  return { ok: true, reply: input.reply(said), notes: unrecorded };
 }
 
 /**
@@ -174,7 +172,7 @@ function recordWhatItMet(
   trees: ReturnType<typeof resolveTrees>,
   met: WriteVerdict,
   which: string,
-): { readonly ok: true } | { readonly ok: false; readonly why: string } {
+): { readonly ok: boolean; readonly why?: string } {
   const refusing = met.grade === 'refuse';
   const scope = resolveScope(refusing ? 'channel.refused' : 'channel.asked', { which });
   const writer = openTreeForWriting(trees, scope);
@@ -184,24 +182,27 @@ function recordWhatItMet(
     upcasters: catalogUpcasters(),
   };
   const channel = refusing ? REFUSES_A_WRITE_CHANNEL : ASKS_A_PERSON_CHANNEL;
-  for (const at of met.at) {
-    for (const rule of at.rules) {
-      const input = {
-        channel,
-        rule: rule.id,
-        path: at.relative ?? at.path,
-        which,
-      };
-      const done = refusing ? recordChannelRefused(ctx, input) : recordChannelAsked(ctx, input);
-      if (!done.ok) {
-        writer.checkpoint();
-        return { ok: false, why: done.message };
+  // The facts, the service fact and their signature in ONE hold of the tail's lock.
+  return writer.exclusively(() => {
+    for (const at of met.at) {
+      for (const rule of at.rules) {
+        const input = {
+          channel,
+          rule: rule.id,
+          path: at.relative ?? at.path,
+          which,
+        };
+        const done = refusing ? recordChannelRefused(ctx, input) : recordChannelAsked(ctx, input);
+        if (!done.ok) {
+          writer.checkpoint();
+          return { ok: false, why: done.message };
+        }
       }
     }
-  }
-  // A SERVICE FACT THAT DID NOT LAND IS A GAP IN THE EVIDENCE, NOT AN UN-ASKING: the askings are
-  // on the chain, so the charge rides — the MCP tool's rule for the same two facts.
-  if (!refusing) recordChannelServed(ctx, { channel: ASKS_A_PERSON_CHANNEL, which });
-  writer.checkpoint();
-  return { ok: true };
+    // A SERVICE FACT THAT DID NOT LAND IS A GAP IN THE EVIDENCE, NOT AN UN-ASKING: the askings are
+    // on the chain, so the charge rides — the MCP tool's rule for the same two facts.
+    if (!refusing) recordChannelServed(ctx, { channel: ASKS_A_PERSON_CHANNEL, which });
+    writer.checkpoint();
+    return { ok: true };
+  });
 }

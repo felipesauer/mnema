@@ -66,18 +66,21 @@ export function runKeySigstore(
     return { ok: false, reason: 'REFUSED', code: 'NOT_A_SIGSTORE_IDENTITY', message: notOne };
   }
   const writer = openTreeForWriting(trees, 'public');
-  const linked = linkAccount(
-    {
-      writer,
-      layout: { root: chainRootForScope(trees, 'public') as string },
-      upcasters: catalogUpcasters(),
-    },
-    { account: identity, service: SIGSTORE_SERVICE },
-  );
+  const linked = writer.exclusively(() => {
+    const written = linkAccount(
+      {
+        writer,
+        layout: { root: chainRootForScope(trees, 'public') as string },
+        upcasters: catalogUpcasters(),
+      },
+      { account: identity, service: SIGSTORE_SERVICE },
+    );
+    if (written.ok) writer.checkpoint();
+    return written;
+  });
   if (!linked.ok) {
     return { ok: false, reason: 'REFUSED', code: linked.code, message: linked.message };
   }
-  writer.checkpoint();
   return {
     ok: true,
     anchor: linked.anchor,

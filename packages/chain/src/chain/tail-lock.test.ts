@@ -25,7 +25,7 @@
  * plants.
  */
 
-import { existsSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
+import { existsSync, mkdtempSync, readFileSync, rmSync, utimesSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
@@ -35,7 +35,12 @@ import { catalogUpcasters } from '../events/registry.js';
 import { openChainForWriting, verify } from './chain.js';
 import { tailDir, tailLockPath } from './layout.js';
 import { readTailCheckpoints, readTailEntries } from './store.js';
-import { DEFAULT_WAIT_MS, TailBusyError, withTailLock } from './tail-lock.js';
+import {
+  DEFAULT_WAIT_MS,
+  TailBusyError,
+  UNREADABLE_LOCK_ABANDONED_MS,
+  withTailLock,
+} from './tail-lock.js';
 import type { ChainWriter } from './writer.js';
 
 let root: string;
@@ -264,6 +269,65 @@ describe('the lock a writer holds while it appends', () => {
     expect(entries().length).toBe(before);
     expect(existsSync(lock)).toBe(true);
     rmSync(lock);
+  });
+
+  it('breaks a lock file that names no pid once it is older than the limit', () => {
+    const w = founded();
+    const lock = tailLockPath({ root }, w.tail);
+    // What a holder killed between creating the file and writing its line leaves, and what a
+    // power cut leaves at zero bytes: no pid to ask. Stamped past the limit, it is abandoned.
+    writeFileSync(lock, '');
+    const old = (Date.now() - UNREADABLE_LOCK_ABANDONED_MS - 1_000) / 1000;
+    utimesSync(lock, old, old);
+
+    const started = Date.now();
+    w.append(task(w, 'after-an-empty-lock'));
+    expect(Date.now() - started).toBeLessThan(DEFAULT_WAIT_MS);
+    expect(entries().length).toBe(2);
+    expect(existsSync(lock)).toBe(false);
+  });
+
+  it('does not break a lock file that names no pid while it is young', { timeout: 20_000 }, () => {
+    const w = founded();
+    const before = entries().length;
+    const lock = tailLockPath({ root }, w.tail);
+    // Just created and not yet written: the instant a live holder is in before its record.
+    writeFileSync(lock, '');
+
+    expect(() => w.append(task(w, 'beside-a-young-empty-lock'))).toThrow(TailBusyError);
+    expect(entries().length).toBe(before);
+    expect(existsSync(lock)).toBe(true);
+    rmSync(lock);
+  });
+
+  it('signs with no wait when there is nothing to sign, however busy the tail is', () => {
+    const w = founded();
+    w.checkpoint();
+    const lock = tailLockPath({ root }, w.tail);
+    // A live holder: a checkpoint that asked for the lock would wait it out and refuse — after
+    // the write it follows had already landed, which is the refusal that said "not appended".
+    plantAt(lock, process.pid, Date.now());
+
+    const started = Date.now();
+    expect(w.checkpoint()).toBeNull();
+    expect(Date.now() - started).toBeLessThan(DEFAULT_WAIT_MS);
+    rmSync(lock);
+  });
+
+  it('still asks for the lock to sign what another writer left on the tail', {
+    timeout: 20_000,
+  }, () => {
+    const w = founded();
+    w.checkpoint();
+    const other = openWriter();
+    other.append(task(other, 'left-unsigned'));
+    const lock = tailLockPath({ root }, w.tail);
+    plantAt(lock, process.pid, Date.now());
+
+    // The tail moved since this writer's last hold, so what is on it may owe a signature.
+    expect(() => w.checkpoint()).toThrow(TailBusyError);
+    rmSync(lock);
+    expect(w.checkpoint()).not.toBeNull();
   });
 
   it('releases the lock when the act inside it throws', () => {

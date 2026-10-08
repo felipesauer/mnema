@@ -169,7 +169,14 @@ import {
   THE_CHAIN_AS_IT_STANDS_NOW,
   THE_READING_THAT_OPENED_THESE,
 } from '../tree-sources.js';
-import { reasonTold, type WriteVerdict, whatAWriteMeets } from '../what-a-write-meets.js';
+import {
+  type ChargeRecorded,
+  reasonTold,
+  recordTheCharge,
+  unrecordedCharge,
+  type WriteVerdict,
+  whatAWriteMeets,
+} from '../what-a-write-meets.js';
 import { type HookEvent, type HookReply, hookReply } from './hook-reply.js';
 import {
   type EntityLocation,
@@ -351,18 +358,21 @@ export function runCaptureMemory(
   const route = routeWrite(session, 'memory.captured', input);
   if (!route.ok) return route;
   const { ctx, run } = openWrite(session, route.scope, route.target);
-  const captured = captureMemory(ctx, {
-    content: input.content,
-    which: session.which,
-    run,
+  const captured = ctx.writer.exclusively(() => {
+    const written = captureMemory(ctx, {
+      content: input.content,
+      which: session.which,
+      run,
+    });
+    // Checkpoint so the capture is fully signed the moment the tool returns.
+    if (written.ok) ctx.writer.checkpoint();
+    return written;
   });
   // A capture runs no gate, but the authority invariant still applies — surface
   // the core's refusal rather than asserting ok, and checkpoint nothing.
   if (!captured.ok) {
     return { ok: false, code: captured.code, message: captured.message };
   }
-  // Checkpoint so the capture is fully signed the moment the tool returns.
-  ctx.writer.checkpoint();
   return { ok: true, id: captured.id, scope: route.scope, ...forwardReplacement(captured) };
 }
 
@@ -429,18 +439,21 @@ export function runRecordObservation(
   const route = routeWrite(session, 'observation.recorded', input);
   if (!route.ok) return route;
   const { ctx, run } = openWrite(session, route.scope, route.target);
-  const recorded = recordObservation(ctx, {
-    about: about.id,
-    topic: input.topic,
-    text: input.text,
-    which: session.which,
-    run,
+  const recorded = ctx.writer.exclusively(() => {
+    const written = recordObservation(ctx, {
+      about: about.id,
+      topic: input.topic,
+      text: input.text,
+      which: session.which,
+      run,
+    });
+    // Checkpoint so the record is fully signed the moment the tool returns.
+    if (written.ok) ctx.writer.checkpoint();
+    return written;
   });
   if (!recorded.ok) {
     return { ok: false, code: recorded.code, message: recorded.message };
   }
-  // Checkpoint so the record is fully signed the moment the tool returns.
-  ctx.writer.checkpoint();
   return { ok: true, id: recorded.id, scope: route.scope, ...forwardReplacement(recorded) };
 }
 
@@ -465,18 +478,21 @@ export function runRecordHandoff(
   const route = routeWrite(session, 'handoff.recorded', input);
   if (!route.ok) return route;
   const { ctx, run } = openWrite(session, route.scope, route.target);
-  const recorded = recordHandoff(ctx, {
-    task: input.task,
-    fromAgent: input.from,
-    toAgent: input.to,
-    which: session.which,
-    run,
+  const recorded = ctx.writer.exclusively(() => {
+    const written = recordHandoff(ctx, {
+      task: input.task,
+      fromAgent: input.from,
+      toAgent: input.to,
+      which: session.which,
+      run,
+    });
+    // Checkpoint so the record is fully signed the moment the tool returns.
+    if (written.ok) ctx.writer.checkpoint();
+    return written;
   });
   if (!recorded.ok) {
     return { ok: false, code: recorded.code, message: recorded.message };
   }
-  // Checkpoint so the record is fully signed the moment the tool returns.
-  ctx.writer.checkpoint();
   // The labels AS RECORDED, not as asked for: a label that carried a credential
   // reached the chain as a placeholder, and the echo has to say so.
   return {
@@ -545,18 +561,21 @@ export function runLinkKnowledge(
   const unresolved = linkRefusal({ subject: subject.id, target: target.id });
   if (unresolved !== undefined) return { ok: false, code: 'UNKNOWN_TARGET', message: unresolved };
   const { ctx, run } = openWrite(session, route.scope, route.target);
-  const recorded = linkKnowledge(ctx, {
-    subject: subject.id,
-    target: target.id,
-    rel: input.rel,
-    which: session.which,
-    run,
+  const recorded = ctx.writer.exclusively(() => {
+    const written = linkKnowledge(ctx, {
+      subject: subject.id,
+      target: target.id,
+      rel: input.rel,
+      which: session.which,
+      run,
+    });
+    // Checkpoint so the record is fully signed the moment the tool returns.
+    if (written.ok) ctx.writer.checkpoint();
+    return written;
   });
   if (!recorded.ok) {
     return { ok: false, code: recorded.code, message: recorded.message };
   }
-  // Checkpoint so the record is fully signed the moment the tool returns.
-  ctx.writer.checkpoint();
   // What the address covers, off the relation AS RECORDED and against the root of the
   // project this write was ROUTED to — not the session's, which is a different project
   // whenever the caller named one. A write that landed outside a project has no root
@@ -610,10 +629,15 @@ export function runCreateTask(
   const route = routeWrite(session, 'task.created', input);
   if (!route.ok) return route;
   const { ctx, run } = openWrite(session, route.scope, route.target);
-  const created = createTask(ctx, {
-    title: input.title,
-    which: session.which,
-    run,
+  const created = ctx.writer.exclusively(() => {
+    const written = createTask(ctx, {
+      title: input.title,
+      which: session.which,
+      run,
+    });
+    // Checkpoint so the new task is fully signed the moment the tool returns.
+    if (written.ok) ctx.writer.checkpoint();
+    return written;
   });
   // A birth is not a gated transition, but the operation's return is a union —
   // surface the refusal it can carry (the authority invariant) rather than
@@ -621,8 +645,6 @@ export function runCreateTask(
   if (!created.ok) {
     return { ok: false, code: created.code, message: created.message };
   }
-  // Checkpoint so the new task is fully signed the moment the tool returns.
-  ctx.writer.checkpoint();
   return {
     ok: true,
     id: created.id,
@@ -675,18 +697,21 @@ export function runTaskTransition(
 
   const { ctx, run } = openWrite(session, located.home.scope, located.home.target);
   const fields = proofToFields(input);
-  const moved = transitionTask(ctx, {
-    id: input.id,
-    action: input.action,
-    ...(fields !== undefined ? { fields } : {}),
-    which: session.which,
-    run,
+  const moved = ctx.writer.exclusively(() => {
+    const written = transitionTask(ctx, {
+      id: input.id,
+      action: input.action,
+      ...(fields !== undefined ? { fields } : {}),
+      which: session.which,
+      run,
+    });
+    // Checkpoint so the transition is fully signed the moment the tool returns.
+    if (written.ok) ctx.writer.checkpoint();
+    return written;
   });
   if (!moved.ok) {
     return { ok: false, code: moved.code, message: moved.message };
   }
-  // Checkpoint so the transition is fully signed the moment the tool returns.
-  ctx.writer.checkpoint();
   return {
     ok: true,
     id: input.id,
@@ -743,12 +768,17 @@ export function runRecordDecision(
   const route = routeWrite(session, 'decision.recorded', input);
   if (!route.ok) return route;
   const { ctx, run } = openWrite(session, route.scope, route.target);
-  const recorded = recordDecision(ctx, {
-    title: input.title,
-    rationale: input.rationale,
-    ...(input.alternatives !== undefined ? { alternatives: input.alternatives } : {}),
-    which: session.which,
-    run,
+  const recorded = ctx.writer.exclusively(() => {
+    const written = recordDecision(ctx, {
+      title: input.title,
+      rationale: input.rationale,
+      ...(input.alternatives !== undefined ? { alternatives: input.alternatives } : {}),
+      which: session.which,
+      run,
+    });
+    // Checkpoint so the record is fully signed the moment the tool returns.
+    if (written.ok) ctx.writer.checkpoint();
+    return written;
   });
   // A decision birth cannot be gate-refused (birth is not a gated transition; the
   // only check is who != which, which holds for a real client), but the operation
@@ -756,8 +786,6 @@ export function runRecordDecision(
   if (!recorded.ok) {
     return { ok: false, code: recorded.code, message: recorded.message };
   }
-  // Checkpoint so the record is fully signed the moment the tool returns.
-  ctx.writer.checkpoint();
   return {
     ok: true,
     id: recorded.id,
@@ -840,33 +868,36 @@ export function runDecisionTransition(
   const refusedWhen = () =>
     agentMayAccept(workspaceCaches(session), { action: input.action, agent: session.which });
   const stamp = { which: session.which, run, refusedWhen };
-  const moved =
-    input.action === 'supersede'
-      ? supersedeDecision(ctx, {
-          id: input.id,
-          // A missing `by` becomes '', which the gate reads as no successor and
-          // refuses MISSING_BY. `by` reaches only supersede — the other ops have
-          // no channel for it.
-          by: input.by ?? '',
-          ...(fields !== undefined ? { fields } : {}),
-          ...stamp,
-        })
-      : input.action === 'reject'
-        ? rejectDecision(ctx, {
+  const moved = ctx.writer.exclusively(() => {
+    const written =
+      input.action === 'supersede'
+        ? supersedeDecision(ctx, {
             id: input.id,
+            // A missing `by` becomes '', which the gate reads as no successor and
+            // refuses MISSING_BY. `by` reaches only supersede — the other ops have
+            // no channel for it.
+            by: input.by ?? '',
             ...(fields !== undefined ? { fields } : {}),
             ...stamp,
           })
-        : acceptDecision(ctx, {
-            id: input.id,
-            ...(fields !== undefined ? { fields } : {}),
-            ...stamp,
-          });
+        : input.action === 'reject'
+          ? rejectDecision(ctx, {
+              id: input.id,
+              ...(fields !== undefined ? { fields } : {}),
+              ...stamp,
+            })
+          : acceptDecision(ctx, {
+              id: input.id,
+              ...(fields !== undefined ? { fields } : {}),
+              ...stamp,
+            });
+    // Checkpoint so the transition is fully signed the moment the tool returns.
+    if (written.ok) ctx.writer.checkpoint();
+    return written;
+  });
   if (!moved.ok) {
     return { ok: false, code: moved.code, message: moved.message };
   }
-  // Checkpoint so the transition is fully signed the moment the tool returns.
-  ctx.writer.checkpoint();
   // Resolve the ADR from the projection — a decision has no alias, so its human
   // name is the frozen label. Read the ONE tree the entity was located in, and read
   // it through the one function both surfaces resolve a moved display with, fallback
@@ -923,15 +954,18 @@ export function runRetractNote(
   const located = locateEntity(session, input.id, 'records');
   if (located.outcome !== 'found') return refuseUnlocated(session, 'note', input.id, located);
   const { ctx, run } = openWrite(session, located.home.scope, located.home.target);
-  const retracted = retractNote(ctx, {
-    id: input.id,
-    reason: input.reason,
-    which: session.which,
-    run,
+  const retracted = ctx.writer.exclusively(() => {
+    const written = retractNote(ctx, {
+      id: input.id,
+      reason: input.reason,
+      which: session.which,
+      run,
+    });
+    // Checkpoint so the retraction is fully signed the moment the tool returns.
+    if (written.ok) ctx.writer.checkpoint();
+    return written;
   });
   if (!retracted.ok) return { ok: false, code: retracted.code, message: retracted.message };
-  // Checkpoint so the retraction is fully signed the moment the tool returns.
-  ctx.writer.checkpoint();
   return {
     ok: true,
     id: retracted.id,
@@ -984,10 +1018,13 @@ export function runRetractLink(
     };
   }
   const { ctx, run } = openWrite(session, scope);
-  const retracted = retractLink(ctx, { ...edge, reason: input.reason, which: session.which, run });
+  const retracted = ctx.writer.exclusively(() => {
+    const written = retractLink(ctx, { ...edge, reason: input.reason, which: session.which, run });
+    // Checkpoint so the retraction is fully signed the moment the tool returns.
+    if (written.ok) ctx.writer.checkpoint();
+    return written;
+  });
   if (!retracted.ok) return { ok: false, code: retracted.code, message: retracted.message };
-  // Checkpoint so the retraction is fully signed the moment the tool returns.
-  ctx.writer.checkpoint();
   return {
     ok: true,
     subject: retracted.subject,
@@ -1033,11 +1070,16 @@ export function runCreateSkill(
   const route = routeWrite(session, 'skill.created', input);
   if (!route.ok) return route;
   const { ctx, run } = openWrite(session, route.scope, route.target);
-  const created = createSkill(ctx, {
-    name: input.name,
-    body: input.body,
-    which: session.which,
-    run,
+  const created = ctx.writer.exclusively(() => {
+    const written = createSkill(ctx, {
+      name: input.name,
+      body: input.body,
+      which: session.which,
+      run,
+    });
+    // Checkpoint so the propose is fully signed the moment the tool returns.
+    if (written.ok) ctx.writer.checkpoint();
+    return written;
   });
   // A skill birth cannot be gate-refused (birth is not a gated transition; the
   // only check is who != which, which holds for a real client), but the operation
@@ -1045,8 +1087,6 @@ export function runCreateSkill(
   if (!created.ok) {
     return { ok: false, code: created.code, message: created.message };
   }
-  // Checkpoint so the propose is fully signed the moment the tool returns.
-  ctx.writer.checkpoint();
   return {
     ok: true,
     id: created.id,
@@ -1103,19 +1143,22 @@ export function runSkillTransition(
   // exactly as it is on a task move.
   const stamp = { which: session.which, run };
   const args = { id: input.id, ...(fields !== undefined ? { fields } : {}), ...stamp };
-  const moved =
-    input.action === 'review'
-      ? reviewSkill(ctx, args)
-      : input.action === 'adopt'
-        ? adoptSkill(ctx, args)
-        : input.action === 'reject'
-          ? rejectSkill(ctx, args)
-          : deprecateSkill(ctx, args);
+  const moved = ctx.writer.exclusively(() => {
+    const written =
+      input.action === 'review'
+        ? reviewSkill(ctx, args)
+        : input.action === 'adopt'
+          ? adoptSkill(ctx, args)
+          : input.action === 'reject'
+            ? rejectSkill(ctx, args)
+            : deprecateSkill(ctx, args);
+    // Checkpoint so the transition is fully signed the moment the tool returns.
+    if (written.ok) ctx.writer.checkpoint();
+    return written;
+  });
   if (!moved.ok) {
     return { ok: false, code: moved.code, message: moved.message };
   }
-  // Checkpoint so the transition is fully signed the moment the tool returns.
-  ctx.writer.checkpoint();
   // Resolve the name from the projection to orient the human — a skill has no
   // alias. Read the ONE tree the entity was located in (not the session's own tree
   // of that scope, which is a different chain when the skill lives in another
@@ -1741,30 +1784,32 @@ function recordConsultations(
   // The set for this run, created on the first consultation recorded against it.
   const recordedInRun = already ?? new Set<string>();
   session.consulted.set(root, recordedInRun);
-  let appended = 0;
-  // The classes across every consultation this call appended, distinct: the agent
-  // name is the same on all of them, so listing it once per skill would turn one
-  // dirty session name into a report as long as the pattern list.
-  const replaced = new Set<ReplacedClass>();
-  for (const skill of fresh) {
-    const done = recordConsultation(ctx, {
-      skill: skill.id,
-      which: session.which,
-      run,
-    });
-    if (!done.ok) {
-      // Every fact here shares one authority decision, so this is unreachable
-      // for a real client — but a fact already appended must still be signed.
-      if (appended > 0) ctx.writer.checkpoint();
-      return { ok: false, code: done.code, message: done.message };
+  return ctx.writer.exclusively(() => {
+    let appended = 0;
+    // The classes across every consultation this call appended, distinct: the agent
+    // name is the same on all of them, so listing it once per skill would turn one
+    // dirty session name into a report as long as the pattern list.
+    const replaced = new Set<ReplacedClass>();
+    for (const skill of fresh) {
+      const done = recordConsultation(ctx, {
+        skill: skill.id,
+        which: session.which,
+        run,
+      });
+      if (!done.ok) {
+        // Every fact here shares one authority decision, so this is unreachable
+        // for a real client — but a fact already appended must still be signed.
+        if (appended > 0) ctx.writer.checkpoint();
+        return { ok: false, code: done.code, message: done.message };
+      }
+      recordedInRun.add(skill.id);
+      appended += 1;
+      for (const secret of done.replaced ?? []) replaced.add(secret);
     }
-    recordedInRun.add(skill.id);
-    appended += 1;
-    for (const secret of done.replaced ?? []) replaced.add(secret);
-  }
-  // Checkpoint so the consultations are fully signed the moment the tool returns.
-  ctx.writer.checkpoint();
-  return { ok: true, ...(replaced.size > 0 ? { replaced: [...replaced] } : {}) };
+    // Checkpoint so the consultations are fully signed the moment the tool returns.
+    ctx.writer.checkpoint();
+    return { ok: true, ...(replaced.size > 0 ? { replaced: [...replaced] } : {}) };
+  });
 }
 
 /**
@@ -2392,10 +2437,13 @@ export function runRulesBeforeAnEditTool(
     asking || refusing
       ? whatAWriteMeets(caches, { paths: [input.path], root, from: root })
       : undefined;
-  if (met?.grade === 'refuse' && recordWhatItMet(session, met).ok) {
+  if (met?.grade === 'refuse') {
+    const recorded = recordTheCharge(() => recordWhatItMet(session, met));
+    const unrecorded = recorded.ok ? [] : [unrecordedCharge('refuse', recorded.why)];
+    for (const line of unrecorded) session.log(line);
     // What the write founded rides in the reason, the one field of the reply that reaches a model.
     const founded = [...session.founding.take(), ...session.replacementsOwed.take()];
-    const refusal = [reasonTold(met, session.told), ...founded].join('\n\n');
+    const refusal = [reasonTold(met, session.told), ...unrecorded, ...founded].join('\n\n');
     return { ok: true, value: hookReply(PRE_TOOL_USE, { refuse: refusal }) };
   }
   // THE RULES OF A PATH ARE THE RULES OF WHERE IT REALLY IS, for the push and the hold alike: a
@@ -2410,8 +2458,12 @@ export function runRulesBeforeAnEditTool(
   // fail to compose. Then the reply: the charge rides only if the append landed. What asks
   // is decided where the other doors decide it too (`whatAWriteMeets`).
   const gate = met?.grade === 'ask' ? met : undefined;
-  const ask = gate === undefined ? undefined : reasonTold(gate, session.told);
-  const charged = gate === undefined ? { ok: true as const } : recordWhatItMet(session, gate);
+  const charged: ChargeRecorded =
+    gate === undefined ? { ok: true } : recordTheCharge(() => recordWhatItMet(session, gate));
+  const unasked = charged.ok ? [] : [unrecordedCharge('ask', charged.why)];
+  for (const line of unasked) session.log(line);
+  const ask =
+    gate === undefined ? undefined : [reasonTold(gate, session.told), ...unasked].join('\n\n');
   // THE FIRST WRITE'S HOLD, and only where nobody is asked already: a person asked is a stop that
   // says more. It is held ONCE per path per connection; the fact that cites each rule is appended
   // before the reply carries the refusal, and a record that cannot be written refuses nothing.
@@ -2423,7 +2475,7 @@ export function runRulesBeforeAnEditTool(
     heldKey !== undefined &&
     rulesAt.rules.length > 0 &&
     !session.held.has(heldKey)
-      ? recordFacts(session, [rulesAt], FIRST_WRITE_GATE_CHANNEL)
+      ? recordTheCharge(() => recordFacts(session, [rulesAt], FIRST_WRITE_GATE_CHANNEL))
       : undefined;
   const deny =
     refusal?.ok === true && rulesAt !== undefined && heldKey !== undefined
@@ -2458,7 +2510,7 @@ export function runRulesBeforeAnEditTool(
   const told = editRulesTold(deny === undefined ? rulesAt : undefined, founded);
   const said = {
     ...(told !== undefined ? { context: told } : {}),
-    ...(charged.ok && ask !== undefined ? { ask } : {}),
+    ...(ask !== undefined ? { ask } : {}),
     ...(deny !== undefined ? { deny } : {}),
   };
   return { ok: true, value: hookReply(PRE_TOOL_USE, said) };
@@ -2507,27 +2559,29 @@ function recordFacts(
   const route = routeWrite(session, kind, {});
   if (!route.ok) return { ok: false };
   const { ctx, run } = openWrite(session, route.scope);
-  let appended = 0;
-  for (const at of ats) {
-    for (const rule of at.rules) {
-      const input = {
-        channel,
-        rule: rule.id,
-        path: at.relative ?? at.path,
-        which: session.which,
-        run,
-      };
-      const done = refusing ? recordChannelRefused(ctx, input) : recordChannelAsked(ctx, input);
-      if (!done.ok) {
-        if (appended > 0) ctx.writer.checkpoint();
-        return { ok: false };
+  return ctx.writer.exclusively(() => {
+    let appended = 0;
+    for (const at of ats) {
+      for (const rule of at.rules) {
+        const input = {
+          channel,
+          rule: rule.id,
+          path: at.relative ?? at.path,
+          which: session.which,
+          run,
+        };
+        const done = refusing ? recordChannelRefused(ctx, input) : recordChannelAsked(ctx, input);
+        if (!done.ok) {
+          if (appended > 0) ctx.writer.checkpoint();
+          return { ok: false };
+        }
+        session.replacementsOwed.add(done.replaced);
+        appended += 1;
       }
-      session.replacementsOwed.add(done.replaced);
-      appended += 1;
     }
-  }
-  ctx.writer.checkpoint();
-  return { ok: true };
+    ctx.writer.checkpoint();
+    return { ok: true };
+  });
 }
 
 /**
@@ -2560,18 +2614,31 @@ function recordServices(session: Session, channels: readonly CountedChannel[]): 
     already === undefined ? channels : channels.filter((channel) => !already.has(channel));
   if (fresh.length === 0) return;
 
-  const { ctx, run } = openWrite(session, route.scope);
-  const recordedInRun = already ?? new Set<string>();
-  session.served.set(root, recordedInRun);
-  let appended = 0;
-  for (const channel of fresh) {
-    const done = recordChannelServed(ctx, { channel, which: session.which, run });
-    if (!done.ok) break;
-    session.replacementsOwed.add(done.replaced);
-    recordedInRun.add(channel);
-    appended += 1;
+  // A SERVICE FACT THAT CANNOT BE WRITTEN IS A GAP IN THE EVIDENCE, NEVER A FAILED CALL: this
+  // runs inside the edit gate, whose reply must reach the host whatever the tail does — a thrown
+  // busy tail here used to turn the whole reply into a tool error, which the host reads as "go on".
+  try {
+    const { ctx, run } = openWrite(session, route.scope);
+    const recordedInRun = already ?? new Set<string>();
+    session.served.set(root, recordedInRun);
+    ctx.writer.exclusively(() => {
+      let appended = 0;
+      for (const channel of fresh) {
+        const done = recordChannelServed(ctx, { channel, which: session.which, run });
+        if (!done.ok) break;
+        session.replacementsOwed.add(done.replaced);
+        recordedInRun.add(channel);
+        appended += 1;
+      }
+      if (appended > 0) ctx.writer.checkpoint();
+    });
+  } catch (error) {
+    session.log(
+      oneLine(
+        `a channel.served fact could not be recorded: ${error instanceof Error ? error.message : String(error)}`,
+      ),
+    );
   }
-  if (appended > 0) ctx.writer.checkpoint();
 }
 
 /**
