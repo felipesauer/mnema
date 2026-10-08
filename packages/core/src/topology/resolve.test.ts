@@ -1,4 +1,5 @@
-import { mkdirSync, mkdtempSync, rmSync, symlinkSync, writeFileSync } from 'node:fs';
+import { spawnSync } from 'node:child_process';
+import { mkdirSync, mkdtempSync, realpathSync, rmSync, symlinkSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
@@ -136,6 +137,130 @@ describe('resolveTrees — project discovery', () => {
     writeFileSync(join(sandbox, '.mnema'), 'not a tree', 'utf-8');
     const trees = resolveTrees(sandbox, { home: home() });
     expect(trees.projectPublic).toBeUndefined();
+  });
+});
+
+/** Runs git in `cwd` with no user or system configuration, and fails the test if git does. */
+function git(cwd: string, ...args: string[]): void {
+  const ran = spawnSync('git', ['-c', 'init.defaultBranch=main', ...args], {
+    cwd,
+    encoding: 'utf-8',
+    env: {
+      ...process.env,
+      GIT_CONFIG_NOSYSTEM: '1',
+      GIT_CONFIG_GLOBAL: '/dev/null',
+      GIT_AUTHOR_NAME: 't',
+      GIT_AUTHOR_EMAIL: 't@t',
+      GIT_COMMITTER_NAME: 't',
+      GIT_COMMITTER_EMAIL: 't@t',
+    },
+  });
+  if (ran.status !== 0) throw new Error(`git ${args.join(' ')}: ${ran.stderr}`);
+}
+
+/** A repository at `dir` with one commit, so a worktree or a submodule can be made of it. */
+function repoWithACommit(dir: string): string {
+  mkdirSync(dir, { recursive: true });
+  git(dir, 'init', '-q');
+  writeFileSync(join(dir, 'README'), 'x\n');
+  git(dir, 'add', 'README');
+  git(dir, 'commit', '-qm', 'one');
+  return dir;
+}
+
+/**
+ * The private tree lives beside the repository's objects, not in the working tree a
+ * `git worktree remove` deletes: `<git common dir>/mnema/<project, relative to the top of
+ * the working tree>/private`. Without git it stays where it was.
+ */
+describe('resolveTrees — the private tree lives in the repository, not in a working tree', () => {
+  it('puts it under .git/mnema/private for a project at the top of a repository', () => {
+    const repo = repoWithACommit(join(realpathSync(sandbox), 'repo'));
+    mkdirSync(join(repo, '.mnema'));
+    const trees = resolveTrees(repo, { home: home() });
+    expect(trees.projectPublic).toBe(join(repo, '.mnema'));
+    expect(trees.projectPrivate).toBe(join(repo, '.git', 'mnema', 'private'));
+  });
+
+  it('gives a linked worktree the SAME private tree as the checkout it was made from', () => {
+    const repo = repoWithACommit(join(realpathSync(sandbox), 'repo'));
+    const wt = join(realpathSync(sandbox), 'wt');
+    git(repo, 'worktree', 'add', '-q', wt);
+    for (const top of [repo, wt]) {
+      mkdirSync(join(top, '.mnema'), { recursive: true });
+      expect(resolveTrees(top, { home: home() }).projectPrivate, top).toBe(
+        join(repo, '.git', 'mnema', 'private'),
+      );
+    }
+  });
+
+  it('gives a separate clone a private tree of its own', () => {
+    const repo = repoWithACommit(join(realpathSync(sandbox), 'repo'));
+    const clone = join(realpathSync(sandbox), 'clone');
+    git(realpathSync(sandbox), 'clone', '-q', repo, clone);
+    mkdirSync(join(clone, '.mnema'));
+    expect(resolveTrees(clone, { home: home() }).projectPrivate).toBe(
+      join(clone, '.git', 'mnema', 'private'),
+    );
+  });
+
+  it('keys a nested project by its path under the top of the working tree', () => {
+    const repo = repoWithACommit(join(realpathSync(sandbox), 'repo'));
+    const nested = join(repo, 'sub', 'proj');
+    mkdirSync(join(nested, '.mnema'), { recursive: true });
+    expect(resolveTrees(join(nested, '.mnema'), { home: home() }).projectPrivate).toBe(
+      join(repo, '.git', 'mnema', 'sub', 'proj', 'private'),
+    );
+  });
+
+  it('gives each submodule its own, in the git directory git keeps for it', () => {
+    const inner = repoWithACommit(join(realpathSync(sandbox), 'inner'));
+    const outer = repoWithACommit(join(realpathSync(sandbox), 'outer'));
+    git(outer, '-c', 'protocol.file.allow=always', 'submodule', 'add', '-q', inner, 'mod');
+    mkdirSync(join(outer, 'mod', '.mnema'));
+    expect(resolveTrees(join(outer, 'mod'), { home: home() }).projectPrivate).toBe(
+      join(outer, '.git', 'modules', 'mod', 'mnema', 'private'),
+    );
+  });
+
+  it('follows a .git file to a separate git directory, and a bare repository’s worktree to the bare one', () => {
+    const base = realpathSync(sandbox);
+    const sep = join(base, 'sep');
+    mkdirSync(sep);
+    git(sep, 'init', '-q', '--separate-git-dir', join(base, 'sep.git'));
+    mkdirSync(join(sep, '.mnema'));
+    expect(resolveTrees(sep, { home: home() }).projectPrivate).toBe(
+      join(base, 'sep.git', 'mnema', 'private'),
+    );
+
+    const origin = repoWithACommit(join(base, 'origin'));
+    git(base, 'clone', '-q', '--bare', origin, join(base, 'bare.git'));
+    git(join(base, 'bare.git'), 'worktree', 'add', '-q', join(base, 'bwt'));
+    mkdirSync(join(base, 'bwt', '.mnema'));
+    expect(resolveTrees(join(base, 'bwt'), { home: home() }).projectPrivate).toBe(
+      join(base, 'bare.git', 'mnema', 'private'),
+    );
+  });
+
+  it('keeps each worktree’s installation id in its own git directory, so two worktrees never share a tail', () => {
+    const repo = repoWithACommit(join(realpathSync(sandbox), 'repo'));
+    const wt = join(realpathSync(sandbox), 'wt');
+    git(repo, 'worktree', 'add', '-q', wt);
+    mkdirSync(join(repo, '.mnema'));
+    mkdirSync(join(wt, '.mnema'), { recursive: true });
+    expect(resolveTrees(repo, { home: home() }).projectPrivateInstallation).toBe(
+      join(repo, '.git', 'mnema', 'private'),
+    );
+    expect(resolveTrees(wt, { home: home() }).projectPrivateInstallation).toBe(
+      join(repo, '.git', 'worktrees', 'wt', 'mnema', 'private'),
+    );
+  });
+
+  it('keeps it in .mnema/private where there is no repository', () => {
+    mkdirSync(join(sandbox, '.mnema'));
+    const trees = resolveTrees(sandbox, { home: home() });
+    expect(trees.projectPrivate).toBe(join(sandbox, '.mnema', 'private'));
+    expect(trees.projectPrivateInstallation).toBeUndefined();
   });
 });
 

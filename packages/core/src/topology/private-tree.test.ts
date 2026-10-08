@@ -75,6 +75,23 @@ describe('whether git would stage the private tree', () => {
     expect(privateTreeVisibility(trees)).toEqual({ state: 'unknown' });
   });
 
+  it('says outside the worktree for a tree in the repository’s git directory, whatever the .gitignore says', () => {
+    // Where discovery puts it inside a repository: no `git add` stages a path under `.git/`,
+    // so there is nothing to ask git, and nothing to refuse — even with no `/private/` line.
+    git('init', '-q');
+    writeFileSync(join(repo, '.mnema', '.gitignore'), '/locks/\n');
+    const inRepository = { ...trees, projectPrivate: join(repo, '.git', 'mnema', 'private') };
+    expect(privateTreeVisibility(inRepository)).toEqual({ state: 'outside-the-worktree' });
+  });
+
+  it('still says visible for a private tree inside the worktree that nothing ignores, in a repository whose git directory exists', () => {
+    // The neighbour of the case above: a guard that answered "outside" for every tree in a
+    // repository would pass that one and stage this one.
+    git('init', '-q');
+    writeFileSync(join(repo, '.mnema', '.gitignore'), '/locks/\n');
+    expect(privateTreeVisibility(trees).state).toBe('visible');
+  });
+
   it('says unknown outside a project, which has no private tree', () => {
     expect(privateTreeVisibility({ global: trees.global, keyRoot: trees.keyRoot })).toEqual({
       state: 'unknown',

@@ -6,8 +6,10 @@
  * places their events live:
  *
  *   - PROJECT-PUBLIC  `<repo>/.mnema/`          committed; the team sees it.
- *   - PROJECT-PRIVATE `<repo>/.mnema/private/`  gitignored; only this machine,
- *                                               only this project.
+ *   - PROJECT-PRIVATE `<git common dir>/mnema/<project>/private/`  only this machine, only
+ *                     this project — beside the repository's objects, where removing a
+ *                     worktree does not reach and no `git add` stages; `<repo>/.mnema/private/`
+ *                     (gitignored) outside a repository ({@link privateTreePlace}).
  *   - GLOBAL-PRIVATE  `<data>/global/`          only this machine, ACROSS all
  *                                               projects (personal knowledge).
  *
@@ -41,10 +43,14 @@
 
 import { realpathSync, statSync } from 'node:fs';
 import { dirname, isAbsolute, join, resolve } from 'node:path';
+import { privateTreePlace } from './git-place.js';
 
 /** The directory name a project tree lives in, at a repo's root. */
 export const PROJECT_DIR = '.mnema';
-/** The subdirectory of the public project tree that holds the private tree. */
+/**
+ * The private tree's directory name: under the public project tree outside a repository, and
+ * under the repository's git directory inside one ({@link privateTreePlace}).
+ */
 export const PRIVATE_DIR = 'private';
 /** The application's name — dotted, it is the data directory under the home: `~/.mnema`. */
 export const APP_DIR = 'mnema';
@@ -82,8 +88,17 @@ export interface DiscoveryEnv {
 export interface ResolvedTrees {
   /** `<repo>/.mnema` — committed, team-visible. Absent outside a project. */
   readonly projectPublic?: string;
-  /** `<repo>/.mnema/private` — gitignored, this machine. Absent outside a project. */
+  /**
+   * `<git common dir>/mnema/<project>/private` in a repository, `<repo>/.mnema/private`
+   * (gitignored) outside one — this machine. Absent outside a project.
+   */
   readonly projectPrivate?: string;
+  /**
+   * Where THIS working tree keeps its installation id for the private tree — the same path
+   * under its own git directory, so every worktree writes a tail of its own. Absent outside a
+   * repository, where the id lives in the private tree as in every other tree.
+   */
+  readonly projectPrivateInstallation?: string;
   /** `~/.mnema/global` (under `$MNEMA_HOME` when set) — this machine, across all projects. Always present. */
   readonly global: string;
   /** `~/.mnema/identity` (under `$MNEMA_HOME` when set) — the key root the three trees reference. Always present. */
@@ -156,10 +171,16 @@ export function discover(cwd: string, env: DiscoveryEnv): Discovery {
   const walked = walkUp(cwd, homeSpellings(env));
   if (walked.project === undefined) return { trees: base, passedOver: walked.passedOver };
 
+  const inRepository = privateTreePlace(dirname(walked.project));
   return {
     trees: {
       projectPublic: walked.project,
-      projectPrivate: join(walked.project, PRIVATE_DIR),
+      ...(inRepository === undefined
+        ? { projectPrivate: join(walked.project, PRIVATE_DIR) }
+        : {
+            projectPrivate: inRepository.tree,
+            projectPrivateInstallation: inRepository.installation,
+          }),
       ...base,
     },
     passedOver: walked.passedOver,

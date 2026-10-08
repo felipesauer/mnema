@@ -300,7 +300,15 @@ export function openTreeForWriting(
   }
   // Every product write cites the heads of the other tails it had read (`after`), which is
   // what orders it after them whatever the clocks of two machines say.
-  return openChainForWriting(chainRoot, { keyRoot: trees.keyRoot, citeHeads: true, ...options });
+  // The private tree of a repository is one for all its worktrees, and each keeps its own
+  // installation id in its own git directory — so each writes its own tail (`git-place.ts`).
+  const installationRoot = scope === 'private' ? trees.projectPrivateInstallation : undefined;
+  return openChainForWriting(chainRoot, {
+    keyRoot: trees.keyRoot,
+    citeHeads: true,
+    ...(installationRoot === undefined ? {} : { installationRoot }),
+    ...options,
+  });
 }
 
 /**

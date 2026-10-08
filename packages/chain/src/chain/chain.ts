@@ -33,6 +33,13 @@ export interface OpenOptions extends WriterOptions {
    */
   readonly keyRoot: string;
   readonly upcasters?: UpcasterRegistry;
+  /**
+   * Where the installation id is kept (`<installationRoot>/keys/<fingerprint>.inst`), when it is
+   * not the chain root: a chain several working trees of one repository share gives each its own
+   * id, and so its own tail. The id is chosen locally (FORMAT.md §6.1), so where it is kept is
+   * nothing a reader sees. Defaults to the chain root.
+   */
+  readonly installationRoot?: string;
 }
 
 /**
@@ -62,7 +69,10 @@ export interface OpenOptions extends WriterOptions {
 export function openChainForWriting(chainRoot: string, options: OpenOptions): ChainWriter {
   const chainLayout: ChainLayout = { root: chainRoot };
   const keyPair = loadOrCreateKeyPair({ root: options.keyRoot });
-  const installationId = loadOrCreateInstallationId(chainLayout, keyPair.fingerprint);
+  const installationId = loadOrCreateInstallationId(
+    { root: options.installationRoot ?? chainRoot },
+    keyPair.fingerprint,
+  );
   const upcasters = options.upcasters ?? catalogUpcasters();
   return new ChainWriter(chainLayout, keyPair, installationId, upcasters, options);
 }

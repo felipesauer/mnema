@@ -14,6 +14,12 @@
  * would not, and it answers for every source a project's ignore rules come from (this file, a
  * parent's, `.git/info/exclude`, the user's global file), which a read of one file never did.
  *
+ * INSIDE A REPOSITORY THE TREE IS NO LONGER IN THE WORKING TREE: discovery puts it under the
+ * repository's common git directory (`git-place.ts`), and no `git add` stages a path there. A
+ * tree found there is answered `outside-the-worktree` without asking git, and the write goes on.
+ * Anywhere else — the old `.mnema/private/`, or any private tree inside a working tree — git is
+ * asked as before, and a tree it would stage is still refused.
+ *
  * WITHOUT GIT, NOTHING CHANGES. Outside a repository, with git absent, or when git cannot
  * answer (it exits 128, or runs out of time), the answer is `unknown` and the write goes on as
  * it did: there is no commit to leak into when there is no repository, and a refusal on a
@@ -26,6 +32,7 @@
 import { spawnSync } from 'node:child_process';
 import { dirname, join, relative } from 'node:path';
 import { CodedError } from '@mnema/chain';
+import { gitPlaceOf, isWithin } from './git-place.js';
 import type { ResolvedTrees } from './resolve.js';
 
 /** What git says of the private tree. */
@@ -38,6 +45,8 @@ export type PrivateTreeVisibility =
       /** The file that is meant to keep it out, relative to the same directory. */
       readonly gitignore: string;
     }
+  /** In the repository's git directory, where no working tree reaches: nothing can stage it. */
+  | { readonly state: 'outside-the-worktree' }
   | { readonly state: 'unknown' };
 
 /** How long git is given to answer. It reads a few files; a hang is an answer of "unknown". */
@@ -55,6 +64,10 @@ export function privateTreeVisibility(trees: ResolvedTrees): PrivateTreeVisibili
     return { state: 'unknown' };
   }
   const project = dirname(trees.projectPublic);
+  const place = gitPlaceOf(project);
+  if (place !== undefined && isWithin(trees.projectPrivate, place.commonDir)) {
+    return { state: 'outside-the-worktree' };
+  }
   const inside = relative(project, join(trees.projectPrivate, 'a-private-record'));
   const asked = spawnSync('git', ['check-ignore', '-q', '--', inside], {
     cwd: project,
