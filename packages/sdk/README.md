@@ -69,7 +69,7 @@ turns that test red.
   answers the Agent SDK's permission flow for `ask`.
 - The hooks never block the session for a failure of their own: a project that is not there and a
   channel that is switched off are `{}`. A rule that refuses or asks does so whether or not its fact
-  can be recorded: the hook waits up to about 6 s for a busy record, and if the fact still cannot
+  can be recorded: the hook waits up to 7 s for a busy record, and if the fact still cannot
   be written, the reason says so and the record does not show that refusal or asking.
 - It reads the record at and above `cwd` and, as the command line does, the private and the global
   tree of the machine's `HOME`. It never calls a model and never touches the network.

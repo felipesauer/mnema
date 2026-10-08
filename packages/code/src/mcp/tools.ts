@@ -2368,7 +2368,7 @@ export function runGoverningRulesTool(
  *     per rule that refuses, in the place of both of the above: a refusal is the fact itself, so
  *     it records no service.
  * The ASKING IS APPENDED BEFORE THE REPLY IS COMPOSED, and the reply does not wait on it
- * landing. If the fact cannot be written — the record busy past about 6 s, or a field the
+ * landing. If the fact cannot be written — the record busy past `A_CHARGE_WAITS_MS`, or a field the
  * content door refuses — the charge still stands and its reason says the fact is missing
  * (`recordTheCharge`): a charge that fell open whenever the fact could not be written let any
  * process holding the tail switch every rule of the project off.
@@ -2485,12 +2485,17 @@ export function runRulesBeforeAnEditTool(
   // SERVICE IS RECORDED FOR WHAT ACTUALLY SPOKE, per channel, once per run — never for a
   // channel that was switched off and never for one that had nothing to say. A fact saying
   // a channel served on a call where it said nothing would be the fact reading backwards.
-  recordServices(session, [
-    // The push said nothing of its own on a held write: its rules are in the refusal.
-    ...(context !== undefined && deny === undefined ? [EDIT_PUSH_CHANNEL] : []),
-    ...(charged.ok && ask !== undefined ? [ASKS_A_PERSON_CHANNEL] : []),
-    ...(deny !== undefined ? [FIRST_WRITE_GATE_CHANNEL] : []),
-  ]);
+  // NOT TRIED AT ALL WHEN THE CHARGE COULD NOT BE RECORDED: the tail just kept the charge out for
+  // the whole of its budget, and asking it again for the service fact would add one more lock wait
+  // to a reply the host is timing (measured: an asking with the tail held took 8.1 s with it).
+  if (charged.ok && refusal?.ok !== false) {
+    recordServices(session, [
+      // The push said nothing of its own on a held write: its rules are in the refusal.
+      ...(context !== undefined && deny === undefined ? [EDIT_PUSH_CHANNEL] : []),
+      ...(ask !== undefined ? [ASKS_A_PERSON_CHANNEL] : []),
+      ...(deny !== undefined ? [FIRST_WRITE_GATE_CHANNEL] : []),
+    ]);
+  }
   // WHAT THOSE WRITES FOUNDED rides in the text the host hands the agent — the one field of a
   // hook reply that reaches the model; prose beside it would be dropped. It can only be owed on
   // a call that already speaks, because the facts above are written only for a channel that

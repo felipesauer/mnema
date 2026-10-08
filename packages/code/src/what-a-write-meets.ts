@@ -23,7 +23,7 @@
  * before it answers the host, and answers the same whether or not they land ({@link recordTheCharge}).
  */
 
-import { TailBusyError } from '@mnema/chain';
+import { DEFAULT_WAIT_MS, TailBusyError } from '@mnema/chain';
 import { channelIsOn, type RulesAtPath, type ScopedCache } from '@mnema/context';
 import { whatAWriteAsks } from './edit-asks-a-person.js';
 import { editRefusesNotice } from './edit-refuses-a-write.js';
@@ -144,8 +144,9 @@ function verdict(
 }
 
 /**
- * How many times a charge's facts may wait out the tail lock's own budget (2 s each) before the
- * reply goes to the host without them.
+ * How long a charge's facts may take, in all, before the reply goes to the host without them: a
+ * new try starts only if one more of the tail lock's own waits ({@link DEFAULT_WAIT_MS}, 2 s) would
+ * end inside it. So the command hook tries three times, at about 0, 2 and 4 s, and gives up at 6.
  *
  * THE RULE REFUSES WHETHER OR NOT ITS FACT LANDS. The refusal and the asking are decided by
  * reading the record, which takes no lock; only the fact that a write was refused or held is an
@@ -154,30 +155,39 @@ function verdict(
  * as it held it: measured, the write went through at 2.3 s with the lock held by a live pid. So
  * the fact gets more patience than an ordinary write, and its absence is said in the reason.
  *
- * THREE, so the longest wait is about 6 s and not more, because a host that times the hook out
- * lets the write through: every host this plugin wires gives the hook 15 s
- * (`plugin/hooks/hooks.json`), and a hook that waited as long as it takes would reopen the write
- * by that road.
+ * A BUDGET IN TIME, NOT A COUNT OF TRIES. The first try in the server can take two waits — it
+ * opens the session's run, then appends the facts, each under a hold of its own — so a count of
+ * three let one call wait 8 s and more. No later try opens the run again, so no try can end past
+ * this budget: 7 s is the worst, however the waits fall. Measured on the binary with the tail held
+ * by a live pid: the command hook answered `deny` in 6.3 s, the server's refusal and asking in
+ * 6.0 s each (they were 8.1 s for the asking before the service fact stopped being tried after a
+ * charge that did not land).
+ *
+ * It stays well under the hook's timeout because a host that times the hook out lets the write
+ * through: every host this plugin wires gives the hook 15 s (`plugin/hooks/hooks.json`), and a
+ * hook that waited as long as it takes would reopen the write by that road.
  */
-export const A_CHARGE_TRIES = 3;
+export const A_CHARGE_WAITS_MS = 7_000;
 
 /** Whether a charge's facts are on the chain, and if not, why — in words the reason can carry. */
 export type ChargeRecorded = { readonly ok: true } | { readonly ok: false; readonly why: string };
 
 /**
- * Appends a charge's facts with {@link A_CHARGE_TRIES} times the tail's patience, and never throws:
- * the reply to the host is composed whatever this answers.
+ * Appends a charge's facts with up to {@link A_CHARGE_WAITS_MS} of patience, and never throws: the
+ * reply to the host is composed whatever this answers.
  */
 export function recordTheCharge(
   record: () => { readonly ok: boolean; readonly why?: string },
 ): ChargeRecorded {
-  for (let tries = 1; ; tries += 1) {
+  const started = Date.now();
+  for (;;) {
     try {
       const done = record();
       if (done.ok) return { ok: true };
       return { ok: false, why: done.why ?? 'the record would not take the fact' };
     } catch (error) {
-      if (error instanceof TailBusyError && tries < A_CHARGE_TRIES) continue;
+      const endsInside = Date.now() - started + DEFAULT_WAIT_MS <= A_CHARGE_WAITS_MS;
+      if (error instanceof TailBusyError && endsInside) continue;
       return { ok: false, why: whyNotRecorded(error) };
     }
   }

@@ -26,6 +26,7 @@
  */
 
 import { existsSync, mkdtempSync, readFileSync, rmSync, utimesSync, writeFileSync } from 'node:fs';
+import { createRequire, syncBuiltinESMExports } from 'node:module';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
@@ -285,6 +286,43 @@ describe('the lock a writer holds while it appends', () => {
     expect(Date.now() - started).toBeLessThan(DEFAULT_WAIT_MS);
     expect(entries().length).toBe(2);
     expect(existsSync(lock)).toBe(false);
+  });
+
+  it('does not break the fresh empty lock of a live holder that took the old one\u2019s place', {
+    timeout: 20_000,
+  }, () => {
+    const w = founded();
+    const before = entries().length;
+    const lock = tailLockPath({ root }, w.tail);
+    writeFileSync(lock, '');
+    const old = (Date.now() - UNREADABLE_LOCK_ABANDONED_MS - 1_000) / 1000;
+    utimesSync(lock, old, old);
+    // THE ABA. This writer judges the old empty lock abandoned; before its claim lands, another
+    // waiter breaks that same lock and takes the tail with a fresh one it has not written its
+    // line into yet. Both files are empty, so the bytes this writer compares are the same.
+    const fs = createRequire(import.meta.url)('node:fs') as typeof import('node:fs');
+    const rename = fs.renameSync;
+    let raced = false;
+    fs.renameSync = (from, to) => {
+      if (!raced && String(to).endsWith('.breaking')) {
+        raced = true;
+        fs.unlinkSync(lock);
+        fs.writeFileSync(lock, '', { flag: 'wx' });
+      }
+      rename(from, to);
+    };
+    syncBuiltinESMExports();
+    try {
+      // The fresh lock is young and names nobody: the writer waits it out and refuses.
+      expect(() => w.append(task(w, 'beside-a-fresh-holder'))).toThrow(TailBusyError);
+    } finally {
+      fs.renameSync = rename;
+      syncBuiltinESMExports();
+    }
+    expect(raced).toBe(true);
+    expect(existsSync(lock)).toBe(true);
+    expect(entries().length).toBe(before);
+    rmSync(lock);
   });
 
   it('does not break a lock file that names no pid while it is young', { timeout: 20_000 }, () => {

@@ -233,16 +233,31 @@ interface Holder {
   readonly record: string;
   /** How long ago the file was last written, by its mtime: what judges a file with no pid. */
   readonly ageMs: number;
+  /**
+   * WHICH FILE was judged — its inode and its mtime to the nanosecond — so a breaker can prove the
+   * file it moved is that one and not a fresh lock with the same bytes. Two empty locks have the
+   * same bytes, so the record alone cannot tell them apart.
+   */
+  readonly identity: string;
+}
+
+/** The inode and nanosecond mtime of a file: what tells one lock file from the next. */
+function identityOf(path: string): string {
+  const stat = statSync(path, { bigint: true });
+  return `${stat.ino}:${stat.mtimeNs}`;
 }
 
 function holderOf(path: string): Holder | undefined {
   let record: string;
   let written: number;
+  let identity: string;
   try {
     // Read, THEN stat: a holder that writes its record between the two leaves a fresh mtime,
     // so an empty read is never judged old on the strength of a stamp taken before it.
     record = readFileSync(path, 'utf-8');
-    written = statSync(path).mtimeMs;
+    const stat = statSync(path, { bigint: true });
+    written = Number(stat.mtimeMs);
+    identity = `${stat.ino}:${stat.mtimeNs}`;
   } catch {
     return undefined; // vanished between the failed create and this read: retry
   }
@@ -250,8 +265,8 @@ function holderOf(path: string): Holder | undefined {
   const [pidText, sinceText] = record.trim().split(' ');
   const pid = Number.parseInt(pidText ?? '', 10);
   const since = Number.parseInt(sinceText ?? '', 10);
-  if (!Number.isFinite(pid)) return { pid: undefined, since: 0, record, ageMs };
-  return { pid, since: Number.isFinite(since) ? since : 0, record, ageMs };
+  if (!Number.isFinite(pid)) return { pid: undefined, since: 0, record, ageMs, identity };
+  return { pid, since: Number.isFinite(since) ? since : 0, record, ageMs, identity };
 }
 
 /**
@@ -275,13 +290,16 @@ function breakIfAbandoned(path: string, held: Holder): boolean {
   }
   try {
     const moved = readFileSync(claim, 'utf-8');
-    if (moved === held.record) {
+    if (moved === held.record && identityOf(claim) === held.identity) {
       unlinkSync(claim);
       return true;
     }
-    // Different bytes: between the judgement and the rename the old lock was
-    // released and a LIVE holder took a fresh one. Put it back — breaking it would
-    // be exactly the corruption this file exists to prevent.
+    // Different bytes, or the same bytes in a different file: between the judgement and the
+    // rename the old lock was released — or broken by another waiter — and a LIVE holder took
+    // a fresh one. Two empty locks read alike, so only the file's identity tells them apart
+    // (measured: without it, a waiter that judged an old empty lock renamed and deleted the
+    // fresh empty lock of a live holder, and two writers held one tail). Put it back —
+    // breaking it would be exactly the corruption this file exists to prevent.
     renameSync(claim, path);
   } catch {
     // Best effort: the claim is a uniquely-named file this process owns, so the

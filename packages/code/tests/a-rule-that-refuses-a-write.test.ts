@@ -41,6 +41,7 @@ import { openSession } from '../src/mcp/session.js';
 import { runGoverningRulesTool, runRulesBeforeAnEditTool } from '../src/mcp/tools.js';
 import { acceptedBy } from '../src/presentation/accepted-by.js';
 import { type CliIo, run } from '../src/program.js';
+import { A_CHARGE_WAITS_MS } from '../src/what-a-write-meets.js';
 
 const REPO = fileURLToPath(new URL('../../../', import.meta.url));
 const CLI = join(REPO, 'packages', 'code', 'dist', 'cli.js');
@@ -304,9 +305,9 @@ describe('the verb a command host runs', () => {
     expect(reason).toContain(`process ${process.pid} was writing the record`);
     expect(notes).toHaveLength(1);
     expect(publicEvents().length).toBe(before);
-    // Three of the lock's 2 s budgets, and well under the 15 s every host gives the hook.
+    // Three of the lock's 2 s waits, inside the charge's budget and well under the hook's 15 s.
     expect(waited).toBeGreaterThanOrEqual(6_000);
-    expect(waited).toBeLessThan(10_000);
+    expect(waited).toBeLessThan(A_CHARGE_WAITS_MS + 500);
   });
 
   it('asks while a live process holds the record, and says the fact is missing', {
@@ -417,8 +418,26 @@ describe('the MCP tool Claude Code’s hook calls', () => {
       `process ${process.pid} was writing the record`,
     );
     expect(publicEvents().length).toBe(before);
-    expect(waited).toBeLessThan(10_000);
+    expect(waited).toBeLessThan(A_CHARGE_WAITS_MS + 500);
   });
+
+  it('asks while a live process holds the record, inside the charge\u2019s budget, pushing no service fact', async () => {
+    // A rule that informs at the same path, so the push has a service fact to record: tried after
+    // a charge the tail kept out, it was one more lock wait (8.1 s for the whole answer).
+    await did('link', governing, 'src/other', '--rel', 'governs');
+    const before = publicEvents().length;
+    const lock = holdTheTail();
+    const started = Date.now();
+    const specific = tool('src/other/refund.ts')['hookSpecificOutput'] as Record<string, string>;
+    const waited = Date.now() - started;
+    rmSync(lock);
+    expect(specific['permissionDecision']).toBe('ask');
+    expect(specific['permissionDecisionReason']).toContain(
+      'This request for a person could not be recorded',
+    );
+    expect(publicEvents().length).toBe(before);
+    expect(waited).toBeLessThan(A_CHARGE_WAITS_MS + 500);
+  }, 30_000);
 });
 
 describe('the same rule, said again in one session', () => {
