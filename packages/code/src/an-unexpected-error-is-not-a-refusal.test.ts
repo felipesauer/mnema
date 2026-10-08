@@ -76,7 +76,9 @@ describe('the last-resort catch', () => {
     const said = await whatItThrows(
       () => new TypeError("Cannot read properties of undefined (reading 'seq')"),
     );
-    expect(said.err).toEqual([
+    // The first line is the error; a second one, the offer of a report, follows the first fault of
+    // its kind on this machine (`a-report-is-built-from-an-allowlist.test.ts` holds that line).
+    expect(said.err.slice(0, 1)).toEqual([
       "mnema hit an internal error: TypeError: Cannot read properties of undefined (reading 'seq'): this is a fault in mnema, not a refusal of the command",
     ]);
     expect(said.exit).toBe(INTERNAL_ERROR_EXIT);

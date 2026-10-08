@@ -301,6 +301,8 @@ const INVOCATION: Readonly<Record<string, Invocation>> = {
   brief: { argv: () => ['brief'] },
   recall: { argv: () => ['recall'] },
   doctor: { argv: () => ['doctor'] },
+  // It shows the report of the last internal error from a file of the machine's, outside the chain.
+  report: { argv: () => ['report'] },
   // A HOST FEEDS IT, like `before-a-write`, and in process there is no standard input to hand it:
   // the verb answers `{}`, and what it counts is held with a transcript through the plugin's
   // command (`a-session-says-what-it-wrote.test.ts`).
@@ -675,6 +677,7 @@ describe('every verb says if it writes', () => {
       'aging',
       'trailer',
       'doctor',
+      'report',
       'completion',
       'tally',
     ]);

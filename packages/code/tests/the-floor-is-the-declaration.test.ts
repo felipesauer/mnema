@@ -485,6 +485,7 @@ const FLOOR_MODULES: readonly string[] = [
   // The verb that lists what recurs across named projects and copies one to the global tree: on the
   // floor because commander holds its declaration to print a line of help, reaching its command and
   // its presentation only inside the action.
+  'wiring/problem-report.ts',
   'wiring/promote.ts',
   // The verb that prints the notes a session opens with. It is on the floor for the
   // reason every verb's wiring is — commander has to hold its declaration to print a line
