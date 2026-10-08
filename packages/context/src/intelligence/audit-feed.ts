@@ -340,6 +340,11 @@ export const AUDIT_BY_KIND: { readonly [K in EventKind]: AuditMapping } = {
     entityTypeId: ENTITY_USER,
     entityType: 'identity',
   },
+  // A stack starts governing, and stops: a Create and a Delete of the adoption, which is the
+  // entity the subject names. The removal erases no event; what it deletes is the adoption's
+  // standing, as a pruned tail's waiver deletes a tail and keeps its record.
+  'stack.adopted': { activity: ACTIVITY.create, entityTypeId: ENTITY_OTHER, entityType: 'stack' },
+  'stack.removed': { activity: ACTIVITY.delete, entityTypeId: ENTITY_OTHER, entityType: 'stack' },
 };
 
 /** Who is reporting the feed — the producer's own identity, which the record does not hold. */

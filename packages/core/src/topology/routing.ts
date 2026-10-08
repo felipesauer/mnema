@@ -207,6 +207,9 @@ export const UNROUTED_KINDS: { readonly [K in Exclude<EventKind, RoutedKind>]: s
   'backup.declared': 'a backup is declared in the tree that enrolled it, beside its enrollment',
   'tail.pruned':
     'a waiver belongs to the tree whose tail it names — the census that reads it is per-tree',
+  'stack.adopted':
+    'an adoption is written in the tree its signed scope names, which the person chose: public, private or global',
+  'stack.removed': 'a removal is written in the tree the adoption it ends was written in',
 };
 
 /**

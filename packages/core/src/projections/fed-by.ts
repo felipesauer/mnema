@@ -129,6 +129,10 @@ export const FED_BY_KIND: { readonly [K in EventKind]: readonly ProjectionTable[
   'account.linked': [...EVERY_KIND_FEEDS],
   // A key's role, read by the verifier's census; it adds and removes no member.
   'backup.declared': [...EVERY_KIND_FEEDS],
+  // Which stacks govern is read off the chain by the reading that compares a disk with an
+  // adopted digest, never off this cache; the reference index still holds both facts.
+  'stack.adopted': [...EVERY_KIND_FEEDS],
+  'stack.removed': [...EVERY_KIND_FEEDS],
 };
 
 /**
