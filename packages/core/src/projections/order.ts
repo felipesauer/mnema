@@ -3,23 +3,31 @@
  * the input a projection replays.
  *
  * The chain is per-tail by design: each machine appends to its own tail, and
- * there is NO global causal order across tails (that is what makes an offline
- * merge a no-op instead of a conflict). Two rules govern the merge:
+ * there is NO global order across tails (that is what makes an offline merge a
+ * no-op instead of a conflict). What there is, when a writer had read another
+ * tail, is its word for it: the envelope's `after` names the heads it had read.
+ * Three rules govern the merge:
  *
  *   - WITHIN a tail, `seq` is the true order and the hash chain proves it. That
  *     order is NEVER reordered — not even when a tail's own `at` values are not
  *     monotonic (a clock that steps back between two appends must not move a
  *     later-sequenced fact earlier). The proof, not the wall-clock, defines
  *     within-tail order.
- *   - ACROSS tails, no true order exists, so the merge picks a convention. The
- *     only thing a cache needs is that it is TOTAL and DETERMINISTIC: the same
- *     tails always fold to the same order, so a rebuild reproduces the same
- *     state every time.
+ *   - A CITATION is honoured: an event is not taken before what its `after`
+ *     names. A writer only cites what it had read, so this is the one piece of
+ *     true order across tails the record carries, and it holds whatever the
+ *     clocks said.
+ *   - ACROSS tails otherwise, no true order exists, so the merge picks a
+ *     convention. The only thing a cache needs is that it is TOTAL and
+ *     DETERMINISTIC: the same tails always fold to the same order, so a rebuild
+ *     reproduces the same state every time.
  *
- * So this is a k-way merge of per-tail streams, each already in `seq` order. At
- * each step it takes the tail whose next event has the smallest `at`, breaking
- * ties by the tail's key — its id, and across trees the tree's position before
- * it. The key is all there is to break on: two heads of one tail never meet,
+ * So this is a k-way merge of per-tail streams, each already in `seq` order —
+ * the chain's own {@link causalOrder}, the merge the verifier's enrolment fold
+ * walks too. At each step it takes, among the tails whose next event cites
+ * nothing not yet taken, the one whose next event has the smallest `at`,
+ * breaking ties by the tree's position (as a number) and then the tail id.
+ * The tail id is all there is to break on in one tree: two heads of one tail never meet,
  * because `seq` has already put them in order. `at` is only ever compared BETWEEN the heads of
  * different tails — an approximate, human-legible interleaving hint — and never
  * within a tail, so it can never override the proven order. A plain global sort
@@ -36,6 +44,7 @@
 import {
   type CatalogEvent,
   type ChainLayout,
+  causalOrder,
   type Entry,
   firstLinkBreakFrom,
   type LinkBreak,
@@ -48,13 +57,6 @@ import {
 } from '@mnema/chain';
 
 /**
- * One tail's events in proven (`seq`) order, plus a read cursor. `key` is what
- * ties break on across tails; it is total and deterministic within one merge.
- * For a single chain it is the tail id; across trees it is qualified by tree
- * (see {@link streamsOf}) so two trees that happen to share a tail id — the same
- * person's key installs into each — still merge to one stable order.
- */
-/**
  * What a reading of one tail contributed, and where it left off — the shape both the
  * resumed reading and the whole one answer in, so {@link chainArrivals} has one case.
  */
@@ -63,10 +65,18 @@ interface ReadSoFar {
   readonly boundary: TailBoundary | undefined;
 }
 
+/**
+ * One tail's events in proven (`seq`) order, with their entry hashes. `tree` and `tail`
+ * are what ties break on, in that order: the tree's position in the list a caller gave
+ * (0 for a single chain), compared as a NUMBER, and then the tail id — so two trees that
+ * happen to share a tail id (the same person's key installs into each) still merge to one
+ * stable order, and the eleventh tree listed sorts after the second.
+ */
 interface TailStream {
-  readonly key: string;
+  readonly tree: number;
   readonly events: readonly CatalogEvent[];
-  cursor: number;
+  /** The entry hash of each event, by position — what a citation names. */
+  readonly hashes: readonly string[];
   /**
    * The tail this stream came from, and the last `seq` it held when it was read.
    * The merge reads neither — they are what {@link ChainFrontier} is made of, and
@@ -183,6 +193,12 @@ export interface ChainFrontier {
   readonly tails: ReadonlyMap<string, TailReach>;
   /** How many events the order held — the base position of the next arrival. */
   readonly events: number;
+  /**
+   * The entry hashes the covered events cite and the chain did not hold — citations the
+   * order ignored. An arrival that IS one of them would have held its citing event back,
+   * so it cannot be a suffix: see {@link chainArrivals}.
+   */
+  readonly unresolved: readonly string[];
 }
 
 /** One reading of a chain: the order it produced, and how far it reached. */
@@ -210,7 +226,7 @@ export interface ChainReplay {
  * one reading, one order, so a caller that wants both cannot get two.
  */
 export function chainReplay(layout: ChainLayout, upcasters: UpcasterRegistry): ChainReplay {
-  const streams = streamsOf(layout, upcasters, '');
+  const streams = streamsOf(layout, upcasters, 0);
   const tails = new Map<string, TailReach>();
   for (const stream of streams) {
     // One `readdir` per tail beside the reading of it. A replay parses every line of
@@ -224,11 +240,11 @@ export function chainReplay(layout: ChainLayout, upcasters: UpcasterRegistry): C
       latestAt: latestAt(stream.events),
     });
   }
-  const events = mergeStreams(streams);
+  const { events, unresolved } = mergeStreams(streams);
   const linkBreaks = streams
     .map((stream) => stream.linkBreak)
     .filter((broken): broken is LinkBreak => broken !== undefined);
-  return { events, frontier: { tails, events: events.length }, linkBreaks };
+  return { events, frontier: { tails, events: events.length, unresolved }, linkBreaks };
 }
 
 /** What a chain holds beyond a frontier, when that can be said as a suffix. */
@@ -302,8 +318,11 @@ export type ChainArrivals =
  * order and an arrival's `seq` is above everything covered, so it follows by proof
  * whatever its `at` says — which is the same reason the merge never compares two
  * events of one tail. What has to be tested is an arrival against the covered events
- * of the OTHER tails, and there the comparison is `(at, tail)`, exactly as
- * {@link headPrecedes} makes it.
+ * of the OTHER tails, and there the comparison is `(at, tail)`, exactly as the merge
+ * ({@link causalOrder}) makes it between heads. A citation can only hold an arrival back
+ * further, never bring it forward, so it adds two cases and changes none: an arrival that a
+ * covered event cites (its citation was ignored, and would not be now), and an arrival
+ * citing an entry the frontier cannot place.
  *
  * That distinction is not a refinement, it is what makes the fast path reachable.
  * The first version of this test compared every arrival against the greatest `at` in
@@ -363,6 +382,7 @@ export function chainArrivals(
 ): ChainArrivals {
   const tails = listTails(layout);
   const present = new Set(tails);
+  const unresolved = new Set(frontier.unresolved);
   for (const tail of frontier.tails.keys()) {
     if (!present.has(tail)) return { suffix: false, why: 'A_TAIL_IS_GONE' };
   }
@@ -424,6 +444,11 @@ export function chainArrivals(
       latestAt: greater(covered?.latestAt ?? '', latestAt(fresh)),
     });
     if (fresh.length === 0) continue;
+    // A citation the covered order ignored, now satisfied: the event citing it would have
+    // waited for this one, so what was covered is not a prefix of the order any more.
+    if (entries.some((entry) => unresolved.has(entry.link.hash))) {
+      refusal ??= { suffix: false, why: 'AN_ARRIVAL_IS_NOT_LATER' };
+    }
     // The arrivals of this tail must follow the covered events of every OTHER tail,
     // under the comparison the merge makes between heads. Nothing is asked about this
     // tail's own covered events: `seq` already settles those.
@@ -440,7 +465,23 @@ export function chainArrivals(
         }
       }
     }
-    streams.push({ key: tail, events: fresh, cursor: 0, tail, lastSeq, lastHash });
+    streams.push({
+      tree: 0,
+      events: fresh,
+      hashes: entries.map((entry) => entry.link.hash),
+      tail,
+      lastSeq,
+      lastHash,
+    });
+  }
+
+  // What an arrival cites has to be somewhere the merge of the arrivals can place it: among
+  // the arrivals, or the last covered entry of a tail, which every arrival follows. Anything
+  // else is an entry the frontier cannot place — covered further down, or not held at all —
+  // and telling those apart would take the reading this exists to avoid, so the order is
+  // read again instead.
+  if (refusal === undefined && broken.length === 0 && citesBeyond(streams, reached)) {
+    refusal = { suffix: false, why: 'AN_ARRIVAL_IS_NOT_LATER' };
   }
 
   const [firstBreak] = broken;
@@ -452,12 +493,32 @@ export function chainArrivals(
   // The SAME merge the whole order goes through, over the arrivals alone. It is the
   // same function and the same keys, which is what makes the result the tail of the
   // order rather than a second convention for interleaving.
-  const events = mergeStreams(streams);
+  const { events } = mergeStreams(streams);
   return {
     suffix: true,
     events,
-    frontier: { tails: reached, events: frontier.events + events.length },
+    frontier: {
+      tails: reached,
+      events: frontier.events + events.length,
+      unresolved: frontier.unresolved,
+    },
   };
+}
+
+/**
+ * Whether an arrival cites an entry the arrivals' own merge cannot place: one that is neither
+ * an arrival nor the last covered entry of some tail.
+ */
+function citesBeyond(
+  streams: readonly TailStream[],
+  reached: ReadonlyMap<string, TailReach>,
+): boolean {
+  const placed = new Set<string>();
+  for (const stream of streams) for (const hash of stream.hashes) placed.add(hash);
+  for (const reach of reached.values()) if (reach.lastHash !== null) placed.add(reach.lastHash);
+  return streams.some((stream) =>
+    stream.events.some((event) => (event.after ?? []).some((hash) => !placed.has(hash))),
+  );
 }
 
 /** The greater of two instants — the per-tail high-water mark, carried forward. */
@@ -546,45 +607,29 @@ export interface RecordOrder {
  *
  * A chain's own order is the one {@link orderedEvents} gives it, and that is asserted
  * rather than assumed (`order.test.ts`, "orders each chain exactly as `orderedEvents`
- * does"). The per-chain tie-break key is qualified here where that function leaves it
- * bare, which cannot change a within-chain order: every stream of one chain gets the
- * same qualifier, so their keys compare exactly as their tail ids do.
+ * does"). The tree's position breaks a tie here before the tail id does, which cannot
+ * change a within-chain order: every stream of one chain has the same position, so they
+ * compare exactly as their tail ids do. And a citation resolves inside its own chain, so
+ * it reorders a chain against itself and nothing else.
  */
 export function orderedEventsOfRecord(
   layouts: readonly ChainLayout[],
   upcasters: UpcasterRegistry,
 ): RecordOrder {
-  const perChain = layouts.map((layout, index) => streamsOf(layout, upcasters, `${index}:`));
+  const perChain = layouts.map((layout, index) => streamsOf(layout, upcasters, index));
   return {
-    chains: perChain.map((streams) => mergeStreams(rewound(streams))),
-    across: mergeStreams(rewound(perChain.flat())),
+    chains: perChain.map((streams) => mergeStreams(streams).events),
+    across: mergeStreams(perChain.flat()).events,
   };
 }
 
 /**
- * The same streams with fresh cursors — one read, several merges. It copies the
- * cursor and SHARES the events, because draining a stream is what consumes it and
- * the events are what cost something to obtain.
+ * Builds the per-tail streams of one chain. `tree` is the chain's position in the list a
+ * caller gave, which breaks a tie between two trees before the tail id does — so streams
+ * from different trees never tie on their key even when they share a tail id. A single
+ * chain is tree 0, which leaves the single-chain order the tail id's alone.
  */
-function rewound(streams: readonly TailStream[]): TailStream[] {
-  return streams.map((stream) => ({
-    key: stream.key,
-    events: stream.events,
-    cursor: 0,
-    tail: stream.tail,
-    lastSeq: stream.lastSeq,
-    lastHash: stream.lastHash,
-    ...(stream.boundary !== undefined ? { boundary: stream.boundary } : {}),
-  }));
-}
-
-/**
- * Builds the per-tail streams of one chain. `prefix` qualifies each stream's
- * tie-break key so streams from different trees never share a key even when they
- * share a tail id. Within one chain the prefix is empty, preserving the exact
- * single-chain order (tail id alone).
- */
-function streamsOf(layout: ChainLayout, upcasters: UpcasterRegistry, prefix: string): TailStream[] {
+function streamsOf(layout: ChainLayout, upcasters: UpcasterRegistry, tree: number): TailStream[] {
   return listTails(layout).map((tail) => {
     // `readTail` rather than `readTailEntries`: the same bytes, plus what the read
     // had to notice about them. A reading that took only the entries is how a chain
@@ -592,9 +637,9 @@ function streamsOf(layout: ChainLayout, upcasters: UpcasterRegistry, prefix: str
     const read = readTail(layout, tail, upcasters);
     const entries = read.entries;
     return {
-      key: `${prefix}${tail}`,
+      tree,
       events: entries.map((entry) => entry.event),
-      cursor: 0,
+      hashes: entries.map((entry) => entry.link.hash),
       tail,
       lastSeq: entries.length === 0 ? -1 : (entries[entries.length - 1] as Entry).link.seq,
       lastHash: entries.length === 0 ? null : (entries[entries.length - 1] as Entry).link.hash,
@@ -604,39 +649,35 @@ function streamsOf(layout: ChainLayout, upcasters: UpcasterRegistry, prefix: str
   });
 }
 
-/** Drains streams into one order by repeatedly taking the earliest head. */
-function mergeStreams(streams: TailStream[]): CatalogEvent[] {
-  const merged: CatalogEvent[] = [];
-  for (;;) {
-    const next = pickNextStream(streams);
-    if (next === undefined) break;
-    merged.push(next.events[next.cursor] as CatalogEvent);
-    next.cursor += 1;
-  }
-  return merged;
-}
-
 /**
- * Chooses the stream to take the next event from: the one whose head has the
- * smallest `at`, ties broken by stream key (deterministic). Returns undefined
- * when every stream is drained. Consuming heads in this way preserves each
- * tail's `seq` order untouched — only heads of DIFFERENT tails are compared.
+ * Merges streams into one order — {@link causalOrder}, the chain's own merge — and says which
+ * citations it could not place: the hashes cited that the streams' trees do not hold, which
+ * the order ignored. The streams are read and never consumed, so one reading serves several
+ * merges.
  */
-function pickNextStream(streams: readonly TailStream[]): TailStream | undefined {
-  let chosen: TailStream | undefined;
-  for (const stream of streams) {
-    if (stream.cursor >= stream.events.length) continue;
-    if (chosen === undefined || headPrecedes(stream, chosen)) {
-      chosen = stream;
-    }
+function mergeStreams(streams: readonly TailStream[]): {
+  readonly events: CatalogEvent[];
+  readonly unresolved: string[];
+} {
+  const eventAt = (tail: number, position: number): CatalogEvent =>
+    (streams[tail] as TailStream).events[position] as CatalogEvent;
+  const merged = causalOrder(
+    streams.map((stream) => ({
+      tree: stream.tree,
+      tail: stream.tail,
+      length: stream.events.length,
+    })),
+    {
+      at: (tail, position) => eventAt(tail, position).at,
+      hash: (tail, position) => (streams[tail] as TailStream).hashes[position] as string,
+      after: (tail, position) => eventAt(tail, position).after,
+    },
+  );
+  const cursors = streams.map(() => 0);
+  const events: CatalogEvent[] = [];
+  for (const step of merged.steps) {
+    events.push(eventAt(step, cursors[step] as number));
+    cursors[step] = (cursors[step] as number) + 1;
   }
-  return chosen;
-}
-
-/** True if `a`'s head should come before `b`'s: by `at`, then stream key. */
-function headPrecedes(a: TailStream, b: TailStream): boolean {
-  const atA = (a.events[a.cursor] as CatalogEvent).at;
-  const atB = (b.events[b.cursor] as CatalogEvent).at;
-  if (atA !== atB) return atA < atB;
-  return a.key < b.key;
+  return { events, unresolved: [...new Set(merged.notHeld.map((citation) => citation.hash))] };
 }

@@ -472,13 +472,15 @@ describe('the rule has one place', () => {
   });
 
   /**
-   * The THREE documents read through the tolerant `parseStoredJson` rather than through
+   * The FOUR documents read through the tolerant `parseStoredJson` rather than through
    * `parseCanonicalLine`, each with why it is not a line of the record. Reconciled in both
    * directions: a file that starts calling the tolerant reader is accused until somebody
    * says here why its document may be re-spelled, and an entry whose file stopped is accused
    * too, so the list cannot become a blanket.
    */
   const TOLERANT_READERS: Readonly<Record<string, string>> = {
+    [join('chain', 'cited-heads.ts')]:
+      "the note of which heads a tail last cited, under the tree's `locks/`: never committed, never read by the second reader, and a lost or unreadable note costs one redundant citation, never an order",
     [join('chain', 'backup.ts')]:
       "a registration file under this machine's key root: never committed, never read by the second reader, and no proof is taken over its bytes",
     [join('chain', 'key-protection.ts')]:
@@ -500,7 +502,7 @@ describe('the rule has one place', () => {
       .sort();
   }
 
-  it('reads every line of the record through parseCanonicalLine, and only three other documents through the tolerant reader', () => {
+  it('reads every line of the record through parseCanonicalLine, and only four other documents through the tolerant reader', () => {
     expect(callersOf('parseStoredJson')).toEqual(Object.keys(TOLERANT_READERS).sort());
     expect(callersOf('parseCanonicalLine')).toEqual(
       [

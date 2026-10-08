@@ -18,20 +18,23 @@
  *
  * Why the fold runs across ALL tails in one order: enrollment is an identity
  * concern, not a per-tail one — a key enrolled on one machine's tail authorizes
- * events on another's. The order is the SAME k-way merge a projection uses
- * (`(at, tail, seq)`, `seq` inviolable within a tail), so enroll/revoke that
- * race across tails resolve deterministically, the same way state does.
+ * events on another's. The order is the SAME merge a projection uses
+ * ({@link causalOrder}: `seq` inviolable within a tail, and across tails the
+ * smallest `at` among the heads whose citations have been taken), so
+ * enroll/revoke that race across tails resolve deterministically, the same way
+ * state does.
  *
- * One consequence of ordering by `at`: a key's first event must fall AFTER its
- * enrollment in that order, or the fold sees the event before the key is valid
- * and rejects it. In practice `at` provides this — a key can only write once it
- * has been enrolled, which happens earlier in wall-clock time — so a monotonic
- * `at` (the producer's responsibility, as for projections) keeps an enrollment
- * ahead of the events that depend on it. When two tails carry an identical `at`,
- * the tie-break is by tail id, which does not encode causality; the same
- * uniform-`at` discipline the projection order already assumes covers this.
- * A machine that founds its OWN tail (the copy-key and solo cases) is immune:
- * its founding is seq 0 of its own tail, always ahead of its later events.
+ * A key's first event must fall AFTER its enrollment in that order, or the fold
+ * sees the event before the key is valid and rejects it. `at` alone does not
+ * give that: it is the wall clock of each machine, and a second machine whose
+ * clock is behind the enroller's stamps its first event before the enrolment —
+ * an honest record the fold used to refuse. What gives it is the citation: the
+ * new machine's first event cites the head of the enroller's tail it had read,
+ * which is at or after the enrolment, so the event cannot be taken before it
+ * whatever the two clocks say. Without a citation the order is the one `at`
+ * gives, exactly as before citations existed. A machine that founds its OWN
+ * tail (the copy-key and solo cases) is immune either way: its founding is seq
+ * 0 of its own tail, always ahead of its later events.
  *
  * What this fold does and does not decide, stated plainly: it judges whether an
  * event's `signerFp` is a member of its `who`, not whether the tail the event
@@ -78,6 +81,7 @@
 import { checkerEnrollmentMessage, enrollmentMessage } from '../events/build.js';
 import type { CatalogEvent } from '../events/catalog.js';
 import { oneLine } from '../one-line.js';
+import { causalOrder } from './causal-order.js';
 import type { Entry } from './entry.js';
 import { deriveAnchor, verify as verifySignature } from './keys.js';
 import type { ChainLayout } from './layout.js';
@@ -114,6 +118,8 @@ export interface IdentityResolution {
    * still asks {@link members} whether the key is the identity's at the end of the fold.
    */
   readonly backups: ReadonlyMap<string, string>;
+  /** What the order made of the citations the record carries. */
+  readonly citations: CitationsRead;
 }
 
 /** A checker key the record retired (FORMAT.md section 6.2). */
@@ -127,11 +133,26 @@ export interface RetiredChecker {
   readonly resultsBefore: number;
 }
 
-/** One tail's entries in proven (`seq`) order, plus a read cursor. */
-interface TailCursor {
-  readonly tail: string;
-  readonly entries: readonly Entry[];
-  cursor: number;
+/**
+ * What the order made of the citations a record carries (FORMAT.md, "Reading many tails") —
+ * informational, for the census: neither list ever makes an event less authentic.
+ */
+export interface CitationsRead {
+  /** Every citation of an entry hash the record does not hold, which the order ignored. */
+  readonly notHeld: readonly {
+    readonly tail: string;
+    readonly seq: number;
+    readonly hash: string;
+  }[];
+  /**
+   * Every event whose `at` is earlier than the `at` of an entry it cites — a writer's clock
+   * that ran behind what it had read — with the largest such gap, in milliseconds.
+   */
+  readonly behind: readonly {
+    readonly tail: string;
+    readonly seq: number;
+    readonly byMs: number;
+  }[];
 }
 
 /**
@@ -161,7 +182,7 @@ export function resolveIdentity(
   checkpointedThroughByTail: ReadonlyMap<string, number>,
   keys: CommittedKeys = committedKeys(layout),
 ): IdentityResolution {
-  const order = totalOrder(entriesByTail);
+  const { order, citations } = totalOrder(entriesByTail);
   const isCheckpointed = (tail: string, seq: number): boolean =>
     seq <= (checkpointedThroughByTail.get(tail) ?? -1);
   const validKeys = new Map<string, Set<string>>();
@@ -478,47 +499,66 @@ export function resolveIdentity(
     }
   }
 
-  return { issues, members: validKeys, retiredCheckers: retired, backups };
+  return { issues, members: validKeys, retiredCheckers: retired, backups, citations };
 }
 
 /**
- * Merges every tail into one total, deterministic order — the same k-way merge
- * a projection uses. Within a tail, `seq` order is inviolable (the hash chain
- * proves it); across tails the head with the smallest `at` goes next, ties
- * broken by tail id. `at` is only ever compared between heads of DIFFERENT
- * tails, never within one, so it can never override the proven order.
+ * Merges every tail into one total, deterministic order — the order every reader of many
+ * tails folds ({@link causalOrder}): `seq` within a tail, and across tails the smallest `at`
+ * among the heads whose citations have been taken, ties broken by tail id.
+ *
+ * It answers what the order made of the citations too, because the fold is the one reading
+ * of the record that has every tail in hand: which citations named nothing the record holds,
+ * and which events were stamped by a clock behind what they cite.
  */
-function totalOrder(
-  entriesByTail: ReadonlyMap<string, readonly Entry[]>,
-): Array<{ tail: string; entry: Entry }> {
-  const cursors: TailCursor[] = [];
-  for (const [tail, entries] of entriesByTail) {
-    cursors.push({ tail, entries, cursor: 0 });
+function totalOrder(entriesByTail: ReadonlyMap<string, readonly Entry[]>): {
+  readonly order: Array<{ tail: string; entry: Entry }>;
+  readonly citations: CitationsRead;
+} {
+  const tails = [...entriesByTail].map(([tail, entries]) => ({
+    tree: 0,
+    tail,
+    entries,
+    length: entries.length,
+  }));
+  const entryAt = (tail: number, position: number): Entry =>
+    (tails[tail] as (typeof tails)[number]).entries[position] as Entry;
+  const merged = causalOrder(tails, {
+    at: (tail, position) => eventAt(entryAt(tail, position)),
+    hash: (tail, position) => entryAt(tail, position).link.hash,
+    after: (tail, position) => (entryAt(tail, position).event as CatalogEvent).after,
+  });
+  const cursors = tails.map(() => 0);
+  const order: Array<{ tail: string; entry: Entry }> = [];
+  for (const step of merged.steps) {
+    const { tail, entries } = tails[step] as (typeof tails)[number];
+    order.push({ tail, entry: entries[cursors[step] as number] as Entry });
+    cursors[step] = (cursors[step] as number) + 1;
   }
-  const merged: Array<{ tail: string; entry: Entry }> = [];
-  for (;;) {
-    const next = pickNext(cursors);
-    if (next === undefined) break;
-    merged.push({ tail: next.tail, entry: next.entries[next.cursor] as Entry });
-    next.cursor += 1;
+  const notHeld = merged.notHeld.map((citation) => ({
+    tail: (tails[citation.tail] as (typeof tails)[number]).tail,
+    seq: entryAt(citation.tail, citation.position).link.seq,
+    hash: citation.hash,
+  }));
+  const behind: CitationsRead['behind'][number][] = [];
+  for (const citation of merged.held) {
+    const citing = entryAt(citation.tail, citation.position);
+    const cited = entryAt(citation.citedTail, citation.citedPosition);
+    // A gap, not an ordering: how far the citing clock ran behind what it cites.
+    const citedMs = Date.parse(eventAt(cited));
+    const citingMs = Date.parse(eventAt(citing));
+    const byMs = citedMs - citingMs;
+    if (!(byMs > 0)) continue;
+    const tail = (tails[citation.tail] as (typeof tails)[number]).tail;
+    const last = behind[behind.length - 1];
+    // One entry per citing event: the largest gap among what it cites.
+    if (last !== undefined && last.tail === tail && last.seq === citing.link.seq) {
+      if (byMs > last.byMs) behind[behind.length - 1] = { ...last, byMs };
+      continue;
+    }
+    behind.push({ tail, seq: citing.link.seq, byMs });
   }
-  return merged;
-}
-
-function pickNext(cursors: readonly TailCursor[]): TailCursor | undefined {
-  let chosen: TailCursor | undefined;
-  for (const c of cursors) {
-    if (c.cursor >= c.entries.length) continue;
-    if (chosen === undefined || headPrecedes(c, chosen)) chosen = c;
-  }
-  return chosen;
-}
-
-function headPrecedes(a: TailCursor, b: TailCursor): boolean {
-  const atA = eventAt(a.entries[a.cursor] as Entry);
-  const atB = eventAt(b.entries[b.cursor] as Entry);
-  if (atA !== atB) return atA < atB;
-  return a.tail < b.tail;
+  return { order, citations: { notHeld, behind } };
 }
 
 function eventAt(entry: Entry): string {
