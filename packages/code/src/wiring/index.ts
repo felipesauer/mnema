@@ -239,6 +239,7 @@ import { registerLink } from './link.js';
 import { registerMcp } from './mcp.js';
 import { registerMemory } from './memory.js';
 import { registerObserve } from './observe.js';
+import { registerProblemReport } from './problem-report.js';
 import { registerPromote } from './promote.js';
 import { registerRecall } from './recall.js';
 import { registerReferences } from './refs.js';
@@ -335,7 +336,7 @@ export const GROUPS: readonly Group[] = [
   },
   {
     heading: 'This machine:',
-    verbs: [registerKey, registerTail, registerDoctor, registerCompletion],
+    verbs: [registerKey, registerTail, registerDoctor, registerProblemReport, registerCompletion],
   },
   {
     heading: 'Called by a host:',

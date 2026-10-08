@@ -131,6 +131,14 @@ export function internalErrorSentence(what: string): Line {
   );
 }
 
+/** The line after an internal error that has a report to read: it offers, and it sends nothing. */
+export function reportOfferSentence(): Line {
+  return fact(
+    'a report of this is ready to read: `mnema report` shows it whole. Nothing is sent; you decide.',
+    0,
+  );
+}
+
 /**
  * Reports a refusal and records the non-zero exit.
  *
