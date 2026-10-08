@@ -739,7 +739,18 @@ describe('every verb says if it writes', () => {
     expect(ran).toContain('task guard');
     expect(ran).toContain('skill provenance');
     expect(ran).not.toContain('task handoff');
-    expect(ran.sort()).toEqual([...pathsOffered(DECLARED, 'repl')].sort());
+    // The opening counts `audit` as the three readings inside it, which a bare line does not
+    // type; every other path is the line that runs.
+    const typed = new Set(
+      pathsOffered(DECLARED, 'repl').map((path) => {
+        const group = DECLARED.find((verb) => verb.act.name() === path.split(' ')[0]);
+        return group?.members === undefined ? path.split(' ')[0] : path;
+      }),
+    );
+    expect(ran.sort()).toEqual([...typed].sort());
+    expect(pathsOffered(DECLARED, 'repl')).toEqual(
+      expect.arrayContaining(['audit accountability', 'audit antipatterns', 'audit exposure']),
+    );
   });
 
   it('measures every verb against the chain: a read appends nothing', async () => {

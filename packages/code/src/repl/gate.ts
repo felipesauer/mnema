@@ -103,7 +103,17 @@ function theReadsOf(verb: Declared): readonly string[] {
  * member of a group counts as the verb it is: `task next` is a thing a caller types.
  */
 export function pathsOffered(verbs: readonly Declared[], self: string): readonly string[] {
-  return verbs.filter((verb) => verb.act.name() !== self).flatMap(theReadsOf);
+  return verbs
+    .filter((verb) => verb.act.name() !== self)
+    .flatMap((verb) => {
+      // A group that reads whole (`audit`) is the verbs inside it, each one a thing to type — the
+      // same count the surface had when they were verbs of the root.
+      const inside = verb.act.commands.filter((command) => command.name() !== 'help');
+      if (verb.members === undefined && verb.effect === 'reads' && inside.length > 0) {
+        return inside.map((command) => `${verb.act.name()} ${command.name()}`);
+      }
+      return theReadsOf(verb);
+    });
 }
 
 /**
