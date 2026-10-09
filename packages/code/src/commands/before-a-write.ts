@@ -40,7 +40,7 @@
  */
 
 import { dirname } from 'node:path';
-import { catalogUpcasters } from '@mnema/chain';
+import { catalogUpcasters, listPrivateKeyFingerprints } from '@mnema/chain';
 import { type RunHere, runsHere } from '@mnema/context';
 import {
   chainRootForScope,
@@ -55,6 +55,7 @@ import {
   recordChannelAsked,
   recordChannelRefused,
   recordChannelServed,
+  recordedAnchorOf,
   signerFor,
 } from '@mnema/core/write';
 import { anchorsBefore, foundingsSince, treesOf } from '../a-new-identity.js';
@@ -242,11 +243,15 @@ function otherRunsAt(
   const place = met.at[0];
   if (place === undefined) return [];
   try {
-    const actor = authorizingAnchor({
+    // A machine with no key of its own is answered no one BEFORE a signer is asked for: asking a
+    // signer mints a key, and a read must not found somebody to look for.
+    if (listPrivateKeyFingerprints({ root: trees.keyRoot }).length < 1) return [];
+    const asked = {
       writer: signerFor(trees, 'public'),
       layout: { root: chainRootForScope(trees, 'public') as string },
       upcasters: catalogUpcasters(),
-    });
+    };
+    const actor = recordedAnchorOf(asked)?.anchor ?? authorizingAnchor(asked);
     return runsHere(caches(sources), {
       path: place.relative ?? place.path,
       actor,

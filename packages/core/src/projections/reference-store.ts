@@ -48,6 +48,7 @@
 
 import type { CatalogEvent, EventKind } from '@mnema/chain';
 import type { SqliteDatabase } from '../db/sqlite.js';
+import { newestFirst } from './newest-first.js';
 import { windowConditions, withinWindow } from './window.js';
 
 /** The ways an entity can appear in a fact. */
@@ -466,6 +467,11 @@ export interface ChargeAt {
  */
 export const THE_NEWEST_CHARGES_READ = 2_000;
 
+/** The newest charge first, by the core's one rule for it. */
+function byNewestCharge(a: ChargeAt, b: ChargeAt): number {
+  return newestFirst({ at: a.at, id: a.run }, { at: b.at, id: b.run });
+}
+
 /**
  * Every run charged at `path` — asked for a person, or refused — in the named channels, with the
  * newest `at` of each, newest run first.
@@ -501,9 +507,7 @@ export function listChargesAt(
       if (seen === undefined || seen < row.at) newest.set(row.run, row.at);
     }
   }
-  return [...newest.entries()]
-    .map(([run, at]) => ({ run, at }))
-    .sort((a, b) => (a.at === b.at ? (a.run < b.run ? -1 : 1) : a.at < b.at ? 1 : -1));
+  return [...newest.entries()].map(([run, at]) => ({ run, at })).sort(byNewestCharge);
 }
 
 /**
