@@ -1,0 +1,33 @@
+{
+  "description": "Hands the project's committed record to the session as it opens: the decisions in force and the adopted patterns, by name — and, beside it, the memories and observations recorded for the project, from every tree this machine holds, the ones that share a word with what the session touches first. Before a patch is applied, where a rule of that record refuses a write at a path the patch touches, does not let the patch happen, citing the rule, and records the refusal as a fact of the chain; a rule that only asks for a person is let through in silence, since Codex does not pause a write for one. Each can be switched off with `mnema switch`, which records that it was.",
+  "hooks": {
+    "SessionStart": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node \"${CLAUDE_PLUGIN_ROOT}/hooks/session-start.mjs\" --host codex",
+            "timeout": 15
+          },
+          {
+            "type": "command",
+            "command": "node \"${CLAUDE_PLUGIN_ROOT}/hooks/session-recall.mjs\" --host codex",
+            "timeout": 15
+          }
+        ]
+      }
+    ],
+    "PreToolUse": [
+      {
+        "matcher": "apply_patch",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node \"${CLAUDE_PLUGIN_ROOT}/hooks/edit-refuses-a-write.mjs\" --host codex",
+            "timeout": 15
+          }
+        ]
+      }
+    ]
+  }
+}

@@ -102,7 +102,12 @@ try {
   // Imported INSIDE the guard, so that even a plugin directory missing its sibling module
   // is a session opened with nothing added rather than a hook error in front of a person.
   const { reply, whatTheVerbSays, whereTheSessionIs } = await import('./hand-over.mjs');
-  const document = whatTheVerbSays('brief', whereTheSessionIs(), { namesAStranger: true });
+  const document = whatTheVerbSays(
+    'brief',
+    whereTheSessionIs(),
+    { namesAStranger: true },
+    process.argv.slice(2),
+  );
   if (document !== null) process.stdout.write(reply(HOOK_EVENT, document));
 } catch {
   // Silence, deliberately and with nothing to add: the one thing this handler must

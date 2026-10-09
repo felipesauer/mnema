@@ -70,6 +70,8 @@ describe('the rung table', () => {
     expect(rung("VS Code's agent")).toBe('(d)');
     // Cursor refuses and does not pause a write for a person.
     expect(rung("Cursor's command-line agent")).toBe('(c)');
+    // Codex refuses and does not pause a write; the rules file it reads is only documented.
+    expect(rung('Codex')).toBe('(c), with (a) documented, not measured');
     expect(rung('Qwen Code')).toBe('(a), documented, not measured');
   });
 });

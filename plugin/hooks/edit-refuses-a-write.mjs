@@ -1,7 +1,12 @@
 #!/usr/bin/env node
 /**
- * The refusal, in Cursor's agent: where a rule of the project's record refuses a write at a path,
- * the write does not happen and the agent reads the rule that did it.
+ * The refusal, in Cursor's agent and in Codex: where a rule of the project's record refuses a
+ * write at a path, the write does not happen and the agent reads the rule that did it.
+ *
+ * CODEX RUNS IT TOO, from a hooks file of its own (`hooks/codex.json`, `--host codex`), on
+ * `apply_patch`: Codex rejects an `ask` as unsupported and lets the patch through, so it is a
+ * host that refuses alone, like Cursor, and needs no variable to say so — nobody else reads that
+ * file.
  *
  * WHY THIS IS A FILE OF ITS OWN AND NOT `edit-asks-a-person.mjs`. Cursor's command-line agent
  * reads this same plugin, runs only `type: "command"` hooks, and answers a hook's `deny` by not

@@ -85,6 +85,25 @@ export interface Host {
    * others would also run — the command starts nothing where it is unset.
    */
   readonly saysItIsTheHost?: string;
+  /**
+   * The plugin's hooks file this host reads INSTEAD of `hooks/hooks.json`, for a host whose
+   * manifest names one of its own: its hooks are in that file alone, and no other host reads it.
+   */
+  readonly hooksFile?: string;
+  /**
+   * The ceiling this host puts on a hook's text, for a host that counts it in tokens of its own
+   * rather than in Claude Code's 10,000 UTF-16 code units: how many tokens arrive whole, how many
+   * UTF-8 bytes make one, and where each is read. `presentation/within-a-hook.ts` cuts the opening
+   * by it when the plugin's command names the host.
+   */
+  readonly hookText?: {
+    readonly tokens: number;
+    readonly bytesPerToken: number;
+    readonly tokensAt: string;
+    readonly bytesPerTokenAt: string;
+  };
+  /** What the page says under the table about this host, beside its cells. */
+  readonly note?: string;
   /** What it does with each {@link Capability}. */
   readonly cells: { readonly [C in Capability]: Cell };
   /** Where it reads the skills and the agents a stack brings. */
@@ -99,7 +118,12 @@ const HELD = {
   claudeGate: 'packages/code/tests/host-contract/a-refusal-and-a-pause-hold-the-write.test.ts',
   vscodeGate:
     'packages/code/tests/host-contract/an-editor-holds-or-refuses-the-write.vscode.test.ts',
+  codexContract: 'packages/code/tests/host-contract/codex-opens-and-refuses.codex.test.ts',
 } as const;
+
+/** The Codex source every cell of Codex's row that is read rather than run was read at. */
+const CODEX_SOURCE =
+  'https://github.com/openai/codex/blob/979011409de0a60b52f179721948e65531d26144';
 
 /** The day the hosts below that this product does not port were read. */
 const READ_ON = '8 October 2026';
@@ -119,7 +143,7 @@ const NOT_PORTED: Place = { held: 'not ported' };
 /**
  * Every host, in the order the pages list them and the lists of a `--host` enumerate them.
  *
- * THE FIRST THREE ARE PORTED; THE OTHER FIVE WERE ONLY READ. Each of the five documents an MCP
+ * THE FIRST FOUR ARE PORTED; THE OTHER FIVE WERE ONLY READ. Each of the five documents an MCP
  * client and reads an `AGENTS.md`, at the commit the link names, and no hook of this plugin's
  * reaches any of them. Aider was read too and is not here: it has no MCP client.
  */
@@ -182,6 +206,56 @@ export const HOSTS = {
     places: {
       skills: claudeFolder('skills', 'https://cursor.com/docs/context/skills'),
       agents: claudeFolder('agents', 'https://cursor.com/docs/context/subagents'),
+    },
+  },
+  codex: {
+    title: 'Codex',
+    door: 'command',
+    // Codex reads the plugin through a manifest of its own (`.codex-plugin/plugin.json`) that
+    // names this hooks file, so no other host runs its command and none of theirs runs in Codex —
+    // which they would: Codex matches `apply_patch` by `Write` and `Edit` too, and VS Code's
+    // matcher names `apply_patch`. No variable has to say which host this is.
+    hooksFile: 'hooks/codex.json',
+    // `DEFAULT_HOOK_OUTPUT_TOKEN_LIMIT` and `APPROX_BYTES_PER_TOKEN`; the boundary is held by the
+    // contract (10,000 bytes whole, 10,001 replaced by a preview).
+    hookText: {
+      tokens: 2_500,
+      bytesPerToken: 4,
+      tokensAt: `${CODEX_SOURCE}/codex-rs/hooks/src/output_spill.rs#L12`,
+      bytesPerTokenAt: `${CODEX_SOURCE}/codex-rs/utils/string/src/truncate.rs#L4`,
+    },
+    note:
+      'The refusal fails open, as on every host: a gate that cannot answer — no `mnema` on the ' +
+      'PATH (held by its test), an error, or a hook past its 15 seconds (read in ' +
+      `[\`pre_tool_use.rs\`](${CODEX_SOURCE}/codex-rs/hooks/src/events/pre_tool_use.rs#L205-L288)) — ` +
+      'lets the patch through. The opening is cut to Codex’s own ceiling, 2,500 tokens of 4 ' +
+      `UTF-8 bytes ([\`output_spill.rs\`](${CODEX_SOURCE}/codex-rs/hooks/src/output_spill.rs#L12)), ` +
+      'at a whole rule, held by the same test.',
+    cells: {
+      server: { does: true, held: 'a test', by: HELD.codexContract },
+      rulesFile: {
+        does: true,
+        held: 'documentation',
+        at: `${CODEX_SOURCE}/codex-rs/core/src/agents_md.rs`,
+        read: READ_ON,
+      },
+      opens: { does: true, held: 'a test', by: HELD.codexContract },
+      refuses: { does: true, held: 'a test', by: HELD.codexContract },
+      asks: { does: false, held: 'a test', by: HELD.codexContract },
+    },
+    places: {
+      // `.agents/skills` from the project's root down to the session's directory, and under the
+      // home (`ext/skills/src/host_roots.rs`, lines 105 and 154).
+      skills: {
+        held: 'documentation',
+        project: '.agents/skills',
+        user: '.agents/skills',
+        at: `${CODEX_SOURCE}/codex-rs/ext/skills/src/host_roots.rs#L105-L154`,
+        read: READ_ON,
+      },
+      // Codex's agents are TOML files of its own (`.codex/agents/`), not the Markdown a stack
+      // brings, so nothing is installed for them.
+      agents: NOT_PORTED,
     },
   },
   droid: {
@@ -347,6 +421,18 @@ export type RulesFileHost = {
 export const RULES_FILE_HOSTS = HOST_NAMES.filter(
   (name) => HOSTS[name].cells.rulesFile.held === 'a test',
 ) as readonly RulesFileHost[];
+
+/**
+ * Every host whose row names a ceiling of its own for a hook's text, as the list `mnema brief
+ * --hook --host` and `mnema recall --hook --host` enumerate.
+ */
+export const HOOK_TEXT_HOSTS = HOST_NAMES.filter((name) => 'hookText' in HOSTS[name]);
+
+/** The ceiling a host's row names for a hook's text, or `undefined` where it names none. */
+export function hookTextOf(host: HostName): Host['hookText'] {
+  const row: Host = HOSTS[host];
+  return row.hookText;
+}
 
 /** Whether a host does a capability with this product — a cell that says yes, however known. */
 export function does(host: HostName, capability: Capability): boolean {

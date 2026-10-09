@@ -29,6 +29,9 @@ document, delivered by the host instead of waited for.
   this project, each by name. Past 10,000 characters the host would replace the whole
   text with a file path it does not ask the model to open, so `--hook` stops at a whole
   rule inside that and ends by saying how many it left out and which read serves them.
+  In Codex the ceiling is 2,500 of its tokens (4 UTF-8 bytes each), and the plugin's
+  command for Codex asks for that cut (`--hook --host codex`). VS Code and Cursor are
+  given the 10,000-character cut, and what each does past its own ceiling was not measured.
 - **A second `SessionStart` hook** that runs `mnema recall --hook` and hands over the **notes**
   — the memories and observations recorded for the project, one line each, out of every
   tree this machine holds, the private one included: first the ones that share a word with

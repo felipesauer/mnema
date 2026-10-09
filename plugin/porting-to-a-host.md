@@ -18,9 +18,12 @@ already here ([the table](README.md#in-vs-code-and-cursor)):
   ([`a-client-that-names-no-workspace.test.ts`](../packages/code/tests/a-client-that-names-no-workspace.test.ts)).
 - **Whether the server's instructions reach the model.** Not every model family's prompt carries
   them. Where they do not, the opening document (step 2) is what arrives.
-- **How the host loads a plugin at all.** The plugin is written in Claude Code's format and the
-  other two read that format; a host with its own format needs its own manifest, and the facts
-  above are the part that does not change.
+- **How the host loads a plugin at all.** The plugin is written in Claude Code's format and VS Code
+  and Cursor read that format; a host with its own format needs its own manifest, and the facts
+  above are the part that does not change. Codex is the first such host: it reads
+  `.codex-plugin/plugin.json` first, and that manifest names a hooks file only Codex reads, because
+  Codex would otherwise run the other hosts' gates too (it matches `apply_patch` by `Write` and
+  `Edit`). Both files are generated from the host table, like the rest.
 
 ## 2. Then the hooks, one question at a time
 

@@ -145,7 +145,7 @@ describe('runRecall — the notes out of every tree this machine holds', () => {
 });
 
 describe('mnema recall — the verb', () => {
-  it('is a read, and takes one option — the copy a hook carries', () => {
+  it('is a read, and takes the copy a hook carries, and whose ceiling it is cut to', () => {
     // What its wiring says it is, asked of the registration itself: a verb that PRODUCES a
     // channel a session opens with is still a read — it appends nothing — and it has no
     // `--scope` to leave out the private notes it exists to bring back, and no `--limit` to
@@ -160,7 +160,7 @@ describe('mnema recall — the verb', () => {
     });
     expect(declared.act.name()).toBe('recall');
     expect(declared.effect).toBe('reads');
-    expect(declared.act.options.map((option) => option.long)).toEqual(['--hook']);
+    expect(declared.act.options.map((option) => option.long)).toEqual(['--hook', '--host']);
   });
 });
 
