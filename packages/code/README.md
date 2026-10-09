@@ -98,7 +98,11 @@ identically, because they are the same call.
   record's `channel.served` counts what the per-edit hook pushed and never the opening
   texts. It is mnema noting that it delivered the hook's answer, not a person's approval of
   anything. The per-edit one records that it served, and holds a write for a person only where a
-  rule of your own record asks it to — the plugin's page says how. The fourth is that same pause for a
+  rule of your own record asks it to — the plugin's page says how. Where another run of this
+  machine's identity was charged at that same path in the last 30 minutes — a rule asked for a
+  person or refused a write there, in a run still open — the reply ends with one sentence
+  naming that run's agent and how many minutes ago; it is read from the record and appends
+  nothing, and a path no rule has ever charged anyone at gets none. The fourth is that same pause for a
   host whose hooks are processes: VS Code's agent runs it as `mnema before-a-write --host vscode`
   before a write, and it asks, and records, exactly where the third would; Claude Code and
   Cursor never run it. The fifth and sixth are one command, `mnema tally`, run at `Stop` and

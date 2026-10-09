@@ -41,25 +41,35 @@
 
 import { dirname } from 'node:path';
 import { catalogUpcasters } from '@mnema/chain';
-import { chainRootForScope, type DiscoveryEnv, resolveScope, resolveTrees } from '@mnema/core';
+import { type RunHere, runsHere } from '@mnema/context';
 import {
+  chainRootForScope,
+  type DiscoveryEnv,
+  resolveScope,
+  resolveTrees,
+  systemClock,
+} from '@mnema/core';
+import {
+  authorizingAnchor,
   openTreeForWriting,
   recordChannelAsked,
   recordChannelRefused,
   recordChannelServed,
+  signerFor,
 } from '@mnema/core/write';
 import { anchorsBefore, foundingsSince, treesOf } from '../a-new-identity.js';
 import { asksAPerson, pathsOfAWrite, replyFor } from '../host-hook.js';
 import type { HookHost } from '../host-names.js';
 import type { HookSaid } from '../mcp/hook-reply.js';
 import { ASKS_A_PERSON_CHANNEL, REFUSES_A_WRITE_CHANNEL } from '../record-framing.js';
-import { withScopedCaches } from '../tree-sources.js';
+import { caches, withScopedCaches } from '../tree-sources.js';
 import {
   recordTheCharge,
   unrecordedCharge,
   type WriteVerdict,
   whatAWriteMeets,
 } from '../what-a-write-meets.js';
+import { CHARGING_CHANNELS, withWhoIsHere } from '../who-is-here.js';
 
 /** What the command needs — injected so it is testable. */
 export interface BeforeAWriteContext {
@@ -141,12 +151,18 @@ export function runBeforeAPath(
   // The project root is the PARENT of its `.mnema/`, the directory every address is written
   // against; a relative path is the host's, written against where it started the hook.
   const root = dirname(trees.projectPublic);
-  const met = withScopedCaches(trees, (sources) =>
-    whatAWriteMeets(sources, { paths, root, from: ctx.cwd }),
-  );
-  // WHERE THE HOST DOES NOT ASK, AN ASKING IS NOT ONE: the write would go through, and the
-  // record would say a person was asked.
-  if (met === undefined || (met.grade === 'ask' && !input.asks)) return silent();
+  const { met, others } = withScopedCaches(trees, (sources) => {
+    const found = whatAWriteMeets(sources, { paths, root, from: ctx.cwd });
+    // WHERE THE HOST DOES NOT ASK, AN ASKING IS NOT ONE: the write would go through, and the
+    // record would say a person was asked.
+    if (found === undefined || (found.grade === 'ask' && !input.asks)) {
+      return { met: undefined, others: [] };
+    }
+    // WHO ELSE WAS CHARGED AT THE PATH is read only where the hook is going to speak, so the
+    // ordinary case, a write nothing charges, pays nothing for it.
+    return { met: found, others: otherRunsAt(trees, sources, found) };
+  });
+  if (met === undefined) return silent();
 
   // THE ORDER IS THE MCP TOOL'S: the facts are appended, and only then does the reply carry the
   // charge. What the write founded, if it was this key's first in the tree, rides in the reason —
@@ -157,7 +173,10 @@ export function runBeforeAPath(
   const before = anchorsBefore(treesOf(trees));
   const recorded = recordTheCharge(() => recordWhatItMet(trees, met, input.which));
   const unrecorded = recorded.ok ? [] : [unrecordedCharge(met.grade, recorded.why)];
-  const reason = [met.reason, ...unrecorded, ...foundingsSince(before)].join('\n\n');
+  const reason = withWhoIsHere(
+    [met.reason, ...unrecorded, ...foundingsSince(before)].join('\n\n'),
+    others,
+  );
   const said = met.grade === 'refuse' ? { refuse: reason } : { ask: reason };
   return { ok: true, reply: input.reply(said), notes: unrecorded };
 }
@@ -205,4 +224,37 @@ function recordWhatItMet(
     writer.checkpoint();
     return { ok: true };
   });
+}
+
+/**
+ * The other runs of this machine charged at the first path the write met (`runsHere`), or none.
+ *
+ * THIS PROCESS HAS NO RUN OF ITS OWN to leave out, so a run of the agent that is writing — one it
+ * opened through the server — is named like any other, and the sentence names the agent so that
+ * its reader can tell. The identity asked for is the machine's own, decided as a write decides
+ * it; a key the record cannot place says no one rather than fail a hook that has to answer.
+ */
+function otherRunsAt(
+  trees: ReturnType<typeof resolveTrees>,
+  sources: Parameters<typeof caches>[0],
+  met: WriteVerdict,
+): readonly RunHere[] {
+  const place = met.at[0];
+  if (place === undefined) return [];
+  try {
+    const actor = authorizingAnchor({
+      writer: signerFor(trees, 'public'),
+      layout: { root: chainRootForScope(trees, 'public') as string },
+      upcasters: catalogUpcasters(),
+    });
+    return runsHere(caches(sources), {
+      path: place.relative ?? place.path,
+      actor,
+      asOf: systemClock(),
+      sessionRuns: [],
+      channels: CHARGING_CHANNELS,
+    });
+  } catch {
+    return [];
+  }
 }
