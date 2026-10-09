@@ -12,7 +12,7 @@
 function __mnema_commands --description 'the subcommands one level of the tree offers'
     switch "$argv[1]"
         case ''
-            echo 'init decision link unlink memory observe retract skill stack task promote status brief recall rules rules-file switch inherit verify witness check site search show timeline refs audit diagram export usage resume repl why commits aging trailer commit-hook key tail doctor report completion mcp run before-a-write tally corrections help'
+            echo 'init decision link unlink memory observe retract skill stack task promote status brief recall rules rules-file switch inherit verify witness check site search show timeline refs audit diagram export usage resume repl why commits aging trailer commit-hook key tail doctor report completion mcp run before-a-write tally corrections handback help'
         case 'decision'
             echo 'record move supersede import help'
         case 'skill'
@@ -119,6 +119,7 @@ complete -c mnema -f -n '__mnema_at ""' -a 'run' -d 'open and close the session 
 complete -c mnema -f -n '__mnema_at ""' -a 'before-a-write' -d 'answer a host’s hook before a file is written: refuse or ask where a rule says'
 complete -c mnema -f -n '__mnema_at ""' -a 'tally' -d 'answer a host’s Stop or PreCompact hook with what the session wrote and recorded'
 complete -c mnema -f -n '__mnema_at ""' -a 'corrections' -d 'record what a person corrected in a session as proposed decisions, for a Stop hook'
+complete -c mnema -f -n '__mnema_at ""' -a 'handback' -d 'check what a subagent hands back when it stops, or print the format it is checked by'
 complete -c mnema -f -n '__mnema_at ""' -a 'help' -d 'display help for command'
 complete -c mnema -f -n '__mnema_at ""' -s V -l version
 complete -c mnema -f -n '__mnema_at ""' -l color -x -a 'auto always never'
@@ -403,7 +404,7 @@ complete -c mnema -f -n '__mnema_at "switch off"' -l which -r
 complete -c mnema -f -n '__mnema_at "switch off"' -s h -l help
 complete -c mnema -f -n '__mnema_at "switch off"' -s V -l version
 complete -c mnema -f -n '__mnema_at "switch off"' -l color -x -a 'auto always never'
-complete -c mnema -f -n '__mnema_at "switch off"' -a 'brief-document recall-document edit-rules-push edit-asks-a-person edit-refuses-a-write agent-accepts edit-first-write-gate user-corrections session-tally'
+complete -c mnema -f -n '__mnema_at "switch off"' -a 'brief-document recall-document edit-rules-push edit-asks-a-person edit-refuses-a-write agent-accepts edit-first-write-gate user-corrections subagent-handback session-tally'
 
 # mnema switch on
 complete -c mnema -f -n '__mnema_at "switch on"' -l reason -r
@@ -412,7 +413,7 @@ complete -c mnema -f -n '__mnema_at "switch on"' -l which -r
 complete -c mnema -f -n '__mnema_at "switch on"' -s h -l help
 complete -c mnema -f -n '__mnema_at "switch on"' -s V -l version
 complete -c mnema -f -n '__mnema_at "switch on"' -l color -x -a 'auto always never'
-complete -c mnema -f -n '__mnema_at "switch on"' -a 'brief-document recall-document edit-rules-push edit-asks-a-person edit-refuses-a-write agent-accepts edit-first-write-gate user-corrections session-tally'
+complete -c mnema -f -n '__mnema_at "switch on"' -a 'brief-document recall-document edit-rules-push edit-asks-a-person edit-refuses-a-write agent-accepts edit-first-write-gate user-corrections subagent-handback session-tally'
 
 # mnema inherit
 complete -c mnema -f -n '__mnema_at "inherit"' -a 'set' -d 'point this project at a repository of decisions, at one commit'
@@ -797,3 +798,9 @@ complete -c mnema -f -n '__mnema_at "tally"' -l color -x -a 'auto always never'
 complete -c mnema -f -n '__mnema_at "corrections"' -s h -l help
 complete -c mnema -f -n '__mnema_at "corrections"' -s V -l version
 complete -c mnema -f -n '__mnema_at "corrections"' -l color -x -a 'auto always never'
+
+# mnema handback
+complete -c mnema -f -n '__mnema_at "handback"' -l schema
+complete -c mnema -f -n '__mnema_at "handback"' -s h -l help
+complete -c mnema -f -n '__mnema_at "handback"' -s V -l version
+complete -c mnema -f -n '__mnema_at "handback"' -l color -x -a 'auto always never'

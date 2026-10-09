@@ -10,7 +10,7 @@
 
 _mnema_commands() {
   case "$1" in
-    '') echo 'init decision link unlink memory observe retract skill stack task promote status brief recall rules rules-file switch inherit verify witness check site search show timeline refs audit diagram export usage resume repl why commits aging trailer commit-hook key tail doctor report completion mcp run before-a-write tally corrections help' ;;
+    '') echo 'init decision link unlink memory observe retract skill stack task promote status brief recall rules rules-file switch inherit verify witness check site search show timeline refs audit diagram export usage resume repl why commits aging trailer commit-hook key tail doctor report completion mcp run before-a-write tally corrections handback help' ;;
     'decision') echo 'record move supersede import help' ;;
     'skill') echo 'create move export provenance help' ;;
     'stack') echo 'add remove help' ;;
@@ -120,6 +120,7 @@ _mnema_flags() {
     'before-a-write') echo '--host -h --help -V --version --color' ;;
     'tally') echo '-h --help -V --version --color' ;;
     'corrections') echo '-h --help -V --version --color' ;;
+    'handback') echo '--schema -h --help -V --version --color' ;;
     *) echo ;;
   esac
 }
@@ -182,10 +183,10 @@ _mnema_values() {
     'switch:--color') echo 'auto always never' ;;
     'switch off:--scope') echo 'public private global' ;;
     'switch off:--color') echo 'auto always never' ;;
-    'switch off:') echo 'brief-document recall-document edit-rules-push edit-asks-a-person edit-refuses-a-write agent-accepts edit-first-write-gate user-corrections session-tally' ;;
+    'switch off:') echo 'brief-document recall-document edit-rules-push edit-asks-a-person edit-refuses-a-write agent-accepts edit-first-write-gate user-corrections subagent-handback session-tally' ;;
     'switch on:--scope') echo 'public private global' ;;
     'switch on:--color') echo 'auto always never' ;;
-    'switch on:') echo 'brief-document recall-document edit-rules-push edit-asks-a-person edit-refuses-a-write agent-accepts edit-first-write-gate user-corrections session-tally' ;;
+    'switch on:') echo 'brief-document recall-document edit-rules-push edit-asks-a-person edit-refuses-a-write agent-accepts edit-first-write-gate user-corrections subagent-handback session-tally' ;;
     'inherit:--color') echo 'auto always never' ;;
     'inherit set:--color') echo 'auto always never' ;;
     'inherit update:--color') echo 'auto always never' ;;
@@ -248,6 +249,7 @@ _mnema_values() {
     'before-a-write:--color') echo 'auto always never' ;;
     'tally:--color') echo 'auto always never' ;;
     'corrections:--color') echo 'auto always never' ;;
+    'handback:--color') echo 'auto always never' ;;
     *) echo ;;
   esac
 }

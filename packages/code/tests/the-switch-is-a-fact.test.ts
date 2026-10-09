@@ -50,6 +50,7 @@ import { type CatalogEvent, catalogUpcasters } from '@mnema/chain';
 import { type DiscoveryEnv, orderedEvents, resolveTrees } from '@mnema/core';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { runCorrections } from '../src/commands/corrections.js';
+import { runHandback } from '../src/commands/handback.js';
 import { runSessionTally } from '../src/commands/tally.js';
 import { buildMcpServer } from '../src/mcp/server.js';
 import { openSession, type Session } from '../src/mcp/session.js';
@@ -65,6 +66,7 @@ import {
   RECALL_CHANNEL,
   REFUSES_A_WRITE_CHANNEL,
   SESSION_TALLY_CHANNEL,
+  SUBAGENT_HANDBACK_CHANNEL,
   STARTS_OFF,
   SWITCHABLE_CHANNELS,
   USER_CORRECTIONS_CHANNEL,
@@ -467,6 +469,24 @@ const HONOURED: Readonly<
         { payload: JSON.stringify({ hook_event_name: 'Stop', transcript_path: transcript }) },
       );
       return 'systemMessage' in done.reply;
+    },
+  },
+  [SUBAGENT_HANDBACK_CHANNEL]: {
+    // THE SEND-BACK OF A SUBAGENT, driven the way a host drives it: the payload of a `SubagentStop`
+    // whose final reply has no block of decisions. "Speaks" is the reply deciding to block.
+    setUp: async () => {},
+    speaks: async () => {
+      const done = runHandback(
+        { cwd: repo, env },
+        {
+          payload: JSON.stringify({
+            hook_event_name: 'SubagentStop',
+            stop_hook_active: false,
+            last_assistant_message: 'Done.',
+          }),
+        },
+      );
+      return 'decision' in done.reply;
     },
   },
   [AGENT_ACCEPTS_CHANNEL]: {

@@ -12,6 +12,15 @@ tag, with its own changelog.
 
 ### Added
 
+- **A subagent is asked to hand its decisions back in a block that can be checked.** `mnema handback`
+  runs at the host's `SubagentStop` event: a final reply that does not end in one fenced block whose
+  info string is `mnema-handback`, holding `{"decisions":[{"settled","why","turnedDown"}]}` (the list
+  empty where nothing was settled), is sent back once with the format as the reason; the second stop of
+  the same subagent is let through. `mnema handback --schema` prints the JSON Schema the check applies.
+  It checks the shape and never whether the subagent settled something, and it has its own switch,
+  `subagent-handback`. Held against the real Claude Code binary; Codex and Copilot CLI document an
+  equivalent event and the host table says so, with no port.
+
 - **The record can say which stacks govern the work.** Two new event kinds, `stack.adopted`
   (`payload.name`, `payload.version`, `payload.digest`, `payload.scope`) and `stack.removed`
   (`payload.version`, `payload.digest`, `payload.scope`), name a stack by its digest and say in
