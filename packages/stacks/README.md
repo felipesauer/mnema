@@ -84,6 +84,8 @@ carry, or not a bundle at all) is refused.
   wrote into the certificate. It does not prove that the stack is SAFE. An author can sign a harmful skill, and
   nothing that reads the signature reads what a skill tells an agent to do. Read the plan whether it is signed or
   not.
+- The record does not check who removes a stack. A `stack.removed` fact signed by any key that writes to the
+  tree stands, whoever adopted the stack; adopting is not owning.
 - The validator proves that a directory fits the contract. It does not prove that a skill is safe, that its
   instructions are good, or that a script under `scripts/` or `hooks/` does what its description says; it never
   runs one.

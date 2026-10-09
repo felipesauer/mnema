@@ -116,6 +116,7 @@
 import type { Acceptance, AdrCollision, Brief, ChannelState } from '@mnema/context';
 import type { DivergentMove } from '@mnema/core';
 import type { BriefDone } from '../commands/brief.js';
+import type { StacksHere } from '../commands/stack-inspect.js';
 import type { InheritedReading } from '../inherited-record.js';
 import { oneLine } from '../one-line.js';
 import { DERIVED_FROM } from '../provenance.js';
@@ -722,8 +723,13 @@ export function briefWithin(
   outside: NonNullable<BriefDone['outside']> = { drift: [], arrival: [] },
   inherited?: InheritedReading,
   ceiling: HookCeiling = CLAUDE_CODE_CEILING,
+  stacks?: StacksHere,
 ): string[] {
-  const late = [...notInTheRecord(outside), ...inheritedSection(inherited)];
+  const late = [
+    ...notInTheRecord(outside),
+    ...stacksSection(stacks),
+    ...inheritedSection(inherited),
+  ];
   return fitWhole(
     rulesIn(governance),
     room,
@@ -755,6 +761,39 @@ function notInTheRecord(outside: NonNullable<BriefDone['outside']>): string[] {
     `Not in the record: ${counted(total, 'decision document', 'decision documents')} in this checkout, by file name, with no decision derived from them here.`,
     ...bases.map((base) => `- ${toImport(base.directory, base.documents)}`),
     '`mnema decision import <source>` prints what it would propose from a directory and writes nothing; with `--write` it records each one as `proposed`, for a person to accept.',
+  ];
+}
+
+/** The most stacks the opening names; past it the rest are counted, so a crowd cannot take the room. */
+const STACKS_NAMED = 8;
+
+/**
+ * What the copy a hook carries says of the stacks adopted for the project — and nothing at all
+ * where none is, which is every project that never ran `mnema stack add`.
+ *
+ * IT IS THE HOOK'S COPY ONLY, for the reason {@link notInTheRecord} is: where the files of a stack
+ * and the record part is a fact about one disk, and a line about it in a file somebody commits would
+ * make `mnema brief | diff - MNEMA.md` report a difference that is not the record's. The names
+ * come from the record, the departures from the disk, and each is said as what it is: the record
+ * says these are adopted, and a count says how many things `mnema stack check` would name. What a
+ * stack's skills say is for the agent to read where it reads skills; nothing here repeats them.
+ */
+function stacksSection(stacks: StacksHere | undefined): string[] {
+  if (stacks === undefined || stacks.adopted.length === 0) return [];
+  const named = stacks.adopted
+    .slice(0, STACKS_NAMED)
+    .map((s) => `${oneLine(s.name)} ${oneLine(s.version)} (${s.scope})`);
+  const rest = stacks.adopted.length - named.length;
+  const parted = stacks.departures.length;
+  return [
+    '',
+    `Stacks adopted for this project (${stacks.adopted.length}): ${named.join(', ')}${rest > 0 ? ` and ${rest} more` : ''}.`,
+    'Their skills and agents sit in the folders each host reads; `mnema stack list` shows them and `mnema stack check` compares them with the record.',
+    ...(parted > 0
+      ? [
+          `The files and the record part ways in ${counted(parted, 'place', 'places')}; \`mnema stack check\` lists them.`,
+        ]
+      : []),
   ];
 }
 

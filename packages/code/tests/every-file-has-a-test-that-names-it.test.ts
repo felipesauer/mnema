@@ -867,7 +867,7 @@ const CLAUSES_PER_FILE: Readonly<Record<string, number>> = {
   'packages/code/src/commands/skill-export.test.ts': 11,
   'packages/code/src/commands/skill-transition.test.ts': 10,
   'packages/code/src/commands/skill.test.ts': 8,
-  'packages/code/src/commands/stack-inspect.test.ts': 9,
+  'packages/code/src/commands/stack-inspect.test.ts': 16,
   'packages/code/src/commands/stack-install.test.ts': 13,
   'packages/code/src/commands/stack-signature.test.ts': 7,
   'packages/code/src/commands/stack-source.test.ts': 10,

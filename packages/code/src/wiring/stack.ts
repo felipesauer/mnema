@@ -29,6 +29,15 @@ interface TargetOptions {
   readonly to?: string;
 }
 
+/**
+ * What `stack remove` says of who may remove. A `stack.removed` fact is signed by whoever wrote it
+ * and is read for what it says; nothing ties it to the key that adopted the stack, so the verb says
+ * so where a person decides and where it is done, and the package page says it beside what the
+ * digest and the signature prove.
+ */
+const WHO_MAY_REMOVE =
+  'The record does not check who removes a stack: a removal signed by any key that writes to this tree stands, whoever adopted it.';
+
 const SCOPE_HELP =
   `the tree that records the adoption, and so where the files go: ${scopeChoices(SCOPES)}. ` +
   'Defaults to public: the files go into the project to be committed with it; private keeps ' +
@@ -181,6 +190,7 @@ export function registerStack(program: Command, wiring: Wiring): Declared {
     .addOption(enumeratedOption('--scope <scope>', SCOPE_HELP, SCOPES))
     .option('--to <folder>', 'the folder it was written into with --to')
     .option('--dry-run', 'say what would be removed and remove nothing')
+    .addHelpText('after', ['', WHO_MAY_REMOVE].join('\n'))
     .action(async (name: string, opts: TargetOptions & { dryRun?: boolean }) => {
       const target = targetOf(wiring, opts.scope, opts.to);
       if (target === undefined) return;
@@ -203,6 +213,9 @@ export function registerStack(program: Command, wiring: Wiring): Declared {
       for (const path of removed.missing) io.out(onOneLine`  already gone: ${path}`);
       if (removed.recorded) io.out('The removal is recorded.');
       if (opts.dryRun === true) io.out('Dry run: nothing was removed.');
+      // Said where a person decides (the dry run) and where it is done, and only for a tree: a
+      // folder of one's own records nothing.
+      if ('scope' in target) io.out(WHO_MAY_REMOVE);
     });
 
   const lookOptions = (command: Command): Command =>

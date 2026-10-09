@@ -22,6 +22,9 @@ import { fileURLToPath } from 'node:url';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { type CliIo, run } from '../src/program.js';
 
+/** What `stack remove` says of who may remove: the record keeps no author rule for it. */
+const WHO_MAY_REMOVE =
+  'The record does not check who removes a stack: a removal signed by any key that writes to this tree stands, whoever adopted it.';
 const HELLO = fileURLToPath(new URL('../../stacks/fixtures/hello-stack', import.meta.url));
 
 let sandbox: string;
@@ -266,10 +269,14 @@ describe('installing and removing, in process', () => {
     expect(dry.out).toContain('Would remove hello-stack 1.0.0');
     expect(dry.out).toContain('kept, changed since it was written: .claude/agents/greeter.md');
     expect(dry.out).toContain('Dry run: nothing was removed.');
+    expect(dry.out).toContain(WHO_MAY_REMOVE);
     expect(existsSync(join(project, '.mnema/stacks/hello-stack.json'))).toBe(true);
     const done = await mnema(['stack', 'remove', 'hello-stack']);
     expect(done.failed, done.err).toBe(false);
     expect(done.out).toContain('The removal is recorded.');
+    expect(done.out).toContain(WHO_MAY_REMOVE);
+    const help = await mnema(['stack', 'remove', '--help']);
+    expect(help.out.replace(/\s+/g, ' ')).toContain(WHO_MAY_REMOVE);
     expect(readFileSync(join(project, '.claude/agents/greeter.md'), 'utf8')).toBe('mine\n');
     const gone = await mnema(['stack', 'remove', 'hello-stack']);
     expect(gone.failed).toBe(true);

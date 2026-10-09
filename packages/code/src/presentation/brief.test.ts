@@ -953,3 +953,71 @@ describe('the hook’s copy for a host that counts in its own unit', () => {
     expect(text).toContain('so this one stops at a whole rule instead.');
   });
 });
+
+describe('what the copy a hook carries says of the stacks adopted for the project', () => {
+  const adopted = (n: number) =>
+    Array.from({ length: n }, (_, at) => ({
+      name: `stack-${at + 1}`,
+      version: '1.0.0',
+      scope: 'public' as const,
+    }));
+  const base = governance({ decisions: [decision(1)], skills: [pattern(1)] });
+  const hookWith = (stacks: Parameters<typeof briefWithin>[5], over: Brief = base): string[] =>
+    briefWithin(over, HOOK_TEXT_CEILING, undefined, undefined, undefined, stacks);
+
+  it('says nothing where none is adopted, and never in the file', () => {
+    expect(hookWith({ adopted: [], departures: [] })).toEqual(briefDocument(base));
+    const withStacks = hookWith({ adopted: adopted(1), departures: [] });
+    expect(briefDocument(base).join('\n')).not.toContain('Stacks adopted');
+    expect(withStacks.slice(0, briefDocument(base).length)).toEqual(briefDocument(base));
+    expect(withStacks.length).toBeGreaterThan(briefDocument(base).length);
+  });
+
+  it('names each stack with its version and tree, and the doors that list and compare them', () => {
+    const hook = hookWith({
+      adopted: [
+        { name: 'review-pass', version: '0.2.0', scope: 'public' },
+        { name: 'mine', version: '1.0.0', scope: 'global' },
+      ],
+      departures: [],
+    });
+    expect(hook.slice(briefDocument(base).length)).toEqual([
+      '',
+      'Stacks adopted for this project (2): review-pass 0.2.0 (public), mine 1.0.0 (global).',
+      'Their skills and agents sit in the folders each host reads; `mnema stack list` shows them and `mnema stack check` compares them with the record.',
+    ]);
+  });
+
+  it('counts the departures of the files from the record, and names the door', () => {
+    expect(hookWith({ adopted: adopted(1), departures: ['a', 'b'] }).at(-1)).toBe(
+      'The files and the record part ways in 2 places; `mnema stack check` lists them.',
+    );
+    expect(hookWith({ adopted: adopted(1), departures: ['a'] }).at(-1)).toBe(
+      'The files and the record part ways in 1 place; `mnema stack check` lists them.',
+    );
+  });
+
+  it('lists at most eight names and counts the rest, so a crowd cannot take the hook’s room', () => {
+    const hook = hookWith({ adopted: adopted(30), departures: [] });
+    const line = hook.find((l) => l.startsWith('Stacks adopted for this project')) ?? '';
+    expect(
+      line.startsWith('Stacks adopted for this project (30): stack-1 1.0.0 (public), stack-2'),
+    ).toBe(true);
+    expect(line.split(', ')).toHaveLength(8);
+    expect(line.endsWith(' and 22 more.')).toBe(true);
+  });
+
+  it('is part of what has to fit: the rules give way to it', () => {
+    const crowded = governance({
+      decisions: Array.from({ length: 60 }, (_, at) =>
+        decision(
+          at + 1,
+          `A call numbered ${at + 1} about ${'the invoice run and its retries '.repeat(6)}`,
+        ),
+      ),
+    });
+    const hook = hookWith({ adopted: adopted(30), departures: ['a'] }, crowded);
+    expect(printedLength(hook)).toBeLessThanOrEqual(HOOK_TEXT_CEILING);
+    expect(hook.join('\n')).toContain('Stacks adopted for this project (30)');
+  });
+});

@@ -379,19 +379,60 @@ export function unreceipted(ctx: StackContext, target: StackTarget | undefined):
     if ('ok' in where || where.trees === undefined) continue;
     const root = chainRootForScope(where.trees, t.scope);
     if (root === undefined || !existsSync(root)) continue;
-    const standing = new Set<string>();
-    for (const event of orderedEvents({ root }, catalogUpcasters())) {
-      if (event.kind === 'stack.adopted') standing.add(event.subject);
-      else if (event.kind === 'stack.removed') standing.delete(event.subject);
-    }
     const have = new Set((entriesOf(ctx, t) ?? []).map((e) => e.name));
-    for (const name of [...standing].sort()) {
+    for (const name of [...standingIn(root).keys()].sort()) {
       if (!have.has(name)) {
         out.push(`${oneLine(name)} (${t.scope}): the record adopted it and no receipt is here`);
       }
     }
   }
   return out;
+}
+
+/** The stacks a tree's record stands on, each with the version of its last adoption. */
+function standingIn(root: string): Map<string, string> {
+  const standing = new Map<string, string>();
+  for (const event of orderedEvents({ root }, catalogUpcasters())) {
+    if (event.kind === 'stack.adopted') standing.set(event.subject, event.payload.version);
+    else if (event.kind === 'stack.removed') standing.delete(event.subject);
+  }
+  return standing;
+}
+
+/** What the record says is adopted for this project, and where the files and the record part. */
+export interface StacksHere {
+  /** Every stack the three trees' records stand on, by tree and then by name. */
+  readonly adopted: readonly {
+    readonly name: string;
+    readonly version: string;
+    readonly scope: StackScope;
+  }[];
+  /** One line for each thing `stack check` would report, over the three trees. */
+  readonly departures: readonly string[];
+}
+
+/**
+ * The stacks adopted for the project the context is in, and every departure of their files from
+ * the receipts and of the receipts from the record. It reads, and writes nothing: the record is
+ * what says a stack is adopted, so a stack whose files are gone still counts and its absence is
+ * a departure.
+ */
+export function stacksHere(ctx: StackContext): StacksHere {
+  const adopted: { name: string; version: string; scope: StackScope }[] = [];
+  for (const scope of SCOPES_IN_ORDER) {
+    const where = whereOf(ctx, { scope });
+    if ('ok' in where || where.trees === undefined) continue;
+    const root = chainRootForScope(where.trees, scope);
+    if (root === undefined || !existsSync(root)) continue;
+    for (const [name, version] of [...standingIn(root)].sort(([a], [b]) => (a < b ? -1 : 1))) {
+      adopted.push({ name, version, scope });
+    }
+  }
+  const departures = [
+    ...allEntries(ctx, undefined).flatMap((e) => problemsOf(inspect(e))),
+    ...unreceipted(ctx, undefined),
+  ];
+  return { adopted, departures };
 }
 
 /** What exporting did, or why it did not. */

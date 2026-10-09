@@ -624,7 +624,9 @@ $ mnema brief --help
 | file path, so there the rules stop at a whole one and the document says how many it
 | left out. Without the flag nothing is cut. With it the copy also counts, last, the
 | decision documents in this checkout the record has no decision for, as
-| `mnema status` does — a fact about one disk, so the file never carries it.
+| `mnema status` does — a fact about one disk, so the file never carries it. It also
+| names, there, the stacks the record has adopted and how many places their files part
+| from it (`mnema stack check`).
 |
 | Without `--hook` the output holds no clock, no session and no path, so the same
 | record always prints the same bytes and a difference is a difference in the record.
@@ -1694,6 +1696,8 @@ $ mnema stack remove --help
 |   --to <folder>    the folder it was written into with --to
 |   --dry-run        say what would be removed and remove nothing
 |   -h, --help       display help for command
+|
+| The record does not check who removes a stack: a removal signed by any key that writes to this tree stands, whoever adopted it.
 
 ### mnema stack list --help
 $ mnema stack list --help
