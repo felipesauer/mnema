@@ -12,11 +12,13 @@
 function __mnema_commands --description 'the subcommands one level of the tree offers'
     switch "$argv[1]"
         case ''
-            echo 'init decision link unlink memory observe retract skill task promote status brief recall rules rules-file switch inherit verify witness check site search show timeline refs audit diagram export usage resume repl why commits aging trailer commit-hook key tail doctor report completion mcp run before-a-write tally corrections help'
+            echo 'init decision link unlink memory observe retract skill stack task promote status brief recall rules rules-file switch inherit verify witness check site search show timeline refs audit diagram export usage resume repl why commits aging trailer commit-hook key tail doctor report completion mcp run before-a-write tally corrections help'
         case 'decision'
             echo 'record move supersede import help'
         case 'skill'
             echo 'create move export provenance help'
+        case 'stack'
+            echo 'add remove help'
         case 'task'
             echo 'create move handoff next guard help'
         case 'switch'
@@ -78,6 +80,7 @@ complete -c mnema -f -n '__mnema_at ""' -a 'memory' -d 'capture a memory in the 
 complete -c mnema -f -n '__mnema_at ""' -a 'observe' -d 'record an observation about an entity in the current project'
 complete -c mnema -f -n '__mnema_at ""' -a 'retract' -d 'take a memory or an observation back, keeping it in the record (follows the note; takes no --scope)'
 complete -c mnema -f -n '__mnema_at ""' -a 'skill' -d 'propose, move or export a reusable skill, or show where each came from'
+complete -c mnema -f -n '__mnema_at ""' -a 'stack' -d 'install a stack of skills and agents into the folders each host reads'
 complete -c mnema -f -n '__mnema_at ""' -a 'task' -d 'create a task, move it, hand it over, or ask what the workflow allows next'
 complete -c mnema -f -n '__mnema_at ""' -a 'promote' -d 'list what recurs across projects, or copy one pattern to the global tree'
 complete -c mnema -f -n '__mnema_at ""' -a 'status' -d 'show where things stand: the work, what governs, what awaits a ruling'
@@ -264,6 +267,32 @@ complete -c mnema -f -n '__mnema_at "skill provenance"' -l json
 complete -c mnema -f -n '__mnema_at "skill provenance"' -s h -l help
 complete -c mnema -f -n '__mnema_at "skill provenance"' -s V -l version
 complete -c mnema -f -n '__mnema_at "skill provenance"' -l color -x -a 'auto always never'
+
+# mnema stack
+complete -c mnema -f -n '__mnema_at "stack"' -a 'add' -d 'show the plan of a stack, and write it when --expect names its digest'
+complete -c mnema -f -n '__mnema_at "stack"' -a 'remove' -d 'remove an installed stack, keeping every file changed since it was written'
+complete -c mnema -f -n '__mnema_at "stack"' -a 'help' -d 'display help for command'
+complete -c mnema -f -n '__mnema_at "stack"' -s h -l help
+complete -c mnema -f -n '__mnema_at "stack"' -s V -l version
+complete -c mnema -f -n '__mnema_at "stack"' -l color -x -a 'auto always never'
+
+# mnema stack add
+complete -c mnema -f -n '__mnema_at "stack add"' -l scope -x -a 'public private global'
+complete -c mnema -f -n '__mnema_at "stack add"' -l to -r
+complete -c mnema -f -n '__mnema_at "stack add"' -l as -r
+complete -c mnema -f -n '__mnema_at "stack add"' -l expect -r
+complete -c mnema -f -n '__mnema_at "stack add"' -l dry-run
+complete -c mnema -f -n '__mnema_at "stack add"' -s h -l help
+complete -c mnema -f -n '__mnema_at "stack add"' -s V -l version
+complete -c mnema -f -n '__mnema_at "stack add"' -l color -x -a 'auto always never'
+
+# mnema stack remove
+complete -c mnema -f -n '__mnema_at "stack remove"' -l scope -x -a 'public private global'
+complete -c mnema -f -n '__mnema_at "stack remove"' -l to -r
+complete -c mnema -f -n '__mnema_at "stack remove"' -l dry-run
+complete -c mnema -f -n '__mnema_at "stack remove"' -s h -l help
+complete -c mnema -f -n '__mnema_at "stack remove"' -s V -l version
+complete -c mnema -f -n '__mnema_at "stack remove"' -l color -x -a 'auto always never'
 
 # mnema task
 complete -c mnema -f -n '__mnema_at "task"' -a 'create' -d 'create a task in the current project'

@@ -58,6 +58,7 @@ import {
   rejectSkill,
   reviewSkill,
 } from './skill-operations.js';
+import { adoptStack, removeStack } from './stack-operations.js';
 
 /**
  * A checkout whose recorded identity no longer counts its key writes NOTHING — through every
@@ -294,6 +295,17 @@ describe('a checkout the key left writes nothing, through every write of the sur
       op: 'recordConsultation',
       refusedBy: 'the anchor',
       drive: (as, _, s) => recordConsultation(as, { skill: s.fixtures.adopted }),
+    },
+    {
+      op: 'adoptStack',
+      refusedBy: 'the anchor',
+      drive: (as) =>
+        adoptStack(as, { name: 's', version: '1', digest: 'a'.repeat(64), scope: 'public' }),
+    },
+    {
+      op: 'removeStack',
+      refusedBy: 'the anchor',
+      drive: (as) => removeStack(as, { name: 's' }),
     },
     {
       op: 'captureMemory',
