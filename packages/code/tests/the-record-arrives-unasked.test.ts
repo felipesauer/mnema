@@ -179,6 +179,12 @@ const TALLY_HOOK = 'session-tally.mjs';
  * `{}`; what it records is `a-correction-becomes-a-proposal.test.ts`.
  */
 const CORRECTIONS_HOOK = 'session-corrections.mjs';
+/**
+ * The handler that checks, when a subagent stops, that its final reply ends in the block of decisions
+ * the record asks for. In these projects the reply it is handed has none, outside a project it has no
+ * standing and says nothing; what it sends back is `a-subagent-hands-back-its-decisions.test.ts`.
+ */
+const HANDBACK_HOOK = 'subagent-stop.mjs';
 
 /**
  * The command line each declared handler runs — what the recording shim must see it try.
@@ -199,6 +205,7 @@ const VERB_OF: Readonly<Record<string, string>> = {
   [CORRECTIONS_HOOK]: 'corrections',
   [CURSOR_HOOK]: 'before-a-write --host cursor',
   [GATE_HOOK]: 'before-a-write --host vscode',
+  [HANDBACK_HOOK]: 'handback',
 };
 
 /**
@@ -210,7 +217,10 @@ const ASKED_FIRST = '--identify';
 /** Every command line a handler runs, in order — the question first, where it asks one. */
 function callsOf(handler: string): string[] {
   const verb = VERB_OF[handler] as string;
-  return GATES.includes(handler) || handler === TALLY_HOOK || handler === CORRECTIONS_HOOK
+  return GATES.includes(handler) ||
+    handler === TALLY_HOOK ||
+    handler === CORRECTIONS_HOOK ||
+    handler === HANDBACK_HOOK
     ? [verb]
     : [ASKED_FIRST, verb];
 }
@@ -228,6 +238,16 @@ function stdinOf(command: string, at: string): string {
     return JSON.stringify({
       hook_event_name: 'Stop',
       transcript_path: join(at, 'no-such-transcript.jsonl'),
+      cwd: at,
+    });
+  }
+  // The subagent's stop is handed a final reply with no block in it: tried, and answered nothing
+  // wherever the verb has no standing.
+  if (handlerOf(command) === HANDBACK_HOOK) {
+    return JSON.stringify({
+      hook_event_name: 'SubagentStop',
+      stop_hook_active: false,
+      last_assistant_message: 'Done.',
       cwd: at,
     });
   }
@@ -506,6 +526,7 @@ describe('the record arrives unasked', () => {
       TALLY_HOOK,
       CURSOR_HOOK,
       GATE_HOOK,
+      HANDBACK_HOOK,
     ]);
   });
 
@@ -1073,7 +1094,9 @@ describe('the record arrives unasked', () => {
     expect(before.events).toBeGreaterThan(0);
     for (const command of declaredCommands()) {
       const ran = runHook(command, project);
-      expect(ran.status, command).toBe(0);
+      // The subagent's stop is handed a reply with no block, here in a project: it sends it back
+      // (exit 2), and that writes nothing either.
+      expect(ran.status, command).toBe(handlerOf(command) === HANDBACK_HOOK ? 2 : 0);
     }
     expect(held(sandbox)).toEqual(before);
   });
@@ -1107,7 +1130,13 @@ describe('the record arrives unasked', () => {
     // `mcp_tool` gate does in Claude Code. What this case holds now is the set, and which side
     // each is on: the two opening verbs read, the gate is declared as writing, and a fourth verb
     // is a line somebody has to write.
-    expect(declaredEvents()).toEqual(['SessionStart', 'Stop', 'PreCompact', 'PreToolUse']);
+    expect(declaredEvents()).toEqual([
+      'SessionStart',
+      'Stop',
+      'PreCompact',
+      'PreToolUse',
+      'SubagentStop',
+    ]);
 
     const reached = new Set<string>();
     for (const command of declaredCommands()) {
@@ -1124,6 +1153,7 @@ describe('the record arrives unasked', () => {
       'corrections',
       'before-a-write --host cursor',
       'before-a-write --host vscode',
+      'handback',
     ]);
     expect([...reached]).toEqual(Object.values(VERB_OF));
 
@@ -1140,6 +1170,7 @@ describe('the record arrives unasked', () => {
       'corrections: mutates',
       'before-a-write --host cursor: mutates',
       'before-a-write --host vscode: mutates',
+      'handback: reads',
     ]);
   });
 
@@ -1224,6 +1255,7 @@ describe('the record arrives unasked', () => {
       'mcp_tool:rules_before_an_edit',
       'command:/hooks/edit-refuses-a-write.mjs',
       'command:/hooks/edit-asks-a-person.mjs',
+      'command:/hooks/subagent-stop.mjs',
     ]);
 
     const marketplace = readJson<Marketplace>(MARKETPLACE);

@@ -170,6 +170,7 @@ export type ModelChannel =
   | 'host-rules-file'
   | 'agent-accepts'
   | 'session-tally'
+  | 'subagent-handback'
   | 'edit-first-write-gate'
   | 'user-corrections';
 
@@ -313,6 +314,10 @@ export const UNFRAMED_CHANNELS: {
     'what it carries is two counts the product made — files the session’s own tool calls wrote, ' +
     'and decisions recorded since it opened — and no record text, so there is nobody’s words to ' +
     'say whose they are',
+  'subagent-handback':
+    'what it carries is the product’s own sentence about the format a subagent’s final reply is to ' +
+    'end in, and what that reply lacked — no record text, so there is nobody’s words to say whose ' +
+    'they are',
   'agent-accepts':
     'what it carries is the product’s own sentence about an act the agent just made or was turned ' +
     'away from — that its acceptance was recorded as an agent’s, or that the switch is off — and ' +
@@ -345,6 +350,7 @@ export type SwitchableChannel =
   | 'edit-refuses-a-write'
   | 'agent-accepts'
   | 'session-tally'
+  | 'subagent-handback'
   | 'edit-first-write-gate'
   | 'user-corrections';
 
@@ -441,6 +447,16 @@ export const AGENT_ACCEPTS_CHANNEL: SwitchableChannel = 'agent-accepts';
 export const SESSION_TALLY_CHANNEL: SwitchableChannel = 'session-tally';
 
 /**
+ * The channel that sends a subagent back, once, when its final reply does not end in the block of
+ * decisions the record asks a subagent to hand back.
+ *
+ * A FORMAT AND NOT AN ORDER ABOUT THE WORK: it says what the reply is to end in and what the last
+ * one lacked, and it is silent the second time the host asks, whatever the reply. Its own switch,
+ * because it costs a subagent one more turn where it fires.
+ */
+export const SUBAGENT_HANDBACK_CHANNEL: SwitchableChannel = 'subagent-handback';
+
+/**
  * The channel that holds the FIRST write of a session to a file a rule addresses, so that the rules
  * arrive before the write and not beside its result — and lets the same write, repeated, through.
  *
@@ -522,6 +538,10 @@ export const NOT_COUNTED_AS_SERVED: {
     'the line is printed by `mnema tally`, which reads the transcript and the record and ' +
     'writes nothing — no event, no key, no run — so a count of what a session did never moves the ' +
     'record it counts',
+  'subagent-handback':
+    'the reason it hands a subagent is printed by `mnema handback`, which reads the payload and the ' +
+    'record’s switches and writes nothing — no event, no key, no run — so a check of a reply never ' +
+    'moves the record',
   'agent-accepts':
     'the sentence it hands an agent is the reply to a call that is itself the recorded fact ' +
     '(the acceptance, whose actor is on its envelope) or is refused and records nothing, so ' +
@@ -577,6 +597,10 @@ export const WHAT_STOPS: { readonly [K in SwitchableChannel]: string } = {
     'the proposals recorded from what a person typed into a session: with it on, a `Stop` hook ' +
     'reads the transcript, and each time the person corrected the agent a decision is recorded ' +
     'as proposed in this machine’s private tree. Off until switched on',
+  'subagent-handback':
+    'the return of a subagent that ends its final reply without the block of decisions the record ' +
+    'asks for: with it on, a `SubagentStop` hook sends the subagent back once, with the format; ' +
+    'off, a subagent stops as it would without the plugin',
   'session-tally':
     'the line a session’s `Stop` and `PreCompact` hooks print: how many files its own tool calls ' +
     'wrote and how many decisions were recorded since it opened',

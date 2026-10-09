@@ -739,7 +739,9 @@ export const HANDED_OVER: Readonly<
   // line 85 once the doctor handed over `mnema doctor --fix private-tree`, in a line of its own.
   // line 86 once `before-a-write --help` named the second host that only refuses, and the switch
   // of the asking went to a line of its own.
-  source: { line: 86, name: 85, flag: 4, unwritten: 4 },
+  // name 87 with the verb a subagent's stop runs: its help and the reason it sends back each name
+  // `mnema handback --schema`, and the help names the switch that stops it.
+  source: { line: 86, name: 87, flag: 4, unwritten: 4 },
 };
 
 // ---------------------------------------------------------------------------
