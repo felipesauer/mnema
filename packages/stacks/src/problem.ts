@@ -14,7 +14,8 @@ export type ProblemCode =
   | 'symlink'
   | 'signature-not-a-file'
   | 'not-a-file'
-  | 'path-refused';
+  | 'path-refused'
+  | 'not-an-archive';
 
 export interface Problem {
   readonly code: ProblemCode;

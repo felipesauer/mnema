@@ -97,23 +97,24 @@ maintainer's to run, not a pull request's. **Publishing to npm is the maintainer
 part of this procedure, automatic or otherwise**: nothing here runs `npm publish`, and until the
 maintainer does it, the packages are installed from the release's tarballs.
 
-1. **Start from a merged trunk.** The version is already in the four `package.json` files and the
+1. **Start from a merged trunk.** The version is already in the five `package.json` files and the
    changelog has a section for it, both merged through a pull request. Run the gates on what is
    committed.
-2. **Pack the four publishable packages**, `@mnema/chain`, `@mnema/core`, `@mnema/context` and
-   `@mnema/code`, with `pnpm pack` (for example `pnpm --filter @mnema/chain pack`, once for each).
+2. **Pack the five publishable packages**, `@mnema/chain`, `@mnema/core`, `@mnema/context`,
+   `@mnema/stacks` and `@mnema/code`, with `pnpm pack` (for example `pnpm --filter @mnema/chain pack`, once for each).
    The result is one tarball per package, named `mnema-<package>-<version>.tgz`. The other
    packages of the workspace are private and are not packed.
-3. **Write `SHA256SUMS`**: the SHA-256 digest of each of the four tarballs, one line per file, in
+3. **Write `SHA256SUMS`**: the SHA-256 digest of each of the five tarballs, one line per file, in
    `sha256sum`'s format (the digest, two spaces, the file name).
 4. **Tag the commit with an annotated tag**, `v<version>`, on the trunk commit the tarballs were
    built from, and push the tag.
-5. **Create the GitHub release as a pre-release** on that tag, with the four tarballs and
-   `SHA256SUMS` attached. Its notes give the install command, which has to name all four tarballs
-   (`@mnema/code` depends on the other three at its exact version), say that the packages are not
+5. **Create the GitHub release as a pre-release** on that tag, with the five tarballs and
+   `SHA256SUMS` attached. Its notes give the install command, which has to name all five tarballs
+   (`@mnema/code` depends on the other four at its exact version; `v0.1.0-beta` was cut before
+   `@mnema/stacks` was one of them, and has four), say that the packages are not
    on npm, and state the Node floor.
 6. **Prove the install the notes give, from the release itself.** In a throwaway `HOME`, never
-   your own, run the notes' `npm i -g` with the four release URLs together, and check that the
+   your own, run the notes' `npm i -g` with the five release URLs together, and check that the
    binary it puts on the `PATH` prints the version of the tag. Check the tarballs against
    `SHA256SUMS` too.
 
@@ -122,6 +123,7 @@ npm i -g \
   https://github.com/felipesauer/mnema/releases/download/v<version>/mnema-chain-<version>.tgz \
   https://github.com/felipesauer/mnema/releases/download/v<version>/mnema-core-<version>.tgz \
   https://github.com/felipesauer/mnema/releases/download/v<version>/mnema-context-<version>.tgz \
+  https://github.com/felipesauer/mnema/releases/download/v<version>/mnema-stacks-<version>.tgz \
   https://github.com/felipesauer/mnema/releases/download/v<version>/mnema-code-<version>.tgz
 ```
 

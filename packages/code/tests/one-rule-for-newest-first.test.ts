@@ -213,6 +213,7 @@ const THE_REVERSALS: readonly (readonly [string, string])[] = [
   ['chain/src/chain/ots.ts', 'the bytes of a message'],
   ['chain/src/chain/store.ts', 'a tip already read in order'],
   ['chain/src/chain/store.ts', 'arrivals read backwards from the end, restored to seq order'],
+  ['code/src/commands/stack-install.ts', 'what an installation made, taken back last made first'],
 ];
 
 /**

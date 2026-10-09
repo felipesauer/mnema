@@ -666,6 +666,11 @@ describe('every write refuses what no read could accept', () => {
     establishIdentity: 'enrolls what the key root registered; a refusal is reported as declined',
     enrollChecker: 'the fingerprint is computed from a decoded request, the signature proven first',
     enrollFromRequest: 'the fingerprint is computed and the signature is rejected as absent first',
+    // The stack facts: every field is a closed form at the door, so an empty one is refused
+    // by its form (STACK_FIELD_REFUSED) before a fact is built; a removal copies its fields
+    // from the standing adoption, and an empty name finds none.
+    adoptStack: 'every field is a closed form the door holds it to; an empty one is refused by it',
+    removeStack: 'its fields are copied from the standing adoption; an empty name stands nowhere',
   };
 
   it('classifies every function the writing surface exports', () => {

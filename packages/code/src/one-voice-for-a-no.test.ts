@@ -423,6 +423,7 @@ describe('no parent takes a word of its own, and every one refuses a mistyped su
     expect(all.map((p) => p.path)).toEqual([
       'decision',
       'skill',
+      'stack',
       'task',
       'switch',
       'inherit',
@@ -454,6 +455,7 @@ describe('no parent takes a word of its own, and every one refuses a mistyped su
     expect(sentences).toEqual([
       'decision: has no command',
       'skill: has no command',
+      'stack: has no command',
       'task: has no command',
       'switch: has no command',
       'inherit: has no command',

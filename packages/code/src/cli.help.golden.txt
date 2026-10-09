@@ -23,6 +23,8 @@ $ mnema
 !                   (follows the note; takes no --scope)
 !   skill           propose, move or export a reusable skill, or show where each
 !                   came from
+!   stack           install a stack of skills and agents into the folders each
+!                   host reads
 !   task            create a task, move it, hand it over, or ask what the workflow
 !                   allows next
 !   promote         list what recurs across projects, or copy one pattern to the
@@ -87,8 +89,7 @@ $ mnema
 !   key             manage this machine's signing keys
 !   tail            authorize a cut in the record's own tails
 !   doctor          say how mnema is installed on this machine, and what to do
-!                   about each thing found (writes nothing unless you pass --fix
-!                   vscode)
+!                   about each thing found (writes nothing unless you pass --fix)
 !   report          show, whole, what mnema would say about its own last internal
 !                   error, and keep your answer to it (sends nothing)
 !   completion      print the tab-completion script for a shell
@@ -132,6 +133,8 @@ $ mnema --help
 |                   (follows the note; takes no --scope)
 |   skill           propose, move or export a reusable skill, or show where each
 |                   came from
+|   stack           install a stack of skills and agents into the folders each
+|                   host reads
 |   task            create a task, move it, hand it over, or ask what the workflow
 |                   allows next
 |   promote         list what recurs across projects, or copy one pattern to the
@@ -196,8 +199,7 @@ $ mnema --help
 |   key             manage this machine's signing keys
 |   tail            authorize a cut in the record's own tails
 |   doctor          say how mnema is installed on this machine, and what to do
-|                   about each thing found (writes nothing unless you pass --fix
-|                   vscode)
+|                   about each thing found (writes nothing unless you pass --fix)
 |   report          show, whole, what mnema would say about its own last internal
 |                   error, and keep your answer to it (sends nothing)
 |   completion      print the tab-completion script for a shell
@@ -459,6 +461,22 @@ $ mnema skill --help
 |   and reported back, but what mnema does not recognize is written verbatim.
 |   Nor personal data: an email address is replaced with <email>; the mnid already says who wrote.
 |   Each text field holds at most 65536 bytes; a longer one is refused.
+
+### mnema stack --help
+$ mnema stack --help
+| Usage: mnema stack [options] [command]
+|
+| install a stack of skills and agents into the folders each host reads
+|
+| Options:
+|   -h, --help               display help for command
+|
+| Commands:
+|   add [options] <source>   show the plan of a stack, and write it when --expect
+|                            names its digest
+|   remove [options] <name>  remove an installed stack, keeping every file changed
+|                            since it was written
+|   help [command]           display help for command
 
 ### mnema task --help
 $ mnema task --help
@@ -1166,12 +1184,14 @@ $ mnema doctor --help
 | Usage: mnema doctor [options]
 |
 | say how mnema is installed on this machine, and what to do about each thing
-| found (writes nothing unless you pass --fix vscode)
+| found (writes nothing unless you pass --fix)
 |
 | Options:
 |   --fix <what>  make the one change a finding asks for, and only that one:
 |                 `vscode` lists the plugin in the chat.pluginLocations setting of
-|                 VS Code’s settings.json, after keeping a copy of the file
+|                 VS Code’s settings.json, after keeping a copy of the file;
+|                 `private-tree` moves the private notes a worktree still holds in
+|                 .mnema/private/ into the repository’s git directory
 |   --dry-run     with --fix: say what would change and write nothing
 |   -h, --help    display help for command
 |
@@ -1181,10 +1201,14 @@ $ mnema doctor --help
 |   .vscode/mcp.json and ~/.claude.json, the plugin counting as one; and an npm package
 |   named `mnema` installed where the PATH points — the registry is not asked; VS Code’s user
 |   settings.json, for whether its agent is told where the plugin is; and the projects of
-|   ~/.claude.json that still declare the server.
+|   ~/.claude.json that still declare the server; and, in a project inside a git repository,
+|   each worktree’s .mnema/private/, where private notes lived before they moved into the
+|   repository’s git directory.
 | Asked alone it writes nothing and exits 0 whatever it finds: each line says what to do.
-| `--fix vscode` is the only thing that writes: it shows what it will change, keeps a copy of
-| settings.json beside it, keeps the file’s comments, and refuses a file it cannot edit safely.
+| `--fix vscode` writes: it shows what it will change, keeps a copy of settings.json beside
+| it, keeps the file’s comments, and refuses a file it cannot edit safely.
+| `--fix private-tree` writes: it moves each tail, as it is, into the repository’s private
+| tree, and leaves where it was anything whose name there holds other bytes.
 
 ### mnema report --help
 $ mnema report --help
@@ -1604,6 +1628,50 @@ $ mnema skill provenance --help
 |   A consultation is one run served the body — not that the work followed it,
 |   and counted in this project’s trees and the machine-global one, no other.
 |   It records nothing — no event, no consultation.
+
+### mnema stack add --help
+$ mnema stack add --help
+| Usage: mnema stack add [options] <source>
+|
+| show the plan of a stack, and write it when --expect names its digest
+|
+| Arguments:
+|   source             a folder, a tar archive, or an https:// git address
+|
+| Options:
+|   --scope <scope>    the tree that records the adoption, and so where the files
+|                      go: public (team-visible), private (this machine, this
+|                      project), or global (personal, cross-project). Defaults to
+|                      public: the files go into the project to be committed with
+|                      it; private keeps them out of git, and global puts them in
+|                      the home.
+|   --to <folder>      write the files into this folder instead, and record
+|                      nothing
+|   --as <name>        install it under this name, when its own is taken
+|   --expect <digest>  write it, if its digest is this one — the one the plan
+|                      showed
+|   --dry-run          show the plan and write nothing
+|   -h, --help         display help for command
+
+### mnema stack remove --help
+$ mnema stack remove --help
+| Usage: mnema stack remove [options] <name>
+|
+| remove an installed stack, keeping every file changed since it was written
+|
+| Arguments:
+|   name             the name the stack is installed under
+|
+| Options:
+|   --scope <scope>  the tree that records the adoption, and so where the files
+|                    go: public (team-visible), private (this machine, this
+|                    project), or global (personal, cross-project). Defaults to
+|                    public: the files go into the project to be committed with
+|                    it; private keeps them out of git, and global puts them in
+|                    the home.
+|   --to <folder>    the folder it was written into with --to
+|   --dry-run        say what would be removed and remove nothing
+|   -h, --help       display help for command
 
 ### mnema task create --help
 $ mnema task create --help

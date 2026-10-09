@@ -256,6 +256,7 @@ const VERBS_NOT_IN_THE_LIBRARY: Readonly<Record<string, string>> = {
   init: 'founding an identity is a person’s act, on their machine',
   task: 'work items are the host’s, and so is the handoff recorded on one (see `record_handoff`)',
   skill: 'a pattern is written by a person and adopted by a person',
+  stack: 'installing writes into the folders a host reads as instruction, which is a person’s act',
   observe: 'see `record_observation`',
   link: 'a link is written by the person who sets a rule',
   promote:

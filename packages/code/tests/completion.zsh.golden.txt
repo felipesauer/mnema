@@ -12,9 +12,10 @@
 
 _mnema_commands() {
   case "$1" in
-    '') echo 'init decision link unlink memory observe retract skill task promote status brief recall rules rules-file switch inherit verify witness check site search show timeline refs audit diagram export usage resume repl why commits aging trailer commit-hook key tail doctor report completion mcp run before-a-write tally corrections help' ;;
+    '') echo 'init decision link unlink memory observe retract skill stack task promote status brief recall rules rules-file switch inherit verify witness check site search show timeline refs audit diagram export usage resume repl why commits aging trailer commit-hook key tail doctor report completion mcp run before-a-write tally corrections help' ;;
     'decision') echo 'record move supersede import help' ;;
     'skill') echo 'create move export provenance help' ;;
+    'stack') echo 'add remove help' ;;
     'task') echo 'create move handoff next guard help' ;;
     'switch') echo 'off on' ;;
     'inherit') echo 'set update help' ;;
@@ -39,6 +40,7 @@ _mnema_described() {
       'observe:record an observation about an entity in the current project' \
       'retract:take a memory or an observation back, keeping it in the record (follows the note; takes no --scope)' \
       'skill:propose, move or export a reusable skill, or show where each came from' \
+      'stack:install a stack of skills and agents into the folders each host reads' \
       'task:create a task, move it, hand it over, or ask what the workflow allows next' \
       'promote:list what recurs across projects, or copy one pattern to the global tree' \
       'status:show where things stand: the work, what governs, what awaits a ruling' \
@@ -69,7 +71,7 @@ _mnema_described() {
       'commit-hook:install or remove an optional git hook that suggests the Mnema-Decision trailer' \
       'key:manage this machine'\''s signing keys' \
       'tail:authorize a cut in the record'\''s own tails' \
-      'doctor:say how mnema is installed on this machine, and what to do about each thing found (writes nothing unless you pass --fix vscode)' \
+      'doctor:say how mnema is installed on this machine, and what to do about each thing found (writes nothing unless you pass --fix)' \
       'report:show, whole, what mnema would say about its own last internal error, and keep your answer to it (sends nothing)' \
       'completion:print the tab-completion script for a shell' \
       'mcp:run the mnema MCP server over stdio (for an agent host)' \
@@ -89,6 +91,10 @@ _mnema_described() {
       'move:move a skill through the workflow (follows the skill; takes no --scope)' \
       'export:write an adopted pattern as the SKILL.md an agent host reads (records nothing)' \
       'provenance:show where each pattern came from (who proposed it, who adopted it)' \
+      'help:display help for command' ;;
+    'stack') printf '%s\n' \
+      'add:show the plan of a stack, and write it when --expect names its digest' \
+      'remove:remove an installed stack, keeping every file changed since it was written' \
       'help:display help for command' ;;
     'task') printf '%s\n' \
       'create:create a task in the current project' \
@@ -162,6 +168,9 @@ _mnema_flags() {
     'skill move') echo '--note --reason -h --help --which -V --version --color' ;;
     'skill export') echo '--out --description -h --help -V --version --color' ;;
     'skill provenance') echo '--json -h --help -V --version --color' ;;
+    'stack') echo '-h --help -V --version --color' ;;
+    'stack add') echo '--scope --to --as --expect --dry-run -h --help -V --version --color' ;;
+    'stack remove') echo '--scope --to --dry-run -h --help -V --version --color' ;;
     'task') echo '--scope --which -h --help -V --version --color' ;;
     'task create') echo '--scope --which -h --help -V --version --color' ;;
     'task move') echo '--reason --note --feedback -h --help --which -V --version --color' ;;
@@ -265,6 +274,11 @@ _mnema_values() {
     'skill move:') echo 'review adopt reject deprecate' ;;
     'skill export:--color') echo 'auto always never' ;;
     'skill provenance:--color') echo 'auto always never' ;;
+    'stack:--color') echo 'auto always never' ;;
+    'stack add:--scope') echo 'public private global' ;;
+    'stack add:--color') echo 'auto always never' ;;
+    'stack remove:--scope') echo 'public private global' ;;
+    'stack remove:--color') echo 'auto always never' ;;
     'task:--scope') echo 'public private global' ;;
     'task:--color') echo 'auto always never' ;;
     'task create:--scope') echo 'public private global' ;;

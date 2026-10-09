@@ -38,6 +38,13 @@ export {
   privateTreeVisibility,
 } from './private-tree.js';
 export {
+  type LeftBehind,
+  type MovedTree,
+  movePrivateTree,
+  type PrivateTreesLeftBehind,
+  privateTreesLeftBehind,
+} from './private-tree-move.js';
+export {
   type Discovery,
   type DiscoveryEnv,
   discover,

@@ -1,3 +1,4 @@
+export { readStackArchive } from './archive.js';
 export {
   type DigestResult,
   isOutsideTheDigest,
@@ -8,6 +9,7 @@ export {
   stackDigest,
 } from './digest.js';
 export { readStackFiles, type StackFiles } from './files.js';
+export { type Frontmatter, type FrontmatterRead, readFrontmatter } from './frontmatter.js';
 export {
   checkName,
   type ManifestResult,
@@ -19,4 +21,4 @@ export {
 } from './manifest.js';
 export type { Problem, ProblemCode } from './problem.js';
 export { STACK_SCHEMA } from './schema.js';
-export { type StackReport, validateStack } from './validate.js';
+export { type StackReport, validateStack, validateStackFiles } from './validate.js';

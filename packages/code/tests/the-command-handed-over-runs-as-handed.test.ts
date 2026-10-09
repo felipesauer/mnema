@@ -456,6 +456,14 @@ export const NAMES_THAT_NEED_MORE: Readonly<
     times: 1,
     why: 'the verb named in the table row about the page\u2019s verdict; the bullet above it hands the line over, with its --out',
   },
+  'docs/packages.md: mnema stack add': {
+    times: 1,
+    why: 'the verb named as why the stacks package is released; its `--help` hands the source and the --expect it needs',
+  },
+  'packages/stacks/README.md: mnema stack add': {
+    times: 1,
+    why: 'the verb named in the same sentence on the package page, as the caller of the library',
+  },
   'packages/code/README.md: mnema skill export': {
     times: 1,
     why: 'the verb named in the sentence about what leaves the record as a file',
@@ -666,7 +674,9 @@ export const HANDED_OVER: Readonly<
   // flag 3 for the rung table's legend, on the front page and the evidence page, which names the
   // file `mnema rules-file --host` prints.
   // line 83 once the bug report became a form, which says `mnema --version` in a field of its own.
-  span: { line: 83, name: 153, flag: 3, unwritten: 0 },
+  // line 84 once the package page handed over `mnema doctor --fix private-tree`.
+  // name 155 with the two pages that name `mnema stack add` as why the stacks package is released.
+  span: { line: 84, name: 155, flag: 3, unwritten: 0 },
   // name 18 until the page that says where the key lives named `mnema key protect` in a line of
   // its own.
   // line 35 until the same page showed that question in a block of its own.
@@ -725,9 +735,10 @@ export const HANDED_OVER: Readonly<
   // lines of its help that name them.
   // unwritten 4 once the console named a member of a group by its whole path as well as a verb.
   // name 85 with the sentence the server's instructions hand the agent: the person runs `mnema report`.
-  // line 85 once `before-a-write --help` named the second host that only refuses, and the switch
+  // line 85 once the doctor handed over `mnema doctor --fix private-tree`, in a line of its own.
+  // line 86 once `before-a-write --help` named the second host that only refuses, and the switch
   // of the asking went to a line of its own.
-  source: { line: 85, name: 85, flag: 4, unwritten: 4 },
+  source: { line: 86, name: 85, flag: 4, unwritten: 4 },
 };
 
 // ---------------------------------------------------------------------------

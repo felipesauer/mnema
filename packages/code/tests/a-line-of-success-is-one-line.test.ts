@@ -423,6 +423,26 @@ const CLASSIFIED: Readonly<Record<string, { verdict: Verdict; why: string }>> = 
     verdict: 'minted',
     why: 'this surface’s own variable name, and nothing else',
   },
+  'stack.ts «Installed {} {}: {} files written.» #1': {
+    verdict: 'collapsed',
+    why: 'the name and the version are the stack’s own words, read out of its stack.json',
+  },
+  'stack.ts «The adoption is recorded in the {} tree.» #1': {
+    verdict: 'minted',
+    why: 'a scope of the closed set the flag is held to',
+  },
+  'stack.ts «{} {} {}: {} files.» #1': {
+    verdict: 'collapsed',
+    why: 'one of two words of this wiring, then a name and a version read back out of the receipt',
+  },
+  'stack.ts «  kept, changed since it was written: {}» #1': {
+    verdict: 'collapsed',
+    why: 'a path read out of the receipt, which a commit can change',
+  },
+  'stack.ts «  already gone: {}» #1': {
+    verdict: 'collapsed',
+    why: 'a path read out of the receipt, the same as the line above it',
+  },
   'switch.ts «Switched {} {}» #1': {
     verdict: 'minted',
     why: 'a channel of a CLOSED set (an unknown name is refused before the write) and one of two words this wiring owns',
@@ -792,7 +812,8 @@ describe('every line this wiring words is classified', () => {
     // `witness sigstore` prints.
     // 111 once `key sigstore` said the hash the record keeps for an e-mail.
     // 112 with the line `unlink` prints for the edge it took back.
-    expect(FOUND.sites.length).toBe(110);
+    // 115 with the five lines `stack add` and `stack remove` print.
+    expect(FOUND.sites.length).toBe(115);
   });
 
   it('reads the verdict off the source rather than believing the table', () => {
@@ -812,9 +833,9 @@ describe('every line this wiring words is classified', () => {
   it('found sites of both kinds, and the scanner sees a tag when there is one', () => {
     // Neither arm of the case above may be empty, or half of it is vacuous.
     const verdicts = Object.values(CLASSIFIED).map((said) => said.verdict);
-    expect(verdicts.filter((verdict) => verdict === 'collapsed').length).toBe(53);
-    expect(verdicts.filter((verdict) => verdict === 'minted').length).toBe(57);
-    expect(FOUND.sites.filter((site) => site.tagged).length).toBe(53);
+    expect(verdicts.filter((verdict) => verdict === 'collapsed').length).toBe(57);
+    expect(verdicts.filter((verdict) => verdict === 'minted').length).toBe(58);
+    expect(FOUND.sites.filter((site) => site.tagged).length).toBe(57);
   });
 
   it('every reason says where the value comes from', () => {
@@ -940,6 +961,15 @@ describe('a value from outside cannot forge a second line', () => {
  * somebody closed and nobody drove, and the reconciliation below is what says so.
  */
 const UNREACHABLE: Readonly<Record<string, string>> = {
+  'stack.ts «Installed {} {}: {} files written.» #1':
+    'the name is held to the stack-name form and the version to a version’s characters before the ' +
+    'plan exists, so no line break reaches the line; the tag is the second fence',
+  'stack.ts «{} {} {}: {} files.» #1':
+    'the name and version are read back out of a receipt, which a commit can change; no case ' +
+    'forges one yet, so the tag is what holds this line',
+  'stack.ts «  kept, changed since it was written: {}» #1':
+    'a receipt path holding a control character is refused whole before anything is listed',
+  'stack.ts «  already gone: {}» #1': 'the same refusal as the line above',
   'unlink.ts «Retracted link {} —{}→ {}» #1':
     'needs the edge already linked, so two verbs: `link` then `unlink` — driven in ' +
     '`tests/a-link-can-be-retracted.test.ts`, through the same collapse as `link`’s line',
