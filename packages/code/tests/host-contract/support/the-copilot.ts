@@ -259,22 +259,38 @@ async function aCopilotSession(
       cwd: box.project,
       env: { ...env, TERM: 'xterm-256color' },
       stdio: ['pipe', 'ignore', 'ignore'],
+      detached: true,
     });
-    const killer = setTimeout(() => child.kill('SIGKILL'), 100_000);
+    // The whole group goes: `script`, `strace` and the host, which does not always leave on Ctrl-C.
+    const killAll = (): void => {
+      try {
+        process.kill(-(child.pid as number), 'SIGKILL');
+      } catch {
+        // already gone
+      }
+    };
+    const killer = setTimeout(killAll, 100_000);
     const closed = new Promise<void>((resolve) => child.on('close', () => resolve()));
     const shown = (): string => (existsSync(screenFile) ? plain(readFileSync(screenFile, 'latin1')) : '');
-    for (let waited = 0; waited < 60_000 && !shown().includes('Do you want to allow'); waited += 200) {
+    for (let waited = 0; waited < 60_000 && !shown().includes('1. Yes'); waited += 200) {
       await wait(200);
     }
     screen = shown();
-    await wait(1_000);
+    // The first key after the prompt appears is lost to the terminal's own start-up, so the keys
+    // are pressed twice. A second press after the host has gone on lands on an idle input.
+    await wait(4_000);
     child.stdin.write(spec.person);
-    await wait(6_000);
+    await wait(3_000);
+    child.stdin.write(spec.person);
+    await wait(7_000);
     screen = shown();
     child.stdin.write('\u0003');
     await wait(1_000);
     child.stdin.write('\u0003');
+    await Promise.race([closed, wait(5_000)]);
+    killAll();
     await closed;
+    await wait(1_500);
     clearTimeout(killer);
     text = screen;
   }
