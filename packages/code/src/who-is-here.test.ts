@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { HOOK_TEXT_CEILING } from './presentation/within-a-hook.js';
 import { tellsWhatToDo } from './record-framing.js';
-import { hereSentence, NAME_CUT, withWhoIsHere } from './who-is-here.js';
+import { hereSentence, withWhoIsHere } from './who-is-here.js';
 
 describe('hereSentence', () => {
   it('is silent when no other run was charged at the path', () => {
@@ -56,7 +56,7 @@ describe('hereSentence', () => {
       /[\uD800-\uDBFF](?![\uDC00-\uDFFF])|(?<![\uD800-\uDBFF])[\uDC00-\uDFFF]/,
     );
     // Three names of at most the cut, plus the fixed words: a bound, not a function of the input.
-    expect(sentence.length).toBeLessThan(3 * (2 * NAME_CUT + 3) + 140);
+    expect(sentence.length).toBeLessThan(340);
   });
 });
 

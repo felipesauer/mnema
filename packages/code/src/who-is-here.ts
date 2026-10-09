@@ -30,7 +30,7 @@
  * {@link NAME_CUT} characters.
  */
 
-import { A_RUN_IS_HERE_FOR_SECONDS, type RunHere } from '@mnema/context';
+import type { RunHere } from '@mnema/context';
 import { oneLine } from './one-line.js';
 import { HOOK_TEXT_CEILING } from './presentation/within-a-hook.js';
 import {
@@ -97,6 +97,3 @@ export function withWhoIsHere(text: string, here: readonly RunHere[]): string {
   const whole = `${text}${BESIDE}${sentence}`;
   return whole.length <= HOOK_TEXT_CEILING ? whole : text;
 }
-
-/** The age past which a run is not read as here, in words, for the pages that say it. */
-export const HERE_FOR_MINUTES = A_RUN_IS_HERE_FOR_SECONDS / 60;
