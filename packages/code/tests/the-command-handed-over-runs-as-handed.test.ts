@@ -456,6 +456,14 @@ export const NAMES_THAT_NEED_MORE: Readonly<
     times: 1,
     why: 'the verb named in the table row about the page\u2019s verdict; the bullet above it hands the line over, with its --out',
   },
+  'docs/packages.md: mnema stack add': {
+    times: 1,
+    why: 'the verb named as why the stacks package is released; its `--help` hands the source and the --expect it needs',
+  },
+  'packages/stacks/README.md: mnema stack add': {
+    times: 1,
+    why: 'the verb named in the same sentence on the package page, as the caller of the library',
+  },
   'packages/code/README.md: mnema skill export': {
     times: 1,
     why: 'the verb named in the sentence about what leaves the record as a file',
@@ -666,7 +674,8 @@ export const HANDED_OVER: Readonly<
   // flag 3 for the rung table's legend, on the front page and the evidence page, which names the
   // file `mnema rules-file --host` prints.
   // line 83 once the bug report became a form, which says `mnema --version` in a field of its own.
-  span: { line: 83, name: 153, flag: 3, unwritten: 0 },
+  // name 155 with the two pages that name `mnema stack add` as why the stacks package is released.
+  span: { line: 83, name: 155, flag: 3, unwritten: 0 },
   // name 18 until the page that says where the key lives named `mnema key protect` in a line of
   // its own.
   // line 35 until the same page showed that question in a block of its own.
