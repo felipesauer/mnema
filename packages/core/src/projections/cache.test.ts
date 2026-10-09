@@ -835,6 +835,82 @@ describe('ProjectionCache — the reference index', () => {
     expect(cache.subjectRuns('skill.consulted')).toEqual([{ entity: 's-1', run: 'run-a' }]);
   });
 
+  it('reads the charges made at one path, the newest of each run, and only in the named channels', () => {
+    const w = openChainForWriting(chainRoot, { keyRoot: chainRoot });
+    const charge = (
+      kind: 'channel.asked' | 'channel.refused',
+      subject: string,
+      n: number,
+      path: string,
+      run?: string,
+    ) =>
+      w.append({
+        v: 1,
+        kind,
+        at: at(n),
+        who: 'felipe',
+        signerFp: 'fp-1',
+        subject,
+        ...(run === undefined ? {} : { run }),
+        payload: { rule: 'rule-1', path },
+      });
+    charge('channel.asked', 'edit-asks-a-person', 1, 'src/a.ts', 'run-a');
+    charge('channel.asked', 'edit-asks-a-person', 2, 'src/a.ts', 'run-a');
+    charge('channel.refused', 'edit-refuses-a-write', 3, 'src/a.ts', 'run-b');
+    charge('channel.asked', 'edit-asks-a-person', 4, 'src/b.ts', 'run-c');
+    // A charge no run made (the command hook's) names nobody.
+    charge('channel.asked', 'edit-asks-a-person', 5, 'src/a.ts');
+    // The same path in a channel the caller did not name.
+    charge('channel.asked', 'edit-first-write-gate', 6, 'src/a.ts', 'run-d');
+
+    const cache = openCache();
+    cache.rebuild();
+
+    const asked = cache.chargesAt('src/a.ts', ['edit-asks-a-person', 'edit-refuses-a-write']);
+    expect(asked.map((one) => [one.run, one.at])).toEqual([
+      ['run-b', at(3)],
+      ['run-a', at(2)],
+    ]);
+    expect(cache.chargesAt('src/a.ts', ['edit-first-write-gate']).map((one) => one.run)).toEqual([
+      'run-d',
+    ]);
+    expect(cache.chargesAt('src/never.ts', ['edit-asks-a-person'])).toEqual([]);
+    expect(cache.chargesAt('src/a.ts', [])).toEqual([]);
+  });
+
+  it('keeps the newest charge of a run that charged in two channels, whichever channel is read first', () => {
+    const w = openChainForWriting(chainRoot, { keyRoot: chainRoot });
+    const charge = (
+      kind: 'channel.asked' | 'channel.refused',
+      subject: string,
+      n: number,
+      run: string,
+    ) =>
+      w.append({
+        v: 1,
+        kind,
+        at: at(n),
+        who: 'felipe',
+        signerFp: 'fp-1',
+        subject,
+        run,
+        payload: { rule: 'rule-1', path: 'src/a.ts' },
+      });
+    // run-a was charged last in the channel read first; run-b, last in the one read second.
+    charge('channel.asked', 'edit-asks-a-person', 5, 'run-a');
+    charge('channel.refused', 'edit-refuses-a-write', 2, 'run-a');
+    charge('channel.asked', 'edit-asks-a-person', 1, 'run-b');
+    charge('channel.refused', 'edit-refuses-a-write', 6, 'run-b');
+
+    const cache = openCache();
+    cache.rebuild();
+
+    expect(cache.chargesAt('src/a.ts', ['edit-asks-a-person', 'edit-refuses-a-write'])).toEqual([
+      { run: 'run-b', at: at(6) },
+      { run: 'run-a', at: at(5) },
+    ]);
+  });
+
   it('walks from one entity to what it references', () => {
     const w = openChainForWriting(chainRoot, { keyRoot: chainRoot });
     writeEverything(w);

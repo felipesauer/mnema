@@ -196,6 +196,7 @@ const THE_ORDERINGS: readonly Rostered[] = [
   // always was. It is named now because it is one function (`sortDivergent`), asked by the
   // whole-record reading and by the cache that keeps the moves one entity at a time.
   { file: 'core/src/projections/divergent-moves.ts', by: 'compareDivergent', means: OTHER },
+  { file: 'core/src/projections/reference-store.ts', by: 'byNewestCharge', means: NEWEST },
 ];
 
 /**
@@ -481,7 +482,7 @@ describe('one rule for newest first', () => {
     // what makes a scan that suddenly matches nothing a failure rather than a pass.
     expect(INSTALLED.length).toBeGreaterThanOrEqual(44);
     expect(NAMED.length).toBeGreaterThanOrEqual(20);
-    expect(THE_ORDERINGS.filter((each) => each.means === NEWEST)).toHaveLength(7);
+    expect(THE_ORDERINGS.filter((each) => each.means === NEWEST)).toHaveLength(8);
     expect(THE_ORDERINGS.filter((each) => each.means === OLDEST)).toHaveLength(4);
   });
 
