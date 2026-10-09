@@ -244,4 +244,24 @@ describe('mnema stack enable, on the built binary', () => {
     expect(ran.out).toContain('STACK_RECEIPT_REFUSED');
     expect(existsSync(join(sandbox, 'escape.sh'))).toBe(false);
   });
+
+  it('a receipt whose hook name holds an escape is refused, and no escape reaches the terminal', () => {
+    const receipt = join(project, '.mnema/stacks/hello-stack.json');
+    const real = JSON.parse(readFileSync(receipt, 'utf8'));
+    real.hooks[0].name = '\u001b[31mEVIL';
+    writeFileSync(receipt, JSON.stringify(real));
+    const ran = mnemaAtATerminal(
+      '\u001b[31mEVIL\n',
+      'stack',
+      'enable',
+      'hello-stack',
+      '\u001b[31mEVIL',
+      '--from',
+      hooked,
+    );
+    expect(ran.status).toBe(1);
+    expect(ran.out).toContain('STACK_RECEIPT_REFUSED');
+    expect(ran.out).not.toContain('\u001b[31mEVIL');
+    expect(scripts()).toEqual([]);
+  });
 });

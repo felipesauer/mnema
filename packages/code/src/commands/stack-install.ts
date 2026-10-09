@@ -296,6 +296,8 @@ export function readReceipt(
           typeof hook === 'object' &&
           hook !== null &&
           typeof hook.name === 'string' &&
+          // The name is typed back to approve the hook and printed in the question: it is one line.
+          oneLine(hook.name) === hook.name &&
           typeof hook.event === 'string' &&
           typeof hook.file === 'string' &&
           hook.file.startsWith('hooks/') &&

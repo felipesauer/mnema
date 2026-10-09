@@ -36,7 +36,10 @@ interface Heard {
 }
 
 /** One invocation, with or without a person at a terminal who types `typed`. */
-async function mnema(argv: readonly string[], person?: { typed: string }): Promise<Heard> {
+async function mnema(
+  argv: readonly string[],
+  person?: { typed: string; here?: boolean },
+): Promise<Heard> {
   const out: string[] = [];
   const err: string[] = [];
   let failed = false;
@@ -46,7 +49,9 @@ async function mnema(argv: readonly string[], person?: { typed: string }): Promi
     fail: () => {
       failed = true;
     },
-    ...(person === undefined ? {} : { aPersonIsHere: true, ask: async () => person.typed }),
+    ...(person === undefined
+      ? {}
+      : { aPersonIsHere: person.here !== false, ask: async () => person.typed }),
   };
   await run(argv, io);
   return { out: out.join('\n'), err: err.join('\n'), failed };
@@ -144,6 +149,13 @@ describe('turning a hook on and off', () => {
     expect(none.err).toContain('STACK_HOOK_NEEDS_A_PERSON');
   });
 
+  it('refuses when a way to ask is there and no person is: the right answer is not enough', async () => {
+    const piped = await mnema([...enable, hooked], { typed: 'format', here: false });
+    expect(piped.failed).toBe(true);
+    expect(piped.err).toContain('STACK_HOOK_NEEDS_A_PERSON');
+    expect(existsSync(join(project, '.mnema/private/stack-hooks'))).toBe(false);
+  });
+
   it('refuses a name typed that is not the hook, an unknown hook, and a source that differs', async () => {
     const wrong = await mnema([...enable, hooked], { typed: 'yes' });
     expect(wrong.err).toContain('STACK_HOOK_NOT_APPROVED');
@@ -218,6 +230,19 @@ describe('a receipt that cannot be believed', () => {
     );
     rmSync(receipt);
     expect((await mnema(['stack', 'check'])).out).toContain('no receipt is here');
+  });
+
+  it('refuses a hook name that holds a control byte, so the question never carries one', async () => {
+    const receipt = join(project, '.mnema/stacks/hello-stack.json');
+    const real = JSON.parse(readFileSync(receipt, 'utf8'));
+    const forged = '\u001b[31mEVIL';
+    real.hooks[0].name = forged;
+    writeFileSync(receipt, JSON.stringify(real));
+    const heard = await mnema(['stack', 'enable', 'hello-stack', forged, '--from', hooked], {
+      typed: forged,
+    });
+    expect(heard.err).toContain('STACK_RECEIPT_REFUSED');
+    expect(`${heard.out}${heard.err}`).not.toContain('\u001b');
   });
 });
 
