@@ -443,6 +443,34 @@ const CLASSIFIED: Readonly<Record<string, { verdict: Verdict; why: string }>> = 
     verdict: 'collapsed',
     why: 'a path read out of the receipt, the same as the line above it',
   },
+  'stack.ts «  skipped, changed since it was written: {}» #1': {
+    verdict: 'collapsed',
+    why: 'a path read out of the receipt, the same as the lines of `remove`',
+  },
+  'stack.ts «Exported {}: {} files into {}.» #1': {
+    verdict: 'collapsed',
+    why: 'the name is a receipt’s and the folder is whatever the caller typed',
+  },
+  'stack.ts «{} stacks checked: every file is as written and the record agrees.» #1': {
+    verdict: 'minted',
+    why: 'a count of receipts, and words of this wiring',
+  },
+  'stack.ts «{} stacks checked: {} departures.» #1': {
+    verdict: 'minted',
+    why: 'two counts, and words of this wiring',
+  },
+  'stack.ts «Approved {} hook {}; its script is kept at {}.» #1': {
+    verdict: 'collapsed',
+    why: 'the stack’s and the hook’s names read out of the receipt, and a path under the tree',
+  },
+  'stack.ts «Took back the approval of {} hook {}.» #1': {
+    verdict: 'collapsed',
+    why: 'a stack name read out of the receipt and a hook name the caller typed',
+  },
+  'stack.ts «{} hook {} was not approved. Nothing changed.» #1': {
+    verdict: 'collapsed',
+    why: 'a stack name read out of the receipt and a hook name the caller typed',
+  },
   'switch.ts «Switched {} {}» #1': {
     verdict: 'minted',
     why: 'a channel of a CLOSED set (an unknown name is refused before the write) and one of two words this wiring owns',
@@ -813,7 +841,8 @@ describe('every line this wiring words is classified', () => {
     // 111 once `key sigstore` said the hash the record keeps for an e-mail.
     // 112 with the line `unlink` prints for the edge it took back.
     // 115 with the five lines `stack add` and `stack remove` print.
-    expect(FOUND.sites.length).toBe(115);
+    // 122 with the seven lines `stack export`, `check`, `enable` and `disable` print.
+    expect(FOUND.sites.length).toBe(122);
   });
 
   it('reads the verdict off the source rather than believing the table', () => {
@@ -833,9 +862,9 @@ describe('every line this wiring words is classified', () => {
   it('found sites of both kinds, and the scanner sees a tag when there is one', () => {
     // Neither arm of the case above may be empty, or half of it is vacuous.
     const verdicts = Object.values(CLASSIFIED).map((said) => said.verdict);
-    expect(verdicts.filter((verdict) => verdict === 'collapsed').length).toBe(57);
-    expect(verdicts.filter((verdict) => verdict === 'minted').length).toBe(58);
-    expect(FOUND.sites.filter((site) => site.tagged).length).toBe(57);
+    expect(verdicts.filter((verdict) => verdict === 'collapsed').length).toBe(62);
+    expect(verdicts.filter((verdict) => verdict === 'minted').length).toBe(60);
+    expect(FOUND.sites.filter((site) => site.tagged).length).toBe(62);
   });
 
   it('every reason says where the value comes from', () => {
@@ -970,6 +999,18 @@ const UNREACHABLE: Readonly<Record<string, string>> = {
   'stack.ts «  kept, changed since it was written: {}» #1':
     'a receipt path holding a control character is refused whole before anything is listed',
   'stack.ts «  already gone: {}» #1': 'the same refusal as the line above',
+  'stack.ts «  skipped, changed since it was written: {}» #1':
+    'a receipt path holding a control character is refused whole before anything is listed',
+  'stack.ts «Exported {}: {} files into {}.» #1':
+    'the folder is the caller’s and is made by the export, so a break in it names a folder with ' +
+    'a break; no case types one yet, so the tag is what holds this line',
+  'stack.ts «Approved {} hook {}; its script is kept at {}.» #1':
+    'needs a terminal and the answer typed at it, which only the binary under a pseudo-terminal ' +
+    'has (`tests/a-hook-is-turned-on-by-a-person.test.ts`); the names are the receipt’s',
+  'stack.ts «Took back the approval of {} hook {}.» #1':
+    'the hook name must be one the receipt declares to get here, so it is the stack’s own word',
+  'stack.ts «{} hook {} was not approved. Nothing changed.» #1':
+    'the same declared name as the line above',
   'unlink.ts «Retracted link {} —{}→ {}» #1':
     'needs the edge already linked, so two verbs: `link` then `unlink` — driven in ' +
     '`tests/a-link-can-be-retracted.test.ts`, through the same collapse as `link`’s line',

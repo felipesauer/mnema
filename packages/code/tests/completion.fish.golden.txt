@@ -18,7 +18,7 @@ function __mnema_commands --description 'the subcommands one level of the tree o
         case 'skill'
             echo 'create move export provenance help'
         case 'stack'
-            echo 'add remove help'
+            echo 'add remove list show diff check export enable disable help'
         case 'task'
             echo 'create move handoff next guard help'
         case 'switch'
@@ -271,6 +271,13 @@ complete -c mnema -f -n '__mnema_at "skill provenance"' -l color -x -a 'auto alw
 # mnema stack
 complete -c mnema -f -n '__mnema_at "stack"' -a 'add' -d 'show the plan of a stack, and write it when --expect names its digest'
 complete -c mnema -f -n '__mnema_at "stack"' -a 'remove' -d 'remove an installed stack, keeping every file changed since it was written'
+complete -c mnema -f -n '__mnema_at "stack"' -a 'list' -d 'list the installed stacks, and whether each is still as written'
+complete -c mnema -f -n '__mnema_at "stack"' -a 'show' -d 'show one installed stack: its files, its hooks, and the record'
+complete -c mnema -f -n '__mnema_at "stack"' -a 'diff' -d 'compare the installed files with their receipt, and the receipt with the record'
+complete -c mnema -f -n '__mnema_at "stack"' -a 'check' -d 'check every installed stack, or one, against its receipt and the record; fails if any departs'
+complete -c mnema -f -n '__mnema_at "stack"' -a 'export' -d 'copy an installed stack\'s skills and agents into a new folder, in a stack\'s layout'
+complete -c mnema -f -n '__mnema_at "stack"' -a 'enable' -d 'turn on a hook an installed stack declares: shows its script and asks its name, at a terminal'
+complete -c mnema -f -n '__mnema_at "stack"' -a 'disable' -d 'turn a hook off again: takes back the approval and the script kept with it'
 complete -c mnema -f -n '__mnema_at "stack"' -a 'help' -d 'display help for command'
 complete -c mnema -f -n '__mnema_at "stack"' -s h -l help
 complete -c mnema -f -n '__mnema_at "stack"' -s V -l version
@@ -293,6 +300,56 @@ complete -c mnema -f -n '__mnema_at "stack remove"' -l dry-run
 complete -c mnema -f -n '__mnema_at "stack remove"' -s h -l help
 complete -c mnema -f -n '__mnema_at "stack remove"' -s V -l version
 complete -c mnema -f -n '__mnema_at "stack remove"' -l color -x -a 'auto always never'
+
+# mnema stack list
+complete -c mnema -f -n '__mnema_at "stack list"' -l scope -x -a 'public private global'
+complete -c mnema -f -n '__mnema_at "stack list"' -l to -r
+complete -c mnema -f -n '__mnema_at "stack list"' -s h -l help
+complete -c mnema -f -n '__mnema_at "stack list"' -s V -l version
+complete -c mnema -f -n '__mnema_at "stack list"' -l color -x -a 'auto always never'
+
+# mnema stack show
+complete -c mnema -f -n '__mnema_at "stack show"' -l scope -x -a 'public private global'
+complete -c mnema -f -n '__mnema_at "stack show"' -l to -r
+complete -c mnema -f -n '__mnema_at "stack show"' -s h -l help
+complete -c mnema -f -n '__mnema_at "stack show"' -s V -l version
+complete -c mnema -f -n '__mnema_at "stack show"' -l color -x -a 'auto always never'
+
+# mnema stack diff
+complete -c mnema -f -n '__mnema_at "stack diff"' -l scope -x -a 'public private global'
+complete -c mnema -f -n '__mnema_at "stack diff"' -l to -r
+complete -c mnema -f -n '__mnema_at "stack diff"' -s h -l help
+complete -c mnema -f -n '__mnema_at "stack diff"' -s V -l version
+complete -c mnema -f -n '__mnema_at "stack diff"' -l color -x -a 'auto always never'
+
+# mnema stack check
+complete -c mnema -f -n '__mnema_at "stack check"' -l scope -x -a 'public private global'
+complete -c mnema -f -n '__mnema_at "stack check"' -l to -r
+complete -c mnema -f -n '__mnema_at "stack check"' -s h -l help
+complete -c mnema -f -n '__mnema_at "stack check"' -s V -l version
+complete -c mnema -f -n '__mnema_at "stack check"' -l color -x -a 'auto always never'
+
+# mnema stack export
+complete -c mnema -f -n '__mnema_at "stack export"' -l scope -x -a 'public private global'
+complete -c mnema -f -n '__mnema_at "stack export"' -l to -r
+complete -c mnema -f -n '__mnema_at "stack export"' -s h -l help
+complete -c mnema -f -n '__mnema_at "stack export"' -s V -l version
+complete -c mnema -f -n '__mnema_at "stack export"' -l color -x -a 'auto always never'
+
+# mnema stack enable
+complete -c mnema -f -n '__mnema_at "stack enable"' -l from -r
+complete -c mnema -f -n '__mnema_at "stack enable"' -l scope -x -a 'public private global'
+complete -c mnema -f -n '__mnema_at "stack enable"' -l to -r
+complete -c mnema -f -n '__mnema_at "stack enable"' -s h -l help
+complete -c mnema -f -n '__mnema_at "stack enable"' -s V -l version
+complete -c mnema -f -n '__mnema_at "stack enable"' -l color -x -a 'auto always never'
+
+# mnema stack disable
+complete -c mnema -f -n '__mnema_at "stack disable"' -l scope -x -a 'public private global'
+complete -c mnema -f -n '__mnema_at "stack disable"' -l to -r
+complete -c mnema -f -n '__mnema_at "stack disable"' -s h -l help
+complete -c mnema -f -n '__mnema_at "stack disable"' -s V -l version
+complete -c mnema -f -n '__mnema_at "stack disable"' -l color -x -a 'auto always never'
 
 # mnema task
 complete -c mnema -f -n '__mnema_at "task"' -a 'create' -d 'create a task in the current project'

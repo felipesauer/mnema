@@ -6,6 +6,9 @@
  * declares, apart and off — and writes it only when `--expect` names the digest the plan showed, so what is written
  * is what was read even when the source is fetched again. `--dry-run` shows the plan and stops.
  * `stack remove <name>` deletes what is still as it was written and names what is not.
+ * `list`, `show`, `diff` and `check` look at what is installed against its receipt and the record;
+ * `export` copies the skills and agents back out; `enable` and `disable` (a hook) are the one act a stack
+ * cannot do for itself — a hook is never on until a person, at a terminal, has read it.
  *
  * IT IS ON THIS SURFACE AND NOT ON THE AGENT'S. Installing writes into the folders a host reads
  * as instruction, which is an act of the person who administers the project; there is no MCP
@@ -18,7 +21,7 @@ import { here } from './context.js';
 import { enumeratedOption } from './enumerated.js';
 import { onOneLine } from './on-one-line.js';
 import { reportRefusal, reportUsage } from './report.js';
-import { type Declared, mutatesTheRecord, type Wiring } from './verb.js';
+import { type Declared, groupOf, mutatesTheRecord, readsTheRecord, type Wiring } from './verb.js';
 
 /** Where the files go: one of the trees, or a folder of the person's with `--to`. */
 interface TargetOptions {
@@ -65,6 +68,25 @@ function said(refused: { code: string; message: string; lines?: readonly string[
   };
 }
 
+/**
+ * The target a READING verb names: `undefined` when it names none (then every tree is looked in),
+ * `null` after reporting that it named two.
+ */
+function readTargetOf(
+  wiring: Wiring,
+  scope: string | undefined,
+  to: string | undefined,
+): { scope: 'public' | 'private' | 'global' } | { to: string } | undefined | null {
+  if (scope !== undefined && to !== undefined) {
+    reportUsage(wiring, '--scope and --to name two places; give one.');
+    return null;
+  }
+  if (to !== undefined) return { to };
+  return scope === undefined ? undefined : { scope: scope as 'public' | 'private' | 'global' };
+}
+
+const LOOK_SCOPE_HELP = `look in this tree only: ${scopeChoices(SCOPES)}. Without it, in all three.`;
+
 /** Registers `mnema stack` on the program. */
 export function registerStack(program: Command, wiring: Wiring): Declared {
   const { io } = wiring;
@@ -72,7 +94,7 @@ export function registerStack(program: Command, wiring: Wiring): Declared {
     .command('stack')
     .description('install a stack of skills and agents into the folders each host reads');
 
-  stack
+  const add = stack
     .command('add')
     .description('show the plan of a stack, and write it when --expect names its digest')
     .argument('<source>', 'a folder, a tar archive, or an https:// git address')
@@ -152,7 +174,7 @@ export function registerStack(program: Command, wiring: Wiring): Declared {
       },
     );
 
-  stack
+  const remove = stack
     .command('remove')
     .description('remove an installed stack, keeping every file changed since it was written')
     .argument('<name>', 'the name the stack is installed under')
@@ -183,6 +205,239 @@ export function registerStack(program: Command, wiring: Wiring): Declared {
       if (opts.dryRun === true) io.out('Dry run: nothing was removed.');
     });
 
-  // Both members write, so the group answers as one: there is no reading member to run apart.
-  return mutatesTheRecord(stack);
+  const lookOptions = (command: Command): Command =>
+    command
+      .addOption(enumeratedOption('--scope <scope>', LOOK_SCOPE_HELP, SCOPES))
+      .option('--to <folder>', 'look in the folder it was written into with --to');
+
+  const list = lookOptions(
+    stack
+      .command('list')
+      .description('list the installed stacks, and whether each is still as written'),
+  ).action(async (opts: TargetOptions) => {
+    const target = readTargetOf(wiring, opts.scope, opts.to);
+    if (target === null) return;
+    const { listLines } = await import('../commands/stack-inspect.js');
+    for (const line of listLines(here(), target)) io.out(line);
+  });
+
+  const show = lookOptions(
+    stack
+      .command('show')
+      .description('show one installed stack: its files, its hooks, and the record'),
+  )
+    .argument('<name>', 'the name the stack is installed under')
+    .action(async (name: string, opts: TargetOptions) => {
+      const target = readTargetOf(wiring, opts.scope, opts.to);
+      if (target === null) return;
+      const { findEntry, inspect, showLines } = await import('../commands/stack-inspect.js');
+      const found = findEntry(here(), name, target);
+      if ('ok' in found) {
+        reportRefusal(wiring, said(found));
+        return;
+      }
+      for (const line of showLines(inspect(found))) io.out(line);
+    });
+
+  const diff = lookOptions(
+    stack
+      .command('diff')
+      .description(
+        'compare the installed files with their receipt, and the receipt with the record',
+      ),
+  )
+    .argument('<name>', 'the name the stack is installed under')
+    .action(async (name: string, opts: TargetOptions) => {
+      const target = readTargetOf(wiring, opts.scope, opts.to);
+      if (target === null) return;
+      const { diffLines, findEntry, inspect, isSound } = await import(
+        '../commands/stack-inspect.js'
+      );
+      const found = findEntry(here(), name, target);
+      if ('ok' in found) {
+        reportRefusal(wiring, said(found));
+        return;
+      }
+      const looked = inspect(found);
+      for (const line of diffLines(looked)) io.out(line);
+      if (!isSound(looked)) io.fail();
+    });
+
+  const check = lookOptions(
+    stack
+      .command('check')
+      .description(
+        'check every installed stack, or one, against its receipt and the record; fails if any departs',
+      ),
+  )
+    .argument('[name]', 'one stack, by the name it is installed under')
+    .action(async (name: string | undefined, opts: TargetOptions) => {
+      const target = readTargetOf(wiring, opts.scope, opts.to);
+      if (target === null) return;
+      const { allEntries, findEntry, inspect, problemsOf, unreceipted } = await import(
+        '../commands/stack-inspect.js'
+      );
+      const ctx = here();
+      let entries = allEntries(ctx, target);
+      if (name !== undefined) {
+        const found = findEntry(ctx, name, target);
+        if ('ok' in found) {
+          reportRefusal(wiring, said(found));
+          return;
+        }
+        entries = [found];
+      }
+      const problems = [
+        ...entries.flatMap((e) => problemsOf(inspect(e))),
+        ...(name === undefined ? unreceipted(ctx, target) : []),
+      ];
+      for (const line of problems) io.out(line);
+      io.out(
+        problems.length === 0
+          ? `${entries.length} stacks checked: every file is as written and the record agrees.`
+          : `${entries.length} stacks checked: ${problems.length} departures.`,
+      );
+      if (problems.length > 0) io.fail();
+    });
+
+  const exported = lookOptions(
+    stack
+      .command('export')
+      .description(
+        "copy an installed stack's skills and agents into a new folder, in a stack's layout",
+      ),
+  )
+    .argument('<name>', 'the name the stack is installed under')
+    .argument('<folder>', 'a folder that does not exist yet, or is empty')
+    .action(async (name: string, folder: string, opts: TargetOptions) => {
+      const target = readTargetOf(wiring, opts.scope, opts.to);
+      if (target === null) return;
+      const { exportInstalled, findEntry, inspect } = await import('../commands/stack-inspect.js');
+      const ctx = here();
+      const found = findEntry(ctx, name, target);
+      if ('ok' in found) {
+        reportRefusal(wiring, said(found));
+        return;
+      }
+      const done = exportInstalled(ctx, inspect(found), folder);
+      if (!done.ok) {
+        reportRefusal(wiring, said(done));
+        return;
+      }
+      io.out(onOneLine`Exported ${found.name}: ${done.written.length} files into ${folder}.`);
+      for (const path of done.skipped)
+        io.out(onOneLine`  skipped, changed since it was written: ${path}`);
+      io.out(
+        "This is the skills and agents only: stack.json, LICENSE and the hooks are not part of an installation, so this folder is not the stack and its digest is not the stack's.",
+      );
+    });
+
+  const enable = lookOptions(
+    stack
+      .command('enable')
+      .description(
+        'turn on a hook an installed stack declares: shows its script and asks its name, at a terminal',
+      )
+      .argument('<stack>', 'the name the stack is installed under')
+      .argument('<hook>', 'the name of a hook the stack declares')
+      .requiredOption(
+        '--from <source>',
+        'the stack as it was installed: a folder, a tar archive, or an https:// git address',
+      ),
+  ).action(async (name: string, hookName: string, opts: TargetOptions & { from: string }) => {
+    const target = readTargetOf(wiring, opts.scope, opts.to);
+    if (target === null) return;
+    // Asked before anything is read: without a person at a terminal the verb has nothing to do.
+    if (io.aPersonIsHere !== true || io.ask === undefined) {
+      reportRefusal(wiring, {
+        reason: 'REFUSED',
+        code: 'STACK_HOOK_NEEDS_A_PERSON',
+        message:
+          'a hook is turned on by a person at a terminal, one hook at a time, and this is not a terminal. No hook was turned on.',
+      });
+      return;
+    }
+    const { findEntry } = await import('../commands/stack-inspect.js');
+    const { offerHook, offerLines, turnHookOn } = await import('../commands/stack-hooks.js');
+    const { readStackSource } = await import('../commands/stack-source.js');
+    const ctx = here();
+    const found = findEntry(ctx, name, target);
+    if ('ok' in found) {
+      reportRefusal(wiring, said(found));
+      return;
+    }
+    const read = await readStackSource(opts.from, ctx.cwd);
+    if (!read.ok) {
+      reportRefusal(wiring, { reason: 'REFUSED', code: read.code, message: read.message });
+      return;
+    }
+    const offer = offerHook(found, hookName, read);
+    if (!offer.ok) {
+      reportRefusal(wiring, said(offer));
+      return;
+    }
+    for (const line of offerLines(found, offer)) io.out(line);
+    const answer = await io.ask(`Type the hook's name, ${offer.hook.name}, to turn it on: `);
+    if (answer.replace(/[\r\n]+$/, '') !== offer.hook.name) {
+      reportRefusal(wiring, {
+        reason: 'REFUSED',
+        code: 'STACK_HOOK_NOT_APPROVED',
+        message: "the name typed is not the hook's. No hook was turned on.",
+      });
+      return;
+    }
+    const on = turnHookOn(found, offer);
+    if (!on.ok) {
+      reportRefusal(wiring, said(on));
+      return;
+    }
+    io.out(
+      onOneLine`Approved ${found.name} hook ${offer.hook.name}; its script is kept at ${on.script}.`,
+    );
+    io.out(
+      "mnema registers it with no host and runs nothing: to have a host run it, point that host's hook configuration at the script yourself.",
+    );
+  });
+
+  const disable = lookOptions(
+    stack
+      .command('disable')
+      .description('turn a hook off again: takes back the approval and the script kept with it')
+      .argument('<stack>', 'the name the stack is installed under')
+      .argument('<hook>', 'the name of a hook the stack declares'),
+  ).action(async (name: string, hookName: string, opts: TargetOptions) => {
+    const target = readTargetOf(wiring, opts.scope, opts.to);
+    if (target === null) return;
+    const { findEntry } = await import('../commands/stack-inspect.js');
+    const { turnHookOff } = await import('../commands/stack-hooks.js');
+    const found = findEntry(here(), name, target);
+    if ('ok' in found) {
+      reportRefusal(wiring, said(found));
+      return;
+    }
+    const off = turnHookOff(found, hookName);
+    if (!off.ok) {
+      reportRefusal(wiring, said(off));
+      return;
+    }
+    io.out(
+      off.was === 'on'
+        ? onOneLine`Took back the approval of ${found.name} hook ${hookName}.`
+        : onOneLine`${found.name} hook ${hookName} was not approved. Nothing changed.`,
+    );
+  });
+
+  // `list`, `show`, `diff` and `check` read; `export`, `enable` and `disable` write files and not the
+  // record, and are still writes to the console, as `skill export` is.
+  return groupOf(stack, [
+    mutatesTheRecord(add),
+    mutatesTheRecord(remove),
+    readsTheRecord(list),
+    readsTheRecord(show),
+    readsTheRecord(diff),
+    readsTheRecord(check),
+    mutatesTheRecord(exported),
+    mutatesTheRecord(enable),
+    mutatesTheRecord(disable),
+  ]);
 }

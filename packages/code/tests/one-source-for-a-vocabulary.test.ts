@@ -207,8 +207,9 @@ describe('a declaration lists the set it takes', () => {
     // the group's `--scope` too, so their `--help` lists it; twenty-five since the two `--host`
     // sets, of `before-a-write` and `rules-file`, each read from `host-names.ts`; twenty-six since `diagram` takes a subject; twenty-seven since `decision import` takes a `--format`; twenty-nine since `stack add` and
     // `stack remove` each take a `--scope`; thirty-one since `brief` and `recall` take the `--host`
-    // whose ceiling a hook's copy is cut to.
-    expect(DECLARED_SETS.length).toBe(31);
+    // whose ceiling a hook's copy is cut to; thirty-eight since `stack` gained `list`, `show`, `diff`,
+    // `check`, `export`, `enable` and `disable`, each taking a `--scope`.
+    expect(DECLARED_SETS.length).toBe(38);
   });
 
   it('takes the set from the DOMAIN, at each of the levels that take one', () => {
