@@ -878,6 +878,39 @@ describe('ProjectionCache — the reference index', () => {
     expect(cache.chargesAt('src/a.ts', [])).toEqual([]);
   });
 
+  it('keeps the newest charge of a run that charged in two channels, whichever channel is read first', () => {
+    const w = openChainForWriting(chainRoot, { keyRoot: chainRoot });
+    const charge = (
+      kind: 'channel.asked' | 'channel.refused',
+      subject: string,
+      n: number,
+      run: string,
+    ) =>
+      w.append({
+        v: 1,
+        kind,
+        at: at(n),
+        who: 'felipe',
+        signerFp: 'fp-1',
+        subject,
+        run,
+        payload: { rule: 'rule-1', path: 'src/a.ts' },
+      });
+    // run-a was charged last in the channel read first; run-b, last in the one read second.
+    charge('channel.asked', 'edit-asks-a-person', 5, 'run-a');
+    charge('channel.refused', 'edit-refuses-a-write', 2, 'run-a');
+    charge('channel.asked', 'edit-asks-a-person', 1, 'run-b');
+    charge('channel.refused', 'edit-refuses-a-write', 6, 'run-b');
+
+    const cache = openCache();
+    cache.rebuild();
+
+    expect(cache.chargesAt('src/a.ts', ['edit-asks-a-person', 'edit-refuses-a-write'])).toEqual([
+      { run: 'run-b', at: at(6) },
+      { run: 'run-a', at: at(5) },
+    ]);
+  });
+
   it('walks from one entity to what it references', () => {
     const w = openChainForWriting(chainRoot, { keyRoot: chainRoot });
     writeEverything(w);

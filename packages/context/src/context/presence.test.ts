@@ -141,6 +141,25 @@ describe('runsHere — which other runs were charged at a path lately', () => {
     expect(ask('../src/café/index.ts')).toEqual([]);
   });
 
+  it('says nothing when the asker’s instant cannot be read', () => {
+    bench = makeBench();
+    ran('run-a', 'codex', 600, [{ path: 'src/a.ts', ago: 60 }]);
+    const cache = bench.cache();
+    try {
+      expect(
+        runsHere([cache], {
+          path: 'src/a.ts',
+          actor: bench.who,
+          asOf: 'not an instant',
+          sessionRuns: [],
+          channels: CHANNELS,
+        }),
+      ).toEqual([]);
+    } finally {
+      cache.close();
+    }
+  });
+
   it('is empty for a blank actor', () => {
     bench = makeBench();
     ran('run-a', 'codex', 600, [{ path: 'src/a.ts', ago: 60 }]);

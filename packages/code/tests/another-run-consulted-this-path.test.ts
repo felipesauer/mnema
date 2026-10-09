@@ -15,11 +15,11 @@
  * on the real binary, not here (`presentation/within-a-hook.ts`).
  */
 
-import { mkdirSync, mkdtempSync, rmSync } from 'node:fs';
+import { chmodSync, mkdirSync, mkdtempSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { pathToFileURL } from 'node:url';
-import { type CatalogEvent, catalogUpcasters } from '@mnema/chain';
+import { type CatalogEvent, catalogUpcasters, listPrivateKeyFingerprints } from '@mnema/chain';
 import { type DiscoveryEnv, orderedEvents, resolveTrees } from '@mnema/core';
 import { Client } from '@modelcontextprotocol/sdk/client/index.js';
 import { InMemoryTransport } from '@modelcontextprotocol/sdk/inMemory.js';
@@ -175,6 +175,20 @@ describe('the edge of an edit, with a second agent in the project', () => {
     expect(again.text).not.toContain('(codex)');
   });
 
+  it('says it once when the path is asked about and a rule also governs it', async () => {
+    const governing = idIn(await did('decision', 'record', 'Invoices are immutable', 'Audit'));
+    await did('decision', 'move', 'accept', governing, '--note', 'agreed');
+    await did('link', governing, 'src/billing', '--rel', 'governs');
+    const codex = await connect('codex');
+    const claude = await connect('claude-code');
+    await edge(codex, 'src/billing/invoice.ts');
+    const second = await edge(claude, 'src/billing/invoice.ts');
+    expect(second.decision).toBe('ask');
+    expect(second.text).toContain('Another run (codex) consulted this path');
+    expect(second.context).toContain('Invoices are immutable');
+    expect(second.context).not.toMatch(SENTENCE);
+  });
+
   it('says nothing at a path the other run was not charged at, or where no rule speaks', async () => {
     const codex = await connect('codex');
     const claude = await connect('claude-code');
@@ -208,6 +222,29 @@ describe('the edge of an edit, with a second agent in the project', () => {
       'Another run (codex) consulted this path less than a minute ago.',
     );
     expect(reasonOfTheHook('src/billing/ledger.ts')).not.toMatch(SENTENCE);
+  });
+
+  it('names nobody from a machine with no key of its own, and from one whose keys cannot be listed', async () => {
+    const codex = await connect('codex');
+    await edge(codex, 'src/billing/invoice.ts');
+    const told = 'Another run (codex) consulted this path less than a minute ago.';
+    expect(reasonOfTheHook('src/billing/invoice.ts')).toContain(told);
+
+    const keyRoot = resolveTrees(repo, env).keyRoot;
+    expect(listPrivateKeyFingerprints({ root: keyRoot }).length).toBeGreaterThan(0);
+    const keysDir = join(keyRoot, 'keys');
+    try {
+      // Keys the process may not list: the hook still answers, and names nobody.
+      chmodSync(keysDir, 0o000);
+      expect(reasonOfTheHook('src/billing/invoice.ts')).not.toContain('(codex)');
+    } finally {
+      chmodSync(keysDir, 0o700);
+    }
+    expect(reasonOfTheHook('src/billing/invoice.ts')).toContain(told);
+
+    // No key at all: nobody is looked for, and no key is founded to look.
+    rmSync(keysDir, { recursive: true, force: true });
+    expect(reasonOfTheHook('src/billing/invoice.ts')).not.toContain('(codex)');
   });
 
   it('ignores a run left open past the ceiling of age, and keeps one just inside it', async () => {
