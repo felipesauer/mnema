@@ -29,6 +29,7 @@
 
 import { channelIsOn } from '@mnema/context';
 import { type DiscoveryEnv, resolveTrees } from '@mnema/core';
+import { neutralized } from '../one-line.js';
 import { SUBAGENT_HANDBACK_CHANNEL } from '../record-framing.js';
 import { withScopedCaches } from '../tree-sources.js';
 
@@ -112,28 +113,74 @@ function problemsOf(value: unknown, schema: Schema, at: string): string[] {
     return found;
   }
   const object = value as Record<string, unknown>;
+  const rules = schema.properties ?? {};
   for (const key of schema.required ?? []) {
-    if (!(key in object)) found.push(`${at}.${key} is missing`);
+    if (!Object.hasOwn(object, key)) found.push(`${at}.${key} is missing`);
   }
+  let unknown = false;
   for (const [key, one] of Object.entries(object)) {
-    const rule = schema.properties?.[key];
-    if (rule === undefined) {
-      if (schema.additionalProperties === false) found.push(`${at}.${key} is not a field of it`);
+    // The rule is looked up among the schema's OWN fields: `rules[key]` would find
+    // `constructor`, `toString` and `__proto__` on the prototype and let them through.
+    if (!Object.hasOwn(rules, key)) {
+      unknown = true;
       continue;
     }
-    found.push(...problemsOf(one, rule, `${at}.${key}`));
+    found.push(...problemsOf(one, rules[key] as Schema, `${at}.${key}`));
+  }
+  // The key of a field the format does not have is the subagent's own text, and it is not
+  // repeated: the place is named by the schema's words, and so are the fields it may have.
+  if (unknown && schema.additionalProperties === false) {
+    found.push(
+      `${at} has a field the format does not have (its fields: ${Object.keys(rules).join(', ')})`,
+    );
   }
   return found;
 }
 
-/** The last block of a reply whose info string is {@link HANDBACK_INFO}, or `undefined`. */
+/**
+ * How much of the END of a reply is looked at for the block: 128 KiB. A block that fits the schema
+ * with room to spare is a few KiB; what is beyond this is not examined, so a reply cannot make
+ * the check cost more than this, however long the reply, and a block that begins before the
+ * window is a reply with no block in it.
+ */
+export const EXAMINED_BYTES = 128 * 1024;
+
+/** The opening line of the block, and the closing line of any fenced block. */
+const OPENING = `\`\`\`${HANDBACK_INFO}`;
+const CLOSING = '```';
+
+/** Whether `line` is `text` and then only spaces and tabs. */
+function isLine(line: string, text: string): boolean {
+  return line.startsWith(text) && /^[ \t]*$/.test(line.slice(text.length));
+}
+
+/**
+ * The last block of a reply whose info string is {@link HANDBACK_INFO}, or `undefined`.
+ *
+ * ONE PASS OVER THE LINES of the last {@link EXAMINED_BYTES} of the reply: an opening line starts a
+ * block, the first closing line after it ends it, and an opening never closed is no block. The
+ * pattern this replaced searched for the closing from every opening and cost the square of the
+ * number of openings a reply could hold.
+ */
 function theBlockOf(reply: string): string | undefined {
-  const blocks = [
-    ...reply.matchAll(
-      new RegExp(`^\`\`\`${HANDBACK_INFO}[ \\t]*\\r?\\n([\\s\\S]*?)\\r?\\n\`\`\`[ \\t]*$`, 'gm'),
-    ),
-  ];
-  return blocks.at(-1)?.[1];
+  const bytes = Buffer.from(reply, 'utf-8');
+  const window = bytes.length > EXAMINED_BYTES ? bytes.subarray(-EXAMINED_BYTES) : bytes;
+  const lines = window.toString('utf-8').split('\n');
+  let last: string | undefined;
+  let from = -1;
+  lines.forEach((raw, index) => {
+    const line = raw.endsWith('\r') ? raw.slice(0, -1) : raw;
+    if (from < 0) {
+      if (isLine(line, OPENING)) from = index + 1;
+    } else if (isLine(line, CLOSING)) {
+      last = lines
+        .slice(from, index)
+        .map((one) => (one.endsWith('\r') ? one.slice(0, -1) : one))
+        .join('\n');
+      from = -1;
+    }
+  });
+  return last;
 }
 
 /**
@@ -153,9 +200,21 @@ export function whatTheHandbackLacks(reply: string): string[] {
   return problemsOf(parsed, HANDBACK_SCHEMA as Schema, 'the block');
 }
 
+/** How many problems the reason names; the rest are counted, not listed. */
+const PROBLEMS_NAMED = 8;
+
+/**
+ * The most the reason can weigh, in bytes. The format and the problems it names are the product's
+ * own words and fit in a fraction of this; the ceiling is there so that nothing a reply does
+ * can make the sentence longer, whatever the host or the hook's reader would have done with it.
+ */
+export const REASON_BYTES = 4096;
+
 /** The sentence that goes back to the subagent: the format, and what its reply lacked. */
 function reasonFor(lacks: readonly string[]): string {
-  return [
+  const named = lacks.slice(0, PROBLEMS_NAMED);
+  if (lacks.length > named.length) named.push(`and ${lacks.length - named.length} more`);
+  const reason = [
     'This project’s record asks a subagent to end its final reply with the decisions it settled, in one fenced block whose info string is ' +
       `${HANDBACK_INFO}:`,
     '',
@@ -164,8 +223,12 @@ function reasonFor(lacks: readonly string[]): string {
     '```',
     '',
     'Where it settled nothing, the list is empty: {"decisions":[]}. The dispatching agent records what the block carries. ' +
-      `Your last reply was not in that format: ${lacks.join('; ')}. The schema is printed by \`mnema handback --schema\`.`,
+      `Your last reply was not in that format: ${named.join('; ')}. The schema is printed by \`mnema handback --schema\`.`,
   ].join('\n');
+  // Nothing in it is the subagent's text; the neutralizer and the ceiling are for the day one is.
+  const clean = neutralized(reason);
+  const bytes = Buffer.from(clean, 'utf-8');
+  return bytes.length <= REASON_BYTES ? clean : bytes.subarray(0, REASON_BYTES).toString('utf-8');
 }
 
 /** What the command needs — injected so it is testable. */

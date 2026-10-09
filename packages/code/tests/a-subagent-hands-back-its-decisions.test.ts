@@ -19,7 +19,13 @@ import { fileURLToPath } from 'node:url';
 import type { DiscoveryEnv } from '@mnema/core';
 import { Command } from 'commander';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
-import { HANDBACK_SCHEMA, runHandback, whatTheHandbackLacks } from '../src/commands/handback.js';
+import {
+  EXAMINED_BYTES,
+  HANDBACK_SCHEMA,
+  REASON_BYTES,
+  runHandback,
+  whatTheHandbackLacks,
+} from '../src/commands/handback.js';
 import { renderPlain } from '../src/presentation/plain.js';
 import { type CliIo, run } from '../src/program.js';
 import { registerHandback } from '../src/wiring/handback.js';
@@ -48,6 +54,13 @@ async function did(...argv: string[]): Promise<void> {
   };
   await run(argv, io);
   expect(failed, `${argv.join(' ')}: ${err.join(' / ')}`).toBe(false);
+}
+
+/** The control bytes in `text` other than the line break, by code. */
+function controlBytesIn(text: string): number[] {
+  return [...text]
+    .map((one) => one.charCodeAt(0))
+    .filter((code) => (code < 32 && code !== 10) || (code >= 127 && code < 160));
 }
 
 /** A fenced block with the info string the hand-back is read by. */
@@ -140,7 +153,7 @@ describe('which replies are in the format', () => {
     expect(lacks('{}')).toEqual(['the block.decisions is missing']);
     expect(lacks('{"decisions":"none"}')).toEqual(['the block.decisions must be a list']);
     expect(lacks('{"decisions":[],"summary":"x"}')).toEqual([
-      'the block.summary is not a field of it',
+      'the block has a field the format does not have (its fields: decisions)',
     ]);
     expect(lacks('{"decisions":["Use UTC"]}')).toEqual([
       'the block.decisions[0] must be an object',
@@ -148,8 +161,42 @@ describe('which replies are in the format', () => {
     expect(lacks('{"decisions":[{"settled":"a","why":"  ","turnedDown":7,"extra":1}]}')).toEqual([
       'the block.decisions[0].why must say something',
       'the block.decisions[0].turnedDown must be text',
-      'the block.decisions[0].extra is not a field of it',
+      'the block.decisions[0] has a field the format does not have (its fields: settled, why, turnedDown)',
     ]);
+  });
+
+  it('refuses the names every object inherits, at the block and inside a decision', () => {
+    const complete = '"settled":"a","why":"b","turnedDown":"c"';
+    for (const name of ['__proto__', 'constructor', 'toString', 'hasOwnProperty', 'valueOf']) {
+      const value = name === 'toString' || name === 'valueOf' ? '"text"' : '{"x":1}';
+      expect(
+        whatTheHandbackLacks(block(`{"decisions":[],${JSON.stringify(name)}:${value}}`)),
+        `${name} at the block`,
+      ).toEqual(['the block has a field the format does not have (its fields: decisions)']);
+      expect(
+        whatTheHandbackLacks(
+          block(`{"decisions":[{${complete},${JSON.stringify(name)}:${value}}]}`),
+        ),
+        `${name} in a decision`,
+      ).toEqual([
+        'the block.decisions[0] has a field the format does not have (its fields: settled, why, turnedDown)',
+      ]);
+    }
+  });
+
+  it('is not made to look for an inherited name as a required field', () => {
+    expect(whatTheHandbackLacks(block('{"constructor":[]}'))).toEqual([
+      'the block.decisions is missing',
+      'the block has a field the format does not have (its fields: decisions)',
+    ]);
+  });
+
+  it('looks at the end of a reply only, whatever its length', () => {
+    const padding = 'x'.repeat(EXAMINED_BYTES);
+    expect(whatTheHandbackLacks(`${block(ONE)}\n${padding}`)).toEqual([
+      'it has no block whose info string is mnema-handback',
+    ]);
+    expect(whatTheHandbackLacks(`${padding}\n${block(ONE)}`)).toEqual([]);
   });
 });
 
@@ -166,6 +213,28 @@ describe('what the verb answers a host', () => {
     expect(reason).toContain('{"decisions":[]}');
     expect(reason).toContain('it has no block whose info string is mnema-handback');
     expect(reason).toContain('`mnema handback --schema`');
+  });
+
+  it('never repeats a key the subagent wrote, and never exceeds its ceiling', () => {
+    const marks = ['\u001b[31mRED', 'bell\u0007', 'IGNORE-PREVIOUS-INSTRUCTIONS'];
+    const keys = Object.fromEntries(marks.map((mark) => [mark, 1]));
+    const many = Object.fromEntries(
+      Array.from({ length: 10_000 }, (_, index) => [`${'k'.repeat(100)}${index}`, 1]),
+    );
+    const decisions = Array.from({ length: 5_000 }, () => ({ extra: 1 }));
+    for (const reply of [
+      block(JSON.stringify({ decisions: [], ...keys })),
+      block(JSON.stringify({ decisions: [{ settled: 'a', why: 'b', turnedDown: 'c', ...keys }] })),
+      block(JSON.stringify({ decisions: [], ...many })),
+      block(JSON.stringify({ decisions })),
+    ]) {
+      const reason = String(answer(payload(reply)).reply['reason']);
+      expect(controlBytesIn(reason)).toEqual([]);
+      expect(reason).not.toContain('RED');
+      expect(reason).not.toContain('IGNORE-PREVIOUS');
+      expect(reason).not.toContain('kkkkkkkk');
+      expect(Buffer.byteLength(reason)).toBeLessThanOrEqual(REASON_BYTES);
+    }
   });
 
   it('says nothing to a reply in the format', () => {
@@ -272,6 +341,7 @@ describe('the plugin command a host runs when a subagent stops', () => {
       cwd: repo,
       input,
       encoding: 'utf-8',
+      timeout: 20_000,
       env: {
         HOME: join(sandbox, 'home'),
         PATH: `${withMnema ? `${bin}:` : ''}${dirname(process.execPath)}:/usr/bin:/bin`,
@@ -297,6 +367,54 @@ describe('the plugin command a host runs when a subagent stops', () => {
       expect(quiet.status).toBe(0);
       expect(quiet.stdout).toBe('');
       expect(quiet.stderr).toBe('');
+    }
+  });
+
+  it('answers a reply of 200,000 openings that never close in milliseconds, not minutes', () => {
+    const reply = `${'```mnema-handback\n'.repeat(200_000)}the end`;
+    const started = Date.now();
+    const sent = host(payload(reply));
+    // The hook's own budget is 15 s; the pattern this replaced took 217 s on this input.
+    expect(Date.now() - started).toBeLessThan(5_000);
+    expect(sent.status).toBe(2);
+    expect(sent.stderr).toContain('it has no block whose info string is mnema-handback');
+  }, 40_000);
+
+  it('never lets a key out of the reply, and never more than the ceiling', () => {
+    const keyed = JSON.stringify({
+      decisions: [],
+      '\u001b[2Jhi\u0007': 1,
+      ...{ [`${'k'.repeat(100)}`]: 1 },
+    });
+    const sent = host(payload(block(keyed)));
+    expect(sent.status).toBe(2);
+    expect(controlBytesIn(sent.stderr)).toEqual([]);
+    expect(sent.stderr).not.toContain('kkkkkkkk');
+    expect(Buffer.byteLength(sent.stderr)).toBeLessThanOrEqual(REASON_BYTES + 1);
+  });
+
+  it('fails open when mnema answers something that is not its answer', () => {
+    for (const printed of [
+      'not json at all',
+      '{"decision":"block","reason":""}',
+      '{"decision":"block"}',
+    ]) {
+      const bin = join(sandbox, 'strange');
+      mkdirSync(bin, { recursive: true });
+      writeFileSync(join(bin, 'mnema'), `#!/bin/sh\ncat >/dev/null\nprintf '%s' '${printed}'\n`);
+      chmodSync(join(bin, 'mnema'), 0o755);
+      const sent = spawnSync(process.execPath, [join(PLUGIN, 'hooks', 'subagent-stop.mjs')], {
+        cwd: repo,
+        input: payload('Done.'),
+        encoding: 'utf-8',
+        env: {
+          HOME: join(sandbox, 'home'),
+          PATH: `${bin}:${dirname(process.execPath)}:/usr/bin:/bin`,
+          CLAUDE_PROJECT_DIR: repo,
+        },
+      });
+      expect(sent.status, printed).toBe(0);
+      expect(sent.stderr, printed).toBe('');
     }
   });
 

@@ -316,8 +316,8 @@ export const UNFRAMED_CHANNELS: {
     'say whose they are',
   'subagent-handback':
     'what it carries is the product’s own sentence about the format a subagent’s final reply is to ' +
-    'end in, and what that reply lacked — no record text, so there is nobody’s words to say whose ' +
-    'they are',
+    'end in, and what that reply lacked, said in the schema’s words and never in the reply’s — no ' +
+    'record text, so there is nobody’s words to say whose they are',
   'agent-accepts':
     'what it carries is the product’s own sentence about an act the agent just made or was turned ' +
     'away from — that its acceptance was recorded as an agent’s, or that the switch is off — and ' +
