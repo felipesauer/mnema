@@ -35,10 +35,13 @@ const ROOT = join(import.meta.dirname, '..', '..', '..', '..');
 export const GENERATED = [
   'plugin/hooks/hooks.json',
   'plugin/hooks/codex.json',
+  'plugin/hooks/copilot.json',
   'plugin/.claude-plugin/plugin.json',
   'plugin/.codex-plugin/plugin.json',
+  'plugin/.github/plugin/plugin.json',
   'plugin-server-only/.claude-plugin/plugin.json',
   'plugin-server-only/.codex-plugin/plugin.json',
+  'plugin-server-only/.github/plugin/plugin.json',
   'README.md',
   'docs/evidence.md',
 ] as const;
@@ -250,6 +253,51 @@ export function codexHooksJson(): string {
   return `${printed(file)}\n`;
 }
 
+/** What Copilot CLI's hooks file says it does, as the host shows it. */
+const COPILOT_HOOKS_DESCRIPTION =
+  "Hands the project's committed record to the session as it opens: the decisions in force and the adopted patterns, by name — and, beside it, the memories and observations recorded for the project, from every tree this machine holds, the ones that share a word with what the session touches first. Before a file is written, where a rule of that record refuses the write, does not let it happen, citing the rule, and where a rule asks for a person, pauses the write until one decides; each is recorded as a fact of the chain. Each can be switched off with `mnema switch`, which records that it was.";
+
+/**
+ * Copilot CLI's hooks file: the opening, and the gate before a write — no end-of-response count
+ * and no corrections, which read a transcript in Claude Code's format.
+ *
+ * THE EVENTS ARE NAMED IN PASCAL CASE, which is what makes the host hand a hook the payload in
+ * Claude Code's tool names and in snake_case, the one `host-hook.ts` reads. The opening is
+ * answered with a top-level `additionalContext` (`--reply flat`, from the row), the one reply it
+ * reads for it. The gate's command ends in `exit 0`: the host denies a call whose hook exits
+ * non-zero, a program that is missing included, and a gate that cannot answer lets the write go.
+ * NO SHELL FILTER IN FRONT, as Codex's: it applies the matcher, and no other host reads this file.
+ */
+export function copilotHooksJson(): string {
+  const tools = writeToolsOf('copilot');
+  const reply = HOSTS.copilot.openingReply;
+  const handed = reply === undefined ? [] : ['--reply', reply];
+  const handler = does('copilot', 'asks') ? 'edit-asks-a-person.mjs' : 'edit-refuses-a-write.mjs';
+  const file: Json = {
+    description: COPILOT_HOOKS_DESCRIPTION,
+    hooks: {
+      SessionStart: [
+        {
+          hooks: [command('session-start.mjs', handed), command('session-recall.mjs', handed)],
+        },
+      ],
+      PreToolUse: [
+        {
+          matcher: tools.join('|'),
+          hooks: [
+            {
+              type: 'command',
+              command: `${nodeRuns(handler, ['--host', 'copilot'])}; exit 0`,
+              timeout: TIMEOUT,
+            },
+          ],
+        },
+      ],
+    },
+  };
+  return `${printed(file)}\n`;
+}
+
 // ---------------------------------------------------------------------------
 // The manifests
 // ---------------------------------------------------------------------------
@@ -352,6 +400,54 @@ function codexManifest(
   return `${printed(file)}\n`;
 }
 
+/**
+ * The full plugin's manifest as Copilot CLI reads it (`.github/plugin/plugin.json`, which it looks
+ * for before `.claude-plugin/plugin.json` and VS Code does not look for at all).
+ *
+ * TWO THINGS DIFFER FROM CLAUDE CODE'S, BOTH MEASURED (1.0.94). A plugin's server is started in
+ * the plugin's own directory unless the manifest says `cwd`, and `"."` is the session's: without
+ * it `mnema mcp` would look for a project in the folder the plugin was installed to. And the
+ * server is started as `mnema mcp`, the first `mnema` on the PATH — the host has no option a
+ * person fills in, so `mnema_path` cannot reach it. The hooks are the file this host alone reads.
+ */
+export function copilotPluginJson(): string {
+  return copilotManifest(
+    'mnema',
+    "Puts the project's committed mnema record into the session's opening context without the agent asking, with the notes recorded for it on this machine beside it, refuses a write where a rule of that record refuses it, pauses it where a rule asks for a person, and connects the mnema MCP server so the agent can record its own work.",
+    { hooks: HOSTS.copilot.hooksFile },
+  );
+}
+
+/** The server-only plugin's manifest as Copilot CLI reads it: the same server, and no hooks file. */
+export function copilotServerOnlyPluginJson(): string {
+  return copilotManifest(
+    'mnema-server-only',
+    'Connects the mnema MCP server so the agent can record its own work, and runs no hook: nothing is handed to a session as it opens or before a write.',
+    {},
+  );
+}
+
+/** What both of Copilot CLI's manifests declare alike. */
+function copilotManifest(
+  name: string,
+  description: string,
+  rest: { readonly [key: string]: Json },
+): string {
+  const file: Json = {
+    name,
+    version: version(),
+    description,
+    author: { name: 'Felipe Sauer', url: 'https://github.com/felipesauer' },
+    homepage: 'https://github.com/felipesauer/mnema',
+    repository: 'https://github.com/felipesauer/mnema',
+    license: 'Apache-2.0',
+    keywords: ['audit-trail', 'append-only', 'accountability', 'adr', 'local-first'],
+    mcpServers: { mnema: { command: 'mnema', args: ['mcp'], cwd: '.' } },
+    ...rest,
+  };
+  return `${printed(file)}\n`;
+}
+
 // ---------------------------------------------------------------------------
 // The rung table
 // ---------------------------------------------------------------------------
@@ -444,10 +540,16 @@ export function generated(path: (typeof GENERATED)[number], committed: string): 
       return hooksJson();
     case 'plugin/hooks/codex.json':
       return codexHooksJson();
+    case 'plugin/hooks/copilot.json':
+      return copilotHooksJson();
     case 'plugin/.claude-plugin/plugin.json':
       return pluginJson();
     case 'plugin/.codex-plugin/plugin.json':
       return codexPluginJson();
+    case 'plugin/.github/plugin/plugin.json':
+      return copilotPluginJson();
+    case 'plugin-server-only/.github/plugin/plugin.json':
+      return copilotServerOnlyPluginJson();
     case 'plugin-server-only/.codex-plugin/plugin.json':
       return codexServerOnlyPluginJson();
     case 'plugin-server-only/.claude-plugin/plugin.json':

@@ -91,6 +91,13 @@ export interface Host {
    */
   readonly hooksFile?: string;
   /**
+   * How a host reads the reply that hands it the opening of a session, for a host that does not
+   * read the nested one Claude Code does (`hookSpecificOutput.additionalContext`): `flat` is a
+   * top-level `additionalContext`. The handlers that hand the opening over are told by the hooks
+   * file (`--reply flat`), and the nested reply is the one every other host gets.
+   */
+  readonly openingReply?: 'flat';
+  /**
    * The ceiling this host puts on a hook's text, for a host that counts it in tokens of its own
    * rather than in Claude Code's 10,000 UTF-16 code units: how many tokens arrive whole, how many
    * UTF-8 bytes make one, and where each is read. `presentation/within-a-hook.ts` cuts the opening
@@ -110,7 +117,7 @@ export interface Host {
   readonly places: { readonly skills: Place; readonly agents: Place };
 }
 
-/** Where the cells of the three ported hosts that a case of this tree holds are held. */
+/** Where the cells of the ported hosts that a case of this tree holds are held. */
 const HELD = {
   aRulesFile: 'packages/code/tests/a-rules-file-carries-only-what-becomes-a-glob-exactly.test.ts',
   claudeServer: 'packages/code/tests/host-contract/the-rules-arrive-beside-the-write.test.ts',
@@ -119,11 +126,20 @@ const HELD = {
   vscodeGate:
     'packages/code/tests/host-contract/an-editor-holds-or-refuses-the-write.vscode.test.ts',
   codexContract: 'packages/code/tests/host-contract/codex-opens-and-refuses.codex.test.ts',
+  copilotContract:
+    'packages/code/tests/host-contract/copilot-opens-and-refuses.copilot.test.ts',
 } as const;
 
 /** The Codex source every cell of Codex's row that is read rather than run was read at. */
 const CODEX_SOURCE =
   'https://github.com/openai/codex/blob/979011409de0a60b52f179721948e65531d26144';
+
+/**
+ * The Copilot CLI sources every cell of its row that is read rather than run was read at: the
+ * documentation repository of GitHub, at the commit the day's reading was made on.
+ */
+const COPILOT_DOCS =
+  'https://github.com/github/docs/blob/9f651797567230e844373870fce8b14427ad47ad/content/copilot';
 
 /** The day the hosts below that this product does not port were read. */
 const READ_ON = '8 October 2026';
@@ -143,7 +159,7 @@ const NOT_PORTED: Place = { held: 'not ported' };
 /**
  * Every host, in the order the pages list them and the lists of a `--host` enumerate them.
  *
- * THE FIRST FOUR ARE PORTED; THE OTHER FIVE WERE ONLY READ. Each of the five documents an MCP
+ * THE FIRST FIVE ARE PORTED; THE OTHER FIVE WERE ONLY READ. Each of the five documents an MCP
  * client and reads an `AGENTS.md`, at the commit the link names, and no hook of this plugin's
  * reaches any of them. Aider was read too and is not here: it has no MCP client.
  */
@@ -255,6 +271,55 @@ export const HOSTS = {
       },
       // Codex's agents are TOML files of its own (`.codex/agents/`), not the Markdown a stack
       // brings, so nothing is installed for them.
+      agents: NOT_PORTED,
+    },
+  },
+  copilot: {
+    title: 'GitHub Copilot CLI',
+    door: 'command',
+    // Copilot CLI reads the plugin through a manifest of its own (`.github/plugin/plugin.json`,
+    // which it looks for before `.claude-plugin/plugin.json` and VS Code does not look for at all)
+    // that names this hooks file, so no other host runs its command and none of theirs runs here.
+    // The Claude Code manifest would start the server in the plugin's directory, not the project's.
+    hooksFile: 'hooks/copilot.json',
+    // It takes a top-level `additionalContext` for the opening and ignores the nested reply
+    // (1.0.94, held by the contract).
+    openingReply: 'flat',
+    note:
+      'Its hooks are read under the PascalCase event names, which hand the payload in Claude Code’s ' +
+      'tool names (`Write`, `Edit`) and snake_case fields, with the path under `path`. A command ' +
+      'hook that exits non-zero denies the call there (read in ' +
+      `[the hooks reference](${COPILOT_DOCS}/reference/hooks-reference.md)), so the plugin's ends ` +
+      'in `exit 0` whatever happened — no `mnema` on the PATH is held by its test; a hook past ' +
+      'its 15 seconds is let through by the host (read, not measured). The opening is the same ' +
+      'text Claude Code gets, cut at 10,000 units, far under the 10 MiB the host accumulates ' +
+      '(read, not measured). Run without a person (`copilot -p`), a hook’s `ask` is a denial ' +
+      '(held by its test); with one, the host asks (held by its test). The model is any ' +
+      'the host is pointed at, with no GitHub account (`COPILOT_OFFLINE`), under the license ' +
+      'at [`LICENSE.md`](https://github.com/github/copilot-cli/blob/a7ae5b0ce17beddfa5930812bb064138fd3a1cb5/LICENSE.md).',
+    cells: {
+      server: { does: true, held: 'a test', by: HELD.copilotContract },
+      rulesFile: {
+        does: true,
+        held: 'documentation',
+        at: `${COPILOT_DOCS}/reference/copilot-cli-reference/cli-command-reference.md`,
+        read: '9 October 2026',
+      },
+      opens: { does: true, held: 'a test', by: HELD.copilotContract },
+      refuses: { does: true, held: 'a test', by: HELD.copilotContract },
+      asks: { does: true, held: 'a test', by: HELD.copilotContract },
+    },
+    places: {
+      // `.agents/skills` under the project and under the home are two of the folders in the loading
+      // order of its plugin reference. Its agents are `.agent.md` files with a front matter of
+      // their own, and a stack's Markdown agent was not read against it.
+      skills: {
+        held: 'documentation',
+        project: '.agents/skills',
+        user: '.agents/skills',
+        at: `${COPILOT_DOCS}/reference/copilot-cli-reference/cli-plugin-reference.md`,
+        read: '9 October 2026',
+      },
       agents: NOT_PORTED,
     },
   },
