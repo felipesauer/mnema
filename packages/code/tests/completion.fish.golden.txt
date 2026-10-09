@@ -111,7 +111,7 @@ complete -c mnema -f -n '__mnema_at ""' -a 'trailer' -d 'print the commit traile
 complete -c mnema -f -n '__mnema_at ""' -a 'commit-hook' -d 'install or remove an optional git hook that suggests the Mnema-Decision trailer'
 complete -c mnema -f -n '__mnema_at ""' -a 'key' -d 'manage this machine\'s signing keys'
 complete -c mnema -f -n '__mnema_at ""' -a 'tail' -d 'authorize a cut in the record\'s own tails'
-complete -c mnema -f -n '__mnema_at ""' -a 'doctor' -d 'say how mnema is installed on this machine, and what to do about each thing found (writes nothing unless you pass --fix vscode)'
+complete -c mnema -f -n '__mnema_at ""' -a 'doctor' -d 'say how mnema is installed on this machine, and what to do about each thing found (writes nothing unless you pass --fix)'
 complete -c mnema -f -n '__mnema_at ""' -a 'report' -d 'show, whole, what mnema would say about its own last internal error, and keep your answer to it (sends nothing)'
 complete -c mnema -f -n '__mnema_at ""' -a 'completion' -d 'print the tab-completion script for a shell'
 complete -c mnema -f -n '__mnema_at ""' -a 'mcp' -d 'run the mnema MCP server over stdio (for an agent host)'

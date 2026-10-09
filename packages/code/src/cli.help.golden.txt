@@ -89,8 +89,7 @@ $ mnema
 !   key             manage this machine's signing keys
 !   tail            authorize a cut in the record's own tails
 !   doctor          say how mnema is installed on this machine, and what to do
-!                   about each thing found (writes nothing unless you pass --fix
-!                   vscode)
+!                   about each thing found (writes nothing unless you pass --fix)
 !   report          show, whole, what mnema would say about its own last internal
 !                   error, and keep your answer to it (sends nothing)
 !   completion      print the tab-completion script for a shell
@@ -200,8 +199,7 @@ $ mnema --help
 |   key             manage this machine's signing keys
 |   tail            authorize a cut in the record's own tails
 |   doctor          say how mnema is installed on this machine, and what to do
-|                   about each thing found (writes nothing unless you pass --fix
-|                   vscode)
+|                   about each thing found (writes nothing unless you pass --fix)
 |   report          show, whole, what mnema would say about its own last internal
 |                   error, and keep your answer to it (sends nothing)
 |   completion      print the tab-completion script for a shell
@@ -1182,12 +1180,14 @@ $ mnema doctor --help
 | Usage: mnema doctor [options]
 |
 | say how mnema is installed on this machine, and what to do about each thing
-| found (writes nothing unless you pass --fix vscode)
+| found (writes nothing unless you pass --fix)
 |
 | Options:
 |   --fix <what>  make the one change a finding asks for, and only that one:
 |                 `vscode` lists the plugin in the chat.pluginLocations setting of
-|                 VS Code’s settings.json, after keeping a copy of the file
+|                 VS Code’s settings.json, after keeping a copy of the file;
+|                 `private-tree` moves the private notes a worktree still holds in
+|                 .mnema/private/ into the repository’s git directory
 |   --dry-run     with --fix: say what would change and write nothing
 |   -h, --help    display help for command
 |
@@ -1197,10 +1197,14 @@ $ mnema doctor --help
 |   .vscode/mcp.json and ~/.claude.json, the plugin counting as one; and an npm package
 |   named `mnema` installed where the PATH points — the registry is not asked; VS Code’s user
 |   settings.json, for whether its agent is told where the plugin is; and the projects of
-|   ~/.claude.json that still declare the server.
+|   ~/.claude.json that still declare the server; and, in a project inside a git repository,
+|   each worktree’s .mnema/private/, where private notes lived before they moved into the
+|   repository’s git directory.
 | Asked alone it writes nothing and exits 0 whatever it finds: each line says what to do.
-| `--fix vscode` is the only thing that writes: it shows what it will change, keeps a copy of
-| settings.json beside it, keeps the file’s comments, and refuses a file it cannot edit safely.
+| `--fix vscode` writes: it shows what it will change, keeps a copy of settings.json beside
+| it, keeps the file’s comments, and refuses a file it cannot edit safely.
+| `--fix private-tree` writes: it moves each tail, as it is, into the repository’s private
+| tree, and leaves where it was anything whose name there holds other bytes.
 
 ### mnema report --help
 $ mnema report --help
