@@ -66,8 +66,10 @@ import { rebuild } from './rebuild.js';
 import {
   type AuthorshipFilter,
   type AuthorshipTally,
+  type ChargeAt,
   isKnownEntity,
   listAuthors,
+  listChargesAt,
   listReferences,
   listSubjectRuns,
   type ReferenceDirection,
@@ -830,6 +832,15 @@ export class ProjectionCache {
    */
   subjectRuns(kind: EventKind): SubjectRun[] {
     return listSubjectRuns(this.db, kind);
+  }
+
+  /**
+   * Every run charged at `path` in the named channels - asked for a person, or refused - with the
+   * newest instant of each, newest first. A read of the index this cache already keeps (see
+   * {@link listChargesAt} for what it counts and what it leaves out).
+   */
+  chargesAt(path: string, channels: readonly string[]): ChargeAt[] {
+    return listChargesAt(this.db, path, channels);
   }
 
   /**

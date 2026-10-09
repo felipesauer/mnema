@@ -449,6 +449,63 @@ export function listSubjectRuns(db: SqliteDatabase, kind: EventKind): SubjectRun
   return rows.map((row) => ({ entity: row.entity, run: row.run }));
 }
 
+/** A run that was charged at a path, and when it last was. */
+export interface ChargeAt {
+  /** The run the charge belongs to. */
+  readonly run: string;
+  /** `at` of the run's newest charge at the path, the writer's own clock. */
+  readonly at: string;
+}
+
+/**
+ * How many of a channel's newest rows {@link listChargesAt} looks through. A channel keeps one
+ * `channel.asked` or `channel.refused` per rule per charge, for as long as the record lives, and
+ * this is read on the edge of an edit: the work is bounded by this and never by how many charges
+ * the project has made. What is older than the newest of these is older than any age ceiling the
+ * reader puts on a charge, in any project that edits as often as this number says.
+ */
+export const THE_NEWEST_CHARGES_READ = 2_000;
+
+/**
+ * Every run charged at `path` — asked for a person, or refused — in the named channels, with the
+ * newest `at` of each, newest run first.
+ *
+ * ONLY THE FACTS THAT CARRY BOTH A PATH AND A RUN. A charge made by a process that has no run (the
+ * command hook's) names nobody and is not here. The path is compared as the product recorded it,
+ * and the channels are the caller's: the subject of both kinds is the channel, which the key of
+ * the table starts with, so the read walks one channel's rows and never the whole of the table.
+ */
+export function listChargesAt(
+  db: SqliteDatabase,
+  path: string,
+  channels: readonly string[],
+): ChargeAt[] {
+  const newest = new Map<string, string>();
+  const read = db.prepare(
+    `SELECT json_extract(event, '$.run') AS run, MAX(at) AS at
+       FROM (SELECT at, event FROM refs
+              WHERE entity = @channel AND role = 'subject'
+                AND kind IN ('channel.asked', 'channel.refused')
+              ORDER BY ord DESC LIMIT @cap)
+      WHERE json_extract(event, '$.payload.path') = @path
+        AND json_extract(event, '$.run') IS NOT NULL
+      GROUP BY run`,
+  );
+  for (const channel of channels) {
+    const rows = read.all({ channel, path, cap: THE_NEWEST_CHARGES_READ }) as Array<{
+      run: string;
+      at: string;
+    }>;
+    for (const row of rows) {
+      const seen = newest.get(row.run);
+      if (seen === undefined || seen < row.at) newest.set(row.run, row.at);
+    }
+  }
+  return [...newest.entries()]
+    .map(([run, at]) => ({ run, at }))
+    .sort((a, b) => (a.at === b.at ? (a.run < b.run ? -1 : 1) : a.at < b.at ? 1 : -1));
+}
+
 /**
  * Walks the reference graph of THIS tree from `seeds`, following edges in
  * `direction`, and returns every edge it traversed — not the nodes, because the
