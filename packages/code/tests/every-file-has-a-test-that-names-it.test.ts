@@ -556,6 +556,10 @@ const UNWITNESSED: Readonly<Record<string, Debt>> = {
     reached: 'nobody imports it',
     why: "The `skill` group's declaration; every test that runs `skill export` passes `--out`, so the './skills' default this file declares is exercised by nothing and asserted by nothing.",
   },
+  'packages/code/src/wiring/stack.ts': {
+    reached: 'nobody imports it',
+    why: "The `stack` group's declaration and the lines it prints; a-stack-goes-where-nothing-is.test.ts runs the built binary through it, and the plan, the writing and the refusals it reports are asserted on commands/stack-install.ts.",
+  },
   'packages/code/src/wiring/status.ts': {
     reached: 'nobody imports it',
     why: "The `status` declaration; where-things-stand drives it only to prove the CLI's --json equals the MCP bootstrap payload and that context's derivation has a single door.",
@@ -656,7 +660,7 @@ const UNWITNESSED: Readonly<Record<string, Debt>> = {
  * reading, so nothing can fall in two.
  */
 const THE_SHAPE_OF_WHAT_IS_LEFT: Readonly<Record<string, number>> = {
-  wiring: 47,
+  wiring: 48,
   presentation: 11,
   projections: 4,
   completion: 4,
@@ -863,6 +867,8 @@ const CLAUSES_PER_FILE: Readonly<Record<string, number>> = {
   'packages/code/src/commands/skill-export.test.ts': 11,
   'packages/code/src/commands/skill-transition.test.ts': 10,
   'packages/code/src/commands/skill.test.ts': 8,
+  'packages/code/src/commands/stack-install.test.ts': 13,
+  'packages/code/src/commands/stack-source.test.ts': 10,
   'packages/code/src/commands/tail-list.test.ts': 11,
   'packages/code/src/commands/tail-prune.test.ts': 9,
   'packages/code/src/commands/task-transition.test.ts': 10,
@@ -950,6 +956,7 @@ const CLAUSES_PER_FILE: Readonly<Record<string, number>> = {
   'packages/code/tests/a-rules-file-carries-only-what-becomes-a-glob-exactly.test.ts': 11,
   'packages/code/tests/a-sent-command-is-a-band-and-an-answer-has-a-head.test.ts': 18,
   'packages/code/tests/a-session-says-what-it-wrote.test.ts': 13,
+  'packages/code/tests/a-stack-goes-where-nothing-is.test.ts': 7,
   'packages/code/tests/a-state-is-a-position.test.ts': 8,
   'packages/code/tests/a-sticky-pattern-answers-differently-each-call.test.ts': 3,
   'packages/code/tests/a-stopped-import-fails-the-run.test.ts': 1,
@@ -976,9 +983,9 @@ const CLAUSES_PER_FILE: Readonly<Record<string, number>> = {
   'packages/code/tests/every-skill-the-plugin-ships-is-what-it-says.test.ts': 11,
   'packages/code/tests/every-test-file-is-type-checked.test.ts': 6,
   'packages/code/tests/every-tool-says-if-it-writes.test.ts': 16,
-  'packages/code/tests/every-verb-says-if-it-writes.test.ts': 15,
+  'packages/code/tests/every-verb-says-if-it-writes.test.ts': 16,
   'packages/code/tests/every-verifier-gives-one-ed25519-verdict.test.ts': 6,
-  'packages/code/tests/every-write-signs-what-it-wrote.test.ts': 37,
+  'packages/code/tests/every-write-signs-what-it-wrote.test.ts': 39,
   'packages/code/tests/host-contract/a-hook-hands-over-ten-thousand-units.test.ts': 5,
   'packages/code/tests/host-contract/a-refusal-and-a-pause-hold-the-write.test.ts': 6,
   'packages/code/tests/host-contract/a-servers-instructions-are-cut-at-2048.test.ts': 3,
@@ -1269,7 +1276,7 @@ const CLAUSES_PER_FILE: Readonly<Record<string, number>> = {
   'packages/core/src/topology/resolve.test.ts': 7,
   'packages/core/src/topology/routing.test.ts': 11,
   'packages/core/src/workflow/a-gate-judges-the-record-as-it-stands.test.ts': 4,
-  'packages/core/src/workflow/a-stale-anchor-writes-nothing.test.ts': 20,
+  'packages/core/src/workflow/a-stale-anchor-writes-nothing.test.ts': 21,
   'packages/core/src/workflow/a-write-reads-what-arrived.test.ts': 11,
   'packages/core/src/workflow/adoption.test.ts': 12,
   'packages/core/src/workflow/as-the-record-stands.test.ts': 6,
@@ -1298,6 +1305,7 @@ const CLAUSES_PER_FILE: Readonly<Record<string, number>> = {
   'packages/core/tests/readme-example.test.ts': 7,
   'packages/stacks/tests/a-manifest-says-no-more-than-the-contract.test.ts': 2,
   'packages/stacks/tests/a-stack-brings-no-more-than-it-says.test.ts': 7,
+  'packages/stacks/tests/an-archive-is-read-never-unpacked.test.ts': 7,
   'packages/stacks/tests/support.ts': 4,
   'packages/stacks/tests/the-digest-needs-no-mnema.test.ts': 8,
   'packages/stacks/tests/the-frontmatter-reader-places-or-refuses.test.ts': 2,
@@ -1428,6 +1436,8 @@ const PRODUCTION_FILES: readonly string[] = [
   'packages/code/src/commands/skill-transition.ts',
   'packages/code/src/commands/skill.ts',
   'packages/code/src/commands/skills.ts',
+  'packages/code/src/commands/stack-install.ts',
+  'packages/code/src/commands/stack-source.ts',
   'packages/code/src/commands/status.ts',
   'packages/code/src/commands/switch.ts',
   'packages/code/src/commands/tail-list.ts',
@@ -1629,6 +1639,7 @@ const PRODUCTION_FILES: readonly string[] = [
   'packages/code/src/wiring/show.ts',
   'packages/code/src/wiring/site.ts',
   'packages/code/src/wiring/skill.ts',
+  'packages/code/src/wiring/stack.ts',
   'packages/code/src/wiring/status.ts',
   'packages/code/src/wiring/switch.ts',
   'packages/code/src/wiring/tail.ts',
@@ -1756,6 +1767,7 @@ const PRODUCTION_FILES: readonly string[] = [
   'packages/core/src/write.ts',
   'packages/sdk/src/hooks.ts',
   'packages/sdk/src/record.ts',
+  'packages/stacks/src/archive.ts',
   'packages/stacks/src/digest.ts',
   'packages/stacks/src/files.ts',
   'packages/stacks/src/frontmatter.ts',
@@ -1823,8 +1835,9 @@ describe('every file has a test that names it', () => {
     // 82 with the commit-hook group's wiring, which the CLI reaches.
     // 83 with the unlink verb's wiring, which a-link-can-be-retracted drives through the CLI.
     // 84 with the report verb's wiring, which a-report-is-built-from-an-allowlist drives through the program.
-    expect(found.size).toBe(84);
-    expect(byReach('nobody imports it')).toBe(84);
+    // 85 with the stack group's wiring, which a-stack-goes-where-nothing-is drives through the built binary.
+    expect(found.size).toBe(85);
+    expect(byReach('nobody imports it')).toBe(85);
     expect(byReach('imported, and no assertion observes it')).toBe(0);
   });
 
@@ -1846,7 +1859,7 @@ describe('every file has a test that names it', () => {
     // Announced in the header and, until now, kept by hand. A shared excuse is how a table
     // like this turns into a rubber stamp, and a row drained to a stub is how it starts.
     const reasons = Object.values(UNWITNESSED).map((one) => one.why);
-    expect(reasons).toHaveLength(84);
+    expect(reasons).toHaveLength(85);
     expect(new Set(reasons).size).toBe(reasons.length);
     // The shortest reason standing is 156 characters; the floor is under it and well over
     // anything that could be written without saying what reaches that file.

@@ -246,3 +246,14 @@ export type {
   DecideThenWrite,
   DeferredWriteContext,
 } from './workflow/operations.js';
+// A stack adopted into a tree, and removed from it: the two facts an installation records.
+export {
+  type AdoptStackInput,
+  type AdoptStackOk,
+  adoptStack,
+  type RemoveStackError,
+  type RemoveStackInput,
+  type RemoveStackOk,
+  removeStack,
+  type StackFactError,
+} from './workflow/stack-operations.js';

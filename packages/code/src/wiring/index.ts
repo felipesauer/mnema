@@ -253,6 +253,7 @@ import { registerSearch } from './search.js';
 import { registerShow } from './show.js';
 import { registerSite } from './site.js';
 import { registerSkill } from './skill.js';
+import { registerStack } from './stack.js';
 import { registerStatus } from './status.js';
 import { registerSwitch } from './switch.js';
 import { registerTail } from './tail.js';
@@ -293,6 +294,7 @@ export const GROUPS: readonly Group[] = [
       registerObserve,
       registerRetract,
       registerSkill,
+      registerStack,
       registerTask,
       registerPromote,
     ],

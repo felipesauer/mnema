@@ -87,6 +87,7 @@ interface Manifest {
   readonly license?: string;
   readonly files?: readonly string[];
   readonly publishConfig?: { readonly access?: string };
+  readonly dependencies?: Readonly<Record<string, string>>;
 }
 
 const readManifest = (where: string): Manifest => {
@@ -138,7 +139,7 @@ const PACKED: ReadonlyMap<string, readonly string[]> = new Map(
 const carried = (name: string): readonly string[] => PACKED.get(name) ?? [];
 
 describe('the workspace knows which packages it publishes', () => {
-  it('finds eight, and every one but the Action, the SDK, the stacks contract and the editor extension is meant to go', () => {
+  it('finds eight, and every one but the Action, the SDK and the editor extension is meant to go', () => {
     // NON-VACUITY of everything below, which is a reduction over this list. Exact rather
     // than a floor: a floor is a number anyone can lower to swallow a package that stopped
     // being read. `@mnema/action` and `@mnema/sdk` are the two that stay: each is `private`,
@@ -159,15 +160,35 @@ describe('the workspace knows which packages it publishes', () => {
       '@mnema/code',
       '@mnema/context',
       '@mnema/core',
+      '@mnema/stacks',
     ]);
     expect(
       ALL.filter((m) => m.private === true)
         .map((m) => m.name)
         .sort(),
-    ).toEqual(['@mnema/action', '@mnema/sdk', '@mnema/stacks', '@mnema/vscode']);
+    ).toEqual(['@mnema/action', '@mnema/sdk', '@mnema/vscode']);
     expect(ALL.find((m) => m.name === '@mnema/action')?.license).toBe('Apache-2.0');
     expect(ALL.find((m) => m.name === '@mnema/sdk')?.license).toBe('Apache-2.0');
     expect(ALL.find((m) => m.name === '@mnema/vscode')?.license).toBe('Apache-2.0');
+  });
+
+  it('needs no package of the workspace that is held back from the registry', () => {
+    // A PUBLISHED PACKAGE THAT DEPENDS ON A PRIVATE ONE DOES NOT INSTALL. The packer turns
+    // `workspace:*` into a concrete version, so the case below on the packed manifest passes, and
+    // the registry then answers 404 for the private sibling. `@mnema/code` depended on
+    // `@mnema/stacks` while it was still `private`, and every case of this file was green.
+    const held = new Set(ALL.filter((m) => m.private === true).map((m) => m.name));
+    const needs = PUBLISHABLE.flatMap((m) =>
+      Object.keys(m.dependencies ?? {})
+        .filter((dep) => held.has(dep))
+        .map((dep) => `${m.name} needs ${dep}, which is private`),
+    );
+    expect(needs).toEqual([]);
+    // Not vacuous: the publishable packages do name siblings of the workspace.
+    const siblings = new Set(ALL.map((m) => m.name));
+    expect(
+      PUBLISHABLE.some((m) => Object.keys(m.dependencies ?? {}).some((dep) => siblings.has(dep))),
+    ).toBe(true);
   });
 
   it('carries no `private` in a manifest that travels', () => {
@@ -304,7 +325,6 @@ describe('every package carries the licence its manifest claims', () => {
     expect(notPacked.map((m) => m.name).sort()).toEqual([
       '@mnema/action',
       '@mnema/sdk',
-      '@mnema/stacks',
       '@mnema/vscode',
     ]);
     const root = readFileSync(join(ROOT, 'NOTICE'), 'utf-8');

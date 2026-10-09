@@ -456,6 +456,7 @@ describe('the refused run is refused everywhere', () => {
       'key',
       'run',
       'skill',
+      'stack',
       'tail',
       'task',
     ]);
