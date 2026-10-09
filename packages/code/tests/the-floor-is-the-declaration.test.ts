@@ -663,7 +663,8 @@ describe('the floor is the declaration', () => {
   it('loads the Sigstore library only for the flag that reads a bundle', () => {
     // `verify --against-sigstore` and a stack's signature, read by `stack add`, are the readers of
     // `@sigstore/verify`. A bare `verify`, and the act that signs, must not load a byte of it: the
-    // act signs with node:crypto.
+    // act signs with node:crypto. A stack's signature is read through a dynamic `import()`, so
+    // `stack add` loads the library only when there is a `stack.sigstore.json` to read.
     const sigstore = (path: string) =>
       eagerClosure(join(SRC, path))
         .external.map((edge) => edge.specifier)
@@ -674,7 +675,13 @@ describe('the floor is the declaration', () => {
     expect(sigstore('sigstore/sign.ts')).toEqual([]);
     // Not vacuous: the reading does load it.
     expect(sigstore('commands/verify-sigstore.ts')).toContain('@sigstore/verify');
-    expect(sigstore('commands/stack-signature.ts')).toContain('@sigstore/verify');
+    expect(sigstore('sigstore/read.ts')).toContain('@sigstore/verify');
+    // The stack's reader reaches it only through the dynamic import, never eagerly.
+    expect(sigstore('commands/stack-signature.ts')).toEqual([]);
+    expect(sigstore('commands/stack-install.ts')).toEqual([]);
+    expect(readFileSync(join(SRC, 'commands/stack-signature.ts'), 'utf-8')).toContain(
+      "import('../sigstore/read.js')",
+    );
   });
 
   it('reads an import the way the runtime does', () => {
