@@ -635,6 +635,35 @@ const CLASSIFIED: Readonly<Record<string, { verdict: Verdict; why: string }>> = 
     verdict: 'collapsed',
     why: 'the id that record minted for the decision',
   },
+  'brief.ts «Stacks adopted for this project ({}): {}{}.» stacks.adopted.length #1': {
+    verdict: 'minted',
+    why: 'a count of the adopted stacks, taken from the list the record produced',
+  },
+  "brief.ts «Stacks adopted for this project ({}): {}{}.» named.join(', ') #1": {
+    verdict: 'composed',
+    why: 'the names printed in this paragraph, each collapsed below by `oneLine` before it is joined',
+  },
+  "brief.ts «Stacks adopted for this project ({}): {}{}.» rest > 0 ? ` and ${rest} more` : '' #1": {
+    verdict: 'minted',
+    why: 'a count of the stacks the paragraph does not name, taken from the length of the list',
+  },
+  'brief.ts «{} {} ({})» oneLine(s.name) #1': {
+    verdict: 'collapsed',
+    why: 'the name an adopted stack was installed under, read from the record',
+  },
+  'brief.ts «{} {} ({})» oneLine(s.version) #1': {
+    verdict: 'collapsed',
+    why: 'the version an adoption carries, read from the record',
+  },
+  'brief.ts «{} {} ({})» s.scope #1': {
+    verdict: 'minted',
+    why: 'one of the three words of a tree (public, private, global), a closed set the adoption fact allows',
+  },
+  "brief.ts «The files and the record part ways in {}; \\`mnema stack check\\` lists them.» counted(parted, 'place', 'places') #1":
+    {
+      verdict: 'minted',
+      why: 'a count of the departures found, with its noun',
+    },
   'brief.ts «Read from {}, verified at that commit. This project did not decide or sign these:» from #1':
     {
       verdict: 'composed',
@@ -2215,8 +2244,8 @@ describe('every value this layer puts on a line is classified', () => {
     // 251 until the renderer began making an actor's control bytes visible and joined the
     // composers with its two template values; then 253 until the rules in force began saying who
     // accepted them (`brief.ts`, `record.ts`); 294 until `mnema rules` printed the four numbers
-    // of the relation that refuses a write; 301 with the three the trunk added meanwhile; 395 with the lines `mnema site` prints; 306 once the document counts the rules that refuse a write; 367 with the pages of the git bridge; 377 with its shallow sentence and the recipe aging prints; 389 with the section for an inherited record; 415 with the mark on a link taken back, in the graph and its diagram; 418 once the closing paragraph words a host's ceiling in its own unit.
-    expect(FOUND.sites.length).toBe(418);
+    // of the relation that refuses a write; 301 with the three the trunk added meanwhile; 395 with the lines `mnema site` prints; 306 once the document counts the rules that refuse a write; 367 with the pages of the git bridge; 377 with its shallow sentence and the recipe aging prints; 389 with the section for an inherited record; 415 with the mark on a link taken back, in the graph and its diagram; 418 once the closing paragraph words a host's ceiling in its own unit; 425 with the paragraph naming the stacks adopted.
+    expect(FOUND.sites.length).toBe(425);
   });
 
   it('reads the verdict off the source rather than believing the table', () => {
@@ -2237,10 +2266,10 @@ describe('every value this layer puts on a line is classified', () => {
     // No arm of the case above may be empty, or that much of it is vacuous.
     const verdicts = Object.values(CLASSIFIED).map((said) => said.verdict);
     const count = (verdict: Verdict): number => verdicts.filter((said) => said === verdict).length;
-    expect(count('collapsed')).toBe(113);
-    expect(count('minted')).toBe(234);
-    expect(count('composed')).toBe(71);
-    expect(FOUND.sites.filter((site) => /\boneLine\b/.test(site.expression))).toHaveLength(113);
+    expect(count('collapsed')).toBe(115);
+    expect(count('minted')).toBe(238);
+    expect(count('composed')).toBe(72);
+    expect(FOUND.sites.filter((site) => /\boneLine\b/.test(site.expression))).toHaveLength(115);
   });
 
   it('every reason says where the value comes from', () => {
