@@ -54,7 +54,7 @@ are not normalized. It needs no mnema:
 sh digest.sh path/to/my-stack
 ```
 
-which is, in full, `find`, `sort` and `sha256sum` or `shasum -a 256` (see `digest.sh`, two lines). `hello-stack` is
+which is, in full, `find`, `sort` and `sha256sum` or `shasum -a 256` (see `digest.sh`, three lines). `hello-stack` is
 `df9d8d71cdc13bd89b45af349e677ecfcbe98949805278bd42f16e6c0498f9ed`, and a case holds the library and the shell to
 that number.
 
