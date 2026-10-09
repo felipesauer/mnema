@@ -1316,7 +1316,7 @@ $ mnema before-a-write --help
 |
 | Options:
 |   --host <host>  the host whose hook runs this, and whose payload arrives on
-|                  stdin: vscode, cursor, codex
+|                  stdin: vscode, cursor, codex, copilot
 |   -h, --help     display help for command
 |
 | What it reads and what it prints:

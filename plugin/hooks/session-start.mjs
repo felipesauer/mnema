@@ -108,7 +108,7 @@ try {
     { namesAStranger: true },
     process.argv.slice(2),
   );
-  if (document !== null) process.stdout.write(reply(HOOK_EVENT, document));
+  if (document !== null) process.stdout.write(reply(HOOK_EVENT, document, process.argv.slice(2)));
 } catch {
   // Silence, deliberately and with nothing to add: the one thing this handler must
   // never do is make somebody else's session worse than it would have been without

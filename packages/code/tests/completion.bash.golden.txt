@@ -265,7 +265,7 @@ _mnema_values() {
     'run:--color') echo 'auto always never' ;;
     'run start:--color') echo 'auto always never' ;;
     'run end:--color') echo 'auto always never' ;;
-    'before-a-write:--host') echo 'vscode cursor codex' ;;
+    'before-a-write:--host') echo 'vscode cursor codex copilot' ;;
     'before-a-write:--color') echo 'auto always never' ;;
     'tally:--color') echo 'auto always never' ;;
     'corrections:--color') echo 'auto always never' ;;
