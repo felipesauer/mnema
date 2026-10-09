@@ -143,6 +143,41 @@ describe('looking at what is installed', () => {
   });
 });
 
+describe('a session and the doctor are told what is adopted', () => {
+  const OPENING_LINE = 'Stacks adopted for this project (1): hello-stack 1.0.0 (public).';
+
+  it('opens a session with the stacks adopted, and the file a person commits without them', async () => {
+    const hook = await mnema(['brief', '--hook']);
+    expect(hook.failed, hook.err).toBe(false);
+    expect(hook.out).toContain(OPENING_LINE);
+    expect(hook.out).not.toContain('part ways');
+    const file = await mnema(['brief']);
+    expect(file.out).not.toContain('Stacks adopted');
+  });
+
+  it('counts the places the files and the record part, in the opening and in the doctor', async () => {
+    rmSync(join(project, '.claude/agents/greeter.md'));
+    const hook = await mnema(['brief', '--hook']);
+    expect(hook.out).toContain(
+      'The files and the record part ways in 1 place; `mnema stack check` lists them.',
+    );
+    const doctor = await mnema(['doctor']);
+    expect(doctor.out).toContain(
+      'to do · stack: hello-stack (public): .claude/agents/greeter.md is gone',
+    );
+    const check = await mnema(['stack', 'check']);
+    expect(check.failed).toBe(true);
+    expect(check.out).toContain('hello-stack (public): .claude/agents/greeter.md is gone');
+  });
+
+  it('says in the doctor that every file is as written, where it is', async () => {
+    const doctor = await mnema(['doctor']);
+    expect(doctor.out).toContain(
+      'ok · stack: 1 stack is adopted for this project, and every file is as written and the record agrees: nothing to do.',
+    );
+  });
+});
+
 describe('turning a hook on and off', () => {
   const enable = ['stack', 'enable', 'hello-stack', 'format', '--from'];
 
