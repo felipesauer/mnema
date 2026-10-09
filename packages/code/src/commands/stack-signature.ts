@@ -19,7 +19,6 @@
  */
 
 import { SIGNATURE_FILE, type StackFile, stackDigest, stackListing } from '@mnema/stacks';
-import { readSigstoreBundle } from '../sigstore/read.js';
 
 /** What a stack's signature says. */
 export type StackSignature =
@@ -38,6 +37,9 @@ export type StackSignature =
   /** There is a `stack.sigstore.json`, and it does not hold, for this reason. */
   | { readonly kind: 'refused'; readonly why: string };
 
+/** How `sigstore/read.ts` begins the reason when the certificate chain or the log proofs do not verify. */
+const CHECKS_REFUSED = "Sigstore's checks refused it";
+
 /** The digest a bundle says it signs, in hex, when it says one. */
 function namedDigest(text: string): string | undefined {
   try {
@@ -54,10 +56,10 @@ function namedDigest(text: string): string | undefined {
  * Reads the signature among a stack's `files` against `trustedRoot` (by default the public
  * Sigstore root this binary carries). Never throws.
  */
-export function readStackSignature(
+export async function readStackSignature(
   files: readonly StackFile[],
   trustedRoot?: unknown,
-): StackSignature {
+): Promise<StackSignature> {
   const signature = files.find((f) => f.path === SIGNATURE_FILE);
   if (signature === undefined) return { kind: 'unsigned' };
   const listing = stackListing(files);
@@ -73,11 +75,22 @@ export function readStackSignature(
       why: `it signs the digest ${named}, and these files are ${digest}`,
     };
   }
+  // Loaded here, only once there is a signature to read: a stack without one reads no byte of the library.
+  const { readSigstoreBundle } = await import('../sigstore/read.js');
   const reading = readSigstoreBundle(
     text,
     { digest, message: listing },
     ...(trustedRoot === undefined ? [] : [trustedRoot]),
   );
-  if (reading.kind === 'not-covered') return { kind: 'refused', why: reading.why };
+  if (reading.kind === 'not-covered') {
+    return {
+      kind: 'refused',
+      why: reading.why.startsWith(CHECKS_REFUSED)
+        ? `${reading.why}. The trust root this binary carries may be out of date: update mnema, or ` +
+          'remove stack.sigstore.json and install by the digest alone, knowing that then only the ' +
+          'hash vouches for the files'
+        : reading.why,
+    };
+  }
   return { ...reading, kind: 'signed' };
 }

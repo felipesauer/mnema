@@ -114,7 +114,7 @@ export function registerStack(program: Command, wiring: Wiring): Declared {
           reportRefusal(wiring, { reason: 'REFUSED', code: read.code, message: read.message });
           return;
         }
-        const plan = planStackInstall(ctx, read, {
+        const plan = await planStackInstall(ctx, read, {
           target,
           ...(opts.as !== undefined ? { as: opts.as } : {}),
         });

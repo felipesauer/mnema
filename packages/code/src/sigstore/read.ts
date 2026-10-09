@@ -10,8 +10,8 @@
  * checkpoint as `checkpoints.jsonl` holds it, and the bundle is checked as a signature over THOSE
  * bytes and filed under THEIR digest. A bundle over any other message reads `not covered`.
  *
- * It is loaded only when `verify --against-sigstore` is given: without the flag no byte of the
- * library is read.
+ * It is loaded only when `verify --against-sigstore` is given, or when a stack being installed
+ * carries a `stack.sigstore.json`: otherwise no byte of the library is read.
  */
 
 import { bundleFromJSON } from '@sigstore/bundle';

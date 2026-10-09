@@ -348,7 +348,7 @@ const excludeLine = (file: PlannedFile): string =>
  * (with `--as` offered), a destination that is anything at all, a file git would place on the
  * wrong side of a commit.
  */
-export function planStackInstall(
+export async function planStackInstall(
   ctx: StackContext,
   read: SourceRead,
   input: {
@@ -357,7 +357,7 @@ export function planStackInstall(
     /** The Sigstore trust root a signature is read against; the public one this binary carries by default. */
     readonly trustedRoot?: unknown;
   },
-): StackPlan | StackRefused {
+): Promise<StackPlan | StackRefused> {
   const report = validateStackFiles(read.files, read.problems);
   if (!report.ok || report.manifest === undefined || report.digest === undefined) {
     return refuse(
@@ -366,7 +366,7 @@ export function planStackInstall(
       report.problems.map((p) => p.message),
     );
   }
-  const signature = readStackSignature(read.files, input.trustedRoot);
+  const signature = await readStackSignature(read.files, input.trustedRoot);
   if (signature.kind === 'refused') {
     return refuse(
       'STACK_SIGNATURE_REFUSED',

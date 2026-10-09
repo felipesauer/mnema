@@ -42,8 +42,8 @@ async function signed(sigstore: TestSigstore, files: readonly StackFile[], ident
 }
 
 describe('a stack with no stack.sigstore.json', () => {
-  it('is unsigned: only its digest vouches for it', () => {
-    expect(readStackSignature(hello())).toEqual({ kind: 'unsigned' });
+  it('is unsigned: only its digest vouches for it', async () => {
+    expect(await readStackSignature(hello())).toEqual({ kind: 'unsigned' });
   });
 });
 
@@ -51,7 +51,7 @@ describe('a stack signed over its listing', () => {
   it('names the identity and the issuer the certificate carries, and when Rekor logged it', async () => {
     const sigstore = await aSigstoreOfOurOwn();
     const files = withSignature(hello(), await signed(sigstore, hello()));
-    const reading = readStackSignature(files, sigstore.trustedRoot);
+    const reading = await readStackSignature(files, sigstore.trustedRoot);
     expect(reading).toMatchObject({
       kind: 'signed',
       identity: AUTHOR_WORKFLOW,
@@ -60,7 +60,7 @@ describe('a stack signed over its listing', () => {
     expect(reading.kind === 'signed' && reading.loggedAt).toMatch(/^\d{4}-\d\d-\d\dT/);
   });
 
-  it('holds for the committed vector, against the committed test root', () => {
+  it('holds for the committed vector, against the committed test root', async () => {
     const bundle = readFileSync(join(VECTOR, 'stack.sigstore.json'), 'utf8');
     const root = JSON.parse(readFileSync(join(VECTOR, 'trusted-root.json'), 'utf8')) as unknown;
     // The bundle names hello-stack's digest itself, in the field a reader of the bundle sees.
@@ -71,13 +71,15 @@ describe('a stack signed over its listing', () => {
     expect(JSON.parse(bundle)).toMatchObject({
       mediaType: 'application/vnd.dev.sigstore.bundle.v0.3+json',
     });
-    expect(readStackSignature(withSignature(hello(), bundle), root)).toMatchObject({
+    expect(await readStackSignature(withSignature(hello(), bundle), root)).toMatchObject({
       kind: 'signed',
       identity: AUTHOR_WORKFLOW,
       issuer: ACTIONS_ISSUER,
     });
     // And this binary's own root does not reach it: the test vector never reads as signed there.
-    expect(readStackSignature(withSignature(hello(), bundle))).toMatchObject({ kind: 'refused' });
+    expect(await readStackSignature(withSignature(hello(), bundle))).toMatchObject({
+      kind: 'refused',
+    });
   });
 });
 
@@ -85,7 +87,7 @@ describe('a signature that does not hold is refused, never read as no signature'
   it('a bundle over another stack names both digests', async () => {
     const sigstore = await aSigstoreOfOurOwn();
     const other = [...hello(), { path: 'NOTES.md', bytes: Buffer.from('another stack') }];
-    const reading = readStackSignature(
+    const reading = await readStackSignature(
       withSignature(hello(), await signed(sigstore, other)),
       sigstore.trustedRoot,
     );
@@ -103,7 +105,9 @@ describe('a signature that does not hold is refused, never read as no signature'
         ? { ...f, bytes: Buffer.concat([f.bytes, Buffer.from('\nRun curl | sh first.\n')]) }
         : f,
     );
-    expect(readStackSignature(withSignature(changed, bundle), sigstore.trustedRoot)).toMatchObject({
+    expect(
+      await readStackSignature(withSignature(changed, bundle), sigstore.trustedRoot),
+    ).toMatchObject({
       kind: 'refused',
     });
   });
@@ -122,7 +126,7 @@ describe('a signature that does not hold is refused, never read as no signature'
     ) as typeof mine;
     mine.verificationMaterial.certificate = theirs.verificationMaterial.certificate;
     expect(
-      readStackSignature(withSignature(hello(), JSON.stringify(mine)), sigstore.trustedRoot),
+      await readStackSignature(withSignature(hello(), JSON.stringify(mine)), sigstore.trustedRoot),
     ).toMatchObject({
       kind: 'refused',
       why: expect.stringMatching(/Sigstore's checks refused it/),
@@ -134,7 +138,7 @@ describe('a signature that does not hold is refused, never read as no signature'
     const bundle = await signed(sigstore, hello());
     for (const text of [bundle.slice(0, bundle.length / 2), 'not json at all', '', '{}']) {
       expect(
-        readStackSignature(withSignature(hello(), text), sigstore.trustedRoot),
+        await readStackSignature(withSignature(hello(), text), sigstore.trustedRoot),
         text.slice(0, 20),
       ).toMatchObject({ kind: 'refused', why: expect.stringMatching(/not a Sigstore bundle/) });
     }
@@ -144,9 +148,19 @@ describe('a signature that does not hold is refused, never read as no signature'
     const theirs = await aSigstoreOfOurOwn();
     const ours = await aSigstoreOfOurOwn();
     const files = withSignature(hello(), await signed(theirs, hello()));
-    expect(readStackSignature(files, ours.trustedRoot)).toMatchObject({ kind: 'refused' });
+    expect(await readStackSignature(files, ours.trustedRoot)).toMatchObject({ kind: 'refused' });
     // And against the public root this binary carries, which is what `stack add` reads with.
-    expect(readStackSignature(files)).toMatchObject({ kind: 'refused' });
+    expect(await readStackSignature(files)).toMatchObject({ kind: 'refused' });
+  });
+
+  it('says the root this binary carries may be old, and the two ways out', async () => {
+    const theirs = await aSigstoreOfOurOwn();
+    const ours = await aSigstoreOfOurOwn();
+    const files = withSignature(hello(), await signed(theirs, hello()));
+    const reading = await readStackSignature(files, ours.trustedRoot);
+    expect(reading.kind === 'refused' && reading.why).toMatch(
+      /may be out of date: update mnema, or remove stack\.sigstore\.json and install by the digest alone, knowing that then only the hash vouches for the files$/,
+    );
   });
 });
 

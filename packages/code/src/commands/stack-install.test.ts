@@ -73,7 +73,7 @@ function stack(): string {
 async function install(ctx: StackContext, source: string, target: StackTarget, as?: string) {
   const read = await readStackSource(source, ctx.cwd);
   if (!read.ok) return read;
-  const plan = planStackInstall(ctx, read, { target, ...(as !== undefined ? { as } : {}) });
+  const plan = await planStackInstall(ctx, read, { target, ...(as !== undefined ? { as } : {}) });
   if (!plan.ok) return plan;
   return applyStackInstall(ctx, plan, plan.digest);
 }
@@ -125,7 +125,7 @@ describe('a stack is installed into the folders the host table names', () => {
     writeFileSync(join(source, 'stack.json'), JSON.stringify(manifest));
     const read = await readStackSource(source, ctx.cwd);
     if (!read.ok) throw new Error(read.message);
-    const plan = planStackInstall(ctx, read, { target: { scope: 'public' } });
+    const plan = await planStackInstall(ctx, read, { target: { scope: 'public' } });
     if (!plan.ok) throw new Error(plan.message);
     expect(plan.unserved).toEqual({
       skills: ['Goose', "Continue's command line (`cn`)", "Warp's agent"],
@@ -175,7 +175,7 @@ describe('the plan writes nothing, and a digest the person did not see writes no
     const before = filesUnder(ctx.repo).sort();
     const read = await readStackSource(stack(), ctx.cwd);
     if (!read.ok) throw new Error(read.message);
-    expect(planStackInstall(ctx, read, { target: { scope: 'public' } }).ok).toBe(true);
+    expect((await planStackInstall(ctx, read, { target: { scope: 'public' } })).ok).toBe(true);
     expect(filesUnder(ctx.repo).sort()).toEqual(before);
   });
 
@@ -183,7 +183,7 @@ describe('the plan writes nothing, and a digest the person did not see writes no
     const ctx = project();
     const read = await readStackSource(stack(), ctx.cwd);
     if (!read.ok) throw new Error(read.message);
-    const plan = planStackInstall(ctx, read, { target: { scope: 'public' } });
+    const plan = await planStackInstall(ctx, read, { target: { scope: 'public' } });
     if (!plan.ok) throw new Error(plan.message);
     const result = applyStackInstall(ctx, plan, '0'.repeat(64));
     expect(result.ok ? 'written' : result.code).toBe('STACK_DIGEST_DIFFERS');
@@ -521,7 +521,7 @@ describe('the plan shows the tools a skill asks to use without asking', () => {
     );
     const read = await readStackSource(source, ctx.cwd);
     if (!read.ok) throw new Error(read.message);
-    const plan = planStackInstall(ctx, read, { target: { scope: 'public' } });
+    const plan = await planStackInstall(ctx, read, { target: { scope: 'public' } });
     if (!plan.ok) throw new Error(plan.message);
     expect(plan.tools).toEqual([{ skill: 'hello', tools: 'Bash(rm:*) Read' }]);
     expect(planLines(plan)).toContain('  hello: Bash(rm:*) Read');
@@ -539,7 +539,7 @@ describe('the plan says who signed, and that a signature is not safety', () => {
     const ctx = project();
     const read = await readStackSource(stack(), ctx.cwd);
     if (!read.ok) throw new Error(read.message);
-    const plan = planStackInstall(ctx, read, { target: { scope: 'public' } });
+    const plan = await planStackInstall(ctx, read, { target: { scope: 'public' } });
     if (!plan.ok) throw new Error(plan.message);
     expect(plan.signature).toEqual({ kind: 'unsigned' });
     const lines = planLines(plan);
@@ -556,7 +556,7 @@ describe('the plan says who signed, and that a signature is not safety', () => {
     cpSync(join(VECTOR, 'stack.sigstore.json'), join(source, 'stack.sigstore.json'));
     const read = await readStackSource(source, ctx.cwd);
     if (!read.ok) throw new Error(read.message);
-    const plan = planStackInstall(ctx, read, {
+    const plan = await planStackInstall(ctx, read, {
       target: { scope: 'public' },
       trustedRoot: TEST_ROOT,
     });
@@ -592,7 +592,7 @@ describe('the plan says who signed, and that a signature is not safety', () => {
     writeFileSync(join(source, 'skills/hello/notes.md'), 'added after the signature\n');
     const read = await readStackSource(source, ctx.cwd);
     if (!read.ok) throw new Error(read.message);
-    const plan = planStackInstall(ctx, read, {
+    const plan = await planStackInstall(ctx, read, {
       target: { scope: 'public' },
       trustedRoot: TEST_ROOT,
     });
