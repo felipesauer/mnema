@@ -590,8 +590,11 @@ describe('the same rule, said again in one session', () => {
     for (let n = 0; n < 4; n += 1) reasonOn(session, 'src/billing/invoice.ts');
     // A rule this session has not heard from is said whole.
     expect(reasonOn(session, 'src/other/refund.ts')).toContain('Refunds need finance');
-    // And a session of its own starts from the first.
-    expect(reasonOn(sessionHere(), 'src/billing/invoice.ts')).toBe(first);
+    // And a session of its own starts from the first: the whole notice, and then the one thing
+    // that is new to it, that the run before it was charged at the same path.
+    expect(reasonOn(sessionHere(), 'src/billing/invoice.ts')).toBe(
+      `${first}\n\nAnother run (agent-alpha) consulted this path less than a minute ago.`,
+    );
   });
 });
 
