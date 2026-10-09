@@ -1647,6 +1647,12 @@ $ mnema stack add --help
 |                      showed
 |   --dry-run          show the plan and write nothing
 |   -h, --help         display help for command
+|
+| A stack may carry stack.sigstore.json, a Sigstore signature over its digest, checked
+| offline against the root this binary carries. The plan names who signed, beside the
+| digest. A signature proves WHO signed these bytes, not that they are SAFE to run: read
+| the plan either way. A stack with no signature installs on its digest alone, and the plan
+| says so; a signature that does not hold is refused. --expect is still the confirmation.
 
 ### mnema stack remove --help
 $ mnema stack remove --help

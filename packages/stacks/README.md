@@ -58,10 +58,32 @@ which is, in full, `find`, `sort` and `sha256sum` or `shasum -a 256` (see `diges
 `df9d8d71cdc13bd89b45af349e677ecfcbe98949805278bd42f16e6c0498f9ed`, and a case holds the library and the shell to
 that number.
 
+## The signature
+
+An author may sign a stack with Sigstore and ship the bundle as `stack.sigstore.json` at the stack's root, the one
+file the digest leaves out. What it signs is the listing the digest is the SHA-256 of, so the digest the bundle
+names, and the one the transparency log records, is the stack's digest itself:
+
+```sh
+sh digest.sh my-stack --listing > listing
+cosign sign-blob --new-bundle-format --bundle my-stack/stack.sigstore.json listing
+```
+
+The bundle is a Sigstore bundle v0.3 (`application/vnd.dev.sigstore.bundle.v0.3+json`) holding a message signature
+with a `hashedrekord` log entry. `stackListing(files)` returns the same bytes. This library does not read the
+bundle: `mnema stack add` does, offline, against the Sigstore trust root its binary carries, and shows the
+identity the certificate names and its issuer beside the digest. A stack with no signature installs on its digest
+alone, and the plan says so; a signature that does not hold (over other bytes, from a root the binary does not
+carry, or not a bundle at all) is refused.
+
 ## What it proves — and what it does not
 
 - The digest proves that two directories hold the same bytes. It does not prove who wrote them, and a digest with
   no signature says only "exactly this".
+- A signature that holds proves WHO signed the digest: the identity, an e-mail or a CI workflow, that Sigstore
+  wrote into the certificate. It does not prove that the stack is SAFE. An author can sign a harmful skill, and
+  nothing that reads the signature reads what a skill tells an agent to do. Read the plan whether it is signed or
+  not.
 - The validator proves that a directory fits the contract. It does not prove that a skill is safe, that its
   instructions are good, or that a script under `scripts/` or `hooks/` does what its description says; it never
   runs one.
