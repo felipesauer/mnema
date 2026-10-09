@@ -32,7 +32,7 @@
 
 import type { RunHere } from '@mnema/context';
 import { oneLine } from './one-line.js';
-import { HOOK_TEXT_CEILING } from './presentation/within-a-hook.js';
+import { CLAUDE_CODE_CEILING, type HookCeiling } from './presentation/within-a-hook.js';
 import {
   ASKS_A_PERSON_CHANNEL,
   FIRST_WRITE_GATE_CHANNEL,
@@ -55,12 +55,19 @@ export const NAME_CUT = 40;
 /** What separates the text a call has to say from the sentence beside it. */
 const BESIDE = '\n\n';
 
-/** A name as a line prints it: one line, cut at {@link NAME_CUT} whole characters. */
+/**
+ * A name as a line prints it: only letters, digits, dot, underscore and hyphen, every other
+ * character a `?`, cut at {@link NAME_CUT} whole characters. An agent name is a client's own
+ * string, and a client's names are identifiers (`claude-code`, `vscode-copilot`); anything else
+ * in one is not something to hand to another model as prose. The cut and the alphabet are not a
+ * defence against every wording an identifier can spell, only against a sentence: no space
+ * survives, so a name cannot read as one.
+ */
 function printed(agent: string): string {
-  const characters = Array.from(oneLine(agent));
-  return characters.length <= NAME_CUT
-    ? characters.join('')
-    : `${characters.slice(0, NAME_CUT).join('')}…`;
+  const safe = Array.from(oneLine(agent), (character) =>
+    /^[A-Za-z0-9._-]$/.test(character) ? character : '?',
+  );
+  return safe.length <= NAME_CUT ? safe.join('') : `${safe.slice(0, NAME_CUT).join('')}…`;
 }
 
 /** Whole minutes as a person counts them, never "0 min ago". */
@@ -89,11 +96,17 @@ export function hereSentence(here: readonly RunHere[]): string | undefined {
 
 /**
  * `text` with the sentence for `here` after it, or `text` itself when there is none or when the
- * two together would cross the hook's ceiling: the sentence gives way, the text does not.
+ * two together would cross the host's ceiling, measured in the host's own unit (`ceiling`:
+ * UTF-16 units for Claude Code, UTF-8 bytes for Codex): the sentence gives way, the text does
+ * not.
  */
-export function withWhoIsHere(text: string, here: readonly RunHere[]): string {
+export function withWhoIsHere(
+  text: string,
+  here: readonly RunHere[],
+  ceiling: HookCeiling = CLAUDE_CODE_CEILING,
+): string {
   const sentence = hereSentence(here);
   if (sentence === undefined) return text;
   const whole = `${text}${BESIDE}${sentence}`;
-  return whole.length <= HOOK_TEXT_CEILING ? whole : text;
+  return ceiling.lengthOf(whole) <= ceiling.most ? whole : text;
 }

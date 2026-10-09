@@ -60,8 +60,9 @@ import {
 } from '@mnema/core/write';
 import { anchorsBefore, foundingsSince, treesOf } from '../a-new-identity.js';
 import { asksAPerson, pathsOfAWrite, replyFor } from '../host-hook.js';
-import type { HookHost } from '../host-names.js';
+import { type HookHost, hookTextOf } from '../host-names.js';
 import type { HookSaid } from '../mcp/hook-reply.js';
+import { type HookCeiling, hookCeilingOf } from '../presentation/within-a-hook.js';
 import { ASKS_A_PERSON_CHANNEL, REFUSES_A_WRITE_CHANNEL } from '../record-framing.js';
 import { caches, withScopedCaches } from '../tree-sources.js';
 import {
@@ -125,6 +126,7 @@ export function runBeforeAWrite(
     which: input.host,
     paths,
     asks: asksAPerson(input.host),
+    ceiling: hookCeilingOf(hookTextOf(input.host)),
     reply: (said) => replyFor(input.host, said),
   });
 }
@@ -143,6 +145,8 @@ export function runBeforeAPath(
     readonly which: string;
     readonly paths: readonly string[];
     readonly asks: boolean;
+    /** What the host keeps of a hook's text; Claude Code's where omitted. */
+    readonly ceiling?: HookCeiling;
     readonly reply: (said: HookSaid) => object;
   },
 ): BeforeAWriteDone {
@@ -177,6 +181,7 @@ export function runBeforeAPath(
   const reason = withWhoIsHere(
     [met.reason, ...unrecorded, ...foundingsSince(before)].join('\n\n'),
     others,
+    input.ceiling,
   );
   const said = met.grade === 'refuse' ? { refuse: reason } : { ask: reason };
   return { ok: true, reply: input.reply(said), notes: unrecorded };

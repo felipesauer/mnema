@@ -238,3 +238,55 @@ describe('the edge of an edit, with a second agent in the project', () => {
     expect(outside.text).not.toMatch(SENTENCE);
   });
 });
+
+describe('the sentence under the ceiling of a host that counts bytes', () => {
+  /** The reason the Codex door answers for a write of `path`, and the bytes it is. */
+  function codexReason(path: string): { reason: string; bytes: number } {
+    const payload = JSON.stringify({
+      hook_event_name: 'PreToolUse',
+      tool_name: 'apply_patch',
+      tool_input: {
+        command: `*** Begin Patch\n*** Update File: ${path}\n@@\n-a\n+b\n*** End Patch`,
+      },
+      cwd: repo,
+    });
+    const done = runBeforeAWrite({ cwd: repo, env }, { host: 'codex', payload });
+    const reply = JSON.parse(JSON.stringify(done.reply)) as {
+      hookSpecificOutput?: { permissionDecisionReason?: string };
+    };
+    const reason = reply.hookSpecificOutput?.permissionDecisionReason ?? '';
+    return { reason, bytes: Buffer.byteLength(reason, 'utf8') };
+  }
+
+  async function refusing(path: string, dashes: number): Promise<void> {
+    const id = idIn(await did('decision', 'record', `Frozen ${'—'.repeat(dashes)}`, 'Stop'));
+    await did('decision', 'move', 'accept', id, '--note', 'agreed');
+    await did('link', id, path, '--rel', 'refuses-a-write');
+  }
+
+  it('names the other run where the reason has room, and drops the sentence where bytes would pass the ceiling', async () => {
+    const CEILING = 10_000;
+    await refusing('src/lockA', 2800);
+    const probe = codexReason('src/lockA/x.ts').bytes;
+    expect(probe).toBeGreaterThan(8_000);
+    // The second rule is sized so that its reason sits a few bytes under the ceiling: a sentence
+    // counted in UTF-16 units (a third of the bytes here) would still fit, and in bytes it cannot.
+    await refusing('src/lockB', 2800 + Math.floor((CEILING - 40 - probe) / 3));
+    const alone = codexReason('src/lockB/x.ts');
+    expect(alone.bytes).toBeLessThanOrEqual(CEILING);
+    expect(alone.bytes).toBeGreaterThan(CEILING - 45);
+
+    const codex = await connect('codex');
+    await edge(codex, 'src/lockA/x.ts');
+    await edge(codex, 'src/lockB/x.ts');
+
+    // Room to spare: the sentence rides.
+    expect(codexReason('src/lockA/x.ts').reason).toContain(
+      'Another run (codex) consulted this path less than a minute ago.',
+    );
+    // No room in bytes: the reason is exactly what it was, inside the ceiling.
+    const crowded = codexReason('src/lockB/x.ts');
+    expect(crowded.reason).toBe(alone.reason);
+    expect(crowded.bytes).toBeLessThanOrEqual(CEILING);
+  });
+});
