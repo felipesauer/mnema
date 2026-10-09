@@ -461,8 +461,8 @@ export const NAMES_THAT_NEED_MORE: Readonly<
     why: 'the verb named as why the stacks package is released; its `--help` hands the source and the --expect it needs',
   },
   'packages/stacks/README.md: mnema stack add': {
-    times: 1,
-    why: 'the verb named in the same sentence on the package page, as the caller of the library',
+    times: 2,
+    why: 'the verb named on the package page as the caller of the library, and as the reader of a stack\u2019s signature; its `--help` hands the source and the --expect it needs',
   },
   'packages/code/README.md: mnema skill export': {
     times: 1,
@@ -676,7 +676,8 @@ export const HANDED_OVER: Readonly<
   // line 83 once the bug report became a form, which says `mnema --version` in a field of its own.
   // line 84 once the package page handed over `mnema doctor --fix private-tree`.
   // name 155 with the two pages that name `mnema stack add` as why the stacks package is released.
-  span: { line: 84, name: 155, flag: 3, unwritten: 0 },
+  // name 156 with the package page naming it again as the reader of a stack's signature.
+  span: { line: 84, name: 156, flag: 3, unwritten: 0 },
   // name 18 until the page that says where the key lives named `mnema key protect` in a line of
   // its own.
   // line 35 until the same page showed that question in a block of its own.

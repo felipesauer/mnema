@@ -1,0 +1,55 @@
+{
+  "mediaType": "application/vnd.dev.sigstore.trustedroot+json;version=0.1",
+  "tlogs": [
+    {
+      "baseUrl": "https://rekor.sigstore.dev",
+      "hashAlgorithm": "SHA2_256",
+      "publicKey": {
+        "rawBytes": "MFkwEwYHKoZIzj0CAQYIKoZIzj0DAQcDQgAE1teVgJ65NiyezqIBxR+NK3JcqjxF6JgV0XU71xSyjwSx1MkDw6HfjXySYt6cEMB8zae+di6dz2hsAe6tO6+EHQ==",
+        "keyDetails": "PKIX_ECDSA_P256_SHA_256",
+        "validFor": {
+          "start": "2000-01-01T00:00:00.000Z"
+        }
+      },
+      "logId": {
+        "keyId": "43Jo33vF8iZBTCQ+g8wHhzOl4efAPFn2ILgAL2nt0ko="
+      }
+    }
+  ],
+  "certificateAuthorities": [
+    {
+      "subject": {
+        "organization": "test",
+        "commonName": "test"
+      },
+      "uri": "https://fulcio.sigstore.dev",
+      "certChain": {
+        "certificates": [
+          {
+            "rawBytes": "MIIBpzCCAU6gAwIBAgIBATAKBggqhkjOPQQDAzArMREwDwYDVQQDEwhzaWdzdG9yZTEWMBQGA1UEChMNc2lnc3RvcmUubW9jazAeFw0yNjEwMDkxMjM3MTBaFw0yNzEwMDkxMjM3MTBaMCsxETAPBgNVBAMTCHNpZ3N0b3JlMRYwFAYDVQQKEw1zaWdzdG9yZS5tb2NrMFkwEwYHKoZIzj0CAQYIKoZIzj0DAQcDQgAEsl8zPO/2UwBmBMzXBgLA9BjyzoknVz6QXMvUcVZaCcv+Ytgyk+jp1r1KGDGp/DUpUjznz2kQFvLo3XmlhaVBU6NjMGEwDwYDVR0TAQH/BAUwAwEB/zAOBgNVHQ8BAf8EBAMCAQYwHQYDVR0OBBYEFGqSW4QZJ0mPdcnIuYF1LyExmVK4MB8GA1UdIwQYMBaAFGqSW4QZJ0mPdcnIuYF1LyExmVK4MAoGCCqGSM49BAMDA0cAMEQCIHWdJoCRROOtck5Zm4XZMeqXgXZEqPmg0GLiaCUO9DvxAiAU/sSG8rOK/2lm1GJPXfD0GobOecRhkOyFwtAfRftAig=="
+          }
+        ]
+      },
+      "validFor": {
+        "start": "2000-01-01T00:00:00.000Z"
+      }
+    }
+  ],
+  "ctlogs": [
+    {
+      "baseUrl": "https://ctfe.sigstore.dev/test",
+      "hashAlgorithm": "SHA2_256",
+      "publicKey": {
+        "rawBytes": "MFkwEwYHKoZIzj0CAQYIKoZIzj0DAQcDQgAEXGnYJMQv+9dVV09wsMmMFcJgeOj1gsRT4xQLZ8jrxLwUtrHtA7Anry1FyKwMocZlsZnW79AD182zREPV8sZKTQ==",
+        "keyDetails": "PKIX_ECDSA_P256_SHA_256",
+        "validFor": {
+          "start": "2000-01-01T00:00:00.000Z"
+        }
+      },
+      "logId": {
+        "keyId": "czfG9FMtijg+VXxyfFpsLUwCbgiazICrHLyYo8dUixY="
+      }
+    }
+  ],
+  "timestampAuthorities": []
+}
