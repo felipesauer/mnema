@@ -127,6 +127,8 @@ const ANSWERS_ANYWAY: Readonly<Record<string, string>> = {
     'the same receipts, checked against their files; with none installed there is nothing to depart from',
   tally:
     'a host runs it at every Stop of a session, and outside a project it answers `{}` — the same silence — because that session is not the product’s to speak into',
+  handback:
+    'a host runs it whenever a subagent stops, and outside a project it answers `{}` — the same silence — because that session is not the product’s to speak into',
 };
 
 /**

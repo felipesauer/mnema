@@ -232,6 +232,7 @@ import { registerDecision } from './decision.js';
 import { registerDiagram } from './diagram.js';
 import { registerDoctor } from './doctor.js';
 import { registerExport } from './export.js';
+import { registerHandback } from './handback.js';
 import { registerInherit } from './inherit.js';
 import { registerInit } from './init.js';
 import { registerKey } from './key.js';
@@ -340,7 +341,14 @@ export const GROUPS: readonly Group[] = [
   },
   {
     heading: 'Called by a host:',
-    verbs: [registerMcp, registerRun, registerBeforeAWrite, registerTally, registerCorrections],
+    verbs: [
+      registerMcp,
+      registerRun,
+      registerBeforeAWrite,
+      registerTally,
+      registerCorrections,
+      registerHandback,
+    ],
   },
 ];
 

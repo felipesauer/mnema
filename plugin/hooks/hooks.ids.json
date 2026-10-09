@@ -48,6 +48,12 @@
       "group": 2,
       "index": 0,
       "runs": "hooks/edit-asks-a-person.mjs"
+    },
+    "subagent-stop": {
+      "event": "SubagentStop",
+      "group": 0,
+      "index": 0,
+      "runs": "hooks/subagent-stop.mjs"
     }
   }
 }

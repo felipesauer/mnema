@@ -12,8 +12,11 @@ to it.
 
 <SUBAGENT-STOP>
 If you were dispatched by another agent to do a task, you do not record. Put each decision you
-made in your final reply: what was settled, why, and what was turned down. Whoever dispatched
-you records it. Then skip the rest of this skill.
+made in your final reply: what was settled, why, and what was turned down. End the reply with one
+fenced block whose info string is `mnema-handback`, holding
+`{"decisions":[{"settled":"…","why":"…","turnedDown":"…"}]}`, the list empty if you settled nothing
+(`mnema handback --schema` prints the schema). A hook of this plugin sends a reply without it back
+once. Whoever dispatched you records it. Then skip the rest of this skill.
 </SUBAGENT-STOP>
 
 ## When it applies
