@@ -661,11 +661,13 @@ describe('reading a bundle, offline', () => {
 
 describe('the act, the claim and the reading, over a record', () => {
   let sandbox: string;
+  let sandboxRoot: string;
   beforeEach(() => {
-    sandbox = mkdtempSync(join(tmpdir(), 'mnema-sigstore-'));
+    sandboxRoot = mkdtempSync(join(tmpdir(), 'mnema-sigstore-'));
+    sandbox = sandboxRoot;
   });
   afterEach(() => {
-    rmSync(sandbox, { recursive: true, force: true });
+    rmSync(sandboxRoot, { recursive: true, force: true });
   });
 
   function aProject(): { cwd: string; env: DiscoveryEnv; global: boolean } {
