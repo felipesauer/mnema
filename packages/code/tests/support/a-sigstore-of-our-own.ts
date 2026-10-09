@@ -56,7 +56,7 @@ export async function aSigstoreOfOurOwn(): Promise<TestSigstore> {
     const text =
       typeof answer.response === 'string'
         ? answer.response
-        : Buffer.from(answer.response.buffer).toString('utf-8');
+        : Buffer.from(answer.response.buffer).toString('utf8');
     return { status: answer.statusCode, text: async () => text };
   };
   const validFor = { start: '2000-01-01T00:00:00.000Z' };
