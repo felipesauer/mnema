@@ -218,6 +218,7 @@ describe('the local log and the limits', () => {
       version: CONTEXT.version,
       argv: ['show'],
       verbs: CONTEXT.verbs,
+      aPersonIsHere: true,
     });
   /** A distinct fault: the code is what the fingerprint rests on. */
   const fault = (n: number) => Object.assign(new TypeError('x'), { code: `ERR_FAULT_${n}` });
@@ -277,7 +278,10 @@ describe('the local log and the limits', () => {
     const base = diagnose(fault(1), CONTEXT) as Diagnostic;
     appendDiagnostic(globalDir(), base);
     // a working directory that spells something the report says: the place is withheld
-    const made = runReport({ cwd: env.home, env: { ...env, accountHome: 'linux-x64' } }, {});
+    const made = runReport(
+      { cwd: env.home, env: { ...env, accountHome: 'linux-x64' }, aPersonIsHere: true },
+      {},
+    );
     expect(made.refused).toBe(true);
     expect(made.lines.join(' ')).toContain('place');
     expect(existsSync(join(globalDir(), 'report-draft.md'))).toBe(false);
@@ -292,7 +296,7 @@ describe('the local log and the limits', () => {
     expect(note(fault(2)).offer).toBe(false);
     expect(readDiagnostics(globalDir())).toHaveLength(1);
     for (const ask of [{}, { on: true }, { off: true }, { decline: true }]) {
-      const said = runReport({ cwd: env.home, env }, ask);
+      const said = runReport({ cwd: env.home, env, aPersonIsHere: true }, ask);
       expect(said.refused, JSON.stringify(ask)).toBe(true);
       expect(said.lines.join(' ')).toContain('Delete that file');
     }
@@ -314,6 +318,7 @@ describe('the local log and the limits', () => {
         version: CONTEXT.version,
         argv: [],
         verbs: [],
+        aPersonIsHere: true,
       }),
     ).toEqual({ offer: false });
   });
@@ -344,7 +349,7 @@ describe('the verb, end to end through the program', () => {
     rmSync(dir, { recursive: true, force: true });
   });
 
-  async function run(argv: string[], thrown?: () => unknown) {
+  async function run(argv: string[], thrown?: () => unknown, aPersonIsHere = true) {
     const out: string[] = [];
     const err: string[] = [];
     let exit: number | undefined;
@@ -355,6 +360,7 @@ describe('the verb, end to end through the program', () => {
         fail: (code) => {
           exit = code ?? 1;
         },
+        aPersonIsHere,
       },
       [],
       renderPlain,
@@ -392,6 +398,17 @@ describe('the verb, end to end through the program', () => {
     expect(readState(join(dir, 'data', 'global')).off).toBe(true);
     const two = await run(['report', '--on', '--off']);
     expect(two.exit).toBe(1);
+  });
+
+  it('logs an error nobody was there to read, offers nothing, and keeps the offer for a person', async () => {
+    const bug = () => aFullOfPersonalThings();
+    const unseen = await run(['boom'], bug, false);
+    expect(unseen.exit).toBe(70);
+    expect(unseen.err.some((line) => line.includes('mnema report'))).toBe(false);
+    expect(readDiagnostics(join(dir, 'data', 'global'))).toHaveLength(1);
+    expect(readState(join(dir, 'data', 'global')).offered).toEqual([]);
+    const seen = await run(['boom'], bug, true);
+    expect(seen.err.some((line) => line.includes('mnema report'))).toBe(true);
   });
 
   it('says so when there is nothing on record', async () => {

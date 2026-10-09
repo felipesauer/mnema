@@ -28,18 +28,23 @@ export function registerProblemReport(program: Command, wiring: Wiring): Declare
         'The report is built from a short list of facts — mnema’s version, Node’s, the platform, the name',
         'of the verb, the kind of error, where in mnema it happened — and from nothing else: no record',
         'content, no path, no name, no address, no message. It is refused whole if it would carry any.',
-        'mnema makes no network request: the text is shown and saved to a file, and sending it is yours.',
+        'mnema makes no network request and opens no browser: the text is shown and saved to a file and,',
+        'at a terminal, a link is printed that opens GitHub’s form with the report in it — nothing is',
+        'sent until you press Submit there.',
         'What was logged, what you declined and the switch live in the global tree’s directory, beside',
         'the record and not in it.',
       ].join('\n'),
     )
     .action(async (options: { decline?: boolean; off?: boolean; on?: boolean }) => {
       const { runReport } = await import('../commands/report.js');
-      const outcome = runReport(here(), {
-        decline: options.decline === true,
-        off: options.off === true,
-        on: options.on === true,
-      });
+      const outcome = runReport(
+        { ...here(), aPersonIsHere: io.aPersonIsHere === true },
+        {
+          decline: options.decline === true,
+          off: options.off === true,
+          on: options.on === true,
+        },
+      );
       if (outcome.refused) {
         io.err(render(refusalSentence(outcome.lines.join(' '))));
         io.fail();

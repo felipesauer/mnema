@@ -1,0 +1,25 @@
+name: Internal error
+description: A report of an internal error, as `mnema report` shows it
+title: "[internal] "
+labels: [bug]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        This form is what the link printed by `mnema report` opens. The report below is exactly the
+        text `mnema report` showed you: a handful of facts about mnema and the error, and nothing
+        from your record, your machine or your name. Nothing is sent until you press Submit.
+  - type: textarea
+    id: report
+    attributes:
+      label: Report
+      description: The text `mnema report` showed you. Leave it as it is.
+    validations:
+      required: true
+  - type: textarea
+    id: what-you-were-doing
+    attributes:
+      label: What you were doing
+      description: Optional, and yours to write. What you ran and what you expected. Leave out record content, paths, names and addresses.
+    validations:
+      required: false
