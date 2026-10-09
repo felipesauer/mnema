@@ -165,8 +165,10 @@ export type { TransitionProof } from './projections/proof.js';
 export {
   type AuthorshipFilter,
   type AuthorshipTally,
+  type ChargeAt,
   isKnownEntity,
   listAuthors,
+  listChargesAt,
   listReferences,
   listSubjectRuns,
   matchesAuthorship,

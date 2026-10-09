@@ -95,6 +95,13 @@ export {
   nextActionsForTask,
 } from './context/next-action.js';
 export {
+  A_RUN_IS_HERE_FOR_SECONDS,
+  CLOCKS_MAY_DIFFER_BY_SECONDS,
+  type PresenceQuery,
+  type RunHere,
+  runsHere,
+} from './context/presence.js';
+export {
   type HiddenMatches,
   type PertinentSearch,
   pertinentFirst,
