@@ -36,6 +36,9 @@ import { startTheStandIn, type TheCall, type TheRequest } from './the-stand-in-a
 /** The made-up key Copilot is handed. It names no account and opens nothing. */
 const KEY = 'sk-ant-api03-stand-in-0000000000000000000000000000';
 
+/** The words of the rule's reason, which the host draws above the prompt a person answers. */
+const THE_ASK = 'asks that a person look at';
+
 /** What a person presses, on the prompt a hook's `ask` raises: Enter takes "Yes". */
 export const YES = '\r';
 
@@ -278,15 +281,12 @@ async function aCopilotSession(
       existsSync(screenFile) ? plain(readFileSync(screenFile, 'latin1')) : '';
     // The terminal is the size the case asked for, or nothing read off it is about that size.
     await theDeviceWasTheSizeAskedFor(out, 40, 120);
-    for (let waited = 0; waited < 60_000 && !shown().includes('1. Yes'); waited += 200) {
+    // The wait is for the mnema prompt itself: "1. Yes" also heads the host's own terminal-setup
+    // dialog, which comes first and is not the prompt.
+    for (let waited = 0; waited < 60_000 && !shown().includes(THE_ASK); waited += 200) {
       await wait(200);
     }
-    screen = shown();
-    // The first key after the prompt appears is lost to the terminal's own start-up, so the keys
-    // are pressed twice. A second press after the host has gone on lands on an idle input.
     await wait(4_000);
-    child.stdin.write(spec.person);
-    await wait(3_000);
     child.stdin.write(spec.person);
     await wait(7_000);
     screen = shown();

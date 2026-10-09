@@ -137,6 +137,14 @@ describe('copilot cli opens with the record, refuses the write and asks a person
         person: keys,
       });
       expect(session.screen).toContain('Do you want to allow');
+      // Only an answer closes the prompt: once it is closed the host draws its input line again
+      // below it, and a person who pressed nothing leaves the prompt as the last thing on screen.
+      const afterThePrompt = session.screen.slice(session.screen.lastIndexOf('esc to cancel'));
+      // (The screen is read as latin1, so the heavy right-pointing angle quotation mark U+276F
+      // arrives as its three UTF-8 bytes.)
+      expect(afterThePrompt.includes('\u00e2\u009d\u00af'), 'the prompt was never answered').toBe(
+        true,
+      );
       expect(existsSync(join(session.project, 'src/ledger/entry.ts'))).toBe(written);
       expect(theChannelFactsOf(session.project, session.home)['channel.asked']).toBe(1);
     }, 240_000);
