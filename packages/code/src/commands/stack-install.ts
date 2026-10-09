@@ -117,6 +117,8 @@ export interface StackPlan {
   readonly unserved: { readonly skills: readonly string[]; readonly agents: readonly string[] };
   /** The hooks the stack declares — listed, never written, never on. */
   readonly hooks: readonly StackHook[];
+  /** The SHA-256 of each declared hook's script, by hook name — what the receipt keeps. */
+  readonly hookHashes: Readonly<Record<string, string>>;
   /**
    * The tools each skill's `allowed-tools` asks a host to let it use without asking — not run at
    * installation, but a permission the stack brings, so the plan shows it.
@@ -136,13 +138,14 @@ export interface StackRefused {
 /** A version's characters, the form the record's door admits (`stack-operations.ts`). */
 const VERSION = /^[0-9A-Za-z][0-9A-Za-z.+-]{0,63}$/;
 
-const refuse = (code: string, message: string, lines?: readonly string[]): StackRefused =>
+export const refuse = (code: string, message: string, lines?: readonly string[]): StackRefused =>
   lines === undefined ? { ok: false, code, message } : { ok: false, code, message, lines };
 
-const sha256 = (bytes: Uint8Array): string => createHash('sha256').update(bytes).digest('hex');
+export const sha256 = (bytes: Uint8Array): string =>
+  createHash('sha256').update(bytes).digest('hex');
 
 /** The folders of one kind the host table documents, each with the hosts that read it. */
-function folders(
+export function folders(
   kind: 'skills' | 'agents',
   side: 'project' | 'user',
 ): { readonly folders: ReadonlyMap<string, readonly string[]>; readonly none: readonly string[] } {
@@ -161,7 +164,7 @@ function folders(
 }
 
 /** Where a target's files go, where its receipts are, and which receipts share its folders. */
-interface Where {
+export interface Where {
   readonly base: string;
   readonly side: 'project' | 'user';
   readonly receipts: string;
@@ -170,7 +173,7 @@ interface Where {
   readonly trees?: ResolvedTrees;
 }
 
-function whereOf(ctx: StackContext, target: StackTarget): Where | StackRefused {
+export function whereOf(ctx: StackContext, target: StackTarget): Where | StackRefused {
   if ('to' in target) {
     const base = isAbsolute(target.to) ? target.to : resolve(ctx.cwd, target.to);
     const stat = lstatSync(base, { throwIfNoEntry: false });
@@ -215,12 +218,25 @@ export function targetRefusal(ctx: StackContext, target: StackTarget): StackRefu
 }
 
 /** What a receipt keeps: what was installed, and every file written with its SHA-256. */
-interface Receipt {
+export interface Receipt {
   readonly name: string;
   readonly installedAs: string;
   readonly version: string;
   readonly digest: string;
   readonly files: readonly { readonly path: string; readonly sha256: string }[];
+  /**
+   * The hooks the stack declared, with the SHA-256 of each script: a hook is never written, so
+   * what a person later approves is held to these bytes. Absent in a receipt older than this.
+   */
+  readonly hooks?: readonly ReceiptHook[];
+}
+
+/** One declared hook as a receipt keeps it. */
+export interface ReceiptHook {
+  readonly name: string;
+  readonly event: string;
+  readonly file: string;
+  readonly sha256: string;
 }
 
 /** A SHA-256 in lower-case hex: a receipt's digest and every file's hash. */
@@ -232,7 +248,7 @@ const HEX64 = /^[0-9a-f]{64}$/;
  * of the public tree is committed, so it is read as a claim somebody may have written by hand —
  * one whose `installedAs` is not its own file name would make a removal speak for another stack.
  */
-function readReceipt(
+export function readReceipt(
   path: string,
   name: string,
 ): Receipt | { readonly refused: string } | undefined {
@@ -270,11 +286,35 @@ function readReceipt(
   ) {
     return { refused: 'its "files" is not a list of paths with their SHA-256' };
   }
+  if (r.hooks !== undefined) {
+    const hooks = r.hooks;
+    if (
+      !Array.isArray(hooks) ||
+      !hooks.every((h: unknown) => {
+        const hook = h as Partial<Record<keyof ReceiptHook, unknown>> | null;
+        return (
+          typeof hook === 'object' &&
+          hook !== null &&
+          typeof hook.name === 'string' &&
+          // The name is typed back to approve the hook and printed in the question: it is one line.
+          oneLine(hook.name) === hook.name &&
+          typeof hook.event === 'string' &&
+          typeof hook.file === 'string' &&
+          hook.file.startsWith('hooks/') &&
+          refusePath(hook.file) === undefined &&
+          typeof hook.sha256 === 'string' &&
+          HEX64.test(hook.sha256)
+        );
+      })
+    ) {
+      return { refused: 'its "hooks" is not a list of declared hooks with their SHA-256' };
+    }
+  }
   return value as Receipt;
 }
 
 /** Every receipt in the given folders that is the receipt its file name says, by that name. */
-function receiptsIn(dirs: readonly string[]): Map<string, Receipt> {
+export function receiptsIn(dirs: readonly string[]): Map<string, Receipt> {
   const all = new Map<string, Receipt>();
   for (const dir of dirs) {
     let names: string[] = [];
@@ -292,7 +332,7 @@ function receiptsIn(dirs: readonly string[]): Map<string, Receipt> {
   return all;
 }
 
-const short = (digest: string): string => digest.slice(0, 12);
+export const short = (digest: string): string => digest.slice(0, 12);
 const called = (r: { name: string; installedAs: string; version: string; digest: string }) =>
   `${r.installedAs === r.name ? r.name : `${r.installedAs} (${r.name})`}@${r.version} (${short(r.digest)})`;
 
@@ -300,7 +340,7 @@ const called = (r: { name: string; installedAs: string; version: string; digest:
  * What stands in the way of writing `path` under `base`: a link or a file on the way to it, or
  * anything at all where it goes. `undefined` when the way is clear.
  */
-function inTheWay(base: string, path: string, owner: (p: string) => string | undefined) {
+export function inTheWay(base: string, path: string, owner: (p: string) => string | undefined) {
   const parts = path.split('/');
   for (let i = 1; i <= parts.length; i += 1) {
     const here = parts.slice(0, i).join('/');
@@ -469,6 +509,12 @@ export async function planStackInstall(
     files,
     unserved: { skills: skills.none, agents: agents.none },
     hooks: manifest.hooks ?? [],
+    hookHashes: Object.fromEntries(
+      (manifest.hooks ?? []).flatMap((h) => {
+        const script = read.files.find((f) => f.path === h.file);
+        return script === undefined ? [] : [[h.name, sha256(script.bytes)] as [string, string]];
+      }),
+    ),
     tools: read.files.flatMap((f) => {
       const skill = /^skills\/([^/]+)\/SKILL\.md$/.exec(f.path)?.[1];
       if (skill === undefined) return [];
@@ -637,7 +683,7 @@ export interface StackInstalled {
 }
 
 /** Creates the folders on the way to `path` under `base`, one at a time, never through a link. */
-function makeTheWay(base: string, path: string, made: string[]): void {
+export function makeTheWay(base: string, path: string, made: string[]): void {
   const parts = path.split('/').slice(0, -1);
   for (let i = 1; i <= parts.length; i += 1) {
     const here = join(base, ...parts.slice(0, i));
@@ -655,7 +701,7 @@ function makeTheWay(base: string, path: string, made: string[]): void {
 }
 
 /** Writes new bytes at `path` under `base`: never over anything, never through a link, never executable. */
-function writeNew(base: string, path: string, bytes: Uint8Array, made: string[]): void {
+export function writeNew(base: string, path: string, bytes: Uint8Array, made: string[]): void {
   makeTheWay(base, path, made);
   const at = join(base, path);
   const fd = openSync(
@@ -696,6 +742,16 @@ function writePlan(plan: StackPlan, where: Where): void {
       version: plan.version,
       digest: plan.digest,
       files: plan.files.map((f) => ({ path: f.path, sha256: sha256(f.bytes) })),
+      ...(plan.hooks.length === 0
+        ? {}
+        : {
+            hooks: plan.hooks.map((h) => ({
+              name: h.name,
+              event: h.event,
+              file: h.file,
+              sha256: plan.hookHashes[h.name] ?? '',
+            })),
+          }),
     };
     mkdirSync(where.receipts, { recursive: true });
     writeNew(
@@ -787,7 +843,7 @@ export interface StackRemoval {
 }
 
 /** The adoption standing under `name` in the tree at `root`: the last, unless removed since. */
-function standingAdoption(root: string, name: string): { digest: string } | undefined {
+export function standingAdoption(root: string, name: string): { digest: string } | undefined {
   let standing: { digest: string } | undefined;
   for (const event of orderedEvents({ root }, catalogUpcasters())) {
     if (event.subject !== name) continue;
@@ -798,8 +854,27 @@ function standingAdoption(root: string, name: string): { digest: string } | unde
 }
 
 /** Every folder a target may hold a stack's files in — what a receipt's path has to sit under. */
-function placeFolders(side: 'project' | 'user'): string[] {
+export function placeFolders(side: 'project' | 'user'): string[] {
   return [...folders('skills', side).folders.keys(), ...folders('agents', side).folders.keys()];
+}
+
+/**
+ * The paths of a receipt that are not under a folder a host reads, that climb out, or that reach
+ * through a link. A receipt is a claim somebody may have edited, so nothing is opened or deleted
+ * on a path it names until this is empty.
+ */
+export function badReceiptPaths(where: Where, receipt: Receipt): string[] {
+  const allowed = placeFolders(where.side);
+  return receipt.files
+    .map((f) => f.path)
+    .filter(
+      (p) =>
+        typeof p !== 'string' ||
+        refusePath(p) !== undefined ||
+        !allowed.some((folder) => p.startsWith(`${folder}/`)) ||
+        inTheWay(where.base, p, () => undefined)?.includes('symbolic link') === true,
+    )
+    .map(String);
 }
 
 /**
@@ -832,21 +907,13 @@ export function removeInstalledStack(
   }
   const receipt = read;
   const allowed = placeFolders(where.side);
-  const bad = receipt.files
-    .map((f) => f.path)
-    .filter(
-      (p) =>
-        typeof p !== 'string' ||
-        refusePath(p) !== undefined ||
-        !allowed.some((folder) => p.startsWith(`${folder}/`)) ||
-        inTheWay(where.base, p, () => undefined)?.includes('symbolic link') === true,
-    );
+  const bad = badReceiptPaths(where, receipt);
   if (bad.length > 0) {
     return refuse(
       'STACK_RECEIPT_REFUSED',
       `the receipt of ${input.name} names files outside the folders a host reads, or through a link; ` +
         'nothing is deleted on its word. Nothing was removed.',
-      bad.map(String),
+      bad,
     );
   }
   const removed: string[] = [];

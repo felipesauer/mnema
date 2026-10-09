@@ -473,14 +473,30 @@ $ mnema stack --help
 | install a stack of skills and agents into the folders each host reads
 |
 | Options:
-|   -h, --help               display help for command
+|   -h, --help                        display help for command
 |
 | Commands:
-|   add [options] <source>   show the plan of a stack, and write it when --expect
-|                            names its digest
-|   remove [options] <name>  remove an installed stack, keeping every file changed
-|                            since it was written
-|   help [command]           display help for command
+|   add [options] <source>            show the plan of a stack, and write it when
+|                                     --expect names its digest
+|   remove [options] <name>           remove an installed stack, keeping every
+|                                     file changed since it was written
+|   list [options]                    list the installed stacks, and whether each
+|                                     is still as written
+|   show [options] <name>             show one installed stack: its files, its
+|                                     hooks, and the record
+|   diff [options] <name>             compare the installed files with their
+|                                     receipt, and the receipt with the record
+|   check [options] [name]            check every installed stack, or one, against
+|                                     its receipt and the record; fails if any
+|                                     departs
+|   export [options] <name> <folder>  copy an installed stack's skills and agents
+|                                     into a new folder, in a stack's layout
+|   enable [options] <stack> <hook>   turn on a hook an installed stack declares:
+|                                     shows its script and asks its name, at a
+|                                     terminal
+|   disable [options] <stack> <hook>  turn a hook off again: takes back the
+|                                     approval and the script kept with it
+|   help [command]                    display help for command
 
 ### mnema task --help
 $ mnema task --help
@@ -1704,6 +1720,123 @@ $ mnema stack remove --help
 |                    the home.
 |   --to <folder>    the folder it was written into with --to
 |   --dry-run        say what would be removed and remove nothing
+|   -h, --help       display help for command
+
+### mnema stack list --help
+$ mnema stack list --help
+| Usage: mnema stack list [options]
+|
+| list the installed stacks, and whether each is still as written
+|
+| Options:
+|   --scope <scope>  look in this tree only: public (team-visible), private (this
+|                    machine, this project), or global (personal, cross-project).
+|                    Without it, in all three.
+|   --to <folder>    look in the folder it was written into with --to
+|   -h, --help       display help for command
+
+### mnema stack show --help
+$ mnema stack show --help
+| Usage: mnema stack show [options] <name>
+|
+| show one installed stack: its files, its hooks, and the record
+|
+| Arguments:
+|   name             the name the stack is installed under
+|
+| Options:
+|   --scope <scope>  look in this tree only: public (team-visible), private (this
+|                    machine, this project), or global (personal, cross-project).
+|                    Without it, in all three.
+|   --to <folder>    look in the folder it was written into with --to
+|   -h, --help       display help for command
+
+### mnema stack diff --help
+$ mnema stack diff --help
+| Usage: mnema stack diff [options] <name>
+|
+| compare the installed files with their receipt, and the receipt with the record
+|
+| Arguments:
+|   name             the name the stack is installed under
+|
+| Options:
+|   --scope <scope>  look in this tree only: public (team-visible), private (this
+|                    machine, this project), or global (personal, cross-project).
+|                    Without it, in all three.
+|   --to <folder>    look in the folder it was written into with --to
+|   -h, --help       display help for command
+
+### mnema stack check --help
+$ mnema stack check --help
+| Usage: mnema stack check [options] [name]
+|
+| check every installed stack, or one, against its receipt and the record; fails
+| if any departs
+|
+| Arguments:
+|   name             one stack, by the name it is installed under
+|
+| Options:
+|   --scope <scope>  look in this tree only: public (team-visible), private (this
+|                    machine, this project), or global (personal, cross-project).
+|                    Without it, in all three.
+|   --to <folder>    look in the folder it was written into with --to
+|   -h, --help       display help for command
+
+### mnema stack export --help
+$ mnema stack export --help
+| Usage: mnema stack export [options] <name> <folder>
+|
+| copy an installed stack's skills and agents into a new folder, in a stack's
+| layout
+|
+| Arguments:
+|   name             the name the stack is installed under
+|   folder           a folder that does not exist yet, or is empty
+|
+| Options:
+|   --scope <scope>  look in this tree only: public (team-visible), private (this
+|                    machine, this project), or global (personal, cross-project).
+|                    Without it, in all three.
+|   --to <folder>    look in the folder it was written into with --to
+|   -h, --help       display help for command
+
+### mnema stack enable --help
+$ mnema stack enable --help
+| Usage: mnema stack enable [options] <stack> <hook>
+|
+| turn on a hook an installed stack declares: shows its script and asks its name,
+| at a terminal
+|
+| Arguments:
+|   stack            the name the stack is installed under
+|   hook             the name of a hook the stack declares
+|
+| Options:
+|   --from <source>  the stack as it was installed: a folder, a tar archive, or an
+|                    https:// git address
+|   --scope <scope>  look in this tree only: public (team-visible), private (this
+|                    machine, this project), or global (personal, cross-project).
+|                    Without it, in all three.
+|   --to <folder>    look in the folder it was written into with --to
+|   -h, --help       display help for command
+
+### mnema stack disable --help
+$ mnema stack disable --help
+| Usage: mnema stack disable [options] <stack> <hook>
+|
+| turn a hook off again: takes back the approval and the script kept with it
+|
+| Arguments:
+|   stack            the name the stack is installed under
+|   hook             the name of a hook the stack declares
+|
+| Options:
+|   --scope <scope>  look in this tree only: public (team-visible), private (this
+|                    machine, this project), or global (personal, cross-project).
+|                    Without it, in all three.
+|   --to <folder>    look in the folder it was written into with --to
 |   -h, --help       display help for command
 
 ### mnema task create --help

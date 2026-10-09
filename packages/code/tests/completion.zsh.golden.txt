@@ -15,7 +15,7 @@ _mnema_commands() {
     '') echo 'init decision link unlink memory observe retract skill stack task promote status brief recall rules rules-file switch inherit verify witness check site search show timeline refs audit diagram export usage resume repl why commits aging trailer commit-hook key tail doctor report completion mcp run before-a-write tally corrections handback help' ;;
     'decision') echo 'record move supersede import help' ;;
     'skill') echo 'create move export provenance help' ;;
-    'stack') echo 'add remove help' ;;
+    'stack') echo 'add remove list show diff check export enable disable help' ;;
     'task') echo 'create move handoff next guard help' ;;
     'switch') echo 'off on' ;;
     'inherit') echo 'set update help' ;;
@@ -96,6 +96,13 @@ _mnema_described() {
     'stack') printf '%s\n' \
       'add:show the plan of a stack, and write it when --expect names its digest' \
       'remove:remove an installed stack, keeping every file changed since it was written' \
+      'list:list the installed stacks, and whether each is still as written' \
+      'show:show one installed stack: its files, its hooks, and the record' \
+      'diff:compare the installed files with their receipt, and the receipt with the record' \
+      'check:check every installed stack, or one, against its receipt and the record; fails if any departs' \
+      'export:copy an installed stack'\''s skills and agents into a new folder, in a stack'\''s layout' \
+      'enable:turn on a hook an installed stack declares: shows its script and asks its name, at a terminal' \
+      'disable:turn a hook off again: takes back the approval and the script kept with it' \
       'help:display help for command' ;;
     'task') printf '%s\n' \
       'create:create a task in the current project' \
@@ -172,6 +179,13 @@ _mnema_flags() {
     'stack') echo '-h --help -V --version --color' ;;
     'stack add') echo '--scope --to --as --expect --dry-run -h --help -V --version --color' ;;
     'stack remove') echo '--scope --to --dry-run -h --help -V --version --color' ;;
+    'stack list') echo '--scope --to -h --help -V --version --color' ;;
+    'stack show') echo '--scope --to -h --help -V --version --color' ;;
+    'stack diff') echo '--scope --to -h --help -V --version --color' ;;
+    'stack check') echo '--scope --to -h --help -V --version --color' ;;
+    'stack export') echo '--scope --to -h --help -V --version --color' ;;
+    'stack enable') echo '--from --scope --to -h --help -V --version --color' ;;
+    'stack disable') echo '--scope --to -h --help -V --version --color' ;;
     'task') echo '--scope --which -h --help -V --version --color' ;;
     'task create') echo '--scope --which -h --help -V --version --color' ;;
     'task move') echo '--reason --note --feedback -h --help --which -V --version --color' ;;
@@ -281,6 +295,20 @@ _mnema_values() {
     'stack add:--color') echo 'auto always never' ;;
     'stack remove:--scope') echo 'public private global' ;;
     'stack remove:--color') echo 'auto always never' ;;
+    'stack list:--scope') echo 'public private global' ;;
+    'stack list:--color') echo 'auto always never' ;;
+    'stack show:--scope') echo 'public private global' ;;
+    'stack show:--color') echo 'auto always never' ;;
+    'stack diff:--scope') echo 'public private global' ;;
+    'stack diff:--color') echo 'auto always never' ;;
+    'stack check:--scope') echo 'public private global' ;;
+    'stack check:--color') echo 'auto always never' ;;
+    'stack export:--scope') echo 'public private global' ;;
+    'stack export:--color') echo 'auto always never' ;;
+    'stack enable:--scope') echo 'public private global' ;;
+    'stack enable:--color') echo 'auto always never' ;;
+    'stack disable:--scope') echo 'public private global' ;;
+    'stack disable:--color') echo 'auto always never' ;;
     'task:--scope') echo 'public private global' ;;
     'task:--color') echo 'auto always never' ;;
     'task create:--scope') echo 'public private global' ;;
