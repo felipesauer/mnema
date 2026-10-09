@@ -220,3 +220,33 @@ describe('a receipt that cannot be believed', () => {
     expect((await mnema(['stack', 'check'])).out).toContain('no receipt is here');
   });
 });
+
+describe('installing and removing, in process', () => {
+  it('writes nothing without the digest, and refuses two places or a source that is not there', async () => {
+    const unconfirmed = await mnema(['stack', 'add', HELLO, '--to', join(sandbox, 'elsewhere')]);
+    expect(unconfirmed.failed).toBe(true);
+    expect(unconfirmed.err).toContain('STACK_UNCONFIRMED');
+    expect(existsSync(join(sandbox, 'elsewhere'))).toBe(false);
+    const two = await mnema(['stack', 'add', HELLO, '--scope', 'public', '--to', project]);
+    expect(two.err).toContain('--scope and --to name two places');
+    const nowhere = await mnema(['stack', 'add', join(sandbox, 'nowhere')]);
+    expect(nowhere.failed).toBe(true);
+    const wrong = await mnema(['stack', 'add', hooked, '--expect', 'a'.repeat(64)]);
+    expect(wrong.failed).toBe(true);
+  });
+
+  it('removes a stack, keeps the file changed since, and says so on a dry run first', async () => {
+    writeFileSync(join(project, '.claude/agents/greeter.md'), 'mine\n');
+    const dry = await mnema(['stack', 'remove', 'hello-stack', '--dry-run']);
+    expect(dry.out).toContain('Would remove hello-stack 1.0.0');
+    expect(dry.out).toContain('kept, changed since it was written: .claude/agents/greeter.md');
+    expect(dry.out).toContain('Dry run: nothing was removed.');
+    expect(existsSync(join(project, '.mnema/stacks/hello-stack.json'))).toBe(true);
+    const done = await mnema(['stack', 'remove', 'hello-stack']);
+    expect(done.failed, done.err).toBe(false);
+    expect(done.out).toContain('The removal is recorded.');
+    expect(readFileSync(join(project, '.claude/agents/greeter.md'), 'utf8')).toBe('mine\n');
+    const gone = await mnema(['stack', 'remove', 'hello-stack']);
+    expect(gone.failed).toBe(true);
+  });
+});
