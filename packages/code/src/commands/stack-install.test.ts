@@ -132,6 +132,7 @@ describe('a stack is installed into the folders the host table names', () => {
       skills: ['Goose', "Continue's command line (`cn`)", "Warp's agent"],
       agents: [
         'Codex',
+        'GitHub Copilot CLI',
         'Factory Droid',
         'Qwen Code',
         'Goose',

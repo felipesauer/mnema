@@ -400,7 +400,10 @@ describe('the verb a command host runs', () => {
 
   it('reads the paths of Copilot CLI’s writes: `Write` and `Edit` under `path`, and a patch it hands whole', () => {
     expect(
-      pathsOfAWrite('copilot', { tool_name: 'Write', tool_input: { path: '/w/a.ts', file_text: '' } }),
+      pathsOfAWrite('copilot', {
+        tool_name: 'Write',
+        tool_input: { path: '/w/a.ts', file_text: '' },
+      }),
     ).toEqual(['/w/a.ts']);
     expect(
       pathsOfAWrite('copilot', {

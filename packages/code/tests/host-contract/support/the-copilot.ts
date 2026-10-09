@@ -28,6 +28,7 @@ import { join } from 'node:path';
 import { afterEach } from 'vitest';
 import { decodedWhole } from '../../support/arriving.js';
 import { GIT_WITHOUT_MAINTENANCE } from '../../support/git-without-maintenance.js';
+import { sizedTo, theDeviceWasTheSizeAskedFor } from '../../support/pty.js';
 import { aSandbox, REPO, type TheProjectToWrite, type TheSandbox } from './a-sandbox.js';
 import { destinationsIn, isLoopback, refuseUnlessLoopbackOnly } from './the-host.js';
 import { startTheStandIn, type TheCall, type TheRequest } from './the-stand-in-api.js';
@@ -93,7 +94,9 @@ function theCopilotUnderTest(): { readonly binary: string; readonly version: str
 
 /** The text of every block of a request's user messages, one string per block. */
 export function theUserBlocksOf(request: TheRequest): string[] {
-  const messages = Array.isArray(request.body['messages']) ? (request.body['messages'] as unknown[]) : [];
+  const messages = Array.isArray(request.body['messages'])
+    ? (request.body['messages'] as unknown[])
+    : [];
   return messages.flatMap((message) => {
     const one = message as { role?: unknown; content?: unknown } | null;
     if (one?.role !== 'user') return [];
@@ -252,7 +255,7 @@ async function aCopilotSession(
     const quoted = (word: string): string => `'${word.replaceAll("'", "'\\''")}'`;
     writeFileSync(
       runner,
-      `#!/bin/sh\ncd ${quoted(box.project)}\nstty rows 40 cols 120\nexec ${[...traced, '-i', 'Write the file.', '--no-color'].map(quoted).join(' ')}\n`,
+      `#!/bin/sh\ncd ${quoted(box.project)}\n${sizedTo(40, 120, out).join('\n')}\nexec ${[...traced, '-i', 'Write the file.', '--no-color'].map(quoted).join(' ')}\n`,
       { mode: 0o755 },
     );
     const child = spawn('script', ['-qefc', runner, screenFile], {
@@ -271,7 +274,10 @@ async function aCopilotSession(
     };
     const killer = setTimeout(killAll, 100_000);
     const closed = new Promise<void>((resolve) => child.on('close', () => resolve()));
-    const shown = (): string => (existsSync(screenFile) ? plain(readFileSync(screenFile, 'latin1')) : '');
+    const shown = (): string =>
+      existsSync(screenFile) ? plain(readFileSync(screenFile, 'latin1')) : '';
+    // The terminal is the size the case asked for, or nothing read off it is about that size.
+    await theDeviceWasTheSizeAskedFor(out, 40, 120);
     for (let waited = 0; waited < 60_000 && !shown().includes('1. Yes'); waited += 200) {
       await wait(200);
     }
@@ -302,12 +308,16 @@ async function aCopilotSession(
     throw new Error(`the host reached beyond loopback: ${JSON.stringify(outward)}`);
   }
   if (destinations.length === 0) {
-    throw new Error('strace saw the host connect nowhere, so it read nothing: the instrument is blind');
+    throw new Error(
+      'strace saw the host connect nowhere, so it read nothing: the instrument is blind',
+    );
   }
   // The run measured the binary it was started for: Copilot names its version in every request.
   const messages = standIn.requests.filter((request) => request.url.includes('/v1/messages'));
   for (const request of messages) {
-    if (!JSON.stringify(request.body['system'] ?? '').includes(`Version number: ${copilot.version}`)) {
+    if (
+      !JSON.stringify(request.body['system'] ?? '').includes(`Version number: ${copilot.version}`)
+    ) {
       throw new Error(`a request does not name the version ${copilot.version}`);
     }
   }
@@ -344,7 +354,13 @@ export function patching(relative: string) {
   return (): TheCall => ({
     tool: 'apply_patch',
     input: {
-      input: ['*** Begin Patch', `*** Add File: ${relative}`, '+export const probe = 1;', '*** End Patch', ''].join('\n'),
+      input: [
+        '*** Begin Patch',
+        `*** Add File: ${relative}`,
+        '+export const probe = 1;',
+        '*** End Patch',
+        '',
+      ].join('\n'),
     },
   });
 }

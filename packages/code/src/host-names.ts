@@ -126,8 +126,7 @@ const HELD = {
   vscodeGate:
     'packages/code/tests/host-contract/an-editor-holds-or-refuses-the-write.vscode.test.ts',
   codexContract: 'packages/code/tests/host-contract/codex-opens-and-refuses.codex.test.ts',
-  copilotContract:
-    'packages/code/tests/host-contract/copilot-opens-and-refuses.copilot.test.ts',
+  copilotContract: 'packages/code/tests/host-contract/copilot-opens-and-refuses.copilot.test.ts',
 } as const;
 
 /** The Codex source every cell of Codex's row that is read rather than run was read at. */

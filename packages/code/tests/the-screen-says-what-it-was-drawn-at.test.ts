@@ -519,7 +519,13 @@ describe('everything that gives a session a terminal of a chosen size checks tha
       .filter((file) => readFileSync(file, 'utf-8').includes(DRIVES_A_TERMINAL))
       .map((file) => file.slice(TESTS.length))
       .sort();
-    expect(driving).toEqual(['support/pty.ts', 'the-console-on-ink.test.ts'].sort());
+    expect(driving).toEqual(
+      [
+        'host-contract/support/the-copilot.ts',
+        'support/pty.ts',
+        'the-console-on-ink.test.ts',
+      ].sort(),
+    );
     // AND EVERY ONE OF THEM ASKS THE DEVICE WHAT IT BECAME, through the one function that
     // knows how — a driver that wrote its own `stty rows` line and never read it back is
     // the state all four were in, and the state a fourth would arrive in.
