@@ -961,6 +961,7 @@ const CLAUSES_PER_FILE: Readonly<Record<string, number>> = {
   'packages/code/tests/a-sent-command-is-a-band-and-an-answer-has-a-head.test.ts': 18,
   'packages/code/tests/a-session-says-what-it-wrote.test.ts': 13,
   'packages/code/tests/a-stack-goes-where-nothing-is.test.ts': 7,
+  'packages/code/tests/a-stack-is-handled-through-the-program.test.ts': 6,
   'packages/code/tests/a-stack-is-looked-at-against-its-receipt.test.ts': 7,
   'packages/code/tests/a-state-is-a-position.test.ts': 8,
   'packages/code/tests/a-sticky-pattern-answers-differently-each-call.test.ts': 3,
