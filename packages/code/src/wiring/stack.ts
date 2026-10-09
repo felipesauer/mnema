@@ -1,9 +1,9 @@
 /**
  * The `mnema stack` wiring: installing a stack and removing one.
  *
- * `stack add <source>` shows the plan whole — the stack, its digest, its source, every file and
- * the hosts that read it, the hosts that receive nothing, and the hooks it declares, apart and
- * off — and writes it only when `--expect` names the digest the plan showed, so what is written
+ * `stack add <source>` shows the plan whole — the stack, its digest and who signed it, its
+ * source, every file and the hosts that read it, the hosts that receive nothing, and the hooks it
+ * declares, apart and off — and writes it only when `--expect` names the digest the plan showed, so what is written
  * is what was read even when the source is fetched again. `--dry-run` shows the plan and stops.
  * `stack remove <name>` deletes what is still as it was written and names what is not.
  *
@@ -81,6 +81,17 @@ export function registerStack(program: Command, wiring: Wiring): Declared {
     .option('--as <name>', 'install it under this name, when its own is taken')
     .option('--expect <digest>', 'write it, if its digest is this one — the one the plan showed')
     .option('--dry-run', 'show the plan and write nothing')
+    .addHelpText(
+      'after',
+      [
+        '',
+        'A stack may carry stack.sigstore.json, a Sigstore signature over its digest, checked',
+        'offline against the root this binary carries. The plan names who signed, beside the',
+        'digest. A signature proves WHO signed these bytes, not that they are SAFE to run: read',
+        'the plan either way. A stack with no signature installs on its digest alone, and the plan',
+        'says so; a signature that does not hold is refused. --expect is still the confirmation.',
+      ].join('\n'),
+    )
     .action(
       async (
         source: string,
@@ -103,7 +114,7 @@ export function registerStack(program: Command, wiring: Wiring): Declared {
           reportRefusal(wiring, { reason: 'REFUSED', code: read.code, message: read.message });
           return;
         }
-        const plan = planStackInstall(ctx, read, {
+        const plan = await planStackInstall(ctx, read, {
           target,
           ...(opts.as !== undefined ? { as: opts.as } : {}),
         });

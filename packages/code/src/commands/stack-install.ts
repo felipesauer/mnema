@@ -68,6 +68,7 @@ import {
 } from '@mnema/stacks';
 import { HOST_NAMES, HOSTS, type Place } from '../host-names.js';
 import { oneLine } from '../one-line.js';
+import { readStackSignature, type StackSignature } from './stack-signature.js';
 import type { SourceRead } from './stack-source.js';
 
 /** The three trees a stack is adopted into. */
@@ -102,6 +103,8 @@ export interface StackPlan {
   readonly installedAs: string;
   readonly version: string;
   readonly digest: string;
+  /** What `stack.sigstore.json` says: who signed these bytes, or that nobody did. */
+  readonly signature: Exclude<StackSignature, { kind: 'refused' }>;
   readonly description: string;
   readonly license: string;
   readonly author: string;
@@ -345,17 +348,30 @@ const excludeLine = (file: PlannedFile): string =>
  * (with `--as` offered), a destination that is anything at all, a file git would place on the
  * wrong side of a commit.
  */
-export function planStackInstall(
+export async function planStackInstall(
   ctx: StackContext,
   read: SourceRead,
-  input: { readonly target: StackTarget; readonly as?: string },
-): StackPlan | StackRefused {
+  input: {
+    readonly target: StackTarget;
+    readonly as?: string;
+    /** The Sigstore trust root a signature is read against; the public one this binary carries by default. */
+    readonly trustedRoot?: unknown;
+  },
+): Promise<StackPlan | StackRefused> {
   const report = validateStackFiles(read.files, read.problems);
   if (!report.ok || report.manifest === undefined || report.digest === undefined) {
     return refuse(
       'STACK_INVALID',
       'the stack does not keep to the contract. Nothing was written.',
       report.problems.map((p) => p.message),
+    );
+  }
+  const signature = await readStackSignature(read.files, input.trustedRoot);
+  if (signature.kind === 'refused') {
+    return refuse(
+      'STACK_SIGNATURE_REFUSED',
+      `stack.sigstore.json does not hold: ${signature.why}. A stack whose signature does not hold ` +
+        'is not installed on the digest alone. Nothing was written.',
     );
   }
   const manifest = report.manifest;
@@ -440,6 +456,7 @@ export function planStackInstall(
     installedAs,
     version: manifest.version,
     digest: report.digest,
+    signature,
     description: manifest.description,
     license: manifest.license,
     author:
@@ -489,6 +506,7 @@ export function planLines(plan: StackPlan): string[] {
   const lines = [
     `Stack ${named} ${plan.version}: ${one(plan.description)}`,
     `  digest   ${plan.digest}`,
+    ...signedLines(plan.signature),
     `  source   ${one(plan.source)}`,
     `  license  ${one(plan.license)}`,
     `  author   ${one(plan.author)} (as the stack says; nothing proves it)`,
@@ -519,6 +537,26 @@ export function planLines(plan: StackPlan): string[] {
     );
   }
   return lines;
+}
+
+/**
+ * Who signed, beside the digest. What a signature proves is said where it is shown: WHO signed
+ * these bytes, never that they are safe.
+ */
+function signedLines(signature: StackPlan['signature']): string[] {
+  const more = (text: string): string => `           ${text}`;
+  if (signature.kind === 'unsigned') {
+    return [
+      '  signed   no: there is no stack.sigstore.json, so only the digest vouches for these files —',
+      more('that they are exactly these, not who wrote them'),
+    ];
+  }
+  return [
+    `  signed   by ${oneLine(signature.identity)}`,
+    more(`issuer ${oneLine(signature.issuer)}`),
+    more(`logged in Rekor at ${oneLine(signature.loggedAt)}, index ${oneLine(signature.logIndex)}`),
+    more('a signature proves who signed these bytes, not that they are safe to run'),
+  ];
 }
 
 /**

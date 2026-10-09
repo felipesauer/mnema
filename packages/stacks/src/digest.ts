@@ -77,6 +77,25 @@ const compareBytes = (a: string, b: string): number =>
  * number with `find`, `sort` and `sha256sum`, and a case holds the two to the same golden.
  */
 export function stackDigest(files: readonly StackFile[]): DigestResult {
+  const listed = listingOf(files);
+  if ('refusals' in listed) return { digest: undefined, refusals: listed.refusals };
+  return { digest: sha256(listed.listing), refusals: [] };
+}
+
+/**
+ * The bytes the digest is the SHA-256 of — one `path NUL sha256(file) LF` per file — or
+ * `undefined` when a path is refused. It is the message an author's `stack.sigstore.json` signs,
+ * so the digest a Sigstore bundle names is the stack's digest itself; `digest.sh <dir> --listing`
+ * prints the same bytes.
+ */
+export function stackListing(files: readonly StackFile[]): Uint8Array | undefined {
+  const listed = listingOf(files);
+  return 'listing' in listed ? listed.listing : undefined;
+}
+
+function listingOf(
+  files: readonly StackFile[],
+): { readonly listing: Uint8Array } | { readonly refusals: readonly PathRefusal[] } {
   const counted = files.filter((f) => !isOutsideTheDigest(f.path));
   const refusals: PathRefusal[] = [];
   const seen = new Set<string>();
@@ -92,7 +111,7 @@ export function stackDigest(files: readonly StackFile[]): DigestResult {
     }
     seen.add(file.path);
   }
-  if (refusals.length > 0) return { digest: undefined, refusals };
+  if (refusals.length > 0) return { refusals };
   const lines = [...counted]
     .sort((a, b) => compareBytes(a.path, b.path))
     .map((f) =>
@@ -102,5 +121,5 @@ export function stackDigest(files: readonly StackFile[]): DigestResult {
         Buffer.from(`${sha256(f.bytes)}\n`),
       ]),
     );
-  return { digest: sha256(Buffer.concat(lines)), refusals };
+  return { listing: Buffer.concat(lines) };
 }
