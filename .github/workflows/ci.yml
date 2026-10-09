@@ -170,6 +170,10 @@ jobs:
     runs-on: ubuntu-24.04
     env:
       PYTHON3_IS_THE_FLOOR: '1'
+      # The cases start the reader, and a reader that runs writes `__pycache__` beside its modules;
+      # the case that packs the tarballs runs after them, in the same tree, and found seventeen
+      # `.pyc` in `@mnema/chain`. The guard is right; the job must not leave the cache behind.
+      PYTHONDONTWRITEBYTECODE: '1'
     steps:
       - uses: actions/checkout@v7
 
