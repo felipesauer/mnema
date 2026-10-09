@@ -31,6 +31,14 @@
  * second place deciding what a session is told, and it would have to parse markdown to find
  * where a rule ends. The composition knows where every item ends, so the cut is made where the
  * lines are built, and the declaration of it is made in the same place.
+ *
+ * ANOTHER HOST, ANOTHER UNIT. Codex measures a hook's text in tokens of four UTF-8 bytes,
+ * 2,500 of them, and over that saves it to a file and hands over a preview with its MIDDLE cut —
+ * so a text this module cut at 10,000 code units, which runs to more bytes than units wherever
+ * a line carries `·` or `—`, arrived cut in the middle of a rule. The host table says the
+ * ceiling of a host that has one of its own (`hookText`), and {@link hookCeilingOf} is the one
+ * place it becomes a unit and a number; the verb is told the host by the command the plugin
+ * generates for it (`--host`), never by guessing.
  */
 
 /**
@@ -59,8 +67,72 @@ const BETWEEN_THE_STREAMS = 2;
  * a wide glyph that takes two columns and one unit counts one here, and an astral character
  * that takes one column and two units counts two.
  */
-export function printedLength(lines: readonly string[]): number {
-  return lines.reduce((sum, line) => sum + line.length + 1, 0);
+export function printedLength(
+  lines: readonly string[],
+  lengthOf: (text: string) => number = unitsOf,
+): number {
+  return lines.reduce((sum, line) => sum + lengthOf(line) + 1, 0);
+}
+
+/** A text's length in UTF-16 code units — Claude Code's unit. */
+function unitsOf(text: string): number {
+  return text.length;
+}
+
+/** A text's length in UTF-8 bytes — the unit Codex's ceiling is a quarter of. */
+function bytesOf(text: string): number {
+  return Buffer.byteLength(text, 'utf8');
+}
+
+/**
+ * The ceiling one host puts on a hook's text: how many of its own units arrive whole, how a text
+ * is measured in that unit, and how the declaration of a cut says it.
+ */
+export interface HookCeiling {
+  /** The most a text may measure and still arrive whole. */
+  readonly most: number;
+  /** A text's length, in the unit of {@link most}; additive over the lines of a text. */
+  readonly lengthOf: (text: string) => number;
+  /**
+   * The ceiling as the paragraph that declares a cut words it: a count of characters, or of
+   * tokens of so many bytes — the words are the composer's, the numbers are these.
+   */
+  readonly said: { readonly count: number; readonly bytesPerToken?: number };
+}
+
+/** Claude Code's ceiling, and every host's that the host table names none for. */
+export const CLAUDE_CODE_CEILING: HookCeiling = {
+  most: HOOK_TEXT_CEILING,
+  lengthOf: unitsOf,
+  said: { count: HOOK_TEXT_CEILING },
+};
+
+/**
+ * How many bytes this product keeps in hand under a ceiling counted in tokens of four bytes.
+ *
+ * MEASURED, AND IT IS ZERO. Codex 0.161.0 handed over whole a hook's text of exactly 10,000
+ * UTF-8 bytes (2,500 of its tokens) and replaced one of 10,001 by a preview with its middle cut
+ * and a file path (`tests/host-contract/codex-opens-and-refuses.codex.test.ts`). Its count is
+ * `ceil(bytes / 4)` of the text the hook printed, nothing added; so `ceil(b / 4) <= most` is
+ * `b <= 4 * most` exactly, and a margin would only drop a rule that fits. The case that holds the
+ * boundary is the one that would go red the day the host counts differently.
+ */
+const TOKEN_MARGIN_BYTES = 0;
+
+/**
+ * The ceiling of a hook's text for a host whose row of the host table names one (`host-names.ts`,
+ * `hookText`, read by the caller with `hookTextOf`), or Claude Code's where it names none.
+ */
+export function hookCeilingOf(
+  hookText: { readonly tokens: number; readonly bytesPerToken: number } | undefined,
+): HookCeiling {
+  if (hookText === undefined) return CLAUDE_CODE_CEILING;
+  const { tokens, bytesPerToken } = hookText;
+  return {
+    most: tokens * bytesPerToken - TOKEN_MARGIN_BYTES,
+    lengthOf: bytesOf,
+    said: { count: tokens, bytesPerToken },
+  };
 }
 
 /**
@@ -72,10 +144,13 @@ export function printedLength(lines: readonly string[]): number {
  * would cross it the day the record stopped chaining, which is the day its notice matters
  * most. The lines are the ones the verb writes there, as written.
  */
-export function roomBeside(alsoSaid: readonly string[]): number {
-  if (alsoSaid.length === 0) return HOOK_TEXT_CEILING;
+export function roomBeside(
+  alsoSaid: readonly string[],
+  ceiling: HookCeiling = CLAUDE_CODE_CEILING,
+): number {
+  if (alsoSaid.length === 0) return ceiling.most;
   const appended = alsoSaid.join('\n').trim();
-  return HOOK_TEXT_CEILING - (appended.length + BETWEEN_THE_STREAMS);
+  return ceiling.most - (ceiling.lengthOf(appended) + BETWEEN_THE_STREAMS);
 }
 
 /**
@@ -100,13 +175,14 @@ export function fitWhole(
   total: number,
   room: number,
   compose: (shown: number) => string[],
+  lengthOf: (text: string) => number = unitsOf,
 ): string[] {
   const whole = compose(total);
-  if (printedLength(whole) <= room) return whole;
+  if (printedLength(whole, lengthOf) <= room) return whole;
   let fitting = compose(0);
   for (let shown = 1; shown < total; shown += 1) {
     const next = compose(shown);
-    if (printedLength(next) > room) break;
+    if (printedLength(next, lengthOf) > room) break;
     fitting = next;
   }
   return fitting;

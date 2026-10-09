@@ -101,6 +101,8 @@ export interface TheEditorSession {
   /** The version the editor said it was. */
   readonly version: string | undefined;
   mnema(...args: string[]): string;
+  /** Every command line the editor's hooks ran `mnema` with, in order. */
+  calls(): string[];
   remove(): void;
 }
 
@@ -213,6 +215,7 @@ export async function anEditorSession(spec: TheEditorSpec): Promise<TheEditorSes
       held: log.includes('held for a confirmation: true'),
       version,
       mnema: box.mnema,
+      calls: box.calls,
       remove: box.remove,
     };
   } catch (error) {

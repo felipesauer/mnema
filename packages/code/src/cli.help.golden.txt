@@ -585,10 +585,12 @@ $ mnema brief --help
 | print what governs the work here as markdown, for an agent to read
 |
 | Options:
-|   --hook      print it for a Claude Code hook: whole rules up to what a hook
-|               carries, and a closing paragraph saying how many were left out and
-|               what serves them
-|   -h, --help  display help for command
+|   --hook         print it for a Claude Code hook: whole rules up to what a hook
+|                  carries, and a closing paragraph saying how many were left out
+|                  and what serves them
+|   --host <host>  with --hook, the host whose own ceiling to cut the rules to:
+|                  codex; without it, Claude Code’s
+|   -h, --help     display help for command
 |
 | It prints to stdout and writes nothing — the redirection is yours, and `>`
 | REPLACES the whole of the file it names:
@@ -633,9 +635,11 @@ $ mnema recall --help
 | print the notes recorded here as markdown, near ones first, for an agent to read
 |
 | Options:
-|   --hook      print it for a Claude Code hook: whole notes up to what a hook
-|               carries, each section saying how many it left out
-|   -h, --help  display help for command
+|   --hook         print it for a Claude Code hook: whole notes up to what a hook
+|                  carries, each section saying how many it left out
+|   --host <host>  with --hook, the host whose own ceiling to cut the notes to:
+|                  codex; without it, Claude Code’s
+|   -h, --help     display help for command
 |
 | It prints to stdout and writes nothing. It is what a session opens with beside the
 | document `mnema brief` prints: the memories and the observations recorded for this
@@ -1296,17 +1300,18 @@ $ mnema before-a-write --help
 |
 | Options:
 |   --host <host>  the host whose hook runs this, and whose payload arrives on
-|                  stdin: vscode, cursor
+|                  stdin: vscode, cursor, codex
 |   -h, --help     display help for command
 |
 | What it reads and what it prints:
 |   The JSON a host hands a hook before a tool runs, on stdin. On stdout, the reply the
 |   host reads: {} unless a rule of this project addresses a path the write touches —
 |   `deny` where it is linked with `refuses-a-write`, which wins, and `ask` where it is
-|   linked with `asks-for-a-person` — citing the rules. For --host cursor only `deny` is
-|   answered: that host does not hold a write for a person. Each refusal or asking is
-|   recorded as a fact before the reply is printed. They can be switched off with `mnema
-|   switch off edit-refuses-a-write` and `mnema switch off edit-asks-a-person`.
+|   linked with `asks-for-a-person` — citing the rules. For --host cursor and --host
+|   codex only `deny` is answered: those hosts do not hold a write for a person. Each
+|   refusal or asking is recorded as a fact before the reply is printed. They can be
+|   switched off with `mnema switch off edit-refuses-a-write` and
+|   `mnema switch off edit-asks-a-person`.
 
 ### mnema tally --help
 $ mnema tally --help

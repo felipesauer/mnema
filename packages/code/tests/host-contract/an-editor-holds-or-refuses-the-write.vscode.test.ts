@@ -41,6 +41,11 @@ describe('an editor holds or refuses the write', () => {
       'channel.refused': 1,
       'channel.asked': 0,
     });
+    // VS Code ran the plugin's own file and not Codex's: the gate it ran is VS Code's, and no
+    // command it started named Codex — the opening's included.
+    const calls = session.calls();
+    expect(calls).toContain('before-a-write --host vscode');
+    expect(calls.filter((call) => call.includes('--host codex'))).toEqual([]);
   }, 240_000);
 
   it('ask: the agent stops on a confirmation, creates nothing and does not go on', async () => {

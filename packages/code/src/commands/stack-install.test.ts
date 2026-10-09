@@ -93,6 +93,7 @@ function filesUnder(root: string, at = ''): string[] {
 }
 
 const HOST_FILES = [
+  '.agents/skills/hello/SKILL.md',
   '.claude/agents/greeter.md',
   '.claude/skills/hello/SKILL.md',
   '.factory/skills/hello/SKILL.md',
@@ -130,6 +131,7 @@ describe('a stack is installed into the folders the host table names', () => {
     expect(plan.unserved).toEqual({
       skills: ['Goose', "Continue's command line (`cn`)", "Warp's agent"],
       agents: [
+        'Codex',
         'Factory Droid',
         'Qwen Code',
         'Goose',

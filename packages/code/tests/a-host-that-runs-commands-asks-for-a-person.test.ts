@@ -466,7 +466,7 @@ describe('the plugin command VS Code runs', () => {
     });
     expect(refused.status).not.toBe(0);
     expect(refused.stdout).toBe('');
-    expect(refused.stderr).toContain('--host takes one of vscode, cursor, not "zed".');
+    expect(refused.stderr).toContain('--host takes one of vscode, cursor, codex, not "zed".');
     const missing = spawnSync(process.execPath, [CLI, 'before-a-write'], {
       cwd: repo,
       input: '{}',

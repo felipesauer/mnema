@@ -42,10 +42,11 @@ export function registerBeforeAWrite(program: Command, wiring: Wiring): Declared
         '  The JSON a host hands a hook before a tool runs, on stdin. On stdout, the reply the',
         '  host reads: {} unless a rule of this project addresses a path the write touches —',
         '  `deny` where it is linked with `refuses-a-write`, which wins, and `ask` where it is',
-        '  linked with `asks-for-a-person` — citing the rules. For --host cursor only `deny` is',
-        '  answered: that host does not hold a write for a person. Each refusal or asking is',
-        '  recorded as a fact before the reply is printed. They can be switched off with `mnema',
-        '  switch off edit-refuses-a-write` and `mnema switch off edit-asks-a-person`.',
+        '  linked with `asks-for-a-person` — citing the rules. For --host cursor and --host',
+        '  codex only `deny` is answered: those hosts do not hold a write for a person. Each',
+        '  refusal or asking is recorded as a fact before the reply is printed. They can be',
+        '  switched off with `mnema switch off edit-refuses-a-write` and',
+        '  `mnema switch off edit-asks-a-person`.',
       ].join('\n'),
     )
     .action(async (opts: { host: string }) => {

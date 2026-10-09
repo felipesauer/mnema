@@ -34,7 +34,8 @@
  */
 
 import type { Command } from 'commander';
-import { switchedOff } from './brief.js';
+import { hookTextOf } from '../host-names.js';
+import { hookHostOf, hookHostOption, switchedOff } from './brief.js';
 import { here } from './context.js';
 import { writeLines } from './io.js';
 import { reportRefusal } from './report.js';
@@ -75,11 +76,15 @@ export function registerRecall(program: Command, wiring: Wiring): Declared {
       'print it for a Claude Code hook: whole notes up to what a hook carries, each section ' +
         'saying how many it left out',
     )
-    .action(async (opts: { hook?: boolean }) => {
+    .addOption(hookHostOption('the notes'))
+    .action(async (opts: { hook?: boolean; host?: string }) => {
+      const host = hookHostOf(wiring, opts.hook === true, opts.host);
+      if (host === false) return;
       const { linkBreakNotice } = await import('./integrity.js');
       const { runRecall } = await import('../commands/recall.js');
       const { recallDocument, recallWithin } = await import('../presentation/recall.js');
-      const { roomBeside } = await import('../presentation/within-a-hook.js');
+      const { hookCeilingOf, roomBeside } = await import('../presentation/within-a-hook.js');
+      const ceiling = hookCeilingOf(host === null ? undefined : hookTextOf(host));
       const result = runRecall(here());
       if (!result.ok) {
         reportRefusal(
@@ -97,7 +102,14 @@ export function registerRecall(program: Command, wiring: Wiring): Declared {
       writeLines(
         io,
         opts.hook === true
-          ? recallWithin(result, roomBeside(notice.map((line) => render(line))))
+          ? recallWithin(
+              result,
+              roomBeside(
+                notice.map((line) => render(line)),
+                ceiling,
+              ),
+              ceiling.lengthOf,
+            )
           : recallDocument(result),
       );
     });

@@ -114,8 +114,37 @@ function counts(): Record<string, number> {
   );
 }
 
+/**
+ * A patch as Codex's `apply_patch` takes it, adding `relative` — the path as the model writes it,
+ * relative to the session's directory.
+ */
+function aPatchAdding(relative: string): string {
+  return [
+    '*** Begin Patch',
+    `*** Add File: ${relative}`,
+    '+export const probe = 1;',
+    '*** End Patch',
+  ].join('\n');
+}
+
 /** The payload a host hands its hook before a write of `relative`. */
 function payloadFor(host: HookHost, relative: string): string {
+  if (host === 'codex') {
+    // As Codex 0.161.0 serializes it (`codex-rs/hooks/src/events/pre_tool_use.rs`): the patch is
+    // the `command` of the input, and the tool keeps its own name whatever the matcher said.
+    return JSON.stringify({
+      session_id: '0199c0de-0000-7000-8000-000000000000',
+      turn_id: 'turn-1',
+      transcript_path: null,
+      cwd: repo,
+      hook_event_name: 'PreToolUse',
+      model: 'stand-in',
+      permission_mode: 'default',
+      tool_name: 'apply_patch',
+      tool_input: { command: aPatchAdding(relative) },
+      tool_use_id: 'call-1',
+    });
+  }
   return host === 'cursor'
     ? JSON.stringify({
         hook_event_name: 'preToolUse',
@@ -331,6 +360,36 @@ describe('the verb a command host runs', () => {
     ).toBeUndefined();
     expect(asksAPerson('cursor')).toBe(false);
     expect(asksAPerson('vscode')).toBe(true);
+  });
+
+  it('reads the paths of Codex’s patch off its `command`, and not off the field VS Code names', () => {
+    const patch = [
+      '*** Begin Patch',
+      '*** Update File: src/a.ts',
+      '@@',
+      '-old',
+      '+new',
+      '*** Move to: src/b.ts',
+      '*** Delete File: src/c.ts',
+      '*** End Patch',
+    ].join('\n');
+    expect(
+      pathsOfAWrite('codex', { tool_name: 'apply_patch', tool_input: { command: patch } }),
+    ).toEqual(['src/a.ts', 'src/b.ts', 'src/c.ts']);
+    expect(
+      pathsOfAWrite('codex', { tool_name: 'apply_patch', tool_input: { input: patch } }),
+    ).toEqual([]);
+    // `Write` and `Edit` are names Codex MATCHES apply_patch by, never names it hands a hook.
+    expect(
+      pathsOfAWrite('codex', { tool_name: 'Write', tool_input: { file_path: '/w/a.ts' } }),
+    ).toBeUndefined();
+    expect(asksAPerson('codex')).toBe(false);
+  });
+
+  it('codex: a write that only asks is let through in silence, with nothing recorded', () => {
+    const before = publicEvents().length;
+    expect(verb('codex', 'src/other/refund.ts')).toEqual({ reply: {}, notes: [] });
+    expect(publicEvents().length).toBe(before);
   });
 });
 
@@ -647,5 +706,55 @@ describe('the command Cursor runs from the plugin', () => {
       'before-a-write --host cursor',
     ]);
     expect(refusals()).toEqual([`${refusing} @ src/billing/invoice.ts by cursor`]);
+  });
+});
+
+describe('the command Codex runs from the plugin', () => {
+  type Groups = Record<string, { matcher?: string; hooks: { command?: string }[] }[]>;
+
+  /** Codex's hooks file, the one its manifest names. */
+  function codexHooks(): Groups {
+    const manifest = JSON.parse(
+      readFileSync(join(PLUGIN, '.codex-plugin', 'plugin.json'), 'utf-8'),
+    ) as { hooks: string };
+    return (JSON.parse(readFileSync(join(PLUGIN, manifest.hooks), 'utf-8')) as { hooks: Groups })
+      .hooks;
+  }
+
+  it('is the only gate in the file Codex reads, matched by the one tool it names a patch', () => {
+    const groups = codexHooks()['PreToolUse'] ?? [];
+    expect(groups.map((group) => group.matcher)).toEqual(['apply_patch']);
+    const commands = groups.flatMap((group) => group.hooks.map((hook) => hook.command ?? ''));
+    expect(commands).toHaveLength(1);
+    expect(commands[0]).toContain('edit-refuses-a-write.mjs');
+    expect(commands[0]).toContain('--host codex');
+    // And no hook of the file every other host reads names Codex.
+    expect(readFileSync(join(PLUGIN, 'hooks', 'hooks.json'), 'utf-8')).not.toContain('codex');
+  });
+
+  it('refuses a patch under a refusing rule, as the process Codex starts, and records it', () => {
+    const bin = join(sandbox, 'bin');
+    mkdirSync(bin);
+    writeFileSync(join(bin, 'mnema'), `#!/bin/sh\nexec "${process.execPath}" "${CLI}" "$@"\n`);
+    chmodSync(join(bin, 'mnema'), 0o755);
+    const command = codexHooks()['PreToolUse']?.[0]?.hooks[0]?.command ?? '';
+    // Codex substitutes `${CLAUDE_PLUGIN_ROOT}` itself and also sets it in the environment
+    // (`codex-rs/hooks/src/engine/discovery.rs`, 0.161.0); the shell here does the second.
+    const ran = spawnSync('sh', ['-c', command], {
+      cwd: repo,
+      input: payloadFor('codex', 'src/billing/invoice.ts'),
+      encoding: 'utf-8',
+      env: {
+        HOME: join(sandbox, 'home'),
+        PATH: `${bin}:${dirname(process.execPath)}:/usr/bin:/bin`,
+        PLUGIN_ROOT: PLUGIN,
+        CLAUDE_PLUGIN_ROOT: PLUGIN,
+      },
+    });
+    expect(ran.status).toBe(0);
+    const said = decided(JSON.parse(ran.stdout) as Record<string, unknown>);
+    expect(said.value).toBe('deny');
+    expect(said.reason).toContain(refusing);
+    expect(refusals()).toEqual([`${refusing} @ src/billing/invoice.ts by codex`]);
   });
 });

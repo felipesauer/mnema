@@ -736,7 +736,9 @@ export const HANDED_OVER: Readonly<
   // unwritten 4 once the console named a member of a group by its whole path as well as a verb.
   // name 85 with the sentence the server's instructions hand the agent: the person runs `mnema report`.
   // line 85 once the doctor handed over `mnema doctor --fix private-tree`, in a line of its own.
-  source: { line: 85, name: 85, flag: 4, unwritten: 4 },
+  // line 86 once `before-a-write --help` named the second host that only refuses, and the switch
+  // of the asking went to a line of its own.
+  source: { line: 86, name: 85, flag: 4, unwritten: 4 },
 };
 
 // ---------------------------------------------------------------------------

@@ -25,6 +25,7 @@ import {
   HOST_NAMES,
   HOSTS,
   type HookHost,
+  type Host,
   type HostName,
 } from '../../src/host-names.js';
 
@@ -33,8 +34,11 @@ const ROOT = join(import.meta.dirname, '..', '..', '..', '..');
 /** Every file this module generates, by its path from the repository's root. */
 export const GENERATED = [
   'plugin/hooks/hooks.json',
+  'plugin/hooks/codex.json',
   'plugin/.claude-plugin/plugin.json',
+  'plugin/.codex-plugin/plugin.json',
   'plugin-server-only/.claude-plugin/plugin.json',
+  'plugin-server-only/.codex-plugin/plugin.json',
   'README.md',
   'docs/evidence.md',
 ] as const;
@@ -186,16 +190,61 @@ function beforeAWrite(name: HostName): readonly Json[] {
   ];
 }
 
+/** Whether a host reads a hooks file of its own rather than `hooks/hooks.json`. */
+const readsItsOwn = (name: HostName): boolean => 'hooksFile' in HOSTS[name];
+
+/** The hooks a session opens with, the same two on every host that opens. */
+const SESSION_START: Json = [
+  { hooks: [command('session-start.mjs'), command('session-recall.mjs')] },
+];
+
 /** The plugin's hooks file. */
 export function hooksJson(): string {
   const ordered = [...BEFORE_A_WRITE, ...HOST_NAMES.filter((n) => !BEFORE_A_WRITE.includes(n))];
   const file: Json = {
     description: HOOKS_DESCRIPTION,
     hooks: {
-      SessionStart: [{ hooks: [command('session-start.mjs'), command('session-recall.mjs')] }],
+      SessionStart: SESSION_START,
       Stop: [{ hooks: [command('session-tally.mjs'), command('session-corrections.mjs')] }],
       PreCompact: [{ hooks: [command('session-tally.mjs')] }],
-      PreToolUse: ordered.flatMap(beforeAWrite),
+      PreToolUse: ordered.filter((n) => !readsItsOwn(n)).flatMap(beforeAWrite),
+    },
+  };
+  return `${printed(file)}\n`;
+}
+
+/** What Codex's hooks file says it does, as the host shows it. */
+const CODEX_HOOKS_DESCRIPTION =
+  "Hands the project's committed record to the session as it opens: the decisions in force and the adopted patterns, by name — and, beside it, the memories and observations recorded for the project, from every tree this machine holds, the ones that share a word with what the session touches first. Before a patch is applied, where a rule of that record refuses a write at a path the patch touches, does not let the patch happen, citing the rule, and records the refusal as a fact of the chain; a rule that only asks for a person is let through in silence, since Codex does not pause a write for one. Each can be switched off with `mnema switch`, which records that it was.";
+
+/**
+ * Codex's hooks file: the opening, and the gate before a patch — no end-of-response count and no
+ * corrections, which read a transcript in Claude Code's format, and Codex writes its own.
+ *
+ * NO SHELL IN FRONT. Codex applies the matcher (`apply_patch`, the one name it hands a hook for a
+ * file edit), and no other host reads this file, so the command starts only where it has
+ * something to read.
+ */
+export function codexHooksJson(): string {
+  const tools = writeToolsOf('codex');
+  const file: Json = {
+    description: CODEX_HOOKS_DESCRIPTION,
+    hooks: {
+      // The opening is cut to Codex's own ceiling, so the handlers name the host to the verb.
+      SessionStart: [
+        {
+          hooks: [
+            command('session-start.mjs', ['--host', 'codex']),
+            command('session-recall.mjs', ['--host', 'codex']),
+          ],
+        },
+      ],
+      PreToolUse: [
+        {
+          matcher: tools.join('|'),
+          hooks: [command('edit-refuses-a-write.mjs', ['--host', 'codex'])],
+        },
+      ],
     },
   };
   return `${printed(file)}\n`;
@@ -253,6 +302,56 @@ export function serverOnlyPluginJson(): string {
   );
 }
 
+/**
+ * The full plugin's manifest as Codex reads it (`.codex-plugin/plugin.json`, which Codex looks
+ * for before `.claude-plugin/plugin.json`).
+ *
+ * TWO THINGS DIFFER FROM CLAUDE CODE'S, BOTH READ IN CODEX'S SOURCE (0.161.0). The server is
+ * started as `mnema mcp`, the first `mnema` on the PATH: Codex substitutes no variable into a
+ * server's arguments and has no option a person fills in, so neither the launcher's path nor the
+ * `mnema_path` choice can reach it, and a server started without a `cwd` runs in the session's
+ * directory, which is where the project is found (`codex-rs/codex-mcp/src/plugin_config.rs`).
+ * And the hooks are the file Codex alone reads (`hooks`, a path that starts with `./`).
+ */
+export function codexPluginJson(): string {
+  return codexManifest(
+    'mnema',
+    "Puts the project's committed mnema record into the session's opening context without the agent asking, with the notes recorded for it on this machine beside it, refuses a patch where a rule of that record refuses the write, and connects the mnema MCP server so the agent can record its own work.",
+    { hooks: `./${HOSTS.codex.hooksFile}` },
+  );
+}
+
+/**
+ * The server-only plugin's manifest as Codex reads it: the same server, and no hooks file — the
+ * directory has none, so Codex's default (`hooks/hooks.json`) finds nothing either. Without it,
+ * Codex read the Claude Code manifest and started the server with `${CLAUDE_PLUGIN_ROOT}` left
+ * as it was written.
+ */
+export function codexServerOnlyPluginJson(): string {
+  return codexManifest(
+    'mnema-server-only',
+    'Connects the mnema MCP server so the agent can record its own work, and runs no hook: nothing is handed to a session as it opens or before a patch.',
+    {},
+  );
+}
+
+/** What both of Codex's manifests declare alike. */
+function codexManifest(
+  name: string,
+  description: string,
+  rest: { readonly [key: string]: Json },
+): string {
+  const file: Json = {
+    name,
+    version: version(),
+    description,
+    keywords: ['audit-trail', 'append-only', 'accountability', 'adr', 'local-first'],
+    mcpServers: { mnema: { command: 'mnema', args: ['mcp'] } },
+    ...rest,
+  };
+  return `${printed(file)}\n`;
+}
+
 // ---------------------------------------------------------------------------
 // The rung table
 // ---------------------------------------------------------------------------
@@ -285,9 +384,13 @@ function rungOf(name: HostName): string {
   const cells = HOSTS[name].cells;
   const a: readonly Cell[] = [cells.server, cells.rulesFile];
   if (!a.every((cell) => cell.held !== 'not ported' && cell.does)) return 'none';
-  if (a.some((cell) => cell.held === 'documentation')) return '(a), documented, not measured';
   const climbed = (['opens', 'refuses', 'asks'] as const).findIndex((c) => !does(name, c));
-  return ['(a)', '(b)', '(c)', '(d)'][climbed === -1 ? 3 : climbed] ?? 'none';
+  const rung = ['(a)', '(b)', '(c)', '(d)'][climbed === -1 ? 3 : climbed] ?? 'none';
+  if (!a.some((cell) => cell.held === 'documentation')) return rung;
+  // A host whose (a) is only documented says so on its rung, however far its other cells climb.
+  return rung === '(a)'
+    ? '(a), documented, not measured'
+    : `${rung}, with (a) documented, not measured`;
 }
 
 /** The rung table, with its links relative to a page at `base` from the repository's root. */
@@ -326,7 +429,12 @@ function withTheTable(page: string, base: string, path: string): string {
   const from = page.indexOf(BEGIN);
   const to = page.indexOf(END);
   if (from === -1 || to < from) throw new Error(`${path} has no generated rung table`);
-  return `${page.slice(0, from)}${BEGIN}\n\n${rungTable(base)}\n\n${LEGEND}\n\n${page.slice(to)}`;
+  const notes = HOST_NAMES.flatMap((name) => {
+    const host: Host = HOSTS[name];
+    return host.note === undefined ? [] : [`**${host.title}.** ${host.note}`];
+  });
+  const under = notes.length === 0 ? '' : `${notes.join('\n\n')}\n\n`;
+  return `${page.slice(0, from)}${BEGIN}\n\n${rungTable(base)}\n\n${under}${LEGEND}\n\n${page.slice(to)}`;
 }
 
 /** What `path` is once generated, given its committed text — a page keeps its own prose. */
@@ -334,8 +442,14 @@ export function generated(path: (typeof GENERATED)[number], committed: string): 
   switch (path) {
     case 'plugin/hooks/hooks.json':
       return hooksJson();
+    case 'plugin/hooks/codex.json':
+      return codexHooksJson();
     case 'plugin/.claude-plugin/plugin.json':
       return pluginJson();
+    case 'plugin/.codex-plugin/plugin.json':
+      return codexPluginJson();
+    case 'plugin-server-only/.codex-plugin/plugin.json':
+      return codexServerOnlyPluginJson();
     case 'plugin-server-only/.claude-plugin/plugin.json':
       return serverOnlyPluginJson();
     case 'README.md':
