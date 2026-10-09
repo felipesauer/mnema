@@ -397,10 +397,20 @@ function refusesTheFlag(ran, flags) {
  * The event name is echoed back because the host routes the reply by it, and a reply naming
  * the wrong one is dropped in silence.
  *
+ * A HOST THAT READS ONLY A TOP-LEVEL `additionalContext` is told so by its hooks file
+ * (`--reply flat`, generated from its row of the host table): Copilot CLI ignores the nested reply
+ * every other host reads and hands the model nothing (measured on 1.0.94), in silence, which is
+ * why the shape is the file's to say and not a guess made here.
+ *
  * @param {string} event
  * @param {string} text
+ * @param {readonly string[]} [handed] The handler's own arguments, from the hooks file.
  * @returns {string}
  */
-export function reply(event, text) {
-  return `${JSON.stringify({ hookSpecificOutput: { hookEventName: event, additionalContext: text } })}\n`;
+export function reply(event, text, handed = []) {
+  const body =
+    flagValue(handed, '--reply') === 'flat'
+      ? { additionalContext: text }
+      : { hookSpecificOutput: { hookEventName: event, additionalContext: text } };
+  return `${JSON.stringify(body)}\n`;
 }

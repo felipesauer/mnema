@@ -1,0 +1,21 @@
+{
+  "name": "mnema",
+  "version": "0.1.0-beta",
+  "description": "Puts the project's committed mnema record into the session's opening context without the agent asking, with the notes recorded for it on this machine beside it, refuses a write where a rule of that record refuses it, pauses it where a rule asks for a person, and connects the mnema MCP server so the agent can record its own work.",
+  "author": {
+    "name": "Felipe Sauer",
+    "url": "https://github.com/felipesauer"
+  },
+  "homepage": "https://github.com/felipesauer/mnema",
+  "repository": "https://github.com/felipesauer/mnema",
+  "license": "Apache-2.0",
+  "keywords": ["audit-trail", "append-only", "accountability", "adr", "local-first"],
+  "mcpServers": {
+    "mnema": {
+      "command": "mnema",
+      "args": ["mcp"],
+      "cwd": "."
+    }
+  },
+  "hooks": "hooks/copilot.json"
+}

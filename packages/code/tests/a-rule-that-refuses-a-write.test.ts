@@ -145,6 +145,18 @@ function payloadFor(host: HookHost, relative: string): string {
       tool_use_id: 'call-1',
     });
   }
+  if (host === 'copilot') {
+    // As Copilot CLI 1.0.94 hands a hook configured under the PascalCase event name: Claude's
+    // tool names (its `create` is `Write`), snake_case fields, and the path under `path`.
+    return JSON.stringify({
+      hook_event_name: 'PreToolUse',
+      session_id: 'a0e3c1f2-0000-4000-8000-000000000000',
+      timestamp: '2026-10-09T12:00:00.000Z',
+      cwd: repo,
+      tool_name: 'Write',
+      tool_input: { path: join(repo, relative), file_text: 'export const probe = 1;\n' },
+    });
+  }
   return host === 'cursor'
     ? JSON.stringify({
         hook_event_name: 'preToolUse',
@@ -384,6 +396,43 @@ describe('the verb a command host runs', () => {
       pathsOfAWrite('codex', { tool_name: 'Write', tool_input: { file_path: '/w/a.ts' } }),
     ).toBeUndefined();
     expect(asksAPerson('codex')).toBe(false);
+  });
+
+  it('reads the paths of Copilot CLI’s writes: `Write` and `Edit` under `path`, and a patch it hands whole', () => {
+    expect(
+      pathsOfAWrite('copilot', {
+        tool_name: 'Write',
+        tool_input: { path: '/w/a.ts', file_text: '' },
+      }),
+    ).toEqual(['/w/a.ts']);
+    expect(
+      pathsOfAWrite('copilot', {
+        tool_name: 'Edit',
+        tool_input: { path: '/w/b.ts', old_str: 'a', new_str: 'b' },
+      }),
+    ).toEqual(['/w/b.ts']);
+    // Its `apply_patch` is also named `Edit`, and its input is the patch text itself, not an object.
+    const patch = [
+      '*** Begin Patch',
+      '*** Update File: src/a.ts',
+      '*** Delete File: src/c.ts',
+      '*** End Patch',
+    ].join('\n');
+    expect(pathsOfAWrite('copilot', { tool_name: 'Edit', tool_input: patch })).toEqual([
+      'src/a.ts',
+      'src/c.ts',
+    ]);
+    // Neither VS Code’s field names nor its tool names are read here, and a read is no write.
+    expect(
+      pathsOfAWrite('copilot', { tool_name: 'create_file', tool_input: { filePath: '/w/a.ts' } }),
+    ).toBeUndefined();
+    expect(
+      pathsOfAWrite('copilot', { tool_name: 'Write', tool_input: { filePath: '/w/a.ts' } }),
+    ).toEqual([]);
+    expect(
+      pathsOfAWrite('copilot', { tool_name: 'Read', tool_input: { path: '/w/a.ts' } }),
+    ).toBeUndefined();
+    expect(asksAPerson('copilot')).toBe(true);
   });
 
   it('codex: a write that only asks is let through in silence, with nothing recorded', () => {

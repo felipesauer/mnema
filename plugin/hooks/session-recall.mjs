@@ -48,7 +48,7 @@ try {
   // its sibling module is a session opened with nothing added, not a hook error.
   const { reply, whatTheVerbSays, whereTheSessionIs } = await import('./hand-over.mjs');
   const notes = whatTheVerbSays('recall', whereTheSessionIs(), {}, process.argv.slice(2));
-  if (notes !== null) process.stdout.write(reply(HOOK_EVENT, notes));
+  if (notes !== null) process.stdout.write(reply(HOOK_EVENT, notes, process.argv.slice(2)));
 } catch {
   // Silence, with nothing to add: the one thing a handler of this plugin must never do is
   // make somebody else's session worse than it would have been without it.
