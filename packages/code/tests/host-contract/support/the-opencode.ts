@@ -88,7 +88,9 @@ function theOpencodeUnderTest(): { readonly binary: string; readonly version: st
 export function theSystemBlocksOf(request: TheRequest): string[] {
   const system = request.body['system'];
   if (typeof system === 'string') return [system];
-  return Array.isArray(system) ? system.map((block) => String((block as { text?: unknown }).text)) : [];
+  return Array.isArray(system)
+    ? system.map((block) => String((block as { text?: unknown }).text))
+    : [];
 }
 
 /** The names of the tools a request offers. */

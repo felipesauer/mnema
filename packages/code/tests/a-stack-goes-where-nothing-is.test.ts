@@ -66,7 +66,7 @@ describe('mnema stack, on the built binary', () => {
     expect(dry.status).toBe(0);
     expect(dry.out).toContain('.claude/skills/hello/SKILL.md');
     expect(dry.out).toContain(
-      "No agent is written for: Codex, GitHub Copilot CLI, Antigravity's command line (`agy`), Factory Droid",
+      "No agent is written for: Codex, GitHub Copilot CLI, OpenCode, Antigravity's command line (`agy`), Factory Droid",
     );
     expect(dry.out).toContain('Hooks: none.');
     expect(digestOf(dry.out)).toMatch(/^[0-9a-f]{64}$/);
