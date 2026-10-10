@@ -27,7 +27,7 @@ tag, with its own changelog.
   console runs the stack readers and, as for every verb that can change the record, refuses the acts
   (`add`, `remove`, `export`, `enable`, `disable`) and names the shell. The VS Code extension, which is not
   published, gains a "mnema: stacks" panel: list, show, compare, check, export, and add from a folder or
-  from the index, each running `mnema stack`; an add shows the plan the command line printed, whole,
+  from the index, each running the `stack` verb; an add shows the plan the command line printed, whole,
   asks once, and writes with the digest that plan showed. It has no control that turns a hook on.
 
 - **The record can say which stacks govern the work.** Two new event kinds, `stack.adopted`

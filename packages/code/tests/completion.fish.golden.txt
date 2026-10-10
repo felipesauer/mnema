@@ -18,7 +18,7 @@ function __mnema_commands --description 'the subcommands one level of the tree o
         case 'skill'
             echo 'create move export provenance help'
         case 'stack'
-            echo 'add remove list show diff check export enable disable help'
+            echo 'add remove list index show diff check export enable disable help'
         case 'task'
             echo 'create move handoff next guard help'
         case 'switch'
@@ -273,6 +273,7 @@ complete -c mnema -f -n '__mnema_at "skill provenance"' -l color -x -a 'auto alw
 complete -c mnema -f -n '__mnema_at "stack"' -a 'add' -d 'show the plan of a stack, and write it when --expect names its digest'
 complete -c mnema -f -n '__mnema_at "stack"' -a 'remove' -d 'remove an installed stack, keeping every file changed since it was written'
 complete -c mnema -f -n '__mnema_at "stack"' -a 'list' -d 'list the installed stacks, and whether each is still as written'
+complete -c mnema -f -n '__mnema_at "stack"' -a 'index' -d 'list the stacks an index names, with the digest each must have'
 complete -c mnema -f -n '__mnema_at "stack"' -a 'show' -d 'show one installed stack: its files, its hooks, and the record'
 complete -c mnema -f -n '__mnema_at "stack"' -a 'diff' -d 'compare the installed files with their receipt, and the receipt with the record'
 complete -c mnema -f -n '__mnema_at "stack"' -a 'check' -d 'check every installed stack, or one, against its receipt and the record; fails if any departs'
@@ -305,9 +306,16 @@ complete -c mnema -f -n '__mnema_at "stack remove"' -l color -x -a 'auto always 
 # mnema stack list
 complete -c mnema -f -n '__mnema_at "stack list"' -l scope -x -a 'public private global'
 complete -c mnema -f -n '__mnema_at "stack list"' -l to -r
+complete -c mnema -f -n '__mnema_at "stack list"' -l json
 complete -c mnema -f -n '__mnema_at "stack list"' -s h -l help
 complete -c mnema -f -n '__mnema_at "stack list"' -s V -l version
 complete -c mnema -f -n '__mnema_at "stack list"' -l color -x -a 'auto always never'
+
+# mnema stack index
+complete -c mnema -f -n '__mnema_at "stack index"' -l json
+complete -c mnema -f -n '__mnema_at "stack index"' -s h -l help
+complete -c mnema -f -n '__mnema_at "stack index"' -s V -l version
+complete -c mnema -f -n '__mnema_at "stack index"' -l color -x -a 'auto always never'
 
 # mnema stack show
 complete -c mnema -f -n '__mnema_at "stack show"' -l scope -x -a 'public private global'
