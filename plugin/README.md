@@ -308,7 +308,9 @@ recognises a Claude plugin by its `.claude-plugin/plugin.json`; it was not run a
 window.
 
 **Where the table stops.** It was measured with VS Code 1.137 and its Copilot Chat 0.65,
-and with Cursor's command-line agent 2026.09.18 — not Cursor's editor. The last row was
+and with Cursor's command-line agent 2026.09.18 — not Cursor's editor, which is in the host table at
+the first rung, from its documentation alone, until somebody reads it with
+[the script kept for that](captures/cursor-ide-script.md). The last row was
 measured on 30 Sep 2026 against each host with no model and no network — a stand-in model in
 VS Code, a stand-in backend for Cursor's agent — with the plugin of this repository and the
 built binary; none of it is held by a file of this repository yet ([how each claim is held](../docs/evidence.md)).

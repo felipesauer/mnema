@@ -36,6 +36,7 @@ each cell is known.
 | Cursor's command-line agent | yes, read on Cursor agent 2026.09.18, 23 September 2026 | yes, [held by a test](../packages/code/tests/a-rules-file-carries-only-what-becomes-a-glob-exactly.test.ts) | yes, read on Cursor agent 2026.09.18, 23 September 2026 | yes, read on Cursor agent 2026.09.18, 2 October 2026 | no, read on Cursor agent 2026.09.18, 30 September 2026 | (c) |
 | Codex | yes, [held by a test](../packages/code/tests/host-contract/codex-opens-and-refuses.codex.test.ts) | documented, not measured ([read 8 October 2026](https://github.com/openai/codex/blob/979011409de0a60b52f179721948e65531d26144/codex-rs/core/src/agents_md.rs)) | yes, [held by a test](../packages/code/tests/host-contract/codex-opens-and-refuses.codex.test.ts) | yes, [held by a test](../packages/code/tests/host-contract/codex-opens-and-refuses.codex.test.ts) | no, [held by a test](../packages/code/tests/host-contract/codex-opens-and-refuses.codex.test.ts) | (c), with (a) documented, not measured |
 | GitHub Copilot CLI | yes, [held by a test](../packages/code/tests/host-contract/copilot-opens-and-refuses.copilot.test.ts) | documented, not measured ([read 9 October 2026](https://github.com/github/docs/blob/9f651797567230e844373870fce8b14427ad47ad/content/copilot/reference/copilot-cli-reference/cli-command-reference.md)) | yes, [held by a test](../packages/code/tests/host-contract/copilot-opens-and-refuses.copilot.test.ts) | yes, [held by a test](../packages/code/tests/host-contract/copilot-opens-and-refuses.copilot.test.ts) | yes, [held by a test](../packages/code/tests/host-contract/copilot-opens-and-refuses.copilot.test.ts) | (d), with (a) documented, not measured |
+| Cursor's editor | documented, not measured ([read 10 October 2026](https://cursor.com/docs/context/mcp)) | documented, not measured ([read 10 October 2026](https://cursor.com/docs/context/rules)) | not ported | not ported | not ported | (a), documented, not measured |
 | Factory Droid | documented, not measured ([read 8 October 2026](https://github.com/Factory-AI/factory/blob/c6ea470/docs/cli/configuration/mcp.mdx)) | documented, not measured ([read 8 October 2026](https://github.com/Factory-AI/factory/blob/c6ea470/docs/cli/configuration/agents-md.mdx)) | not ported | not ported | not ported | (a), documented, not measured |
 | Qwen Code | documented, not measured ([read 8 October 2026](https://github.com/QwenLM/qwen-code/blob/cbbb0a5/docs/users/features/mcp.md)) | documented, not measured ([read 8 October 2026](https://github.com/QwenLM/qwen-code/blob/cbbb0a5/docs/users/features/memory.md)) | not ported | not ported | not ported | (a), documented, not measured |
 | Goose | documented, not measured ([read 8 October 2026](https://github.com/aaif-goose/goose/blob/a4189ec/README.md)) | documented, not measured ([read 8 October 2026](https://github.com/aaif-goose/goose/blob/a4189ec/crates/goose/src/hints/load_hints.rs)) | not ported | not ported | not ported | (a), documented, not measured |
@@ -48,14 +49,17 @@ each cell is known.
 
 **GitHub Copilot CLI.** Its hooks are read under the PascalCase event names, which hand the payload in Claude Code’s tool names (`Write`, `Edit`) and snake_case fields, with the path under `path`. A command hook that exits non-zero denies the call there (read in [the hooks reference](https://github.com/github/docs/blob/9f651797567230e844373870fce8b14427ad47ad/content/copilot/reference/hooks-reference.md)), so the plugin's ends in `exit 0` whatever happened — no `mnema` on the PATH is held by its test; a hook past its 15 seconds is let through by the host (read, not measured). The opening is the same text Claude Code gets, cut at 10,000 units, far under the 10 MiB the host accumulates (read, not measured). Run without a person (`copilot -p`), a hook’s `ask` is a denial (held by its test); with one, the host asks (held by its test). The model is any the host is pointed at, with no GitHub account (`COPILOT_OFFLINE`), under the license at [`LICENSE.md`](https://github.com/github/copilot-cli/blob/a7ae5b0ce17beddfa5930812bb064138fd3a1cb5/LICENSE.md). When a subagent stops: documented, not measured ([read 9 October 2026](https://github.com/github/docs/blob/9f651797567230e844373870fce8b14427ad47ad/content/copilot/reference/hooks-reference.md#subagentstop--subagentstop)).
 
+**Cursor's editor.** Only its documentation was read, on 10 October 2026: the agent of the editor runs `preToolUse` and `sessionStart` hooks, a `preToolUse` that answers `deny` blocks the action, `ask` is accepted there and not enforced, and a `sessionStart` hook can add context to the session. That documentation says the hooks in Claude Code’s settings files are loaded, and says nothing of the hooks of a plugin installed in Claude Code, which the command-line agent was read to load. Whether the editor runs this plugin’s hook, sets `CURSOR_VERSION` for it and hands it the payload the command-line agent does was not read, so nothing above the first rung is promised for it. The script that reads it is `plugin/captures/cursor-ide-script.md`.
+
 Each cell says how it is known: **held by a test** of this repository; **read** once against the
 real host, on the version and the day it names, and held by no file yet; or **documented, not
-measured**: the host's own documentation or code says the host does it, at the commit the link
-names, and nothing was run. **Not ported**: the plugin hands that host nothing for it. For the
-first three hosts, the rules file is the one `mnema rules-file --host` prints in the host's
-format, and the test holds what it prints, not how the host matches its globs; for the others,
-it is `AGENTS.md`, which the host's documentation says it reads. A host reaches a rung when every
-rung before it is a yes; Aider was read too, and is not here, because it has no MCP client.
+measured**: the host's own documentation or code says the host does it, at the commit or on the
+page the link names, and nothing was run. **Not ported**: the plugin hands that host nothing for
+it. For the first three hosts, the rules file is the one `mnema rules-file --host` prints in the
+host's format, and the test holds what it prints, not how the host matches its globs; for the
+others, it is `AGENTS.md`, which the host's documentation says it reads. A host reaches a rung
+when every rung before it is a yes; Aider was read too, and is not here, because it has no MCP
+client.
 
 <!-- End of the generated rung table. -->
 
@@ -144,6 +148,10 @@ Cursor's command-line agent needs an account, and an account is not a thing a fr
 what is read of it is read by hand, from a script kept beside the plugin and a file that says the day,
 the version and the checksum of what ran. [How a capture is made](../plugin/captures/README.md). A
 capture is a dated reading and is never presented here as a test.
+
+Cursor's editor needs an account too, and no capture of it has been made: the table above says of it
+only what Cursor's documentation says, and [the script for reading it](../plugin/captures/cursor-ide-script.md)
+is what a later capture follows.
 
 | The claim | Read on | Held by |
 |---|---|---|

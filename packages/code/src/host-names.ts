@@ -153,13 +153,16 @@ const COPILOT_DOCS =
 /** The day the hosts below that this product does not port were read. */
 const READ_ON = '8 October 2026';
 
-/** A folder of Claude Code's, which two other hosts read too, as the documentation `at` says. */
-const claudeFolder = (kind: 'skills' | 'agents', at: string): Place => ({
+/** The day Cursor's documentation was read for its editor. */
+const CURSOR_READ_ON = '10 October 2026';
+
+/** A folder of Claude Code's, which other hosts read too, as the documentation `at` says. */
+const claudeFolder = (kind: 'skills' | 'agents', at: string, read = READ_ON): Place => ({
   held: 'documentation',
   project: `.claude/${kind}`,
   user: `.claude/${kind}`,
   at,
-  read: READ_ON,
+  read,
 });
 
 /** No folder of this host's was read, or it reads agents in another format. */
@@ -168,9 +171,9 @@ const NOT_PORTED: Place = { held: 'not ported' };
 /**
  * Every host, in the order the pages list them and the lists of a `--host` enumerate them.
  *
- * THE FIRST FIVE ARE PORTED; THE OTHER FIVE WERE ONLY READ. Each of the five documents an MCP
- * client and reads an `AGENTS.md`, at the commit the link names, and no hook of this plugin's
- * reaches any of them. Aider was read too and is not here: it has no MCP client.
+ * THE FIRST SIX ARE PORTED; THE OTHERS WERE ONLY READ. Each of the others documents an MCP client
+ * and reads an `AGENTS.md`, at the commit or on the page the link names, and no hook of this
+ * plugin's is known to reach any of them. Aider was read too and is not here: it has no MCP client.
  */
 export const HOSTS = {
   claude: {
@@ -347,6 +350,45 @@ export const HOSTS = {
         read: '9 October 2026',
       },
       agents: NOT_PORTED,
+    },
+  },
+  cursorIde: {
+    title: "Cursor's editor",
+    door: 'none',
+    // The editor is a graphical application that needs an account, so no job runs it: what is
+    // known of it above the first rung is read by a person from `plugin/captures/cursor-ide-script.md`,
+    // and `tests/the-cursor-editor-rises-only-with-a-capture.test.ts` keeps the cells below from
+    // climbing before a capture of that day is committed.
+    note:
+      'Only its documentation was read, on 10 October 2026: the agent of the editor runs ' +
+      '`preToolUse` and `sessionStart` hooks, a `preToolUse` that answers `deny` blocks the ' +
+      'action, `ask` is accepted there and not enforced, and a `sessionStart` hook can add ' +
+      'context to the session. That documentation says the hooks in Claude Code’s settings ' +
+      'files are loaded, and says nothing of the hooks of a plugin installed in Claude ' +
+      'Code, which the command-line agent was read to load. Whether the editor runs this ' +
+      'plugin’s hook, sets `CURSOR_VERSION` for it and hands it the payload the command-line ' +
+      'agent does was not read, so nothing above the first rung is promised for it. ' +
+      'The script that reads it is `plugin/captures/cursor-ide-script.md`.',
+    cells: {
+      server: {
+        does: true,
+        held: 'documentation',
+        at: 'https://cursor.com/docs/context/mcp',
+        read: CURSOR_READ_ON,
+      },
+      rulesFile: {
+        does: true,
+        held: 'documentation',
+        at: 'https://cursor.com/docs/context/rules',
+        read: CURSOR_READ_ON,
+      },
+      opens: { held: 'not ported' },
+      refuses: { held: 'not ported' },
+      asks: { held: 'not ported' },
+    },
+    places: {
+      skills: claudeFolder('skills', 'https://cursor.com/docs/context/skills', CURSOR_READ_ON),
+      agents: claudeFolder('agents', 'https://cursor.com/docs/context/subagents', CURSOR_READ_ON),
     },
   },
   droid: {

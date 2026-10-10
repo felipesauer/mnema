@@ -220,6 +220,7 @@ export const PAGES: Readonly<Record<string, number>> = {
   'docs/site.md': 1,
   'packages/code/README.md': 61,
   'plugin/README.md': 6,
+  'plugin/captures/cursor-ide-script.md': 4,
   'plugin/captures/cursor-script.md': 4,
 };
 

@@ -1088,6 +1088,7 @@ const CLAUSES_PER_FILE: Readonly<Record<string, number>> = {
   'packages/code/tests/the-converter-a-page-publishes-runs.test.ts': 9,
   'packages/code/tests/the-corner-says-what-its-level-covers.test.ts': 14,
   'packages/code/tests/the-cost-comes-from-the-host.test.ts': 6,
+  'packages/code/tests/the-cursor-editor-rises-only-with-a-capture.test.ts': 4,
   'packages/code/tests/the-document-is-a-function-of-the-record.test.ts': 6,
   'packages/code/tests/the-echo-names-the-record.test.ts': 13,
   'packages/code/tests/the-evidence-page-cites-what-exists.test.ts': 4,
