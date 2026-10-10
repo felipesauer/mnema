@@ -456,6 +456,26 @@ export const NAMES_THAT_NEED_MORE: Readonly<
     times: 1,
     why: 'the verb named in the table row about the page\u2019s verdict; the bullet above it hands the line over, with its --out',
   },
+  'CHANGELOG.md: mnema rules-file': {
+    times: 1,
+    why: 'the verb named in the entry on a rule addressed at a directory; its `--help` hands the --host it needs',
+  },
+  'CHANGELOG.md: mnema site': {
+    times: 1,
+    why: 'the verb named as what writes the page, the third reader the strict Ed25519 rule holds',
+  },
+  'CHANGELOG.md: mnema stack add': {
+    times: 1,
+    why: 'the verb named, beside its removal, as what writes the adoption kinds; the entry above hands the line over with <source>',
+  },
+  'CHANGELOG.md: mnema stack remove': {
+    times: 1,
+    why: 'the verb named, beside its adoption, as what writes the removal kind; its `--help` hands the name it needs',
+  },
+  'SECURITY.md: mnema site': {
+    times: 1,
+    why: 'the verb named as what writes the page whose reader is in scope; the page about it hands the line over',
+  },
   'docs/packages.md: mnema stack add': {
     times: 1,
     why: 'the verb named as why the stacks package is released; its `--help` hands the source and the --expect it needs',
@@ -683,7 +703,10 @@ export const HANDED_OVER: Readonly<
   // line 91 with the page of the stack index, which hands over `mnema stack add <source> --dry-run`.
   // line 101 for the editor's script, whose case table names `mnema rules-file --host cursor > …` in a cell.
   // name 162 for the command-line agent of Antigravity's script, whose cases name `mnema brief` twice.
-  span: { line: 102, name: 162, flag: 3, unwritten: 0 },
+  // line 106, name 172 and flag 4 for the changelog's entries on what landed after the pre-release
+  // (the hosts, stacks, `mnema report`, `mnema promote`, `MNEMA_CACHE_DIR`, `rules-file` and the
+  // private tree's move), and the security policy's scope, which names the page `mnema site` writes.
+  span: { line: 106, name: 172, flag: 4, unwritten: 0 },
   // name 18 until the page that says where the key lives named `mnema key protect` in a line of
   // its own.
   // line 35 until the same page showed that question in a block of its own.

@@ -2,6 +2,15 @@
   "name": "@mnema/stacks",
   "version": "0.1.0-beta",
   "description": "The stack contract: the stack.json schema, the validator, and the canonical digest a stack is identified by. A pure library; it runs nothing.",
+  "keywords": [
+    "agent-skills",
+    "skills",
+    "ai-agents",
+    "claude-code",
+    "coding-agents",
+    "digest",
+    "mnema"
+  ],
   "author": "Felipe Sauer (https://github.com/felipesauer)",
   "license": "Apache-2.0",
   "type": "module",
