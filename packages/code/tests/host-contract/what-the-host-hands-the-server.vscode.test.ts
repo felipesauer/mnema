@@ -18,6 +18,7 @@ describe("what VS Code's agent hands the server it starts", () => {
       settings: { 'chat.mcp.autostart': 'newAndOutdated' },
       target: 'src/anywhere/file.ts',
     });
+    expect(session.requests[0]?.tools, session.log.slice(-1500)).toEqual([]);
     const handed = theServerWasHanded(session.project);
 
     expect(handed).toEqual({ client: '?', chain: ['?'], present: [] });
