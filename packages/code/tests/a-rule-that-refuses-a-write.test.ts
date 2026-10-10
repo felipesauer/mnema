@@ -145,6 +145,14 @@ function payloadFor(host: HookHost, relative: string): string {
       tool_use_id: 'call-1',
     });
   }
+  if (host === 'opencode') {
+    // As the plugin OpenCode loads hands it (`plugin/opencode/mnema.js`): the tool's own name and
+    // the arguments OpenCode gave its hook, the path absolute under `filePath`.
+    return JSON.stringify({
+      tool_name: 'write',
+      tool_input: { filePath: join(repo, relative), content: 'export const probe = 1;\n' },
+    });
+  }
   if (host === 'copilot') {
     // As Copilot CLI 1.0.94 hands a hook configured under the PascalCase event name: Claude's
     // tool names (its `create` is `Write`), snake_case fields, and the path under `path`.
@@ -438,6 +446,49 @@ describe('the verb a command host runs', () => {
   it('codex: a write that only asks is let through in silence, with nothing recorded', () => {
     const before = publicEvents().length;
     expect(verb('codex', 'src/other/refund.ts')).toEqual({ reply: {}, notes: [] });
+    expect(publicEvents().length).toBe(before);
+  });
+
+  it('reads the paths of OpenCode’s three writers: `write` and `edit` under `filePath`, a patch under `patchText`', () => {
+    expect(
+      pathsOfAWrite('opencode', { tool_name: 'write', tool_input: { filePath: '/w/a.ts' } }),
+    ).toEqual(['/w/a.ts']);
+    expect(
+      pathsOfAWrite('opencode', {
+        tool_name: 'edit',
+        tool_input: { filePath: '/w/b.ts', oldString: 'a', newString: 'b' },
+      }),
+    ).toEqual(['/w/b.ts']);
+    const patch = [
+      '*** Begin Patch',
+      '*** Add File: src/a.ts',
+      '*** Update File: src/b.ts',
+      '*** Move to: src/c.ts',
+      '*** Delete File: src/d.ts',
+      '*** End Patch',
+    ].join('\n');
+    expect(
+      pathsOfAWrite('opencode', { tool_name: 'apply_patch', tool_input: { patchText: patch } }),
+    ).toEqual(['src/a.ts', 'src/b.ts', 'src/c.ts', 'src/d.ts']);
+    // The fields of the other hosts are not read, and a read is no write.
+    expect(
+      pathsOfAWrite('opencode', { tool_name: 'apply_patch', tool_input: { command: patch } }),
+    ).toEqual([]);
+    expect(
+      pathsOfAWrite('opencode', { tool_name: 'write', tool_input: { file_path: '/w/a.ts' } }),
+    ).toEqual([]);
+    expect(
+      pathsOfAWrite('opencode', { tool_name: 'read', tool_input: { filePath: '/w/a.ts' } }),
+    ).toBeUndefined();
+    expect(
+      pathsOfAWrite('opencode', { tool_name: 'Write', tool_input: { filePath: '/w/a.ts' } }),
+    ).toBeUndefined();
+    expect(asksAPerson('opencode')).toBe(false);
+  });
+
+  it('opencode: a write that only asks is let through in silence, with nothing recorded', () => {
+    const before = publicEvents().length;
+    expect(verb('opencode', 'src/other/refund.ts')).toEqual({ reply: {}, notes: [] });
     expect(publicEvents().length).toBe(before);
   });
 });
