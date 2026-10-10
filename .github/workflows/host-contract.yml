@@ -159,7 +159,6 @@ jobs:
       fail-fast: false
       matrix:
         version: ${{ fromJSON(contains(fromJSON('["schedule","workflow_dispatch"]'), github.event_name) && '["stable"]' || '["1.139.0"]') }}
-        shard: [1, 2, 3, 4, 5, 6]
     steps:
       - uses: actions/checkout@v7
 
@@ -202,21 +201,7 @@ jobs:
       - name: Hold the contract, with only loopback
         env:
           MNEMA_HOST_CONTRACT_HOST: vscode
-        run: |
-          cat > "$RUNNER_TEMP/probe.sh" <<'EOF'
-          ip link set lo up
-          for k in 1 2 3 4; do (while :; do :; done) & done
-          for i in $(seq 1 18); do
-            if xvfb-run -a ./node_modules/.bin/vitest run --config vitest.host-contract.config.ts 2>&1 | tee "$RUNNER_TEMP/p$i.log" | grep -c . > /dev/null; test "${PIPESTATUS[0]}" = 0; then
-              echo "PROBE $i ok"
-            else
-              echo "PROBE $i FAILED"
-              grep -v 'dbus\|^ *at ' "$RUNNER_TEMP/p$i.log" | tail -90
-            fi
-          done
-          kill $(jobs -p)
-          EOF
-          unshare -rn bash "$RUNNER_TEMP/probe.sh"
+        run: unshare -rn bash -c 'ip link set lo up && exec xvfb-run -a ./node_modules/.bin/vitest run --config vitest.host-contract.config.ts'
 
   # THE SAME CONTRACT FOR CODEX. The binary is the one npm installs from `@openai/codex` (Apache-2.0),
   # and before it runs, npm checks the registry's signature of each package and the provenance
