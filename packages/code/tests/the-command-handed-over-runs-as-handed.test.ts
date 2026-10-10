@@ -456,6 +456,26 @@ export const NAMES_THAT_NEED_MORE: Readonly<
     times: 1,
     why: 'the verb named in the table row about the page\u2019s verdict; the bullet above it hands the line over, with its --out',
   },
+  'CHANGELOG.md: mnema rules-file': {
+    times: 1,
+    why: 'the verb named in the entry on a rule addressed at a directory; its `--help` hands the --host it needs',
+  },
+  'CHANGELOG.md: mnema site': {
+    times: 1,
+    why: 'the verb named as what writes the page, the third reader the strict Ed25519 rule holds',
+  },
+  'CHANGELOG.md: mnema stack add': {
+    times: 1,
+    why: 'the verb named, beside its removal, as what writes the adoption kinds; the entry above hands the line over with <source>',
+  },
+  'CHANGELOG.md: mnema stack remove': {
+    times: 1,
+    why: 'the verb named, beside its adoption, as what writes the removal kind; its `--help` hands the name it needs',
+  },
+  'SECURITY.md: mnema site': {
+    times: 1,
+    why: 'the verb named as what writes the page whose reader is in scope; the page about it hands the line over',
+  },
   'README.md: mnema stack add': {
     times: 1,
     why: 'the verb named in the row of the features table on stacks; the package page hands the line over, with --dry-run',
@@ -708,7 +728,10 @@ export const HANDED_OVER: Readonly<
   // package page's sections on stacks and on `mnema report`, the front page's and the features
   // page's rows on `mnema stack add`, and the features page's lines on `mnema handback` and its
   // switch.
-  span: { line: 104, name: 171, flag: 2, unwritten: 0 },
+  // line 108, name 181 and flag 3 for the changelog's entries on what landed after the pre-release
+  // (the hosts, stacks, `mnema report`, `mnema promote`, `MNEMA_CACHE_DIR`, `rules-file` and the
+  // private tree's move), and the security policy's scope, which names the page `mnema site` writes.
+  span: { line: 108, name: 181, flag: 3, unwritten: 0 },
   // name 18 until the page that says where the key lives named `mnema key protect` in a line of
   // its own.
   // line 35 until the same page showed that question in a block of its own.

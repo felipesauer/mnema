@@ -2,6 +2,11 @@
   "name": "@mnema/context",
   "version": "0.1.0-beta",
   "description": "The mnema context layer: read-only derivations that turn the proven record into the context that guides an agent. Depends on @mnema/core.",
+  "keywords": [
+    "ai-agents",
+    "coding-agents",
+    "decision-records"
+  ],
   "author": "Felipe Sauer (https://github.com/felipesauer)",
   "license": "Apache-2.0",
   "type": "module",

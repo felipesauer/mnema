@@ -26,22 +26,13 @@ __pycache__/
 # Local AI-assistant state (permissions, plans).
 .claude/
 
-# Reconstruction workbench (local-only; see .refactor/README.md).
+# A local workbench, never committed.
 .refactor/
 
-# Alpha-era local-only artifacts kept out of the reconstruction (referenced
-# from the `main` branch; not part of the rebuilt tree).
-docs-local/
-scripts/
-
-# Dogfood: mnema runs against itself in this repo, so this .mnema/ is a
-# development workbench, not a reference project — ignored WHOLESALE.
-#
-# This is a deliberate exception for the tool's OWN repo. Adopter projects do
-# the opposite (and `mnema init` scaffolds a .gitignore that commits the chain
-# and public keys, ignoring only the rebuildable state/cache and the private
-# key). The faithful examples of the audit flow are those adopter repos, never
-# this one.
+# This repository keeps no mnema record of its own: a .mnema/ here is what a run of the binary
+# left behind, and it is ignored whole so none of it is ever committed. A project that adopts
+# mnema does the opposite — `mnema init` writes a .gitignore that commits the chain and the
+# public keys and ignores only the rebuildable cache and the private key.
 .mnema/
 
 # What `pnpm --filter @mnema/vscode package` writes. Built on request, never reviewed.

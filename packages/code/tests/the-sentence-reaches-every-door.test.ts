@@ -396,6 +396,26 @@ const KEYWORDS_THE_PROMISE_BUYS: Readonly<Record<string, string>> = {
   accountability:
     'the record carries who wrote each fact down, which is the third thing the promise names',
   'tamper-evident': 'verbatim in the caveat, and stated there together with what it is NOT',
+  'mcp-server': 'the same fact as `mcp`, spelled the way a server for the protocol is searched for',
+  'coding-agents':
+    'the same work as `ai-agents`, named the way the hosts that write code are searched for',
+  'decision-records': 'the same thing as `adr`, in words',
+  'claude-code':
+    'a host the plugin is written for, at the rung the host table holds by a test against its real binary',
+  codex:
+    'a host the plugin is ported to, at the rung the host table holds by a test against its real binary',
+  'github-copilot':
+    'Copilot CLI, a host the plugin is ported to, at the rung the host table holds by a test against its real binary',
+  'gemini-cli':
+    'a host the plugin is ported to, at the rung the host table holds by a test against its real binary',
+  opencode:
+    'a host the plugin is ported to, at the rung the host table holds by a test against its real binary',
+  cursor:
+    "a host whose command-line agent runs the plugin, read once on the host and said so in the host table's cell",
+  'hash-chain': 'the format: every event is hash-chained to the one before it in its tail',
+  ed25519: 'the signature the format specifies, and the one rule every reader holds it to',
+  'agent-skills':
+    'the open format a stack carries its skills in, byte for byte; a fact about the contract, not a claim about the record',
 };
 
 describe('no keyword promises what the sentence does not', () => {
