@@ -211,8 +211,8 @@ tag, with its own changelog.
   the product's own server, each job starts one that writes down the name the client announced, the
   executables above it and which of a closed list of variables exist in its environment — names
   only, never a value or a path — and the case asserts them by value. Held for Claude Code, Codex,
-  GitHub Copilot CLI, Gemini CLI and OpenCode; VS Code's agent does not start the plugin's server
-  in its job, and a case says so. The table is in `docs/evidence.md`.
+  GitHub Copilot CLI, Gemini CLI and OpenCode; in VS Code's agent's job no handshake of the plugin's server
+  is seen, and a case says so, without saying why. The table is in `docs/evidence.md`.
 
 ### Changed
 

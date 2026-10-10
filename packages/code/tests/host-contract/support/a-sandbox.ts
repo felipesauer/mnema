@@ -141,7 +141,7 @@ export interface WhatTheServerWasHanded {
 export function theServerWasHanded(project: string): WhatTheServerWasHanded {
   const file = join(dirname(project), 'what-the-server-was-handed.json');
   if (!existsSync(file)) {
-    throw new Error('the host never started the server that was to measure it');
+    throw new Error('the server that was to measure it wrote no report');
   }
   return JSON.parse(readFileSync(file, 'utf-8')) as WhatTheServerWasHanded;
 }
