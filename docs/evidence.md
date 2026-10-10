@@ -149,6 +149,10 @@ what is read of it is read by hand, from a script kept beside the plugin and a f
 the version and the checksum of what ran. [How a capture is made](../plugin/captures/README.md). A
 capture is a dated reading and is never presented here as a test.
 
+Cursor's editor needs an account too, and no capture of it has been made: the table above says of it
+only what Cursor's documentation says, and [the script for reading it](../plugin/captures/cursor-ide-script.md)
+is what a later capture follows.
+
 | The claim | Read on | Held by |
 |---|---|---|
 | In an interactive Claude Code session, a person is shown the rule that asked and decides, and the write waits for that decision | Claude Code 2.1.228, 19 August 2026 | not held yet |

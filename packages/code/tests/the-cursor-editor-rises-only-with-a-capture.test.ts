@@ -16,10 +16,10 @@
  * the other is red here as well.
  */
 
-import { readFileSync, readdirSync } from 'node:fs';
+import { readdirSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
-import { HOSTS } from '../src/host-names.js';
+import { type Cell, HOSTS } from '../src/host-names.js';
 
 const ROOT = join(import.meta.dirname, '..', '..', '..');
 const CAPTURES = join(ROOT, 'plugin', 'captures');
@@ -46,11 +46,15 @@ function captureDays(): string[] {
     .map((match) => `${Number(match[3])} ${MONTHS[Number(match[2]) - 1]} ${match[1]}`);
 }
 
+/** A cell of the editor's row, as the type every row's cells have. */
+const cellOf = (capability: 'opens' | 'refuses' | 'asks'): Cell =>
+  HOSTS.cursorIde.cells[capability];
+
 describe("Cursor's editor, above the first rung", () => {
   it('has a cell above it only where a capture of that day is committed', () => {
     const days = captureDays();
     for (const capability of ['opens', 'refuses', 'asks'] as const) {
-      const cell = HOSTS.cursorIde.cells[capability];
+      const cell = cellOf(capability);
       if (cell.held === 'not ported') continue;
       const read = 'read' in cell ? cell.read : '';
       expect(
