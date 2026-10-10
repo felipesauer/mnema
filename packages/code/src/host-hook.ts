@@ -169,6 +169,11 @@ const WRITES: { readonly [H in HookHost]: { readonly [tool: string]: PathsOf } }
   // absolute `filePath`, and `apply_patch` — the writer the `gpt-` models get instead of those two —
   // the patch under `patchText` (`packages/opencode/src/tool/`, 1.18.35).
   opencode: { write: filePath, edit: filePath, apply_patch: patchIn('patchText') },
+  // THE NAMES GEMINI CLI GIVES ITS TWO WRITING TOOLS, handed over as they are to a `BeforeTool`
+  // hook with the arguments the model gave, the path under `file_path`: `write_file` and `replace`
+  // (`packages/core/src/tools/definitions/base-declarations.ts`, v0.63.0). A multi-file tool of
+  // its own was not read, and a file a shell command writes is not a tool this table can name.
+  gemini: { write_file: snakeFilePath, replace: snakeFilePath },
 };
 
 /**
@@ -227,6 +232,17 @@ export function replyFor(host: HookHost, said: HookSaid): object {
     // OpenCode's plugin is this product's own and reads the same nested reply: it throws the
     // reason on `deny`, which OpenCode hands the model as the call's error.
     opencode: (s) => hookReply('PreToolUse', s),
+    // Gemini CLI reads the decision at the top level of the reply — `decision` and `reason` — and
+    // has no field called `permissionDecision`; the nested reply would be read as nothing. Only a
+    // refusal reaches it: its row says it is not asked.
+    gemini: (s) => {
+      const said = hookReply('PreToolUse', s).hookSpecificOutput;
+      return said !== undefined &&
+        'permissionDecision' in said &&
+        said.permissionDecision === 'deny'
+        ? { decision: 'deny', reason: said.permissionDecisionReason }
+        : {};
+    },
   };
   return reply[host](said);
 }

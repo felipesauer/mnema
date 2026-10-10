@@ -134,6 +134,7 @@ describe('a stack is installed into the folders the host table names', () => {
         'Codex',
         'GitHub Copilot CLI',
         'OpenCode',
+        'Gemini CLI',
         "Antigravity's command line (`agy`)",
         'Factory Droid',
         'Qwen Code',

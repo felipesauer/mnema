@@ -849,7 +849,7 @@ complete -c mnema -f -n '__mnema_at "run end"' -s V -l version
 complete -c mnema -f -n '__mnema_at "run end"' -l color -x -a 'auto always never'
 
 # mnema before-a-write
-complete -c mnema -f -n '__mnema_at "before-a-write"' -l host -x -a 'vscode cursor codex copilot opencode'
+complete -c mnema -f -n '__mnema_at "before-a-write"' -l host -x -a 'vscode cursor codex copilot opencode gemini'
 complete -c mnema -f -n '__mnema_at "before-a-write"' -s h -l help
 complete -c mnema -f -n '__mnema_at "before-a-write"' -s V -l version
 complete -c mnema -f -n '__mnema_at "before-a-write"' -l color -x -a 'auto always never'
