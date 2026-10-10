@@ -681,7 +681,8 @@ export const HANDED_OVER: Readonly<
   // `--schema` in the plugin page and the package page, and the switch that stops it, each in a
   // line of its own or in a span.
   // line 91 with the page of the stack index, which hands over `mnema stack add <source> --dry-run`.
-  span: { line: 100, name: 160, flag: 3, unwritten: 0 },
+  // line 101 for the editor's script, whose case table names `mnema rules-file --host cursor > …` in a cell.
+  span: { line: 101, name: 160, flag: 3, unwritten: 0 },
   // name 18 until the page that says where the key lives named `mnema key protect` in a line of
   // its own.
   // line 35 until the same page showed that question in a block of its own.
@@ -700,7 +701,9 @@ export const HANDED_OVER: Readonly<
   // line 52 and name 27 for the script that reads Cursor by hand: it makes a project of its own with
   // `mnema init`, and records and moves a rule and links it (`mnema decision record`, `mnema decision
   // move`, `mnema link`).
-  block: { line: 52, name: 27, flag: 1, unwritten: 0 },
+  // line 55 and name 28 for the script that reads Cursor's editor: the same project and the same
+  // rule, and `mnema rules-file --host cursor`, which writes the rules file the editor is asked about.
+  block: { line: 55, name: 28, flag: 1, unwritten: 0 },
   // 46 until the refusal an agent's `accept` gets, with the switch off, began naming the command a
   // person accepts with (`agent-accepts.ts`).
   // line 34 until the sentences an agent's accept is answered with began handing whole lines
