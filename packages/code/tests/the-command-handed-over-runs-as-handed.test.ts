@@ -682,7 +682,8 @@ export const HANDED_OVER: Readonly<
   // line of its own or in a span.
   // line 91 with the page of the stack index, which hands over `mnema stack add <source> --dry-run`.
   // line 101 for the editor's script, whose case table names `mnema rules-file --host cursor > …` in a cell.
-  span: { line: 101, name: 160, flag: 3, unwritten: 0 },
+  // name 162 for the command-line agent of Antigravity's script, whose cases name `mnema brief` twice.
+  span: { line: 101, name: 162, flag: 3, unwritten: 0 },
   // name 18 until the page that says where the key lives named `mnema key protect` in a line of
   // its own.
   // line 35 until the same page showed that question in a block of its own.
@@ -703,7 +704,9 @@ export const HANDED_OVER: Readonly<
   // move`, `mnema link`).
   // line 55 and name 28 for the script that reads Cursor's editor: the same project and the same
   // rule, and `mnema rules-file --host cursor`, which writes the rules file the editor is asked about.
-  block: { line: 55, name: 28, flag: 1, unwritten: 0 },
+  // line 58 and name 29 for the script that reads Antigravity's command line: the same project and
+  // rules, with `mnema init`, the rule helper, and `mnema brief > …`, which writes the rules file it is asked about.
+  block: { line: 58, name: 29, flag: 1, unwritten: 0 },
   // 46 until the refusal an agent's `accept` gets, with the switch off, began naming the command a
   // person accepts with (`agent-accepts.ts`).
   // line 34 until the sentences an agent's accept is answered with began handing whole lines

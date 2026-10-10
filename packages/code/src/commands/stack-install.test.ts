@@ -133,6 +133,7 @@ describe('a stack is installed into the folders the host table names', () => {
       agents: [
         'Codex',
         'GitHub Copilot CLI',
+        "Antigravity's command line (`agy`)",
         'Factory Droid',
         'Qwen Code',
         'Goose',

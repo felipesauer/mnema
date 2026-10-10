@@ -1,0 +1,100 @@
+{
+  "capturedBy": "by hand",
+  "date": "YYYY-MM-DD",
+  "host": {
+    "name": "Antigravity's command line (agy)",
+    "command": "agy",
+    "version": "",
+    "versionAtTheEnd": "",
+    "sha256": "",
+    "plan": "",
+    "model": "",
+    "mode": "accept-edits | default | plan",
+    "enableTelemetry": "true | false"
+  },
+  "machine": "",
+  "script": {
+    "file": "plugin/captures/antigravity-cli-script.md",
+    "commit": ""
+  },
+  "plugin": {
+    "version": "",
+    "commit": "",
+    "installedFrom": "this checkout"
+  },
+  "rules": {
+    "refuses-a-write": { "address": "src/frozen", "id": "" },
+    "asks-for-a-person": { "address": "src/ledger", "id": "" },
+    "governs": { "address": "src/billing", "id": "" }
+  },
+  "cases": [
+    {
+      "id": "plugin-is-read-as-it-is",
+      "expected": "agy installs the plugin directory of this checkout as it is and lists its skills and its server.",
+      "observed": "",
+      "channelFacts": { "channel.refused": 0, "channel.asked": 0, "channel.served": 0 },
+      "verdict": "held | did-not-hold | not-run",
+      "transcript": []
+    },
+    {
+      "id": "hook-gets-the-payload-it-reads",
+      "expected": "A PreToolUse runs for a creation and for an edit, with toolCall.name write_to_file and then replace_file_content (or multi_replace_file_content), the path under toolCall.args.TargetFile, and workspacePaths naming the project.",
+      "observed": "",
+      "probe": { "toolNames": [], "pathField": "", "pathIsAbsolute": false, "variablesSet": [] },
+      "channelFacts": { "channel.refused": 0, "channel.asked": 0, "channel.served": 0 },
+      "verdict": "held | did-not-hold | not-run",
+      "transcript": []
+    },
+    {
+      "id": "opens-by-pre-invocation",
+      "expected": "A PreInvocation ran with invocationNum 0, the text of mnema brief arrived as a message of the conversation, and the model names the three rules.",
+      "observed": "",
+      "probe": { "invocationsRun": 0, "invocationNumbers": [] },
+      "channelFacts": { "channel.refused": 0, "channel.asked": 0, "channel.served": 0 },
+      "verdict": "held | did-not-hold | not-run",
+      "transcript": []
+    },
+    {
+      "id": "refuses-a-write",
+      "expected": "The file is not created, and the model is told `src/frozen is frozen`.",
+      "observed": "",
+      "channelFacts": { "channel.refused": 0, "channel.asked": 0, "channel.served": 0 },
+      "verdict": "held | did-not-hold | not-run",
+      "transcript": []
+    },
+    {
+      "id": "ask-pauses-the-write",
+      "expected": "The file is not created while the prompt is open and after n, is created after y, and the prompt shows the probe's reason; under -p the file's existence and what agy printed are written down.",
+      "observed": "",
+      "headless": { "fileCreated": false, "stdout": "", "stderr": "" },
+      "channelFacts": { "channel.refused": 0, "channel.asked": 0, "channel.served": 0 },
+      "verdict": "held | did-not-hold | not-run",
+      "transcript": []
+    },
+    {
+      "id": "no-rule",
+      "expected": "The file is created, and nothing was said about a rule.",
+      "observed": "",
+      "channelFacts": { "channel.refused": 0, "channel.asked": 0, "channel.served": 0 },
+      "verdict": "held | did-not-hold | not-run",
+      "transcript": []
+    },
+    {
+      "id": "server-is-reached",
+      "expected": "A server named mnema is listed and connected, its tools keep their own names, and governing_rules returns the rule `Bill in UTC` with its id.",
+      "observed": "",
+      "needsCwd": false,
+      "channelFacts": { "channel.refused": 0, "channel.asked": 0, "channel.served": 0 },
+      "verdict": "held | did-not-hold | not-run",
+      "transcript": []
+    },
+    {
+      "id": "rules-file-is-read",
+      "expected": "The answer names AGENTS.md and says `Bill in UTC`.",
+      "observed": "",
+      "channelFacts": { "channel.refused": 0, "channel.asked": 0, "channel.served": 0 },
+      "verdict": "held | did-not-hold | not-run",
+      "transcript": []
+    }
+  ]
+}
