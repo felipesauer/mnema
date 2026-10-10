@@ -714,6 +714,7 @@ describe('every verb says if it writes', () => {
       'task guard': (f) => ['task', 'guard', 'submit', f.task, '--actor', f.anchor],
       'skill provenance': () => ['skill', 'provenance'],
       'stack list': () => ['stack', 'list', '--to', STACK_TO()],
+      'stack index': () => ['stack', 'index', STACK_INDEX],
       'stack show': () => ['stack', 'show', 'hello-stack', '--to', STACK_TO()],
       'stack diff': () => ['stack', 'diff', 'hello-stack', '--to', STACK_TO()],
       'stack check': () => ['stack', 'check', '--to', STACK_TO()],
@@ -721,6 +722,7 @@ describe('every verb says if it writes', () => {
     // The stack the four `stack` readers look at: installed into a folder of its own, which
     // records nothing, so the readers are measured against a receipt that really exists.
     const STACK_TO = (): string => join(sandbox, 'stack-to');
+    const STACK_INDEX = fileURLToPath(new URL('../../../stack-index', import.meta.url));
     const HELLO_STACK = fileURLToPath(
       new URL('../../stacks/fixtures/hello-stack', import.meta.url),
     );

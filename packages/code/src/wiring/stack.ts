@@ -227,12 +227,44 @@ export function registerStack(program: Command, wiring: Wiring): Declared {
     stack
       .command('list')
       .description('list the installed stacks, and whether each is still as written'),
-  ).action(async (opts: TargetOptions) => {
-    const target = readTargetOf(wiring, opts.scope, opts.to);
-    if (target === null) return;
-    const { listLines } = await import('../commands/stack-inspect.js');
-    for (const line of listLines(here(), target)) io.out(line);
-  });
+  )
+    .option('--json', 'emit the same reading as JSON, for a program to take')
+    .action(async (opts: TargetOptions & { json?: boolean }) => {
+      const target = readTargetOf(wiring, opts.scope, opts.to);
+      if (target === null) return;
+      const { listJson, listLines } = await import('../commands/stack-inspect.js');
+      if (opts.json === true) {
+        io.out(listJson(here(), target));
+        return;
+      }
+      for (const line of listLines(here(), target)) io.out(line);
+    });
+
+  const index = stack
+    .command('index')
+    .description('list the stacks an index names, with the digest each must have')
+    .argument('[folder]', 'the folder holding index.json', 'stack-index')
+    .option('--json', 'emit the entries as JSON, for a program to take')
+    .addHelpText(
+      'after',
+      [
+        '',
+        'The index holds no stack: each entry is a name, a link and a digest, and one kept in the',
+        'same checkout names its folder. Being listed does not make a stack safe. Add one with',
+        '`mnema stack add <source> --dry-run`, and it is the stack listed only if the digest the',
+        'plan shows is the one the index gives.',
+      ].join('\n'),
+    )
+    .action(async (folder: string, opts: { json?: boolean }) => {
+      const { indexJson, indexLines, readStackIndex } = await import('../commands/stack-index.js');
+      const read = readStackIndex(here().cwd, folder);
+      if (!read.ok) {
+        reportRefusal(wiring, said(read));
+        return;
+      }
+      if (opts.json === true) io.out(indexJson(read));
+      else for (const line of indexLines(read)) io.out(line);
+    });
 
   const show = lookOptions(
     stack
@@ -446,6 +478,7 @@ export function registerStack(program: Command, wiring: Wiring): Declared {
     mutatesTheRecord(add),
     mutatesTheRecord(remove),
     readsTheRecord(list),
+    readsTheRecord(index),
     readsTheRecord(show),
     readsTheRecord(diff),
     readsTheRecord(check),

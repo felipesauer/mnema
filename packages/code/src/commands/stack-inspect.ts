@@ -301,6 +301,32 @@ export function listLines(ctx: StackContext, target: StackTarget | undefined): s
   return lines.length === 0 ? ['No stack is installed.'] : lines;
 }
 
+/**
+ * `stack list` for a program to read: the same entries, with the same judgement, as fields. A hook is
+ * counted `on` only when a person approved it at a terminal; this reading approves nothing.
+ */
+export function listJson(ctx: StackContext, target: StackTarget | undefined): string {
+  const stacks = allEntries(ctx, target).map((entry) => {
+    const i = inspect(entry);
+    const where = 'to' in entry.target ? { to: entry.target.to } : { scope: entry.target.scope };
+    if (i.refused !== undefined || entry.receipt === undefined) {
+      return { name: entry.name, ...where, refused: oneLine(i.refused ?? ''), sound: false };
+    }
+    return {
+      name: entry.name,
+      ...where,
+      version: entry.receipt.version,
+      digest: entry.receipt.digest,
+      files: i.files.length,
+      changed: i.files.filter((f) => f.state !== 'as written').length,
+      hooks: i.hooks.length,
+      hooksOn: i.hooks.filter((h) => h.state === 'on').length,
+      sound: isSound(i),
+    };
+  });
+  return JSON.stringify({ stacks });
+}
+
 /** The lines of `stack show`: everything the receipt, the files and the record say of one stack. */
 export function showLines(i: Inspection): string[] {
   const { entry } = i;

@@ -15,7 +15,7 @@ _mnema_commands() {
     '') echo 'init decision link unlink memory observe retract skill stack task promote status brief recall rules rules-file switch inherit verify witness check site search show timeline refs audit diagram export usage resume repl why commits aging trailer commit-hook key tail doctor report completion mcp run before-a-write tally corrections handback help' ;;
     'decision') echo 'record move supersede import help' ;;
     'skill') echo 'create move export provenance help' ;;
-    'stack') echo 'add remove list show diff check export enable disable help' ;;
+    'stack') echo 'add remove list index show diff check export enable disable help' ;;
     'task') echo 'create move handoff next guard help' ;;
     'switch') echo 'off on' ;;
     'inherit') echo 'set update help' ;;
@@ -97,6 +97,7 @@ _mnema_described() {
       'add:show the plan of a stack, and write it when --expect names its digest' \
       'remove:remove an installed stack, keeping every file changed since it was written' \
       'list:list the installed stacks, and whether each is still as written' \
+      'index:list the stacks an index names, with the digest each must have' \
       'show:show one installed stack: its files, its hooks, and the record' \
       'diff:compare the installed files with their receipt, and the receipt with the record' \
       'check:check every installed stack, or one, against its receipt and the record; fails if any departs' \
@@ -179,7 +180,8 @@ _mnema_flags() {
     'stack') echo '-h --help -V --version --color' ;;
     'stack add') echo '--scope --to --as --expect --dry-run -h --help -V --version --color' ;;
     'stack remove') echo '--scope --to --dry-run -h --help -V --version --color' ;;
-    'stack list') echo '--scope --to -h --help -V --version --color' ;;
+    'stack list') echo '--scope --to --json -h --help -V --version --color' ;;
+    'stack index') echo '--json -h --help -V --version --color' ;;
     'stack show') echo '--scope --to -h --help -V --version --color' ;;
     'stack diff') echo '--scope --to -h --help -V --version --color' ;;
     'stack check') echo '--scope --to -h --help -V --version --color' ;;
@@ -297,6 +299,7 @@ _mnema_values() {
     'stack remove:--color') echo 'auto always never' ;;
     'stack list:--scope') echo 'public private global' ;;
     'stack list:--color') echo 'auto always never' ;;
+    'stack index:--color') echo 'auto always never' ;;
     'stack show:--scope') echo 'public private global' ;;
     'stack show:--color') echo 'auto always never' ;;
     'stack diff:--scope') echo 'public private global' ;;
