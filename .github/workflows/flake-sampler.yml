@@ -191,6 +191,7 @@ jobs:
         env:
           REPETITIONS: ${{ github.event.inputs.repetitions || 10 }}
           LABELS: '9'
+          RUN: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
         run: |
           set -euo pipefail
           case "$REPETITIONS" in
@@ -202,13 +203,68 @@ jobs:
             --per-label "$REPETITIONS" \
             --expect "$((REPETITIONS * LABELS))" \
             --summary "$GITHUB_STEP_SUMMARY" \
-            --json tally.json
+            --json tally.json \
+            --issues issues.json \
+            --run "$RUN"
 
       - name: Upload the tally
         if: always()
         uses: actions/upload-artifact@v7
         with:
           name: flake-tally
-          path: tally.json
+          path: |
+            tally.json
+            issues.json
           retention-days: 90
           if-no-files-found: warn
+
+  # THE ONLY JOB IN THIS FILE THAT MAY WRITE, and only on a night. A night that found a case used to
+  # be a red job on a page nobody opens, and it went red two nights running before anybody knew.
+  # This opens ONE issue per case, or adds a comment to the one that is open, in the mould of the
+  # `tell-somebody` of `host-contract.yml`. It is still not a gate: an issue blocks nothing, and
+  # this job is not a required check and must never become one.
+  #
+  # IT RUNS ON `schedule` ONLY. A pull request that touches the sampler runs the sampler to prove
+  # it counts, and that proof must not open an issue; nor may a hand-asked night with a custom
+  # `repetitions`, whose rate is not the nightly one.
+  #
+  # IT SPEAKS ONLY FROM A TALLY THE SUMMARISER PUBLISHED. `issues.json` is empty on a clean night
+  # and on a broken ruler (which has no rate to quote), and a night whose artifact never arrived
+  # has no file at all and says nothing rather than failing a second time.
+  tell-somebody:
+    name: open an issue
+    needs: summarise
+    if: ${{ always() && github.event_name == 'schedule' }}
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    permissions:
+      issues: write
+    steps:
+      - name: Download the tally
+        uses: actions/download-artifact@v8
+        with:
+          name: flake-tally
+          path: tally
+        continue-on-error: true
+
+      - name: Open the issue, or add to the one that is open
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          if [ ! -f tally/issues.json ]; then echo "no issues.json: nothing to say"; exit 0; fi
+          COUNT=$(jq 'length' tally/issues.json)
+          echo "$COUNT case(s) to tell somebody about"
+          for INDEX in $(seq 0 $((COUNT - 1))); do
+            TITLE=$(jq -r ".[$INDEX].title" tally/issues.json)
+            BODY=$(jq -r ".[$INDEX].body" tally/issues.json)
+            # The stable token the summariser puts at the end of every title: a search by the whole
+            # title breaks on a quote in a case name, a search by the token cannot.
+            TOKEN=$(printf '%s' "$TITLE" | grep -o 'sampler-[0-9a-f]*' | tail -n 1)
+            OPEN=$(gh issue list --repo "$GITHUB_REPOSITORY" --state open --search "in:title \"$TOKEN\"" --json number --jq '.[0].number // empty')
+            if [ -n "$OPEN" ]; then
+              gh issue comment "$OPEN" --repo "$GITHUB_REPOSITORY" --body "$BODY"
+            else
+              gh issue create --repo "$GITHUB_REPOSITORY" --title "$TITLE" --body "$BODY"
+            fi
+          done
