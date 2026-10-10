@@ -2,6 +2,13 @@
   "name": "@mnema/chain",
   "version": "0.1.0-beta",
   "description": "The mnema proof engine: typed event catalog, per-tail hash chain, Ed25519 checkpoints, and verification. Zero runtime dependencies.",
+  "keywords": [
+    "append-only",
+    "tamper-evident",
+    "audit-trail",
+    "hash-chain",
+    "ed25519"
+  ],
   "author": "Felipe Sauer (https://github.com/felipesauer)",
   "license": "Apache-2.0",
   "type": "module",

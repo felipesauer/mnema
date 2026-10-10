@@ -12,6 +12,70 @@ tag, with its own changelog.
 
 ### Added
 
+- **The plugin reaches seven hosts, from one table of the hosts.** `packages/code/src/host-names.ts`
+  holds one row per host and one cell per rung — (a) the MCP server and a rules file, (b) the opening
+  of a session, (c) a refusal before a write, (d) a pause for a person — each saying how it is known:
+  held by a test, read once on the real host, or documented and not measured. The plugin's hooks
+  files and manifests, a summary on the README and the whole table on `docs/evidence.md` are
+  generated from it, and a test is red when one of them was edited by hand. Codex, GitHub Copilot
+  CLI, OpenCode and Gemini CLI are ported: Codex and Copilot CLI read a manifest and a hooks file of
+  their own in the plugin, OpenCode a module copied into the project, Gemini CLI an extension
+  installed from a checkout. Each opens a session and refuses a write where a rule refuses it,
+  Copilot CLI also pauses one for a person, and each is held by a job that runs the host's real
+  binary against a stand-in model, with no account. `mnema before-a-write --host` takes `codex`,
+  `copilot`, `opencode` and `gemini`, and `mnema brief --hook --host codex` cuts the opening to
+  Codex's own ceiling at a whole rule. Cursor's editor, Antigravity's command line, Factory Droid,
+  Qwen Code, Goose, Continue's `cn` and Warp's agent are rows at the first rung, documented and not
+  measured; the first two have a script to read them by hand in `plugin/captures/`.
+
+- **Stacks: the skills and agents a project adopts.** `@mnema/stacks` is the contract of a stack — a
+  `stack.json`, skills in the open Agent Skills format, agents in a neutral format, declared hooks and
+  a licence — with its validator and a digest anyone reproduces with `digest.sh`; it is released with
+  the other four packages. `mnema stack add <source>` reads a folder, a tar archive or an `https://`
+  git address, shows the plan whole and writes only when `--expect` names the digest it showed. It
+  refuses a stack that brings an MCP server, writes skills and agents where the hosts that read them
+  look, and records `stack.adopted` in the tree `--scope` names; `--to <folder>` writes the files and
+  records nothing. A `stack.sigstore.json` is checked offline against the trust root the binary
+  carries, and the plan names who signed beside the digest. `stack list`, `show`, `diff`, `check`,
+  `export` and `remove` (which keeps every file changed since it was written) read and undo; a hook a
+  stack declares stays off until `stack enable` shows its script and a person at a terminal types its
+  name. A session's opening says which stacks govern the project, and `mnema doctor` and `stack
+  check` say where the files part from the record. Two example stacks, `evidence-first` and
+  `review-pass`, and an index of stacks with a link and a digest each (`stack-index/`) are in the
+  repository.
+
+- **A fault in mnema is not a refusal, and `mnema report` shows what it would say about one.** The
+  last-resort catch tells an internal error from a refusal and says which it was. An internal error is
+  logged on this machine, outside the record, and `mnema report` shows its report whole — mnema's
+  version, Node's, the platform, the verb, the kind of error and where in mnema it happened, and
+  nothing else — and keeps your answer: `--decline` for that kind of error, `--off` for all of them.
+  It sends nothing: at a terminal it prints a link that opens GitHub's issue form with the report in
+  it. The MCP server's instructions tell an agent to leave the report to the person, and no tool sends
+  or accepts one. The bug report on GitHub is a form.
+
+- **The edge of an edit says when another run was there.** When a rule refused a write or asked for a
+  person at a path in another run of this machine's identity, in the last 30 minutes, the reply to an
+  edit there ends with one sentence naming that run's agent and how long ago. It is read from facts
+  the record holds and writes nothing.
+
+- **An event can cite the heads it was written on top of.** The envelope gains an optional `after`:
+  the entry hashes of the heads of other tails the writer had read and its tail had not cited yet.
+  Every reader of many tails takes an event after what it cites, whatever the clocks said. `verify`
+  names a citation the record does not hold and a tail whose clock ran behind what it cites, both
+  informational, and the Python reader says the same.
+
+- **`mnema promote`** lists what is in force, in the same words, in the committed records of two or
+  more projects you name (`--workspace`), and copies one of them to the global tree as `proposed`,
+  with a `derived-from` link to each instance you cite. It never scans the disk.
+
+- **`MNEMA_CACHE_DIR`** keeps the cache of reads in a directory you choose: a checkout you cannot
+  write to, the worktrees of one project, or a CI cache. It stays a cache.
+
+- **`mnema rules-file` carries a rule addressed at a directory**, as `dir/**`, and says what each host
+  adds to a glob.
+
+- **The Python reader takes `--require signed`**, with the meaning `verify --require=signed` gives it.
+
 - **A subagent is asked to hand its decisions back in a block that can be checked.** `mnema handback`
   runs at the host's `SubagentStop` event: a final reply that does not end in one fenced block whose
   info string is `mnema-handback`, holding `{"decisions":[{"settled","why","turnedDown"}]}` (the list
@@ -35,7 +99,7 @@ tag, with its own changelog.
   (`payload.version`, `payload.digest`, `payload.scope`), name a stack by its digest and say in
   which tree it governs: `public`, `private` or `global`. Neither carries a path, a source
   address or a credential: the write door admits only closed forms, and a reader refuses any
-  field the contract does not declare. No command writes them yet. The Python reader takes them
+  field the contract does not declare. `mnema stack add` and `mnema stack remove` write them. The Python reader takes them
   from `event-schema.json` with no code of its own (`packages/chain/FORMAT.md`, section 6.6).
 
 - **A Sigstore countersignature.** `mnema witness sigstore` signs the last checkpoint of each
@@ -146,6 +210,27 @@ tag, with its own changelog.
 
 ### Changed
 
+- **The private tree lives beside the repository's objects.** Inside a git repository it moved from
+  `<project>/.mnema/private/` to `<git common dir>/mnema/<project path>/private/`, so `git worktree
+  remove` no longer deletes private notes; every worktree reads the same notes and writes a tail of its
+  own. `mnema doctor` names a worktree that still holds notes in the old place, and `mnema doctor
+  --fix private-tree` moves them (`--dry-run` says what it would move).
+- **Ed25519 is verified under one strict rule** by the product, the Python reader and the page
+  `mnema site` writes: canonical encodings, no key and no `R` of small order, and `S < L`. A signature
+  that some Node versions accepted over a small-order key is refused by all three. The 1,077 vectors of
+  Wycheproof, CCTV and ed25519-speccheck, copied with their licences, hold the three to one verdict.
+- **A stored line that is not UTF-8 is refused** by every reader, naming the byte, where it used to be
+  read with U+FFFD in place of the bad bytes. A torn last line cut inside a character is dropped, as
+  any torn last line is.
+- **`mnema --help` is grouped by the flow of the work** — Record, Hand over, Verify, Read, The git log,
+  This machine, Called by a host — with only the name in the column.
+- **The console has a band behind each command sent and a dot before each answer**, with a faint line
+  under an answer that names the verb, how long it took and the hour; the guide down the margin and
+  the margin are gone.
+- **A refusal of a write opens with the rule that refuses it**, and says the shell is not covered.
+- **An e-mail address in a body is replaced with `<email>`** before it is recorded, on every door, and
+  the reply says so.
+
 - **Eight verbs went under the noun they belong to; the old names are gone, with no alias.**
   `skills` is now `skill provenance`. `focus` is part of `resume`, which lists the runs the actor
   has open under the last one (`--json` already carried them as `focus`). `accountability`,
@@ -177,6 +262,18 @@ tag, with its own changelog.
 
 ### Fixed
 
+- **A refusal no longer says a write was not appended when it was.** Every write now appends and signs
+  in one hold of the tail's lock. It used to sign under a second hold, and when that one was refused
+  the reply said "not appended" about a fact already on the chain.
+- **A busy tail no longer turns a rule off.** The edit gate decides a refusal or a pause by reading and
+  answers whatever the append does; when the fact cannot be recorded in its time, the reason says the
+  refusal could not be recorded, and why.
+- **A lock file that names no pid is broken once it is older than 10 seconds**, where it used to refuse
+  every write until somebody deleted it.
+- **A Node below the floor is told so in one sentence**, where some versions failed to load the program
+  first: the entry checks the version before it links anything else.
+- **A tail directory that holds no event is not counted as a tail**, which made a witnessed record read
+  short of `fully-signed`.
 - **An `ADR-<n>` label means the same thing in every verb that takes an id.** `decision move`
   refused the label while `link` accepted it and recorded the text "ADR-1" as one end of an edge
   pointing at nothing. A label that names exactly one decision in the project is now accepted
@@ -195,6 +292,13 @@ tag, with its own changelog.
 
 ### Known limits
 
+- A binary from before `after` stops reading the record once an envelope carries it, as it does for
+  any field it does not know; one from before the UTF-8 rule reads a line that is not UTF-8 instead of
+  refusing it.
+- The plugins of Codex, Copilot CLI, OpenCode and Gemini CLI ask the binary for a host that
+  `v0.1.0-beta` does not know: with that release they get the server and the opening and no refusal,
+  in silence. They need a `mnema` built from `main`, or a release after that one.
+
 - A binary from before `stack.adopted` and `stack.removed` stops reading the whole record once
   one is in a tree it reads, as it does for any kind it does not know (`packages/chain/FORMAT.md`,
   section 4.1).
@@ -212,8 +316,9 @@ tag, with its own changelog.
   that made it, and the note says that an undeclared backup reads that way.
 - A Sigstore bundle is no witness level: it never moves the verdict, the level,
   `--require witnessed` or the exit. The trust root is carried, not fetched, so a bundle signed
-  after Sigstore turns its keys over reads `not covered` on this binary. Signing has been run
-  only against Sigstore's own test doubles, not against the public instance.
+  after Sigstore turns its keys over reads `not covered` on this binary. The suite signs against
+  Sigstore's own test doubles; the public instance was signed against once, by hand, through the
+  `Sigstore probe` workflow.
 
 ## [0.1.0-beta] - 2026-10-05
 
