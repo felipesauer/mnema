@@ -3,12 +3,13 @@
 The decisions behind your agents' work, kept where the work is: the record lives
 in the repository, it reaches the agent before it writes, and anyone can check it. The reaching is the plugin's:
 in Claude Code a session is handed the record as it opens and the rules for a file
-at each edit, and in VS Code and in Cursor's command-line agent it is handed the
-opening — see [Install](install.md).
+at each edit, and in the other hosts with a plugin — VS Code, Cursor's command-line agent,
+Codex, Copilot CLI, Gemini CLI and OpenCode — it is handed the opening; how far each host goes is
+[its rung](evidence.md#each-hosts-rung), and how to install it is in [Install](install.md).
 
 ```mermaid
 flowchart LR
-    agent["Agent session<br/>Claude Code · VS Code · Cursor CLI"]
+    agent["Agent session<br/>Claude Code · Codex · Copilot CLI · Gemini CLI<br/>OpenCode · VS Code · Cursor CLI"]
     record[(".mnema/<br/>signed · append-only<br/>committed with the code")]
     team["Your team<br/>every clone"]
     stranger["Anyone<br/>no key · no network"]
@@ -81,9 +82,9 @@ agent has written anything. At each edit the rules
 addressed at that file are handed over too: they land beside the result of that
 write, in time for every edit after it and for a correction of that one
 (read on Claude Code 2.1.228 and 2.1.281; [`the-rule-reaches-the-writing.test.ts`](../packages/code/tests/the-rule-reaches-the-writing.test.ts) holds the product's half), and a rule recorded as asking for a
-person holds the write itself until one decides — in VS Code's agent too, through a hook of its
-own, and not in Cursor's command-line agent, which runs the hook and ignores the pause
-(read on VS Code 1.137 and Cursor's agent 2026.09.18; [how each claim is held](evidence.md)). Each of those channels can be switched off, and
+person holds the write itself until one decides — in VS Code's agent and Copilot CLI too, through
+a hook of their own, and not in Cursor's command-line agent, Codex, Gemini CLI or OpenCode, which
+refuse a write and do not pause one ([how each claim is held](evidence.md#each-hosts-rung)). Each of those channels can be switched off, and
 switching one off is itself a signed fact.
 
 **It proves itself to a stranger.** Every fact is hash-chained, and every write the

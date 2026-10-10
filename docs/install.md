@@ -1,5 +1,10 @@
 # Install
 
+mnema is one command-line binary, `mnema`, and a plugin for each agent host that hands the
+record to the host's sessions. Install the binary first, then the plugin for your host.
+
+## The binary
+
 **Nothing is on npm yet**, so `npm i -g @mnema/code` answers 404 until the first
 publication. Until then, install the pre-release `v0.1.0-beta`: `@mnema/code` depends on
 the other three packages, so the four tarballs go in one command.
@@ -37,6 +42,8 @@ export PATH="$HOME/.local/bin:$PATH"     # add this line to your shell's startup
 
 `mnema --version` says whether the shell finds it.
 
+## Claude Code
+
 For the Claude Code plugin — the opening context, the notes beside it and the per-edit
 rules — add this repository as a marketplace and install from it:
 
@@ -66,7 +73,9 @@ edit, no pause for a person is asked at one, and no count or correction is taken
 a response — and its skills are not installed. The agent still has every tool of the server,
 and you still have every command. Do not install both: they declare the same server.
 
-**In VS Code and Cursor**, the server is the same `mnema mcp`, and the plugin is the same
+## VS Code and Cursor
+
+In VS Code and Cursor, the server is the same `mnema mcp`, and the plugin is the same
 one. VS Code's agent reads the Claude Code plugin format, and Cursor's command-line agent
 picks up a plugin installed in Claude Code on the same machine; the per-host details — what
 each one runs, the rules at each edit that are Claude Code's alone, and the pause for a person
@@ -79,7 +88,10 @@ which VS Code marks as experimental. In order: install the plugin in Claude Code
 (`--dry-run` shows the change first). That verb is the one thing `doctor` writes: it runs only when
 you type it, copies your `settings.json` aside first, keeps its comments, and lists the plugin's
 folder in the marketplace, whose path does not change when the plugin updates.
-**In Codex**, the plugin comes from the same marketplace, and Codex reads a manifest of its own
+
+## Codex
+
+In Codex, the plugin comes from the same marketplace, and Codex reads a manifest of its own
 in it (`.codex-plugin/plugin.json`):
 
 ```bash
@@ -94,7 +106,9 @@ runs a plugin's hooks only once you have marked them trusted in its own review o
 then the plugin gives the server alone. `mnema-server-only@mnema` connects the server and runs no
 hook.
 
-**In OpenCode**, there is no marketplace to add: its hook is code, so the plugin is one
+## OpenCode
+
+In OpenCode, there is no marketplace to add: its hook is code, so the plugin is one
 JavaScript module, copied into the project, and the server is declared in the project's
 `opencode.json`:
 
@@ -120,7 +134,9 @@ asking `mnema` who it is, so up to 45), and on Windows `mnema.cmd` may not be ru
 does not start a `.cmd` without a shell — the module is then silent, as where `mnema` is missing; this
 last point was not run.
 
-**In GitHub Copilot CLI**, the plugin comes from the same marketplace, which the command line reads
+## GitHub Copilot CLI
+
+In GitHub Copilot CLI, the plugin comes from the same marketplace, which the command line reads
 as it is:
 
 ```bash
@@ -129,9 +145,12 @@ copilot plugin install mnema@mnema
 ```
 
 It opens each session with the document and the notes, refuses a write where a rule refuses it and,
-where a person is at the terminal, pauses a write where a rule asks for one.
+where a person is at the terminal, pauses a write where a rule asks for one. `mnema-server-only@mnema`
+connects the server and runs no hook.
 
-**In Gemini CLI**, the hook is an extension, a folder the host copies into your home, and it is
+## Gemini CLI
+
+In Gemini CLI, the hook is an extension, a folder the host copies into your home, and it is
 installed from a checkout of this repository, where it is the folder `plugin/gemini`:
 
 ```bash
@@ -149,7 +168,9 @@ run at all, since Node does not start a `.cmd` without a shell — the script is
 not run. A run without a person (`gemini -p`) in a folder the host does not trust does not start
 unless it is told to trust it (`--skip-trust`).
 
-**Which `mnema` each of these plugins needs.** The plugin files of Codex, Copilot CLI, OpenCode and
+## Which `mnema` the newer plugins need
+
+The plugin files of Codex, Copilot CLI, OpenCode and
 Gemini CLI come from `main`, and the refusal they ask for is answered by
 `mnema before-a-write --host codex` (`copilot`, `opencode`, `gemini`), a host the pre-release
 `v0.1.0-beta` does not know: measured on that tag, it answers `--host takes one of vscode, cursor`
@@ -159,8 +180,22 @@ Codex's opening is also not cut to its own ceiling (the document is cut at 10,00
 may truncate on a long record). The refusal needs a `mnema` built from `main`, or a release newer than the tag (the tag and `main` both
 report the version `0.1.0-beta`, so `--version` does not tell them apart).
 
+## Any other host with an MCP client
+
+The hosts in the first rung of [the table](evidence.md#each-hosts-rung) — Cursor's editor,
+Antigravity's command line, Factory Droid, Qwen Code, Goose, Continue's command line and Warp's
+agent — get no plugin from this repository. Their own documentation says they take an MCP server
+and read a rules file; that was read, not run with this product. Declare the server the way the
+host's documentation says, as the command `mnema` with the one argument `mcp`, run in the project's
+root. The agent then has every tool of the server; nothing opens its sessions, refuses a write or
+pauses one.
+
+## Without a plugin
+
 Without the plugin, `mnema rules-file --host claude`, `--host vscode` or `--host cursor` prints the committed rules
 addressed at a file or a directory in that host's own rules format, and says which rules it left out and why.
+
+## Checking an install
 
 `mnema doctor` says, one line to a finding and with what to do about it, whether a `mnema` is
 on the `PATH` and which one, whether the Claude Code plugin is installed and at what version,

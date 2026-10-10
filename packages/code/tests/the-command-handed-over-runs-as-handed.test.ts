@@ -456,6 +456,26 @@ export const NAMES_THAT_NEED_MORE: Readonly<
     times: 1,
     why: 'the verb named in the table row about the page\u2019s verdict; the bullet above it hands the line over, with its --out',
   },
+  'README.md: mnema stack add': {
+    times: 1,
+    why: 'the verb named in the row of the features table on stacks; the package page hands the line over, with --dry-run',
+  },
+  'docs/features.md: mnema stack add': {
+    times: 1,
+    why: 'the verb named in the line on the skills and agents a project adopts; the package page hands the line over',
+  },
+  'packages/code/README.md: mnema stack add': {
+    times: 1,
+    why: 'the verb named in prose, as the one that reads a stack and shows its plan; the block above it hands the line over, with --dry-run',
+  },
+  'packages/code/README.md: mnema stack remove': {
+    times: 1,
+    why: 'the verb named as the one that keeps every file changed since it was written; its `--help` hands the name it needs',
+  },
+  'packages/code/README.md: mnema stack enable': {
+    times: 1,
+    why: 'the verb named as what turns a declared hook on, at a terminal; its `--help` hands the stack and the hook it needs',
+  },
   'docs/packages.md: mnema stack add': {
     times: 1,
     why: 'the verb named as why the stacks package is released; its `--help` hands the source and the --expect it needs',
@@ -683,7 +703,12 @@ export const HANDED_OVER: Readonly<
   // line 91 with the page of the stack index, which hands over `mnema stack add <source> --dry-run`.
   // line 101 for the editor's script, whose case table names `mnema rules-file --host cursor > …` in a cell.
   // name 162 for the command-line agent of Antigravity's script, whose cases name `mnema brief` twice.
-  span: { line: 102, name: 162, flag: 3, unwritten: 0 },
+  // flag 2 once the front page carried a summary of the hosts and the legend that names
+  // `mnema rules-file --host` stayed on the evidence page alone. line 104 and name 171 with the
+  // package page's sections on stacks and on `mnema report`, the front page's and the features
+  // page's rows on `mnema stack add`, and the features page's lines on `mnema handback` and its
+  // switch.
+  span: { line: 104, name: 171, flag: 2, unwritten: 0 },
   // name 18 until the page that says where the key lives named `mnema key protect` in a line of
   // its own.
   // line 35 until the same page showed that question in a block of its own.
@@ -706,7 +731,9 @@ export const HANDED_OVER: Readonly<
   // rule, and `mnema rules-file --host cursor`, which writes the rules file the editor is asked about.
   // line 58 and name 29 for the script that reads Antigravity's command line: the same project and
   // rules, with `mnema init`, the rule helper, and `mnema brief > …`, which writes the rules file it is asked about.
-  block: { line: 58, name: 29, flag: 1, unwritten: 0 },
+  // line 59 and name 32 for the package page's blocks on stacks (`mnema stack add … --dry-run`,
+  // `mnema stack list`, `mnema stack check`) and on `mnema report`.
+  block: { line: 59, name: 32, flag: 1, unwritten: 0 },
   // 46 until the refusal an agent's `accept` gets, with the switch off, began naming the command a
   // person accepts with (`agent-accepts.ts`).
   // line 34 until the sentences an agent's accept is answered with began handing whole lines

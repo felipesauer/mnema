@@ -4,7 +4,7 @@
  *
  * WHAT IT CARRIES, AND WHY NO MORE. The agent's name as the run declared it (`codex`,
  * `claude-code`), and how many minutes ago. Not the run's id, not its goal, not the rule that
- * charged it, not a count of what it wrote. The name is what `mnema focus` and the opening
+ * charged it, not a count of what it wrote. The name is what `mnema resume` and the opening
  * document already hand every agent of this machine about the open runs of the same identity,
  * so the sentence discloses nothing a session could not read by asking; the id opens a run's
  * whole history and the goal is prose another agent wrote, which a sentence pushed at somebody's

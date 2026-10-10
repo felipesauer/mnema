@@ -11,8 +11,8 @@
  * EVERY CELL SAYS HOW IT IS KNOWN, in the three words `docs/evidence.md` uses: held by a test of
  * this tree, read once against the real host and not held yet, or documented by the host and not
  * measured with this product at all. A cell with nothing behind it does not compile. The plugin's
- * hooks file, its manifests and the rung table on the README and on `docs/evidence.md` are
- * generated from this table (`tests/support/the-host-files.ts`), and
+ * hooks files, its manifests, the rung table on `docs/evidence.md` and the summary of it on the
+ * README are generated from this table (`tests/support/the-host-files.ts`), and
  * `tests/the-host-files-are-generated.test.ts` is red when one of them was edited by hand.
  *
  * A MODULE OF ITS OWN, ON THE FLOOR, for the reason it always was: the command line declares

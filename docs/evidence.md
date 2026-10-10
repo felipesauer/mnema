@@ -24,7 +24,7 @@ What the verifier proves, and what it does not, is on
 
 ## Each host's rung
 
-The same table the README carries, with the same words: what each host does with mnema, and how
+The whole table, of which the README carries a summary: what each host does with mnema, and how
 each cell is known.
 
 <!-- The rung table below is generated from packages/code/src/host-names.ts: edit the table there. -->
