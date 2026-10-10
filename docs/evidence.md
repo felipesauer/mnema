@@ -114,6 +114,8 @@ client.
 | Both readers refuse every JSONTestSuite `n_` file as a stored line, and decide every `i_` file alike; every file whose bytes are not UTF-8 both refuse for that, naming the same byte | a test | [`outside-vectors.test.ts`](../packages/chain/src/chain/outside-vectors.test.ts) |
 | Each file of a record the readers decode — a segment line, a checkpoint, the tail proof, a committed key — is refused by the product and by the second reader, naming the same byte, when one byte in it is not UTF-8, and a torn final fragment, cut on any byte, is dropped by both | a test | [`every-reader-refuses-bytes-that-are-not-utf8.test.ts`](../packages/chain/src/chain/every-reader-refuses-bytes-that-are-not-utf8.test.ts) |
 | The vectors above are the files their publishers published: each is copied with its license and commit, and its SHA-256 is checked | a test | [`outside-vectors.test.ts`](../packages/chain/src/chain/outside-vectors.test.ts) |
+| An agent is never its own authority: a `which` equal to the `who`, even short or padded, is refused before anything is written | a test | [`authority.test.ts`](../packages/core/src/identity/authority.test.ts) |
+| The name of the agent, which is stamped on every event, is screened for secrets like any other free text | a test | [`every-door.test.ts`](../packages/core/src/content/every-door.test.ts) |
 | The Action fails a pull request whose record was cut back to an earlier state that is honest in every byte, by holding it to the base with `verify --since` | a test | [`run.test.ts`](../packages/action/src/run.test.ts) |
 
 ## Historical
