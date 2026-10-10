@@ -1,4 +1,11 @@
-# mnema — the Claude Code plugin
+# mnema — the plugin for agent hosts
+
+The plugin is written for Claude Code, and the same folder carries what each of the other hosts reads
+in its own form: VS Code's agent and Cursor's command-line agent read it as it is, Codex and GitHub
+Copilot CLI read manifests and hooks files of their own here, and OpenCode and Gemini CLI get a
+module and an extension from it. How far each host goes is [its rung](../docs/evidence.md#each-hosts-rung),
+and how to install each is [the install page](../docs/install.md). This page describes Claude Code's
+and says where the others part from it.
 
 One installation, both surfaces. When a session opens, the project's **committed**
 mnema record arrives in the agent's context without the agent asking for it, and beside it
@@ -345,16 +352,34 @@ claude plugin install mnema-server-only@mnema
 
 ```
 plugin/
-├── .claude-plugin/
-│   └── plugin.json          the manifest, and the MCP server declaration
+├── .claude-plugin/plugin.json   Claude Code's manifest (VS Code's agent and Cursor read it too)
+├── .codex-plugin/plugin.json    Codex's manifest, naming hooks/codex.json
+├── .github/plugin/plugin.json   Copilot CLI's manifest, naming hooks/copilot.json
 ├── hooks/
-│   ├── hooks.json           two events: SessionStart, PreToolUse (one hook per host there)
-│   ├── edit-asks-a-person.mjs  VS Code's gate: runs `mnema before-a-write --host vscode`
-│   ├── hand-over.mjs        the rule the handlers follow: run a verb, or say nothing
-│   ├── session-recall.mjs   runs `mnema recall --hook`; silent when nothing is noted
-│   └── session-start.mjs    runs `mnema brief --hook`; silent when there is nothing to say
+│   ├── hooks.json               Claude Code's hooks, and VS Code's and Cursor's beside them:
+│   │                            SessionStart, PreToolUse, Stop, PreCompact, SubagentStop
+│   ├── hooks.ids.json           a stable id for each hook of hooks.json
+│   ├── codex.json               Codex's hooks: SessionStart, PreToolUse
+│   ├── copilot.json             Copilot CLI's hooks: SessionStart, PreToolUse
+│   ├── hand-over.mjs            the rule the handlers follow: run a verb, or say nothing
+│   ├── session-start.mjs        runs `mnema brief --hook`; silent when there is nothing to say
+│   ├── session-recall.mjs       runs `mnema recall --hook`; silent when nothing is noted
+│   ├── session-tally.mjs        the count at the end of a response and before a compaction
+│   ├── session-corrections.mjs  the corrections at the end of a response
+│   ├── edit-asks-a-person.mjs   the gate of the hosts that run commands and can pause a write
+│   ├── edit-refuses-a-write.mjs the gate of the hosts that run commands and only refuse
+│   └── subagent-stop.mjs        runs `mnema handback` when a subagent stops
+├── opencode/mnema.js            OpenCode's plugin module, copied into a project
+├── gemini/                      Gemini CLI's extension: its manifest, hooks file and script
+├── skills/                      the three skills the plugin installs
+├── server/launch.mjs            starts `mnema mcp` from the binary the plugin is set to
+├── captures/                    the scripts that read a host by hand, where no job can
+├── porting-to-a-host.md         how a new host is added
 └── README.md
 ```
+
+The hooks files, the manifests, the OpenCode module and the Gemini extension are generated from
+the host table, `packages/code/src/host-names.ts`, and a test is red when one was edited by hand.
 
 The handler is a wrapper rather than a bare `mnema brief` in `hooks.json` on purpose:
 outside a project the verb refuses on stderr and exits 1, which is right for a command

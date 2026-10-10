@@ -1,6 +1,6 @@
 /**
- * What the host table (`src/host-names.ts`) generates: the plugin's hooks file, its two
- * manifests, and the rung table the README and `docs/evidence.md` carry.
+ * What the host table (`src/host-names.ts`) generates: the plugin's hooks files, its manifests,
+ * the rung table `docs/evidence.md` carries, and the summary of it on the README.
  *
  * ONE FACT, WRITTEN ONCE. Which hook reaches which host, through which door and under which
  * matcher, was a hand-written file the binary's tables had to agree with; the shell in front of
@@ -827,6 +827,80 @@ function withTheTable(page: string, base: string, path: string): string {
   return `${page.slice(0, from)}${BEGIN}\n\n${rungTable(base)}\n\n${under}${LEGEND}\n\n${page.slice(to)}`;
 }
 
+// ---------------------------------------------------------------------------
+// The summary on the front page
+// ---------------------------------------------------------------------------
+
+/**
+ * The organisation on GitHub that publishes each host. Its avatar stands for the host in the
+ * summary: one picture per row from one place, where a set of logos would come from as many
+ * places as there are hosts. A host added to the table without one does not compile.
+ */
+const PUBLISHER: { readonly [H in HostName]: string } = {
+  claude: 'anthropics',
+  vscode: 'microsoft',
+  cursor: 'cursor',
+  codex: 'openai',
+  copilot: 'github',
+  opencode: 'anomalyco',
+  gemini: 'google-gemini',
+  cursorIde: 'cursor',
+  antigravity: 'google',
+  droid: 'Factory-AI',
+  qwen: 'QwenLM',
+  goose: 'aaif-goose',
+  continue: 'continuedev',
+  warp: 'warpdotdev',
+};
+
+/** The heading of `docs/install.md` for a host this repository has no plugin for. */
+const ANY_HOST = 'any-other-host-with-an-mcp-client';
+
+/** The heading of `docs/install.md` that says how each host gets mnema. */
+const INSTALLED_AT: { readonly [H in HostName]: string } = {
+  claude: 'claude-code',
+  vscode: 'vs-code-and-cursor',
+  cursor: 'vs-code-and-cursor',
+  codex: 'codex',
+  copilot: 'github-copilot-cli',
+  opencode: 'opencode',
+  gemini: 'gemini-cli',
+  cursorIde: ANY_HOST,
+  antigravity: ANY_HOST,
+  droid: ANY_HOST,
+  qwen: ANY_HOST,
+  goose: ANY_HOST,
+  continue: ANY_HOST,
+  warp: ANY_HOST,
+};
+
+/** The summary: one row per host, with its rung and where its install is, for a page at `base`. */
+export function hostSummary(base: string): string {
+  const rows = HOST_NAMES.map((name) => {
+    const host = HOSTS[name];
+    const avatar = `<img src="https://github.com/${PUBLISHER[name]}.png?size=40" width="20" height="20" alt="">`;
+    const at = INSTALLED_AT[name];
+    const what = at === ANY_HOST ? 'the server alone' : 'the plugin';
+    return `| ${avatar} ${host.title} | ${rungOf(name)} | [${what}](${base}docs/install.md#${at}) |`;
+  });
+  return ['| Host | Rung | Install |', '| --- | --- | --- |', ...rows].join('\n');
+}
+
+/** The line that opens the generated summary on a page. */
+const SUMMARY_BEGIN =
+  '<!-- The host summary below is generated from packages/code/src/host-names.ts: edit the table there. -->';
+
+/** The line that closes it. */
+const SUMMARY_END = '<!-- End of the generated host summary. -->';
+
+/** `page` with its host summary regenerated, for a page at `base` from the repository's root. */
+function withTheSummary(page: string, base: string, path: string): string {
+  const from = page.indexOf(SUMMARY_BEGIN);
+  const to = page.indexOf(SUMMARY_END);
+  if (from === -1 || to < from) throw new Error(`${path} has no generated host summary`);
+  return `${page.slice(0, from)}${SUMMARY_BEGIN}\n\n${hostSummary(base)}\n\n${page.slice(to)}`;
+}
+
 /** What `path` is once generated, given its committed text — a page keeps its own prose. */
 export function generated(path: (typeof GENERATED)[number], committed: string): string {
   switch (path) {
@@ -857,7 +931,7 @@ export function generated(path: (typeof GENERATED)[number], committed: string): 
     case 'plugin-server-only/.claude-plugin/plugin.json':
       return serverOnlyPluginJson();
     case 'README.md':
-      return withTheTable(committed, '', path);
+      return withTheSummary(committed, '', path);
     case 'docs/evidence.md':
       return withTheTable(committed, '../', path);
   }

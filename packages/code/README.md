@@ -10,8 +10,9 @@ since it was signed, and a stranger can check that without your keys and
 without installing this.
 
 This is the package you install: the command line and MCP server for
-[mnema](https://github.com/felipesauer/mnema), two surfaces over one record. The
-agent writes through MCP while it works; you read, audit, and verify from the
+[mnema](https://github.com/felipesauer/mnema), two surfaces over one record, for the AI coding
+agents of Claude Code, Codex, GitHub Copilot CLI, Gemini CLI, OpenCode, VS Code and Cursor, or any
+MCP client. The agent writes through MCP while it works; you read, audit, and verify from the
 terminal.
 
 It holds no domain logic of its own — it resolves where you are, calls one
@@ -132,6 +133,9 @@ identically, because they are the same call.
   and the pause for a person reaches VS Code too and not Cursor's agent, which runs the hook
   and ignores the pause — the [plugin's page](../../plugin/README.md#in-vs-code-and-cursor) has
   the table, host by host, and [how each claim is held](../../docs/evidence.md) says which of it a test holds.
+  Codex, GitHub Copilot CLI, OpenCode and Gemini CLI read files of their own in the same plugin
+  folder: the two opening texts and the refusal, and in Copilot CLI the pause too, each held by a
+  job against the host's real binary; [the install page](../../docs/install.md) says how, host by host.
 - **A rules file for a host without the plugin** — `mnema rules-file --host vscode` prints the
   committed rules in force whose address is a file or a directory, as a `.instructions.md` with an `applyTo`,
   `--host cursor` as a `.mdc` with `globs`, and `--host claude` as a `.claude/rules/mnema.md` with
@@ -933,6 +937,52 @@ into the repository's private tree (`--dry-run` says what it would move), drops 
 that had written again since keeps the tail it writes now, and its old tail is moved as a closed
 one. The exit status is 0 whatever it found: a script that wants to act on a
 finding reads the line.
+
+### Skills and agents a project adopts: stacks
+
+A stack is a folder somebody publishes so another project can take it whole: a `stack.json`,
+skills in the open Agent Skills format, agents in a neutral format, and a licence. Its contract,
+its validator and the digest it is known by are [`@mnema/stacks`](../stacks/).
+
+```sh
+mnema stack add ../evidence-first --dry-run
+mnema stack list
+mnema stack check
+```
+
+`mnema stack add` reads a folder, a tar archive or an `https://` git address and shows the plan
+whole: the files, the folders of each host that receive them, the hooks the stack declares — apart,
+and off — and the digest. It writes nothing until `--expect` names that digest, and it refuses a
+stack that brings an MCP server. The adoption is a signed fact, `stack.adopted`, in the tree
+`--scope` names: public by default, so the files are committed with the project. `--to <folder>`
+writes the files and records nothing. Skills go where Claude Code, VS Code, Cursor, Codex, Copilot
+CLI, OpenCode, Gemini CLI, Antigravity, Factory Droid and Qwen Code look for them, and agents where
+Claude Code, VS Code and Cursor do; each of those folders is read in the host's documentation, not
+measured. `mnema stack remove` keeps every file changed since it was written, and `mnema stack check`
+fails when the files or their receipt part from the record. A hook a stack declares stays off until
+`mnema stack enable` shows its script and a person at a terminal types its name.
+
+**What it proves** is that the files written are the bytes the digest names and, when the stack
+carries `stack.sigstore.json`, who signed that digest, checked offline. **What it does not prove**
+is that a stack is safe to run, or that its instructions make an agent better: a signature says who,
+not what. Any key that writes to the tree can record a removal, whoever adopted the stack.
+
+### When mnema itself fails
+
+An error in mnema's own code is not a refusal, and it says so: the command names it as an internal
+error, keeps a short note of it on this machine — outside the record — and points at `mnema report`.
+
+```sh
+mnema report
+```
+
+It shows, whole, the report it would make of the last one: mnema's version, Node's, the platform,
+the verb, the kind of error and where in mnema it happened — no record content, no path, no name, no
+address, no message, and a report that would carry one is refused whole. **It sends nothing.** At a
+terminal it prints a link that opens GitHub's issue form with the report filled in, and nothing
+leaves until you press Submit there. `--decline` stops offering reports of that kind of error, and
+`--off` switches reporting off on this machine. An agent that meets the error is told to leave the
+report to you: no tool of the MCP server sends one or accepts one.
 
 ### What goes into the record
 

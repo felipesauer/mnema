@@ -2,7 +2,7 @@
 
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="docs/assets/banner-dark.svg">
-  <img src="docs/assets/banner-light.svg" alt="mnema, a chain of signed blocks" width="640">
+  <img src="docs/assets/banner-light.svg" alt="mnema: a signed, append-only record of the decisions behind AI coding agents' work" width="640">
 </picture>
 
 <h3>Your decisions, handed to your agents' sessions and held at the edits they govern — append-only and signed in the repository, and checkable by anyone.</h3>
@@ -15,8 +15,10 @@
 </p>
 
 <p>
-mnema keeps the calls behind your agents' work as signed, append-only facts in the repository. A
-session opens with the ones in force, a rule can refuse or pause the write it governs, and
+mnema is a command line and an MCP server that keep the calls behind your AI coding agents' work —
+decisions, the rules they become, and notes — as signed, append-only facts in the repository. A
+session in Claude Code, Codex, GitHub Copilot CLI, Gemini CLI, OpenCode, VS Code or Cursor opens with
+the ones in force, a rule can refuse or pause the write it governs where the host allows, and
 <code>mnema verify</code> checks the record with no key and no network.
 </p>
 
@@ -41,7 +43,7 @@ session opens with the ones in force, a rule can refuse or pause the write it go
 </table>
 
 <p align="center">
-<sub>Claude Code · VS Code · Cursor CLI · GitHub Action · SDK · <code>mnema site</code>. The Action, the SDK and the VS Code extension run from a checkout; nothing is on npm yet.</sub>
+<sub>Claude Code · Codex · Copilot CLI · Gemini CLI · OpenCode · VS Code · Cursor · any MCP client · GitHub Action · SDK · <code>mnema site</code>. The Action, the SDK and the VS Code extension run from a checkout; nothing is on npm yet.</sub>
 </p>
 
 <p align="center">
@@ -51,7 +53,7 @@ installing this.
 </p>
 
 <p align="center">
-<a href="#quick-start">Quick start</a> · <a href="#how-it-works">How it works</a> · <a href="#features">Features</a> · <a href="#watch-it">Watch it</a> · <a href="#what-it-proves--and-what-it-does-not">What it proves</a> · <a href="#docs">Docs</a>
+<a href="#quick-start">Quick start</a> · <a href="#how-it-works">How it works</a> · <a href="#hosts">Hosts</a> · <a href="#features">Features</a> · <a href="#watch-it">Watch it</a> · <a href="#what-it-proves--and-what-it-does-not">What it proves</a> · <a href="#docs">Docs</a>
 </p>
 
 ## Quick start
@@ -84,68 +86,50 @@ The whole install, the other hosts and the first record, line by line, are in
 3. **Hand over.** With the plugin, each session opens with what is in force, and each edit meets the rules for its file.
 4. **Verify.** Every fact is signed and hash-chained. `mnema verify`, a second reader in Python, or the page `mnema site` writes checks it.
 
-More in [`docs/how-it-works.md`](docs/how-it-works.md); what each host does and does not reach is in
-[`docs/agent-hosts.md`](docs/agent-hosts.md).
+More in [`docs/how-it-works.md`](docs/how-it-works.md); what a session is handed, word for word, is in
+[`docs/agent-hosts.md`](docs/agent-hosts.md), and how far each host goes is under [Hosts](#hosts).
 
 ## Hosts
 
-What each agent host does with mnema, one rung at a time: (a) the MCP server and rules in a file,
-(b) the opening of a session, (c) a refusal before a write, (d) a pause for a person.
+mnema works with any agent host that has an MCP client, and how much more a host gets depends on
+what its hooks allow, one rung at a time: (a) the MCP server and rules in a file, (b) the opening
+of a session, (c) a refusal before a write, (d) a pause for a person.
 
-<!-- The rung table below is generated from packages/code/src/host-names.ts: edit the table there. -->
+<!-- The host summary below is generated from packages/code/src/host-names.ts: edit the table there. -->
 
-| Host | (a) The MCP server | (a) Rules in a file | (b) The opening of a session | (c) A refusal before a write | (d) A pause for a person | Rung |
-| --- | --- | --- | --- | --- | --- | --- |
-| Claude Code | yes, [held by a test](packages/code/tests/host-contract/the-rules-arrive-beside-the-write.test.ts) | yes, [held by a test](packages/code/tests/a-rules-file-carries-only-what-becomes-a-glob-exactly.test.ts) | yes, [held by a test](packages/code/tests/host-contract/the-session-opens-with-the-record.test.ts) | yes, [held by a test](packages/code/tests/host-contract/a-refusal-and-a-pause-hold-the-write.test.ts) | yes, [held by a test](packages/code/tests/host-contract/a-refusal-and-a-pause-hold-the-write.test.ts) | (d) |
-| VS Code's agent | yes, read on VS Code 1.137 with Copilot Chat 0.65, 23 September 2026 | yes, [held by a test](packages/code/tests/a-rules-file-carries-only-what-becomes-a-glob-exactly.test.ts) | yes, read on VS Code 1.137 with Copilot Chat 0.65, 23 September 2026 | yes, [held by a test](packages/code/tests/host-contract/an-editor-holds-or-refuses-the-write.vscode.test.ts) | yes, [held by a test](packages/code/tests/host-contract/an-editor-holds-or-refuses-the-write.vscode.test.ts) | (d) |
-| Cursor's command-line agent | yes, read on Cursor agent 2026.09.18, 23 September 2026 | yes, [held by a test](packages/code/tests/a-rules-file-carries-only-what-becomes-a-glob-exactly.test.ts) | yes, read on Cursor agent 2026.09.18, 23 September 2026 | yes, read on Cursor agent 2026.09.18, 2 October 2026 | no, read on Cursor agent 2026.09.18, 30 September 2026 | (c) |
-| Codex | yes, [held by a test](packages/code/tests/host-contract/codex-opens-and-refuses.codex.test.ts) | documented, not measured ([read 8 October 2026](https://github.com/openai/codex/blob/979011409de0a60b52f179721948e65531d26144/codex-rs/core/src/agents_md.rs)) | yes, [held by a test](packages/code/tests/host-contract/codex-opens-and-refuses.codex.test.ts) | yes, [held by a test](packages/code/tests/host-contract/codex-opens-and-refuses.codex.test.ts) | no, [held by a test](packages/code/tests/host-contract/codex-opens-and-refuses.codex.test.ts) | (c), with (a) documented, not measured |
-| GitHub Copilot CLI | yes, [held by a test](packages/code/tests/host-contract/copilot-opens-and-refuses.copilot.test.ts) | documented, not measured ([read 9 October 2026](https://github.com/github/docs/blob/9f651797567230e844373870fce8b14427ad47ad/content/copilot/reference/copilot-cli-reference/cli-command-reference.md)) | yes, [held by a test](packages/code/tests/host-contract/copilot-opens-and-refuses.copilot.test.ts) | yes, [held by a test](packages/code/tests/host-contract/copilot-opens-and-refuses.copilot.test.ts) | yes, [held by a test](packages/code/tests/host-contract/copilot-opens-and-refuses.copilot.test.ts) | (d), with (a) documented, not measured |
-| OpenCode | yes, [held by a test](packages/code/tests/host-contract/opencode-opens-and-refuses.opencode.test.ts) | documented, not measured ([read 10 October 2026](https://github.com/anomalyco/opencode/blob/53d1eabb61e21162157817bf677da0a4ad3332e3/packages/opencode/src/session/instruction.ts#L60-L67)) | yes, [held by a test](packages/code/tests/host-contract/opencode-opens-and-refuses.opencode.test.ts) | yes, [held by a test](packages/code/tests/host-contract/opencode-opens-and-refuses.opencode.test.ts) | no, [held by a test](packages/code/tests/host-contract/opencode-opens-and-refuses.opencode.test.ts) | (c), with (a) documented, not measured |
-| Gemini CLI | yes, [held by a test](packages/code/tests/host-contract/gemini-opens-and-refuses.gemini.test.ts) | documented, not measured ([read 10 October 2026](https://github.com/google-gemini/gemini-cli/blob/573846625af9e93b3b968e0e0b86bb093a4c9b16/docs/cli/gemini-md.md)) | yes, [held by a test](packages/code/tests/host-contract/gemini-opens-and-refuses.gemini.test.ts) | yes, [held by a test](packages/code/tests/host-contract/gemini-opens-and-refuses.gemini.test.ts) | no, [held by a test](packages/code/tests/host-contract/gemini-opens-and-refuses.gemini.test.ts) | (c), with (a) documented, not measured |
-| Cursor's editor | documented, not measured ([read 10 October 2026](https://cursor.com/docs/context/mcp)) | documented, not measured ([read 10 October 2026](https://cursor.com/docs/context/rules)) | not ported | not ported | not ported | (a), documented, not measured |
-| Antigravity's command line (`agy`) | documented, not measured ([read 10 October 2026](https://antigravity.google/docs/mcp)) | documented, not measured ([read 10 October 2026](https://antigravity.google/docs/rules)) | not ported | not ported | not ported | (a), documented, not measured |
-| Factory Droid | documented, not measured ([read 8 October 2026](https://github.com/Factory-AI/factory/blob/c6ea470/docs/cli/configuration/mcp.mdx)) | documented, not measured ([read 8 October 2026](https://github.com/Factory-AI/factory/blob/c6ea470/docs/cli/configuration/agents-md.mdx)) | not ported | not ported | not ported | (a), documented, not measured |
-| Qwen Code | documented, not measured ([read 8 October 2026](https://github.com/QwenLM/qwen-code/blob/cbbb0a5/docs/users/features/mcp.md)) | documented, not measured ([read 8 October 2026](https://github.com/QwenLM/qwen-code/blob/cbbb0a5/docs/users/features/memory.md)) | not ported | not ported | not ported | (a), documented, not measured |
-| Goose | documented, not measured ([read 8 October 2026](https://github.com/aaif-goose/goose/blob/a4189ec/README.md)) | documented, not measured ([read 8 October 2026](https://github.com/aaif-goose/goose/blob/a4189ec/crates/goose/src/hints/load_hints.rs)) | not ported | not ported | not ported | (a), documented, not measured |
-| Continue's command line (`cn`) | documented, not measured ([read 8 October 2026](https://github.com/continuedev/continue/blob/5522c6f/extensions/cli/src/services/MCPService.ts)) | documented, not measured ([read 8 October 2026](https://github.com/continuedev/continue/blob/5522c6f/core/config/markdown/loadMarkdownRules.ts)) | not ported | not ported | not ported | (a), documented, not measured |
-| Warp's agent | documented, not measured ([read 8 October 2026](https://github.com/warpdotdev/warp/blob/325d4d4/app/src/ai/agent_sdk/driver/mcp_startup.rs)) | documented, not measured ([read 8 October 2026](https://github.com/warpdotdev/warp/blob/325d4d4/app/src/ai/agent_tips.rs)) | not ported | not ported | not ported | (a), documented, not measured |
+| Host | Rung | Install |
+| --- | --- | --- |
+| <img src="https://github.com/anthropics.png?size=40" width="20" height="20" alt=""> Claude Code | (d) | [the plugin](docs/install.md#claude-code) |
+| <img src="https://github.com/microsoft.png?size=40" width="20" height="20" alt=""> VS Code's agent | (d) | [the plugin](docs/install.md#vs-code-and-cursor) |
+| <img src="https://github.com/cursor.png?size=40" width="20" height="20" alt=""> Cursor's command-line agent | (c) | [the plugin](docs/install.md#vs-code-and-cursor) |
+| <img src="https://github.com/openai.png?size=40" width="20" height="20" alt=""> Codex | (c), with (a) documented, not measured | [the plugin](docs/install.md#codex) |
+| <img src="https://github.com/github.png?size=40" width="20" height="20" alt=""> GitHub Copilot CLI | (d), with (a) documented, not measured | [the plugin](docs/install.md#github-copilot-cli) |
+| <img src="https://github.com/anomalyco.png?size=40" width="20" height="20" alt=""> OpenCode | (c), with (a) documented, not measured | [the plugin](docs/install.md#opencode) |
+| <img src="https://github.com/google-gemini.png?size=40" width="20" height="20" alt=""> Gemini CLI | (c), with (a) documented, not measured | [the plugin](docs/install.md#gemini-cli) |
+| <img src="https://github.com/cursor.png?size=40" width="20" height="20" alt=""> Cursor's editor | (a), documented, not measured | [the server alone](docs/install.md#any-other-host-with-an-mcp-client) |
+| <img src="https://github.com/google.png?size=40" width="20" height="20" alt=""> Antigravity's command line (`agy`) | (a), documented, not measured | [the server alone](docs/install.md#any-other-host-with-an-mcp-client) |
+| <img src="https://github.com/Factory-AI.png?size=40" width="20" height="20" alt=""> Factory Droid | (a), documented, not measured | [the server alone](docs/install.md#any-other-host-with-an-mcp-client) |
+| <img src="https://github.com/QwenLM.png?size=40" width="20" height="20" alt=""> Qwen Code | (a), documented, not measured | [the server alone](docs/install.md#any-other-host-with-an-mcp-client) |
+| <img src="https://github.com/aaif-goose.png?size=40" width="20" height="20" alt=""> Goose | (a), documented, not measured | [the server alone](docs/install.md#any-other-host-with-an-mcp-client) |
+| <img src="https://github.com/continuedev.png?size=40" width="20" height="20" alt=""> Continue's command line (`cn`) | (a), documented, not measured | [the server alone](docs/install.md#any-other-host-with-an-mcp-client) |
+| <img src="https://github.com/warpdotdev.png?size=40" width="20" height="20" alt=""> Warp's agent | (a), documented, not measured | [the server alone](docs/install.md#any-other-host-with-an-mcp-client) |
 
-**Claude Code.** When a subagent stops: yes, [held by a test](packages/code/tests/host-contract/a-subagent-is-sent-back-for-its-handback.test.ts).
+<!-- End of the generated host summary. -->
 
-**Codex.** The refusal fails open, as on every host: a gate that cannot answer — no `mnema` on the PATH (held by its test), an error, or a hook past its 15 seconds (read in [`pre_tool_use.rs`](https://github.com/openai/codex/blob/979011409de0a60b52f179721948e65531d26144/codex-rs/hooks/src/events/pre_tool_use.rs#L205-L288)) — lets the patch through. The opening is cut to Codex’s own ceiling, 2,500 tokens of 4 UTF-8 bytes ([`output_spill.rs`](https://github.com/openai/codex/blob/979011409de0a60b52f179721948e65531d26144/codex-rs/hooks/src/output_spill.rs#L12)), at a whole rule, held by the same test. When a subagent stops: documented, not measured ([read 9 October 2026](https://github.com/openai/codex/blob/979011409de0a60b52f179721948e65531d26144/codex-rs/hooks/src/events/stop.rs#L178-L206)).
-
-**GitHub Copilot CLI.** Its hooks are read under the PascalCase event names, which hand the payload in Claude Code’s tool names (`Write`, `Edit`) and snake_case fields, with the path under `path`. A command hook that exits non-zero denies the call there (read in [the hooks reference](https://github.com/github/docs/blob/9f651797567230e844373870fce8b14427ad47ad/content/copilot/reference/hooks-reference.md)), so the plugin's ends in `exit 0` whatever happened — no `mnema` on the PATH is held by its test; a hook past its 15 seconds is let through by the host (read, not measured). The opening is the same text Claude Code gets, cut at 10,000 units, far under the 10 MiB the host accumulates (read, not measured). Run without a person (`copilot -p`), a hook’s `ask` is a denial (held by its test); with one, the host asks (held by its test). The model is any the host is pointed at, with no GitHub account (`COPILOT_OFFLINE`), under the license at [`LICENSE.md`](https://github.com/github/copilot-cli/blob/a7ae5b0ce17beddfa5930812bb064138fd3a1cb5/LICENSE.md). When a subagent stops: documented, not measured ([read 9 October 2026](https://github.com/github/docs/blob/9f651797567230e844373870fce8b14427ad47ad/content/copilot/reference/hooks-reference.md#subagentstop--subagentstop)).
-
-**OpenCode.** Its hook is a JavaScript module the person copies into `.opencode/plugins/` (see `docs/install.md`), which runs `mnema` as a process: the refusal throws, and OpenCode hands the model the reason as the call’s error; the opening is added to the system prompt through `experimental.chat.system.transform`, a hook the host marks experimental, so the contract pins the version it was held on. The tools it writes through are `write` and `edit`, and `apply_patch` for the models that use it ([`registry.ts`](https://github.com/anomalyco/opencode/blob/53d1eabb61e21162157817bf677da0a4ad3332e3/packages/opencode/src/tool/registry.ts#L297-L300)); a file a shell command writes meets no hook, as on every host. The module fails open: with no `mnema` on the PATH, or a program of that name that is not this product, the write goes through (held by its test). OpenCode’s own `permission.ask` hook is not used, so a rule that only asks for a person is let through in silence. The opening is the text Claude Code gets, cut at 10,000 units; a ceiling of OpenCode’s on a system prompt was not found in its documentation or in the source read. The model is any the host is pointed at, with no account, under the MIT license at [`LICENSE`](https://github.com/anomalyco/opencode/blob/53d1eabb61e21162157817bf677da0a4ad3332e3/LICENSE).
-
-**Gemini CLI.** Its hooks come from an extension, a folder the person installs from a checkout of this repository (see `docs/install.md`): the extension declares the server, and its hooks run one script that runs `mnema` as a process. The refusal answers `BeforeTool` on its two tools that write, `write_file` and `replace`, with a top-level `decision` of `deny` and its `reason`, which Gemini CLI hands the model as the call’s error; a file a shell command writes meets no hook, as on every host. The opening is a `SessionStart` hook’s `additionalContext`: Gemini CLI escapes `<` and `>` in it and wraps it in `<hook_context>`, and in a non-interactive run puts it before the prompt (read in [`types.ts`](https://github.com/google-gemini/gemini-cli/blob/573846625af9e93b3b968e0e0b86bb093a4c9b16/packages/core/src/hooks/types.ts#L263-L277) and [`gemini.tsx`](https://github.com/google-gemini/gemini-cli/blob/573846625af9e93b3b968e0e0b86bb093a4c9b16/packages/cli/src/gemini.tsx#L951-L956)); a ceiling of its own on that text was not found in the source read, so it is cut at 10,000 units. A hook that exits with a code other than 0 or 2 is a warning and the call goes on, and the script fails open: with no `mnema` on the PATH, or a program of that name that is not this product, the write goes through (held by its test). The documentation lists `allow` and `deny` as the decisions of a `BeforeTool` hook; the source also has an `ask`, which was not read for what it does with a write and is not used, so a rule that only asks for a person is let through in silence. Run without a person, in a folder it does not trust, the host does not start (exit 55) unless it is told to trust the folder (`--skip-trust` or `GEMINI_CLI_TRUST_WORKSPACE=true`, which the contract sets). The model is any the host is pointed at, with no account, under the Apache-2.0 license at [`LICENSE`](https://github.com/google-gemini/gemini-cli/blob/573846625af9e93b3b968e0e0b86bb093a4c9b16/LICENSE).
-
-**Cursor's editor.** Only its documentation was read, on 10 October 2026: the agent of the editor runs `preToolUse` and `sessionStart` hooks, a `preToolUse` that answers `deny` blocks the action, `ask` is accepted there and not enforced, and a `sessionStart` hook can add context to the session. That documentation says the hooks in Claude Code’s settings files are loaded, and says nothing of the hooks of a plugin installed in Claude Code, which the command-line agent was read to load. Whether the editor runs this plugin’s hook, sets `CURSOR_VERSION` for it and hands it the payload the command-line agent does was not read, so nothing above the first rung is promised for it. The script that reads it is `plugin/captures/cursor-ide-script.md`.
-
-**Antigravity's command line (`agy`).** Only its documentation was read, on 10 October 2026. It documents hooks in a dialect of its own, in a `hooks.json` kept in the project’s `.agents` folder or in an installed plugin: five events (`PreToolUse`, `PostToolUse`, `PreInvocation`, `PostInvocation`, `Stop`) and no `SessionStart`; a `PreToolUse` answers `allow`, `deny`, `ask`, `force_ask` or `deny_unless_prior_grant` and is handed `toolCall.name` and `toolCall.args`; the tools that write are `write_to_file`, `replace_file_content` and `multi_replace_file_content`, each with its path under `TargetFile`; a `PreInvocation` can add a message to the conversation. This plugin ships no hooks file in that dialect and no reader of that payload, so nothing above the first rung is promised for it. The script that reads it is `plugin/captures/antigravity-cli-script.md`.
-
-Each cell says how it is known: **held by a test** of this repository; **read** once against the
-real host, on the version and the day it names, and held by no file yet; or **documented, not
-measured**: the host's own documentation or code says the host does it, at the commit or on the
-page the link names, and nothing was run. **Not ported**: the plugin hands that host nothing for
-it. For the first three hosts, the rules file is the one `mnema rules-file --host` prints in the
-host's format, and the test holds what it prints, not how the host matches its globs; for the
-others, it is `AGENTS.md`, which the host's documentation says it reads (Gemini CLI's is
-`GEMINI.md`: it reads `AGENTS.md` only where its settings list it). A host reaches a rung
-when every rung before it is a yes; Aider was read too, and is not here, because it has no MCP
-client.
-
-<!-- End of the generated rung table. -->
+Each cell of the full table, how each one is known — held by a test, read once on a real host, or
+documented and not measured — and the notes on each host are in
+[How each claim is held](docs/evidence.md#each-hosts-rung). The plugins of Codex, Copilot CLI,
+OpenCode and Gemini CLI need a `mnema` built from `main`: the pre-release does not know them yet
+([why](docs/install.md#which-mnema-the-newer-plugins-need)).
 
 ## Features
 
 | Feature | What it does |
 |---|---|
-| **Opens every session** | With the plugin, the decisions in force, the adopted patterns and the notes near the work. [Agent hosts](docs/agent-hosts.md) |
-| **Rules at each edit** | In Claude Code, the rules for a file land beside the write. [Agent hosts](docs/agent-hosts.md) |
-| **Refuses a write** | `refuses-a-write` stops an agent's write there, in Claude Code, VS Code and Cursor CLI. [Features](docs/features.md) |
-| **Asks for a person** | `asks-for-a-person` holds the write until someone decides, in Claude Code and VS Code. [Features](docs/features.md) |
+| **Opens every session** | With the plugin, the decisions in force, the adopted patterns and the notes near the work. [What a session is handed](docs/agent-hosts.md) |
+| **Rules at each edit** | In Claude Code, the rules for a file land beside the write. [What a session is handed](docs/agent-hosts.md) |
+| **Refuses a write** | `refuses-a-write` stops an agent's write there, on every host from rung (c) up. [Features](docs/features.md) |
+| **Asks for a person** | `asks-for-a-person` holds the write until someone decides, on the hosts of rung (d): Claude Code, VS Code and Copilot CLI. [Features](docs/features.md) |
 | **Supersede, never edit** | A change of mind is a new decision. The old one leaves the opening and stays in the record. [How it works](docs/how-it-works.md) |
 | **Take a note back** | `mnema retract` appends a signed retraction, and nothing is erased. [Features](docs/features.md) |
 | **Every write signed** | The command line and the MCP server sign each write before they return. [How it works](docs/how-it-works.md) |
@@ -154,6 +138,7 @@ client.
 | **A page that verifies itself** | `mnema site` writes one HTML file, and the reader's browser checks it. [The page](docs/site.md) |
 | **A pull-request check** | The Action comments what a PR does to the record and fails when it is not signed. [Packages](docs/packages.md) |
 | **The git log, read against it** | `trailer`, `commits`, `why` and `aging` tie commits to decisions. [Features](docs/features.md) |
+| **Stacks** | `mnema stack add` installs a set of skills and agents where the hosts that read them look, from a plan shown whole, and records the adoption as a signed fact. [Stacks](packages/stacks/README.md) |
 
 ## Watch it
 
@@ -178,7 +163,7 @@ shows what the binary draws, so none of them can go on showing an older product 
 key, no network — and prints each verdict verbatim, naming the level it reached.
 
 - **What holds.** A changed or reordered event breaks the hash chain, and an edit made without the signing key fails the signed checkpoints.
-- **What does not hold.** Nothing proves that nothing was removed: a hash chain shows what changed, never what is gone, and the history a git remote keeps is what covers omission. A record forged whole under a fresh key verifies clean, and a key is not proven to be the person a name says. A refusal of a write covers the editing tools of Claude Code, the VS Code agent (Copilot) and Cursor, and not their shell: `sed -i` on a protected file goes round it.
+- **What does not hold.** Nothing proves that nothing was removed: a hash chain shows what changed, never what is gone, and the history a git remote keeps is what covers omission. A record forged whole under a fresh key verifies clean, a key is not proven to be the person a name says, and the agent named on a fact is the name its client announced. A refusal of a write covers a host's editing tools, not its shell: `sed -i` on a protected file goes round it.
 - **What a green `verify` means.** That nothing *verifiable* is broken, not that the record is honest, and the gate protects the shape of a change, not who may make it.
 
 The whole table, claim by claim, is in [`docs/what-it-proves.md`](docs/what-it-proves.md); how each
@@ -187,7 +172,7 @@ claim about the agent hosts is held, and which are not held yet, is in [`docs/ev
 ## Docs
 
 [Install](docs/install.md) · [Your first record](docs/first-record.md) · [How it works](docs/how-it-works.md) ·
-[Agent hosts](docs/agent-hosts.md) · [Features](docs/features.md) · [What it proves](docs/what-it-proves.md) ·
+[What a session is handed](docs/agent-hosts.md) · [Features](docs/features.md) · [What it proves](docs/what-it-proves.md) ·
 [Verify without installing](docs/verify-without-installing.md) · [The page that verifies itself](docs/site.md) ·
 [How each claim is held](docs/evidence.md) · [Where it fits](docs/where-it-fits.md) · [Packages](docs/packages.md) ·
 [Build from source](docs/build-from-source.md) · [Contributing](CONTRIBUTING.md)

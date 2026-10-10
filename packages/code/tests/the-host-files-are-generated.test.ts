@@ -1,8 +1,8 @@
 /**
  * THE HOST FILES ARE GENERATED, AND ONE EDITED BY HAND IS RED.
  *
- * The plugin's hooks file, the two manifests and the rung table on the README and on
- * `docs/evidence.md` are what `support/the-host-files.ts` makes of the host table in
+ * The plugin's hooks files, the manifests, the rung table on `docs/evidence.md` and the summary
+ * of it on the README are what `support/the-host-files.ts` makes of the host table in
  * `src/host-names.ts`. Each committed file is compared here with what the table generates, byte
  * for byte; for a page, with the page as it stands and its table regenerated, so the prose
  * around the table stays the page's own. A file somebody edited by hand differs, and this is red.
@@ -33,8 +33,18 @@ describe('the files the host table generates', () => {
   });
 
   it('accuses a rung table edited by hand, and keeps the prose around it', () => {
-    const committed = readFileSync(join(ROOT, 'README.md'), 'utf-8');
+    const committed = readFileSync(join(ROOT, 'docs/evidence.md'), 'utf-8');
     const edited = committed.replace('| Goose |', '| Goose, fully supported |');
+    expect(edited).not.toBe(committed);
+    expect(generated('docs/evidence.md', edited)).toBe(committed);
+    const prose = committed.replace('## Not held yet', '## Not held yet!');
+    expect(prose).not.toBe(committed);
+    expect(generated('docs/evidence.md', prose)).toBe(prose);
+  });
+
+  it('accuses a host summary edited by hand, and keeps the prose around it', () => {
+    const committed = readFileSync(join(ROOT, 'README.md'), 'utf-8');
+    const edited = committed.replace('Goose | (a), documented, not measured', 'Goose | (d)');
     expect(edited).not.toBe(committed);
     expect(generated('README.md', edited)).toBe(committed);
     const prose = committed.replace('## Features', '## Features!');
