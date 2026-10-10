@@ -44,7 +44,7 @@ describe('the files the host table generates', () => {
 
   it('accuses a host summary edited by hand, and keeps the prose around it', () => {
     const committed = readFileSync(join(ROOT, 'README.md'), 'utf-8');
-    const edited = committed.replace('Goose | (a), documented, not measured', 'Goose | (d)');
+    const edited = committed.replace('**Goose**', '**Goose, fully supported**');
     expect(edited).not.toBe(committed);
     expect(generated('README.md', edited)).toBe(committed);
     const prose = committed.replace('## Features', '## Features!');

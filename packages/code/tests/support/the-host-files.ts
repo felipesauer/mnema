@@ -831,27 +831,146 @@ function withTheTable(page: string, base: string, path: string): string {
 // The summary on the front page
 // ---------------------------------------------------------------------------
 
+/** Where the logos of most hosts come from: LobeHub's icons, MIT, one release pinned. */
+const LOBEHUB = 'https://cdn.jsdelivr.net/npm/@lobehub/icons-static-png@1.97.1';
+
+/** A file in a host's own repository, at the commit the host table already pins for it. */
+const RAW = 'https://raw.githubusercontent.com';
+
 /**
- * The organisation on GitHub that publishes each host. Its avatar stands for the host in the
- * summary: one picture per row from one place, where a set of logos would come from as many
- * places as there are hosts. A host added to the table without one does not compile.
+ * How each host is shown in the summary: the name a reader knows it by, who makes it and what kind
+ * of tool it is, and its own logo — one file for a light page and one for a dark one, where the
+ * logo has two. The logos are their owners' marks, linked and not copied into this repository. A
+ * host added to the table without a row here does not compile.
  */
-const PUBLISHER: { readonly [H in HostName]: string } = {
-  claude: 'anthropics',
-  vscode: 'microsoft',
-  cursor: 'cursor',
-  codex: 'openai',
-  copilot: 'github',
-  opencode: 'anomalyco',
-  gemini: 'google-gemini',
-  cursorIde: 'cursor',
-  antigravity: 'google',
-  droid: 'Factory-AI',
-  qwen: 'QwenLM',
-  goose: 'aaif-goose',
-  continue: 'continuedev',
-  warp: 'warpdotdev',
+const SHOWN: {
+  readonly [H in HostName]: {
+    readonly name: string;
+    readonly by: string;
+    readonly light: string;
+    readonly dark?: string;
+  };
+} = {
+  claude: {
+    name: 'Claude Code',
+    by: 'Anthropic · terminal and editors',
+    light: `${LOBEHUB}/light/claudecode-color.png`,
+    dark: `${LOBEHUB}/dark/claudecode-color.png`,
+  },
+  vscode: {
+    name: 'VS Code',
+    by: 'Microsoft · the agent of the editor',
+    light: 'https://cdn.jsdelivr.net/gh/devicons/devicon@v2.17.0/icons/vscode/vscode-original.svg',
+  },
+  cursor: {
+    name: 'Cursor CLI',
+    by: 'Cursor · command line',
+    light: `${LOBEHUB}/light/cursor.png`,
+    dark: `${LOBEHUB}/dark/cursor.png`,
+  },
+  codex: {
+    name: 'Codex',
+    by: 'OpenAI · command line',
+    light: `${LOBEHUB}/light/codex-color.png`,
+    dark: `${LOBEHUB}/dark/codex-color.png`,
+  },
+  copilot: {
+    name: 'Copilot CLI',
+    by: 'GitHub · command line',
+    light: `${LOBEHUB}/light/githubcopilot.png`,
+    dark: `${LOBEHUB}/dark/githubcopilot.png`,
+  },
+  opencode: {
+    name: 'OpenCode',
+    by: 'Anomaly · command line',
+    light: `${LOBEHUB}/light/opencode.png`,
+    dark: `${LOBEHUB}/dark/opencode.png`,
+  },
+  gemini: {
+    name: 'Gemini CLI',
+    by: 'Google · command line',
+    light: `${LOBEHUB}/light/geminicli-color.png`,
+    dark: `${LOBEHUB}/dark/geminicli-color.png`,
+  },
+  cursorIde: {
+    name: 'Cursor',
+    by: 'Cursor · editor',
+    light: `${LOBEHUB}/light/cursor.png`,
+    dark: `${LOBEHUB}/dark/cursor.png`,
+  },
+  antigravity: {
+    name: 'Antigravity CLI',
+    by: 'Google · command line (`agy`)',
+    light: `${LOBEHUB}/light/antigravity-color.png`,
+    dark: `${LOBEHUB}/dark/antigravity-color.png`,
+  },
+  droid: {
+    name: 'Factory Droid',
+    by: 'Factory · command line',
+    light: `${RAW}/Factory-AI/factory/c6ea47082007a32a8a76bb99da42e387565f119a/docs/favicon.svg`,
+  },
+  qwen: {
+    name: 'Qwen Code',
+    by: 'Qwen · command line',
+    light: `${LOBEHUB}/light/qwen-color.png`,
+    dark: `${LOBEHUB}/dark/qwen-color.png`,
+  },
+  goose: {
+    name: 'Goose',
+    by: 'Agentic AI Foundation · desktop and command line',
+    light: `${LOBEHUB}/light/goose.png`,
+    dark: `${LOBEHUB}/dark/goose.png`,
+  },
+  continue: {
+    name: 'Continue CLI',
+    by: 'Continue · command line (`cn`)',
+    light: `${RAW}/continuedev/continue/5522c6f44ca0ac3528b37244818fbfa39b5af470/extensions/intellij/src/main/resources/META-INF/pluginIcon.svg`,
+    dark: `${RAW}/continuedev/continue/5522c6f44ca0ac3528b37244818fbfa39b5af470/extensions/intellij/src/main/resources/META-INF/pluginIcon_dark.svg`,
+  },
+  warp: {
+    name: 'Warp',
+    by: 'Warp · terminal',
+    light: `${RAW}/warpdotdev/warp/325d4d4701b41feb272487e89a6cf02bfba9f194/app/assets/bundled/svg/warp-logo-dark.svg`,
+    dark: `${RAW}/warpdotdev/warp/325d4d4701b41feb272487e89a6cf02bfba9f194/app/assets/bundled/svg/warp-logo-light.svg`,
+  },
 };
+
+/** The short word for each capability, in the order of the rungs. */
+const SHORT: { readonly [C in Capability]: string } = {
+  server: 'MCP server',
+  rulesFile: 'rules file',
+  opens: 'opening',
+  refuses: 'refusal',
+  asks: 'pause',
+};
+
+/**
+ * What a host gets, in short words: what a test holds or a run on the real host read, and, under
+ * it, what only its documentation says.
+ */
+function whatItGets(name: HostName): string {
+  const cells = HOSTS[name].cells;
+  const all = Object.keys(SHORT) as Capability[];
+  const yes = all.filter((c) => {
+    const cell = cells[c];
+    return cell.held !== 'not ported' && cell.held !== 'documentation' && cell.does;
+  });
+  const documented = all.filter((c) => cells[c].held === 'documentation');
+  const said = yes.map((c) => SHORT[c]).join(' · ');
+  if (documented.length === 0) return said;
+  const words = documented.map((c) => SHORT[c]).join(' · ');
+  return said === ''
+    ? `${words}<br><sub>documented, not measured</sub>`
+    : `${said}<br><sub>${words}: documented, not measured</sub>`;
+}
+
+/** A host's logo, the dark one where the page is dark. */
+function logoOf(name: HostName): string {
+  const shown = SHOWN[name];
+  const img = `<img src="${shown.light}" width="24" height="24" alt="${shown.name}">`;
+  if (shown.dark === undefined) return img;
+  return `<picture><source media="(prefers-color-scheme: dark)" srcset="${shown.dark}">${img}</picture>`;
+}
 
 /** The heading of `docs/install.md` for a host this repository has no plugin for. */
 const ANY_HOST = 'any-other-host-with-an-mcp-client';
@@ -877,13 +996,18 @@ const INSTALLED_AT: { readonly [H in HostName]: string } = {
 /** The summary: one row per host, with its rung and where its install is, for a page at `base`. */
 export function hostSummary(base: string): string {
   const rows = HOST_NAMES.map((name) => {
-    const host = HOSTS[name];
-    const avatar = `<img src="https://github.com/${PUBLISHER[name]}.png?size=40" width="20" height="20" alt="">`;
+    const shown = SHOWN[name];
+    const rung = rungOf(name).split(',')[0] ?? 'none';
     const at = INSTALLED_AT[name];
-    const what = at === ANY_HOST ? 'the server alone' : 'the plugin';
-    return `| ${avatar} ${host.title} | ${rungOf(name)} | [${what}](${base}docs/install.md#${at}) |`;
+    const install = `[${at === ANY_HOST ? 'MCP server' : 'Plugin'}](${base}docs/install.md#${at})`;
+    const host = `**${shown.name}**<br><sub>${shown.by}</sub>`;
+    return `| ${logoOf(name)} | ${host} | **${rung}** | ${whatItGets(name)} | ${install} |`;
   });
-  return ['| Host | Rung | Install |', '| --- | --- | --- |', ...rows].join('\n');
+  return [
+    '| | Host | Rung | What it gets | Install |',
+    '| :---: | :--- | :---: | :--- | :--- |',
+    ...rows,
+  ].join('\n');
 }
 
 /** The line that opens the generated summary on a page. */
