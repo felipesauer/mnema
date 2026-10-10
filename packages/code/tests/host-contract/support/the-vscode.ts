@@ -117,8 +117,6 @@ export interface TheEditorSpec {
   readonly hookFiles?: Readonly<Record<string, unknown>>;
   /** How long to wait for something to happen, in milliseconds. */
   readonly waitMs?: number;
-  /** Settings of the editor to add to the ones every case has. */
-  readonly settings?: Readonly<Record<string, unknown>>;
 }
 
 /**
@@ -155,7 +153,6 @@ export async function anEditorSession(spec: TheEditorSpec): Promise<TheEditorSes
         'update.mode': 'none',
         'extensions.autoUpdate': false,
         'extensions.autoCheckUpdates': false,
-        ...spec.settings,
       }),
     );
     for (const [name, hooks] of Object.entries(spec.hookFiles ?? {})) {

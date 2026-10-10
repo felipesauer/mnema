@@ -207,6 +207,12 @@ tag, with its own changelog.
   a checker key from a repository secret: after its other steps it runs `mnema check run` with it,
   leaves the results in the working tree and fails when a check did not pass. A declared program
   is started without the Action's inputs in its environment.
+- **What each host hands the MCP server it starts is measured in the host jobs.** In place of
+  `mnema mcp`, each job starts a server that writes down the name the client announced, the
+  executables above it and which of a closed list of variables exist in its environment — names
+  only, never a value or a path — and the case asserts them by value. Held for Claude Code, Codex,
+  GitHub Copilot CLI, Gemini CLI and OpenCode; VS Code's agent does not start the plugin's server
+  in its job, and a case says so. The table is in `docs/evidence.md`.
 
 ### Changed
 
