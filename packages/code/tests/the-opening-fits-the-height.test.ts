@@ -46,6 +46,7 @@ import { REPL_VERB } from '../src/wiring/repl.js';
 import { ESC } from './support/console.js';
 import {
   aFrameSince,
+  aPageWith,
   aPageWithout,
   inPty as drive,
   type Fixture,
@@ -96,6 +97,9 @@ const VERIFIED = 'local integrity verified';
  * character a reader cannot see is a character an edit destroys without anybody noticing.
  */
 const TO_THE_TOP = `${ESC}[H`;
+
+/** The width the walk below is driven at, which its wait has to replay the page at. */
+const THE_WIDTH = 100;
 
 /**
  * THE LAST WORD OF THE LAST SENTENCE THE ANSWER SAYS — how a case knows the whole of it landed.
@@ -214,10 +218,18 @@ const asks: Step = {
   what: `asked ${A_LONG_READ}`,
 };
 
-/** The caller walks the roll back to its oldest line. */
+/**
+ * The caller walks the roll back to its oldest line.
+ *
+ * IT WAITS FOR THE PAGE IT IS ABOUT: what the session is, which is the first thing the walk brings
+ * back. It WAITED FOR *a frame*, and under load the frame it ended on was the tail of the answer
+ * before it, drawn after the key was written — the case then read the page the answer settled on
+ * and said the opening did not come back. Measured at one run in forty-five on the runners, and
+ * eighteen in twenty on a machine kept busy.
+ */
 const walksToTheTop: Step = {
   types: TO_THE_TOP,
-  until: aFrameSince(PROMPT),
+  until: aPageWith(PROMPT, THE_WIDTH, THE_FLOOR.rows, OPENED),
   what: 'walked to the top of the roll',
 };
 
@@ -668,7 +680,7 @@ describe('the answer a caller asked for is on the page, at the shortest window t
     // what it holds does not fit ACROSS the window, and the row saying where the session is
     // standing is a PATH ({@link deep}). It is a SIZE and not a threshold either way; where the
     // last arrangement gives way is searched for in `the-opening-fits-the-screen.test.ts`.
-    const columns = 100;
+    const columns = THE_WIDTH;
     // AND THE HEIGHT IS THE FLOOR'S, which was twenty-four: no page is laid out under it
     // (`src/repl/floor.ts`), so a window shorter than this measures the screen that says so.
     const rows = THE_FLOOR.rows;
