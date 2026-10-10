@@ -12,9 +12,9 @@ never *tested*. It expires with the version it was read on.
 
 | File | What it is |
 |---|---|
-| [`cursor-script.md`](cursor-script.md) | The script a person follows to read Cursor's agent: the project to make, the three cases, how to take the transcript and how to redact it. |
+| [`cursor-script.md`](cursor-script.md) | The script a person follows to read Cursor's agent: the project to make, the four cases (the fourth reads what the agent hands an MCP server), how to take the transcript and how to redact it. |
 | [`cursor-capture.template.json`](cursor-capture.template.json) | The shape of the result. A capture is a copy of it, filled in, named `cursor-<date>.json`. |
-| [`cursor-ide-script.md`](cursor-ide-script.md) | The same, for Cursor's editor, the graphical application: a home and a profile of their own, a probe that writes down what a hook is handed, eight cases, and what a capture lets the host table change. |
+| [`cursor-ide-script.md`](cursor-ide-script.md) | The same, for Cursor's editor, the graphical application: a home and a profile of their own, a probe that writes down what a hook is handed, nine cases (one reads what the editor hands an MCP server), and what a capture lets the host table change. |
 | [`cursor-ide-capture.template.json`](cursor-ide-capture.template.json) | The shape of the result for the editor, named `cursor-ide-<date>.json`. None has been made yet: the host table says of the editor only what its documentation says. |
 | [`antigravity-cli-script.md`](antigravity-cli-script.md) | The same, for Antigravity's command line (`agy`): a home of its own, a probe in the host's own hook dialect, eight cases, and what a capture lets the host table change. |
 | [`antigravity-cli-capture.template.json`](antigravity-cli-capture.template.json) | The shape of the result for it, named `antigravity-cli-<date>.json`. None has been made yet: the host table says of it only what its documentation says. |

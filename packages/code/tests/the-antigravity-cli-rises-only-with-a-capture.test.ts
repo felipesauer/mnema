@@ -88,3 +88,14 @@ describe('the script and the template of a capture of the command line', () => {
     expect(template.host.name).toBe("Antigravity's command line (agy)");
   });
 });
+
+describe('the script of a capture of the command line', () => {
+  const script = readFileSync(join(CAPTURES, 'antigravity-cli-script.md'), 'utf-8');
+
+  it('goes into the project before the block that writes `.agents`', () => {
+    const block = script.indexOf('mkdir -p .agents');
+    expect(block).toBeGreaterThan(0);
+    const opening = script.slice(script.lastIndexOf('```sh', block), block);
+    expect(opening).toContain('cd "$PROJECT"');
+  });
+});
