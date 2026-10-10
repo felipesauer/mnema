@@ -1,7 +1,7 @@
 # Where it fits
 
-**Who it is for.** A team, or one person, whose coding agents — Claude Code, VS Code's
-agent, Cursor's command-line agent — make choices that somebody will later ask about:
+**Who it is for.** A team, or one person, whose coding agents — Claude Code, Codex, GitHub
+Copilot CLI, Gemini CLI, OpenCode, VS Code's agent, Cursor — make choices that somebody will later ask about:
 which library, which approach, which option was turned down and why. The reader it is
 built for is the one who asks *who decided this, and has the record been touched since*,
 and who wants to answer from the repository, with a command anybody can run.
