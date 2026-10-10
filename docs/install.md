@@ -150,14 +150,13 @@ not run. A run without a person (`gemini -p`) in a folder the host does not trus
 unless it is told to trust it (`--skip-trust`).
 
 **Which `mnema` each of these plugins needs.** The plugin files of Codex, Copilot CLI, OpenCode and
-Gemini CLI come from `main`, and the refusal they ask for is answered by `mnema before-a-write --host
-codex` (`copilot`, `opencode`, `gemini`), a host the pre-release `v0.1.0-beta` does not know:
-measured on that tag, it answers `--host takes one of vscode, cursor` and exits 1, and each plugin
-lets the write through in silence. With `v0.1.0-beta`, then, these four hosts get the server and the
-opening and **no refusal and, in Copilot CLI, no pause for a person**; Codex's opening is also not
-cut to its own ceiling (the document is cut at 10,000 units, which Codex may truncate on a long
-record). The
-refusal needs a `mnema` built from `main`, or a release newer than the tag (the tag and `main` both
+Gemini CLI come from `main`, and the refusal they ask for is answered by
+`mnema before-a-write --host codex` (`copilot`, `opencode`, `gemini`), a host the pre-release
+`v0.1.0-beta` does not know: measured on that tag, it answers `--host takes one of vscode, cursor`
+and exits 1, and each plugin lets the write through in silence. With `v0.1.0-beta`, then, these four
+hosts get the server and the opening and **no refusal and, in Copilot CLI, no pause for a person**;
+Codex's opening is also not cut to its own ceiling (the document is cut at 10,000 units, which Codex
+may truncate on a long record). The refusal needs a `mnema` built from `main`, or a release newer than the tag (the tag and `main` both
 report the version `0.1.0-beta`, so `--version` does not tell them apart).
 
 Without the plugin, `mnema rules-file --host claude`, `--host vscode` or `--host cursor` prints the committed rules
