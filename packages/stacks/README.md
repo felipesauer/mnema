@@ -93,7 +93,7 @@ folders.
 [`stack-index/`](../../stack-index/) is a list of stacks: for each, a name, a version, a link and the digest.
 It holds no stack. The two examples are its first entries, and the suite recomputes their digests from the
 folders. A stack listed from somewhere else is held to nothing here: the link may move and the digest is what the
-proposer wrote, so compare it with the digest `mnema stack add --dry-run` shows.
+proposer wrote, so compare it with the digest the install plan shows.
 
 ## What it proves — and what it does not
 

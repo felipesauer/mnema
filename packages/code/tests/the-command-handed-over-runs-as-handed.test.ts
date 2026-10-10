@@ -680,7 +680,8 @@ export const HANDED_OVER: Readonly<
   // line 90 and name 159 with the pages that describe the subagent's stop: `mnema handback` and its
   // `--schema` in the plugin page and the package page, and the switch that stops it, each in a
   // line of its own or in a span.
-  span: { line: 90, name: 159, flag: 3, unwritten: 0 },
+  // line 91 with the page of the stack index, which hands over `mnema stack add <source> --dry-run`.
+  span: { line: 91, name: 159, flag: 3, unwritten: 0 },
   // name 18 until the page that says where the key lives named `mnema key protect` in a line of
   // its own.
   // line 35 until the same page showed that question in a block of its own.
