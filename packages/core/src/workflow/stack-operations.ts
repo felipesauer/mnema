@@ -56,6 +56,16 @@ const STACK_NAME_MAX = 64;
 const STACK_VERSION = /^[0-9A-Za-z][0-9A-Za-z.+-]*$/;
 const STACK_VERSION_MAX = 64;
 
+/** Whether `text` is a stack name in the form the write door admits — the door's own rule, for readers. */
+export function isStackName(text: string): boolean {
+  return STACK_NAME.test(text) && text.length <= STACK_NAME_MAX;
+}
+
+/** Whether `text` is a version label in the form the write door admits — the door's own rule, for readers. */
+export function isStackVersion(text: string): boolean {
+  return STACK_VERSION.test(text) && text.length <= STACK_VERSION_MAX;
+}
+
 /** The digest a stack is identified by: a SHA-256, in lower-case hex. */
 const STACK_DIGEST = /^[0-9a-f]{64}$/;
 
@@ -111,14 +121,14 @@ function fieldRefusal(
   switch (field) {
     case 'name':
     case 'as':
-      return STACK_NAME.test(text) && text.length <= STACK_NAME_MAX
+      return isStackName(text)
         ? undefined
         : refuse(
             'a stack name is lower-case ASCII letters, digits and single hyphens, at most 64 ' +
               'characters, and never a path',
           );
     case 'version':
-      return STACK_VERSION.test(text) && text.length <= STACK_VERSION_MAX
+      return isStackVersion(text)
         ? undefined
         : refuse(
             'a version is ASCII letters, digits, ".", "+" and "-", at most 64 characters, and ' +

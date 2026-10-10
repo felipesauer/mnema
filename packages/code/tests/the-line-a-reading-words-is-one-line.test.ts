@@ -635,25 +635,29 @@ const CLASSIFIED: Readonly<Record<string, { verdict: Verdict; why: string }>> = 
     verdict: 'collapsed',
     why: 'the id that record minted for the decision',
   },
-  'brief.ts «Stacks adopted for this project ({}): {}{}.» stacks.adopted.length #1': {
+  'brief.ts «Stacks adopted for this project ({}): {}.» stacks.adopted.length #1': {
     verdict: 'minted',
     why: 'a count of the adopted stacks, taken from the list the record produced',
   },
-  "brief.ts «Stacks adopted for this project ({}): {}{}.» named.join(', ') #1": {
+  'brief.ts «Stacks adopted for this project ({}): {}.» said #1': {
     verdict: 'composed',
-    why: 'the names printed in this paragraph, each collapsed below by `oneLine` before it is joined',
+    why: 'the paragraph `stacksSection` joins from the entries below: the names, the count of the rest and the count of those it cannot show',
   },
-  "brief.ts «Stacks adopted for this project ({}): {}{}.» rest > 0 ? ` and ${rest} more` : '' #1": {
+  'brief.ts «{} more» rest #1': {
     verdict: 'minted',
-    why: 'a count of the stacks the paragraph does not name, taken from the length of the list',
+    why: 'a count of the legible stacks the paragraph does not name, taken from the length of the list',
   },
-  'brief.ts «{} {} ({})» oneLine(s.name) #1': {
-    verdict: 'collapsed',
-    why: 'the name an adopted stack was installed under, read from the record',
+  'brief.ts «{} the record holds that cannot be shown here» unreadable #1': {
+    verdict: 'minted',
+    why: 'a count of the entries whose name or version is not in the form the write door admits; they are counted and never echoed',
   },
-  'brief.ts «{} {} ({})» oneLine(s.version) #1': {
-    verdict: 'collapsed',
-    why: 'the version an adoption carries, read from the record',
+  'brief.ts «{} {} ({})» s.name #1': {
+    verdict: 'minted',
+    why: 'printed only where `isStackName` admits it, the write door’s own rule: lower-case ASCII letters, digits and single hyphens, at most 64, so it holds no newline and nothing else',
+  },
+  'brief.ts «{} {} ({})» s.version #1': {
+    verdict: 'minted',
+    why: 'printed only where `isStackVersion` admits it, the write door’s own rule: ASCII letters, digits, ".", "+" and "-", at most 64, so it holds no newline and nothing else',
   },
   'brief.ts «{} {} ({})» s.scope #1': {
     verdict: 'minted',
@@ -2245,7 +2249,7 @@ describe('every value this layer puts on a line is classified', () => {
     // composers with its two template values; then 253 until the rules in force began saying who
     // accepted them (`brief.ts`, `record.ts`); 294 until `mnema rules` printed the four numbers
     // of the relation that refuses a write; 301 with the three the trunk added meanwhile; 395 with the lines `mnema site` prints; 306 once the document counts the rules that refuse a write; 367 with the pages of the git bridge; 377 with its shallow sentence and the recipe aging prints; 389 with the section for an inherited record; 415 with the mark on a link taken back, in the graph and its diagram; 418 once the closing paragraph words a host's ceiling in its own unit; 425 with the paragraph naming the stacks adopted.
-    expect(FOUND.sites.length).toBe(425);
+    expect(FOUND.sites.length).toBe(426);
   });
 
   it('reads the verdict off the source rather than believing the table', () => {
@@ -2266,10 +2270,10 @@ describe('every value this layer puts on a line is classified', () => {
     // No arm of the case above may be empty, or that much of it is vacuous.
     const verdicts = Object.values(CLASSIFIED).map((said) => said.verdict);
     const count = (verdict: Verdict): number => verdicts.filter((said) => said === verdict).length;
-    expect(count('collapsed')).toBe(115);
-    expect(count('minted')).toBe(238);
+    expect(count('collapsed')).toBe(113);
+    expect(count('minted')).toBe(241);
     expect(count('composed')).toBe(72);
-    expect(FOUND.sites.filter((site) => /\boneLine\b/.test(site.expression))).toHaveLength(115);
+    expect(FOUND.sites.filter((site) => /\boneLine\b/.test(site.expression))).toHaveLength(113);
   });
 
   it('every reason says where the value comes from', () => {

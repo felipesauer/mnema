@@ -115,6 +115,7 @@
 
 import type { Acceptance, AdrCollision, Brief, ChannelState } from '@mnema/context';
 import type { DivergentMove } from '@mnema/core';
+import { isStackName, isStackVersion } from '@mnema/core/write';
 import type { BriefDone } from '../commands/brief.js';
 import type { StacksHere } from '../commands/stack-inspect.js';
 import type { InheritedReading } from '../inherited-record.js';
@@ -777,17 +778,29 @@ const STACKS_NAMED = 8;
  * come from the record, the departures from the disk, and each is said as what it is: the record
  * says these are adopted, and a count says how many things `mnema stack check` would name. What a
  * stack's skills say is for the agent to read where it reads skills; nothing here repeats them.
+ *
+ * ITS SIZE DOES NOT DEPEND ON WHAT THE RECORD HOLDS. A name or a version is printed only if it
+ * is in the form the write door admits (the door's own predicates, {@link isStackName} and
+ * {@link isStackVersion}: ASCII, at most 64 characters), so a fact appended past the door cannot
+ * carry text of its own into a session; what is not in that form is counted as unreadable and
+ * never echoed. At most {@link STACKS_NAMED} are named, each at most 64 + 64 + 10 characters,
+ * so the section is at most {@link STACKS_SECTION_MOST} characters whatever the record says.
  */
 function stacksSection(stacks: StacksHere | undefined): string[] {
   if (stacks === undefined || stacks.adopted.length === 0) return [];
-  const named = stacks.adopted
-    .slice(0, STACKS_NAMED)
-    .map((s) => `${oneLine(s.name)} ${oneLine(s.version)} (${s.scope})`);
-  const rest = stacks.adopted.length - named.length;
+  const legible = stacks.adopted.filter((s) => isStackName(s.name) && isStackVersion(s.version));
+  const unreadable = stacks.adopted.length - legible.length;
+  const named = legible.slice(0, STACKS_NAMED).map((s) => `${s.name} ${s.version} (${s.scope})`);
+  const rest = legible.length - named.length;
   const parted = stacks.departures.length;
+  const said = [
+    ...(named.length > 0 ? [named.join(', ')] : []),
+    ...(rest > 0 ? [`${rest} more`] : []),
+    ...(unreadable > 0 ? [`${unreadable} the record holds that cannot be shown here`] : []),
+  ].join('; ');
   return [
     '',
-    `Stacks adopted for this project (${stacks.adopted.length}): ${named.join(', ')}${rest > 0 ? ` and ${rest} more` : ''}.`,
+    `Stacks adopted for this project (${stacks.adopted.length}): ${said}.`,
     'Their skills and agents sit in the folders each host reads; `mnema stack list` shows them and `mnema stack check` compares them with the record.',
     ...(parted > 0
       ? [
@@ -796,6 +809,14 @@ function stacksSection(stacks: StacksHere | undefined): string[] {
       : []),
   ];
 }
+
+/**
+ * The most characters {@link stacksSection} can print: the eight named entries at their longest
+ * (a 64-character name, a 64-character version, and ` (private)` with the separators), plus the
+ * fixed sentences and the counts, which are numbers of at most a few digits. A guard measures a
+ * section against it.
+ */
+export const STACKS_SECTION_MOST = 1_800;
 
 /**
  * What another repository's record says governs, in a section of its own — and nothing at all
