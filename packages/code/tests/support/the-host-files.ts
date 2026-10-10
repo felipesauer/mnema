@@ -89,7 +89,7 @@ function version(): string {
 
 /** What the plugin's hooks file says it does, as the host shows it. */
 const HOOKS_DESCRIPTION =
-  "Hands the project's committed record to the session as it opens: the decisions in force and the adopted patterns, by name — and, beside it, the memories and observations recorded for the project, from every tree this machine holds, the ones that share a word with what the session touches first. At each edit, hands over the rules of the record addressed at that path, beside the result of that write — and where a rule of that record asks for it, pauses the write until a person decides, and where a rule refuses it, does not let the write happen, citing the rule either way — in Claude Code through a call into the server, and in VS Code and Cursor, whose hooks are processes, through a command each: VS Code's that Claude Code and Cursor never match, and Cursor's, which runs only where Cursor says it is the host and refuses alone, since its agent does not pause a write for a person. Every one of those is recorded as a fact of the chain. At the end of a response that wrote a file, and before a conversation is compacted, says how many files the session's own tool calls wrote and how many decisions were recorded since it opened — a count, which records nothing. And, only where somebody switched it on, at the end of a response records the places where the person corrected the agent as proposed decisions in the machine's private tree. Each can be switched off with `mnema switch`, which records that it was.";
+  "Hands the project's committed record to the session as it opens: the decisions in force and the adopted patterns, by name — and, beside it, the memories and observations recorded for the project, from every tree this machine holds, the ones that share a word with what the session touches first. At each edit, hands over the rules of the record addressed at that path, beside the result of that write — and where a rule of that record asks for it, pauses the write until a person decides, and where a rule refuses it, does not let the write happen, citing the rule either way — in Claude Code through a call into the server, and in VS Code and Cursor, whose hooks are processes, through a command each: VS Code's that Claude Code and Cursor never match, and Cursor's, which runs only where Cursor says it is the host and refuses alone, since its agent does not pause a write for a person. Every one of those is recorded as a fact of the chain. At the end of a response that wrote a file, and before a conversation is compacted, says how many files the session's own tool calls wrote and how many decisions were recorded since it opened — a count, which records nothing. And, only where somebody switched it on, at the end of a response records the places where the person corrected the agent as proposed decisions in the machine's private tree. And, where a subagent is about to stop, sends it back once if its final reply does not end in the block of decisions the record asks it to hand over, with the format. Each can be switched off with `mnema switch`, which records that it was.";
 
 /** A variable the HOST expands in the files it reads — written as the host spells it, never ours. */
 const hostVariable = (name: string): string => `$${'{'}${name}}`;
@@ -201,6 +201,16 @@ const SESSION_START: Json = [
   { hooks: [command('session-start.mjs'), command('session-recall.mjs')] },
 ];
 
+/**
+ * Whether the plugin's hooks file declares the hook of a subagent's stop: when a host that reads
+ * that file has it held by a test. A host that was only read for it (Codex and Copilot, which read
+ * files of their own) is a line under the rung table, never a hook.
+ */
+const stopsASubagent = (name: HostName): boolean => {
+  const cell = (HOSTS[name] as Host).subagentStop;
+  return cell !== undefined && cell.held === 'a test' && cell.does;
+};
+
 /** The plugin's hooks file. */
 export function hooksJson(): string {
   const ordered = [...BEFORE_A_WRITE, ...HOST_NAMES.filter((n) => !BEFORE_A_WRITE.includes(n))];
@@ -211,6 +221,9 @@ export function hooksJson(): string {
       Stop: [{ hooks: [command('session-tally.mjs'), command('session-corrections.mjs')] }],
       PreCompact: [{ hooks: [command('session-tally.mjs')] }],
       PreToolUse: ordered.filter((n) => !readsItsOwn(n)).flatMap(beforeAWrite),
+      ...(HOST_NAMES.some((n) => !readsItsOwn(n) && stopsASubagent(n))
+        ? { SubagentStop: [{ hooks: [command('subagent-stop.mjs')] }] }
+        : {}),
     },
   };
   return `${printed(file)}\n`;
@@ -527,7 +540,12 @@ function withTheTable(page: string, base: string, path: string): string {
   if (from === -1 || to < from) throw new Error(`${path} has no generated rung table`);
   const notes = HOST_NAMES.flatMap((name) => {
     const host: Host = HOSTS[name];
-    return host.note === undefined ? [] : [`**${host.title}.** ${host.note}`];
+    const stops =
+      host.subagentStop === undefined
+        ? undefined
+        : `When a subagent stops: ${cellText(host.subagentStop, base)}.`;
+    const said = [host.note, stops].filter((text) => text !== undefined);
+    return said.length === 0 ? [] : [`**${host.title}.** ${said.join(' ')}`];
   });
   const under = notes.length === 0 ? '' : `${notes.join('\n\n')}\n\n`;
   return `${page.slice(0, from)}${BEGIN}\n\n${rungTable(base)}\n\n${under}${LEGEND}\n\n${page.slice(to)}`;

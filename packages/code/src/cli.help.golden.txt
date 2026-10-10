@@ -103,6 +103,8 @@ $ mnema
 !                   wrote and recorded
 !   corrections     record what a person corrected in a session as proposed
 !                   decisions, for a Stop hook
+!   handback        check what a subagent hands back when it stops, or print the
+!                   format it is checked by
 !
 ! Help:
 !   help            display help for command
@@ -213,6 +215,8 @@ $ mnema --help
 |                   wrote and recorded
 |   corrections     record what a person corrected in a session as proposed
 |                   decisions, for a Stop hook
+|   handback        check what a subagent hands back when it stops, or print the
+|                   format it is checked by
 |
 | Help:
 |   help            display help for command
@@ -1370,6 +1374,29 @@ $ mnema corrections --help
 |   It does nothing until `mnema switch on user-corrections`, because it reads what a person
 |   typed. With the channel off, or outside a project, it records nothing.
 
+### mnema handback --help
+$ mnema handback --help
+| Usage: mnema handback [options]
+|
+| check what a subagent hands back when it stops, or print the format it is
+| checked by
+|
+| Options:
+|   --schema    print the JSON Schema of the block a hand-back ends in, and read
+|               nothing
+|   -h, --help  display help for command
+|
+| What it reads and what it prints:
+|   The JSON a host hands a SubagentStop hook on stdin. A subagent hands the decisions it
+|   settled back in its final reply, in one fenced block whose info string is
+|   `mnema-handback`, holding {"decisions":[{"settled","why","turnedDown"}]}, the list
+|   empty where it settled nothing. On stdout, the reply the host reads: a block decision
+|   with the reason, once per stop, when the final reply has no such block or the block is
+|   not in the format, or {} when it does, when the hook is not SubagentStop, when there is
+|   no project here, or the reply cannot be read.
+|   It reads, and writes nothing. It can be switched off with
+|   `mnema switch off subagent-handback`.
+
 ### mnema decision record --help
 $ mnema decision record --help
 | Usage: mnema decision record [options] <title> [rationale]
@@ -1957,7 +1984,7 @@ $ mnema switch off --help
 |   channel          the channel to switch (brief-document, recall-document,
 |                    edit-rules-push, edit-asks-a-person, edit-refuses-a-write,
 |                    agent-accepts, edit-first-write-gate, user-corrections,
-|                    session-tally)
+|                    subagent-handback, session-tally)
 |
 | Options:
 |   --reason <text>  why (recorded in the fact; never required)
@@ -1992,7 +2019,7 @@ $ mnema switch on --help
 |   channel          the channel to switch (brief-document, recall-document,
 |                    edit-rules-push, edit-asks-a-person, edit-refuses-a-write,
 |                    agent-accepts, edit-first-write-gate, user-corrections,
-|                    session-tally)
+|                    subagent-handback, session-tally)
 |
 | Options:
 |   --reason <text>  why (recorded in the fact; never required)

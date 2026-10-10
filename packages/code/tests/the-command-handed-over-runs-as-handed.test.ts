@@ -677,7 +677,10 @@ export const HANDED_OVER: Readonly<
   // line 84 once the package page handed over `mnema doctor --fix private-tree`.
   // name 155 with the two pages that name `mnema stack add` as why the stacks package is released.
   // name 156 with the package page naming it again as the reader of a stack's signature.
-  span: { line: 84, name: 156, flag: 3, unwritten: 0 },
+  // line 90 and name 159 with the pages that describe the subagent's stop: `mnema handback` and its
+  // `--schema` in the plugin page and the package page, and the switch that stops it, each in a
+  // line of its own or in a span.
+  span: { line: 90, name: 159, flag: 3, unwritten: 0 },
   // name 18 until the page that says where the key lives named `mnema key protect` in a line of
   // its own.
   // line 35 until the same page showed that question in a block of its own.
@@ -739,7 +742,10 @@ export const HANDED_OVER: Readonly<
   // line 85 once the doctor handed over `mnema doctor --fix private-tree`, in a line of its own.
   // line 86 once `before-a-write --help` named the second host that only refuses, and the switch
   // of the asking went to a line of its own.
-  source: { line: 87, name: 90, flag: 4, unwritten: 4 },
+  // name 87 with the verb a subagent's stop runs: its help and the reason it sends back each name
+  // `mnema handback --schema`, and the help names the switch that stops it.
+  // line 88 with the help of `mnema handback`: the two lines that name the switch and the schema.
+  source: { line: 89, name: 92, flag: 4, unwritten: 4 },
 };
 
 // ---------------------------------------------------------------------------

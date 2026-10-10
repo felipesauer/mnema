@@ -298,6 +298,7 @@ describe('what `channel.served` counts, said by the table the type makes total',
       'edit-refuses-a-write',
       'recall-document',
       'session-tally',
+      'subagent-handback',
       'user-corrections',
     ]);
   });
@@ -496,6 +497,7 @@ describe('every handler that pushes declares the channel it carries', () => {
       'PreToolUse:mcp_tool:rules_before_an_edit:edit-rules-push+edit-asks-a-person+edit-first-write-gate+edit-refuses-a-write',
       'PreToolUse:command:edit-refuses-a-write.mjs',
       'PreToolUse:command:edit-asks-a-person.mjs',
+      'SubagentStop:command:subagent-stop.mjs',
     ]);
   });
 

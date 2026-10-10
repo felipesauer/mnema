@@ -69,6 +69,15 @@ document, delivered by the host instead of waited for.
   decisions are those of the project since the session's first line, so a second session of the same
   project in the same hours is counted too. The line is the reply's `systemMessage`; which host shows
   it, and to whom, was not measured.
+- **A `SubagentStop` hook**, `mnema handback`. A subagent hands the decisions it settled back in its
+  final reply, and a reply that said only "done" lost them without a word. This asks the reply to end with
+  one fenced block whose info string is `mnema-handback`, holding `{"decisions":[{"settled","why","turnedDown"}]}`
+  — the list empty where it settled nothing — in the JSON Schema `mnema handback --schema` prints. A reply
+  with no such block, or with one outside the schema, is sent back with the format as the reason (exit 2),
+  once: the host's second stop of the same subagent is let through. It checks the shape and not whether the
+  subagent settled something, calls no model and records nothing. Held against the real Claude Code binary
+  by `a-subagent-is-sent-back-for-its-handback.test.ts`; the other hosts that read this hooks file were not
+  measured on the event. `mnema switch off subagent-handback` stops it.
 - **A `Stop` hook that records corrections**, off until you switch it on (`mnema switch on
   user-corrections`). It runs `mnema corrections`, which reads the transcript the host names — its
   words, which no other part of this plugin reads — finds the prompts that open by correcting the

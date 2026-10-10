@@ -85,7 +85,7 @@ function aCallTurn(call: TheCall): string {
 }
 
 /** The closing turn: plain text, so the host stops. */
-function aClosingTurn(): string {
+function aClosingTurn(text: string): string {
   return [
     frame('message_start', { type: 'message_start', message: { ...MESSAGE, id: 'msg_end' } }),
     frame('content_block_start', {
@@ -96,7 +96,7 @@ function aClosingTurn(): string {
     frame('content_block_delta', {
       type: 'content_block_delta',
       index: 0,
-      delta: { type: 'text_delta', text: 'done' },
+      delta: { type: 'text_delta', text },
     }),
     frame('content_block_stop', { type: 'content_block_stop', index: 0 }),
     frame('message_delta', {
@@ -130,8 +130,17 @@ export function carriesAResult(body: Readonly<Record<string, unknown>>): boolean
  * Starts the stand-in on a free loopback port.
  *
  * @param call - the one call to make, or none: a session that only opens.
+ * @param closing - the text every other turn closes with, `done` unless a case needs its own: it is
+ *   what a subagent's final reply is, since the stand-in answers the subagent's requests too.
+ * @param once - make the call once, however many requests offer the tool: a subagent is offered the
+ *   same tools, and a stand-in that called again would have it dispatch subagents of its own.
  */
-export async function startTheStandIn(call?: TheCall): Promise<TheStandIn> {
+export async function startTheStandIn(
+  call?: TheCall,
+  closing = 'done',
+  once = false,
+): Promise<TheStandIn> {
+  let called = false;
   const requests: TheRequest[] = [];
   const peers: string[] = [];
   const server: Server = createServer((req, res) => {
@@ -152,8 +161,12 @@ export async function startTheStandIn(call?: TheCall): Promise<TheStandIn> {
       }
       res.writeHead(200, { 'content-type': 'text/event-stream', 'cache-control': 'no-cache' });
       const wanted =
-        call !== undefined && toolsOffered(body).includes(call.tool) && !carriesAResult(body);
-      res.end(wanted ? aCallTurn(call) : aClosingTurn());
+        call !== undefined &&
+        !(once && called) &&
+        toolsOffered(body).includes(call.tool) &&
+        !carriesAResult(body);
+      if (wanted) called = true;
+      res.end(wanted ? aCallTurn(call) : aClosingTurn(closing));
     });
   });
   server.on('connection', (socket) => {
@@ -187,5 +200,13 @@ export function runInTheShell(command: (project: string) => string) {
   return (project: string): TheCall => ({
     tool: 'Bash',
     input: { command: command(project), description: 'run a command' },
+  });
+}
+
+/** The call a model would make to dispatch a subagent: the host's own `Agent`. */
+export function dispatchASubagent(prompt = 'Look into it and report.') {
+  return (_project: string): TheCall => ({
+    tool: 'Agent',
+    input: { description: 'look into it', prompt, subagent_type: 'general-purpose' },
   });
 }

@@ -111,6 +111,14 @@ export interface Host {
   };
   /** What the page says under the table about this host, beside its cells. */
   readonly note?: string;
+  /**
+   * What it does when a subagent stops: runs the plugin's hook on that event, which can send the
+   * subagent back for the block of decisions it hands over. Apart from the cells because it is not
+   * a rung of the ladder: a host reaches (a) to (d) with or without it. Absent where the host was
+   * not read for it. The plugin's hooks file declares the hook for the hosts that read it and for
+   * which this is a test.
+   */
+  readonly subagentStop?: Cell;
   /** What it does with each {@link Capability}. */
   readonly cells: { readonly [C in Capability]: Cell };
   /** Where it reads the skills and the agents a stack brings. */
@@ -127,6 +135,8 @@ const HELD = {
     'packages/code/tests/host-contract/an-editor-holds-or-refuses-the-write.vscode.test.ts',
   codexContract: 'packages/code/tests/host-contract/codex-opens-and-refuses.codex.test.ts',
   copilotContract: 'packages/code/tests/host-contract/copilot-opens-and-refuses.copilot.test.ts',
+  claudeHandback:
+    'packages/code/tests/host-contract/a-subagent-is-sent-back-for-its-handback.test.ts',
 } as const;
 
 /** The Codex source every cell of Codex's row that is read rather than run was read at. */
@@ -166,6 +176,7 @@ export const HOSTS = {
   claude: {
     title: 'Claude Code',
     door: 'mcp_tool',
+    subagentStop: { does: true, held: 'a test', by: HELD.claudeHandback },
     cells: {
       server: { does: true, held: 'a test', by: HELD.claudeServer },
       rulesFile: { does: true, held: 'a test', by: HELD.aRulesFile },
@@ -246,6 +257,14 @@ export const HOSTS = {
       'lets the patch through. The opening is cut to Codex’s own ceiling, 2,500 tokens of 4 ' +
       `UTF-8 bytes ([\`output_spill.rs\`](${CODEX_SOURCE}/codex-rs/hooks/src/output_spill.rs#L12)), ` +
       'at a whole rule, held by the same test.',
+    // `events/stop.rs` fires a `SubagentStop` command hook and takes exit 2 with a continuation
+    // prompt on stderr (lines 178-206 and 361-362); this plugin ports nothing to it.
+    subagentStop: {
+      does: true,
+      held: 'documentation',
+      at: `${CODEX_SOURCE}/codex-rs/hooks/src/events/stop.rs#L178-L206`,
+      read: '9 October 2026',
+    },
     cells: {
       server: { does: true, held: 'a test', by: HELD.codexContract },
       rulesFile: {
@@ -296,6 +315,14 @@ export const HOSTS = {
       '(held by its test); with one, the host asks (held by its test). The model is any ' +
       'the host is pointed at, with no GitHub account (`COPILOT_OFFLINE`), under the license ' +
       'at [`LICENSE.md`](https://github.com/github/copilot-cli/blob/a7ae5b0ce17beddfa5930812bb064138fd3a1cb5/LICENSE.md).',
+    // The hooks reference lists `subagentStop` as an event that can block and force continuation;
+    // this plugin ports nothing to it.
+    subagentStop: {
+      does: true,
+      held: 'documentation',
+      at: `${COPILOT_DOCS}/reference/hooks-reference.md#subagentstop--subagentstop`,
+      read: '9 October 2026',
+    },
     cells: {
       server: { does: true, held: 'a test', by: HELD.copilotContract },
       rulesFile: {
