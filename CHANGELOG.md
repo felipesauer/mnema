@@ -295,6 +295,13 @@ tag, with its own changelog.
   says to delete the lock file it names.
 - **A timestamp calendar is contacted only on the https port.** A proof naming an operator's host on
   another port is refused and not contacted.
+- **The by-hand capture scripts read from the home they say they use.** In the script for Cursor's
+  editor, `claude plugin list` ran before the scratch `HOME` was exported and read the plugin of the
+  real one; it now runs after. In the script for Antigravity's command line, the block that writes
+  the probe did not enter the project first; it does. The scripts for Cursor's command line and
+  editor gain a case, `what-the-host-hands-the-server`, that registers the same server the host jobs
+  use and has a person copy the name the client announced, the executables above it and which
+  variables of the closed list exist, names only, into the capture.
 
 ### Known limits
 

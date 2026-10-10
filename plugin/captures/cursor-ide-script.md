@@ -24,18 +24,19 @@ cursor --version                                   # the version, the commit and
 sha256sum "<the file that ran: the AppImage, or the application's main binary>"
 git -C <this checkout> rev-parse HEAD              # the commit of this script and of the plugin
 grep '"version"' <this checkout>/plugin/.claude-plugin/plugin.json
-claude plugin list                                 # the plugin as Cursor will see it
 uname -sr
 ```
+
+Not `claude plugin list` yet: it reads the plugin from the home it runs under, and the home of this
+capture is made in step 1. It is run there, after the `export`.
 
 Also write down, from **Cursor > About Cursor**, the version and the commit it shows; the plan (the
 plan's name, not the account's); the model the chat uses (the case needs a model that edits files;
 say which one you chose); and the value of **Settings > Agents > Third-Party Imports > Include
 Third-Party Plugins, Skills, and Other Configs** (Cursor's documentation says it is on by default).
 
-If `claude plugin list` shows a plugin that is not the one in this checkout, install the one in this
-checkout first (`claude plugin marketplace add <this checkout>`, then `claude plugin install
-mnema@mnema`) and say so in the capture. The capture says which plugin was read.
+The capture says which plugin was read: the one step 1 installs from this checkout, as `claude plugin
+list` shows it there.
 
 ## 1. A home of its own, a profile of its own, a project of its own
 
@@ -52,6 +53,7 @@ mkdir -p "$HOME" "$MNEMA_HOME" "$SANDBOX/probe"
 # The plugin, installed in Claude Code under THIS home (Cursor's editor reads it from there, if it does).
 claude plugin marketplace add <this checkout>
 claude plugin install mnema@mnema
+claude plugin list                   # the plugin as Cursor will see it: under THIS home, so run it here
 
 export PROJECT="$SANDBOX/project"
 mkdir -p "$PROJECT" && cd "$PROJECT" && git init -q && mnema init
@@ -93,6 +95,26 @@ chmod +x .cursor/probe.sh
 The probe answers nothing and always exits `0`, so it changes no decision. Delete it when the capture
 is done.
 
+A second probe, for the case `what-the-host-hands-the-server`: the server the host contract jobs
+start in the place of `mnema mcp` (it needs `pnpm install` in this checkout). It serves no tool and,
+once the client has said hello, writes one file with three things and nothing else: the name the client
+announced (`clientInfo.name`), the base names of the executables above the server (names, never a
+path), and which variables of a closed list exist in its environment (the list is `THE_MARKS` in the
+file; **names, never a value**). Register it for this project as Cursor's documentation says a
+project's MCP servers are listed:
+
+```sh
+cat > .cursor/mcp.json <<EOF
+{ "mcpServers": { "handed": { "command": "node",
+    "args": ["<this checkout>/packages/code/tests/host-contract/support/a-server-that-says-what-it-was-handed.mjs",
+             "$SANDBOX/probe/handed.json"] } } }
+EOF
+```
+
+It writes nothing to the record of any project, and nothing about it is kept by the product: it is
+read here, by hand, so a person can see what the editor hands a server before anyone decides anything
+from it.
+
 Quit every Cursor window (a second instance hands the window to the running one, and the running
 one has your home, not this one), then start a separate instance from this same shell, so it has
 this `HOME`, this `MNEMA_HOME` and this `PATH`:
@@ -121,6 +143,7 @@ the places named, and copy the lines that show it into the capture's `transcript
 | `no-rule` | Chat: `Create the file src/other/x.ts containing export const x = 1; with your Write tool.` | The file is created, and the plugin said nothing. | `ls src/other`; the count below. |
 | `server-is-reached` | Open **Customize**, its MCP list. Chat: `Call the mnema tool governing_rules for the path src/billing/a.ts and show me what it returned.` | A server named `mnema` is listed and started, its tools keep their own names, and the call returns the rule `Bill in UTC` with its id. | The MCP list in Customize (status, tool names); the chat; the id from step 1. |
 | `rules-file-is-read` | Write the rules file for the editor: `mnema rules-file --host cursor > .cursor/rules/mnema.mdc` (make the folder first). Chat: `Which project rules apply to src/billing/a.ts? Say which rule files you used.` | The chat lists the rule file among the rules it applied, and says `Bill in UTC`. | The chat's list of applied rules; **Customize**, its Rules tab. |
+| `what-the-host-hands-the-server` | With `.cursor/mcp.json` of step 1 in place, open the MCP list in **Customize** and let the server `handed` start; then `cat "$SANDBOX/probe/handed.json"`. | The file exists and holds the three fields. Whatever they are, they are what the editor handed: write them down, and do not read a rung into them. | `$SANDBOX/probe/handed.json`: `client`, `chain`, `present`. |
 
 After each case, count what the record holds, so a refusal that was not recorded, or a pause that
 nobody was asked for, shows:
@@ -137,6 +160,11 @@ Two cases do not need the plugin to have run, and say so in `observed` rather th
 if `plugin-hooks-are-loaded` did not hold, the cases `opens-the-session`, `refuses-a-write` and
 `ask-is-ignored` are expected not to hold either; run them anyway, because a file created where the
 page says a rule refuses it is the finding.
+
+For `what-the-host-hands-the-server`, copy the three fields into the capture's `handed` (`client` as
+one string, `chain` nearest first, `present` as the names the file lists) **exactly as the file has
+them**, and nothing else from the environment: not a value, not a path, not the output of `env`. If
+the file was never written, the case is `not-run` and `observed` says what the MCP list showed.
 
 If the agent uses another tool than `Write` to change a file (its transcript or the probe's
 `tool_name` says which), the case is `not-run` for that reason when the page is about `Write`, and

@@ -47,6 +47,15 @@
       "channelFacts": { "channel.refused": 0, "channel.asked": 0, "channel.served": 0 },
       "verdict": "held | did-not-hold | not-run",
       "transcript": []
+    },
+    {
+      "id": "what-the-host-hands-the-server",
+      "expected": "The file the probe server writes exists and holds the three fields; whatever they are, they are what the agent handed.",
+      "observed": "",
+      "handed": { "client": "", "chain": [], "present": [] },
+      "channelFacts": { "channel.refused": 0, "channel.asked": 0, "channel.served": 0 },
+      "verdict": "held | did-not-hold | not-run",
+      "transcript": []
     }
   ]
 }

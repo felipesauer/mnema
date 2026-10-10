@@ -46,6 +46,24 @@ rule 'Bill in UTC'                  src/billing governs
 
 Write the three ids down: a case is read against them.
 
+A probe of your own for the case `what-the-host-hands-the-server`: the server the host contract jobs
+start in the place of `mnema mcp` (it needs `pnpm install` in this checkout). It serves no tool and,
+once the client has said hello, writes one file with three things and nothing else: the name the client
+announced (`clientInfo.name`), the base names of the executables above the server (names, never a
+path), and which variables of a closed list exist in its environment (the list is `THE_MARKS` in the
+file; **names, never a value**). It writes nothing to the record. Register it for this project, where
+Cursor's documentation says a project's MCP servers are listed:
+
+```sh
+export HANDED="$(mktemp -d)"
+mkdir -p .cursor
+cat > .cursor/mcp.json <<EOF
+{ "mcpServers": { "handed": { "command": "node",
+    "args": ["<this checkout>/packages/code/tests/host-contract/support/a-server-that-says-what-it-was-handed.mjs",
+             "$HANDED/handed.json"] } } }
+EOF
+```
+
 ## 2. The cases
 
 Each is one run of the agent, in this directory, in a fresh session:
@@ -62,6 +80,7 @@ let it write files; say in the capture which you used.)
 | `refuses-a-write` | `Create the file src/frozen/x.ts containing export const x = 1; with your Write tool.` | The file is **not** created, and the agent's transcript shows the reason: the rule's id and `refuses a write at src/frozen/x.ts`. | `ls src/frozen`; the transcript. |
 | `ask-is-ignored` | `Create the file src/ledger/x.ts containing export const x = 1; with your Write tool.` | The file **is** created, with no pause: Cursor's agent does not hold a write that only asks. Nothing is recorded as asked. | `ls src/ledger`; the count below. |
 | `no-rule` | `Create the file src/other/x.ts containing export const x = 1; with your Write tool.` | The file is created, and the plugin said nothing. | `ls src/other`; the count below. |
+| `what-the-host-hands-the-server` | With `.cursor/mcp.json` of step 1 in place, run the agent in this directory in a way that starts its MCP servers (say which: `cursor-agent mcp list`, or a prompt); then `cat "$HANDED/handed.json"`. | The file exists and holds the three fields. Whatever they are, they are what the agent handed: write them down, and do not read a rung into them. | `$HANDED/handed.json`: `client`, `chain`, `present`. |
 
 After each case, count what the record holds, so a refusal that was not recorded, or a pause that
 nobody was asked for, shows:
@@ -71,6 +90,11 @@ grep -rho '"kind":"channel\.[a-z]*"' .mnema | sort | uniq -c
 ```
 
 `refuses-a-write` should add one `channel.refused`. The other two should add none.
+
+For `what-the-host-hands-the-server`, copy the three fields into the capture's `handed` (`client` as one
+string, `chain` nearest first, `present` as the names the file lists) **exactly as the file has them**,
+and nothing else from the environment: not a value, not a path, not the output of `env`. If the file was
+never written, the case is `not-run` and `observed` says which command you ran and what it printed.
 
 If the agent is not asked to use `Write`, or uses another tool to change the file, the case is
 `not-run` for that reason, not `did-not-hold`: the page says what was read of `Write`, and of nothing

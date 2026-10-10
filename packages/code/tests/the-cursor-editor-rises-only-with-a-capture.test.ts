@@ -87,3 +87,29 @@ describe('the script and the template of a capture of the editor', () => {
     expect(template.host.name).toBe("Cursor's editor");
   });
 });
+
+describe('the scripts of a capture of Cursor, and what the host hands the server', () => {
+  const read = (file: string): string => readFileSync(join(CAPTURES, file), 'utf-8');
+
+  it("reads the editor's plugin list under the home of the capture, after the export", () => {
+    const script = read('cursor-ide-script.md');
+    const exported = script.indexOf('export HOME=');
+    const listed = script.indexOf('\nclaude plugin list');
+    expect(exported).toBeGreaterThan(0);
+    expect(listed).toBeGreaterThan(exported);
+  });
+
+  it('has the case in both scripts and the three fields in both templates', () => {
+    for (const [script, template] of [
+      ['cursor-script.md', 'cursor-capture.template.json'],
+      ['cursor-ide-script.md', 'cursor-ide-capture.template.json'],
+    ] as const) {
+      expect(read(script)).toContain('| `what-the-host-hands-the-server` |');
+      const parsed = JSON.parse(read(template)) as {
+        cases: { id: string; handed?: Record<string, unknown> }[];
+      };
+      const found = parsed.cases.find((one) => one.id === 'what-the-host-hands-the-server');
+      expect(Object.keys(found?.handed ?? {}), template).toEqual(['client', 'chain', 'present']);
+    }
+  });
+});
