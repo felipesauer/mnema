@@ -1067,6 +1067,7 @@ const CLAUSES_PER_FILE: Readonly<Record<string, number>> = {
   'packages/code/tests/the-address-says-what-it-covers.test.ts': 14,
   'packages/code/tests/the-agent-is-told-the-record-does-not-chain.test.ts': 11,
   'packages/code/tests/the-agent-is-told-what-it-has.test.ts': 16,
+  'packages/code/tests/the-antigravity-cli-rises-only-with-a-capture.test.ts': 4,
   'packages/code/tests/the-bare-name-asks.test.ts': 15,
   'packages/code/tests/the-binary-a-page-promises-is-the-one-that-speaks.test.ts': 7,
   'packages/code/tests/the-bodies-fit-one-read.test.ts': 15,

@@ -156,6 +156,9 @@ const READ_ON = '8 October 2026';
 /** The day Cursor's documentation was read for its editor. */
 const CURSOR_READ_ON = '10 October 2026';
 
+/** The day Antigravity's documentation was read for its command line. */
+const ANTIGRAVITY_READ_ON = '10 October 2026';
+
 /** A folder of Claude Code's, which other hosts read too, as the documentation `at` says. */
 const claudeFolder = (kind: 'skills' | 'agents', at: string, read = READ_ON): Place => ({
   held: 'documentation',
@@ -389,6 +392,55 @@ export const HOSTS = {
     places: {
       skills: claudeFolder('skills', 'https://cursor.com/docs/context/skills', CURSOR_READ_ON),
       agents: claudeFolder('agents', 'https://cursor.com/docs/context/subagents', CURSOR_READ_ON),
+    },
+  },
+  antigravity: {
+    title: "Antigravity's command line (`agy`)",
+    door: 'none',
+    // The binary is closed, installed by a script that downloads it from the vendor and updates
+    // itself, under terms a person accepts by installing it, so no job runs it: what is known of it
+    // above the first rung is read by a person from `plugin/captures/antigravity-cli-script.md`, and
+    // `tests/the-antigravity-cli-rises-only-with-a-capture.test.ts` keeps the cells below from
+    // climbing before a capture of that day is committed.
+    note:
+      'Only its documentation was read, on 10 October 2026. It documents hooks in a dialect of its ' +
+      'own, in a `hooks.json` kept in the project’s `.agents` folder or in an installed plugin: ' +
+      'five events (`PreToolUse`, `PostToolUse`, `PreInvocation`, `PostInvocation`, `Stop`) and no ' +
+      '`SessionStart`; a `PreToolUse` answers `allow`, `deny`, `ask`, `force_ask` or ' +
+      '`deny_unless_prior_grant` and is handed `toolCall.name` and `toolCall.args`; the tools that ' +
+      'write are `write_to_file`, `replace_file_content` and `multi_replace_file_content`, each ' +
+      'with its path under `TargetFile`; a `PreInvocation` can add a message to the conversation. ' +
+      'This plugin ships no hooks file in that dialect and no reader of that payload, so nothing ' +
+      'above the first rung is promised for it. The script that reads it is ' +
+      '`plugin/captures/antigravity-cli-script.md`.',
+    cells: {
+      server: {
+        does: true,
+        held: 'documentation',
+        at: 'https://antigravity.google/docs/mcp',
+        read: ANTIGRAVITY_READ_ON,
+      },
+      rulesFile: {
+        does: true,
+        held: 'documentation',
+        at: 'https://antigravity.google/docs/rules',
+        read: ANTIGRAVITY_READ_ON,
+      },
+      opens: { held: 'not ported' },
+      refuses: { held: 'not ported' },
+      asks: { held: 'not ported' },
+    },
+    places: {
+      // Its own agents name its own tools (`view_file`, `run_command`) and its own model tiers, and
+      // its page warns that an unmapped tool name can hang the subagent, so nothing is installed.
+      skills: {
+        held: 'documentation',
+        project: '.agents/skills',
+        user: '.gemini/antigravity-cli/skills',
+        at: 'https://antigravity.google/docs/skills',
+        read: ANTIGRAVITY_READ_ON,
+      },
+      agents: NOT_PORTED,
     },
   },
   droid: {
