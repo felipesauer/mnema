@@ -518,12 +518,13 @@ export function rungTable(base: string): string {
 const LEGEND = [
   'Each cell says how it is known: **held by a test** of this repository; **read** once against the',
   'real host, on the version and the day it names, and held by no file yet; or **documented, not',
-  "measured**: the host's own documentation or code says the host does it, at the commit the link",
-  'names, and nothing was run. **Not ported**: the plugin hands that host nothing for it. For the',
-  "first three hosts, the rules file is the one `mnema rules-file --host` prints in the host's",
-  'format, and the test holds what it prints, not how the host matches its globs; for the others,',
-  "it is `AGENTS.md`, which the host's documentation says it reads. A host reaches a rung when every",
-  'rung before it is a yes; Aider was read too, and is not here, because it has no MCP client.',
+  "measured**: the host's own documentation or code says the host does it, at the commit or on the",
+  'page the link names, and nothing was run. **Not ported**: the plugin hands that host nothing for',
+  'it. For the first three hosts, the rules file is the one `mnema rules-file --host` prints in the',
+  "host's format, and the test holds what it prints, not how the host matches its globs; for the",
+  "others, it is `AGENTS.md`, which the host's documentation says it reads. A host reaches a rung",
+  'when every rung before it is a yes; Aider was read too, and is not here, because it has no MCP',
+  'client.',
 ].join('\n');
 
 /** The line that opens the generated part of a page. */
