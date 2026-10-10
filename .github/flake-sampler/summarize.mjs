@@ -55,7 +55,7 @@
  */
 
 import { createHash } from 'node:crypto';
-import { appendFileSync,readdirSync, readFileSync, statSync, writeFileSync } from 'node:fs';
+import { appendFileSync, readdirSync, readFileSync, statSync, writeFileSync } from 'node:fs';
 import { isAbsolute, join, relative } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
@@ -456,7 +456,7 @@ export function issuesFor(result, run) {
       `- Runs it failed in: ${row.runs.join(', ')}`,
       `- Night: ${run}`,
       '',
-      'One night is a sample, not the rate: the failing log of each run is in that night\'s `flake-reports-*` artifacts, and the nights that come after add their own comment here.',
+      "One night is a sample, not the rate: the failing log of each run is in that night's `flake-reports-*` artifacts, and the nights that come after add their own comment here.",
       '',
       failed === runs
         ? 'It failed in every run, which is a case that is broken at this commit rather than a flake. Read the failing case in the log.'

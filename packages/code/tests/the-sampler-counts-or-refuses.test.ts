@@ -556,10 +556,7 @@ describe('the sampler names one issue per case that failed', () => {
   });
 
   it('says on the issue that a case failing in every run is broken, not flaky, and that it is no gate', () => {
-    const [issue] = issuesFor(
-      sampled({ node22: all('failed', 5), node24: all('failed', 5) }),
-      RUN,
-    );
+    const [issue] = issuesFor(sampled({ node22: all('failed', 5), node24: all('failed', 5) }), RUN);
 
     expect(issue?.body).toContain('failed in **10 of 10** runs (100.0%)');
     expect(issue?.body).toContain('every run');
