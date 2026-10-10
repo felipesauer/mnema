@@ -16,6 +16,9 @@ describe('what OpenCode hands the server it starts', () => {
     const session = await start({ project: (it) => it.measureTheServer() });
     const handed = theServerWasHanded(session.project);
 
-    expect(handed).toEqual({ client: '?', chain: ['?'], present: [] });
+    expect(handed.client).toBe('opencode');
+    // The server is started directly by the host. What follows is the instrument.
+    expect(handed.chain.slice(0, 1)).toEqual(['opencode']);
+    expect(handed.present).toEqual([]);
   }, 180_000);
 });

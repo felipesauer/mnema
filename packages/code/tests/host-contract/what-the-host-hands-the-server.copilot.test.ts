@@ -16,6 +16,9 @@ describe('what the Copilot CLI hands the server it starts', () => {
     const session = await start({ project: (it) => it.measureTheServer() });
     const handed = theServerWasHanded(session.project);
 
-    expect(handed).toEqual({ client: '?', chain: ['?'], present: [] });
+    expect(handed.client).toBe('copilot-cli');
+    // The server is started directly by the host. What follows is the instrument.
+    expect(handed.chain.slice(0, 1)).toEqual(['copilot']);
+    expect(handed.present).toEqual(['COPILOT_AGENT_SESSION_ID', 'COPILOT_CLI_BINARY_VERSION']);
   }, 180_000);
 });

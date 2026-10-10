@@ -15,6 +15,7 @@ describe("what VS Code's agent hands the server it starts", () => {
   it('announces itself, and says where the server sits and what it marks', async () => {
     const session = await start({
       project: (it) => it.measureTheServer(),
+      settings: { 'chat.mcp.autostart': 'newAndOutdated' },
       target: 'src/anywhere/file.ts',
     });
     const handed = theServerWasHanded(session.project);

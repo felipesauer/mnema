@@ -16,6 +16,11 @@ describe('what Codex hands the server it starts', () => {
     const session = await start({ project: (it) => it.measureTheServer() });
     const handed = theServerWasHanded(session.project);
 
-    expect(handed).toEqual({ client: '?', chain: ['?'], present: [] });
+    expect(handed.client).toBe('codex-mcp-client');
+    // The server is started directly by the host, as the manifest declares it. What follows is
+    // the instrument.
+    expect(handed.chain.slice(0, 1)).toEqual(['codex']);
+    // Codex hands a server a short list of variables of its own and none of a mark.
+    expect(handed.present).toEqual([]);
   }, 180_000);
 });

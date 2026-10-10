@@ -16,6 +16,9 @@ describe('what Gemini CLI hands the server it starts', () => {
     const session = await start({ project: (it) => it.measureTheServer() });
     const handed = theServerWasHanded(session.project);
 
-    expect(handed).toEqual({ client: '?', chain: ['?'], present: [] });
+    expect(handed.client).toBe('gemini-cli-mcp-client');
+    // Gemini CLI is a Node program: the server sits under two `node`. What follows is the instrument.
+    expect(handed.chain.slice(0, 2)).toEqual(['node', 'node']);
+    expect(handed.present).toEqual(['GEMINI_CLI']);
   }, 180_000);
 });
