@@ -14,12 +14,11 @@
     "gemini-cli",
     "opencode",
     "cursor",
-    "decision-records",
     "adr",
+    "decision-records",
     "audit-trail",
     "tamper-evident",
     "append-only",
-    "guardrails",
     "accountability",
     "local-first"
   ],

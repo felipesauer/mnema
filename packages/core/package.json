@@ -3,11 +3,10 @@
   "version": "0.1.0-beta",
   "description": "The mnema work domain: the gate over the SHAPE of a change, projections, identity, and queries. Depends on @mnema/chain.",
   "keywords": [
-    "mnema",
+    "ai-agents",
+    "adr",
     "decision-records",
-    "audit-trail",
-    "projections",
-    "ai-agents"
+    "audit-trail"
   ],
   "author": "Felipe Sauer (https://github.com/felipesauer)",
   "license": "Apache-2.0",
