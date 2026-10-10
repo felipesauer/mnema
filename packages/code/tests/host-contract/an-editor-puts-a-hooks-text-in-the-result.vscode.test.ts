@@ -39,7 +39,9 @@ describe("an editor puts a hook's text inside the result", () => {
         },
       },
     });
-    expect(session.written).toBe(true);
+    // THE LOG IS THE MESSAGE: a red here is the editor not having written, and which step it
+    // stopped at is what the runner logged.
+    expect(session.written, session.log).toBe(true);
     const handed = theResultTheModelWasHanded(session);
     expect(handed).toContain(MARKER);
     expect(handed).toMatch(
