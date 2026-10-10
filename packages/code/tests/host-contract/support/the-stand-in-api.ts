@@ -32,6 +32,8 @@ export interface TheCall {
 export interface TheRequest {
   readonly url: string;
   readonly body: Readonly<Record<string, unknown>>;
+  /** The `User-Agent` header, which a host that names its version there is read by. */
+  readonly userAgent: string;
 }
 
 /** A running stand-in. */
@@ -154,7 +156,7 @@ export async function startTheStandIn(
         body = {};
       }
       const url = req.url ?? '';
-      requests.push({ url, body });
+      requests.push({ url, body, userAgent: String(req.headers['user-agent'] ?? '') });
       if (!url.includes('/v1/messages')) {
         res.writeHead(200, { 'content-type': 'application/json' }).end('{}');
         return;
