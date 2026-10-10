@@ -17,8 +17,8 @@
 <p>
 mnema is a command line and an MCP server that keep the calls behind your AI coding agents' work —
 decisions, the rules they become, and notes — as signed, append-only facts in the repository. A
-session in Claude Code, Codex, GitHub Copilot CLI, Gemini CLI, OpenCode, VS Code or Cursor opens with
-the ones in force, a rule can refuse or pause the write it governs where the host allows, and
+session in Claude Code, Codex, GitHub Copilot CLI, Gemini CLI, OpenCode, VS Code or Cursor's
+command-line agent opens with the ones in force, a rule can refuse or pause the write it governs where the host allows, and
 <code>mnema verify</code> checks the record with no key and no network.
 </p>
 
