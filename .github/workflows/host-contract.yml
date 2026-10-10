@@ -159,6 +159,7 @@ jobs:
       fail-fast: false
       matrix:
         version: ${{ fromJSON(contains(fromJSON('["schedule","workflow_dispatch"]'), github.event_name) && '["stable"]' || '["1.139.0"]') }}
+        shard: [1, 2, 3, 4, 5, 6]
     steps:
       - uses: actions/checkout@v7
 
@@ -204,7 +205,7 @@ jobs:
         run: |
           cat > "$RUNNER_TEMP/probe.sh" <<'EOF'
           ip link set lo up
-          for i in $(seq 1 22); do
+          for i in $(seq 1 18); do
             if xvfb-run -a ./node_modules/.bin/vitest run --config vitest.host-contract.config.ts > "$RUNNER_TEMP/p$i.log" 2>&1; then
               echo "PROBE $i ok"
             else
