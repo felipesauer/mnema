@@ -1,0 +1,84 @@
+// A bare MCP server over stdio, started where a host asked for `mnema mcp`. It serves no tool
+// and writes down three things the host handed it, as a JSON file, once the handshake is done:
+//
+//   client   the name the client announced in `initialize` (`clientInfo.name`);
+//   chain    the base names of the executables above this process, nearest first;
+//   present  which of a closed list of variables exist in its environment, by NAME.
+//
+// NEVER A VALUE, NEVER A PATH. The environment of a host holds secrets, and a path carries the
+// name of whoever ran it: what is written is names of executables and names of variables, and
+// nothing else read off the environment. The list is closed on purpose: a variable that is not
+// in it is not looked at.
+//
+// usage: node a-server-that-says-what-it-was-handed.mjs <report file>
+import { readFileSync, readlinkSync, writeFileSync } from 'node:fs';
+import { basename } from 'node:path';
+import { Server } from '@modelcontextprotocol/sdk/server/index.js';
+import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js';
+import { ListToolsRequestSchema } from '@modelcontextprotocol/sdk/types.js';
+
+/** The marks a host or its editor is known to leave in the environment of what it starts. */
+const THE_MARKS = [
+  'AI_AGENT',
+  'ANTIGRAVITY_AGENT',
+  'CLAUDECODE',
+  'CLAUDE_CODE_ENTRYPOINT',
+  'CLAUDE_CODE_SESSION_ID',
+  'COPILOT_AGENT_SESSION_ID',
+  'COPILOT_CLI_BINARY_VERSION',
+  'COPILOT_LOADER_PID',
+  'CURSOR_AGENT',
+  'CURSOR_TRACE_ID',
+  'CURSOR_VERSION',
+  'ELECTRON_RUN_AS_NODE',
+  'GEMINI_CLI',
+  'OPENCODE_CLIENT',
+  'VSCODE_PID',
+];
+
+/** The base name of the process `pid` runs: its executable, else the name it goes by. */
+function nameOf(pid) {
+  try {
+    return basename(readlinkSync(`/proc/${pid}/exe`));
+  } catch {
+    try {
+      return readFileSync(`/proc/${pid}/comm`, 'utf-8').trim();
+    } catch {
+      return '?';
+    }
+  }
+}
+
+/** The parent of `pid`, or 0 where it cannot be read. The name in `stat` may hold spaces. */
+function parentOf(pid) {
+  try {
+    const stat = readFileSync(`/proc/${pid}/stat`, 'utf-8');
+    return Number(stat.slice(stat.lastIndexOf(')') + 2).split(' ')[1]);
+  } catch {
+    return 0;
+  }
+}
+
+function theChain() {
+  const chain = [];
+  for (let pid = process.ppid; pid > 1; pid = parentOf(pid)) chain.push(nameOf(pid));
+  return chain;
+}
+
+const [, , report] = process.argv;
+const server = new Server(
+  { name: 'what-it-was-handed', version: '0.0.1' },
+  { capabilities: { tools: {} } },
+);
+server.setRequestHandler(ListToolsRequestSchema, async () => ({ tools: [] }));
+server.oninitialized = () => {
+  writeFileSync(
+    report,
+    JSON.stringify({
+      client: server.getClientVersion()?.name,
+      chain: theChain(),
+      present: THE_MARKS.filter((name) => process.env[name] !== undefined),
+    }),
+  );
+};
+await server.connect(new StdioServerTransport());
