@@ -76,6 +76,25 @@ identity the certificate names and its issuer beside the digest. A stack with no
 alone, and the plan says so; a signature that does not hold (over other bytes, from a root the binary does not
 carry, or not a bundle at all) is refused.
 
+## Examples, and the index
+
+[`examples/`](examples/) holds two stacks to read and to try, both in English and neither of any one domain:
+
+- `evidence-first`: an `investigator` agent that answers with `path:line` findings and says what it did not search,
+  and a `claim-checking` skill on what a search that finds nothing does and does not prove;
+- `review-pass`: a `reviewer` agent that makes one pass over a change against written criteria and gives its
+  verdict first, and a `review-checklist` skill.
+
+Neither brings a hook. On every pull request the CI validates both with this library and with `skills-ref`, the
+validator the Agent Skills specification publishes, installs both with the built `mnema` binary into a home it
+makes for the purpose, checks that the record still verifies, and has `skills-ref` read the installed skill
+folders.
+
+[`stack-index/`](../../stack-index/) is a list of stacks: for each, a name, a version, a link and the digest.
+It holds no stack. The two examples are its first entries, and the suite recomputes their digests from the
+folders. A stack listed from somewhere else is held to nothing here: the link may move and the digest is what the
+proposer wrote, so compare it with the digest `mnema stack add --dry-run` shows.
+
 ## What it proves — and what it does not
 
 - The digest proves that two directories hold the same bytes. It does not prove who wrote them, and a digest with
@@ -96,6 +115,8 @@ carry, or not a bundle at all) is refused.
   path, a case holds the two to the same verdict over a set of skills; it is not a dependency, and it takes
   non-ASCII skill names that this validator refuses.
 - It does not install anything, fetch anything, or sign anything.
+- Being an example, or being listed in the index, is not a vouching. The two examples are installed by the CI
+  and read by the validators; nobody has shown that their instructions make an agent better.
 
 ## Install
 
