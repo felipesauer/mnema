@@ -22,6 +22,9 @@ import { fileURLToPath } from 'node:url';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { type CliIo, run } from '../src/program.js';
 
+/** What `stack remove` says of who may remove: the record keeps no author rule for it. */
+const WHO_MAY_REMOVE =
+  'The record does not check who removes a stack: a removal signed by any key that writes to this tree stands, whoever adopted it.';
 const HELLO = fileURLToPath(new URL('../../stacks/fixtures/hello-stack', import.meta.url));
 
 let sandbox: string;
@@ -108,7 +111,7 @@ describe('looking at what is installed', () => {
     expect(diff.failed).toBe(false);
     expect(diff.out).toContain('= .claude/skills/hello/SKILL.md  as written');
     const check = await mnema(['stack', 'check', 'hello-stack']);
-    expect(check.out).toContain('1 stacks checked: every file is as written');
+    expect(check.out).toContain('1 stacks checked: every file the receipts name is as written');
   });
 
   it('says nothing is installed, and refuses a stack that is not', async () => {
@@ -137,6 +140,41 @@ describe('looking at what is installed', () => {
     const taken = await mnema(['stack', 'export', 'hello-stack', out]);
     expect(taken.failed).toBe(true);
     expect(taken.err).toContain('STACK_DESTINATION_TAKEN');
+  });
+});
+
+describe('a session and the doctor are told what is adopted', () => {
+  const OPENING_LINE = 'Stacks adopted for this project (1): hello-stack 1.0.0 (public).';
+
+  it('opens a session with the stacks adopted, and the file a person commits without them', async () => {
+    const hook = await mnema(['brief', '--hook']);
+    expect(hook.failed, hook.err).toBe(false);
+    expect(hook.out).toContain(OPENING_LINE);
+    expect(hook.out).not.toContain('part ways');
+    const file = await mnema(['brief']);
+    expect(file.out).not.toContain('Stacks adopted');
+  });
+
+  it('counts the places the files and the record part, in the opening and in the doctor', async () => {
+    rmSync(join(project, '.claude/agents/greeter.md'));
+    const hook = await mnema(['brief', '--hook']);
+    expect(hook.out).toContain(
+      'The files and the record part ways in 1 place; `mnema stack check` lists them.',
+    );
+    const doctor = await mnema(['doctor']);
+    expect(doctor.out).toContain(
+      'to do · stack: hello-stack (public): .claude/agents/greeter.md is gone',
+    );
+    const check = await mnema(['stack', 'check']);
+    expect(check.failed).toBe(true);
+    expect(check.out).toContain('hello-stack (public): .claude/agents/greeter.md is gone');
+  });
+
+  it('says in the doctor that every file is as written, where it is', async () => {
+    const doctor = await mnema(['doctor']);
+    expect(doctor.out).toContain(
+      'ok · stack: 1 stack is adopted for this project, and every file the receipts name is as written and the record agrees; files they do not name are not looked at: nothing to do.',
+    );
   });
 });
 
@@ -266,10 +304,14 @@ describe('installing and removing, in process', () => {
     expect(dry.out).toContain('Would remove hello-stack 1.0.0');
     expect(dry.out).toContain('kept, changed since it was written: .claude/agents/greeter.md');
     expect(dry.out).toContain('Dry run: nothing was removed.');
+    expect(dry.out).toContain(WHO_MAY_REMOVE);
     expect(existsSync(join(project, '.mnema/stacks/hello-stack.json'))).toBe(true);
     const done = await mnema(['stack', 'remove', 'hello-stack']);
     expect(done.failed, done.err).toBe(false);
     expect(done.out).toContain('The removal is recorded.');
+    expect(done.out).toContain(WHO_MAY_REMOVE);
+    const help = await mnema(['stack', 'remove', '--help']);
+    expect(help.out.replace(/\s+/g, ' ')).toContain(WHO_MAY_REMOVE);
     expect(readFileSync(join(project, '.claude/agents/greeter.md'), 'utf8')).toBe('mine\n');
     const gone = await mnema(['stack', 'remove', 'hello-stack']);
     expect(gone.failed).toBe(true);

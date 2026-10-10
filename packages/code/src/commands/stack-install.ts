@@ -53,6 +53,7 @@ import {
   chainRootForScope,
   type DiscoveryEnv,
   detectSecrets,
+  isStackVersion,
   orderedEvents,
   type ResolvedTrees,
   resolveTrees,
@@ -134,9 +135,6 @@ export interface StackRefused {
   /** One line per thing in the way, when there are several. */
   readonly lines?: readonly string[];
 }
-
-/** A version's characters, the form the record's door admits (`stack-operations.ts`). */
-const VERSION = /^[0-9A-Za-z][0-9A-Za-z.+-]{0,63}$/;
 
 export const refuse = (code: string, message: string, lines?: readonly string[]): StackRefused =>
   lines === undefined ? { ok: false, code, message } : { ok: false, code, message, lines };
@@ -266,7 +264,7 @@ export function readReceipt(
   if (typeof r.name !== 'string' || checkName(r.name) !== undefined) {
     return { refused: 'its "name" is not a stack name' };
   }
-  if (typeof r.version !== 'string' || !VERSION.test(r.version)) {
+  if (typeof r.version !== 'string' || !isStackVersion(r.version)) {
     return { refused: 'its "version" is not one the record admits' };
   }
   if (typeof r.digest !== 'string' || !HEX64.test(r.digest)) {
@@ -415,7 +413,7 @@ export async function planStackInstall(
     );
   }
   const manifest = report.manifest;
-  if (!VERSION.test(manifest.version)) {
+  if (!isStackVersion(manifest.version)) {
     return refuse(
       'STACK_VERSION_REFUSED',
       'the stack\'s "version" is not one the record admits: ASCII letters, digits, ".", "+" and "-", ' +

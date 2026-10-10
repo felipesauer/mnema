@@ -286,6 +286,8 @@ export {
   INITIAL_STATE,
   isDecisionState,
   isSkillState,
+  isStackName,
+  isStackVersion,
   isTaskState,
   type ProofField,
   SKILL_ACTIONS,

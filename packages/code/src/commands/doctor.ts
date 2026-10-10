@@ -4,7 +4,7 @@
  * configuration, not a cache, and it asks nobody over a network. `--fix vscode` and
  * `--fix private-tree` are the two things it writes, each only when a person asks.
  *
- * FIVE QUESTIONS, each answered by files that were read and named in the answer:
+ * SIX QUESTIONS, each answered by files that were read and named in the answer:
  *   - is a `mnema` on the `PATH`, which one, and is it the one running now;
  *   - is the Claude Code plugin installed, and at what version (Claude Code's own list of
  *     installed plugins — a file of the host's that this product does not own, so a list that is
@@ -14,9 +14,11 @@
  *   - is there a namesake: a second “mnema” on the `PATH`, or an npm package named “mnema”
  *     installed where this machine's `PATH` points. THE REGISTRY IS NOT ASKED: a package that is
  *     published but not installed here is outside what this can know, and it says so;
- *   - and, in a project inside a git repository, does a worktree still hold a private tree where
+ *   - in a project inside a git repository, does a worktree still hold a private tree where
  *     it lived before it moved into the repository's git directory — notes nothing reads there,
- *     and that removing the worktree deletes.
+ *     and that removing the worktree deletes;
+ *   - and, where the record has adopted a stack, are its files still what the receipt says it
+ *     wrote and does the record still say the same (`mnema stack check`'s own comparison).
  *
  * Each finding is ONE line: what was found, then what to do. A finding that needs nothing to be
  * done says so. The verb's exit status is 0 whatever it found — it reports, and a script that
@@ -45,6 +47,7 @@ import {
 import { oneLine } from '../one-line.js';
 import { VERSION } from '../version.js';
 import { type Plan, planFix, readLocations, SETTING, settingsCandidates } from './doctor-vscode.js';
+import { stacksHere } from './stack-inspect.js';
 
 /** What the doctor needs — injected so it is testable against a sandbox. */
 export interface DoctorContext {
@@ -60,7 +63,7 @@ export interface DoctorContext {
 
 /** `attention` is a finding with something to do; `fine` needs nothing. */
 export interface Finding {
-  readonly topic: 'binary' | 'plugin' | 'vscode' | 'mcp' | 'namesake' | 'private-tree';
+  readonly topic: 'binary' | 'plugin' | 'vscode' | 'mcp' | 'namesake' | 'private-tree' | 'stack';
   readonly state: 'fine' | 'attention';
   /** One line: what was found, then what to do. */
   readonly line: string;
@@ -620,6 +623,30 @@ function privateTreeFindings(ctx: DoctorContext): Finding[] {
 }
 
 /**
+ * The stacks adopted for this project against their files: one finding for each place the files
+ * and the record part (`stack check`'s own lines), or one that says they agree. Nothing is said
+ * where no stack is adopted, which is every machine that never ran `mnema stack add`.
+ */
+function stackFindings(ctx: DoctorContext): Finding[] {
+  const { adopted, departures } = stacksHere({ cwd: ctx.cwd, env: ctx.env });
+  if (adopted.length === 0) return [];
+  if (departures.length === 0) {
+    return [
+      {
+        topic: 'stack',
+        state: 'fine',
+        line: `${adopted.length} ${adopted.length === 1 ? 'stack is' : 'stacks are'} adopted for this project, and every file the receipts name is as written and the record agrees; files they do not name are not looked at: nothing to do.`,
+      },
+    ];
+  }
+  return departures.map((departure) => ({
+    topic: 'stack' as const,
+    state: 'attention' as const,
+    line: `${departure} — \`mnema stack check\` lists every departure and \`mnema stack diff <name>\` shows one.`,
+  }));
+}
+
+/**
  * `mnema doctor --fix private-tree`: moves every old private tree of this project into the one
  * the repository keeps (`privateTreesLeftBehind`, `movePrivateTree`, `@mnema/core`), and says
  * what it moved. With `dryRun`, it says what it would move and writes nothing.
@@ -668,7 +695,7 @@ export function fixPrivateTree(
   return { refused: false, lines };
 }
 
-/** Reads the machine and answers, in the order the five questions are asked above. */
+/** Reads the machine and answers, in the order the six questions are asked above. */
 export function runDoctor(ctx: DoctorContext): { readonly findings: readonly Finding[] } {
   const plugins = installedPlugins(ctx);
   return {
@@ -679,6 +706,7 @@ export function runDoctor(ctx: DoctorContext): { readonly findings: readonly Fin
       ...mcpFindings(ctx, plugins),
       ...namesakeFindings(ctx),
       ...privateTreeFindings(ctx),
+      ...stackFindings(ctx),
     ],
   };
 }
