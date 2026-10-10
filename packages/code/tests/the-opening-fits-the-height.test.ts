@@ -50,6 +50,7 @@ import {
   aPageWithout,
   inPty as drive,
   type Fixture,
+  FRAME_IS_DRAWN,
   opensAConsole,
   type Ran,
   type Step,
@@ -242,6 +243,34 @@ const walksToTheTop: Step = {
  * step before it caused.
  */
 const leaves: Step = { types: '\u0004', until: () => true, what: 'left' };
+
+/**
+ * THE STEP ABOVE IS WHAT IS ASKED, not the helper it is built from.
+ *
+ * THE HELPER HAS CASES OF ITS OWN (`the-wait-asks-the-page.test.ts`) AND THEY CANNOT SAY THIS: that
+ * the walk uses it. Put `aFrameSince` back into the step and every one of those stays green, and
+ * the only thing that goes red is the driven case — one run in forty-five on the runners, so a
+ * defect restored here was not caught by anything that ran. These replay the stream the failure is
+ * made of, deterministically: the tail of the answer before the walk, drawn after the key was
+ * written, arriving ahead of the frame the key caused.
+ */
+describe('the walk to the top waits for the page it is about', () => {
+  /** A whole frame at the width the walk reads at: the rules of the input area, then the row typed. */
+  const frameShowing = (text: string): string =>
+    `${text}\n${'\u2500'.repeat(THE_WIDTH)}\n${PROMPT} ${FRAME_IS_DRAWN}`;
+  const tail = frameShowing('the tail of the answer before the walk');
+
+  it('does not end on the tail of the answer before it, drawn after the key was written', () => {
+    expect(walksToTheTop.until(tail, 0), 'ended on a frame the key did not cause').toBe(false);
+  });
+
+  it('ends once the page shows what the walk brings back', () => {
+    const brought = `${tail}${frameShowing(OPENED)}`;
+    expect(walksToTheTop.until(brought, 0), 'did not end on the page showing the opening').toBe(
+      true,
+    );
+  });
+});
 
 /** Which row of a page holds something, and −1 when none does. */
 function rowOf(screen: Screen, what: string): number {

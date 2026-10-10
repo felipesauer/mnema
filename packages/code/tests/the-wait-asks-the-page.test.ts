@@ -80,6 +80,13 @@ describe('a page is waited for by what it shows, not by a frame having arrived',
     expect(wait(framed, 0), 'ended on a stream with no page at that width').toBe(false);
   });
 
+  it('ends once the page, drawn at that width by the step, shows it', () => {
+    // THE POSITIVE HALF: without it every case above is satisfied by a wait that never answers.
+    const page = `${PROMPT} what the session is\n${'\u2500'.repeat(80)}\n${PROMPT} ${FRAME_IS_DRAWN}`;
+    const wait = aPageWith(PROMPT, 80, 24, 'what the session is');
+    expect(wait(page, 0), 'did not end on a page showing it').toBe(true);
+  });
+
   it('is still waiting when the frame was drawn before the step, not by it', () => {
     const before = `${PROMPT} an answer${FRAME_IS_DRAWN}`;
     const wait = aPageWith(PROMPT, 80, 24, 'what the session is');
