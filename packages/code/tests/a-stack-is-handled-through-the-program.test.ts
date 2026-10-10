@@ -143,6 +143,62 @@ describe('looking at what is installed', () => {
   });
 });
 
+describe('reading what is installed, and the index, for a program', () => {
+  it('lists the installed stacks as JSON, with the hook counted off until a person turned it on', async () => {
+    const listed = JSON.parse((await mnema(['stack', 'list', '--json'])).out);
+    expect(listed.stacks).toHaveLength(1);
+    expect(listed.stacks[0]).toMatchObject({
+      name: 'hello-stack',
+      scope: 'public',
+      version: '1.0.0',
+      files: 5,
+      changed: 0,
+      hooks: 1,
+      hooksOn: 0,
+      sound: true,
+    });
+    expect(listed.stacks[0].digest).toMatch(/^[0-9a-f]{64}$/);
+  });
+
+  it('says so in JSON when a file departs', async () => {
+    writeFileSync(join(project, '.claude/agents/greeter.md'), 'mine\n');
+    const listed = JSON.parse((await mnema(['stack', 'list', '--json'])).out);
+    expect(listed.stacks[0]).toMatchObject({ changed: 1, sound: false });
+  });
+
+  it('lists the stacks an index names, and never writes', async () => {
+    mkdirSync(join(project, 'stack-index'));
+    writeFileSync(
+      join(project, 'stack-index/index.json'),
+      JSON.stringify({
+        stacks: [
+          {
+            name: 'elsewhere',
+            version: '1.0.0',
+            description: 'Kept elsewhere.',
+            link: 'https://example.com/elsewhere',
+            digest: 'a'.repeat(64),
+          },
+        ],
+      }),
+    );
+    const shown = await mnema(['stack', 'index']);
+    expect(shown.failed, shown.err).toBe(false);
+    expect(shown.out).toContain('elsewhere 1.0.0  Kept elsewhere.');
+    expect(shown.out).toContain(`digest  ${'a'.repeat(64)}`);
+    expect(shown.out).toContain('Being listed does not make a stack safe');
+    const json = JSON.parse((await mnema(['stack', 'index', 'stack-index', '--json'])).out);
+    expect(json.stacks[0].name).toBe('elsewhere');
+    expect(json.stacks[0].source).toBeUndefined();
+  });
+
+  it('refuses a folder with no index', async () => {
+    const none = await mnema(['stack', 'index', 'nowhere']);
+    expect(none.failed).toBe(true);
+    expect(none.err).toContain('STACK_INDEX_REFUSED');
+  });
+});
+
 describe('a session and the doctor are told what is adopted', () => {
   const OPENING_LINE = 'Stacks adopted for this project (1): hello-stack 1.0.0 (public).';
 

@@ -482,6 +482,8 @@ $ mnema stack --help
 |                                     file changed since it was written
 |   list [options]                    list the installed stacks, and whether each
 |                                     is still as written
+|   index [options] [folder]          list the stacks an index names, with the
+|                                     digest each must have
 |   show [options] <name>             show one installed stack: its files, its
 |                                     hooks, and the record
 |   diff [options] <name>             compare the installed files with their
@@ -1737,7 +1739,26 @@ $ mnema stack list --help
 |                    machine, this project), or global (personal, cross-project).
 |                    Without it, in all three.
 |   --to <folder>    look in the folder it was written into with --to
+|   --json           emit the same reading as JSON, for a program to take
 |   -h, --help       display help for command
+
+### mnema stack index --help
+$ mnema stack index --help
+| Usage: mnema stack index [options] [folder]
+|
+| list the stacks an index names, with the digest each must have
+|
+| Arguments:
+|   folder      the folder holding index.json (default: "stack-index")
+|
+| Options:
+|   --json      emit the entries as JSON, for a program to take
+|   -h, --help  display help for command
+|
+| The index holds no stack: each entry is a name, a link and a digest, and one kept in the
+| same checkout names its folder. Being listed does not make a stack safe. Add one with
+| `mnema stack add <source> --dry-run`, and it is the stack listed only if the digest the
+| plan shows is the one the index gives.
 
 ### mnema stack show --help
 $ mnema stack show --help
