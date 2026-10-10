@@ -307,7 +307,7 @@ export function registerStack(program: Command, wiring: Wiring): Declared {
       for (const line of problems) io.out(line);
       io.out(
         problems.length === 0
-          ? `${entries.length} stacks checked: every file is as written and the record agrees.`
+          ? `${entries.length} stacks checked: every file the receipts name is as written and the record agrees; files they do not name are not looked at.`
           : `${entries.length} stacks checked: ${problems.length} departures.`,
       );
       if (problems.length > 0) io.fail();

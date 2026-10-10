@@ -280,7 +280,7 @@ describe('a stack adopted in a tree is looked at against its receipt and the rec
       {
         topic: 'stack',
         state: 'fine',
-        line: '1 stack is adopted for this project, and every file is as written and the record agrees: nothing to do.',
+        line: '1 stack is adopted for this project, and every file the receipts name is as written and the record agrees; files they do not name are not looked at: nothing to do.',
       },
     ]);
     rmSync(join(ctx.cwd, '.claude/agents/greeter.md'));

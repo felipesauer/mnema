@@ -111,7 +111,7 @@ describe('looking at what is installed', () => {
     expect(diff.failed).toBe(false);
     expect(diff.out).toContain('= .claude/skills/hello/SKILL.md  as written');
     const check = await mnema(['stack', 'check', 'hello-stack']);
-    expect(check.out).toContain('1 stacks checked: every file is as written');
+    expect(check.out).toContain('1 stacks checked: every file the receipts name is as written');
   });
 
   it('says nothing is installed, and refuses a stack that is not', async () => {
@@ -173,7 +173,7 @@ describe('a session and the doctor are told what is adopted', () => {
   it('says in the doctor that every file is as written, where it is', async () => {
     const doctor = await mnema(['doctor']);
     expect(doctor.out).toContain(
-      'ok · stack: 1 stack is adopted for this project, and every file is as written and the record agrees: nothing to do.',
+      'ok · stack: 1 stack is adopted for this project, and every file the receipts name is as written and the record agrees; files they do not name are not looked at: nothing to do.',
     );
   });
 });

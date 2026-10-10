@@ -635,7 +635,7 @@ function stackFindings(ctx: DoctorContext): Finding[] {
       {
         topic: 'stack',
         state: 'fine',
-        line: `${adopted.length} ${adopted.length === 1 ? 'stack is' : 'stacks are'} adopted for this project, and every file is as written and the record agrees: nothing to do.`,
+        line: `${adopted.length} ${adopted.length === 1 ? 'stack is' : 'stacks are'} adopted for this project, and every file the receipts name is as written and the record agrees; files they do not name are not looked at: nothing to do.`,
       },
     ];
   }

@@ -451,10 +451,11 @@ const CLASSIFIED: Readonly<Record<string, { verdict: Verdict; why: string }>> = 
     verdict: 'collapsed',
     why: 'the name is a receipt’s and the folder is whatever the caller typed',
   },
-  'stack.ts «{} stacks checked: every file is as written and the record agrees.» #1': {
-    verdict: 'minted',
-    why: 'a count of receipts, and words of this wiring',
-  },
+  'stack.ts «{} stacks checked: every file the receipts name is as written and the record agrees; files they do not name are not looked at.» #1':
+    {
+      verdict: 'minted',
+      why: 'a count of receipts, and words of this wiring',
+    },
   'stack.ts «{} stacks checked: {} departures.» #1': {
     verdict: 'minted',
     why: 'two counts, and words of this wiring',

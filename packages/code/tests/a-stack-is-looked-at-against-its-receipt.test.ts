@@ -67,7 +67,7 @@ describe('mnema stack list, show, diff and check, on the built binary', () => {
     expect(show.out).toContain('.claude/agents/greeter.md  as written');
     const check = mnema('stack', 'check');
     expect(check.status).toBe(0);
-    expect(check.out).toContain('1 stacks checked: every file is as written');
+    expect(check.out).toContain('1 stacks checked: every file the receipts name is as written');
   });
 
   it('name a changed file and a gone one, and fail', () => {
