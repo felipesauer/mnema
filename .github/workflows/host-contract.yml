@@ -204,8 +204,8 @@ jobs:
         run: |
           cat > "$RUNNER_TEMP/probe.sh" <<'EOF'
           ip link set lo up
-          for i in $(seq 1 15); do
-            if xvfb-run -a ./node_modules/.bin/vitest run --config vitest.host-contract.config.ts an-editor-puts-a-hooks-text > "$RUNNER_TEMP/p$i.log" 2>&1; then
+          for i in $(seq 1 8); do
+            if xvfb-run -a ./node_modules/.bin/vitest run --config vitest.host-contract.config.ts > "$RUNNER_TEMP/p$i.log" 2>&1; then
               echo "PROBE $i ok"
             else
               echo "PROBE $i FAILED"
