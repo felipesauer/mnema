@@ -11,6 +11,7 @@
       "!packages/**/dist/**",
       ".github/**/*.mjs",
       "plugin/**/*.mjs",
+      "plugin/**/*.js",
       "plugin/**/*.json",
       ".claude-plugin/*.json"
     ]

@@ -504,7 +504,7 @@ function mergeAForeignTail(into: string): string {
 interface Driven {
   readonly at: string;
   /** Runs the act. Throws if the fixture could not produce what it needs. */
-  readonly drive: () => void;
+  readonly drive: () => void | Promise<void>;
 }
 
 /** A path the sweep does not drive, and the reason — the honest half of the list. */
@@ -606,9 +606,12 @@ describe('every write path leaves the record fully signed', () => {
       },
       {
         at: 'commands/stack-install.ts:applyStackInstall',
-        drive: () => {
+        drive: async () => {
           const read = { ok: true as const, ...readStackFiles(HELLO_STACK), shown: 'a folder' };
-          const plan = ok('plan', planStackInstall(ctx, read, { target: { scope: 'public' } }));
+          const plan = ok(
+            'plan',
+            await planStackInstall(ctx, read, { target: { scope: 'public' } }),
+          );
           ok('stack add', applyStackInstall(ctx, plan, plan.digest));
         },
       },
@@ -1026,11 +1029,11 @@ describe('every write path leaves the record fully signed', () => {
     expect([...driven, ...Object.keys(NOT_DRIVEN)].sort()).toEqual(PATHS.map((p) => p.at).sort());
   });
 
-  it('leaves nothing above a checkpoint, after every CLI write there is', () => {
+  it('leaves nothing above a checkpoint, after every CLI write there is', async () => {
     const project = join(sandbox, 'repo');
     for (const row of cliSweep()) {
       const before = acrossTrees(project, env);
-      row.drive();
+      await row.drive();
       const after = acrossTrees(project, env);
       // THE RULE. Anything here is an act of writing that returned without signing.
       expect(after.uncovered, row.at).toEqual([]);
@@ -1042,11 +1045,11 @@ describe('every write path leaves the record fully signed', () => {
     expect(end.levels).toContain('fully-signed');
   });
 
-  it('leaves nothing above a checkpoint, after every MCP write there is', () => {
+  it('leaves nothing above a checkpoint, after every MCP write there is', async () => {
     const project = join(sandbox, 'served');
     for (const row of mcpSweep()) {
       const before = acrossTrees(project, env);
-      row.drive();
+      await row.drive();
       const after = acrossTrees(project, env);
       expect(after.uncovered, row.at).toEqual([]);
       expect(after.events, `${row.at} appended nothing`).toBeGreaterThan(before.events);
@@ -1055,21 +1058,21 @@ describe('every write path leaves the record fully signed', () => {
     expect(end.levels).toContain('fully-signed');
   });
 
-  it('signs every CLI write under the hold that wrote it, so a refusal never follows the fact', () => {
+  it('signs every CLI write under the hold that wrote it, so a refusal never follows the fact', async () => {
     const project = join(sandbox, 'repo');
     const trap = armTheGapBetweenTheFactAndItsSignature();
     try {
-      for (const row of cliSweep()) holdsOrSaysSo(row, project, trap);
+      for (const row of cliSweep()) await holdsOrSaysSo(row, project, trap);
     } finally {
       trap.disarm();
     }
   });
 
-  it('signs every MCP write under the hold that wrote it, so a refusal never follows the fact', () => {
+  it('signs every MCP write under the hold that wrote it, so a refusal never follows the fact', async () => {
     const project = join(sandbox, 'served');
     const trap = armTheGapBetweenTheFactAndItsSignature();
     try {
-      for (const row of mcpSweep()) holdsOrSaysSo(row, project, trap);
+      for (const row of mcpSweep()) await holdsOrSaysSo(row, project, trap);
     } finally {
       trap.disarm();
     }
@@ -1245,11 +1248,11 @@ function armTheGapBetweenTheFactAndItsSignature(): Trap {
  * Drives one row with the trap armed, and holds the reply to what the chain gained: a row that
  * says it was refused added nothing, and a row that says it wrote left nothing unsigned.
  */
-function holdsOrSaysSo(row: Driven, project: string, trap: Trap): void {
+async function holdsOrSaysSo(row: Driven, project: string, trap: Trap): Promise<void> {
   const before = acrossTrees(project, env);
   let refusal: unknown;
   try {
-    row.drive();
+    await row.drive();
   } catch (error) {
     refusal = error;
   }

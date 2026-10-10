@@ -129,6 +129,10 @@ export interface TheSpec {
   readonly project?: (it: { dir: string; mnema: (...args: string[]) => string }) => void;
   /** The call the stand-in makes, given the project directory. None: a session that only opens. */
   readonly call?: (project: string) => TheCall;
+  /** The text every turn that calls no tool closes with; a subagent's final reply is one. */
+  readonly closing?: string;
+  /** Whether the stand-in makes the call once in all, rather than at each request that offers it. */
+  readonly callOnce?: boolean;
   /** Hooks to declare beside the plugin's, in the project's settings. */
   readonly hooks?: Readonly<Record<string, unknown>>;
   /** The permission rules that let the call run. */
@@ -206,7 +210,7 @@ export async function aSession(spec: TheSpec = {}): Promise<TheSession> {
     }
   }
 
-  const standIn = await startTheStandIn(spec.call?.(project));
+  const standIn = await startTheStandIn(spec.call?.(project), spec.closing, spec.callOnce);
   writeFileSync(
     join(config, '.claude.json'),
     JSON.stringify({

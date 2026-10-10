@@ -145,6 +145,39 @@ function payloadFor(host: HookHost, relative: string): string {
       tool_use_id: 'call-1',
     });
   }
+  if (host === 'gemini') {
+    // As Gemini CLI 0.63.0 hands a `BeforeTool` hook (`docs/hooks/reference.md`): its own tool
+    // names and snake_case fields, the path under `file_path`, beside the common fields.
+    return JSON.stringify({
+      session_id: 'f3a1c0de-0000-4000-8000-000000000000',
+      transcript_path: '/tmp/gemini/chats/session.json',
+      cwd: repo,
+      hook_event_name: 'BeforeTool',
+      timestamp: '2026-10-10T12:00:00.000Z',
+      tool_name: 'write_file',
+      tool_input: { file_path: join(repo, relative), content: 'export const probe = 1;\n' },
+    });
+  }
+  if (host === 'opencode') {
+    // As the plugin OpenCode loads hands it (`plugin/opencode/mnema.js`): the tool's own name and
+    // the arguments OpenCode gave its hook, the path absolute under `filePath`.
+    return JSON.stringify({
+      tool_name: 'write',
+      tool_input: { filePath: join(repo, relative), content: 'export const probe = 1;\n' },
+    });
+  }
+  if (host === 'copilot') {
+    // As Copilot CLI 1.0.94 hands a hook configured under the PascalCase event name: Claude's
+    // tool names (its `create` is `Write`), snake_case fields, and the path under `path`.
+    return JSON.stringify({
+      hook_event_name: 'PreToolUse',
+      session_id: 'a0e3c1f2-0000-4000-8000-000000000000',
+      timestamp: '2026-10-09T12:00:00.000Z',
+      cwd: repo,
+      tool_name: 'Write',
+      tool_input: { path: join(repo, relative), file_text: 'export const probe = 1;\n' },
+    });
+  }
   return host === 'cursor'
     ? JSON.stringify({
         hook_event_name: 'preToolUse',
@@ -189,6 +222,13 @@ function holdTheTail(): string {
 
 /** The permission decision of a reply. */
 function decided(reply: Record<string, unknown>): { value?: string; reason?: string } {
+  // Gemini CLI reads its decision at the top level of the reply, not under `hookSpecificOutput`.
+  if (typeof reply['decision'] === 'string') {
+    return {
+      value: reply['decision'],
+      ...(typeof reply['reason'] === 'string' ? { reason: reply['reason'] } : {}),
+    };
+  }
   const specific = reply['hookSpecificOutput'] as
     | { permissionDecision?: string; permissionDecisionReason?: string; additionalContext?: string }
     | undefined;
@@ -386,9 +426,127 @@ describe('the verb a command host runs', () => {
     expect(asksAPerson('codex')).toBe(false);
   });
 
+  it('reads the paths of Copilot CLI’s writes: `Write` and `Edit` under `path`, and a patch it hands whole', () => {
+    expect(
+      pathsOfAWrite('copilot', {
+        tool_name: 'Write',
+        tool_input: { path: '/w/a.ts', file_text: '' },
+      }),
+    ).toEqual(['/w/a.ts']);
+    expect(
+      pathsOfAWrite('copilot', {
+        tool_name: 'Edit',
+        tool_input: { path: '/w/b.ts', old_str: 'a', new_str: 'b' },
+      }),
+    ).toEqual(['/w/b.ts']);
+    // Its `apply_patch` is also named `Edit`, and its input is the patch text itself, not an object.
+    const patch = [
+      '*** Begin Patch',
+      '*** Update File: src/a.ts',
+      '*** Delete File: src/c.ts',
+      '*** End Patch',
+    ].join('\n');
+    expect(pathsOfAWrite('copilot', { tool_name: 'Edit', tool_input: patch })).toEqual([
+      'src/a.ts',
+      'src/c.ts',
+    ]);
+    // Neither VS Code’s field names nor its tool names are read here, and a read is no write.
+    expect(
+      pathsOfAWrite('copilot', { tool_name: 'create_file', tool_input: { filePath: '/w/a.ts' } }),
+    ).toBeUndefined();
+    expect(
+      pathsOfAWrite('copilot', { tool_name: 'Write', tool_input: { filePath: '/w/a.ts' } }),
+    ).toEqual([]);
+    expect(
+      pathsOfAWrite('copilot', { tool_name: 'Read', tool_input: { path: '/w/a.ts' } }),
+    ).toBeUndefined();
+    expect(asksAPerson('copilot')).toBe(true);
+  });
+
   it('codex: a write that only asks is let through in silence, with nothing recorded', () => {
     const before = publicEvents().length;
     expect(verb('codex', 'src/other/refund.ts')).toEqual({ reply: {}, notes: [] });
+    expect(publicEvents().length).toBe(before);
+  });
+
+  it('reads the paths of OpenCode’s three writers: `write` and `edit` under `filePath`, a patch under `patchText`', () => {
+    expect(
+      pathsOfAWrite('opencode', { tool_name: 'write', tool_input: { filePath: '/w/a.ts' } }),
+    ).toEqual(['/w/a.ts']);
+    expect(
+      pathsOfAWrite('opencode', {
+        tool_name: 'edit',
+        tool_input: { filePath: '/w/b.ts', oldString: 'a', newString: 'b' },
+      }),
+    ).toEqual(['/w/b.ts']);
+    const patch = [
+      '*** Begin Patch',
+      '*** Add File: src/a.ts',
+      '*** Update File: src/b.ts',
+      '*** Move to: src/c.ts',
+      '*** Delete File: src/d.ts',
+      '*** End Patch',
+    ].join('\n');
+    expect(
+      pathsOfAWrite('opencode', { tool_name: 'apply_patch', tool_input: { patchText: patch } }),
+    ).toEqual(['src/a.ts', 'src/b.ts', 'src/c.ts', 'src/d.ts']);
+    // The fields of the other hosts are not read, and a read is no write.
+    expect(
+      pathsOfAWrite('opencode', { tool_name: 'apply_patch', tool_input: { command: patch } }),
+    ).toEqual([]);
+    expect(
+      pathsOfAWrite('opencode', { tool_name: 'write', tool_input: { file_path: '/w/a.ts' } }),
+    ).toEqual([]);
+    expect(
+      pathsOfAWrite('opencode', { tool_name: 'read', tool_input: { filePath: '/w/a.ts' } }),
+    ).toBeUndefined();
+    expect(
+      pathsOfAWrite('opencode', { tool_name: 'Write', tool_input: { filePath: '/w/a.ts' } }),
+    ).toBeUndefined();
+    expect(asksAPerson('opencode')).toBe(false);
+  });
+
+  it('opencode: a write that only asks is let through in silence, with nothing recorded', () => {
+    const before = publicEvents().length;
+    expect(verb('opencode', 'src/other/refund.ts')).toEqual({ reply: {}, notes: [] });
+    expect(publicEvents().length).toBe(before);
+  });
+
+  it('reads the paths of Gemini CLI’s two writers: `write_file` and `replace`, under `file_path`', () => {
+    expect(
+      pathsOfAWrite('gemini', { tool_name: 'write_file', tool_input: { file_path: '/w/a.ts' } }),
+    ).toEqual(['/w/a.ts']);
+    expect(
+      pathsOfAWrite('gemini', {
+        tool_name: 'replace',
+        tool_input: { file_path: '/w/b.ts', old_string: 'a', new_string: 'b' },
+      }),
+    ).toEqual(['/w/b.ts']);
+    // The fields and the names of the other hosts are not read, and a read is no write.
+    expect(
+      pathsOfAWrite('gemini', { tool_name: 'write_file', tool_input: { filePath: '/w/a.ts' } }),
+    ).toEqual([]);
+    expect(
+      pathsOfAWrite('gemini', { tool_name: 'Write', tool_input: { file_path: '/w/a.ts' } }),
+    ).toBeUndefined();
+    expect(
+      pathsOfAWrite('gemini', { tool_name: 'read_file', tool_input: { file_path: '/w/a.ts' } }),
+    ).toBeUndefined();
+    expect(asksAPerson('gemini')).toBe(false);
+  });
+
+  it('gemini: the refusal is the top-level `decision: deny` and its `reason`, and nothing else is read', () => {
+    // Its hook output is read at the top level (`types.ts`, `isBlockingDecision`); the nested
+    // `permissionDecision` of the other hosts is not a field it knows.
+    const { reply } = verb('gemini', 'src/billing/invoice.ts');
+    expect(Object.keys(reply).sort()).toEqual(['decision', 'reason']);
+    expect(reply['decision']).toBe('deny');
+    expect(String(reply['reason'])).toContain('refuses a write at src/billing/invoice.ts');
+  });
+
+  it('gemini: a write that only asks is let through in silence, with nothing recorded', () => {
+    const before = publicEvents().length;
+    expect(verb('gemini', 'src/other/refund.ts')).toEqual({ reply: {}, notes: [] });
     expect(publicEvents().length).toBe(before);
   });
 });
@@ -541,8 +699,11 @@ describe('the same rule, said again in one session', () => {
     for (let n = 0; n < 4; n += 1) reasonOn(session, 'src/billing/invoice.ts');
     // A rule this session has not heard from is said whole.
     expect(reasonOn(session, 'src/other/refund.ts')).toContain('Refunds need finance');
-    // And a session of its own starts from the first.
-    expect(reasonOn(sessionHere(), 'src/billing/invoice.ts')).toBe(first);
+    // And a session of its own starts from the first: the whole notice, and then the one thing
+    // that is new to it, that the run before it was charged at the same path.
+    expect(reasonOn(sessionHere(), 'src/billing/invoice.ts')).toBe(
+      `${first}\n\nAnother run (agent-alpha) consulted this path less than a minute ago.`,
+    );
   });
 });
 

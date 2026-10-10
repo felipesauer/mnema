@@ -83,7 +83,7 @@ identically, because they are the same call.
   The same record always prints the same bytes, which is what makes
   `mnema brief | diff - MNEMA.md` a staleness check.
 - **A plugin for Claude Code**, in [`plugin/`](../../plugin/), that stops the delivery
-  from depending on somebody remembering to regenerate a file. It declares eight hooks and
+  from depending on somebody remembering to regenerate a file. It declares nine hooks and
   the MCP server below, in one installation. As a session opens, one hook runs `mnema
   brief` and hands over the document, and another runs `mnema recall` and hands over the
   **notes** — the memories and observations recorded for the project, from every tree
@@ -98,7 +98,12 @@ identically, because they are the same call.
   record's `channel.served` counts what the per-edit hook pushed and never the opening
   texts. It is mnema noting that it delivered the hook's answer, not a person's approval of
   anything. The per-edit one records that it served, and holds a write for a person only where a
-  rule of your own record asks it to — the plugin's page says how. The fourth is that same pause for a
+  rule of your own record asks it to — the plugin's page says how. Where another run of this
+  machine's identity was charged at that same path in the last 30 minutes (looking through each
+  channel's 2,000 newest charges, no further) — a rule asked for a
+  person or refused a write there, in a run still open — the reply ends with one sentence
+  naming that run's agent and how many minutes ago; it is read from the record and appends
+  nothing, and a path no rule has ever charged anyone at gets none. The fourth is that same pause for a
   host whose hooks are processes: VS Code's agent runs it as `mnema before-a-write --host vscode`
   before a write, and it asks, and records, exactly where the third would; Claude Code and
   Cursor never run it. The fifth and sixth are one command, `mnema tally`, run at `Stop` and
@@ -113,13 +118,15 @@ identically, because they are the same call.
   "that is wrong", "use … instead", in English and Portuguese), and records each as a `proposed`
   decision in this machine's private tree, citing the session and the line, at most five at a time
   and never the same line twice. A match is a pattern and not a judgement, which is why it is
-  proposed. No model is called. All seven are **silent** where there is no project, so a
+  proposed. No model is called. The eighth is a `SubagentStop` hook that runs `mnema handback`: a subagent hands the decisions it settled back in its final reply, and the hook asks that reply to end with one fenced block, info string `mnema-handback`, holding `{"decisions":[…]}` (the list empty where it settled nothing) in the schema `mnema handback --schema` prints. A reply with no such block, or a block outside the schema, is sent back with the format as the reason (exit 2) — once, since the host's second stop of the same subagent is let through. It checks the shape and never whether the subagent settled something; `mnema switch off subagent-handback` stops it. It is held in Claude Code, against the real binary; the other hosts that read the plugin's hooks file were not measured on that event. All eight are **silent** where there is no project, so a
   machine that installs this and opens a session somewhere else sees nothing. Asserted in
   `tests/the-record-arrives-unasked.test.ts`, `tests/the-rule-reaches-the-writing.test.ts`
   and `tests/the-record-asks-for-a-person.test.ts`, the fourth in
   `tests/a-host-that-runs-commands-asks-for-a-person.test.ts`, the fifth and sixth in
-  `tests/a-session-says-what-it-wrote.test.ts`, and the seventh in
-  `tests/a-correction-becomes-a-proposal.test.ts`; the plugin's own page states what
+  `tests/a-session-says-what-it-wrote.test.ts`, the seventh in
+  `tests/a-correction-becomes-a-proposal.test.ts`, and the eighth in
+  `tests/a-subagent-hands-back-its-decisions.test.ts` and
+  `tests/host-contract/a-subagent-is-sent-back-for-its-handback.test.ts`; the plugin's own page states what
   it carries and what it leaves behind. VS Code's agent and Cursor's command-line agent read
   the same plugin: the two opening hooks run in both, the rules at each edit are Claude Code's,
   and the pause for a person reaches VS Code too and not Cursor's agent, which runs the hook

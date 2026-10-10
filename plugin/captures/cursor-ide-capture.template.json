@@ -1,0 +1,97 @@
+{
+  "capturedBy": "by hand",
+  "date": "YYYY-MM-DD",
+  "host": {
+    "name": "Cursor's editor",
+    "command": "cursor",
+    "version": "",
+    "commit": "",
+    "sha256": "",
+    "plan": "",
+    "model": "",
+    "editsWithoutConfirmation": "",
+    "thirdPartyImports": "on | off"
+  },
+  "machine": "",
+  "script": {
+    "file": "plugin/captures/cursor-ide-script.md",
+    "commit": ""
+  },
+  "plugin": {
+    "version": "",
+    "commit": "",
+    "installedFrom": "this checkout | the marketplace"
+  },
+  "rules": {
+    "refuses-a-write": { "address": "src/frozen", "id": "" },
+    "asks-for-a-person": { "address": "src/ledger", "id": "" },
+    "governs": { "address": "src/billing", "id": "" }
+  },
+  "cases": [
+    {
+      "id": "plugin-hooks-are-loaded",
+      "expected": "The hooks of the mnema plugin installed in Claude Code are listed among the hooks Cursor will run.",
+      "observed": "",
+      "channelFacts": { "channel.refused": 0, "channel.asked": 0, "channel.served": 0 },
+      "verdict": "held | did-not-hold | not-run",
+      "transcript": []
+    },
+    {
+      "id": "hook-gets-the-payload-it-reads",
+      "expected": "CURSOR_VERSION is set for the hook, and it is handed tool_name Write with the path under tool_input.file_path, for a creation and for the edit of a file that exists.",
+      "observed": "",
+      "probe": { "toolNames": [], "pathField": "", "cursorVersionSet": false },
+      "channelFacts": { "channel.refused": 0, "channel.asked": 0, "channel.served": 0 },
+      "verdict": "held | did-not-hold | not-run",
+      "transcript": []
+    },
+    {
+      "id": "opens-the-session",
+      "expected": "A sessionStart hook of the plugin ran and its text is in the session: the chat names the three rules.",
+      "observed": "",
+      "channelFacts": { "channel.refused": 0, "channel.asked": 0, "channel.served": 0 },
+      "verdict": "held | did-not-hold | not-run",
+      "transcript": []
+    },
+    {
+      "id": "refuses-a-write",
+      "expected": "The file is not created, and the chat shows the rule's id and `refuses a write at src/frozen/x.ts`.",
+      "observed": "",
+      "channelFacts": { "channel.refused": 0, "channel.asked": 0, "channel.served": 0 },
+      "verdict": "held | did-not-hold | not-run",
+      "transcript": []
+    },
+    {
+      "id": "ask-is-ignored",
+      "expected": "The file is created with no pause, and nothing is recorded as asked.",
+      "observed": "",
+      "channelFacts": { "channel.refused": 0, "channel.asked": 0, "channel.served": 0 },
+      "verdict": "held | did-not-hold | not-run",
+      "transcript": []
+    },
+    {
+      "id": "no-rule",
+      "expected": "The file is created, and the plugin said nothing.",
+      "observed": "",
+      "channelFacts": { "channel.refused": 0, "channel.asked": 0, "channel.served": 0 },
+      "verdict": "held | did-not-hold | not-run",
+      "transcript": []
+    },
+    {
+      "id": "server-is-reached",
+      "expected": "A server named mnema is listed and started, its tools keep their own names, and governing_rules returns the rule `Bill in UTC` with its id.",
+      "observed": "",
+      "channelFacts": { "channel.refused": 0, "channel.asked": 0, "channel.served": 0 },
+      "verdict": "held | did-not-hold | not-run",
+      "transcript": []
+    },
+    {
+      "id": "rules-file-is-read",
+      "expected": "The chat lists .cursor/rules/mnema.mdc among the rules it applied to src/billing/a.ts, and says `Bill in UTC`.",
+      "observed": "",
+      "channelFacts": { "channel.refused": 0, "channel.asked": 0, "channel.served": 0 },
+      "verdict": "held | did-not-hold | not-run",
+      "transcript": []
+    }
+  ]
+}

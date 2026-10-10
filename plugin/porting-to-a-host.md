@@ -23,7 +23,14 @@ already here ([the table](README.md#in-vs-code-and-cursor)):
   above are the part that does not change. Codex is the first such host: it reads
   `.codex-plugin/plugin.json` first, and that manifest names a hooks file only Codex reads, because
   Codex would otherwise run the other hosts' gates too (it matches `apply_patch` by `Write` and
-  `Edit`). Both files are generated from the host table, like the rest.
+  `Edit`). Both files are generated from the host table, like the rest. A host whose hook is
+  code, not a command (OpenCode), reads no manifest or hooks file of this plugin at all: it loads
+  a JavaScript module from its own folder, so the generator writes one self-contained module
+  (`plugin/opencode/mnema.js`) that runs `mnema` as a process, and the person copies it. Gemini
+  CLI reads its hooks from an extension, a folder it copies at install, with its hooks at
+  `hooks/hooks.json` — the path of this plugin's own hooks file — so the extension is a folder of
+  its own (`plugin/gemini/`), generated from the table and self-contained: its hooks run one script
+  in it, since the handlers beside the plugin's hooks file would not be copied with it.
 
 ## 2. Then the hooks, one question at a time
 

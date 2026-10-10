@@ -461,8 +461,8 @@ export const NAMES_THAT_NEED_MORE: Readonly<
     why: 'the verb named as why the stacks package is released; its `--help` hands the source and the --expect it needs',
   },
   'packages/stacks/README.md: mnema stack add': {
-    times: 1,
-    why: 'the verb named in the same sentence on the package page, as the caller of the library',
+    times: 2,
+    why: 'the verb named on the package page as the caller of the library, and as the reader of a stack\u2019s signature; its `--help` hands the source and the --expect it needs',
   },
   'packages/code/README.md: mnema skill export': {
     times: 1,
@@ -676,7 +676,14 @@ export const HANDED_OVER: Readonly<
   // line 83 once the bug report became a form, which says `mnema --version` in a field of its own.
   // line 84 once the package page handed over `mnema doctor --fix private-tree`.
   // name 155 with the two pages that name `mnema stack add` as why the stacks package is released.
-  span: { line: 84, name: 155, flag: 3, unwritten: 0 },
+  // name 156 with the package page naming it again as the reader of a stack's signature.
+  // line 90 and name 159 with the pages that describe the subagent's stop: `mnema handback` and its
+  // `--schema` in the plugin page and the package page, and the switch that stops it, each in a
+  // line of its own or in a span.
+  // line 91 with the page of the stack index, which hands over `mnema stack add <source> --dry-run`.
+  // line 101 for the editor's script, whose case table names `mnema rules-file --host cursor > …` in a cell.
+  // name 162 for the command-line agent of Antigravity's script, whose cases name `mnema brief` twice.
+  span: { line: 102, name: 162, flag: 3, unwritten: 0 },
   // name 18 until the page that says where the key lives named `mnema key protect` in a line of
   // its own.
   // line 35 until the same page showed that question in a block of its own.
@@ -695,7 +702,11 @@ export const HANDED_OVER: Readonly<
   // line 52 and name 27 for the script that reads Cursor by hand: it makes a project of its own with
   // `mnema init`, and records and moves a rule and links it (`mnema decision record`, `mnema decision
   // move`, `mnema link`).
-  block: { line: 52, name: 27, flag: 1, unwritten: 0 },
+  // line 55 and name 28 for the script that reads Cursor's editor: the same project and the same
+  // rule, and `mnema rules-file --host cursor`, which writes the rules file the editor is asked about.
+  // line 58 and name 29 for the script that reads Antigravity's command line: the same project and
+  // rules, with `mnema init`, the rule helper, and `mnema brief > …`, which writes the rules file it is asked about.
+  block: { line: 58, name: 29, flag: 1, unwritten: 0 },
   // 46 until the refusal an agent's `accept` gets, with the switch off, began naming the command a
   // person accepts with (`agent-accepts.ts`).
   // line 34 until the sentences an agent's accept is answered with began handing whole lines
@@ -738,7 +749,10 @@ export const HANDED_OVER: Readonly<
   // line 85 once the doctor handed over `mnema doctor --fix private-tree`, in a line of its own.
   // line 86 once `before-a-write --help` named the second host that only refuses, and the switch
   // of the asking went to a line of its own.
-  source: { line: 86, name: 85, flag: 4, unwritten: 4 },
+  // name 87 with the verb a subagent's stop runs: its help and the reason it sends back each name
+  // `mnema handback --schema`, and the help names the switch that stops it.
+  // line 88 with the help of `mnema handback`: the two lines that name the switch and the schema.
+  source: { line: 92, name: 92, flag: 4, unwritten: 4 },
 };
 
 // ---------------------------------------------------------------------------

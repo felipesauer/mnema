@@ -7,6 +7,7 @@ export {
   SIGNATURE_FILE,
   type StackFile,
   stackDigest,
+  stackListing,
 } from './digest.js';
 export { readStackFiles, type StackFiles } from './files.js';
 export { type Frontmatter, type FrontmatterRead, readFrontmatter } from './frontmatter.js';

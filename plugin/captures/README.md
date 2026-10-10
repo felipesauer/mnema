@@ -1,9 +1,10 @@
 # Captures made by hand
 
 Some of what the plugin hands a host cannot be read on a free runner. Cursor's command-line agent
-needs an account, and the model behind it is the vendor's, so nothing here starts it from a workflow:
-what is known of it is read by a person, on a machine that has the account, from the script in this
-folder, and kept as a dated file.
+and its editor need an account, and the model behind them is the vendor's; Antigravity's command line
+signs a person in to Google, is a closed binary installed under terms its user accepts, and updates
+itself. Nothing here starts any of them from a workflow: what is known of them is read by a person, on
+a machine that has the account, from the script in this folder, and kept as a dated file.
 
 A capture is **a reading, not a test**. Nothing in this repository reruns it and nothing fails when it
 goes stale, so a page that cites one says *captured by hand on `<date>`, Cursor CLI `<version>`* and
@@ -13,6 +14,10 @@ never *tested*. It expires with the version it was read on.
 |---|---|
 | [`cursor-script.md`](cursor-script.md) | The script a person follows to read Cursor's agent: the project to make, the three cases, how to take the transcript and how to redact it. |
 | [`cursor-capture.template.json`](cursor-capture.template.json) | The shape of the result. A capture is a copy of it, filled in, named `cursor-<date>.json`. |
+| [`cursor-ide-script.md`](cursor-ide-script.md) | The same, for Cursor's editor, the graphical application: a home and a profile of their own, a probe that writes down what a hook is handed, eight cases, and what a capture lets the host table change. |
+| [`cursor-ide-capture.template.json`](cursor-ide-capture.template.json) | The shape of the result for the editor, named `cursor-ide-<date>.json`. None has been made yet: the host table says of the editor only what its documentation says. |
+| [`antigravity-cli-script.md`](antigravity-cli-script.md) | The same, for Antigravity's command line (`agy`): a home of its own, a probe in the host's own hook dialect, eight cases, and what a capture lets the host table change. |
+| [`antigravity-cli-capture.template.json`](antigravity-cli-capture.template.json) | The shape of the result for it, named `antigravity-cli-<date>.json`. None has been made yet: the host table says of it only what its documentation says. |
 
 What a capture holds is what the standard for a test execution record asks of one: the environment
 (the date, the exact version of the agent and the SHA-256 of the file that ran, the machine), who read

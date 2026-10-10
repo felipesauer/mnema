@@ -12,6 +12,24 @@ tag, with its own changelog.
 
 ### Added
 
+- **A subagent is asked to hand its decisions back in a block that can be checked.** `mnema handback`
+  runs at the host's `SubagentStop` event: a final reply that does not end in one fenced block whose
+  info string is `mnema-handback`, holding `{"decisions":[{"settled","why","turnedDown"}]}` (the list
+  empty where nothing was settled), is sent back once with the format as the reason; the second stop of
+  the same subagent is let through. `mnema handback --schema` prints the JSON Schema the check applies.
+  It checks the shape and never whether the subagent settled something, and it has its own switch,
+  `subagent-handback`. Held against the real Claude Code binary; Codex and Copilot CLI document an
+  equivalent event and the host table says so, with no port.
+
+- **Stacks in the console and in the editor.** `mnema stack index [folder]` prints the entries of an
+  index of stacks (name, version, link, digest, and the folder of one kept in the checkout) and
+  `--json` gives them to a program; `mnema stack list --json` does the same for the installed ones. The
+  console runs the stack readers and, as for every verb that can change the record, refuses the acts
+  (`add`, `remove`, `export`, `enable`, `disable`) and names the shell. The VS Code extension, which is not
+  published, gains a "mnema: stacks" panel: list, show, compare, check, export, and add from a folder or
+  from the index, each running the `stack` verb; an add shows the plan the command line printed, whole,
+  asks once, and writes with the digest that plan showed. It has no control that turns a hook on.
+
 - **The record can say which stacks govern the work.** Two new event kinds, `stack.adopted`
   (`payload.name`, `payload.version`, `payload.digest`, `payload.scope`) and `stack.removed`
   (`payload.version`, `payload.digest`, `payload.scope`), name a stack by its digest and say in

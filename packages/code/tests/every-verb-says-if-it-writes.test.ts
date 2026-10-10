@@ -314,6 +314,9 @@ const INVOCATION: Readonly<Record<string, Invocation>> = {
   // the verb answers `{}`, and what it counts is held with a transcript through the plugin's
   // command (`a-session-says-what-it-wrote.test.ts`).
   tally: { argv: () => ['tally'] },
+  // The same for the subagent's stop: in process it has no payload, answers `{}` and writes
+  // nothing. What it answers to a payload is held in `a-subagent-hands-back-its-decisions.test.ts`.
+  handback: { argv: () => ['handback'] },
   // The same, for the verb that WRITES when a host feeds it: in process it has no payload, answers
   // `{}` and records nothing. What it records is held with a transcript through the binary and the
   // plugin's command (`a-correction-becomes-a-proposal.test.ts`), and in the signing sweep.
@@ -688,6 +691,7 @@ describe('every verb says if it writes', () => {
       'report',
       'completion',
       'tally',
+      'handback',
     ]);
     expect(verbsThat('mutates').length + verbsThat('reads').length).toBe(DECLARED.length);
   });
@@ -698,7 +702,7 @@ describe('every verb says if it writes', () => {
     // both directions — the members it declares are the subcommands the program holds — and each
     // member that says it reads is run for real, in both forms, and counted in the chain.
     const grouped = DECLARED.filter((verb) => verb.members !== undefined);
-    expect(grouped.map((verb) => verb.act.name()).sort()).toEqual(['skill', 'task']);
+    expect(grouped.map((verb) => verb.act.name()).sort()).toEqual(['skill', 'stack', 'task']);
     for (const group of grouped) {
       expect(
         (group.members ?? []).map((member) => member.act.name()).sort(),
@@ -709,7 +713,32 @@ describe('every verb says if it writes', () => {
       'task next': (f) => ['task', 'next', f.task],
       'task guard': (f) => ['task', 'guard', 'submit', f.task, '--actor', f.anchor],
       'skill provenance': () => ['skill', 'provenance'],
+      'stack list': () => ['stack', 'list', '--to', STACK_TO()],
+      'stack index': () => ['stack', 'index', STACK_INDEX],
+      'stack show': () => ['stack', 'show', 'hello-stack', '--to', STACK_TO()],
+      'stack diff': () => ['stack', 'diff', 'hello-stack', '--to', STACK_TO()],
+      'stack check': () => ['stack', 'check', '--to', STACK_TO()],
     };
+    // The stack the four `stack` readers look at: installed into a folder of its own, which
+    // records nothing, so the readers are measured against a receipt that really exists.
+    const STACK_TO = (): string => join(sandbox, 'stack-to');
+    const STACK_INDEX = fileURLToPath(new URL('../../../stack-index', import.meta.url));
+    const HELLO_STACK = fileURLToPath(
+      new URL('../../stacks/fixtures/hello-stack', import.meta.url),
+    );
+    const planned = await mnema(['stack', 'add', HELLO_STACK, '--dry-run', '--to', STACK_TO()]);
+    const wanted = /digest {3}([0-9a-f]{64})/.exec(planned.out.join('\n'))?.[1];
+    expect(wanted, planned.out.join(' / ')).toBeDefined();
+    const installed = await mnema([
+      'stack',
+      'add',
+      HELLO_STACK,
+      '--to',
+      STACK_TO(),
+      '--expect',
+      wanted as string,
+    ]);
+    expect(installed.failed, installed.out.join(' / ')).toBe(false);
     const declaredReaders = grouped.flatMap((group) =>
       (group.members ?? [])
         .filter((member) => member.effect === 'reads')

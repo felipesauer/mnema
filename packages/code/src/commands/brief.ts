@@ -89,6 +89,7 @@ import {
   THE_READING_THAT_OPENED_THESE,
   withScopedCaches,
 } from '../tree-sources.js';
+import { type StacksHere, stacksHere } from './stack-inspect.js';
 
 /** What the brief needs — injected so it is testable. */
 export interface BriefContext {
@@ -133,6 +134,12 @@ export interface BriefDone {
    * {@link brief}: those are the project's own, signed by it and counted by its `verify`.
    */
   readonly inherited?: InheritedReading;
+  /**
+   * The stacks adopted for this project and where their files part from the record — present only
+   * when the caller asked ({@link runBrief}'s `outside`), for the reason {@link outside} is: it
+   * reads the disk, so the file somebody commits never carries it.
+   */
+  readonly stacks?: StacksHere;
 }
 
 /** The read was refused — there is no project to compose a brief for. */
@@ -250,6 +257,7 @@ export function runBrief(
       // for `decision import`'s reason — a file imported into the private tree is imported.
       ...(asked.outside === true
         ? {
+            stacks: stacksHere(ctx),
             outside: {
               drift: decisionsOutsideTheRecord(sources, dirname(trees.projectPublic as string)),
               arrival: basesNeverImported(sources, dirname(trees.projectPublic as string)),

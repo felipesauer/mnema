@@ -73,7 +73,7 @@ function stack(): string {
 async function install(ctx: StackContext, source: string, target: StackTarget, as?: string) {
   const read = await readStackSource(source, ctx.cwd);
   if (!read.ok) return read;
-  const plan = planStackInstall(ctx, read, { target, ...(as !== undefined ? { as } : {}) });
+  const plan = await planStackInstall(ctx, read, { target, ...(as !== undefined ? { as } : {}) });
   if (!plan.ok) return plan;
   return applyStackInstall(ctx, plan, plan.digest);
 }
@@ -126,12 +126,16 @@ describe('a stack is installed into the folders the host table names', () => {
     writeFileSync(join(source, 'stack.json'), JSON.stringify(manifest));
     const read = await readStackSource(source, ctx.cwd);
     if (!read.ok) throw new Error(read.message);
-    const plan = planStackInstall(ctx, read, { target: { scope: 'public' } });
+    const plan = await planStackInstall(ctx, read, { target: { scope: 'public' } });
     if (!plan.ok) throw new Error(plan.message);
     expect(plan.unserved).toEqual({
       skills: ['Goose', "Continue's command line (`cn`)", "Warp's agent"],
       agents: [
         'Codex',
+        'GitHub Copilot CLI',
+        'OpenCode',
+        'Gemini CLI',
+        "Antigravity's command line (`agy`)",
         'Factory Droid',
         'Qwen Code',
         'Goose',
@@ -177,7 +181,7 @@ describe('the plan writes nothing, and a digest the person did not see writes no
     const before = filesUnder(ctx.repo).sort();
     const read = await readStackSource(stack(), ctx.cwd);
     if (!read.ok) throw new Error(read.message);
-    expect(planStackInstall(ctx, read, { target: { scope: 'public' } }).ok).toBe(true);
+    expect((await planStackInstall(ctx, read, { target: { scope: 'public' } })).ok).toBe(true);
     expect(filesUnder(ctx.repo).sort()).toEqual(before);
   });
 
@@ -185,7 +189,7 @@ describe('the plan writes nothing, and a digest the person did not see writes no
     const ctx = project();
     const read = await readStackSource(stack(), ctx.cwd);
     if (!read.ok) throw new Error(read.message);
-    const plan = planStackInstall(ctx, read, { target: { scope: 'public' } });
+    const plan = await planStackInstall(ctx, read, { target: { scope: 'public' } });
     if (!plan.ok) throw new Error(plan.message);
     const result = applyStackInstall(ctx, plan, '0'.repeat(64));
     expect(result.ok ? 'written' : result.code).toBe('STACK_DIGEST_DIFFERS');
@@ -523,9 +527,98 @@ describe('the plan shows the tools a skill asks to use without asking', () => {
     );
     const read = await readStackSource(source, ctx.cwd);
     if (!read.ok) throw new Error(read.message);
-    const plan = planStackInstall(ctx, read, { target: { scope: 'public' } });
+    const plan = await planStackInstall(ctx, read, { target: { scope: 'public' } });
     if (!plan.ok) throw new Error(plan.message);
     expect(plan.tools).toEqual([{ skill: 'hello', tools: 'Bash(rm:*) Read' }]);
     expect(planLines(plan)).toContain('  hello: Bash(rm:*) Read');
+  });
+});
+
+describe('the plan says who signed, and that a signature is not safety', () => {
+  const VECTOR = join(
+    dirname(fileURLToPath(import.meta.url)),
+    '../../tests/support/signed-hello-stack',
+  );
+  const TEST_ROOT = JSON.parse(readFileSync(join(VECTOR, 'trusted-root.json'), 'utf8')) as unknown;
+
+  it('with no stack.sigstore.json, it installs on the digest alone and says so', async () => {
+    const ctx = project();
+    const read = await readStackSource(stack(), ctx.cwd);
+    if (!read.ok) throw new Error(read.message);
+    const plan = await planStackInstall(ctx, read, { target: { scope: 'public' } });
+    if (!plan.ok) throw new Error(plan.message);
+    expect(plan.signature).toEqual({ kind: 'unsigned' });
+    const lines = planLines(plan);
+    const at = lines.findIndex((l) => l.startsWith('  digest '));
+    expect(lines.slice(at + 1, at + 3)).toEqual([
+      '  signed   no: there is no stack.sigstore.json, so only the digest vouches for these files —',
+      '           that they are exactly these, not who wrote them',
+    ]);
+  });
+
+  it('signed, it names the identity and the issuer beside the digest, and that it proves who and not safe', async () => {
+    const ctx = project();
+    const source = stack();
+    cpSync(join(VECTOR, 'stack.sigstore.json'), join(source, 'stack.sigstore.json'));
+    const read = await readStackSource(source, ctx.cwd);
+    if (!read.ok) throw new Error(read.message);
+    const plan = await planStackInstall(ctx, read, {
+      target: { scope: 'public' },
+      trustedRoot: TEST_ROOT,
+    });
+    if (!plan.ok) throw new Error(plan.message);
+    const lines = planLines(plan);
+    const at = lines.findIndex((l) => l.startsWith('  digest '));
+    expect(lines[at + 1]).toBe(
+      '  signed   by https://github.com/example/hello-stack/.github/workflows/sign.yml@refs/heads/main',
+    );
+    expect(lines[at + 2]).toBe('           issuer https://token.actions.githubusercontent.com');
+    expect(lines[at + 3]).toMatch(/^ {11}logged in Rekor at \d{4}-\d\d-\d\dT.*, index \d+$/);
+    expect(lines[at + 4]).toBe(
+      '           a signature proves who signed these bytes, not that they are safe to run',
+    );
+    // The digest stays what the person confirms: the signature does not stand in for --expect.
+    expect(applyStackInstall(ctx, plan, '0'.repeat(64))).toMatchObject({
+      ok: false,
+      code: 'STACK_DIGEST_DIFFERS',
+    });
+    expect(applyStackInstall(ctx, plan, plan.digest).ok).toBe(true);
+  });
+
+  it('a signature that does not hold is refused, and nothing is written', async () => {
+    const ctx = project();
+    const source = stack();
+    cpSync(join(VECTOR, 'stack.sigstore.json'), join(source, 'stack.sigstore.json'));
+    // The public root this binary carries does not reach the test vector.
+    const result = await install(ctx, source, { scope: 'public' });
+    expect(result.ok ? 'written' : result.code).toBe('STACK_SIGNATURE_REFUSED');
+    expect(result.ok ? '' : result.message).toMatch(/is not installed on the digest alone/);
+    expect(existsSync(join(ctx.repo, '.claude'))).toBe(false);
+    // Nor with the test root, over files changed since it was signed.
+    writeFileSync(join(source, 'skills/hello/notes.md'), 'added after the signature\n');
+    const read = await readStackSource(source, ctx.cwd);
+    if (!read.ok) throw new Error(read.message);
+    const plan = await planStackInstall(ctx, read, {
+      target: { scope: 'public' },
+      trustedRoot: TEST_ROOT,
+    });
+    expect(plan.ok ? 'planned' : plan.code).toBe('STACK_SIGNATURE_REFUSED');
+  });
+
+  it('a stack.sigstore.json that is a symbolic link, or a folder, is refused before it is read', async () => {
+    for (const make of [
+      (s: string) =>
+        symlinkSync(join(VECTOR, 'stack.sigstore.json'), join(s, 'stack.sigstore.json')),
+      (s: string) => mkdirSync(join(s, 'stack.sigstore.json')),
+    ]) {
+      const ctx = project();
+      const source = stack();
+      make(source);
+      const result = await install(ctx, source, { scope: 'public' });
+      expect(result.ok ? 'written' : result.code).toBe('STACK_INVALID');
+      expect(existsSync(join(ctx.repo, '.claude'))).toBe(false);
+      rmSync(join(sandbox, 'repo'), { recursive: true, force: true });
+      rmSync(join(sandbox, 'source'), { recursive: true, force: true });
+    }
   });
 });

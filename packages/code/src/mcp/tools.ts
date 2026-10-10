@@ -80,9 +80,11 @@ import {
   type ReferenceGraph,
   type Resume,
   type RulesAtPath,
+  type RunHere,
   readRecord,
   references,
   resume,
+  runsHere,
   type ScopedCache,
   type ServedSkill,
   type SkillCatalogue,
@@ -177,6 +179,7 @@ import {
   type WriteVerdict,
   whatAWriteMeets,
 } from '../what-a-write-meets.js';
+import { CHARGING_CHANNELS, withWhoIsHere } from '../who-is-here.js';
 import { type HookEvent, type HookReply, hookReply } from './hook-reply.js';
 import {
   type EntityLocation,
@@ -2444,7 +2447,12 @@ export function runRulesBeforeAnEditTool(
     // What the write founded rides in the reason, the one field of the reply that reaches a model.
     const founded = [...session.founding.take(), ...session.replacementsOwed.take()];
     const refusal = [reasonTold(met, session.told), ...unrecorded, ...founded].join('\n\n');
-    return { ok: true, value: hookReply(PRE_TOOL_USE, { refuse: refusal }) };
+    return {
+      ok: true,
+      value: hookReply(PRE_TOOL_USE, {
+        refuse: withWhoIsHere(refusal, otherRunsAt(session, met.at[0])),
+      }),
+    };
   }
   // THE RULES OF A PATH ARE THE RULES OF WHERE IT REALLY IS, for the push and the hold alike: a
   // path the rules do not address as written is read again at where a link leads inside the
@@ -2509,12 +2517,42 @@ export function runRulesBeforeAnEditTool(
   // On a held write the rules ride in the refusal, so the context is what was founded and nothing
   // more; the rules would otherwise reach the model twice in one reply.
   const told = editRulesTold(deny === undefined ? rulesAt : undefined, founded);
+  // WHO ELSE WAS CHARGED AT THIS PATH RIDES BESIDE WHAT THE CALL ALREADY SAYS, in one field of the
+  // reply and only where the call speaks: silence stays silence, and no rule, no founding and no
+  // refusal gives way to it (`withWhoIsHere`). The asking, if there is one; else the hold; else
+  // the push.
+  const others = otherRunsAt(session, gate?.at[0] ?? rulesAt);
   const said = {
-    ...(told !== undefined ? { context: told } : {}),
-    ...(ask !== undefined ? { ask } : {}),
-    ...(deny !== undefined ? { deny } : {}),
+    ...(told !== undefined
+      ? { context: ask === undefined && deny === undefined ? withWhoIsHere(told, others) : told }
+      : {}),
+    ...(ask !== undefined ? { ask: withWhoIsHere(ask, others) } : {}),
+    ...(deny !== undefined ? { deny: ask === undefined ? withWhoIsHere(deny, others) : deny } : {}),
   };
   return { ok: true, value: hookReply(PRE_TOOL_USE, said) };
+}
+
+/**
+ * The other runs of this machine that were charged at `place` lately (`runsHere`), or none: a read
+ * of the session's own project, never a write, and never a reason for the call to fail.
+ */
+function otherRunsAt(session: Session, place: RulesAtPath | undefined): readonly RunHere[] {
+  if (place === undefined) return [];
+  try {
+    return runsHere(sessionCaches(session), {
+      path: place.relative ?? place.path,
+      actor: session.who,
+      ...askerContext(session),
+      channels: CHARGING_CHANNELS,
+    });
+  } catch (error) {
+    session.log(
+      oneLine(
+        `who else is at a path could not be read: ${error instanceof Error ? error.message : String(error)}`,
+      ),
+    );
+    return [];
+  }
 }
 
 /**

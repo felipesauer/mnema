@@ -12,7 +12,7 @@
  *
  * ## Which hosts, and what each can be told
  *
- * {@link HookHost} is a union of THREE, `vscode`, `cursor` and `codex`, and the reason is a
+ * {@link HookHost} is a union of FOUR, `vscode`, `cursor`, `codex` and `copilot`, and the reason is a
  * measurement rather than a backlog. VS Code 1.137 with Copilot Chat 0.65 runs a plugin's `PreToolUse`
  * command before the tool, and a reply carrying `permissionDecision: "ask"` holds the write for
  * a person (the host's own log: *"requires confirmation (preToolUse hook returned 'ask')"*; the
@@ -22,6 +22,12 @@
  *
  * Codex 0.161.0 does what Cursor does, held by its host contract: `deny` refuses, and `ask` is
  * rejected as unsupported and the write goes on.
+ *
+ * Copilot CLI 1.0.94 does what VS Code does — it is the same family of agent — and is read under
+ * the PascalCase event name, which hands the payload in snake_case and in Claude Code's tool
+ * names: its `create` is `Write`; its `edit`, `str_replace_editor` and `apply_patch` are all
+ * `Edit`, and the last hands the patch text itself where the others hand an object. Run without a
+ * person (`copilot -p`) its `ask` is a denial; the contract holds both.
  *
  * So they differ in exactly one thing, and {@link asksAPerson} is the table that says it. A
  * host that does not ask cannot be told to, and recording that it asked would be the fact
@@ -53,19 +59,32 @@
 import { does, type HookHost } from './host-names.js';
 import { type HookSaid, hookReply } from './mcp/hook-reply.js';
 
-/** How to read the paths out of one write tool's input. */
-type PathsOf = (input: Readonly<Record<string, unknown>>) => readonly string[];
+/** How to read the paths out of one write tool's input, whatever shape the host handed it. */
+type PathsOf = (input: unknown) => readonly string[];
+
+/** The fields of an input that is an object, or none for any other shape. */
+const fieldsOf = (input: unknown): Readonly<Record<string, unknown>> =>
+  typeof input === 'object' && input !== null && !Array.isArray(input)
+    ? (input as Record<string, unknown>)
+    : {};
 
 /** The one path of a tool that writes one file, under the field the host names it. */
-const filePath: PathsOf = (input) =>
-  typeof input['filePath'] === 'string' && input['filePath'] !== '' ? [input['filePath']] : [];
+const pathUnder =
+  (field: string): PathsOf =>
+  (input) => {
+    const named = fieldsOf(input)[field];
+    return typeof named === 'string' && named !== '' ? [named] : [];
+  };
+
+/** The one path of a tool that writes one file, under the field VS Code names it. */
+const filePath: PathsOf = pathUnder('filePath');
 
 /** The one path of Cursor's write tool, which names its field the way Claude Code does. */
-const snakeFilePath: PathsOf = (input) =>
-  typeof input['file_path'] === 'string' && input['file_path'] !== '' ? [input['file_path']] : [];
+const snakeFilePath: PathsOf = pathUnder('file_path');
 
 /** The files a multi-replace touches: one `filePath` per replacement, each once. */
-const replacements: PathsOf = (input) => {
+const replacements: PathsOf = (raw) => {
+  const input = fieldsOf(raw);
   const list = Array.isArray(input['replacements']) ? input['replacements'] : [];
   const paths = list.flatMap((one) =>
     typeof one === 'object' &&
@@ -96,13 +115,26 @@ const PATCH_HEADER = /^\*\*\* (?:Add File|Update File|Delete File|Move to): (.+)
 const patchIn =
   (field: string): PathsOf =>
   (input) => {
-    const text = typeof input[field] === 'string' ? input[field] : '';
-    const paths = text.split(/\r?\n/).flatMap((line) => {
-      const named = PATCH_HEADER.exec(line)?.[1]?.trim();
-      return named === undefined || named === '' ? [] : [named];
-    });
-    return [...new Set(paths)];
+    const text = fieldsOf(input)[field];
+    return pathsOfThePatch(typeof text === 'string' ? text : '');
   };
+
+/** The files a patch's own text touches, each once. */
+function pathsOfThePatch(text: string): readonly string[] {
+  const paths = text.split(/\r?\n/).flatMap((line) => {
+    const named = PATCH_HEADER.exec(line)?.[1]?.trim();
+    return named === undefined || named === '' ? [] : [named];
+  });
+  return [...new Set(paths)];
+}
+
+/**
+ * What Copilot CLI's `Edit` hands: its `edit` and `str_replace_editor` an object with the file's
+ * `path`, and its `apply_patch` the patch text itself, as a string. Both are named `Edit` to a
+ * hook configured under the PascalCase event, so the shape of the input says which it was.
+ */
+const copilotEdit: PathsOf = (input) =>
+  typeof input === 'string' ? pathsOfThePatch(input) : pathUnder('path')(input);
 
 /**
  * The tools each host writes a file through, and where each one's path is.
@@ -128,6 +160,20 @@ const WRITES: { readonly [H in HookHost]: { readonly [tool: string]: PathsOf } }
   // (`codex-rs/core/src/tools/hook_names.rs`, 0.161.0). A file written by a shell command is not a
   // tool this table can name, on Codex as on every other host.
   codex: { apply_patch: patchIn('command') },
+  // THE NAMES CLAUDE CODE GIVES THEM, because the hook is configured under the PascalCase event
+  // name (the payload of the camelCase one carries the host's own: `create`, `edit`,
+  // `apply_patch`, with the same input). `Write` is its `create`; `Edit` is the other writers.
+  copilot: { Write: pathUnder('path'), Edit: copilotEdit },
+  // THE NAMES OPENCODE GIVES ITS OWN TOOLS, handed over as they are by the plugin it loads
+  // (`tool.execute.before` is given a tool's id and its arguments): `write` and `edit` name an
+  // absolute `filePath`, and `apply_patch` — the writer the `gpt-` models get instead of those two —
+  // the patch under `patchText` (`packages/opencode/src/tool/`, 1.18.35).
+  opencode: { write: filePath, edit: filePath, apply_patch: patchIn('patchText') },
+  // THE NAMES GEMINI CLI GIVES ITS TWO WRITING TOOLS, handed over as they are to a `BeforeTool`
+  // hook with the arguments the model gave, the path under `file_path`: `write_file` and `replace`
+  // (`packages/core/src/tools/definitions/base-declarations.ts`, v0.63.0). A multi-file tool of
+  // its own was not read, and a file a shell command writes is not a tool this table can name.
+  gemini: { write_file: snakeFilePath, replace: snakeFilePath },
 };
 
 /**
@@ -160,7 +206,7 @@ export function pathsOfAWrite(host: HookHost, payload: unknown): readonly string
   if (typeof tool !== 'string') return undefined;
   const read = WRITES[host][tool];
   if (read === undefined) return undefined;
-  return typeof input === 'object' && input !== null ? read(input as Record<string, unknown>) : [];
+  return read(input);
 }
 
 /**
@@ -180,6 +226,23 @@ export function replyFor(host: HookHost, said: HookSaid): object {
     // the reason; `ask` is parsed and rejected as unsupported, and the write goes on — which is
     // why the Codex door never answers it (`codex-rs/hooks/src/engine/output_parser.rs`, 0.161.0).
     codex: (s) => hookReply('PreToolUse', s),
+    // Copilot CLI read the nested reply too, measured on 1.0.94: `deny` refused the write and its
+    // reason came back as the call's error, and `ask` raised the prompt for a person.
+    copilot: (s) => hookReply('PreToolUse', s),
+    // OpenCode's plugin is this product's own and reads the same nested reply: it throws the
+    // reason on `deny`, which OpenCode hands the model as the call's error.
+    opencode: (s) => hookReply('PreToolUse', s),
+    // Gemini CLI reads the decision at the top level of the reply — `decision` and `reason` — and
+    // has no field called `permissionDecision`; the nested reply would be read as nothing. Only a
+    // refusal reaches it: its row says it is not asked.
+    gemini: (s) => {
+      const said = hookReply('PreToolUse', s).hookSpecificOutput;
+      return said !== undefined &&
+        'permissionDecision' in said &&
+        said.permissionDecision === 'deny'
+        ? { decision: 'deny', reason: said.permissionDecisionReason }
+        : {};
+    },
   };
   return reply[host](said);
 }

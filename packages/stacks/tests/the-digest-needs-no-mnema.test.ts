@@ -1,8 +1,9 @@
 import { execFileSync } from 'node:child_process';
+import { createHash } from 'node:crypto';
 import { mkdirSync, symlinkSync } from 'node:fs';
 import { join } from 'node:path';
 import { afterEach, describe, expect, it } from 'vitest';
-import { stackDigest } from '../src/digest.js';
+import { stackDigest, stackListing } from '../src/digest.js';
 import { readStackFiles } from '../src/files.js';
 import { validateStack } from '../src/validate.js';
 import { cleanScratch, DIGEST_SH, HELLO_STACK, put, scratchStack } from './support.js';
@@ -21,6 +22,19 @@ describe('the digest of a stack', () => {
   it('is the golden for hello-stack, by the library and by three lines of shell', () => {
     expect(libraryDigest(HELLO_STACK)).toBe(HELLO_STACK_DIGEST);
     expect(shellDigest(HELLO_STACK)).toBe(HELLO_STACK_DIGEST);
+  });
+
+  it('signs a listing whose SHA-256 is the digest, and the shell prints the same bytes', () => {
+    const listing = stackListing(readStackFiles(HELLO_STACK).files);
+    expect(listing).toBeDefined();
+    expect(
+      createHash('sha256')
+        .update(listing as Uint8Array)
+        .digest('hex'),
+    ).toBe(HELLO_STACK_DIGEST);
+    const shell = execFileSync('sh', [DIGEST_SH, HELLO_STACK, '--listing']);
+    expect(Buffer.from(shell).equals(Buffer.from(listing as Uint8Array))).toBe(true);
+    expect(Buffer.from(shell).toString('utf8').startsWith('LICENSE\0')).toBe(true);
   });
 
   it('agrees with the shell over names that sort differently by bytes than by habit', () => {

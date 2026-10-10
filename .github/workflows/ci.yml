@@ -170,6 +170,10 @@ jobs:
     runs-on: ubuntu-24.04
     env:
       PYTHON3_IS_THE_FLOOR: '1'
+      # The cases start the reader, and a reader that runs writes `__pycache__` beside its modules;
+      # the case that packs the tarballs runs after them, in the same tree, and found seventeen
+      # `.pyc` in `@mnema/chain`. The guard is right; the job must not leave the cache behind.
+      PYTHONDONTWRITEBYTECODE: '1'
     steps:
       - uses: actions/checkout@v7
 
@@ -352,6 +356,49 @@ jobs:
 
       - name: Both validators, the same verdict
         run: pnpm vitest run packages/stacks/tests/the-skills-ref-oracle-agrees.test.ts
+
+  # THE EXAMPLE STACKS INSTALL. The stacks this repository ships as examples are the ones a person
+  # is most likely to try first, so they are installed here the way a person installs one: the BUILT
+  # binary reads each from its folder, shows the plan, writes it under a sandbox `HOME` (a fresh
+  # temporary folder the test makes; nothing of the runner's own home is touched), and the record
+  # still verifies. Then `skills-ref`, pinned as in the oracle job, validates every installed skill
+  # folder, and the stack index is held to the stacks it lists. Nothing of a stack is executed: the
+  # folders hold text and the binary only copies it. No secret, no account, and no network beyond
+  # the package indexes `setup-node` and `pip` already use.
+  the-example-stacks-install:
+    name: the example stacks install
+    runs-on: ubuntu-24.04
+    env:
+      SKILLS_REF_IS_THE_ORACLE: '1'
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: pnpm/action-setup@v6
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version: '24'
+          cache: 'pnpm'
+
+      - uses: actions/setup-python@v7
+        with:
+          python-version: '3.12'
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Install the oracle, pinned
+        run: python3 -m pip install skills-ref==0.1.1
+
+      - name: Build
+        run: pnpm build
+
+      - name: Install each example in a sandbox home, and hold the index to them
+        run: >-
+          pnpm vitest run
+          packages/code/tests/the-example-stacks-install.test.ts
+          packages/stacks/tests/the-example-stacks-hold.test.ts
+          packages/stacks/tests/the-index-names-the-stacks-it-lists.test.ts
 
   # THE LINK CANNOT COME BACK. This repository does not credit the tool that wrote a change in
   # the change's own record, and for 243 pull requests that held because somebody remembered it.

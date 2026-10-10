@@ -91,6 +91,13 @@ export interface Host {
    */
   readonly hooksFile?: string;
   /**
+   * How a host reads the reply that hands it the opening of a session, for a host that does not
+   * read the nested one Claude Code does (`hookSpecificOutput.additionalContext`): `flat` is a
+   * top-level `additionalContext`. The handlers that hand the opening over are told by the hooks
+   * file (`--reply flat`), and the nested reply is the one every other host gets.
+   */
+  readonly openingReply?: 'flat';
+  /**
    * The ceiling this host puts on a hook's text, for a host that counts it in tokens of its own
    * rather than in Claude Code's 10,000 UTF-16 code units: how many tokens arrive whole, how many
    * UTF-8 bytes make one, and where each is read. `presentation/within-a-hook.ts` cuts the opening
@@ -104,13 +111,21 @@ export interface Host {
   };
   /** What the page says under the table about this host, beside its cells. */
   readonly note?: string;
+  /**
+   * What it does when a subagent stops: runs the plugin's hook on that event, which can send the
+   * subagent back for the block of decisions it hands over. Apart from the cells because it is not
+   * a rung of the ladder: a host reaches (a) to (d) with or without it. Absent where the host was
+   * not read for it. The plugin's hooks file declares the hook for the hosts that read it and for
+   * which this is a test.
+   */
+  readonly subagentStop?: Cell;
   /** What it does with each {@link Capability}. */
   readonly cells: { readonly [C in Capability]: Cell };
   /** Where it reads the skills and the agents a stack brings. */
   readonly places: { readonly skills: Place; readonly agents: Place };
 }
 
-/** Where the cells of the three ported hosts that a case of this tree holds are held. */
+/** Where the cells of the ported hosts that a case of this tree holds are held. */
 const HELD = {
   aRulesFile: 'packages/code/tests/a-rules-file-carries-only-what-becomes-a-glob-exactly.test.ts',
   claudeServer: 'packages/code/tests/host-contract/the-rules-arrive-beside-the-write.test.ts',
@@ -119,22 +134,60 @@ const HELD = {
   vscodeGate:
     'packages/code/tests/host-contract/an-editor-holds-or-refuses-the-write.vscode.test.ts',
   codexContract: 'packages/code/tests/host-contract/codex-opens-and-refuses.codex.test.ts',
+  copilotContract: 'packages/code/tests/host-contract/copilot-opens-and-refuses.copilot.test.ts',
+  opencodeContract: 'packages/code/tests/host-contract/opencode-opens-and-refuses.opencode.test.ts',
+  geminiContract: 'packages/code/tests/host-contract/gemini-opens-and-refuses.gemini.test.ts',
+  claudeHandback:
+    'packages/code/tests/host-contract/a-subagent-is-sent-back-for-its-handback.test.ts',
 } as const;
 
 /** The Codex source every cell of Codex's row that is read rather than run was read at. */
 const CODEX_SOURCE =
   'https://github.com/openai/codex/blob/979011409de0a60b52f179721948e65531d26144';
 
+/**
+ * The Copilot CLI sources every cell of its row that is read rather than run was read at: the
+ * documentation repository of GitHub, at the commit the day's reading was made on.
+ */
+const COPILOT_DOCS =
+  'https://github.com/github/docs/blob/9f651797567230e844373870fce8b14427ad47ad/content/copilot';
+
+/**
+ * The OpenCode source every cell of its row that is read rather than run was read at: the commit
+ * of the tag the contract holds (v1.18.35).
+ */
+const OPENCODE_SOURCE =
+  'https://github.com/anomalyco/opencode/blob/53d1eabb61e21162157817bf677da0a4ad3332e3';
+
+/**
+ * The Gemini CLI source every cell of its row that is read rather than run was read at: the commit
+ * of the tag the contract holds (v0.63.0).
+ */
+const GEMINI_SOURCE =
+  'https://github.com/google-gemini/gemini-cli/blob/573846625af9e93b3b968e0e0b86bb093a4c9b16';
+
+/** The day Gemini CLI's documentation and source were read. */
+const GEMINI_READ_ON = '10 October 2026';
+
+/** The day OpenCode's documentation and source were read. */
+const OPENCODE_READ_ON = '10 October 2026';
+
 /** The day the hosts below that this product does not port were read. */
 const READ_ON = '8 October 2026';
 
-/** A folder of Claude Code's, which two other hosts read too, as the documentation `at` says. */
-const claudeFolder = (kind: 'skills' | 'agents', at: string): Place => ({
+/** The day Cursor's documentation was read for its editor. */
+const CURSOR_READ_ON = '10 October 2026';
+
+/** The day Antigravity's documentation was read for its command line. */
+const ANTIGRAVITY_READ_ON = '10 October 2026';
+
+/** A folder of Claude Code's, which other hosts read too, as the documentation `at` says. */
+const claudeFolder = (kind: 'skills' | 'agents', at: string, read = READ_ON): Place => ({
   held: 'documentation',
   project: `.claude/${kind}`,
   user: `.claude/${kind}`,
   at,
-  read: READ_ON,
+  read,
 });
 
 /** No folder of this host's was read, or it reads agents in another format. */
@@ -143,14 +196,15 @@ const NOT_PORTED: Place = { held: 'not ported' };
 /**
  * Every host, in the order the pages list them and the lists of a `--host` enumerate them.
  *
- * THE FIRST FOUR ARE PORTED; THE OTHER FIVE WERE ONLY READ. Each of the five documents an MCP
- * client and reads an `AGENTS.md`, at the commit the link names, and no hook of this plugin's
- * reaches any of them. Aider was read too and is not here: it has no MCP client.
+ * THE FIRST SIX ARE PORTED; THE OTHERS WERE ONLY READ. Each of the others documents an MCP client
+ * and reads an `AGENTS.md`, at the commit or on the page the link names, and no hook of this
+ * plugin's is known to reach any of them. Aider was read too and is not here: it has no MCP client.
  */
 export const HOSTS = {
   claude: {
     title: 'Claude Code',
     door: 'mcp_tool',
+    subagentStop: { does: true, held: 'a test', by: HELD.claudeHandback },
     cells: {
       server: { does: true, held: 'a test', by: HELD.claudeServer },
       rulesFile: { does: true, held: 'a test', by: HELD.aRulesFile },
@@ -231,6 +285,14 @@ export const HOSTS = {
       'lets the patch through. The opening is cut to Codex’s own ceiling, 2,500 tokens of 4 ' +
       `UTF-8 bytes ([\`output_spill.rs\`](${CODEX_SOURCE}/codex-rs/hooks/src/output_spill.rs#L12)), ` +
       'at a whole rule, held by the same test.',
+    // `events/stop.rs` fires a `SubagentStop` command hook and takes exit 2 with a continuation
+    // prompt on stderr (lines 178-206 and 361-362); this plugin ports nothing to it.
+    subagentStop: {
+      does: true,
+      held: 'documentation',
+      at: `${CODEX_SOURCE}/codex-rs/hooks/src/events/stop.rs#L178-L206`,
+      read: '9 October 2026',
+    },
     cells: {
       server: { does: true, held: 'a test', by: HELD.codexContract },
       rulesFile: {
@@ -255,6 +317,250 @@ export const HOSTS = {
       },
       // Codex's agents are TOML files of its own (`.codex/agents/`), not the Markdown a stack
       // brings, so nothing is installed for them.
+      agents: NOT_PORTED,
+    },
+  },
+  copilot: {
+    title: 'GitHub Copilot CLI',
+    door: 'command',
+    // Copilot CLI reads the plugin through a manifest of its own (`.github/plugin/plugin.json`,
+    // which it looks for before `.claude-plugin/plugin.json` and VS Code does not look for at all)
+    // that names this hooks file, so no other host runs its command and none of theirs runs here.
+    // The Claude Code manifest would start the server in the plugin's directory, not the project's.
+    hooksFile: 'hooks/copilot.json',
+    // It takes a top-level `additionalContext` for the opening and ignores the nested reply
+    // (1.0.94, held by the contract).
+    openingReply: 'flat',
+    note:
+      'Its hooks are read under the PascalCase event names, which hand the payload in Claude Code’s ' +
+      'tool names (`Write`, `Edit`) and snake_case fields, with the path under `path`. A command ' +
+      'hook that exits non-zero denies the call there (read in ' +
+      `[the hooks reference](${COPILOT_DOCS}/reference/hooks-reference.md)), so the plugin's ends ` +
+      'in `exit 0` whatever happened — no `mnema` on the PATH is held by its test; a hook past ' +
+      'its 15 seconds is let through by the host (read, not measured). The opening is the same ' +
+      'text Claude Code gets, cut at 10,000 units, far under the 10 MiB the host accumulates ' +
+      '(read, not measured). Run without a person (`copilot -p`), a hook’s `ask` is a denial ' +
+      '(held by its test); with one, the host asks (held by its test). The model is any ' +
+      'the host is pointed at, with no GitHub account (`COPILOT_OFFLINE`), under the license ' +
+      'at [`LICENSE.md`](https://github.com/github/copilot-cli/blob/a7ae5b0ce17beddfa5930812bb064138fd3a1cb5/LICENSE.md).',
+    // The hooks reference lists `subagentStop` as an event that can block and force continuation;
+    // this plugin ports nothing to it.
+    subagentStop: {
+      does: true,
+      held: 'documentation',
+      at: `${COPILOT_DOCS}/reference/hooks-reference.md#subagentstop--subagentstop`,
+      read: '9 October 2026',
+    },
+    cells: {
+      server: { does: true, held: 'a test', by: HELD.copilotContract },
+      rulesFile: {
+        does: true,
+        held: 'documentation',
+        at: `${COPILOT_DOCS}/reference/copilot-cli-reference/cli-command-reference.md`,
+        read: '9 October 2026',
+      },
+      opens: { does: true, held: 'a test', by: HELD.copilotContract },
+      refuses: { does: true, held: 'a test', by: HELD.copilotContract },
+      asks: { does: true, held: 'a test', by: HELD.copilotContract },
+    },
+    places: {
+      // `.agents/skills` under the project and under the home are two of the folders in the loading
+      // order of its plugin reference. Its agents are `.agent.md` files with a front matter of
+      // their own, and a stack's Markdown agent was not read against it.
+      skills: {
+        held: 'documentation',
+        project: '.agents/skills',
+        user: '.agents/skills',
+        at: `${COPILOT_DOCS}/reference/copilot-cli-reference/cli-plugin-reference.md`,
+        read: '9 October 2026',
+      },
+      agents: NOT_PORTED,
+    },
+  },
+  opencode: {
+    title: 'OpenCode',
+    door: 'command',
+    // OpenCode reads no hooks file and no manifest of this plugin: its hook is code, a JavaScript
+    // module it loads from `.opencode/plugins/`. The module is generated from this row
+    // (`plugin/opencode/mnema.js`), and no other host reads it.
+    hooksFile: 'opencode/mnema.js',
+    note:
+      'Its hook is a JavaScript module the person copies into `.opencode/plugins/` (see ' +
+      '`docs/install.md`), which runs `mnema` as a process: the refusal throws, and OpenCode hands ' +
+      'the model the reason as the call’s error; the opening is added to the system prompt ' +
+      'through `experimental.chat.system.transform`, a hook the host marks experimental, so the ' +
+      'contract pins the version it was held on. The tools it writes through are `write` and ' +
+      '`edit`, and `apply_patch` for the models that use it ' +
+      `([\`registry.ts\`](${OPENCODE_SOURCE}/packages/opencode/src/tool/registry.ts#L297-L300)); a ` +
+      'file a shell command writes meets no hook, as on every host. The module fails open: with ' +
+      'no `mnema` on the PATH, or a program of that name that is not this product, the write ' +
+      'goes through (held by its test). OpenCode’s own `permission.ask` hook is not used, so a ' +
+      'rule that only asks for a person is let through in silence. The opening is the text ' +
+      'Claude Code gets, cut at 10,000 units; a ceiling of OpenCode’s on a system prompt was not ' +
+      'found in its documentation or in the source read. The model is any the host is pointed ' +
+      'at, with no account, under the MIT license at ' +
+      `[\`LICENSE\`](${OPENCODE_SOURCE}/LICENSE).`,
+    cells: {
+      server: { does: true, held: 'a test', by: HELD.opencodeContract },
+      rulesFile: {
+        does: true,
+        held: 'documentation',
+        at: `${OPENCODE_SOURCE}/packages/opencode/src/session/instruction.ts#L60-L67`,
+        read: OPENCODE_READ_ON,
+      },
+      opens: { does: true, held: 'a test', by: HELD.opencodeContract },
+      refuses: { does: true, held: 'a test', by: HELD.opencodeContract },
+      asks: { does: false, held: 'a test', by: HELD.opencodeContract },
+    },
+    places: {
+      // Its skills page lists `.claude/skills` and `.agents/skills`, in the project and under the
+      // home. Its agents are Markdown files of its own (`.opencode/agents/`) with a `mode` and a
+      // `provider/model` id, which a stack's agent does not carry, so nothing is installed.
+      skills: claudeFolder('skills', 'https://opencode.ai/docs/skills/', OPENCODE_READ_ON),
+      agents: NOT_PORTED,
+    },
+  },
+  gemini: {
+    title: 'Gemini CLI',
+    door: 'command',
+    // Gemini CLI reads no hooks file of this plugin's: it loads an extension, a folder with a
+    // `gemini-extension.json` at its root and its hooks in `hooks/hooks.json` — the path the Claude
+    // Code plugin's own hooks file already has, so the extension is a folder of its own
+    // (`plugin/gemini/`), generated from this row and self-contained, since installing it copies it.
+    hooksFile: 'gemini/hooks/hooks.json',
+    note:
+      'Its hooks come from an extension, a folder the person installs from a checkout of this ' +
+      'repository (see `docs/install.md`): the extension declares the server, and its hooks run ' +
+      'one script that runs `mnema` as a process. The refusal answers `BeforeTool` on its two ' +
+      'tools that write, `write_file` and `replace`, with a top-level `decision` of `deny` and ' +
+      'its `reason`, which Gemini CLI hands the model as the call’s error; a file a shell command ' +
+      'writes meets no hook, as on every host. The opening is a `SessionStart` hook’s ' +
+      '`additionalContext`: Gemini CLI escapes `<` and `>` in it and wraps it in ' +
+      '`<hook_context>`, and in a non-interactive run puts it before the prompt (read in ' +
+      `[\`types.ts\`](${GEMINI_SOURCE}/packages/core/src/hooks/types.ts#L263-L277) and ` +
+      `[\`gemini.tsx\`](${GEMINI_SOURCE}/packages/cli/src/gemini.tsx#L951-L956)); a ceiling of ` +
+      'its own on that text was not found in the source read, so it is cut at 10,000 units. A hook ' +
+      'that exits with a code other than 0 or 2 is a warning and the call goes on, and the script ' +
+      'fails open: with no `mnema` on the PATH, or a program of that name that is not this ' +
+      'product, the write goes through (held by its test). The documentation lists `allow` and ' +
+      '`deny` as the decisions of a `BeforeTool` hook; the source also has an `ask`, which was ' +
+      'not read for what it does with a write and is not used, so a rule that only asks for a ' +
+      'person is let through in silence. Run without a person, in a folder it does not trust, ' +
+      'the host does not start (exit 55) unless it is told to trust the folder (`--skip-trust` or ' +
+      '`GEMINI_CLI_TRUST_WORKSPACE=true`, which the contract sets). The model is ' +
+      'any the host is pointed at, with no account, under the Apache-2.0 license at ' +
+      `[\`LICENSE\`](${GEMINI_SOURCE}/LICENSE).`,
+    cells: {
+      server: { does: true, held: 'a test', by: HELD.geminiContract },
+      rulesFile: {
+        does: true,
+        held: 'documentation',
+        at: `${GEMINI_SOURCE}/docs/cli/gemini-md.md`,
+        read: GEMINI_READ_ON,
+      },
+      opens: { does: true, held: 'a test', by: HELD.geminiContract },
+      refuses: { does: true, held: 'a test', by: HELD.geminiContract },
+      asks: { does: false, held: 'a test', by: HELD.geminiContract },
+    },
+    places: {
+      // `.agents/skills` under the project and under the home, beside `.gemini/skills`. Its agents
+      // are Markdown files of its own (`.gemini/agents/`) with a `kind` and tool names of its own,
+      // which a stack's agent does not carry, so nothing is installed.
+      skills: {
+        held: 'documentation',
+        project: '.agents/skills',
+        user: '.agents/skills',
+        at: `${GEMINI_SOURCE}/docs/cli/skills.md#L44-L53`,
+        read: GEMINI_READ_ON,
+      },
+      agents: NOT_PORTED,
+    },
+  },
+  cursorIde: {
+    title: "Cursor's editor",
+    door: 'none',
+    // The editor is a graphical application that needs an account, so no job runs it: what is
+    // known of it above the first rung is read by a person from `plugin/captures/cursor-ide-script.md`,
+    // and `tests/the-cursor-editor-rises-only-with-a-capture.test.ts` keeps the cells below from
+    // climbing before a capture of that day is committed.
+    note:
+      'Only its documentation was read, on 10 October 2026: the agent of the editor runs ' +
+      '`preToolUse` and `sessionStart` hooks, a `preToolUse` that answers `deny` blocks the ' +
+      'action, `ask` is accepted there and not enforced, and a `sessionStart` hook can add ' +
+      'context to the session. That documentation says the hooks in Claude Code’s settings ' +
+      'files are loaded, and says nothing of the hooks of a plugin installed in Claude ' +
+      'Code, which the command-line agent was read to load. Whether the editor runs this ' +
+      'plugin’s hook, sets `CURSOR_VERSION` for it and hands it the payload the command-line ' +
+      'agent does was not read, so nothing above the first rung is promised for it. ' +
+      'The script that reads it is `plugin/captures/cursor-ide-script.md`.',
+    cells: {
+      server: {
+        does: true,
+        held: 'documentation',
+        at: 'https://cursor.com/docs/context/mcp',
+        read: CURSOR_READ_ON,
+      },
+      rulesFile: {
+        does: true,
+        held: 'documentation',
+        at: 'https://cursor.com/docs/context/rules',
+        read: CURSOR_READ_ON,
+      },
+      opens: { held: 'not ported' },
+      refuses: { held: 'not ported' },
+      asks: { held: 'not ported' },
+    },
+    places: {
+      skills: claudeFolder('skills', 'https://cursor.com/docs/context/skills', CURSOR_READ_ON),
+      agents: claudeFolder('agents', 'https://cursor.com/docs/context/subagents', CURSOR_READ_ON),
+    },
+  },
+  antigravity: {
+    title: "Antigravity's command line (`agy`)",
+    door: 'none',
+    // The binary is closed, installed by a script that downloads it from the vendor and updates
+    // itself, under terms a person accepts by installing it, so no job runs it: what is known of it
+    // above the first rung is read by a person from `plugin/captures/antigravity-cli-script.md`, and
+    // `tests/the-antigravity-cli-rises-only-with-a-capture.test.ts` keeps the cells below from
+    // climbing before a capture of that day is committed.
+    note:
+      'Only its documentation was read, on 10 October 2026. It documents hooks in a dialect of its ' +
+      'own, in a `hooks.json` kept in the project’s `.agents` folder or in an installed plugin: ' +
+      'five events (`PreToolUse`, `PostToolUse`, `PreInvocation`, `PostInvocation`, `Stop`) and no ' +
+      '`SessionStart`; a `PreToolUse` answers `allow`, `deny`, `ask`, `force_ask` or ' +
+      '`deny_unless_prior_grant` and is handed `toolCall.name` and `toolCall.args`; the tools that ' +
+      'write are `write_to_file`, `replace_file_content` and `multi_replace_file_content`, each ' +
+      'with its path under `TargetFile`; a `PreInvocation` can add a message to the conversation. ' +
+      'This plugin ships no hooks file in that dialect and no reader of that payload, so nothing ' +
+      'above the first rung is promised for it. The script that reads it is ' +
+      '`plugin/captures/antigravity-cli-script.md`.',
+    cells: {
+      server: {
+        does: true,
+        held: 'documentation',
+        at: 'https://antigravity.google/docs/mcp',
+        read: ANTIGRAVITY_READ_ON,
+      },
+      rulesFile: {
+        does: true,
+        held: 'documentation',
+        at: 'https://antigravity.google/docs/rules',
+        read: ANTIGRAVITY_READ_ON,
+      },
+      opens: { held: 'not ported' },
+      refuses: { held: 'not ported' },
+      asks: { held: 'not ported' },
+    },
+    places: {
+      // Its own agents name its own tools (`view_file`, `run_command`) and its own model tiers, and
+      // its page warns that an unmapped tool name can hang the subagent, so nothing is installed.
+      skills: {
+        held: 'documentation',
+        project: '.agents/skills',
+        user: '.gemini/antigravity-cli/skills',
+        at: 'https://antigravity.google/docs/skills',
+        read: ANTIGRAVITY_READ_ON,
+      },
       agents: NOT_PORTED,
     },
   },

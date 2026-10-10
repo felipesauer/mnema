@@ -6,7 +6,9 @@ name: Host contract
 # ceilings, the shell going round a rule, the hooks failing open — is read off the request the host
 # sends next, and off the file that was or was not written. The same is done for VS Code's agent
 # with the real editor under a virtual screen, and for Codex with its real binary against a stand-in
-# that speaks the Responses API. The cases are `packages/code/tests/host-contract/`;
+# that speaks the Responses API, and for the Copilot CLI and for OpenCode with their real binaries
+# against the same stand-in Claude Code gets. Gemini CLI has its real binary
+# against a stand-in that speaks its own `generateContent` API. The cases are `packages/code/tests/host-contract/`;
 # this file only gives them a host. Cursor is not here: it needs an account, and its capture is
 # made by hand (`plugin/captures/`).
 #
@@ -283,11 +285,231 @@ jobs:
           MNEMA_HOST_CONTRACT_HOST: codex
         run: unshare -rn bash -c 'ip link set lo up && exec ./node_modules/.bin/vitest run --config vitest.host-contract.config.ts'
 
+  # THE SAME CONTRACT FOR THE COPILOT CLI. The binary is the one npm installs from `@github/copilot`
+  # (its platform package, `@github/copilot-linux-x64`), under the license in the package, which
+  # lets anyone install and run it; the job redistributes nothing and runs it unmodified. Before it
+  # runs, npm checks the registry's signature of each package. THAT IS ALL THE PROVENANCE THERE IS:
+  # these packages carry no attestation of the repository and tag that built them (the registry
+  # answers 404 for it), so unlike the Codex job this one cannot say who built the binary, only that
+  # the registry served what it signed, and that the binary reports the version asked for. The
+  # model is a stand-in that speaks `/v1/messages`, reached with the documented bring-your-own-key
+  # variables and `COPILOT_OFFLINE`: no GitHub account, no key, no secret. Copilot installs the
+  # plugin from this checkout, as a person would (`copilot plugin marketplace add`), inside the
+  # namespace. The pinned version is the last one in the matrix line; a run that is not a pull
+  # request or a push tries `latest`.
+  copilot:
+    name: host contract (copilot ${{ matrix.version }})
+    runs-on: ubuntu-24.04
+    strategy:
+      fail-fast: false
+      matrix:
+        version: ${{ fromJSON(contains(fromJSON('["schedule","workflow_dispatch"]'), github.event_name) && '["latest"]' || '["1.0.94"]') }}
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: pnpm/action-setup@v6
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version: '24'
+          cache: 'pnpm'
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Build
+        run: pnpm build
+
+      # The only step that talks to the registry, and it runs before the binary starts.
+      - name: Install the host and check its signatures
+        env:
+          WANTED: ${{ matrix.version }}
+        run: |
+          set -euo pipefail
+          case "$WANTED" in
+            latest) VERSION=$(npm view @github/copilot dist-tags.latest) ;;
+            *) VERSION="$WANTED" ;;
+          esac
+          [ -n "$VERSION" ] || { echo "no version for $WANTED"; exit 1; }
+          mkdir -p "$RUNNER_TEMP/copilot" && cd "$RUNNER_TEMP/copilot"
+          npm init -y >/dev/null
+          npm install --ignore-scripts "@github/copilot@$VERSION"
+          npm audit signatures
+          BIN="$PWD/node_modules/@github/copilot-linux-x64/copilot"
+          REPORTED=$(COPILOT_AUTO_UPDATE=false "$BIN" --version | head -n 1)
+          echo "$REPORTED"
+          [ "$REPORTED" = "GitHub Copilot CLI $VERSION." ] || { echo "the binary reports $REPORTED, not $VERSION"; exit 1; }
+          {
+            echo "MNEMA_HOST_CONTRACT_COPILOT=$BIN"
+            echo "MNEMA_HOST_CONTRACT_COPILOT_VERSION=$VERSION"
+          } >> "$GITHUB_ENV"
+          {
+            echo "### Host measured"
+            echo "- Copilot CLI $VERSION (asked for \`$WANTED\`), registry signatures verified"
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Install strace
+        run: sudo apt-get install -y strace
+
+      - name: Allow a network namespace of our own
+        run: sudo sysctl -w kernel.apparmor_restrict_unprivileged_userns=0
+
+      - name: Hold the contract, with only loopback
+        env:
+          MNEMA_HOST_CONTRACT_HOST: copilot
+        run: unshare -rn bash -c 'ip link set lo up && exec ./node_modules/.bin/vitest run --config vitest.host-contract.config.ts'
+
+  # THE SAME CONTRACT FOR OPENCODE. The binary is the one npm installs from `opencode-ai` (its
+  # platform package, `opencode-linux-x64`), MIT-licensed; the job redistributes nothing and runs
+  # it unmodified. Before it runs, npm checks the registry's signature of each package. THAT IS ALL
+  # THE PROVENANCE THERE IS: these packages carry no attestation of the repository and tag that
+  # built them (the registry answers 404 for it), so unlike the Codex job this one cannot say who
+  # built the binary, only that the registry served what it signed, and that the binary reports the
+  # version asked for. The model is a stand-in that speaks `/v1/messages`, reached through the
+  # provider configuration OpenCode documents (a base URL and a made-up key): no account, no key, no
+  # secret. The plugin module of this checkout is copied into the project, as a person would. The
+  # pinned version is the last one in the matrix line; a run that is not a pull request or a push
+  # tries `latest`.
+  opencode:
+    name: host contract (opencode ${{ matrix.version }})
+    runs-on: ubuntu-24.04
+    strategy:
+      fail-fast: false
+      matrix:
+        version: ${{ fromJSON(contains(fromJSON('["schedule","workflow_dispatch"]'), github.event_name) && '["latest"]' || '["1.18.35"]') }}
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: pnpm/action-setup@v6
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version: '24'
+          cache: 'pnpm'
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Build
+        run: pnpm build
+
+      # The only step that talks to the registry, and it runs before the binary starts.
+      - name: Install the host and check its signatures
+        env:
+          WANTED: ${{ matrix.version }}
+        run: |
+          set -euo pipefail
+          case "$WANTED" in
+            latest) VERSION=$(npm view opencode-ai dist-tags.latest) ;;
+            *) VERSION="$WANTED" ;;
+          esac
+          [ -n "$VERSION" ] || { echo "no version for $WANTED"; exit 1; }
+          mkdir -p "$RUNNER_TEMP/opencode" && cd "$RUNNER_TEMP/opencode"
+          npm init -y >/dev/null
+          npm install --ignore-scripts "opencode-ai@$VERSION"
+          npm audit signatures
+          BIN="$PWD/node_modules/opencode-linux-x64/bin/opencode"
+          REPORTED=$(OPENCODE_DISABLE_AUTOUPDATE=1 "$BIN" --version | head -n 1)
+          echo "$REPORTED"
+          [ "$REPORTED" = "$VERSION" ] || { echo "the binary reports $REPORTED, not $VERSION"; exit 1; }
+          {
+            echo "MNEMA_HOST_CONTRACT_OPENCODE=$BIN"
+            echo "MNEMA_HOST_CONTRACT_OPENCODE_VERSION=$VERSION"
+          } >> "$GITHUB_ENV"
+          {
+            echo "### Host measured"
+            echo "- OpenCode $VERSION (asked for \`$WANTED\`), registry signatures verified"
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Install strace
+        run: sudo apt-get install -y strace
+
+      - name: Allow a network namespace of our own
+        run: sudo sysctl -w kernel.apparmor_restrict_unprivileged_userns=0
+
+      - name: Hold the contract, with only loopback
+        env:
+          MNEMA_HOST_CONTRACT_HOST: opencode
+        run: unshare -rn bash -c 'ip link set lo up && exec ./node_modules/.bin/vitest run --config vitest.host-contract.config.ts'
+
+  # THE SAME CONTRACT FOR GEMINI CLI. The binary is the one npm installs from `@google/gemini-cli`
+  # (a bundled script on Node), Apache-2.0; the job redistributes nothing and runs it unmodified.
+  # Before it runs, npm checks the registry's signature of each package. THAT IS ALL THE PROVENANCE
+  # THERE IS: the one attestation of a build `npm audit signatures` finds in the tree is a
+  # dependency's, and the host's own package carries none, so this job cannot say who built the
+  # binary, only that the registry served what it signed, and that the binary reports the version
+  # asked for. The model is a stand-in that speaks `:streamGenerateContent`, reached through the
+  # variables the host documents for a gateway (a base URL and a made-up key): no account, no key,
+  # no secret. The extension of this checkout is installed with the host's own command, as a person
+  # would, in a home of its own. The pinned version is the last one in the matrix line; a run that
+  # is not a pull request or a push tries `latest`.
+  gemini:
+    name: host contract (gemini ${{ matrix.version }})
+    runs-on: ubuntu-24.04
+    strategy:
+      fail-fast: false
+      matrix:
+        version: ${{ fromJSON(contains(fromJSON('["schedule","workflow_dispatch"]'), github.event_name) && '["latest"]' || '["0.63.0"]') }}
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: pnpm/action-setup@v6
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version: '24'
+          cache: 'pnpm'
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Build
+        run: pnpm build
+
+      # The only step that talks to the registry, and it runs before the binary starts.
+      - name: Install the host and check its signatures
+        env:
+          WANTED: ${{ matrix.version }}
+        run: |
+          set -euo pipefail
+          case "$WANTED" in
+            latest) VERSION=$(npm view @google/gemini-cli dist-tags.latest) ;;
+            *) VERSION="$WANTED" ;;
+          esac
+          [ -n "$VERSION" ] || { echo "no version for $WANTED"; exit 1; }
+          mkdir -p "$RUNNER_TEMP/gemini" "$RUNNER_TEMP/gemini-home" && cd "$RUNNER_TEMP/gemini"
+          npm init -y >/dev/null
+          npm install --ignore-scripts "@google/gemini-cli@$VERSION"
+          npm audit signatures
+          BIN="$PWD/node_modules/.bin/gemini"
+          REPORTED=$(HOME="$RUNNER_TEMP/gemini-home" "$BIN" --version | head -n 1)
+          echo "$REPORTED"
+          [ "$REPORTED" = "$VERSION" ] || { echo "the binary reports $REPORTED, not $VERSION"; exit 1; }
+          {
+            echo "MNEMA_HOST_CONTRACT_GEMINI=$BIN"
+            echo "MNEMA_HOST_CONTRACT_GEMINI_VERSION=$VERSION"
+          } >> "$GITHUB_ENV"
+          {
+            echo "### Host measured"
+            echo "- Gemini CLI $VERSION (asked for \`$WANTED\`), registry signatures verified"
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Install strace
+        run: sudo apt-get install -y strace
+
+      - name: Allow a network namespace of our own
+        run: sudo sysctl -w kernel.apparmor_restrict_unprivileged_userns=0
+
+      - name: Hold the contract, with only loopback
+        env:
+          MNEMA_HOST_CONTRACT_HOST: gemini
+        run: unshare -rn bash -c 'ip link set lo up && exec ./node_modules/.bin/vitest run --config vitest.host-contract.config.ts'
+
   # WHEN THE WEEKLY RUN FAILS, SOMEBODY HAS TO KNOW. One issue, opened with the workflow's own token
   # and kept open: a second failure while it is open adds a comment and opens nothing.
   tell-somebody:
     name: open an issue
-    needs: [claude-code, vscode, codex]
+    needs: [claude-code, vscode, codex, copilot, opencode, gemini]
     if: ${{ failure() && contains(fromJSON('["schedule","workflow_dispatch"]'), github.event_name) }}
     runs-on: ubuntu-24.04
     permissions:
@@ -300,10 +522,13 @@ jobs:
           CLAUDE_CODE: ${{ needs.claude-code.result }}
           VS_CODE: ${{ needs.vscode.result }}
           CODEX: ${{ needs.codex.result }}
+          COPILOT: ${{ needs.copilot.result }}
+          OPENCODE: ${{ needs.opencode.result }}
+          GEMINI: ${{ needs.gemini.result }}
         run: |
           set -euo pipefail
           # One issue per host that failed, named for it.
-          for HOST in "Claude Code:$CLAUDE_CODE" "VS Code:$VS_CODE" "Codex:$CODEX"; do
+          for HOST in "Claude Code:$CLAUDE_CODE" "VS Code:$VS_CODE" "Codex:$CODEX" "Copilot CLI:$COPILOT" "OpenCode:$OPENCODE" "Gemini CLI:$GEMINI"; do
             NAME="${HOST%%:*}"; RESULT="${HOST#*:}"
             [ "$RESULT" = "failure" ] || continue
             TITLE="The host contract failed against a newer $NAME"

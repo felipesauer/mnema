@@ -1,0 +1,8 @@
+{
+  "name": "evidence-first",
+  "version": "1.0.0",
+  "description": "An investigator agent that reports findings with file and line, and a skill on what a search does and does not prove.",
+  "author": { "name": "mnema", "url": "https://github.com/felipesauer/mnema" },
+  "license": "Apache-2.0",
+  "brings": { "skills": ["claim-checking"], "agents": ["investigator"], "hooks": [] }
+}

@@ -1,0 +1,8 @@
+{
+  "name": "review-pass",
+  "version": "1.0.0",
+  "description": "A reviewer agent that makes one pass over a change against written criteria and gives a verdict, with a checklist skill.",
+  "author": { "name": "mnema", "url": "https://github.com/felipesauer/mnema" },
+  "license": "Apache-2.0",
+  "brings": { "skills": ["review-checklist"], "agents": ["reviewer"], "hooks": [] }
+}

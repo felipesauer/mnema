@@ -42,6 +42,12 @@ export interface CliIo {
    * must not happen without one (the offer of a report, and the link that sends it).
    */
   readonly aPersonIsHere?: boolean;
+  /**
+   * Asks the person one question at the terminal and returns the line they typed. Absent where
+   * there is no terminal to ask at — the in-process harness, a pipe — and an act that needs an
+   * answer treats absence as a refusal.
+   */
+  readonly ask?: (question: string) => Promise<string>;
 }
 
 /**
@@ -98,6 +104,15 @@ export const processIo: CliIo = {
     process.exitCode = code ?? 1;
   },
   aPersonIsHere: process.stdin.isTTY === true && process.stderr.isTTY === true,
+  ask: async (question) => {
+    const { createInterface } = await import('node:readline/promises');
+    const lines = createInterface({ input: process.stdin, output: process.stderr, terminal: true });
+    try {
+      return await lines.question(question);
+    } finally {
+      lines.close();
+    }
+  },
   input: async () => {
     const chunks: Buffer[] = [];
     for await (const chunk of process.stdin) chunks.push(Buffer.from(chunk as Buffer));
