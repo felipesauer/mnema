@@ -192,6 +192,7 @@ const PAGES_PUBLISHING: Readonly<Record<string, number>> = {
   'docs/first-record.md': 1,
   'packages/code/README.md': 2,
   'plugin/README.md': 1,
+  'plugin/captures/antigravity-cli-script.md': 1,
 };
 
 describe('every place that publishes the recipe says what the redirection does', () => {
