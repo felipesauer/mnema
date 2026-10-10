@@ -650,159 +650,107 @@ export const NAMES_THAT_NEED_MORE: Readonly<
  * the repository, `mnema init` to run there (a name); `status` without an identity says to run `mnema
  * init` (a name); and a supersede by a proposal names the accept that would put the successor in
  * force, `mnema decision move accept <id> --note "<why>"` (a line) — 34 → 36 lines, 46 → 49 names.
+ *
+ * THE COUNT IS PER FILE. Up to here it was one total for each part of the corpus (the spans of
+ * the pages, their blocks, the source), and every change that handed a command over in any file
+ * moved the same three rows, so two changes in two files collided in one line. Each file has its
+ * own row now, in the form `PAGES` of the shell guard has, and the comparison stays exact in both
+ * directions: a file that begins handing commands over is a row somebody has to write, and a
+ * file whose commands all went is a row somebody has to remove. The totals above, 259 lines, 305
+ * names, 8 flags and 4 unwritten, are the sum of the rows. The history of each total is in the
+ * version control of this file.
  */
 export const HANDED_OVER: Readonly<
-  Record<Handed['from'], Readonly<Record<Reading['kind'], number>>>
+  Record<string, Readonly<Partial<Record<Reading['kind'], number>>>>
 > = {
-  // name 66 until the page about where the key lives named the verbs that protect it, and the
-  // ones that stay unprotected without it (`key protect`, `key unprotect`, `verify`).
-  // line 34 until the plugin page named `mnema --identify`, the question its hooks ask first.
-  // line 36, name 71 until the page said `mnema key protect` asks for the passphrase.
-  // line 36 and name 71 until the two pages named the command the Stop and PreCompact hooks run
-  // (`mnema tally`, twice) and the switch that stops it (`mnema switch off session-tally`).
-  // line 37 and name 73 until the plugin page named the switch that turns the first-write hold on
-  // (`mnema switch on edit-first-write-gate`, a line) and the listing that says it is off (`mnema switch`).
-  // line 38 and name 74 until the two pages named the verb that records corrections
-  // (`mnema corrections`, and `mnema switch` in the row that says it starts off) and the switch that
-  // turns it on (`mnema switch on user-corrections`, a line on each page).
-  // And one line and one name more for the page that says a rule can refuse a write.
-  // name 77 until the page named `mnema doctor` and the server-only plugin's `mnema mcp`.
-  // line 41 and name 80 until the Action's page was added: it hands over its workflow, and names
-  // `mnema rules` twice.
-  // And four names more for the paragraph that says a note can be taken back: `mnema retract`,
-  // and the three reads it names (`mnema search`, `mnema show`, `mnema verify`).
-  // And one name more for the changelog entry that names `mnema brief` beside the inherited section.
-  // line 48 until the page said which flag compares the keys that signed with GitHub's, and how an
-  // account is linked (`mnema verify --against-github`, `mnema key github`).
-  // line 50 and name 96 once the page of the library door was added: it names `mnema brief`,
-  // `mnema recall`, `mnema rules <path>`, `mnema verify` and `mnema brief --hook` in its table.
-  // And five lines and four names more for the editor extension's page: it hands over the verdict
-  // line of `mnema decision move`, and names the five reads it makes (`mnema rules`, `mnema search`,
-  // `mnema show`, `mnema verify`, `mnema switch`).
-  // line 51 and name 103 for the section and the table row that hand over `mnema site --out` and
-  // name the verb and what it checks (`mnema verify`, `mnema site`) in prose, twice over on two pages.
-  // line 60 and name 118 for the front page's list of what else it does (the verbs it points at),
-  // and the package page's sections on the log read against the record, the inherited record and
-  // `mnema doctor`.
-  // name 121 for who may take a note back: the changelog names `mnema retract` and `mnema verify`,
-  // and the package page `mnema verify` once more.
-  // name 124 for the optional commit hook: the changelog entry and the package page's section name
-  // `mnema commit-hook install` and `mnema commit-hook uninstall`, and the page `mnema init`.
-  // line 65 and name 128 once a checker key could be retired and the Action ran the checks: the
-  // front page, the package page, the Action's page and the changelog hand over the retirement
-  // whole, and name the verbs it refuses and the one the Action runs (name 131 with the hook's).
-  // line 67 for the changelog entries on `--stdin` and `--body-file` and on reading a path where it
-  // really lands (`line` counts two more spans than before).
-  // line 68 and name 132 for the page of example rules: it names `mnema rules biome.json` and
-  // the `mnema` its scripts are run with, and each moved the count by one, looked at.
-  // name 139 for the front page and the docs that took its long form: the row that says the
-  // reader's browser checks the page (`mnema site`, twice), the step that addresses a rule at a path
-  // (`mnema link`), and the quick start, which names the verbs it runs.
-  // name 140 for the changelog entry that says `mnema init` declares the backup in the record.
-  // line 74 and name 144 for the Sigstore countersignature: the changelog entry, the package page,
-  // the page's table and the format hand over `witness sigstore`, `key sigstore` and
-  // `verify --against-sigstore`.
-  // name 145 for the row of that table that says the claim keeps an e-mail as its hash.
-  // line 69 for the install page's no-sudo alternative, which ends on `mnema --version`.
-  // line 74 and name 144 with the pages that say how VS Code's agent is made to load the plugin
-  // (`mnema doctor --fix vscode`, `mnema doctor`) and the doctor's changed paragraphs.
-  // line 77 and name 146 with the pages that hand over `mnema unlink` whole.
-  // line 83 and name 151 with both: the Sigstore countersignature and `mnema unlink`.
-  // line 84 for the row of the evidence page that names what `mnema brief --hook` prints.
-  // line 85 and name 153 for the changelog entry on the one-line `mnema verify` and the page that
-  // sets a signed commit beside the record (`mnema verify`, `mnema verify --since`), looked at.
-  // flag 3 for the rung table's legend, on the front page and the evidence page, which names the
-  // file `mnema rules-file --host` prints.
-  // line 83 once the bug report became a form, which says `mnema --version` in a field of its own.
-  // line 84 once the package page handed over `mnema doctor --fix private-tree`.
-  // name 155 with the two pages that name `mnema stack add` as why the stacks package is released.
-  // name 156 with the package page naming it again as the reader of a stack's signature.
-  // line 90 and name 159 with the pages that describe the subagent's stop: `mnema handback` and its
-  // `--schema` in the plugin page and the package page, and the switch that stops it, each in a
-  // line of its own or in a span.
-  // line 91 with the page of the stack index, which hands over `mnema stack add <source> --dry-run`.
-  // line 101 for the editor's script, whose case table names `mnema rules-file --host cursor > …` in a cell.
-  // name 162 for the command-line agent of Antigravity's script, whose cases name `mnema brief` twice.
-  // flag 2 once the front page carried a summary of the hosts and the legend that names
-  // `mnema rules-file --host` stayed on the evidence page alone. line 104 and name 171 with the
-  // package page's sections on stacks and on `mnema report`, the front page's and the features
-  // page's rows on `mnema stack add`, and the features page's lines on `mnema handback` and its
-  // switch.
-  // line 108, name 181 and flag 3 for the changelog's entries on what landed after the pre-release
-  // (the hosts, stacks, `mnema report`, `mnema promote`, `MNEMA_CACHE_DIR`, `rules-file` and the
-  // private tree's move), and the security policy's scope, which names the page `mnema site` writes.
-  span: { line: 108, name: 181, flag: 3, unwritten: 0 },
-  // name 18 until the page that says where the key lives named `mnema key protect` in a line of
-  // its own.
-  // line 35 until the same page showed that question in a block of its own.
-  // name 19 until the page said `mnema key protect` asks for the passphrase at a terminal.
-  // line 40 and flag 1 once a page showed the commands that declare a check and run it.
-  // line 41 for the block that writes the page.
-  // line 46 and name 21 for the package page's blocks on the log read against the record and on
-  // the inherited record, and the plugin page's block that installs the server-only plugin.
-  // line 47 for the front page's block that moves a decision by its id (`mnema decision move`).
-  // name 23 for the package page's block that installs and removes the commit hook.
-  // line 48 for the package page's block that retires a checker key.
-  // line 49 and name 25 for the front page's quick start, which hands over the first record in a block
-  // of its own beside the one on the first-record page.
-  // name 26 for the package page's block that runs `mnema verify` in a CI workflow with the cache
-  // directory set.
-  // line 52 and name 27 for the script that reads Cursor by hand: it makes a project of its own with
-  // `mnema init`, and records and moves a rule and links it (`mnema decision record`, `mnema decision
-  // move`, `mnema link`).
-  // line 55 and name 28 for the script that reads Cursor's editor: the same project and the same
-  // rule, and `mnema rules-file --host cursor`, which writes the rules file the editor is asked about.
-  // line 58 and name 29 for the script that reads Antigravity's command line: the same project and
-  // rules, with `mnema init`, the rule helper, and `mnema brief > …`, which writes the rules file it is asked about.
-  // line 59 and name 32 for the package page's blocks on stacks (`mnema stack add … --dry-run`,
-  // `mnema stack list`, `mnema stack check`) and on `mnema report`.
-  block: { line: 59, name: 32, flag: 1, unwritten: 0 },
-  // 46 until the refusal an agent's `accept` gets, with the switch off, began naming the command a
-  // person accepts with (`agent-accepts.ts`).
-  // line 34 until the sentences an agent's accept is answered with began handing whole lines
-  // over (`agent-accepts.ts`: the read, the person's accept, and the switch in both positions).
-  // line 40 until the plugin told a session which program answered that question (`hand-over.mjs`).
-  // name 50 until the hook copy of the opening document named `mnema decision import` (`presentation/brief.ts`).
-  // name 52 until `before-a-write`'s help named the switch of the refusal beside the asking's.
-  // name 51 until the table that says why the record does not count the tally's service named
-  // `mnema tally` (`record-framing.ts`), and the table of what owes no notice about the chain named
-  // `mnema verify` as the reading that rules on it (`record-integrity.ts`).
-  // line 46 until the verb's own help named the switch that stops it, `mnema switch off
-  // session-tally` (`wiring/tally.ts`).
-  // line 47 until the help of the verb that records corrections named the switch that turns it on,
-  // `mnema switch on user-corrections` (`wiring/corrections.ts`).
-  // name 53 until `mnema doctor` named the `mnema mcp` a host starts, twice, and `claude mcp add mnema -- mnema mcp`.
-  // line 53 and name 60 until `key github` and `verify --against-github` handed over each other.
-  // And one line and four names more for the verb that points a project at another record (`wiring/inherit.ts`).
-  // line 54 and name 62 once a key could be requested and enrolled to sign check results, and the
-  // checks' own help named the verbs that declare and run them.
-  // line 60 and name 72 for the verb's own help: its example, and the names it mentions.
-  // line 61 and name 75 for the commit hook: the script `install` writes runs `mnema commit-hook
-  // suggest`, and the group's help names `install` and `uninstall`.
-  // line 62 and name 77 once a checker key could be retired: the refusal of a retired key names
-  // the line that enrolls a new one, and the verb's help and the retirement's sentence name
-  // `mnema verify` and the reads beside it.
-  // name 76 once the usage refusal of `skill create` stopped naming the verb, now that the long text
-  // can come from standard input or a file.
-  // line 67 and name 81 for the Sigstore countersignature: the help of `witness sigstore`, `key
-  // sigstore` and `verify --against-sigstore` name one another, and the act names the claim.
-  // name 82 once the help of `key sigstore` said the bundle `mnema witness sigstore` files still
-  // names the address the record keeps only as a hash.
-  // line 75 and flag 4 with the promotion verb's own help and sentences, each a command that parses.
-  // line 76 and name 77 for the help of `mnema doctor`, which names the one thing it writes,
-  // `mnema doctor --fix vscode`, in a line of its own.
-  // line 81 and name 83 with both: the Sigstore help and the promotion and doctor help.
-  // line 84 and name 84 with the report verb: its three flags, each read by its own name, and the three
-  // lines of its help that name them.
-  // unwritten 4 once the console named a member of a group by its whole path as well as a verb.
-  // name 85 with the sentence the server's instructions hand the agent: the person runs `mnema report`.
-  // line 85 once the doctor handed over `mnema doctor --fix private-tree`, in a line of its own.
-  // line 86 once `before-a-write --help` named the second host that only refuses, and the switch
-  // of the asking went to a line of its own.
-  // name 87 with the verb a subagent's stop runs: its help and the reason it sends back each name
-  // `mnema handback --schema`, and the help names the switch that stops it.
-  // line 88 with the help of `mnema handback`: the two lines that name the switch and the schema.
-  source: { line: 92, name: 92, flag: 4, unwritten: 4 },
+  'CHANGELOG.md': { line: 15, name: 28, flag: 1 },
+  'README.md': { line: 1, name: 10 },
+  'SECURITY.md': { name: 2 },
+  'docs/evidence.md': { line: 1, flag: 1 },
+  'docs/features.md': { line: 7, name: 11 },
+  'docs/first-record.md': { line: 1, name: 4 },
+  'docs/how-it-works.md': { line: 2, name: 1 },
+  'docs/install.md': { line: 4, name: 4 },
+  'docs/packages.md': { line: 1, name: 2 },
+  'docs/site.md': { line: 1, name: 3 },
+  'docs/verify-without-installing.md': { name: 1 },
+  'docs/what-it-proves.md': { line: 1, name: 6 },
+  'docs/where-it-fits.md': { line: 1, name: 2 },
+  'examples/rules/README.md': { line: 1, name: 1 },
+  'packages/action/README.md': { line: 6, name: 6 },
+  'packages/chain/FORMAT.md': { line: 3 },
+  'packages/code/README.md': { line: 73, name: 98, flag: 2 },
+  'packages/code/src/a-new-identity.ts': { line: 2, name: 1 },
+  'packages/code/src/agent-accepts.ts': { line: 4 },
+  'packages/code/src/commands/commit-hook.ts': { line: 1, name: 2 },
+  'packages/code/src/commands/doctor.ts': { line: 3, name: 4 },
+  'packages/code/src/commands/handback.ts': { line: 1 },
+  'packages/code/src/commands/report.ts': { line: 3 },
+  'packages/code/src/commands/site.ts': { name: 1 },
+  'packages/code/src/commands/skill-export.ts': { line: 1, name: 2 },
+  'packages/code/src/commands/stack-index.ts': { line: 1 },
+  'packages/code/src/commands/status.ts': { name: 1 },
+  'packages/code/src/edit-refuses-a-write.ts': { line: 1, name: 1 },
+  'packages/code/src/host-rules-file.ts': { line: 1 },
+  'packages/code/src/inherited-record.ts': { name: 1 },
+  'packages/code/src/mcp/context.ts': { name: 1, flag: 2 },
+  'packages/code/src/mcp/instructions.ts': { name: 1 },
+  'packages/code/src/mcp/server.ts': { line: 1 },
+  'packages/code/src/pinned-run.ts': { line: 1 },
+  'packages/code/src/presentation/brief.ts': { line: 1, name: 10 },
+  'packages/code/src/presentation/promoted.ts': { line: 4 },
+  'packages/code/src/presentation/runs.ts': { line: 1 },
+  'packages/code/src/presentation/site.ts': { name: 1 },
+  'packages/code/src/presentation/status.ts': { line: 2 },
+  'packages/code/src/presentation/usage.ts': { name: 1 },
+  'packages/code/src/record-framing.ts': { name: 6 },
+  'packages/code/src/record-integrity.ts': { name: 7 },
+  'packages/code/src/repl/gate.ts': { unwritten: 2 },
+  'packages/code/src/repl/promotable.ts': { line: 1 },
+  'packages/code/src/repl/session.ts': { unwritten: 2 },
+  'packages/code/src/wiring/before-a-write.ts': { line: 2 },
+  'packages/code/src/wiring/brief.ts': { line: 4, name: 5 },
+  'packages/code/src/wiring/completion.ts': { line: 3 },
+  'packages/code/src/wiring/corrections.ts': { line: 1 },
+  'packages/code/src/wiring/decision.ts': { line: 1, name: 1 },
+  'packages/code/src/wiring/diagram.ts': { line: 4 },
+  'packages/code/src/wiring/doctor.ts': { name: 1 },
+  'packages/code/src/wiring/handback.ts': { line: 1 },
+  'packages/code/src/wiring/inherit.ts': { line: 1, name: 3 },
+  'packages/code/src/wiring/init.ts': { line: 2, name: 4 },
+  'packages/code/src/wiring/key.ts': { line: 8, name: 12 },
+  'packages/code/src/wiring/options.ts': { name: 1 },
+  'packages/code/src/wiring/promote.ts': { line: 8 },
+  'packages/code/src/wiring/recall.ts': { line: 2, name: 4 },
+  'packages/code/src/wiring/repl.ts': { flag: 1 },
+  'packages/code/src/wiring/report.ts': { name: 2 },
+  'packages/code/src/wiring/run.ts': { line: 1, name: 2 },
+  'packages/code/src/wiring/search.ts': { name: 1 },
+  'packages/code/src/wiring/show.ts': { name: 1 },
+  'packages/code/src/wiring/site.ts': { line: 1, name: 2 },
+  'packages/code/src/wiring/skill.ts': { line: 1 },
+  'packages/code/src/wiring/stack.ts': { line: 1 },
+  'packages/code/src/wiring/switch.ts': { name: 2 },
+  'packages/code/src/wiring/tail.ts': { name: 1 },
+  'packages/code/src/wiring/tally.ts': { line: 1 },
+  'packages/code/src/wiring/verify.ts': { line: 5, name: 7 },
+  'packages/code/src/wiring/witness.ts': { line: 3, name: 1 },
+  'packages/context/src/intelligence/pattern-moves.ts': { name: 1 },
+  'packages/context/src/intelligence/promotion.ts': { flag: 1 },
+  'packages/core/src/checks/operations.ts': { line: 4 },
+  'packages/core/src/identity/membership.ts': { line: 7 },
+  'packages/core/src/workflow/identity-operations.ts': { name: 1 },
+  'packages/sdk/README.md': { line: 2, name: 4 },
+  'packages/stacks/README.md': { line: 1, name: 2 },
+  'packages/vscode/README.md': { line: 11, name: 4 },
+  'packages/vscode/src/stacks.ts': { line: 1 },
+  'plugin/README.md': { line: 23, name: 19 },
+  'plugin/captures/antigravity-cli-script.md': { line: 3, name: 3 },
+  'plugin/captures/cursor-ide-script.md': { line: 4, name: 1 },
+  'plugin/captures/cursor-script.md': { line: 3, name: 1 },
+  'plugin/hooks/hand-over.mjs': { line: 1 },
+  'plugin/skills/recording-decisions/SKILL.md': { line: 1 },
+  'stack-index/README.md': { line: 1 },
 };
 
 // ---------------------------------------------------------------------------
@@ -885,17 +833,17 @@ describe('a name whose verb needs more is one somebody looked at', () => {
 });
 
 describe('the readings know what they read', () => {
-  it('each part of the corpus hands over what the count says', () => {
-    const counted: Record<string, Record<string, number>> = {
-      span: { line: 0, name: 0, flag: 0, unwritten: 0 },
-      block: { line: 0, name: 0, flag: 0, unwritten: 0 },
-      source: { line: 0, name: 0, flag: 0, unwritten: 0 },
-    };
+  it('each file hands over what the count says, and no other file hands over any', () => {
+    const counted: Record<string, Partial<Record<Reading['kind'], number>>> = {};
     for (const one of read) {
-      for (const reading of one.readings) {
-        const row = counted[one.from] as Record<string, number>;
-        row[reading.kind] = (row[reading.kind] ?? 0) + 1;
-      }
+      const file = one.where.split(':')[0] as string;
+      const row = counted[file] ?? {};
+      counted[file] = row;
+      for (const reading of one.readings) row[reading.kind] = (row[reading.kind] ?? 0) + 1;
+    }
+    // A file that hands over commands and reads none of them (a bare listing) is not a row.
+    for (const [file, row] of Object.entries(counted)) {
+      if (Object.keys(row).length === 0) delete counted[file];
     }
     expect(counted).toEqual(HANDED_OVER);
   });
