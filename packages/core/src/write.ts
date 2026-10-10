@@ -251,8 +251,6 @@ export {
   type AdoptStackInput,
   type AdoptStackOk,
   adoptStack,
-  isStackName,
-  isStackVersion,
   type RemoveStackError,
   type RemoveStackInput,
   type RemoveStackOk,

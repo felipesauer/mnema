@@ -53,11 +53,12 @@ import {
   chainRootForScope,
   type DiscoveryEnv,
   detectSecrets,
+  isStackVersion,
   orderedEvents,
   type ResolvedTrees,
   resolveTrees,
 } from '@mnema/core';
-import { adoptStack, isStackVersion, openTreeForWriting, removeStack } from '@mnema/core/write';
+import { adoptStack, openTreeForWriting, removeStack } from '@mnema/core/write';
 import {
   checkName,
   readFrontmatter,

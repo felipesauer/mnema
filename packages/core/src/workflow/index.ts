@@ -140,6 +140,7 @@ export {
   type SkillProofField,
   type SkillTransition,
 } from './skill-transitions.js';
+export { isStackName, isStackVersion } from './stack-form.js';
 export { INITIAL_STATE, isTaskState, TASK_STATES, type TaskState } from './states.js';
 export {
   findTransition,

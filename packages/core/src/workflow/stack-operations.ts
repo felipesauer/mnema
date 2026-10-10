@@ -44,27 +44,10 @@ import { type Judged, onTheRecordAsItStands } from './as-the-record-stands.js';
 import { systemClock } from './clock.js';
 import { authorizingAnchor, ensureFounded } from './identity-operations.js';
 import type { WriteContext } from './operations.js';
+import { isStackName, isStackVersion } from './stack-form.js';
 
 /** The three trees a stack can be adopted into — the scopes that are a tree, and no other. */
 export const STACK_SCOPES: readonly Scope[] = ['public', 'private', 'global'];
-
-/** The stack-name form: lower-case ASCII letters and digits, joined by single hyphens. */
-const STACK_NAME = /^[a-z0-9]+(-[a-z0-9]+)*$/;
-const STACK_NAME_MAX = 64;
-
-/** A version's characters, starting with a letter or a digit. */
-const STACK_VERSION = /^[0-9A-Za-z][0-9A-Za-z.+-]*$/;
-const STACK_VERSION_MAX = 64;
-
-/** Whether `text` is a stack name in the form the write door admits — the door's own rule, for readers. */
-export function isStackName(text: string): boolean {
-  return STACK_NAME.test(text) && text.length <= STACK_NAME_MAX;
-}
-
-/** Whether `text` is a version label in the form the write door admits — the door's own rule, for readers. */
-export function isStackVersion(text: string): boolean {
-  return STACK_VERSION.test(text) && text.length <= STACK_VERSION_MAX;
-}
 
 /** The digest a stack is identified by: a SHA-256, in lower-case hex. */
 const STACK_DIGEST = /^[0-9a-f]{64}$/;

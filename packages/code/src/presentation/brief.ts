@@ -115,7 +115,7 @@
 
 import type { Acceptance, AdrCollision, Brief, ChannelState } from '@mnema/context';
 import type { DivergentMove } from '@mnema/core';
-import { isStackName, isStackVersion } from '@mnema/core/write';
+import { isStackName, isStackVersion } from '@mnema/core';
 import type { BriefDone } from '../commands/brief.js';
 import type { StacksHere } from '../commands/stack-inspect.js';
 import type { InheritedReading } from '../inherited-record.js';
