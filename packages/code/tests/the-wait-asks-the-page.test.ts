@@ -25,7 +25,7 @@
  */
 
 import { describe, expect, it } from 'vitest';
-import { aPageWithout, FRAME_IS_DRAWN } from './support/pty.js';
+import { aPageWith, aPageWithout, FRAME_IS_DRAWN } from './support/pty.js';
 
 const PROMPT = 'mnema>';
 
@@ -62,6 +62,34 @@ describe('a page is not asked about before there is one', () => {
     // page the keystroke has not reached yet.
     const before = `${PROMPT} an answer${FRAME_IS_DRAWN}`;
     const wait = aPageWithout(PROMPT, 80, 24, 'the oldest line');
+    expect(wait(before, before.length), 'ended on a frame from before the step').toBe(false);
+  });
+});
+
+describe('a page is waited for by what it shows, not by a frame having arrived', () => {
+  it('refuses to be built with nothing to wait for', () => {
+    expect(() => aPageWith(PROMPT, 80, 24)).toThrow(/nothing to wait for/);
+  });
+
+  it('is still waiting while no page was drawn at that width, even if a frame ended', () => {
+    // A frame that ended is what the step used to take for its own effect. The page it drew is
+    // what says whether the key reached it, and a stream with no page at the width has none.
+    const framed = `${PROMPT} what the session is${FRAME_IS_DRAWN}`;
+    const wait = aPageWith(PROMPT, 80, 24, 'what the session is');
+    expect(wait('', 0), 'ended on an empty stream').toBe(false);
+    expect(wait(framed, 0), 'ended on a stream with no page at that width').toBe(false);
+  });
+
+  it('ends once the page, drawn at that width by the step, shows it', () => {
+    // THE POSITIVE HALF: without it every case above is satisfied by a wait that never answers.
+    const page = `${PROMPT} what the session is\n${'\u2500'.repeat(80)}\n${PROMPT} ${FRAME_IS_DRAWN}`;
+    const wait = aPageWith(PROMPT, 80, 24, 'what the session is');
+    expect(wait(page, 0), 'did not end on a page showing it').toBe(true);
+  });
+
+  it('is still waiting when the frame was drawn before the step, not by it', () => {
+    const before = `${PROMPT} an answer${FRAME_IS_DRAWN}`;
+    const wait = aPageWith(PROMPT, 80, 24, 'what the session is');
     expect(wait(before, before.length), 'ended on a frame from before the step').toBe(false);
   });
 });

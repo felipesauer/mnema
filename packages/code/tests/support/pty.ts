@@ -481,6 +481,41 @@ export function aPageWithout(
   };
 }
 
+/**
+ * A FRAME THE STEP CAUSED, WITH `present` ON THE PAGE — {@link aPageWithout} turned the other way,
+ * for a key whose whole effect is to bring something BACK.
+ *
+ * WHY {@link aFrameSince} IS NOT ENOUGH FOR IT. That one answers on any finished frame that
+ * arrived since the step began, and a frame that arrived since is not always a frame the key
+ * caused: the answer the step before it waited for is still being drawn a moment after that step
+ * ended — a row at the foot raised once the answer ended — and under load a key written in that
+ * gap is "answered" by the tail of the PREVIOUS step. The case then reads a page the key has not
+ * reached. Measured: the walk back to the top of the roll ended on such a frame in 18 of 20
+ * runs on a machine kept busy, with the opening on the page one frame later.
+ *
+ * SO THE STEP ASKS THE PAGE THE QUESTION THE CASE ASKS: is the thing the key brings back showing.
+ * A replay that finds no page at this width is not a page showing it, and neither is one that
+ * throws.
+ */
+export function aPageWith(
+  prompt: string,
+  columns: number,
+  rows: number,
+  ...present: readonly string[]
+): (bytes: string, since: number) => boolean {
+  if (present.length === 0) throw new Error('aPageWith was given nothing to wait for');
+  const caused = aFrameAfter(prompt);
+  return (bytes, since) => {
+    if (!caused(bytes) || !bytes.slice(since).includes(prompt)) return false;
+    try {
+      const page = theSettledScreen(bytes, columns, rows);
+      return present.every((shown) => page.text.includes(shown));
+    } catch {
+      return false;
+    }
+  };
+}
+
 export function aFrameWithout(
   prompt: string,
   absent: string,

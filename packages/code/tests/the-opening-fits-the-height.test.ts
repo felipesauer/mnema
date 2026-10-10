@@ -46,9 +46,11 @@ import { REPL_VERB } from '../src/wiring/repl.js';
 import { ESC } from './support/console.js';
 import {
   aFrameSince,
+  aPageWith,
   aPageWithout,
   inPty as drive,
   type Fixture,
+  FRAME_IS_DRAWN,
   opensAConsole,
   type Ran,
   type Step,
@@ -96,6 +98,9 @@ const VERIFIED = 'local integrity verified';
  * character a reader cannot see is a character an edit destroys without anybody noticing.
  */
 const TO_THE_TOP = `${ESC}[H`;
+
+/** The width the walk below is driven at, which its wait has to replay the page at. */
+const THE_WIDTH = 100;
 
 /**
  * THE LAST WORD OF THE LAST SENTENCE THE ANSWER SAYS — how a case knows the whole of it landed.
@@ -214,10 +219,18 @@ const asks: Step = {
   what: `asked ${A_LONG_READ}`,
 };
 
-/** The caller walks the roll back to its oldest line. */
+/**
+ * The caller walks the roll back to its oldest line.
+ *
+ * IT WAITS FOR THE PAGE IT IS ABOUT: what the session is, which is the first thing the walk brings
+ * back. It WAITED FOR *a frame*, and under load the frame it ended on was the tail of the answer
+ * before it, drawn after the key was written — the case then read the page the answer settled on
+ * and said the opening did not come back. Measured at one run in forty-five on the runners, and
+ * eighteen in twenty on a machine kept busy.
+ */
 const walksToTheTop: Step = {
   types: TO_THE_TOP,
-  until: aFrameSince(PROMPT),
+  until: aPageWith(PROMPT, THE_WIDTH, THE_FLOOR.rows, OPENED),
   what: 'walked to the top of the roll',
 };
 
@@ -230,6 +243,34 @@ const walksToTheTop: Step = {
  * step before it caused.
  */
 const leaves: Step = { types: '\u0004', until: () => true, what: 'left' };
+
+/**
+ * THE STEP ABOVE IS WHAT IS ASKED, not the helper it is built from.
+ *
+ * THE HELPER HAS CASES OF ITS OWN (`the-wait-asks-the-page.test.ts`) AND THEY CANNOT SAY THIS: that
+ * the walk uses it. Put `aFrameSince` back into the step and every one of those stays green, and
+ * the only thing that goes red is the driven case — one run in forty-five on the runners, so a
+ * defect restored here was not caught by anything that ran. These replay the stream the failure is
+ * made of, deterministically: the tail of the answer before the walk, drawn after the key was
+ * written, arriving ahead of the frame the key caused.
+ */
+describe('the walk to the top waits for the page it is about', () => {
+  /** A whole frame at the width the walk reads at: the rules of the input area, then the row typed. */
+  const frameShowing = (text: string): string =>
+    `${text}\n${'\u2500'.repeat(THE_WIDTH)}\n${PROMPT} ${FRAME_IS_DRAWN}`;
+  const tail = frameShowing('the tail of the answer before the walk');
+
+  it('does not end on the tail of the answer before it, drawn after the key was written', () => {
+    expect(walksToTheTop.until(tail, 0), 'ended on a frame the key did not cause').toBe(false);
+  });
+
+  it('ends once the page shows what the walk brings back', () => {
+    const brought = `${tail}${frameShowing(OPENED)}`;
+    expect(walksToTheTop.until(brought, 0), 'did not end on the page showing the opening').toBe(
+      true,
+    );
+  });
+});
 
 /** Which row of a page holds something, and −1 when none does. */
 function rowOf(screen: Screen, what: string): number {
@@ -668,7 +709,7 @@ describe('the answer a caller asked for is on the page, at the shortest window t
     // what it holds does not fit ACROSS the window, and the row saying where the session is
     // standing is a PATH ({@link deep}). It is a SIZE and not a threshold either way; where the
     // last arrangement gives way is searched for in `the-opening-fits-the-screen.test.ts`.
-    const columns = 100;
+    const columns = THE_WIDTH;
     // AND THE HEIGHT IS THE FLOOR'S, which was twenty-four: no page is laid out under it
     // (`src/repl/floor.ts`), so a window shorter than this measures the screen that says so.
     const rows = THE_FLOOR.rows;
