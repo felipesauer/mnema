@@ -21,6 +21,11 @@ const CLI = join(REPO, 'packages', 'code', 'dist', 'cli.js');
 /** The plugin of this tree, as a host loads it from its directory. */
 export const PLUGIN = join(REPO, 'plugin');
 
+/** The stand-in that is started where a host asks for `mnema mcp`, and writes down what it was handed. */
+const A_SERVER_THAT_SAYS = fileURLToPath(
+  new URL('./a-server-that-says-what-it-was-handed.mjs', import.meta.url),
+);
+
 /** The environment a process of the sandbox runs in: its own home, nothing of the machine's. */
 export function sandboxEnv(home: string, path: string): NodeJS.ProcessEnv {
   return {
@@ -40,6 +45,12 @@ export function sandboxEnv(home: string, path: string): NodeJS.ProcessEnv {
 export interface TheProjectToWrite {
   readonly dir: string;
   mnema(...args: string[]): string;
+  /**
+   * From now on the shim, asked for `mnema mcp`, starts a server that serves nothing and writes
+   * down what the host handed it, in place of the product's. Read it back with
+   * {@link theServerWasHanded}. Every other verb still runs the build.
+   */
+  measureTheServer(): void;
 }
 
 /** A sandbox, ready for a host. */
@@ -73,9 +84,16 @@ export function aSandbox(prefix: string, write?: (project: TheProjectToWrite) =>
   // The shim runs this tree's build, so the host starts the product the suite just built, and
   // it writes down each command line it was run with, so a case can say which door ran.
   const log = join(root, 'calls.log');
+  const measuring = join(root, 'measure-the-server');
   writeFileSync(
     join(bin, 'mnema'),
-    `#!/bin/sh\nprintf '%s\\n' "$*" >> "${log}"\nexec "${process.execPath}" "${CLI}" "$@"\n`,
+    [
+      '#!/bin/sh',
+      `printf '%s\\n' "$*" >> "${log}"`,
+      `if [ "$1" = mcp ] && [ -e "${measuring}" ]; then exec "${process.execPath}" "${A_SERVER_THAT_SAYS}" "${join(root, 'what-the-server-was-handed.json')}"; fi`,
+      `exec "${process.execPath}" "${CLI}" "$@"`,
+      '',
+    ].join('\n'),
     { mode: 0o755 },
   );
   const mnema = (...args: string[]): string =>
@@ -101,10 +119,29 @@ export function aSandbox(prefix: string, write?: (project: TheProjectToWrite) =>
       env: sandboxEnv(home, base),
     });
     mnema('init');
-    write?.({ dir: project, mnema });
+    write?.({ dir: project, mnema, measureTheServer: () => writeFileSync(measuring, '') });
   } catch (error) {
     sandbox.remove();
     throw error;
   }
   return sandbox;
+}
+
+/** What a server started in place of `mnema mcp` was handed: see {@link TheProjectToWrite.measureTheServer}. */
+export interface WhatTheServerWasHanded {
+  /** The name the client announced in its handshake. */
+  readonly client: string | undefined;
+  /** The base names of the executables from the server up to the root, nearest first. */
+  readonly chain: readonly string[];
+  /** Which of a closed list of variables were present in its environment, by name; never a value. */
+  readonly present: readonly string[];
+}
+
+/** Reads what the measuring server wrote for the session of `project`; throws where it wrote nothing. */
+export function theServerWasHanded(project: string): WhatTheServerWasHanded {
+  const file = join(dirname(project), 'what-the-server-was-handed.json');
+  if (!existsSync(file)) {
+    throw new Error('the host never started the server that was to measure it');
+  }
+  return JSON.parse(readFileSync(file, 'utf-8')) as WhatTheServerWasHanded;
 }

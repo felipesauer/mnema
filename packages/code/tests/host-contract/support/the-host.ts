@@ -34,7 +34,7 @@ import { fileURLToPath } from 'node:url';
 import { afterEach } from 'vitest';
 import { decodedWhole } from '../../support/arriving.js';
 import { GIT_WITHOUT_MAINTENANCE } from '../../support/git-without-maintenance.js';
-import { aSandbox, PLUGIN } from './a-sandbox.js';
+import { aSandbox, PLUGIN, type TheProjectToWrite } from './a-sandbox.js';
 import { startTheStandIn, type TheCall, type TheRequest } from './the-stand-in-api.js';
 
 const A_SERVER_THAT_TALKS = fileURLToPath(
@@ -126,7 +126,7 @@ export interface TheSession {
 /** How to start a session. */
 export interface TheSpec {
   /** Writes the record and the files the case stands on; `mnema` runs in the project. */
-  readonly project?: (it: { dir: string; mnema: (...args: string[]) => string }) => void;
+  readonly project?: (it: TheProjectToWrite) => void;
   /** The call the stand-in makes, given the project directory. None: a session that only opens. */
   readonly call?: (project: string) => TheCall;
   /** The text every turn that calls no tool closes with; a subagent's final reply is one. */
