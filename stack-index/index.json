@@ -1,0 +1,20 @@
+{
+  "stacks": [
+    {
+      "name": "evidence-first",
+      "version": "1.0.0",
+      "description": "An investigator agent that reports findings with file and line, and a skill on what a search does and does not prove.",
+      "link": "https://github.com/felipesauer/mnema/tree/main/packages/stacks/examples/evidence-first",
+      "digest": "d8ef7d9252d24840adb4ac3804ed6fe1f525c25f477d7eca275aa7af7ad7f174",
+      "path": "packages/stacks/examples/evidence-first"
+    },
+    {
+      "name": "review-pass",
+      "version": "1.0.0",
+      "description": "A reviewer agent that makes one pass over a change against written criteria and gives a verdict, with a checklist skill.",
+      "link": "https://github.com/felipesauer/mnema/tree/main/packages/stacks/examples/review-pass",
+      "digest": "83bcfd8a84c69f047b17dad3007ef6998585f89f376b9a06d19b75acac96e9c5",
+      "path": "packages/stacks/examples/review-pass"
+    }
+  ]
+}
