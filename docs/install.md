@@ -114,7 +114,32 @@ refuses it, handing the model the rule as the call's error. It pauses nothing, s
 asks is let through, and it does nothing where `mnema` is missing or is another program. Its
 opening goes through a hook OpenCode marks experimental, so it is held on one version of OpenCode
 (`.github/workflows/host-contract.yml` names it). `~/.config/opencode/plugins/` takes the same file
-for every project.
+for every project. The module runs `mnema` as a process and waits for it: a call that does not answer
+holds OpenCode's own process for up to 15 seconds (the opening asks twice, `brief` and `recall`, after
+asking `mnema` who it is, so up to 45), and on Windows `mnema.cmd` may not be run at all, since Node
+does not start a `.cmd` without a shell — the module is then silent, as where `mnema` is missing; this
+last point was not run.
+
+**In GitHub Copilot CLI**, the plugin comes from the same marketplace, which the command line reads
+as it is:
+
+```bash
+copilot plugin marketplace add felipesauer/mnema
+copilot plugin install mnema@mnema
+```
+
+It opens each session with the document and the notes, refuses a write where a rule refuses it and,
+where a person is at the terminal, pauses a write where a rule asks for one.
+
+**Which `mnema` each of these plugins needs.** The plugin files of Codex, Copilot CLI and OpenCode
+come from `main`, and the refusal they ask for is answered by `mnema before-a-write --host codex`
+(`copilot`, `opencode`), a host the pre-release `v0.1.0-beta` does not know: measured on that tag,
+it answers `--host takes one of vscode, cursor` and exits 1, and each plugin lets the write through
+in silence. With `v0.1.0-beta`, then, these three hosts get the server and the opening and **no
+refusal and, in Copilot CLI, no pause for a person**; Codex's opening is also not cut to its own
+ceiling (the document is cut at 10,000 units, which Codex may truncate on a long record). The
+refusal needs a `mnema` built from `main`, or a release newer than the tag (the tag and `main` both
+report the version `0.1.0-beta`, so `--version` does not tell them apart).
 
 Without the plugin, `mnema rules-file --host claude`, `--host vscode` or `--host cursor` prints the committed rules
 addressed at a file or a directory in that host's own rules format, and says which rules it left out and why.
