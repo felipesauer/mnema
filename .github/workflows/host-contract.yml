@@ -205,14 +205,16 @@ jobs:
         run: |
           cat > "$RUNNER_TEMP/probe.sh" <<'EOF'
           ip link set lo up
+          for k in 1 2 3 4; do (while :; do :; done) & done
           for i in $(seq 1 18); do
-            if xvfb-run -a ./node_modules/.bin/vitest run --config vitest.host-contract.config.ts > "$RUNNER_TEMP/p$i.log" 2>&1; then
+            if xvfb-run -a ./node_modules/.bin/vitest run --config vitest.host-contract.config.ts 2>&1 | tee "$RUNNER_TEMP/p$i.log" | grep -c . > /dev/null; test "${PIPESTATUS[0]}" = 0; then
               echo "PROBE $i ok"
             else
               echo "PROBE $i FAILED"
               grep -v 'dbus\|^ *at ' "$RUNNER_TEMP/p$i.log" | tail -90
             fi
           done
+          kill $(jobs -p)
           EOF
           unshare -rn bash "$RUNNER_TEMP/probe.sh"
 
