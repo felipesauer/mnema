@@ -28,6 +28,26 @@ this repository, and every read and every write goes through the `mnema` command
   the editor's file watcher on `.mnema/**`; when it has been quiet for 1.5 seconds it is read again,
   and a decision waiting now that was not waiting at the previous reading is announced once. There
   is no timer polling the record.
+- **A panel, "mnema: stacks", in the Explorer.** The stacks adopted for the project, read from
+  `mnema stack list --json`: each with its version, the tree it was adopted into, and whether its
+  files are still as written. Its buttons and commands run the `stack` verb of the command line:
+  - `mnema: Add a stack from a folder, archive or git address` and `mnema: Add a stack from the
+    index` run `mnema stack add <source> --scope <scope> --dry-run` and show what it printed, the
+    whole plan, in the output channel "mnema stacks". Only after that is one question asked; if
+    the person confirms, the write is `mnema stack add <source> --scope <scope> --expect <digest>`
+    with the digest that plan printed, so the files written are the ones shown. From the index, the
+    plan's digest must also be the one the index lists, or nothing is asked and nothing is written.
+    The index is read by `mnema stack index` from the folder named by `mnema.stackIndex` (default
+    `stack-index`, relative to the workspace folder); an entry the checkout does not hold is not
+    installed from here, and the message names the digest to compare.
+  - `Show`, `Compare with its receipt` and `Check against the record` run the verbs `show`,
+    `diff` and `check` of `stack` and print what they printed, a departure included.
+  - `Remove` runs `mnema stack remove <name> --dry-run`, shows it, asks once, and only then removes;
+    `Export` runs `mnema stack export <name> <folder>` into a folder the person types.
+- **No button turns a hook on.** A stack may declare hooks; they are shown as the command line
+  reports them, and a hook is on only when a person, at a terminal, read its script and typed its
+  name (`mnema stack enable <stack> <hook> --from <source>`). The extension has no command for it and says where it is done; the
+  command line, started as the extension starts it, refuses with no terminal.
 - **The status bar.** The level `mnema verify --json` reports for the record, and how many of the
   channels `mnema switch` lists are off, with their names in the tooltip. Clicking it reads again.
 
@@ -84,10 +104,16 @@ for that module; nothing downloads or starts an editor.
   200 decisions, and says in each tooltip how many exist when there are more.
 - The channels are read from the printed lines of `mnema switch`, which has no JSON form: if
   those lines change shape, the status bar shows the channels as not read rather than guessing.
-- It writes nothing of its own: the only write is the verdict above, made by `mnema`. It opens no
+- It writes nothing of its own: the only writes are the verdict above and the stack acts (add,
+  remove, export), each made by `mnema`. A stack's plan, its signature line and its refusals are
+  the command line's text, not this extension's: nothing here says that a stack is safe, and a
+  stack being in the index or signed does not make it so. Not offered here, and done in a terminal:
+  `--as` when a name is taken, a folder of your own with `--to`, and the hooks. It opens no
   network connection; `mnema` keeps whatever cache it keeps under `.mnema/locks/`.
-- It is tested against a stand-in for the editor's API and has not been run inside a real editor by
-  the checks of this repository. It is not on the Marketplace.
+- It is tested against a stand-in for the editor's API, and the stack acts also against the built
+  command line in a project of their own. The tests have not clicked a button in a real editor; CI
+  starts the packaged file in one and checks that its commands are registered. It is not on the
+  Marketplace.
 
 ## License
 

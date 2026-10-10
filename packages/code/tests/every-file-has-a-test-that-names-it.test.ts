@@ -1334,10 +1334,11 @@ const CLAUSES_PER_FILE: Readonly<Record<string, number>> = {
   'packages/stacks/tests/the-schema-file-is-the-schema.test.ts': 5,
   'packages/stacks/tests/the-skills-ref-oracle-agrees.test.ts': 5,
   'packages/vscode/src/cli.test.ts': 2,
-  'packages/vscode/src/extension.test.ts': 3,
+  'packages/vscode/src/extension.test.ts': 7,
   'packages/vscode/src/manifest.test.ts': 2,
   'packages/vscode/src/proposed.test.ts': 2,
   'packages/vscode/src/rules.test.ts': 2,
+  'packages/vscode/src/stacks.test.ts': 7,
   'packages/vscode/src/status.test.ts': 2,
   'packages/vscode/src/the-bundle-holds-no-database.test.ts': 6,
 };
@@ -1810,6 +1811,7 @@ const PRODUCTION_FILES: readonly string[] = [
   'packages/vscode/src/extension.ts',
   'packages/vscode/src/proposed.ts',
   'packages/vscode/src/rules.ts',
+  'packages/vscode/src/stacks.ts',
   'packages/vscode/src/status.ts',
 ];
 

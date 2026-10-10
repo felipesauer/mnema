@@ -4,7 +4,7 @@
   "publisher": "felipesauer",
   "version": "0.1.0-beta",
   "private": true,
-  "description": "A VS Code extension for the person who reviews the mnema record: the rules in force over the open file, the decisions waiting for a judgment, and where the record verifies. It reads and writes only through the mnema command line and is not published.",
+  "description": "A VS Code extension for the person who reviews the mnema record: the rules in force over the open file, the decisions waiting for a judgment, the stacks adopted for the project, and where the record verifies. It reads and writes only through the mnema command line and is not published.",
   "author": "Felipe Sauer (https://github.com/felipesauer)",
   "license": "Apache-2.0",
   "type": "module",
@@ -38,6 +38,12 @@
           "default": "mnema",
           "scope": "machine",
           "description": "The mnema executable the extension runs. It is started directly, with an argument array, never through a shell."
+        },
+        "mnema.stackIndex": {
+          "type": "string",
+          "default": "stack-index",
+          "scope": "machine",
+          "description": "The folder holding the index of stacks (index.json), relative to the workspace folder. It is read by `mnema stack index`."
         }
       }
     },
@@ -46,6 +52,11 @@
         {
           "id": "mnema.proposed",
           "name": "mnema: awaiting judgment",
+          "when": "workspaceFolderCount > 0"
+        },
+        {
+          "id": "mnema.stacks",
+          "name": "mnema: stacks",
           "when": "workspaceFolderCount > 0"
         }
       ]
@@ -66,6 +77,34 @@
       {
         "command": "mnema.showRules",
         "title": "mnema: Show the rules over this file"
+      },
+      {
+        "command": "mnema.stacks.add",
+        "title": "mnema: Add a stack from a folder, archive or git address"
+      },
+      {
+        "command": "mnema.stacks.addFromIndex",
+        "title": "mnema: Add a stack from the index"
+      },
+      {
+        "command": "mnema.stacks.show",
+        "title": "mnema: Show a stack"
+      },
+      {
+        "command": "mnema.stacks.diff",
+        "title": "mnema: Compare a stack with its receipt"
+      },
+      {
+        "command": "mnema.stacks.check",
+        "title": "mnema: Check a stack against the record"
+      },
+      {
+        "command": "mnema.stacks.remove",
+        "title": "mnema: Remove a stack"
+      },
+      {
+        "command": "mnema.stacks.export",
+        "title": "mnema: Export a stack"
       }
     ],
     "menus": {
@@ -79,6 +118,43 @@
           "command": "mnema.reject",
           "when": "view == mnema.proposed",
           "group": "inline@2"
+        },
+        {
+          "command": "mnema.stacks.show",
+          "when": "view == mnema.stacks",
+          "group": "inline@1"
+        },
+        {
+          "command": "mnema.stacks.diff",
+          "when": "view == mnema.stacks",
+          "group": "stack@1"
+        },
+        {
+          "command": "mnema.stacks.check",
+          "when": "view == mnema.stacks",
+          "group": "stack@2"
+        },
+        {
+          "command": "mnema.stacks.export",
+          "when": "view == mnema.stacks",
+          "group": "stack@3"
+        },
+        {
+          "command": "mnema.stacks.remove",
+          "when": "view == mnema.stacks",
+          "group": "stack@4"
+        }
+      ],
+      "view/title": [
+        {
+          "command": "mnema.stacks.add",
+          "when": "view == mnema.stacks",
+          "group": "navigation@1"
+        },
+        {
+          "command": "mnema.stacks.addFromIndex",
+          "when": "view == mnema.stacks",
+          "group": "navigation@2"
         }
       ]
     }
