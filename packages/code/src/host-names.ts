@@ -136,6 +136,7 @@ const HELD = {
   codexContract: 'packages/code/tests/host-contract/codex-opens-and-refuses.codex.test.ts',
   copilotContract: 'packages/code/tests/host-contract/copilot-opens-and-refuses.copilot.test.ts',
   opencodeContract: 'packages/code/tests/host-contract/opencode-opens-and-refuses.opencode.test.ts',
+  geminiContract: 'packages/code/tests/host-contract/gemini-opens-and-refuses.gemini.test.ts',
   claudeHandback:
     'packages/code/tests/host-contract/a-subagent-is-sent-back-for-its-handback.test.ts',
 } as const;
@@ -157,6 +158,16 @@ const COPILOT_DOCS =
  */
 const OPENCODE_SOURCE =
   'https://github.com/anomalyco/opencode/blob/53d1eabb61e21162157817bf677da0a4ad3332e3';
+
+/**
+ * The Gemini CLI source every cell of its row that is read rather than run was read at: the commit
+ * of the tag the contract holds (v0.63.0).
+ */
+const GEMINI_SOURCE =
+  'https://github.com/google-gemini/gemini-cli/blob/573846625af9e93b3b968e0e0b86bb093a4c9b16';
+
+/** The day Gemini CLI's documentation and source were read. */
+const GEMINI_READ_ON = '10 October 2026';
 
 /** The day OpenCode's documentation and source were read. */
 const OPENCODE_READ_ON = '10 October 2026';
@@ -406,6 +417,62 @@ export const HOSTS = {
       // home. Its agents are Markdown files of its own (`.opencode/agents/`) with a `mode` and a
       // `provider/model` id, which a stack's agent does not carry, so nothing is installed.
       skills: claudeFolder('skills', 'https://opencode.ai/docs/skills/', OPENCODE_READ_ON),
+      agents: NOT_PORTED,
+    },
+  },
+  gemini: {
+    title: 'Gemini CLI',
+    door: 'command',
+    // Gemini CLI reads no hooks file of this plugin's: it loads an extension, a folder with a
+    // `gemini-extension.json` at its root and its hooks in `hooks/hooks.json` — the path the Claude
+    // Code plugin's own hooks file already has, so the extension is a folder of its own
+    // (`plugin/gemini/`), generated from this row and self-contained, since installing it copies it.
+    hooksFile: 'gemini/hooks/hooks.json',
+    note:
+      'Its hooks come from an extension, a folder the person installs from a checkout of this ' +
+      'repository (see `docs/install.md`): the extension declares the server, and its hooks run ' +
+      'one script that runs `mnema` as a process. The refusal answers `BeforeTool` on its two ' +
+      'tools that write, `write_file` and `replace`, with a top-level `decision` of `deny` and ' +
+      'its `reason`, which Gemini CLI hands the model as the call’s error; a file a shell command ' +
+      'writes meets no hook, as on every host. The opening is a `SessionStart` hook’s ' +
+      '`additionalContext`: Gemini CLI escapes `<` and `>` in it and wraps it in ' +
+      '`<hook_context>`, and in a non-interactive run puts it before the prompt (read in ' +
+      `[\`types.ts\`](${GEMINI_SOURCE}/packages/core/src/hooks/types.ts#L263-L277) and ` +
+      `[\`gemini.tsx\`](${GEMINI_SOURCE}/packages/cli/src/gemini.tsx#L951-L956)); a ceiling of ` +
+      'its own on that text was not found in the source read, so it is cut at 10,000 units. A hook ' +
+      'that exits with a code other than 0 or 2 is a warning and the call goes on, and the script ' +
+      'fails open: with no `mnema` on the PATH, or a program of that name that is not this ' +
+      'product, the write goes through (held by its test). The documentation lists `allow` and ' +
+      '`deny` as the decisions of a `BeforeTool` hook; the source also has an `ask`, which was ' +
+      'not read for what it does with a write and is not used, so a rule that only asks for a ' +
+      'person is let through in silence. Run without a person, in a folder it does not trust, ' +
+      'the host does not start (exit 55) unless it is told to trust the folder (`--skip-trust` or ' +
+      '`GEMINI_CLI_TRUST_WORKSPACE=true`, which the contract sets). The model is ' +
+      'any the host is pointed at, with no account, under the Apache-2.0 license at ' +
+      `[\`LICENSE\`](${GEMINI_SOURCE}/LICENSE).`,
+    cells: {
+      server: { does: true, held: 'a test', by: HELD.geminiContract },
+      rulesFile: {
+        does: true,
+        held: 'documentation',
+        at: `${GEMINI_SOURCE}/docs/cli/gemini-md.md`,
+        read: GEMINI_READ_ON,
+      },
+      opens: { does: true, held: 'a test', by: HELD.geminiContract },
+      refuses: { does: true, held: 'a test', by: HELD.geminiContract },
+      asks: { does: false, held: 'a test', by: HELD.geminiContract },
+    },
+    places: {
+      // `.agents/skills` under the project and under the home, beside `.gemini/skills`. Its agents
+      // are Markdown files of its own (`.gemini/agents/`) with a `kind` and tool names of its own,
+      // which a stack's agent does not carry, so nothing is installed.
+      skills: {
+        held: 'documentation',
+        project: '.agents/skills',
+        user: '.agents/skills',
+        at: `${GEMINI_SOURCE}/docs/cli/skills.md#L44-L53`,
+        read: GEMINI_READ_ON,
+      },
       agents: NOT_PORTED,
     },
   },
