@@ -33,6 +33,11 @@
     "what-the-suite-left-behind": "node .github/what-the-suite-left-behind/sweep.mjs",
     "the-link-cannot-come-back": "node .github/the-link-cannot-come-back/scan.mjs"
   },
+  "pnpm": {
+    "overrides": {
+      "source-map-js@<1.2.2": "^1.2.2"
+    }
+  },
   "devDependencies": {
     "@biomejs/biome": "^2.5.14",
     "@types/node": "^26.6.3",
