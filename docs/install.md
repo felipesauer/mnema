@@ -94,6 +94,28 @@ runs a plugin's hooks only once you have marked them trusted in its own review o
 then the plugin gives the server alone. `mnema-server-only@mnema` connects the server and runs no
 hook.
 
+**In OpenCode**, there is no marketplace to add: its hook is code, so the plugin is one
+JavaScript module, copied into the project, and the server is declared in the project's
+`opencode.json`:
+
+```bash
+mkdir -p .opencode/plugins
+curl -fsSL https://raw.githubusercontent.com/felipesauer/mnema/main/plugin/opencode/mnema.js \
+  -o .opencode/plugins/mnema.js
+```
+
+```json
+{ "mcp": { "mnema": { "type": "local", "command": ["mnema", "mcp"] } } }
+```
+
+The module runs the first `mnema` on the `PATH`. It adds the document and the notes to each
+session's system prompt, and refuses a write — `write`, `edit` or `apply_patch` — where a rule
+refuses it, handing the model the rule as the call's error. It pauses nothing, so a rule that only
+asks is let through, and it does nothing where `mnema` is missing or is another program. Its
+opening goes through a hook OpenCode marks experimental, so it is held on one version of OpenCode
+(`.github/workflows/host-contract.yml` names it). `~/.config/opencode/plugins/` takes the same file
+for every project.
+
 Without the plugin, `mnema rules-file --host claude`, `--host vscode` or `--host cursor` prints the committed rules
 addressed at a file or a directory in that host's own rules format, and says which rules it left out and why.
 

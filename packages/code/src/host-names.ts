@@ -135,6 +135,7 @@ const HELD = {
     'packages/code/tests/host-contract/an-editor-holds-or-refuses-the-write.vscode.test.ts',
   codexContract: 'packages/code/tests/host-contract/codex-opens-and-refuses.codex.test.ts',
   copilotContract: 'packages/code/tests/host-contract/copilot-opens-and-refuses.copilot.test.ts',
+  opencodeContract: 'packages/code/tests/host-contract/opencode-opens-and-refuses.opencode.test.ts',
   claudeHandback:
     'packages/code/tests/host-contract/a-subagent-is-sent-back-for-its-handback.test.ts',
 } as const;
@@ -149,6 +150,16 @@ const CODEX_SOURCE =
  */
 const COPILOT_DOCS =
   'https://github.com/github/docs/blob/9f651797567230e844373870fce8b14427ad47ad/content/copilot';
+
+/**
+ * The OpenCode source every cell of its row that is read rather than run was read at: the commit
+ * of the tag the contract holds (v1.18.35).
+ */
+const OPENCODE_SOURCE =
+  'https://github.com/anomalyco/opencode/blob/53d1eabb61e21162157817bf677da0a4ad3332e3';
+
+/** The day OpenCode's documentation and source were read. */
+const OPENCODE_READ_ON = '10 October 2026';
 
 /** The day the hosts below that this product does not port were read. */
 const READ_ON = '8 October 2026';
@@ -352,6 +363,49 @@ export const HOSTS = {
         at: `${COPILOT_DOCS}/reference/copilot-cli-reference/cli-plugin-reference.md`,
         read: '9 October 2026',
       },
+      agents: NOT_PORTED,
+    },
+  },
+  opencode: {
+    title: 'OpenCode',
+    door: 'command',
+    // OpenCode reads no hooks file and no manifest of this plugin: its hook is code, a JavaScript
+    // module it loads from `.opencode/plugins/`. The module is generated from this row
+    // (`plugin/opencode/mnema.js`), and no other host reads it.
+    hooksFile: 'opencode/mnema.js',
+    note:
+      'Its hook is a JavaScript module the person copies into `.opencode/plugins/` (see ' +
+      '`docs/install.md`), which runs `mnema` as a process: the refusal throws, and OpenCode hands ' +
+      'the model the reason as the call’s error; the opening is added to the system prompt ' +
+      'through `experimental.chat.system.transform`, a hook the host marks experimental, so the ' +
+      'contract pins the version it was held on. The tools it writes through are `write` and ' +
+      '`edit`, and `apply_patch` for the models that use it ' +
+      `([\`registry.ts\`](${OPENCODE_SOURCE}/packages/opencode/src/tool/registry.ts#L297-L300)); a ` +
+      'file a shell command writes meets no hook, as on every host. The module fails open: with ' +
+      'no `mnema` on the PATH, or a program of that name that is not this product, the write ' +
+      'goes through (held by its test). OpenCode’s own `permission.ask` hook is not used, so a ' +
+      'rule that only asks for a person is let through in silence. The opening is the text ' +
+      'Claude Code gets, cut at 10,000 units; a ceiling of OpenCode’s on a system prompt was not ' +
+      'found in its documentation or in the source read. The model is any the host is pointed ' +
+      'at, with no account, under the MIT license at ' +
+      `[\`LICENSE\`](${OPENCODE_SOURCE}/LICENSE).`,
+    cells: {
+      server: { does: true, held: 'a test', by: HELD.opencodeContract },
+      rulesFile: {
+        does: true,
+        held: 'documentation',
+        at: `${OPENCODE_SOURCE}/packages/opencode/src/session/instruction.ts#L60-L67`,
+        read: OPENCODE_READ_ON,
+      },
+      opens: { does: true, held: 'a test', by: HELD.opencodeContract },
+      refuses: { does: true, held: 'a test', by: HELD.opencodeContract },
+      asks: { does: false, held: 'a test', by: HELD.opencodeContract },
+    },
+    places: {
+      // Its skills page lists `.claude/skills` and `.agents/skills`, in the project and under the
+      // home. Its agents are Markdown files of its own (`.opencode/agents/`) with a `mode` and a
+      // `provider/model` id, which a stack's agent does not carry, so nothing is installed.
+      skills: claudeFolder('skills', 'https://opencode.ai/docs/skills/', OPENCODE_READ_ON),
       agents: NOT_PORTED,
     },
   },

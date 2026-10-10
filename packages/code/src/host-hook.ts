@@ -164,6 +164,11 @@ const WRITES: { readonly [H in HookHost]: { readonly [tool: string]: PathsOf } }
   // name (the payload of the camelCase one carries the host's own: `create`, `edit`,
   // `apply_patch`, with the same input). `Write` is its `create`; `Edit` is the other writers.
   copilot: { Write: pathUnder('path'), Edit: copilotEdit },
+  // THE NAMES OPENCODE GIVES ITS OWN TOOLS, handed over as they are by the plugin it loads
+  // (`tool.execute.before` is given a tool's id and its arguments): `write` and `edit` name an
+  // absolute `filePath`, and `apply_patch` — the writer the `gpt-` models get instead of those two —
+  // the patch under `patchText` (`packages/opencode/src/tool/`, 1.18.35).
+  opencode: { write: filePath, edit: filePath, apply_patch: patchIn('patchText') },
 };
 
 /**
@@ -219,6 +224,9 @@ export function replyFor(host: HookHost, said: HookSaid): object {
     // Copilot CLI read the nested reply too, measured on 1.0.94: `deny` refused the write and its
     // reason came back as the call's error, and `ask` raised the prompt for a person.
     copilot: (s) => hookReply('PreToolUse', s),
+    // OpenCode's plugin is this product's own and reads the same nested reply: it throws the
+    // reason on `deny`, which OpenCode hands the model as the call's error.
+    opencode: (s) => hookReply('PreToolUse', s),
   };
   return reply[host](said);
 }
