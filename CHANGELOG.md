@@ -112,7 +112,7 @@ tag, with its own changelog.
 - **A Sigstore countersignature.** `mnema witness sigstore` signs the last checkpoint of each
   tail with a short-lived Sigstore certificate (the browser here; the job's own token in GitHub
   Actions) and files the bundle at `witness/<checkpoint>.sigstore.json`. Of the record only the
-  checkpoint digest leaves; the e-mail, or the repository and the workflow, goes into Sigstore's
+  checkpoint digest leaves; the e-mail, or the repository, the workflow, the commit and the run, goes into Sigstore's
   public log by design, and the help and the act say so. In GitHub Actions it refuses a private
   repository. `mnema key sigstore <identity>` records the claim (`account.linked`,
   `service: "sigstore"`, no new kind) that lets a bundle speak for an identity of the record —

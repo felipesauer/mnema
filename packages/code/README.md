@@ -415,14 +415,15 @@ last checkpoint of each tail with a short-lived [Sigstore](https://www.sigstore.
 certificate — through the browser here, or with the job's own token in GitHub Actions
 (`permissions: id-token: write`) — and files the bundle beside the `.ots`. Of the record,
 only the checkpoint's digest leaves. **Your identity leaves too, by design:** the
-certificate names the e-mail you sign in with, or the repository and the workflow, and it
-goes into Sigstore's public log, which does not forget, and into the committed bundle; in
+certificate names the e-mail you sign in with, or the repository, the workflow, the commit and the
+run, and it goes into Sigstore's public log, which does not forget, and into the committed bundle; in
 GitHub Actions the act refuses a private repository. `mnema key sigstore <e-mail or
 workflow>` records the signed claim that this identity is that one — an e-mail as its
 SHA-256, never the address, which protects the record and not the bundle or the log — and `mnema verify
 --against-sigstore` reads every bundle **offline**, against the trust root the binary
-carries, and says who signed in, when Rekor logged it, and whether an identity of the record
-names that signer. **What it proves** is that whoever could sign in as that e-mail (or run
+carries, and says who signed in, when Rekor logged it and, from a GitHub Actions job, the
+repository, the workflow, the commit and the run the certificate names, and whether an
+identity of the record names that signer. **What it proves** is that whoever could sign in as that e-mail (or run
 that workflow) countersigned the checkpoint by then, on Rekor's clock. **What it does not
 prove** is who wrote the record: anybody can countersign the digest of a checkpoint they can
 read. It is no witness level — the verdict, the level, `--require witnessed` and the exit are

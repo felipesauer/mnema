@@ -679,6 +679,20 @@ describe('reading a bundle, offline', () => {
     expect(line).toContain('a run, not the agent inside it');
   });
 
+  it('says the other commit and the other run in the note when the certificate names another', async () => {
+    const { text, root } = await anActionsBundle({
+      sha: 'b'.repeat(40),
+      run_id: '778',
+      run_attempt: '1',
+    });
+    const reading = readSigstoreBundle(text, { digest: DIGEST, message: MESSAGE }, root);
+    const line = sigstoreLine({ scope: 'public', tail: 't', checkpoint: DIGEST, reading });
+    expect(line).toContain(`commit ${'b'.repeat(40)}`);
+    expect(line).not.toContain('a'.repeat(40));
+    expect(line).toContain('run https://github.com/o/r/actions/runs/778/attempts/1');
+    expect(line).not.toContain('/runs/777/');
+  });
+
   it('refuses the bundle over any other message, recomputed rather than taken from it', async () => {
     const { text, root } = await aBundle();
     const other = Buffer.from(MESSAGE.toString('utf-8').replace('"toSeq":3', '"toSeq":4'));

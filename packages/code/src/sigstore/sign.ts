@@ -8,7 +8,7 @@
  * certificate naming the identity the token carries. Rekor (`rekor.sigstore.dev`) is handed the
  * SHA-256 of a checkpoint's signed message, a signature over that message, and the certificate.
  * The message itself never leaves: a clone recomputes it from `checkpoints.jsonl`. The identity
- * does leave, by design — the e-mail, or the repository and the workflow, goes into a public
+ * does leave, by design — the e-mail, or the repository, the workflow, the commit and the run, goes into a public
  * log that does not forget. Locally the token comes from `oauth2.sigstore.dev` through the
  * browser; in GitHub Actions it is the job's own, asked for with audience `sigstore`.
  *

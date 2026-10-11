@@ -127,10 +127,11 @@ date a result before its own retirement, so the record no longer vouches for the
 
 ## An agent in CI
 
-A job in which an agent works can end by countersigning what the agent recorded, so that the record
-names the run it was written in. The job needs `id-token: write`, and the repository must be public:
-the act refuses a private one, because the repository and the workflow go into Sigstore's public
-log, which does not forget.
+A job in which an agent works can end by countersigning what the agent recorded, so that the bundle
+names the run that countersigned the checkpoint: not the run the record was written in, and not the
+agent inside it. The job needs `id-token: write`, and the repository must be public: the act refuses
+a private one, because the repository, the workflow, the commit and the run go into Sigstore's
+public log, which does not forget.
 
 ```yaml
 jobs:
