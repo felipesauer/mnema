@@ -48,6 +48,7 @@ import { runVerify } from '../commands/verify.js';
 import { readSigstoreReceipts } from '../commands/verify-sigstore.js';
 import { runWitnessSigstore } from '../commands/witness.js';
 import { type CliIo, run } from '../program.js';
+import { sigstoreLine } from '../wiring/verify.js';
 import { readSigstoreBundle } from './read.js';
 import {
   type Fetch,
@@ -80,6 +81,18 @@ function aToken(claims: Record<string, unknown>): string {
 }
 
 const LOCAL_CLAIMS = { iss: 'https://oauth2.sigstore.dev/auth', email: EMAIL, sub: 'CgYxMjM0NTY' };
+
+const ACTIONS_WORKFLOW = 'https://github.com/o/r/.github/workflows/agent.yml@refs/heads/main';
+const ACTIONS_CLAIMS = {
+  iss: 'https://token.actions.githubusercontent.com',
+  sub: ACTIONS_WORKFLOW,
+  repository: 'o/r',
+  sha: 'a'.repeat(40),
+  run_id: '777',
+  run_attempt: '2',
+  job_workflow_ref: 'o/r/.github/workflows/agent.yml@refs/heads/main',
+  repository_visibility: 'public',
+};
 
 interface Asked {
   readonly url: string;
@@ -596,6 +609,88 @@ describe('reading a bundle, offline', () => {
       identity: EMAIL,
       issuer: 'https://oauth2.sigstore.dev/auth',
     });
+  });
+
+  /** A bundle signed from a GitHub Actions job whose token carries these claims. */
+  async function anActionsBundle(claims: Record<string, unknown> = {}) {
+    const sigstore = await aSigstore('sub');
+    const signed = await signWithSigstore([{ digest: DIGEST, message: MESSAGE }], {
+      fetch: sigstore.fetch,
+      token: async () => aToken({ ...ACTIONS_CLAIMS, ...claims }),
+    });
+    if (!signed.ok || !signed.checkpoints[0]?.ok) throw new Error('setup: not signed');
+    return { text: JSON.stringify(signed.checkpoints[0].bundle), root: sigstore.trustedRoot };
+  }
+
+  it('names the repository, the workflow, the commit and the run the certificate carries', async () => {
+    const { text, root } = await anActionsBundle();
+    expect(readSigstoreBundle(text, { digest: DIGEST, message: MESSAGE }, root)).toMatchObject({
+      kind: 'signed',
+      identity: ACTIONS_WORKFLOW,
+      ran: {
+        workflow: ACTIONS_WORKFLOW,
+        repository: 'https://github.com/o/r',
+        commit: 'a'.repeat(40),
+        run: 'https://github.com/o/r/actions/runs/777/attempts/2',
+      },
+    });
+  });
+
+  it('says the other commit and the other run when the certificate names another', async () => {
+    const { text, root } = await anActionsBundle({
+      sha: 'b'.repeat(40),
+      run_id: '778',
+      run_attempt: '1',
+    });
+    expect(readSigstoreBundle(text, { digest: DIGEST, message: MESSAGE }, root)).toMatchObject({
+      kind: 'signed',
+      ran: {
+        commit: 'b'.repeat(40),
+        run: 'https://github.com/o/r/actions/runs/778/attempts/1',
+      },
+    });
+  });
+
+  it('names no run for a certificate that carries none, and never invents one', async () => {
+    const { text, root } = await aBundle();
+    const reading = readSigstoreBundle(text, { digest: DIGEST, message: MESSAGE }, root);
+    expect(reading.kind).toBe('signed');
+    expect(reading).not.toHaveProperty('ran');
+    const partial = await anActionsBundle({ run_id: undefined });
+    expect(
+      readSigstoreBundle(partial.text, { digest: DIGEST, message: MESSAGE }, partial.root),
+    ).toMatchObject({ ran: { commit: 'a'.repeat(40) } });
+    const noRun = readSigstoreBundle(
+      partial.text,
+      { digest: DIGEST, message: MESSAGE },
+      partial.root,
+    );
+    expect(noRun.kind === 'signed' && noRun.ran).not.toHaveProperty('run');
+  });
+
+  it('says it in the note, and says the bundle names a run, not the agent inside it', async () => {
+    const { text, root } = await anActionsBundle();
+    const reading = readSigstoreBundle(text, { digest: DIGEST, message: MESSAGE }, root);
+    const line = sigstoreLine({ scope: 'public', tail: 't', checkpoint: DIGEST, reading });
+    expect(line).toContain(`workflow ${ACTIONS_WORKFLOW}`);
+    expect(line).toContain('repository https://github.com/o/r');
+    expect(line).toContain(`commit ${'a'.repeat(40)}`);
+    expect(line).toContain('run https://github.com/o/r/actions/runs/777/attempts/2');
+    expect(line).toContain('a run, not the agent inside it');
+  });
+
+  it('says the other commit and the other run in the note when the certificate names another', async () => {
+    const { text, root } = await anActionsBundle({
+      sha: 'b'.repeat(40),
+      run_id: '778',
+      run_attempt: '1',
+    });
+    const reading = readSigstoreBundle(text, { digest: DIGEST, message: MESSAGE }, root);
+    const line = sigstoreLine({ scope: 'public', tail: 't', checkpoint: DIGEST, reading });
+    expect(line).toContain(`commit ${'b'.repeat(40)}`);
+    expect(line).not.toContain('a'.repeat(40));
+    expect(line).toContain('run https://github.com/o/r/actions/runs/778/attempts/1');
+    expect(line).not.toContain('/runs/777/');
   });
 
   it('refuses the bundle over any other message, recomputed rather than taken from it', async () => {

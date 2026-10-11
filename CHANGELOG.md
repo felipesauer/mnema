@@ -12,6 +12,13 @@ tag, with its own changelog.
 
 ### Added
 
+- **`mnema verify --against-sigstore` names the run a Sigstore certificate carries.** From a GitHub
+  Actions job, the note of each bundle now also says the repository, the workflow, the commit and the
+  run the certificate names (Fulcio's extensions 12, 9, 13 and 21), and `--json` carries them as
+  `ran`. A certificate for an e-mail names none. They name a run, not the agent or the model inside
+  it; the verdict, the level and the exit are what they were. The second reader still names the
+  bundle and does not check it. `docs/what-it-proves.md` has the row, and `packages/action`'s README
+  a recipe for an agent in CI.
 - **The plugin is ported to four hosts beyond Claude Code, from one table of the hosts.** `packages/code/src/host-names.ts`
   holds one row per host and one cell per rung — (a) the MCP server and a rules file, (b) the opening
   of a session, (c) a refusal before a write, (d) a pause for a person — each saying how it is known:
@@ -105,7 +112,7 @@ tag, with its own changelog.
 - **A Sigstore countersignature.** `mnema witness sigstore` signs the last checkpoint of each
   tail with a short-lived Sigstore certificate (the browser here; the job's own token in GitHub
   Actions) and files the bundle at `witness/<checkpoint>.sigstore.json`. Of the record only the
-  checkpoint digest leaves; the e-mail, or the repository and the workflow, goes into Sigstore's
+  checkpoint digest leaves; the e-mail, or the repository, the workflow, the commit and the run, goes into Sigstore's
   public log by design, and the help and the act say so. In GitHub Actions it refuses a private
   repository. `mnema key sigstore <identity>` records the claim (`account.linked`,
   `service: "sigstore"`, no new kind) that lets a bundle speak for an identity of the record —
@@ -219,7 +226,10 @@ tag, with its own changelog.
 - **Every third-party action in the workflows is pinned by the SHA of a commit.** `uses:` named a moving major tag
   (`actions/checkout@v7`); it now names the 40-hex commit, followed by `# vX.Y.Z` for the release it was taken from,
   and a test is red on a tag, a branch or a SHA with no version. Dependabot's `github-actions` updates keep both.
-
+- **The node 24 cell runs the suite once, instrumented, and the coverage floors carry a declared slack.** The cell used to
+  run it twice (plain, then for the coverage gate). Floors are now 93.7 statements, 86.8 branches, 96.0 functions
+  and 95.2 lines: the figures measured on the runner (94.23, 87.33, 96.54, 95.71) minus half a point. The guard that
+  scans the workspace for callers of the gate's derivation reads the tree once instead of four times.
 - **The private tree lives beside the repository's objects.** Inside a git repository it moved from
   `<project>/.mnema/private/` to `<git common dir>/mnema/<project path>/private/`, so `git worktree
   remove` no longer deletes private notes; every worktree reads the same notes and writes a tail of its

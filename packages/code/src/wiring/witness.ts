@@ -67,7 +67,8 @@ const WHAT_SIGSTORE_KEEPS = [
   'What leaves this machine: to Fulcio (fulcio.sigstore.dev), a sign-in token and a key made',
   'for this act alone; to Rekor (rekor.sigstore.dev), the SHA-256 of each checkpoint and a',
   "signature over it — never the record's events. AND YOUR IDENTITY: the certificate names the",
-  'e-mail you sign in with or, in GitHub Actions, the repository and the workflow, and it goes',
+  'e-mail you sign in with or, in GitHub Actions, the repository, the workflow, the commit and',
+  'the run, and it goes',
   'into a public log that does not forget, and into the bundle the record commits.',
 ].join('\n');
 

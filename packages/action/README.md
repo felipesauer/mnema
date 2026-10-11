@@ -125,6 +125,44 @@ date a result before its own retirement, so the record no longer vouches for the
 | `require-approval-for-asks` | `false` | `true` fails the check when an accepted `asks-for-a-person` rule addresses a changed file and only the author has approved |
 | `checker-key` | empty | the private half (PEM) of a key the record enrolls as a checker, from a secret; runs `mnema check run` with it and fails when a check did not pass. Empty runs no check |
 
+## An agent in CI
+
+A job in which an agent works can end by countersigning what the agent recorded, so that the bundle
+names the run that countersigned the checkpoint: not the run the record was written in, and not the
+agent inside it. The job needs `id-token: write`, and the repository must be public: the act refuses
+a private one, because the repository, the workflow, the commit and the run go into Sigstore's
+public log, which does not forget.
+
+```yaml
+jobs:
+  agent:
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: write
+      id-token: write
+    steps:
+      - uses: actions/checkout@v7
+      - uses: pnpm/action-setup@v6
+      - uses: actions/setup-node@v7
+        with:
+          node-version: '24'
+          cache: 'pnpm'
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm build
+      # ... the agent works here, recording through the mnema it was handed ...
+      - run: node packages/code/dist/cli.js witness sigstore
+      - run: node packages/code/dist/cli.js verify --against-sigstore
+```
+
+Every write seals a checkpoint, so `witness sigstore` countersigns the last one the agent left. The
+bundle lands at `witness/<checkpoint>.sigstore.json` in the record: commit it, or the countersignature
+is lost with the runner. `verify --against-sigstore` then reads it offline and prints the repository,
+the workflow, the commit and the run the certificate names.
+
+That is a run, not the agent inside it. The bundle says which run of which workflow, at which
+commit, countersigned the checkpoint; it does not say which agent or model worked in that run, and
+`mnema verify` and its exit are what they were without it.
+
 ## How it is built
 
 The part worth testing has no network in it. `record.ts` reads `.mnema/tails/*.jsonl` and says

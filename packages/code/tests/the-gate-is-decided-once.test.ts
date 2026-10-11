@@ -23,16 +23,28 @@ const REPO = fileURLToPath(new URL('../../../', import.meta.url));
 const PACKAGES = join(REPO, 'packages');
 
 /**
+ * The workspace's non-test sources, read as code and read ONCE: the cases below ask six questions
+ * of the same tree, and one reading per question is what made this file the slowest of the suite
+ * under instrumentation.
+ */
+let tree: { file: string; code: string }[] | undefined;
+function theTree(): { file: string; code: string }[] {
+  tree ??= ['chain', 'core', 'context', 'code']
+    .flatMap((pkg) => sourceFiles(join(PACKAGES, pkg, 'src')))
+    .map((file) => ({ file: relative(REPO, file), code: codeOnly(readFileSync(file, 'utf-8')) }));
+  return tree;
+}
+
+/**
  * Every non-test source of the workspace whose CODE calls `name(`, repository-relative. A
  * definition (`function name(`) is not a call — the first reading of this ruler counted the
  * modules that define both functions as their callers.
  */
 function callersOf(name: string): string[] {
   const call = new RegExp(`(?<!function\\s+)\\b${name}\\s*\\(`);
-  return ['chain', 'core', 'context', 'code']
-    .flatMap((pkg) => sourceFiles(join(PACKAGES, pkg, 'src')))
-    .filter((file) => call.test(codeOnly(readFileSync(file, 'utf-8'))))
-    .map((file) => relative(REPO, file))
+  return theTree()
+    .filter(({ code }) => call.test(code))
+    .map(({ file }) => file)
     .sort();
 }
 
