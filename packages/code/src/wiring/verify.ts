@@ -675,11 +675,25 @@ function reportSigstore(io: CliIo, render: Render, receipts: SigstoreReceipts): 
 }
 
 /** The one line about one bundle. */
-function sigstoreLine(finding: SigstoreFinding): string {
+export function sigstoreLine(finding: SigstoreFinding): string {
   const at = onOneLine`sigstore: ${finding.tail} checkpoint ${finding.checkpoint.slice(0, 12)}`;
   const reading = finding.reading;
   if (reading.kind === 'not-covered') return onOneLine`${at} — not covered: ${reading.why}`;
-  const signed = onOneLine`${at} — signed by ${reading.identity} (${reading.issuer}), logged by Rekor at ${reading.loggedAt} (entry ${reading.logIndex})`;
+  const ran = reading.ran;
+  const names =
+    ran === undefined
+      ? []
+      : [
+          ...(ran.repository === undefined ? [] : [`repository ${ran.repository}`]),
+          ...(ran.workflow === undefined ? [] : [`workflow ${ran.workflow}`]),
+          ...(ran.commit === undefined ? [] : [`commit ${ran.commit}`]),
+          ...(ran.run === undefined ? [] : [`run ${ran.run}`]),
+        ];
+  const certificate =
+    names.length === 0
+      ? ''
+      : onOneLine` — its certificate names ${names.join(', ')}; it names a run, not the agent inside it`;
+  const signed = onOneLine`${at} — signed by ${reading.identity} (${reading.issuer})${certificate}, logged by Rekor at ${reading.loggedAt} (entry ${reading.logIndex})`;
   if (finding.namedBy !== undefined) {
     return onOneLine`${signed}; ${finding.namedBy} names this identity as its own`;
   }

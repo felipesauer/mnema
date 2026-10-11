@@ -12,6 +12,13 @@ tag, with its own changelog.
 
 ### Added
 
+- **`mnema verify --against-sigstore` names the run a Sigstore certificate carries.** From a GitHub
+  Actions job, the note of each bundle now also says the repository, the workflow, the commit and the
+  run the certificate names (Fulcio's extensions 12, 9, 13 and 21), and `--json` carries them as
+  `ran`. A certificate for an e-mail names none. They name a run, not the agent or the model inside
+  it; the verdict, the level and the exit are what they were. The second reader still names the
+  bundle and does not check it. `docs/what-it-proves.md` has the row, and `packages/action`'s README
+  a recipe for an agent in CI.
 - **The plugin is ported to four hosts beyond Claude Code, from one table of the hosts.** `packages/code/src/host-names.ts`
   holds one row per host and one cell per rung — (a) the MCP server and a rules file, (b) the opening
   of a session, (c) a refusal before a write, (d) a pause for a person — each saying how it is known:
