@@ -671,7 +671,7 @@ describe('reading a bundle, offline', () => {
   it('says it in the note, and says the bundle names a run, not the agent inside it', async () => {
     const { text, root } = await anActionsBundle();
     const reading = readSigstoreBundle(text, { digest: DIGEST, message: MESSAGE }, root);
-    const line = sigstoreLine({ scope: 'project', tail: 't', checkpoint: DIGEST, reading });
+    const line = sigstoreLine({ scope: 'public', tail: 't', checkpoint: DIGEST, reading });
     expect(line).toContain(`workflow ${ACTIONS_WORKFLOW}`);
     expect(line).toContain('repository https://github.com/o/r');
     expect(line).toContain(`commit ${'a'.repeat(40)}`);
