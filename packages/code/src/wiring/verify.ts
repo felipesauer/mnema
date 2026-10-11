@@ -692,8 +692,8 @@ export function sigstoreLine(finding: SigstoreFinding): string {
   const certificate =
     names.length === 0
       ? ''
-      : onOneLine` — its certificate names ${names.join(', ')}; it names a run, not the agent inside it`;
-  const signed = onOneLine`${at} — signed by ${reading.identity} (${reading.issuer})${certificate}, logged by Rekor at ${reading.loggedAt} (entry ${reading.logIndex})`;
+      : onOneLine`; its certificate names ${names.join(', ')}: a run, not the agent inside it`;
+  const signed = onOneLine`${at} — signed by ${reading.identity} (${reading.issuer}), logged by Rekor at ${reading.loggedAt} (entry ${reading.logIndex})${certificate}`;
   if (finding.namedBy !== undefined) {
     return onOneLine`${signed}; ${finding.namedBy} names this identity as its own`;
   }

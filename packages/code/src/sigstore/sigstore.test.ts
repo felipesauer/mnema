@@ -676,7 +676,7 @@ describe('reading a bundle, offline', () => {
     expect(line).toContain('repository https://github.com/o/r');
     expect(line).toContain(`commit ${'a'.repeat(40)}`);
     expect(line).toContain('run https://github.com/o/r/actions/runs/777/attempts/2');
-    expect(line).toContain('names a run, not the agent inside it');
+    expect(line).toContain('a run, not the agent inside it');
   });
 
   it('refuses the bundle over any other message, recomputed rather than taken from it', async () => {
