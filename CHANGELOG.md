@@ -216,6 +216,10 @@ tag, with its own changelog.
 
 ### Changed
 
+- **The node 24 cell runs the suite once, instrumented, and the coverage floors carry a declared slack.** The cell used to
+  run it twice (plain, then for the coverage gate). Floors are now 93.7 statements, 86.8 branches, 96.0 functions
+  and 95.2 lines: the figures measured on the runner (94.23, 87.33, 96.54, 95.71) minus half a point. The guard that
+  scans the workspace for callers of the gate's derivation reads the tree once instead of four times.
 - **The private tree lives beside the repository's objects.** Inside a git repository it moved from
   `<project>/.mnema/private/` to `<git common dir>/mnema/<project path>/private/`, so `git worktree
   remove` no longer deletes private notes; every worktree reads the same notes and writes a tail of its
