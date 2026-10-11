@@ -1,10 +1,10 @@
 /**
  * THE INSTALL LINE IS ONE. Until the packages are published, `npm i -g @mnema/code` answers 404,
- * and `docs/install.md` gives the install of the pre-release from the four tarballs of its GitHub
+ * and `docs/install.md` gives the install of the pre-release from the five tarballs of its GitHub
  * release. `mnema doctor` and the plugin's hand-over hook say how to install too; a third
  * spelling of the line would send a person to a URL that page does not give.
  *
- * `docs/install.md` is the source: its four URLs are read off the page and each of the other two must
+ * `docs/install.md` is the source: its five URLs are read off the page and each of the other two must
  * carry exactly those, in that order.
  */
 
@@ -18,18 +18,19 @@ import { VERSION } from '../src/version.js';
 const REPO = fileURLToPath(new URL('../../../', import.meta.url));
 const TARBALL = /https:\/\/github\.com\/felipesauer\/mnema\/releases\/download\/[^\s\\]+\.tgz/g;
 
-/** The four URLs of the install block of `docs/install.md`. */
+/** The five URLs of the install block of `docs/install.md`. */
 const README_URLS = (
   readFileSync(join(REPO, 'docs', 'install.md'), 'utf-8').match(TARBALL) ?? []
-).slice(0, 4);
+).slice(0, 5);
 
 describe('the install of the pre-release', () => {
-  it('is four tarballs on the page, chain first and code last', () => {
-    expect(README_URLS).toHaveLength(4);
+  it('is five tarballs on the page, chain first and code last', () => {
+    expect(README_URLS).toHaveLength(5);
     expect(README_URLS.map((url) => url.split('/').pop())).toEqual([
       expect.stringMatching(/^mnema-chain-/),
       expect.stringMatching(/^mnema-core-/),
       expect.stringMatching(/^mnema-context-/),
+      expect.stringMatching(/^mnema-stacks-/),
       expect.stringMatching(/^mnema-code-/),
     ]);
   });

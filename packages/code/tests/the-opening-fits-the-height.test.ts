@@ -401,8 +401,8 @@ const THE_GEOMETRIES: readonly {
   // a screen everybody has. What moved is the art, not the rule: the same third of the same
   // screen buys an arrangement now, and the three sizes are kept at their old numbers so that
   // the change is visible here rather than hidden by re-choosing them.
-  // The title carries the version, so this row sits where the title's width puts it: at 0.1.0-beta
-  // the title is wider than at 0.1.0 and 101 columns by 24 rows no longer holds the
+  // The title carries the version, so this row sits where the title's width puts it: at 0.2.0-beta
+  // the title is wider than at 0.2.0 and 101 columns by 24 rows no longer holds the
   // arrangement (the first width that does is 105, measured at 24 and at 30 rows); the last row moved with it.
   // The widths in this table are what `panelFor` is asked, which is the width INSIDE the margin
   // (`insideTheMargin`, which is the terminal's columns less the margin), not the terminal's columns; and 24 rows is

@@ -1,6 +1,6 @@
 {
   "name": "@mnema/core",
-  "version": "0.1.0-beta",
+  "version": "0.2.0-beta",
   "description": "The mnema work domain: the gate over the SHAPE of a change, projections, identity, and queries. Depends on @mnema/chain.",
   "keywords": [
     "ai-agents",

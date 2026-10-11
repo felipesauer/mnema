@@ -10,6 +10,8 @@ tag, with its own changelog.
 
 ## [Unreleased]
 
+## [0.2.0-beta] - 2026-10-11
+
 ### Added
 
 - **`mnema verify --against-sigstore` names the run a Sigstore certificate carries.** From a GitHub
@@ -61,8 +63,9 @@ tag, with its own changelog.
   or accepts one. The bug report on GitHub is a form.
 
 - **The edge of an edit says when another run was there.** When a rule refused a write or asked for a
-  person at a path in another run of this machine's identity, in the last 30 minutes, the reply to an
-  edit there ends with one sentence naming that run's agent and how long ago. It is read from facts
+  person at a path in another run of this machine's identity, in the last 30 minutes, a reply to an
+  edit there that already has something to say (a rule's push, an asking, a refusal, the hold on a
+  first write) ends with one sentence naming that run's agent and how long ago. It is read from facts
   the record holds and writes nothing.
 
 - **An event can cite the heads it was written on top of.** The envelope gains an optional `after`:
@@ -97,7 +100,7 @@ tag, with its own changelog.
   `--json` gives them to a program; `mnema stack list --json` does the same for the installed ones. The
   console runs the stack readers and, as for every verb that can change the record, refuses the acts
   (`add`, `remove`, `export`, `enable`, `disable`) and names the shell. The VS Code extension, which is not
-  published, gains a "mnema: stacks" panel: list, show, compare, check, export, and add from a folder or
+  published, gains a "mnema: stacks" panel: list, show, compare, check, export, remove, and add from a folder or
   from the index, each running the `stack` verb; an add shows the plan the command line printed, whole,
   asks once, and writes with the digest that plan showed. It has no control that turns a hook on.
 
@@ -225,11 +228,18 @@ tag, with its own changelog.
 
 - **Every third-party action in the workflows is pinned by the SHA of a commit.** `uses:` named a moving major tag
   (`actions/checkout@v7`); it now names the 40-hex commit, followed by `# vX.Y.Z` for the release it was taken from,
-  and a test is red on a tag, a branch or a SHA with no version. Dependabot's `github-actions` updates keep both.
+  and a test is red on a tag, a branch, a short SHA or a SHA with no version. It does not check that the SHA
+  belongs to the tag in the comment. Dependabot's `github-actions` ecosystem is unchanged.
+- **The host contract checks are named for their host alone on a pull request and a push.** The six jobs
+  carried the pinned version of the host in their name (`host contract (codex 0.161.0)`), so raising a pin
+  would have renamed a required check; the name is now `host contract (codex)`, and the version stays in
+  the run's summary. The weekly and manual runs append the version they were given, and nobody requires
+  those. A test reads the workflow and is red on a name that is not the host plus that one suffix.
 - **The node 24 cell runs the suite once, instrumented, and the coverage floors carry a declared slack.** The cell used to
   run it twice (plain, then for the coverage gate). Floors are now 93.7 statements, 86.8 branches, 96.0 functions
   and 95.2 lines: the figures measured on the runner (94.23, 87.33, 96.54, 95.71) minus half a point. The guard that
-  scans the workspace for callers of the gate's derivation reads the tree once instead of four times.
+  scans the workspace for callers of the gate's derivation reads the tree once, where it read it once
+  for each name it asked about.
 - **The private tree lives beside the repository's objects.** Inside a git repository it moved from
   `<project>/.mnema/private/` to `<git common dir>/mnema/<project path>/private/`, so `git worktree
   remove` no longer deletes private notes; every worktree reads the same notes and writes a tail of its
@@ -319,12 +329,13 @@ tag, with its own changelog.
 
 ### Known limits
 
+- The hand-back check is on by default: a subagent whose final reply lacks the block costs one extra
+  turn (the stand-in model's session took about half a second longer, measured on Claude Code); its
+  switch, `subagent-handback`, stops it. Claude Code also fires `SubagentStop` for its internal
+  agents, and each of those is sent back once too; VS Code and Cursor were not measured.
 - A binary from before `after` stops reading the record once an envelope carries it, as it does for
   any field it does not know; one from before the UTF-8 rule reads a line that is not UTF-8 instead of
   refusing it.
-- The plugins of Codex, Copilot CLI, OpenCode and Gemini CLI ask the binary for a host that
-  `v0.1.0-beta` does not know: with that release they get the server and the opening and no refusal,
-  in silence. They need a `mnema` built from `main`, or a release after that one.
 
 - A binary from before `stack.adopted` and `stack.removed` stops reading the whole record once
   one is in a tree it reads, as it does for any kind it does not know (`packages/chain/FORMAT.md`,
@@ -518,4 +529,5 @@ Requires Node ≥ 22.12.0; the packages are ESM-only.
   committed tree (`packages/chain/FORMAT.md` §4.1).
 
 [Unreleased]: https://github.com/felipesauer/mnema/commits/main
+[0.2.0-beta]: https://github.com/felipesauer/mnema/releases/tag/v0.2.0-beta
 [0.1.0-beta]: https://github.com/felipesauer/mnema/releases/tag/v0.1.0-beta

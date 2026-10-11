@@ -179,13 +179,16 @@ describe('the report is made of an allowlist', () => {
       'TypeError: a different message entirely',
       '    at x (/opt/other/lib/node_modules/@mnema/code/src/commands/show.ts:41:2)',
     ].join('\n');
-    expect(diagnose(elsewhere, { ...CONTEXT, version: '0.1.7' })?.fingerprint).toBe(
+    // Same major.minor as the product, another patch; and the next minor. Neither is typed, so a
+    // bump of the product's version does not move what this case compares.
+    const [major = '0', minor = '0'] = VERSION.split('.');
+    expect(diagnose(elsewhere, { ...CONTEXT, version: `${major}.${minor}.7` })?.fingerprint).toBe(
       here.fingerprint,
     );
-    expect(diagnose(elsewhere, { ...CONTEXT, version: '0.2.0' })?.fingerprint).not.toBe(
-      here.fingerprint,
-    );
-    expect(fingerprintOf('RangeError', here.frames, '0.1.0')).not.toBe(here.fingerprint);
+    expect(
+      diagnose(elsewhere, { ...CONTEXT, version: `${major}.${Number(minor) + 1}.0` })?.fingerprint,
+    ).not.toBe(here.fingerprint);
+    expect(fingerprintOf('RangeError', here.frames, VERSION)).not.toBe(here.fingerprint);
     expect(here.fingerprint).toMatch(/^[0-9a-f]{8}$/);
   });
 

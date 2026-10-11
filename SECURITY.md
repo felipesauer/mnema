@@ -2,8 +2,8 @@
 
 ## Supported versions
 
-Fixes are made on the default branch. The `@mnema/*` packages built from it have one
-pre-release on GitHub, `v0.1.0-beta`, as tarballs, and nothing on npm yet
+Fixes are made on the default branch. The `@mnema/*` packages built from it have
+pre-releases on GitHub, the latest `v0.2.0-beta`, as tarballs, and nothing on npm yet
 (`npm view @mnema/code version` says whether that is still so). Until a release, the supported
 version is the default branch itself; after one, the latest release.
 
