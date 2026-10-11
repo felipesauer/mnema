@@ -47,6 +47,7 @@ import {
   collectReports,
   EXIT,
   exitCodeOf,
+  issuesFor,
   render,
   THE_FILE_ITSELF,
   THE_RUN_ITSELF,
@@ -487,5 +488,132 @@ describe('the sampler reads exactly the names its workflow writes', () => {
     const labels = Number(off(/^\s*LABELS: '(\d+)'\s*$/m, 'how many labels it expects'));
 
     expect(labels).toBe(NODES.length * SHARDS.length);
+  });
+});
+
+/**
+ * A NIGHT THAT FOUND A CASE TELLS SOMEBODY, ONCE PER CASE. The sampler used to print its rate on a
+ * page nobody opened, and went red two nights running with no one told. What it hands the
+ * workflow is one issue per case, with a title that does not change from one night to the next
+ * (so the next night finds the issue and adds to it) and a body that carries this night's rate.
+ */
+describe('the sampler names one issue per case that failed', () => {
+  const RUN = 'https://github.com/felipesauer/mnema/actions/runs/1';
+  const RUN_LATER = 'https://github.com/felipesauer/mnema/actions/runs/2';
+
+  const sampled = (labels: Record<string, ReadonlyArray<keyof typeof CAPTURE>>) =>
+    tally({ dir: night(labels), root: RUNNER_ROOT, expect: 10, perLabel: 5 });
+
+  it('opens one issue for a case that failed in two runs, not one for each run', () => {
+    const result = sampled({
+      node22: ['failed', 'passed', 'passed', 'passed', 'failed'],
+      node24: all('passed', 5),
+    });
+
+    const issues = issuesFor(result, RUN);
+
+    expect(issues).toHaveLength(1);
+    const [issue] = issues;
+    expect(issue?.title).toContain('packages/chain/src/one-line.test.ts');
+    expect(issue?.title).toContain('is published on its own');
+    expect(issue?.body).toContain('failed in **2 of 10** runs (20.0%)');
+    expect(issue?.body).toContain('node22#01, node22#05');
+    expect(issue?.body).toContain(RUN);
+  });
+
+  it('keeps the title the same on the next night, whatever its rate and its run were', () => {
+    const first = issuesFor(
+      sampled({
+        node22: ['failed', 'passed', 'passed', 'passed', 'failed'],
+        node24: all('passed', 5),
+      }),
+      RUN,
+    );
+    const later = issuesFor(
+      sampled({
+        node22: all('passed', 5),
+        node24: ['passed', 'passed', 'failed', 'passed', 'passed'],
+      }),
+      RUN_LATER,
+    );
+
+    expect(later).toHaveLength(1);
+    expect(later[0]?.title).toBe(first[0]?.title);
+    expect(later[0]?.title.length).toBeGreaterThan(0);
+    expect(later[0]?.body).toContain('1 of 10');
+    expect(later[0]?.body).toContain(RUN_LATER);
+    expect(later[0]?.body).not.toContain(RUN);
+  });
+
+  it('tells nobody on a clean night, and nobody on a broken ruler, which has no rate to give', () => {
+    const clean = sampled({ node22: all('passed', 5), node24: all('passed', 5) });
+    const broken = sampled({ node22: all('failed', 5), node24: all('passed', 4) });
+
+    expect(clean.verdict).toBe('CLEAN');
+    expect(issuesFor(clean, RUN)).toEqual([]);
+    expect(broken.verdict).toBe('RULER BROKEN');
+    expect(issuesFor(broken, RUN)).toEqual([]);
+  });
+
+  it('says on the issue that a case failing in every run is broken, not flaky, and that it is no gate', () => {
+    const [issue] = issuesFor(sampled({ node22: all('failed', 5), node24: all('failed', 5) }), RUN);
+
+    expect(issue?.body).toContain('failed in **10 of 10** runs (100.0%)');
+    expect(issue?.body).toContain('every run');
+    expect(issue?.body).toContain('not a gate');
+  });
+
+  it('gives two different cases two different titles, even when their names are alike', () => {
+    const base = { file: 'a.test.ts', runs: ['n#01'] };
+    const result = {
+      verdict: 'FLAKY' as const,
+      broken: [],
+      read: 10,
+      expect: 10,
+      perLabel: 10,
+      labels: [{ label: 'n', count: 10 }],
+      cases: { least: 1, most: 1 },
+      rows: [
+        { ...base, name: `${'x'.repeat(200)} one` },
+        { ...base, name: `${'x'.repeat(200)} two` },
+      ],
+    };
+
+    const [one, two] = issuesFor(result, RUN);
+
+    expect(one?.title).not.toBe(two?.title);
+    expect(one?.title.length).toBeLessThan(200);
+  });
+});
+
+/**
+ * THE WORKFLOW IS WHERE THE ISSUE IS ACTUALLY OPENED, and a sentence in a header is not a guard:
+ * only the one job that speaks may write issues, and that job must not run on a pull request
+ * (one from a fork has no token that could, and one that could would be a sampler that spams).
+ */
+describe('only the telling job may write issues, and only on a night', () => {
+  const WORKFLOW = readFileSync(join(ROOT, '.github/workflows/flake-sampler.yml'), 'utf-8');
+  const jobsAt = WORKFLOW.indexOf('\njobs:\n');
+  const tellAt = WORKFLOW.indexOf('\n  tell-somebody:');
+  const tell = tellAt === -1 ? '' : WORKFLOW.slice(tellAt);
+
+  it('has a telling job, which is the only one that holds the issues permission', () => {
+    expect(tell.length).toBeGreaterThan(0);
+    expect(WORKFLOW.match(/issues: write/g)).toHaveLength(1);
+    expect(tell).toContain('issues: write');
+    expect(WORKFLOW.slice(0, jobsAt)).not.toContain('issues: write');
+  });
+
+  it('runs on the nightly schedule only, so a pull request that touches the sampler opens nothing', () => {
+    const condition = /^\s*if: (.+)$/m.exec(tell)?.[1] ?? '';
+
+    expect(condition).toContain("github.event_name == 'schedule'");
+    expect(condition).not.toContain('pull_request');
+    expect(condition).not.toContain('workflow_dispatch');
+  });
+
+  it('reads the issues the summariser wrote, and the summariser is asked to write them', () => {
+    expect(WORKFLOW).toMatch(/--issues\s+issues\.json/);
+    expect(tell).toContain('issues.json');
   });
 });

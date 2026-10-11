@@ -54,6 +54,7 @@
  *     this does not keep.
  */
 
+import { createHash } from 'node:crypto';
 import { appendFileSync, readdirSync, readFileSync, statSync, writeFileSync } from 'node:fs';
 import { isAbsolute, join, relative } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -426,6 +427,48 @@ export function render(result) {
 }
 
 /**
+ * ONE ISSUE PER CASE THAT FAILED, so that a red night is read by somebody. The page a night prints
+ * is a page nobody opens: the sampler went red two nights running before anyone was told.
+ *
+ * THE TITLE IS A PURE FUNCTION OF THE CASE (its file and its name), never of the rate or of the
+ * night, so the next night's run finds the issue that is open and adds to it instead of opening a
+ * second. The token at its end is a hash of the file and the name, because a name may carry a
+ * quote or be a hundred characters long, and a search by the whole title is a search that
+ * breaks on both. A broken ruler or a clean night has no row and so no issue: this never speaks
+ * from a rate it did not publish.
+ *
+ * @param {Tally} result
+ * @param {string} run  The URL of the run that produced the tally.
+ * @returns {{ title: string, body: string }[]}
+ */
+export function issuesFor(result, run) {
+  if (result.verdict !== 'FLAKY') return [];
+  const runs = result.read;
+  return result.rows.map((row) => {
+    const token = `sampler-${createHash('sha1').update(`${row.file}\n${row.name}`).digest('hex').slice(0, 10)}`;
+    const name = row.name.length > 80 ? `${row.name.slice(0, 79)}…` : row.name;
+    const failed = row.runs.length;
+    const body = [
+      `The flake sampler ran the suite ${runs} times against one commit, and this case failed in **${failed} of ${runs}** runs (${((failed / runs) * 100).toFixed(1)}%).`,
+      '',
+      `- Case: ${row.name}`,
+      `- File: \`${row.file}\``,
+      `- Runs it failed in: ${row.runs.join(', ')}`,
+      `- Night: ${run}`,
+      '',
+      "One night is a sample, not the rate: the failing log of each run is in that night's `flake-reports-*` artifacts, and the nights that come after add their own comment here.",
+      '',
+      failed === runs
+        ? 'It failed in every run, which is a case that is broken at this commit rather than a flake. Read the failing case in the log.'
+        : 'It passed in the others, so what differs between a run that fails and a run that does not is the thing to find. Do not raise a timeout, add a retry or skip it before it is found.',
+      '',
+      'The sampler is a signal and not a gate: this issue blocks no merge and is closed by whoever fixes the case.',
+    ].join('\n');
+    return { title: `Flaky case: ${name} (${row.file}) [${token}]`, body };
+  });
+}
+
+/**
  * @param {readonly string[]} argv
  * @returns {{
  *   dir: string,
@@ -434,6 +477,8 @@ export function render(result) {
  *   perLabel: number,
  *   summary: string,
  *   json: string,
+ *   issues: string,
+ *   run: string,
  * }}
  */
 function readArgs(argv) {
@@ -444,6 +489,8 @@ function readArgs(argv) {
     perLabel: Number.NaN,
     summary: '',
     json: '',
+    issues: '',
+    run: '',
   };
   /** @type {Record<string, keyof typeof args>} */
   const takes = {
@@ -453,6 +500,8 @@ function readArgs(argv) {
     '--per-label': 'perLabel',
     '--summary': 'summary',
     '--json': 'json',
+    '--issues': 'issues',
+    '--run': 'run',
   };
   for (let index = 0; index < argv.length; index += 2) {
     const flag = argv[index] ?? '';
@@ -473,5 +522,8 @@ if (process.argv[1] === fileURLToPath(import.meta.url)) {
   process.stdout.write(page);
   if (args.summary !== '') appendFileSync(args.summary, page);
   if (args.json !== '') writeFileSync(args.json, `${JSON.stringify(result, null, 2)}\n`);
+  if (args.issues !== '') {
+    writeFileSync(args.issues, `${JSON.stringify(issuesFor(result, args.run), null, 2)}\n`);
+  }
   process.exitCode = exitCodeOf(result);
 }
