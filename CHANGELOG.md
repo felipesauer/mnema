@@ -216,6 +216,10 @@ tag, with its own changelog.
 
 ### Changed
 
+- **Every third-party action in the workflows is pinned by the SHA of a commit.** `uses:` named a moving major tag
+  (`actions/checkout@v7`); it now names the 40-hex commit, followed by `# vX.Y.Z` for the release it was taken from,
+  and a test is red on a tag, a branch or a SHA with no version. Dependabot's `github-actions` updates keep both.
+
 - **The private tree lives beside the repository's objects.** Inside a git repository it moved from
   `<project>/.mnema/private/` to `<git common dir>/mnema/<project path>/private/`, so `git worktree
   remove` no longer deletes private notes; every worktree reads the same notes and writes a tail of its
