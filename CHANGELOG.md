@@ -12,6 +12,13 @@ tag, with its own changelog.
 
 ### Added
 
+- **`mnema verify --against-sigstore` names the run a Sigstore certificate carries.** From a GitHub
+  Actions job, the note of each bundle now also says the repository, the workflow, the commit and the
+  run the certificate names (Fulcio's extensions 12, 9, 13 and 21), and `--json` carries them as
+  `ran`. A certificate for an e-mail names none. They name a run, not the agent or the model inside
+  it; the verdict, the level and the exit are what they were. The second reader still names the
+  bundle and does not check it. `docs/what-it-proves.md` has the row, and `packages/action`'s README
+  a recipe for an agent in CI.
 - **The plugin is ported to four hosts beyond Claude Code, from one table of the hosts.** `packages/code/src/host-names.ts`
   holds one row per host and one cell per rung — (a) the MCP server and a rules file, (b) the opening
   of a session, (c) a refusal before a write, (d) a pause for a person — each saying how it is known:
@@ -105,7 +112,7 @@ tag, with its own changelog.
 - **A Sigstore countersignature.** `mnema witness sigstore` signs the last checkpoint of each
   tail with a short-lived Sigstore certificate (the browser here; the job's own token in GitHub
   Actions) and files the bundle at `witness/<checkpoint>.sigstore.json`. Of the record only the
-  checkpoint digest leaves; the e-mail, or the repository and the workflow, goes into Sigstore's
+  checkpoint digest leaves; the e-mail, or the repository, the workflow, the commit and the run, goes into Sigstore's
   public log by design, and the help and the act say so. In GitHub Actions it refuses a private
   repository. `mnema key sigstore <identity>` records the claim (`account.linked`,
   `service: "sigstore"`, no new kind) that lets a bundle speak for an identity of the record —

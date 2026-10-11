@@ -12,7 +12,8 @@ name: Sigstore probe
 #
 # WHEN IT FAILS. When `verify` exits non-zero, or when its JSON does not hold exactly what the act
 # promises: at least one bundle, every bundle read as `signed`, by this workflow's identity, and
-# named by an identity of the record. `--against-sigstore` answers in notes and never moves the
+# named by an identity of the record, and carrying the repository, the commit and the run of THIS job
+# (Fulcio's extensions 12, 13 and 21, read from the real certificate). `--against-sigstore` answers in notes and never moves the
 # exit, so the exit alone would be green over a bundle that does not hold; the notes are the
 # criterion, read from `--json`.
 #
@@ -79,8 +80,21 @@ jobs:
             const read = JSON.parse(fs.readFileSync(process.argv[1], "utf8"));
             const identity = process.env.IDENTITY;
             const findings = read.sigstore?.findings ?? [];
+            const server = process.env.GITHUB_SERVER_URL;
+            const repo = process.env.GITHUB_REPOSITORY;
+            const ran = {
+              repository: `${server}/${repo}`,
+              commit: process.env.GITHUB_SHA,
+              run: `${server}/${repo}/actions/runs/${process.env.GITHUB_RUN_ID}/attempts/${process.env.GITHUB_RUN_ATTEMPT}`,
+            };
             const wrong = findings.filter(
-              (f) => f.reading?.kind !== "signed" || f.reading.identity !== identity || f.namedBy === undefined,
+              (f) =>
+                f.reading?.kind !== "signed" ||
+                f.reading.identity !== identity ||
+                f.namedBy === undefined ||
+                f.reading.ran?.repository !== ran.repository ||
+                f.reading.ran?.commit !== ran.commit ||
+                f.reading.ran?.run !== ran.run,
             );
             if (findings.length === 0 || wrong.length > 0) {
               console.error(`the bundles do not hold what the act promises (${findings.length} read):`);
