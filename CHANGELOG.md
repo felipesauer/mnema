@@ -223,6 +223,9 @@ tag, with its own changelog.
 
 ### Changed
 
+- **Every third-party action in the workflows is pinned by the SHA of a commit.** `uses:` named a moving major tag
+  (`actions/checkout@v7`); it now names the 40-hex commit, followed by `# vX.Y.Z` for the release it was taken from,
+  and a test is red on a tag, a branch or a SHA with no version. Dependabot's `github-actions` updates keep both.
 - **The node 24 cell runs the suite once, instrumented, and the coverage floors carry a declared slack.** The cell used to
   run it twice (plain, then for the coverage gate). Floors are now 93.7 statements, 86.8 branches, 96.0 functions
   and 95.2 lines: the figures measured on the runner (94.23, 87.33, 96.54, 95.71) minus half a point. The guard that

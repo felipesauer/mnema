@@ -496,7 +496,9 @@ describe('the scan is wired where it can be right', () => {
     // setting to explain it — so deleting the `with:` block left the string in the file and
     // the mutation lit nothing. `theJob` now drops every comment line, and the shape below
     // requires the value to sit under the checkout's own `with:` rather than anywhere.
-    expect(theJob()).toMatch(/uses: actions\/checkout@v7\n\s+with:\n\s+fetch-depth: 0/);
+    expect(theJob()).toMatch(
+      /uses: actions\/checkout@[0-9a-f]{40} # v\d+\.\d+\.\d+\n\s+with:\n\s+fetch-depth: 0/,
+    );
   });
 
   it('never passes --commits-only, which would leave nineteen of the leaks unread', () => {
