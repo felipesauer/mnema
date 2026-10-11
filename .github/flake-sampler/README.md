@@ -39,10 +39,12 @@ what tells them apart.
 
 ## Who is told
 
-A night on the `schedule` that finds a case failing opens **one issue per case**, or adds a comment
+A night on the `schedule` that finds a case failing opens an issue for the case, or adds a comment
 to the one that is open, with that night's rate and the link to the run. The title ends in a token
-that is a hash of the file and the case name, so the next night finds the issue by it and does not
-open a second. A clean night and a broken ruler say nothing. The job that does this
+that is a hash of the file and the case name, and the job looks for an open issue by that token so
+that the next night comments instead of opening a second. That is the intent: the shell loop that
+does it has not yet run against GitHub, and whether the search finds an issue by a token with a
+hyphen in it is for the first real night to show. A clean night and a broken ruler say nothing. The job that does this
 (`tell-somebody`) runs on `schedule` only, so neither a pull request that touches the sampler nor
 a night asked for by hand opens an issue, and an issue is still not a gate: it blocks nothing.
 

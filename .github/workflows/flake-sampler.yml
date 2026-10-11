@@ -258,8 +258,10 @@ jobs:
           for INDEX in $(seq 0 $((COUNT - 1))); do
             TITLE=$(jq -r ".[$INDEX].title" tally/issues.json)
             BODY=$(jq -r ".[$INDEX].body" tally/issues.json)
-            # The stable token the summariser puts at the end of every title: a search by the whole
-            # title breaks on a quote in a case name, a search by the token cannot.
+            # The stable token the summariser puts at the end of every title. The intent is that a
+            # search by it finds the open issue, where a search by the whole title would break on a
+            # quote in a case name. This loop has not yet run against GitHub: that the search matches
+            # a token with a hyphen in it is unproven until the first real night.
             TOKEN=$(printf '%s' "$TITLE" | grep -o 'sampler-[0-9a-f]*' | tail -n 1)
             OPEN=$(gh issue list --repo "$GITHUB_REPOSITORY" --state open --search "in:title \"$TOKEN\"" --json number --jq '.[0].number // empty')
             if [ -n "$OPEN" ]; then
