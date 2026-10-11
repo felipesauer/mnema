@@ -53,8 +53,8 @@ worse than no ruler, which is the rule `.github/why-it-went-red/` was built on a
 ## In CI
 
 Two steps, and their **order is the mechanism**: the record runs before the first `pnpm test` and
-the report after the coverage gate, which is a *second* run of the suite. A report between the two
-would read a temp directory the second run is about to write. Placed wrongly it would refuse
+the report after the last of them (the coverage gate is the suite's run on node 24). A report
+between two would read a temp directory the next one is about to write. Placed wrongly it would refuse
 rather than answer, and `packages/code/tests/what-the-suite-left-behind.test.ts` reads `ci.yml`
 and fails if the record is not before every run of the suite and the report after all of them.
 
