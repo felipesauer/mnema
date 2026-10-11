@@ -54,9 +54,13 @@ concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
+# THE NAMES OF THE JOBS ARE THE CHECKS A MERGE WAITS FOR. On a pull request and on a push a job is
+# named for its host alone, `host contract (codex)`, so that raising a pin does not rename a
+# required check; the version is in the "Host measured" summary of the run. The weekly and the
+# manual run append the version they were given, and nobody requires those.
 jobs:
   claude-code:
-    name: host contract (claude code ${{ matrix.version }})
+    name: host contract (claude code${{ contains(fromJSON('["schedule","workflow_dispatch"]'), github.event_name) && format(' {0}', matrix.version) || '' }})
     runs-on: ubuntu-24.04
     strategy:
       fail-fast: false
@@ -153,7 +157,7 @@ jobs:
   # The pinned version is the last one in the matrix line; a run that is not a pull request or a
   # push tries `stable`.
   vscode:
-    name: host contract (vs code ${{ matrix.version }})
+    name: host contract (vs code${{ contains(fromJSON('["schedule","workflow_dispatch"]'), github.event_name) && format(' {0}', matrix.version) || '' }})
     runs-on: ubuntu-24.04
     strategy:
       fail-fast: false
@@ -212,7 +216,7 @@ jobs:
   # (`codex plugin marketplace add`), inside the namespace. The pinned version is the last one in
   # the matrix line; a run that is not a pull request or a push tries `latest`.
   codex:
-    name: host contract (codex ${{ matrix.version }})
+    name: host contract (codex${{ contains(fromJSON('["schedule","workflow_dispatch"]'), github.event_name) && format(' {0}', matrix.version) || '' }})
     runs-on: ubuntu-24.04
     strategy:
       fail-fast: false
@@ -298,7 +302,7 @@ jobs:
   # namespace. The pinned version is the last one in the matrix line; a run that is not a pull
   # request or a push tries `latest`.
   copilot:
-    name: host contract (copilot ${{ matrix.version }})
+    name: host contract (copilot${{ contains(fromJSON('["schedule","workflow_dispatch"]'), github.event_name) && format(' {0}', matrix.version) || '' }})
     runs-on: ubuntu-24.04
     strategy:
       fail-fast: false
@@ -371,7 +375,7 @@ jobs:
   # pinned version is the last one in the matrix line; a run that is not a pull request or a push
   # tries `latest`.
   opencode:
-    name: host contract (opencode ${{ matrix.version }})
+    name: host contract (opencode${{ contains(fromJSON('["schedule","workflow_dispatch"]'), github.event_name) && format(' {0}', matrix.version) || '' }})
     runs-on: ubuntu-24.04
     strategy:
       fail-fast: false
@@ -444,7 +448,7 @@ jobs:
   # would, in a home of its own. The pinned version is the last one in the matrix line; a run that
   # is not a pull request or a push tries `latest`.
   gemini:
-    name: host contract (gemini ${{ matrix.version }})
+    name: host contract (gemini${{ contains(fromJSON('["schedule","workflow_dispatch"]'), github.event_name) && format(' {0}', matrix.version) || '' }})
     runs-on: ubuntu-24.04
     strategy:
       fail-fast: false
