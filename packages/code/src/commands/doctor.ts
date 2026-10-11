@@ -127,10 +127,10 @@ function binariesOnPath(processEnv: NodeJS.ProcessEnv): { path: string; real: st
 
 /**
  * The install of the pre-release, until the packages are published: `@mnema/code` depends on the
- * other three, so the four tarballs of the GitHub release go in one command. It is the line the
+ * other four, so the five tarballs of the GitHub release go in one command. It is the line the
  * install page (`docs/install.md`) gives, and `the-install-line-is-one.test.ts` holds the two together.
  */
-const PRERELEASE_INSTALL = `npm i -g ${['chain', 'core', 'context', 'code']
+const PRERELEASE_INSTALL = `npm i -g ${['chain', 'core', 'context', 'stacks', 'code']
   .map(
     (name) =>
       `https://github.com/felipesauer/mnema/releases/download/v${VERSION}/mnema-${name}-${VERSION}.tgz`,

@@ -92,7 +92,7 @@ names how to run it.
 
 ## Cutting a release
 
-This is how the `v0.1.0-beta` pre-release was cut, and it is the whole procedure. It is the
+This is how a pre-release is cut (`v0.1.0-beta` was the first), and it is the whole procedure. It is the
 maintainer's to run, not a pull request's. **Publishing to npm is the maintainer's own act and no
 part of this procedure, automatic or otherwise**: nothing here runs `npm publish`, and until the
 maintainer does it, the packages are installed from the release's tarballs.
@@ -111,7 +111,7 @@ maintainer does it, the packages are installed from the release's tarballs.
 5. **Create the GitHub release as a pre-release** on that tag, with the five tarballs and
    `SHA256SUMS` attached. Its notes give the install command, which has to name all five tarballs
    (`@mnema/code` depends on the other four at its exact version; `v0.1.0-beta` was cut before
-   `@mnema/stacks` was one of them, and has four), say that the packages are not
+   `@mnema/stacks` was one of them, and has four; `v0.2.0-beta` is the first with five), say that the packages are not
    on npm, and state the Node floor.
 6. **Prove the install the notes give, from the release itself.** In a throwaway `HOME`, never
    your own, run the notes' `npm i -g` with the five release URLs together, and check that the

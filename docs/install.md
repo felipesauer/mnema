@@ -6,15 +6,16 @@ record to the host's sessions. Install the binary first, then the plugin for you
 ## The binary
 
 **Nothing is on npm yet**, so `npm i -g @mnema/code` answers 404 until the first
-publication. Until then, install the pre-release `v0.1.0-beta`: `@mnema/code` depends on
-the other three packages, so the four tarballs go in one command.
+publication. Until then, install the pre-release `v0.2.0-beta`: `@mnema/code` depends on
+the other four packages, so the five tarballs go in one command.
 
 ```sh
 npm i -g \
-  https://github.com/felipesauer/mnema/releases/download/v0.1.0-beta/mnema-chain-0.1.0-beta.tgz \
-  https://github.com/felipesauer/mnema/releases/download/v0.1.0-beta/mnema-core-0.1.0-beta.tgz \
-  https://github.com/felipesauer/mnema/releases/download/v0.1.0-beta/mnema-context-0.1.0-beta.tgz \
-  https://github.com/felipesauer/mnema/releases/download/v0.1.0-beta/mnema-code-0.1.0-beta.tgz
+  https://github.com/felipesauer/mnema/releases/download/v0.2.0-beta/mnema-chain-0.2.0-beta.tgz \
+  https://github.com/felipesauer/mnema/releases/download/v0.2.0-beta/mnema-core-0.2.0-beta.tgz \
+  https://github.com/felipesauer/mnema/releases/download/v0.2.0-beta/mnema-context-0.2.0-beta.tgz \
+  https://github.com/felipesauer/mnema/releases/download/v0.2.0-beta/mnema-stacks-0.2.0-beta.tgz \
+  https://github.com/felipesauer/mnema/releases/download/v0.2.0-beta/mnema-code-0.2.0-beta.tgz
 ```
 
 The release carries a `SHA256SUMS` beside them. Once the packages are published, this is
@@ -36,7 +37,7 @@ prefix is `/usr` and writing there needs `sudo`), install under your own home in
 same arguments after the flag, and put its `bin` on the `PATH`:
 
 ```sh
-npm i -g --prefix ~/.local @mnema/code   # or the four tarballs above
+npm i -g --prefix ~/.local @mnema/code   # or the five tarballs above
 export PATH="$HOME/.local/bin:$PATH"     # add this line to your shell's startup file
 ```
 
@@ -172,13 +173,13 @@ unless it is told to trust it (`--skip-trust`).
 
 The plugin files of Codex, Copilot CLI, OpenCode and
 Gemini CLI come from `main`, and the refusal they ask for is answered by
-`mnema before-a-write --host codex` (`copilot`, `opencode`, `gemini`), a host the pre-release
-`v0.1.0-beta` does not know: measured on that tag, it answers `--host takes one of vscode, cursor`
-and exits 1, and each plugin lets the write through in silence. With `v0.1.0-beta`, then, these four
-hosts get the server and the opening and **no refusal and, in Copilot CLI, no pause for a person**;
-Codex's opening is also not cut to its own ceiling (the document is cut at 10,000 units, which Codex
-may truncate on a long record). The refusal needs a `mnema` built from `main`, or a release newer than the tag (the tag and `main` both
-report the version `0.1.0-beta`, so `--version` does not tell them apart).
+`mnema before-a-write --host codex` (`copilot`, `opencode`, `gemini`), a host the earlier
+pre-release `v0.1.0-beta` does not know: measured on that tag, it answers
+`--host takes one of vscode, cursor` and exits 1, and each plugin lets the write through in silence.
+With `v0.1.0-beta`, then, these four hosts get the server and the opening and **no refusal and, in
+Copilot CLI, no pause for a person**; Codex's opening is also not cut to its own ceiling (the
+document is cut at 10,000 units, which Codex may truncate on a long record). The refusal needs
+`v0.2.0-beta` or a later release; `mnema --version` says which one you have.
 
 ## Any other host with an MCP client
 

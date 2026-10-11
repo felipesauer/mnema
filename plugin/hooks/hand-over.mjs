@@ -129,12 +129,12 @@ const WHICH_PROGRAM = '--identify';
 const THIS_PRODUCT = '@mnema/code';
 
 /**
- * How the product is installed until it is on npm: the four tarballs of the GitHub release, in
+ * How the product is installed until it is on npm: the five tarballs of the GitHub release, in
  * one command, the line `docs/install.md` gives (`the-install-line-is-one.test.ts` holds them
  * together). Move it to `npm install -g @mnema/code` when the packages are published.
  */
-const PRERELEASE = '0.1.0-beta';
-const PRERELEASE_INSTALL = `npm i -g ${['chain', 'core', 'context', 'code']
+const PRERELEASE = '0.2.0-beta';
+const PRERELEASE_INSTALL = `npm i -g ${['chain', 'core', 'context', 'stacks', 'code']
   .map(
     (name) =>
       `https://github.com/felipesauer/mnema/releases/download/v${PRERELEASE}/mnema-${name}-${PRERELEASE}.tgz`,

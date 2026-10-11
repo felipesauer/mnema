@@ -221,7 +221,7 @@ $ mnema --help
 | Help:
 |   help            display help for command
 $ mnema --version
-| 0.1.0-beta
+| 0.2.0-beta
 
 ### mnema init --help
 $ mnema init --help

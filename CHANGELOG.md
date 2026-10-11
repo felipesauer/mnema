@@ -10,6 +10,8 @@ tag, with its own changelog.
 
 ## [Unreleased]
 
+## [0.2.0-beta] - 2026-10-11
+
 ### Added
 
 - **`mnema verify --against-sigstore` names the run a Sigstore certificate carries.** From a GitHub
@@ -329,13 +331,11 @@ tag, with its own changelog.
 
 - The hand-back check is on by default: a subagent whose final reply lacks the block costs one extra
   turn (the stand-in model's session took about half a second longer, measured on Claude Code); its
-  switch, `subagent-handback`, stops it.
+  switch, `subagent-handback`, stops it. Claude Code also fires `SubagentStop` for its internal
+  agents, and each of those is sent back once too; VS Code and Cursor were not measured.
 - A binary from before `after` stops reading the record once an envelope carries it, as it does for
   any field it does not know; one from before the UTF-8 rule reads a line that is not UTF-8 instead of
   refusing it.
-- The plugins of Codex, Copilot CLI, OpenCode and Gemini CLI ask the binary for a host that
-  `v0.1.0-beta` does not know: with that release they get the server and the opening and no refusal,
-  in silence. They need a `mnema` built from `main`, or a release after that one.
 
 - A binary from before `stack.adopted` and `stack.removed` stops reading the whole record once
   one is in a tree it reads, as it does for any kind it does not know (`packages/chain/FORMAT.md`,
@@ -529,4 +529,5 @@ Requires Node ≥ 22.12.0; the packages are ESM-only.
   committed tree (`packages/chain/FORMAT.md` §4.1).
 
 [Unreleased]: https://github.com/felipesauer/mnema/commits/main
+[0.2.0-beta]: https://github.com/felipesauer/mnema/releases/tag/v0.2.0-beta
 [0.1.0-beta]: https://github.com/felipesauer/mnema/releases/tag/v0.1.0-beta

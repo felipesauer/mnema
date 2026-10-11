@@ -119,8 +119,8 @@ of a session, (c) a refusal before a write, (d) a pause for a person.
 Each cell of the full table, how each one is known — held by a test, read once on a real host, or
 documented and not measured — and the notes on each host are in
 [How each claim is held](docs/evidence.md#each-hosts-rung). The plugins of Codex, Copilot CLI,
-OpenCode and Gemini CLI need a `mnema` built from `main`: the pre-release does not know them yet
-([why](docs/install.md#which-mnema-the-newer-plugins-need)).
+OpenCode and Gemini CLI need a `mnema` of `v0.2.0-beta` or newer: the earlier pre-release does not
+know them ([why](docs/install.md#which-mnema-the-newer-plugins-need)).
 
 ## Features
 

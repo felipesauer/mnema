@@ -1,6 +1,6 @@
 {
   "name": "@mnema/stacks",
-  "version": "0.1.0-beta",
+  "version": "0.2.0-beta",
   "description": "The stack contract: the stack.json schema, the validator, and the canonical digest a stack is identified by. A pure library; it runs nothing.",
   "keywords": [
     "agent-skills",
