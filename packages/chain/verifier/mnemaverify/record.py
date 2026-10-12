@@ -37,7 +37,7 @@ import re
 from typing import NamedTuple
 
 from . import bitcoin, enrolment, gaps, ots, schema
-from .checkpoint import Checkpoint, read_checkpoint, read_tailproof
+from .checkpoint import Checkpoint, binding_break, read_checkpoint, read_tailproof
 from .ed25519 import verify as ed25519_verify
 from .entry import Entry, entry_hash, read_line
 from .keys import PublicKey, load_keyring
@@ -304,6 +304,40 @@ def _check_signature(
         return False
 
 
+def _check_binding(
+    report: Report, span: list[Entry], signer: object, label: str
+) -> bool:
+    """Section 6: every event in a checkpoint's range names that checkpoint's signer.
+
+    The checkpoint is the one thing that proves which key signed the range; an event's own
+    `signerFp` is a claim inside the bytes it signed. This reader used to fold that claim into
+    section 6.2 unchecked, so the holder of a checker key could write an event naming the
+    person's key, sign the checkpoint with the checker's, and section 6.2 saw the person. The
+    product refused that record and this reader verified it.
+    """
+    found = binding_break([entry.event for entry in span], signer)
+    if found is None:
+        return True
+    offset, half = found
+    seq = span[offset].seq
+    if half == "signer":
+        report.fail(
+            "6",
+            f"seq {seq} names a signer other than the checkpoint that signs its range: every "
+            "event in a checkpoint's range names that checkpoint's signerFp, because the "
+            "checkpoint is what proves who signed it",
+            label,
+        )
+    else:
+        report.fail(
+            "6",
+            f"seq {seq}: its `which` is its `who` in their canonical form, an identity "
+            "authorizing itself, which no event in a signed range may say",
+            label,
+        )
+    return False
+
+
 class Checkpoints(NamedTuple):
     """What a tail's checkpoints file yielded, and how far a VERIFIED one reaches.
 
@@ -423,7 +457,12 @@ def _check_checkpoints(
             report, ring, checkpoint.stored["signerFp"], checkpoint.stored["sig"],
             checkpoint.message, "6", label,
         )
-        if root_held and signed:
+        # The binding is judged over a range whose signature VERIFIED, as the product judges
+        # it: a signature that fails already says nothing about who signed the range.
+        if root_held and signed and _check_binding(
+            report, entries[checkpoint.from_seq : checkpoint.to_seq + 1],
+            checkpoint.stored["signerFp"], label,
+        ):
             verified.append(checkpoint)
         previous_hash = checkpoint.message_hash
         previous_to = checkpoint.to_seq
