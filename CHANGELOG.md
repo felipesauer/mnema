@@ -10,6 +10,17 @@ tag, with its own changelog.
 
 ## [Unreleased]
 
+### Added
+
+- **Two kinds for a key that signs as a person's agent: `agent.enrolled` and `agent.retired`.** An agent key is a
+  member of the identity that enrolled it, under a name; `FORMAT.md` §6.2 says the role, and both readers (the product
+  and the Python second reader) refuse a fact the key signs for another identity, under a `which` other than its name,
+  or of a kind that changes who may sign, and a fact it signs after a signature-covered retirement. The catalog has 34
+  kinds and the published vectors are 38. `verify` counts, in its census, the facts an agent key signed (`attested`)
+  and, behind `--verbose`, every other `which` (`declared`, the key that signed stated it); the second reader says the
+  same counts, and neither moves the verdict, the level or the exit. This version reads agent keys and no command of it
+  enrols one yet. A binary from before stops reading a record that holds either kind, as for any kind it does not know.
+
 ### Changed
 
 - **The tools of the MCP server answer in JSON without indentation.** Every read (`bootstrap`, `focus`, `resume`,

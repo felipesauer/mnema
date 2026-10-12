@@ -135,6 +135,27 @@ describe('a clean verify says the verdict and stops', () => {
     expect(verbose.out.some((line) => line.startsWith('  census [backup-key] public '))).toBe(true);
   });
 
+  it('keeps an agent the key only declared behind --verbose, and out of the verdict', async () => {
+    // A `which` written by a key without the agent role is what every record carries today: the
+    // key that signed stated it, and nothing holds it. True, informational, and on nearly every
+    // record — so it is said where the notes are listed, and the clean verdict stays one line.
+    await found();
+    await record('write the runbook');
+    await record('ask the agent for it', '--which', 'claude');
+
+    const short = await verify();
+    expect(short.out).toHaveLength(1);
+    expect(short.out[0]).not.toContain('declared');
+    expect(short.out[0]).not.toContain('agent');
+
+    const verbose = await verify('--verbose');
+    expect(verbose.out[0]).toBe(short.out[0]);
+    // Two events: a task is born as a pair, the creation and its first move, and both carry it.
+    expect(verbose.out).toContain(
+      '  census [declared-which] public claude: 2 event(s) name the agent "claude" — declared by the key that signed, not attested',
+    );
+  });
+
   it('puts the verdict first, with or without --verbose', async () => {
     await found();
     await record('write the runbook');

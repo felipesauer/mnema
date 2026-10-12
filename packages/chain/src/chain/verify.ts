@@ -473,9 +473,7 @@ function agentsNamed(agents: IdentityResolution['agents']): CensusNote[] {
         anchor: agent.anchor,
         name: agent.name,
         events: agent.events,
-        detail:
-          `${agent.events} event(s) attested by an agent key enrolled as "${oneLine(agent.name)}" ` +
-          `(${agent.agentFp.slice(0, 12)}, for ${oneLine(agent.anchor.slice(0, 17))})`,
+        detail: `${agent.events} event(s) attested by an agent key enrolled as "${oneLine(agent.name)}" (${oneLine(agent.agentFp.slice(0, 12))}, for ${oneLine(agent.anchor.slice(0, 17))})`,
       }),
     ),
     ...agents.declared.map(
@@ -483,9 +481,7 @@ function agentsNamed(agents: IdentityResolution['agents']): CensusNote[] {
         kind: 'declared-which',
         which: named.which,
         events: named.events,
-        detail:
-          `${named.events} event(s) name the agent "${oneLine(named.which)}" — declared by the key ` +
-          'that signed, not attested',
+        detail: `${named.events} event(s) name the agent "${oneLine(named.which)}" — declared by the key that signed, not attested`,
       }),
     ),
   ];

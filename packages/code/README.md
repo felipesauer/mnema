@@ -298,7 +298,9 @@ mnema verify
 # key the same way; a `census [key-without-tail]` is a tail to look for. A clean record is
 # that one line: `--verbose` adds the census note about the backup key and, when the private
 # tree holds nothing, the line that says so. It adds and never takes away — a break, an
-# issue and the exit are the same with it and without it.
+# issue and the exit are the same with it and without it. It also adds, per agent name a
+# fact carries, how many facts name it on the word of the key that signed (`declared`); facts
+# an agent key signed are counted without the flag (`attested`, FORMAT.md §6.2).
 
 # Auditing several projects? Name them, and get ONE verdict over all of them.
 mnema verify --workspace ~/work/api ~/work/web

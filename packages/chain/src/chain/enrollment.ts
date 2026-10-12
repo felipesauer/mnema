@@ -311,16 +311,29 @@ export function resolveIdentity(
     // was enrolled as — compared byte for byte, both being canonical — and never change who may
     // sign or what a key may sign.
     const role = agents.get(event.signerFp);
-    if (role !== undefined) {
-      const refusal = agentRefusal(event, role);
-      if (refusal !== undefined) {
-        issues.push({
-          tail,
-          seq,
-          detail: `${oneLine(event.kind)} is signed by ${oneLine(event.signerFp)}, an agent key${refusal}`,
-        });
-        continue;
-      }
+    if (role !== undefined && event.who !== role.anchor) {
+      issues.push({
+        tail,
+        seq,
+        detail: `${oneLine(event.kind)} is signed by ${oneLine(event.signerFp)}, an agent key, for an identity other than the one that enrolled it`,
+      });
+      continue;
+    }
+    if (role !== undefined && event.which !== role.name) {
+      issues.push({
+        tail,
+        seq,
+        detail: `${oneLine(event.kind)} is signed by ${oneLine(event.signerFp)}, an agent key enrolled as "${oneLine(role.name)}", and its which does not name that agent`,
+      });
+      continue;
+    }
+    if (role !== undefined && CHANGES_WHO_MAY_SIGN.has(event.kind)) {
+      issues.push({
+        tail,
+        seq,
+        detail: `${oneLine(event.kind)} is signed by ${oneLine(event.signerFp)}, an agent key, which signs no change to who may sign or what a key may sign`,
+      });
+      continue;
     }
     switch (event.kind) {
       case 'identity.founded': {
@@ -703,24 +716,6 @@ const CHANGES_WHO_MAY_SIGN: ReadonlySet<string> = new Set([
   'agent.retired',
   'account.linked',
 ]);
-
-/**
- * The three refusals of an event an agent key signs, in the order FORMAT.md section 6.2 lists
- * them, as the end of the issue's sentence — or `undefined` when the role allows it.
- */
-function agentRefusal(
-  event: CatalogEvent,
-  role: { readonly anchor: string; readonly name: string },
-): string | undefined {
-  if (event.who !== role.anchor) return ', for an identity other than the one that enrolled it';
-  if (event.which !== role.name) {
-    return ` enrolled as "${oneLine(role.name)}", and its which does not name that agent`;
-  }
-  if (CHANGES_WHO_MAY_SIGN.has(event.kind)) {
-    return ', which signs no change to who may sign or what a key may sign';
-  }
-  return undefined;
-}
 
 /** Whether `fp` is in the set of any identity at this point of the fold. */
 function inAnyIdentity(validKeys: ReadonlyMap<string, ReadonlySet<string>>, fp: string): boolean {
