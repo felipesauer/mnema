@@ -5,8 +5,13 @@ import { fileURLToPath } from 'node:url';
 import { catalogUpcasters, deriveAnchor, openChainForWriting } from '@mnema/chain';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { declareCheck, enrollChecker, retireChecker, runRuleChecks } from '../checks/operations.js';
-import { requestEnrollment } from '../identity/handshake.js';
-import { enrollFromRequest, revokeMember } from '../identity/roster.js';
+import { requestAgentEnrollment, requestEnrollment } from '../identity/handshake.js';
+import {
+  enrollAgentFromRequest,
+  enrollFromRequest,
+  retireAgentKey,
+  revokeMember,
+} from '../identity/roster.js';
 import {
   captureMemory,
   linkKnowledge,
@@ -24,7 +29,14 @@ import {
   switchChannel,
 } from './channel-operations.js';
 import { recordDecision } from './decision-operations.js';
-import { enrollKey, ensureFounded, linkAccount, revokeKey } from './identity-operations.js';
+import {
+  enrollAgent,
+  enrollKey,
+  ensureFounded,
+  linkAccount,
+  retireAgent,
+  revokeKey,
+} from './identity-operations.js';
 import { createTask, type WriteContext } from './operations.js';
 import { authorizeTailPrune } from './prune-operations.js';
 import { endRun, startRun } from './session-operations.js';
@@ -187,6 +199,7 @@ describe('every write refuses what no read could accept', () => {
     let rule = '';
     let checker: WriteContext | undefined;
     let checkerKey = '';
+    let agentKey = '';
     return [
       {
         op: 'createTask',
@@ -514,6 +527,47 @@ describe('every write refuses what no read could accept', () => {
         drive: () => enrollKey(ctx, { newFp: 'f'.repeat(64), reverseSig: '' }),
       },
       {
+        op: 'enrollAgent',
+        field: 'agentFp',
+        names: 'payload.agentFp',
+        drive: () => enrollAgent(ctx, { agentFp: '', name: 'claude', reverseSig: 'sig' }),
+      },
+      {
+        op: 'enrollAgent',
+        field: 'reverseSig',
+        names: 'payload.reverseSig',
+        drive: () => enrollAgent(ctx, { agentFp: 'f'.repeat(64), name: 'claude', reverseSig: '' }),
+      },
+      {
+        op: 'retireAgent',
+        field: 'agentFp',
+        names: 'payload.agentFp',
+        drive: () => retireAgent(ctx, { agentFp: '', reason: 'lent out' }),
+      },
+      {
+        op: 'retireAgent',
+        field: 'reason',
+        names: 'payload.reason',
+        drive: () => retireAgent(ctx, { agentFp: 'f'.repeat(64), reason: '' }),
+      },
+      {
+        // The roster's retirement of an agent reaches the same fact through its own checks, so it
+        // needs a real agent first — the only way its `reason` is ever reached.
+        op: 'retireAgentKey',
+        field: 'reason',
+        names: 'payload.reason',
+        prepare: () => {
+          const anchor = ensureFounded(ctx);
+          const agentRoot = mkdtempSync(join(tmpdir(), 'mnema-append-agent-'));
+          const request = requestAgentEnrollment({ anchor, name: 'claude', keyRoot: agentRoot });
+          if (!request.ok) throw new Error('the agent request could not be made');
+          const enrolled = enrollAgentFromRequest(ctx, { request: request.request });
+          if (!enrolled.ok) throw new Error(`the agent was not enrolled: ${enrolled.code}`);
+          agentKey = enrolled.fingerprint;
+        },
+        drive: () => retireAgentKey(ctx, { fingerprint: agentKey, reason: '' }),
+      },
+      {
         // The roster's revoke reaches the same fact through its own checks, so it
         // needs a real second member first — which is the only way its `reason` is
         // ever reached, and therefore the only honest way to drive it.
@@ -637,12 +691,16 @@ describe('every write refuses what no read could accept', () => {
   const APPENDS_NOTHING: Readonly<Record<string, string>> = {
     authorizingAnchor: 'reads which anchor this installation serves; appends nothing',
     decideAnchor: 'settles the same question without writing',
+    decodeAgentRequest: 'parses an agent request line',
     decodeKeyRequest: 'parses a request line',
     deferredWrite: 'pairs a signer with a writer it has not opened; the write is the operation’s',
+    encodeAgentRequest: 'serializes one',
     encodeKeyRequest: 'serializes one',
     onTheRecordAsItStands: 'holds the lock around a judgement; the write is the caller’s',
     openTreeForWriting: 'opens a writer; the write is the caller’s',
     recordedAnchorOf: 'asks whether the recorded identity still counts the key; appends nothing',
+    requestAgentEnrollment:
+      'produces an agent request and may mint the agent’s key, but appends no event',
     requestEnrollment: 'produces a request and may mint a key, but appends no event',
     restoreKey: 'installs key material and records an anchor; appends no event',
     signerFor: 'reads who would sign in a tree and may mint a key, but opens no writer',
@@ -666,6 +724,8 @@ describe('every write refuses what no read could accept', () => {
     establishIdentity: 'enrolls what the key root registered; a refusal is reported as declined',
     enrollChecker: 'the fingerprint is computed from a decoded request, the signature proven first',
     enrollFromRequest: 'the fingerprint is computed and the signature is rejected as absent first',
+    enrollAgentFromRequest:
+      'the fingerprint is computed from a decoded request, and the name and the signature are proven first',
     // The stack facts: every field is a closed form at the door, so an empty one is refused
     // by its form (STACK_FIELD_REFUSED) before a fact is built; a removal copies its fields
     // from the standing adoption, and an empty name finds none.

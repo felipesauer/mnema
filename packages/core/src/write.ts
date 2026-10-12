@@ -51,7 +51,13 @@ export type { SelfAuthorizedErr } from './identity/authority.js';
 // signature proving it consents. It can mint this machine's key on first use, so
 // it belongs on the writing side even though it appends nothing.
 export {
+  type AgentRequest,
+  type AgentRequestErr,
+  type AgentRequestInput,
+  type AgentRequestOk,
+  decodeAgentRequest,
   decodeKeyRequest,
+  encodeAgentRequest,
   encodeKeyRequest,
   type KeyRequest,
   type RequestErr,
@@ -59,6 +65,7 @@ export {
   type RequestInput,
   type RequestOk,
   type RequestSource,
+  requestAgentEnrollment,
   requestEnrollment,
 } from './identity/handshake.js';
 // Restoring a key from a copy of its private half — the only recovery there is.
@@ -74,15 +81,23 @@ export {
 } from './identity/restore.js';
 // Operating the roster: enrolling a requested key, and retiring one.
 export {
+  type EnrollAgentErr,
+  type EnrollAgentInput,
+  type EnrollAgentOk,
   type EnrollRequestErr,
   type EnrollRequestErrorCode,
   type EnrollRequestInput,
   type EnrollRequestOk,
+  enrollAgentFromRequest,
   enrollFromRequest,
+  type RetireAgentErr,
+  type RetireAgentInput,
+  type RetireAgentOk,
   type RevokeMemberErr,
   type RevokeMemberErrorCode,
   type RevokeMemberInput,
   type RevokeMemberOk,
+  retireAgentKey,
   revokeMember,
 } from './identity/roster.js';
 // The knowledge domain's writes: each appends one point-in-time fact, no gate.
@@ -138,12 +153,14 @@ export {
 } from './workflow/as-the-record-stands.js';
 export {
   type AccountLinkOk,
+  type AgentNameRefusal,
   type AnchorContext,
   type AnchorDecision,
   authorizingAnchor,
   type DeclinedKey,
   decideAnchor,
   type EstablishedIdentity,
+  enrollAgent,
   enrollKey,
   ensureFounded,
   establishIdentity,
@@ -151,6 +168,7 @@ export {
   linkAccount,
   type RecordedAnchor,
   recordedAnchorOf,
+  retireAgent,
   revokeKey,
 } from './workflow/identity-operations.js';
 // The write operations for the work domain: each appends an event a gate

@@ -1,7 +1,7 @@
 import { cpSync, mkdtempSync, readdirSync, readFileSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
-import { catalogUpcasters, LATEST_VERSION, openChainForWriting } from '@mnema/chain';
+import { agentEnrolled, catalogUpcasters, LATEST_VERSION, openChainForWriting } from '@mnema/chain';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import {
   isMarker,
@@ -29,6 +29,7 @@ import {
   retractNote,
 } from './knowledge/operations.js';
 import { orderedEvents } from './projections/order.js';
+import { appendEvent } from './workflow/append.js';
 import { switchChannel } from './workflow/channel-operations.js';
 import { decisionGate } from './workflow/decision-gate.js';
 import {
@@ -37,12 +38,7 @@ import {
   supersedeDecision,
 } from './workflow/decision-operations.js';
 import { gate } from './workflow/gate.js';
-import {
-  enrollAgent,
-  ensureFounded,
-  linkAccount,
-  retireAgent,
-} from './workflow/identity-operations.js';
+import { ensureFounded, linkAccount, retireAgent } from './workflow/identity-operations.js';
 import { createTask, transitionTask, type WriteContext } from './workflow/operations.js';
 import { authorizeTailPrune } from './workflow/prune-operations.js';
 import { startRun } from './workflow/session-operations.js';
@@ -574,8 +570,22 @@ describe('every kind says where its references are, and the door asks it there',
     {
       kind: 'agent.enrolled',
       site: 'name',
+      // THROUGH THE DOOR ITSELF, not through `enrollAgent`: that one holds a name to the shape this
+      // product enrols (a lower-case word), which refuses every marker before the door is asked,
+      // and the door's own rule is what a hand-built event meets.
       drive: (said) =>
-        enrollAgent(ctx, { agentFp: 'c'.repeat(64), name: said, reverseSig: 'd'.repeat(128) }),
+        appendEvent(
+          ctx.writer,
+          agentEnrolled(
+            {
+              at: '2026-10-12T00:00:00.000Z',
+              who: ctx.writer.anchor,
+              signerFp: 'c'.repeat(64),
+              subject: ctx.writer.anchor,
+            },
+            { agentFp: 'c'.repeat(64), name: said, reverseSig: 'd'.repeat(128) },
+          ),
+        ),
     },
   ];
 

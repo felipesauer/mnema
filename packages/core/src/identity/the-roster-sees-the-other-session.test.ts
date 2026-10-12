@@ -11,7 +11,8 @@
  * Not a race, for the reason `workflow/the-second-move-sees-the-first.test.ts` gives: the
  * hazard is the stale reading, and the case produces it every time by running the other
  * session's whole change right after this session's roster was read. The roster is read
- * through `rosterOf`, so that is where the other session is let in.
+ * through `rosterByRole` (the identity's own keys and its agents', from one replay), so that is
+ * where the other session is let in.
  */
 
 import { mkdtempSync, rmSync } from 'node:fs';
@@ -35,8 +36,8 @@ vi.mock('./membership.js', async (importOriginal) => {
   const real = await importOriginal<typeof import('./membership.js')>();
   return {
     ...real,
-    rosterOf: (...args: Parameters<typeof real.rosterOf>): Set<string> => {
-      const reading = real.rosterOf(...args);
+    rosterByRole: (...args: Parameters<typeof real.rosterByRole>) => {
+      const reading = real.rosterByRole(...args);
       const other = race.other;
       if (other !== undefined && !race.inOther) {
         race.other = undefined;

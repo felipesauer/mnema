@@ -25,8 +25,14 @@
  */
 
 import { type ChainSigner, committedPublicKey, materializePublicKey } from '@mnema/chain';
-import { type ScreenedWrite, screenContent, screened } from '../content/screen.js';
+import {
+  type ScreenedWrite,
+  type ScreenRefusal,
+  screenContent,
+  screened,
+} from '../content/screen.js';
 import { oneLine } from '../one-line.js';
+import type { AppendRefusal } from '../workflow/append.js';
 import {
   type Judged,
   onTheRecordAsItStands,
@@ -35,7 +41,9 @@ import {
 import {
   type AnchorDecision,
   decideAnchor,
+  enrollAgent,
   enrollKey,
+  retireAgent,
   revokeKey,
 } from '../workflow/identity-operations.js';
 import {
@@ -44,8 +52,9 @@ import {
   signerOfContext,
   type WriteContext,
 } from '../workflow/operations.js';
-import { decodeKeyRequest } from './handshake.js';
-import { membershipIn, provesConsent, rosterOf } from './membership.js';
+import { agentNameRefusal } from './agent-name.js';
+import { decodeAgentRequest, decodeKeyRequest } from './handshake.js';
+import { membershipIn, provesAgentConsent, provesConsent, rosterByRole } from './membership.js';
 
 /** What enrolling a requested key needs. */
 export interface EnrollRequestInput {
@@ -76,6 +85,8 @@ export type EnrollRequestErrorCode =
   | 'UNPROVEN_REQUEST'
   /** This machine's own key is not currently valid for its identity, so it cannot vouch. */
   | 'CANNOT_VOUCH'
+  /** The key already holds the agent role in this identity: it cannot also join it. */
+  | 'AN_AGENT_KEY'
   /** The material would have made a fact no read could accept; nothing was written. */
   | 'UNREADABLE_EVENT'
   /**
@@ -138,8 +149,21 @@ export function enrollFromRequest(
   return onTheRecordAsItStands(
     writing,
     () => rosterAsItStands(ctx, signer),
-    ({ decided, roster }): Judged<EnrollRequestOk | EnrollRequestErr> => {
+    ({ decided, roster, agents }): Judged<EnrollRequestOk | EnrollRequestErr> => {
       const anchor = decided.anchor;
+      // A key that holds the agent role is in an identity already, and the verifier refuses a
+      // second enrolment of it: said here, while refusing is free.
+      if (agents.has(fingerprint)) {
+        return {
+          refuse: {
+            ok: false,
+            code: 'AN_AGENT_KEY',
+            message:
+              `the key ${oneLine(fingerprint)} is an agent key of ${oneLine(anchor)} — an agent is not ` +
+              'a member that joins, and the record takes a key in one role only',
+          },
+        };
+      }
       if (!provesConsent(request.key, anchor, request.reverseSig)) {
         return {
           refuse: {
@@ -219,6 +243,8 @@ export interface RevokeMemberOk extends ScreenedWrite {
 export type RevokeMemberErrorCode =
   /** The record does not currently count this key as a member of the identity. */
   | 'UNKNOWN_KEY'
+  /** The key holds the agent role, which is retired by `mnema key revoke --agent`. */
+  | 'AN_AGENT_KEY'
   /** It is the identity's last key: retiring it would leave nothing able to extend the record. */
   | 'LAST_KEY'
   /** This machine's own key is not currently valid for its identity, so it cannot revoke. */
@@ -275,8 +301,19 @@ export function revokeMember(
   return onTheRecordAsItStands(
     writing,
     () => rosterAsItStands(ctx, signer),
-    ({ decided, roster }): Judged<RevokeMemberOk | RevokeMemberErr> => {
+    ({ decided, roster, agents }): Judged<RevokeMemberOk | RevokeMemberErr> => {
       const anchor = decided.anchor;
+      if (agents.has(input.fingerprint)) {
+        return {
+          refuse: {
+            ok: false,
+            code: 'AN_AGENT_KEY',
+            message:
+              `${oneLine(input.fingerprint)} is an agent key of ${oneLine(anchor)}, and an agent is ` +
+              `retired by its own verb: \`mnema key revoke --agent ${oneLine(input.fingerprint)} --reason "<why>"\``,
+          },
+        };
+      }
       if (decided.source !== 'unfounded' && !roster.has(signer.signerFingerprint)) {
         return {
           refuse: {
@@ -349,12 +386,19 @@ export function revokeMember(
 function rosterAsItStands(
   ctx: DecideThenWrite,
   signer: ChainSigner,
-): { readonly decided: AnchorDecision; readonly roster: Set<string> } {
+): {
+  readonly decided: AnchorDecision;
+  /** The keys that are the identity's own: the ones that vouch, retire, and count as "the last". */
+  readonly roster: Set<string>;
+  /** The agent keys it holds, each with the name it was enrolled under. */
+  readonly agents: ReadonlyMap<string, string>;
+} {
   const decided = decideAnchor({ writer: signer, layout: ctx.layout, upcasters: ctx.upcasters });
-  return {
-    decided,
-    roster: rosterOf({ tree: ctx.layout.root, upcasters: ctx.upcasters }, decided.anchor),
-  };
+  const { persons, agents } = rosterByRole(
+    { tree: ctx.layout.root, upcasters: ctx.upcasters },
+    decided.anchor,
+  );
+  return { decided, roster: persons, agents };
 }
 
 /**
@@ -398,4 +442,251 @@ function stillProvenIn(ctx: DecideThenWrite, fingerprint: string): { stillMember
   if (key === null) return {};
   const proven = membershipIn({ tree: ctx.layout.root, upcasters: ctx.upcasters }, key);
   return proven.ok ? { stillMemberOf: proven.anchor } : {};
+}
+
+/** What enrolling an agent key needs. */
+export interface EnrollAgentInput {
+  /** The line `mnema key request --agent` printed on the machine that holds the agent's key. */
+  readonly request: string;
+}
+
+/** The key is an agent of this machine's identity. */
+export interface EnrollAgentOk {
+  readonly ok: true;
+  /** The agent key's fingerprint, derived from the key the request carried. */
+  readonly fingerprint: string;
+  /** The name it was enrolled under — what every fact it signs carries as its `which`. */
+  readonly name: string;
+  /** The identity it speaks for — this machine's own. */
+  readonly anchor: string;
+  /** True when the record already had this key under this name, so nothing was appended. */
+  readonly alreadyAgent: boolean;
+}
+
+/** Why a key was not enrolled as an agent. */
+export type EnrollAgentErr =
+  | AppendRefusal
+  | ScreenRefusal
+  | {
+      readonly ok: false;
+      readonly code:
+        | 'MALFORMED_REQUEST'
+        | 'BAD_AGENT_NAME'
+        | 'UNPROVEN_REQUEST'
+        | 'CANNOT_VOUCH'
+        | 'A_MEMBER_KEY'
+        | 'AGENT_UNDER_ANOTHER_NAME'
+        | 'RETIRED_AGENT';
+      readonly message: string;
+    };
+
+/**
+ * Enrolls the key an AGENT request carries as an agent of THIS machine's identity, under the name
+ * the request carries: commits the key's public half into the tree, then appends the vouch and
+ * checkpoints it, so the role is proven at once.
+ *
+ * Refused while refusing is free: a line that is not an agent request (a request to JOIN is refused
+ * by its prefix, so a person cannot grant the wrong power by pasting the wrong line); a name this
+ * product does not enrol; a consent given for another identity or another name; a machine whose
+ * own key the identity no longer counts, or that is itself an agent (an agent vouches for nobody);
+ * a key that is already a member of an identity in this record, or an agent under another name, or
+ * one the record took out of the role — the verifier refuses each of those facts for good.
+ */
+export function enrollAgentFromRequest(
+  ctx: DecideThenWrite,
+  input: EnrollAgentInput,
+): EnrollAgentOk | EnrollAgentErr {
+  const request = decodeAgentRequest(input.request);
+  if (request === null) {
+    return {
+      ok: false,
+      code: 'MALFORMED_REQUEST',
+      message:
+        'that is not an agent request — hand over the whole line `mnema key request --agent <name> --anchor <id>` ' +
+        'printed on the machine that holds the agent key, unedited',
+    };
+  }
+  const unnamed = agentNameRefusal(request.name);
+  if (unnamed !== undefined) return { ok: false, code: 'BAD_AGENT_NAME', message: unnamed };
+
+  const signer = signerOfContext(ctx);
+  const fingerprint = request.key.fingerprint;
+  const writing = writingOnce(ctx);
+  return onTheRecordAsItStands(
+    writing,
+    () => rosterAsItStands(ctx, signer),
+    ({ decided, roster, agents }): Judged<EnrollAgentOk | EnrollAgentErr> => {
+      const anchor = decided.anchor;
+      if (!provesAgentConsent(request.key, anchor, request.name, request.reverseSig)) {
+        return {
+          refuse: {
+            ok: false,
+            code: 'UNPROVEN_REQUEST',
+            message:
+              `that request does not prove the key ${oneLine(fingerprint)} consented to be ` +
+              `"${oneLine(request.name)}" for ${oneLine(anchor)} — an agent request is made for ONE ` +
+              'identity under ONE name',
+          },
+        };
+      }
+      if (decided.source !== 'unfounded' && !roster.has(signer.signerFingerprint)) {
+        return {
+          refuse: {
+            ok: false,
+            code: 'CANNOT_VOUCH',
+            message:
+              `this machine's key is not currently one of ${oneLine(anchor)}'s own — the record retired it, ` +
+              'or it is an agent key, so a vouch it signed would be rejected. Enroll from a machine that is still a member',
+          },
+        };
+      }
+      const held = agents.get(fingerprint);
+      if (held === request.name) {
+        return {
+          refuse: { ok: true, fingerprint, name: request.name, anchor, alreadyAgent: true },
+        };
+      }
+      if (held !== undefined) {
+        return {
+          refuse: {
+            ok: false,
+            code: 'AGENT_UNDER_ANOTHER_NAME',
+            message:
+              `the key ${oneLine(fingerprint)} is already ${oneLine(anchor)}'s agent "${oneLine(held)}" — ` +
+              'a key keeps the name it was enrolled under, so retire it first and make the agent a key of its own',
+          },
+        };
+      }
+      const membership = membershipIn(
+        { tree: ctx.layout.root, upcasters: ctx.upcasters },
+        request.key,
+      );
+      if (membership.ok || membership.code === 'AMBIGUOUS_MEMBERSHIP') {
+        return {
+          refuse: {
+            ok: false,
+            code: 'A_MEMBER_KEY',
+            message:
+              `the key ${oneLine(fingerprint)} is already a member of an identity in this record — an agent ` +
+              'key is a key of its own, made for the agent, and the record takes a key in one role only',
+          },
+        };
+      }
+      if (membership.code === 'REVOKED_KEY') {
+        return {
+          refuse: {
+            ok: false,
+            code: 'RETIRED_AGENT',
+            message:
+              `the key ${oneLine(fingerprint)} was taken out of an identity in this record and is never ` +
+              'enrolled again — make a new key for the agent with `mnema key request --agent`',
+          },
+        };
+      }
+      return {
+        write: () => {
+          const write = writing.opened();
+          materializePublicKey(write.layout, request.key);
+          const enrolled = enrollAgent(write, {
+            agentFp: fingerprint,
+            name: request.name,
+            reverseSig: request.reverseSig,
+          });
+          if (!enrolled.ok) return enrolled;
+          return { ok: true, fingerprint, name: request.name, anchor, alreadyAgent: false };
+        },
+      };
+    },
+  );
+}
+
+/** What retiring an agent key needs. */
+export interface RetireAgentInput {
+  /** The full fingerprint of the agent key. */
+  readonly fingerprint: string;
+  /** Why — recorded in the fact. */
+  readonly reason: string;
+}
+
+/** The agent key signs nothing from this point on. */
+export interface RetireAgentOk extends ScreenedWrite {
+  readonly ok: true;
+  readonly fingerprint: string;
+  /** The identity that retired it. */
+  readonly anchor: string;
+  /** The name it held. */
+  readonly name: string;
+}
+
+/** Why an agent key was not retired. */
+export type RetireAgentErr =
+  | AppendRefusal
+  | ScreenRefusal
+  | {
+      readonly ok: false;
+      readonly code: 'UNKNOWN_AGENT' | 'CANNOT_VOUCH';
+      readonly message: string;
+    };
+
+/**
+ * Retires an agent key of THIS machine's identity: from the retirement on it signs nothing, and it
+ * is never enrolled again. Events it signed before stay valid. The agent key is not asked — a key
+ * somebody holds is not a key that has to agree to be taken back — and only a key of the
+ * identity's own can do it. The retirement is checkpointed at once, because a reader honours it
+ * only when it is covered.
+ */
+export function retireAgentKey(
+  ctx: DecideThenWrite,
+  input: RetireAgentInput,
+): RetireAgentOk | RetireAgentErr {
+  const text = screenContent({ reason: input.reason });
+  if (!text.ok) return text;
+  const signer = signerOfContext(ctx);
+  const writing = writingOnce(ctx);
+  return onTheRecordAsItStands(
+    writing,
+    () => rosterAsItStands(ctx, signer),
+    ({ decided, roster, agents }): Judged<RetireAgentOk | RetireAgentErr> => {
+      const anchor = decided.anchor;
+      if (decided.source !== 'unfounded' && !roster.has(signer.signerFingerprint)) {
+        return {
+          refuse: {
+            ok: false,
+            code: 'CANNOT_VOUCH',
+            message:
+              `this machine's key is not currently one of ${oneLine(anchor)}'s own, so a retirement it ` +
+              'signed would be rejected. Retire from a machine that is still a member',
+          },
+        };
+      }
+      const name = agents.get(input.fingerprint);
+      if (name === undefined) {
+        return {
+          refuse: {
+            ok: false,
+            code: 'UNKNOWN_AGENT',
+            message:
+              `the record does not count ${oneLine(input.fingerprint)} as an agent key of ${oneLine(anchor)} — ` +
+              'it was never enrolled here, or it was retired already',
+          },
+        };
+      }
+      return {
+        write: () => {
+          const retired = retireAgent(writing.opened(), {
+            agentFp: input.fingerprint,
+            reason: text.fields.reason,
+          });
+          if (!retired.ok) return retired;
+          return {
+            ok: true,
+            fingerprint: input.fingerprint,
+            anchor,
+            name,
+            ...screened(text.replaced),
+          };
+        },
+      };
+    },
+  );
 }

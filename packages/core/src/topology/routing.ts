@@ -40,14 +40,19 @@ import {
   type ChainSigner,
   type ChainWriter,
   catalogUpcasters,
+  chainExtent,
+  committedPublicKey,
   ensureTree,
+  localKeyFingerprint,
   openChainForWriting,
+  readAnchor,
   signerAt,
 } from '@mnema/chain';
+import { membershipIn, rosterByRole } from '../identity/membership.js';
 import { canonicalIdentity } from '../identity/who.js';
 import type { DeferredWriteContext } from '../workflow/operations.js';
 import { PrivateTreeVisibleError, privateTreeVisibility } from './private-tree.js';
-import type { ResolvedTrees } from './resolve.js';
+import type { AgentSigning, ResolvedTrees } from './resolve.js';
 
 /** The three trees a write can be routed to. */
 export type Scope = 'public' | 'private' | 'global';
@@ -311,11 +316,68 @@ export function openTreeForWriting(
   // installation id in its own git directory — so each writes its own tail (`git-place.ts`).
   const installationRoot = scope === 'private' ? trees.projectPrivateInstallation : undefined;
   return openChainForWriting(chainRoot, {
-    keyRoot: trees.keyRoot,
+    keyRoot: keyRootFor(trees, chainRoot),
     citeHeads: true,
     ...(installationRoot === undefined ? {} : { installationRoot }),
     ...options,
   });
+}
+
+/** What the record said about the agent key in a tree, as of the extent it was read at. */
+const agentReadings = new Map<string, { readonly extent: string; readonly enrolled: boolean }>();
+
+/**
+ * The key root a tree is signed from: the AGENT's where the record enrols the agent's key in that
+ * tree under exactly the name it is configured as, and the person's everywhere else.
+ *
+ * Per tree, because enrolment is: an agent enrolled in the committed tree of a project is no
+ * member of that project's private tree or of the machine's global one, and a key a tree never
+ * admitted would found an identity of its own there — which an agent key never does (FORMAT.md
+ * section 6.2: a key that signs for a person's identity is not an identity of its own). So the
+ * agent key is only ever the key of a tree that names it, and a tree that does not is written
+ * with the person's key, as it was before the agent had one, and the facts say so: their `which`
+ * is then declared by the key that signed, not attested.
+ *
+ * Answered without reading the record where it can be: a tree that already recorded an anchor for
+ * the agent key settled it once, and the roster check before every write (`ensureFounded`) is what
+ * notices a retirement afterwards. Otherwise the record is read once per extent it has.
+ */
+export function keyRootFor(trees: ResolvedTrees, chainRoot: string): string {
+  const agent = trees.agent;
+  if (agent === undefined) return trees.keyRoot;
+  const fingerprint = localKeyFingerprint({ root: agent.keyRoot });
+  if (fingerprint === null) return trees.keyRoot;
+  const layout = { root: chainRoot };
+  if (readAnchor(layout, fingerprint) !== null) return agent.keyRoot;
+
+  const extent = chainExtent(layout);
+  const key = `${chainRoot}\n${agent.keyRoot}\n${agent.name}`;
+  const seen = agentReadings.get(key);
+  if (seen?.extent === extent) return seen.enrolled ? agent.keyRoot : trees.keyRoot;
+  const enrolled = agentIsEnrolledIn(chainRoot, fingerprint, agent.name);
+  agentReadings.set(key, { extent, enrolled });
+  return enrolled ? agent.keyRoot : trees.keyRoot;
+}
+
+/**
+ * The agent that signs in `scope`'s tree, or undefined when the person's key does: the agent is
+ * configured, has a key on this machine, and the record enrols it in that tree as the name it is
+ * configured as ({@link keyRootFor}). It reads and mints nothing.
+ */
+export function agentSignsIn(trees: ResolvedTrees, scope: Scope): AgentSigning | undefined {
+  const chainRoot = chainRootForScope(trees, scope);
+  if (trees.agent === undefined || chainRoot === undefined) return undefined;
+  return keyRootFor(trees, chainRoot) === trees.agent.keyRoot ? trees.agent : undefined;
+}
+
+/** Whether the record at `chainRoot` proves the key `fingerprint` an agent there, as `name`. */
+function agentIsEnrolledIn(chainRoot: string, fingerprint: string, name: string): boolean {
+  const half = committedPublicKey({ root: chainRoot }, fingerprint);
+  if (half === null) return false;
+  const query = { tree: chainRoot, upcasters: catalogUpcasters() };
+  const proven = membershipIn(query, half);
+  if (!proven.ok || proven.membership !== 'agent') return false;
+  return rosterByRole(query, proven.anchor).agents.get(fingerprint) === name;
 }
 
 /**
@@ -336,7 +398,7 @@ export function signerFor(trees: ResolvedTrees, scope: Scope): ChainSigner {
   if (chainRoot === undefined) {
     throw new TreeUnavailableError(`no ${scope} tree in this context`);
   }
-  return signerAt(chainRoot, { keyRoot: trees.keyRoot });
+  return signerAt(chainRoot, { keyRoot: keyRootFor(trees, chainRoot) });
 }
 
 /**

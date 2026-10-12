@@ -76,6 +76,8 @@ export {
   sigstoreAccountOf,
   sigstoreIdentityRefusal,
 } from './identity/account.js';
+// The shape of a name an agent key is enrolled under, asked before a name becomes a folder.
+export { AGENT_NAME, agentNameRefusal } from './identity/agent-name.js';
 // An identity founded where others already were — the one reading every surface asks, at the
 // moment of a write and when the record is audited afterwards.
 export {
@@ -222,6 +224,9 @@ export {
   withinWindow,
 } from './projections/window.js';
 export {
+  type AgentSigning,
+  agentKeyRoot,
+  agentSignsIn,
   type BirthProbe,
   chainRootForScope,
   type Discovery,
@@ -256,6 +261,7 @@ export {
   tailsHeld,
   treesSearched,
   whyNoProjectRootAt,
+  withAgentKey,
 } from './topology/index.js';
 export {
   type Clock,
