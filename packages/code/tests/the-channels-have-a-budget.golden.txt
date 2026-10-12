@@ -6,24 +6,24 @@ session start: recall --hook                  820 B      200 tok
 file form: brief (what MNEMA.md carries)     2534 B      676 tok
 instructions                                 2044 B      470 tok
 edit: rules pushed                            380 B      102 tok
-edit: asks for a person                       497 B      130 tok
+edit: asks for a person                       564 B      147 tok
 edit: refuses the write                       646 B      185 tok
-tool answer: bootstrap                       2995 B     1068 tok
+tool answer: bootstrap                       3623 B     1258 tok
 tool answer: skills                           336 B      105 tok
-tool answer: focus                            813 B      306 tok
-tool answer: resume                          1638 B      613 tok
+tool answer: focus                           1357 B      502 tok
+tool answer: resume                          2224 B      803 tok
 tool answer: search                          1753 B      624 tok
 tool answer: search ["term"]                  326 B      120 tok
-tool answer: read_record ["id"]               865 B      350 tok
-tool answer: audit_timeline ["id"]           3158 B     1320 tok
-tool answer: audit_refs ["id"]                782 B      314 tok
-tool answer: governing_rules ["path"]        1123 B      402 tok
+tool answer: read_record ["id"]               865 B      344 tok
+tool answer: audit_timeline ["id"]           3158 B     1312 tok
+tool answer: audit_refs ["id"]                782 B      311 tok
+tool answer: governing_rules ["path"]        1123 B      399 tok
 tool answer: next_actions ["id"]              167 B       56 tok
-tool answer: audit_accountability            2119 B      494 tok
+tool answer: audit_accountability            2205 B      510 tok
 tool answer: audit_exposure                   138 B       48 tok
 tool answer: audit_antipatterns               433 B      112 tok
-tool answer: record_decision                  152 B       49 tok
-tool answer: capture_memory                   146 B       48 tok
+tool answer: record_decision                  152 B       48 tok
+tool answer: capture_memory                   146 B       44 tok
 tool definition: capture_memory              2103 B      451 tok
 tool definition: record_observation          2411 B      523 tok
 tool definition: retract_note                1841 B      416 tok

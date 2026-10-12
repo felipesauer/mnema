@@ -102,6 +102,7 @@ interface Channel {
 }
 
 const channels: Channel[] = [];
+const others: Client[] = [];
 
 /** What a tool answers, as the text the host puts in front of the model. */
 async function tool(name: string, args: Record<string, unknown> = {}): Promise<string> {
@@ -207,6 +208,24 @@ beforeAll(async () => {
 
   add('instructions', client.getInstructions() ?? '');
 
+  // Another agent of this machine asks at `src/payments` first, so the edge there carries the
+  // sentence that says another run consulted the path, the one text of the channel that exists
+  // only when two runs share a project.
+  const other = new Client({ name: 'codex', version: '1.0.0' }, { capabilities: { roots: {} } });
+  other.setRequestHandler(ListRootsRequestSchema, () => ({
+    roots: [{ uri: pathToFileURL(repo).href }],
+  }));
+  const [otherClient, otherServer] = InMemoryTransport.createLinkedPair();
+  await Promise.all([
+    other.connect(otherClient),
+    buildMcpServer({ cwd: repo, env, log: () => {} }).server.connect(otherServer),
+  ]);
+  others.push(other);
+  await other.callTool({
+    name: 'rules_before_an_edit',
+    arguments: { path: 'src/payments/refund.ts' },
+  });
+
   // The edge of an edit: the three answers the tool gives, as the host reads them.
   add('edit: rules pushed', await tool('rules_before_an_edit', { path: 'src/billing/invoice.ts' }));
   add(
@@ -263,6 +282,7 @@ beforeAll(async () => {
 
 afterAll(async () => {
   await client?.close();
+  for (const other of others) await other.close();
   process.chdir(originalCwd);
   if (originalHome === undefined) delete process.env.HOME;
   else process.env.HOME = originalHome;
@@ -300,6 +320,11 @@ describe('the budget of each channel', () => {
     expect(by('edit: rules pushed')).toContain('"additionalContext"');
     expect(by('edit: asks for a person')).toContain('"permissionDecision":"ask"');
     expect(by('edit: refuses the write')).toContain('"permissionDecision":"deny"');
+  });
+
+  it('carries the sentence that names the other run at the path it consulted', () => {
+    const asks = channels.find((c) => c.label === 'edit: asks for a person')?.text ?? '';
+    expect(scrub(asks)).toContain('Another run (codex) consulted this path');
   });
 
   it('carries nothing of the machine it was measured on', () => {
