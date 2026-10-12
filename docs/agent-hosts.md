@@ -52,4 +52,68 @@ arrive beside each rule is who accepted it, so a rule a stranger's clone planted
 open a session looking like the team's: the identity, a person or an agent, and a mark
 on an identity nobody else has ruled with.
 
+## Signing as an agent inside a sandbox
+
+An agent key (`key request --agent <name> --anchor <id>`, then `key enroll --agent` where your own key is; the
+[package README](../packages/code/README.md) has the verbs) lives in `agents/<name>/` under the data directory (`~/.mnema`,
+or `$MNEMA_HOME`), in the clear. What it proves about `which` depends on who else can read that folder. By itself it proves
+one thing: the person's key did not sign the fact. The sandbox is what narrows who could have signed as the agent, and
+this page says what each host's own documentation says its sandbox does, and what it does not.
+
+What follows is read from the hosts' documentation (Claude Code, Codex, Gemini CLI, read on 10 October 2026). Nothing
+here was run: no host was started, no setting below was tried, and no model was called. The setting names are the ones
+those pages give; check them against the version you run.
+
+### What each host's sandbox leaves readable
+
+| Host | Sandbox | What it confines by default | Denying a path to reads |
+|---|---|---|---|
+| Claude Code | Off by default. Seatbelt on macOS, bubblewrap and socat on Linux and WSL2 | Writes, to the working directory and temp. Reads: "most of the machine, including credential files" | `sandbox.filesystem.denyRead`, `sandbox.credentials.files`; its `Read` tool obeys permission rules, not `denyRead` |
+| Codex | Seatbelt on macOS, bubblewrap on Linux and WSL2; `workspace-write` by default | Writes, to the workspace. Reads: "the agent can read files" | `permissions.<profile>.filesystem.<path> = "deny"` |
+| Gemini CLI | Seatbelt with profiles, or a container (Docker, Podman, gVisor, LXC) | The default profile `permissive-open` "confines writes to the project directory while allowing broad file reads"; the `strict-*` profiles restrict reads | A `strict-*` profile, or what the container mounts |
+
+None of the three denies the reading of `~/.mnema` by default. Whoever sets one up lists the data directory (the
+folder of the agent keys is inside it) among the paths denied to reads.
+
+### Claude Code: four things together
+
+For the model's shell and file tools not to reach any key, all of these hold at once:
+
+1. the sandbox is on;
+2. `sandbox.filesystem.denyRead` names the data directory;
+3. a permission rule denies the `Read` tool the same path (`Read(~/.mnema/**)`), because that tool does not obey `denyRead`;
+4. `allowUnsandboxedCommands` is `false`, or a command the sandbox refused is retried outside it.
+
+Claude Code's file tools, its MCP servers and its hooks run outside the sandbox. That is what lets the mnema server read
+the agent key, and it means any other MCP server of that session that reads files can read it too. The setting that says which agent key the server signs with has to sit where the model cannot write it: the host
+protects its own project settings, `.mcp.json` and user settings from a sandboxed write, but the project's own
+directory of the record is in the working directory and is not protected. So the choice goes in the plugin's option
+or the environment (`MNEMA_AGENT_KEY`, or `--agent-key <name>` on the command a hook runs), never in the project's
+configuration of mnema.
+
+### Codex: a profile
+
+A Codex profile that denies the data directory under `permissions.<profile>.filesystem` keeps the model's commands from
+reading it. Whether Codex's MCP servers run inside or outside that sandbox is not in the page this was read from;
+do not rely on either until you have tried it.
+
+### Gemini CLI: a `strict-*` profile, or a container
+
+Under a `strict-*` profile reads are restricted; under `permissive-open` they are not. In a container that holds the
+whole process, the CLI runs inside it and, by inference from that page and not from a line of it, so do the MCP servers it
+launches. Mount the agent's folder into the container and nothing else of the data directory.
+
+### What is left to the machine, and the record does not see it
+
+- One host with no sandbox, or with Claude Code's retry outside it left on, is enough to make everything above false: a
+  shell there reads the folder of the key and signs as the agent. The record cannot tell. `verify` counts a fact such a key
+  signed as attested, and the machine's setup is a condition you keep, not a fact the record carries.
+- The sandbox is not proof of the model. The record shows that the key that signed was the agent's, not which process held
+  it or which model drove it.
+- Running the agent as another operating-system user, or in a container with the key mounted only there, is a stronger
+  separation that this page does not set up. It was read about, not tried.
+- Not measured: whether any of the hosts above passes the manifest's `env` to the server as the plugin expects; whether
+  Codex's or Gemini's MCP servers sit inside their sandbox; that the settings above, together, keep a shell from reading
+  the key on any version.
+
 To integrate mnema with a new agent host, see [plugin/porting-to-a-host.md](../plugin/porting-to-a-host.md) — it describes how to connect the MCP server, measure hook behavior, and reuse existing host implementations.

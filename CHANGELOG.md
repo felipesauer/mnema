@@ -21,6 +21,10 @@ tag, with its own changelog.
   retired after it signed is named too (`retired-agent`, with and without the flag, as a retired checker is). The
   second reader says the same counts, and none of them moves the verdict, the level or the exit. This version reads agent keys and no command of it
   enrols one yet. A binary from before stops reading a record that holds either kind, as for any kind it does not know.
+- **A page on signing as an agent inside a sandbox.** [`docs/agent-hosts.md`](docs/agent-hosts.md) says, from the
+  documentation of Claude Code, Codex and Gemini CLI, what each host's sandbox leaves readable (none denies the
+  data directory by default), the four things Claude Code needs together, the profile Codex and Gemini CLI ask for, and
+  that one host of the machine left outside makes the rest false. It names what was not measured: nothing was run.
 
 ### Changed
 
