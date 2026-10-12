@@ -20,7 +20,7 @@
 import type { Brief } from '@mnema/context';
 import fc from 'fast-check';
 import { describe, expect, it } from 'vitest';
-import { briefDocument, briefWithin } from './brief.js';
+import { briefDocument, briefWithin, HOW_TO_REGENERATE } from './brief.js';
 import { fitWhole, HOOK_TEXT_CEILING, printedLength } from './within-a-hook.js';
 
 const SEED = Number(process.env.FC_SEED ?? 20_261_007);
@@ -130,7 +130,11 @@ describe('the document a hook carries', () => {
         fc.nat({ max: HOOK_TEXT_CEILING }),
         (decisions, patterns, slack) => {
           const brief = governance(decisions, patterns);
-          const file = briefDocument(brief);
+          // The file's document, less the paragraph that teaches regenerating the file, which a
+          // hook does not carry.
+          const whole = briefDocument(brief);
+          const at = whole.indexOf(HOW_TO_REGENERATE[0] as string);
+          const file = [...whole.slice(0, at), ...whole.slice(at + HOW_TO_REGENERATE.length + 1)];
           // Every room from what the fixed part needs up to the host's ceiling.
           const floor = printedLength(briefWithin(brief, 0));
           fc.pre(floor <= HOOK_TEXT_CEILING);
