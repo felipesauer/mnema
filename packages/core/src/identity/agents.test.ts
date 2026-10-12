@@ -464,7 +464,9 @@ describe('which key a tree is signed with', () => {
     expect(enrollAgentFromRequest(m.ctx, { request: claude.request }).ok).toBe(true);
     // The key has written in this tree: it keeps an anchor, which is what a shortcut used to trust.
     const asAgent = open(claude.keyRoot);
-    expect(captureMemory(asAgent.ctx, { content: 'from the agent', which: 'claude' }).ok).toBe(true);
+    expect(captureMemory(asAgent.ctx, { content: 'from the agent', which: 'claude' }).ok).toBe(
+      true,
+    );
     asAgent.writer.checkpoint();
     expect(readAnchor({ root: tree }, claude.fingerprint)).toBe(anchor);
 
