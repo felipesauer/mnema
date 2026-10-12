@@ -308,10 +308,6 @@ const UNWITNESSED: Readonly<Record<string, Debt>> = {
     reached: 'nobody imports it',
     why: 'resolveIdentity, the enrollment fold: no test calls it, and enrollment.test.ts only regex-matches its issue wording inside the flattened issues array of verify().',
   },
-  'packages/chain/src/chain/verify.ts': {
-    reached: 'nobody imports it',
-    why: "The verifier itself: no test imports verifyChain, since all of them go through chain.ts's verify() wrapper, and canonicalIdentityForm is asserted only through @mnema/chain, i.e. dist.",
-  },
   'packages/chain/src/chain/writer.ts': {
     reached: 'nobody imports it',
     why: 'The ChainWriter class: six tests name it and all six spell `import type`, taking their writer from openChainForWriting in chain.ts instead, so every assertion observes a value THAT module returned.',
@@ -666,7 +662,7 @@ const THE_SHAPE_OF_WHAT_IS_LEFT: Readonly<Record<string, number>> = {
   completion: 4,
   commands: 2,
   barrels: 3,
-  scattered: 13,
+  scattered: 12,
 };
 
 /** Which group of the shape above a debt row belongs to. One reading, so nothing falls in two. */
@@ -792,7 +788,7 @@ const CLAUSES_PER_FILE: Readonly<Record<string, number>> = {
   'packages/chain/src/chain/range.test.ts': 5,
   'packages/chain/src/chain/second-reader-agrees-on-enrolment.test.ts': 17,
   'packages/chain/src/chain/second-reader-agrees-on-the-bytes.test.ts': 3,
-  'packages/chain/src/chain/second-reader-agrees-on-the-record.test.ts': 17,
+  'packages/chain/src/chain/second-reader-agrees-on-the-record.test.ts': 18,
   'packages/chain/src/chain/second-reader-is-independent.test.ts': 5,
   'packages/chain/src/chain/second-reader-says-what-it-does-not-check.test.ts': 6,
   'packages/chain/src/chain/sleep.test.ts': 2,
@@ -1884,8 +1880,9 @@ describe('every file has a test that names it', () => {
     // 83 with the unlink verb's wiring, which a-link-can-be-retracted drives through the CLI.
     // 84 with the report verb's wiring, which a-report-is-built-from-an-allowlist drives through the program.
     // 85 with the stack group's wiring, which a-stack-goes-where-nothing-is drives through the built binary.
-    expect(found.size).toBe(85);
-    expect(byReach('nobody imports it')).toBe(85);
+    // 84 once the second reader's record test asserts on the verifier's canonicalIdentityForm.
+    expect(found.size).toBe(84);
+    expect(byReach('nobody imports it')).toBe(84);
     expect(byReach('imported, and no assertion observes it')).toBe(0);
   });
 
@@ -1907,7 +1904,7 @@ describe('every file has a test that names it', () => {
     // Announced in the header and, until now, kept by hand. A shared excuse is how a table
     // like this turns into a rubber stamp, and a row drained to a stub is how it starts.
     const reasons = Object.values(UNWITNESSED).map((one) => one.why);
-    expect(reasons).toHaveLength(85);
+    expect(reasons).toHaveLength(84);
     expect(new Set(reasons).size).toBe(reasons.length);
     // The shortest reason standing is 156 characters; the floor is under it and well over
     // anything that could be written without saying what reaches that file.

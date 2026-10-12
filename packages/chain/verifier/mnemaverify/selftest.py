@@ -22,6 +22,7 @@ import hashlib
 
 from . import ots
 from .canonical import UNDEFINED, canonical, canonical_bytes, strict_loads
+from .checkpoint import canonical_identity
 from .ed25519 import public_key_of as ed_public_key_of
 from .ed25519 import sign as ed_sign
 from .ed25519 import verify as ed25519_verify
@@ -434,6 +435,28 @@ def _declarations(report: Report) -> None:
         )
 
 
+# Section 6's trimmed set against Python's own `strip()`, which removes more: U+001F and
+# U+0085 are not in the set, so an identity ending in one is NOT the identity without it -
+# the product's `trim` keeps them too. U+00A0 and U+FEFF are in it.
+_IDENTITY_FORMS = (
+    ("x ", True),
+    ("﻿x", True),
+    ("x　", True),
+    ("x\u001f", False),
+    ("x\u0085", False),
+    ("x\u001c", False),
+)
+
+
+def _identity_form(report: Report) -> None:
+    for value, same in _IDENTITY_FORMS:
+        what = f"{value!r} is {'' if same else 'not '}the identity 'x' in section 6's form"
+        if (canonical_identity(value) == "x") == same:
+            report.ok("6", what, "self-test")
+        else:
+            report.fail("6", f"{what}, and this reader says otherwise", "self-test")
+
+
 def run(report: Report) -> None:
     _signatures(report)
     _declarations(report)
@@ -441,3 +464,4 @@ def run(report: Report) -> None:
     _canonicalization(report)
     _folding(report)
     _witness_limits(report)
+    _identity_form(report)

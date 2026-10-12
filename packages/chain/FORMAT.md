@@ -17,7 +17,7 @@ this reader reports a gap it cannot judge, because §3 leaves a reader of this d
 unable to tell an authorized cut from tampering. On a line holding bytes that are not UTF-8,
 found by JSONTestSuite, the two used to part: the product decoded them to U+FFFD and found the
 line canonical, while this reader refused it. Both refuse it now, naming the same byte (§4,
-`packages/chain/src/chain/outside-vectors.test.ts`). Twenty-six points
+`packages/chain/src/chain/outside-vectors.test.ts`). Twenty-seven points
 where this document was **not enough** for that were found in the writing, and every one of
 them has been fixed here — `python3 verifier/mnema_verify.py gaps` lists them, with which
 were resolved by reading a specification, which by experiment against the published bytes,
@@ -437,6 +437,22 @@ part of it**:
   facts. This used to say the rule "is not specified in this document", and an
   implementation built from the document alone accepted a signature by any key in
   `keys/` and was right to. It is specified now.
+- **Every event in a checkpoint's range names that checkpoint's `signerFp`, and its
+  `which`, when present, is not its `who`.** A reader refuses a checkpoint whose
+  signature verifies over a range holding an event that breaks either, and does not
+  count that range as signature-covered. The checkpoint is the one thing that proves
+  which key signed the range; an event's own `signerFp` is a claim inside the bytes it
+  signed, and §6.2 folds that claim. Without this sentence the holder of a role key —
+  a checker's — writes an event naming the person's key, signs the checkpoint with its
+  own, and §6.2 sees the person. `which` and `who` are compared in one canonical form:
+  NFC, then with every leading and trailing character of this set removed — U+0009 to
+  U+000D, U+0020, U+00A0, U+1680, U+2000 to U+200A, U+2028, U+2029, U+202F, U+205F,
+  U+3000 and U+FEFF — so `which` = `who` followed by U+00A0 is refused. The set is
+  written out because "trimmed" is not one rule across languages: it is what
+  JavaScript's `trim` removes, and Python's `strip()` also removes U+001C to U+001F and
+  U+0085. The product applied both halves before this document said them, and the
+  second reader verified the record that breaks the first until it did
+  (`packages/chain/src/chain/second-reader-agrees-on-the-record.test.ts`).
 - `scheme` is `mnema-checkpoint/1`; a reader refuses a scheme it does not know
   rather than guessing at the fields, and the signature is over the seven keys
   above with `sig` absent
@@ -1139,9 +1155,11 @@ Stated plainly, because a published format invites all three readings:
   second delivery: it accepted two things the product refused (a field no kind
   declares, on an appended event; a signer no enrolment authorized) and refused one
   thing the product accepts (an honest event carrying `which`). §4.1 and §6.2 are
-  those three, closed. What that buys is technical independence — another language,
-  another author-session, no shared code — and it is what surfaced the
-  twenty-six points where this document was not enough, which are now fixed above.
+  those three, closed. A fourth acceptance was found later — an event naming a
+  signer other than the checkpoint over it — and §6 closes it. What that buys is
+  technical independence — another language, another author-session, no shared
+  code — and it is what surfaced the twenty-seven points where this document was
+  not enough, which are now fixed above.
   What it does **not** buy is social independence: same author, same repository,
   same interest in it working. A format with three implementations maintained by
   three parties checking each other has a kind of assurance this one still does not

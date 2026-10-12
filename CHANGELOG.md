@@ -10,6 +10,18 @@ tag, with its own changelog.
 
 ## [Unreleased]
 
+### Fixed
+
+- **The second reader binds every event in a signed range to the checkpoint's signer.** The product
+  refused an event whose `signerFp` is not the key that signed the checkpoint over it, and an event
+  whose `which` is its `who`; `FORMAT.md` said neither, and the Python verifier read an event's own
+  `signerFp` into the enrolment fold. So it verified a record in which a checker key signs a
+  checkpoint over an event naming the person's key, and §6.2 saw the person. §6 now says both rules,
+  with the set an identity is trimmed of written out (Python's `strip()` removes more than
+  JavaScript's `trim()`), and both readers refuse that record. `mutate.py` builds it, and the case
+  `which` = `who` + U+00A0; the gap registry has a twenty-seventh entry, closed. The product's verdict
+  on any record does not move.
+
 ## [0.2.0-beta] - 2026-10-11
 
 ### Added

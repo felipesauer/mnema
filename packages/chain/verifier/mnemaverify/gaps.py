@@ -368,6 +368,23 @@ GAPS: tuple[Gap, ...] = (
         "--certificate-oidc-issuer <issuer> <file>`",
         standing="record-finding",
     ),
+    Gap(
+        "G27",
+        "6",
+        "nothing bound an event to the checkpoint that signed it: section 6 proved WHICH key "
+        "signed a range, section 6.2 read each event's own `signerFp`, and no sentence said the "
+        "two must be the same key. So the holder of a checker key could write an event naming "
+        "the person's key, sign the checkpoint with the checker's, and the fold saw the person - "
+        "a record the product refused and this reader verified. The product's rule that `which` "
+        "is not `who` in a signed range was unwritten the same way",
+        "specified",
+        "CLOSED: section 6 says every event in a checkpoint's range names that checkpoint's "
+        "signerFp, and its `which` is not its `who` in the canonical form, with the trimmed set "
+        "written out because Python's strip() removes more than JavaScript's trim(). Earned by "
+        "two mutations, a checker's checkpoint over the person's event and `which` = `who` + "
+        "U+00A0",
+        standing="settled",
+    ),
 )
 
 BY_ID = {g.id: g for g in GAPS}

@@ -15,7 +15,7 @@
  * implementations completing end-to-end tests as a PRECONDITION for publishing a
  * standard. Certificate Transparency runs on several implementations checking each other.
  * What that buys is not redundancy — it is that assumptions which work inside one product
- * and are false outside it become visible. Twenty-six of them did; `python3
+ * and are false outside it become visible. Twenty-seven of them did; `python3
  * verifier/mnema_verify.py gaps` lists them, and one of them is a place where the two readers,
  * both faithful to the document, DATE THE SAME RECORD DIFFERENTLY.
  *
@@ -95,6 +95,7 @@ import { witnessSigstorePath } from './layout.js';
 import { meetsRequirement } from './level.js';
 import { readTailCheckpoints } from './store.js';
 import { serializeTailProof, signTailProof } from './tailproof.js';
+import { canonicalIdentityForm } from './verify.js';
 
 /** The second reader, and the tool that builds the inputs it has to refuse. */
 const VERIFIER = fileURLToPath(new URL('../../verifier/mnema_verify.py', import.meta.url));
@@ -554,6 +555,35 @@ const MUTATIONS = [
     productBreaks: 'ok',
   },
   {
+    // A ROLE KEY SPEAKING IN THE PERSON'S NAME. A checker key signs the checkpoint over an
+    // event whose `signerFp` is the person's, so the enrolment fold, reading the event, sees a
+    // key valid for the anchor and the checker's containment never meets it. The product bound
+    // each event to its checkpoint's signer and refused this; the second reader read the
+    // event's claim and VERIFIED it, until section 6 wrote the binding down.
+    name: 'checkpoint-by-a-checker-over-the-persons-event',
+    refusals: 1,
+    section: '6',
+    says: 'names a signer other than the checkpoint',
+    productSays: 'event identity does not bind to its signer',
+    // The other half of the rule: a range that broke the binding is NOT covered. The product
+    // says its event is "NOT yet signature-covered"; this reader has to leave the event in the
+    // window above the last verified checkpoint, and must not say the record has no such window.
+    uncovered: '1 event(s) sit above the last checkpoint',
+    productLayer: 'T2/T4',
+    productBreaks: 'ok',
+  },
+  {
+    // The same binding's second half: inside a signed range, `which` is not `who`, compared in
+    // the canonical form — here `who` with a trailing U+00A0, which a byte comparison misses.
+    name: 'which-is-who-in-a-signed-range',
+    refusals: 1,
+    section: '6',
+    says: 'its `which` is its `who`',
+    productSays: 'event identity does not bind to its signer',
+    productLayer: 'T2/T4',
+    productBreaks: 'ok',
+  },
+  {
     name: 'reordered-lines',
     refusals: 6,
     section: '3',
@@ -688,6 +718,16 @@ describe('the second reader refuses, and the mutation that earns each refusal sh
       `no refusal under section ${mutation.section} said ${mutation.says}`,
     ).toBe(true);
 
+    if ('uncovered' in mutation) {
+      expect(notes(there), `${mutation.name} was counted as signature-covered`).toContain(
+        mutation.uncovered,
+      );
+      expect(
+        there.findings.filter((f) => f.level === 'ok').map((f) => f.what),
+        `${mutation.name}: the second reader claimed no keyless window`,
+      ).not.toContainEqual(expect.stringContaining('there is no keyless window'));
+    }
+
     // And the product refuses the same bytes. THERE IS NO LONGER ANYWHERE ELSE FOR A ROW TO
     // GO: this loop used to have an escape hatch for a mutation only one reader catches — the
     // asymmetry, which had two named members (G21, G08) — and both are closed, so every row
@@ -703,6 +743,9 @@ describe('the second reader refuses, and the mutation that earns each refusal sh
     if (mutation.productBreaks === 'ok') {
       expect(here.ok, `the product accepted ${mutation.name}`).toBe(false);
       expect(here.issues.map((issue) => issue.layer)).toContain(mutation.productLayer);
+      if ('productSays' in mutation) {
+        expect(here.issues.map((issue) => issue.detail).join('\n')).toContain(mutation.productSays);
+      }
     } else {
       expect(here.witness, `the product still trusts the witness after ${mutation.name}`).toBe(
         'not-covered',
@@ -776,6 +819,36 @@ describe('the second reader refuses, and the mutation that earns each refusal sh
  * `witnessed-record` has no such inversion, so nothing here tests that distinction and the
  * document now says so instead of implying otherwise.
  */
+describe('the two readers compare `which` with `who` in one canonical form', () => {
+  it('trims exactly the set the product trims, over every code point of the BMP', () => {
+    // Python's `strip()` removes U+001C to U+001F and U+0085, which the product's `trim` keeps,
+    // so the second reader trims an enumerated set instead — and this is that set, asked of
+    // the second reader and compared with what the product's form removes, code point by
+    // code point. A set that drifted either way would make one reader call two identities the
+    // same that the other calls different.
+    const verifierDir = fileURLToPath(new URL('../../verifier/', import.meta.url));
+    const run = python([
+      '-c',
+      `import sys; sys.path.insert(0, ${JSON.stringify(verifierDir)}); ` +
+        'from mnemaverify.checkpoint import IDENTITY_TRIM; ' +
+        'print(",".join(str(ord(c)) for c in IDENTITY_TRIM))',
+    ]);
+    const second = run.stdout.trim().split(',').map(Number);
+    const product: number[] = [];
+    for (let code = 0; code <= 0xffff; code += 1) {
+      if (code >= 0xd800 && code <= 0xdfff) continue;
+      if (canonicalIdentityForm(`x${String.fromCharCode(code)}`) === 'x') product.push(code);
+    }
+    expect(second).toEqual(product);
+    // NON-VACUITY, from the outside: the two characters that split the languages land where
+    // section 6 says, in the product's own form.
+    expect(canonicalIdentityForm('x\u0085')).toBe('x\u0085');
+    expect(canonicalIdentityForm('x ')).toBe('x');
+    expect(second).not.toContain(0x85);
+    expect(second).toContain(0xa0);
+  });
+});
+
 describe('the two readers date the same record, from the block the document names', () => {
   it('reports one block for one checkpoint, and that block really carries it', () => {
     const record = copyOf('witnessed-record');
