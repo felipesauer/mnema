@@ -10,6 +10,14 @@ tag, with its own changelog.
 
 ## [Unreleased]
 
+### Changed
+
+- **The text a hook hands a session no longer carries the paragraph on regenerating the file.** `mnema brief --hook`
+  opened every session with how to regenerate `MNEMA.md` and check it against the record, a paragraph for whoever
+  holds the file and no use to a session that holds none; it is left out, 393 B and 96 tokens (o200k) fewer at
+  every opening. `mnema brief` without the flag prints the paragraph as before, so the file and the staleness
+  check are unchanged.
+
 ## [0.2.0-beta] - 2026-10-11
 
 ### Added
