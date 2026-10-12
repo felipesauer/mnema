@@ -8,20 +8,20 @@ instructions                                 2044 B      470 tok
 edit: rules pushed                            380 B      102 tok
 edit: asks for a person                       564 B      147 tok
 edit: refuses the write                       646 B      185 tok
-tool answer: bootstrap                       3623 B     1258 tok
-tool answer: skills                           336 B      105 tok
-tool answer: focus                           1357 B      502 tok
-tool answer: resume                          2224 B      803 tok
-tool answer: search                          1753 B      624 tok
-tool answer: search ["term"]                  326 B      120 tok
-tool answer: read_record ["id"]               865 B      344 tok
-tool answer: audit_timeline ["id"]           3158 B     1312 tok
-tool answer: audit_refs ["id"]                782 B      311 tok
-tool answer: governing_rules ["path"]        1123 B      399 tok
-tool answer: next_actions ["id"]              167 B       56 tok
-tool answer: audit_accountability            2205 B      510 tok
-tool answer: audit_exposure                   138 B       48 tok
-tool answer: audit_antipatterns               433 B      112 tok
+tool answer: bootstrap                       2418 B      936 tok
+tool answer: skills                           305 B       90 tok
+tool answer: focus                            899 B      371 tok
+tool answer: resume                          1441 B      591 tok
+tool answer: search                          1305 B      464 tok
+tool answer: search ["term"]                  240 B       87 tok
+tool answer: read_record ["id"]               700 B      273 tok
+tool answer: audit_timeline ["id"]           2518 B     1066 tok
+tool answer: audit_refs ["id"]                577 B      231 tok
+tool answer: governing_rules ["path"]         817 B      275 tok
+tool answer: next_actions ["id"]              106 B       28 tok
+tool answer: audit_accountability             916 B      276 tok
+tool answer: audit_exposure                    82 B       26 tok
+tool answer: audit_antipatterns               301 B       74 tok
 tool answer: record_decision                  152 B       48 tok
 tool answer: capture_memory                   146 B       44 tok
 tool definition: capture_memory              2103 B      451 tok

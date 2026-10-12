@@ -2222,16 +2222,17 @@ function moved(
  * points at a tool for the rest has stated nothing (`record-framing.ts`), and `verify` is
  * not a tool of this server at all.
  *
- * `compact` is the one thing a caller decides, because one read already decided it: the
- * index serves many hits at once and pays for every space twice over.
+ * THE PAYLOAD IS WRITTEN WITHOUT INDENTATION, for every read. Nobody reads it as a page —
+ * the host parses it and the model is billed for every space of it on every call — and
+ * `JSON.parse` gives back the same document either way
+ * (`tests/a-tool-answers-without-indentation.test.ts`).
  */
 function served(
   session: Session,
   result: unknown,
   also: readonly string[] = [],
-  compact = false,
 ): { readonly content: { readonly type: 'text'; readonly text: string }[] } {
-  return replied(session, [compact ? JSON.stringify(result) : JSON.stringify(result, null, 2)], {
+  return replied(session, [JSON.stringify(result)], {
     wrote: false,
     after: also,
   });

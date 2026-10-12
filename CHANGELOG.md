@@ -12,6 +12,12 @@ tag, with its own changelog.
 
 ### Changed
 
+- **The tools of the MCP server answer in JSON without indentation.** Every read (`bootstrap`, `focus`, `resume`,
+  `search`, `read_record`, `skills`, the `audit_*` reads, `governing_rules`, `next_actions`) wrote its payload indented
+  by two spaces, which the host hands to the model as text and which is billed on every call. The document is the
+  same one (`JSON.parse` gives back an equal value; no field was added, removed or renamed) and is 9% to 58%
+  smaller: `bootstrap` 3,623 to 2,418 bytes (1,258 to 936 tokens, o200k), `resume` 2,224 to 1,441,
+  `audit_accountability` 2,205 to 916.
 - **The text a hook hands a session no longer carries the paragraph on regenerating the file.** `mnema brief --hook`
   opened every session with how to regenerate `MNEMA.md` and check it against the record, a paragraph for whoever
   holds the file and no use to a session that holds none; it is left out, 393 B and 96 tokens (o200k) fewer at
