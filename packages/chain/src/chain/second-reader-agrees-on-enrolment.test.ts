@@ -1577,6 +1577,37 @@ describe('the two readers agree on records the product itself wrote — an agent
     expect(refused.join('\n')).toContain('already in an identity, or holds a role');
   });
 
+  it('an agent key taken out by a key revocation, not retired, enrolled again under another name: refused by both', () => {
+    // `key.revoked` removes the key from the identity and leaves the role with it, so the key is
+    // in no identity at this point; only the role map still says it was an agent. Without that
+    // memory the key would come back under a new name, and its past facts would be read as
+    // another agent's.
+    const { a, g, anchor } = personAndAgent();
+    const revoke = keyRevoked(
+      { at: at(3), who: anchor, signerFp: a.fingerprint, subject: anchor },
+      { revokedFp: g.fingerprint, reason: 'the machine was lent out' },
+    );
+    writeTail(
+      `${a.fingerprint}-i1`,
+      [
+        founding(a),
+        enrolAgent(anchor, a, g),
+        revoke,
+        enrolAgent(anchor, a, g, { name: 'gemini', when: 4 }),
+      ],
+      a,
+    );
+
+    const { productOk, verdict, refused } = bothReaders();
+    expect(productOk).toBe(false);
+    expect(productRefused()).toEqual([
+      'agent.enrolled names a key that is already in an identity, or holds a role, at this point',
+    ]);
+    expect(verdict).toBe('REFUSED');
+    expect(refused).toHaveLength(1);
+    expect(refused.join('\n')).toContain('already in an identity, or holds a role');
+  });
+
   it('a name with a colon and a letter outside ASCII, consented to over its UTF-8: green on both', () => {
     // The consent is `agent-enroll:<anchor>:<agentFp>:<name>` in UTF-8, the name last and whole.
     // A reader that encoded it any other way (latin-1 writes U+00E9 as one byte, not two) would

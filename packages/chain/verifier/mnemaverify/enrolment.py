@@ -377,7 +377,6 @@ def resolve(
                 or agent in checkers
                 or agent in agents
                 or agent in retired
-                or agent in retired_agents
             ):
                 issues.append(
                     Issue(tail, seq, "agent.enrolled names a key already in an identity, or holds a role")
