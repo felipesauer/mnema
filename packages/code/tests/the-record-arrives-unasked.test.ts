@@ -53,6 +53,7 @@ import { fileURLToPath } from 'node:url';
 import { excerptOf } from '@mnema/core';
 import type { Command } from 'commander';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
+import { HOW_TO_REGENERATE } from '../src/presentation/brief.js';
 import { HOOK_TEXT_CEILING } from '../src/presentation/within-a-hook.js';
 import { buildProgram } from '../src/program.js';
 import {
@@ -593,10 +594,13 @@ describe('the record arrives unasked', () => {
     expect(document).toContain(COMMITTED_TITLE);
     const notes = cli('recall', '--hook');
     expect(notes).toContain(PRIVATE_NOTE);
-    // UNDER THE CEILING THE HOOK'S COPY IS THE FILE'S, byte for byte: the flag cuts only a text
-    // that would not arrive as text, so a record this size is handed over exactly as
-    // `mnema brief > MNEMA.md` writes it.
-    expect(document).toBe(cli('brief'));
+    // UNDER THE CEILING THE HOOK'S COPY IS THE FILE'S, byte for byte, but for the paragraph that
+    // teaches regenerating the file: the flag cuts only a text that would not arrive as text,
+    // and a session handed this text holds no file to regenerate.
+    const recipe = `${HOW_TO_REGENERATE.join('\n')}\n\n`;
+    expect(cli('brief')).toContain(recipe);
+    expect(document).not.toContain(HOW_TO_REGENERATE[0]);
+    expect(document).toBe(cli('brief').replace(recipe, ''));
     expect(notes).toBe(cli('recall'));
 
     // Each handler, and the text of the verb IT runs — the two are one rule over two verbs.
@@ -682,7 +686,7 @@ describe('the record arrives unasked', () => {
     const quiet = (JSON.parse(after.out) as { hookSpecificOutput: { additionalContext: string } })
       .hookSpecificOutput.additionalContext;
     expect(quiet).not.toContain('issue [T1]');
-    expect(quiet).toBe(cli('brief'));
+    expect(quiet).toBe(cli('brief', '--hook'));
   });
 
   it('stops at a whole rule where a hook’s text would be replaced, and says so', () => {
