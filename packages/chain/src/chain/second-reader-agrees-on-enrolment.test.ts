@@ -1469,6 +1469,114 @@ describe('the two readers agree on records the product itself wrote — an agent
     expect(refused.join('\n')).toContain('not an agent key of its identity');
   });
 
+  /** B: a real identity with its own key, founded in its own tail, that is not A. */
+  function stranger(): { b: KeyPair; bAnchor: string } {
+    const b = generateKeyPair();
+    commitPublicKey(b);
+    return { b, bAnchor: deriveAnchor(b.fingerprint) };
+  }
+
+  it('an agent enrolment into an identity, signed by a key outside its set: refused by both', () => {
+    // B vouches for G in A's name and G consents: every other check passes. Only that B's key is
+    // not A's makes it a forgery, and a reader without the check would take G in as A's agent.
+    const { a, g, anchor } = personAndAgent();
+    const { b } = stranger();
+    writeTail(`${a.fingerprint}-i1`, [founding(a)], a);
+    writeTail(`${b.fingerprint}-i3`, [founding(b), enrolAgent(anchor, b, g)], b);
+    writeTail(`${g.fingerprint}-i2`, [byAgent(anchor, g, 't-1', 4)], g);
+
+    const { productOk, verdict, refused } = bothReaders();
+    expect(productOk).toBe(false);
+    // G's own fact, for an identity G was never validly enrolled into, is the second line. The
+    // order follows the tails' names, which are random keys, so the two lines are compared sorted.
+    expect([...productRefused()].sort()).toEqual(
+      [
+        'agent.enrolled is signed by a key not valid for the anchor at this point',
+        `event signer ${g.fingerprint} is not a key enrolled for ${anchor} at this point`,
+      ].sort(),
+    );
+    expect(verdict).toBe('REFUSED');
+    expect(refused).toHaveLength(2);
+    expect(refused.join('\n')).toContain(
+      'agent.enrolled is signed by a key not valid for the anchor',
+    );
+    expect(refused.join('\n')).toContain('is not a key enrolled for');
+  });
+
+  it('an agent retirement signed by a key outside the identity: refused by both', () => {
+    const { a, g, anchor } = personAndAgent();
+    const { b } = stranger();
+    writeTail(`${a.fingerprint}-i1`, [founding(a), enrolAgent(anchor, a, g)], a);
+    writeTail(`${b.fingerprint}-i3`, [founding(b), retireAgent(anchor, b, g, 3)], b);
+    writeTail(`${g.fingerprint}-i2`, [byAgent(anchor, g, 't-1', 4)], g);
+
+    const { productOk, verdict, refused } = bothReaders();
+    expect(productOk).toBe(false);
+    expect(productRefused()).toEqual([
+      'agent.retired is signed by a key not valid for the anchor at this point',
+    ]);
+    expect(verdict).toBe('REFUSED');
+    expect(refused).toHaveLength(1);
+    expect(refused.join('\n')).toContain('signed by a key not valid for the anchor');
+  });
+
+  it('an agent enrolment whose who is not its subject: refused by both', () => {
+    const { a, g, anchor } = personAndAgent();
+    const { bAnchor } = stranger();
+    const forged = agentEnrolled(
+      { at: at(2), who: bAnchor, signerFp: a.fingerprint, subject: anchor },
+      { agentFp: g.fingerprint, name: 'claude', reverseSig: consent(anchor, g, 'claude') },
+    );
+    writeTail(`${a.fingerprint}-i1`, [founding(a), forged], a);
+
+    const { productOk, verdict, refused } = bothReaders();
+    expect(productOk).toBe(false);
+    expect(productRefused()).toEqual(['agent.enrolled who is not the anchor it enrols into']);
+    expect(verdict).toBe('REFUSED');
+    expect(refused).toHaveLength(1);
+    expect(refused.join('\n')).toContain('who is not the anchor it enrols into');
+  });
+
+  it('an agent retirement whose who is not its subject: refused by both', () => {
+    const { a, g, anchor } = personAndAgent();
+    const { bAnchor } = stranger();
+    const forged = agentRetired(
+      { at: at(3), who: bAnchor, signerFp: a.fingerprint, subject: anchor },
+      { agentFp: g.fingerprint, reason: 'the machine was lent out' },
+    );
+    writeTail(`${a.fingerprint}-i1`, [founding(a), enrolAgent(anchor, a, g), forged], a);
+
+    const { productOk, verdict, refused } = bothReaders();
+    expect(productOk).toBe(false);
+    expect(productRefused()).toEqual(['agent.retired who is not the anchor it retires from']);
+    expect(verdict).toBe('REFUSED');
+    expect(refused).toHaveLength(1);
+    expect(refused.join('\n')).toContain('who is not the anchor it retires from');
+  });
+
+  it('a retired agent key enrolled again: refused by both', () => {
+    const { a, g, anchor } = personAndAgent();
+    writeTail(
+      `${a.fingerprint}-i1`,
+      [
+        founding(a),
+        enrolAgent(anchor, a, g),
+        retireAgent(anchor, a, g, 3),
+        enrolAgent(anchor, a, g, { when: 4 }),
+      ],
+      a,
+    );
+
+    const { productOk, verdict, refused } = bothReaders();
+    expect(productOk).toBe(false);
+    expect(productRefused()).toEqual([
+      'agent.enrolled names a key that is already in an identity, or holds a role, at this point',
+    ]);
+    expect(verdict).toBe('REFUSED');
+    expect(refused).toHaveLength(1);
+    expect(refused.join('\n')).toContain('already in an identity, or holds a role');
+  });
+
   it('a name with a colon and a letter outside ASCII, consented to over its UTF-8: green on both', () => {
     // The consent is `agent-enroll:<anchor>:<agentFp>:<name>` in UTF-8, the name last and whole.
     // A reader that encoded it any other way (latin-1 writes U+00E9 as one byte, not two) would
