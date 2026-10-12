@@ -14,6 +14,7 @@ import type { Command } from 'commander';
 import { itemLine } from '../presentation/items.js';
 import { windowGloss, windowHelp } from '../vocabulary.js';
 import { here } from './context.js';
+import { onOneLine } from './on-one-line.js';
 import { ACTOR_HELP } from './options.js';
 import { reportRefusal } from './report.js';
 import { type Declared, readsTheRecord, type Wiring } from './verb.js';
@@ -68,7 +69,8 @@ export function registerAccountability(program: Command, wiring: Wiring): Declar
           return;
         }
         // Human summary — one level. The total and one line per author with their
-        // count; the per-kind and per-agent breakdown stays in --json.
+        // count; the per-kind and per-agent breakdown stays in --json, but for the agents
+        // an agent key attested.
         //
         // AND, BESIDE AN AUTHOR WHOSE IDENTITY WAS FOUNDED WHERE OTHERS ALREADY WERE, where and
         // when: the count says there are two authors, and this says which one arrived second —
@@ -93,6 +95,11 @@ export function registerAccountability(program: Command, wiring: Wiring): Declar
                 ...(account.retiredBy !== undefined
                   ? [`retired by ${anchorText(result.anchors, account.retiredBy)}`]
                   : []),
+                // The agents an agent key attested, and how many of their facts it signed: `claude 40
+                // (38 attested)`. Said without a flag; an agent only declared stays in the --json.
+                ...account.byWhich
+                  .filter((one) => one.which !== null && one.attested !== undefined)
+                  .map((one) => onOneLine`${one.which} ${one.count} (${one.attested} attested)`),
                 ...founded,
               ]),
             ),

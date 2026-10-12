@@ -482,6 +482,8 @@ describe('the server signs as the agent the record names', () => {
     // And what the reads say of it: the line of `show` and the account of the author.
     const shown = await did(undefined, 'show', decision?.subject as string);
     expect(shown).toContain('agent claude, attested by its own key');
+    // The text says the same, without a flag: the agent, its count, and how many the key signed.
+    expect(await did(undefined, 'audit', 'accountability')).toContain('claude 3 (3 attested)');
     const account = JSON.parse(await did(undefined, 'audit', 'accountability', '--json')) as {
       readonly byWho: readonly {
         readonly byWhich: readonly { which: string | null; count: number; attested: number }[];
@@ -530,6 +532,7 @@ describe('the server signs as the agent the record names', () => {
         readonly byWhich: readonly { which: string | null; attested?: number }[];
       }[];
     };
+    expect(await did(undefined, 'audit', 'accountability')).not.toContain('attested)');
     expect(
       account.byWho.flatMap((who) => who.byWhich).filter((one) => one.which === 'claude-code'),
     ).toEqual([{ which: 'claude-code', count: 3 }]);

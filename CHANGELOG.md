@@ -31,7 +31,7 @@ tag, with its own changelog.
   name the record gave the key, not what the client announced; elsewhere the person's key signs, as before, and the
   server says so once. The hook files and manifests the host table generates pass the host's name, and the plugin has
   an `agent_key` option, empty by default. `mnema show <id>` marks a decision an agent key recorded or ruled
-  (`attested by its own key`), `mnema audit accountability --json` carries `attested` beside an agent's count where
+  (`attested by its own key`), `mnema audit accountability` says `claude 40 (38 attested)` beside an author for an agent whose key signed some of its facts, and with `--json` it carries `attested` beside an agent's count where
   there is one, and `mnema doctor` lists the agent keys of the machine against the project's record. The core now
   names `enrollAgent`, `retireAgent`, `enrollAgentFromRequest`, `retireAgentKey` and `requestAgentEnrollment` in
   `@mnema/core/write`, and the shape of an agent's name (`AGENT_NAME`, `agentNameRefusal`) in `@mnema/core`.

@@ -266,6 +266,10 @@ const CLASSIFIED: Readonly<Record<string, { verdict: Verdict; why: string }>> = 
     verdict: 'minted',
     why: 'two counts this reading computed',
   },
+  'accountability.ts «{} {} ({} attested)» #1': {
+    verdict: 'collapsed',
+    why: 'the name an agent key was enrolled under, read back out of the record',
+  },
   'decision.ts «Moved {} of {}; the rest were refused above and nothing was written for them.» #1':
     {
       verdict: 'minted',
@@ -890,7 +894,8 @@ describe('every line this wiring words is classified', () => {
     // 115 with the five lines `stack add` and `stack remove` print.
     // 122 with the seven lines `stack export`, `check`, `enable` and `disable` print.
     // 134 with the twelve lines the three agent verbs print.
-    expect(FOUND.sites.length).toBe(134);
+    // 135 with the agent an agent key attested, on the line of the author in `audit accountability`.
+    expect(FOUND.sites.length).toBe(135);
   });
 
   it('reads the verdict off the source rather than believing the table', () => {
@@ -910,9 +915,9 @@ describe('every line this wiring words is classified', () => {
   it('found sites of both kinds, and the scanner sees a tag when there is one', () => {
     // Neither arm of the case above may be empty, or half of it is vacuous.
     const verdicts = Object.values(CLASSIFIED).map((said) => said.verdict);
-    expect(verdicts.filter((verdict) => verdict === 'collapsed').length).toBe(64);
+    expect(verdicts.filter((verdict) => verdict === 'collapsed').length).toBe(65);
     expect(verdicts.filter((verdict) => verdict === 'minted').length).toBe(70);
-    expect(FOUND.sites.filter((site) => site.tagged).length).toBe(64);
+    expect(FOUND.sites.filter((site) => site.tagged).length).toBe(65);
   });
 
   it('every reason says where the value comes from', () => {
@@ -1038,6 +1043,9 @@ describe('a value from outside cannot forge a second line', () => {
  * somebody closed and nobody drove, and the reconciliation below is what says so.
  */
 const UNREACHABLE: Readonly<Record<string, string>> = {
+  'accountability.ts «{} {} ({} attested)» #1':
+    'the name is the one an agent key was enrolled under, which the name form holds to one line before ' +
+    'the record has it; the tag is the second fence',
   'stack.ts «Installed {} {}: {} files written.» #1':
     'the name is held to the stack-name form and the version to a version’s characters before the ' +
     'plan exists, so no line break reaches the line; the tag is the second fence',

@@ -872,8 +872,9 @@ For a host with no manifest of this plugin, put `--agent-key <name>` in the host
 project's: a host's project configuration is what the model writes, so the choice of key does not go there.
 
 `mnema show <id>` marks a decision's recorder or ruler that an agent key signed (`agent claude, attested
-by its own key`), and `mnema audit accountability --json` carries, per agent, how many of its facts the
-record's own agent key signed (`attested`, absent where none).
+by its own key`), and `mnema audit accountability` says, beside an author, `claude 40 (38 attested)` for an agent whose
+key signed some of its facts; with `--json` each agent carries how many of its facts the record's own agent key
+signed (`attested`, absent where none).
 
 **What `mnema verify` holds an agent key to.** The key is a member of the identity that enrolled it,
 and what it signs is refused unless all of this holds: its `who` is that identity's anchor; its
