@@ -19,12 +19,7 @@ import type { Brief, ChannelState } from '@mnema/context';
 import type { DivergentMove } from '@mnema/core';
 import { describe, expect, it } from 'vitest';
 import { hookTextOf } from '../host-names.js';
-import {
-  briefDocument,
-  briefWithin,
-  HOW_TO_REGENERATE,
-  STACKS_SECTION_MOST,
-} from './brief.js';
+import { briefDocument, briefWithin, HOW_TO_REGENERATE, STACKS_SECTION_MOST } from './brief.js';
 import {
   CLAUDE_CODE_CEILING,
   HOOK_TEXT_CEILING,
