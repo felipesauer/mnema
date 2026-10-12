@@ -24,6 +24,14 @@ tag, with its own changelog.
 
 ### Changed
 
+- **A reported run no longer repeats its actor, and the focus inside a resume no longer names it.** A run in
+  `bootstrap`, `resume` and `focus` carried `who`, and `resume.focus` carried `actor`, each the same value as the
+  `actor` the answer already gives (every run listed there is one of the actor's). They are left out of the
+  derivation, so the MCP tools and the `--json` of the CLI's `status` and `resume` serve the same shape: `who`
+  is gone from every run and `resume.focus` is `{ openRuns }`. Nothing else moves; `focus` keeps its own `actor`.
+  `bootstrap` 2,418 to 2,104 bytes (936 to 784 tokens, o200k), `resume` 1,441 to 1,127 (591 to 439), `focus` 899 to
+  743 (371 to 295), and ten open runs save ten more `who`. A reader that took the actor from a run takes it from the
+  answer's `actor`.
 - **The tools of the MCP server answer in JSON without indentation.** Every read (`bootstrap`, `focus`, `resume`,
   `search`, `read_record`, `skills`, the `audit_*` reads, `governing_rules`, `next_actions`) wrote its payload indented
   by two spaces, which the host hands to the model as text and which is billed on every call. The document is the
