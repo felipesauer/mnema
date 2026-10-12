@@ -17,8 +17,9 @@ tag, with its own changelog.
   and the Python second reader) refuse a fact the key signs for another identity, under a `which` other than its name,
   or of a kind that changes who may sign, and a fact it signs after a signature-covered retirement. The catalog has 34
   kinds and the published vectors are 38. `verify` counts, in its census, the facts an agent key signed (`attested`)
-  and, behind `--verbose`, every other `which` (`declared`, the key that signed stated it); the second reader says the
-  same counts, and neither moves the verdict, the level or the exit. This version reads agent keys and no command of it
+  and, behind `--verbose`, every other `which` (`declared`, the key that signed stated it); an agent key the record
+  retired after it signed is named too (`retired-agent`, with and without the flag, as a retired checker is). The
+  second reader says the same counts, and none of them moves the verdict, the level or the exit. This version reads agent keys and no command of it
   enrols one yet. A binary from before stops reading a record that holds either kind, as for any kind it does not know.
 
 ### Changed

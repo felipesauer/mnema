@@ -915,6 +915,21 @@ const CLASSIFIED: Readonly<Record<string, { verdict: Verdict; why: string }>> = 
       verdict: 'collapsed',
       why: 'the identity a stored retirement names as its signer',
     },
+  '@mnema/chain chain/verify.ts «{} retired it — authentic, since the key held the role when it » oneLine(retirement.by) #2':
+    {
+      verdict: 'collapsed',
+      why: 'the identity a stored agent retirement names as its signer, which is the anchor it retires from',
+    },
+  '@mnema/chain chain/verify.ts «{} event(s) signed by the agent key {} before » retirement.eventsBefore #1':
+    {
+      verdict: 'minted',
+      why: 'a count the fold kept, of facts it accepted from the key',
+    },
+  '@mnema/chain chain/verify.ts «{} event(s) signed by the agent key {} before » oneLine(fingerprint) #1':
+    {
+      verdict: 'collapsed',
+      why: 'the agent key a stored retirement names',
+    },
   '@mnema/chain chain/verify.ts «the event at seq {} cites {}…, an entry this record does » seq #1':
     {
       verdict: 'minted',
@@ -1750,6 +1765,8 @@ const NOT_A_SENTENCE: Readonly<Record<string, string>> = {
     'another clause of that same table, and a count on the same terms',
   '@mnema/chain chain/verify.ts «{} retired checker key(s) whose earlier check results are no longer vouched for (see census — informational, not a break)» count':
     'another clause of that same table, and a count on the same terms',
+  '@mnema/chain chain/verify.ts «{} retired agent key(s) whose earlier facts are no longer vouched for (see census — informational, not a break)» count':
+    'another clause of that same table, and a count on the same terms',
   '@mnema/chain chain/verify.ts «{} citation(s) of an entry this record does not hold, ignored in the order (see census — informational, not a break)» count':
     'another clause of that same table, and a count on the same terms',
   '@mnema/chain chain/verify.ts «{} tail(s) whose clock ran behind what it had read (see census — informational, not a break)» count':
@@ -1781,8 +1798,8 @@ describe('every value the domain puts in a sentence is classified', () => {
     // are equal. The scale is stated, and so is what the HANDOFF said — twenty-three
     // sites, twelve in `core` and eleven in `chain` — because it counted sentences
     // written at a `message:` or a `detail:` directly, and a value is not a sentence.
-    expect(SITES.length).toBe(233);
-    expect(FOUND[0]?.sites.length).toBe(90);
+    expect(SITES.length).toBe(236);
+    expect(FOUND[0]?.sites.length).toBe(93);
     expect(FOUND[1]?.sites.length).toBe(143);
     expect(FOUND.flatMap((layer) => layer.wording).length).toBeGreaterThan(15);
   });
@@ -1833,11 +1850,11 @@ describe('every value the domain puts in a sentence is classified', () => {
     // No arm of the case above may be empty, or that much of it is vacuous.
     const verdicts = Object.values(CLASSIFIED).map((said) => said.verdict);
     const count = (verdict: Verdict): number => verdicts.filter((said) => said === verdict).length;
-    expect(count('collapsed')).toBe(151);
-    expect(count('minted')).toBe(59);
+    expect(count('collapsed')).toBe(153);
+    expect(count('minted')).toBe(60);
     expect(count('composed')).toBe(23);
     expect(SITES.filter((site) => new RegExp(`\\b${DOOR}\\b`).test(site.expression))).toHaveLength(
-      151,
+      153,
     );
   });
 

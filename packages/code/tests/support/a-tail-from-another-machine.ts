@@ -24,10 +24,24 @@
  * Collapsing the other four is a slice of its own, not a line of this one.
  */
 
-import { cpSync, readdirSync, rmSync } from 'node:fs';
+import { cpSync, readdirSync, rmSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
-import { catalogUpcasters, openChainForWriting } from '@mnema/chain';
-import { createTask } from '@mnema/core/write';
+import {
+  agentEnrolled,
+  agentEnrollmentMessage,
+  agentRetired,
+  ChainWriter,
+  catalogUpcasters,
+  deriveAnchor,
+  generateKeyPair,
+  openChainForWriting,
+  publicKeyPath,
+  publicKeyToPem,
+  sign,
+  taskCreated,
+} from '@mnema/chain';
+import { type DiscoveryEnv, resolveTrees } from '@mnema/core';
+import { createTask, openTreeForWriting } from '@mnema/core/write';
 
 /**
  * Writes a tail on `machine`, merges it into the tree at `into`, and answers with its id.
@@ -52,4 +66,66 @@ export function mergeAForeignTail(into: string, machine: string): string {
   }
   rmSync(machine, { recursive: true, force: true });
   return writer.tail;
+}
+
+/**
+ * An AGENT KEY the project's person enrolled, which signed `signed` facts and was then retired —
+ * the one record the CLI cannot write yet (no verb enrols an agent), written the way the chain's
+ * own tests write one: the person's writer appends the enrolment and the retirement, a writer
+ * holding the agent's key appends its tasks in a tail of its own, and every tail is checkpointed.
+ * `at` is explicit, so the order the fold reads is the one a case names and not the clock's.
+ */
+export function anAgentThatSignedAndWasRetired(
+  repo: string,
+  env: DiscoveryEnv,
+  signed: number,
+): { readonly agentFp: string; readonly anchor: string } {
+  const trees = resolveTrees(repo, env);
+  const root = trees.projectPublic as string;
+  const person = openTreeForWriting(trees, 'public');
+  const anchor = deriveAnchor(person.signerFingerprint);
+  const agent = generateKeyPair();
+  writeFileSync(publicKeyPath({ root }, agent.fingerprint), publicKeyToPem(agent.publicKey));
+  const base = Date.now() + 60_000;
+  const at = (n: number): string => new Date(base + n * 1000).toISOString();
+  const consent = Buffer.from(
+    sign(agentEnrollmentMessage(anchor, agent.fingerprint, 'claude'), agent.privateKey),
+  ).toString('hex');
+  person.exclusively(() => {
+    person.append(
+      agentEnrolled(
+        { at: at(0), who: anchor, signerFp: person.signerFingerprint, subject: anchor },
+        { agentFp: agent.fingerprint, name: 'claude', reverseSig: consent },
+      ),
+    );
+    person.checkpoint();
+  });
+  const writer = new ChainWriter({ root }, agent, 'i9', catalogUpcasters());
+  writer.exclusively(() => {
+    for (let n = 1; n <= signed; n += 1) {
+      writer.append(
+        taskCreated(
+          {
+            at: at(n),
+            who: anchor,
+            signerFp: agent.fingerprint,
+            subject: `agent-task-${n}`,
+            which: 'claude',
+          },
+          { title: `what the agent did, ${n}` },
+        ),
+      );
+    }
+    writer.checkpoint();
+  });
+  person.exclusively(() => {
+    person.append(
+      agentRetired(
+        { at: at(signed + 1), who: anchor, signerFp: person.signerFingerprint, subject: anchor },
+        { agentFp: agent.fingerprint, reason: 'the machine was lent out' },
+      ),
+    );
+    person.checkpoint();
+  });
+  return { agentFp: agent.fingerprint, anchor };
 }

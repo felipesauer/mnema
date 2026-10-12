@@ -116,6 +116,13 @@ export interface IdentityResolution {
    */
   readonly retiredCheckers: ReadonlyMap<string, RetiredChecker>;
   /**
+   * Every agent key a signature-covered `agent.retired` took out of the role, by fingerprint: who
+   * retired it, where, and how many facts it signed BEFORE — facts the fold accepted, because the
+   * key held the role when it signed, and which the census names for the reason it names a
+   * checker's results: "before" is placed by the `at` the key itself wrote.
+   */
+  readonly retiredAgents: ReadonlyMap<string, RetiredAgent>;
+  /**
    * The keys a signature-covered `backup.declared` says are an identity's backup, each with that
    * identity (FORMAT.md section 6.5). A declaration is about how a key with no tail is SAID, so it
    * is kept here for the census and decides nothing about which events are authentic; the census
@@ -160,6 +167,17 @@ export interface RetiredChecker {
   readonly seq: number;
   /** How many `check.passed`/`check.failed` it signed that the fold accepted before it. */
   readonly resultsBefore: number;
+}
+
+/** An agent key the record retired (FORMAT.md section 6.2). */
+export interface RetiredAgent {
+  /** The identity that retired it. */
+  readonly by: string;
+  /** Where the retirement sits. */
+  readonly tail: string;
+  readonly seq: number;
+  /** How many facts it signed that the fold accepted before the retirement. */
+  readonly eventsBefore: number;
 }
 
 /**
@@ -269,7 +287,7 @@ export function resolveIdentity(
   // set like any key, and the role stays with it.
   const agents = new Map<string, { readonly anchor: string; readonly name: string }>();
   // The agent keys a signature-covered `agent.retired` took out: they sign nothing from then on.
-  const retiredAgents = new Set<string>();
+  const retiredAgents = new Map<string, RetiredAgent>();
   // What the census says of the agents accepted facts name: per agent key, per declared `which`.
   const attested = new Map<string, number>();
   const declared = new Map<string, number>();
@@ -483,7 +501,14 @@ export function resolveIdentity(
         // like a revocation, it takes effect only when signature-covered.
         if (!isCheckpointed(tail, seq)) break;
         keysOf(anchor).delete(agentFp);
-        retiredAgents.add(agentFp);
+        if (!retiredAgents.has(agentFp)) {
+          retiredAgents.set(agentFp, {
+            by: event.who,
+            tail,
+            seq,
+            eventsBefore: attested.get(agentFp) ?? 0,
+          });
+        }
         break;
       }
       case 'key.revoked': {
@@ -694,6 +719,7 @@ export function resolveIdentity(
     issues,
     members: validKeys,
     retiredCheckers: retired,
+    retiredAgents,
     backups,
     citations,
     agents: named,

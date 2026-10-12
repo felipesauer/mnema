@@ -136,6 +136,10 @@ class Resolution(NamedTuple):
     # role stated on one. Informational: nothing here moves the verdict.
     attested: list[tuple[str, str, str, int]]
     declared: list[tuple[str, int]]
+    # Section 6.2: (agentFp, anchor that retired it, events) of every agent key a covered
+    # agent.retired took out of the role that had signed an accepted fact before it - the count the
+    # product's census names, said and never judged.
+    retired_agents: list[tuple[str, str, int]]
 
 
 def _merged(entries_by_tail: dict[str, list[Entry]]) -> Merged:
@@ -270,6 +274,9 @@ def resolve(
     agents: dict[str, tuple[str, str]] = {}
     # Agent keys a covered agent.retired took out: they sign nothing, ever again.
     retired_agents: set[str] = set()
+    # For each of them, (the anchor that retired it, how many facts the fold had judged by then);
+    # the facts that count are the ones no issue names, which is known only after the fold.
+    retirements: dict[str, tuple[str, int]] = {}
     # (tail, seq, agent key or None, which) of every event that reached its kind's conditions,
     # so the census counts, after the fold, only the ones no issue names.
     judged: list[tuple[str, int, str | None, Any]] = []
@@ -406,6 +413,7 @@ def resolve(
                 continue
             keys_of(anchor).discard(agent)
             retired_agents.add(agent)
+            retirements.setdefault(agent, (anchor, len(judged)))
             continue
 
         if kind == "checker.enrolled":
@@ -568,6 +576,16 @@ def resolve(
             attested[agent_key] = attested.get(agent_key, 0) + 1
         elif isinstance(which, str):
             declared[which] = declared.get(which, 0) + 1
+    # A key retired before it signed anything has nothing to name.
+    retired_with_facts: list[tuple[str, str, int]] = []
+    for agent, (by, upto) in retirements.items():
+        before = sum(
+            1
+            for tail, seq, agent_key, _which in judged[:upto]
+            if agent_key == agent and (tail, seq) not in refused
+        )
+        if before > 0:
+            retired_with_facts.append((agent, by, before))
     return Resolution(
         issues,
         valid,
@@ -576,6 +594,7 @@ def resolve(
         merged.behind,
         [(fp, agents[fp][0], agents[fp][1], count) for fp, count in attested.items()],
         list(declared.items()),
+        retired_with_facts,
     )
 
 

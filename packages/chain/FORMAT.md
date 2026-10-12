@@ -618,6 +618,12 @@ party with no key cannot retire an honest agent. Only the identity that enrolled
 it, by a key of its own that is not an agent key — so a leaked agent key cannot retire its
 siblings, nor be used to retire itself out of the record's sight.
 
+What the key signed BEFORE its retirement stays authentic, for the reason a checker's results do,
+and "before" is the same merged order and the same `at` the key itself wrote: a leaked agent key
+can place a fact before its own retirement. A reader therefore learns from the record that the key
+was retired, and how many facts it signed before; this product's `verify` names those in its
+census, as it names a retired checker's, informational, and the second reader says the same count.
+
 **What a reader learns from it.** An event signed by an agent key that the fold accepts names, in
 `which`, the name its identity enrolled that key under: its agent is ATTESTED by an agent key
 enrolled as that name. Any other `which` is DECLARED: the key that signed stated it. Which process

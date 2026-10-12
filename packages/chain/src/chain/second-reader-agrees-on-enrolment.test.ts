@@ -1488,6 +1488,88 @@ describe('the two readers agree on records the product itself wrote — an agent
     expect(product).toEqual([`attested ${name} 1`]);
     expect(second).toEqual(product);
   });
+
+  /**
+   * What each reader says of an agent key the record retired: `<fp12> by <by17> <n>`, one per key
+   * that signed accepted facts before its retirement — the count the checker's note carries as
+   * `resultsBefore`, sorted, so the two lists are compared and not two wordings.
+   */
+  function retiredAgentCensus(): { product: readonly string[]; second: readonly string[] } {
+    const product = verify(root, catalogUpcasters())
+      .census.flatMap((note) =>
+        note.kind === 'retired-agent'
+          ? [`${note.fingerprint.slice(0, 12)} by ${note.by.slice(0, 17)} ${note.eventsBefore}`]
+          : [],
+      )
+      .sort();
+    const second = secondNotes()
+      .flatMap((said) => {
+        const retired =
+          /^6\.2: (\d+) event\(s\) signed by the agent key (\S+) before (\S+) retired it/.exec(
+            said,
+          );
+        return retired === null ? [] : [`${retired[2]} by ${retired[3]} ${retired[1]}`];
+      })
+      .sort();
+    return { product, second };
+  }
+
+  it('a retired agent key that signed before: both name it, with the same count', () => {
+    const { a, g, anchor } = personAndAgent();
+    writeTail(
+      `${a.fingerprint}-i1`,
+      [founding(a), enrolAgent(anchor, a, g), retireAgent(anchor, a, g, 5)],
+      a,
+    );
+    writeTail(
+      `${g.fingerprint}-i2`,
+      [byAgent(anchor, g, 't-1', 3), byAgent(anchor, g, 't-2', 4)],
+      g,
+    );
+
+    const { productOk, verdict, refused } = bothReaders();
+    expect(refused, 'the second reader refuses what the key signed while it held the role').toEqual(
+      [],
+    );
+    expect(productOk).toBe(true);
+    expect(verdict).toBe('VERIFIED');
+    const { product, second } = retiredAgentCensus();
+    expect(product).toEqual([`${g.fingerprint.slice(0, 12)} by ${anchor.slice(0, 17)} 2`]);
+    expect(second).toEqual(product);
+    expect(
+      verify(root, catalogUpcasters()).census.filter((note) => note.kind === 'retired-agent'),
+    ).toMatchObject([{ fingerprint: g.fingerprint, by: anchor, eventsBefore: 2 }]);
+  });
+
+  it('a retired agent key that signed nothing, or whose retirement no checkpoint covers: named by neither', () => {
+    // The checker's note is for a key that signed BEFORE; a key retired with nothing to its name
+    // leaves nothing to say, and an ignored retirement retired nothing.
+    const { a, g, anchor } = personAndAgent();
+    writeTail(
+      `${a.fingerprint}-i1`,
+      [founding(a), enrolAgent(anchor, a, g), retireAgent(anchor, a, g, 3)],
+      a,
+    );
+    expect(bothReaders().productOk).toBe(true);
+    expect(retiredAgentCensus()).toEqual({ product: [], second: [] });
+
+    rmSync(root, { recursive: true, force: true });
+    mkdirSync(root, { recursive: true });
+    const again = personAndAgent();
+    writeTail(
+      `${again.a.fingerprint}-i1`,
+      [
+        founding(again.a),
+        enrolAgent(again.anchor, again.a, again.g),
+        retireAgent(again.anchor, again.a, again.g, 5),
+      ],
+      again.a,
+      { residual: 1 },
+    );
+    writeTail(`${again.g.fingerprint}-i2`, [byAgent(again.anchor, again.g, 't-1', 3)], again.g);
+    expect(bothReaders().productOk).toBe(true);
+    expect(retiredAgentCensus()).toEqual({ product: [], second: [] });
+  });
 });
 
 /**

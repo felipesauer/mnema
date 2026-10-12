@@ -962,6 +962,7 @@ function censusLocus(note: CensusNote): string {
     case 'key-without-tail':
     case 'backup-key':
     case 'retired-checker':
+    case 'retired-agent':
       return note.fingerprint;
     case 'empty-tail':
     case 'partial-final-line':

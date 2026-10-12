@@ -177,6 +177,7 @@ export type CensusNote =
   | ForeignRetractionNote
   | ForeignLinkRetractionNote
   | RetiredCheckerNote
+  | RetiredAgentNote
   | CitationNotHeldNote
   | ClockBehindNote
   | AttestedWhichNote
@@ -379,6 +380,29 @@ export interface RetiredCheckerNote {
   readonly by: string;
   /** How many results it signed that the fold accepted before the retirement. */
   readonly resultsBefore: number;
+  /** Where the retirement sits. */
+  readonly tail: string;
+  readonly seq: number;
+  readonly detail: string;
+}
+
+/**
+ * An agent key the record retired (`agent.retired`, FORMAT.md section 6.2) that had signed facts
+ * before its retirement.
+ *
+ * Not a break, for the reason a {@link RetiredCheckerNote} is not: each of those facts was signed
+ * while the key held the role, and the facts it signs AFTER are breaks of their own. A reader is
+ * told anyway, because "before" is the place the merged order gives a fact, and that place comes
+ * from the `at` the key itself wrote — a leaked key can put a fact before its own retirement.
+ */
+export interface RetiredAgentNote {
+  readonly kind: 'retired-agent';
+  /** The retired agent key. */
+  readonly fingerprint: string;
+  /** The identity that retired it. */
+  readonly by: string;
+  /** How many facts it signed that the fold accepted before the retirement. */
+  readonly eventsBefore: number;
   /** Where the retirement sits. */
   readonly tail: string;
   readonly seq: number;
@@ -742,6 +766,7 @@ export function verifyChain(
     ...foreignRetractions(tails, entriesByTail),
     ...foreignLinkRetractions(tails, entriesByTail),
     ...retiredCheckers(identity.retiredCheckers),
+    ...retiredAgents(identity.retiredAgents),
     ...citationsNotHeld(identity.citations),
     ...clocksBehind(identity.citations),
     ...agentsNamed(identity.agents),
@@ -1049,6 +1074,31 @@ function retiredCheckers(retired: IdentityResolution['retiredCheckers']): Retire
         `${retirement.resultsBefore} check result(s) signed by ${oneLine(fingerprint)} before ` +
         `${oneLine(retirement.by)} retired it — authentic, since the key held the role when it ` +
         'signed, and no longer vouched for: a result is placed before a retirement by the time ' +
+        'the key itself wrote',
+    });
+  }
+  return found;
+}
+
+/**
+ * Every retired agent key that signed facts before its retirement, in the order the fold met the
+ * retirements. A key retired before it signed anything has nothing to name.
+ */
+function retiredAgents(retired: IdentityResolution['retiredAgents']): RetiredAgentNote[] {
+  const found: RetiredAgentNote[] = [];
+  for (const [fingerprint, retirement] of retired) {
+    if (retirement.eventsBefore === 0) continue;
+    found.push({
+      kind: 'retired-agent',
+      fingerprint,
+      by: retirement.by,
+      eventsBefore: retirement.eventsBefore,
+      tail: retirement.tail,
+      seq: retirement.seq,
+      detail:
+        `${retirement.eventsBefore} event(s) signed by the agent key ${oneLine(fingerprint)} before ` +
+        `${oneLine(retirement.by)} retired it — authentic, since the key held the role when it ` +
+        'signed, and no longer vouched for: an event is placed before a retirement by the time ' +
         'the key itself wrote',
     });
   }
@@ -1602,6 +1652,8 @@ const CENSUS_CLAUSE: Readonly<Record<CensusNote['kind'], ((count: number) => str
     `${count} link retraction(s) by an identity that did not record the link, not applied (see census — informational, not a break)`,
   'retired-checker': (count) =>
     `${count} retired checker key(s) whose earlier check results are no longer vouched for (see census — informational, not a break)`,
+  'retired-agent': (count) =>
+    `${count} retired agent key(s) whose earlier facts are no longer vouched for (see census — informational, not a break)`,
   'citation-not-held': (count) =>
     `${count} citation(s) of an entry this record does not hold, ignored in the order (see census — informational, not a break)`,
   'clock-behind-what-it-read': (count) =>

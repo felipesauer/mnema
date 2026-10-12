@@ -849,13 +849,15 @@ are tested to agree.
 
 **A retired agent key signs nothing.** Only the identity that enrolled the key retires it, by a key
 of its own that is not an agent key, and the retirement counts only once a checkpoint covers it. From
-then on `verify` refuses any event the key signs. What it signed before still verifies.
+then on `verify` refuses any event the key signs. What it signed before still verifies, and the census
+names it, as it names a retired checker's results (`census [retired-agent] …`, with and without `--verbose`):
+a leaked key can date a fact before its own retirement, so the record no longer vouches for those facts.
 
 **What the census says, and what it does not.** A fact that `verify` accepts from an agent key is
 counted per key (`census [attested-which] …`: that key, enrolled as that name, signed that many
 facts). A `which` written by a key without the role is counted as declared (`census
-[declared-which] …`, shown with `--verbose`): the key that signed stated it, and nothing attests it. Both are informational:
-neither moves the verdict or the exit code. The record does not say which process held the agent
+[declared-which] …`, shown with `--verbose`): the key that signed stated it, and nothing attests it. All three are informational:
+none moves the verdict or the exit code. The record does not say which process held the agent
 key, nor which model drove it; that is a property of the machine, and a program with access to the
 key signs as that agent.
 
