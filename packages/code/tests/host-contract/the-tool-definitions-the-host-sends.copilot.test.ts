@@ -1,5 +1,5 @@
 /**
- * WHAT THE COPILOT CLI CHARGES FOR THE PLUGIN'S TOOLS, read off the request it sends the
+ * WHAT THE COPILOT CLI SENDS OF THE PLUGIN'S TOOLS, read off the request it sends the
  * stand-in: the whole definition of every one of the 27, in the request, named `mnema-<tool>`.
  * The method and its limits are those of `the-tool-definitions-the-host-sends.test.ts`.
  */
@@ -12,7 +12,7 @@ import {
   theServersTools,
 } from './support/the-tool-definitions.js';
 
-describe("what the Copilot CLI charges for the plugin's tools", () => {
+describe("what the Copilot CLI sends of the plugin's tools", () => {
   const start = aCopilotForEachCase();
 
   it('sends the whole definition of all 27 in the request, and they weigh this much', async () => {

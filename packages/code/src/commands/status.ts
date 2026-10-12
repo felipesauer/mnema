@@ -110,8 +110,8 @@ export interface StatusDone {
    *
    * IT IS THE ONE FIELD HERE THAT IS NOT THE DERIVATION'S, and it is separate from
    * {@link StatusDone.status} rather than folded into it for that reason. `bootstrap` is
-   * served byte for byte through two doors — this verb's `--json` and the MCP's payload
-   * — and a count of FILES belongs to one checkout: inside that object it would break
+   * served as the same object through two doors — this verb's `--json` (indented) and the
+   * MCP's payload (not) — and a count of FILES belongs to one checkout: inside that object it would break
    * the promise those two doors make to each other, and would move when somebody
    * switched branch. See `outside-the-record.ts` for why this reading exists at all.
    */

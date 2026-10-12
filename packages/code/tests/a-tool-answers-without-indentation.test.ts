@@ -1,8 +1,8 @@
 /**
  * A TOOL ANSWERS IN THE SHORTEST JSON THAT SAYS THE SAME THING.
  *
- * The first block of every read is a JSON document nobody reads as a page: the host hands it to
- * the model, which is billed for every space of an indented one on every call. The test holds
+ * The first block of each read below is a JSON document nobody reads as a page: the host hands it to
+ * the model, which reads every space of an indented one on every call. The test holds
  * both halves of that: the text is the document written without indentation (so it is what
  * `JSON.stringify` of its own parse gives back, byte for byte), and what it says is the record's
  * (a field read back out of it is the one the write put in).
@@ -69,11 +69,13 @@ describe('what a read tool answers', () => {
   it.each([
     ['bootstrap', () => ({})],
     ['focus', () => ({})],
+    ['skills', () => ({})],
     ['resume', () => ({})],
     ['search', () => ({})],
     ['read_record', () => ({ id: decision })],
     ['audit_timeline', () => ({ id: decision })],
     ['audit_refs', () => ({ id: decision })],
+    ['governing_rules', () => ({ path: 'src' })],
     ['audit_accountability', () => ({})],
     ['audit_exposure', () => ({})],
     ['audit_antipatterns', () => ({})],

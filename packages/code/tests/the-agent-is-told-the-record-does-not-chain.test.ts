@@ -22,7 +22,8 @@
  * That the fact arrives in the SAME reply and not behind a second call — `verify` is not
  * a tool of this server, so "ask verify" would point at a door this reader cannot open;
  * that it arrives for every read that serves the record; that the PAYLOAD is untouched,
- * because `bootstrap`'s object is served byte for byte through two doors and a field
+ * because `bootstrap`'s object is served as the same object through two doors (the CLI's
+ * `--json` indented, the MCP's payload not) and a field
  * added here would make them disagree; and that over a sound record nothing is said at
  * all, which is the guard that makes the rest mean anything.
  *
@@ -204,8 +205,8 @@ describe('over a record that does not chain, every read says so', () => {
     const client = await connect();
     const boot = await client.callTool({ name: 'bootstrap' });
     const said = blocks(boot);
-    // `bootstrap` is served byte for byte through two doors — this one and the CLI's
-    // `--json` — so the notice may not enter the object, and the object has to stay
+    // `bootstrap` is served as the same object through two doors — this one and the CLI's
+    // `--json` (indented, where this one is not) — so the notice may not enter the object, and the object has to stay
     // parseable on its own.
     expect(() => JSON.parse(said[0] as string)).not.toThrow();
     const context = JSON.parse(said[0] as string) as Record<string, unknown>;
