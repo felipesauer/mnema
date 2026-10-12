@@ -868,6 +868,8 @@ In Claude Code, VS Code and Cursor, which read one manifest, the plugin's `agent
 default; the manifests of Codex, Copilot CLI and Gemini CLI name their own host; the hook files of
 every host whose hooks are processes pass the host's name too. `mnema doctor` lists the agent keys
 this machine holds against the project's record, and says when `MNEMA_AGENT_KEY` names one it does not hold.
+For a host with no manifest of this plugin, put `--agent-key <name>` in the host's user configuration, not in a
+project's: a host's project configuration is what the model writes, so the choice of key does not go there.
 
 `mnema show <id>` marks a decision's recorder or ruler that an agent key signed (`agent claude, attested
 by its own key`), and `mnema audit accountability --json` carries, per agent, how many of its facts the

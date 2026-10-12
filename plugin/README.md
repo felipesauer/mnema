@@ -263,6 +263,10 @@ own, and what it records is declared, not attested. That a host passes a manifes
 was not measured on the hosts named here, only on Claude Code's documentation; `mnema doctor` says what
 a machine holds.
 
+For a host this plugin has no manifest for, add `--agent-key <name>` to the server's command in the host's
+user configuration, not in a project's: a host's project configuration is what the model writes, so the
+choice of key does not go there.
+
 For the per-edit hook, ask about a path the way it does:
 
 ```sh

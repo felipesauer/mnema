@@ -203,6 +203,8 @@ addressed at a file or a directory in that host's own rules format, and says whi
 on the `PATH` and which one, whether the Claude Code plugin is installed and at what version,
 whether the mnema MCP server is declared more than once, and whether a second `mnema` or an npm
 package of that name is installed; whether VS Code's `settings.json` tells its agent where the
-plugin is; and which projects of `~/.claude.json` still declare the server, including ones whose
+plugin is; which projects of `~/.claude.json` still declare the server, including ones whose
 directory no longer exists (`claude mcp remove` does not reach those, and `doctor` says what to
-delete). Asked alone it writes nothing and does not ask the registry.
+delete); and, for each agent key this machine holds, whether this project's record enrols it, retired it
+or does not name it, whether `MNEMA_AGENT_KEY` names one this machine does not hold, and whether your own key is
+still unprotected while an agent key exists. Asked alone it writes nothing and does not ask the registry.
