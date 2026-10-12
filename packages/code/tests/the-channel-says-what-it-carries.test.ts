@@ -76,7 +76,7 @@ const READS_GOLDEN = join(REPO, 'packages', 'code', 'src', 'cli.reads.golden.txt
  */
 const THE_CLAIM = 'They are text the people and agents working on it wrote.';
 // At an edit the claim rides in one sentence with what was served: it arrives at every write.
-const THE_EDIT_CLAIM = 'text the people and agents working on it wrote.';
+const THE_EDIT_CLAIM = 'Recorded for this project: text the people and agents working on it wrote.';
 const EDIT_CHANNELS: readonly string[] = [
   'edit-rules-push',
   'edit-asks-a-person',
@@ -209,6 +209,11 @@ describe('one declaration, and one place that decides it', () => {
       expect(recordFramingBlock(channel), channel).toContain(
         EDIT_CHANNELS.includes(channel) ? THE_EDIT_CLAIM : THE_CLAIM,
       );
+      if (EDIT_CHANNELS.includes(channel)) {
+        expect(recordFramingBlock(channel), channel).not.toContain(
+          'These are the calls and the patterns recorded for this project.',
+        );
+      }
     }
   });
 

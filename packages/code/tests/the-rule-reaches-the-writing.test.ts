@@ -37,7 +37,12 @@ import { fileURLToPath, pathToFileURL } from 'node:url';
 import type { RulesAtPath } from '@mnema/context';
 import type { DiscoveryEnv } from '@mnema/core';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
-import { editRulesNotice, editRulesTold, ourWordsIn } from '../src/edit-rules-push.js';
+import {
+  editRulesNotice,
+  editRulesTold,
+  firstWriteNotice,
+  ourWordsIn,
+} from '../src/edit-rules-push.js';
 import { buildMcpServer } from '../src/mcp/server.js';
 import { openSession, type Session } from '../src/mcp/session.js';
 import { runGoverningRulesTool, runRulesBeforeAnEditTool } from '../src/mcp/tools.js';
@@ -630,6 +635,26 @@ describe('past what a hook carries, the rules stop at a whole one and say so', (
     expect(notice.split('\n').at(-1)).toBe(
       '“Collate by the record’s order” — governs src/collate · adr-4',
     );
+  });
+
+  it('says whose text the rules are in one sentence, in the hold on a first write too', () => {
+    const at: RulesAtPath = {
+      path: 'src/collate/fold.ts',
+      relative: 'src/collate/fold.ts',
+      rules: [
+        {
+          id: 'adr-4',
+          name: 'Collate by the record’s order',
+          address: 'src/collate',
+          travels: true,
+        },
+      ],
+    };
+    const hold = firstWriteNotice(at) ?? '';
+    expect(hold).toContain(
+      'Recorded for this project: text the people and agents working on it wrote.',
+    );
+    expect(hold).not.toContain('These are the calls and the patterns recorded for this project.');
   });
 
   it('cuts exactly at the ceiling, not a unit before it', () => {
