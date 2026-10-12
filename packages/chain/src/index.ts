@@ -206,6 +206,9 @@ export {
 } from './chain/writer.js';
 export {
   accountLinked,
+  agentEnrolled,
+  agentEnrollmentMessage,
+  agentRetired,
   BIRTH_ACTION,
   backupDeclared,
   channelAsked,
@@ -253,6 +256,8 @@ export {
 export {
   type AccountLinkedV1,
   ADDRESS_RELATIONS,
+  type AgentEnrolledV1,
+  type AgentRetiredV1,
   ASKS_FOR_A_PERSON_RELATION,
   type BackupDeclaredV1,
   type CatalogEvent,

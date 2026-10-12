@@ -194,6 +194,9 @@ export const REASONS: { readonly [K in EventKind]: readonly ReasonSite<K>[] } = 
   'backup.declared': [],
   'stack.adopted': [],
   'stack.removed': [],
+  'agent.enrolled': [],
+  // The reason an agent key is retired, as a checker's and a revoked key's.
+  'agent.retired': ['reason'],
 };
 
 /** The refusal the first reason of `event` that says nothing earns, or undefined. */
@@ -257,6 +260,8 @@ export const TITLES: { readonly [K in EventKind]: readonly TextField<K>[] } = {
   'backup.declared': [],
   'stack.adopted': [],
   'stack.removed': [],
+  'agent.enrolled': [],
+  'agent.retired': [],
 };
 
 /** The refusal the title of `event` earns when it is a marker, or undefined. */
@@ -335,6 +340,10 @@ export const REFERENCES: { readonly [K in EventKind]: readonly ReferenceSite<K>[
   'stack.adopted': [],
   // Everything a removal carries is copied from the adoption the record holds.
   'stack.removed': [],
+  // The agent's name is what every fact its key signs carries as `which`, looked up by exact
+  // string; the fingerprint and the consent are computed from the key, never typed.
+  'agent.enrolled': ['name'],
+  'agent.retired': [],
 };
 
 /**

@@ -710,6 +710,51 @@ export function checkerRetired(
 }
 
 /**
+ * The consent message a key signs to be enrolled as the AGENT `name` of the identity `anchor`:
+ * `agent-enroll:<anchor>:<agentFp>:<name>`. A message of its own, and neither
+ * {@link enrollmentMessage}'s nor {@link checkerEnrollmentMessage}'s, so no consent serves
+ * another role; and it carries the anchor and the name, so a consent given as one agent of one
+ * identity enrols the key as no other. `anchor` and `agentFp` are fixed-width, and `name` is the
+ * last field, taken whole — a colon in it is not a separator.
+ */
+export function agentEnrollmentMessage(anchor: string, agentFp: string, name: string): Uint8Array {
+  return new TextEncoder().encode(`agent-enroll:${anchor}:${agentFp}:${name}`);
+}
+
+/**
+ * Builds an `agent.enrolled` event (subject = the anchor the agent key joins; `who` = that
+ * anchor). `signerFp` is one of its keys that is not an agent key; `reverseSig` is the agent
+ * key's signature over {@link agentEnrollmentMessage}.
+ */
+export function agentEnrolled(
+  envelope: EnvelopeInput,
+  payload: { agentFp: string; name: string; reverseSig: string },
+): CatalogEvent {
+  return {
+    v: 1,
+    kind: 'agent.enrolled',
+    ...envelopeFields(envelope),
+    payload: { agentFp: payload.agentFp, name: payload.name, reverseSig: payload.reverseSig },
+  };
+}
+
+/**
+ * Builds an `agent.retired` event (subject = the anchor that enrolled the agent key; `who` =
+ * that anchor). The agent key is not asked.
+ */
+export function agentRetired(
+  envelope: EnvelopeInput,
+  payload: { agentFp: string; reason: string },
+): CatalogEvent {
+  return {
+    v: 1,
+    kind: 'agent.retired',
+    ...envelopeFields(envelope),
+    payload: { agentFp: payload.agentFp, reason: payload.reason },
+  };
+}
+
+/**
  * Builds an `account.linked` event (subject = the ANCHOR that names its account).
  *
  * Both fields are required and neither is checked here: which hosts and which account

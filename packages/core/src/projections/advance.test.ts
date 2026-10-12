@@ -45,6 +45,8 @@ import { mkdirSync, mkdtempSync, readdirSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import {
+  agentEnrolled,
+  agentRetired,
   catalogUpcasters,
   deriveAnchor,
   type EventKind,
@@ -159,7 +161,29 @@ interface Arrival {
   readonly overAnEmptyChain?: true;
 }
 
+/**
+ * Appends one agent fact as built, signed by the writer's own key for its own anchor: no operation
+ * of this package writes one yet, and what the case proves is what the arrival feeds, not that the
+ * fold would accept it.
+ */
+function appendAgentFact(ctx: WriteContext, kind: 'agent.enrolled' | 'agent.retired'): void {
+  const signerFp = ctx.writer.signerFingerprint;
+  const anchor = deriveAnchor(signerFp);
+  const envelope = { at: new Date().toISOString(), who: anchor, signerFp, subject: anchor };
+  ctx.writer.append(
+    kind === 'agent.enrolled'
+      ? agentEnrolled(envelope, {
+          agentFp: 'c'.repeat(64),
+          name: 'claude',
+          reverseSig: 'd'.repeat(128),
+        })
+      : agentRetired(envelope, { agentFp: 'c'.repeat(64), reason: 'the machine was lent out' }),
+  );
+}
+
 const ARRIVALS: { readonly [K in EventKind]: Arrival } = {
+  'agent.enrolled': { emit: (ctx) => appendAgentFact(ctx, 'agent.enrolled') },
+  'agent.retired': { emit: (ctx) => appendAgentFact(ctx, 'agent.retired') },
   'run.started': { emit: (ctx) => landed(startRun(ctx, { agent: 'a-fresh-agent' })) },
   'run.ended': {
     setup: (ctx) => landed(startRun(ctx, { agent: 'an-agent-that-will-stop' })).id,

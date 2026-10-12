@@ -264,6 +264,11 @@ export const PAYLOAD_SCHEMA: { readonly [K in EventKind]: PayloadSchemaOf<K> } =
   'stack.adopted': { name: 'string', version: 'string', digest: 'string', scope: 'string' },
   // The adoption's three, repeated, so a removal says on its own which bytes were let go.
   'stack.removed': { version: 'string', digest: 'string', scope: 'string' },
+  // All three required: an agent enrolment that does not name the key, the name its facts must
+  // carry, or the key's consent to that name enrols nobody a reader could hold to it.
+  'agent.enrolled': { agentFp: 'string', name: 'string', reverseSig: 'string' },
+  // Required for the reason a checker's retirement requires it.
+  'agent.retired': { agentFp: 'string', reason: 'string' },
 };
 
 /**

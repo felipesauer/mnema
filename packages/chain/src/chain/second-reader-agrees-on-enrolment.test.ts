@@ -40,6 +40,9 @@ import fc from 'fast-check';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 
 import {
+  agentEnrolled,
+  agentEnrollmentMessage,
+  agentRetired,
   backupDeclared,
   channelRefused,
   checkerEnrolled,
@@ -1141,6 +1144,295 @@ describe('the two readers agree on records the product itself wrote — a checke
     expect(refused).toHaveLength(2);
     expect(refused.join('\n')).toContain('a retired checker key, which signs nothing');
     expect(refused.join('\n')).toContain('which is never enrolled again');
+  });
+});
+
+/**
+ * A KEY THAT SIGNS FOR ITS PERSON, UNDER A NAME, read by both (FORMAT.md section 6.2). An agent
+ * key is a member of the identity that enrolled it, and the role narrows what it signs: never
+ * for another identity, never under another `which`, never a fact that changes who may sign. The
+ * fold reads it, so the stranger's reader has lines of Python for it, and every case here is one
+ * where the two have to reach the same polarity — and, where it is honest, the same census.
+ */
+describe('the two readers agree on records the product itself wrote — an agent', () => {
+  function consent(anchor: string, agent: KeyPair, name: string): string {
+    return Buffer.from(
+      sign(agentEnrollmentMessage(anchor, agent.fingerprint, name), agent.privateKey),
+    ).toString('hex');
+  }
+
+  function enrolAgent(
+    anchor: string,
+    voucher: KeyPair,
+    agent: KeyPair,
+    opts: { name?: string; sig?: string; when?: number } = {},
+  ): CatalogEvent {
+    const name = opts.name ?? 'claude';
+    return agentEnrolled(
+      { at: at(opts.when ?? 2), who: anchor, signerFp: voucher.fingerprint, subject: anchor },
+      { agentFp: agent.fingerprint, name, reverseSig: opts.sig ?? consent(anchor, agent, name) },
+    );
+  }
+
+  function retireAgent(anchor: string, signer: KeyPair, agent: KeyPair, when: number) {
+    return agentRetired(
+      { at: at(when), who: anchor, signerFp: signer.fingerprint, subject: anchor },
+      { agentFp: agent.fingerprint, reason: 'the machine was lent out' },
+    );
+  }
+
+  /** A fact the agent key signs, for `who`, naming `which` (none when it is null). */
+  function byAgent(
+    who: string,
+    agent: KeyPair,
+    id: string,
+    when: number,
+    which: string | null = 'claude',
+  ): CatalogEvent {
+    return task(who, agent, id, when, which === null ? {} : { which });
+  }
+
+  /** A person (A) and an agent key (G); G's .pub committed, as the enrolment commits it. */
+  function personAndAgent(): { a: KeyPair; g: KeyPair; anchor: string } {
+    const a = generateKeyPair();
+    const g = generateKeyPair();
+    commitPublicKey(a);
+    commitPublicKey(g);
+    return { a, g, anchor: deriveAnchor(a.fingerprint) };
+  }
+
+  /**
+   * What each reader counts of the agents the record's facts name — `attested <name> <n>` for an
+   * agent key's facts, `declared <which> <n>` for a `which` a key without the role wrote — sorted,
+   * so the two lists are compared and not two wordings.
+   */
+  function agentCensus(): { product: readonly string[]; second: readonly string[] } {
+    const product = verify(root, catalogUpcasters())
+      .census.flatMap((note) =>
+        note.kind === 'attested-which'
+          ? [`attested ${note.name} ${note.events}`]
+          : note.kind === 'declared-which'
+            ? [`declared ${note.which} ${note.events}`]
+            : [],
+      )
+      .sort();
+    const second = secondNotes()
+      .flatMap((said) => {
+        const attested = /^6\.2: (\d+) event\(s\) attested by an agent key enrolled as "(.*)"/.exec(
+          said,
+        );
+        if (attested !== null) return [`attested ${attested[2]} ${attested[1]}`];
+        const declared = /^6\.2: (\d+) event\(s\) name the agent "(.*)" — declared/.exec(said);
+        return declared === null ? [] : [`declared ${declared[2]} ${declared[1]}`];
+      })
+      .sort();
+    return { product, second };
+  }
+
+  it('an agent key signing for its person, as its name: green on both, and both count it', () => {
+    const { a, g, anchor } = personAndAgent();
+    writeTail(
+      `${a.fingerprint}-i1`,
+      [founding(a), enrolAgent(anchor, a, g), task(anchor, a, 't-0', 3, { which: 'claude' })],
+      a,
+    );
+    writeTail(
+      `${g.fingerprint}-i2`,
+      [byAgent(anchor, g, 't-1', 4), byAgent(anchor, g, 't-2', 5)],
+      g,
+    );
+
+    const { productOk, verdict, refused } = bothReaders();
+    expect(refused, 'the second reader refuses an honest agent').toEqual([]);
+    expect(productOk).toBe(true);
+    expect(verdict).toBe('VERIFIED');
+    // The same count in both, and the person's own `which` said as what it is: declared.
+    const { product, second } = agentCensus();
+    expect(product).toEqual(['attested claude 2', 'declared claude 1']);
+    expect(second).toEqual(product);
+  });
+
+  it('an agent key under another `which`: refused by both', () => {
+    const { a, g, anchor } = personAndAgent();
+    writeTail(`${a.fingerprint}-i1`, [founding(a), enrolAgent(anchor, a, g)], a);
+    writeTail(`${g.fingerprint}-i2`, [byAgent(anchor, g, 't-1', 3, 'codex')], g);
+
+    const { productOk, verdict, refused } = bothReaders();
+    expect(productOk).toBe(false);
+    expect(productRefused()).toEqual([
+      `task.created is signed by ${g.fingerprint}, an agent key enrolled as "claude", and its which does not name that agent`,
+    ]);
+    expect(verdict).toBe('REFUSED');
+    expect(refused).toHaveLength(1);
+    expect(refused.join('\n')).toContain('its which is not the name the key was enrolled under');
+  });
+
+  it('an agent key with no `which`: refused by both', () => {
+    const { a, g, anchor } = personAndAgent();
+    writeTail(`${a.fingerprint}-i1`, [founding(a), enrolAgent(anchor, a, g)], a);
+    writeTail(`${g.fingerprint}-i2`, [byAgent(anchor, g, 't-1', 3, null)], g);
+
+    const { productOk, verdict, refused } = bothReaders();
+    expect(productOk).toBe(false);
+    expect(productRefused()).toEqual([
+      `task.created is signed by ${g.fingerprint}, an agent key enrolled as "claude", and its which does not name that agent`,
+    ]);
+    expect(verdict).toBe('REFUSED');
+    expect(refused).toHaveLength(1);
+    expect(refused.join('\n')).toContain('its which is not the name the key was enrolled under');
+  });
+
+  it('an agent key speaking for another identity that took it in: refused by both', () => {
+    // B makes the agent key a plain member of its own identity — a `key.enrolled` naming an agent
+    // key is accepted as it always was — and the key then writes as B. The first refusal is the
+    // one that makes the key useless outside the anchor that gave it the role.
+    const { a, g, anchor } = personAndAgent();
+    const b = generateKeyPair();
+    commitPublicKey(b);
+    const bAnchor = deriveAnchor(b.fingerprint);
+    writeTail(`${a.fingerprint}-i1`, [founding(a), enrolAgent(anchor, a, g)], a);
+    writeTail(`${b.fingerprint}-i3`, [founding(b), enrolled(bAnchor, b, g, 3)], b);
+    writeTail(`${g.fingerprint}-i2`, [byAgent(bAnchor, g, 't-1', 4)], g);
+
+    const { productOk, verdict, refused } = bothReaders();
+    expect(productOk).toBe(false);
+    expect(productRefused()).toEqual([
+      `task.created is signed by ${g.fingerprint}, an agent key, for an identity other than the one that enrolled it`,
+    ]);
+    expect(verdict).toBe('REFUSED');
+    expect(refused).toHaveLength(1);
+    expect(refused.join('\n')).toContain('for an identity other than the one that enrolled it');
+  });
+
+  it('an agent key signing a change to who may sign — its own retirement too: refused by both', () => {
+    const { a, g, anchor } = personAndAgent();
+    const h = generateKeyPair();
+    commitPublicKey(h);
+    writeTail(`${a.fingerprint}-i1`, [founding(a), enrolAgent(anchor, a, g)], a);
+    writeTail(
+      `${g.fingerprint}-i2`,
+      [
+        keyEnrolled(
+          { at: at(3), who: anchor, signerFp: g.fingerprint, subject: anchor, which: 'claude' },
+          { newFp: h.fingerprint, reverseSig: reverseSig(anchor, h) },
+        ),
+        agentRetired(
+          { at: at(4), who: anchor, signerFp: g.fingerprint, subject: anchor, which: 'claude' },
+          { agentFp: g.fingerprint, reason: 'out of sight' },
+        ),
+      ],
+      g,
+    );
+
+    const { productOk, verdict, refused } = bothReaders();
+    expect(productOk).toBe(false);
+    expect(productRefused()).toEqual([
+      `key.enrolled is signed by ${g.fingerprint}, an agent key, which signs no change to who may sign or what a key may sign`,
+      `agent.retired is signed by ${g.fingerprint}, an agent key, which signs no change to who may sign or what a key may sign`,
+    ]);
+    expect(verdict).toBe('REFUSED');
+    expect(refused).toHaveLength(2);
+    expect(refused.join('\n')).toContain('which signs no change to who may sign');
+  });
+
+  it('an agent enrolment whose consent was given under another name: refused by both', () => {
+    const { a, g, anchor } = personAndAgent();
+    writeTail(
+      `${a.fingerprint}-i1`,
+      [founding(a), enrolAgent(anchor, a, g, { sig: consent(anchor, g, 'codex') })],
+      a,
+    );
+
+    const { productOk, verdict, refused } = bothReaders();
+    expect(productOk).toBe(false);
+    expect(productRefused()).toEqual([
+      'agent.enrolled reverse signature does not prove the agent consented to this name',
+    ]);
+    expect(verdict).toBe('REFUSED');
+    expect(refused.join('\n')).toContain('does not prove the agent consented');
+  });
+
+  it.each([
+    ['ends in U+00A0, which the set holds: refused by both', 'claude\u00a0', false],
+    [
+      'ends in U+001F, which Python’s strip() takes and the set does not: verified by both',
+      'claude\u001f',
+      true,
+    ],
+  ])('a name that %s', (_said, name, honest) => {
+    const { a, g, anchor } = personAndAgent();
+    writeTail(`${a.fingerprint}-i1`, [founding(a), enrolAgent(anchor, a, g, { name })], a);
+    writeTail(`${g.fingerprint}-i2`, [byAgent(anchor, g, 't-1', 3, name)], g);
+
+    const { productOk, verdict, refused } = bothReaders();
+    expect(productOk).toBe(honest);
+    expect(verdict).toBe(honest ? 'VERIFIED' : 'REFUSED');
+    if (honest) {
+      expect(refused).toEqual([]);
+      return;
+    }
+    // The enrolment is refused, so the key holds no role and no membership: its fact fails too.
+    expect(productRefused()).toContain(
+      'agent.enrolled name begins or ends with a character of the set section 6.2 writes out',
+    );
+    expect(refused.join('\n')).toContain('name begins or ends with');
+  });
+
+  it('a retirement no checkpoint covers: ignored by both', () => {
+    const { a, g, anchor } = personAndAgent();
+    writeTail(
+      `${a.fingerprint}-i1`,
+      [founding(a), enrolAgent(anchor, a, g), retireAgent(anchor, a, g, 3)],
+      a,
+      { residual: 1 },
+    );
+    writeTail(`${g.fingerprint}-i2`, [byAgent(anchor, g, 't-1', 4)], g);
+
+    const { productOk, verdict, refused } = bothReaders();
+    expect(refused, 'the second reader honours an uncovered retirement').toEqual([]);
+    expect(productOk).toBe(true);
+    expect(verdict).toBe('VERIFIED');
+  });
+
+  it('a covered retirement: what the key signed before stands, what it signs after is refused, by both', () => {
+    const { a, g, anchor } = personAndAgent();
+    writeTail(
+      `${a.fingerprint}-i1`,
+      [founding(a), enrolAgent(anchor, a, g), retireAgent(anchor, a, g, 4)],
+      a,
+    );
+    writeTail(
+      `${g.fingerprint}-i2`,
+      [byAgent(anchor, g, 't-1', 3), byAgent(anchor, g, 't-2', 5)],
+      g,
+    );
+
+    const { productOk, verdict, refused } = bothReaders();
+    expect(productOk).toBe(false);
+    expect(productRefused()).toEqual([
+      `task.created is signed by ${g.fingerprint}, an agent key retired at this point, which signs nothing`,
+    ]);
+    expect(verdict).toBe('REFUSED');
+    expect(refused).toHaveLength(1);
+    expect(refused.join('\n')).toContain('a retired agent key, which signs nothing');
+  });
+
+  it('the same key enrolled as an agent twice: refused by both', () => {
+    const { a, g, anchor } = personAndAgent();
+    writeTail(
+      `${a.fingerprint}-i1`,
+      [founding(a), enrolAgent(anchor, a, g), enrolAgent(anchor, a, g, { when: 3 })],
+      a,
+    );
+
+    const { productOk, verdict, refused } = bothReaders();
+    expect(productOk).toBe(false);
+    expect(productRefused()).toEqual([
+      'agent.enrolled names a key that is already in an identity, or holds a role, at this point',
+    ]);
+    expect(verdict).toBe('REFUSED');
+    expect(refused).toHaveLength(1);
+    expect(refused.join('\n')).toContain('already in an identity, or holds a role');
   });
 });
 

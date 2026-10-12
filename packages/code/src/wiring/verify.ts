@@ -432,8 +432,9 @@ export function registerVerify(program: Command, wiring: Wiring): Declared {
     )
     .option(
       '--verbose',
-      'also print what is informational and nothing else: the census note about a backup key, ' +
-        'and the line for the private tree when it holds no record. A break, an issue, a ' +
+      'also print what is informational and nothing else: the census notes about a backup key ' +
+        'and about an agent named only by the key that signed, and the line for the private ' +
+        'tree when it holds no record. A break, an issue, a ' +
         'warning and the exit are the same with and without it',
     )
     .option(
@@ -916,8 +917,9 @@ function report(
   for (const note of tree.result.census) {
     // The backup key `init` makes signs nothing until it is restored, and the verdict's own clause
     // already says so; the note naming WHICH key is informational and waits for `--verbose`. Every
-    // other note says a thing a reader may have to act on, and is never behind it.
-    if (note.kind === 'backup-key' && !verbose) continue;
+    // other note says a thing a reader may have to act on, and is never behind it. A `which` that the
+    // key which signed only stated is the truth of nearly every record, and waits there too.
+    if ((note.kind === 'backup-key' || note.kind === 'declared-which') && !verbose) continue;
     io.out(
       render(fact(onOneLine`census [${note.kind}] ${named} ${censusLocus(note)}: ${note.detail}`)),
     );
@@ -970,6 +972,12 @@ function censusLocus(note: CensusNote): string {
       return note.note;
     case 'foreign-link-retraction':
       return note.link.subject;
+    // An agent named by a key the record holds to it, and one only stated: the first names the
+    // key, the second the `which` the facts carry.
+    case 'attested-which':
+      return note.agentFp;
+    case 'declared-which':
+      return note.which;
   }
 }
 
