@@ -833,16 +833,52 @@ results in the working tree for your workflow to commit or upload.
 The record can also say that a key is an identity's agent: a key a person lets a program sign with,
 without handing it the key that enrols, revokes and declares. A member of the identity writes an
 `agent.enrolled` naming the key and a name, and the key signs, over the UTF-8 of
-`agent-enroll:<anchor>:<agentFp>:<name>`, that it consents to that name. This release reads and
-judges those two facts (`agent.enrolled`, `agent.retired`); the commands that write them are not
-in it.
+`agent-enroll:<anchor>:<agentFp>:<name>`, that it consents to that name. `mnema verify` judges those
+two facts (`agent.enrolled`, `agent.retired`), and three verbs write them.
+
+**Making one, enrolling it, retiring it.**
+
+```sh
+mnema key request --agent claude --anchor <identity>     # where the agent's key will live
+mnema key enroll --agent <the line it printed>           # where your own key is
+mnema key revoke --agent <fingerprint> --reason "<why>"  # when it should sign nothing more
+```
+
+`request` makes the key in a folder of its own, `agents/<name>/` under the data directory (`~/.mnema`,
+or `$MNEMA_HOME`), never beside your own key, and writes it in the clear: the host that signs with it
+has no terminal to ask a passphrase at. A name is a lower-case word of letters, digits, dots, dashes
+and underscores, up to 64 characters, and it is also the folder. `enroll` is run where your own key
+is, and asks its passphrase at the terminal where the key has one; it records `agent.enrolled` in the project's committed
+tree and says so when your key is unencrypted, because then anything that can read your home can sign
+as you and the agent key separates nothing. `key revoke <fingerprint>` refuses an agent key and names
+the verb that retires it, and an agent key does not count as one of an identity's keys where the last
+one may not be retired.
+
+**Signing with it.** `mnema mcp --agent-key <name>` (or `MNEMA_AGENT_KEY=<name>`, which a `mnema` from
+before the option ignores where an argument would stop it; the flag wins) and `mnema before-a-write
+--host <host> --agent-key <name>` sign with that key where the project's committed record enrols it
+under exactly that name, and the `which` of every fact of the connection is the name the record gave
+the key, whatever the client announced. Everywhere else the person's key signs, as before, and the
+`which` stays declared: a project whose record does not enrol the key, the project's private tree and
+the machine's global one (`key enroll --agent` records in the committed tree only), and a machine with
+no key under that name. The server says once, on its error stream, when it was asked for an agent and
+signs as you. A key the record retired is not passed over to yours: its writes are refused. A name this
+product does not enrol is ignored, with a word. The hooks of `corrections` still sign with your key.
+In Claude Code, VS Code and Cursor, which read one manifest, the plugin's `agent_key` option is empty by
+default; the manifests of Codex, Copilot CLI and Gemini CLI name their own host; the hook files of
+every host whose hooks are processes pass the host's name too. `mnema doctor` lists the agent keys
+this machine holds against the project's record, and says when `MNEMA_AGENT_KEY` names one it does not hold.
+
+`mnema show <id>` marks a decision's recorder or ruler that an agent key signed (`agent claude, attested
+by its own key`), and `mnema audit accountability --json` carries, per agent, how many of its facts the
+record's own agent key signed (`attested`, absent where none).
 
 **What `mnema verify` holds an agent key to.** The key is a member of the identity that enrolled it,
 and what it signs is refused unless all of this holds: its `who` is that identity's anchor; its
 `which` is, byte for byte, the name the key was enrolled under; and its kind is not one that
 changes who may sign or what a key may sign (`identity.founded`, `key.enrolled`, `key.revoked`,
 `backup.declared`, `checker.enrolled`, `checker.retired`, `agent.enrolled`, `agent.retired`,
-`account.linked`). A key already in an identity, or holding a role, cannot be enrolled as an agent.
+`account.linked`). A key already in an identity, holding a role, or retired from one, cannot be enrolled as an agent.
 A name may not begin or end with a character of the set `FORMAT.md` section 6.2 writes out, and may
 not be the anchor itself. The Python reader in `packages/chain/verifier` judges the same, and the two
 are tested to agree.

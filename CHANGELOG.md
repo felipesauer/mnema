@@ -19,8 +19,22 @@ tag, with its own changelog.
   kinds and the published vectors are 38. `verify` counts, in its census, the facts an agent key signed (`attested`)
   and, behind `--verbose`, every other `which` (`declared`, the key that signed stated it); an agent key the record
   retired after it signed is named too (`retired-agent`, with and without the flag, as a retired checker is). The
-  second reader says the same counts, and none of them moves the verdict, the level or the exit. This version reads agent keys and no command of it
-  enrols one yet. A binary from before stops reading a record that holds either kind, as for any kind it does not know.
+  second reader says the same counts, and none of them moves the verdict, the level or the exit. A binary from before stops reading a record that holds either kind, as for any kind it does not know.
+- **The verbs that make, enrol and retire an agent key, and a server and hooks that sign with one.**
+  `mnema key request --agent <name> --anchor <id>` makes the key in the agent's own folder under the data directory
+  (`agents/<name>/`, in the clear, never beside the person's key) and prints a line; `mnema key enroll --agent <line>`
+  records it in the committed tree with the person's key (and says when that key is unencrypted, which leaves the
+  separation to nothing); `mnema key revoke --agent <fingerprint> --reason <why>` retires it, and `key revoke` of an
+  agent key names that verb. An agent key is not counted among an identity's own keys where the last one may not be
+  retired. `mnema mcp --agent-key <name>` (or `MNEMA_AGENT_KEY`) and `mnema before-a-write --host <host> --agent-key <name>` sign with
+  the key where the project's committed record enrols it under that name, and the `which` of what they record is the
+  name the record gave the key, not what the client announced; elsewhere the person's key signs, as before, and the
+  server says so once. The hook files and manifests the host table generates pass the host's name, and the plugin has
+  an `agent_key` option, empty by default. `mnema show <id>` marks a decision an agent key recorded or ruled
+  (`attested by its own key`), `mnema audit accountability --json` carries `attested` beside an agent's count where
+  there is one, and `mnema doctor` lists the agent keys of the machine against the project's record. The core now
+  names `enrollAgent`, `retireAgent`, `enrollAgentFromRequest`, `retireAgentKey` and `requestAgentEnrollment` in
+  `@mnema/core/write`, and the shape of an agent's name (`AGENT_NAME`, `agentNameRefusal`) in `@mnema/core`.
 
 ### Changed
 

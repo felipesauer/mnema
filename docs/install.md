@@ -53,10 +53,11 @@ claude plugin marketplace add felipesauer/mnema
 claude plugin install mnema@mnema
 ```
 
-Claude Code may end the install with `1 userConfig option not yet set`. That is the plugin's
-`mnema_path` option, which has the default `mnema` (the first one on your `PATH`): the host
-lists an option as unset until you give it a value, and nothing needs doing unless you want to
-run another binary (`/plugin configure mnema@mnema`).
+Claude Code may end the install saying that `userConfig` options are not yet set. They are the
+plugin's `mnema_path` option, which has the default `mnema` (the first one on your `PATH`), and its
+`agent_key` option, which is empty (the server signs with your own key): the host lists an option as
+unset until you give it a value, and nothing needs doing unless you want to run another binary or
+sign as an agent (`/plugin configure mnema@mnema`).
 
 The plugin connects the MCP server too, so registering the server yourself as well is
 redundant: a session would be offered every tool twice, under two prefixes.
