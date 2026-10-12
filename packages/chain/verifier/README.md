@@ -32,12 +32,13 @@ completing end-to-end tests as a **precondition** for publishing a technical sta
 Certificate Transparency runs on several implementations checking each other.
 
 What a second reader buys is not redundancy. It is that assumptions which work inside one
-product and are false outside it become **visible**. Twenty-six of them did, and they are
+product and are false outside it become **visible**. Twenty-seven of them did, and they are
 the deliverable half of this directory — `mnema_verify.py gaps`.
 
-Three of the twenty-six were places the two readers **disagreed about the same bytes**, and
-all three are closed. Two were acceptances — a field no kind declares, on an appended event;
-a signer no enrolment authorized — found by *building the input*, because nine mutations both
+Four of the twenty-seven were places the two readers **disagreed about the same bytes**, and
+all four are closed. Three were acceptances — a field no kind declares, on an appended event;
+a signer no enrolment authorized; an event naming a signer other than the checkpoint over
+it — found by *building the input*, because nine mutations both
 readers refused prove nothing about what this one accepts. The third ran the other way and is
 the quieter of the two failures: this reader **refused an honest event** for carrying
 `which`, which sixteen of the twenty-three published vectors carry, because the document
@@ -50,7 +51,7 @@ rigour, so nobody goes looking for it.
 |---|---|
 | **T1** | every entry's stored hash is the hash of its content and its position; the sequence is contiguous, and a gap is reported with its location |
 | **T2** | each checkpoint's content root folds over the events of its range, from their canonical bytes |
-| **T4** | the Ed25519 signature over the checkpoint's signed message, under a key whose material is **recomputed** to the fingerprint that names it |
+| **T4** | the Ed25519 signature over the checkpoint's signed message, under a key whose material is **recomputed** to the fingerprint that names it; and every event of the range names that key as its `signerFp`, with a `which` that is not its `who` |
 | **T3** | the OpenTimestamps proof's subject is the checkpoint's digest, the path folds to the merkle root the stored header carries, and the header's own hash meets the target it declares — with section 8's three declared limits refused by name |
 | **§1** | the 36 published vectors and the four aggregate digests, plus every refusal section 1 lists |
 | **§4** | byte identity: re-serializing what a line holds reproduces that line exactly |
@@ -202,7 +203,7 @@ Only §6.2 refuses it, which is the whole difference between *the signature veri
 ## The honest guarantee
 
 **What this buys.** A verdict on a real record, reached from the document and the bytes, by
-a program that has never seen the implementation. Twenty-six places where the document was
+a program that has never seen the implementation. Twenty-seven places where the document was
 not enough for that, each one written down. **A refusal for every mutation in `mutate.py`,
 with no exception** — the exception used to be the one that existed to demonstrate an
 acceptance, and there is no acceptance left to demonstrate. **One disagreement with the
