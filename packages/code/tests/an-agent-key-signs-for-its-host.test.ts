@@ -32,6 +32,7 @@ import { InMemoryTransport } from '@modelcontextprotocol/sdk/inMemory.js';
 import { ListRootsRequestSchema } from '@modelcontextprotocol/sdk/types.js';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { runBeforeAWrite } from '../src/commands/before-a-write.js';
+import { runDoctor } from '../src/commands/doctor.js';
 import { buildMcpServer } from '../src/mcp/server.js';
 import { type CliIo, run } from '../src/program.js';
 
@@ -410,6 +411,20 @@ describe('the server signs as the agent the record names', () => {
       expect.objectContaining({ kind: 'attested-which', name: 'claude', events: 3 }),
     );
     expect(notes.some((note) => note.which === 'evil' || note.name === 'evil')).toBe(false);
+
+    // And what the reads say of it: the line of `show` and the account of the author.
+    const shown = await did(undefined, 'show', decision?.subject as string);
+    expect(shown).toContain('agent claude, attested by its own key');
+    const account = JSON.parse(await did(undefined, 'audit', 'accountability', '--json')) as {
+      readonly byWho: readonly {
+        readonly byWhich: readonly { which: string | null; count: number; attested: number }[];
+      }[];
+    };
+    expect(account.byWho.flatMap((who) => who.byWhich)).toContainEqual({
+      which: 'claude',
+      count: 3,
+      attested: 3,
+    });
   });
 
   it('without the agent key, the same call is refused for the passphrase — the key is what makes it work', async () => {
@@ -441,6 +456,16 @@ describe('the server signs as the agent the record names', () => {
     expect(notes).toContainEqual(
       expect.objectContaining({ kind: 'declared-which', which: 'claude-code' }),
     );
+    // Declared is silence in `show` — the line says what it always said — and not attested in the account.
+    expect(await did(undefined, 'show', decision?.subject as string)).not.toContain('attested');
+    const account = JSON.parse(await did(undefined, 'audit', 'accountability', '--json')) as {
+      readonly byWho: readonly {
+        readonly byWhich: readonly { which: string | null; attested: number }[];
+      }[];
+    };
+    expect(
+      account.byWho.flatMap((who) => who.byWhich).filter((one) => one.which === 'claude-code'),
+    ).toEqual([expect.objectContaining({ attested: 0 })]);
   });
 
   it('ignores a name that is not one this product enrols, and says so', async () => {
@@ -554,5 +579,70 @@ describe('the handler asks again without the agent key of a mnema that does not 
     } finally {
       rmSync(dir, { recursive: true, force: true });
     }
+  });
+});
+
+describe('mnema doctor says what the agent keys are', () => {
+  const findings = (processEnv: NodeJS.ProcessEnv = {}): string[] =>
+    runDoctor({
+      cwd: repo,
+      env,
+      processEnv: { PATH: '', ...processEnv },
+      running: { file: join(sandbox, 'mnema'), version: '9.9.9' },
+    })
+      .findings.filter((one) => one.topic === 'agent-key')
+      .map((one) => `${one.state} ${one.line}`);
+
+  it('says nothing on a machine that holds no agent key and is asked for none', () => {
+    expect(findings()).toEqual([]);
+  });
+
+  it('says a key this project does not enrol signs as the person, then that it is enrolled, then that it was retired', async () => {
+    const requested = await did(
+      undefined,
+      'key',
+      'request',
+      '--agent',
+      'claude',
+      '--anchor',
+      await identity(),
+    );
+    const before = findings();
+    expect(before[0]).toContain('attention this machine holds the agent key "claude"');
+    expect(before[0]).toContain('declared, not attested');
+    // The person's key is in the clear, and an agent key exists: the separation is nothing.
+    expect(
+      before.some((line) => line.includes('separates nothing while your own key is in the clear')),
+    ).toBe(true);
+
+    await did(undefined, 'key', 'enroll', '--agent', lineOf(requested));
+    expect(findings()[0]).toBe(
+      'fine the agent key "claude" is enrolled in this project: a host asked to sign as it does, and what it records is attested: nothing to do.',
+    );
+
+    await did(
+      undefined,
+      'key',
+      'revoke',
+      '--agent',
+      fingerprintIn(requested),
+      '--reason',
+      'lent out',
+    );
+    expect(findings()[0]).toContain('attention the agent key "claude" was retired by this project');
+  });
+
+  it('says a host asked for an agent this machine holds no key for, and stays quiet once the key is protected', async () => {
+    expect(findings({ MNEMA_AGENT_KEY: 'gemini' })).toEqual([
+      'attention MNEMA_AGENT_KEY asks this process to sign as the agent "gemini", and this machine holds no key under that name: it signs as you instead — `mnema key request --agent gemini --anchor <your identity>` makes one.',
+    ]);
+    expect(findings({ MNEMA_AGENT_KEY: '${user_config.agent_key}' })).toEqual([]);
+    expect(findings({ MNEMA_AGENT_KEY: '' })).toEqual([]);
+
+    await anAgent('claude', 'correct horse');
+    await did('correct horse', 'key', 'protect');
+    expect(findings()).toEqual([
+      'fine the agent key "claude" is enrolled in this project: a host asked to sign as it does, and what it records is attested: nothing to do.',
+    ]);
   });
 });

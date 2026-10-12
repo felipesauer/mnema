@@ -4,7 +4,7 @@
  * configuration, not a cache, and it asks nobody over a network. `--fix vscode` and
  * `--fix private-tree` are the two things it writes, each only when a person asks.
  *
- * SIX QUESTIONS, each answered by files that were read and named in the answer:
+ * SEVEN QUESTIONS, each answered by files that were read and named in the answer:
  *   - is a `mnema` on the `PATH`, which one, and is it the one running now;
  *   - is the Claude Code plugin installed, and at what version (Claude Code's own list of
  *     installed plugins — a file of the host's that this product does not own, so a list that is
@@ -17,8 +17,11 @@
  *   - in a project inside a git repository, does a worktree still hold a private tree where
  *     it lived before it moved into the repository's git directory — notes nothing reads there,
  *     and that removing the worktree deletes;
- *   - and, where the record has adopted a stack, are its files still what the receipt says it
- *     wrote and does the record still say the same (`mnema stack check`'s own comparison).
+ *   - where the record has adopted a stack, are its files still what the receipt says it
+ *     wrote and does the record still say the same (`mnema stack check`'s own comparison);
+ *   - and, for each agent key this machine holds, does this project's record enrol it, does a
+ *     host asked to sign as an agent hold a key to do it with, and does the person's own key being
+ *     unencrypted leave the whole separation to nothing.
  *
  * Each finding is ONE line: what was found, then what to do. A finding that needs nothing to be
  * done says so. The verb's exit status is 0 whatever it found — it reports, and a script that
@@ -31,20 +34,31 @@ import {
   copyFileSync,
   existsSync,
   lstatSync,
+  readdirSync,
   readFileSync,
   realpathSync,
   statSync,
   writeFileSync,
 } from 'node:fs';
 import { basename, delimiter, dirname, join } from 'node:path';
+import { listPrivateKeyFingerprints } from '@mnema/chain';
 import {
+  AGENT_NAME,
+  agentKeyRoot,
+  agentStanding,
   type DiscoveryEnv,
   movePrivateTree,
   type PrivateTreesLeftBehind,
   privateTreesLeftBehind,
   resolveTrees,
+  withAgentKey,
 } from '@mnema/core';
+import { agentKeyFromEnvironment } from '../env.js';
 import { oneLine } from '../one-line.js';
+import {
+  personsKeyInTheClear,
+  THE_AGENT_KEY_SEPARATES_NOTHING,
+} from '../the-persons-key-in-the-clear.js';
 import { VERSION } from '../version.js';
 import { type Plan, planFix, readLocations, SETTING, settingsCandidates } from './doctor-vscode.js';
 import { stacksHere } from './stack-inspect.js';
@@ -63,7 +77,15 @@ export interface DoctorContext {
 
 /** `attention` is a finding with something to do; `fine` needs nothing. */
 export interface Finding {
-  readonly topic: 'binary' | 'plugin' | 'vscode' | 'mcp' | 'namesake' | 'private-tree' | 'stack';
+  readonly topic:
+    | 'binary'
+    | 'plugin'
+    | 'vscode'
+    | 'mcp'
+    | 'namesake'
+    | 'private-tree'
+    | 'stack'
+    | 'agent-key';
   readonly state: 'fine' | 'attention';
   /** One line: what was found, then what to do. */
   readonly line: string;
@@ -647,6 +669,84 @@ function stackFindings(ctx: DoctorContext): Finding[] {
 }
 
 /**
+ * The agent keys this machine holds, against this project's record: for each, whether the
+ * committed tree enrols it under its name — a host asked to sign as it then does — or names it
+ * not, in which case that host signs as the person and what it records is declared, not
+ * attested. Said too: a host that asks for an agent whose key this machine does not hold, and a
+ * person's key in the clear, which leaves the agent key a label and nothing more.
+ *
+ * Nothing is said on a machine that holds no agent key and is asked for none, which is every
+ * machine that never ran `mnema key request --agent`.
+ */
+function agentKeyFindings(ctx: DoctorContext): Finding[] {
+  const dir = dirname(agentKeyRoot(ctx.env, 'x'));
+  const held = existsSync(dir)
+    ? readdirSync(dir)
+        .filter((name) => AGENT_NAME.test(name))
+        .filter(
+          (name) => listPrivateKeyFingerprints({ root: agentKeyRoot(ctx.env, name) }).length > 0,
+        )
+        .sort()
+    : [];
+  const asked = agentKeyFromEnvironment(ctx.processEnv);
+  const finding = (state: Finding['state'], line: string): Finding => ({
+    topic: 'agent-key',
+    state,
+    line,
+  });
+  const out: Finding[] = [];
+  const resolved = resolveTrees(ctx.cwd, ctx.env);
+  const enrolledHere: string[] = [];
+  for (const name of held) {
+    if (resolved.projectPublic === undefined) {
+      out.push(
+        finding(
+          'fine',
+          `this machine holds the agent key "${oneLine(name)}"; there is no project here to say whether its record enrols it.`,
+        ),
+      );
+      continue;
+    }
+    const standing = agentStanding(withAgentKey(resolved, ctx.env, name), 'public');
+    if (standing === 'enrolled') {
+      enrolledHere.push(name);
+      out.push(
+        finding(
+          'fine',
+          `the agent key "${oneLine(name)}" is enrolled in this project: a host asked to sign as it does, and what it records is attested: nothing to do.`,
+        ),
+      );
+    } else if (standing === 'retired') {
+      out.push(
+        finding(
+          'attention',
+          `the agent key "${oneLine(name)}" was retired by this project's record: it signs nothing, and a host asked to sign as it is refused — ask the host for another agent, or none.`,
+        ),
+      );
+    } else {
+      out.push(
+        finding(
+          'attention',
+          `this machine holds the agent key "${oneLine(name)}", and this project's record does not enrol it: a host asked to sign as "${oneLine(name)}" signs as you instead, and what it records is declared, not attested — \`mnema key request --agent ${oneLine(name)} --anchor <your identity>\`, then \`mnema key enroll --agent <the line>\` where your own key is.`,
+        ),
+      );
+    }
+  }
+  if (asked !== undefined && !held.includes(asked)) {
+    out.push(
+      finding(
+        'attention',
+        `${'MNEMA_AGENT_KEY'} asks this process to sign as the agent "${oneLine(asked)}", and this machine holds no key under that name: it signs as you instead — \`mnema key request --agent ${oneLine(asked)} --anchor <your identity>\` makes one.`,
+      ),
+    );
+  }
+  if (held.length > 0 && personsKeyInTheClear(resolveTrees(ctx.cwd, ctx.env).keyRoot) === true) {
+    out.push(finding('attention', `${THE_AGENT_KEY_SEPARATES_NOTHING}.`));
+  }
+  return out;
+}
+
+/**
  * `mnema doctor --fix private-tree`: moves every old private tree of this project into the one
  * the repository keeps (`privateTreesLeftBehind`, `movePrivateTree`, `@mnema/core`), and says
  * what it moved. With `dryRun`, it says what it would move and writes nothing.
@@ -695,7 +795,7 @@ export function fixPrivateTree(
   return { refused: false, lines };
 }
 
-/** Reads the machine and answers, in the order the six questions are asked above. */
+/** Reads the machine and answers, in the order the questions are asked above. */
 export function runDoctor(ctx: DoctorContext): { readonly findings: readonly Finding[] } {
   const plugins = installedPlugins(ctx);
   return {
@@ -707,6 +807,7 @@ export function runDoctor(ctx: DoctorContext): { readonly findings: readonly Fin
       ...namesakeFindings(ctx),
       ...privateTreeFindings(ctx),
       ...stackFindings(ctx),
+      ...agentKeyFindings(ctx),
     ],
   };
 }

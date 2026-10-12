@@ -225,8 +225,10 @@ export {
 } from './projections/window.js';
 export {
   type AgentSigning,
+  type AgentStanding,
   agentKeyRoot,
   agentSignsIn,
+  agentStanding,
   type BirthProbe,
   chainRootForScope,
   type Discovery,

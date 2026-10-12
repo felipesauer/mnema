@@ -123,6 +123,13 @@ export interface WhichCount {
   /** The executing agent's name, or null when the human acted with no agent. */
   readonly which: string | null;
   readonly count: number;
+  /**
+   * How many of those facts the record's own agent key for that name signed, for this very
+   * identity: the agent is then attested by the key, not only declared by whoever signed. The
+   * others were signed by a key with no such role — the person's own, as before agent keys — and
+   * `which` there is the name the signer wrote. Never more than `count`, and 0 for no agent.
+   */
+  readonly attested: number;
 }
 
 /** A factual account of authorship over the record, within an optional window. */
@@ -264,9 +271,10 @@ function fold(
   const perWho = new Map<string, WhoAccumulator>();
   let total = 0;
   for (const source of sources) {
+    const agents = source.cache.agentKeys();
     for (const cell of source.cache.authorship(filter)) {
       total += cell.count;
-      accumulate(perWho, cell);
+      accumulate(perWho, cell, agents);
     }
   }
   const machines = new Set(sources.flatMap((source) => source.cache.checkers()));
@@ -321,21 +329,40 @@ interface WhoAccumulator {
   total: number;
   readonly byKind: Map<EventKind, number>;
   readonly byWhich: Map<string | null, number>;
+  /** Of `byWhich`, the facts an agent key enrolled under that name signed. */
+  readonly attested: Map<string | null, number>;
 }
 
 /**
  * Adds one tally cell to its author's totals, creating the author on first
  * sight. The same cell feeds both breakdowns, which is why they always agree.
  */
-function accumulate(perWho: Map<string, WhoAccumulator>, cell: AuthorshipTally): void {
+function accumulate(
+  perWho: Map<string, WhoAccumulator>,
+  cell: AuthorshipTally,
+  agents: ReadonlyMap<string, { readonly anchor: string; readonly name: string }>,
+): void {
   let acc = perWho.get(cell.who);
   if (acc === undefined) {
-    acc = { who: cell.who, total: 0, byKind: new Map(), byWhich: new Map() };
+    acc = {
+      who: cell.who,
+      total: 0,
+      byKind: new Map(),
+      byWhich: new Map(),
+      attested: new Map(),
+    };
     perWho.set(cell.who, acc);
   }
   acc.total += cell.count;
   acc.byKind.set(cell.kind, (acc.byKind.get(cell.kind) ?? 0) + cell.count);
   acc.byWhich.set(cell.which, (acc.byWhich.get(cell.which) ?? 0) + cell.count);
+  // Attested where the key that signed is an agent key of THIS identity, enrolled under the very
+  // name the fact carries: the two conditions the verifier holds every accepted fact of such a
+  // key to, asked here of the envelope alone.
+  const agent = agents.get(cell.signer);
+  if (agent !== undefined && agent.anchor === cell.who && agent.name === cell.which) {
+    acc.attested.set(cell.which, (acc.attested.get(cell.which) ?? 0) + cell.count);
+  }
 }
 
 /** Finishes an accumulator into an immutable, stably-ordered account. */
@@ -349,7 +376,7 @@ function finishWho(
     .map(([kind, count]) => ({ kind, count }))
     .sort((a, b) => (a.kind < b.kind ? -1 : a.kind > b.kind ? 1 : 0));
   const byWhich = [...acc.byWhich.entries()]
-    .map(([which, count]) => ({ which, count }))
+    .map(([which, count]) => ({ which, count, attested: acc.attested.get(which) ?? 0 }))
     .sort(byCountThenWhich);
   return {
     who: acc.who,

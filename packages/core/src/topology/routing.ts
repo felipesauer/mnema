@@ -354,7 +354,7 @@ export function keyRootFor(trees: ResolvedTrees, chainRoot: string): string {
   const key = `${chainRoot}\n${agent.keyRoot}\n${agent.name}`;
   const seen = agentReadings.get(key);
   if (seen?.extent === extent) return seen.enrolled ? agent.keyRoot : trees.keyRoot;
-  const enrolled = agentIsEnrolledIn(chainRoot, fingerprint, agent.name);
+  const enrolled = agentStandingIn(chainRoot, fingerprint, agent.name) !== 'absent';
   agentReadings.set(key, { extent, enrolled });
   return enrolled ? agent.keyRoot : trees.keyRoot;
 }
@@ -370,18 +370,37 @@ export function agentSignsIn(trees: ResolvedTrees, scope: Scope): AgentSigning |
   return keyRootFor(trees, chainRoot) === trees.agent.keyRoot ? trees.agent : undefined;
 }
 
-/** Whether the record at `chainRoot` proves the key `fingerprint` an agent there, as `name`. */
-function agentIsEnrolledIn(chainRoot: string, fingerprint: string, name: string): boolean {
+/** What the record at one tree says of an agent key: it enrols it, it retired it, or it names it not. */
+export type AgentStanding = 'enrolled' | 'retired' | 'absent';
+
+/**
+ * What the record of `scope`'s tree says of the agent configured in `trees` — read from the record
+ * on every ask, never from a recorded anchor — or undefined when none is configured, the machine
+ * holds no key under its name, or the tree is not there. It is the question the choice of key asks
+ * ({@link keyRootFor}) and the one `mnema doctor` answers a person with.
+ */
+export function agentStanding(trees: ResolvedTrees, scope: Scope): AgentStanding | undefined {
+  const chainRoot = chainRootForScope(trees, scope);
+  const agent = trees.agent;
+  if (agent === undefined || chainRoot === undefined) return undefined;
+  const fingerprint = localKeyFingerprint({ root: agent.keyRoot });
+  return fingerprint === null ? undefined : agentStandingIn(chainRoot, fingerprint, agent.name);
+}
+
+/** What the record at `chainRoot` says of the key `fingerprint` as the agent `name`. */
+function agentStandingIn(chainRoot: string, fingerprint: string, name: string): AgentStanding {
   const half = committedPublicKey({ root: chainRoot }, fingerprint);
-  if (half === null) return false;
+  if (half === null) return 'absent';
   const query = { tree: chainRoot, upcasters: catalogUpcasters() };
   const proven = membershipIn(query, half);
-  // A key the record RETIRED is still the agent's key for this purpose: it is the key that writes
-  // here, and the write is refused by the record (`REVOKED_KEY`) instead of passing to the
+  // A key the record RETIRED is still the agent's key for the choice of key: it is the key that
+  // writes here, and the write is refused by the record (`REVOKED_KEY`) instead of passing to the
   // person's key, which would make retiring an agent the way to have its host sign as the person.
-  if (!proven.ok) return proven.code === 'REVOKED_KEY';
-  if (proven.membership !== 'agent') return false;
-  return rosterByRole(query, proven.anchor).agents.get(fingerprint) === name;
+  if (!proven.ok) return proven.code === 'REVOKED_KEY' ? 'retired' : 'absent';
+  if (proven.membership !== 'agent') return 'absent';
+  return rosterByRole(query, proven.anchor).agents.get(fingerprint) === name
+    ? 'enrolled'
+    : 'absent';
 }
 
 /**

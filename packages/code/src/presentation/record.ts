@@ -57,6 +57,8 @@ export interface RecordContext {
   readonly anchors: AnchorForms;
   /** How many runs consulted this pattern; absent for anything but a skill. */
   readonly consultations?: number;
+  /** The actors of a decision the record's own agent key signed for (`mnema show`). */
+  readonly attested?: { readonly recordedBy?: true; readonly acceptedBy?: true };
 }
 
 /**
@@ -137,8 +139,11 @@ function aboveTheBody(lines: string[], facts: readonly string[]): string[] {
 }
 
 /** `mnid:ab12cd34 (a person)` or `mnid:ab12cd34 (agent claude-code)`. */
-function actorText(anchors: AnchorForms, actor: DecisionActor): string {
-  const act = actor.which === undefined ? A_PERSON : `agent ${oneLine(actor.which)}`;
+function actorText(anchors: AnchorForms, actor: DecisionActor, attested = false): string {
+  const act =
+    actor.which === undefined
+      ? A_PERSON
+      : `agent ${oneLine(actor.which)}${attested ? ', attested by its own key' : ''}`;
   return `${oneLine(anchorText(anchors, actor.who))} (${act})`;
 }
 
@@ -208,12 +213,20 @@ export function recordReport(render: Render, body: RecordBody, context: RecordCo
       // opens one record. An agent is named; a person is the act with no agent on it.
       if (body.record.recordedBy !== undefined) {
         lines.push(
-          render(fact(`recorded by ${actorText(context.anchors, body.record.recordedBy)}`)),
+          render(
+            fact(
+              `recorded by ${actorText(context.anchors, body.record.recordedBy, context.attested?.recordedBy === true)}`,
+            ),
+          ),
         );
       }
       if (body.record.acceptedBy !== undefined) {
         lines.push(
-          render(fact(`accepted by ${actorText(context.anchors, body.record.acceptedBy)}`)),
+          render(
+            fact(
+              `accepted by ${actorText(context.anchors, body.record.acceptedBy, context.attested?.acceptedBy === true)}`,
+            ),
+          ),
         );
       }
       lines.push('');

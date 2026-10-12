@@ -49,6 +49,7 @@ export function registerShow(program: Command, wiring: Wiring): Declared {
         recordReport(render, result.record, {
           anchors: result.anchors,
           ...(result.consultations !== undefined ? { consultations: result.consultations } : {}),
+          ...(result.attested !== undefined ? { attested: result.attested } : {}),
         }),
       );
     });

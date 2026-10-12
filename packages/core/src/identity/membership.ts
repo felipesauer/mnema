@@ -494,6 +494,29 @@ export function agentsOf(query: MembershipQuery, anchor: string): Map<string, st
   return rosterByRole(query, anchor).agents;
 }
 
+/**
+ * Every key the events enrol as an AGENT — with the identity that enrolled it and the name — whose
+ * consent verifies against the public half the tree carries. A key stays in the map after a
+ * retirement or a revocation: what it signed while it held the role is still what it signed, and
+ * the readings that count it (`accountability`) are about those facts. A key enrolled twice keeps
+ * its first.
+ */
+export function agentKeysIn(
+  events: Iterable<CatalogEvent>,
+  tree: string,
+): Map<string, { readonly anchor: string; readonly name: string }> {
+  const keys = new Map<string, { readonly anchor: string; readonly name: string }>();
+  const layout: ChainLayout = { root: tree };
+  for (const fact of enrollmentFactsOf(events)) {
+    if (fact.kind !== 'agent-enrolled' || keys.has(fact.fingerprint)) continue;
+    const half = committedPublicKey(layout, fact.fingerprint);
+    if (half === null || !provesAgentConsent(half, fact.anchor, fact.name, fact.reverseSig))
+      continue;
+    keys.set(fact.fingerprint, { anchor: fact.anchor, name: fact.name });
+  }
+  return keys;
+}
+
 /** An identity's keys as one reading of the record sees them: its own, and its agents'. */
 export interface RosterByRole {
   /** The keys that are the identity's own — the ones that may vouch, retire and be the last. */

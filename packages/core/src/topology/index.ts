@@ -60,7 +60,9 @@ export {
   withAgentKey,
 } from './resolve.js';
 export {
+  type AgentStanding,
   agentSignsIn,
+  agentStanding,
   chainRootForScope,
   type DeferredWrite,
   deferredWrite,

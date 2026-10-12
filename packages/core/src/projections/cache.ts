@@ -22,7 +22,7 @@ import {
 import { dropProjections, ensureSchema } from '../db/schema.js';
 import { IN_MEMORY, inTransaction, openDatabase, type SqliteDatabase } from '../db/sqlite.js';
 import { type FoundedBeside, identitiesFoundedBeside } from '../identity/founded-beside.js';
-import { rosterIn, rosterOf } from '../identity/membership.js';
+import { agentKeysIn, rosterIn, rosterOf } from '../identity/membership.js';
 import { advance } from './advance.js';
 import { readCacheFileFor } from './cache-home.js';
 import {
@@ -783,6 +783,16 @@ export class ProjectionCache {
    */
   foundedBeside(): FoundedBeside[] {
     return identitiesFoundedBeside(readMembership(this.db));
+  }
+
+  /**
+   * The agent keys this tree enrols, by fingerprint, each with the identity it speaks for and the
+   * name it was enrolled under — read off the membership facts this cache keeps, with the consent
+   * proven against the public halves the tree carries (`agentKeysIn`). A key a retirement took
+   * out is still in it: it answers which facts an agent key signed, and those stay signed.
+   */
+  agentKeys(): Map<string, { readonly anchor: string; readonly name: string }> {
+    return agentKeysIn(readMembership(this.db), this.layout.root);
   }
 
   /**
