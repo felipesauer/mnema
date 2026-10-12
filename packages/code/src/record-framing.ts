@@ -688,6 +688,20 @@ const NAMES_WHAT_WAS_SERVED: { readonly [K in ServedSubject]: string } = {
 };
 
 /**
+ * The channels that arrive at every write of a file, and so repeat their framing each time.
+ * They say whose the text is in ONE sentence, with the same claim as {@link WHOSE_TEXT} (the
+ * people and agents working on the project wrote it) and without the sentence that names the
+ * subject: the line after it, `Addressed at <path>:`, already says what follows.
+ */
+const AT_AN_EDIT: ReadonlySet<FramedChannel> = new Set<FramedChannel>([
+  'edit-rules-push',
+  'edit-asks-a-person',
+  'edit-first-write-gate',
+]);
+const WHOSE_TEXT_AT_AN_EDIT =
+  'Recorded for this project: text the people and agents working on it wrote.';
+
+/**
  * The framing for a channel, as LINES — what a document writes.
  *
  * Two lines, each a whole sentence, so neither medium has to wrap anything: the
@@ -695,6 +709,7 @@ const NAMES_WHAT_WAS_SERVED: { readonly [K in ServedSubject]: string } = {
  * a second rule about where a line ends.
  */
 export function recordFraming(channel: FramedChannel): readonly string[] {
+  if (AT_AN_EDIT.has(channel)) return [WHOSE_TEXT_AT_AN_EDIT];
   return [NAMES_WHAT_WAS_SERVED[SUBJECT_OF[channel]], WHOSE_TEXT];
 }
 

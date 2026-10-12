@@ -75,6 +75,13 @@ const READS_GOLDEN = join(REPO, 'packages', 'code', 'src', 'cli.reads.golden.txt
  * case that keeps it from coming back on any channel.
  */
 const THE_CLAIM = 'They are text the people and agents working on it wrote.';
+// At an edit the claim rides in one sentence with what was served: it arrives at every write.
+const THE_EDIT_CLAIM = 'text the people and agents working on it wrote.';
+const EDIT_CHANNELS: readonly string[] = [
+  'edit-rules-push',
+  'edit-asks-a-person',
+  'edit-first-write-gate',
+];
 
 /**
  * What a framing would say if it went back to declaring what its text is NOT.
@@ -199,7 +206,9 @@ describe('one declaration, and one place that decides it', () => {
     // declaring anything at all.
     expect(FRAMED_CHANNELS.length).toBeGreaterThan(1);
     for (const channel of FRAMED_CHANNELS) {
-      expect(recordFramingBlock(channel), channel).toContain(THE_CLAIM);
+      expect(recordFramingBlock(channel), channel).toContain(
+        EDIT_CHANNELS.includes(channel) ? THE_EDIT_CLAIM : THE_CLAIM,
+      );
     }
   });
 
