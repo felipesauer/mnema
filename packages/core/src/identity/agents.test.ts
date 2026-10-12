@@ -19,6 +19,7 @@ import {
   committedPublicKey,
   localKeyFingerprint,
   openChainForWriting,
+  readAnchor,
   verify,
 } from '@mnema/chain';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
@@ -455,6 +456,25 @@ describe('which key a tree is signed with', () => {
 
     const trees = treesOf(m.keyRoot, { name: 'gemini', keyRoot: claude.keyRoot });
     expect(signerFor(trees, 'public').signerFingerprint).toBe(m.fingerprint);
+  });
+
+  it('does not take the agent for another name once the key has written here as the agent', () => {
+    const { m, anchor } = person();
+    const claude = agentRequest(anchor, 'claude');
+    expect(enrollAgentFromRequest(m.ctx, { request: claude.request }).ok).toBe(true);
+    // The key has written in this tree: it keeps an anchor, which is what a shortcut used to trust.
+    const asAgent = open(claude.keyRoot);
+    expect(captureMemory(asAgent.ctx, { content: 'from the agent', which: 'claude' }).ok).toBe(true);
+    asAgent.writer.checkpoint();
+    expect(readAnchor({ root: tree }, claude.fingerprint)).toBe(anchor);
+
+    const same = treesOf(m.keyRoot, { name: 'claude', keyRoot: claude.keyRoot });
+    expect(signerFor(same, 'public').signerFingerprint).toBe(claude.fingerprint);
+    // The same key under another folder name: the record enrols it as "claude", so a write
+    // stamped "codex" would be one its own `verify` refuses. The person's key signs instead.
+    const renamed = treesOf(m.keyRoot, { name: 'codex', keyRoot: claude.keyRoot });
+    expect(signerFor(renamed, 'public').signerFingerprint).toBe(m.fingerprint);
+    expect(agentSignsIn(renamed, 'public')).toBeUndefined();
   });
 
   it('is the person’s when the agent has no key on this machine, and mints none', () => {

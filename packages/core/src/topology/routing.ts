@@ -45,7 +45,6 @@ import {
   ensureTree,
   localKeyFingerprint,
   openChainForWriting,
-  readAnchor,
   signerAt,
 } from '@mnema/chain';
 import { membershipIn, rosterByRole } from '../identity/membership.js';
@@ -338,9 +337,10 @@ const agentReadings = new Map<string, { readonly extent: string; readonly enroll
  * with the person's key, as it was before the agent had one, and the facts say so: their `which`
  * is then declared by the key that signed, not attested.
  *
- * Answered without reading the record where it can be: a tree that already recorded an anchor for
- * the agent key settled it once, and the roster check before every write (`ensureFounded`) is what
- * notices a retirement afterwards. Otherwise the record is read once per extent it has.
+ * Always from the record, and the NAME is part of the question: a key the machine already wrote
+ * with in a tree (an anchor is recorded for it) can still sit under another folder name than the
+ * one the record enrols it as, and a write stamped with the configured name would be one that
+ * `verify` refuses. The record is read once per extent it has.
  */
 export function keyRootFor(trees: ResolvedTrees, chainRoot: string): string {
   const agent = trees.agent;
@@ -348,8 +348,6 @@ export function keyRootFor(trees: ResolvedTrees, chainRoot: string): string {
   const fingerprint = localKeyFingerprint({ root: agent.keyRoot });
   if (fingerprint === null) return trees.keyRoot;
   const layout = { root: chainRoot };
-  if (readAnchor(layout, fingerprint) !== null) return agent.keyRoot;
-
   const extent = chainExtent(layout);
   const key = `${chainRoot}\n${agent.keyRoot}\n${agent.name}`;
   const seen = agentReadings.get(key);
