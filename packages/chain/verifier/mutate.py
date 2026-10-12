@@ -46,6 +46,7 @@ from mnemaverify.checkpoint import (  # noqa: E402
     signed_message,
 )
 from mnemaverify.ed25519 import public_key_of, sign  # noqa: E402
+from mnemaverify.enrolment import anchor_of, checker_message  # noqa: E402
 from mnemaverify.entry import entry_hash  # noqa: E402
 from mnemaverify.root import content_root  # noqa: E402
 
@@ -66,17 +67,25 @@ UNENROLLED_SECRET = bytes.fromhex(
 _SPKI_ED25519_PREFIX = bytes.fromhex("302a300506032b6570032100")
 
 
-def _unenrolled_public() -> tuple[str, str]:
+# A SECOND PUBLISHED KEY, for a record that needs two: RFC 8032 section 7.1's second test
+# vector. It is what a checker key is in the mutations below - a key enrolled under a ROLE,
+# by an `identity.founded` key that is the first vector.
+CHECKER_SECRET = bytes.fromhex(
+    "4ccd089b28ff96da9db6c346ec114e0f5b8a319f35aba624da8cf6ed4fb8a6fb"
+)
+
+
+def _unenrolled_public(secret: bytes = UNENROLLED_SECRET) -> tuple[str, str]:
     """The committed form of that key: its fingerprint, and the PEM to write beside it."""
-    der = _SPKI_ED25519_PREFIX + public_key_of(UNENROLLED_SECRET)
+    der = _SPKI_ED25519_PREFIX + public_key_of(secret)
     body = base64.b64encode(der).decode("ascii")
     pem = f"-----BEGIN PUBLIC KEY-----\n{body}\n-----END PUBLIC KEY-----\n"
     return hashlib.sha256(der).hexdigest(), pem
 
 
-def _commit_the_unenrolled_key(root: str) -> str:
+def _commit_the_unenrolled_key(root: str, secret: bytes = UNENROLLED_SECRET) -> str:
     """Write it into `keys/`, so the reader can look it up and check its material."""
-    fingerprint, pem = _unenrolled_public()
+    fingerprint, pem = _unenrolled_public(secret)
     keys = os.path.join(root, "keys")
     os.makedirs(keys, exist_ok=True)
     with open(os.path.join(keys, fingerprint + ".pub"), "w", encoding="utf-8") as handle:
@@ -845,6 +854,98 @@ def decomposed_text_in_a_signed_line(root: str) -> tuple[bool, str]:
     return _rewrite(path, lines), f"the text of line {at + 1} written in NFD"
 
 
+def _append_signed(root: str, event: dict, secret: bytes) -> int:
+    """Append one event and a checkpoint over it alone, GENUINELY signed by `secret`.
+
+    The checkpoint chains by `prev` to the last one, its root folds over the event, and its
+    signature verifies under a key committed beside it. Returns the event's seq.
+    """
+    fingerprint = _commit_the_unenrolled_key(root, secret)
+    checkpoints = _checkpoints(root)
+    lines = _read_lines(checkpoints)
+    last = strict_loads(lines[-1].decode("utf-8"))
+    _, seq = _append(root, event)
+    stored = {
+        "contentRoot": content_root([canonical_bytes(event)]),
+        "fromSeq": seq,
+        "prev": hashlib.sha256(signed_message(last, CHECKPOINT_KEYS)).hexdigest(),
+        "scheme": CHECKPOINT_SCHEME,
+        "signerFp": fingerprint,
+        "tail": _tail_dir(root).rsplit(os.sep, 1)[-1],
+        "toSeq": seq,
+    }
+    message = signed_message(stored, CHECKPOINT_KEYS)
+    lines.append(canonical_bytes({**stored, "sig": sign(secret, message).hex()}))
+    _rewrite(checkpoints, lines)
+    return seq
+
+
+def checkpoint_by_a_checker_over_the_persons_event(root: str) -> tuple[bool, str]:
+    """A CHECKER key closes a checkpoint over an event that names the PERSON's key as signer.
+
+    The holder of a role key - a checker's, which signs check results and nothing else - writes
+    an ordinary event, puts the person's fingerprint in its `signerFp`, and signs the checkpoint
+    with the key it holds. Every check below section 6.2 closes: the root folds, `prev` chains,
+    the signature verifies under a committed, enrolled key. And the enrolment fold, which reads
+    the event's own `signerFp`, sees the person - a key valid for the anchor - so the checker's
+    containment ("a checker key signs check results and nothing else") never meets the event.
+
+    What refuses it is section 6's binding: every event in a checkpoint's range names that
+    checkpoint's `signerFp`. The checkpoint is the only thing that proves who signed the range.
+    """
+    anchor = _refound(root, "the record a checker key is enrolled in")
+    person, _ = _unenrolled_public()
+    checker = _commit_the_unenrolled_key(root, CHECKER_SECRET)
+    template = _last_event(root)
+
+    def event(kind: str, subject: str, payload: dict) -> dict:
+        return {**template, "kind": kind, "subject": subject, "payload": payload}
+
+    reverse = sign(CHECKER_SECRET, checker_message(anchor, checker)).hex()
+    _append_signed(
+        root,
+        event("checker.enrolled", anchor_of(checker), {"checkerFp": checker, "reverseSig": reverse}),
+        UNENROLLED_SECRET,
+    )
+    seq = _append_signed(
+        root,
+        event(
+            "memory.captured",
+            "01a02d24-730d-7000-988d-ac7784b4a4a4",
+            {"content": "written with the checker key, in the person's name"},
+        ),
+        CHECKER_SECRET,
+    )
+    return True, (
+        f"cp[{seq}..{seq}] signed by the checker {checker[:12]}... over an event naming "
+        f"the person {person[:12]}..."
+    )
+
+
+def which_is_who_in_a_signed_range(root: str) -> tuple[bool, str]:
+    """An event whose `which` is its `who`, inside a range a checkpoint genuinely signed.
+
+    `who` is the identity that authorized a move and `which` the agent that executed it, and a
+    move an identity authorized for itself is the self-authorization the writer refuses to
+    make. The two are compared in their canonical form - NFC, then trimmed of the set section 6
+    enumerates - so this `which` is `who` with a trailing U+00A0, which a byte comparison would
+    call a different identity.
+    """
+    anchor = _refound(root, "the record whose last event authorizes itself")
+    template = _last_event(root)
+    seq = _append_signed(
+        root,
+        {
+            **template,
+            "subject": "01a02d24-730d-7000-988d-ac7784b4a4a5",
+            "payload": {"content": "the agent that executed this is the identity that authorized it"},
+            "which": anchor + " ",
+        },
+        UNENROLLED_SECRET,
+    )
+    return True, f"seq {seq} signed under cp[{seq}..{seq}] with `which` = `who` + U+00A0"
+
+
 def _flip_payload(payload: object) -> object:
     """Change one string in a payload, or add one if it holds none."""
     if isinstance(payload, dict):
@@ -885,6 +986,8 @@ MUTATIONS = {
     "whitespace-in-a-signed-line": whitespace_in_a_signed_line,
     "key-order-in-a-signed-line": key_order_in_a_signed_line,
     "decomposed-text-in-a-signed-line": decomposed_text_in_a_signed_line,
+    "checkpoint-by-a-checker-over-the-persons-event": checkpoint_by_a_checker_over_the_persons_event,
+    "which-is-who-in-a-signed-range": which_is_who_in_a_signed_range,
 }
 
 

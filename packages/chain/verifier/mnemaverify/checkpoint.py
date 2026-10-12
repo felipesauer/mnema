@@ -26,6 +26,7 @@ artifact nobody looks at.
 from __future__ import annotations
 
 import hashlib
+import unicodedata
 from typing import Any, NamedTuple
 
 from .canonical import canonical_bytes, strict_loads, utf8_text
@@ -64,6 +65,38 @@ class Checkpoint(NamedTuple):
     @property
     def label(self) -> str:
         return f"cp[{self.from_seq}..{self.to_seq}]"
+
+
+# Section 6's set, written out because "trimmed" is not one rule across languages: this is
+# what JavaScript's `String.prototype.trim` removes (WhiteSpace and LineTerminator), and it is
+# NOT what Python's `str.strip()` removes - that one also takes U+001C to U+001F and U+0085,
+# so `strip()` would call two identities the same that the product calls different.
+IDENTITY_TRIM = (
+    "\u0009\u000a\u000b\u000c\u000d   "
+    "           "
+    "    　﻿"
+)
+
+
+def canonical_identity(value: str) -> str:
+    """The form `which` and `who` are compared in: NFC, then trimmed of IDENTITY_TRIM."""
+    return unicodedata.normalize("NFC", value).strip(IDENTITY_TRIM)
+
+
+def binding_break(events: list[dict[str, Any]], signer_fp: Any) -> tuple[int, str] | None:
+    """Section 6's binding of a range's events to the checkpoint that signs it.
+
+    Every event in the range names the checkpoint's `signerFp`, and its `which`, when present,
+    is not its `who`. Returns the offset of the first event that breaks it, and which half.
+    """
+    for offset, event in enumerate(events):
+        if event.get("signerFp") != signer_fp:
+            return offset, "signer"
+        which, who = event.get("which"), event.get("who")
+        if isinstance(which, str) and isinstance(who, str):
+            if canonical_identity(which) == canonical_identity(who):
+                return offset, "which"
+    return None
 
 
 def read_checkpoint(raw: bytes, index: int) -> Checkpoint:
