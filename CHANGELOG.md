@@ -23,6 +23,12 @@ tag, with its own changelog.
   holds the file and no use to a session that holds none; it is left out, 393 B and 96 tokens (o200k) fewer at
   every opening. `mnema brief` without the flag prints the paragraph as before, so the file and the staleness
   check are unchanged.
+- **The framing the rules carry at each edit is one sentence.** The rules pushed at a write, the pause that asks for a
+  person and the hold on a first write opened with two sentences, one naming what was served and one saying whose text
+  it is; at every edit of a file they now open with one, "Recorded for this project: text the people and agents
+  working on it wrote.", which keeps the claim about who wrote the rules and drops the repeated subject. The rules, their
+  ids and the sentence about another run are the same. 46 B fewer at every edit (rules pushed 380 to 334 bytes, 102 to
+  93 tokens, o200k; the pause 564 to 518, 147 to 138). The opening of a session and the notes keep their two sentences.
 
 ### Fixed
 
