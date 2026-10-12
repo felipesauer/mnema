@@ -253,6 +253,71 @@ describe('the verbs that make an agent key', () => {
     expect(keysIn(join(home, '.mnema', 'agents', 'claude'))).toEqual(agent);
   });
 
+  it('refuses --agent together with --checker at each verb, and does nothing', async () => {
+    const fingerprint = await anAgent('claude');
+    const before = events().length;
+
+    const request = await mnema(
+      undefined,
+      'key',
+      'request',
+      '--agent',
+      'gemini',
+      '--checker',
+      '--anchor',
+      await identity(),
+    );
+    expect(request.failed).toBe(true);
+    expect(request.err).toContain('ONE_POWER');
+    expect(request.err).toContain('--agent and --checker ask for different powers');
+    expect(existsSync(join(home, '.mnema', 'agents', 'gemini'))).toBe(false);
+
+    const enroll = await mnema(undefined, 'key', 'enroll', '--agent', '--checker', 'a-line');
+    expect(enroll.failed).toBe(true);
+    expect(enroll.err).toContain('ONE_POWER');
+    expect(enroll.err).toContain('--agent and --checker enrol different powers');
+
+    const revoke = await mnema(
+      undefined,
+      'key',
+      'revoke',
+      '--agent',
+      '--checker',
+      fingerprint,
+      '--reason',
+      'lent out',
+    );
+    expect(revoke.failed).toBe(true);
+    expect(revoke.err).toContain('ONE_POWER');
+    expect(revoke.err).toContain('--agent and --checker retire different keys');
+    expect(events()).toHaveLength(before);
+  });
+
+  it('requests for the key in the file it is given, and makes none in the agent’s folder', async () => {
+    // A key made elsewhere: the folder of another agent holds it, in the clear.
+    const other = fingerprintIn(
+      await did(undefined, 'key', 'request', '--agent', 'other', '--anchor', await identity()),
+    );
+    const file = join(home, '.mnema', 'agents', 'other', 'keys', `${other}.key`);
+
+    const requested = await did(
+      undefined,
+      'key',
+      'request',
+      '--agent',
+      'claude',
+      '--key',
+      file,
+      '--anchor',
+      await identity(),
+    );
+
+    expect(requested).toContain(
+      `Requesting for the agent claude: key ${other} (read from the file you named, not installed)`,
+    );
+    expect(existsSync(join(home, '.mnema', 'agents', 'claude'))).toBe(false);
+  });
+
   it('refuses a name this product does not enrol, and makes no folder for it', async () => {
     for (const name of ['Claude', '../escape', 'two words', 'mnid:abc']) {
       const refused = await mnema(
