@@ -94,8 +94,8 @@ import { deriveAnchor, generateKeyPair, publicKeyToPem } from './keys.js';
 import { witnessSigstorePath } from './layout.js';
 import { meetsRequirement } from './level.js';
 import { readTailCheckpoints } from './store.js';
-import { canonicalIdentityForm } from './verify.js';
 import { serializeTailProof, signTailProof } from './tailproof.js';
+import { canonicalIdentityForm } from './verify.js';
 
 /** The second reader, and the tool that builds the inputs it has to refuse. */
 const VERIFIER = fileURLToPath(new URL('../../verifier/mnema_verify.py', import.meta.url));
