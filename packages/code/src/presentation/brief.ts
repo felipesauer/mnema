@@ -230,7 +230,7 @@ const WHAT_TRAVELS = [
  * said is the text, and here is the copy of it that travels INSIDE the file — read by
  * whoever is deciding to regenerate. {@link registerBrief}'s help is the other.
  */
-const HOW_TO_REGENERATE = [
+export const HOW_TO_REGENERATE = [
   'Regenerate this file with `mnema brief > <this file>`, and check it with',
   '`mnema brief | diff - <this file>` — a difference is either a copy that fell behind',
   'the record or an edit made here by hand, and an edit here is lost on the next run.',
@@ -710,8 +710,9 @@ export function briefDocument(governance: Brief, inherited?: InheritedReading): 
  * choice left was between that and a cut this product makes and SAYS. It is the second one,
  * and the ceiling and its measurement are in one place ({@link HOOK_TEXT_CEILING}).
  *
- * WHAT MOVES AND WHAT DOES NOT. Under the ceiling this is {@link briefDocument}, byte for byte
- * ({@link fitWhole} asks the whole first). Over it, the skeleton is untouched — every heading,
+ * WHAT MOVES AND WHAT DOES NOT. Under the ceiling this is {@link briefDocument} without the
+ * paragraph that teaches regenerating a file ({@link HOW_TO_REGENERATE} — a session handed this
+ * text holds no file), and nothing else ({@link fitWhole} asks the whole first). Over it, the skeleton is untouched — every heading,
  * every paragraph, in the same order — and what shortens is the list of bullets, from its end:
  * decisions first and patterns after, as the document already orders them. Each heading still
  * counts what is printed under it, which is what {@link WHAT_TRAVELS} tells the reader a heading
@@ -734,7 +735,7 @@ export function briefWithin(
   return fitWhole(
     rulesIn(governance),
     room,
-    (shown) => [...composed(governance, shown, ceiling), ...late],
+    (shown) => [...composed(governance, shown, ceiling, false), ...late],
     ceiling.lengthOf,
   );
 }
@@ -929,6 +930,7 @@ function composed(
   governance: Brief,
   shown: number,
   ceiling: HookCeiling = CLAUDE_CODE_CEILING,
+  forAFile = true,
 ): string[] {
   const decisions = governance.decisions.slice(0, shown);
   const skills = governance.skills.slice(0, Math.max(0, shown - governance.decisions.length));
@@ -941,8 +943,9 @@ function composed(
     '',
     ...WHAT_TRAVELS,
     '',
-    ...HOW_TO_REGENERATE,
-    '',
+    // How to regenerate is for whoever holds the file; a session that is handed this text
+    // has no file to regenerate, and pays for the paragraph at every opening.
+    ...(forAFile ? [...HOW_TO_REGENERATE, ''] : []),
     ...whatHasAnAddress(governance.addressed, governance.editPush),
     '',
     ...whatAsksForAPerson(governance.asking, governance.asksAPerson),

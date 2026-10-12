@@ -19,7 +19,12 @@ import type { Brief, ChannelState } from '@mnema/context';
 import type { DivergentMove } from '@mnema/core';
 import { describe, expect, it } from 'vitest';
 import { hookTextOf } from '../host-names.js';
-import { briefDocument, briefWithin, STACKS_SECTION_MOST } from './brief.js';
+import {
+  briefDocument,
+  briefWithin,
+  HOW_TO_REGENERATE,
+  STACKS_SECTION_MOST,
+} from './brief.js';
 import {
   CLAUDE_CODE_CEILING,
   HOOK_TEXT_CEILING,
@@ -829,6 +834,13 @@ describe('the brief says how a decision of the reader’s own gets in', () => {
   });
 });
 
+/** The file's document as a hook hands it: the same lines, without the regeneration recipe. */
+const theHooksCopy = (brief: Brief): string[] => {
+  const file = briefDocument(brief);
+  const at = file.indexOf(HOW_TO_REGENERATE[0] as string);
+  return [...file.slice(0, at), ...file.slice(at + HOW_TO_REGENERATE.length + 1)];
+};
+
 describe('the hook’s copy stops at a whole rule, and says so', () => {
   /** A title as long as a real one gets — the kind that takes a record past the ceiling. */
   const long = (n: number) =>
@@ -840,9 +852,17 @@ describe('the hook’s copy stops at a whole rule, and says so', () => {
   });
   const bullets = (lines: readonly string[]) => lines.filter((line) => line.startsWith('- **'));
 
-  it('is the file’s copy byte for byte while the file fits', () => {
+  it('is the file’s copy while the file fits, without the paragraph that teaches regenerating it', () => {
     const small = governance({ decisions: [decision(1), decision(2)], skills: [pattern(1)] });
-    expect(briefWithin(small, HOOK_TEXT_CEILING)).toEqual(briefDocument(small));
+    const file = briefDocument(small);
+    const at = file.indexOf(HOW_TO_REGENERATE[0] as string);
+    expect(at).toBeGreaterThan(0);
+    expect(briefWithin(small, HOOK_TEXT_CEILING)).toEqual([
+      ...file.slice(0, at),
+      ...file.slice(at + HOW_TO_REGENERATE.length + 1),
+    ]);
+    expect(briefWithin(small, HOOK_TEXT_CEILING).join('\n')).not.toContain('mnema brief >');
+    expect(file.join('\n')).toContain('mnema brief > <this file>');
   });
 
   it('fits, where the file does not — and the file keeps every rule', () => {
@@ -862,7 +882,7 @@ describe('the hook’s copy stops at a whole rule, and says so', () => {
 
   it('keeps the skeleton the file has, heading for heading and paragraph for paragraph', () => {
     const hook = briefWithin(crowded, HOOK_TEXT_CEILING);
-    const file = briefDocument(crowded);
+    const file = theHooksCopy(crowded);
     const skeleton = (lines: readonly string[]) =>
       lines.filter((line) => !line.startsWith('- **') && !/^## /.test(line));
     // Everything that is not a bullet or a heading is the file's, in its order, and the
@@ -897,7 +917,7 @@ describe('the hook’s copy stops at a whole rule, and says so', () => {
     const two = governance({
       decisions: [1, 2].map((n) => decision(n, `A call numbered ${n} ${'at length '.repeat(100)}`)),
     });
-    const hook = briefWithin(two, printedLength(briefDocument(two)) - 1).join('\n');
+    const hook = briefWithin(two, printedLength(theHooksCopy(two)) - 1).join('\n');
     expect(hook).toContain(
       'Left out of this text: 1 decision in force — the last one in the order',
     );
@@ -966,11 +986,11 @@ describe('what the copy a hook carries says of the stacks adopted for the projec
     briefWithin(over, HOOK_TEXT_CEILING, undefined, undefined, undefined, stacks);
 
   it('says nothing where none is adopted, and never in the file', () => {
-    expect(hookWith({ adopted: [], departures: [] })).toEqual(briefDocument(base));
+    expect(hookWith({ adopted: [], departures: [] })).toEqual(theHooksCopy(base));
     const withStacks = hookWith({ adopted: adopted(1), departures: [] });
-    expect(briefDocument(base).join('\n')).not.toContain('Stacks adopted');
-    expect(withStacks.slice(0, briefDocument(base).length)).toEqual(briefDocument(base));
-    expect(withStacks.length).toBeGreaterThan(briefDocument(base).length);
+    expect(theHooksCopy(base).join('\n')).not.toContain('Stacks adopted');
+    expect(withStacks.slice(0, theHooksCopy(base).length)).toEqual(theHooksCopy(base));
+    expect(withStacks.length).toBeGreaterThan(theHooksCopy(base).length);
   });
 
   it('names each stack with its version and tree, and the doors that list and compare them', () => {
@@ -981,7 +1001,7 @@ describe('what the copy a hook carries says of the stacks adopted for the projec
       ],
       departures: [],
     });
-    expect(hook.slice(briefDocument(base).length)).toEqual([
+    expect(hook.slice(theHooksCopy(base).length)).toEqual([
       '',
       'Stacks adopted for this project (2): review-pass 0.2.0 (public), mine 1.0.0 (global).',
       'Their skills and agents sit in the folders each host reads; `mnema stack list` shows them and `mnema stack check` compares them with the record.',
@@ -1018,7 +1038,7 @@ describe('what the copy a hook carries says of the stacks adopted for the projec
     const section = hookWith({
       adopted: crowd,
       departures: Array.from({ length: 100_000 }, () => 'a'),
-    }).slice(briefDocument(base).length);
+    }).slice(theHooksCopy(base).length);
     expect(section.join('\n').length).toBeLessThanOrEqual(STACKS_SECTION_MOST);
     expect(section.join('\n')).not.toContain('IGNORE');
     expect(section.join('\n')).toContain('1 the record holds that cannot be shown here');

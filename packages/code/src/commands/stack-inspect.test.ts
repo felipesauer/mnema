@@ -14,7 +14,7 @@ import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { GIT_WITHOUT_MAINTENANCE } from '../../tests/support/git-without-maintenance.js';
-import { briefDocument, briefWithin } from '../presentation/brief.js';
+import { briefDocument, briefWithin, HOW_TO_REGENERATE } from '../presentation/brief.js';
 import { HOOK_TEXT_CEILING } from '../presentation/within-a-hook.js';
 import { runBrief } from './brief.js';
 import { runDoctor } from './doctor.js';
@@ -308,7 +308,10 @@ describe('a stack adopted in a tree is looked at against its receipt and the rec
       undefined,
       asHook.stacks,
     );
-    expect(opening.slice(briefDocument(asFile.brief).length)).toEqual([
+    const file = briefDocument(asFile.brief);
+    const at = file.indexOf(HOW_TO_REGENERATE[0] as string);
+    const hooksFile = [...file.slice(0, at), ...file.slice(at + HOW_TO_REGENERATE.length + 1)];
+    expect(opening.slice(hooksFile.length)).toEqual([
       '',
       'Stacks adopted for this project (1): hello-stack 1.0.0 (public).',
       'Their skills and agents sit in the folders each host reads; `mnema stack list` shows them and `mnema stack check` compares them with the record.',

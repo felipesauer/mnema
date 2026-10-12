@@ -1,7 +1,7 @@
 The size of every channel the model reads, over one fixture record.
 Bytes are UTF-8; tokens are o200k_base, a relative measure and not what a Claude model bills.
 
-session start: brief --hook                  2870 B      757 tok
+session start: brief --hook                  2477 B      661 tok
 session start: recall --hook                  820 B      200 tok
 file form: brief (what MNEMA.md carries)     2534 B      676 tok
 instructions                                 2044 B      470 tok

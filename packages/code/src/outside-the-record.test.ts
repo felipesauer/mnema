@@ -35,7 +35,7 @@ import { runDecisionImport } from './commands/decision-import.js';
 import { runInit } from './commands/init.js';
 import { runLink } from './commands/link.js';
 import { basesNeverImported, decisionsOutsideTheRecord } from './outside-the-record.js';
-import { briefDocument, briefWithin } from './presentation/brief.js';
+import { briefDocument, briefWithin, HOW_TO_REGENERATE } from './presentation/brief.js';
 import { HOOK_TEXT_CEILING } from './presentation/within-a-hook.js';
 import { withScopedCaches } from './tree-sources.js';
 
@@ -372,6 +372,11 @@ describe('which conventional decision bases this checkout holds that the record 
   });
 });
 
+function withoutTheRecipe(file: string[]): string[] {
+  const at = file.indexOf(HOW_TO_REGENERATE[0] as string);
+  return [...file.slice(0, at), ...file.slice(at + HOW_TO_REGENERATE.length + 1)];
+}
+
 describe('what the copy of the opening document a hook carries says about them', () => {
   /** The opening document, the way the hook asks for it and the way a file is written. */
   function opening(repo: string, env: DiscoveryEnv): { hook: string[]; file: string[] } {
@@ -382,7 +387,8 @@ describe('what the copy of the opening document a hook carries says about them',
     expect(asFile.outside).toBeUndefined();
     return {
       hook: briefWithin(asHook.brief, HOOK_TEXT_CEILING, asHook.outside),
-      file: briefDocument(asFile.brief),
+      // What a hook hands is the file's document without the recipe for regenerating it.
+      file: withoutTheRecipe(briefDocument(asFile.brief)),
     };
   }
 
