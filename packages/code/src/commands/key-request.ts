@@ -24,12 +24,13 @@
  * the key root, and only to mint this machine's key on first use.
  *
  * A thin adapter: it resolves the key root, turns a path the person typed into an
- * absolute one, and calls ONE core operation.
+ * absolute one, and calls ONE core operation. For an AGENT's key ({@link runAgentRequest}) the key
+ * root is the agent's own folder under the data directory, never the person's.
  */
 
 import { resolve } from 'node:path';
-import { type DiscoveryEnv, resolveTrees } from '@mnema/core';
-import { type RequestSource, requestEnrollment } from '@mnema/core/write';
+import { agentKeyRoot, agentNameRefusal, type DiscoveryEnv, resolveTrees } from '@mnema/core';
+import { type RequestSource, requestAgentEnrollment, requestEnrollment } from '@mnema/core/write';
 import { resolveAnchorInRecord } from '../anchors.js';
 
 /** What the request needs — injected so it is testable. */
@@ -98,5 +99,59 @@ export function runKeyRequest(
     request: made.request,
     source: made.source,
     minted: made.minted,
+  };
+}
+
+/** An agent's request was produced; nothing is enrolled yet. */
+export interface AgentRequestMade extends KeyRequestMade {
+  /** The name the agent will be enrolled under. */
+  readonly name: string;
+  /** The agent's own key root: `<data directory>/agents/<name>`. */
+  readonly keyRoot: string;
+}
+
+/**
+ * Produces an agent key's request to be enrolled in `anchor` under `name`: the key is made at the
+ * agent's own key root — `<data directory>/agents/<name>`, in the clear, never beside the person's
+ * key — and the line carries its public half and its consent to that one name in that one
+ * identity. With `privateKeyPath` it speaks for the key in that file instead (read, never
+ * installed).
+ */
+export function runAgentRequest(
+  ctx: KeyRequestContext,
+  input: { anchor: string; name: string; privateKeyPath?: string },
+): AgentRequestMade | KeyRequestRefused {
+  const unnamed = agentNameRefusal(input.name);
+  if (unnamed !== undefined) {
+    return { ok: false, reason: 'REFUSED', code: 'BAD_AGENT_NAME', message: unnamed };
+  }
+  const trees = resolveTrees(ctx.cwd, ctx.env);
+  // Resolved BEFORE the agent's key root is touched, as the person's is: a value that names no
+  // identity must not mint a key on the way to being refused.
+  const anchor = resolveAnchorInRecord(trees, input.anchor);
+  if (!anchor.ok) {
+    return { ok: false, reason: 'REFUSED', code: anchor.code, message: anchor.message };
+  }
+  const keyRoot = agentKeyRoot(ctx.env, input.name);
+  const made = requestAgentEnrollment({
+    anchor: anchor.anchor,
+    name: input.name,
+    keyRoot,
+    ...(input.privateKeyPath !== undefined
+      ? { privateKeyPath: resolve(ctx.cwd, input.privateKeyPath) }
+      : {}),
+  });
+  if (!made.ok) {
+    return { ok: false, reason: 'REFUSED', code: made.code, message: made.message };
+  }
+  return {
+    ok: true,
+    fingerprint: made.fingerprint,
+    anchor: made.anchor,
+    request: made.request,
+    source: made.source,
+    minted: made.minted,
+    name: made.name,
+    keyRoot,
   };
 }

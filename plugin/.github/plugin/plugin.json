@@ -14,7 +14,10 @@
     "mnema": {
       "command": "mnema",
       "args": ["mcp"],
-      "cwd": "."
+      "cwd": ".",
+      "env": {
+        "MNEMA_AGENT_KEY": "copilot"
+      }
     }
   },
   "hooks": "hooks/copilot.json"

@@ -376,7 +376,11 @@ function agentIsEnrolledIn(chainRoot: string, fingerprint: string, name: string)
   if (half === null) return false;
   const query = { tree: chainRoot, upcasters: catalogUpcasters() };
   const proven = membershipIn(query, half);
-  if (!proven.ok || proven.membership !== 'agent') return false;
+  // A key the record RETIRED is still the agent's key for this purpose: it is the key that writes
+  // here, and the write is refused by the record (`REVOKED_KEY`) instead of passing to the
+  // person's key, which would make retiring an agent the way to have its host sign as the person.
+  if (!proven.ok) return proven.code === 'REVOKED_KEY';
+  if (proven.membership !== 'agent') return false;
   return rosterByRole(query, proven.anchor).agents.get(fingerprint) === name;
 }
 

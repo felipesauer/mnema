@@ -137,7 +137,7 @@ describe('requestAgentEnrollment — the agent asks, at its own key root', () =>
     const { anchor } = person();
     for (const name of [
       'Claude',
-      'mnid:' + 'a'.repeat(64),
+      `mnid:${'a'.repeat(64)}`,
       '../x',
       '',
       '-x',
@@ -434,6 +434,18 @@ describe('which key a tree is signed with', () => {
     expect(agentSignsIn(trees, 'global')).toBeUndefined();
     // No agent configured: the person's key, enrolled or not.
     expect(signerFor(treesOf(m.keyRoot), 'public').signerFingerprint).toBe(m.fingerprint);
+  });
+
+  it('is still the agent’s once the record retired it, so a retired agent is refused and never passes to the person', () => {
+    const { m, anchor } = person();
+    const claude = agentRequest(anchor, 'claude');
+    expect(enrollAgentFromRequest(m.ctx, { request: claude.request }).ok).toBe(true);
+    expect(retireAgentKey(m.ctx, { fingerprint: claude.fingerprint, reason: 'lent out' }).ok).toBe(
+      true,
+    );
+
+    const trees = treesOf(m.keyRoot, { name: 'claude', keyRoot: claude.keyRoot });
+    expect(signerFor(trees, 'public').signerFingerprint).toBe(claude.fingerprint);
   });
 
   it('does not take the agent for a name it was not enrolled under', () => {

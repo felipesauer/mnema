@@ -17,6 +17,12 @@
       "title": "Path to the mnema executable",
       "description": "Absolute path of the mnema binary the plugin runs. Leave it as mnema to run the first one on your PATH.",
       "default": "mnema"
+    },
+    "agent_key": {
+      "type": "string",
+      "title": "Agent key",
+      "description": "The name of an agent key made with `mnema key request --agent <name>` and enrolled with `mnema key enroll --agent`, for the server to sign with. Leave it empty to sign with your own key. This file is read by Claude Code, VS Code and Cursor alike, so no name is filled in for you.",
+      "default": ""
     }
   },
   "mcpServers": {
@@ -24,7 +30,8 @@
       "command": "node",
       "args": ["${CLAUDE_PLUGIN_ROOT}/server/launch.mjs", "mcp"],
       "env": {
-        "MNEMA_PLUGIN_BINARY": "${user_config.mnema_path}"
+        "MNEMA_PLUGIN_BINARY": "${user_config.mnema_path}",
+        "MNEMA_AGENT_KEY": "${user_config.agent_key}"
       }
     }
   }

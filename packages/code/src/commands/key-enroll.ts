@@ -25,7 +25,13 @@
  */
 
 import { type DiscoveryEnv, resolveTrees } from '@mnema/core';
-import { deferredWrite, enrollChecker, enrollFromRequest } from '@mnema/core/write';
+import {
+  deferredWrite,
+  enrollAgentFromRequest,
+  enrollChecker,
+  enrollFromRequest,
+} from '@mnema/core/write';
+import { personsKeyInTheClear } from '../the-persons-key-in-the-clear.js';
 
 /** What the enrollment needs — injected so it is testable. */
 export interface KeyEnrollContext {
@@ -129,5 +135,55 @@ export function runKeyEnroll(
     anchor: enrolled.anchor,
     alreadyMember: enrolled.alreadyMember,
     root: trees.projectPublic,
+  };
+}
+
+/** The key may now sign as an agent of this machine's identity. */
+export interface AgentEnrolled {
+  readonly ok: true;
+  /** The agent key's fingerprint. */
+  readonly fingerprint: string;
+  /** The name it was enrolled under: the `which` of everything it signs. */
+  readonly name: string;
+  /** The identity it speaks for — this machine's own. */
+  readonly anchor: string;
+  /** True when the record already had it under this name, so nothing was appended. */
+  readonly alreadyAgent: boolean;
+  /** The project tree that recorded it. */
+  readonly root: string;
+  /** True when the person's own key is unencrypted, which leaves the separation to nothing. */
+  readonly personsKeyInTheClear: boolean;
+}
+
+/**
+ * Enrolls the key an AGENT request carries — a key that signs for this identity under a name —
+ * vouched for by this machine's key, in the project's public tree, where the other machines and an
+ * anonymous verifier read it. The person's key signs the vouch: this is the verb that asks it for
+ * its passphrase at the terminal, which is what the agent's host, without one, can never do.
+ */
+export function runAgentEnroll(
+  ctx: KeyEnrollContext,
+  input: { request: string },
+): AgentEnrolled | KeyEnrollRefused {
+  const trees = resolveTrees(ctx.cwd, ctx.env);
+  if (trees.projectPublic === undefined) {
+    return { ok: false, reason: 'NO_PROJECT' };
+  }
+  const write = deferredWrite(trees, 'public');
+  const enrolled = enrollAgentFromRequest(write, { request: input.request });
+  if (!enrolled.ok) {
+    return { ok: false, reason: 'REFUSED', code: enrolled.code, message: enrolled.message };
+  }
+  // The enrolment signs its own checkpoint; this covers a founding it may have appended
+  // alongside, and is a no-op otherwise.
+  write.checkpoint();
+  return {
+    ok: true,
+    fingerprint: enrolled.fingerprint,
+    name: enrolled.name,
+    anchor: enrolled.anchor,
+    alreadyAgent: enrolled.alreadyAgent,
+    root: trees.projectPublic,
+    personsKeyInTheClear: personsKeyInTheClear(trees.keyRoot) === true,
   };
 }

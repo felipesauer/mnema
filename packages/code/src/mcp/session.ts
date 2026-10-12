@@ -58,12 +58,15 @@
 
 import { catalogUpcasters } from '@mnema/chain';
 import {
+  agentNameRefusal,
+  agentSignsIn,
   chainRootForScope,
   type DiscoveryEnv,
   type PassedOverTree,
   type ReplacedClass,
   type ResolvedTrees,
   type Scope,
+  withAgentKey,
 } from '@mnema/core';
 import {
   authorizingAnchor,
@@ -96,6 +99,12 @@ export type OpenSessionInput = ClientWorkspace & {
   readonly clientName: string;
   /** An explicit project directory the server was configured with, if any. */
   readonly configProject?: string | undefined;
+  /**
+   * The agent this server signs as where the record enrols its key — the name of the folder its
+   * key lives in under the data directory (`mnema mcp --agent-key`). Absent, the server signs
+   * with the person's key and the session's `which` is what the client announced.
+   */
+  readonly agentKey?: string | undefined;
   /** The discovery environment (`$HOME`, `$MNEMA_HOME`). */
   readonly env: DiscoveryEnv;
   /**
@@ -297,7 +306,20 @@ export interface Session {
    * the record and the report would then name two different agents for one session,
    * and one of the two names would be a credential.
    */
-  readonly which: string;
+  which: string;
+  /**
+   * What the client announced about itself (`clientInfo.name`, defaulted) — kept because `which`
+   * is not always it: where the record enrols this server's agent key, `which` is the name that
+   * enrolment gave the key ({@link agentKey}), and the announcement is no longer what the facts
+   * say.
+   */
+  readonly clientName: string;
+  /**
+   * The agent this server was asked to sign as, where it is enrolled (`openSession`). The trees
+   * carry it for the choice of key (`agentSignsIn`); it is kept here to build the trees of a
+   * re-read the same way, and to say once when it is not in force.
+   */
+  readonly agentKey?: string;
   /**
    * The authorizing anchor (the machine's key) — the `who` and the bootstrap actor.
    *
@@ -477,13 +499,17 @@ export interface Session {
  * `a-refusal-leaves-nothing.test.ts` digests the tree around a connection that reads.
  */
 export function openSession(input: OpenSessionInput): Session {
-  const { trees, inProject, project, rung, workspaceProjects, passedOver } = resolveContext(
+  const resolved = resolveContext(
     cascadeInput(
       input.env,
       input.configProject,
       input.cwd !== undefined ? { cwd: input.cwd } : { roots: input.roots },
     ),
   );
+  const { inProject, project, rung, workspaceProjects, passedOver } = resolved;
+  const log = input.log ?? (() => {});
+  const agentKey = usableAgentKey(input.agentKey, log);
+  const trees = withTheAgent(resolved.trees, input.env, agentKey);
 
   // WHERE THE ANCHOR IS READ FROM, and nothing else. This is not a write default —
   // there is none on a session any more (see {@link WriteTarget}); it is the one tree
@@ -507,6 +533,13 @@ export function openSession(input: OpenSessionInput): Session {
   // precisely because founding had settled it, and there is no run to take it after
   // any more. It appends nothing.
   const who = anchorIn(trees, anchorTree);
+  // SAID ONCE, because the person needs to hear it somewhere: a server asked to sign as an agent
+  // that signs as the person instead is the one thing a plugin update must not do in silence.
+  if (agentKey !== undefined && inProject && agentSignsIn(trees, 'public') === undefined) {
+    log(
+      `agent key "${agentKey}" is not in force in this project — this machine holds no key under that name, or the committed record does not enrol it as "${agentKey}": signing with the person's key, so the agent the facts name is declared, not attested. \`mnema key request --agent ${agentKey} --anchor <identity>\`, then \`mnema key enroll --agent <the line>\` where you hold your own key, puts it in force`,
+    );
+  }
 
   return {
     trees,
@@ -524,7 +557,9 @@ export function openSession(input: OpenSessionInput): Session {
     ...(input.cwd !== undefined ? { cwd: input.cwd } : {}),
     // Zero, and it is REPORTED as zero — see {@link Session.refreshes}.
     refreshes: 0,
-    which: input.clientName,
+    which: whichOf(trees, input.clientName),
+    clientName: input.clientName,
+    ...(agentKey !== undefined ? { agentKey } : {}),
     who,
     // Empty: the first write to a tree opens that tree's run (see `openWrite`). A
     // session that only reads carries this map to its close still empty, and that is
@@ -532,7 +567,7 @@ export function openSession(input: OpenSessionInput): Session {
     runs: new Map<string, OpenRun>(),
     ended: false,
     env: input.env,
-    log: input.log ?? (() => {}),
+    log,
     caches,
     founding: new FoundingWatch(),
     replacementsOwed: new ReplacementsOwed(),
@@ -651,10 +686,14 @@ export function refreshWorkspace(session: Session, roots: readonly string[]): Wo
   // refuse (a key the record proves belongs to two identities), and a session left
   // holding a project's trees with the global tree's `who` would attribute that
   // project's work to an answer another tree gave.
-  const who = landed ? anchorIn(resolved.trees, 'private') : session.who;
+  const who = landed
+    ? anchorIn(withTheAgent(resolved.trees, session.env, session.agentKey), 'private')
+    : session.who;
 
+  const trees = withTheAgent(resolved.trees, session.env, session.agentKey);
   session.roots = union;
-  session.trees = resolved.trees;
+  session.trees = trees;
+  session.which = whichOf(trees, session.clientName);
   session.inProject = resolved.inProject;
   session.rung = resolved.rung;
   if (resolved.project !== undefined) session.project = resolved.project;
@@ -666,6 +705,38 @@ export function refreshWorkspace(session: Session, roots: readonly string[]): Wo
     learned,
     ...(landed && resolved.project !== undefined ? { landedOn: resolved.project } : {}),
   };
+}
+
+/**
+ * The agent name this server will try to sign as: the one it was given, when it is a name this
+ * product enrols — and otherwise none, said once, because a server that does not start over a
+ * misspelt option is worse than one that signs as the person and says so.
+ */
+function usableAgentKey(name: string | undefined, log: (line: string) => void): string | undefined {
+  if (name === undefined) return undefined;
+  const unnamed = agentNameRefusal(name);
+  if (unnamed === undefined) return name;
+  log(`agent key ignored — ${oneLine(unnamed)}; this server signs with the person's key`);
+  return undefined;
+}
+
+/** `trees`, told which agent to sign as where the record enrols it, when one is configured. */
+function withTheAgent(
+  trees: ResolvedTrees,
+  env: DiscoveryEnv,
+  agentKey: string | undefined,
+): ResolvedTrees {
+  return agentKey === undefined ? trees : withAgentKey(trees, env, agentKey);
+}
+
+/**
+ * The `which` a connection stamps on what it writes: the name the record enrols the agent key
+ * under, where that key signs in the project's committed tree — read from the record, never from
+ * what the client said, because the record holds a fact to exactly that name — and what the client
+ * announced everywhere else.
+ */
+function whichOf(trees: ResolvedTrees, clientName: string): string {
+  return agentSignsIn(trees, 'public')?.name ?? clientName;
 }
 
 /**

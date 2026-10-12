@@ -24,7 +24,7 @@
 
 import { privateKeyPath } from '@mnema/chain';
 import { type DiscoveryEnv, resolveTrees } from '@mnema/core';
-import { deferredWrite, retireChecker, revokeMember } from '@mnema/core/write';
+import { deferredWrite, retireAgentKey, retireChecker, revokeMember } from '@mnema/core/write';
 import { forwardReplacement, type Replacement } from '../recorded-content.js';
 
 /** What the revocation needs — injected so it is testable. */
@@ -146,6 +146,50 @@ export function runCheckerRetire(
     checker: retired.checker,
     retiredBy: retired.retiredBy,
     alreadyRetired: retired.alreadyRetired,
+    root: trees.projectPublic,
+    ...forwardReplacement(retired),
+  };
+}
+
+/** The agent key signs nothing from now on. */
+export interface AgentRetired extends Replacement {
+  readonly ok: true;
+  readonly fingerprint: string;
+  /** The name it held. */
+  readonly name: string;
+  /** The identity that retired it. */
+  readonly anchor: string;
+  /** The project tree that recorded it. */
+  readonly root: string;
+}
+
+/**
+ * Retires an AGENT key — a key that signs for this identity under a name — signed by this
+ * machine's key in the project's public tree, where every other machine and an anonymous verifier
+ * read it. The agent's key is not asked, and its file is not touched: what retires it is the
+ * record.
+ */
+export function runAgentRetire(
+  ctx: KeyRevokeContext,
+  input: { fingerprint: string; reason: string },
+): AgentRetired | KeyRevokeRefused {
+  const trees = resolveTrees(ctx.cwd, ctx.env);
+  if (trees.projectPublic === undefined) {
+    return { ok: false, reason: 'NO_PROJECT' };
+  }
+  const write = deferredWrite(trees, 'public');
+  const retired = retireAgentKey(write, { fingerprint: input.fingerprint, reason: input.reason });
+  if (!retired.ok) {
+    return { ok: false, reason: 'REFUSED', code: retired.code, message: retired.message };
+  }
+  // The retirement signs its own checkpoint (a reader honours only a covered one); this covers a
+  // founding it may have appended alongside, and is a no-op otherwise.
+  write.checkpoint();
+  return {
+    ok: true,
+    fingerprint: retired.fingerprint,
+    name: retired.name,
+    anchor: retired.anchor,
     root: trees.projectPublic,
     ...forwardReplacement(retired),
   };

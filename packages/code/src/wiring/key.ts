@@ -15,6 +15,7 @@
 import type { Command } from 'commander';
 import { fact } from '../presentation/detail.js';
 import { RECORD_CONTRACT_HELP } from '../recorded-content.js';
+import { THE_AGENT_KEY_SEPARATES_NOTHING } from '../the-persons-key-in-the-clear.js';
 import { here } from './context.js';
 import { onOneLine } from './on-one-line.js';
 import { reportRefusal, reportReplacement } from './report.js';
@@ -85,7 +86,59 @@ export function registerKey(program: Command, wiring: Wiring): Declared {
       "ask to sign check results only, under this key's own identity, instead of joining " +
         '(for the machine that runs `mnema check run`, such as a CI runner)',
     )
-    .action(async (opts: { anchor: string; key?: string; checker?: boolean }) => {
+    .option(
+      '--agent <name>',
+      "ask to be enrolled as an AGENT of that identity under <name>: a key of its own, made in the agent's folder " +
+        "of this machine's data directory and never beside yours, that signs for the identity and names that agent on everything it signs",
+    )
+    .action(async (opts: { anchor: string; key?: string; checker?: boolean; agent?: string }) => {
+      if (opts.agent !== undefined) {
+        if (opts.checker === true) {
+          reportRefusal(wiring, {
+            reason: 'REFUSED',
+            code: 'ONE_POWER',
+            message: '--agent and --checker ask for different powers — choose one',
+          });
+          return;
+        }
+        const { runAgentRequest } = await import('../commands/key-request.js');
+        const result = runAgentRequest(here(), {
+          anchor: opts.anchor,
+          name: opts.agent,
+          ...(opts.key !== undefined ? { privateKeyPath: opts.key } : {}),
+        });
+        if (!result.ok) {
+          reportRefusal(wiring, result);
+          return;
+        }
+        io.out(
+          result.minted
+            ? `Created the key of the agent ${result.name}: ${result.fingerprint}`
+            : `Requesting for the agent ${result.name}: key ${result.fingerprint}` +
+                `${result.source === 'file' ? ' (read from the file you named, not installed)' : ''}`,
+        );
+        io.out(render(fact(`to be enrolled in ${result.anchor} as "${result.name}"`)));
+        io.out(
+          render(
+            fact(
+              onOneLine`its key lives in ${result.keyRoot}, in the clear: the agent's host signs with it and has no terminal to ask a passphrase at`,
+            ),
+          ),
+        );
+        io.out('');
+        io.out(result.request);
+        io.out('');
+        io.out(render(fact('Hand that line to a machine already in that identity, which runs:')));
+        io.out(render(fact('mnema key enroll --agent <the line>', 2)));
+        io.out(
+          render(
+            fact(
+              'It proves consent to that ONE name in that ONE identity and is not a secret. The key is.',
+            ),
+          ),
+        );
+        return;
+      }
       const { runKeyRequest } = await import('../commands/key-request.js');
       const asChecker = opts.checker === true;
       const result = runKeyRequest(here(), {
@@ -149,7 +202,56 @@ export function registerKey(program: Command, wiring: Wiring): Declared {
       '--checker',
       'enroll a key that signs check results only (the line `mnema key request --checker --anchor <id>` printed)',
     )
-    .action(async (request: string, opts: { checker?: boolean }) => {
+    .option(
+      '--agent',
+      'enroll a key as an agent of this identity (the line `mnema key request --agent <name> --anchor <id>` printed)',
+    )
+    .action(async (request: string, opts: { checker?: boolean; agent?: boolean }) => {
+      if (opts.agent === true) {
+        if (opts.checker === true) {
+          reportRefusal(wiring, {
+            reason: 'REFUSED',
+            code: 'ONE_POWER',
+            message: '--agent and --checker enrol different powers — choose one',
+          });
+          return;
+        }
+        const { runAgentEnroll } = await import('../commands/key-enroll.js');
+        const result = runAgentEnroll(here(), { request });
+        if (result.ok) {
+          if (result.alreadyAgent) {
+            io.out(
+              `Key ${result.fingerprint} is already the agent "${result.name}" — nothing recorded.`,
+            );
+            return;
+          }
+          io.out(`Enrolled agent ${result.name}: key ${result.fingerprint}`);
+          io.out(
+            render(
+              fact(
+                `it signs for ${result.anchor}, and names itself "${result.name}" on everything it signs`,
+              ),
+            ),
+          );
+          io.out(render(fact(onOneLine`recorded in ${result.root}`)));
+          if (result.personsKeyInTheClear) {
+            io.out(render(fact(`Note: ${THE_AGENT_KEY_SEPARATES_NOTHING}`)));
+          }
+          io.out(
+            render(
+              fact(
+                'Commit and share the record: another machine reads it to know the agent signs.',
+              ),
+            ),
+          );
+          return;
+        }
+        reportRefusal(wiring, result, {
+          NO_PROJECT:
+            'No mnema project here. Run `mnema key enroll --agent` inside the project to record it.',
+        });
+        return;
+      }
       if (opts.checker === true) {
         const { runCheckerEnroll } = await import('../commands/key-enroll.js');
         const result = runCheckerEnroll(here(), { request });
@@ -306,29 +408,141 @@ export function registerKey(program: Command, wiring: Wiring): Declared {
       '--checker',
       'retire a key that signs check results: from then on it signs nothing, and is never enrolled again',
     )
+    .option(
+      '--agent',
+      'retire an agent key of this identity: from then on it signs nothing, and is never enrolled again',
+    )
     .addHelpText('after', RECORD_CONTRACT_HELP)
-    .action(async (fingerprint: string, opts: { reason: string; checker?: boolean }) => {
-      if (opts.checker === true) {
-        const { runCheckerRetire } = await import('../commands/key-revoke.js');
-        const result = runCheckerRetire(here(), { fingerprint, reason: opts.reason });
-        if (result.ok) {
-          if (result.alreadyRetired) {
+    .action(
+      async (fingerprint: string, opts: { reason: string; checker?: boolean; agent?: boolean }) => {
+        if (opts.agent === true) {
+          if (opts.checker === true) {
+            reportRefusal(wiring, {
+              reason: 'REFUSED',
+              code: 'ONE_POWER',
+              message: '--agent and --checker retire different keys — choose one',
+            });
+            return;
+          }
+          const { runAgentRetire } = await import('../commands/key-revoke.js');
+          const result = runAgentRetire(here(), { fingerprint, reason: opts.reason });
+          if (result.ok) {
+            io.out(`Retired agent ${result.name}: key ${result.fingerprint}`);
+            reportReplacement(result, io);
+            io.out(render(fact(`it signs nothing from here on — retired by ${result.anchor}`)));
             io.out(
-              `Key ${result.fingerprint} was retired as a checker by ${result.retiredBy} already — nothing recorded.`,
+              render(
+                fact(
+                  'What it signed before stays in the record, and `mnema verify` names it. Its key file is untouched: what retires it is the record.',
+                ),
+              ),
+            );
+            io.out(
+              render(
+                fact(
+                  'Commit and share the record: a retirement others cannot read retires nothing.',
+                ),
+              ),
             );
             return;
           }
-          io.out(`Retired checker ${result.fingerprint}`);
-          reportReplacement(result, io);
-          io.out(render(fact(`it signs nothing from here on — retired by ${result.retiredBy}`)));
-          io.out(
-            render(
-              fact(
-                'What it signed before stays in the record, and `mnema verify` names it: a leaked ' +
-                  'key can date a result before its own retirement.',
+          reportRefusal(wiring, result, {
+            NO_PROJECT:
+              'No mnema project here. Run `mnema key revoke --agent` inside the project to record it.',
+          });
+          return;
+        }
+        if (opts.checker === true) {
+          const { runCheckerRetire } = await import('../commands/key-revoke.js');
+          const result = runCheckerRetire(here(), { fingerprint, reason: opts.reason });
+          if (result.ok) {
+            if (result.alreadyRetired) {
+              io.out(
+                `Key ${result.fingerprint} was retired as a checker by ${result.retiredBy} already — nothing recorded.`,
+              );
+              return;
+            }
+            io.out(`Retired checker ${result.fingerprint}`);
+            reportReplacement(result, io);
+            io.out(render(fact(`it signs nothing from here on — retired by ${result.retiredBy}`)));
+            io.out(
+              render(
+                fact(
+                  'What it signed before stays in the record, and `mnema verify` names it: a leaked ' +
+                    'key can date a result before its own retirement.',
+                ),
               ),
-            ),
-          );
+            );
+            io.out(
+              render(
+                fact(
+                  'Commit and share the record: a retirement others cannot read retires nothing.',
+                ),
+              ),
+            );
+            return;
+          }
+          reportRefusal(wiring, result, {
+            NO_PROJECT:
+              'No mnema project here. Run `mnema key revoke` inside the project to record it.',
+          });
+          return;
+        }
+        const { runKeyRevoke } = await import('../commands/key-revoke.js');
+        const result = runKeyRevoke(here(), { fingerprint, reason: opts.reason });
+        if (result.ok) {
+          io.out(`Revoked key ${result.fingerprint}`);
+          reportReplacement(result, io);
+          io.out(render(fact(`from ${result.anchor} — ${result.remaining} key(s) left`)));
+          if (result.self && result.keyFile !== undefined) {
+            // The person just retired the key this machine signs with, and this checkout goes on
+            // recording the identity it left. THIS SAID "anything it writes as that identity fails
+            // verification", and it was true while nothing read a recorded anchor again: the write
+            // exited 0 and left the whole record failing `verify` for good. Every write asks now
+            // whether the identity a checkout recorded still counts its key, and refuses when it
+            // does not (the core's `ensureFounded`), so the sentence says the refusal.
+            //
+            // AND IT SAID "what it writes here is refused", which is more than the refusal is. The
+            // retirement is recorded in the public tree alone (`key-revoke.ts`), and each tree asks
+            // its own roster, so a `--scope private` write from this checkout lands — measured on
+            // the binary. So the sentence names the public tree, as `init` does where it says the
+            // same refusal; `the-refusal-names-the-way-out.test.ts` runs both writes.
+            io.out(
+              render(
+                fact(
+                  "That is THIS machine's key: this checkout still records the identity it left, " +
+                    'so what it writes to the public tree here is refused until it records another.',
+                ),
+              ),
+            );
+            // Where the record still proves the key in one other identity, a restore points the
+            // checkout there — the way out of an identity whose only key this was, which the
+            // refusal of a fresh clone hands over and `the-refusal-names-the-way-out.test.ts`
+            // follows to the letter.
+            //
+            // Where it proves none, or more than one, THIS SAID "it must not write to this project
+            // again" and "Bring another key in first", and the record it read is the copy this
+            // checkout holds: a checkout that had not pulled the other identity's enrollment of the
+            // key was told there was nothing, while a pull and the same restore made it write as
+            // that identity — measured on the binary, and followed to the letter in
+            // `the-checkout-a-key-left.test.ts`. So it says the pull, and the file either way.
+            io.out(
+              render(
+                fact(
+                  result.stillMemberOf !== undefined
+                    ? `The record proves the key a member of ${result.stillMemberOf}: ` +
+                        '`mnema key restore "<the key file>"` here makes this checkout write as it.'
+                    : 'The record this checkout holds proves the key a member of no single other ' +
+                        'identity: if the record, once pulled, proves it a member of one, ' +
+                        '`mnema key restore "<the key file>"` here makes this checkout write as it.',
+                ),
+              ),
+            );
+            // Loaded here, on the one path that says it, so every other command's floor does not
+            // grow an edge for a line only a revocation of this machine's own key prints.
+            const { keyFileLine } = await import('../key-file.js');
+            io.out(render(fact(keyFileLine(result.keyFile, here().env.mnemaHome))));
+          }
           io.out(
             render(
               fact('Commit and share the record: a retirement others cannot read retires nothing.'),
@@ -340,75 +554,8 @@ export function registerKey(program: Command, wiring: Wiring): Declared {
           NO_PROJECT:
             'No mnema project here. Run `mnema key revoke` inside the project to record it.',
         });
-        return;
-      }
-      const { runKeyRevoke } = await import('../commands/key-revoke.js');
-      const result = runKeyRevoke(here(), { fingerprint, reason: opts.reason });
-      if (result.ok) {
-        io.out(`Revoked key ${result.fingerprint}`);
-        reportReplacement(result, io);
-        io.out(render(fact(`from ${result.anchor} — ${result.remaining} key(s) left`)));
-        if (result.self && result.keyFile !== undefined) {
-          // The person just retired the key this machine signs with, and this checkout goes on
-          // recording the identity it left. THIS SAID "anything it writes as that identity fails
-          // verification", and it was true while nothing read a recorded anchor again: the write
-          // exited 0 and left the whole record failing `verify` for good. Every write asks now
-          // whether the identity a checkout recorded still counts its key, and refuses when it
-          // does not (the core's `ensureFounded`), so the sentence says the refusal.
-          //
-          // AND IT SAID "what it writes here is refused", which is more than the refusal is. The
-          // retirement is recorded in the public tree alone (`key-revoke.ts`), and each tree asks
-          // its own roster, so a `--scope private` write from this checkout lands — measured on
-          // the binary. So the sentence names the public tree, as `init` does where it says the
-          // same refusal; `the-refusal-names-the-way-out.test.ts` runs both writes.
-          io.out(
-            render(
-              fact(
-                "That is THIS machine's key: this checkout still records the identity it left, " +
-                  'so what it writes to the public tree here is refused until it records another.',
-              ),
-            ),
-          );
-          // Where the record still proves the key in one other identity, a restore points the
-          // checkout there — the way out of an identity whose only key this was, which the
-          // refusal of a fresh clone hands over and `the-refusal-names-the-way-out.test.ts`
-          // follows to the letter.
-          //
-          // Where it proves none, or more than one, THIS SAID "it must not write to this project
-          // again" and "Bring another key in first", and the record it read is the copy this
-          // checkout holds: a checkout that had not pulled the other identity's enrollment of the
-          // key was told there was nothing, while a pull and the same restore made it write as
-          // that identity — measured on the binary, and followed to the letter in
-          // `the-checkout-a-key-left.test.ts`. So it says the pull, and the file either way.
-          io.out(
-            render(
-              fact(
-                result.stillMemberOf !== undefined
-                  ? `The record proves the key a member of ${result.stillMemberOf}: ` +
-                      '`mnema key restore "<the key file>"` here makes this checkout write as it.'
-                  : 'The record this checkout holds proves the key a member of no single other ' +
-                      'identity: if the record, once pulled, proves it a member of one, ' +
-                      '`mnema key restore "<the key file>"` here makes this checkout write as it.',
-              ),
-            ),
-          );
-          // Loaded here, on the one path that says it, so every other command's floor does not
-          // grow an edge for a line only a revocation of this machine's own key prints.
-          const { keyFileLine } = await import('../key-file.js');
-          io.out(render(fact(keyFileLine(result.keyFile, here().env.mnemaHome))));
-        }
-        io.out(
-          render(
-            fact('Commit and share the record: a retirement others cannot read retires nothing.'),
-          ),
-        );
-        return;
-      }
-      reportRefusal(wiring, result, {
-        NO_PROJECT:
-          'No mnema project here. Run `mnema key revoke` inside the project to record it.',
-      });
-    });
+      },
+    );
   // `mnema key protect` / `unprotect` — put a passphrase on this machine's private keys at
   // rest, or take it off. The passphrase is `MNEMA_KEY_PASSPHRASE`, read where signing reads
   // it (`commands/key-protect.ts` says why it is not a flag). These touch key files and no

@@ -373,6 +373,14 @@ export interface McpServerOptions {
    */
   readonly configProject?: string | undefined;
   /**
+   * The agent this server signs as, where the record enrols its key — what `mnema mcp
+   * --agent-key` (or `MNEMA_AGENT_KEY`) carries: the name of the folder the agent's key lives in
+   * under the data directory. Where the record enrols that key under that name, the `which` of
+   * every fact of the connection is the name the record gives it, whatever the client announced
+   * (`clientInfo`); anywhere else the person's key signs and the client's announcement stands.
+   */
+  readonly agentKey?: string | undefined;
+  /**
    * The directory the host started this server in — what the cascade walks up from for
    * a client that declares no `roots` capability, and for no other (see
    * {@link ClientWorkspace}). `mnema mcp` passes its own working directory.
@@ -458,6 +466,7 @@ export function buildMcpServer(options: McpServerOptions): {
         env,
         log,
         ...(options.configProject !== undefined ? { configProject: options.configProject } : {}),
+        ...(options.agentKey !== undefined ? { agentKey: options.agentKey } : {}),
       });
       // Before the log line and before this promise resolves: from here on the close
       // can reach the session synchronously, and there is no window in which a write

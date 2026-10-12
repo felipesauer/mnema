@@ -34,6 +34,10 @@ export function registerBeforeAWrite(program: Command, wiring: Wiring): Declared
         HOOK_HOSTS,
       ).makeOptionMandatory(),
     )
+    .option(
+      '--agent-key <name>',
+      "sign what this hook records with the key of that agent where the project's record enrols it (made with `mnema key request --agent <name>`), and name the agent the record gives that key; elsewhere the person's key signs",
+    )
     .addHelpText(
       'after',
       [
@@ -51,7 +55,7 @@ export function registerBeforeAWrite(program: Command, wiring: Wiring): Declared
         '  `mnema switch off edit-asks-a-person`.',
       ].join('\n'),
     )
-    .action(async (opts: { host: string }) => {
+    .action(async (opts: { host: string; agentKey?: string }) => {
       const { runBeforeAWrite } = await import('../commands/before-a-write.js');
       const { fact } = await import('../presentation/detail.js');
       const host = HOOK_HOSTS.find((one) => one === opts.host);
@@ -60,7 +64,10 @@ export function registerBeforeAWrite(program: Command, wiring: Wiring): Declared
         return;
       }
       const payload = io.input === undefined ? '' : await io.input();
-      const done = runBeforeAWrite(here(), { host, payload });
+      const done = runBeforeAWrite(
+        { ...here(), ...(opts.agentKey !== undefined ? { agentKey: opts.agentKey } : {}) },
+        { host, payload },
+      );
       for (const note of done.notes) io.err(render(fact(note, 0)));
       io.out(JSON.stringify(done.reply));
     });
