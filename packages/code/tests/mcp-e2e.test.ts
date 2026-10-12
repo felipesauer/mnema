@@ -252,7 +252,8 @@ describe('MCP session + tools — unit', () => {
     // opened is reported — no other actor's runs.
     expect(focus.actor).toBe(session.who);
     expect(focus.openRuns.some((r) => r.id === theRun(session))).toBe(true);
-    expect(focus.openRuns.every((r) => r.who === session.who)).toBe(true);
+    // ...and the actor is said once, at the top: no run repeats it.
+    expect(focus.openRuns.every((r) => !('who' in r))).toBe(true);
 
     // The read appended nothing — the chain is the same length.
     const after = orderedEvents({ root: chainRoot }, catalogUpcasters()).length;
@@ -285,7 +286,6 @@ describe('MCP session + tools — unit', () => {
       runFocusTool(session).actor,
       runResumeTool(session).actor,
       runBootstrap(session).resume.actor,
-      ...runFocusTool(session).openRuns.map((run) => run.who),
       ...accounted(runAccountabilityTool(session)),
     ];
     expect(carried.length).toBeGreaterThan(0);

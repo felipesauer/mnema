@@ -119,7 +119,7 @@ export interface ActorScope extends AskerContext {
  * that proves the three are attached proves this one is not recomputed
  * (`focus.test.ts` — "carries what the run wrote, as the projection folded it").
  */
-export interface ReportedRun extends RunProjection {
+export interface ReportedRun extends Omit<RunProjection, 'who'> {
   /**
    * Whether THIS asker opened this run.
    *
@@ -184,8 +184,11 @@ export interface Resume {
    * the whole reason the run is not opened at the handshake.
    */
   readonly lastRun: ReportedRun | null;
-  /** The actor's current focus (open runs), composed in. */
-  readonly focus: Focus;
+  /**
+   * The actor's current focus (open runs), composed in. It does not repeat the
+   * `actor`: this answer already names it, and `focus` is composed for that same one.
+   */
+  readonly focus: Omit<Focus, 'actor'>;
 }
 
 /**
@@ -247,7 +250,7 @@ export function resume(caches: readonly ProjectionCache[], scope: ActorScope): R
   return {
     actor: actor ?? '',
     lastRun: chosen === undefined ? null : report(chosen, scope),
-    focus: focus(caches, scope),
+    focus: { openRuns: focus(caches, scope).openRuns },
   };
 }
 
@@ -257,7 +260,10 @@ export function resume(caches: readonly ProjectionCache[], scope: ActorScope): R
  * ("is anything still happening here?") has no meaning for a run that has ended,
  * which already carries its own `endedAt`.
  */
-function report(run: RunProjection, asker: AskerContext): ReportedRun {
+function report(projected: RunProjection, asker: AskerContext): ReportedRun {
+  // The projection's `who` stays out: every run reported here passed the filter
+  // `who === actor`, so it equals the actor the answer already names once.
+  const { who: _who, ...run } = projected;
   const thisSession = asker.sessionRuns.includes(run.id);
   if (!run.open) return { ...run, thisSession };
   const age = elapsedSeconds(run.startedAt, asker.asOf);
