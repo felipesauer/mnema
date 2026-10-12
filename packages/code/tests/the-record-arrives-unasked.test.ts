@@ -53,7 +53,6 @@ import { fileURLToPath } from 'node:url';
 import { excerptOf } from '@mnema/core';
 import type { Command } from 'commander';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
-import { HOW_TO_REGENERATE } from '../src/presentation/brief.js';
 import { HOOK_TEXT_CEILING } from '../src/presentation/within-a-hook.js';
 import { buildProgram } from '../src/program.js';
 import {
@@ -597,9 +596,10 @@ describe('the record arrives unasked', () => {
     // UNDER THE CEILING THE HOOK'S COPY IS THE FILE'S, byte for byte, but for the paragraph that
     // teaches regenerating the file: the flag cuts only a text that would not arrive as text,
     // and a session handed this text holds no file to regenerate.
-    const recipe = `${HOW_TO_REGENERATE.join('\n')}\n\n`;
-    expect(cli('brief')).toContain(recipe);
-    expect(document).not.toContain(HOW_TO_REGENERATE[0]);
+    const recipe =
+      /Regenerate this file with `mnema brief > <this file>`[\s\S]*?survives a regeneration\.\n\n/;
+    expect(cli('brief')).toMatch(recipe);
+    expect(document).not.toMatch(/Regenerate this file/);
     expect(document).toBe(cli('brief').replace(recipe, ''));
     expect(notes).toBe(cli('recall'));
 
