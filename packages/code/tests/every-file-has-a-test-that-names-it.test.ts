@@ -1089,6 +1089,7 @@ const CLAUSES_PER_FILE: Readonly<Record<string, number>> = {
   'packages/code/tests/the-cache-dir-reaches-every-door.test.ts': 9,
   'packages/code/tests/the-ceiling-belongs-to-the-case.test.ts': 4,
   'packages/code/tests/the-channel-says-what-it-carries.test.ts': 8,
+  'packages/code/tests/the-channels-have-a-budget.test.ts': 13,
   'packages/code/tests/the-checkout-a-key-left.test.ts': 14,
   'packages/code/tests/the-ci-recipe-catches-what-verify-cannot.test.ts': 8,
   'packages/code/tests/the-citation-that-arrives-opens.test.ts': 13,
