@@ -34,6 +34,7 @@ import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { runBeforeAWrite } from '../src/commands/before-a-write.js';
 import { runDoctor } from '../src/commands/doctor.js';
 import { buildMcpServer } from '../src/mcp/server.js';
+import { openSession, refreshWorkspace } from '../src/mcp/session.js';
 import { type CliIo, run } from '../src/program.js';
 import { personsKeyInTheClear } from '../src/the-persons-key-in-the-clear.js';
 
@@ -469,6 +470,25 @@ describe('the server signs as the agent the record names', () => {
     ).toEqual([{ which: 'claude-code', count: 3 }]);
   });
 
+  it('takes the agent’s name from the record when the session enters the project by its roots, not from the client', async () => {
+    await anAgent('claude');
+    // Opened with no workspace at all: outside any project, so what the client announced is the
+    // `which`; then the host announces the project, and the `which` is the record's.
+    const session = openSession({
+      roots: [],
+      clientName: 'evil',
+      env,
+      agentKey: 'claude',
+    });
+    expect(session.inProject).toBe(false);
+    expect(session.which).toBe('evil');
+
+    refreshWorkspace(session, [pathToFileURL(repo).href]);
+
+    expect(session.inProject).toBe(true);
+    expect(session.which).toBe('claude');
+  });
+
   it('ignores a name that is not one this product enrols, and says so', async () => {
     let reply: Reply | undefined;
     const log = await connected('claude-code', '../escape', repo, async (client) => {
@@ -527,6 +547,31 @@ describe('the hook records as the agent the record names', () => {
     const without = runBeforeAWrite({ cwd: repo, env }, { host: 'vscode', payload });
     expect(without.notes.join('\n')).toContain('could not be recorded');
     expect(events().filter((event) => event.kind === 'channel.refused')).toHaveLength(1);
+  });
+});
+
+describe('the hook names the agent the record gives the key, not the host', () => {
+  it('stamps the agent’s name where it differs from the host’s', async () => {
+    const decision = (await did(undefined, 'decision', 'record', 'Billing is frozen', 'why')).match(
+      /\(([0-9a-f-]{20,})\)/,
+    )?.[1];
+    await did(undefined, 'decision', 'move', 'accept', decision as string, '--note', 'agreed');
+    await did(undefined, 'link', decision as string, 'src/billing', '--rel', 'refuses-a-write');
+    const fingerprint = await anAgent('claude');
+    const payload = JSON.stringify({
+      hook_event_name: 'PreToolUse',
+      tool_name: 'create_file',
+      tool_input: { filePath: join(repo, 'src', 'billing', 'invoice.ts'), content: 'x' },
+      cwd: repo,
+    });
+
+    runBeforeAWrite({ cwd: repo, env, agentKey: 'claude' }, { host: 'vscode', payload });
+
+    const refused = events().filter((event) => event.kind === 'channel.refused');
+    expect(refused).toHaveLength(1);
+    expect(refused[0]?.which).toBe('claude');
+    expect(refused[0]?.signerFp).toBe(fingerprint);
+    expect(await did(undefined, 'verify')).toContain('local integrity verified');
   });
 });
 

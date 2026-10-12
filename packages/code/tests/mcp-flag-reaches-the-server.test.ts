@@ -14,7 +14,7 @@
  * project there.
  */
 
-import { describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 /** Every options object `mnema mcp` built a server with, in call order. */
 const built = vi.hoisted(() => ({ calls: [] as Record<string, unknown>[], connects: 0 }));
@@ -91,5 +91,35 @@ describe('mnema mcp — the working directory reaches the server', () => {
       cwd: process.cwd(),
       configProject: '/srv/pilot',
     });
+  });
+});
+
+describe('mnema mcp --agent-key — the agent the server signs as reaches it', () => {
+  const variable = 'MNEMA_AGENT_KEY';
+  let before: string | undefined;
+  beforeEach(() => {
+    before = process.env[variable];
+    delete process.env[variable];
+  });
+  afterEach(() => {
+    if (before === undefined) delete process.env[variable];
+    else process.env[variable] = before;
+  });
+
+  it('passes the flag, and the environment only when the flag is absent', async () => {
+    expect(await mnema('mcp', '--agent-key', 'claude')).toMatchObject({ agentKey: 'claude' });
+    process.env[variable] = 'from-the-environment';
+    expect(await mnema('mcp')).toMatchObject({ agentKey: 'from-the-environment' });
+  });
+
+  it('lets the flag win over the environment', async () => {
+    process.env[variable] = 'from-the-environment';
+    expect(await mnema('mcp', '--agent-key', 'from-the-flag')).toMatchObject({
+      agentKey: 'from-the-flag',
+    });
+  });
+
+  it('sets no agent key when neither is given', async () => {
+    expect(await mnema('mcp')).not.toHaveProperty('agentKey');
   });
 });
