@@ -355,6 +355,52 @@ const CLASSIFIED: Readonly<Record<string, { verdict: Verdict; why: string }>> = 
     verdict: 'collapsed',
     why: 'the project root, discovered from the cwd — the same value `init` prints',
   },
+  'key.ts «Created the key of the agent {}: {}» #1': {
+    verdict: 'minted',
+    why: 'a name held to the agent-name form before a key is made, and a fingerprint computed from the key',
+  },
+  'key.ts «Requesting for the agent {}: key {}» #1': {
+    verdict: 'minted',
+    why: 'the same name, held to the same form, and a fingerprint computed from the key spoken for',
+  },
+  'key.ts «to be enrolled in {} as "{}"» #1': {
+    verdict: 'minted',
+    why: 'the anchor `--anchor` resolved to, and the name held to the agent-name form',
+  },
+  "key.ts «its key lives in {}, in the clear: the agent's host signs with it and has no terminal to ask a passphrase at» #1":
+    {
+      verdict: 'collapsed',
+      why: 'the agent’s key root under the data directory, which `$MNEMA_HOME` may place anywhere a directory name can be',
+    },
+  'key.ts «Enrolled agent {}: key {}» #1': {
+    verdict: 'minted',
+    why: 'a name the request carried and the door held to the agent-name form, and a fingerprint computed from its key',
+  },
+  'key.ts «Key {} is already the agent "{}" — nothing recorded.» #1': {
+    verdict: 'minted',
+    why: 'a fingerprint computed from the key the request carried, and the name the record holds for it',
+  },
+  'key.ts «it signs for {}, and names itself "{}" on everything it signs» #1': {
+    verdict: 'minted',
+    why: 'the anchor of the identity that vouched, and the name held to the agent-name form',
+  },
+  'key.ts «recorded in {}» #3': {
+    verdict: 'collapsed',
+    why: 'the project root, discovered from the cwd — the same value `init` prints',
+  },
+  'key.ts «Note: {}» #1': {
+    verdict: 'minted',
+    why: 'a constant sentence of this product',
+  },
+  'key.ts «Retired agent {}: key {}» #1': {
+    verdict: 'minted',
+    why: 'the name the record held for a key it counted as an agent, and the fingerprint matched against it',
+  },
+  'key.ts «it signs nothing from here on — retired by {}» #2': {
+    verdict: 'minted',
+    why: 'the anchor of the identity that signed the retirement',
+  },
+  'key.ts «{}» #3': { verdict: 'minted', why: 'a ternary of two of this surface’s own clauses' },
   'check.ts «Declared the check of {}» #1': {
     verdict: 'minted',
     why: 'the id of a decision the write found in the record, or it refused',
@@ -843,7 +889,8 @@ describe('every line this wiring words is classified', () => {
     // 112 with the line `unlink` prints for the edge it took back.
     // 115 with the five lines `stack add` and `stack remove` print.
     // 122 with the seven lines `stack export`, `check`, `enable` and `disable` print.
-    expect(FOUND.sites.length).toBe(122);
+    // 134 with the twelve lines the three agent verbs print.
+    expect(FOUND.sites.length).toBe(134);
   });
 
   it('reads the verdict off the source rather than believing the table', () => {
@@ -863,9 +910,9 @@ describe('every line this wiring words is classified', () => {
   it('found sites of both kinds, and the scanner sees a tag when there is one', () => {
     // Neither arm of the case above may be empty, or half of it is vacuous.
     const verdicts = Object.values(CLASSIFIED).map((said) => said.verdict);
-    expect(verdicts.filter((verdict) => verdict === 'collapsed').length).toBe(62);
-    expect(verdicts.filter((verdict) => verdict === 'minted').length).toBe(60);
-    expect(FOUND.sites.filter((site) => site.tagged).length).toBe(62);
+    expect(verdicts.filter((verdict) => verdict === 'collapsed').length).toBe(64);
+    expect(verdicts.filter((verdict) => verdict === 'minted').length).toBe(70);
+    expect(FOUND.sites.filter((site) => site.tagged).length).toBe(64);
   });
 
   it('every reason says where the value comes from', () => {
@@ -1045,6 +1092,9 @@ const UNREACHABLE: Readonly<Record<string, string>> = {
   'key.ts «Your copy at {} was read, not moved — keep it where it is.» #1': 'the same restore',
   'key.ts «recorded in {}» #1': 'needs a request from a second machine',
   'key.ts «recorded in {}» #2': 'the same request',
+  'key.ts «recorded in {}» #3': 'the same request, made for an agent',
+  "key.ts «its key lives in {}, in the clear: the agent's host signs with it and has no terminal to ask a passphrase at» #1":
+    'needs a data directory whose NAME holds a line break',
   'check.ts «failed {}: {}» #1':
     'needs a checker key enrolled in the record, and a program that fails',
   'check.ts «recorded in {}» #1': 'the same checker run',

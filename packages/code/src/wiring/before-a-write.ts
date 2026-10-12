@@ -36,7 +36,7 @@ export function registerBeforeAWrite(program: Command, wiring: Wiring): Declared
     )
     .option(
       '--agent-key <name>',
-      "sign what this hook records with the key of that agent where the project's record enrols it (made with `mnema key request --agent <name>`), and name the agent the record gives that key; elsewhere the person's key signs",
+      "sign what this hook records with the key of that agent where the project's record enrols it (made with `mnema key request --agent <name> --anchor <id>`), and name the agent the record gives that key; elsewhere the person's key signs",
     )
     .addHelpText(
       'after',

@@ -35,6 +35,7 @@ import { runBeforeAWrite } from '../src/commands/before-a-write.js';
 import { runDoctor } from '../src/commands/doctor.js';
 import { buildMcpServer } from '../src/mcp/server.js';
 import { type CliIo, run } from '../src/program.js';
+import { personsKeyInTheClear } from '../src/the-persons-key-in-the-clear.js';
 
 const PASSPHRASE = 'MNEMA_KEY_PASSPHRASE';
 
@@ -460,12 +461,12 @@ describe('the server signs as the agent the record names', () => {
     expect(await did(undefined, 'show', decision?.subject as string)).not.toContain('attested');
     const account = JSON.parse(await did(undefined, 'audit', 'accountability', '--json')) as {
       readonly byWho: readonly {
-        readonly byWhich: readonly { which: string | null; attested: number }[];
+        readonly byWhich: readonly { which: string | null; attested?: number }[];
       }[];
     };
     expect(
       account.byWho.flatMap((who) => who.byWhich).filter((one) => one.which === 'claude-code'),
-    ).toEqual([expect.objectContaining({ attested: 0 })]);
+    ).toEqual([{ which: 'claude-code', count: 3 }]);
   });
 
   it('ignores a name that is not one this product enrols, and says so', async () => {
@@ -636,7 +637,9 @@ describe('mnema doctor says what the agent keys are', () => {
     expect(findings({ MNEMA_AGENT_KEY: 'gemini' })).toEqual([
       'attention MNEMA_AGENT_KEY asks this process to sign as the agent "gemini", and this machine holds no key under that name: it signs as you instead — `mnema key request --agent gemini --anchor <your identity>` makes one.',
     ]);
-    expect(findings({ MNEMA_AGENT_KEY: '${user_config.agent_key}' })).toEqual([]);
+    // The placeholder a host that does not know the substitution leaves as it was written.
+    const unsubstituted = ['$', '{user_config.agent_key}'].join('');
+    expect(findings({ MNEMA_AGENT_KEY: unsubstituted })).toEqual([]);
     expect(findings({ MNEMA_AGENT_KEY: '' })).toEqual([]);
 
     await anAgent('claude', 'correct horse');
@@ -644,5 +647,15 @@ describe('mnema doctor says what the agent keys are', () => {
     expect(findings()).toEqual([
       'fine the agent key "claude" is enrolled in this project: a host asked to sign as it does, and what it records is attested: nothing to do.',
     ]);
+  });
+});
+
+describe('whether the person’s own key leaves the separation to nothing', () => {
+  it('says so for a key in the clear, no longer once it is protected, and nothing for a machine with none', async () => {
+    const root = join(home, '.mnema', 'identity');
+    expect(personsKeyInTheClear(root)).toBe(true);
+    await did('correct horse', 'key', 'protect');
+    expect(personsKeyInTheClear(root)).toBe(false);
+    expect(personsKeyInTheClear(join(sandbox, 'no-key-here'))).toBeUndefined();
   });
 });

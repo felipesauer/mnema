@@ -12,12 +12,17 @@
 /** What a name enrolled through a door of this product looks like. */
 export const AGENT_NAME = /^[a-z0-9][a-z0-9._-]{0,63}$/;
 
-/** Why `name` is not an agent name this product enrols, or `undefined` when it is one. */
+/**
+ * Why `name` is not an agent name this product enrols, or `undefined` when it is one.
+ *
+ * The sentence does not carry the value: it is what the caller typed, or what a request carried,
+ * and it can hold anything — so what is said is the form, and the caller already has what it gave.
+ */
 export function agentNameRefusal(name: string): string | undefined {
   if (AGENT_NAME.test(name)) return undefined;
   return (
-    `"${name.replace(/\s+/g, ' ').slice(0, 80)}" is not a name an agent key is enrolled under: it is a ` +
-    'lower-case word of letters, digits, dots, dashes and underscores, 1 to 64 characters, starting ' +
-    'with a letter or a digit (it is also the folder the agent key lives in)'
+    'that is not a name an agent key is enrolled under: it is a lower-case word of letters, digits, ' +
+    'dots, dashes and underscores, 1 to 64 characters, starting with a letter or a digit ' +
+    '(it is also the folder the agent key lives in)'
   );
 }

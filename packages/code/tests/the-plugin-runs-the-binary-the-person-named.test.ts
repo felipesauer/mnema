@@ -142,7 +142,10 @@ describe('both manifests hand the option to the server', () => {
         mnema: {
           command: 'node',
           args: [`\${CLAUDE_PLUGIN_ROOT}/server/launch.mjs`, 'mcp'],
-          env: { MNEMA_PLUGIN_BINARY: `\${user_config.mnema_path}` },
+          env: {
+            MNEMA_PLUGIN_BINARY: `\${user_config.mnema_path}`,
+            MNEMA_AGENT_KEY: `\${user_config.agent_key}`,
+          },
         },
       });
     });

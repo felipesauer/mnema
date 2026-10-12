@@ -24,8 +24,8 @@ import {
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { captureMemory } from '../knowledge/operations.js';
 import { orderedEvents } from '../projections/order.js';
-import { agentSignsIn, signerFor } from '../topology/index.js';
 import type { ResolvedTrees } from '../topology/resolve.js';
+import { agentSignsIn, signerFor } from '../topology/routing.js';
 import type { Clock } from '../workflow/clock.js';
 import { decideAnchor, enrollAgent, ensureFounded } from '../workflow/identity-operations.js';
 import type { WriteContext } from '../workflow/operations.js';

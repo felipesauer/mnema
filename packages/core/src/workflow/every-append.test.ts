@@ -560,6 +560,8 @@ describe('every write refuses what no read could accept', () => {
           const anchor = ensureFounded(ctx);
           const agentRoot = mkdtempSync(join(tmpdir(), 'mnema-append-agent-'));
           const request = requestAgentEnrollment({ anchor, name: 'claude', keyRoot: agentRoot });
+          // The key is made to ask and is not needed again: retiring one asks only the record.
+          rmSync(agentRoot, { recursive: true, force: true });
           if (!request.ok) throw new Error('the agent request could not be made');
           const enrolled = enrollAgentFromRequest(ctx, { request: request.request });
           if (!enrolled.ok) throw new Error(`the agent was not enrolled: ${enrolled.code}`);

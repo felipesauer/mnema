@@ -399,8 +399,8 @@ describe('the plugin command VS Code runs', () => {
     expect(write.status).toBe(0);
     expect(decided(JSON.parse(write.stdout) as Record<string, unknown>).value).toBe('ask');
     expect(readFileSync(calls, 'utf-8').trim().split('\n')).toEqual([
-      'before-a-write --host vscode',
-      'before-a-write --host vscode',
+      'before-a-write --host vscode --agent-key vscode',
+      'before-a-write --host vscode --agent-key vscode',
     ]);
   });
 

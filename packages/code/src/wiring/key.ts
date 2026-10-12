@@ -15,7 +15,6 @@
 import type { Command } from 'commander';
 import { fact } from '../presentation/detail.js';
 import { RECORD_CONTRACT_HELP } from '../recorded-content.js';
-import { THE_AGENT_KEY_SEPARATES_NOTHING } from '../the-persons-key-in-the-clear.js';
 import { here } from './context.js';
 import { onOneLine } from './on-one-line.js';
 import { reportRefusal, reportReplacement } from './report.js';
@@ -235,6 +234,9 @@ export function registerKey(program: Command, wiring: Wiring): Declared {
           );
           io.out(render(fact(onOneLine`recorded in ${result.root}`)));
           if (result.personsKeyInTheClear) {
+            const { THE_AGENT_KEY_SEPARATES_NOTHING } = await import(
+              '../the-persons-key-in-the-clear.js'
+            );
             io.out(render(fact(`Note: ${THE_AGENT_KEY_SEPARATES_NOTHING}`)));
           }
           io.out(
@@ -248,7 +250,7 @@ export function registerKey(program: Command, wiring: Wiring): Declared {
         }
         reportRefusal(wiring, result, {
           NO_PROJECT:
-            'No mnema project here. Run `mnema key enroll --agent` inside the project to record it.',
+            'No mnema project here. Run `mnema key enroll` inside the project to record it.',
         });
         return;
       }
@@ -448,7 +450,7 @@ export function registerKey(program: Command, wiring: Wiring): Declared {
           }
           reportRefusal(wiring, result, {
             NO_PROJECT:
-              'No mnema project here. Run `mnema key revoke --agent` inside the project to record it.',
+              'No mnema project here. Run `mnema key revoke` inside the project to record it.',
           });
           return;
         }

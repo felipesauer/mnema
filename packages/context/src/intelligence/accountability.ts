@@ -127,9 +127,11 @@ export interface WhichCount {
    * How many of those facts the record's own agent key for that name signed, for this very
    * identity: the agent is then attested by the key, not only declared by whoever signed. The
    * others were signed by a key with no such role — the person's own, as before agent keys — and
-   * `which` there is the name the signer wrote. Never more than `count`, and 0 for no agent.
+   * `which` there is the name the signer wrote. ABSENT where none was, so an account over a record
+   * with no agent key reads as it always did (and an agent's reading of it costs what it cost).
+   * Never more than `count`.
    */
-  readonly attested: number;
+  readonly attested?: number;
 }
 
 /** A factual account of authorship over the record, within an optional window. */
@@ -376,7 +378,10 @@ function finishWho(
     .map(([kind, count]) => ({ kind, count }))
     .sort((a, b) => (a.kind < b.kind ? -1 : a.kind > b.kind ? 1 : 0));
   const byWhich = [...acc.byWhich.entries()]
-    .map(([which, count]) => ({ which, count, attested: acc.attested.get(which) ?? 0 }))
+    .map(([which, count]) => {
+      const attested = acc.attested.get(which) ?? 0;
+      return { which, count, ...(attested > 0 ? { attested } : {}) };
+    })
     .sort(byCountThenWhich);
   return {
     who: acc.who,

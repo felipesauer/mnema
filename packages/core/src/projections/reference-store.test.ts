@@ -243,8 +243,8 @@ describe('tallyAuthorship — one count per event', () => {
       taskCreated('t3', 3),
     ]);
     expect(tallyAuthorship(db).sort((a, b) => b.count - a.count)).toEqual([
-      { who: 'mnid:author', kind: 'task.created', which: 'claude', count: 2 },
-      { who: 'mnid:author', kind: 'task.created', which: null, count: 1 },
+      { who: 'mnid:author', kind: 'task.created', which: 'claude', signer: 'fp', count: 2 },
+      { who: 'mnid:author', kind: 'task.created', which: null, signer: 'fp', count: 1 },
     ]);
   });
 
@@ -254,7 +254,7 @@ describe('tallyAuthorship — one count per event', () => {
     expect(tallyAuthorship(db, { to: at(3) }).map((c) => c.count)).toEqual([1]);
     // Filtering by an agent excludes the facts a human authored with none.
     expect(tallyAuthorship(db, { which: 'claude' })).toEqual([
-      { who: 'mnid:author', kind: 'task.created', which: 'claude', count: 1 },
+      { who: 'mnid:author', kind: 'task.created', which: 'claude', signer: 'fp', count: 1 },
     ]);
   });
 });
