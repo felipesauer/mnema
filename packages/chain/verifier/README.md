@@ -36,10 +36,11 @@ product and are false outside it become **visible**. Twenty-seven of them did, a
 the deliverable half of this directory — `mnema_verify.py gaps`.
 
 Four of the twenty-seven were places the two readers **disagreed about the same bytes**, and
-all four are closed. Three were acceptances — a field no kind declares, on an appended event;
-a signer no enrolment authorized; an event naming a signer other than the checkpoint over
-it — found by *building the input*, because nine mutations both
-readers refused prove nothing about what this one accepts. The third ran the other way and is
+all four are closed. Between them they hold five disagreements, four of them acceptances — a
+field no kind declares, on an appended event; a signer no enrolment authorized; an event
+naming a signer other than the checkpoint over it; an event whose `which` is its `who` inside
+a signed range — found by *building the input*, because nine mutations both
+readers refused prove nothing about what this one accepts. The fifth ran the other way and is
 the quieter of the two failures: this reader **refused an honest event** for carrying
 `which`, which sixteen of the twenty-three published vectors carry, because the document
 described the envelope as the intersection of its own exemplars. Refusing too much looks like

@@ -565,6 +565,10 @@ const MUTATIONS = [
     section: '6',
     says: 'names a signer other than the checkpoint',
     productSays: 'event identity does not bind to its signer',
+    // The other half of the rule: a range that broke the binding is NOT covered. The product
+    // says its event is "NOT yet signature-covered"; this reader has to leave the event in the
+    // window above the last verified checkpoint, and must not say the record has no such window.
+    uncovered: '1 event(s) sit above the last checkpoint',
     productLayer: 'T2/T4',
     productBreaks: 'ok',
   },
@@ -713,6 +717,16 @@ describe('the second reader refuses, and the mutation that earns each refusal sh
       named.some((f) => f.section === mutation.section && f.what.includes(mutation.says)),
       `no refusal under section ${mutation.section} said ${mutation.says}`,
     ).toBe(true);
+
+    if ('uncovered' in mutation) {
+      expect(notes(there), `${mutation.name} was counted as signature-covered`).toContain(
+        mutation.uncovered,
+      );
+      expect(
+        there.findings.filter((f) => f.level === 'ok').map((f) => f.what),
+        `${mutation.name}: the second reader claimed no keyless window`,
+      ).not.toContainEqual(expect.stringContaining('there is no keyless window'));
+    }
 
     // And the product refuses the same bytes. THERE IS NO LONGER ANYWHERE ELSE FOR A ROW TO
     // GO: this loop used to have an escape hatch for a mutation only one reader catches — the
