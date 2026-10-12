@@ -826,6 +826,10 @@ describe('the two readers compare `which` with `who` in one canonical form', () 
       if (canonicalIdentityForm(`x${String.fromCharCode(code)}`) === 'x') product.push(code);
     }
     expect(second).toEqual(product);
+    // NON-VACUITY, from the outside: the two characters that split the languages land where
+    // section 6 says, in the product's own form.
+    expect(canonicalIdentityForm('x\u0085')).toBe('x\u0085');
+    expect(canonicalIdentityForm('x ')).toBe('x');
     expect(second).not.toContain(0x85);
     expect(second).toContain(0xa0);
   });
