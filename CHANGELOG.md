@@ -46,6 +46,14 @@ tag, with its own changelog.
 
 ### Added
 
+- **What each host charges for the plugin's 27 tool definitions is measured, per host, in the host's job.** The
+  request each real host sends its stand-in model is read: Claude Code, the Copilot CLI, OpenCode and Gemini CLI send
+  the whole definition of all 27 in every request (49,498, 49,624, 50,551 and 56,324 bytes; 11,217, 11,357,
+  11,331 and 12,548 tokens, o200k), against 53,862 bytes and 12,136 tokens for the server's own listing; Codex
+  sends none and charges for one `tool_search` entry (2,891 bytes, 672 tokens) that lists the server; VS Code's
+  agent is offered none of them in its job, so it is not measured. Nothing about the tools changed; a case per
+  host is red when the host wraps a definition differently or a definition gains a word.
+
 - **`mnema verify --against-sigstore` names the run a Sigstore certificate carries.** From a GitHub
   Actions job, the note of each bundle now also says the repository, the workflow, the commit and the
   run the certificate names (Fulcio's extensions 12, 9, 13 and 21), and `--json` carries them as
