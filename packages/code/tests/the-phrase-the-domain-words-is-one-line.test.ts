@@ -1566,7 +1566,7 @@ const CLASSIFIED: Readonly<Record<string, { verdict: Verdict; why: string }>> = 
   '@mnema/core identity/roster.ts «"{}" for {} — an agent request is made for ONE » oneLine(request.name) #1':
     {
       verdict: 'collapsed',
-      why: 'the name an agent request carried, which nothing has held to the agent-name form yet',
+      why: 'the name an agent request carried, which `agentNameRefusal` has already held to the agent-name form where it is worded; the tag is the second fence',
     },
   '@mnema/core identity/roster.ts «retired by its own verb: \\`mnema key revoke --agent {} --reason "<why>"\\`» oneLine(input.fingerprint) #1':
     {
