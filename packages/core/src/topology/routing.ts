@@ -210,6 +210,8 @@ export const UNROUTED_KINDS: { readonly [K in Exclude<EventKind, RoutedKind>]: s
   'stack.adopted':
     'an adoption is written in the tree its signed scope names, which the person chose: public, private or global',
   'stack.removed': 'a removal is written in the tree the adoption it ends was written in',
+  'agent.enrolled': 'the roster belongs to the tree that holds the identity it rosters',
+  'agent.retired': 'the roster belongs to the tree that holds the identity it rosters',
 };
 
 /**

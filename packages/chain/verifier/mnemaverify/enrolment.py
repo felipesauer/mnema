@@ -30,6 +30,18 @@ The shape, from the document:
     any other kind     signed by a checker key: refused, whatever it is
     any kind at all    signed by a retired key: refused; a checker.enrolled naming one too
 
+    agent.enrolled     who == subject, signerFp valid for the anchor at this point and not an
+                       agent key, name trimmed of nothing in IDENTITY_TRIM and not who, agentFp
+                       in no set and holding no role, and reverseSig verifies under the key
+                       agentFp names, over the UTF-8 of `agent-enroll:<anchor>:<agentFp>:<name>`
+                       -> adds agentFp to the anchor's set, as an AGENT named name
+    agent.retired      who == subject, signerFp valid for the anchor at this point and not an
+                       agent key, agentFp an agent key of this anchor
+                       -> when COVERED, removes agentFp from the set, and it is retired
+    any kind at all    signed by an agent key: refused when its who is not the anchor that
+                       enrolled the key, its which is not the name byte for byte, or its kind
+                       changes who may sign (AGENT_NEVER_SIGNS)
+
     backup.declared    who == subject, signerFp valid for the anchor at this point, and
                        backupFp valid for the anchor at this point
                        -> when COVERED, backupFp is the anchor's declared backup (6.5)
@@ -56,11 +68,28 @@ import hashlib
 from datetime import datetime, timezone
 from typing import Any, NamedTuple
 
+from .checkpoint import IDENTITY_TRIM
 from .ed25519 import verify as ed25519_verify
 from .entry import Entry
 from .keys import PublicKey
 
 ANCHOR_PREFIX = "mnid:"
+
+# Section 6.2: the kinds an agent key never signs - every fact that changes who may sign, or
+# what a key may sign. A check result is not here: it already needs a checker key.
+AGENT_NEVER_SIGNS = frozenset(
+    {
+        "identity.founded",
+        "key.enrolled",
+        "key.revoked",
+        "backup.declared",
+        "checker.enrolled",
+        "checker.retired",
+        "agent.enrolled",
+        "agent.retired",
+        "account.linked",
+    }
+)
 
 
 def anchor_of(fingerprint: str) -> str:
@@ -76,6 +105,12 @@ def enrolment_message(anchor: str, new_fp: str) -> bytes:
 def checker_message(anchor: str, checker_fp: str) -> bytes:
     """What a key signs to consent to sign check results: `check-enroll:<anchor>:<fp>`."""
     return f"check-enroll:{anchor}:{checker_fp}".encode("utf-8")
+
+
+def agent_message(anchor: str, agent_fp: str, name: str) -> bytes:
+    """What a key signs to consent to be the agent `name` of `anchor`:
+    `agent-enroll:<anchor>:<agentFp>:<name>`, in UTF-8. The name is last and taken whole."""
+    return f"agent-enroll:{anchor}:{agent_fp}:{name}".encode("utf-8")
 
 
 class Issue(NamedTuple):
@@ -96,6 +131,15 @@ class Resolution(NamedTuple):
     not_held: list[tuple[str, int, str]]
     # (tail, seq, milliseconds) of every event stamped before an entry it cites.
     behind: list[tuple[str, int, int]]
+    # Section 6.2, "What a reader learns from it": (agentFp, anchor, name, events) of every agent
+    # key that signed an accepted fact, and (which, events) of every `which` a key without the
+    # role stated on one. Informational: nothing here moves the verdict.
+    attested: list[tuple[str, str, str, int]]
+    declared: list[tuple[str, int]]
+    # Section 6.2: (agentFp, anchor that retired it, events) of every agent key a covered
+    # agent.retired took out of the role that had signed an accepted fact before it - the count the
+    # product's census names, said and never judged.
+    retired_agents: list[tuple[str, str, int]]
 
 
 def _merged(entries_by_tail: dict[str, list[Entry]]) -> Merged:
@@ -225,14 +269,28 @@ def resolve(
     checkers: set[str] = set()
     # Keys a covered checker.retired took out of the role: they sign nothing, ever again.
     retired: set[str] = set()
+    # Keys enrolled as agents, each with (the anchor that enrolled it, its name). The role stays
+    # with the key from its enrolment on, a key.revoked naming it included.
+    agents: dict[str, tuple[str, str]] = {}
+    # Agent keys a covered agent.retired took out: they sign nothing, ever again.
+    retired_agents: set[str] = set()
+    # For each of them, (the anchor that retired it, how many facts the fold had judged by then);
+    # the facts that count are the ones no issue names, which is known only after the fold.
+    retirements: dict[str, tuple[str, int]] = {}
+    # (tail, seq, agent key or None, which) of every event that reached its kind's conditions,
+    # so the census counts, after the fold, only the ones no issue names.
+    judged: list[tuple[str, int, str | None, Any]] = []
 
     def keys_of(anchor: str) -> set[str]:
         return valid.setdefault(anchor, set())
 
+    def in_any_identity(fp: Any) -> bool:
+        return any(fp in keys for keys in valid.values())
+
     def is_covered(tail: str, seq: int) -> bool:
         return seq <= covered_through.get(tail, -1)
 
-    def add_key(anchor: str, fp: str, tail: str, seq: int) -> None:
+    def add_key(anchor: str, fp: str, tail: str, seq: int) -> bool:
         token = f"{anchor}|{fp}"
         if token in covered_revoked:
             if not is_covered(tail, seq):
@@ -244,9 +302,10 @@ def resolve(
                         "without being covered itself",
                     )
                 )
-                return
+                return False
             covered_revoked.discard(token)
         keys_of(anchor).add(fp)
+        return True
 
     merged = _merged(entries_by_tail)
     for tail, entry in merged.order:
@@ -264,10 +323,97 @@ def resolve(
         if signer in retired:
             issues.append(Issue(tail, seq, f"{kind} is signed by a retired checker key, which signs nothing"))
             continue
+        if signer in retired_agents:
+            issues.append(Issue(tail, seq, f"{kind} is signed by a retired agent key, which signs nothing"))
+            continue
         if not is_result and signer in checkers:
             issues.append(
                 Issue(tail, seq, f"{kind} is signed by a checker key, which signs check results only")
             )
+            continue
+        # The agent's role, judged before the kind's own conditions: its facts speak for the
+        # identity that enrolled it, under the name it was enrolled as - byte for byte, both
+        # canonical - and never change who may sign.
+        role = agents.get(signer) if isinstance(signer, str) else None
+        which = event.get("which")
+        if role is not None:
+            role_anchor, role_name = role
+            refusal = None
+            if who != role_anchor:
+                refusal = "for an identity other than the one that enrolled it"
+            elif which != role_name:
+                refusal = "and its which is not the name the key was enrolled under"
+            elif kind in AGENT_NEVER_SIGNS:
+                refusal = "which signs no change to who may sign or what a key may sign"
+            if refusal is not None:
+                issues.append(Issue(tail, seq, f"{kind} is signed by an agent key, {refusal}"))
+                continue
+        judged.append((tail, seq, signer if role is not None else None, which))
+
+        if kind == "agent.enrolled":
+            anchor = subject
+            agent = payload.get("agentFp")
+            name = payload.get("name")
+            if who != anchor or not isinstance(anchor, str):
+                issues.append(Issue(tail, seq, "agent.enrolled who is not the anchor it enrols into"))
+                continue
+            if signer not in keys_of(anchor):
+                issues.append(
+                    Issue(tail, seq, "agent.enrolled is signed by a key not valid for the anchor at this point")
+                )
+                continue
+            # Section 6.2's set, written out - not str.strip(), which takes U+001C..U+001F too.
+            if not isinstance(name, str) or name != name.strip(IDENTITY_TRIM):
+                issues.append(
+                    Issue(tail, seq, "agent.enrolled name begins or ends with a character of section 6.2's set")
+                )
+                continue
+            if name == who:
+                issues.append(Issue(tail, seq, "agent.enrolled name is its who"))
+                continue
+            if (
+                not isinstance(agent, str)
+                or in_any_identity(agent)
+                or agent in checkers
+                or agent in agents
+                or agent in retired
+                or agent in retired_agents
+            ):
+                issues.append(
+                    Issue(tail, seq, "agent.enrolled names a key already in an identity, or holds a role")
+                )
+                continue
+            if not _consent_ok(ring, agent_message(anchor, agent, name), agent, payload.get("reverseSig")):
+                issues.append(
+                    Issue(tail, seq, "agent.enrolled reverse signature does not prove the agent consented to this name")
+                )
+                continue
+            if add_key(anchor, agent, tail, seq):
+                agents[agent] = (anchor, name)
+            continue
+
+        if kind == "agent.retired":
+            anchor = subject
+            agent = payload.get("agentFp")
+            if who != anchor or not isinstance(anchor, str):
+                issues.append(Issue(tail, seq, "agent.retired who is not the anchor it retires from"))
+                continue
+            if signer not in keys_of(anchor):
+                issues.append(
+                    Issue(tail, seq, "agent.retired is signed by a key not valid for the anchor at this point")
+                )
+                continue
+            if not isinstance(agent, str) or agents.get(agent, ("", ""))[0] != anchor:
+                issues.append(
+                    Issue(tail, seq, "agent.retired names a key that is not an agent key of its identity")
+                )
+                continue
+            # The revocation's gate: an uncovered retirement is ignored rather than honoured.
+            if not is_covered(tail, seq):
+                continue
+            keys_of(anchor).discard(agent)
+            retired_agents.add(agent)
+            retirements.setdefault(agent, (anchor, len(judged)))
             continue
 
         if kind == "checker.enrolled":
@@ -287,7 +433,7 @@ def resolve(
                     Issue(tail, seq, "checker.enrolled reverse signature does not prove the checker consented")
                 )
                 continue
-            if checker in retired:
+            if checker in retired or checker in retired_agents:
                 issues.append(
                     Issue(tail, seq, "checker.enrolled names a retired checker key, which is never enrolled again")
                 )
@@ -418,7 +564,38 @@ def resolve(
                     f"{str(who)[:20]}... at this point",
                 )
             )
-    return Resolution(issues, valid, backups, merged.not_held, merged.behind)
+    # What the accepted facts name as their agent: an event some issue names was refused, and a
+    # refused fact names nobody.
+    refused = {(issue.tail, issue.seq) for issue in issues}
+    attested: dict[str, int] = {}
+    declared: dict[str, int] = {}
+    for tail, seq, agent_key, which in judged:
+        if (tail, seq) in refused:
+            continue
+        if agent_key is not None:
+            attested[agent_key] = attested.get(agent_key, 0) + 1
+        elif isinstance(which, str):
+            declared[which] = declared.get(which, 0) + 1
+    # A key retired before it signed anything has nothing to name.
+    retired_with_facts: list[tuple[str, str, int]] = []
+    for agent, (by, upto) in retirements.items():
+        before = sum(
+            1
+            for tail, seq, agent_key, _which in judged[:upto]
+            if agent_key == agent and (tail, seq) not in refused
+        )
+        if before > 0:
+            retired_with_facts.append((agent, by, before))
+    return Resolution(
+        issues,
+        valid,
+        backups,
+        merged.not_held,
+        merged.behind,
+        [(fp, agents[fp][0], agents[fp][1], count) for fp, count in attested.items()],
+        list(declared.items()),
+        retired_with_facts,
+    )
 
 
 def _reverse_signature_ok(

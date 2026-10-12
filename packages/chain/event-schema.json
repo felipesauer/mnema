@@ -42,6 +42,23 @@
       }
     },
     {
+      "kind": "agent.enrolled",
+      "v": 1,
+      "payload": {
+        "agentFp": "string",
+        "name": "string",
+        "reverseSig": "string"
+      }
+    },
+    {
+      "kind": "agent.retired",
+      "v": 1,
+      "payload": {
+        "agentFp": "string",
+        "reason": "string"
+      }
+    },
+    {
       "kind": "backup.declared",
       "v": 1,
       "payload": {

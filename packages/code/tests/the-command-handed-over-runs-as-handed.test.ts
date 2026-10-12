@@ -682,7 +682,7 @@ export const HANDED_OVER: Readonly<
   'examples/rules/README.md': { line: 1, name: 1 },
   'packages/action/README.md': { line: 6, name: 7 },
   'packages/chain/FORMAT.md': { line: 3 },
-  'packages/code/README.md': { line: 73, name: 98, flag: 2 },
+  'packages/code/README.md': { line: 73, name: 99, flag: 2 },
   'packages/code/src/a-new-identity.ts': { line: 2, name: 1 },
   'packages/code/src/agent-accepts.ts': { line: 4 },
   'packages/code/src/commands/commit-hook.ts': { line: 1, name: 2 },

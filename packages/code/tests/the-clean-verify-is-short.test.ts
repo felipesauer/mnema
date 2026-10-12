@@ -23,6 +23,7 @@ import { listTails, orderedSegments } from '@mnema/chain';
 import { resolveTrees } from '@mnema/core';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { type CliIo, run } from '../src/program.js';
+import { anAgentThatSignedAndWasRetired } from './support/a-tail-from-another-machine.js';
 
 let sandbox: string;
 let repo: string;
@@ -133,6 +134,75 @@ describe('a clean verify says the verdict and stops', () => {
 
     const verbose = await verify('--verbose');
     expect(verbose.out.some((line) => line.startsWith('  census [backup-key] public '))).toBe(true);
+  });
+
+  it('keeps an agent the key only declared behind --verbose, and out of the verdict', async () => {
+    // A `which` written by a key without the agent role is what every record carries today: the
+    // key that signed stated it, and nothing holds it. True, informational, and on nearly every
+    // record — so it is said where the notes are listed, and the clean verdict stays one line.
+    await found();
+    await record('write the runbook');
+    await record('ask the agent for it', '--which', 'claude');
+
+    const short = await verify();
+    expect(short.out).toHaveLength(1);
+    expect(short.out[0]).not.toContain('declared');
+    expect(short.out[0]).not.toContain('agent');
+
+    const verbose = await verify('--verbose');
+    expect(verbose.out[0]).toBe(short.out[0]);
+    // Two events: a task is born as a pair, the creation and its first move, and both carry it.
+    expect(verbose.out).toContain(
+      '  census [declared-which] public claude: 2 event(s) name the agent "claude" — declared by the key that signed, not attested',
+    );
+  });
+
+  it('says a retired agent key the way it says a retired checker: with the flag and without it', async () => {
+    // The mirror of `retired-checker`, and unlike the `which` above it is NOT behind --verbose:
+    // a key the record took out of the role is a thing a reader may have to act on, and a note of
+    // that kind is never hidden. The clause is in the verdict's sentence, so a clean verify stays
+    // one line only for a record with nothing of the kind.
+    await found();
+    await record('write the runbook');
+    const { agentFp } = anAgentThatSignedAndWasRetired(repo, { home: join(sandbox, 'home') }, 2);
+
+    const short = await verify();
+    expect(short.failed).toBe(false);
+    expect(short.out[0]).toContain(
+      '1 retired agent key(s) whose earlier facts are no longer vouched for (see census — informational, not a break)',
+    );
+    const line = short.out.find((said) => said.startsWith('  census [retired-agent] public '));
+    expect(line).toContain(`${agentFp}: 2 event(s) signed by the agent key ${agentFp} before `);
+
+    const verbose = await verify('--verbose');
+    expect(verbose.out[0]).toBe(short.out[0]);
+    expect(verbose.out.filter((said) => said.includes('[retired-agent]'))).toEqual([line]);
+    expect(verbose.failed).toBe(false);
+  });
+
+  it('puts a retired agent key in the --json verdict, whatever the flag', async () => {
+    await found();
+    await record('write the runbook');
+    const { agentFp, anchor } = anAgentThatSignedAndWasRetired(
+      repo,
+      { home: join(sandbox, 'home') },
+      2,
+    );
+
+    const retired = async (...flags: readonly string[]) => {
+      const said = await verify('--json', ...flags);
+      const parsed = JSON.parse(said.out.join('\n')) as {
+        trees?: readonly { result: { census: readonly { kind: string }[] } }[];
+        result?: { census: readonly { kind: string }[] };
+      };
+      const results = parsed.trees?.map((tree) => tree.result) ?? [parsed.result];
+      return results
+        .flatMap((result) => result?.census ?? [])
+        .filter((note) => note.kind === 'retired-agent');
+    };
+    const without = await retired();
+    expect(without).toMatchObject([{ fingerprint: agentFp, by: anchor, eventsBefore: 2 }]);
+    expect(await retired('--verbose')).toEqual(without);
   });
 
   it('puts the verdict first, with or without --verbose', async () => {

@@ -301,6 +301,10 @@ export const SUBJECT_TEXT = {
   // stack this tree holds as adopted is removed.
   'stack.adopted': 'identifier',
   'stack.removed': 'identifier',
+  // DERIVED: the anchor of the key that signs it — an identity enrols and retires only its own
+  // agents.
+  'agent.enrolled': 'identifier',
+  'agent.retired': 'identifier',
 } as const satisfies { readonly [K in EventKind]: FieldNature };
 
 /**
@@ -467,6 +471,12 @@ export const PAYLOAD_TEXT = {
   // All three are copied from the adoption the record holds, never handed in, as a check
   // result's program is copied from its declaration.
   'stack.removed': { version: 'identifier', digest: 'identifier', scope: 'identifier' },
+  // The fingerprint and the consent are computed from the agent's key, never typed. The name is
+  // the caller's, and a NAME: every fact the key signs carries it as `which` and a reader compares
+  // it byte for byte, so a scrubbed one would name another agent.
+  'agent.enrolled': { agentFp: 'identifier', name: 'name', reverseSig: 'identifier' },
+  // The key is proved against the record (an agent this identity enrolled); the reason is prose.
+  'agent.retired': { agentFp: 'identifier', reason: 'body' },
 } as const satisfies {
   readonly [K in EventKind]: { readonly [P in PayloadPath<K>]: FieldNature };
 };

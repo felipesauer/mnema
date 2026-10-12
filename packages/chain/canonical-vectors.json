@@ -672,6 +672,41 @@
         }
       },
       "sha256": "c4ffbc4609aa4f6a8d7832afa77230884f47e616d6363257d8f94ca8713198d5"
+    },
+    {
+      "name": "agent.enrolled (a person enrols a key as their agent, under a name)",
+      "kind": "agent.enrolled",
+      "event": {
+        "v": 1,
+        "kind": "agent.enrolled",
+        "at": "2026-07-21T00:00:00.000Z",
+        "who": "mnid:1111111111111111111111111111111111111111111111111111111111111111",
+        "signerFp": "2222222222222222222222222222222222222222222222222222222222222222",
+        "subject": "mnid:1111111111111111111111111111111111111111111111111111111111111111",
+        "payload": {
+          "agentFp": "9999999999999999999999999999999999999999999999999999999999999999",
+          "name": "claude",
+          "reverseSig": "efefefefefefefefefefefefefefefefefefefefefefefefefefefefefefefef"
+        }
+      },
+      "sha256": "738db435d7a431658139220c9ee2bc62d6a24a6ae4b8e2de7abc877f1ed33ea8"
+    },
+    {
+      "name": "agent.retired (a person retires the key their agent signed with)",
+      "kind": "agent.retired",
+      "event": {
+        "v": 1,
+        "kind": "agent.retired",
+        "at": "2026-07-21T00:00:00.000Z",
+        "who": "mnid:1111111111111111111111111111111111111111111111111111111111111111",
+        "signerFp": "2222222222222222222222222222222222222222222222222222222222222222",
+        "subject": "mnid:1111111111111111111111111111111111111111111111111111111111111111",
+        "payload": {
+          "agentFp": "9999999999999999999999999999999999999999999999999999999999999999",
+          "reason": "The machine the agent ran on was lent out."
+        }
+      },
+      "sha256": "804d7d532b294678f93a27644a4729f988b2fab53e456d3e1a66f2d5c3e78f42"
     }
   ],
   "chain": {
@@ -689,6 +724,6 @@
       "vector": "run.ended",
       "entryHash": "bafbebddd9d5ee75b10bdde626c5e36eed44b37d9fe352b4d98f614fa2647b73"
     },
-    "contentRootOverAllVectors": "2937178de1e23d20c07aee30efdb7f5b199671e8f18d4b8f142767dfefa7433e"
+    "contentRootOverAllVectors": "f3dd4793887ee47a59de19a24ad09d10c90a372c177dd21e573e7c358e907185"
   }
 }

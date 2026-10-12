@@ -298,7 +298,9 @@ mnema verify
 # key the same way; a `census [key-without-tail]` is a tail to look for. A clean record is
 # that one line: `--verbose` adds the census note about the backup key and, when the private
 # tree holds nothing, the line that says so. It adds and never takes away — a break, an
-# issue and the exit are the same with it and without it.
+# issue and the exit are the same with it and without it. It also adds, per agent name a
+# fact carries, how many facts name it on the word of the key that signed (`declared`); facts
+# an agent key signed are counted without the flag (`attested`, FORMAT.md §6.2).
 
 # Auditing several projects? Name them, and get ONE verdict over all of them.
 mnema verify --workspace ~/work/api ~/work/web
@@ -825,6 +827,39 @@ the program checks what its rule says. A declared program runs on the runner, so
 a declaration can make the runner start that program. The Action in `packages/action` runs the
 step above for you when it is handed the checker key as a secret (`checker-key`), and leaves the
 results in the working tree for your workflow to commit or upload.
+
+### A key that signs for its person, under a name
+
+The record can also say that a key is an identity's agent: a key a person lets a program sign with,
+without handing it the key that enrols, revokes and declares. A member of the identity writes an
+`agent.enrolled` naming the key and a name, and the key signs, over the UTF-8 of
+`agent-enroll:<anchor>:<agentFp>:<name>`, that it consents to that name. This release reads and
+judges those two facts (`agent.enrolled`, `agent.retired`); the commands that write them are not
+in it.
+
+**What `mnema verify` holds an agent key to.** The key is a member of the identity that enrolled it,
+and what it signs is refused unless all of this holds: its `who` is that identity's anchor; its
+`which` is, byte for byte, the name the key was enrolled under; and its kind is not one that
+changes who may sign or what a key may sign (`identity.founded`, `key.enrolled`, `key.revoked`,
+`backup.declared`, `checker.enrolled`, `checker.retired`, `agent.enrolled`, `agent.retired`,
+`account.linked`). A key already in an identity, or holding a role, cannot be enrolled as an agent.
+A name may not begin or end with a character of the set `FORMAT.md` section 6.2 writes out, and may
+not be the anchor itself. The Python reader in `packages/chain/verifier` judges the same, and the two
+are tested to agree.
+
+**A retired agent key signs nothing.** Only the identity that enrolled the key retires it, by a key
+of its own that is not an agent key, and the retirement counts only once a checkpoint covers it. From
+then on `verify` refuses any event the key signs. What it signed before still verifies, and the census
+names it, as it names a retired checker's results (`census [retired-agent] …`, with and without `--verbose`):
+a leaked key can date a fact before its own retirement, so the record no longer vouches for those facts.
+
+**What the census says, and what it does not.** A fact that `verify` accepts from an agent key is
+counted per key (`census [attested-which] …`: that key, enrolled as that name, signed that many
+facts). A `which` written by a key without the role is counted as declared (`census
+[declared-which] …`, shown with `--verbose`): the key that signed stated it, and nothing attests it. All three are informational:
+none moves the verdict or the exit code. The record does not say which process held the agent
+key, nor which model drove it; that is a property of the machine, and a program with access to the
+key signs as that agent.
 
 ### Reading the git log against the record
 

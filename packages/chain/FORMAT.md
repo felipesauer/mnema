@@ -6,7 +6,7 @@ against their implementation, and get the same digests we do.
 
 **Somebody has.** [`verifier/`](./verifier/) beside this file is a second implementation, in
 Python, written from this document and importing nothing of the product it checks. It
-reproduces the 36 published vectors and the four aggregate digests, and checks the frozen
+reproduces the 38 published vectors and the four aggregate digests, and checks the frozen
 records in the test suite beside the product
 (`packages/chain/src/chain/second-reader-agrees-on-the-record.test.ts`), on honest records
 and on every input the format refuses. The two verdicts differ in two pinned cases. With the
@@ -576,6 +576,61 @@ therefore learns from the record that the key was retired, and which results it 
 before; this product's `verify` names those in its census, informational, and does not
 call them breaks
 (`packages/chain/src/chain/second-reader-agrees-on-enrolment.test.ts`).
+
+**A sixth fact grants a key the role of an identity's AGENT, and a seventh withdraws it.** An
+agent key is a member of the identity that enrolled it — its facts speak for that identity,
+`who` — with a role that narrows what it signs. It is how a person lets a program sign for them
+without handing it the key that enrols, revokes and declares.
+
+| kind | what it must satisfy | what it does |
+|---|---|---|
+| `agent.enrolled` | `who == subject`; `signerFp` is in the anchor's set at this point and is not an agent key; `payload.name` has no leading or trailing character of the set below, and is not `who`; `payload.agentFp` is, at this point, in no identity's set, and is not a checker key, an agent key or a retired key; and `payload.reverseSig` is a valid Ed25519 signature, by the key `agentFp` names (fingerprint recomputed, as above), over the UTF-8 of `agent-enroll:<anchor>:<agentFp>:<name>` | adds `agentFp` to the anchor's set, as an AGENT key named `name` |
+| `agent.retired` | `who == subject`; `signerFp` is in the anchor's set at this point and is not an agent key; and `payload.agentFp` is an agent key of this anchor at this point | when SIGNATURE-COVERED: removes `agentFp` from the set; it is RETIRED |
+
+The set is U+0009 to U+000D, U+0020, U+00A0, U+1680, U+2000 to U+200A, U+2028, U+2029, U+202F,
+U+205F, U+3000 and U+FEFF — the one §6 compares `which` and `who` in. It is written out because
+"trimmed" is not one rule across languages. `anchor` is `mnid:` and 64 hex characters and
+`agentFp` is 64, so `name` is the last field of the consent message and is taken whole, a colon
+in it included; and no consent message is a prefix of another, so a consent given for one role,
+one identity or one name enrols the key as no other.
+
+**An event whose `signerFp` is an agent key at its point in the fold is refused when any of these
+holds**, whatever else it satisfies:
+
+1. its `who` is not the anchor that enrolled the key;
+2. its `which` is absent, or is not, byte for byte, the `name` the key was enrolled under;
+3. its kind is one that changes who may sign, or what a key may sign: `identity.founded`,
+   `key.enrolled`, `key.revoked`, `backup.declared`, `checker.enrolled`, `checker.retired`,
+   `agent.enrolled`, `agent.retired`, `account.linked`. (A `check.passed` or `check.failed`
+   already needs a checker key.)
+
+This is judged at the event's point in the merged order, after the two tests above — a retired
+key, a checker key — and before the conditions of the event's own kind, against the agent keys as
+every earlier event in that order left them. A key is an agent key from its `agent.enrolled` on,
+and stays one: a `key.revoked` naming it takes it out of the set like any key, and the role stays
+with it, so no later fact turns it into a key without the role. An `agent.enrolled` that would
+restore a key some covered `key.revoked` removed is gated as any such addition is.
+
+**A retired agent key signs nothing**, exactly as a retired checker key: from its retirement on,
+an event of any kind it signs is refused, and so is an `agent.enrolled` or a `checker.enrolled`
+naming it. Like a revocation, an `agent.retired` takes effect only when signature-covered, so a
+party with no key cannot retire an honest agent. Only the identity that enrolled the key retires
+it, by a key of its own that is not an agent key — so a leaked agent key cannot retire its
+siblings, nor be used to retire itself out of the record's sight.
+
+What the key signed BEFORE its retirement stays authentic, for the reason a checker's results do,
+and "before" is the same merged order and the same `at` the key itself wrote: a leaked agent key
+can place a fact before its own retirement. A reader therefore learns from the record that the key
+was retired, and how many facts it signed before; this product's `verify` names those in its
+census, as it names a retired checker's, informational, and the second reader says the same count.
+
+**What a reader learns from it.** An event signed by an agent key that the fold accepts names, in
+`which`, the name its identity enrolled that key under: its agent is ATTESTED by an agent key
+enrolled as that name. Any other `which` is DECLARED: the key that signed stated it. Which process
+held the agent key, and which model drove it, is a property of the machine — its sandbox, its
+users — that the record does not carry. This product's `verify` counts both in its census,
+informational, and the second reader says the same counts
+(`packages/chain/src/chain/second-reader-agrees-on-enrolment.test.ts`, "an agent").
 
 **And every other event is authentic only if its `signerFp` is in the set of its
 own `who` at its point in the fold.** That is the whole rule; there is no

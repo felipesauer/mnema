@@ -25,6 +25,8 @@
 
 import {
   accountLinked,
+  agentEnrolled,
+  agentRetired,
   type BackupKey,
   backupDeclared,
   type CatalogEvent,
@@ -629,6 +631,68 @@ export function revokeKey(
       keyRevoked(
         { at, who: anchor, signerFp: ctx.writer.signerFingerprint, subject: anchor },
         { revokedFp: input.revokedFp, reason: text.fields.reason },
+      ),
+    );
+    if (!appended.ok) return appended;
+    ctx.writer.checkpoint();
+    return { ok: true, anchor, ...screened(text.replaced) };
+  });
+}
+
+/**
+ * Enrolls a key as an AGENT of this installation's anchor, under `name`: the local key (a member)
+ * vouches, and `reverseSig` — the agent key's signature over
+ * `agent-enroll:<anchor>:<agentFp>:<name>` — proves the key consents to that name in that identity.
+ * The caller supplies the material, as for {@link enrollKey}; this signs the vouch, appends the
+ * fact and checkpoints it, so the role is proven at once.
+ *
+ * The name goes through the content door as a NAME: every fact the key signs carries it as its
+ * `which`, compared byte for byte, so a credential in it refuses the write rather than being
+ * redacted into another agent's name. What the reader holds the fact to is FORMAT.md section 6.2.
+ */
+export function enrollAgent(
+  ctx: WriteContext,
+  input: { agentFp: string; name: string; reverseSig: string },
+): IdentityOk | ScreenRefusal | AppendRefusal {
+  const text = screenContent({ name: input.name });
+  if (!text.ok) return text;
+
+  return ctx.writer.exclusively(() => {
+    const anchor = ensureFounded(ctx);
+    const at = (ctx.clock ?? systemClock)();
+    const appended = appendEvent(
+      ctx.writer,
+      agentEnrolled(
+        { at, who: anchor, signerFp: ctx.writer.signerFingerprint, subject: anchor },
+        { agentFp: input.agentFp, name: text.fields.name, reverseSig: input.reverseSig },
+      ),
+    );
+    if (!appended.ok) return appended;
+    ctx.writer.checkpoint();
+    return { ok: true, anchor, ...screened(text.replaced) };
+  });
+}
+
+/**
+ * Retires an agent key of this installation's anchor: from the retirement on it signs nothing. The
+ * retirement is checkpointed at once, because a reader honours it only when it is covered; the
+ * agent key is not asked. The `reason` is prose, through the door like a revocation's.
+ */
+export function retireAgent(
+  ctx: WriteContext,
+  input: { agentFp: string; reason: string },
+): IdentityOk | ScreenRefusal | AppendRefusal {
+  const text = screenContent({ reason: input.reason });
+  if (!text.ok) return text;
+
+  return ctx.writer.exclusively(() => {
+    const anchor = ensureFounded(ctx);
+    const at = (ctx.clock ?? systemClock)();
+    const appended = appendEvent(
+      ctx.writer,
+      agentRetired(
+        { at, who: anchor, signerFp: ctx.writer.signerFingerprint, subject: anchor },
+        { agentFp: input.agentFp, reason: text.fields.reason },
       ),
     );
     if (!appended.ok) return appended;

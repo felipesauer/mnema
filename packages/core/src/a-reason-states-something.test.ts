@@ -37,7 +37,12 @@ import {
   supersedeDecision,
 } from './workflow/decision-operations.js';
 import { gate } from './workflow/gate.js';
-import { ensureFounded, linkAccount } from './workflow/identity-operations.js';
+import {
+  enrollAgent,
+  ensureFounded,
+  linkAccount,
+  retireAgent,
+} from './workflow/identity-operations.js';
 import { createTask, transitionTask, type WriteContext } from './workflow/operations.js';
 import { authorizeTailPrune } from './workflow/prune-operations.js';
 import { startRun } from './workflow/session-operations.js';
@@ -261,6 +266,11 @@ describe('every kind says where its why is, and the door asks it there', () => {
           checkerKey = asked.fingerprint;
         },
         drive: (said) => retireChecker(ctx, { fingerprint: checkerKey, reason: said }),
+      },
+      {
+        kind: 'agent.retired',
+        site: 'reason',
+        drive: (said) => retireAgent(ctx, { agentFp: 'c'.repeat(64), reason: said }),
       },
       {
         kind: 'channel.switched',
@@ -560,6 +570,12 @@ describe('every kind says where its references are, and the door asks it there',
       kind: 'account.linked',
       site: 'account',
       drive: (said) => linkAccount(ctx, { account: said }),
+    },
+    {
+      kind: 'agent.enrolled',
+      site: 'name',
+      drive: (said) =>
+        enrollAgent(ctx, { agentFp: 'c'.repeat(64), name: said, reverseSig: 'd'.repeat(128) }),
     },
   ];
 

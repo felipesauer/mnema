@@ -988,6 +988,30 @@ def _check_enrolment(
             "after what it cites",
             f"{tail[:20]}...",
         )
+    # Section 6.2, "What a reader learns from it": who the accepted facts name as their agent, and
+    # on whose word. Said and never judged - the product's census says the same counts.
+    for agent_fp, anchor, name, count in resolution.attested:
+        report.note(
+            "6.2",
+            f'{count} event(s) attested by an agent key enrolled as "{name}" '
+            f"({agent_fp[:12]}, for {anchor[:17]})",
+        )
+    for which, count in resolution.declared:
+        report.note(
+            "6.2",
+            f'{count} event(s) name the agent "{which}" — declared by the key that signed, '
+            "not attested",
+        )
+    # An agent key the record retired, after the facts it signed while it held the role: the same
+    # count the product's census names, and for the same reason - "before" is the place the `at`
+    # the key itself wrote gives a fact.
+    for agent_fp, by, count in resolution.retired_agents:
+        report.note(
+            "6.2",
+            f"{count} event(s) signed by the agent key {agent_fp[:12]} before {by[:17]} retired it "
+            "- authentic, since the key held the role when it signed, and no longer vouched for: "
+            "an event is placed before a retirement by the time the key itself wrote",
+        )
     issues = resolution.issues
     for issue in issues:
         report.fail("6.2", issue.detail, f"{issue.tail[:20]}... seq {issue.seq}", "G21")

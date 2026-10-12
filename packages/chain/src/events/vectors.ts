@@ -39,6 +39,8 @@
 
 import {
   accountLinked,
+  agentEnrolled,
+  agentRetired,
   backupDeclared,
   channelAsked,
   channelRefused,
@@ -182,6 +184,9 @@ const VECTOR_COMMIT = '7777777777777777777777777777777777777777';
 
 /** The digest a stack is adopted and removed by in the vectors: 64 lower-case hex characters. */
 const VECTOR_STACK_DIGEST = '8888888888888888888888888888888888888888888888888888888888888888';
+
+/** The key an `agent.enrolled` makes an agent of {@link VECTOR_WHO}, and an `agent.retired` retires. */
+const VECTOR_AGENT_FP = '9999999999999999999999999999999999999999999999999999999999999999';
 
 /** The envelope of a check result: the checker's own anchor, signed by the checker's key. */
 const checker = (
@@ -559,6 +564,28 @@ export const CANONICAL_VECTORS: {
         version: '1.0.0',
         digest: VECTOR_STACK_DIGEST,
         scope: 'public',
+      }),
+    },
+  ],
+  'agent.enrolled': [
+    {
+      // A person makes a key an agent of their own identity: the subject is the person's anchor,
+      // and `name` is what every fact the key signs must carry as its `which`.
+      name: 'agent.enrolled (a person enrols a key as their agent, under a name)',
+      event: agentEnrolled(person(VECTOR_WHO), {
+        agentFp: VECTOR_AGENT_FP,
+        name: 'claude',
+        reverseSig: 'ef'.repeat(32),
+      }),
+    },
+  ],
+  'agent.retired': [
+    {
+      // The identity that enrolled the key retires it; the agent key is not asked.
+      name: 'agent.retired (a person retires the key their agent signed with)',
+      event: agentRetired(person(VECTOR_WHO), {
+        agentFp: VECTOR_AGENT_FP,
+        reason: 'The machine the agent ran on was lent out.',
       }),
     },
   ],

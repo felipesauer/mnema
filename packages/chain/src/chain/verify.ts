@@ -177,8 +177,11 @@ export type CensusNote =
   | ForeignRetractionNote
   | ForeignLinkRetractionNote
   | RetiredCheckerNote
+  | RetiredAgentNote
   | CitationNotHeldNote
-  | ClockBehindNote;
+  | ClockBehindNote
+  | AttestedWhichNote
+  | DeclaredWhichNote;
 
 /**
  * A committed public key with no tail on disk.
@@ -384,6 +387,29 @@ export interface RetiredCheckerNote {
 }
 
 /**
+ * An agent key the record retired (`agent.retired`, FORMAT.md section 6.2) that had signed facts
+ * before its retirement.
+ *
+ * Not a break, for the reason a {@link RetiredCheckerNote} is not: each of those facts was signed
+ * while the key held the role, and the facts it signs AFTER are breaks of their own. A reader is
+ * told anyway, because "before" is the place the merged order gives a fact, and that place comes
+ * from the `at` the key itself wrote — a leaked key can put a fact before its own retirement.
+ */
+export interface RetiredAgentNote {
+  readonly kind: 'retired-agent';
+  /** The retired agent key. */
+  readonly fingerprint: string;
+  /** The identity that retired it. */
+  readonly by: string;
+  /** How many facts it signed that the fold accepted before the retirement. */
+  readonly eventsBefore: number;
+  /** Where the retirement sits. */
+  readonly tail: string;
+  readonly seq: number;
+  readonly detail: string;
+}
+
+/**
  * A citation (`after`) of an entry hash this record does not hold.
  *
  * The order ignores it: the event is placed as if it cited nothing, and nothing is refused
@@ -417,6 +443,72 @@ export interface ClockBehindNote {
   /** The largest gap, in milliseconds. */
   readonly behindByMs: number;
   readonly detail: string;
+}
+
+/**
+ * An agent key (`agent.enrolled`, FORMAT.md section 6.2) that signed facts the fold accepted: their
+ * agent is ATTESTED — every one names, in `which`, the name the identity enrolled the key under.
+ *
+ * Informational: it moves neither `ok`, the level nor the exit. What it says is what the record
+ * holds — which key, enrolled by whom, under which name — and not which process held the key or
+ * which model drove it, which are properties of the machine the record does not carry.
+ */
+export interface AttestedWhichNote {
+  readonly kind: 'attested-which';
+  /** The agent key. */
+  readonly agentFp: string;
+  /** The identity that enrolled it. */
+  readonly anchor: string;
+  /** The name it was enrolled under, which its facts carry as `which`. */
+  readonly name: string;
+  /** How many facts it signed that the fold accepted. */
+  readonly events: number;
+  readonly detail: string;
+}
+
+/**
+ * A `which` that accepted facts carry, signed by a key that is not an agent key: the agent is
+ * DECLARED — the key that signed stated it, and nothing in the record holds it to that name.
+ *
+ * It is the truth of every `which` written before agent keys existed, so it says so instead of
+ * leaving the word to read as more than it is. It has NO CLAUSE in the verdict's sentence: it is
+ * said where the notes are listed — `--json`, the page, and `mnema verify --verbose` — so a clean
+ * verify stays the one line it is.
+ */
+export interface DeclaredWhichNote {
+  readonly kind: 'declared-which';
+  /** The `which`, as the facts carry it. */
+  readonly which: string;
+  /** How many accepted facts carry it. */
+  readonly events: number;
+  readonly detail: string;
+}
+
+/**
+ * What the census says of the agents the accepted facts name: one note per agent key that signed,
+ * and one per `which` that a key without the role stated.
+ */
+function agentsNamed(agents: IdentityResolution['agents']): CensusNote[] {
+  return [
+    ...agents.attested.map(
+      (agent): AttestedWhichNote => ({
+        kind: 'attested-which',
+        agentFp: agent.agentFp,
+        anchor: agent.anchor,
+        name: agent.name,
+        events: agent.events,
+        detail: `${agent.events} event(s) attested by an agent key enrolled as "${oneLine(agent.name)}" (${oneLine(agent.agentFp.slice(0, 12))}, for ${oneLine(agent.anchor.slice(0, 17))})`,
+      }),
+    ),
+    ...agents.declared.map(
+      (named): DeclaredWhichNote => ({
+        kind: 'declared-which',
+        which: named.which,
+        events: named.events,
+        detail: `${named.events} event(s) name the agent "${oneLine(named.which)}" — declared by the key that signed, not attested`,
+      }),
+    ),
+  ];
 }
 
 /**
@@ -674,8 +766,10 @@ export function verifyChain(
     ...foreignRetractions(tails, entriesByTail),
     ...foreignLinkRetractions(tails, entriesByTail),
     ...retiredCheckers(identity.retiredCheckers),
+    ...retiredAgents(identity.retiredAgents),
     ...citationsNotHeld(identity.citations),
     ...clocksBehind(identity.citations),
+    ...agentsNamed(identity.agents),
   ];
 
   const ok = allIssues.length === 0;
@@ -980,6 +1074,31 @@ function retiredCheckers(retired: IdentityResolution['retiredCheckers']): Retire
         `${retirement.resultsBefore} check result(s) signed by ${oneLine(fingerprint)} before ` +
         `${oneLine(retirement.by)} retired it — authentic, since the key held the role when it ` +
         'signed, and no longer vouched for: a result is placed before a retirement by the time ' +
+        'the key itself wrote',
+    });
+  }
+  return found;
+}
+
+/**
+ * Every retired agent key that signed facts before its retirement, in the order the fold met the
+ * retirements. A key retired before it signed anything has nothing to name.
+ */
+function retiredAgents(retired: IdentityResolution['retiredAgents']): RetiredAgentNote[] {
+  const found: RetiredAgentNote[] = [];
+  for (const [fingerprint, retirement] of retired) {
+    if (retirement.eventsBefore === 0) continue;
+    found.push({
+      kind: 'retired-agent',
+      fingerprint,
+      by: retirement.by,
+      eventsBefore: retirement.eventsBefore,
+      tail: retirement.tail,
+      seq: retirement.seq,
+      detail:
+        `${retirement.eventsBefore} event(s) signed by the agent key ${oneLine(fingerprint)} before ` +
+        `${oneLine(retirement.by)} retired it — authentic, since the key held the role when it ` +
+        'signed, and no longer vouched for: an event is placed before a retirement by the time ' +
         'the key itself wrote',
     });
   }
@@ -1514,8 +1633,11 @@ function coverageClause(facts: VerdictFacts): string {
  * `mnema verify` prints under the verdict, and that holds for every kind but the backup key:
  * its note waits for `--verbose` (`wiring/verify.ts`), so its clause names the flag instead of
  * pointing at lines the short answer does not print.
+ *
+ * `null` IS A KIND WITH NO CLAUSE: a declared `which` is said only where the notes are listed, so
+ * the sentence a clean record earns does not grow a clause on every record that carries a `which`.
  */
-const CENSUS_CLAUSE: Readonly<Record<CensusNote['kind'], (count: number) => string>> = {
+const CENSUS_CLAUSE: Readonly<Record<CensusNote['kind'], ((count: number) => string) | null>> = {
   'key-without-tail': (count) =>
     `${count} committed key(s) without a tail (see census — informational, not a break)`,
   'backup-key': (count) =>
@@ -1530,16 +1652,22 @@ const CENSUS_CLAUSE: Readonly<Record<CensusNote['kind'], (count: number) => stri
     `${count} link retraction(s) by an identity that did not record the link, not applied (see census — informational, not a break)`,
   'retired-checker': (count) =>
     `${count} retired checker key(s) whose earlier check results are no longer vouched for (see census — informational, not a break)`,
+  'retired-agent': (count) =>
+    `${count} retired agent key(s) whose earlier facts are no longer vouched for (see census — informational, not a break)`,
   'citation-not-held': (count) =>
     `${count} citation(s) of an entry this record does not hold, ignored in the order (see census — informational, not a break)`,
   'clock-behind-what-it-read': (count) =>
     `${count} tail(s) whose clock ran behind what it had read (see census — informational, not a break)`,
+  'attested-which': (count) =>
+    `${count} agent key(s) attesting the agent their facts name (see census — informational, not a break)`,
+  'declared-which': null,
 };
 
 /** One clause per kind of note present, in the order the kinds are declared in. */
 function censusClauses(census: readonly CensusNote[]): string[] {
   const clauses: string[] = [];
   for (const [kind, clause] of Object.entries(CENSUS_CLAUSE)) {
+    if (clause === null) continue;
     const count = census.filter((note) => note.kind === kind).length;
     if (count > 0) clauses.push(clause(count));
   }

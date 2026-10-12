@@ -1068,6 +1068,65 @@ export interface CheckerRetiredV1 extends Envelope {
 }
 
 /**
+ * A KEY WAS ENROLLED AS AN AGENT of an identity: a member of that identity whose role narrows
+ * what it signs.
+ *
+ * It is how a person lets a program sign for them without handing it the key that enrols,
+ * revokes and declares. The agent key joins the identity that enrolled it — its facts speak for
+ * that identity, `who` — and, unlike a {@link CheckerEnrolledV1}, it speaks for no anchor of its
+ * own. `who == subject ==` the anchor, and `signerFp` a key valid for it at this point that is not
+ * itself an agent key.
+ *
+ * `name` is what the agent is called, and the reader holds every fact the key signs to it: its
+ * `which` must be `name`, byte for byte. `reverseSig` is the agent key's own consent, over
+ * `agent-enroll:<anchor>:<agentFp>:<name>` — a message of its own, so a consent to join an
+ * identity, or to sign check results, cannot enrol an agent, and a consent given as one agent's
+ * name cannot enrol the key under another.
+ *
+ * What the reader does with it (FORMAT.md section 6.2): an event the key signs is refused when
+ * its `who` is not the anchor that enrolled it, when its `which` is not `name`, or when its kind
+ * changes who may sign or what a key may sign. Any other event it signs is ATTESTED: its agent is
+ * the one the identity enrolled under that name.
+ */
+export interface AgentEnrolledV1 extends Envelope {
+  readonly kind: 'agent.enrolled';
+  readonly v: 1;
+  /** Subject is the anchor the agent key joins. */
+  readonly payload: {
+    /** The full fingerprint of the key enrolled as an agent. */
+    readonly agentFp: string;
+    /** The agent's name — what every fact the key signs must carry as its `which`. */
+    readonly name: string;
+    /** `agentFp`'s hex Ed25519 signature over `agent-enroll:<anchor>:<agentFp>:<name>`. */
+    readonly reverseSig: string;
+  };
+}
+
+/**
+ * AN AGENT KEY WAS RETIRED: from this point the key is out of its identity, and it never signs
+ * again.
+ *
+ * Only the identity that enrolled the key retires it, by a key of its own that is not an agent
+ * key — so a leaked agent key cannot retire its siblings, nor retire itself out of the record's
+ * sight. `who == subject ==` that anchor; `reason` says why. The agent key's consent is not asked.
+ *
+ * Like a revocation it takes effect only when it is itself signature-covered: from then on an
+ * event of any kind the key signs is refused, and so is an `agent.enrolled` or a
+ * `checker.enrolled` naming it. What the key signed before stays authentic.
+ */
+export interface AgentRetiredV1 extends Envelope {
+  readonly kind: 'agent.retired';
+  readonly v: 1;
+  /** Subject is the anchor that enrolled the agent key. */
+  readonly payload: {
+    /** The full fingerprint of the agent key being retired. */
+    readonly agentFp: string;
+    /** Why it is being retired. */
+    readonly reason: string;
+  };
+}
+
+/**
  * A RULE'S CHECK PASSED at one commit: the command declared for it ran there and exited 0.
  *
  * Signed by a key enrolled as a checker (see {@link CheckerEnrolledV1}), under that key's own
@@ -1242,7 +1301,9 @@ export type CatalogEvent =
   | AccountLinkedV1
   | BackupDeclaredV1
   | StackAdoptedV1
-  | StackRemovedV1;
+  | StackRemovedV1
+  | AgentEnrolledV1
+  | AgentRetiredV1;
 
 /** The `kind` discriminators present in the catalog. */
 export type EventKind = CatalogEvent['kind'];
@@ -1284,4 +1345,6 @@ export const LATEST_VERSION: { readonly [K in EventKind]: number } = {
   'backup.declared': 1,
   'stack.adopted': 1,
   'stack.removed': 1,
+  'agent.enrolled': 1,
+  'agent.retired': 1,
 };

@@ -31,9 +31,11 @@ import {
 import { recordDecision, supersedeDecision } from '../workflow/decision-operations.js';
 import {
   declareBackup,
+  enrollAgent,
   enrollKey,
   foundIdentity,
   linkAccount,
+  retireAgent,
   revokeKey,
 } from '../workflow/identity-operations.js';
 import { createTask, transitionTask, type WriteContext } from '../workflow/operations.js';
@@ -277,6 +279,19 @@ const DRIVERS: { readonly [K in EventKind]: Driver } = {
 
   // A fingerprint, an identifier like an enrolment's: nothing a caller types reaches it.
   'backup.declared': (ctx) => declareBackup(ctx, { backupFp: 'a'.repeat(64) }),
+
+  // The name is the caller's NAME, which every fact the agent key signs carries as `which`; the
+  // fingerprint and the consent are computed from the key, so they are literals here.
+  'agent.enrolled': (ctx, text) =>
+    enrollAgent(ctx, {
+      agentFp: 'a'.repeat(64),
+      name: text('payload.name'),
+      reverseSig: 'b'.repeat(128),
+    }),
+
+  // The key is an identifier; the reason is the one field a person writes.
+  'agent.retired': (ctx, text) =>
+    retireAgent(ctx, { agentFp: 'a'.repeat(64), reason: text('payload.reason') }),
 
   // The version is the author's label and the one caller's string the door is owed; the name,
   // the digest and the scope are closed forms the operation proves, so they are literals here

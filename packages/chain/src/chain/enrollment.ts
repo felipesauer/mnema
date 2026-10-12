@@ -78,7 +78,11 @@
  * or an event's mere absence from `issues`.
  */
 
-import { checkerEnrollmentMessage, enrollmentMessage } from '../events/build.js';
+import {
+  agentEnrollmentMessage,
+  checkerEnrollmentMessage,
+  enrollmentMessage,
+} from '../events/build.js';
 import type { CatalogEvent } from '../events/catalog.js';
 import { oneLine } from '../one-line.js';
 import { causalOrder } from './causal-order.js';
@@ -112,6 +116,13 @@ export interface IdentityResolution {
    */
   readonly retiredCheckers: ReadonlyMap<string, RetiredChecker>;
   /**
+   * Every agent key a signature-covered `agent.retired` took out of the role, by fingerprint: who
+   * retired it, where, and how many facts it signed BEFORE — facts the fold accepted, because the
+   * key held the role when it signed, and which the census names for the reason it names a
+   * checker's results: "before" is placed by the `at` the key itself wrote.
+   */
+  readonly retiredAgents: ReadonlyMap<string, RetiredAgent>;
+  /**
    * The keys a signature-covered `backup.declared` says are an identity's backup, each with that
    * identity (FORMAT.md section 6.5). A declaration is about how a key with no tail is SAID, so it
    * is kept here for the census and decides nothing about which events are authentic; the census
@@ -120,6 +131,31 @@ export interface IdentityResolution {
   readonly backups: ReadonlyMap<string, string>;
   /** What the order made of the citations the record carries. */
   readonly citations: CitationsRead;
+  /**
+   * Who the accepted facts name as their agent (FORMAT.md section 6.2, "What a reader learns from
+   * it") — informational, for the census: nothing here makes an event more or less authentic.
+   */
+  readonly agents: AgentsNamed;
+}
+
+/** The agents the accepted facts of a record name, and on whose word. */
+export interface AgentsNamed {
+  /**
+   * Every agent key that signed at least one accepted fact, in the order the fold met its first:
+   * its agent is ATTESTED — the key was enrolled as `name` by `anchor`, and every fact it signed
+   * carries `name` as its `which`.
+   */
+  readonly attested: readonly {
+    readonly agentFp: string;
+    readonly anchor: string;
+    readonly name: string;
+    readonly events: number;
+  }[];
+  /**
+   * Every `which` an accepted fact carries that a key without the agent role signed, in the order
+   * the fold met it: DECLARED — the key that signed stated it, and nothing in the record holds it.
+   */
+  readonly declared: readonly { readonly which: string; readonly events: number }[];
 }
 
 /** A checker key the record retired (FORMAT.md section 6.2). */
@@ -131,6 +167,17 @@ export interface RetiredChecker {
   readonly seq: number;
   /** How many `check.passed`/`check.failed` it signed that the fold accepted before it. */
   readonly resultsBefore: number;
+}
+
+/** An agent key the record retired (FORMAT.md section 6.2). */
+export interface RetiredAgent {
+  /** The identity that retired it. */
+  readonly by: string;
+  /** Where the retirement sits. */
+  readonly tail: string;
+  readonly seq: number;
+  /** How many facts it signed that the fold accepted before the retirement. */
+  readonly eventsBefore: number;
 }
 
 /**
@@ -207,7 +254,7 @@ export function resolveIdentity(
   // enrollment, a benign copy-key second install).
   const coveredRevoked = new Set<string>();
   const restoreKey = (anchor: string, fp: string): string => `${anchor}|${fp}`;
-  const addKeyGated = (anchor: string, fp: string, tail: string, seq: number): void => {
+  const addKeyGated = (anchor: string, fp: string, tail: string, seq: number): boolean => {
     if (coveredRevoked.has(restoreKey(anchor, fp))) {
       if (!isCheckpointed(tail, seq)) {
         // Residual re-add of a covered-revoked key: ignored, stays residual.
@@ -216,12 +263,13 @@ export function resolveIdentity(
           seq,
           detail: `re-adds ${oneLine(fp)} revoked under signature coverage without being checkpointed itself`,
         });
-        return;
+        return false;
       }
       // A signed re-enrollment legitimately supersedes the covered revoke.
       coveredRevoked.delete(restoreKey(anchor, fp));
     }
     keysOf(anchor).add(fp);
+    return true;
   };
 
   // The keys enrolled as CHECKERS at this point: they sign check results and nothing else.
@@ -234,10 +282,20 @@ export function resolveIdentity(
   const retired = new Map<string, RetiredChecker>();
   // The keys a covered `backup.declared` names, with the identity that declared them.
   const backups = new Map<string, string>();
+  // The keys enrolled as AGENTS, with the anchor that enrolled each and the name it was enrolled
+  // under. A key keeps the role from its `agent.enrolled` on — a `key.revoked` takes it out of the
+  // set like any key, and the role stays with it.
+  const agents = new Map<string, { readonly anchor: string; readonly name: string }>();
+  // The agent keys a signature-covered `agent.retired` took out: they sign nothing from then on.
+  const retiredAgents = new Map<string, RetiredAgent>();
+  // What the census says of the agents accepted facts name: per agent key, per declared `which`.
+  const attested = new Map<string, number>();
+  const declared = new Map<string, number>();
 
   for (const { tail, entry } of order) {
     const event = entry.event;
     const seq = entry.link.seq;
+    const before = issues.length;
     // The role, both ways. A checker key that signs anything but a check result is refused
     // before the kind is even looked at — its own founding, an enrolment, a decision — so a
     // leaked runner secret can say a check passed and nothing more.
@@ -250,11 +308,48 @@ export function resolveIdentity(
       });
       continue;
     }
+    if (retiredAgents.has(event.signerFp)) {
+      issues.push({
+        tail,
+        seq,
+        detail: `${oneLine(event.kind)} is signed by ${oneLine(event.signerFp)}, an agent key retired at this point, which signs nothing`,
+      });
+      continue;
+    }
     if (!isCheckResult && checkers.has(event.signerFp)) {
       issues.push({
         tail,
         seq,
         detail: `${oneLine(event.kind)} is signed by ${oneLine(event.signerFp)}, a checker key, which signs check results only`,
+      });
+      continue;
+    }
+    // The agent's role: a member of the identity that enrolled it, narrowed three ways and judged
+    // before the kind's own conditions. Its facts speak for that identity alone, under the name it
+    // was enrolled as — compared byte for byte, both being canonical — and never change who may
+    // sign or what a key may sign.
+    const role = agents.get(event.signerFp);
+    if (role !== undefined && event.who !== role.anchor) {
+      issues.push({
+        tail,
+        seq,
+        detail: `${oneLine(event.kind)} is signed by ${oneLine(event.signerFp)}, an agent key, for an identity other than the one that enrolled it`,
+      });
+      continue;
+    }
+    if (role !== undefined && event.which !== role.name) {
+      issues.push({
+        tail,
+        seq,
+        detail: `${oneLine(event.kind)} is signed by ${oneLine(event.signerFp)}, an agent key enrolled as "${oneLine(role.name)}", and its which does not name that agent`,
+      });
+      continue;
+    }
+    if (role !== undefined && CHANGES_WHO_MAY_SIGN.has(event.kind)) {
+      issues.push({
+        tail,
+        seq,
+        detail: `${oneLine(event.kind)} is signed by ${oneLine(event.signerFp)}, an agent key, which signs no change to who may sign or what a key may sign`,
       });
       continue;
     }
@@ -315,6 +410,105 @@ export function resolveIdentity(
           break;
         }
         addKeyGated(anchor, newFp, tail, seq);
+        break;
+      }
+      case 'agent.enrolled': {
+        // A member (`signerFp`, valid for the anchor now and not itself an agent key — the role
+        // clause above refused that already) makes a key an agent of its own identity, under a
+        // name, and the key consents to exactly that over `agent-enroll:<anchor>:<agentFp>:<name>`.
+        const anchor = event.subject;
+        const { agentFp, name, reverseSig } = event.payload;
+        if (event.who !== anchor) {
+          issues.push({ tail, seq, detail: 'agent.enrolled who is not the anchor it enrols into' });
+          break;
+        }
+        if (!keysOf(anchor).has(event.signerFp)) {
+          issues.push({
+            tail,
+            seq,
+            detail: 'agent.enrolled is signed by a key not valid for the anchor at this point',
+          });
+          break;
+        }
+        // `trim` removes exactly the set section 6.2 writes out, and NFC is section 4's already.
+        if (name !== name.trim()) {
+          issues.push({
+            tail,
+            seq,
+            detail:
+              'agent.enrolled name begins or ends with a character of the set section 6.2 writes out',
+          });
+          break;
+        }
+        if (name === event.who) {
+          issues.push({ tail, seq, detail: 'agent.enrolled name is its who' });
+          break;
+        }
+        if (
+          inAnyIdentity(validKeys, agentFp) ||
+          checkers.has(agentFp) ||
+          agents.has(agentFp) ||
+          retired.has(agentFp) ||
+          retiredAgents.has(agentFp)
+        ) {
+          issues.push({
+            tail,
+            seq,
+            detail:
+              'agent.enrolled names a key that is already in an identity, or holds a role, at this point',
+          });
+          break;
+        }
+        if (!consentOk(keys, agentEnrollmentMessage(anchor, agentFp, name), agentFp, reverseSig)) {
+          issues.push({
+            tail,
+            seq,
+            detail:
+              'agent.enrolled reverse signature does not prove the agent consented to this name',
+          });
+          break;
+        }
+        if (!addKeyGated(anchor, agentFp, tail, seq)) break;
+        agents.set(agentFp, { anchor, name });
+        break;
+      }
+      case 'agent.retired': {
+        // Only the identity that enrolled the key retires it, by a key of its own that is not an
+        // agent key (the role clause above refused that already). The agent key is not asked.
+        const anchor = event.subject;
+        const { agentFp } = event.payload;
+        if (event.who !== anchor) {
+          issues.push({ tail, seq, detail: 'agent.retired who is not the anchor it retires from' });
+          break;
+        }
+        if (!keysOf(anchor).has(event.signerFp)) {
+          issues.push({
+            tail,
+            seq,
+            detail: 'agent.retired is signed by a key not valid for the anchor at this point',
+          });
+          break;
+        }
+        if (agents.get(agentFp)?.anchor !== anchor) {
+          issues.push({
+            tail,
+            seq,
+            detail: 'agent.retired names a key that is not an agent key of its identity',
+          });
+          break;
+        }
+        // It refuses the key's LATER facts, which are other, possibly checkpointed, events — so,
+        // like a revocation, it takes effect only when signature-covered.
+        if (!isCheckpointed(tail, seq)) break;
+        keysOf(anchor).delete(agentFp);
+        if (!retiredAgents.has(agentFp)) {
+          retiredAgents.set(agentFp, {
+            by: event.who,
+            tail,
+            seq,
+            eventsBefore: attested.get(agentFp) ?? 0,
+          });
+        }
         break;
       }
       case 'key.revoked': {
@@ -424,6 +618,14 @@ export function resolveIdentity(
           });
           break;
         }
+        if (retiredAgents.has(checkerFp)) {
+          issues.push({
+            tail,
+            seq,
+            detail: `checker.enrolled names ${oneLine(checkerFp)}, an agent key retired at this point, which is never enrolled again`,
+          });
+          break;
+        }
         checkers.add(checkerFp);
         break;
       }
@@ -497,9 +699,54 @@ export function resolveIdentity(
         }
       }
     }
+    // Only a fact the fold accepted names its agent; a refused one is an issue already.
+    if (issues.length !== before) continue;
+    if (role !== undefined) {
+      attested.set(event.signerFp, (attested.get(event.signerFp) ?? 0) + 1);
+    } else if (event.which !== undefined) {
+      declared.set(event.which, (declared.get(event.which) ?? 0) + 1);
+    }
   }
 
-  return { issues, members: validKeys, retiredCheckers: retired, backups, citations };
+  const named: AgentsNamed = {
+    attested: [...attested].flatMap(([agentFp, events]) => {
+      const role = agents.get(agentFp);
+      return role === undefined ? [] : [{ agentFp, anchor: role.anchor, name: role.name, events }];
+    }),
+    declared: [...declared].map(([which, events]) => ({ which, events })),
+  };
+  return {
+    issues,
+    members: validKeys,
+    retiredCheckers: retired,
+    retiredAgents,
+    backups,
+    citations,
+    agents: named,
+  };
+}
+
+/**
+ * The kinds an agent key never signs (FORMAT.md section 6.2): every fact that changes who may sign
+ * or what a key may sign. `check.passed` and `check.failed` are not here because they already need
+ * a checker key.
+ */
+const CHANGES_WHO_MAY_SIGN: ReadonlySet<string> = new Set([
+  'identity.founded',
+  'key.enrolled',
+  'key.revoked',
+  'backup.declared',
+  'checker.enrolled',
+  'checker.retired',
+  'agent.enrolled',
+  'agent.retired',
+  'account.linked',
+]);
+
+/** Whether `fp` is in the set of any identity at this point of the fold. */
+function inAnyIdentity(validKeys: ReadonlyMap<string, ReadonlySet<string>>, fp: string): boolean {
+  for (const set of validKeys.values()) if (set.has(fp)) return true;
+  return false;
 }
 
 /**

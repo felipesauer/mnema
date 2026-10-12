@@ -172,9 +172,10 @@ const CODE_SRC = join(HERE, 'src');
  * 41 since a checker key can be retired: `retireChecker`. 43 since an identity declares its
  * backup: `declareBackup`, and `enrollBackup`, which `init` enrolls and declares it with. 44
  * since a link can be retracted: `retractLink`. 46 since a stack can be adopted and removed:
- * `adoptStack` and `removeStack`.
+ * `adoptStack` and `removeStack`. 48 since an identity can enrol and retire an agent key:
+ * `enrollAgent` and `retireAgent`.
  */
-const CORE_OPERATIONS_THAT_APPEND = 46;
+const CORE_OPERATIONS_THAT_APPEND = 48;
 
 /** The stack the cases install. */
 const HELLO_STACK = fileURLToPath(new URL('../../stacks/fixtures/hello-stack', import.meta.url));

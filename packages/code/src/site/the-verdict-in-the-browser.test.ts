@@ -28,6 +28,7 @@ import vm from 'node:vm';
 import { verify } from '@mnema/chain';
 import type { DiscoveryEnv } from '@mnema/core';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
+import { anAgentThatSignedAndWasRetired } from '../../tests/support/a-tail-from-another-machine.js';
 import { runDecision } from '../commands/decision.js';
 import { runDecisionTransition } from '../commands/decision-transition.js';
 import { runInit } from '../commands/init.js';
@@ -169,6 +170,27 @@ describe('the verdict a page computes', () => {
     // What is listed under an honest verdict is the census, said as a note and not as a break.
     expect(shown.lines).toHaveLength(cli.notes);
     expect(shown.lines.every((line) => line?.startsWith('note: '))).toBe(true);
+  });
+
+  it('says a retired agent key as a note, with the clause mnema verify gives it', () => {
+    honestRecord();
+    anAgentThatSignedAndWasRetired(repo, env, 2);
+    expect(runSite({ cwd: repo, env }, { out: join(sandbox, 'retired') }).ok).toBe(true);
+    const page = readFileSync(join(sandbox, 'retired', 'index.html'), 'utf-8');
+    const shown = runInAPage(page, scriptOf(page));
+    const cli = theCliSays();
+    expect(cli.ok).toBe(true);
+    expect(cli.summary).toContain(
+      '1 retired agent key(s) whose earlier facts are no longer vouched for',
+    );
+    expect(shown.summary).toBe(cli.summary);
+    expect(shown.state).toBe('verified');
+    expect(shown.lines.filter((line) => line?.includes('signed by the agent key'))).toEqual([
+      expect.stringMatching(
+        /^note: 2 event\(s\) signed by the agent key \S+ before \S+ retired it/,
+      ),
+    ]);
+    expect(shown.lines).toHaveLength(cli.notes);
   });
 
   it('breaks where mnema verify breaks when an event is edited, and says the same of it', () => {

@@ -820,6 +820,86 @@ const CLASSIFIED: Readonly<Record<string, { verdict: Verdict; why: string }>> = 
       verdict: 'collapsed',
       why: 'the checker key a stored enrolment names; the catalog requires a non-empty string and nothing more',
     },
+  '@mnema/chain chain/enrollment.ts «{} is signed by {}, an agent key retired at this point, which signs nothing» oneLine(event.kind) #1':
+    {
+      verdict: 'collapsed',
+      why: 'the kind a stored event claims, read before the role is asked; the catalog names it and nothing here has narrowed it yet',
+    },
+  '@mnema/chain chain/enrollment.ts «{} is signed by {}, an agent key retired at this point, which signs nothing» oneLine(event.signerFp) #1':
+    {
+      verdict: 'collapsed',
+      why: 'the signer a stored event claims; the catalog requires a non-empty string and nothing more',
+    },
+  '@mnema/chain chain/enrollment.ts «{} is signed by {}, an agent key, for an identity other than the one that enrolled it» oneLine(event.kind) #1':
+    {
+      verdict: 'collapsed',
+      why: 'the kind a stored event claims, read before its own conditions are asked',
+    },
+  '@mnema/chain chain/enrollment.ts «{} is signed by {}, an agent key, for an identity other than the one that enrolled it» oneLine(event.signerFp) #1':
+    {
+      verdict: 'collapsed',
+      why: 'the signer a stored event claims; the catalog requires a non-empty string and nothing more',
+    },
+  '@mnema/chain chain/enrollment.ts «{} is signed by {}, an agent key enrolled as "{}", and its which does not name that agent» oneLine(event.kind) #1':
+    {
+      verdict: 'collapsed',
+      why: 'the kind a stored event claims, read before its own conditions are asked',
+    },
+  '@mnema/chain chain/enrollment.ts «{} is signed by {}, an agent key enrolled as "{}", and its which does not name that agent» oneLine(event.signerFp) #1':
+    {
+      verdict: 'collapsed',
+      why: 'the signer a stored event claims; the catalog requires a non-empty string and nothing more',
+    },
+  '@mnema/chain chain/enrollment.ts «{} is signed by {}, an agent key enrolled as "{}", and its which does not name that agent» oneLine(role.name) #1':
+    {
+      verdict: 'collapsed',
+      why: 'the name a stored `agent.enrolled` gave the key; the fold refused it with a leading or trailing space, and nothing else',
+    },
+  '@mnema/chain chain/enrollment.ts «{} is signed by {}, an agent key, which signs no change to who may sign or what a key may sign» oneLine(event.kind) #1':
+    {
+      verdict: 'collapsed',
+      why: 'the kind a stored event claims, read before its own conditions are asked',
+    },
+  '@mnema/chain chain/enrollment.ts «{} is signed by {}, an agent key, which signs no change to who may sign or what a key may sign» oneLine(event.signerFp) #1':
+    {
+      verdict: 'collapsed',
+      why: 'the signer a stored event claims; the catalog requires a non-empty string and nothing more',
+    },
+  '@mnema/chain chain/enrollment.ts «checker.enrolled names {}, an agent key retired at this point, which is never enrolled again» oneLine(checkerFp) #1':
+    {
+      verdict: 'collapsed',
+      why: 'the checker key a stored enrolment names; the catalog requires a non-empty string and nothing more',
+    },
+  '@mnema/chain chain/verify.ts «{} event(s) attested by an agent key enrolled as "{}" ({}, for {})» agent.events #1':
+    {
+      verdict: 'minted',
+      why: 'a count the fold kept, of facts it accepted from the agent key',
+    },
+  '@mnema/chain chain/verify.ts «{} event(s) attested by an agent key enrolled as "{}" ({}, for {})» oneLine(agent.name) #1':
+    {
+      verdict: 'collapsed',
+      why: 'the name a stored `agent.enrolled` gave the key',
+    },
+  '@mnema/chain chain/verify.ts «{} event(s) attested by an agent key enrolled as "{}" ({}, for {})» oneLine(agent.agentFp.slice(0, 12)) #1':
+    {
+      verdict: 'collapsed',
+      why: 'the head of the agent key a stored `agent.enrolled` names',
+    },
+  '@mnema/chain chain/verify.ts «{} event(s) attested by an agent key enrolled as "{}" ({}, for {})» oneLine(agent.anchor.slice(0, 17)) #1':
+    {
+      verdict: 'collapsed',
+      why: 'the head of the identity a stored `agent.enrolled` names as its subject',
+    },
+  '@mnema/chain chain/verify.ts «{} event(s) name the agent "{}" — declared by the key that signed, not attested» named.events #1':
+    {
+      verdict: 'minted',
+      why: 'a count the fold kept, of accepted facts that carry the `which`',
+    },
+  '@mnema/chain chain/verify.ts «{} event(s) name the agent "{}" — declared by the key that signed, not attested» oneLine(named.which) #1':
+    {
+      verdict: 'collapsed',
+      why: 'the `which` stored events carry; the catalog requires a non-empty string and nothing more',
+    },
   '@mnema/chain chain/verify.ts «{} check result(s) signed by {} before » retirement.resultsBefore #1':
     {
       verdict: 'minted',
@@ -834,6 +914,21 @@ const CLASSIFIED: Readonly<Record<string, { verdict: Verdict; why: string }>> = 
     {
       verdict: 'collapsed',
       why: 'the identity a stored retirement names as its signer',
+    },
+  '@mnema/chain chain/verify.ts «{} retired it — authentic, since the key held the role when it » oneLine(retirement.by) #2':
+    {
+      verdict: 'collapsed',
+      why: 'the identity a stored agent retirement names as its signer, which is the anchor it retires from',
+    },
+  '@mnema/chain chain/verify.ts «{} event(s) signed by the agent key {} before » retirement.eventsBefore #1':
+    {
+      verdict: 'minted',
+      why: 'a count the fold kept, of facts it accepted from the key',
+    },
+  '@mnema/chain chain/verify.ts «{} event(s) signed by the agent key {} before » oneLine(fingerprint) #1':
+    {
+      verdict: 'collapsed',
+      why: 'the agent key a stored retirement names',
     },
   '@mnema/chain chain/verify.ts «the event at seq {} cites {}…, an entry this record does » seq #1':
     {
@@ -1670,9 +1765,13 @@ const NOT_A_SENTENCE: Readonly<Record<string, string>> = {
     'another clause of that same table, and a count on the same terms',
   '@mnema/chain chain/verify.ts «{} retired checker key(s) whose earlier check results are no longer vouched for (see census — informational, not a break)» count':
     'another clause of that same table, and a count on the same terms',
+  '@mnema/chain chain/verify.ts «{} retired agent key(s) whose earlier facts are no longer vouched for (see census — informational, not a break)» count':
+    'another clause of that same table, and a count on the same terms',
   '@mnema/chain chain/verify.ts «{} citation(s) of an entry this record does not hold, ignored in the order (see census — informational, not a break)» count':
     'another clause of that same table, and a count on the same terms',
   '@mnema/chain chain/verify.ts «{} tail(s) whose clock ran behind what it had read (see census — informational, not a break)» count':
+    'another clause of that same table, and a count on the same terms',
+  '@mnema/chain chain/verify.ts «{} agent key(s) attesting the agent their facts name (see census — informational, not a break)» count':
     'another clause of that same table, and a count on the same terms',
   '@mnema/chain chain/verify.ts «{}/» layout.root':
     'the prefix `withinChain` STRIPS — what makes the locus a path inside the chain rather ' +
@@ -1699,8 +1798,8 @@ describe('every value the domain puts in a sentence is classified', () => {
     // are equal. The scale is stated, and so is what the HANDOFF said — twenty-three
     // sites, twelve in `core` and eleven in `chain` — because it counted sentences
     // written at a `message:` or a `detail:` directly, and a value is not a sentence.
-    expect(SITES.length).toBe(217);
-    expect(FOUND[0]?.sites.length).toBe(74);
+    expect(SITES.length).toBe(236);
+    expect(FOUND[0]?.sites.length).toBe(93);
     expect(FOUND[1]?.sites.length).toBe(143);
     expect(FOUND.flatMap((layer) => layer.wording).length).toBeGreaterThan(15);
   });
@@ -1751,11 +1850,11 @@ describe('every value the domain puts in a sentence is classified', () => {
     // No arm of the case above may be empty, or that much of it is vacuous.
     const verdicts = Object.values(CLASSIFIED).map((said) => said.verdict);
     const count = (verdict: Verdict): number => verdicts.filter((said) => said === verdict).length;
-    expect(count('collapsed')).toBe(137);
-    expect(count('minted')).toBe(57);
+    expect(count('collapsed')).toBe(153);
+    expect(count('minted')).toBe(60);
     expect(count('composed')).toBe(23);
     expect(SITES.filter((site) => new RegExp(`\\b${DOOR}\\b`).test(site.expression))).toHaveLength(
-      137,
+      153,
     );
   });
 
