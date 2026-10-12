@@ -219,7 +219,7 @@ export const PAGES: Readonly<Record<string, number>> = {
   'docs/how-it-works.md': 1,
   'docs/site.md': 1,
   // 65 since the package page's blocks on stacks and on `mnema report`.
-  'packages/code/README.md': 65,
+  'packages/code/README.md': 68,
   'plugin/README.md': 6,
   'plugin/captures/antigravity-cli-script.md': 4,
   'plugin/captures/cursor-ide-script.md': 4,
