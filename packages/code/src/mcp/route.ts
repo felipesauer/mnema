@@ -202,7 +202,9 @@ export function pickProject(session: Session, name: string): Picked {
     return { ok: false, code: 'UNKNOWN_PROJECT', message: noSuchProject(name, projects) };
   }
 
-  const matches = projects.filter((project) => basename(project.dir) === name);
+  // Normalized, as `nameOfProject` does: a model echoes a name in NFC whatever the disk holds.
+  const wanted = name.normalize('NFC');
+  const matches = projects.filter((project) => basename(project.dir).normalize('NFC') === wanted);
   const only = matches[0];
   if (only !== undefined && matches.length === 1) return { ok: true, target: only };
   if (matches.length > 1) {

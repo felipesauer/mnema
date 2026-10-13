@@ -61,11 +61,11 @@ tag, with its own changelog.
   given is refused as `AMBIGUOUS_PROJECT`, not resolved to the wrong one. The record stays as it was: the signed
   `event` of `audit_timeline` is served byte for byte, and the `path` of `governing_rules` and what `bootstrap`
   says of the workspace still give the absolute path. Two directories whose names differ only in Unicode
-  normalization count as sharing a name, and answer by path. The budget golden measures eight answers, with the
+  normalization count as sharing a name: they answer by path, and the bare name of either is refused as ambiguous. The budget golden measures eight answers, with the
   fixture's path scrubbed to the 13 bytes of `/work/project`: the largest, `audit_timeline`, goes from 2,518 bytes
   (1,066 tokens) to 2,482 (1,058) and a `search` from 1,305 (464) to 1,251 (452), in o200k, a relative measure, not
   what a model is billed. The gain grows with the length of the path: it is the path minus the name, once per
-  `project`. Estimated, not measured on this change, with a 50-byte path it is about 62 bytes per occurrence.
+  `project`.
 
 ### Fixed
 

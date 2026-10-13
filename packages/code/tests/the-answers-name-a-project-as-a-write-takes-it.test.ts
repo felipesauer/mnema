@@ -104,6 +104,30 @@ describe('nameOfProject', () => {
     closeSession(alone);
   });
 
+  it('resolves a lone NFD directory by its name in either normalization form', () => {
+    const nfd = makeProject('lone-nfd', 'cafe\u0301');
+    const session = openOn(nfd);
+    expect(nameOfProject(session, nfd)).toBe('cafe\u0301');
+    for (const said of ['cafe\u0301', 'caf\u00e9']) {
+      const picked = pickProject(session, said);
+      expect(picked.ok && picked.target.dir).toBe(nfd);
+    }
+    closeSession(session);
+  });
+
+  it('refuses the bare name of two directories that differ only in normalization as ambiguous', () => {
+    const nfc = makeProject('pair-nfc', 'caf\u00e9');
+    const nfd = makeProject('pair-nfd', 'cafe\u0301');
+    const session = openOn(nfc, nfd);
+    expect(nameOfProject(session, nfc)).toBe(nfc);
+    expect(nameOfProject(session, nfd)).toBe(nfd);
+    for (const said of ['cafe\u0301', 'caf\u00e9']) {
+      const picked = pickProject(session, said);
+      expect(picked.ok ? 'ok' : picked.code).toBe('AMBIGUOUS_PROJECT');
+    }
+    closeSession(session);
+  });
+
   it('round-trips: picking what an answer would say returns the project, in every workspace', () => {
     const workspaces = [
       [alpha],
