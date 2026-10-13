@@ -32,10 +32,53 @@ export function registerKey(program: Command, wiring: Wiring): Declared {
   // is the moment a person would think the copy has done its job and delete it.
   key
     .command('restore')
-    .description("restore this machine's identity from a copy of a key's private half")
-    .argument('<file>', 'the PEM file holding the private half (your backup copy)')
-    .action(async (file: string) => {
-      const { runKeyRestore } = await import('../commands/key-restore.js');
+    .description(
+      "restore a key from a copy of its private half: this machine's identity, or an agent's",
+    )
+    .argument(
+      '<file>',
+      'the PEM file holding the private half (your backup copy, or the agent key)',
+    )
+    .option(
+      '--agent <name>',
+      "install the key of the AGENT <name> in that agent's folder of this machine's data directory, where a host " +
+        'started with `--agent-key <name>` signs with it, as does a server with MNEMA_AGENT_KEY=<name> in its ' +
+        'environment. The record of the project must ' +
+        'enrol the key as that agent under that name; nothing is written to the record or beside your key. ' +
+        'For a machine that begins every job empty, such as a CI runner',
+    )
+    .action(async (file: string, opts: { agent?: string }) => {
+      const { runAgentRestore, runKeyRestore } = await import('../commands/key-restore.js');
+      if (opts.agent !== undefined) {
+        const agent = runAgentRestore(here(), { name: opts.agent, privateKeyPath: file });
+        if (agent.ok) {
+          io.out(`Restored the key of the agent ${agent.name}: ${agent.fingerprint}`);
+          io.out(
+            render(
+              fact(
+                onOneLine`it signs for ${agent.anchor} as "${agent.name}" where this project's record enrols it`,
+              ),
+            ),
+          );
+          io.out(
+            render(fact(onOneLine`private half installed at ${agent.installedAt}, in the clear`)),
+          );
+          io.out(render(fact(onOneLine`Your copy at ${file} was read, not moved.`)));
+          io.out(
+            render(
+              fact(
+                onOneLine`a server started with --agent-key ${agent.name}, or with MNEMA_AGENT_KEY=${agent.name} in its environment, or a hook started with --agent-key ${agent.name}, signs with it`,
+              ),
+            ),
+          );
+          return;
+        }
+        reportRefusal(wiring, agent, {
+          NO_PROJECT:
+            'No mnema project here. Run `mnema key restore --agent <name> <file>` inside the project whose record enrols the agent.',
+        });
+        return;
+      }
       const result = runKeyRestore(here(), { privateKeyPath: file });
       if (result.ok) {
         io.out(`Restored key ${result.fingerprint}`);
@@ -131,7 +174,7 @@ export function registerKey(program: Command, wiring: Wiring): Declared {
           render(
             fact(
               result.source === 'file'
-                ? onOneLine`its key is the file you named, ${opts.key ?? ''}, which this did not install: it stays where you keep it, and a host signs with it only once it is put at ${result.keyFile}`
+                ? onOneLine`its key is the file you named, ${opts.key ?? ''}, which this did not install: it stays where you keep it, and a host signs with it only once it is put at ${result.keyFile} — \`mnema key restore --agent ${result.name} <file>\` does that where the agent runs`
                 : onOneLine`its key lives in ${result.keyRoot}, in the clear: the agent's host signs with it and has no terminal to ask a passphrase at`,
             ),
           ),

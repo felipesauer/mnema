@@ -1843,7 +1843,7 @@ describe('the verbs say, tree by tree, what they wrote, and refuse what they can
 
     expect(said).not.toContain('its key lives in');
     expect(said).toContain(
-      `its key is the file you named, ${other}, which this did not install: it stays where you keep it, and a host signs with it only once it is put at ${join(home, '.mnema', 'agents', 'claude', 'keys', `${basename(other, '.key')}.key`)}`,
+      `its key is the file you named, ${other}, which this did not install: it stays where you keep it, and a host signs with it only once it is put at ${join(home, '.mnema', 'agents', 'claude', 'keys', `${basename(other, '.key')}.key`)} — \`mnema key restore --agent claude <file>\` does that where the agent runs`,
     );
     expect(existsSync(join(home, '.mnema', 'agents', 'claude'))).toBe(false);
   });

@@ -720,7 +720,7 @@ complete -c mnema -f -n '__mnema_at "commit-hook suggest"' -s V -l version
 complete -c mnema -f -n '__mnema_at "commit-hook suggest"' -l color -x -a 'auto always never'
 
 # mnema key
-complete -c mnema -f -n '__mnema_at "key"' -a 'restore' -d 'restore this machine\'s identity from a copy of a key\'s private half'
+complete -c mnema -f -n '__mnema_at "key"' -a 'restore' -d 'restore a key from a copy of its private half: this machine\'s identity, or an agent\'s'
 complete -c mnema -f -n '__mnema_at "key"' -a 'request' -d 'ask to bring this machine into an identity (run this on the joining machine)'
 complete -c mnema -f -n '__mnema_at "key"' -a 'enroll' -d 'vouch for a requesting key so it joins this identity (run this on a member)'
 complete -c mnema -f -n '__mnema_at "key"' -a 'github' -d 'record that this identity is a GitHub account, so `mnema verify --against-github` can compare the keys that signed with the keys that account publishes'
@@ -734,6 +734,7 @@ complete -c mnema -f -n '__mnema_at "key"' -s V -l version
 complete -c mnema -f -n '__mnema_at "key"' -l color -x -a 'auto always never'
 
 # mnema key restore
+complete -c mnema -f -n '__mnema_at "key restore"' -l agent -r
 complete -c mnema -f -n '__mnema_at "key restore"' -s h -l help
 complete -c mnema -f -n '__mnema_at "key restore"' -s V -l version
 complete -c mnema -f -n '__mnema_at "key restore"' -l color -x -a 'auto always never'

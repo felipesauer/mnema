@@ -127,41 +127,116 @@ date a result before its own retirement, so the record no longer vouches for the
 
 ## An agent in CI
 
-A job in which an agent works can end by countersigning what the agent recorded, so that the bundle
-names the run that countersigned the checkpoint: not the run the record was written in, and not the
-agent inside it. The job needs `id-token: write`, and the repository must be public: the act refuses
-a private one, because the repository, the workflow, the commit and the run go into Sigstore's
-public log, which does not forget.
+A runner begins every job with nothing, so the key an agent signs with has to arrive from a secret.
+Without one, the first write the job makes mints a key on the spot, and that key founds an identity of
+its own in the project's public record: `mnema verify` exits 0 over it, and the record then holds a
+stranger beside yours. The recipe below puts a key the record already enrols as the agent into the
+agent's folder before the agent works, so what it records is signed as that agent and `verify` counts
+it as attested.
 
+**Once, on your machine.**
+
+1. Make the key outside this machine's data directory, so that no host of yours signs with it:
+   `MNEMA_HOME=<a new directory> mnema key request --agent ci --anchor <your identity>`. The key is the
+   `.key` file under `<that directory>/agents/ci/keys/`. A key of your own making works too:
+   `openssl genpkey -algorithm ed25519 -out ci.pem`, then `mnema key request --agent ci --anchor
+   <your identity> --key ci.pem`; it must be Ed25519 and not protected by a passphrase.
+2. In the project, `mnema key enroll --agent <the line it printed>`, then commit and push the record.
+   The key is not on that machine, so only the committed tree enrols it.
+3. Store the PEM as a secret of an environment of the repository (here `MNEMA_AGENT_KEY_PEM`, in
+   `mnema-agent`), and delete the file and the directory. The environment is what limits which jobs
+   and which branches are handed the secret.
+
+**In each run.**
+
+<!-- BEGIN agent-ci-recipe -->
 ```yaml
 jobs:
   agent:
     runs-on: ubuntu-24.04
+    environment: mnema-agent
     permissions:
       contents: write
       id-token: write
+    env:
+      MNEMA_HOME: ${{ runner.temp }}/mnema
+      MNEMA_AGENT_KEY: ci
     steps:
       - uses: actions/checkout@v7
-      - uses: pnpm/action-setup@v6
-      - uses: actions/setup-node@v7
-        with:
-          node-version: '24'
-          cache: 'pnpm'
-      - run: pnpm install --frozen-lockfile
-      - run: pnpm build
-      # ... the agent works here, recording through the mnema it was handed ...
-      - run: node packages/code/dist/cli.js witness sigstore
-      - run: node packages/code/dist/cli.js verify --against-sigstore
+      # ... install and build, so that `mnema` is on the PATH ...
+      - name: Put the agent's key where the agent runs
+        env:
+          AGENT_PEM: ${{ secrets.MNEMA_AGENT_KEY_PEM }}
+        run: |
+          umask 077
+          trap 'rm -f "$RUNNER_TEMP/agent.pem"' EXIT
+          printf '%s\n' "$AGENT_PEM" > "$RUNNER_TEMP/agent.pem"
+          mnema key restore --agent ci "$RUNNER_TEMP/agent.pem"
+      # ... the agent works here, recording through the `mnema mcp` its host starts ...
 ```
+<!-- END agent-ci-recipe -->
+
+Then, in the same job, once the agent has worked:
+
+```yaml
+      - run: mnema verify
+      - run: mnema witness sigstore
+      - run: mnema verify --against-sigstore
+      - run: git add .mnema && git commit -m "record the agent's run" && git push
+```
+
+`MNEMA_HOME` is under `runner.temp`, outside the checkout, so the key never reaches the `git add`.
+`mnema key restore --agent ci <file>` refuses, before it writes anything, a name that is not an agent
+name, a file that is not an Ed25519 private key or is protected by a passphrase, a key the checkout's
+committed record does not enrol as an agent, one it enrols under another name or has retired, and a
+folder that already holds another key. Otherwise it copies the key to `$MNEMA_HOME/agents/ci/keys/`
+(the `.key` file readable by its owner alone, and its `.pub`) and appends nothing to the record. The
+file it is given is read, not moved or deleted; the step above removes the one it made, and the secret
+itself stays in the environment. A checkout older than the `key enroll` is refused
+(`NOT_A_MEMBER`): pull first. Nothing is checked about which jobs are handed the secret; that is the
+environment's rule.
+
+**What signs in the job, and what does not.**
+
+- The server the host starts (`mnema mcp`) signs with the agent's key when it is given `--agent-key
+  ci` or has `MNEMA_AGENT_KEY=ci` in its environment, and the hook (`mnema before-a-write --host
+  <host> --agent-key ci`) when it is given the flag. Whether a host hands the job's environment to
+  the server it starts is the host's, and has not been measured for any of them: if it does not, put
+  the name in the command the job starts the host with, never in a file of the checkout.
+- The command line does not read `MNEMA_AGENT_KEY`. A write made by hand in the job, such as a
+  decision recorded from a step, signs with the runner's own key, which it mints, and founds an
+  identity in the public record. Write through the server or the hook, not the command line.
+- Only the committed tree counts. The runner has no key of yours, so the project's private tree and
+  the machine's global one cannot enrol the agent there: a write to either is refused
+  (`AGENT_NOT_ENROLLED`) and nothing is signed. `capture_memory` with no scope writes to the private
+  tree, so the agent has to ask for `public`.
+- `mnema verify` over what the job wrote exits 0 and counts the facts as attested to `ci`. Before the
+  first push, your own `mnema verify` names the enrolled key as one without a tail (informational, not
+  a break); the line goes once the job's record is pushed.
+- `mnema check run --key <file>` does not ask that the key be Ed25519, as `key restore --agent` and
+  `key request --agent --key` do.
+
+Every job writes a tail of its own, so two jobs in parallel never fork one. A leaked secret signs, as
+`ci` and for your identity, anything an agent may sign, until the record retires it; it cannot found
+an identity, enrol or retire a key, or link an account. The record says which key signed a fact, not
+which job held it: only the checkpoint `witness sigstore` countersigns names a run. To rotate, run
+the first part again with a new key under the same name, store it as the secret, then retire the old
+one from a machine that writes as a member: `mnema key revoke --agent <old fingerprint> --reason
+"<why>"`, and commit and push. If the secret leaked, retire first. From the retirement on, `verify`
+refuses what the old key signs after it and names, in its census, what it signed before.
 
 Every write seals a checkpoint, so `witness sigstore` countersigns the last one the agent left. The
 bundle lands at `witness/<checkpoint>.sigstore.json` in the record: commit it, or the countersignature
-is lost with the runner. `verify --against-sigstore` then reads it offline and prints the repository,
-the workflow, the commit and the run the certificate names.
+is lost with the runner. The job needs `id-token: write`, and the repository must be public: the act
+refuses a private one, because the repository, the workflow, the commit and the run go into Sigstore's
+public log, which does not forget. `verify --against-sigstore` then reads the bundle offline and prints
+the repository, the workflow, the commit and the run the certificate names.
 
 That is a run, not the agent inside it. The bundle says which run of which workflow, at which
 commit, countersigned the checkpoint; it does not say which agent or model worked in that run, and
-`mnema verify` and its exit are what they were without it.
+`mnema verify` and its exit are what they were without it. Only your own key can link the workflow to
+your identity (`mnema key sigstore <the workflow>`): without that fact, the bundle dates the
+checkpoint and speaks for nobody.
 
 ## How it is built
 

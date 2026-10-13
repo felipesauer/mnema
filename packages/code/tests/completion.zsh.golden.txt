@@ -138,7 +138,7 @@ _mnema_described() {
       'suggest:what the hook calls: append the suggestion to a commit message file' \
       'help:display help for command' ;;
     'key') printf '%s\n' \
-      'restore:restore this machine'\''s identity from a copy of a key'\''s private half' \
+      'restore:restore a key from a copy of its private half: this machine'\''s identity, or an agent'\''s' \
       'request:ask to bring this machine into an identity (run this on the joining machine)' \
       'enroll:vouch for a requesting key so it joins this identity (run this on a member)' \
       'github:record that this identity is a GitHub account, so `mnema verify --against-github` can compare the keys that signed with the keys that account publishes' \
@@ -237,7 +237,7 @@ _mnema_flags() {
     'commit-hook uninstall') echo '-h --help -V --version --color' ;;
     'commit-hook suggest') echo '-h --help -V --version --color' ;;
     'key') echo '-h --help -V --version --color' ;;
-    'key restore') echo '-h --help -V --version --color' ;;
+    'key restore') echo '--agent -h --help -V --version --color' ;;
     'key request') echo '--anchor --key --checker --agent -h --help -V --version --color' ;;
     'key enroll') echo '--checker --agent -h --help -V --version --color' ;;
     'key github') echo '-h --help -V --version --color' ;;
