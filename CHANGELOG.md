@@ -60,6 +60,11 @@ tag, with its own changelog.
   does not enrol it, and the person's key signed: the agent the facts name is declared, not attested. Nothing is said
   without an agent, where the agent signs, in the global tree, or for a `project` that names the session's own
   project, which the opening of the session already spoke of.
+- **A page on signing as an agent inside a sandbox.** [`docs/agent-hosts.md`](docs/agent-hosts.md) gives the three verbs of
+  an agent key in order, says that under one operating-system user it separates nothing the model's own commands can read,
+  and says, from the documentation of Claude Code, Codex and Gemini CLI, what each host's sandbox leaves readable (none
+  denies the data directory by default), the four things Claude Code needs together, and the profile Codex and Gemini CLI
+  ask for. The verbs were run, in a throwaway home directory; no host was started, and VS Code and Cursor are not covered.
 
 ### Changed
 
