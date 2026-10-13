@@ -151,6 +151,18 @@ tag, with its own changelog.
   JavaScript's `trim()`), and both readers refuse that record. `mutate.py` builds it, and the case
   `which` = `who` + U+00A0; the gap registry has a twenty-seventh entry, closed. The product's verdict
   on any record does not move.
+- **The agent key's refusals and census say what holds.** `verify` calls a retired agent key that has no tail
+  "retired" in the census, in each tree, not "enrolled". The refusal of a write for an agent the record does not
+  enrol says why the person's key cannot sign in its place: it is protected and `MNEMA_KEY_PASSPHRASE` is not in the
+  environment, or it is not on this machine. `key revoke` with a protected key says so for the person who runs it
+  (`KEY_IS_PROTECTED`), not with the advice given to an agent's host. `key request --agent --key` names the kind of
+  key it refuses ("an EC key", "an RSA key") and, for a key given by file, the exact file the host signs with once it
+  is put in the agent's folder.
+- **A limit, declared: the role of an agent key belongs to the record that enrols it.** A record that has not heard of
+  an `agent.enrolled` can enrol the same key as an ordinary member, and both readers accept it there. `mnema key
+  request --key <file>` now refuses a file kept in the agents' folder (`AN_AGENT_KEY`); that checks where the file
+  lives, not what it holds, and a copy kept elsewhere is not recognised. `docs/what-it-proves.md` and `FORMAT.md`
+  say it.
 
 ## [0.2.0-beta] - 2026-10-11
 

@@ -30,7 +30,7 @@
 
 import type { KeyObject } from 'node:crypto';
 import { mkdirSync, readdirSync, renameSync } from 'node:fs';
-import { dirname, join, resolve } from 'node:path';
+import { dirname, join, resolve, sep } from 'node:path';
 import { privateKeyPath } from '@mnema/chain';
 import {
   agentKeyRoot,
@@ -96,6 +96,20 @@ export function runKeyRequest(
   const anchor = resolveAnchorInRecord(trees, input.anchor);
   if (!anchor.ok) {
     return { ok: false, reason: 'REFUSED', code: anchor.code, message: anchor.message };
+  }
+  // A key file kept in the agents' folder is an agent's: where it lives is all that can be told
+  // without opening it, and a copy kept elsewhere is not recognised.
+  if (input.privateKeyPath !== undefined) {
+    const file = resolve(ctx.cwd, input.privateKeyPath);
+    const agents = dirname(agentKeyRoot(ctx.env, 'x'));
+    if (file.startsWith(`${agents}${sep}`)) {
+      return {
+        ok: false,
+        reason: 'REFUSED',
+        code: 'AN_AGENT_KEY',
+        message: `the key file ${file} lives in the folder of the agents' keys, ${agents}: an agent's key signs for its host under a name and is not a key of a person to enrol. This checks where the file lives, not what it holds`,
+      };
+    }
   }
   const made = requestEnrollment({
     anchor: anchor.anchor,
