@@ -129,7 +129,9 @@ export function registerKey(program: Command, wiring: Wiring): Declared {
         io.out(
           render(
             fact(
-              onOneLine`its key lives in ${result.keyRoot}, in the clear: the agent's host signs with it and has no terminal to ask a passphrase at`,
+              result.source === 'file'
+                ? onOneLine`its key is the file you named, ${opts.key ?? ''}, which this did not install: it stays where you keep it, and a host signs with it only once it is put in ${result.keyRoot}`
+                : onOneLine`its key lives in ${result.keyRoot}, in the clear: the agent's host signs with it and has no terminal to ask a passphrase at`,
             ),
           ),
         );
@@ -227,15 +229,24 @@ export function registerKey(program: Command, wiring: Wiring): Declared {
         const { runAgentEnroll } = await import('../commands/key-enroll.js');
         const result = runAgentEnroll(here(), { request });
         if (result.ok) {
+          // Said by what was done: a run that wrote nowhere, because a tree refused it, has not
+          // enrolled anything, whatever an earlier run left in the other trees.
+          const wrote = result.trees.some((tree) => tree.state === 'enrolled');
           io.out(
-            result.alreadyAgent
-              ? `Key ${result.fingerprint} is already the agent "${result.name}" — nothing recorded.`
-              : `Enrolled agent ${result.name}: key ${result.fingerprint}`,
+            wrote
+              ? `Enrolled agent ${result.name}: key ${result.fingerprint}`
+              : result.alreadyAgent
+                ? `Key ${result.fingerprint} is already the agent "${result.name}" — nothing recorded.`
+                : `Nothing recorded for the agent ${result.name}: key ${result.fingerprint} — a tree refused it`,
           );
+          // A machine that joined an identity writes its own trees under one of its own: the line
+          // then says which identity each tree took the key for.
+          const elsewhereIn = (tree: (typeof result.trees)[number]): boolean =>
+            tree.anchor !== undefined && tree.anchor !== result.anchor;
           io.out(
             render(
               fact(
-                `it signs for ${result.anchor}, and names itself "${result.name}" on everything it signs`,
+                `it signs for ${result.anchor}${result.trees.some(elsewhereIn) ? ' in the committed tree' : ''}, and names itself "${result.name}" on everything it signs`,
               ),
             ),
           );
@@ -257,9 +268,13 @@ export function registerKey(program: Command, wiring: Wiring): Declared {
               render(
                 fact(
                   tree.state === 'enrolled'
-                    ? onOneLine`${names[tree.scope]}: enrolled, recorded in ${tree.root}`
+                    ? elsewhereIn(tree)
+                      ? onOneLine`${names[tree.scope]}: enrolled for ${tree.anchor ?? ''}, recorded in ${tree.root}`
+                      : onOneLine`${names[tree.scope]}: enrolled, recorded in ${tree.root}`
                     : tree.state === 'already'
-                      ? onOneLine`${names[tree.scope]}: already the agent, nothing recorded`
+                      ? elsewhereIn(tree)
+                        ? onOneLine`${names[tree.scope]}: already the agent for ${tree.anchor ?? ''}, nothing recorded`
+                        : onOneLine`${names[tree.scope]}: already the agent, nothing recorded`
                       : onOneLine`${names[tree.scope]}: skipped — ${tree.why ?? ''}`,
                 ),
               ),

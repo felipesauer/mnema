@@ -28,6 +28,7 @@
  * root is the agent's own folder under the data directory, never the person's.
  */
 
+import type { KeyObject } from 'node:crypto';
 import { mkdirSync, readdirSync, renameSync } from 'node:fs';
 import { dirname, join, resolve } from 'node:path';
 import { privateKeyPath } from '@mnema/chain';
@@ -40,7 +41,12 @@ import {
   resolveTrees,
   withAgentKey,
 } from '@mnema/core';
-import { type RequestSource, requestAgentEnrollment, requestEnrollment } from '@mnema/core/write';
+import {
+  decodeAgentRequest,
+  type RequestSource,
+  requestAgentEnrollment,
+  requestEnrollment,
+} from '@mnema/core/write';
 import { resolveAnchorInRecord } from '../anchors.js';
 
 /** What the request needs — injected so it is testable. */
@@ -166,6 +172,13 @@ export function runAgentRequest(
   if (!made.ok) {
     return { ok: false, reason: 'REFUSED', code: made.code, message: made.message };
   }
+  // A key read from a file is whatever the file holds, and only an Ed25519 key's consent is one the
+  // record proves: said here, before a line that cannot be enrolled is handed to anybody.
+  const decoded = decodeAgentRequest(made.request);
+  const notAnAgentKey = decoded === null ? undefined : agentKeyAlgorithmRefusal(decoded.key);
+  if (notAnAgentKey !== undefined) {
+    return { ok: false, reason: 'REFUSED', code: 'UNREADABLE_KEY', message: notAnAgentKey };
+  }
   return {
     ok: true,
     fingerprint: made.fingerprint,
@@ -177,6 +190,21 @@ export function runAgentRequest(
     keyRoot,
     ...(rotated !== undefined ? { rotated } : {}),
   };
+}
+
+/**
+ * What is wrong with a key that is to be an agent's, or undefined when nothing is: the consent that
+ * enrols an agent is proved for an Ed25519 key and no other, so a P-256 or an RSA key would make a
+ * line that is printed and then refused.
+ */
+export function agentKeyAlgorithmRefusal(key: {
+  readonly fingerprint: string;
+  readonly publicKey: KeyObject;
+}): string | undefined {
+  const kind = key.publicKey.asymmetricKeyType;
+  return kind === 'ed25519'
+    ? undefined
+    : `the key ${key.fingerprint} is ${kind === undefined ? 'of a kind this does not know' : `a ${kind} key`}, and an agent's key is an Ed25519 one — the consent that enrols it is proved for no other kind; \`mnema key request --agent <name> --anchor <your identity>\` without --key makes one`;
 }
 
 /**

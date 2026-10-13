@@ -38,6 +38,7 @@ import {
   retireChecker,
   revokeMember,
 } from '@mnema/core/write';
+import { oneLine } from '../one-line.js';
 import { forwardReplacement, type Replacement } from '../recorded-content.js';
 
 /** What the revocation needs — injected so it is testable. */
@@ -189,8 +190,6 @@ export interface AgentRetired extends Replacement {
   readonly root: string;
   /** Each tree that holds a record, in the order they were taken: committed, private, global. */
   readonly trees: readonly AgentTreeRetired[];
-  /** True when a tree refused: what was written stays, and the verb says so and exits 1. */
-  readonly partial: boolean;
 }
 
 /**
@@ -222,16 +221,21 @@ export function runAgentRetire(
     try {
       retired = retireAgentKey(write, { fingerprint: input.fingerprint, reason: input.reason });
     } catch (error) {
-      if (
-        !(error instanceof PrivateTreeVisibleError || error instanceof IdentityUnavailableError)
-      ) {
-        throw error;
-      }
-      const code = error instanceof PrivateTreeVisibleError ? 'PRIVATE_TREE_VISIBLE' : error.code;
-      if (first === undefined && results.every((one) => one.state === 'skipped')) {
-        return { ok: false, reason: 'REFUSED', code, message: error.message };
-      }
-      results.push({ ...where, state: 'refused', code, why: error.message });
+      const nothingWritten = first === undefined && results.every((one) => one.state === 'skipped');
+      const known =
+        error instanceof PrivateTreeVisibleError || error instanceof IdentityUnavailableError;
+      // Any other error is a system's (a permission, a full disk): thrown as it is when nothing was
+      // written yet, and, once another tree took the retirement, that tree's refusal in the
+      // system's own code, so the verb says what was written.
+      if (!known && nothingWritten) throw error;
+      const code = !known
+        ? String((error as { code?: unknown }).code ?? 'REFUSED')
+        : error instanceof PrivateTreeVisibleError
+          ? 'PRIVATE_TREE_VISIBLE'
+          : error.code;
+      const message = oneLine(error instanceof Error ? error.message : String(error));
+      if (nothingWritten) return { ok: false, reason: 'REFUSED', code, message };
+      results.push({ ...where, state: 'refused', code, why: message });
       continue;
     }
     if (!retired.ok) {
@@ -269,7 +273,6 @@ export function runAgentRetire(
     anchor: first.anchor,
     root: first.root,
     trees: results,
-    partial: results.some((one) => one.state === 'refused'),
     ...forwardReplacement(first),
   };
 }

@@ -5,11 +5,12 @@
  * run on a machine that is ALREADY a member: membership is granted by a member's
  * signature, so there is no way for a joining machine to admit itself.
  *
- * Scope is the project's PUBLIC tree, and only it. An enrollment is a per-tree
- * fact, and the tree that matters is the committed one — it is what the other
- * machine will read to learn it was accepted, and what an anonymous verifier
- * checks the vouch against. The private and global trees are local to one machine,
- * so a second machine could never see an enrollment recorded there.
+ * Scope, for a key that joins or checks, is the project's PUBLIC tree, and only it. An
+ * enrollment is a per-tree fact, and the tree that matters is the committed one — it is what
+ * the other machine will read to learn it was accepted, and what an anonymous verifier checks
+ * the vouch against. The private and global trees are local to one machine, so a second machine
+ * could never see an enrollment recorded there. An AGENT's key ({@link runAgentEnroll}) is the
+ * exception: it signs in those trees too, so it is enrolled in each of them that can hold it.
  *
  * A thin adapter: resolve the project, hand ONE core operation a deferred write of the
  * tree, report what came back. Whether the request proves consent, whether this machine
@@ -51,6 +52,7 @@ import {
 } from '@mnema/core/write';
 import { oneLine } from '../one-line.js';
 import { personsKeyInTheClear } from '../the-persons-key-in-the-clear.js';
+import { agentKeyAlgorithmRefusal } from './key-request.js';
 
 /** What the enrollment needs — injected so it is testable. */
 export interface KeyEnrollContext {
@@ -170,6 +172,8 @@ export interface AgentTreeResult {
   readonly state: 'enrolled' | 'already' | 'skipped' | 'refused';
   readonly why?: string;
   readonly code?: string;
+  /** The identity the key speaks for in this tree, when it was enrolled there or already was. */
+  readonly anchor?: string;
 }
 
 /** The key may now sign as an agent of this machine's identity, in the trees listed. */
@@ -181,14 +185,12 @@ export interface AgentEnrolled {
   readonly name: string;
   /** The identity it speaks for in the first tree that took it — this machine's own. */
   readonly anchor: string;
-  /** True when no tree needed a write: the record already had it, under this name. */
+  /** True when no tree needed a write and none refused: the record already had it, under this name. */
   readonly alreadyAgent: boolean;
   /** The first tree that took it: the project's committed tree inside a project. */
   readonly root: string;
   /** Each tree reached, in the order they were taken: committed, private, global. */
   readonly trees: readonly AgentTreeResult[];
-  /** True when a tree refused: what was written stays, and the verb says so and exits 1. */
-  readonly partial: boolean;
   /** The other keys the first tree that took it already counts as agents under this same name. */
   readonly alsoUnderTheName: readonly string[];
   /** True when the person's own key is unencrypted, which leaves the separation to nothing. */
@@ -207,6 +209,12 @@ interface AgentSubject {
   readonly keyRoot?: string;
   /** Whether the key the verb is for is the one this machine holds under that name. */
   readonly local: boolean;
+  /**
+   * That what was handed is no line this verb can read (a request to join, a truncated line, a
+   * name the product does not enrol, a key that cannot be an agent's): the first tree's refusal
+   * says what is wrong with it, instead of a tree being skipped for a key that is not "elsewhere".
+   */
+  readonly unreadable?: true;
 }
 
 /**
@@ -239,17 +247,7 @@ export function runAgentEnroll(
   const trees = resolveTrees(ctx.cwd, ctx.env);
   const reached = reachableTrees(trees);
   const subject = subjectOf(ctx.env, input.request);
-  if (subject === 'NO_AGENT_KEY') {
-    return {
-      ok: false,
-      reason: 'REFUSED',
-      code: 'NO_AGENT_KEY',
-      message:
-        `this machine holds no key for the agent "${oneLine(input.request)}" — ` +
-        `\`mnema key request --agent ${oneLine(input.request)} --anchor <your identity>\` makes one, and ` +
-        '`mnema key enroll --agent <the line it prints>` enrols it',
-    };
-  }
+  if ('ok' in subject) return subject;
 
   const writes = new Map(reached.map((tree) => [tree.scope, deferredWrite(trees, tree.scope)]));
   const lineIn = (scope: Scope): string => {
@@ -274,7 +272,7 @@ export function runAgentEnroll(
   let took: { fingerprint: string; name: string; anchor: string } | undefined;
   for (const tree of reached) {
     const where = { scope: tree.scope, root: tree.chainRoot };
-    if (tree.scope !== 'public' && !subject.local) {
+    if (tree.scope !== 'public' && !subject.local && subject.unreadable !== true) {
       results.push({
         ...where,
         state: 'skipped',
@@ -283,7 +281,19 @@ export function runAgentEnroll(
       continue;
     }
     const write = writes.get(tree.scope) as DeferredWrite;
-    const attempt = enrolIn(write, tree.scope, subject, lineIn(tree.scope));
+    let attempt: ReturnType<typeof enrolIn>;
+    try {
+      attempt = enrolIn(write, tree.scope, subject, lineIn(tree.scope));
+    } catch (error) {
+      // A tree that cannot be written (a permission, a full disk) after another took the vouch is
+      // that tree's refusal, in the system's own code, so the verb says what was written.
+      if (took === undefined) throw error;
+      attempt = {
+        ok: false,
+        code: String((error as { code?: unknown }).code ?? 'REFUSED'),
+        message: oneLine(error instanceof Error ? error.message : String(error)),
+      };
+    }
     if (!attempt.ok) {
       // Nothing was written before the first tree tried: that refusal is the verb's.
       if (took === undefined) {
@@ -293,7 +303,11 @@ export function runAgentEnroll(
       continue;
     }
     took ??= { fingerprint: attempt.fingerprint, name: attempt.name, anchor: attempt.anchor };
-    results.push({ ...where, state: attempt.alreadyAgent ? 'already' : 'enrolled' });
+    results.push({
+      ...where,
+      state: attempt.alreadyAgent ? 'already' : 'enrolled',
+      anchor: attempt.anchor,
+    });
   }
 
   if (took === undefined) {
@@ -316,7 +330,6 @@ export function runAgentEnroll(
     alreadyAgent: results.every((one) => one.state === 'already' || one.state === 'skipped'),
     root,
     trees: results,
-    partial: results.some((one) => one.state === 'refused'),
     alsoUnderTheName: otherKeysUnder(took, root),
     personsKeyInTheClear: personsKeyInTheClear(trees.keyRoot) === true,
   };
@@ -341,15 +354,29 @@ function otherKeysUnder(
  * for the line this machine would print — and says `NO_AGENT_KEY` when it is not. Anything else is
  * handed to the core as a line, which refuses what is not one.
  */
-function subjectOf(env: DiscoveryEnv, request: string): AgentSubject | 'NO_AGENT_KEY' {
+function subjectOf(env: DiscoveryEnv, request: string): AgentSubject | KeyEnrollRefused {
   if (!request.startsWith(AGENT_REQUEST_PREFIX) && AGENT_NAME.test(request)) {
     const keyRoot = agentKeyRoot(env, request);
-    if (localKeyFingerprint({ root: keyRoot }) === null) return 'NO_AGENT_KEY';
+    if (localKeyFingerprint({ root: keyRoot }) === null) {
+      return {
+        ok: false,
+        reason: 'REFUSED',
+        code: 'NO_AGENT_KEY',
+        message:
+          `this machine holds no key for the agent "${oneLine(request)}" — ` +
+          `\`mnema key request --agent ${oneLine(request)} --anchor <your identity>\` makes one, and ` +
+          '`mnema key enroll --agent <the line it prints>` enrols it',
+      };
+    }
     return { name: request, keyRoot, local: true };
   }
   const decoded = decodeAgentRequest(request);
   if (decoded === null || agentNameRefusal(decoded.name) !== undefined) {
-    return { line: request, local: false };
+    return { line: request, local: false, unreadable: true };
+  }
+  const notAnAgentKey = agentKeyAlgorithmRefusal(decoded.key);
+  if (notAnAgentKey !== undefined) {
+    return { ok: false, reason: 'REFUSED', code: 'UNREADABLE_KEY', message: notAnAgentKey };
   }
   const keyRoot = agentKeyRoot(env, decoded.name);
   return {
