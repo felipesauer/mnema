@@ -45,9 +45,9 @@ import { CHECKER_REQUEST_PREFIX, decodeKeyRequest } from '../identity/handshake.
 import { membershipIn, personsRosterOf } from '../identity/membership.js';
 import { oneLine } from '../one-line.js';
 import { orderedEvents } from '../projections/order.js';
-import { type AppendRefusal, appendEvent } from '../workflow/append.js';
+import { type AppendRefusal, appendEvent, appendFact } from '../workflow/append.js';
 import { systemClock } from '../workflow/clock.js';
-import { decideAnchor, ensureFounded } from '../workflow/identity-operations.js';
+import { authorizingAnchor, decideAnchor } from '../workflow/identity-operations.js';
 import {
   type DecideThenWrite,
   openedContext,
@@ -121,14 +121,16 @@ export function declareCheck(
     };
   }
 
-  const who = ensureFounded(ctx);
+  // `who` is decided before anything is founded, by the function the founding asks
+  // (`authorizingAnchor`), so the agent is judged and the fact asked at the door before the
+  // founding — which the door does only once both have passed (see `appendFact`).
+  const who = authorizingAnchor(ctx);
   const agent = resolveExecutingAgent(who, input.which);
   if (!agent.ok) return agent;
-  const appended = appendEvent(
-    ctx.writer,
+  const appended = appendFact(ctx, ({ at }) =>
     checkDeclared(
       {
-        at: (ctx.clock ?? systemClock)(),
+        at,
         who,
         signerFp: ctx.writer.signerFingerprint,
         subject: input.rule,
@@ -243,23 +245,24 @@ export function enrollChecker(
 
   const write = openedContext(ctx);
   return write.writer.exclusively(() => {
-    const who = ensureFounded(write);
+    // The public half is in the tree before the fact that names it, as it is for a key and an
+    // agent the roster enrols; the door then asks the fact, founds, and appends it.
     materializePublicKey(write.layout, request.key);
-    const appended = appendEvent(
-      write.writer,
+    const appended = appendFact(write, ({ at, anchor: who }) =>
       checkerEnrolled(
-        {
-          at: (write.clock ?? systemClock)(),
-          who,
-          signerFp: write.writer.signerFingerprint,
-          subject: checker,
-        },
+        { at, who, signerFp: write.writer.signerFingerprint, subject: checker },
         { checkerFp: fingerprint, reverseSig: request.reverseSig },
       ),
     );
     if (!appended.ok) return appended;
     write.writer.checkpoint();
-    return { ok: true, fingerprint, checker, vouchedBy: who, alreadyChecker: false };
+    return {
+      ok: true,
+      fingerprint,
+      checker,
+      vouchedBy: appended.anchor,
+      alreadyChecker: false,
+    };
   });
 }
 
@@ -535,16 +538,9 @@ export function retireChecker(
 
   const write = openedContext(ctx);
   return write.writer.exclusively(() => {
-    const who = ensureFounded(write);
-    const appended = appendEvent(
-      write.writer,
+    const appended = appendFact(write, ({ at, anchor: who }) =>
       checkerRetired(
-        {
-          at: (write.clock ?? systemClock)(),
-          who,
-          signerFp: write.writer.signerFingerprint,
-          subject: checker,
-        },
+        { at, who, signerFp: write.writer.signerFingerprint, subject: checker },
         { checkerFp: fingerprint, reason: text.fields.reason },
       ),
     );
@@ -554,7 +550,7 @@ export function retireChecker(
       ok: true,
       fingerprint,
       checker,
-      retiredBy: who,
+      retiredBy: appended.anchor,
       alreadyRetired: false,
       ...screened(text.replaced),
     };

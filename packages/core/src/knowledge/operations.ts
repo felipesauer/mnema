@@ -34,7 +34,7 @@
  *   - the installation founds its anchor before its first fact, so the captured
  *     memory's signer is a key valid for its anchor at verify.
  *   - the finished event passes the READER's own rule before it is appended
- *     ({@link appendEvent}). A fact is where this mattered most: `link "" tgt` and
+ *     ({@link appendFact}). A fact is where this mattered most: `link "" tgt` and
  *     `handoff "" a b` put an empty value in the event's SUBJECT, and once such an
  *     entry was on the tail no read of that project ever opened again.
  *
@@ -76,10 +76,9 @@ import { canonicalId, mintId } from '../identity/id.js';
 import { oneLine } from '../one-line.js';
 import { linkOf, projectLinkAssertions, withdraws } from '../projections/knowledge.js';
 import { orderedEvents } from '../projections/order.js';
-import { type AppendRefusal, appendEvent } from '../workflow/append.js';
+import { type AppendRefusal, appendFact } from '../workflow/append.js';
 import { type Judged, onTheRecordAsItStands } from '../workflow/as-the-record-stands.js';
-import { systemClock } from '../workflow/clock.js';
-import { authorizingAnchor, ensureFounded } from '../workflow/identity-operations.js';
+import { authorizingAnchor } from '../workflow/identity-operations.js';
 import type { WriteContext } from '../workflow/operations.js';
 
 /** A memory was captured: the fact was appended. */
@@ -136,14 +135,9 @@ export function captureMemory(ctx: WriteContext, input: CaptureInput): CaptureOk
   // the root (the same move `who` makes). Canonical by construction.
   const id = mintId();
 
-  // Found this installation's anchor before the fact, so its signer is a key
-  // valid for its anchor at verify.
-  // Once founded it appends nothing, and refuses an anchor that no longer counts
-  // this key (see `ensureFounded`).
-  ensureFounded(ctx);
-  const at = (ctx.clock ?? systemClock)();
-  const appended = appendEvent(
-    ctx.writer,
+  // The door asks the fact first, then founds this installation's anchor, so the fact's
+  // signer is a key valid for its anchor at verify (see `appendFact`).
+  const appended = appendFact(ctx, ({ at }) =>
     memoryCaptured(
       {
         at,
@@ -235,10 +229,7 @@ export function recordObservation(
   // identity, canonical by construction.
   const id = mintId();
 
-  ensureFounded(ctx);
-  const at = (ctx.clock ?? systemClock)();
-  const appended = appendEvent(
-    ctx.writer,
+  const appended = appendFact(ctx, ({ at }) =>
     observationRecorded(
       {
         at,
@@ -316,10 +307,7 @@ export function recordHandoff(ctx: WriteContext, input: HandoffInput): HandoffOk
   const which = agent.which;
   const task = canonicalId(agents.fields.subject) ?? agents.fields.subject;
 
-  ensureFounded(ctx);
-  const at = (ctx.clock ?? systemClock)();
-  const appended = appendEvent(
-    ctx.writer,
+  const appended = appendFact(ctx, ({ at }) =>
     handoffRecorded(
       {
         at,
@@ -400,10 +388,7 @@ export function linkKnowledge(ctx: WriteContext, input: LinkInput): LinkOk | Fac
   const subject = canonicalId(relation.fields.subject) ?? relation.fields.subject;
   const target = canonicalId(relation.fields.target) ?? relation.fields.target;
 
-  ensureFounded(ctx);
-  const at = (ctx.clock ?? systemClock)();
-  const appended = appendEvent(
-    ctx.writer,
+  const appended = appendFact(ctx, ({ at }) =>
     knowledgeLinked(
       {
         at,
@@ -588,10 +573,7 @@ export function retractNote(ctx: WriteContext, input: RetractInput): RetractOk |
       }
       return {
         write: () => {
-          ensureFounded(ctx);
-          const at = (ctx.clock ?? systemClock)();
-          const appended = appendEvent(
-            ctx.writer,
+          const appended = appendFact(ctx, ({ at }) =>
             noteRetracted(
               {
                 at,
@@ -761,10 +743,7 @@ export function retractLink(
       }
       return {
         write: () => {
-          ensureFounded(ctx);
-          const at = (ctx.clock ?? systemClock)();
-          const appended = appendEvent(
-            ctx.writer,
+          const appended = appendFact(ctx, ({ at }) =>
             linkRetracted(
               {
                 at,

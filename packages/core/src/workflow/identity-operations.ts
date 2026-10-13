@@ -59,7 +59,7 @@ import {
 } from '../identity/membership.js';
 import { oneLine } from '../one-line.js';
 import { orderedEvents } from '../projections/order.js';
-import { type AppendRefusal, appendEvent } from './append.js';
+import { type AppendRefusal, appendEvent, appendFact } from './append.js';
 import { systemClock } from './clock.js';
 import type { WriteContext } from './operations.js';
 import { rosterAsTheChainIs } from './read-the-record.js';
@@ -534,16 +534,16 @@ export function enrollKey(
   // ONE HOLD for the founding, the fact and its signature: a checkpoint taken under a lock of
   // its own could be refused after the fact landed, and the refusal would say nothing was.
   return ctx.writer.exclusively(() => {
-    const anchor = ensureFounded(ctx);
     // Through the door like every other write, even though both fields are derived
     // (a fingerprint computed from the joining key, a signature `decodeKeyRequest`
     // already rejected as absent). This is an EXPORT of the writing surface, so a
     // caller outside the two surfaces can hand it a value the real callers never
-    // produce, and it owes that caller a refusal it can read rather than a throw.
-    const appended = appendEvent(ctx.writer, enrollment(ctx, anchor, input));
+    // produce, and it owes that caller a refusal it can read rather than a throw —
+    // asked before the founding, so the refusal founds nothing (see `appendFact`).
+    const appended = appendFact(ctx, ({ at, anchor }) => enrollment(ctx, at, anchor, input));
     if (!appended.ok) return appended;
     ctx.writer.checkpoint();
-    return { ok: true, anchor };
+    return { ok: true, anchor: appended.anchor };
   });
 }
 
@@ -557,10 +557,13 @@ function enrollBackup(
   input: { newFp: string; reverseSig: string },
 ): IdentityOk | AppendRefusal {
   return ctx.writer.exclusively(() => {
-    const anchor = ensureFounded(ctx);
-    const enrolledHere = appendEvent(ctx.writer, enrollment(ctx, anchor, input));
+    const enrolledHere = appendFact(ctx, ({ at, anchor }) => enrollment(ctx, at, anchor, input));
     if (!enrolledHere.ok) return enrolledHere;
-    const declared = appendEvent(ctx.writer, declaration(ctx, anchor, input.newFp));
+    const anchor = enrolledHere.anchor;
+    const declared = appendEvent(
+      ctx.writer,
+      declaration(ctx, (ctx.clock ?? systemClock)(), anchor, input.newFp),
+    );
     ctx.writer.checkpoint();
     if (!declared.ok) return declared;
     return { ok: true, anchor };
@@ -569,18 +572,22 @@ function enrollBackup(
 
 function enrollment(
   ctx: WriteContext,
+  at: string,
   anchor: string,
   input: { newFp: string; reverseSig: string },
 ): CatalogEvent {
-  const at = (ctx.clock ?? systemClock)();
   return keyEnrolled(
     { at, who: anchor, signerFp: ctx.writer.signerFingerprint, subject: anchor },
     { newFp: input.newFp, reverseSig: input.reverseSig },
   );
 }
 
-function declaration(ctx: WriteContext, anchor: string, backupFp: string): CatalogEvent {
-  const at = (ctx.clock ?? systemClock)();
+function declaration(
+  ctx: WriteContext,
+  at: string,
+  anchor: string,
+  backupFp: string,
+): CatalogEvent {
   return backupDeclared(
     { at, who: anchor, signerFp: ctx.writer.signerFingerprint, subject: anchor },
     { backupFp },
@@ -600,11 +607,12 @@ export function declareBackup(
   input: { backupFp: string },
 ): IdentityOk | AppendRefusal {
   return ctx.writer.exclusively(() => {
-    const anchor = ensureFounded(ctx);
-    const appended = appendEvent(ctx.writer, declaration(ctx, anchor, input.backupFp));
+    const appended = appendFact(ctx, ({ at, anchor }) =>
+      declaration(ctx, at, anchor, input.backupFp),
+    );
     if (!appended.ok) return appended;
     ctx.writer.checkpoint();
-    return { ok: true, anchor };
+    return { ok: true, anchor: appended.anchor };
   });
 }
 
@@ -633,10 +641,7 @@ export function revokeKey(
   if (!text.ok) return text;
 
   return ctx.writer.exclusively(() => {
-    const anchor = ensureFounded(ctx);
-    const at = (ctx.clock ?? systemClock)();
-    const appended = appendEvent(
-      ctx.writer,
+    const appended = appendFact(ctx, ({ at, anchor }) =>
       keyRevoked(
         { at, who: anchor, signerFp: ctx.writer.signerFingerprint, subject: anchor },
         { revokedFp: input.revokedFp, reason: text.fields.reason },
@@ -644,7 +649,7 @@ export function revokeKey(
     );
     if (!appended.ok) return appended;
     ctx.writer.checkpoint();
-    return { ok: true, anchor, ...screened(text.replaced) };
+    return { ok: true, anchor: appended.anchor, ...screened(text.replaced) };
   });
 }
 
@@ -671,10 +676,7 @@ export function enrollAgent(
   if (unnamed !== undefined) return { ok: false, code: 'BAD_AGENT_NAME', message: unnamed };
 
   return ctx.writer.exclusively(() => {
-    const anchor = ensureFounded(ctx);
-    const at = (ctx.clock ?? systemClock)();
-    const appended = appendEvent(
-      ctx.writer,
+    const appended = appendFact(ctx, ({ at, anchor }) =>
       agentEnrolled(
         { at, who: anchor, signerFp: ctx.writer.signerFingerprint, subject: anchor },
         { agentFp: input.agentFp, name: text.fields.name, reverseSig: input.reverseSig },
@@ -682,7 +684,7 @@ export function enrollAgent(
     );
     if (!appended.ok) return appended;
     ctx.writer.checkpoint();
-    return { ok: true, anchor, ...screened(text.replaced) };
+    return { ok: true, anchor: appended.anchor, ...screened(text.replaced) };
   });
 }
 
@@ -699,10 +701,7 @@ export function retireAgent(
   if (!text.ok) return text;
 
   return ctx.writer.exclusively(() => {
-    const anchor = ensureFounded(ctx);
-    const at = (ctx.clock ?? systemClock)();
-    const appended = appendEvent(
-      ctx.writer,
+    const appended = appendFact(ctx, ({ at, anchor }) =>
       agentRetired(
         { at, who: anchor, signerFp: ctx.writer.signerFingerprint, subject: anchor },
         { agentFp: input.agentFp, reason: text.fields.reason },
@@ -710,7 +709,7 @@ export function retireAgent(
     );
     if (!appended.ok) return appended;
     ctx.writer.checkpoint();
-    return { ok: true, anchor, ...screened(text.replaced) };
+    return { ok: true, anchor: appended.anchor, ...screened(text.replaced) };
   });
 }
 
@@ -758,10 +757,7 @@ export function linkAccount(
   if (!text.ok) return text;
 
   return ctx.writer.exclusively(() => {
-    const anchor = ensureFounded(ctx);
-    const at = (ctx.clock ?? systemClock)();
-    const appended = appendEvent(
-      ctx.writer,
+    const appended = appendFact(ctx, ({ at, anchor }) =>
       accountLinked(
         { at, who: anchor, signerFp: ctx.writer.signerFingerprint, subject: anchor },
         { service, account: text.fields.account },
@@ -769,7 +765,12 @@ export function linkAccount(
     );
     if (!appended.ok) return appended;
     ctx.writer.checkpoint();
-    return { ok: true, anchor, account: text.fields.account, ...screened(text.replaced) };
+    return {
+      ok: true,
+      anchor: appended.anchor,
+      account: text.fields.account,
+      ...screened(text.replaced),
+    };
   });
 }
 

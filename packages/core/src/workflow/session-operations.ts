@@ -71,15 +71,14 @@ import {
 import { resolveExecutingAgent, type SelfAuthorizedErr } from '../identity/authority.js';
 import { canonicalId, mintId } from '../identity/id.js';
 import { oneLine } from '../one-line.js';
-import { type AppendRefusal, appendEvent } from './append.js';
+import { type AppendRefusal, appendFact } from './append.js';
 import {
   type Judged,
   onTheRecordAsItStands,
   type StateMovedErr,
   stateMoved,
 } from './as-the-record-stands.js';
-import { systemClock } from './clock.js';
-import { authorizingAnchor, ensureFounded } from './identity-operations.js';
+import { authorizingAnchor } from './identity-operations.js';
 import type { WriteContext } from './operations.js';
 import { standing } from './read-the-record.js';
 
@@ -114,7 +113,7 @@ export interface EndRunOk extends ScreenedWrite {
 export type StartRunError =
   /** A free-text field was over the size limit (see {@link screenContent}). */
   | ScreenRefusal
-  /** A read would not have accepted the event (see {@link appendEvent}). */
+  /** A read would not have accepted the event (see {@link appendFact}). */
   | AppendRefusal
   /**
    * The executing agent IS the authorizing anchor — an agent cannot open the
@@ -126,7 +125,7 @@ export type StartRunError =
 export type EndRunError =
   /** A free-text field was over the size limit (see {@link screenContent}). */
   | ScreenRefusal
-  /** A read would not have accepted the event (see {@link appendEvent}). */
+  /** A read would not have accepted the event (see {@link appendFact}). */
   | AppendRefusal
   /**
    * The closing agent IS the authorizing anchor — the same refusal the birth
@@ -244,14 +243,9 @@ function appendRunStarted(
   },
 ): StartRunOk | StartRunError {
   const { id, who, which, fields } = run;
-  // Found this installation's anchor before the fact, so the session's signer is
-  // a key valid for its anchor at verify.
-  // Once founded it appends nothing, and refuses an anchor that no longer counts
-  // this key (see `ensureFounded`).
-  ensureFounded(ctx);
-  const at = (ctx.clock ?? systemClock)();
-  const appended = appendEvent(
-    ctx.writer,
+  // The door asks the fact first, then founds this installation's anchor, so the fact's
+  // signer is a key valid for its anchor at verify (see `appendFact`).
+  const appended = appendFact(ctx, ({ at }) =>
     runStarted(
       {
         at,
@@ -353,14 +347,9 @@ export function endRun(ctx: WriteContext, input: EndRunInput): EndRunOk | EndRun
 
       return {
         write: () => {
-          // Found this installation's anchor before the fact, so the close is signed by
-          // a key valid for its anchor at verify.
-          // Once founded it appends nothing, and refuses an anchor that no longer counts
-          // this key (see `ensureFounded`).
-          ensureFounded(ctx);
-          const at = (ctx.clock ?? systemClock)();
-          const appended = appendEvent(
-            ctx.writer,
+          // The door asks the fact first, then founds this installation's anchor, so the fact's
+          // signer is a key valid for its anchor at verify (see `appendFact`).
+          const appended = appendFact(ctx, ({ at }) =>
             runEnded(
               {
                 at,

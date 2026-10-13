@@ -44,17 +44,17 @@ import {
 import { resolveExecutingAgent } from '../identity/authority.js';
 import { canonicalId, mintId } from '../identity/id.js';
 import { oneLine } from '../one-line.js';
-import { type AppendRefusal, appendEvent, appendEvents } from './append.js';
+import { type AppendRefusal, appendFact, appendFacts } from './append.js';
 import {
   type Judged,
   onTheRecordAsItStands,
   type StateMovedErr,
   stateMoved,
 } from './as-the-record-stands.js';
-import { type Clock, systemClock } from './clock.js';
+import type { Clock } from './clock.js';
 import { type DecisionGateErr, decisionGate } from './decision-gate.js';
 import { INITIAL_DECISION_STATE } from './decision-states.js';
-import { authorizingAnchor, ensureFounded } from './identity-operations.js';
+import { authorizingAnchor } from './identity-operations.js';
 import { asTheChainIs, standing } from './read-the-record.js';
 
 /** Shared dependencies for a write: where to read state from and where to append. */
@@ -71,7 +71,7 @@ export type DecisionWriteError =
   | DecisionGateErr
   /** A free-text field was over the size limit (see {@link screenContent}). */
   | ScreenRefusal
-  /** A read would not have accepted the event (see {@link appendEvent}). */
+  /** A read would not have accepted the event (see {@link appendFact}). */
   | AppendRefusal
   /**
    * The decision acted on does not exist (no `decision.recorded` for this id).
@@ -214,34 +214,31 @@ export function recordDecision(
     (decisions) => ({
       write: (): RecordOk | DecisionWriteError => {
         const adr = `ADR-${decisions.size + 1}`;
-        // Found this installation's anchor before the birth pair, so both events'
-        // signer is a key valid for its anchor at verify.
-        // Once founded it appends nothing, and refuses an anchor that no longer counts
-        // this key (see `ensureFounded`).
-        ensureFounded(ctx);
-        const at = (ctx.clock ?? systemClock)();
-        const birth = decisionBirth(
-          {
-            at,
-            who,
-            signerFp: ctx.writer.signerFingerprint,
-            subject: id,
-            ...(which !== undefined ? { which } : {}),
-            ...(text.fields.run !== undefined ? { run: text.fields.run } : {}),
-          },
-          {
-            title: text.fields.title,
-            rationale: text.fields.rationale,
-            adr,
-            initial: INITIAL_DECISION_STATE,
-            // The SCREENED value, and omitted when the caller gave none: absence in,
-            // absence out, so a decision with no alternative records no key for one.
-            ...(text.fields.alternatives !== undefined
-              ? { alternatives: text.fields.alternatives }
-              : {}),
-          },
+        // The door asks the birth pair first, then founds this installation's anchor, so both
+        // events' signer is a key valid for its anchor at verify (see `appendFact`).
+        const appended = appendFacts(ctx, ({ at }) =>
+          decisionBirth(
+            {
+              at,
+              who,
+              signerFp: ctx.writer.signerFingerprint,
+              subject: id,
+              ...(which !== undefined ? { which } : {}),
+              ...(text.fields.run !== undefined ? { run: text.fields.run } : {}),
+            },
+            {
+              title: text.fields.title,
+              rationale: text.fields.rationale,
+              adr,
+              initial: INITIAL_DECISION_STATE,
+              // The SCREENED value, and omitted when the caller gave none: absence in,
+              // absence out, so a decision with no alternative records no key for one.
+              ...(text.fields.alternatives !== undefined
+                ? { alternatives: text.fields.alternatives }
+                : {}),
+            },
+          ),
         );
-        const appended = appendEvents(ctx.writer, birth);
         if (!appended.ok) return appended;
         const [e1, e2] = appended.entries as [Entry, Entry];
         return {
@@ -383,30 +380,27 @@ function transition(
 
       return {
         write: () => {
-          // Found this installation's anchor before its first fact, so the transition's
-          // signer is a key valid for its anchor at verify.
-          // Once founded it appends nothing, and refuses an anchor that no longer counts
-          // this key (see `ensureFounded`).
-          ensureFounded(ctx);
-          const at = (ctx.clock ?? systemClock)();
-          const event = decisionTransitioned(
-            {
-              at,
-              who,
-              signerFp: ctx.writer.signerFingerprint,
-              subject: id,
-              ...(which !== undefined ? { which } : {}),
-              ...(pinned.fields.run !== undefined ? { run: pinned.fields.run } : {}),
-            },
-            {
-              from: current.state,
-              to: verdict.to,
-              action: verdict.action,
-              ...(verdict.by !== undefined ? { by: verdict.by } : {}),
-              ...(verdict.fields !== undefined ? { fields: verdict.fields } : {}),
-            },
+          // The door asks the fact first, then founds this installation's anchor, so the
+          // transition's signer is a key valid for its anchor at verify (see `appendFact`).
+          const appended = appendFact(ctx, ({ at }) =>
+            decisionTransitioned(
+              {
+                at,
+                who,
+                signerFp: ctx.writer.signerFingerprint,
+                subject: id,
+                ...(which !== undefined ? { which } : {}),
+                ...(pinned.fields.run !== undefined ? { run: pinned.fields.run } : {}),
+              },
+              {
+                from: current.state,
+                to: verdict.to,
+                action: verdict.action,
+                ...(verdict.by !== undefined ? { by: verdict.by } : {}),
+                ...(verdict.fields !== undefined ? { fields: verdict.fields } : {}),
+              },
+            ),
           );
-          const appended = appendEvent(ctx.writer, event);
           if (!appended.ok) return appended;
           return {
             ok: true,

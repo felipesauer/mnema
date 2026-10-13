@@ -68,16 +68,16 @@ import {
 import { resolveExecutingAgent } from '../identity/authority.js';
 import { canonicalId, mintId } from '../identity/id.js';
 import { oneLine } from '../one-line.js';
-import { type AppendRefusal, appendEvent, appendEvents } from './append.js';
+import { type AppendRefusal, appendFact, appendFacts } from './append.js';
 import {
   type Judged,
   onTheRecordAsItStands,
   type StateMovedErr,
   stateMoved,
 } from './as-the-record-stands.js';
-import { type Clock, systemClock } from './clock.js';
+import type { Clock } from './clock.js';
 import { type GateErr, gate } from './gate.js';
-import { authorizingAnchor, ensureFounded } from './identity-operations.js';
+import { authorizingAnchor } from './identity-operations.js';
 import { standing } from './read-the-record.js';
 import { INITIAL_STATE } from './states.js';
 
@@ -103,10 +103,13 @@ export interface WriteContext {
   /**
    * What the caller owes the tree before this context's first fact and after its founding — the
    * MCP session's run, prepared before the operation and written only once it has decided to
-   * write. Called by `ensureFounded`, which every operation calls between the last refusal the
-   * operation itself makes and its first append; the caller makes it run once. The refusals the
-   * append door makes of the event it is handed (a title, a reason or a reference that is not one,
-   * an event no read could open) come after `ensureFounded`, so those still follow the founding.
+   * write. Called by `ensureFounded`, which every operation reaches through the append door
+   * (`appendFact`) after the last refusal it makes, and after the door has asked the fact; the
+   * caller makes it run once. THIS SAID the door's own refusals (a title, a reason or a reference
+   * that is not one, an event no read could open) "come after `ensureFounded`, so those still
+   * follow the founding": they did, and from an empty HOME each one left the key, the founding and
+   * — here — the run behind it. They come before it now, so a refused first fact writes no run
+   * (`code/tests/a-refusal-leaves-nothing.test.ts`, the append door through the server).
    */
   readonly beforeTheFirstFact?: () => void;
 }
@@ -301,29 +304,27 @@ export function transitionTask(
 
       return {
         write: () => {
-          // Found this installation's anchor before its first fact, so the transition's
-          // signer is a key valid for its anchor at verify.
-          // Once founded it appends nothing, and refuses an anchor that no longer counts
-          // this key (see `ensureFounded`).
-          ensureFounded(ctx);
-          const at = (ctx.clock ?? systemClock)();
-          const event = taskTransitioned(
-            {
-              at,
-              who,
-              signerFp: ctx.writer.signerFingerprint,
-              subject: id,
-              ...(which !== undefined ? { which } : {}),
-              ...(pinned.fields.run !== undefined ? { run: pinned.fields.run } : {}),
-            },
-            {
-              from: current,
-              to: verdict.to,
-              action: verdict.action,
-              ...(verdict.fields !== undefined ? { fields: verdict.fields } : {}),
-            },
+          // The door asks the fact first, then founds this installation's anchor, so the
+          // transition's signer is a key valid for its anchor at verify — and a fact the door
+          // refuses founds nothing (see `appendFact`).
+          const appended = appendFact(ctx, ({ at }) =>
+            taskTransitioned(
+              {
+                at,
+                who,
+                signerFp: ctx.writer.signerFingerprint,
+                subject: id,
+                ...(which !== undefined ? { which } : {}),
+                ...(pinned.fields.run !== undefined ? { run: pinned.fields.run } : {}),
+              },
+              {
+                from: current,
+                to: verdict.to,
+                action: verdict.action,
+                ...(verdict.fields !== undefined ? { fields: verdict.fields } : {}),
+              },
+            ),
           );
-          const appended = appendEvent(ctx.writer, event);
           if (!appended.ok) return appended;
           return {
             ok: true,
@@ -369,27 +370,24 @@ export function createTask(ctx: WriteContext, input: CreateInput): CreateOk | Wr
   // at the root (the same move `who` makes). It is canonical by construction.
   const id = mintId();
 
-  // Found this installation's anchor before the birth pair, so both events'
-  // signer is a key valid for its anchor at verify.
-  // Once founded it appends nothing, and refuses an anchor that no longer counts
-  // this key (see `ensureFounded`).
-  ensureFounded(ctx);
-  const at = (ctx.clock ?? systemClock)();
-  const birth = taskBirth(
-    {
-      at,
-      who,
-      signerFp: ctx.writer.signerFingerprint,
-      subject: id,
-      ...(which !== undefined ? { which } : {}),
-      ...(text.fields.run !== undefined ? { run: text.fields.run } : {}),
-    },
-    { title: text.fields.title, initial: INITIAL_STATE },
+  // The door asks the birth pair first, then founds this installation's anchor, so both
+  // events' signer is a key valid for its anchor at verify (see `appendFact`). The pair is
+  // appended atomically: a torn birth would leave a created task with no state, permanently
+  // burning the id (the projection drops a stateless subject, so every later transition on it
+  // fails as UNKNOWN_TASK).
+  const appended = appendFacts(ctx, ({ at }) =>
+    taskBirth(
+      {
+        at,
+        who,
+        signerFp: ctx.writer.signerFingerprint,
+        subject: id,
+        ...(which !== undefined ? { which } : {}),
+        ...(text.fields.run !== undefined ? { run: text.fields.run } : {}),
+      },
+      { title: text.fields.title, initial: INITIAL_STATE },
+    ),
   );
-  // Append the pair atomically: a torn birth would leave a created task with no
-  // state, permanently burning the id (the projection drops a stateless
-  // subject, so every later transition on it fails as UNKNOWN_TASK).
-  const appended = appendEvents(ctx.writer, birth);
   if (!appended.ok) return appended;
   const [e1, e2] = appended.entries as [Entry, Entry];
   return { ok: true, id, entries: [e1, e2], ...screened([...text.replaced, ...agent.replaced]) };

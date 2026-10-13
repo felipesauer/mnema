@@ -64,9 +64,12 @@ export interface OpenOptions extends WriterOptions {
  * this tail passed its signature check" whenever it sorted first. So the half that
  * travels is born at the writer's first append, under the tail's lock
  * (`ChainWriter.ensureBorn`); the installation id, which the tree's `.gitignore`
- * keeps out, is the one thing opening writes into the chain (`writer.test.ts`, *leaves
- * only the installation id in a chain its writer opened and never wrote to*, and the
- * thirteen refused verbs of `code/tests/a-refusal-leaves-nothing.test.ts`).
+ * keeps out, is the one thing opening writes into the chain, and only for a key the
+ * machine already keeps (`writer.test.ts`, *leaves only the installation id in a chain
+ * its writer opened and never wrote to*). A key made in memory keeps its id with the
+ * pair, at the first append, so opening for it writes nothing at all — what the
+ * seventeen refused verbs of `code/tests/a-refusal-leaves-nothing.test.ts` hold, from a
+ * HOME with no key.
  */
 export function openChainForWriting(chainRoot: string, options: OpenOptions): ChainWriter {
   const chainLayout: ChainLayout = { root: chainRoot };

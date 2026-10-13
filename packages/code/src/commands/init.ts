@@ -139,8 +139,9 @@ export interface InitRefused {
  * key `init.test.ts` ran it with. The anchor was read off a WRITER opened for the
  * purpose, and opening one touched the tree before anything was appended: for any other
  * key it materialized that key's public half, minted an installation id and gave its
- * tail a directory and a proof (opening mints only the id now; the rest waits for the
- * writer's first append). Measured on the binary, `mnema init` run by a second
+ * tail a directory and a proof (opening mints only the id now, and only for a key the
+ * machine already keeps — a key made in memory keeps its id with the pair; the rest waits
+ * for the writer's first append). Measured on the binary, `mnema init` run by a second
  * machine in a cloned project answered "nothing to found" and left four new entries
  * under `.mnema/`, two of them untracked in git. The anchor is read from the SIGNER now
  * (`signerFor`), which opens nothing, and the writer is opened only on the path that

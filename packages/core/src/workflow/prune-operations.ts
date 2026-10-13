@@ -49,9 +49,8 @@ import {
 } from '../content/screen.js';
 import { resolveExecutingAgent, type SelfAuthorizedErr } from '../identity/authority.js';
 import { oneLine } from '../one-line.js';
-import { type AppendRefusal, appendEvent } from './append.js';
-import { systemClock } from './clock.js';
-import { authorizingAnchor, ensureFounded } from './identity-operations.js';
+import { type AppendRefusal, appendFact } from './append.js';
+import { authorizingAnchor } from './identity-operations.js';
 import type { WriteContext } from './operations.js';
 
 /** The cut was authorized: the waiver is on the record, and it says this. */
@@ -143,12 +142,10 @@ export function authorizeTailPrune(ctx: WriteContext, input: PruneInput): PruneO
   if (!agent.ok) return agent;
   const which = agent.which;
 
-  ensureFounded(ctx);
-  const appended = appendEvent(
-    ctx.writer,
+  const appended = appendFact(ctx, ({ at }) =>
     tailPruned(
       {
-        at: (ctx.clock ?? systemClock)(),
+        at,
         who,
         signerFp: ctx.writer.signerFingerprint,
         // The anchor the cut tail served — the identity the fact is filed under, read
