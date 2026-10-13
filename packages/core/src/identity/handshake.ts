@@ -39,6 +39,7 @@ import {
   checkerEnrollmentMessage,
   enrollmentMessage,
   fingerprintOf,
+  isProtected,
   type KeyPair,
   listPrivateKeyFingerprints,
   loadOrCreateKeyPair,
@@ -318,7 +319,15 @@ export interface AgentRequestOk {
 /** Why no agent request was produced. */
 export type AgentRequestErr =
   | RequestErr
-  | { readonly ok: false; readonly code: 'BAD_AGENT_NAME'; readonly message: string };
+  | {
+      readonly ok: false;
+      /**
+       * The name is no agent name, or the key named by file is protected by a passphrase — a
+       * host that signs for an agent has no terminal to ask it at.
+       */
+      readonly code: 'BAD_AGENT_NAME' | 'PROTECTED_AGENT_KEY';
+      readonly message: string;
+    };
 
 /**
  * Produces an agent key's request to be enrolled in an identity under a name.
@@ -346,6 +355,15 @@ export function requestAgentEnrollment(input: AgentRequestInput): AgentRequestOk
   let source: RequestSource;
   let minted = false;
   if (input.privateKeyPath !== undefined) {
+    if (isProtectedFile(input.privateKeyPath)) {
+      return {
+        ok: false,
+        code: 'PROTECTED_AGENT_KEY',
+        message:
+          `${oneLine(input.privateKeyPath)} is protected by a passphrase, and an agent's host has no terminal to ask it at — ` +
+          'leave the key out and `mnema key request --agent <name> --anchor <your identity>` makes the agent one that is not protected',
+      };
+    }
     const fromFile = readKeyPair(input.privateKeyPath);
     if (fromFile === null) {
       return {
@@ -374,6 +392,15 @@ export function requestAgentEnrollment(input: AgentRequestInput): AgentRequestOk
     source,
     minted,
   };
+}
+
+/** Whether the file at `path` is a key protected by a passphrase (false when it cannot be read). */
+function isProtectedFile(path: string): boolean {
+  try {
+    return isProtected(readFileSync(path, 'utf-8'));
+  } catch {
+    return false;
+  }
 }
 
 /** The key pair a PEM file holds, or null when it is not a readable private key. */

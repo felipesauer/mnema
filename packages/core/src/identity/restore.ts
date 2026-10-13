@@ -51,7 +51,14 @@ import {
   writeAnchor,
 } from '@mnema/chain';
 import { oneLine } from '../one-line.js';
-import { type Membership, type MembershipRefusalCode, membershipIn } from './membership.js';
+import { agentNameRefusal } from './agent-name.js';
+import { nameOfAKeyKind } from './key-kind.js';
+import {
+  type Membership,
+  type MembershipRefusalCode,
+  membershipIn,
+  rosterByRole,
+} from './membership.js';
 
 /** What restoring a key needs. Paths are absolute — the surface resolves them. */
 export interface RestoreInput {
@@ -156,18 +163,21 @@ export function restoreKey(input: RestoreInput): RestoreOk | RestoreErr {
     };
   }
 
-  const found = membershipIn({ tree: input.tree, upcasters: input.upcasters }, keyPair);
+  const query = { tree: input.tree, upcasters: input.upcasters };
+  const found = membershipIn(query, keyPair);
   if (!found.ok) return found;
   // An agent's key restored here would be installed at the person's key root, where the next
   // write signs with it as the person: facts the verifier then reads as a break, because they are
   // signed by an agent key and name no agent. Before the anchor is written, as before anything.
   if (found.membership === 'agent') {
+    const name = rosterByRole(query, found.anchor).agents.get(keyPair.fingerprint) ?? '<name>';
     return {
       ok: false,
       code: 'AN_AGENT_KEY',
       message:
         `the key ${oneLine(keyPair.fingerprint)} is an agent key of ${oneLine(found.anchor)} — it signs ` +
-        "for its host from its own agent's folder and is not a key of a person to restore; nothing was written",
+        "for its host from its own agent's folder and is not a key of a person to restore; " +
+        `\`mnema key restore --agent ${oneLine(name)} <file>\` installs it there. Nothing was written`,
     };
   }
 
@@ -217,4 +227,141 @@ function isProtectedCopy(path: string): boolean {
   } catch {
     return false;
   }
+}
+
+/** What restoring an agent's key needs. Paths are absolute — the surface resolves them. */
+export interface RestoreAgentInput {
+  /** The PEM file holding the private half: READ and never moved. */
+  readonly privateKeyPath: string;
+  /** The name the record enrols the key under, which is also its folder. */
+  readonly name: string;
+  /** The agent's own key root (`agentKeyRoot`): the folder the host reads the key from. */
+  readonly agentKeyRoot: string;
+  /** The tree whose chain must prove the key an agent's. */
+  readonly tree: string;
+  readonly upcasters: UpcasterRegistry;
+}
+
+/** The key of an agent was installed in its folder. */
+export interface RestoreAgentOk {
+  readonly ok: true;
+  readonly fingerprint: string;
+  /** The identity the agent signs for. */
+  readonly anchor: string;
+  /** The name the record enrols the key under. */
+  readonly name: string;
+  /** Where the private half was installed — a COPY; the file named is untouched. */
+  readonly installedAt: string;
+}
+
+/** Why the key of an agent was not restored. */
+export type RestoreAgentErrorCode =
+  | RestoreErrorCode
+  /** The name is no agent name — it is a folder, so one that could name another place is refused. */
+  | 'BAD_AGENT_NAME'
+  /** The key is protected by a passphrase, and an agent's host has no terminal to ask it at. */
+  | 'PROTECTED_AGENT_KEY'
+  /** The tree proves the key a member of the identity itself: it is a person's to restore. */
+  | 'NOT_AN_AGENT_KEY'
+  /** The tree enrols the key as an agent under another name. */
+  | 'AGENT_UNDER_ANOTHER_NAME';
+
+/** The restore was refused; nothing was written. */
+export interface RestoreAgentErr {
+  readonly ok: false;
+  readonly code: RestoreAgentErrorCode;
+  readonly message: string;
+}
+
+/**
+ * Installs the key of an agent into the agent's own folder, for the machine it will sign from: a
+ * runner that begins every job with nothing on it takes the key from where the team keeps it and
+ * puts it where the agent's host looks.
+ *
+ * It decides what {@link restoreKey} decides for a person, with the answers turned round: the
+ * record must prove the key an AGENT of an identity, under exactly `name` (a key keeps the name it
+ * was enrolled under, and the host that reads the folder stamps that name on what it signs), not
+ * retired, and the folder may hold no other live key. A copy that is protected is refused, where a
+ * person's is kept protected: the agent's host cannot ask for the passphrase.
+ *
+ * It appends nothing and records NO anchor. The key is read from the record on every write (the
+ * record enrols it, and the person's anchor file is exactly the shortcut that would let a key
+ * speak for an identity the record does not name), so installing the file is all there is to do.
+ */
+export function restoreAgentKey(input: RestoreAgentInput): RestoreAgentOk | RestoreAgentErr {
+  const unnamed = agentNameRefusal(input.name);
+  if (unnamed !== undefined) return { ok: false, code: 'BAD_AGENT_NAME', message: unnamed };
+
+  if (isProtectedCopy(input.privateKeyPath)) {
+    return {
+      ok: false,
+      code: 'PROTECTED_AGENT_KEY',
+      message:
+        `${oneLine(input.privateKeyPath)} is protected by a passphrase, and an agent's host has no terminal to ask it at — ` +
+        '`mnema key request --agent <name> --anchor <your identity>` makes the agent a key that is not protected',
+    };
+  }
+  const keyPair = readKeyPair(input.privateKeyPath);
+  if (keyPair === null) {
+    return {
+      ok: false,
+      code: 'UNREADABLE_KEY',
+      message: `${oneLine(input.privateKeyPath)} could not be read as a private key`,
+    };
+  }
+  const kind = keyPair.publicKey.asymmetricKeyType;
+  if (kind !== 'ed25519') {
+    return {
+      ok: false,
+      code: 'UNREADABLE_KEY',
+      message:
+        `the key ${oneLine(keyPair.fingerprint)} is ${kind === undefined ? 'of a kind this does not know' : nameOfAKeyKind(kind)}, ` +
+        "and an agent's key is an Ed25519 one — the consent that enrols it is proved for no other kind",
+    };
+  }
+
+  const query = { tree: input.tree, upcasters: input.upcasters };
+  const found = membershipIn(query, keyPair);
+  if (!found.ok) return found;
+  if (found.membership !== 'agent') {
+    return {
+      ok: false,
+      code: 'NOT_AN_AGENT_KEY',
+      message:
+        `the key ${oneLine(keyPair.fingerprint)} is a key of ${oneLine(found.anchor)} itself, not an agent's — ` +
+        "`mnema key restore <file>` brings it back as the person's. Nothing was written",
+    };
+  }
+  const enrolledAs = rosterByRole(query, found.anchor).agents.get(keyPair.fingerprint) ?? '';
+  if (enrolledAs !== input.name) {
+    return {
+      ok: false,
+      code: 'AGENT_UNDER_ANOTHER_NAME',
+      message:
+        `the record enrols the key ${oneLine(keyPair.fingerprint)} as the agent "${oneLine(enrolledAs)}" of ` +
+        `${oneLine(found.anchor)}, not as "${oneLine(input.name)}" — a key keeps the name it was enrolled under, ` +
+        `so restore it with --agent ${oneLine(enrolledAs)}`,
+    };
+  }
+
+  const keyRoot = { root: input.agentKeyRoot };
+  const [other] = listPrivateKeyFingerprints(keyRoot).filter((fp) => fp !== keyPair.fingerprint);
+  if (other !== undefined) {
+    return {
+      ok: false,
+      code: 'KEY_PRESENT',
+      message:
+        `the folder of the agent "${oneLine(input.name)}" already holds the private key ${oneLine(other)} — ` +
+        'a second would make the key the agent signs with depend on the order the directory lists them',
+    };
+  }
+
+  const installedAt = persistKeyPair(keyRoot, keyPair);
+  return {
+    ok: true,
+    fingerprint: keyPair.fingerprint,
+    anchor: found.anchor,
+    name: input.name,
+    installedAt,
+  };
 }

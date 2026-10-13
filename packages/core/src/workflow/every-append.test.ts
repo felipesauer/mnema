@@ -706,6 +706,8 @@ describe('every write refuses what no read could accept', () => {
     requestAgentEnrollment:
       'produces an agent request and may mint the agent’s key, but appends no event',
     requestEnrollment: 'produces a request and may mint a key, but appends no event',
+    restoreAgentKey:
+      'installs key material in an agent’s folder and records no anchor; appends no event',
     restoreKey: 'installs key material and records an anchor; appends no event',
     signerFor: 'reads who would sign in a tree and may mint a key, but opens no writer',
   };

@@ -107,7 +107,7 @@ _mnema_flags() {
     'commit-hook uninstall') echo '-h --help -V --version --color' ;;
     'commit-hook suggest') echo '-h --help -V --version --color' ;;
     'key') echo '-h --help -V --version --color' ;;
-    'key restore') echo '-h --help -V --version --color' ;;
+    'key restore') echo '--agent -h --help -V --version --color' ;;
     'key request') echo '--anchor --key --checker --agent -h --help -V --version --color' ;;
     'key enroll') echo '--checker --agent -h --help -V --version --color' ;;
     'key github') echo '-h --help -V --version --color' ;;

@@ -23,8 +23,8 @@
 
 import { resolve } from 'node:path';
 import { catalogUpcasters } from '@mnema/chain';
-import { type DiscoveryEnv, resolveTrees } from '@mnema/core';
-import { type RestoredMembership, restoreKey } from '@mnema/core/write';
+import { agentKeyRoot, agentNameRefusal, type DiscoveryEnv, resolveTrees } from '@mnema/core';
+import { type RestoredMembership, restoreAgentKey, restoreKey } from '@mnema/core/write';
 
 /** What the restore needs — injected so it is testable. */
 export interface KeyRestoreContext {
@@ -98,5 +98,55 @@ export function runKeyRestore(
     membership: restored.membership,
     installedAt: restored.installedAt,
     root: trees.projectPublic,
+  };
+}
+
+/** The key of an agent was installed in the agent's own folder. */
+export interface AgentKeyRestored {
+  readonly ok: true;
+  readonly fingerprint: string;
+  /** The identity the agent signs for. */
+  readonly anchor: string;
+  /** The name the record enrols the key under. */
+  readonly name: string;
+  /** Where the private half was installed — a copy; the file given is untouched. */
+  readonly installedAt: string;
+}
+
+/**
+ * Restores the key of an agent into the agent's folder of this machine's data directory
+ * (`<data>/agents/<name>`) — what a CI runner, which begins every job with an empty one, does before
+ * its agent works. The record of the project's public tree must enrol the key as that agent under
+ * that name; nothing is written to the person's key root, to the tree or to the record.
+ */
+export function runAgentRestore(
+  ctx: KeyRestoreContext,
+  input: { name: string; privateKeyPath: string },
+): AgentKeyRestored | KeyRestoreRefused {
+  const unnamed = agentNameRefusal(input.name);
+  if (unnamed !== undefined) {
+    return { ok: false, reason: 'REFUSED', code: 'BAD_AGENT_NAME', message: unnamed };
+  }
+  const trees = resolveTrees(ctx.cwd, ctx.env);
+  if (trees.projectPublic === undefined) {
+    return { ok: false, reason: 'NO_PROJECT' };
+  }
+
+  const restored = restoreAgentKey({
+    privateKeyPath: resolve(ctx.cwd, input.privateKeyPath),
+    name: input.name,
+    agentKeyRoot: agentKeyRoot(ctx.env, input.name),
+    tree: trees.projectPublic,
+    upcasters: catalogUpcasters(),
+  });
+  if (!restored.ok) {
+    return { ok: false, reason: 'REFUSED', code: restored.code, message: restored.message };
+  }
+  return {
+    ok: true,
+    fingerprint: restored.fingerprint,
+    anchor: restored.anchor,
+    name: restored.name,
+    installedAt: restored.installedAt,
   };
 }
