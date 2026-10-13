@@ -1,11 +1,13 @@
 /**
- * A SERVER'S INSTRUCTIONS ARE CUT AT 2,048 CHARACTERS, in the real host — and the plugin's own
- * arrive whole.
+ * A SERVER'S INSTRUCTIONS ARE CUT AT THE CEILING THE HOST IS ASKED FOR, 2,048 CHARACTERS, and the
+ * plugin's own arrive whole.
  *
- * THE NUMBER IS NOT DOCUMENTED. The host's MCP page does not mention it; it is read here, off the
+ * THE NUMBER MOVED. Claude Code cut at 2,048 characters up to 2.1.295 and cuts at 4,096 since
+ * 2.1.296, a change its changelog states; `CLAUDE_CODE_MAX_MCP_DESCRIPTION_LENGTH` sets it. The
+ * product writes to 2,048, the lower, so the case asks the host for 2,048 and reads it off the
  * request, in the version the run names: a server whose instructions are one longer than the
  * ceiling arrives as the ceiling and the marker `… [truncated]`, and one exactly at it arrives
- * whole. The product writes its instructions to fit, and `every-description-reaches-the-model`
+ * whole. Without the variable the 2.1.296 host keeps 4,096 and this case is red. The product writes its instructions to fit, and `every-description-reaches-the-model`
  * holds that against a number of its own; this holds that against the host.
  *
  * WHAT IS HELD HERE AND WHAT IS NOT. That the boundary of the host in this version is where the
@@ -22,7 +24,7 @@ function aTextOf(length: number): string {
   return Array.from({ length }, (_, index) => String(index % 10)).join('');
 }
 
-describe("a server's instructions are cut at 2,048 characters", () => {
+describe("a server's instructions are cut at the 2,048 characters the host is asked for", () => {
   const start = aHostForEachCase();
 
   it('keeps 2,048, cuts one more, and hands the plugin’s own over whole', async () => {

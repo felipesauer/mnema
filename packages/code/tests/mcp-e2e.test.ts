@@ -2690,7 +2690,7 @@ describe('MCP server — end to end over a real client', () => {
     // worse than one that omits it, so the claim itself is asserted, not just the name.
     //
     // THE THREE PHRASES WERE REWRITTEN, not the three properties. The host cuts a
-    // description at 2048 characters and `bootstrap` was losing 54% of itself, so this
+    // description at 2048 characters (Claude Code up to 2.1.295) and `bootstrap` was losing 54% of itself, so this
     // contract was compressed to every declaration and no justification. The scope
     // clause survived the compression BECAUSE of the mutation named above — it is the
     // one clause here whose falsification a battery proved nothing else catches.
@@ -3675,7 +3675,7 @@ describe('MCP — what enters the record', () => {
     // whichever direction the door went.
     expect(description).toContain('awaitingJudgement');
     // The phrase moved and the property did not. It read '`skills` with the id' until
-    // the host's 2048-character ceiling forced this description down from 4478; the
+    // the 2048-character ceiling of Claude Code up to 2.1.295 forced this description down from 4478; the
     // three doors now share one clause that says they are all reached BY ID, which is
     // the fact this line is about.
     expect(description).toContain('For the rest, by id:');

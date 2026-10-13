@@ -1,7 +1,8 @@
 /**
  * Every tool description reaches the model WHOLE.
  *
- * The host truncates a tool description at 2048 characters, appends `… [truncated]`,
+ * Claude Code truncated a tool description at 2048 characters (up to 2.1.295; the limit is
+ * 4096 since 2.1.296, a change its changelog states), appends `… [truncated]`,
  * and tells nobody. Measured against the built `dist` by asking `tools/list` and
  * comparing the protocol's bytes with the bytes the host hands the model: `bootstrap`
  * was 4478 characters and lost 2430 of them — 54% — and `guard` was 2070 and lost 22.
@@ -20,7 +21,8 @@
  * WHAT IT DOES NOT KNOW, declared rather than guessed:
  *   - WHERE the cut happens — the client, the SDK, or the API. That decides whether
  *     the fix is ours or a report upstream, and it is unmeasured.
- *   - WHETHER 2048 is fixed or configurable.
+ *   - WHETHER 2048 is fixed or configurable: it is configurable in Claude Code, with
+ *     `CLAUDE_CODE_MAX_MCP_DESCRIPTION_LENGTH`, and the product keeps to the lower number.
  *   - WHETHER other MCP clients truncate, and at what point. The official list has 29.
  * A number this file cannot re-derive is a number it has to be told, so the ceiling is
  * a constant with its provenance beside it rather than a probe of the host.
@@ -43,7 +45,8 @@ import { buildMcpServer } from '../src/mcp/server.js';
  * The host's ceiling, in characters of the description string.
  *
  * MEASURED, not chosen: `tools/list` was compared against what the host forwards, and
- * the boundary is 2048 with `… [truncated]` appended past it. It is written here
+ * the boundary was 2048 with `… [truncated]` appended past it (4096 since Claude Code 2.1.296; the
+ * product keeps to the lower). It is written here
  * because this process cannot ask the host what its limit is — see the file's doc — and
  * a limit nobody can re-derive is a limit that has to be stated with its source.
  */
@@ -167,7 +170,7 @@ describe('every description reaches the model', () => {
     // on the text itself rather than inferred from the descriptions: a session's transcript
     // records what the host folded in (`mcp_instructions_delta`), and a server there that
     // sent more arrived as exactly 2,048 characters followed by `… [truncated]` — host
-    // 2.1.280, on 22/09/2026. The host's own documentation says the same of both fields
+    // 2.1.280, on 22/09/2026; since 2.1.296 the host keeps 4,096, and the product stays at 2,048. The host's own documentation says the same of both fields
     // ("truncates tool descriptions and server instructions at 2KB each"), which is why the
     // constant is shared rather than stated twice. What a cut takes is the end, and the end
     // of this text is the sentence about what comes back.

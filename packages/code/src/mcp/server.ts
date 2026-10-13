@@ -293,8 +293,8 @@ const DECISION_VERDICTS = andListed(actionsRequiring('decision', 'note'));
  * The reads report; the person or the agent decides, and `mnema run end <id> --which <agent>`
  * is how a decision gets recorded — whole, because the verb refuses a close that names no agent.
  *
- * WHY IT IS SHORTER THAN THE RULES IT CARRIES. The host truncates a tool description
- * at 2048 characters and appends `… [truncated]`, and nothing warns. This text is
+ * WHY IT IS SHORTER THAN THE RULES IT CARRIES. Claude Code truncated a tool description
+ * at 2048 characters (up to 2.1.295; 4096 since 2.1.296) and appended `… [truncated]`, and nothing warned. This text is
  * appended to four descriptions, one of which — `bootstrap`, at 4478 — lost 54% of
  * itself that way, and what a cut takes is the END, where every limit this project
  * declares happens to be written. So what stayed on the wire is every DECLARATION an
@@ -1348,8 +1348,8 @@ function registerTools(tool: ToolRegistrar, ensureSession: () => Promise<Session
     readsTheRecord('bootstrap'),
     {
       title: 'Bootstrap the session',
-      // THE LONGEST DESCRIPTION ON THIS SERVER, and the one the host's 2048-character
-      // ceiling cut in half — 4478 characters, 2430 of them dropped with `…
+      // THE LONGEST DESCRIPTION ON THIS SERVER, and the one Claude Code's 2048-character
+      // ceiling (up to 2.1.295) cut in half — 4478 characters, 2430 of them dropped with `…
       // [truncated]` and no warning. What a cut takes is the END, and the end of this
       // text was where every limit of the read was declared: what `unread` means, why a
       // decision that does not govern is left out, what a total larger than its list

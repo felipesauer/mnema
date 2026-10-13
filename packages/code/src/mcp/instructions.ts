@@ -42,12 +42,14 @@
  * what turns it off is disconnecting the server. `record-framing.ts` lists it among the
  * texts deliberately outside the union, with this reason.
  *
- * THE CEILING IS THE HOST'S, AND IT WAS MEASURED ON THIS FIELD. The host keeps 2,048
- * characters of a server's instructions and appends `… [truncated]` — read off the
- * `mcp_instructions_delta` a session's transcript records, where a server that sent more
- * arrived as exactly 2,048 characters and the marker — and its documentation says the same
- * ("truncates tool descriptions and server instructions at 2KB each"). What a cut takes is
- * the END, so what matters most is first. Held by
+ * THE CEILING IS THE HOST'S, AND IT WAS MEASURED ON THIS FIELD. Claude Code keeps 2,048
+ * characters of a server's instructions up to 2.1.295 and 4,096 since 2.1.296, and appends
+ * `… [truncated]` past it; `CLAUDE_CODE_MAX_MCP_DESCRIPTION_LENGTH` moves the number. It was
+ * read off the `mcp_instructions_delta` a session's transcript records, where a server that
+ * sent more arrived as exactly the ceiling and the marker, and the host's documentation
+ * says the same ("truncates tool descriptions and server instructions at 2KB each"). THE
+ * CEILING HERE STAYS 2,048: it is the lower of the two, so the text fits whichever host
+ * reads it. What a cut takes is the END, so what matters most is first. Held by
  * `every-description-reaches-the-model.test.ts`, which is where the same ceiling is held
  * for every tool description.
  *
