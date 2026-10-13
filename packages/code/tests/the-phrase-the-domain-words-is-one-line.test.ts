@@ -1538,6 +1538,79 @@ const CLASSIFIED: Readonly<Record<string, { verdict: Verdict; why: string }>> = 
       verdict: 'collapsed',
       why: 'the path `key restore` was given, in the refusal that says it would not open',
     },
+  "@mnema/core identity/handshake.ts «{} is protected by a passphrase, and an agent's host has no terminal to ask it at — » oneLine(input.privateKeyPath) #1":
+    {
+      verdict: 'collapsed',
+      why: 'the path a caller typed to `key request --agent --key`, in the refusal that says the file is protected',
+    },
+  "@mnema/core identity/restore.ts «{} is protected by a passphrase, and an agent's host has no terminal to ask it at — » oneLine(input.privateKeyPath) #1":
+    {
+      verdict: 'collapsed',
+      why: 'the path `key restore --agent` was given, in the refusal that says the file is protected',
+    },
+  '@mnema/core identity/restore.ts «{} could not be read as a private key» oneLine(input.privateKeyPath) #2':
+    {
+      verdict: 'collapsed',
+      why: 'the path `key restore --agent` was given, in the refusal that says it would not open',
+    },
+  '@mnema/core identity/restore.ts «the key {} is {}, » oneLine(keyPair.fingerprint) #1': {
+    verdict: 'collapsed',
+    why: 'the fingerprint re-derived from the private key file `key restore --agent` was handed',
+  },
+  "@mnema/core identity/restore.ts «the key {} is {}, » kind === undefined ? 'of a kind this does not know' : nameOfAKeyKind(kind) #1":
+    {
+      verdict: 'minted',
+      why: 'one of this product’s own words, or the name of an algorithm that Node reports for a key it parsed',
+    },
+  "@mnema/core identity/restore.ts «the key {} is a key of {} itself, not an agent's — » oneLine(keyPair.fingerprint) #1":
+    {
+      verdict: 'collapsed',
+      why: 'the fingerprint re-derived from the private key file `key restore --agent` was handed',
+    },
+  "@mnema/core identity/restore.ts «the key {} is a key of {} itself, not an agent's — » oneLine(found.anchor) #1":
+    {
+      verdict: 'collapsed',
+      why: 'the identity the record proves the key a member of, named by whoever vouched for it',
+    },
+  '@mnema/core identity/restore.ts «the record enrols the key {} as the agent "{}" of » oneLine(keyPair.fingerprint) #1':
+    {
+      verdict: 'collapsed',
+      why: 'the fingerprint re-derived from the private key file `key restore --agent` was handed',
+    },
+  '@mnema/core identity/restore.ts «the record enrols the key {} as the agent "{}" of » oneLine(enrolledAs) #1':
+    {
+      verdict: 'collapsed',
+      why: 'the name the record gave the key, read from the record whose events are not this machine’s alone',
+    },
+  '@mnema/core identity/restore.ts «{}, not as "{}" — a key keeps the name it was enrolled under, » oneLine(found.anchor) #1':
+    {
+      verdict: 'collapsed',
+      why: 'the identity the record proves the key an agent of, named by whoever vouched for it',
+    },
+  '@mnema/core identity/restore.ts «{}, not as "{}" — a key keeps the name it was enrolled under, » oneLine(input.name) #1':
+    {
+      verdict: 'collapsed',
+      why: 'the name a caller typed to `key restore --agent`, which the agent-name form has already held to one line',
+    },
+  '@mnema/core identity/restore.ts «so restore it with --agent {}» oneLine(enrolledAs) #1': {
+    verdict: 'collapsed',
+    why: 'the name the record gave the key, read from the record whose events are not this machine’s alone',
+  },
+  '@mnema/core identity/restore.ts «the folder of the agent "{}" already holds the private key {} — » oneLine(input.name) #1':
+    {
+      verdict: 'collapsed',
+      why: 'the name a caller typed to `key restore --agent`, which the agent-name form has already held to one line',
+    },
+  '@mnema/core identity/restore.ts «the folder of the agent "{}" already holds the private key {} — » oneLine(other) #1':
+    {
+      verdict: 'collapsed',
+      why: 'a FILE NAME in the agent’s key root, stripped of its suffix — whatever the directory holds',
+    },
+  '@mnema/core identity/restore.ts «\\`mnema key restore --agent {} <file>\\` installs it there. Nothing was written» oneLine(name) #1':
+    {
+      verdict: 'collapsed',
+      why: 'the name the record gave the key, read from the record whose events are not this machine’s alone',
+    },
   '@mnema/core identity/restore.ts «this machine already holds the private key {} — » oneLine(other) #1':
     {
       verdict: 'collapsed',
@@ -1946,9 +2019,9 @@ describe('every value the domain puts in a sentence is classified', () => {
     // are equal. The scale is stated, and so is what the HANDOFF said — twenty-three
     // sites, twelve in `core` and eleven in `chain` — because it counted sentences
     // written at a `message:` or a `detail:` directly, and a value is not a sentence.
-    expect(SITES.length).toBe(266);
+    expect(SITES.length).toBe(281);
     expect(FOUND[0]?.sites.length).toBe(93);
-    expect(FOUND[1]?.sites.length).toBe(173);
+    expect(FOUND[1]?.sites.length).toBe(188);
     expect(FOUND.flatMap((layer) => layer.wording).length).toBeGreaterThan(15);
   });
 
@@ -1998,11 +2071,11 @@ describe('every value the domain puts in a sentence is classified', () => {
     // No arm of the case above may be empty, or that much of it is vacuous.
     const verdicts = Object.values(CLASSIFIED).map((said) => said.verdict);
     const count = (verdict: Verdict): number => verdicts.filter((said) => said === verdict).length;
-    expect(count('collapsed')).toBe(182);
-    expect(count('minted')).toBe(61);
+    expect(count('collapsed')).toBe(196);
+    expect(count('minted')).toBe(62);
     expect(count('composed')).toBe(23);
     expect(SITES.filter((site) => new RegExp(`\\b${DOOR}\\b`).test(site.expression))).toHaveLength(
-      182,
+      196,
     );
   });
 
