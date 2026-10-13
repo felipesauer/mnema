@@ -221,6 +221,11 @@ export class ChainWriter {
     installationId: string,
     private readonly upcasters: UpcasterRegistry,
     options: WriterOptions = {},
+    /**
+     * What must be on disk before this tail's first byte that opening did not write: a machine's
+     * first key, made in memory and kept here (`keyToSignWith`). Run once, at birth.
+     */
+    private readonly keepBeforeBirth?: () => void,
   ) {
     this.maxSegmentBytes = options.maxSegmentBytes ?? DEFAULT_MAX_SEGMENT_BYTES;
     this.maxUnsignedEvents = options.maxUnsignedEvents ?? DEFAULT_MAX_UNSIGNED_EVENTS;
@@ -271,6 +276,8 @@ export class ChainWriter {
    */
   private ensureBorn(): void {
     if (this.born) return;
+    // First, so a key another process kept meanwhile refuses before anything lands in the chain.
+    this.keepBeforeBirth?.();
     materializePublicKey(this.layout, this.keyPair);
     mkdirSync(tailDir(this.layout, this.tailId), { recursive: true });
     this.ensureTailProof();

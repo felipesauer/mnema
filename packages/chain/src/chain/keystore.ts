@@ -36,6 +36,7 @@ import {
   writeFileSync,
   writeSync,
 } from 'node:fs';
+import { resolve } from 'node:path';
 import { decodeStoredBytes } from '../events/stored-json.js';
 import { CodedError } from './coded-error.js';
 import {
@@ -101,13 +102,93 @@ export function loadOrCreateKeyPair(layout: ChainLayout): KeyPair {
       // Asked again under the lock: the process that held it before this one may have minted.
       const minted = findLocalKeyPair(layout);
       if (minted !== null) return minted;
-      const keyPair = generateKeyPair();
+      // The key this process already answered "who signs" with, when it did: one key per process.
+      const keyPair = unkept.get(resolve(layout.root)) ?? generateKeyPair();
       persistKeyPair(layout, keyPair);
+      unkept.delete(resolve(layout.root));
       return keyPair;
     });
   } catch (error) {
     if (error instanceof TailBusyError) throw new KeyRootBusyError(error.tailLock, error.heldBy);
     throw error;
+  }
+}
+
+/**
+ * The keys made in this process for a key root that held none, and not kept yet — by key root.
+ * One per root, so every question this process asks about who signs there gets the same answer.
+ */
+const unkept = new Map<string, KeyPair>();
+
+/** The key a writer signs with, and — when it is not on disk yet — how to keep it. */
+export interface KeyToSignWith {
+  readonly keyPair: KeyPair;
+  /** Present only for a key made in this process and not kept: called before its first byte. */
+  readonly keep?: () => void;
+}
+
+/**
+ * The machine's key at `layout`, or — where it holds none — a key made IN MEMORY and kept only
+ * when something is written with it ({@link KeyToSignWith.keep}).
+ *
+ * A FIRST WRITE THE GATE REFUSED MADE THE MACHINE'S KEY. The key was minted where a writer
+ * opened, and the surfaces open one before the operation decides: measured on the binary, a
+ * `task move cancel` with no reason from an empty HOME was refused (`MISSING_PROOF`) and left a
+ * key pair under the HOME and an installation id in the project. "The key is made at the first
+ * write" said otherwise. So the decision is taken with a key nobody has kept yet, and the key is
+ * kept at the writer's first append, under the key root's lock.
+ *
+ * The lock's race moves with it: two processes may each hold a key of their own while each
+ * decides. The first to keep wins; the second, finding a key it did not make, refuses
+ * ({@link KeyMadeMeanwhileError}) rather than sign as a second identity of this machine — its
+ * decision was taken as a key that is not the machine's. Its next write signs with the one kept.
+ */
+export function keyToSignWith(layout: ChainLayout): KeyToSignWith {
+  const existing = findLocalKeyPair(layout);
+  if (existing !== null) return { keyPair: existing };
+  const root = resolve(layout.root);
+  const keyPair = unkept.get(root) ?? generateKeyPair();
+  unkept.set(root, keyPair);
+  return { keyPair, keep: () => keepKeyPair(layout, keyPair) };
+}
+
+function keepKeyPair(layout: ChainLayout, keyPair: KeyPair): void {
+  // Kept already, by another writer of this process: nothing to take the lock for.
+  if (localKeyFingerprint(layout) === keyPair.fingerprint) return;
+  ensureKeyRootIgnored(layout);
+  try {
+    withTailLock(keyRootLockPath(layout), () => {
+      const there = localKeyFingerprint(layout);
+      if (there === keyPair.fingerprint) return;
+      if (there !== null) throw new KeyMadeMeanwhileError(layout.root, there);
+      persistKeyPair(layout, keyPair);
+    });
+  } catch (error) {
+    if (error instanceof TailBusyError) throw new KeyRootBusyError(error.tailLock, error.heldBy);
+    throw error;
+  } finally {
+    unkept.delete(resolve(layout.root));
+  }
+}
+
+/**
+ * A write decided with a key this process made in memory, refused because another process kept
+ * this machine's first key while it decided. Signing anyway would give the machine two keys,
+ * and which one it speaks as would then be directory order. Nothing was written.
+ */
+export class KeyMadeMeanwhileError extends CodedError {
+  readonly code = 'KEY_MADE_MEANWHILE';
+
+  constructor(
+    readonly keyRoot: string,
+    readonly fingerprint: string,
+  ) {
+    super(
+      `this machine's first key (${fingerprint}) was made by another process while this write ` +
+        'was being decided, with a key of its own that would have been a second identity. ' +
+        `Nothing was written. Write again: it signs with the key now in ${keyRoot}.`,
+    );
+    this.name = 'KeyMadeMeanwhileError';
   }
 }
 
@@ -436,6 +517,37 @@ export function loadOrCreateInstallationId(layout: ChainLayout, fingerprint: str
   }
 }
 
+/** The installation ids chosen in this process for a key not kept yet — by the id's path. */
+const unkeptIds = new Map<string, string>();
+
+/**
+ * The installation id of a key not kept yet ({@link keyToSignWith}), chosen in memory and written
+ * by `keep`, beside the key, at the writer's first append. A key nobody kept has no id on disk and
+ * no other process holds it, so the id is this process's to choose; one per chain, so two writers
+ * of this process name one tail.
+ */
+export function installationIdToKeep(
+  layout: ChainLayout,
+  fingerprint: string,
+): { readonly id: string; readonly keep: () => void } {
+  const path = installationIdPath(layout, fingerprint);
+  const id = unkeptIds.get(path) ?? randomBytes(16).toString('hex');
+  unkeptIds.set(path, id);
+  return {
+    id,
+    keep: () => {
+      mkdirSync(keysDir(layout), { recursive: true });
+      if (mintInstallationId(path, id) === undefined) {
+        // Kept by another writer of this process — or a file nobody should have made for a key
+        // that was never kept, and then this is not the tail it names.
+        const there = loadOrCreateInstallationId(layout, fingerprint);
+        if (there !== id) throw new UnsettledInstallationIdError(path, 0);
+      }
+      unkeptIds.delete(path);
+    },
+  };
+}
+
 /**
  * How long a reader waits for an installation id another process has created and not yet
  * written, before it refuses — and how long a create that keeps finding the name taken, where
@@ -580,8 +692,10 @@ function readInstallationId(path: string, deadline: number): string | undefined 
  * A write that fails after the create removes the file, so a full disk cannot leave behind the
  * empty `.inst` that every later reader would wait out and refuse.
  */
-export function mintInstallationId(path: string): string | undefined {
-  const installationId = randomBytes(16).toString('hex');
+export function mintInstallationId(
+  path: string,
+  installationId: string = randomBytes(16).toString('hex'),
+): string | undefined {
   let fd: number;
   try {
     fd = openSync(path, 'wx', 0o600);

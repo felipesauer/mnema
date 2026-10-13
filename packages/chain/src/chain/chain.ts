@@ -15,8 +15,9 @@ import { catalogUpcasters } from '../events/registry.js';
 import type { UpcasterRegistry } from '../events/upcaster.js';
 import {
   type ChainSigner,
+  installationIdToKeep,
+  keyToSignWith,
   loadOrCreateInstallationId,
-  loadOrCreateKeyPair,
   localKeyFingerprint,
   signerOf,
 } from './keystore.js';
@@ -68,13 +69,21 @@ export interface OpenOptions extends WriterOptions {
  */
 export function openChainForWriting(chainRoot: string, options: OpenOptions): ChainWriter {
   const chainLayout: ChainLayout = { root: chainRoot };
-  const keyPair = loadOrCreateKeyPair({ root: options.keyRoot });
-  const installationId = loadOrCreateInstallationId(
-    { root: options.installationRoot ?? chainRoot },
-    keyPair.fingerprint,
-  );
+  const key = keyToSignWith({ root: options.keyRoot });
+  const installationLayout: ChainLayout = { root: options.installationRoot ?? chainRoot };
   const upcasters = options.upcasters ?? catalogUpcasters();
-  return new ChainWriter(chainLayout, keyPair, installationId, upcasters, options);
+  const keepKey = key.keep;
+  if (keepKey === undefined) {
+    const installationId = loadOrCreateInstallationId(installationLayout, key.keyPair.fingerprint);
+    return new ChainWriter(chainLayout, key.keyPair, installationId, upcasters, options);
+  }
+  // A machine with no key yet: the key, and its installation id here, are kept at the writer's
+  // first append — so a write refused before it leaves the machine and the tree as they were.
+  const installation = installationIdToKeep(installationLayout, key.keyPair.fingerprint);
+  return new ChainWriter(chainLayout, key.keyPair, installation.id, upcasters, options, () => {
+    keepKey();
+    installation.keep();
+  });
 }
 
 /**
@@ -97,7 +106,7 @@ export function signerAt(chainRoot: string, options: { readonly keyRoot: string 
   // WHO SIGNS, WITHOUT OPENING THE KEY: a protected key would otherwise make this question need
   // the passphrase. The key is opened where it signs, at the writer.
   const keyRoot = { root: options.keyRoot };
-  const fingerprint = localKeyFingerprint(keyRoot) ?? loadOrCreateKeyPair(keyRoot).fingerprint;
+  const fingerprint = localKeyFingerprint(keyRoot) ?? keyToSignWith(keyRoot).keyPair.fingerprint;
   return signerOf({ root: chainRoot }, fingerprint);
 }
 
