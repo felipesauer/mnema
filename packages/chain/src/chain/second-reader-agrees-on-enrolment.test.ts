@@ -10,8 +10,8 @@
  * happened here, and it is why this file exists. With no field declarations published, the
  * only derivation of the envelope a stranger could make was the INTERSECTION of the
  * published vectors' top-level keys — which `FORMAT.md` section 7 stated as a fact, in so
- * many words. `which` is carried by sixteen of the twenty-three vectors and `run` by
- * three, so an intersection is not the envelope; the second reader consequently REFUSED an
+ * many words. `which` was carried by sixteen of the twenty-three vectors published when
+ * this was found, and `run` by three, so an intersection is not the envelope; the second reader consequently REFUSED an
  * honest event for carrying `which`, on a record the product read as fine. Nothing caught
  * it: the frozen records happen to hold only events that carry neither, and every mutation
  * in the table is an attack, so every case in the suite was asking the other question.
