@@ -46,7 +46,7 @@
  * this module's shape rather than its prose. A measurement over a real record put the
  * complaint as one line — every read that reports a run reports the CONTAINER, never
  * what was put in it — and it was true of the whole of {@link ReportedRun}: `id`,
- * `agent`, `who`, `goal`, `outcome`, `open`, `startedAt`, `endedAt`, `lastFactAt`, and
+ * `agent`, `goal`, `outcome`, `open`, `startedAt`, `endedAt`, `lastFactAt`, and
  * the three fields added here. `lastFactAt` says WHEN the last fact landed and nothing
  * can be inferred from it about WHAT landed, so a session that recorded a decision and
  * one that recorded a passing note reported identically. The fold answers it now
@@ -104,8 +104,8 @@ export interface ActorScope extends AskerContext {
 }
 
 /**
- * A run as REPORTED to an asker: the projection, plus what only the asker's own
- * position adds.
+ * A run as REPORTED to an asker: the projection less its `who` (the actor is said
+ * once, by the answer), plus what only the asker's own position adds.
  *
  * The three added fields are derived, never stored — nothing new is written to the
  * record to produce them. That is deliberate: the defect they answer is a session's

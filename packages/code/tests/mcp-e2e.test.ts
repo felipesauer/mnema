@@ -231,6 +231,9 @@ describe('MCP session + tools — unit', () => {
     const context = runBootstrap(session);
     expect(context.resume.actor).toBe(session.who);
     expect(context.resume.focus.openRuns.some((r) => r.id === theRun(session))).toBe(true);
+    // ...and the actor is said once: the nested focus is only its runs, and no run repeats it.
+    expect(Object.keys(context.resume.focus)).toEqual(['openRuns']);
+    expect(JSON.stringify(context).split(session.who)).toHaveLength(2);
   });
 
   it('focus reports the session actor’s own open run, and writes nothing', () => {
@@ -312,6 +315,9 @@ describe('MCP session + tools — unit', () => {
     expect(resume.lastRun?.open).toBe(false);
     // The ended run is not in focus.
     expect(resume.focus.openRuns.some((r) => r.id === runId)).toBe(false);
+    // The actor is said once: the nested focus is only its runs, and no run repeats it.
+    expect(Object.keys(resume.focus)).toEqual(['openRuns']);
+    expect(JSON.stringify(resume).split(session.who)).toHaveLength(2);
   });
 
   it('next_actions lists a task’s legal moves, and refuses an unknown id as data', () => {
