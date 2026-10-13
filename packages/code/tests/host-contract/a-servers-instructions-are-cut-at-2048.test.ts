@@ -26,7 +26,10 @@ describe("a server's instructions are cut at 2,048 characters", () => {
   const start = aHostForEachCase();
 
   it('keeps 2,048, cuts one more, and hands the plugin’s own over whole', async () => {
-    const session = await start({ servers: { exact: aTextOf(2048), over: aTextOf(2049) } });
+    const session = await start({
+      servers: { exact: aTextOf(2048), over: aTextOf(2049) },
+      env: { CLAUDE_CODE_MAX_MCP_DESCRIPTION_LENGTH: '2048' },
+    });
     const arrived = theInstructionsThatArrived(session, ['plugin:mnema:mnema', 'exact', 'over']);
 
     expect(arrived['exact']).toBe(aTextOf(2048));
