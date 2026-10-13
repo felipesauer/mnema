@@ -56,7 +56,7 @@ import {
 } from './identity-operations.js';
 import { createTask, transitionTask, type WriteContext } from './operations.js';
 import { authorizeTailPrune } from './prune-operations.js';
-import { endRun, startRun } from './session-operations.js';
+import { endRun, prepareRun, startRun } from './session-operations.js';
 import {
   adoptSkill,
   createSkill,
@@ -350,6 +350,14 @@ describe('a checkout the key left writes nothing, through every write of the sur
       op: 'startRun',
       refusedBy: 'the anchor',
       drive: (as) => startRun(as, { agent: 'a' }),
+    },
+    {
+      op: 'prepareRun',
+      refusedBy: 'the anchor',
+      drive: (as) => {
+        const prepared = prepareRun(as, { agent: 'a' });
+        return prepared.ok ? prepared.start() : prepared;
+      },
     },
     {
       op: 'endRun',

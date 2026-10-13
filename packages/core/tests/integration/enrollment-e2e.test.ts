@@ -50,7 +50,9 @@ const upcasters: UpcasterRegistry = catalogUpcasters();
 
 function openMachine(prefix: string): Machine {
   const root = mkdtempSync(join(tmpdir(), prefix));
-  // keyRoot == chainRoot: each machine keeps its key beside its one chain here.
+  // keyRoot == chainRoot: each machine keeps its key beside its one chain here. A machine that
+  // has its key: a first key is kept only at a first append.
+  loadOrCreateKeyPair({ root });
   const writer = openChainForWriting(root, { keyRoot: root });
   return { root, writer, fingerprint: writer.signerFingerprint };
 }

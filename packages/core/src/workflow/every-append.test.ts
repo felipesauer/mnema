@@ -39,7 +39,7 @@ import {
 } from './identity-operations.js';
 import { createTask, type WriteContext } from './operations.js';
 import { authorizeTailPrune } from './prune-operations.js';
-import { endRun, startRun } from './session-operations.js';
+import { endRun, prepareRun, startRun } from './session-operations.js';
 import { createSkill, recordConsultation } from './skill-operations.js';
 
 /**
@@ -396,6 +396,16 @@ describe('every write refuses what no read could accept', () => {
         field: 'goal',
         names: 'payload.goal',
         drive: () => startRun(ctx, { agent: 'a', goal: '' }),
+      },
+      {
+        // The same run, prepared before the write that opens it and started by that write.
+        op: 'prepareRun',
+        field: 'goal',
+        names: 'payload.goal',
+        drive: () => {
+          const prepared = prepareRun(ctx, { agent: 'a', goal: '' });
+          return prepared.ok ? prepared.start() : prepared;
+        },
       },
       {
         op: 'endRun',

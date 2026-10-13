@@ -17,7 +17,13 @@ import { existsSync, mkdirSync, mkdtempSync, readdirSync, readFileSync, rmSync }
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { pathToFileURL } from 'node:url';
-import { catalogUpcasters, ensureTree, memoryCaptured, verify } from '@mnema/chain';
+import {
+  catalogUpcasters,
+  ensureTree,
+  loadOrCreateKeyPair,
+  memoryCaptured,
+  verify,
+} from '@mnema/chain';
 import {
   chainRootForScope,
   type DiscoveryEnv,
@@ -35,7 +41,7 @@ import {
   resolveTrees,
   type Scope,
 } from '@mnema/core';
-import { createTask, openTreeForWriting, signerFor } from '@mnema/core/write';
+import { createTask, openTreeForWriting } from '@mnema/core/write';
 import { Client } from '@modelcontextprotocol/sdk/client/index.js';
 import { InMemoryTransport } from '@modelcontextprotocol/sdk/inMemory.js';
 import { ListRootsRequestSchema } from '@modelcontextprotocol/sdk/types.js';
@@ -113,7 +119,7 @@ afterEach(() => {
  * with none has no anchor until its first write, and a case about the anchor needs one to hold.
  */
 function aMachineWithAKey(): void {
-  signerFor(resolveTrees(sandbox, env), 'global');
+  loadOrCreateKeyPair({ root: resolveTrees(sandbox, env).keyRoot });
 }
 
 /**

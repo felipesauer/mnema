@@ -30,6 +30,7 @@ import {
   catalogUpcasters,
   deriveAnchor,
   enrollmentMessage,
+  loadOrCreateKeyPair,
   materializePublicKey,
   openChainForWriting,
   sign,
@@ -84,6 +85,8 @@ function machine(prefix: string): Machine {
 
 /** A writer for the key at `keyRoot` — what a NEW process of that installation opens. */
 function open(keyRoot: string): Machine {
+  // A machine that has its key: a first key is kept only at a first append.
+  loadOrCreateKeyPair({ root: keyRoot });
   const writer = openChainForWriting(tree, { keyRoot });
   return {
     keyRoot,

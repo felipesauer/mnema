@@ -34,6 +34,7 @@ import {
   enrollmentMessage,
   generateKeyPair,
   identityFounded,
+  loadOrCreateKeyPair,
   materializePublicKey,
   openChainForWriting,
   type PublicHalf,
@@ -90,6 +91,8 @@ function machine(prefix: string): Machine {
 }
 
 function open(keyRoot: string): Machine {
+  // A machine that has its key: a first key is kept only at a first append.
+  loadOrCreateKeyPair({ root: keyRoot });
   const writer = openChainForWriting(tree, { keyRoot });
   const layout: ChainLayout = { root: tree };
   return {
@@ -370,7 +373,8 @@ describe('the same decision with or without a writer — the one a caller takes 
   /** A key root holding a key that has never opened a writer over the tree. */
   function unopened(prefix: string): { keyRoot: string; fingerprint: string } {
     const keyRoot = tmp(prefix);
-    return { keyRoot, fingerprint: signerAt(tree, { keyRoot }).signerFingerprint };
+    // A machine that has its key and never opened a writer here: asking who signs keeps no key.
+    return { keyRoot, fingerprint: loadOrCreateKeyPair({ root: keyRoot }).fingerprint };
   }
 
   it('for a key new to the tree: the anchor it would found — and the tree untouched by asking', () => {
@@ -425,7 +429,8 @@ describe('the way out, with three identities — the words for more than two', (
   /** A key root holding a key that has never opened a writer over the tree. */
   function joiner(prefix: string): { keyRoot: string; fingerprint: string } {
     const keyRoot = tmp(prefix);
-    return { keyRoot, fingerprint: signerAt(tree, { keyRoot }).signerFingerprint };
+    // A machine that has its key and never opened a writer here: asking who signs keeps no key.
+    return { keyRoot, fingerprint: loadOrCreateKeyPair({ root: keyRoot }).fingerprint };
   }
 
   /** The refusal the record gives for the key, whole. */

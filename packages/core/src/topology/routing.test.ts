@@ -231,9 +231,12 @@ describe('openTreeForWriting — routing a write to the right tree', () => {
   });
 
   it('signs every tree with the ONE key root (referenced, never copied)', () => {
-    // Writing to two different trees must not put a private key in either chain.
-    openTreeForWriting(trees, 'public');
-    openTreeForWriting(trees, 'global');
+    // Writing to two different trees must not put a private key in either chain. Written, not
+    // only opened: a machine's first key is kept at its first append.
+    for (const scope of ['public', 'global'] as const) {
+      const created = createTask(contextFor(scope).ctx, { title: `in the ${scope} tree` });
+      if (!created.ok) throw new Error('create failed');
+    }
     const noPrivateKeyIn = (root: string): boolean => {
       const keysDir = join(root, 'keys');
       if (!existsSync(keysDir)) return true;

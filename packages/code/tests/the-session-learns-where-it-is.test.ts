@@ -43,9 +43,8 @@ import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync } from 'node:f
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
-import { catalogUpcasters, ensureTree } from '@mnema/chain';
+import { catalogUpcasters, ensureTree, loadOrCreateKeyPair } from '@mnema/chain';
 import { type DiscoveryEnv, orderedEvents, PROJECT_DIR, resolveTrees } from '@mnema/core';
-import { signerFor } from '@mnema/core/write';
 import { Client } from '@modelcontextprotocol/sdk/client/index.js';
 import { InMemoryTransport } from '@modelcontextprotocol/sdk/inMemory.js';
 import { ListRootsRequestSchema } from '@modelcontextprotocol/sdk/types.js';
@@ -162,8 +161,9 @@ beforeEach(() => {
   sandbox = mkdtempSync(join(tmpdir(), 'mnema-learns-'));
   env = { home: sandbox };
   logged = [];
-  // The machine's own key, made the way the first write makes it: nothing else here writes.
-  signerFor(resolveTrees(sandbox, env), 'global');
+  // The machine's own key, made the way the first write that lands makes it: nothing else here
+  // writes.
+  loadOrCreateKeyPair({ root: resolveTrees(sandbox, env).keyRoot });
 });
 
 afterEach(() => {
