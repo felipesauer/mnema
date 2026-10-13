@@ -2355,10 +2355,10 @@ $ mnema key request --help
 |                   data directory and never beside yours (or the one --key names,
 |                   which is not made), that signs for the identity and names that
 |                   agent on everything it signs. The line consents to that one
-|                   identity; in the private and global trees, where the key lives
-|                   on this machine and the tree speaks for another, `key enroll
-|                   --agent <name>` on this machine makes the consent again under
-|                   that tree's identity
+|                   identity; in the private tree and the global one, where the
+|                   key lives on this machine and the tree speaks for another,
+|                   `key enroll --agent <name>` on this machine makes the consent
+|                   again under that tree's identity
 |   -h, --help      display help for command
 
 ### mnema key enroll --help
@@ -2377,10 +2377,11 @@ $ mnema key enroll --help
 |               committed tree and, where the key lives on this machine, its
 |               private tree and the machine's global one (the line `mnema key
 |               request --agent <name> --anchor <id>` printed, or the agent's name
-|               where its key is here). In the private and global trees, where the
-|               key lives on this machine and the tree speaks for another identity
-|               than the line's, the key's consent is made again under that tree's
-|               identity; the committed tree takes the line's identity or refuses.
+|               where its key is here). In the private tree and the global one,
+|               where the key lives on this machine and the tree speaks for
+|               another identity than the line's, the key's consent is made again
+|               under that tree's identity; the committed tree takes the line's
+|               identity or refuses.
 |   -h, --help  display help for command
 
 ### mnema key github --help

@@ -380,6 +380,11 @@ const CLASSIFIED: Readonly<Record<string, { verdict: Verdict; why: string }>> = 
     verdict: 'minted',
     why: 'a name the request carried and the door held to the agent-name form, and a fingerprint computed from its key',
   },
+  'key.ts «Nothing signs with it until the host is told to: \\`mnema mcp --agent-key {}\\`, or the plugin’s \\`agent_key\\` option» #1':
+    {
+      verdict: 'collapsed',
+      why: 'the name the request carried, which the door held to the agent-name form where it is worded; the tag is the second fence',
+    },
   'key.ts «Key {} is already the agent "{}" — nothing recorded.» #1': {
     verdict: 'minted',
     why: 'a fingerprint computed from the key the request carried, and the name the record holds for it',
@@ -942,7 +947,8 @@ describe('every line this wiring words is classified', () => {
     // by a rotation, and the other keys under the name, less the one line the enrolment printed alone.
     // 145 with the line a tree that refused leaves in place of "Enrolled agent", the identity a tree
     // took the key for, and the line that says a key read from a file is not installed.
-    expect(FOUND.sites.length).toBe(145);
+    // 146 with the line a successful enrolment ends on, saying the host is still to be told.
+    expect(FOUND.sites.length).toBe(146);
   });
 
   it('reads the verdict off the source rather than believing the table', () => {
@@ -962,9 +968,9 @@ describe('every line this wiring words is classified', () => {
   it('found sites of both kinds, and the scanner sees a tag when there is one', () => {
     // Neither arm of the case above may be empty, or half of it is vacuous.
     const verdicts = Object.values(CLASSIFIED).map((said) => said.verdict);
-    expect(verdicts.filter((verdict) => verdict === 'collapsed').length).toBe(74);
+    expect(verdicts.filter((verdict) => verdict === 'collapsed').length).toBe(75);
     expect(verdicts.filter((verdict) => verdict === 'minted').length).toBe(71);
-    expect(FOUND.sites.filter((site) => site.tagged).length).toBe(74);
+    expect(FOUND.sites.filter((site) => site.tagged).length).toBe(75);
   });
 
   it('every reason says where the value comes from', () => {
@@ -1160,6 +1166,8 @@ const UNREACHABLE: Readonly<Record<string, string>> = {
   'key.ts «{}: skipped — {}» #1':
     'the name is one of three constants and the reason is this product’s own sentence',
   'key.ts «{}: skipped — {}» #2': 'the same, for the retirement',
+  'key.ts «Nothing signs with it until the host is told to: \\`mnema mcp --agent-key {}\\`, or the plugin’s \\`agent_key\\` option» #1':
+    'the name is the one the request carried, held to the agent-name form by the door, so no break reaches the line',
   'key.ts «{}: retired, recorded in {}» #1': 'the same data directory, for the retirement',
   'key.ts «the key {} was retired by the record and is never enrolled again: it was put aside in {}, not deleted» #1':
     'the folder is under the agent’s key root, which a name of the agent-name form cannot break',
