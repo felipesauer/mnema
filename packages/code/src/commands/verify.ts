@@ -544,12 +544,15 @@ function reportOn(tree: ScopedTree, upcasters: UpcasterRegistry, keyRoot: string
 
 /**
  * The chain's verdict over one tree, with the one note the chain cannot word: a committed key with
- * no tail that the record ENROLS AS AN AGENT has simply not signed here yet. The chain says of any
- * such key that its tail "may have been dropped (a botched merge)", which is the right fear for a
- * colleague's key and a false one for an agent enrolled a minute ago — and `mnema key enroll
- * --agent` is run before the host writes, so every agent starts as that note. The verdict, the
- * level, the issues and the clause count are the chain's, untouched; only the sentence of the
- * note for an agent key changes, and only where no waiver already accounts for the key.
+ * no tail that the record ENROLS AS AN AGENT is, most often, an agent that has not signed here yet.
+ * The chain says of any such key that its tail "may have been dropped (a botched merge)", the
+ * right fear for a colleague's key and a partial one for an agent enrolled a minute ago — and
+ * `mnema key enroll --agent` is run before the host writes, so every agent starts as that note.
+ * The sentence names the agent, and says BOTH readings: nothing local can tell an agent that never
+ * wrote from one whose tail was lost, and a sentence saying "nothing signed yet" would hide the
+ * second from the one who most needs it. The verdict, the level, the issues and the clause count
+ * are the chain's, untouched; only the sentence of the note for an agent key changes, and only
+ * where no waiver already accounts for the key.
  */
 function verifiedTree(root: string, upcasters: UpcasterRegistry, keyRoot: string): VerifyResult {
   const result = verify(root, upcasters, { keyRoot });
@@ -570,7 +573,7 @@ function verifiedTree(root: string, upcasters: UpcasterRegistry, keyRoot: string
       if (agent === undefined) return note;
       return {
         ...note,
-        detail: `the key of the agent "${oneLine(agent.name)}" of ${oneLine(agent.anchor)}: the record enrols it and it has signed nothing here yet, so it has no tail until it does`,
+        detail: `the key of the agent "${oneLine(agent.name)}" of ${oneLine(agent.anchor)}: the record enrols it, and it has no tail on disk — it may have signed nothing here yet, or its tail may have been dropped (a botched merge) or removed; nothing here can tell which`,
       };
     }),
   };

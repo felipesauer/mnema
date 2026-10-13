@@ -935,18 +935,16 @@ describe('the agent key never makes the person’s key, nor an identity of its o
 });
 
 describe('the verdict over an agent that is enrolled and has not signed yet', () => {
-  it('says it has no tail until it signs, and never that its tail may have been dropped', async () => {
+  it('says it has no tail, names the agent, and does not claim it has signed nothing', async () => {
     const fingerprint = await anAgent('claude');
     const anchor = events().find((event) => event.kind === 'identity.founded')?.subject;
 
     const said = await did(undefined, 'verify');
 
     expect(said).toContain(
-      `census [key-without-tail] public ${fingerprint}: the key of the agent "claude" of ${anchor}: the record enrols it and it has signed nothing here yet, so it has no tail until it does`,
+      `census [key-without-tail] public ${fingerprint}: the key of the agent "claude" of ${anchor}: the record enrols it, and it has no tail on disk — it may have signed nothing here yet, or its tail may have been dropped (a botched merge) or removed; nothing here can tell which`,
     );
     expect(said).toContain('1 committed key(s) without a tail');
-    expect(said).not.toContain('botched merge');
-    expect(await did(undefined, 'verify', '--json', '--verbose')).not.toContain('botched merge');
   });
 });
 
