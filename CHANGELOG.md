@@ -24,6 +24,17 @@ tag, with its own changelog.
 
 ### Changed
 
+- **A write routed by `project` says the absolute directory it fell in.** The seven write tools that take `project`
+  (`capture_memory`, `record_observation`, `record_handoff`, `link_knowledge`, `create_task`, `record_decision`,
+  `create_skill`) now end their confirmation with `  In the project at <path>.`, after the line that says which
+  tree it landed in. A `project` can be a name read off an earlier answer, and a conversation can outlive the
+  connection it learnt the name in: after a reload the workspace may hold another directory by that name, and the
+  write, signed and append-only, resolves to it. The path is the spelling that cannot mean two places; this makes the
+  landing visible at once, it does not refuse the write. A write that named no project says nothing new, and neither
+  does one that landed in the global tree, which belongs to no project. For a 50-byte path the line adds 72 bytes and
+  21 tokens to a confirmation (`capture_memory`: 146 to 218 bytes, 44 to 65 tokens), o200k, a relative measure and
+  not what a model is billed; the confirmations the budget golden measures name no project, so the golden does not
+  move.
 - **A reported run no longer repeats its actor, and the focus inside a resume no longer names it.** A run in
   `bootstrap`, `resume`, `focus` and `guard` carried `who`, and `resume.focus` carried `actor`, each the same value as the
   `actor` the answer already gives (every run listed there is one of the actor's). They are left out of the
