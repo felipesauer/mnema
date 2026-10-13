@@ -63,6 +63,20 @@ tag, with its own changelog.
   working on it wrote.", which keeps the claim about who wrote the rules and drops the repeated subject. The rules, their
   ids and the sentence about another run are the same. 46 B fewer at every edit (rules pushed 380 to 334 bytes, 102 to
   93 tokens, o200k; the pause 564 to 518, 147 to 138). The opening of a session and the notes keep their two sentences.
+- **The `project` in an answer is the directory's name when no other project of the workspace has it.** `search`
+  (`hits`, `hidden`), `read_record`, `audit_refs` (`nodes`, `links`), `audit_timeline` (one per entry),
+  `audit_accountability`, `audit_antipatterns` and `audit_exposure` (`findings`, `scanned`) said the project by its
+  absolute path, repeated at every hit. They now say `api` where the workspace has one `api`, and the whole path
+  where two projects share the name. Both are spellings a write's `project` argument already took, so the value an
+  answer gives goes back into a write and lands in the same project; a name that became ambiguous after being
+  given is refused as `AMBIGUOUS_PROJECT`, not resolved to the wrong one. The record stays as it was: the signed
+  `event` of `audit_timeline` is served byte for byte, and the `path` of `governing_rules` and what `bootstrap`
+  says of the workspace still give the absolute path. Two directories whose names differ only in Unicode
+  normalization count as sharing a name: they answer by path, and the bare name of either is refused as ambiguous. The budget golden measures eight answers, with the
+  fixture's path scrubbed to the 13 bytes of `/work/project`: the largest, `audit_timeline`, goes from 2,518 bytes
+  (1,066 tokens) to 2,482 (1,058) and a `search` from 1,305 (464) to 1,251 (452), in o200k, a relative measure, not
+  what a model is billed. The gain grows with the length of the path: it is the path minus the name, once per
+  `project`.
 
 ### Fixed
 
