@@ -1223,7 +1223,7 @@ const CLAUSES_PER_FILE: Readonly<Record<string, number>> = {
   'packages/context/src/context/brief.test.ts': 7,
   'packages/context/src/context/decisions.test.ts': 5,
   'packages/context/src/context/disposition.test.ts': 5,
-  'packages/context/src/context/focus.test.ts': 4,
+  'packages/context/src/context/focus.test.ts': 5,
   'packages/context/src/context/next-action.test.ts': 4,
   'packages/context/src/context/presence.test.ts': 5,
   'packages/context/src/context/search.test.ts': 6,
