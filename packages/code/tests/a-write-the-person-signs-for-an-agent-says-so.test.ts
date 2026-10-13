@@ -253,8 +253,19 @@ describe('a write routed by `project` to a project that does not enrol the agent
     expect(ofKind(other, 'decision.recorded')[0]?.signerFp).toBe(agent.fingerprint);
   });
 
-  it('says nothing for a write in the global tree', async () => {
-    await anAgent();
+  it('says nothing for a write in the global tree, even where the machine does not enrol the agent', async () => {
+    // The agent is enrolled in the committed and private trees of `repo` and NOT in the global one,
+    // so the person's key does sign there: the global tree is the machine's, and no directory of a
+    // project is a place for that sentence.
+    const identity = (await did('audit', 'accountability')).match(/mnid:[0-9a-f]{8}/)?.[0];
+    const line = requestLineOf(
+      await did('key', 'request', '--agent', 'claude', '--anchor', identity as string),
+    );
+    for (const scope of ['public', 'private'] as const) {
+      const write = deferredWrite(resolveTrees(repo, env), scope);
+      expect(enrollAgentFromRequest(write, { request: line }).ok).toBe(true);
+      write.checkpoint();
+    }
     await aSecondProject();
 
     let text = '';
