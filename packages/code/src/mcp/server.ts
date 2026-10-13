@@ -139,15 +139,6 @@ import {
 import type { ClientWorkspace } from './context.js';
 import { SERVER_INSTRUCTIONS } from './instructions.js';
 import { armSessionClose, type Lifecycle } from './lifecycle.js';
-import {
-  accountabilityNamed,
-  antipatternsNamed,
-  exposureNamed,
-  recordNamed,
-  referencesNamed,
-  searchNamed,
-  timelineNamed,
-} from './project-in-answers.js';
 import { namedProjects } from './route.js';
 import { closeSession, openSession, refreshWorkspace, type Session } from './session.js';
 import {
@@ -1654,7 +1645,7 @@ function registerTools(tool: ToolRegistrar, ensureSession: () => Promise<Session
         return refused(active, result);
       }
       // An empty index is an ANSWER ("nothing here matches"), never an error.
-      return served(active, searchNamed(active, result.value));
+      return served(active, result.value);
     },
   );
 
@@ -1687,7 +1678,7 @@ function registerTools(tool: ToolRegistrar, ensureSession: () => Promise<Session
       if (!result.ok) {
         return refused(active, result);
       }
-      return served(active, recordNamed(active, result.value));
+      return served(active, result.value);
     },
   );
 
@@ -1735,7 +1726,7 @@ function registerTools(tool: ToolRegistrar, ensureSession: () => Promise<Session
       if (!result.ok) {
         return refused(active, result);
       }
-      return served(active, timelineNamed(active, result.value));
+      return served(active, result.value);
     },
   );
 
@@ -1783,7 +1774,7 @@ function registerTools(tool: ToolRegistrar, ensureSession: () => Promise<Session
       }
       // An entity nothing references is an ANSWER ("nothing is tied to this"),
       // never an error — the same reason an empty history is one.
-      return served(active, referencesNamed(active, result.value));
+      return served(active, result.value);
     },
   );
 
@@ -1924,7 +1915,7 @@ function registerTools(tool: ToolRegistrar, ensureSession: () => Promise<Session
       if (!result.ok) {
         return refused(active, result);
       }
-      return served(active, accountabilityNamed(active, result.value));
+      return served(active, result.value);
     },
   );
 
@@ -1961,7 +1952,7 @@ function registerTools(tool: ToolRegistrar, ensureSession: () => Promise<Session
       }
       // An empty report is an ANSWER ("nothing recognizable is recorded here"),
       // never an error — the same reason an empty history is one.
-      return served(active, exposureNamed(active, result.value));
+      return served(active, result.value);
     },
   );
 
@@ -1994,7 +1985,7 @@ function registerTools(tool: ToolRegistrar, ensureSession: () => Promise<Session
       if (!result.ok) {
         return refused(active, result);
       }
-      return served(active, antipatternsNamed(active, result.value));
+      return served(active, result.value);
     },
   );
 }

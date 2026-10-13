@@ -3898,12 +3898,10 @@ describe('MCP — what enters the record', () => {
     const finding = report.findings.find((f) => f.id === '019fa8b7-0410-717b-9af2-cfeb013fc4ac');
     expect(finding?.scope).toBe('private');
     // WHERE to rotate, which the tree alone cannot say once several projects are read.
-    expect(finding?.project).toBe('proj');
+    expect(finding?.project).toBe(project);
     expect(finding?.classes).toEqual(['aws-access-key']);
     // The denominator is one count per record, and the project's held what was read.
-    const scannedHere = report.scanned.find((entry) => entry.project === 'proj');
-    expect(scannedHere).toBeDefined();
-    expect(scannedHere?.scanned).toBeGreaterThan(0);
+    expect(report.scanned.find((entry) => entry.project === project)?.scanned).toBeGreaterThan(0);
 
     // The whole reply — the text an agent puts in its transcript — holds no value.
     expect(body).not.toContain(SECRET);

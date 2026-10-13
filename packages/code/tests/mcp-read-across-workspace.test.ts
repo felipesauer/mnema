@@ -466,7 +466,7 @@ describe('over the real transport', () => {
     expect(read.isError).toBeFalsy();
     const body = JSON.parse(replyText(read)) as { project: string; kind: string };
     expect(body.kind).toBe('memory');
-    expect(body.project).toBe('second');
+    expect(body.project).toBe(second);
 
     // And an id nowhere in the workspace is a tool error whose text names both.
     const missing = await client.callTool({ name: 'read_record', arguments: { id: NOWHERE } });

@@ -120,7 +120,7 @@ tag, with its own changelog.
 - **A write routed by `project` says the absolute directory it fell in.** The seven write tools that take `project`
   (`capture_memory`, `record_observation`, `record_handoff`, `link_knowledge`, `create_task`, `record_decision`,
   `create_skill`) now add `  In the project at <path>.` to their confirmation, right after the line that says which
-  tree it landed in. A `project` can be a name read off an earlier answer, and a conversation can outlive the
+  tree it landed in. A `project` can be a name the caller carried, and a conversation can outlive the
   connection it learnt the name in: after a reload the workspace may hold another directory by that name, and the
   write, signed and append-only, resolves to it. The path tells two directories apart where a name shared by both
   does not (one directory can still have two paths, through a symlink); this makes the landing visible at once, it
@@ -157,23 +157,17 @@ tag, with its own changelog.
   ids and the sentence about another run are the same. 46 B fewer at each edit where one of them speaks (rules pushed 380 to 334 bytes,
   102 to 93 tokens, o200k; the pause 564 to 518, 147 to 138; the hold on a first write is the same sentence, not
   measured separately). The opening of a session and the notes keep their two sentences.
-- **The `project` in an answer is the directory's name when no other project of the workspace has it.** `search`
-  (`hits`, `hidden`), `read_record`, `audit_refs` (`nodes`, `links`), `audit_timeline` (one per entry),
-  `audit_accountability`, `audit_antipatterns` and `audit_exposure` (`findings`, `scanned`) said the project by its
-  absolute path, repeated at every hit. They now say `api` where the workspace has one `api`, and the whole path
-  where two projects share the name. Both are spellings a write's `project` argument already took, so the value an
-  answer gives goes back into a write of the same workspace and lands in the same project; a name that became ambiguous after being
-  given is refused as `AMBIGUOUS_PROJECT`, not resolved to the wrong one. The record stays as it was: the signed
-  `event` of `audit_timeline` is served unchanged, and the list of projects that `bootstrap` gives a workspace of two
-  or more is still by absolute path. Two directories whose names differ only in Unicode
-  normalization count as sharing a name: they answer by path, and the bare name of either is refused as ambiguous. The budget golden measures eight answers, with the
-  fixture's path scrubbed to the 13 bytes of `/work/project`: the largest, `audit_timeline`, goes from 2,518 bytes
-  (1,066 tokens) to 2,482 (1,058) and a `search` from 1,305 (464) to 1,251 (452), in o200k, a relative measure, not
-  what a model is billed. The gain grows with the length of the path: it is the path minus the name, once per
-  `project`.
 
 ### Fixed
 
+- **The `project` in an answer is the absolute path again, not the directory's name.** `search`, `read_record`, `audit_refs`,
+  `audit_timeline`, `audit_accountability`, `audit_antipatterns` and `audit_exposure` had begun to say `api` where the
+  workspace held one `api`. A name is not stable between connections: with a workspace of `work/api` and `work/alpha`
+  that said `api`, and a reload into one of `clones/api` and `work/alpha`, the same `api` echoed into a write landed
+  in `clones/api`, in a repository nobody had named, and nothing refused it. The path echoed there is refused as
+  `UNKNOWN_PROJECT` and writes nothing. A write's `project` still takes the path or the directory's name, and the
+  reply to a write routed by `project` still says the directory it fell in. The cost is what the shorter name had saved:
+  the budget golden's eight answers grow back by the path minus the name, once per `project`.
 - **The hook handler no longer fails to fall back when an older `mnema`, which refuses `--agent-key`, exits before
   reading its input.** A payload larger than the pipe met the closed pipe, and the handler took that for a failed
   run: it did not ask again without the option and answered nothing.
