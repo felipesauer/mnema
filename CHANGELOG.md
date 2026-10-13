@@ -162,9 +162,10 @@ tag, with its own changelog.
 - **`guard` says the refusal the key of this machine would give the move, where it used to say ok.** `guard` answered
   `ok` for a task whose write was then refused for the key: the person's key protected by a passphrase with none in the
   environment (`KEY_IS_PROTECTED`), an agent that the task's tree does not enrol while the person's key that would sign
-  instead is protected (`AGENT_NOT_ENROLLED`), an agent whose key was retired (`REVOKED_KEY`). An agent that obeyed `guard`
-  and supplied the missing `reason` was refused all the same. It now asks the key the way the write does, before the
-  gate, without opening a key or making one, and answers the write's own refusal in its words and code (without
+  instead is protected (`AGENT_NOT_ENROLLED`), an agent whose key was retired, whether or not your own key is on this
+  machine (`REVOKED_KEY`). An agent that obeyed `guard` and supplied the missing `reason` was refused all the same.
+  It now asks the key the way the write does, before the gate, without opening a key or making one, and answers the
+  write's own refusal in its words and code (without
   ` The fact was NOT recorded.`). It cannot know a passphrase that is set but wrong (`KEY_PASSPHRASE_WRONG`), the
   record busy at that moment (`TAIL_BUSY`, `KEY_ROOT_BUSY`), or another write changing the task before the move; and
   where the machine has no key at all it still says `MISSING_WHO`, though the first write there makes the key and
