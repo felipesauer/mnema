@@ -517,8 +517,16 @@ export const NAMES_THAT_NEED_MORE: Readonly<
     why: 'the verb named in a sentence about taking a note back, with the id and the reason it takes',
   },
   'packages/code/README.md: mnema observe': {
+    times: 2,
+    why: 'a verb named beside `mnema memory`, in the same list, and again where the pages say that both go to the private tree when an agent asked for by the environment writes without `--scope`',
+  },
+  'CHANGELOG.md: mnema observe': {
     times: 1,
-    why: 'a verb named beside `mnema memory`, in the same list',
+    why: 'a verb named beside `mnema memory`, in the entry that says where either goes when an agent asked for by the environment writes without `--scope`',
+  },
+  'CHANGELOG.md: mnema before-a-write': {
+    times: 1,
+    why: 'the hook named in the entry that says it reads the agent from the environment, the flag winning; the package page hands the whole line over, with its host',
   },
   'packages/code/README.md: mnema decision import': {
     times: 1,
@@ -666,7 +674,7 @@ export const NAMES_THAT_NEED_MORE: Readonly<
 export const HANDED_OVER: Readonly<
   Record<string, Readonly<Partial<Record<Reading['kind'], number>>>>
 > = {
-  'CHANGELOG.md': { line: 28, name: 34, flag: 1 },
+  'CHANGELOG.md': { line: 28, name: 38, flag: 1 },
   'README.md': { line: 1, name: 10 },
   'SECURITY.md': { name: 2 },
   'docs/agent-hosts.md': { line: 4, name: 3 },
@@ -681,10 +689,10 @@ export const HANDED_OVER: Readonly<
   'docs/what-it-proves.md': { line: 4, name: 8 },
   'docs/where-it-fits.md': { line: 1, name: 2 },
   'examples/rules/README.md': { line: 1, name: 1 },
-  'packages/action/README.md': { line: 14, name: 11 },
+  'packages/action/README.md': { line: 14, name: 12 },
   'packages/chain/FORMAT.md': { line: 3 },
   'packages/chain/src/chain/key-protection.ts': { line: 3 },
-  'packages/code/README.md': { line: 82, name: 103, flag: 2 },
+  'packages/code/README.md': { line: 82, name: 105, flag: 2 },
   'packages/code/src/a-new-identity.ts': { line: 2, name: 1 },
   'packages/code/src/agent-accepts.ts': { line: 4 },
   'packages/code/src/commands/commit-hook.ts': { line: 1, name: 2 },
