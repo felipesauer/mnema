@@ -77,6 +77,16 @@ tag, with its own changelog.
   folder it did not make. `mnema doctor` no longer leaves out that the record proves a retired agent key a
   member of two identities. The help of `key enroll --agent` and `key request --agent` says that a tree that
   speaks for another identity takes the key's consent made again.
+- **A server that signs as an agent finds the agent in every project of its workspace, and its run's end names the
+  agent the record names then.** A write routed to another project (the `project` argument, or a transition on an
+  id only that project holds) was signed with the person's root: it minted a key on a machine that held only the
+  agent's, or signed as the person in silence where that project enrols the agent. The close of a run, which chooses
+  its key when it is written, no longer stamps the `which` read when the run opened (a person who enrolled the agent
+  while the host was open made `verify` report a `run.ended` its `which` did not name). `mnema key restore` refuses
+  an agent key (`AN_AGENT_KEY`) before anything is written; a second `key enroll --agent` landing at the same moment
+  is "already enrolled", not a member's key. `verify` says of an agent key with no tail both that it may have signed
+  nothing yet and that its tail may have been dropped; a refusal for a retired key promises only the trees it
+  reached, and the refusal at a session's opening names no single tree.
 - **The second reader binds every event in a signed range to the checkpoint's signer.** The product
   refused an event whose `signerFp` is not the key that signed the checkpoint over it, and an event
   whose `which` is its `who`; `FORMAT.md` said neither, and the Python verifier read an event's own
