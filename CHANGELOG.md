@@ -167,7 +167,7 @@ tag, with its own changelog.
   (`AGENT_NAME_REFUSED`) is refused on the command line and by the server, naming the name that came and the form
   accepted: no key, no identity, no fact. The server still opens and reads; it is each write that is refused. In the
   hook it is the recording of the fact that is not done, the reply to the host unchanged and saying why.
-- **A first write the operation refuses makes no key and founds nothing.** On a machine with no key, a write refused
+- **A first write the operation refuses makes no key and founds nothing — with one refusal left.** On a machine with no key, a write refused
   by the operation itself (`task move cancel` with no reason, `MISSING_PROOF`; a field over the size limit) made the
   machine's key and left an installation id in the project; through the server, whose session run opened before the
   operation decided, it also founded an identity in the public record — a public key, an anchor and a tail holding
@@ -175,7 +175,11 @@ tag, with its own changelog.
   made at the first write that lands now, as the entry above says: it is kept, with its installation id, at the first
   append, and the server writes its run after the operation's last refusal, in the hold of that write. Two processes
   making a machine's first write at one instant still make one key: the one that keeps second refuses
-  (`KEY_MADE_MEANWHILE`), writes nothing, and its next write signs with the key that is there.
+  (`KEY_MADE_MEANWHILE`), writes nothing, and its next write signs with the key that is there. What this does not
+  cover: a refusal that comes from validating the event itself, at the append door (`task create` with an empty title,
+  `UNREADABLE_EVENT`; a reason or a reference that is not one), still comes after the founding. From an empty `HOME`
+  that write is refused and has already made the key and left a public key, an anchor and a tail in the tree, and the
+  server says "This key founded an identity of its own".
 - **The `project` in an answer is the absolute path again, not the directory's name.** `search`, `read_record`, `audit_refs`,
   `audit_timeline`, `audit_accountability`, `audit_antipatterns` and `audit_exposure` had begun to say `api` where the
   workspace held one `api`. A name is not stable between connections: with a workspace of `work/api` and `work/alpha`

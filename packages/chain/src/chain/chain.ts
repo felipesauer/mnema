@@ -91,8 +91,9 @@ export function openChainForWriting(chainRoot: string, options: OpenOptions): Ch
  * Who would sign in the chain at `chainRoot` with the key at `options.keyRoot` — read WITHOUT
  * opening the chain for writing, so nothing inside the chain is touched.
  *
- * Opening a writer is not free even when nothing is appended: it mints the key's installation id
- * in the chain. It USED TO do more — materialize the key's public half and give the tail its
+ * Opening a writer is not free even when nothing is appended: for a key already kept it makes the
+ * key's installation id in the chain (a key not made yet is kept, with its id, only at the first
+ * append). It USED TO do more — materialize the key's public half and give the tail its
  * directory and its proof of ownership — and those three moved to the first append (see
  * {@link openChainForWriting}), so what opening leaves now is one local file that git ignores.
  * A file all the same: a caller whose answer may turn out to write nothing — a refusal decided

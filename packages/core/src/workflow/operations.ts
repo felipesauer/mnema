@@ -103,8 +103,10 @@ export interface WriteContext {
   /**
    * What the caller owes the tree before this context's first fact and after its founding — the
    * MCP session's run, prepared before the operation and written only once it has decided to
-   * write. Called by `ensureFounded`, which every operation calls between its last refusal and
-   * its first append; the caller makes it run once.
+   * write. Called by `ensureFounded`, which every operation calls between the last refusal the
+   * operation itself makes and its first append; the caller makes it run once. The refusals the
+   * append door makes of the event it is handed (a title, a reason or a reference that is not one,
+   * an event no read could open) come after `ensureFounded`, so those still follow the founding.
    */
   readonly beforeTheFirstFact?: () => void;
 }
