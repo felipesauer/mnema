@@ -76,10 +76,11 @@ when told its name, with the plugin's `agent_key` option, `MNEMA_AGENT_KEY`, or 
 
 What the key proves about `which` depends on who else can read the folder it lives in, and under one operating-system user
 that is everything the model's own commands can read, unless a sandbox says otherwise. Under the same user and the same
-files an agent key does not separate the agent from the person: it separates the person's key from the agent's only while
-the model cannot read the data directory, and that is what a sandbox is for. Your own key is in the same data directory, and in
-the clear unless you ran `mnema key protect`: a model that can read the directory can sign as you. `enroll` says so while
-the key is in the clear.
+files the agent key keeps the model from signing as you only if your own key is protected (`mnema key protect`) and the
+passphrase is in no environment the host inherits; the model can always read the agent's key and sign as the agent unless
+a sandbox keeps it from the directory. Your own key is in the same data directory, and in the clear unless you ran
+`mnema key protect`: a model that can read the directory can sign as you, unless the key is protected and
+`MNEMA_KEY_PASSPHRASE` is out of the environment. `enroll` says so while the key is in the clear.
 
 This page says what each host's own documentation says its sandbox does, and what it does not.
 
@@ -108,17 +109,19 @@ For the model's shell and file tools not to reach any key, all of these hold at 
 3. a permission rule denies the `Read` tool the same path (`Read(~/.mnema/**)`), because that tool does not obey `denyRead`;
 4. `allowUnsandboxedCommands` is `false`, or a command the sandbox refused is retried outside it.
 
-Claude Code's file tools, its MCP servers and its hooks run outside the sandbox. That is what lets the mnema server read
-the agent key, and it means any other MCP server of that session that reads files can read it too. The setting that says which agent key the server signs with has to sit where the model cannot write it: the host
-protects its own project settings, `.mcp.json` and user settings from a sandboxed write, but the project's own
-directory of the record is in the working directory and is not protected. So the choice goes in the plugin's option
+Claude Code's documentation says its file tools, its MCP servers and its hooks run outside the sandbox; not tried here.
+By inference from that, and not from a line of it, that is what lets the mnema server read the agent key, and any other
+MCP server of that session that reads files could read it too. The setting that says which agent key the server signs
+with has to sit where the model cannot write it: the host's documentation says it protects its own project settings,
+`.mcp.json` and user settings from a sandboxed write (not tried here), but the project's own directory of the record is
+in the working directory, which a sandbox leaves writable by default. So the choice goes in the plugin's option
 or the environment (`MNEMA_AGENT_KEY`, or `--agent-key <name>` on the command a hook runs), never in a file of the
 project, which is what the model can write.
 
 ### Codex: a profile
 
-A Codex profile that denies the data directory under `permissions.<profile>.filesystem` keeps the model's commands from
-reading it. Whether Codex's MCP servers run inside or outside that sandbox is not in the page this was read from;
+A Codex profile that denies the data directory under `permissions.<profile>.filesystem` is documented to keep the model's
+commands from reading it; not tried. Whether Codex's MCP servers run inside or outside that sandbox is not in the page this was read from;
 do not rely on either until you have tried it.
 
 ### Gemini CLI: a `strict-*` profile, or a container

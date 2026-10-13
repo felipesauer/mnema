@@ -266,7 +266,7 @@ refused and nothing is signed, and the refusal names the verb `key enroll --agen
 the recording of the fact: the reply to the host is unchanged and says why). That a host passes a manifest's `env` to the server
 was not measured on the hosts named here, only on Claude Code's documentation; and that VS Code and Cursor
 hand the server the `agent_key` option was not measured either; `mnema doctor` says what a machine holds. What a host's sandbox leaves of the key's folder to the model is in
-[What a session is handed](../docs/agent-hosts.md#signing-as-an-agent-inside-a-sandbox).
+[the sandbox section of the agent hosts page](../docs/agent-hosts.md#signing-as-an-agent-inside-a-sandbox).
 
 For a host this plugin has no manifest for, add `--agent-key <name>` to the server's command in the host's
 user configuration, not in a project's: a host's project configuration is what the model writes, so the
