@@ -16,7 +16,7 @@
  * (code.claude.com/docs/en/memory, *AGENTS.md*), and on this machine 0 of 299 sessions
  * loaded one, in two projects that keep both. `CLAUDE.md` is the one that arrives there, or
  * the file it imports with an `@` line. The plugin needs neither: its `SessionStart` hook
- * hands this document to the session with no file at all.
+ * hands this document to the session without writing a file.
  *
  * What those files lack is provenance — hand-kept instruction with no author, no
  * state and no supersession, rotting in silence. So this does not replace the

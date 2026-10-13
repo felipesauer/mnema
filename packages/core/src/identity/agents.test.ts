@@ -470,6 +470,11 @@ describe('the last key of an identity is the last that is not an agent’s', () 
     const refused = revokeMember(m.ctx, { fingerprint: m.fingerprint, reason: 'rotated out' });
 
     expect(refused).toMatchObject({ ok: false, code: 'LAST_KEY' });
+    // The agent's key is still on the roster, so "the only key" would be false: it is the only
+    // one that is not an agent's.
+    const said = (refused as { message: string }).message;
+    expect(said).toContain(`is the only key of ${anchor} that is not an agent's`);
+    expect(said).not.toContain(`is the only key ${anchor} has`);
     expect(count('key.revoked')).toBe(0);
   });
 
