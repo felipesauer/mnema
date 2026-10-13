@@ -49,8 +49,12 @@ tag, with its own changelog.
   answer gives goes back into a write and lands in the same project; a name that became ambiguous after being
   given is refused as `AMBIGUOUS_PROJECT`, not resolved to the wrong one. The record stays as it was: the signed
   `event` of `audit_timeline` is served byte for byte, and the `path` of `governing_rules` and what `bootstrap`
-  says of the workspace still give the absolute path. With a 50-byte path the eight answers measured at 7,268 bytes
-  (2,701 tokens, o200k) are 765 bytes (221 tokens) smaller, and a search that returns 20 hits about 900 bytes.
+  says of the workspace still give the absolute path. Two directories whose names differ only in Unicode
+  normalization count as sharing a name, and answer by path. The budget golden measures eight answers, with the
+  fixture's path scrubbed to the 13 bytes of `/work/project`: the largest, `audit_timeline`, goes from 2,518 bytes
+  (1,066 tokens) to 2,482 (1,058) and a `search` from 1,305 (464) to 1,251 (452), in o200k, a relative measure, not
+  what a model is billed. The gain grows with the length of the path: it is the path minus the name, once per
+  `project`. Estimated, not measured on this change, with a 50-byte path it is about 62 bytes per occurrence.
 
 ### Fixed
 
