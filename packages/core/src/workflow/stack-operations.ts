@@ -39,10 +39,9 @@ import { resolveExecutingAgent, type SelfAuthorizedErr } from '../identity/autho
 import { oneLine } from '../one-line.js';
 import { orderedEvents } from '../projections/order.js';
 import type { Scope } from '../topology/routing.js';
-import { type AppendRefusal, appendEvent } from './append.js';
+import { type AppendRefusal, appendFact } from './append.js';
 import { type Judged, onTheRecordAsItStands } from './as-the-record-stands.js';
-import { systemClock } from './clock.js';
-import { authorizingAnchor, ensureFounded } from './identity-operations.js';
+import { authorizingAnchor } from './identity-operations.js';
 import type { WriteContext } from './operations.js';
 import { isStackName, isStackVersion } from './stack-form.js';
 
@@ -167,12 +166,10 @@ export function adoptStack(
   // Appended and signed in ONE hold of the tail's lock, so no other session can take the tail
   // between the fact landing and its signature.
   return ctx.writer.exclusively(() => {
-    ensureFounded(ctx);
-    const appended = appendEvent(
-      ctx.writer,
+    const appended = appendFact(ctx, ({ at }) =>
       stackAdopted(
         {
-          at: (ctx.clock ?? systemClock)(),
+          at,
           who,
           signerFp: ctx.writer.signerFingerprint,
           subject,
@@ -264,12 +261,10 @@ export function removeStack(
       }
       return {
         write: () => {
-          ensureFounded(ctx);
-          const appended = appendEvent(
-            ctx.writer,
+          const appended = appendFact(ctx, ({ at }) =>
             stackRemoved(
               {
-                at: (ctx.clock ?? systemClock)(),
+                at,
                 who,
                 signerFp: ctx.writer.signerFingerprint,
                 subject: input.name,

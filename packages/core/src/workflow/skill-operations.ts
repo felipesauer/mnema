@@ -39,15 +39,15 @@ import {
 import { resolveExecutingAgent, type SelfAuthorizedErr } from '../identity/authority.js';
 import { canonicalId, mintId } from '../identity/id.js';
 import { oneLine } from '../one-line.js';
-import { type AppendRefusal, appendEvent, appendEvents } from './append.js';
+import { type AppendRefusal, appendFact, appendFacts } from './append.js';
 import {
   type Judged,
   onTheRecordAsItStands,
   type StateMovedErr,
   stateMoved,
 } from './as-the-record-stands.js';
-import { type Clock, systemClock } from './clock.js';
-import { authorizingAnchor, ensureFounded } from './identity-operations.js';
+import type { Clock } from './clock.js';
+import { authorizingAnchor } from './identity-operations.js';
 import { standing } from './read-the-record.js';
 import { type SkillGateErr, skillGate } from './skill-gate.js';
 import { INITIAL_SKILL_STATE } from './skill-states.js';
@@ -66,7 +66,7 @@ export type SkillWriteError =
   | SkillGateErr
   /** A free-text field was over the size limit (see {@link screenContent}). */
   | ScreenRefusal
-  /** A read would not have accepted the event (see {@link appendEvent}). */
+  /** A read would not have accepted the event (see {@link appendFact}). */
   | AppendRefusal
   /** The skill acted on does not exist (no `skill.created` for this id). */
   | { readonly ok: false; readonly code: 'UNKNOWN_SKILL'; readonly message: string }
@@ -153,24 +153,21 @@ export function createSkill(
   // at the root. It is canonical by construction.
   const id = mintId();
 
-  // Found this installation's anchor before the birth pair, so both events'
-  // signer is a key valid for its anchor at verify.
-  // Once founded it appends nothing, and refuses an anchor that no longer counts
-  // this key (see `ensureFounded`).
-  ensureFounded(ctx);
-  const at = (ctx.clock ?? systemClock)();
-  const birth = skillBirth(
-    {
-      at,
-      who,
-      signerFp: ctx.writer.signerFingerprint,
-      subject: id,
-      ...(which !== undefined ? { which } : {}),
-      ...(text.fields.run !== undefined ? { run: text.fields.run } : {}),
-    },
-    { name: text.fields.name, body: text.fields.body, initial: INITIAL_SKILL_STATE },
+  // The door asks the birth pair first, then founds this installation's anchor, so both
+  // events' signer is a key valid for its anchor at verify (see `appendFact`).
+  const appended = appendFacts(ctx, ({ at }) =>
+    skillBirth(
+      {
+        at,
+        who,
+        signerFp: ctx.writer.signerFingerprint,
+        subject: id,
+        ...(which !== undefined ? { which } : {}),
+        ...(text.fields.run !== undefined ? { run: text.fields.run } : {}),
+      },
+      { name: text.fields.name, body: text.fields.body, initial: INITIAL_SKILL_STATE },
+    ),
   );
-  const appended = appendEvents(ctx.writer, birth);
   if (!appended.ok) return appended;
   const [e1, e2] = appended.entries as [Entry, Entry];
   return {
@@ -247,14 +244,9 @@ export function recordConsultation(
   // the screen so the canonicalization is bounded by the size limit.
   const skill = canonicalId(named.fields.subject) ?? named.fields.subject;
 
-  // Found this installation's anchor before the fact, so its signer is a key
-  // valid for its anchor at verify.
-  // Once founded it appends nothing, and refuses an anchor that no longer counts
-  // this key (see `ensureFounded`).
-  ensureFounded(ctx);
-  const at = (ctx.clock ?? systemClock)();
-  const appended = appendEvent(
-    ctx.writer,
+  // The door asks the fact first, then founds this installation's anchor, so the fact's
+  // signer is a key valid for its anchor at verify (see `appendFact`).
+  const appended = appendFact(ctx, ({ at }) =>
     skillConsulted({
       at,
       who,
@@ -375,29 +367,26 @@ function transition(
 
       return {
         write: () => {
-          // Found this installation's anchor before the transition, so its signer is a
-          // key valid for its anchor at verify.
-          // Once founded it appends nothing, and refuses an anchor that no longer counts
-          // this key (see `ensureFounded`).
-          ensureFounded(ctx);
-          const at = (ctx.clock ?? systemClock)();
-          const event = skillTransitioned(
-            {
-              at,
-              who,
-              signerFp: ctx.writer.signerFingerprint,
-              subject: id,
-              ...(which !== undefined ? { which } : {}),
-              ...(pinned.fields.run !== undefined ? { run: pinned.fields.run } : {}),
-            },
-            {
-              from: current.state,
-              to: verdict.to,
-              action: verdict.action,
-              ...(verdict.fields !== undefined ? { fields: verdict.fields } : {}),
-            },
+          // The door asks the fact first, then founds this installation's anchor, so the fact's
+          // signer is a key valid for its anchor at verify (see `appendFact`).
+          const appended = appendFact(ctx, ({ at }) =>
+            skillTransitioned(
+              {
+                at,
+                who,
+                signerFp: ctx.writer.signerFingerprint,
+                subject: id,
+                ...(which !== undefined ? { which } : {}),
+                ...(pinned.fields.run !== undefined ? { run: pinned.fields.run } : {}),
+              },
+              {
+                from: current.state,
+                to: verdict.to,
+                action: verdict.action,
+                ...(verdict.fields !== undefined ? { fields: verdict.fields } : {}),
+              },
+            ),
           );
-          const appended = appendEvent(ctx.writer, event);
           if (!appended.ok) return appended;
           return {
             ok: true,
