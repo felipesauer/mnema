@@ -114,6 +114,7 @@ async function aSecondProject(): Promise<void> {
 async function connected(
   agentKey: string | undefined,
   call: (client: Client) => Promise<void>,
+  moreRoots: readonly string[] = [],
 ): Promise<void> {
   const { server } = buildMcpServer({
     cwd: sandbox,
@@ -123,7 +124,7 @@ async function connected(
   });
   const client = new Client({ name: 'evil', version: '1.0.0' }, { capabilities: { roots: {} } });
   client.setRequestHandler(ListRootsRequestSchema, () => ({
-    roots: [repo, other].map((dir) => ({ uri: pathToFileURL(dir).href })),
+    roots: [repo, other, ...moreRoots].map((dir) => ({ uri: pathToFileURL(dir).href })),
   }));
   const [clientTransport, serverTransport] = InMemoryTransport.createLinkedPair();
   await Promise.all([client.connect(clientTransport), server.connect(serverTransport)]);
@@ -326,6 +327,30 @@ describe("a write that names the session's own project", () => {
     expect(noticesIn(own)).toEqual([]);
     expect(noticesIn(ownByPath)).toEqual([]);
     expect(noticesIn(elsewhere)).toEqual([THE_LINE(other)]);
+  });
+});
+
+describe("a write routed to a directory that only shares the session's project name", () => {
+  it('says it: the project is the directory, not its name', async () => {
+    // The agent is enrolled in `repo` alone; `x/repo` is ANOTHER project that happens to be named
+    // like the session's, and is addressed by its path.
+    await anAgent();
+    const homonym = join(sandbox, 'x', 'repo');
+    mkdirSync(homonym, { recursive: true });
+    process.chdir(homonym);
+    await did('init');
+    process.chdir(repo);
+
+    let text = '';
+    await connected(
+      'claude',
+      async (client) => {
+        text = await say(client, 'capture_memory', { content: 'a note', project: homonym });
+      },
+      [homonym],
+    );
+
+    expect(noticesIn(text)).toEqual([THE_LINE(homonym)]);
   });
 });
 

@@ -206,8 +206,8 @@ export interface Replacement {
  * The half of a write result that says the PERSON's key signed a write the server was asked to
  * sign as an agent: the destination project does not enrol that agent, so the write is signed
  * with the person's key and the agent it names is declared, not attested. Present only for a
- * write routed to a project of the workspace — by `project`, or by an id only it holds — where
- * that is so; the server's own trees say it once at the opening, and this is the same fact for a
+ * write routed to another project than the session's — by `project`, or by an id only it holds —
+ * where that is so; the server's own trees say it once at the opening, and this is the same fact for a
  * tree the opening did not name. Absent on the command line, which has no agent to configure.
  */
 export interface PersonSigned {
