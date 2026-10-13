@@ -155,20 +155,23 @@ export function routedTo(
 /**
  * Whether the PERSON's key signs a write into `scope` of the project it was routed to, when the
  * server was asked to sign as an agent — the fact the opening says for the trees of the session
- * and cannot say for a project the write is routed to afterwards.
+ * and cannot say for ANOTHER project of the workspace the write is routed to afterwards.
  *
- * Said only when all of these hold: an agent is configured; the write was ROUTED (a `project`, or
- * an id another project holds — `target` is absent for the session's own trees, which the opening
- * already spoke of); it is not in the global tree, which is the machine's and not the project's;
- * and the key choice there is the person's. A tree where the agent signs has nothing to say, and
- * one where nobody can sign refuses the write before there is a reply.
+ * Said only when all of these hold: the destination is a project other than the session's own,
+ * which the opening already spoke of (a `project` that names the session's own project is not a
+ * routing elsewhere; a transition on an id the session's own trees hold has no `target`); and the
+ * key choice there is the person's. A tree where the agent signs has nothing to say, and one where
+ * nobody can sign refuses the write before there is a reply. The global tree is never reached here:
+ * {@link routedTo} says nothing for it and no transition finds a `target` in it.
  */
 export function personSignedIn(
   session: Session,
   scope: Scope,
   target: WriteTarget | undefined,
 ): PersonSigned {
-  if (session.agentKey === undefined || target === undefined || scope === 'global') return {};
+  // `agentKey` is only here to narrow the type: with no agent, `keyChoiceIn` already says nothing.
+  if (session.agentKey === undefined || target === undefined) return {};
+  if (target.dir === session.project) return {};
   if (keyChoiceIn(target.trees, scope)?.signs !== 'person') return {};
   return { personSigned: { agent: session.agentKey, project: target.dir } };
 }

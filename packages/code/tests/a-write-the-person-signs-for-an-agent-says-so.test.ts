@@ -301,7 +301,46 @@ describe('a write routed by `project` to a project that does not enrol the agent
   });
 });
 
+describe('a write that names the session\'s own project', () => {
+  it('says nothing for it, which the opening already spoke of, and says it for another project', async () => {
+    // The agent is enrolled in the committed tree of `repo` alone, so the person's key signs the
+    // private one: what the opening says. Naming `repo` is not routing the write elsewhere.
+    const identity = (await did('audit', 'accountability')).match(/mnid:[0-9a-f]{8}/)?.[0];
+    const line = requestLineOf(
+      await did('key', 'request', '--agent', 'claude', '--anchor', identity as string),
+    );
+    const write = deferredWrite(resolveTrees(repo, env), 'public');
+    expect(enrollAgentFromRequest(write, { request: line }).ok).toBe(true);
+    write.checkpoint();
+    await aSecondProject();
+
+    let own = '';
+    let ownByPath = '';
+    let elsewhere = '';
+    await connected('claude', async (client) => {
+      own = await say(client, 'capture_memory', { content: 'a note', project: 'repo' });
+      ownByPath = await say(client, 'capture_memory', { content: 'a note', project: repo });
+      elsewhere = await say(client, 'capture_memory', { content: 'a note', project: other });
+    });
+
+    expect(noticesIn(own)).toEqual([]);
+    expect(noticesIn(ownByPath)).toEqual([]);
+    expect(noticesIn(elsewhere)).toEqual([THE_LINE(other)]);
+  });
+});
+
 describe('a transition that lands in a project that does not enrol the agent', () => {
+  /** Births `args` of `tool` in `other` as the person, and hands back the id minted. */
+  async function bornInOther(tool: string, args: Record<string, unknown>): Promise<string> {
+    let said = '';
+    await connected(undefined, async (client) => {
+      said = await say(client, tool, { ...args, project: other });
+    });
+    const id = said.match(/[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}/)?.[0];
+    if (id === undefined) throw new Error(`setup: no id in ${said}`);
+    return id;
+  }
+
   it('says the person signed it, and says so once', async () => {
     await anAgent();
     await aSecondProject();
@@ -315,6 +354,49 @@ describe('a transition that lands in a project that does not enrol the agent', (
         id: 'ADR-1',
         action: 'reject',
         note: 'turned down',
+      });
+    });
+
+    expect(noticesIn(text)).toEqual([THE_LINE(other)]);
+  });
+
+  it('says it for a task moved by its id', async () => {
+    await anAgent();
+    await aSecondProject();
+    const task = await bornInOther('create_task', { title: 'held by the other' });
+
+    let text = '';
+    await connected('claude', async (client) => {
+      text = await say(client, 'task_transition', { id: task, action: 'submit' });
+    });
+
+    expect(noticesIn(text)).toEqual([THE_LINE(other)]);
+  });
+
+  it('says it for a note retracted by its id', async () => {
+    await anAgent();
+    await aSecondProject();
+    const note = await bornInOther('capture_memory', { content: 'held by the other' });
+
+    let text = '';
+    await connected('claude', async (client) => {
+      text = await say(client, 'retract_note', { id: note, reason: 'it was wrong' });
+    });
+
+    expect(noticesIn(text)).toEqual([THE_LINE(other)]);
+  });
+
+  it('says it for a pattern moved by its id', async () => {
+    await anAgent();
+    await aSecondProject();
+    const skill = await bornInOther('create_skill', { name: 'the pattern', body: 'do it so' });
+
+    let text = '';
+    await connected('claude', async (client) => {
+      text = await say(client, 'skill_transition', {
+        id: skill,
+        action: 'review',
+        note: 'it reads well',
       });
     });
 
