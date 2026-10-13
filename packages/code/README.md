@@ -1486,6 +1486,13 @@ landing can make is from the global tree into a project. `bootstrap` says how ma
 times the client has said so — **including zero**, because a re-read that changed
 nothing and one that never happened would otherwise look the same.
 
+When a workspace holds several projects, the answers of `search`, `read_record` and the `audit_*`
+reads name a project by its directory's name when no other project of the workspace has it, and by its
+whole path when one does; both are what a write's `project` argument takes, and `bootstrap` gives the
+paths (`tests/the-answers-name-a-project-as-a-write-takes-it.test.ts`). A name that a second
+project later shares is refused as ambiguous, not resolved; but a name carried to a new connection
+whose workspace holds a different directory of that name resolves to that one.
+
 `--project` is how you make certain which record a session serves:
 `"args": ["mcp", "--project", "/home/you/work/api"]`. Without it the project is
 whichever workspace folder the host happens to announce first that has a
