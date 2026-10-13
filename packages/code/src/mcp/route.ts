@@ -130,6 +130,26 @@ export function routeWrite(
 }
 
 /**
+ * The directory a write fell in, for the reply to say — and only when the CALLER named
+ * the project.
+ *
+ * A name read off an earlier answer can outlive the connection it was learnt in: after
+ * a reload the workspace may hold a different directory by that name, and the write
+ * resolves to it. Nothing can refuse a valid name; what is left is to say, in the one
+ * reply the caller reads, the absolute path — the spelling that cannot mean two places.
+ *
+ * Nothing is said when the caller named nothing (no name was echoed, so there is none
+ * to mistake), nor for a write that landed in the global tree: that tree is the
+ * machine's, and a directory named beside it would say it fell somewhere it did not.
+ */
+export function routedTo(route: { readonly scope: Scope; readonly target?: WriteTarget }): {
+  readonly project?: string;
+} {
+  if (route.target === undefined || route.scope === 'global') return {};
+  return { project: route.target.dir };
+}
+
+/**
  * The tree a kind lands in at a destination that says nothing — the core's rule
  * inside a project, the global tree outside one.
  *
@@ -191,7 +211,7 @@ type Picked =
  * and every path this could walk up from is a path the caller can spell exactly. The
  * refusal names the projects, so a subdirectory earns a list rather than a guess.
  */
-function pickProject(session: Session, name: string): Picked {
+export function pickProject(session: Session, name: string): Picked {
   const projects = session.workspaceProjects;
   if (isAbsolute(name)) {
     // `resolve` so a trailing slash, a `.` or a `..` still matches the one spelling
@@ -202,13 +222,55 @@ function pickProject(session: Session, name: string): Picked {
     return { ok: false, code: 'UNKNOWN_PROJECT', message: noSuchProject(name, projects) };
   }
 
-  const matches = projects.filter((project) => basename(project.dir) === name);
+  // Normalized, as `nameOfProject` does: a model echoes a name in NFC whatever the disk holds.
+  const wanted = name.normalize('NFC');
+  const matches = projects.filter((project) => basename(project.dir).normalize('NFC') === wanted);
   const only = matches[0];
   if (only !== undefined && matches.length === 1) return { ok: true, target: only };
   if (matches.length > 1) {
     return { ok: false, code: 'AMBIGUOUS_PROJECT', message: severalProjects(name, matches) };
   }
   return { ok: false, code: 'UNKNOWN_PROJECT', message: noSuchProject(name, projects) };
+}
+
+/**
+ * What an ANSWER calls a project: the directory's own name when no other project of the
+ * workspace has it, the whole path when one does. `undefined` stays `undefined` — the
+ * machine-global tree belongs to no project.
+ *
+ * It is the other half of {@link pickProject}, and the pair is one contract: for every
+ * project of every workspace, `pickProject(workspace, nameOfProject(workspace, dir))`
+ * returns that project. The name is only ever given where the name is accepted, so a
+ * caller that echoes what it was told into a write's `project` lands where it was told.
+ * A name that stops being unique afterwards is refused as ambiguous, never resolved
+ * to the wrong one.
+ *
+ * Applied at the edge, on a finished answer. Inside, the project stays its absolute path:
+ * it is what the search deduplicates by and the audit groups by.
+ */
+export function nameOfProject(workspace: Pick<Session, 'workspaceProjects'>, dir: string): string;
+export function nameOfProject(
+  workspace: Pick<Session, 'workspaceProjects'>,
+  dir: undefined,
+): undefined;
+export function nameOfProject(
+  workspace: Pick<Session, 'workspaceProjects'>,
+  dir: string | undefined,
+): string | undefined;
+export function nameOfProject(
+  workspace: Pick<Session, 'workspaceProjects'>,
+  dir: string | undefined,
+): string | undefined {
+  if (dir === undefined) return undefined;
+  const name = basename(dir);
+  // Compared normalized: a model echoes a name in NFC, so two directories that differ only
+  // in normalization are homonyms here, and answer by path, where the exact name would
+  // land a write in whichever of them spells it that way.
+  const same = name.normalize('NFC');
+  const sharing = workspace.workspaceProjects.filter(
+    (project) => basename(project.dir).normalize('NFC') === same,
+  );
+  return sharing.length === 1 && sharing[0]?.dir === dir ? name : dir;
 }
 
 /**

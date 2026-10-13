@@ -191,7 +191,7 @@ import {
   refuseUnlocated,
   type WorkspaceTree,
 } from './locate.js';
-import { routeWrite } from './route.js';
+import { routedTo, routeWrite } from './route.js';
 import { openWrite, type Session, whichOfWrite } from './session.js';
 
 /** A memory was captured, or the requested scope was not available here. */
@@ -376,7 +376,13 @@ export function runCaptureMemory(
   if (!captured.ok) {
     return { ok: false, code: captured.code, message: captured.message };
   }
-  return { ok: true, id: captured.id, scope: route.scope, ...forwardReplacement(captured) };
+  return {
+    ok: true,
+    id: captured.id,
+    scope: route.scope,
+    ...routedTo(route),
+    ...forwardReplacement(captured),
+  };
 }
 
 /** An observation was recorded, or the requested scope was not available here. */
@@ -457,7 +463,13 @@ export function runRecordObservation(
   if (!recorded.ok) {
     return { ok: false, code: recorded.code, message: recorded.message };
   }
-  return { ok: true, id: recorded.id, scope: route.scope, ...forwardReplacement(recorded) };
+  return {
+    ok: true,
+    id: recorded.id,
+    scope: route.scope,
+    ...routedTo(route),
+    ...forwardReplacement(recorded),
+  };
 }
 
 /**
@@ -502,6 +514,7 @@ export function runRecordHandoff(
     ok: true,
     recorded: [recorded.fromAgent, recorded.toAgent],
     scope: route.scope,
+    ...routedTo(route),
     ...forwardReplacement(recorded),
   };
 }
@@ -604,6 +617,7 @@ export function runLinkKnowledge(
     ok: true,
     recorded: [recorded.rel],
     scope: route.scope,
+    ...routedTo(route),
     ...(reach !== undefined ? { reach } : {}),
     ...(subjectScope !== undefined ? { subjectScope } : {}),
     ...forwardReplacement(recorded),
@@ -653,6 +667,7 @@ export function runCreateTask(
     id: created.id,
     alias: deriveAlias('task', created.id),
     scope: route.scope,
+    ...routedTo(route),
     ...forwardReplacement(created),
   };
 }
@@ -794,6 +809,7 @@ export function runRecordDecision(
     id: recorded.id,
     adr: recorded.adr,
     scope: route.scope,
+    ...routedTo(route),
     ...forwardReplacement(recorded),
   };
 }
@@ -1093,6 +1109,7 @@ export function runCreateSkill(
     id: created.id,
     name: created.name,
     scope: route.scope,
+    ...routedTo(route),
     ...forwardReplacement(created),
   };
 }

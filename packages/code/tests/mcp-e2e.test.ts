@@ -231,6 +231,9 @@ describe('MCP session + tools — unit', () => {
     const context = runBootstrap(session);
     expect(context.resume.actor).toBe(session.who);
     expect(context.resume.focus.openRuns.some((r) => r.id === theRun(session))).toBe(true);
+    // ...and the actor is said once: the nested focus is only its runs, and no run repeats it.
+    expect(Object.keys(context.resume.focus)).toEqual(['openRuns']);
+    expect(JSON.stringify(context).split(session.who)).toHaveLength(2);
   });
 
   it('focus reports the session actor’s own open run, and writes nothing', () => {
@@ -252,7 +255,8 @@ describe('MCP session + tools — unit', () => {
     // opened is reported — no other actor's runs.
     expect(focus.actor).toBe(session.who);
     expect(focus.openRuns.some((r) => r.id === theRun(session))).toBe(true);
-    expect(focus.openRuns.every((r) => r.who === session.who)).toBe(true);
+    // ...and the actor is said once, at the top: no run repeats it.
+    expect(focus.openRuns.every((r) => !('who' in r))).toBe(true);
 
     // The read appended nothing — the chain is the same length.
     const after = orderedEvents({ root: chainRoot }, catalogUpcasters()).length;
@@ -285,7 +289,6 @@ describe('MCP session + tools — unit', () => {
       runFocusTool(session).actor,
       runResumeTool(session).actor,
       runBootstrap(session).resume.actor,
-      ...runFocusTool(session).openRuns.map((run) => run.who),
       ...accounted(runAccountabilityTool(session)),
     ];
     expect(carried.length).toBeGreaterThan(0);
@@ -312,6 +315,9 @@ describe('MCP session + tools — unit', () => {
     expect(resume.lastRun?.open).toBe(false);
     // The ended run is not in focus.
     expect(resume.focus.openRuns.some((r) => r.id === runId)).toBe(false);
+    // The actor is said once: the nested focus is only its runs, and no run repeats it.
+    expect(Object.keys(resume.focus)).toEqual(['openRuns']);
+    expect(JSON.stringify(resume).split(session.who)).toHaveLength(2);
   });
 
   it('next_actions lists a task’s legal moves, and refuses an unknown id as data', () => {
@@ -3877,10 +3883,12 @@ describe('MCP — what enters the record', () => {
     const finding = report.findings.find((f) => f.id === '019fa8b7-0410-717b-9af2-cfeb013fc4ac');
     expect(finding?.scope).toBe('private');
     // WHERE to rotate, which the tree alone cannot say once several projects are read.
-    expect(finding?.project).toBe(project);
+    expect(finding?.project).toBe('proj');
     expect(finding?.classes).toEqual(['aws-access-key']);
     // The denominator is one count per record, and the project's held what was read.
-    expect(report.scanned.find((entry) => entry.project === project)?.scanned).toBeGreaterThan(0);
+    const scannedHere = report.scanned.find((entry) => entry.project === 'proj');
+    expect(scannedHere).toBeDefined();
+    expect(scannedHere?.scanned).toBeGreaterThan(0);
 
     // The whole reply — the text an agent puts in its transcript — holds no value.
     expect(body).not.toContain(SECRET);
