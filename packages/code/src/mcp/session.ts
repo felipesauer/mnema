@@ -323,9 +323,11 @@ export interface Session {
    */
   readonly clientName: string;
   /**
-   * The agent this server was asked to sign as, where it is enrolled (`openSession`). The trees
-   * carry it for the choice of key (`agentSignsIn`); it is kept here to build the trees of a
-   * re-read the same way, and to say, for each tree, when it is not in force.
+   * The agent this server was asked to sign as (`openSession`), whatever the name: one the record
+   * enrols, one it does not, and one that is no agent name at all (`agentNameRefusal`), whose
+   * trees refuse every write. The trees carry it for the choice of key (`agentSignsIn`); it is
+   * kept here to build the trees of a re-read the same way, and to say, for each tree, when it is
+   * not in force.
    */
   readonly agentKey?: string;
   /**

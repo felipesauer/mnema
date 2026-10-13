@@ -656,15 +656,21 @@ describe('the hook records as the agent the record names', () => {
 });
 
 /**
- * Every file under `dir` with a hash of what it holds: a photograph of a tree, to compare two. A
- * `locks/` directory holds the read caches a reading opens, which are no key and no fact.
+ * Every file under `dir` with a hash of what it holds, and every directory, even an empty one: a
+ * photograph of a tree, to compare two. An empty `identity/` is nothing a file listing sees, and it
+ * is what a write that made a key folder and then stopped leaves. A `locks/` directory holds the
+ * read caches a reading opens, which are no key and no fact.
  */
 function photographOf(dir: string): string[] {
   if (!existsSync(dir)) return [];
   return readdirSync(dir, { recursive: true, withFileTypes: true })
-    .filter((entry) => entry.isFile() && !entry.parentPath.endsWith('/locks'))
+    .filter(
+      (entry) =>
+        !entry.parentPath.endsWith('/locks') && !(entry.isDirectory() && entry.name === 'locks'),
+    )
     .map((entry) => {
       const file = join(entry.parentPath, entry.name);
+      if (entry.isDirectory()) return `${file}/`;
       return `${file} ${createHash('sha256').update(readFileSync(file)).digest('hex')}`;
     })
     .sort();
@@ -1049,6 +1055,10 @@ describe('mnema doctor says what the agent keys are', () => {
   it('says a host asked for an agent this machine holds no key for, and stays quiet once the key is protected', async () => {
     expect(findings({ MNEMA_AGENT_KEY: 'gemini' })).toEqual([
       'attention MNEMA_AGENT_KEY asks this process to sign as the agent "gemini", and this machine holds no key under that name: this process, and a command run with it, signs as you — or is refused, where your own key is protected and MNEMA_KEY_PASSPHRASE is not in the environment, or is not on this machine — `mnema key request --agent gemini --anchor <your identity>` makes one.',
+    ]);
+    // A name that is no agent's is refused, and the line says so, not that the process signs as the person.
+    expect(findings({ MNEMA_AGENT_KEY: 'Claude' })).toEqual([
+      'attention MNEMA_AGENT_KEY asks this process to sign as "Claude", which is not a name an agent key is enrolled under, so a write made with it is refused (AGENT_NAME_REFUSED) and nothing is written: the name is a lower-case word of letters, digits, dots, dashes and underscores, 1 to 64 characters, starting with a letter or a digit. Set it to the name of an agent key, or unset it.',
     ]);
     // The placeholder a host that does not know the substitution leaves as it was written.
     const unsubstituted = ['$', '{user_config.agent_key}'].join('');
