@@ -29,6 +29,7 @@ import { afterEach } from 'vitest';
 import { decodedWhole } from '../../support/arriving.js';
 import { GIT_WITHOUT_MAINTENANCE } from '../../support/git-without-maintenance.js';
 import { aSandbox, REPO, type TheProjectToWrite, type TheSandbox } from './a-sandbox.js';
+import { openWithOneRetry, sayInTheJobSummary } from './one-retry.js';
 import { destinationsIn, isLoopback, refuseUnlessLoopbackOnly } from './the-host.js';
 
 /** The command hook that answers the permission decision it is told. */
@@ -186,8 +187,24 @@ export function aPatchAdding(relative: string): string {
   ].join('\n');
 }
 
+/**
+ * Starts a Codex session, and opens it once more, said in the job's summary, if the plugin's
+ * server is not in its tool list: Codex's own race, not the product's (see `one-retry.ts`).
+ */
+function aCodexSession(
+  spec: TheCodexSpec,
+  keep: (box: TheSandbox) => void,
+): Promise<TheCodexSession> {
+  return openWithOneRetry(
+    () => aCodexSessionOnce(spec, keep),
+    (session) => theToolSearchSays(session).includes('- mnema:'),
+    spec.mnemaOnPath !== false,
+    sayInTheJobSummary,
+  );
+}
+
 /** Starts one Codex session in a fresh sandbox and waits for it to end. */
-async function aCodexSession(
+async function aCodexSessionOnce(
   spec: TheCodexSpec,
   keep: (box: TheSandbox) => void,
 ): Promise<TheCodexSession> {
