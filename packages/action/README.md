@@ -200,12 +200,13 @@ environment's rule.
 
 - The server the host starts (`mnema mcp`) signs with the agent's key when it is given `--agent-key
   ci` or has `MNEMA_AGENT_KEY=ci` in its environment, and the hook (`mnema before-a-write --host
-  <host> --agent-key ci`) when it is given the flag. Whether a host hands the job's environment to
+  <host> --agent-key ci`) when it is given the flag or has `MNEMA_AGENT_KEY`. Whether a host hands the job's environment to
   the server it starts is the host's, and has not been measured for any of them: if it does not, put
   the name in the command the job starts the host with, never in a file of the checkout.
-- The command line does not read `MNEMA_AGENT_KEY`. A write made by hand in the job, such as a
-  decision recorded from a step, signs with the runner's own key, which it mints, and founds an
-  identity in the public record. Write through the server or the hook, not the command line.
+- The command line reads `MNEMA_AGENT_KEY` too: a write made by hand in the job, such as a decision
+  recorded from a step, signs as the agent where the committed record enrols it, and is refused
+  elsewhere (`AGENT_NOT_ENROLLED`); nothing is minted. `mnema memory` without `--scope` goes to the
+  private tree, as `capture_memory` does, and is refused there.
 - Only the committed tree counts. The runner has no key of yours, so the project's private tree and
   the machine's global one cannot enrol the agent there: a write to either is refused
   (`AGENT_NOT_ENROLLED`) and nothing is signed. `capture_memory` with no scope writes to the private
