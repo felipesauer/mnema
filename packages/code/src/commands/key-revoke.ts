@@ -22,7 +22,12 @@
  * only to write, and a refused revocation leaves the tree as it found it.
  */
 
-import { holdsRecord, privateKeyPath } from '@mnema/chain';
+import {
+  holdsRecord,
+  KEY_PASSPHRASE_VARIABLE,
+  KeyIsProtectedError,
+  privateKeyPath,
+} from '@mnema/chain';
 import {
   type DiscoveryEnv,
   IdentityUnavailableError,
@@ -83,10 +88,36 @@ export type KeyRevokeRefused =
     };
 
 /**
+ * What a retirement says when the key that signs it is protected and no passphrase is to hand.
+ * The chain's own sentence ends in the advice for a host that signs for an agent — a key of its own
+ * — which has nothing to do with a person retiring a key: the retirement is signed by THEIR key.
+ */
+function protectedKeyMessage(error: KeyIsProtectedError): string {
+  return `the private key at ${error.path} is protected by a passphrase and ${KEY_PASSPHRASE_VARIABLE} is not set, and a retirement is signed with it: run the command in a terminal, which asks for the passphrase, or set ${KEY_PASSPHRASE_VARIABLE} for it`;
+}
+
+/** The refusal a protected key earns from a verb that signs, in words that fit the verb. */
+function refusedWhereProtected<T>(body: () => T): T | KeyRevokeRefused {
+  try {
+    return body();
+  } catch (error) {
+    if (!(error instanceof KeyIsProtectedError)) throw error;
+    return { ok: false, reason: 'REFUSED', code: error.code, message: protectedKeyMessage(error) };
+  }
+}
+
+/**
  * Retires `fingerprint` from the identity this machine serves in the current
  * project. With no project found from the cwd it refuses `NO_PROJECT`.
  */
 export function runKeyRevoke(
+  ctx: KeyRevokeContext,
+  input: { fingerprint: string; reason: string },
+): KeyRevoked | KeyRevokeRefused {
+  return refusedWhereProtected(() => revokeOwnKey(ctx, input));
+}
+
+function revokeOwnKey(
   ctx: KeyRevokeContext,
   input: { fingerprint: string; reason: string },
 ): KeyRevoked | KeyRevokeRefused {
@@ -139,6 +170,13 @@ export interface CheckerRetired extends Replacement {
  * machine serves in the project's public tree, where the runner and every verifier read it.
  */
 export function runCheckerRetire(
+  ctx: KeyRevokeContext,
+  input: { fingerprint: string; reason: string },
+): CheckerRetired | KeyRevokeRefused {
+  return refusedWhereProtected(() => retireCheckerKey(ctx, input));
+}
+
+function retireCheckerKey(
   ctx: KeyRevokeContext,
   input: { fingerprint: string; reason: string },
 ): CheckerRetired | KeyRevokeRefused {
@@ -227,13 +265,16 @@ export function runAgentRetire(
       // Any other error is a system's (a permission, a full disk): thrown as it is when nothing was
       // written yet, and, once another tree took the retirement, that tree's refusal in the
       // system's own code, so the verb says what was written.
-      if (!known && nothingWritten) throw error;
+      const fits = error instanceof KeyIsProtectedError;
+      if (!known && !fits && nothingWritten) throw error;
       const code = !known
         ? String((error as { code?: unknown }).code ?? 'REFUSED')
         : error instanceof PrivateTreeVisibleError
           ? 'PRIVATE_TREE_VISIBLE'
           : error.code;
-      const message = oneLine(error instanceof Error ? error.message : String(error));
+      const message = fits
+        ? protectedKeyMessage(error)
+        : oneLine(error instanceof Error ? error.message : String(error));
       if (nothingWritten) return { ok: false, reason: 'REFUSED', code, message };
       results.push({ ...where, state: 'refused', code, why: message });
       continue;
