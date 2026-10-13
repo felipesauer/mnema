@@ -688,10 +688,10 @@ const NAMES_WHAT_WAS_SERVED: { readonly [K in ServedSubject]: string } = {
 };
 
 /**
- * The channels that arrive at every write of a file, and so repeat their framing each time.
+ * The channels that arrive at an edit a rule speaks to, and so repeat their framing each time.
  * They say whose the text is in ONE sentence, with the same claim as {@link WHOSE_TEXT} (the
  * people and agents working on the project wrote it) and without the sentence that names the
- * subject: the line after it, `Addressed at <path>:`, already says what follows.
+ * subject: a line after it already says what follows.
  */
 const AT_AN_EDIT: ReadonlySet<FramedChannel> = new Set<FramedChannel>([
   'edit-rules-push',

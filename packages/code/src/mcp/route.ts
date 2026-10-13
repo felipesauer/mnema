@@ -138,7 +138,8 @@ export function routeWrite(
  * A name read off an earlier answer can outlive the connection it was learnt in: after
  * a reload the workspace may hold a different directory by that name, and the write
  * resolves to it. Nothing can refuse a valid name; what is left is to say, in the one
- * reply the caller reads, the absolute path — the spelling that cannot mean two places.
+ * reply the caller reads, the absolute path: it tells two directories apart where a name shared by
+ * both does not (one directory can still have two paths, through a symlink).
  *
  * Nothing is said when the caller named nothing (no name was echoed, so there is none
  * to mistake), nor for a write that landed in the global tree: that tree is the

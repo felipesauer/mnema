@@ -520,7 +520,7 @@ describe('the session says how many projects it chose from', () => {
     }
 
     // And it is beside the answer, never inside it: a caller parsing the first block
-    // gets the context package's shape, byte for byte. The two totals are part of that shape
+    // gets the context package's shape, as derived. The two totals are part of that shape
     // — each cut list carries the count that says it was cut — and every key here
     // belongs to the derivation, which is the point: the transport added nothing.
     const payload = JSON.parse(blocks[0]?.text as string) as Record<string, unknown>;

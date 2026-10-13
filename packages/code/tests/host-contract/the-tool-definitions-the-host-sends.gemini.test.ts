@@ -1,5 +1,5 @@
 /**
- * WHAT GEMINI CLI CHARGES FOR THE PLUGIN'S TOOLS, read off the request it sends the stand-in: the
+ * WHAT GEMINI CLI SENDS OF THE PLUGIN'S TOOLS, read off the request it sends the stand-in: the
  * whole definition of every one of the 27, in the request, inside the one `functionDeclarations`
  * list, named `mcp_mnema_<tool>`. The method and its limits are those of
  * `the-tool-definitions-the-host-sends.test.ts`.
@@ -19,7 +19,7 @@ function declarationsOf(body: Readonly<Record<string, unknown>>): unknown {
   return groups.flatMap((group) => theEntriesOf(group['functionDeclarations']));
 }
 
-describe("what Gemini CLI charges for the plugin's tools", () => {
+describe("what Gemini CLI sends of the plugin's tools", () => {
   const start = aGeminiForEachCase();
 
   it('sends the whole definition of all 27 in the request, and they weigh this much', async () => {

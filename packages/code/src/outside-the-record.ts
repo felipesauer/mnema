@@ -12,8 +12,8 @@
  *
  * IT IS A READING OF THE DISK, WHICH IS WHY IT IS HERE AND NOT IN `@mnema/context`.
  * That package derives over caches and touches no filesystem, and `bootstrap` — its
- * opening context — is served byte for byte to the agent surface and to `mnema status
- * --json`. A count of files in one checkout inside that answer would put a fact about
+ * opening context — is served as the same object to the agent surface and to `mnema status
+ * --json` (the CLI's indented, the MCP's payload not). A count of files in one checkout inside that answer would put a fact about
  * ONE MACHINE into the payload two doors promise is the same answer, and would move
  * when somebody switched branch. So it rides BESIDE the derivation, from this package,
  * and the reading that prints it says which of the two each line came from.
@@ -28,7 +28,8 @@
  * THAT PARAGRAPH IS NOW TRUE OF THE FILE AND NOT OF EVERY COPY, and it is kept for the half that
  * stands. It went on to place the fact at the terminal of the person who decides, `mnema status`;
  * what it did not weigh is that the person rarely types `status`, and the agent beside them is
- * handed the same document every session through the plugin's hook, with `--hook`. That copy is
+ * handed this document, less the paragraph on regenerating the file, at every session through
+ * the plugin's hook, with `--hook`. That copy is
  * never committed and never diffed — it is read once and thrown away — so the reason above does
  * not reach it, and it now ends with these two readings (`presentation/brief.ts`,
  * `notInTheRecord`). The file `mnema brief` prints without the flag still carries none of it.

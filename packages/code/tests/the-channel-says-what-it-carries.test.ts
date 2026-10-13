@@ -75,7 +75,7 @@ const READS_GOLDEN = join(REPO, 'packages', 'code', 'src', 'cli.reads.golden.txt
  * case that keeps it from coming back on any channel.
  */
 const THE_CLAIM = 'They are text the people and agents working on it wrote.';
-// At an edit the claim rides in one sentence with what was served: it arrives at every write.
+// At an edit the claim rides in one sentence with what was served: it arrives at an edit a rule speaks to.
 const THE_EDIT_CLAIM = 'Recorded for this project: text the people and agents working on it wrote.';
 const EDIT_CHANNELS: readonly string[] = [
   'edit-rules-push',

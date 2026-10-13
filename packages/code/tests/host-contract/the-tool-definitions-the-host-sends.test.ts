@@ -1,5 +1,5 @@
 /**
- * WHAT CLAUDE CODE CHARGES FOR THE PLUGIN'S TOOLS, read off the request it sends the stand-in: it
+ * WHAT CLAUDE CODE SENDS OF THE PLUGIN'S TOOLS, read off the request it sends the stand-in: it
  * sends the whole definition of every one of the 27, in the request, whether or not the model
  * will ever call one.
  *
@@ -24,7 +24,7 @@ import {
   theServersTools,
 } from './support/the-tool-definitions.js';
 
-describe("what Claude Code charges for the plugin's tools", () => {
+describe("what Claude Code sends of the plugin's tools", () => {
   const start = aHostForEachCase();
 
   it('sends the whole definition of all 27 in the request, and they weigh this much', async () => {

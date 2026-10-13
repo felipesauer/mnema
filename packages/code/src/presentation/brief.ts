@@ -944,7 +944,7 @@ function composed(
     ...WHAT_TRAVELS,
     '',
     // How to regenerate is for whoever holds the file; a session that is handed this text
-    // has no file to regenerate, and pays for the paragraph at every opening.
+    // has no use for how to regenerate the file, and carries the paragraph at every opening.
     ...(forAFile ? [...HOW_TO_REGENERATE, ''] : []),
     ...whatHasAnAddress(governance.addressed, governance.editPush),
     '',

@@ -42,7 +42,7 @@ naming a signer other than the checkpoint over it; an event whose `which` is its
 a signed range — found by *building the input*, because nine mutations both
 readers refused prove nothing about what this one accepts. The fifth ran the other way and is
 the quieter of the two failures: this reader **refused an honest event** for carrying
-`which`, which sixteen of the twenty-three published vectors carry, because the document
+`which`, which sixteen of the twenty-three vectors published when this was found carried, because the document
 described the envelope as the intersection of its own exemplars. Refusing too much looks like
 rigour, so nobody goes looking for it.
 

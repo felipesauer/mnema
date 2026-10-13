@@ -1,5 +1,5 @@
 /**
- * WHAT OPENCODE CHARGES FOR THE PLUGIN'S TOOLS, read off the request it sends the stand-in: the
+ * WHAT OPENCODE SENDS OF THE PLUGIN'S TOOLS, read off the request it sends the stand-in: the
  * whole definition of every one of the 27, in the request, named `mnema_<tool>`. Its first
  * request is a title preflight with no tool list; the first one that offers tools is the one
  * measured. The method and its limits are those of `the-tool-definitions-the-host-sends.test.ts`.
@@ -13,7 +13,7 @@ import {
   theServersTools,
 } from './support/the-tool-definitions.js';
 
-describe("what OpenCode charges for the plugin's tools", () => {
+describe("what OpenCode sends of the plugin's tools", () => {
   const start = anOpencodeForEachCase();
 
   it('sends the whole definition of all 27 in the request, and they weigh this much', async () => {

@@ -1,8 +1,8 @@
 /**
- * WHAT CODEX CHARGES FOR THE PLUGIN'S TOOLS, read off the request it sends the stand-in: none of
+ * WHAT CODEX SENDS OF THE PLUGIN'S TOOLS, read off the request it sends the stand-in: none of
  * the 27 definitions is in the request. Codex defers the tools of an MCP server behind one
- * `tool_search` entry, whose description lists the server and the instructions its handshake
- * gave; what the request pays is that entry, and a model that wants a tool pays a search first.
+ * `tool_search` entry, whose description lists the server; the request carries that entry, and a
+ * model that wants a tool searches first (not measured).
  *
  * The method and its limits are those of `the-tool-definitions-the-host-sends.test.ts`. NOT
  * MEASURED: what the search returns for a tool, and so what a definition costs once it is
@@ -18,10 +18,10 @@ import {
   weigh,
 } from './support/the-tool-definitions.js';
 
-describe("what Codex charges for the plugin's tools", () => {
+describe("what Codex sends of the plugin's tools", () => {
   const start = aCodexForEachCase();
 
-  it('sends none of the 27 definitions, and charges for the search entry that reaches them', async () => {
+  it('sends none of the 27 definitions, and sends the search entry that reaches them', async () => {
     const session = await start({});
     const entries = theEntriesOf(theFirstThatOffersTools(session.requests)?.body['tools']);
     const named = (prefix: string) => theServersTools(entries, prefix).names;

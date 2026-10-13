@@ -168,9 +168,9 @@ describe('the envelope the file declares is the envelope the reader takes', () =
     // NON-VACUITY WITH A HISTORY. `which` and `run` were declared NOWHERE, and
     // `FORMAT.md` section 7 said an event has "seven top-level keys" — a sentence
     // taken from the INTERSECTION of the published vectors rather than from any
-    // declaration. Sixteen of the twenty-three vectors carry `which`, three carry
-    // `run`, and an independent verifier built on that sentence refused an honest
-    // event for carrying one. Measured, before this delivery: the second reader
+    // declaration. Sixteen of the twenty-three vectors published when this was found
+    // carry `which`, three carry `run`, and an independent verifier built on that
+    // sentence refused an honest event for carrying one. Measured, before this delivery: the second reader
     // answered REFUSED on a record the product read as fine.
     const withWhich = canonicalVectors().find((v) => 'which' in v.event);
     expect(withWhich, 'no vector carries `which`, so this case checks nothing').toBeDefined();
