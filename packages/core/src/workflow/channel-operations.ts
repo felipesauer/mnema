@@ -46,9 +46,8 @@ import {
   screened,
 } from '../content/screen.js';
 import { resolveExecutingAgent, type SelfAuthorizedErr } from '../identity/authority.js';
-import { type AppendRefusal, appendEvent } from './append.js';
-import { systemClock } from './clock.js';
-import { authorizingAnchor, ensureFounded } from './identity-operations.js';
+import { type AppendRefusal, appendFact } from './append.js';
+import { authorizingAnchor } from './identity-operations.js';
 import type { WriteContext } from './operations.js';
 
 /** The switch was recorded: the channel now stands where this fact says. */
@@ -111,12 +110,10 @@ export function switchChannel(ctx: WriteContext, input: SwitchInput): SwitchOk |
   if (!agent.ok) return agent;
   const which = agent.which;
 
-  ensureFounded(ctx);
-  const appended = appendEvent(
-    ctx.writer,
+  const appended = appendFact(ctx, ({ at }) =>
     channelSwitched(
       {
-        at: (ctx.clock ?? systemClock)(),
+        at,
         who,
         signerFp: ctx.writer.signerFingerprint,
         subject: content.fields.subject,
@@ -246,11 +243,9 @@ export function recordChannelServed(
   const agent = resolveExecutingAgent(who, input.which);
   if (!agent.ok) return agent;
 
-  ensureFounded(ctx);
-  const appended = appendEvent(
-    ctx.writer,
+  const appended = appendFact(ctx, ({ at }) =>
     channelServed({
-      at: (ctx.clock ?? systemClock)(),
+      at,
       who,
       signerFp: ctx.writer.signerFingerprint,
       subject: content.fields.subject,
@@ -318,12 +313,10 @@ function recordRuleAtPath(
   const agent = resolveExecutingAgent(who, input.which);
   if (!agent.ok) return agent;
 
-  ensureFounded(ctx);
-  const appended = appendEvent(
-    ctx.writer,
+  const appended = appendFact(ctx, ({ at }) =>
     build(
       {
-        at: (ctx.clock ?? systemClock)(),
+        at,
         who,
         signerFp: ctx.writer.signerFingerprint,
         subject: content.fields.subject,

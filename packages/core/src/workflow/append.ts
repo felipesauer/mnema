@@ -35,6 +35,9 @@
 
 import { type CatalogEvent, type ChainWriter, type Entry, unreadableReason } from '@mnema/chain';
 import { unfilledReference, unfilledTitle, unstatedReason } from '../a-reason-states-something.js';
+import { systemClock } from './clock.js';
+import { authorizingAnchor, ensureFounded } from './identity-operations.js';
+import type { WriteContext } from './operations.js';
 
 /**
  * A write refused because the record would not have been readable back; nothing
@@ -111,6 +114,28 @@ export type AppendedEvents =
   | AppendRefusal;
 
 /**
+ * What a fact is stamped with, handed to the function that builds it ({@link appendFact}).
+ *
+ * Both come from the founding: `anchor` is the identity this installation serves in the tree
+ * (what `ensureFounded` returned), and `at` is read from the clock once the founding is on the
+ * tail, so a fact is never stamped before the founding it follows.
+ */
+export interface FactStamp {
+  readonly at: string;
+  readonly anchor: string;
+}
+
+/** A fact appended on its way into the tree, with the anchor it was founded under. */
+export type AppendedFact =
+  | { readonly ok: true; readonly entry: Entry; readonly anchor: string }
+  | AppendRefusal;
+
+/** Several facts appended as one atom, with the anchor they were founded under. */
+export type AppendedFacts =
+  | { readonly ok: true; readonly entries: readonly Entry[]; readonly anchor: string }
+  | AppendRefusal;
+
+/**
  * Appends one event after checking a read would accept it. On refusal nothing is
  * appended and the reader's own reason comes back, naming the field.
  */
@@ -135,16 +160,90 @@ export function appendEvents(writer: ChainWriter, events: readonly CatalogEvent[
 }
 
 /**
+ * The first fact of an operation, asked of this door BEFORE anything is founded, and appended
+ * after: the one way an operation goes from its last refusal to its first append.
+ *
+ * `build` makes the event from a {@link FactStamp}, and it is called twice. First with the anchor
+ * the founding would serve (`authorizingAnchor`) and an instant no clock gave, and the event it
+ * returns is put to this door's four questions ({@link refuse}): a refusal returns here, and
+ * nothing — no founding, no key, no session run — has been written. Then the anchor is founded
+ * (`ensureFounded`, which also writes what the caller owes before its first fact:
+ * `WriteContext.beforeTheFirstFact`), the clock is read, and the event is built again with both
+ * and appended through {@link appendEvent}, which asks the same questions once more. None of them
+ * reads `at` or `anchor` beyond requiring one, so the answer the first build got is the answer the
+ * second gets; where it is not, the second refusal is still a refusal, after the founding, as it
+ * was before this function existed.
+ *
+ * WHY THE EVENT IS BUILT TWICE AND NOT ONCE. Reusing the first build would put on the tail an
+ * event stamped before the founding it follows — a shape no writer of this record produces, and
+ * one the ordering of the tails reads (`at` across tails). The second build is the fact as the
+ * founding leaves it to be.
+ *
+ * `build` must not write, and must not mint anything the caller hands back — it runs once for a
+ * refusal that never lands. `every-append.test.ts` drives every operation that needs no setup on
+ * a tree nobody wrote to, with a key root that holds no key, and holds both at nothing.
+ */
+export function appendFact(
+  ctx: WriteContext,
+  build: (stamp: FactStamp) => CatalogEvent,
+): AppendedFact {
+  const stamped = foundedThenBuilt(ctx, (stamp) => [build(stamp)]);
+  if (!stamped.ok) return stamped;
+  const appended = appendEvent(ctx.writer, stamped.events[0] as CatalogEvent);
+  return appended.ok ? { ok: true, entry: appended.entry, anchor: stamped.anchor } : appended;
+}
+
+/**
+ * {@link appendFact} for facts that are one atom — a birth pair — appended through
+ * {@link appendEvents}: every one is asked before the founding, and none lands unless all do.
+ */
+export function appendFacts(
+  ctx: WriteContext,
+  build: (stamp: FactStamp) => readonly CatalogEvent[],
+): AppendedFacts {
+  const stamped = foundedThenBuilt(ctx, build);
+  if (!stamped.ok) return stamped;
+  const appended = appendEvents(ctx.writer, stamped.events);
+  return appended.ok ? { ok: true, entries: appended.entries, anchor: stamped.anchor } : appended;
+}
+
+/**
+ * An instant for the build that is only asked, never appended: a well-formed one, so the reader's
+ * rule for `at` passes it as it passes the clock's, and no clock is read for it.
+ */
+const ASKED_ONLY = new Date(0).toISOString();
+
+/** The half {@link appendFact} and {@link appendFacts} share: ask, found, then build for real. */
+function foundedThenBuilt(
+  ctx: WriteContext,
+  build: (stamp: FactStamp) => readonly CatalogEvent[],
+):
+  | { readonly ok: true; readonly events: readonly CatalogEvent[]; readonly anchor: string }
+  | AppendRefusal {
+  for (const event of build({ at: ASKED_ONLY, anchor: authorizingAnchor(ctx) })) {
+    const refusal = refuse(event);
+    if (refusal !== undefined) return refusal;
+  }
+  const anchor = ensureFounded(ctx);
+  const at = (ctx.clock ?? systemClock)();
+  return { ok: true, events: build({ at, anchor }), anchor };
+}
+
+/**
  * The refusal an event earns from the reader's rule, or undefined when it passes.
  *
- * The message says THE FACT was not recorded, and not "nothing was" — which would
- * be a shade untrue. An operation founds this installation's anchor on its way in
- * (`ensureFounded`), and on a tree that had never been written to that founding
- * lands before the fact is built, so a refusal here can leave a freshly founded and
- * otherwise empty tree behind. That is a legitimate, readable, verifiable fact the
- * next successful write would have needed anyway — unlike the size limit, which
- * runs before any identity is consulted and therefore costs literally nothing. The
- * difference is small and it is stated rather than papered over.
+ * The message says THE FACT was not recorded, and not "nothing was". THIS SAID that "nothing"
+ * would be a shade untrue: an operation founded this installation's anchor on its way in
+ * (`ensureFounded`), and on a tree never written to that founding landed before the fact was
+ * built, so a refusal here left "a freshly founded and otherwise empty tree behind" — called a
+ * legitimate fact the next write would have needed anyway. Measured on the binary from an empty
+ * HOME it was more than that: the refusal also made the machine's key, and the founding sat on a
+ * tail with no checkpoint, so `verify --require=signed` failed for the whole project; through the
+ * server it opened and signed a session run too, and said "This key founded an identity of its
+ * own". The founding comes after this door now ({@link appendFact}), and a refusal leaves the tree
+ * and the key root as it found them (`every-append.test.ts`, the virgin-tree cases;
+ * `code/tests/a-refusal-leaves-nothing.test.ts`, one case per class on the binary). The words stay
+ * "the fact": they are what the agent reads, and they are true.
  */
 function refuse(event: CatalogEvent): AppendRefusal | undefined {
   const reason = unreadableReason(event);

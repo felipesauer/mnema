@@ -675,7 +675,11 @@ describe('every write refuses what no read could accept', () => {
    * A tree nobody ever wrote to, and a key root that holds no key yet: the first write of a
    * machine, into a project of its own. The writer is open, and opening it keeps nothing.
    */
-  function virginTree(): { readonly tree: string; readonly keys: string; readonly ctx: WriteContext } {
+  function virginTree(): {
+    readonly tree: string;
+    readonly keys: string;
+    readonly ctx: WriteContext;
+  } {
     const tree = mkdtempSync(join(tmpdir(), 'mnema-virgin-'));
     const keys = mkdtempSync(join(tmpdir(), 'mnema-virgin-key-'));
     const fresh: WriteContext = {
