@@ -1562,7 +1562,10 @@ A write that names a `project` says, in its reply, the absolute directory it fel
 another connection, and the same name can mean another directory in this one; the path says
 which, after the write, and does not refuse it. A write that named no project, or that landed
 in the global tree, says nothing of the sort
-(`tests/a-routed-write-says-where-it-landed.test.ts`).
+(`tests/a-routed-write-says-where-it-landed.test.ts`). When the server signs as an agent and the write
+went to another project of the workspace whose tree does not enrol that agent, the reply adds a line
+saying the person's key signed it and the agent it names is declared, not attested
+(`tests/a-write-the-person-signs-for-an-agent-says-so.test.ts`).
 
 `--project` is how you make certain which record a session serves:
 `"args": ["mcp", "--project", "/home/you/work/api"]`. Without it the project is

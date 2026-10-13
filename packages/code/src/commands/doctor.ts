@@ -692,8 +692,8 @@ function treesSaid(scopes: readonly Scope[]): string {
  * each, in which of the project's committed tree, its private tree and the machine's global one the
  * record enrols it under its name — a host asked to sign as it then does, in that tree — and in
  * which it does not, where that host signs as the person instead (declared, not attested), or is
- * refused when the person's key is protected. A key retired in any tree this reaches is retired in all of them, and a
- * key enrolled in one tree and retired in another is said as both.
+ * refused when the person's key is protected. A key retired in any tree this reaches is retired in
+ * all of them, and a key enrolled in one tree and retired in another is said as both.
  *
  * Then the agents the files this product generates for each host ask for, by the names of the
  * hosts that run a hook (`HOOK_HOSTS`): a name this machine holds no key under is a host that signs
