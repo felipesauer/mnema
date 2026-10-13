@@ -18,12 +18,14 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { pathToFileURL } from 'node:url';
 import { ensureTree, memoryCaptured } from '@mnema/chain';
+import type { TimelineEntry } from '@mnema/context';
 import { type DiscoveryEnv, PROJECT_DIR, resolveTrees } from '@mnema/core';
 import { openTreeForWriting } from '@mnema/core/write';
 import { Client } from '@modelcontextprotocol/sdk/client/index.js';
 import { InMemoryTransport } from '@modelcontextprotocol/sdk/inMemory.js';
 import { ListRootsRequestSchema } from '@modelcontextprotocol/sdk/types.js';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
+import { timelineNamed } from '../src/mcp/project-in-answers.js';
 import { nameOfProject, pickProject } from '../src/mcp/route.js';
 import { buildMcpServer } from '../src/mcp/server.js';
 import { closeSession, openSession, type Session } from '../src/mcp/session.js';
@@ -108,6 +110,33 @@ describe('nameOfProject', () => {
     const picked = pickProject(session, 'api');
     expect(picked.ok).toBe(false);
     expect(picked.ok ? undefined : picked.code).toBe('AMBIGUOUS_PROJECT');
+    closeSession(session);
+  });
+});
+
+describe('the naming is by position, and the machine-global tree stays unnamed', () => {
+  it('renames the entry and leaves a `project` inside the signed event as it was', () => {
+    const session = openOn(alpha, apiOne, apiTwo);
+    const event = { kind: 'memory.captured', project: alpha } as unknown as TimelineEntry['event'];
+    const entry = {
+      at: '2026-01-01T00:00:00.000Z',
+      kind: 'memory.captured',
+      who: 'someone',
+      subject: 'x',
+      role: 'subject',
+      scope: 'private',
+      project: alpha,
+      event,
+    } as unknown as TimelineEntry;
+    const global = { ...entry } as TimelineEntry;
+    delete (global as { project?: string }).project;
+
+    const said = timelineNamed(session, [entry, { ...entry, project: apiTwo }, global]);
+    expect(said[0]?.project).toBe('alpha');
+    expect((said[0]?.event as unknown as { project: string } | undefined)?.project).toBe(alpha);
+    expect(said[1]?.project).toBe(apiTwo);
+    expect(said[2]).toBe(global);
+    expect('project' in (said[2] as object)).toBe(false);
     closeSession(session);
   });
 });
