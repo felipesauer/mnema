@@ -189,9 +189,7 @@ export function runBeforeAPath(
   // reason and on the second stream, never by letting the write through.
   const before = anchorsBefore(treesOf(trees));
   const recorded = recordTheCharge(() => recordWhatItMet(trees, met, input.which));
-  const unrecorded = [
-    ...(recorded.ok ? [] : [unrecordedCharge(met.grade, recorded.why)]),
-  ];
+  const unrecorded = [...(recorded.ok ? [] : [unrecordedCharge(met.grade, recorded.why)])];
   const reason = withWhoIsHere(
     [met.reason, ...unrecorded, ...foundingsSince(before)].join('\n\n'),
     others,
