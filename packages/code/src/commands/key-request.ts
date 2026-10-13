@@ -29,8 +29,8 @@
  */
 
 import type { KeyObject } from 'node:crypto';
-import { mkdirSync, readdirSync, renameSync } from 'node:fs';
-import { dirname, join, resolve, sep } from 'node:path';
+import { mkdirSync, readdirSync, realpathSync, renameSync } from 'node:fs';
+import { basename, dirname, join, resolve, sep } from 'node:path';
 import { privateKeyPath } from '@mnema/chain';
 import {
   agentKeyRoot,
@@ -81,6 +81,19 @@ export interface KeyRequestRefused {
 }
 
 /**
+ * Where `path` really is: every link in it followed. A path that does not exist yet (the agents'
+ * folder on a machine that has none) is placed by its nearest part that does, so it still compares.
+ */
+function placeOf(path: string): string {
+  try {
+    return realpathSync(path);
+  } catch {
+    const parent = dirname(path);
+    return parent === path ? path : join(placeOf(parent), basename(path));
+  }
+}
+
+/**
  * Produces this machine's request to join `anchor`. With `privateKeyPath` the
  * request speaks for the key in that file instead of this machine's own — the path
  * out of a machine that lost its key, minted another, and still holds a cold copy
@@ -97,17 +110,18 @@ export function runKeyRequest(
   if (!anchor.ok) {
     return { ok: false, reason: 'REFUSED', code: anchor.code, message: anchor.message };
   }
-  // A key file kept in the agents' folder is an agent's: where it lives is all that can be told
-  // without opening it, and a copy kept elsewhere is not recognised.
+  // A key file kept in the agents' folder is an agent's: where it really is (links followed) is all
+  // that can be told without opening it, and a copy kept elsewhere is not recognised.
   if (input.privateKeyPath !== undefined) {
     const file = resolve(ctx.cwd, input.privateKeyPath);
     const agents = dirname(agentKeyRoot(ctx.env, 'x'));
-    if (file.startsWith(`${agents}${sep}`)) {
+    const real = placeOf(file);
+    if (real.startsWith(`${placeOf(agents)}${sep}`)) {
       return {
         ok: false,
         reason: 'REFUSED',
         code: 'AN_AGENT_KEY',
-        message: `the key file ${file} lives in the folder of the agents' keys, ${agents}: an agent's key signs for its host under a name and is not a key of a person to enrol. This checks where the file lives, not what it holds`,
+        message: `the key file ${file}${real === file ? '' : ` (which is ${real})`} lives in the folder of the agents' keys, ${agents}: an agent's key signs for its host under a name and is not a key of ${input.asChecker === true ? 'a checker' : 'a person'} to enrol. This checks the place the file really is, links followed, not what it holds`,
       };
     }
   }

@@ -4,12 +4,13 @@
  * `key request --key <file>` speaks for the key in the file. A key kept under `agents/` is an
  * agent's, which signs for its host under a name and is not a key of a person to enrol, so a
  * request that names such a file is refused (`AN_AGENT_KEY`) before a line is made. The check is
- * where the file lives, not what it holds: a copy kept somewhere else is not recognised.
+ * the place the file really is, links followed, not what it holds: a link to it, or a folder that
+ * is another name for the agents' folder, is refused; a copy kept somewhere else is not recognised.
  */
 
-import { mkdirSync, mkdtempSync, rmSync } from 'node:fs';
+import { copyFileSync, mkdirSync, mkdtempSync, rmSync, symlinkSync } from 'node:fs';
 import { tmpdir } from 'node:os';
-import { join } from 'node:path';
+import { dirname, join, relative, resolve } from 'node:path';
 import { generateKeyPair, persistKeyPair } from '@mnema/chain';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { type CliIo, run } from '../src/program.js';
@@ -83,8 +84,72 @@ describe('key request --key', () => {
     expect(said.failed).toBe(true);
     expect(said.out).not.toContain('mnema-key-request:1:');
     expect(said.err.trim()).toBe(
-      `Refused (AN_AGENT_KEY): the key file ${file} lives in the folder of the agents' keys, ${join(home, '.mnema', 'agents')}: an agent's key signs for its host under a name and is not a key of a person to enrol. This checks where the file lives, not what it holds`,
+      `Refused (AN_AGENT_KEY): the key file ${file} lives in the folder of the agents' keys, ${join(home, '.mnema', 'agents')}: an agent's key signs for its host under a name and is not a key of a person to enrol. This checks the place the file really is, links followed, not what it holds`,
     );
+  });
+
+  /** An agent `ci` with its key made, and where that key file is. */
+  async function anAgentKeyFile(): Promise<string> {
+    const made = await did('key', 'request', '--agent', 'ci', '--anchor', anchor);
+    const fingerprint = made.match(/\b[0-9a-f]{64}\b/)?.[0] as string;
+    return join(home, '.mnema', 'agents', 'ci', 'keys', `${fingerprint}.key`);
+  }
+
+  const refusal = (file: string, real: string | undefined, whose = 'a person'): string =>
+    `Refused (AN_AGENT_KEY): the key file ${file}${real === undefined ? '' : ` (which is ${real})`} lives in the folder of the agents' keys, ${join(home, '.mnema', 'agents')}: an agent's key signs for its host under a name and is not a key of ${whose} to enrol. This checks the place the file really is, links followed, not what it holds`;
+
+  it('refuses a link kept elsewhere that points at the file in the agents folder', async () => {
+    const real = await anAgentKeyFile();
+    const link = join(sandbox, 'looks-innocent.key');
+    symlinkSync(real, link);
+
+    const said = await mnema('key', 'request', '--key', link, '--anchor', anchor);
+
+    expect(said.failed).toBe(true);
+    expect(said.out).not.toContain('mnema-key-request:1:');
+    expect(said.err.trim()).toBe(refusal(link, real));
+  });
+
+  it('refuses a folder that is another name for the agents folder', async () => {
+    const real = await anAgentKeyFile();
+    const alias = join(sandbox, 'alias-of-the-data-directory');
+    symlinkSync(join(home, '.mnema'), alias);
+    const file = join(alias, 'agents', 'ci', 'keys', real.split('/').pop() as string);
+
+    const said = await mnema('key', 'request', '--key', file, '--anchor', anchor);
+
+    expect(said.failed).toBe(true);
+    expect(said.err.trim()).toBe(refusal(file, real));
+  });
+
+  it('refuses the file named by a relative path', async () => {
+    const real = await anAgentKeyFile();
+    const given = relative(repo, real);
+
+    const said = await mnema('key', 'request', '--key', given, '--anchor', anchor);
+
+    expect(said.failed).toBe(true);
+    expect(said.err.trim()).toBe(refusal(resolve(repo, given), undefined));
+  });
+
+  it('takes a copy of the key kept elsewhere: a copy is not a link to the folder', async () => {
+    const real = await anAgentKeyFile();
+    const copy = join(sandbox, 'cold-copy', 'ci.key');
+    mkdirSync(dirname(copy), { recursive: true });
+    copyFileSync(real, copy);
+
+    const said = await did('key', 'request', '--key', copy, '--anchor', anchor);
+
+    expect(said).toContain('mnema-key-request:1:');
+  });
+
+  it('says of a checker request what is true of it: it is not a key of a checker to enrol', async () => {
+    const file = await anAgentKeyFile();
+
+    const said = await mnema('key', 'request', '--checker', '--key', file, '--anchor', anchor);
+
+    expect(said.failed).toBe(true);
+    expect(said.err.trim()).toBe(refusal(file, undefined, 'a checker'));
   });
 
   it('takes a key file that lives anywhere else', async () => {
