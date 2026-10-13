@@ -46,7 +46,7 @@ const WIRING_IO = pathToFileURL(
 ).href;
 const TEMPLATES = fileURLToPath(new URL('../../../.github/ISSUE_TEMPLATE/', import.meta.url));
 
-/** The handshake ceiling the host was measured to keep, in characters (`a-servers-instructions-are-cut-at-2048`). */
+/** The handshake ceiling the product keeps to, in characters: what Claude Code kept up to 2.1.295 (`a-servers-instructions-are-cut-at-2048`). */
 const INSTRUCTIONS_CEILING = 2048;
 
 let sandbox: string;

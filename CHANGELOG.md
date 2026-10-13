@@ -196,6 +196,12 @@ tag, with its own changelog.
   request --anchor <id> --key <file>` now refuses a file kept in the agents' folder (`AN_AGENT_KEY`); that checks the place the file
   really is (links followed), not what it holds, so a link to it is refused and a copy kept elsewhere is not recognised. `docs/what-it-proves.md` and `FORMAT.md`
   say it.
+- **The host contract holds the 2,048-character ceiling of a server's instructions against Claude Code 2.1.296 and later, which moved its default.**
+  Claude Code cut a server's instructions at 2,048 characters up to 2.1.295 and cuts at 4,096 since 2.1.296, as its
+  changelog says; `CLAUDE_CODE_MAX_MCP_DESCRIPTION_LENGTH` sets the number. The case now asks the host for 2,048, which
+  2.1.285, 2.1.287 and 2.1.296 each keep, and the pin moves to 2.1.296. The product's own ceiling does not change and
+  stays safe: it is the lower of the two. What it does not know is how a host reads a description of a tool past 2,048
+  on 2.1.296; the pages that said "2,048" of the host now say up to which version.
 
 ## [0.2.0-beta] - 2026-10-11
 

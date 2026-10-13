@@ -67,7 +67,7 @@ jobs:
       matrix:
         # THE PIN IS THE LAST VERSION IN THIS LINE. A run that is not a pull request or a push
         # tries the two moving tags instead.
-        version: ${{ fromJSON(contains(fromJSON('["schedule","workflow_dispatch"]'), github.event_name) && '["stable","latest"]' || '["2.1.285"]') }}
+        version: ${{ fromJSON(contains(fromJSON('["schedule","workflow_dispatch"]'), github.event_name) && '["stable","latest"]' || '["2.1.296"]') }}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
