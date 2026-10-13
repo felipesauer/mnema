@@ -209,6 +209,16 @@ export function runAgentRequest(
   };
 }
 
+/** The key types Node names whose name is said starting on a vowel sound: ec, ar-ess-ay, ed, ex. */
+const BEGINS_WITH_A_VOWEL_SOUND: ReadonlySet<string> = new Set([
+  'ec',
+  'rsa',
+  'rsa-pss',
+  'ed448',
+  'x25519',
+  'x448',
+]);
+
 /**
  * What is wrong with a key that is to be an agent's, or undefined when nothing is: the consent that
  * enrols an agent is proved for an Ed25519 key and no other, so a P-256 or an RSA key would make a
@@ -221,7 +231,7 @@ export function agentKeyAlgorithmRefusal(key: {
   const kind = key.publicKey.asymmetricKeyType;
   return kind === 'ed25519'
     ? undefined
-    : `the key ${key.fingerprint} is ${kind === undefined ? 'of a kind this does not know' : `${kind === 'ec' || kind === 'rsa' ? 'an' : 'a'} ${kind === 'ec' || kind === 'rsa' ? kind.toUpperCase() : kind} key`}, and an agent's key is an Ed25519 one — the consent that enrols it is proved for no other kind; \`mnema key request --agent <name> --anchor <your identity>\` without --key makes one`;
+    : `the key ${key.fingerprint} is ${kind === undefined ? 'of a kind this does not know' : `${BEGINS_WITH_A_VOWEL_SOUND.has(kind) ? 'an' : 'a'} ${kind === 'ec' || kind === 'rsa' ? kind.toUpperCase() : kind} key`}, and an agent's key is an Ed25519 one — the consent that enrols it is proved for no other kind; \`mnema key request --agent <name> --anchor <your identity>\` without --key makes one`;
 }
 
 /**
