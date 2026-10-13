@@ -301,7 +301,7 @@ describe('a write routed by `project` to a project that does not enrol the agent
   });
 });
 
-describe('a write that names the session\'s own project', () => {
+describe("a write that names the session's own project", () => {
   it('says nothing for it, which the opening already spoke of, and says it for another project', async () => {
     // The agent is enrolled in the committed tree of `repo` alone, so the person's key signs the
     // private one: what the opening says. Naming `repo` is not routing the write elsewhere.
