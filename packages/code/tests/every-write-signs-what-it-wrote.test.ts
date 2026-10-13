@@ -144,10 +144,13 @@ import { GIT_WITHOUT_MAINTENANCE } from './support/git-without-maintenance.js';
  *     which is every function in these files today; a write moved inside a closure
  *     would drop out of the enumeration, and the pinned counts below are what makes
  *     that fail rather than pass.
- *   - The CLI's virgin-tree case, which is deliberate and pinned elsewhere: a CLI
- *     write refused on a tree nobody ever wrote to leaves the founding behind
- *     unsigned (see `every-append.test.ts`). Reaching it needs a project directory
- *     with a tree and no `init`, which the CLI itself never produces.
+ *   - The CLI's virgin-tree case. THIS SAID it was deliberate and pinned: "a CLI write
+ *     refused on a tree nobody ever wrote to leaves the founding behind unsigned".
+ *     Measured on the binary, it was not only a tree with no `init` — a key new to a
+ *     project another key founded left that unsigned founding too, and `verify
+ *     --require=signed` failed on the project. The append door asks before the founding
+ *     now, so there is no such founding to sign (`every-append.test.ts`, the virgin-tree
+ *     cases; `a-refusal-leaves-nothing.test.ts`, one case per class on the binary).
  *   - WHETHER SIGNING IS THE RIGHT CADENCE AT ALL. That was decided with a study and
  *     is not re-litigated here; the ceiling under it is a different mechanism and has
  *     its own case at the end of this file.

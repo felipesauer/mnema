@@ -24,6 +24,9 @@
  * here, and what it gets back is DATA — a typed refusal a surface reports as
  * `Refused (UNREADABLE_EVENT)` — because an empty argument is an ordinary bad input
  * and an agent has to be able to read it and retry, not receive a stack trace.
+ * An operation's first fact comes through {@link appendFact} (or {@link appendFacts}),
+ * which asks this door BEFORE the founding the fact needs, so the refusal is all a
+ * refused first write leaves.
  *
  * AND IT IS NOT THE ONLY GUARD. The writer itself refuses the same events before
  * sealing (`refuseUnreadable`), which is what makes "no unreadable entry can be
