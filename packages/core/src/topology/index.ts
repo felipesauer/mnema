@@ -77,6 +77,7 @@ export {
   resolveScope,
   type Scope,
   signerFor,
+  signerHeldFor,
   TreeUnavailableError,
   treeWords,
 } from './routing.js';

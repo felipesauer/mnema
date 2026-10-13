@@ -710,6 +710,7 @@ describe('every write refuses what no read could accept', () => {
       'installs key material in an agent’s folder and records no anchor; appends no event',
     restoreKey: 'installs key material and records an anchor; appends no event',
     signerFor: 'reads who would sign in a tree and may mint a key, but opens no writer',
+    signerHeldFor: 'reads who would sign in a tree, makes no key, and opens no writer',
   };
 
   const NO_EMPTY_REACHES_A_FIELD: Readonly<Record<string, string>> = {

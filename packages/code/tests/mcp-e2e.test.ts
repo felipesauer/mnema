@@ -35,7 +35,7 @@ import {
   resolveTrees,
   type Scope,
 } from '@mnema/core';
-import { createTask, openTreeForWriting } from '@mnema/core/write';
+import { createTask, openTreeForWriting, signerFor } from '@mnema/core/write';
 import { Client } from '@modelcontextprotocol/sdk/client/index.js';
 import { InMemoryTransport } from '@modelcontextprotocol/sdk/inMemory.js';
 import { ListRootsRequestSchema } from '@modelcontextprotocol/sdk/types.js';
@@ -109,6 +109,14 @@ afterEach(() => {
 });
 
 /**
+ * A machine that already has a key. A session asks who it is without making a key, so a machine
+ * with none has no anchor until its first write, and a case about the anchor needs one to hold.
+ */
+function aMachineWithAKey(): void {
+  signerFor(resolveTrees(sandbox, env), 'global');
+}
+
+/**
  * The tree this connection's KNOWLEDGE writes land in — `private` in a project,
  * `global` outside one.
  *
@@ -150,6 +158,7 @@ function capturedId(result: unknown): string {
 
 describe('MCP session + tools — unit', () => {
   it('opening a session resolves the anchor and the project, and opens no run', () => {
+    aMachineWithAKey();
     const project = makeProject('proj');
     const session = openSession({
       clientName: 'claude-code',
@@ -159,7 +168,7 @@ describe('MCP session + tools — unit', () => {
     expect(session.which).toBe('claude-code');
     // who is the machine's anchor (a derived id), never the client's name.
     expect(session.who).not.toBe('claude-code');
-    expect(session.who.length).toBeGreaterThan(0);
+    expect(session.who?.length).toBeGreaterThan(0);
     // The run is the first WRITE's, not the connection's.
     expect(session.runs.size).toBe(0);
     // In a project, an agent connection routes writes PRIVATE (the origin rule).
@@ -233,7 +242,7 @@ describe('MCP session + tools — unit', () => {
     expect(context.resume.focus.openRuns.some((r) => r.id === theRun(session))).toBe(true);
     // ...and the actor is said once: the nested focus is only its runs, and no run repeats it.
     expect(Object.keys(context.resume.focus)).toEqual(['openRuns']);
-    expect(JSON.stringify(context).split(session.who)).toHaveLength(2);
+    expect(JSON.stringify(context).split(session.who as string)).toHaveLength(2);
   });
 
   it('focus reports the session actor’s own open run, and writes nothing', () => {
@@ -317,7 +326,7 @@ describe('MCP session + tools — unit', () => {
     expect(resume.focus.openRuns.some((r) => r.id === runId)).toBe(false);
     // The actor is said once: the nested focus is only its runs, and no run repeats it.
     expect(Object.keys(resume.focus)).toEqual(['openRuns']);
-    expect(JSON.stringify(resume).split(session.who)).toHaveLength(2);
+    expect(JSON.stringify(resume).split(session.who as string)).toHaveLength(2);
   });
 
   it('next_actions lists a task’s legal moves, and refuses an unknown id as data', () => {
@@ -648,6 +657,7 @@ describe('MCP session + tools — unit', () => {
   });
 
   it('a client naming itself the machine anchor is refused at its first write', () => {
+    aMachineWithAKey();
     // The authority invariant on this surface. It used to be caught by the run the
     // handshake opened; the connection itself is now legitimate — reading is not
     // authorized work — and the refusal lands where the forged authority would have:
@@ -655,7 +665,7 @@ describe('MCP session + tools — unit', () => {
     const project = makeProject('proj');
     const roots = [pathToFileURL(project).href];
     const first = openSession({ clientName: 'claude-code', roots, env });
-    const forged = openSession({ clientName: first.who, roots, env });
+    const forged = openSession({ clientName: first.who as string, roots, env });
 
     // Reads are fine — they carry no authority.
     expect(runFocusTool(forged).actor).toBe(forged.who);
@@ -688,7 +698,11 @@ describe('MCP session + tools — unit', () => {
     if (!runRecordHandoff(session, { task: 'e', from: 'a', to: 'b' }).ok) {
       throw new Error('setup: handoff refused');
     }
-    const forged: Session = { ...session, which: session.who, clientName: session.who };
+    const forged: Session = {
+      ...session,
+      which: session.who as string,
+      clientName: session.who as string,
+    };
 
     const results = [
       runCaptureMemory(forged, { content: 'x' }),
@@ -2708,6 +2722,7 @@ describe('MCP server — end to end over a real client', () => {
   });
 
   it('focus / resume / next_actions read the session context over the real transport', async () => {
+    aMachineWithAKey();
     const project = makeProject('proj');
     const { server } = buildMcpServer({ cwd: sandbox, env, log: () => {} });
     const client = await connectClient(server, [pathToFileURL(project).href]);

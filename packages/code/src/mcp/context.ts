@@ -373,11 +373,10 @@ export function resolveContext(input: ContextInput): ResolvedContext {
  * would look like a refusal of its own.
  *
  * It THROWS rather than returning a refusal, because there is no honest session to
- * return: the server's caller ({@link openSession}) already fails this way when the
- * anchor is unanswerable, the session never opens, and every tool call on the
- * connection reports the same sentence instead of answering out of the wrong record.
- * Nothing has been written when it fires — the trees are resolved before the anchor
- * is read, which is the first thing that touches disk.
+ * return: the server's caller ({@link openSession}) fails this way, the session never
+ * opens, and every tool call on the connection reports the same sentence instead of
+ * answering out of the wrong record. Nothing has been written when it fires — the trees
+ * are resolved before the anchor is asked, which is the first thing that touches disk.
  */
 function configuredProject(configured: string, env: DiscoveryEnv): ResolvedTrees {
   if (!isAbsolute(configured)) {

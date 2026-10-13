@@ -101,6 +101,7 @@ import {
   chainRootForScope,
   DECISION_ACTIONS,
   deriveAlias,
+  IdentityUnavailableError,
   isSearchKind,
   locateLinkScope,
   type ProjectionCache,
@@ -197,7 +198,7 @@ import {
   type WorkspaceTree,
 } from './locate.js';
 import { personSignedIn, routedTo, routeWrite } from './route.js';
-import { openWrite, type Session, whichOfWrite } from './session.js';
+import { anchorIn, openWrite, type Session, whichOfWrite } from './session.js';
 
 /** A memory was captured, or the requested scope was not available here. */
 export type CaptureResult =
@@ -1256,7 +1257,7 @@ function skillProofToFields(input: {
  * always the chain as it stands — the reuse is invisible to the answer.
  */
 export function runBootstrap(session: Session): Bootstrap {
-  return bootstrap(sessionCaches(session), { actor: session.who, ...askerContext(session) });
+  return bootstrap(sessionCaches(session), { actor: session.who ?? '', ...askerContext(session) });
 }
 
 /**
@@ -1857,7 +1858,7 @@ function recordConsultations(
  * so the result carries only the machine's OWN open runs.
  */
 export function runFocusTool(session: Session): Focus {
-  return focus(sessionCaches(session), { actor: session.who, ...askerContext(session) });
+  return focus(sessionCaches(session), { actor: session.who ?? '', ...askerContext(session) });
 }
 
 /**
@@ -1868,7 +1869,7 @@ export function runFocusTool(session: Session): Focus {
  * open OR already ended, the "where was I" anchor.
  */
 export function runResumeTool(session: Session): Resume {
-  return resume(sessionCaches(session), { actor: session.who, ...askerContext(session) });
+  return resume(sessionCaches(session), { actor: session.who ?? '', ...askerContext(session) });
 }
 
 /** The task's legal moves, or a typed refusal when no one tree of the workspace holds it. */
@@ -1934,8 +1935,12 @@ export type GuardResult =
     }
   | {
       readonly ok: false;
-      /** No tree of the workspace holds a task with this id, or several records do. */
-      readonly code: 'UNKNOWN_TASK' | 'AMBIGUOUS_RECORD';
+      /**
+       * No tree of the workspace holds a task with this id, or several records do — or nobody signs
+       * in the task's tree and the write this simulates would be refused there, with the code that
+       * refusal carries.
+       */
+      readonly code: 'UNKNOWN_TASK' | 'AMBIGUOUS_RECORD' | IdentityUnavailableError['code'];
       /** The human-readable reason. */
       readonly message: string;
     };
@@ -1951,8 +1956,9 @@ export type GuardResult =
  * another project, where a guard that refused what the move then did would be worse
  * than either answer alone.
  *
- * The actor is the session's `who` (never a client-supplied value), so the
- * simulated authority is the machine's own — and it is paired with the actor's
+ * The authority simulated is the machine's own — never a client-supplied value — and the one that
+ * signs in the TASK's tree: the same answer whichever root the workspace lists first, and, where
+ * nobody signs in that tree, the refusal the write would carry. It is paired with the actor's
  * focus, so the agent gets "you may (or may not) do this, and here is what you
  * are in the middle of" in one read. The proof (`note`/`reason`/`feedback`) and
  * `which` are simulated exactly as a real move would carry them: with the
@@ -1987,6 +1993,21 @@ export function runGuardTool(
       message: locatedButUnreadable('task', input.id, located.home),
     };
   }
+  // The gate is asked as the write would be: by whoever signs in the TASK's tree, and not by the
+  // session's `who`, which is the anchor of the first tree that had someone and so changes with the
+  // order of the roots. Where nobody signs in that tree the write would be refused, for a reason the
+  // gate does not know, so the answer is that refusal. Where nothing would refuse and no key exists
+  // yet (before the first write), the gate's own answer stands: a transition needs a human who
+  // authorized it.
+  let who: string;
+  try {
+    who = anchorIn(located.home.target?.trees ?? session.trees, located.home.scope) ?? '';
+  } catch (error) {
+    if (error instanceof IdentityUnavailableError) {
+      return { ok: false, code: error.code, message: error.message };
+    }
+    throw error;
+  }
   const fields = proofToFields(input);
   const result = guardWithFocus(
     // The FOCUS's trees, not the task's. The verdict needs no cache (the gate is
@@ -1997,7 +2018,7 @@ export function runGuardTool(
     {
       from: task.state,
       action: input.action,
-      who: session.who,
+      who,
       ...(fields !== undefined ? { fields } : {}),
       ...(input.which !== undefined ? { which: input.which } : {}),
     },
@@ -2574,7 +2595,7 @@ function otherRunsAt(session: Session, place: RulesAtPath | undefined): readonly
   try {
     return runsHere(sessionCaches(session), {
       path: place.relative ?? place.path,
-      actor: session.who,
+      actor: session.who ?? '',
       ...askerContext(session),
       channels: CHARGING_CHANNELS,
     });
