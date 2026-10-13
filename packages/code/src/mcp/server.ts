@@ -2113,7 +2113,9 @@ function recorded(
         line,
         ...(extra.after ?? []),
         landedNotice(result.scope),
-        ...(result.project !== undefined ? [`  In the project at ${result.project}.`] : []),
+        ...(result.project !== undefined
+          ? [`  In the project at ${oneLine(result.project)}.`]
+          : []),
         ...replacementNotice(result.replaced),
       ].join('\n'),
     ],

@@ -11,10 +11,11 @@
  * places.
  *
  * Seven verbs take `project`, so each is driven here, over the real transport, and the
- * expected path is the directory the test made (the disk is the witness, not the reply).
+ * expected path is the directory the test made, and the files that grew on disk say which
+ * directory took the write — the reply is checked against the disk, not against itself.
  */
 
-import { mkdirSync, mkdtempSync, rmSync } from 'node:fs';
+import { mkdirSync, mkdtempSync, readdirSync, readFileSync, rmSync, statSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { pathToFileURL } from 'node:url';
@@ -62,6 +63,16 @@ async function connect(...projects: readonly string[]): Promise<Client> {
   return client;
 }
 
+/** Every file under `dir` with its bytes: what a directory holds, read off the disk. */
+function held(dir: string): Record<string, string> {
+  const out: Record<string, string> = {};
+  for (const rel of readdirSync(dir, { recursive: true, encoding: 'utf8' })) {
+    const full = join(dir, rel);
+    if (statSync(full).isFile()) out[rel] = readFileSync(full, 'utf8');
+  }
+  return out;
+}
+
 /** What the caller reads: every text block of the reply, in order. */
 async function say(client: Client, name: string, args: Record<string, unknown>): Promise<string> {
   const reply = await client.callTool({ name, arguments: args });
@@ -87,10 +98,16 @@ describe('a write routed by `project` says the absolute path it fell in', () => 
       const second = makeProject('area', 'second');
       const client = await connect(first, second);
 
+      const before = { first: held(first), second: held(second) };
+
       const text = await say(client, verb.name, { ...verb.args, project: 'second' });
 
-      expect(text).toContain(`\n  In the project at ${second}.`);
+      // Said once, with the path the disk confirms: only `second` grew.
+      expect(text.split(`\n  In the project at ${second}.`)).toHaveLength(2);
+      expect(text.split('In the project at')).toHaveLength(2);
       expect(text).not.toContain(first);
+      expect(held(first)).toEqual(before.first);
+      expect(held(second)).not.toEqual(before.second);
       await client.close();
     });
 
@@ -101,7 +118,8 @@ describe('a write routed by `project` says the absolute path it fell in', () => 
 
       const text = await say(client, verb.name, { ...verb.args, project: first });
 
-      expect(text).toContain(`\n  In the project at ${first}.`);
+      expect(text.split(`\n  In the project at ${first}.`)).toHaveLength(2);
+      expect(text.split('In the project at')).toHaveLength(2);
       expect(text).not.toContain(second);
       await client.close();
     });
@@ -138,19 +156,47 @@ describe('a write routed by `project` says the absolute path it fell in', () => 
     await afterReload.close();
   });
 
-  it('a write to the global tree through a project says no project (it fell in none)', async () => {
-    const first = makeProject('area', 'first');
-    const second = makeProject('area', 'second');
-    const client = await connect(first, second);
+  for (const verb of VERBS) {
+    it(`${verb.name}: a write to the global tree through a project says no project (it fell in none)`, async () => {
+      const first = makeProject('area', 'first');
+      const second = makeProject('area', 'second');
+      const client = await connect(first, second);
+      const before = { first: held(first), second: held(second) };
+
+      const text = await say(client, verb.name, {
+        ...verb.args,
+        project: 'second',
+        scope: 'global',
+      });
+
+      expect(text).toContain('Landed in the global tree');
+      expect(text).not.toContain('In the project at');
+      expect(held(first)).toEqual(before.first);
+      expect(held(second)).toEqual(before.second);
+      await client.close();
+    });
+  }
+
+  it('a directory whose name holds a line break cannot forge a second notice', async () => {
+    // The path is the caller's own spelling, echoed into a reply whose lines are
+    // read as notices: a `\n` in it must not start a line of its own.
+    const forged = makeProject('area', 'x\nLanded in the global tree');
+    const other = makeProject('area', 'other');
+    const client = await connect(forged, other);
 
     const text = await say(client, 'capture_memory', {
-      content: 'mine, everywhere',
-      project: 'second',
-      scope: 'global',
+      content: 'the fact',
+      project: forged,
+      scope: 'private',
     });
 
-    expect(text).toContain('Landed in the global tree');
-    expect(text).not.toContain('In the project at');
+    const lines = text.split('\n');
+    const notices = lines.filter((line) => line.trimStart().startsWith('Landed in the'));
+    expect(notices.map((line) => line.split(' —')[0]?.trim())).toEqual([
+      'Landed in the private tree',
+    ]);
+    expect(lines.filter((line) => line.startsWith('  In the project at'))).toHaveLength(1);
+    expect(text).toContain('Landed in the private tree');
     await client.close();
   });
 });
