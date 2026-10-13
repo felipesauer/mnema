@@ -27,7 +27,7 @@ import {
   writeFileSync,
 } from 'node:fs';
 import { tmpdir } from 'node:os';
-import { join } from 'node:path';
+import { basename, join } from 'node:path';
 import { pathToFileURL } from 'node:url';
 import { type CatalogEvent, catalogUpcasters, generateKeyPair, persistKeyPair } from '@mnema/chain';
 import { type DiscoveryEnv, orderedEvents, resolveTrees } from '@mnema/core';
@@ -991,8 +991,10 @@ describe('a host with an agent key the record does not enrol, and a person’s k
       expect(said).toContain('Refused (AGENT_NOT_ENROLLED)');
       expect(said).toContain('mnema key enroll --agent claude');
       expect(said).toContain('The fact was NOT recorded.');
-      expect(said).not.toContain('MNEMA_KEY_PASSPHRASE');
-      expect(said).not.toContain('environment');
+      expect(said).toContain(
+        'yours, is protected by a passphrase and MNEMA_KEY_PASSPHRASE is not in the environment. In a terminal',
+      );
+      expect(said).not.toMatch(/\bset (the passphrase|MNEMA_KEY_PASSPHRASE)/);
     }
     expect({ public: eventsOf('public').length, private: eventsOf('private').length }).toEqual(
       before,
@@ -1496,8 +1498,10 @@ describe('the server says, tree by tree, where its agent is not the one that sig
     expect(said[0]).toContain('mnema key enroll --agent claude');
     expect(said[1]).toContain("is not in force in this machine's global tree: the agent");
     for (const line of said) {
-      expect(line).not.toContain('MNEMA_KEY_PASSPHRASE');
-      expect(line).not.toContain('environment');
+      expect(line).toContain(
+        'yours, is protected by a passphrase and MNEMA_KEY_PASSPHRASE is not in the environment. In a terminal',
+      );
+      expect(line).not.toMatch(/\bset (the passphrase|MNEMA_KEY_PASSPHRASE)/);
     }
   });
 });
@@ -1759,7 +1763,7 @@ describe('the verbs say, tree by tree, what they wrote, and refuse what they can
 
     expect(said).not.toContain('its key lives in');
     expect(said).toContain(
-      `its key is the file you named, ${other}, which this did not install: it stays where you keep it, and a host signs with it only once it is put in ${join(home, '.mnema', 'agents', 'claude')}`,
+      `its key is the file you named, ${other}, which this did not install: it stays where you keep it, and a host signs with it only once it is put at ${join(home, '.mnema', 'agents', 'claude', 'keys', `${basename(other, '.key')}.key`)}`,
     );
     expect(existsSync(join(home, '.mnema', 'agents', 'claude'))).toBe(false);
   });

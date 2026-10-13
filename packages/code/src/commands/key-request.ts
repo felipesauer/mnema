@@ -204,7 +204,7 @@ export function agentKeyAlgorithmRefusal(key: {
   const kind = key.publicKey.asymmetricKeyType;
   return kind === 'ed25519'
     ? undefined
-    : `the key ${key.fingerprint} is ${kind === undefined ? 'of a kind this does not know' : `a ${kind} key`}, and an agent's key is an Ed25519 one — the consent that enrols it is proved for no other kind; \`mnema key request --agent <name> --anchor <your identity>\` without --key makes one`;
+    : `the key ${key.fingerprint} is ${kind === undefined ? 'of a kind this does not know' : `${kind === 'ec' || kind === 'rsa' ? 'an' : 'a'} ${kind === 'ec' || kind === 'rsa' ? kind.toUpperCase() : kind} key`}, and an agent's key is an Ed25519 one — the consent that enrols it is proved for no other kind; \`mnema key request --agent <name> --anchor <your identity>\` without --key makes one`;
 }
 
 /**

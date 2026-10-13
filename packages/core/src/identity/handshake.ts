@@ -323,8 +323,8 @@ export type AgentRequestErr =
 /**
  * Produces an agent key's request to be enrolled in an identity under a name.
  *
- * The key is made at the agent's own key root, IN THE CLEAR — the agent's host has no terminal to
- * ask a passphrase at, and a key that needs one is a key the host cannot sign with — and is never
+ * The key is made at the agent's own key root, IN THE CLEAR — the agent's host is never given a
+ * passphrase, and a key that needs one is a key the host cannot sign with — and is never
  * installed at the person's key root, where a second key would make WHICH key the person speaks as
  * depend on directory order. As for a person's request, the anchor is required and never guessed,
  * and nothing is recorded: the agent signs nothing until a member vouches for it.

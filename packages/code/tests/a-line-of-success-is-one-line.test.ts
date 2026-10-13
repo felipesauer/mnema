@@ -405,7 +405,7 @@ const CLASSIFIED: Readonly<Record<string, { verdict: Verdict; why: string }>> = 
     verdict: 'collapsed',
     why: 'the name of a tree this surface chose, said by the one table that names them, and the anchor the tree speaks for',
   },
-  'key.ts «its key is the file you named, {}, which this did not install: it stays where you keep it, and a host signs with it only once it is put in {}» #1':
+  'key.ts «its key is the file you named, {}, which this did not install: it stays where you keep it, and a host signs with it only once it is put at {}» #1':
     {
       verdict: 'collapsed',
       why: 'the path the person typed, which a directory name may break, and the agent’s key root, which `$MNEMA_HOME` may place anywhere',
@@ -1161,7 +1161,7 @@ const UNREACHABLE: Readonly<Record<string, string>> = {
     'the same data directory, for a machine that joined an identity; the anchor is an identity id of the record',
   'key.ts «{}: already the agent for {}, nothing recorded» #1':
     'three constant words and an identity id of the record, so no break reaches the line',
-  'key.ts «its key is the file you named, {}, which this did not install: it stays where you keep it, and a host signs with it only once it is put in {}» #1':
+  'key.ts «its key is the file you named, {}, which this did not install: it stays where you keep it, and a host signs with it only once it is put at {}» #1':
     'needs a key file whose name holds a line break, which a request made from it would have to read as a private key',
   'key.ts «{}: skipped — {}» #1':
     'the name is one of three constants and the reason is this product’s own sentence',

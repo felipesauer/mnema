@@ -467,7 +467,7 @@ function chooseTheKey(trees: ResolvedTrees, chainRoot: string, saying?: string):
     persons === 'absent'
       ? 'is not on this machine'
       : persons === 'protected'
-        ? 'is protected by a passphrase, and a host has no terminal to ask at'
+        ? 'is protected by a passphrase and MNEMA_KEY_PASSPHRASE is not in the environment'
         : undefined;
   if (whyNot === undefined) return { signs: 'person' };
   const how =

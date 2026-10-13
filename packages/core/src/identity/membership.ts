@@ -99,9 +99,10 @@ export type IdentityRefusalCode =
   | 'A_CHECKER_KEY'
   /**
    * An agent is asked for, the record of this tree does not enrol its key, and the key that would
-   * sign instead — the person's — cannot be opened without a terminal (it is protected) or is not
-   * on this machine. Founding or minting a key to get through would be an identity the person
-   * never asked for, so nothing is signed; the way out is a verb at a terminal.
+   * sign instead — the person's — cannot be opened (it is protected, and `MNEMA_KEY_PASSPHRASE` is
+   * not in the environment) or is not on this machine. Founding or minting a key to get through
+   * would be an identity the person never asked for, so nothing is signed; the way out is the verb
+   * that enrols the agent.
    */
   | 'AGENT_NOT_ENROLLED';
 
