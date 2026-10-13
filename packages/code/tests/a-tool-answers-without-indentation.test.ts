@@ -26,6 +26,7 @@ import { buildMcpServer } from '../src/mcp/server.js';
 let sandbox: string;
 let client: Client;
 let decision: string;
+let task: string;
 
 async function call(name: string, args: Record<string, unknown> = {}): Promise<string[]> {
   const reply = (await client.callTool({ name, arguments: args })) as {
@@ -68,6 +69,12 @@ beforeAll(async () => {
   ).join('\n');
   const skill = made.match(/\(([0-9a-f-]{20,})\)/)?.[1];
   if (skill === undefined) throw new Error(`setup: no id in ${made}`);
+  // A task that can still move, so `next_actions` answers a list with something in it (a terminal task
+  // answers `[]`).
+  const created = (await call('create_task', { title: 'Ship the retry policy' })).join('\n');
+  const taskId = created.match(/\(([0-9a-f-]{20,})\)/)?.[1];
+  if (taskId === undefined) throw new Error(`setup: no id in ${created}`);
+  task = taskId;
   for (const action of ['review', 'adopt']) {
     await call('skill_transition', { id: skill, action, note: 'it reads well' });
   }
@@ -89,6 +96,7 @@ describe('what a read tool answers', () => {
     ['audit_timeline', () => ({ id: decision })],
     ['audit_refs', () => ({ id: decision })],
     ['governing_rules', () => ({ path: 'src' })],
+    ['next_actions', () => ({ id: task })],
     ['audit_accountability', () => ({})],
     ['audit_exposure', () => ({})],
     ['audit_antipatterns', () => ({})],
@@ -97,6 +105,12 @@ describe('what a read tool answers', () => {
     const text = first as string;
     expect(text).not.toContain('\n');
     expect(JSON.stringify(JSON.parse(text))).toBe(text);
+  });
+
+  it('next_actions answers a list with a move in it, and in the compact form', async () => {
+    const [first] = await call('next_actions', { id: task });
+    expect(JSON.parse(first as string)).not.toEqual([]);
+    expect(first).not.toContain('\n');
   });
 
   it('says what the record holds, in the compact form', async () => {
