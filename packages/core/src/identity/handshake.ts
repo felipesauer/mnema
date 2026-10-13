@@ -34,6 +34,7 @@
 import { readFileSync } from 'node:fs';
 import {
   ANCHOR_PREFIX,
+  agentEnrollmentMessage,
   CodedError,
   checkerEnrollmentMessage,
   enrollmentMessage,
@@ -48,6 +49,7 @@ import {
   sign,
 } from '@mnema/chain';
 import { oneLine } from '../one-line.js';
+import { agentNameRefusal } from './agent-name.js';
 import { isAnchorId } from './anchor.js';
 
 /**
@@ -63,6 +65,46 @@ const REQUEST_PREFIX = 'mnema-key-request:1:';
  * which power it asks for, and a door that expects one kind refuses the other.
  */
 export const CHECKER_REQUEST_PREFIX = 'mnema-checker-request:1:';
+
+/**
+ * The prefix of a request to be enrolled as an AGENT — a key that speaks for the identity under a
+ * name. Its own prefix, so a person enrolling a line can tell from it which power it asks for, and a
+ * door that expects one kind refuses the other. The line carries the name, because the key's consent
+ * covers it (`agent-enroll:<anchor>:<fp>:<name>`).
+ */
+export const AGENT_REQUEST_PREFIX = 'mnema-agent-request:1:';
+
+/** An agent key's consent to be enrolled in one anchor under one name. */
+export interface AgentRequest extends KeyRequest {
+  readonly name: string;
+}
+
+/** Renders an agent request as the single line a person copies to the machine that vouches. */
+export function encodeAgentRequest(request: AgentRequest): string {
+  const body = JSON.stringify({
+    pub: publicKeyToPem(request.key.publicKey),
+    sig: request.reverseSig,
+    name: request.name,
+  });
+  return AGENT_REQUEST_PREFIX + Buffer.from(body, 'utf-8').toString('base64url');
+}
+
+/** Reads an agent request back, or null when the text is not one. */
+export function decodeAgentRequest(text: string): AgentRequest | null {
+  const key = decodeKeyRequest(text, AGENT_REQUEST_PREFIX);
+  if (key === null) return null;
+  try {
+    const trimmed = text.trim();
+    const payload = trimmed.slice(AGENT_REQUEST_PREFIX.length).replace(/\s+/g, '');
+    const parsed = JSON.parse(Buffer.from(payload, 'base64url').toString('utf-8')) as {
+      name?: unknown;
+    };
+    if (typeof parsed.name !== 'string' || parsed.name.length === 0) return null;
+    return { ...key, name: parsed.name };
+  } catch {
+    return null;
+  }
+}
 
 /** A joining key's consent to become a member of one anchor. */
 export interface KeyRequest {
@@ -243,6 +285,92 @@ export function requestEnrollment(input: RequestInput): RequestOk | RequestErr {
       { key: keyPair, reverseSig },
       asChecker ? CHECKER_REQUEST_PREFIX : REQUEST_PREFIX,
     ),
+    source,
+    minted,
+  };
+}
+
+/** What making an agent's request needs. Paths are absolute — the surface resolves them. */
+export interface AgentRequestInput {
+  /** The identity the agent is for: the anchor of the person who will vouch. */
+  readonly anchor: string;
+  /** The name the agent is enrolled under (see {@link agentNameRefusal}). */
+  readonly name: string;
+  /** The agent's own key root: `<data directory>/agents/<name>`, never the person's. */
+  readonly keyRoot: string;
+  /** Speak for the key in this file instead of the one at the agent's key root (read, never installed). */
+  readonly privateKeyPath?: string;
+}
+
+/** An agent's request was produced; nothing is enrolled yet. */
+export interface AgentRequestOk {
+  readonly ok: true;
+  readonly fingerprint: string;
+  readonly anchor: string;
+  readonly name: string;
+  /** The one line to hand to a member of that identity, who runs `mnema key enroll --agent`. */
+  readonly request: string;
+  readonly source: RequestSource;
+  /** Whether this call created the agent's key (its first use). */
+  readonly minted: boolean;
+}
+
+/** Why no agent request was produced. */
+export type AgentRequestErr =
+  | RequestErr
+  | { readonly ok: false; readonly code: 'BAD_AGENT_NAME'; readonly message: string };
+
+/**
+ * Produces an agent key's request to be enrolled in an identity under a name.
+ *
+ * The key is made at the agent's own key root, IN THE CLEAR — the agent's host is never given a
+ * passphrase, and a key that needs one is a key the host cannot sign with — and is never
+ * installed at the person's key root, where a second key would make WHICH key the person speaks as
+ * depend on directory order. As for a person's request, the anchor is required and never guessed,
+ * and nothing is recorded: the agent signs nothing until a member vouches for it.
+ */
+export function requestAgentEnrollment(input: AgentRequestInput): AgentRequestOk | AgentRequestErr {
+  const unnamed = agentNameRefusal(input.name);
+  if (unnamed !== undefined) return { ok: false, code: 'BAD_AGENT_NAME', message: unnamed };
+  if (!isAnchorId(input.anchor)) {
+    return {
+      ok: false,
+      code: 'INVALID_ANCHOR',
+      message:
+        `"${oneLine(input.anchor)}" is not an identity id — an identity looks like ` +
+        `${ANCHOR_PREFIX}<64 hex>, as printed when a project is founded`,
+    };
+  }
+  const keyRoot = { root: input.keyRoot };
+  let keyPair: KeyPair;
+  let source: RequestSource;
+  let minted = false;
+  if (input.privateKeyPath !== undefined) {
+    const fromFile = readKeyPair(input.privateKeyPath);
+    if (fromFile === null) {
+      return {
+        ok: false,
+        code: 'UNREADABLE_KEY',
+        message: `${oneLine(input.privateKeyPath)} could not be read as a private key`,
+      };
+    }
+    keyPair = fromFile;
+    source = 'file';
+  } else {
+    const before = listPrivateKeyFingerprints(keyRoot);
+    keyPair = loadOrCreateKeyPair(keyRoot);
+    minted = !before.includes(keyPair.fingerprint);
+    source = 'machine';
+  }
+  const reverseSig = Buffer.from(
+    sign(agentEnrollmentMessage(input.anchor, keyPair.fingerprint, input.name), keyPair.privateKey),
+  ).toString('hex');
+  return {
+    ok: true,
+    fingerprint: keyPair.fingerprint,
+    anchor: input.anchor,
+    name: input.name,
+    request: encodeAgentRequest({ key: keyPair, reverseSig, name: input.name }),
     source,
     minted,
   };

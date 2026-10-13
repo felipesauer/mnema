@@ -76,6 +76,8 @@ export {
   sigstoreAccountOf,
   sigstoreIdentityRefusal,
 } from './identity/account.js';
+// The shape of a name an agent key is enrolled under, asked before a name becomes a folder.
+export { AGENT_NAME, agentNameRefusal } from './identity/agent-name.js';
 // An identity founded where others already were — the one reading every surface asks, at the
 // moment of a write and when the record is audited afterwards.
 export {
@@ -103,6 +105,8 @@ export {
 // so a surface needs to be able to name the class to report it as the refusal it
 // is — the same reason `TreeUnavailableError` lives on the read surface.
 export {
+  agentKeysIn,
+  agentsOf,
   IdentityUnavailableError,
   type MembershipRefusalCode,
 } from './identity/membership.js';
@@ -222,12 +226,20 @@ export {
   withinWindow,
 } from './projections/window.js';
 export {
+  type AgentSigning,
+  type AgentStanding,
+  agentKeyRoot,
+  agentRetiredIn,
+  agentSignsIn,
+  agentStanding,
   type BirthProbe,
   chainRootForScope,
   type Discovery,
   type DiscoveryEnv,
   discover,
   type HeldTail,
+  type KeyChoice,
+  keyChoiceIn,
   type LeftBehind,
   locateEntityScope,
   locateEntityScopeWith,
@@ -247,6 +259,7 @@ export {
   privateTreeVisibility,
   type ResolvedTrees,
   type RoutedKind,
+  reachableTrees,
   replayingBirthProbe,
   replayingRecordProbe,
   resolveScope,
@@ -255,7 +268,9 @@ export {
   TreeUnavailableError,
   tailsHeld,
   treesSearched,
+  treeWords,
   whyNoProjectRootAt,
+  withAgentKey,
 } from './topology/index.js';
 export {
   type Clock,

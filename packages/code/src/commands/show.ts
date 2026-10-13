@@ -88,6 +88,12 @@ export interface ShowDone {
   /** How many runs consulted this pattern — present only for a skill. */
   readonly consultations?: number;
   /**
+   * Which of a decision's two actors the record's own agent key signed for: the agent is then
+   * attested by the key, and the line says so; where it is absent, the name is what the signing
+   * key wrote (declared). Present only for a decision that has one.
+   */
+  readonly attested?: { readonly recordedBy?: true; readonly acceptedBy?: true };
+  /**
    * The tails among those read that do not chain — empty for a sound record, which is
    * every record this product wrote on its own. See {@link linkBreaksOf}: what is served
    * beside it came off a record whose proof this is the state of, and the wiring is what
@@ -147,6 +153,7 @@ export function runShow(ctx: ShowContext, input: { id: string }): ShowDone | Sho
     // shortening from the tree it came off — the tree that holds the events naming them.
     if (found.kind !== 'memory' && found.kind !== 'skill') {
       const anchors = found.kind === 'decision' ? anchorForms(opened) : NO_ANCHORS;
+      const attested = holder === undefined ? {} : attestedActors(holder, found);
       // OVER THE TREES THIS READ ACTUALLY OPENED, which here is fewer than all of them:
       // this verb stops at the first tree holding the id. That is the right answer and
       // not a shortfall — the notice is about the record the answer came off, and a tail
@@ -157,6 +164,7 @@ export function runShow(ctx: ShowContext, input: { id: string }): ShowDone | Sho
         anchors,
         linkBreaks: linkBreaksOf(opened, THE_READING_THAT_OPENED_THESE),
         divergent,
+        ...(attested.recordedBy === true || attested.acceptedBy === true ? { attested } : {}),
       };
     }
     // The two kinds whose answer is about the whole record and not about one tree.
@@ -172,4 +180,35 @@ export function runShow(ctx: ShowContext, input: { id: string }): ShowDone | Sho
         : {}),
     };
   });
+}
+
+/**
+ * The actors of a decision that the record's own agent key signed for: the event that recorded
+ * it, and the event that ruled it accepted (the latest), each checked the way the verifier holds
+ * an agent key's facts — signed by a key enrolled as an agent of that identity, under the name the
+ * fact carries. It reads the envelopes of the events this tree already indexes, never the chain.
+ */
+function attestedActors(
+  holder: ScopedCache,
+  body: RecordBody,
+): { recordedBy?: true; acceptedBy?: true } {
+  if (body.kind !== 'decision') return {};
+  const agents = holder.cache.agentKeys();
+  if (agents.size === 0) return {};
+  const rows = holder.cache.references(body.id).filter((row) => row.role === 'subject');
+  const signedByItsAgent = (row: (typeof rows)[number] | undefined): boolean => {
+    if (row === undefined) return false;
+    const agent = agents.get(row.event.signerFp);
+    return agent !== undefined && agent.anchor === row.who && agent.name === row.which;
+  };
+  const recorded = rows.find((row) => row.kind === 'decision.recorded');
+  const accepted = rows
+    .filter(
+      (row) => row.event.kind === 'decision.transitioned' && row.event.payload.to === 'accepted',
+    )
+    .at(-1);
+  return {
+    ...(signedByItsAgent(recorded) ? { recordedBy: true as const } : {}),
+    ...(signedByItsAgent(accepted) ? { acceptedBy: true as const } : {}),
+  };
 }

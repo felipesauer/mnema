@@ -23,7 +23,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "node \"${CLAUDE_PLUGIN_ROOT}/hooks/edit-asks-a-person.mjs\" --host copilot; exit 0",
+            "command": "node \"${CLAUDE_PLUGIN_ROOT}/hooks/edit-asks-a-person.mjs\" --host copilot --agent-key copilot; exit 0",
             "timeout": 15
           }
         ]

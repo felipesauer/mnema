@@ -45,6 +45,8 @@ export {
   privateTreesLeftBehind,
 } from './private-tree-move.js';
 export {
+  type AgentSigning,
+  agentKeyRoot,
   type Discovery,
   type DiscoveryEnv,
   discover,
@@ -55,17 +57,26 @@ export {
   type ResolvedTrees,
   resolveTrees,
   whyNoProjectRootAt,
+  withAgentKey,
 } from './resolve.js';
 export {
+  type AgentStanding,
+  agentRetiredIn,
+  agentSignsIn,
+  agentStanding,
   chainRootForScope,
   type DeferredWrite,
   deferredWrite,
+  type KeyChoice,
+  keyChoiceIn,
   type OpenTreeOptions,
   type Origin,
   openTreeForWriting,
   type RoutedKind,
+  reachableTrees,
   resolveScope,
   type Scope,
   signerFor,
   TreeUnavailableError,
+  treeWords,
 } from './routing.js';

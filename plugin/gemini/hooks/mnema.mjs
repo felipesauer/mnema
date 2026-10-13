@@ -17,6 +17,9 @@ const WRITES = new Set(['write_file', 'replace']);
 /** How long `mnema` is given to answer, in milliseconds. */
 const WAIT = 15000;
 
+/** The agent whose key signs what the gate records, where the record enrols it. */
+const AGENT = ['--agent-key', 'gemini'];
+
 /**
  * One run of `mnema`, both streams kept; a run that did not finish carries an `error`.
  * @param {string[]} args
@@ -76,7 +79,10 @@ function answer(mode, raw) {
       : { hookSpecificOutput: { hookEventName: 'SessionStart', additionalContext: text } };
   }
   if (mode !== 'gate') return undefined;
-  const ran = run(['before-a-write', '--host', 'gemini'], cwd, raw);
+  const gate = ['before-a-write', '--host', 'gemini'];
+  let ran = run([...gate, ...AGENT], cwd, raw);
+  // A `mnema` too old to know the option refuses it by name: asked again without it.
+  if (ran.status !== 0 && ran.stderr.includes('--agent-key')) ran = run(gate, cwd, raw);
   if (ran.error !== undefined || ran.status !== 0) return undefined;
   const said = JSON.parse(ran.stdout);
   return said.decision === 'deny' ? { decision: 'deny', reason: said.reason } : undefined;

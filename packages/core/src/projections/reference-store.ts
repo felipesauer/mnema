@@ -199,6 +199,8 @@ export interface AuthorshipTally {
   readonly kind: EventKind;
   /** The executing agent, or null when the human acted directly. */
   readonly which: string | null;
+  /** The key that signed these facts. */
+  readonly signer: string;
   readonly count: number;
 }
 
@@ -237,6 +239,7 @@ interface RefParams {
   readonly kind: string;
   readonly who: string;
   readonly which: string | null;
+  readonly signer: string;
   readonly subject: string;
   readonly event: string;
 }
@@ -276,8 +279,8 @@ export function materializeReferences(
   from = 0,
 ): void {
   const insert = db.prepare(
-    `INSERT INTO refs (ord, entity, role, at, kind, who, which, subject, event)
-     VALUES (@ord, @entity, @role, @at, @kind, @who, @which, @subject, @event)`,
+    `INSERT INTO refs (ord, entity, role, at, kind, who, which, signer, subject, event)
+     VALUES (@ord, @entity, @role, @at, @kind, @who, @which, @signer, @subject, @event)`,
   );
   events.forEach((event, index) => {
     const ord = from + index;
@@ -385,21 +388,23 @@ export function tallyAuthorship(
   }
   const rows = db
     .prepare(
-      `SELECT who, kind, which, COUNT(*) AS count
+      `SELECT who, kind, which, signer, COUNT(*) AS count
          FROM refs
         WHERE ${conditions.join(' AND ')}
-        GROUP BY who, kind, which`,
+        GROUP BY who, kind, which, signer`,
     )
     .all(params) as Array<{
     who: string;
     kind: string;
     which: string | null;
+    signer: string;
     count: number;
   }>;
   return rows.map((row) => ({
     who: row.who,
     kind: row.kind as EventKind,
     which: row.which,
+    signer: row.signer,
     count: row.count,
   }));
 }
@@ -654,6 +659,7 @@ function refParams(
     kind: event.kind,
     who: event.who,
     which: event.which ?? null,
+    signer: event.signerFp,
     subject: event.subject,
     event: encoded,
   };

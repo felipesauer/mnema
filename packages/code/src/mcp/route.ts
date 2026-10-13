@@ -54,12 +54,14 @@
 import { basename, isAbsolute, resolve } from 'node:path';
 import {
   chainRootForScope,
+  keyChoiceIn,
   type ResolvedTrees,
   type RoutedKind,
   resolveScope,
   type Scope,
 } from '@mnema/core';
 import { oneLine } from '../one-line.js';
+import type { PersonSigned } from '../recorded-content.js';
 import type { WorkspaceProject } from './context.js';
 import type { Session, WriteTarget } from './session.js';
 
@@ -142,11 +144,36 @@ export function routeWrite(
  * to mistake), nor for a write that landed in the global tree: that tree is the
  * machine's, and a directory named beside it would say it fell somewhere it did not.
  */
-export function routedTo(route: { readonly scope: Scope; readonly target?: WriteTarget }): {
-  readonly project?: string;
-} {
+export function routedTo(
+  session: Session,
+  route: { readonly scope: Scope; readonly target?: WriteTarget },
+): { readonly project?: string } & PersonSigned {
   if (route.target === undefined || route.scope === 'global') return {};
-  return { project: route.target.dir };
+  return { project: route.target.dir, ...personSignedIn(session, route.scope, route.target) };
+}
+
+/**
+ * Whether the PERSON's key signs a write into `scope` of the project it was routed to, when the
+ * server was asked to sign as an agent — the fact the opening says for the trees of the session
+ * and cannot say for ANOTHER project of the workspace the write is routed to afterwards.
+ *
+ * Said only when all of these hold: the destination is a project other than the session's own,
+ * which the opening already spoke of (a `project` that names the session's own project is not a
+ * routing elsewhere; a transition on an id the session's own trees hold has no `target`); and the
+ * key choice there is the person's. A tree where the agent signs has nothing to say, and one where
+ * nobody can sign refuses the write before there is a reply. The global tree is never reached here:
+ * {@link routedTo} says nothing for it and no transition finds a `target` in it.
+ */
+export function personSignedIn(
+  session: Session,
+  scope: Scope,
+  target: WriteTarget | undefined,
+): PersonSigned {
+  // `agentKey` is only here to narrow the type: with no agent, `keyChoiceIn` already says nothing.
+  if (session.agentKey === undefined || target === undefined) return {};
+  if (target.dir === session.project) return {};
+  if (keyChoiceIn(target.trees, scope)?.signs !== 'person') return {};
+  return { personSigned: { agent: session.agentKey, project: target.dir } };
 }
 
 /**

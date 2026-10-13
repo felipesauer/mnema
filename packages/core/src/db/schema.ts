@@ -370,6 +370,9 @@ CREATE TABLE IF NOT EXISTS refs (
   who     TEXT NOT NULL,
   -- The executing agent, or NULL when the human acted directly.
   which   TEXT,
+  -- The key that signed the event: what tells a fact an agent key attested from one the person's
+  -- own key signed under the same name.
+  signer  TEXT NOT NULL,
   -- The event's OWN subject, whatever this row's role is. It is what makes an
   -- edge readable off a single referring row: subject → entity.
   subject TEXT NOT NULL,

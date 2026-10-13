@@ -69,13 +69,17 @@ import {
   weakerLevel,
 } from '@mnema/chain';
 import {
+  agentKeysIn,
+  agentsOf,
   type DiscoveryEnv,
+  orderedEvents,
   privateTreeVisibility,
   type ResolvedTrees,
   resolveTrees,
   type Scope,
 } from '@mnema/core';
 import { recordTrees, type ScopedTree } from '../intelligence-source.js';
+import { oneLine } from '../one-line.js';
 
 /** What verify needs — injected so it is testable. */
 export interface VerifyContext {
@@ -223,7 +227,7 @@ function coverProject(
     kind: 'verdict',
     scope: 'public',
     root,
-    result: verify(root, upcasters, { keyRoot: trees.keyRoot }),
+    result: verifiedTree(root, upcasters, trees.keyRoot),
   };
   const rest = recordTrees(trees, undefined)
     .filter((tree) => tree.scope !== 'public' && (tree.scope !== 'global' || global))
@@ -531,7 +535,54 @@ function reportOn(tree: ScopedTree, upcasters: UpcasterRegistry, keyRoot: string
   if (!holdsRecord({ root })) {
     return { kind: 'no-record', scope: tree.scope, root };
   }
-  return { kind: 'verdict', scope: tree.scope, root, result: verify(root, upcasters, { keyRoot }) };
+  return {
+    kind: 'verdict',
+    scope: tree.scope,
+    root,
+    result: verifiedTree(root, upcasters, keyRoot),
+  };
+}
+
+/**
+ * The chain's verdict over one tree, with the one note the chain cannot word: a committed key with
+ * no tail that the record ENROLS AS AN AGENT is, most often, an agent that has not signed here yet.
+ * The chain says of any such key that its tail "may have been dropped (a botched merge)", the
+ * right fear for a colleague's key and a partial one for an agent enrolled a minute ago — and
+ * `mnema key enroll --agent` is run before the host writes, so every agent starts as that note.
+ * The sentence names the agent, and says BOTH readings: nothing local can tell an agent that never
+ * wrote from one whose tail was lost, and a sentence saying "nothing signed yet" would hide the
+ * second from the one who most needs it. The verdict, the level, the issues and the clause count
+ * are the chain's, untouched; only the sentence of the note for an agent key changes, and only
+ * where no waiver already accounts for the key. A key the record has since RETIRED is said to be
+ * retired, not enrolled: it is the one thing the sentence must not call it.
+ */
+function verifiedTree(root: string, upcasters: UpcasterRegistry, keyRoot: string): VerifyResult {
+  const result = verify(root, upcasters, { keyRoot });
+  if (!result.census.some((note) => note.kind === 'key-without-tail')) return result;
+  // A record the chain called unreadable cannot be replayed, and holds no agent to name.
+  let agents: ReturnType<typeof agentKeysIn>;
+  try {
+    agents = agentKeysIn(orderedEvents({ root }, upcasters), root);
+  } catch {
+    return result;
+  }
+  if (agents.size === 0) return result;
+  return {
+    ...result,
+    census: result.census.map((note) => {
+      if (note.kind !== 'key-without-tail' || note.waivers.length > 0) return note;
+      const agent = agents.get(note.fingerprint);
+      if (agent === undefined) return note;
+      const held = agentsOf({ tree: root, upcasters }, agent.anchor).has(note.fingerprint);
+      const standing = held
+        ? 'the record enrols it, and it has no tail on disk — it may have signed nothing here yet,'
+        : 'the record retired it, and it has no tail on disk — it may have signed nothing here,';
+      return {
+        ...note,
+        detail: `the key of the agent "${oneLine(agent.name)}" of ${oneLine(agent.anchor)}: ${standing} or its tail may have been dropped (a botched merge) or removed; nothing here can tell which`,
+      };
+    }),
+  };
 }
 
 /**

@@ -44,7 +44,7 @@ describe('an editor holds or refuses the write', () => {
     // VS Code ran the plugin's own file and not Codex's: the gate it ran is VS Code's, and no
     // command it started named Codex — the opening's included.
     const calls = session.calls();
-    expect(calls).toContain('before-a-write --host vscode');
+    expect(calls).toContain('before-a-write --host vscode --agent-key vscode');
     expect(calls.filter((call) => call.includes('--host codex'))).toEqual([]);
   }, 240_000);
 

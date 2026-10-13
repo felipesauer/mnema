@@ -43,6 +43,7 @@
 
 import { realpathSync, statSync } from 'node:fs';
 import { dirname, isAbsolute, join, resolve } from 'node:path';
+import { agentNameRefusal } from '../identity/agent-name.js';
 import { privateTreePlace } from './git-place.js';
 
 /** The directory name a project tree lives in, at a repo's root. */
@@ -58,6 +59,8 @@ export const APP_DIR = 'mnema';
 export const GLOBAL_DIR = 'global';
 /** The key root's directory under the app directory. */
 export const IDENTITY_DIR = 'identity';
+/** Where the agents' own key roots live under the app directory: one folder per agent name. */
+export const AGENTS_DIR = 'agents';
 
 /** The environment inputs discovery reads — injected so the rule is testable. */
 export interface DiscoveryEnv {
@@ -78,6 +81,18 @@ export interface DiscoveryEnv {
    * when {@link home} names no directory (empty, or relative).
    */
   readonly accountHome?: string | undefined;
+}
+
+/**
+ * An agent this process signs as, where one is configured: the name it is enrolled under, and the
+ * key root that holds its key — `<data directory>/agents/<name>`, never the person's.
+ *
+ * It names a CHOICE, not a fact: a tree signs with this key only where the record enrols it there
+ * under exactly this name (`keyRootFor`), and signs with the person's key everywhere else.
+ */
+export interface AgentSigning {
+  readonly name: string;
+  readonly keyRoot: string;
 }
 
 /**
@@ -103,6 +118,32 @@ export interface ResolvedTrees {
   readonly global: string;
   /** `~/.mnema/identity` (under `$MNEMA_HOME` when set) — the key root the three trees reference. Always present. */
   readonly keyRoot: string;
+  /**
+   * The agent key this process signs with where the record enrols it, when one is configured
+   * (`withAgentKey`). Absent, every tree signs with the person's key at {@link keyRoot}.
+   */
+  readonly agent?: AgentSigning;
+}
+
+/**
+ * The key root of the agent named `name` under the data directory the environment names: its own
+ * folder, so the person's key root never holds a second key (the machine adopts the first it finds
+ * there, and a second would make WHICH key the person speaks as depend on directory order).
+ */
+export function agentKeyRoot(env: DiscoveryEnv, name: string): string {
+  // A name is a folder here, so one that could name another place never gets as far as joining.
+  const unnamed = agentNameRefusal(name);
+  if (unnamed !== undefined) throw new Error(unnamed);
+  return join(appDataDir(env), AGENTS_DIR, name);
+}
+
+/**
+ * `trees`, with the agent `name` to sign as where the record enrols it. The name is the one the
+ * agent was enrolled under, which is also its folder: a value that is not an agent name
+ * (`agentNameRefusal`) throws before it reaches the file system.
+ */
+export function withAgentKey(trees: ResolvedTrees, env: DiscoveryEnv, name: string): ResolvedTrees {
+  return { ...trees, agent: { name, keyRoot: agentKeyRoot(env, name) } };
 }
 
 /**
@@ -289,10 +330,9 @@ export function whyNoProjectRootAt(dir: string, env: DiscoveryEnv): NoProjectRoo
  * every folder it ran from, measured on the built binary as two keys minted in two sibling
  * folders. Rule 3 is what closes that.
  *
- * It stays a named function, with one caller, because the two paths that must agree — `global`
- * and `keyRoot` — are derived from one call ({@link discover}). It is module-private for the
- * reason the project index taught: an export with nothing outside this file behind it is a
- * public name for nobody.
+ * It stays a named function because the paths that must agree — `global`, `keyRoot` and the
+ * agents' roots — are derived from one call. It is module-private for the reason the project
+ * index taught: an export with nothing outside this file behind it is a public name for nobody.
  */
 function appDataDir(env: DiscoveryEnv): string {
   const relocated = env.mnemaHome;

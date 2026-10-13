@@ -5,7 +5,10 @@
   "mcpServers": {
     "mnema": {
       "command": "mnema",
-      "args": ["mcp"]
+      "args": ["mcp"],
+      "env": {
+        "MNEMA_AGENT_KEY": "gemini"
+      }
     }
   }
 }

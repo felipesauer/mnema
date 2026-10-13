@@ -688,7 +688,7 @@ describe('MCP session + tools — unit', () => {
     if (!runRecordHandoff(session, { task: 'e', from: 'a', to: 'b' }).ok) {
       throw new Error('setup: handoff refused');
     }
-    const forged: Session = { ...session, which: session.who };
+    const forged: Session = { ...session, which: session.who, clientName: session.who };
 
     const results = [
       runCaptureMemory(forged, { content: 'x' }),

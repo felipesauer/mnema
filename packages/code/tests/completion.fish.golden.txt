@@ -742,12 +742,14 @@ complete -c mnema -f -n '__mnema_at "key restore"' -l color -x -a 'auto always n
 complete -c mnema -f -n '__mnema_at "key request"' -l anchor -r
 complete -c mnema -f -n '__mnema_at "key request"' -l key -r
 complete -c mnema -f -n '__mnema_at "key request"' -l checker
+complete -c mnema -f -n '__mnema_at "key request"' -l agent -r
 complete -c mnema -f -n '__mnema_at "key request"' -s h -l help
 complete -c mnema -f -n '__mnema_at "key request"' -s V -l version
 complete -c mnema -f -n '__mnema_at "key request"' -l color -x -a 'auto always never'
 
 # mnema key enroll
 complete -c mnema -f -n '__mnema_at "key enroll"' -l checker
+complete -c mnema -f -n '__mnema_at "key enroll"' -l agent
 complete -c mnema -f -n '__mnema_at "key enroll"' -s h -l help
 complete -c mnema -f -n '__mnema_at "key enroll"' -s V -l version
 complete -c mnema -f -n '__mnema_at "key enroll"' -l color -x -a 'auto always never'
@@ -765,6 +767,7 @@ complete -c mnema -f -n '__mnema_at "key sigstore"' -l color -x -a 'auto always 
 # mnema key revoke
 complete -c mnema -f -n '__mnema_at "key revoke"' -l reason -r
 complete -c mnema -f -n '__mnema_at "key revoke"' -l checker
+complete -c mnema -f -n '__mnema_at "key revoke"' -l agent
 complete -c mnema -f -n '__mnema_at "key revoke"' -s h -l help
 complete -c mnema -f -n '__mnema_at "key revoke"' -s V -l version
 complete -c mnema -f -n '__mnema_at "key revoke"' -l color -x -a 'auto always never'
@@ -822,6 +825,7 @@ complete -c mnema -f -n '__mnema_at "completion"' -a 'bash zsh fish'
 
 # mnema mcp
 complete -c mnema -f -n '__mnema_at "mcp"' -l project -r
+complete -c mnema -f -n '__mnema_at "mcp"' -l agent-key -r
 complete -c mnema -f -n '__mnema_at "mcp"' -s h -l help
 complete -c mnema -f -n '__mnema_at "mcp"' -s V -l version
 complete -c mnema -f -n '__mnema_at "mcp"' -l color -x -a 'auto always never'
@@ -850,6 +854,7 @@ complete -c mnema -f -n '__mnema_at "run end"' -l color -x -a 'auto always never
 
 # mnema before-a-write
 complete -c mnema -f -n '__mnema_at "before-a-write"' -l host -x -a 'vscode cursor codex copilot opencode gemini'
+complete -c mnema -f -n '__mnema_at "before-a-write"' -l agent-key -r
 complete -c mnema -f -n '__mnema_at "before-a-write"' -s h -l help
 complete -c mnema -f -n '__mnema_at "before-a-write"' -s V -l version
 complete -c mnema -f -n '__mnema_at "before-a-write"' -l color -x -a 'auto always never'

@@ -29,6 +29,8 @@ const GATES = ['gate', 'decisionGate', 'skillGate'] as const;
 const EXEMPT: Readonly<Record<string, string>> = {
   'packages/context/tests/support/chain.ts':
     'a fixture builder: one process writing a tree it made, that no other session opens',
+  'packages/core/src/a-reason-states-something.test.ts':
+    'drives the door with one hand-built event beside the operations; its gate calls are instrument cases, in a tree no other session opens',
 };
 
 function sources(dir: string): string[] {

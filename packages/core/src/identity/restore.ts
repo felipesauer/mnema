@@ -93,6 +93,8 @@ export type RestoreErrorCode =
   | 'UNREADABLE_KEY'
   /** A private key of another fingerprint is already installed at the key root. */
   | 'KEY_PRESENT'
+  /** The tree proves the key an agent's: it is no key of a person to restore (see {@link restoreKey}). */
+  | 'AN_AGENT_KEY'
   /** The tree does not prove exactly one identity for this key (see the reading). */
   | MembershipRefusalCode;
 
@@ -156,6 +158,18 @@ export function restoreKey(input: RestoreInput): RestoreOk | RestoreErr {
 
   const found = membershipIn({ tree: input.tree, upcasters: input.upcasters }, keyPair);
   if (!found.ok) return found;
+  // An agent's key restored here would be installed at the person's key root, where the next
+  // write signs with it as the person: facts the verifier then reads as a break, because they are
+  // signed by an agent key and name no agent. Before the anchor is written, as before anything.
+  if (found.membership === 'agent') {
+    return {
+      ok: false,
+      code: 'AN_AGENT_KEY',
+      message:
+        `the key ${oneLine(keyPair.fingerprint)} is an agent key of ${oneLine(found.anchor)} — it signs ` +
+        "for its host from its own agent's folder and is not a key of a person to restore; nothing was written",
+    };
+  }
 
   writeAnchor({ root: input.tree }, keyPair.fingerprint, found.anchor);
   // A copy that was protected is installed protected, with the passphrase it was just opened by:

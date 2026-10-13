@@ -1543,6 +1543,154 @@ const CLASSIFIED: Readonly<Record<string, { verdict: Verdict; why: string }>> = 
       verdict: 'collapsed',
       why: 'a FILE NAME in the key root, stripped of its suffix — whatever the directory holds',
     },
+  '@mnema/core identity/restore.ts «the key {} is an agent key of {} — it signs » oneLine(keyPair.fingerprint) #1':
+    {
+      verdict: 'collapsed',
+      why: 'the fingerprint re-derived from the private key file `key restore` was handed, in the refusal that says the key is an agent’s',
+    },
+  '@mnema/core identity/restore.ts «the key {} is an agent key of {} — it signs » oneLine(found.anchor) #1':
+    {
+      verdict: 'collapsed',
+      why: 'the identity the record proves the key an agent of, named by whoever vouched for it',
+    },
+  '@mnema/core identity/handshake.ts «"{}" is not an identity id — an identity looks like » oneLine(input.anchor) #2':
+    {
+      verdict: 'collapsed',
+      why: 'the anchor a caller typed, in the refusal that says it is not one',
+    },
+  '@mnema/core identity/handshake.ts «{} could not be read as a private key» oneLine(input.privateKeyPath) #2':
+    {
+      verdict: 'collapsed',
+      why: 'a path a caller typed — nothing has opened it, which is what the refusal says',
+    },
+  '@mnema/core identity/handshake.ts «{}<64 hex>, as printed when a project is founded» ANCHOR_PREFIX #2':
+    {
+      verdict: 'minted',
+      why: 'the `mnid:` prefix this product mints anchors with — a constant',
+    },
+  '@mnema/core identity/roster.ts «"{}" for {} — an agent request is made for ONE » oneLine(anchor) #1':
+    {
+      verdict: 'collapsed',
+      why: 'the anchor of the identity this machine writes as, which the record names',
+    },
+  '@mnema/core identity/roster.ts «"{}" for {} — an agent request is made for ONE » oneLine(request.name) #1':
+    {
+      verdict: 'collapsed',
+      why: 'the name an agent request carried, which `agentNameRefusal` has already held to the agent-name form where it is worded; the tag is the second fence',
+    },
+  '@mnema/core identity/roster.ts «retired by its own verb: \\`mnema key revoke --agent {} --reason "<why>"\\`» oneLine(input.fingerprint) #1':
+    {
+      verdict: 'collapsed',
+      why: 'a fingerprint a caller typed, or one decoded from the request a caller handed over',
+    },
+  '@mnema/core identity/roster.ts «that request does not prove the key {} consented to be » oneLine(fingerprint) #1':
+    {
+      verdict: 'collapsed',
+      why: 'a fingerprint a caller typed, or one decoded from the request a caller handed over',
+    },
+  '@mnema/core identity/roster.ts «the key {} is already a member of an identity in this record — an agent » oneLine(fingerprint) #1':
+    {
+      verdict: 'collapsed',
+      why: 'a fingerprint a caller typed, or one decoded from the request a caller handed over',
+    },
+  '@mnema/core identity/roster.ts «the key {} is already {}\'s agent "{}" — » oneLine(anchor) #1': {
+    verdict: 'collapsed',
+    why: 'the anchor of the identity this machine writes as, which the record names',
+  },
+  '@mnema/core identity/roster.ts «the key {} is already {}\'s agent "{}" — » oneLine(fingerprint) #1':
+    {
+      verdict: 'collapsed',
+      why: 'a fingerprint a caller typed, or one decoded from the request a caller handed over',
+    },
+  '@mnema/core identity/roster.ts «the key {} is already {}\'s agent "{}" — » oneLine(held) #1': {
+    verdict: 'collapsed',
+    why: 'the name the record holds for a key it counts as an agent, written by whoever vouched',
+  },
+  '@mnema/core identity/roster.ts «enrolled again — \\`mnema key request --agent {} --anchor <your identity>\\` » oneLine(request.name) #1':
+    {
+      verdict: 'collapsed',
+      why: 'the name an agent request carried, which `agentNameRefusal` has already held to the agent-name form where it is worded; the tag is the second fence',
+    },
+  '@mnema/core identity/roster.ts «in any tree it reaches from here — \\`mnema key request --agent {} --anchor <your identity>\\` » oneLine(request.name) #1':
+    {
+      verdict: 'collapsed',
+      why: 'the name an agent request carried, held to the agent-name form by the core’s own door before a tree is asked; the tag is the second fence',
+    },
+  '@mnema/core identity/roster.ts «the key {} is already {}\'s agent "{}" in {} — » oneLine(fingerprint) #1':
+    {
+      verdict: 'collapsed',
+      why: 'a fingerprint a caller typed, or one decoded from the request a caller handed over',
+    },
+  '@mnema/core identity/roster.ts «the key {} is already {}\'s agent "{}" in {} — » oneLine(held) #1':
+    {
+      verdict: 'collapsed',
+      why: 'the name the record holds for a key it counts as an agent, written by whoever vouched',
+    },
+  '@mnema/core identity/roster.ts «the key {} is already {}\'s agent "{}" in {} — » oneLine(proven.anchor) #1':
+    {
+      verdict: 'collapsed',
+      why: 'the anchor of the identity the record proves the key a member of, which the record names',
+    },
+  '@mnema/core identity/roster.ts «the key {} is already {}\'s agent "{}" in {} — » oneLine(where) #1':
+    {
+      verdict: 'collapsed',
+      why: 'how a tree is said by the caller: three constant phrases of this product, held through the tag as the second fence',
+    },
+  '@mnema/core identity/roster.ts «the key {} was retired in {} and is never enrolled again, » oneLine(fingerprint) #1':
+    {
+      verdict: 'collapsed',
+      why: 'a fingerprint a caller typed, or one decoded from the request a caller handed over',
+    },
+  '@mnema/core identity/roster.ts «the key {} was retired in {} and is never enrolled again, » oneLine(where) #1':
+    {
+      verdict: 'collapsed',
+      why: 'how a tree is said by the caller: three constant phrases of this product, held through the tag as the second fence',
+    },
+  '@mnema/core identity/roster.ts «the key {} is an agent key of {} — an agent is not » oneLine(holder.anchor) #1':
+    {
+      verdict: 'collapsed',
+      why: 'the anchor of the identity the record holds the agent key for, which the record names',
+    },
+  '@mnema/core identity/roster.ts «the key {} is an agent key of {} — an agent is not » oneLine(fingerprint) #1':
+    {
+      verdict: 'collapsed',
+      why: 'a fingerprint a caller typed, or one decoded from the request a caller handed over',
+    },
+  '@mnema/core identity/roster.ts «the key {} was taken out of an identity in this record and is never » oneLine(fingerprint) #1':
+    {
+      verdict: 'collapsed',
+      why: 'a fingerprint a caller typed, or one decoded from the request a caller handed over',
+    },
+  '@mnema/core identity/roster.ts «the record does not count {} as an agent key of {} — » oneLine(anchor) #1':
+    {
+      verdict: 'collapsed',
+      why: 'the anchor of the identity this machine writes as, which the record names',
+    },
+  '@mnema/core identity/roster.ts «the record does not count {} as an agent key of {} — » oneLine(input.fingerprint) #1':
+    {
+      verdict: 'collapsed',
+      why: 'a fingerprint a caller typed, or one decoded from the request a caller handed over',
+    },
+  "@mnema/core identity/roster.ts «this machine's key is not currently one of {}'s own — the record retired it, » oneLine(anchor) #1":
+    {
+      verdict: 'collapsed',
+      why: 'the anchor of the identity this machine writes as, which the record names',
+    },
+  "@mnema/core identity/roster.ts «this machine's key is not currently one of {}'s own, so a retirement it » oneLine(anchor) #1":
+    {
+      verdict: 'collapsed',
+      why: 'the anchor of the identity this machine writes as, which the record names',
+    },
+  '@mnema/core identity/roster.ts «{} is an agent key of {}, and an agent is » oneLine(anchor) #1':
+    {
+      verdict: 'collapsed',
+      why: 'the anchor of the identity this machine writes as, which the record names',
+    },
+  '@mnema/core identity/roster.ts «{} is an agent key of {}, and an agent is » oneLine(input.fingerprint) #1':
+    {
+      verdict: 'collapsed',
+      why: 'a fingerprint a caller typed, or one decoded from the request a caller handed over',
+    },
   '@mnema/core identity/roster.ts «that request does not prove the key {} consented to join {} — » oneLine(fingerprint) #1':
     {
       verdict: 'collapsed',
@@ -1798,9 +1946,9 @@ describe('every value the domain puts in a sentence is classified', () => {
     // are equal. The scale is stated, and so is what the HANDOFF said — twenty-three
     // sites, twelve in `core` and eleven in `chain` — because it counted sentences
     // written at a `message:` or a `detail:` directly, and a value is not a sentence.
-    expect(SITES.length).toBe(236);
+    expect(SITES.length).toBe(266);
     expect(FOUND[0]?.sites.length).toBe(93);
-    expect(FOUND[1]?.sites.length).toBe(143);
+    expect(FOUND[1]?.sites.length).toBe(173);
     expect(FOUND.flatMap((layer) => layer.wording).length).toBeGreaterThan(15);
   });
 
@@ -1850,11 +1998,11 @@ describe('every value the domain puts in a sentence is classified', () => {
     // No arm of the case above may be empty, or that much of it is vacuous.
     const verdicts = Object.values(CLASSIFIED).map((said) => said.verdict);
     const count = (verdict: Verdict): number => verdicts.filter((said) => said === verdict).length;
-    expect(count('collapsed')).toBe(153);
-    expect(count('minted')).toBe(60);
+    expect(count('collapsed')).toBe(182);
+    expect(count('minted')).toBe(61);
     expect(count('composed')).toBe(23);
     expect(SITES.filter((site) => new RegExp(`\\b${DOOR}\\b`).test(site.expression))).toHaveLength(
-      153,
+      182,
     );
   });
 

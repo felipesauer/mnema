@@ -42,7 +42,7 @@ import {
 } from '../content/screen.js';
 import { resolveExecutingAgent, type SelfAuthorizedErr } from '../identity/authority.js';
 import { CHECKER_REQUEST_PREFIX, decodeKeyRequest } from '../identity/handshake.js';
-import { membershipIn, rosterOf } from '../identity/membership.js';
+import { membershipIn, personsRosterOf } from '../identity/membership.js';
 import { oneLine } from '../one-line.js';
 import { orderedEvents } from '../projections/order.js';
 import { type AppendRefusal, appendEvent } from '../workflow/append.js';
@@ -213,7 +213,10 @@ export function enrollChecker(
     };
   }
   const query = { tree: ctx.layout.root, upcasters: ctx.upcasters };
-  if (decided.source !== 'unfounded' && !rosterOf(query, anchor).has(signer.signerFingerprint)) {
+  if (
+    decided.source !== 'unfounded' &&
+    !personsRosterOf(query, anchor).has(signer.signerFingerprint)
+  ) {
     return {
       ok: false,
       code: 'CANNOT_VOUCH',
@@ -519,7 +522,7 @@ export function retireChecker(
   const query = { tree: ctx.layout.root, upcasters: ctx.upcasters };
   if (
     decided.source !== 'unfounded' &&
-    !rosterOf(query, decided.anchor).has(signer.signerFingerprint)
+    !personsRosterOf(query, decided.anchor).has(signer.signerFingerprint)
   ) {
     return {
       ok: false,

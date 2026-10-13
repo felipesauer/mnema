@@ -163,7 +163,7 @@ shows what the binary draws, so none of them can go on showing an older product 
 key, no network — and prints each verdict verbatim, naming the level it reached.
 
 - **What holds.** A changed or reordered event breaks the hash chain, and an edit made without the signing key fails the signed checkpoints.
-- **What does not hold.** Nothing proves that nothing was removed: a hash chain shows what changed, never what is gone, and the history a git remote keeps is what covers omission. A record forged whole under a fresh key verifies clean, a key is not proven to be the person a name says, and the agent named on a fact is the name its client announced. A refusal of a write covers a host's editing tools, not its shell: `sed -i` on a protected file goes round it.
+- **What does not hold.** Nothing proves that nothing was removed: a hash chain shows what changed, never what is gone, and the history a git remote keeps is what covers omission. A record forged whole under a fresh key verifies clean, a key is not proven to be the person a name says, and the agent named on a fact is the name its client announced, unless an agent key signed it (then the name the record enrolled the key under). A refusal of a write covers a host's editing tools, not its shell: `sed -i` on a protected file goes round it.
 - **What a green `verify` means.** That nothing *verifiable* is broken, not that the record is honest, and the gate protects the shape of a change, not who may make it.
 
 The whole table, claim by claim, is in [`docs/what-it-proves.md`](docs/what-it-proves.md); how each

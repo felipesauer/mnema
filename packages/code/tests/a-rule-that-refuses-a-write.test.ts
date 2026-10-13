@@ -861,7 +861,7 @@ describe('the command Cursor runs from the plugin', () => {
     expect(said.value).toBe('deny');
     expect(said.reason).toContain(refusing);
     expect(readFileSync(calls, 'utf-8').trim().split('\n')).toEqual([
-      'before-a-write --host cursor',
+      'before-a-write --host cursor --agent-key cursor',
     ]);
     expect(refusals()).toEqual([`${refusing} @ src/billing/invoice.ts by cursor`]);
   });
