@@ -24,7 +24,7 @@ import { InMemoryTransport } from '@modelcontextprotocol/sdk/inMemory.js';
 import { ListRootsRequestSchema } from '@modelcontextprotocol/sdk/types.js';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { buildMcpServer } from '../src/mcp/server.js';
-import { closeSession, openSession } from '../src/mcp/session.js';
+import { closeSession, openSession, refreshWorkspace } from '../src/mcp/session.js';
 import { runCaptureMemory, runRecordDecision } from '../src/mcp/tools.js';
 import { type CliIo, run } from '../src/program.js';
 
@@ -240,6 +240,36 @@ describe('a write routed to another project of the workspace', () => {
     const last = moved[moved.length - 1];
     expect(last?.signerFp).toBe(agent.fingerprint);
     expect(last?.which).toBe('claude');
+  });
+});
+
+describe('a project the workspace learns of after the session opened', () => {
+  it('signs there as the agent too, where the client announced its roots later', async () => {
+    const agent = await anAgent();
+    cpSync(repo, other, { recursive: true });
+    const session = openSession({
+      roots: [],
+      clientName: 'evil',
+      env,
+      agentKey: 'claude',
+      log: () => {},
+    });
+    refreshWorkspace(session, [pathToFileURL(repo).href, pathToFileURL(other).href]);
+
+    const done = runRecordDecision(session, {
+      title: 'Routed after a refresh',
+      rationale: 'because',
+      project: other,
+    });
+    closeSession(session);
+
+    expect(done.ok, JSON.stringify(done)).toBe(true);
+    const recorded = eventsIn(other, 'public').filter(
+      (event) => event.kind === 'decision.recorded',
+    );
+    expect(recorded).toHaveLength(1);
+    expect(recorded[0]?.signerFp).toBe(agent.fingerprint);
+    expect(recorded[0]?.which).toBe('claude');
   });
 });
 
