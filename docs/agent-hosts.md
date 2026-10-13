@@ -54,15 +54,39 @@ on an identity nobody else has ruled with.
 
 ## Signing as an agent inside a sandbox
 
-An agent key (`key request --agent <name> --anchor <id>`, then `key enroll --agent` where your own key is; the
-[package README](../packages/code/README.md) has the verbs) lives in `agents/<name>/` under the data directory (`~/.mnema`,
-or `$MNEMA_HOME`), in the clear. What it proves about `which` depends on who else can read that folder. By itself it proves
-one thing: the person's key did not sign the fact. The sandbox is what narrows who could have signed as the agent, and
-this page says what each host's own documentation says its sandbox does, and what it does not.
+An agent key is a second key of your identity that an agent host signs with, so that a fact it records says
+`which` by a name the record enrolled, not by a name the client announced. Three verbs, in the order you run them
+(the [package README](../packages/code/README.md) has the rest):
 
-What follows is read from the hosts' documentation (Claude Code, Codex, Gemini CLI, read on 10 October 2026). Nothing
-here was run: no host was started, no setting below was tried, and no model was called. The setting names are the ones
-those pages give; check them against the version you run.
+```sh
+mnema key request --agent claude --anchor <your identity>   # makes the key, prints a line
+mnema key enroll --agent claude                             # with your own key: records it
+mnema key revoke --agent <fingerprint> --reason "<why>"     # retires it
+```
+
+`request` makes the key in `agents/claude/` under the data directory (`~/.mnema`, or `$MNEMA_HOME`), in the clear, apart
+from your own key (`identity/`). `enroll` is run where your own key is. It records the agent in three trees: the
+project's committed one (`.mnema/`), its private one (under the project's `.git/mnema/`) and the machine's global one
+(`global/` in the data directory), and prints one line for each. The name given to `enroll` is the folder of a key this
+machine holds; a line printed by a `request` on another machine is passed whole, and is enrolled in the committed tree
+alone. To rotate, retire the key and run `request` again under the same name: the retired key moves to
+`agents/claude/retired/` (it is never deleted) and the new key is enrolled with `enroll`. A host signs with it
+when told its name, with the plugin's `agent_key` option, `MNEMA_AGENT_KEY`, or `mnema mcp --agent-key claude`.
+`mnema doctor` lists the keys the machine holds against the three trees.
+
+What the key proves about `which` depends on who else can read the folder it lives in, and under one operating-system user
+that is everything the model's own commands can read, unless a sandbox says otherwise. Under the same user and the same
+files an agent key does not separate the agent from the person: it separates the person's key from the agent's only while
+the model cannot read the data directory, and that is what a sandbox is for. Your own key is in the same data directory, and in
+the clear unless you ran `mnema key protect`: a model that can read the directory can sign as you. `enroll` says so while
+the key is in the clear.
+
+This page says what each host's own documentation says its sandbox does, and what it does not.
+
+What follows about the hosts is read from their documentation (Claude Code, Codex, Gemini CLI, read on 10 October 2026).
+No host was started, no setting below was tried, and no model was called. The verbs above were run, in a throwaway home
+directory, on this version. The setting names are the ones those pages give; check them against the version you run. VS Code
+and Cursor are not covered: nothing here says they sign with an agent key, or that they keep the folder from a model.
 
 ### What each host's sandbox leaves readable
 
@@ -88,8 +112,8 @@ Claude Code's file tools, its MCP servers and its hooks run outside the sandbox.
 the agent key, and it means any other MCP server of that session that reads files can read it too. The setting that says which agent key the server signs with has to sit where the model cannot write it: the host
 protects its own project settings, `.mcp.json` and user settings from a sandboxed write, but the project's own
 directory of the record is in the working directory and is not protected. So the choice goes in the plugin's option
-or the environment (`MNEMA_AGENT_KEY`, or `--agent-key <name>` on the command a hook runs), never in the project's
-configuration of mnema.
+or the environment (`MNEMA_AGENT_KEY`, or `--agent-key <name>` on the command a hook runs), never in a file of the
+project, which is what the model can write.
 
 ### Codex: a profile
 
@@ -111,8 +135,8 @@ launches. Mount the agent's folder into the container and nothing else of the da
 - The sandbox is not proof of the model. The record shows that the key that signed was the agent's, not which process held
   it or which model drove it.
 - Running the agent as another operating-system user, or in a container with the key mounted only there, is a stronger
-  separation that this page does not set up. It was read about, not tried.
-- Not measured: whether any of the hosts above passes the manifest's `env` to the server as the plugin expects; whether
+  separation that this page does not set up and that nobody tried here.
+- Not measured: whether any host passes the manifest's `env` to the server as the plugin expects; whether
   Codex's or Gemini's MCP servers sit inside their sandbox; that the settings above, together, keep a shell from reading
   the key on any version.
 
