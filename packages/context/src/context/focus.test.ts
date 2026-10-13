@@ -11,6 +11,7 @@ import {
   startRun,
   startRunAt,
 } from '../../tests/support/chain.js';
+import { bootstrap } from './bootstrap.js';
 import { focus, resume } from './focus.js';
 
 describe('focus — what an actor is touching now', () => {
@@ -381,7 +382,7 @@ describe('what a reported run says about its age and its idleness', () => {
     }
   });
 
-  it('carries the projection through untouched — the added fields only add', () => {
+  it('carries the projection through untouched — the added fields only add, and the actor is not repeated', () => {
     bench = makeBench();
     startRun(bench, 'run-1', { agent: 'claude', goal: 'the goal' });
     const cache = bench.cache();
@@ -389,7 +390,54 @@ describe('what a reported run says about its age and its idleness', () => {
       const [reported] = focus([cache], asking(bench.who)).openRuns;
       const projected = cache.getRun('run-1');
       if (projected === null) throw new Error('the run was started, so the cache must project it');
-      expect(reported).toMatchObject(projected);
+      if (reported === undefined) throw new Error('the run is open, so the focus must report it');
+      // The run came through the filter `who === actor`, so its `who` is the asker's and the
+      // answer says it once, at the top. Put back, the run is the core's projection plus the
+      // asker-relative fields (an open run with nothing recorded has no `idleSeconds`) — the independent source is the projection, not this file.
+      expect(reported).not.toHaveProperty('who');
+      expect({ ...reported, who: bench.who }).toEqual({
+        ...projected,
+        thisSession: false,
+        ageSeconds: expect.any(Number),
+      });
+    } finally {
+      cache.close();
+    }
+  });
+});
+
+describe('the actor is said once', () => {
+  let bench: Bench;
+  afterEach(() => {
+    if (bench) rmSync(bench.root, { recursive: true, force: true });
+  });
+
+  it('names the actor once in a focus, a resume and a bootstrap that report two open runs', () => {
+    bench = makeBench();
+    startRun(bench, 'run-1', { agent: 'claude', goal: 'first' });
+    startRun(bench, 'run-2', { agent: 'claude', goal: 'second' });
+    const cache = bench.cache();
+    try {
+      const asker = asking(bench.who);
+      const said = (value: unknown): number => JSON.stringify(value).split(bench.who).length - 1;
+      expect(focus([cache], asker).openRuns).toHaveLength(2);
+      expect(said(focus([cache], asker))).toBe(1);
+      expect(said(resume([cache], asker))).toBe(1);
+      expect(said(bootstrap([cache], asker))).toBe(1);
+    } finally {
+      cache.close();
+    }
+  });
+
+  it('keeps the actor at the top of a resume and out of the focus composed in', () => {
+    bench = makeBench();
+    startRun(bench, 'run-1', { agent: 'claude' });
+    const cache = bench.cache();
+    try {
+      const r = resume([cache], asking(bench.who));
+      expect(r.actor).toBe(bench.who);
+      expect(Object.keys(r.focus)).toEqual(['openRuns']);
+      expect(r.focus.openRuns.map((run) => run.id)).toEqual(['run-1']);
     } finally {
       cache.close();
     }

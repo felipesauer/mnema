@@ -28,6 +28,7 @@
  */
 
 import {
+  agentEnrollmentMessage,
   anchorPath,
   type CatalogEvent,
   type ChainLayout,
@@ -55,7 +56,14 @@ export type Membership =
   /** The key founded this anchor — it is the identity's first key. */
   | 'founded'
   /** A member vouched for the key, and the key's own signature proves it consented. */
-  | 'enrolled';
+  | 'enrolled'
+  /**
+   * A member made the key an AGENT of this identity, under a name, and the key's own signature
+   * proves it consented to that name. It speaks for the identity, narrowed by its role
+   * (FORMAT.md section 6.2), and it is never counted among the identity's own keys where the
+   * count is "who could still extend it alone" ({@link personsRosterOf}).
+   */
+  | 'agent';
 
 /** Why a record does not name one identity for a key. */
 export type MembershipRefusalCode =
@@ -88,7 +96,15 @@ export type IdentityRefusalCode =
    * The key is enrolled in this tree as a CHECKER: it signs check results under its own anchor
    * and nothing else, so founding an identity with it would be a fact the record refuses.
    */
-  | 'A_CHECKER_KEY';
+  | 'A_CHECKER_KEY'
+  /**
+   * An agent is asked for, the record of this tree does not enrol its key, and the key that would
+   * sign instead — the person's — cannot be opened (it is protected, and `MNEMA_KEY_PASSPHRASE` is
+   * not in the environment) or is not on this machine. Founding or minting a key to get through
+   * would be an identity the person never asked for, so nothing is signed; the way out is the verb
+   * that enrols the agent.
+   */
+  | 'AGENT_NOT_ENROLLED';
 
 /** The record proves this key belongs to exactly one identity. */
 export interface MembershipProven {
@@ -167,6 +183,19 @@ export function membershipIn(
         retired.delete(fact.anchor);
         break;
       case 'revoked':
+        member.delete(fact.anchor);
+        retired.add(fact.anchor);
+        break;
+      case 'agent-enrolled':
+        // The consent covers the NAME as well as the anchor, so a different name is not consent.
+        if (!provesAgentConsent(key, fact.anchor, fact.name, fact.reverseSig)) break;
+        if (!member.has(fact.anchor)) member.set(fact.anchor, 'agent');
+        retired.delete(fact.anchor);
+        break;
+      case 'agent-retired':
+        // Only the role is taken back: a retirement of a key that is not this anchor's agent
+        // says nothing about it, and the verifier refuses the fact.
+        if (member.get(fact.anchor) !== 'agent') break;
         member.delete(fact.anchor);
         retired.add(fact.anchor);
         break;
@@ -279,7 +308,9 @@ function ambiguityOf(
   const opening = `this key belongs to more than one identity in that record (${oneLine(anchors.join(', '))}) — which one it should speak for here is not a choice to make on its behalf`;
   // An identity can retire this key only where its roster counts the key and holds another: the
   // revocation refuses a key it does not count, and the last one.
-  const rosters = new Map(anchors.map((anchor) => [anchor, rosterOf(query, anchor)] as const));
+  const rosters = new Map(
+    anchors.map((anchor) => [anchor, personsRosterOf(query, anchor)] as const),
+  );
   const counts = (anchor: string): boolean => rosters.get(anchor)?.has(key.fingerprint) === true;
   const keeps = anchors.filter(
     (anchor) => !counts(anchor) || (rosters.get(anchor)?.size ?? 0) <= 1,
@@ -454,6 +485,70 @@ export function rosterOf(query: MembershipQuery, anchor: string): Set<string> {
 }
 
 /**
+ * The keys of an identity that are its OWN: {@link rosterOf} without the agent keys. It is the
+ * roster that answers who may vouch, who may retire and who may be the last — an agent key is a
+ * member that speaks for the identity under a name, and signs no change to who may sign
+ * (FORMAT.md section 6.2), so an identity whose every key is an agent's has nobody left to
+ * enrol anything.
+ */
+export function personsRosterOf(query: MembershipQuery, anchor: string): Set<string> {
+  return rosterByRole(query, anchor).persons;
+}
+
+/**
+ * The agent keys an identity holds now — each with the name it was enrolled under — as the
+ * record proves them: the consent verifies against the committed public half, and a retirement
+ * takes the key out of the map. A key taken out by `key.revoked` is out too: it is no member.
+ */
+export function agentsOf(query: MembershipQuery, anchor: string): Map<string, string> {
+  return rosterByRole(query, anchor).agents;
+}
+
+/**
+ * Every key the events enrol as an AGENT — with the identity that enrolled it and the name — whose
+ * consent verifies against the public half the tree carries. A key stays in the map after a
+ * retirement or a revocation: what it signed while it held the role is still what it signed, and
+ * the readings that count it (`accountability`) are about those facts. A key enrolled twice keeps
+ * its first.
+ */
+export function agentKeysIn(
+  events: Iterable<CatalogEvent>,
+  tree: string,
+): Map<string, { readonly anchor: string; readonly name: string }> {
+  const keys = new Map<string, { readonly anchor: string; readonly name: string }>();
+  const layout: ChainLayout = { root: tree };
+  for (const fact of enrollmentFactsOf(events)) {
+    if (fact.kind !== 'agent-enrolled' || keys.has(fact.fingerprint)) continue;
+    const half = committedPublicKey(layout, fact.fingerprint);
+    if (half === null || !provesAgentConsent(half, fact.anchor, fact.name, fact.reverseSig))
+      continue;
+    keys.set(fact.fingerprint, { anchor: fact.anchor, name: fact.name });
+  }
+  return keys;
+}
+
+/** An identity's keys as one reading of the record sees them: its own, and its agents'. */
+export interface RosterByRole {
+  /** The keys that are the identity's own — the ones that may vouch, retire and be the last. */
+  readonly persons: Set<string>;
+  /** The agent keys it holds now, each with the name it was enrolled under. */
+  readonly agents: Map<string, string>;
+}
+
+/** {@link personsRosterOf} and {@link agentsOf} from ONE replay of the record. */
+export function rosterByRole(query: MembershipQuery, anchor: string): RosterByRole {
+  const events = orderedEvents({ root: query.tree }, query.upcasters);
+  const { valid, agents } = foldRoster(events, query.tree, anchor);
+  const held = new Map<string, string>();
+  for (const [fingerprint, name] of agents) {
+    if (valid.has(fingerprint)) held.set(fingerprint, name);
+  }
+  const persons = new Set(valid);
+  for (const fingerprint of agents.keys()) persons.delete(fingerprint);
+  return { persons, agents: held };
+}
+
+/**
  * {@link rosterOf} over events a caller already holds, in the record's order — THE SAME FOLD,
  * so a roster read off a session's retained replay and one read off a fresh replay cannot come
  * to disagree about a key. `tree` is where the public half an enrollment names is read, as it is
@@ -469,7 +564,21 @@ export function rosterIn(
   tree: string,
   anchor: string,
 ): Set<string> {
+  return foldRoster(events, tree, anchor).valid;
+}
+
+/**
+ * The one fold behind the roster: every key valid for `anchor` (agent keys among them — they sign
+ * for the identity, and a checkout that writes with one is counted), and the names of the agent
+ * keys that ever held the role here. Which of those are still members is `valid`'s to say.
+ */
+function foldRoster(
+  events: Iterable<CatalogEvent>,
+  tree: string,
+  anchor: string,
+): { readonly valid: Set<string>; readonly agents: Map<string, string> } {
   const valid = new Set<string>();
+  const agents = new Map<string, string>();
   const layout: ChainLayout = { root: tree };
   for (const fact of enrollmentFactsOf(events)) {
     if (fact.anchor !== anchor) continue;
@@ -487,9 +596,22 @@ export function rosterIn(
       case 'revoked':
         valid.delete(fact.fingerprint);
         break;
+      case 'agent-enrolled': {
+        const key = committedPublicKey(layout, fact.fingerprint);
+        if (key === null) break;
+        if (!provesAgentConsent(key, anchor, fact.name, fact.reverseSig)) break;
+        valid.add(fact.fingerprint);
+        // The role stays with the key whatever takes it out of the set: a key revoked, or retired,
+        // is never enrolled again, and the name it held is what its past facts are read under.
+        agents.set(fact.fingerprint, fact.name);
+        break;
+      }
+      case 'agent-retired':
+        if (agents.has(fact.fingerprint)) valid.delete(fact.fingerprint);
+        break;
     }
   }
-  return valid;
+  return { valid, agents };
 }
 
 /** One structurally sound membership fact, in the order the record carries it. */
@@ -501,7 +623,15 @@ type EnrollmentFact =
       readonly fingerprint: string;
       readonly reverseSig: string;
     }
-  | { readonly kind: 'revoked'; readonly anchor: string; readonly fingerprint: string };
+  | { readonly kind: 'revoked'; readonly anchor: string; readonly fingerprint: string }
+  | {
+      readonly kind: 'agent-enrolled';
+      readonly anchor: string;
+      readonly fingerprint: string;
+      readonly name: string;
+      readonly reverseSig: string;
+    }
+  | { readonly kind: 'agent-retired'; readonly anchor: string; readonly fingerprint: string };
 
 /**
  * Walks the record and yields the membership facts whose ENVELOPE holds up,
@@ -539,9 +669,42 @@ function* enrollmentFactsOf(events: Iterable<CatalogEvent>): Generator<Enrollmen
       case 'key.revoked':
         yield { kind: 'revoked', anchor, fingerprint: event.payload.revokedFp };
         break;
+      case 'agent.enrolled':
+        yield {
+          kind: 'agent-enrolled',
+          anchor,
+          fingerprint: event.payload.agentFp,
+          name: event.payload.name,
+          reverseSig: event.payload.reverseSig,
+        };
+        break;
+      case 'agent.retired':
+        yield { kind: 'agent-retired', anchor, fingerprint: event.payload.agentFp };
+        break;
       default:
         break;
     }
+  }
+}
+
+/**
+ * Whether `reverseSig` is this key's own signature over `agent-enroll:<anchor>:<fp>:<name>` — the
+ * agent key's consent to ONE name in ONE identity, which only its holder can make.
+ */
+export function provesAgentConsent(
+  key: PublicHalf,
+  anchor: string,
+  name: string,
+  reverseSig: string,
+): boolean {
+  try {
+    return verifySignature(
+      agentEnrollmentMessage(anchor, key.fingerprint, name),
+      Buffer.from(reverseSig, 'hex'),
+      key.publicKey,
+    );
+  } catch {
+    return false;
   }
 }
 

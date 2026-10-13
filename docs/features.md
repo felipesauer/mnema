@@ -12,7 +12,7 @@ Each line says what it does and what it leaves unproven; the page it points to h
   another run of this machine's identity, an edit there is told so ("Another run (codex) consulted
   this path 12 min ago"). It is read from facts the record already holds and writes nothing; it
   does not say the other run wrote the file or is still working, and the name in it is the one that
-  run's client announced.
+  run's client announced, unless an agent key signed it (then the name the record enrolled the key under).
 - **A subagent hands its decisions back.** In Claude Code, `mnema handback` runs when a subagent
   stops and sends it back once when its last reply lacks the block of decisions it settled;
   `mnema handback --schema` prints the shape. It checks the shape, never that the subagent decided
@@ -70,6 +70,6 @@ Each line says what it does and what it leaves unproven; the page it points to h
   a terminal it prints a link to GitHub's issue form, and you decide.
 - **Your machine, checked.** `mnema doctor` says whether a `mnema` is on the `PATH`, whether the
   plugin is installed, whether VS Code's settings tell its agent where the plugin is, and whether the
-  server is declared twice. Asked alone it writes nothing and does not ask the registry;
+  server is declared twice and, where it holds an agent key, in which trees the record enrols it. Asked alone it writes nothing and does not ask the registry;
   `mnema doctor --fix vscode` is the one change it makes, and only when you type it. For skills, the plugin brings `recording-decisions`, `recording-rulings` and
   `diagnosing-recording`; `mnema-server-only` is the same server without the hooks and the skills.

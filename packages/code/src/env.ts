@@ -55,3 +55,20 @@ function accountHome(): string | undefined {
     return undefined;
   }
 }
+
+/** The environment variable a host file carries the agent's name in (`mnema mcp`). */
+export const AGENT_KEY_VARIABLE = 'MNEMA_AGENT_KEY';
+
+/**
+ * The agent a host file asked this server to sign as, or undefined where it asked none: unset,
+ * empty (the plugin's option left at its default), or a placeholder the host did not substitute
+ * (`${user_config.agent_key}` — a host that does not know the substitution leaves it as it was,
+ * and a name made of it would be a folder that does not exist). Whether what is left is a name
+ * this product enrols is asked where it is used, which says so on the second stream.
+ */
+export function agentKeyFromEnvironment(
+  processEnv: NodeJS.ProcessEnv = process.env,
+): string | undefined {
+  const named = processEnv[AGENT_KEY_VARIABLE]?.trim();
+  return named === undefined || named === '' || named.includes('${') ? undefined : named;
+}

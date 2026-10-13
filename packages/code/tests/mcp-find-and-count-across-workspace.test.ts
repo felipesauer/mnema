@@ -397,7 +397,7 @@ describe('over the real transport', () => {
       total: number;
     };
     expect(index.total).toBe(1);
-    expect(index.hits[0]?.project).toBe(second);
+    expect(index.hits[0]?.project).toBe('second');
 
     const counted = await client.callTool({ name: 'audit_accountability', arguments: {} });
     expect(counted.isError).toBeFalsy();
@@ -405,7 +405,7 @@ describe('over the real transport', () => {
       byProject: { project?: string; total: number }[];
       total?: number;
     };
-    expect(account.byProject.map((entry) => entry.project)).toEqual([first, second, undefined]);
+    expect(account.byProject.map((entry) => entry.project)).toEqual(['first', 'second', undefined]);
     // The project that was written to has facts; the one that was not has none, and
     // says so rather than being absent.
     expect(account.byProject[1]?.total).toBeGreaterThan(0);

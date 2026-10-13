@@ -46,7 +46,7 @@
  * this module's shape rather than its prose. A measurement over a real record put the
  * complaint as one line — every read that reports a run reports the CONTAINER, never
  * what was put in it — and it was true of the whole of {@link ReportedRun}: `id`,
- * `agent`, `who`, `goal`, `outcome`, `open`, `startedAt`, `endedAt`, `lastFactAt`, and
+ * `agent`, `goal`, `outcome`, `open`, `startedAt`, `endedAt`, `lastFactAt`, and
  * the three fields added here. `lastFactAt` says WHEN the last fact landed and nothing
  * can be inferred from it about WHAT landed, so a session that recorded a decision and
  * one that recorded a passing note reported identically. The fold answers it now
@@ -104,8 +104,8 @@ export interface ActorScope extends AskerContext {
 }
 
 /**
- * A run as REPORTED to an asker: the projection, plus what only the asker's own
- * position adds.
+ * A run as REPORTED to an asker: the projection less its `who` (the actor is said
+ * once, by the answer), plus what only the asker's own position adds.
  *
  * The three added fields are derived, never stored — nothing new is written to the
  * record to produce them. That is deliberate: the defect they answer is a session's
@@ -119,7 +119,7 @@ export interface ActorScope extends AskerContext {
  * that proves the three are attached proves this one is not recomputed
  * (`focus.test.ts` — "carries what the run wrote, as the projection folded it").
  */
-export interface ReportedRun extends RunProjection {
+export interface ReportedRun extends Omit<RunProjection, 'who'> {
   /**
    * Whether THIS asker opened this run.
    *
@@ -184,8 +184,11 @@ export interface Resume {
    * the whole reason the run is not opened at the handshake.
    */
   readonly lastRun: ReportedRun | null;
-  /** The actor's current focus (open runs), composed in. */
-  readonly focus: Focus;
+  /**
+   * The actor's current focus (open runs), composed in. It does not repeat the
+   * `actor`: this answer already names it, and `focus` is composed for that same one.
+   */
+  readonly focus: Omit<Focus, 'actor'>;
 }
 
 /**
@@ -247,7 +250,7 @@ export function resume(caches: readonly ProjectionCache[], scope: ActorScope): R
   return {
     actor: actor ?? '',
     lastRun: chosen === undefined ? null : report(chosen, scope),
-    focus: focus(caches, scope),
+    focus: { openRuns: focus(caches, scope).openRuns },
   };
 }
 
@@ -257,7 +260,10 @@ export function resume(caches: readonly ProjectionCache[], scope: ActorScope): R
  * ("is anything still happening here?") has no meaning for a run that has ended,
  * which already carries its own `endedAt`.
  */
-function report(run: RunProjection, asker: AskerContext): ReportedRun {
+function report(projected: RunProjection, asker: AskerContext): ReportedRun {
+  // The projection's `who` stays out: every run reported here passed the filter
+  // `who === actor`, so it equals the actor the answer already names once.
+  const { who: _who, ...run } = projected;
   const thisSession = asker.sessionRuns.includes(run.id);
   if (!run.open) return { ...run, thisSession };
   const age = elapsedSeconds(run.startedAt, asker.asOf);

@@ -203,6 +203,23 @@ export interface Replacement {
 }
 
 /**
+ * The half of a write result that says the PERSON's key signed a write the server was asked to
+ * sign as an agent: the destination project does not enrol that agent, so the write is signed
+ * with the person's key and the agent it names is declared, not attested. Present only for a
+ * write routed to another project than the session's — by `project`, or by an id only it holds —
+ * where that is so; the server's own trees say it once at the opening, and this is the same fact for a
+ * tree the opening did not name. Absent on the command line, which has no agent to configure.
+ */
+export interface PersonSigned {
+  readonly personSigned?: {
+    /** The agent name the server was asked to sign as. */
+    readonly agent: string;
+    /** The absolute directory of the project the write fell in. */
+    readonly project: string;
+  };
+}
+
+/**
  * The half of a write result that reports WHERE it landed — the tree the kind (or
  * the caller's override) routed it to.
  *
@@ -210,8 +227,14 @@ export interface Replacement {
  * that could not say where it went is the state this closes. It is the RESOLVED
  * scope, never the argument — the argument is regularly absent.
  */
-export interface Landed {
+export interface Landed extends PersonSigned {
   readonly scope: Scope;
+  /**
+   * The absolute directory of the project the CALLER named, when the write was routed by
+   * the `project` argument and fell in a project's tree. Absent otherwise — the command
+   * line has no such argument, and a write that named nothing echoed no name.
+   */
+  readonly project?: string;
 }
 
 /**

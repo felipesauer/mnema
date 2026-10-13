@@ -238,11 +238,11 @@ _mnema_flags() {
     'commit-hook suggest') echo '-h --help -V --version --color' ;;
     'key') echo '-h --help -V --version --color' ;;
     'key restore') echo '-h --help -V --version --color' ;;
-    'key request') echo '--anchor --key --checker -h --help -V --version --color' ;;
-    'key enroll') echo '--checker -h --help -V --version --color' ;;
+    'key request') echo '--anchor --key --checker --agent -h --help -V --version --color' ;;
+    'key enroll') echo '--checker --agent -h --help -V --version --color' ;;
     'key github') echo '-h --help -V --version --color' ;;
     'key sigstore') echo '-h --help -V --version --color' ;;
-    'key revoke') echo '--reason --checker -h --help -V --version --color' ;;
+    'key revoke') echo '--reason --checker --agent -h --help -V --version --color' ;;
     'key protect') echo '-h --help -V --version --color' ;;
     'key unprotect') echo '-h --help -V --version --color' ;;
     'tail') echo '-h --help -V --version --color' ;;
@@ -251,11 +251,11 @@ _mnema_flags() {
     'doctor') echo '--fix --dry-run -h --help -V --version --color' ;;
     'report') echo '--decline --off --on -h --help -V --version --color' ;;
     'completion') echo '-h --help -V --version --color' ;;
-    'mcp') echo '--project -h --help -V --version --color' ;;
+    'mcp') echo '--project --agent-key -h --help -V --version --color' ;;
     'run') echo '-h --help -V --version --color' ;;
     'run start') echo '--which --goal -h --help -V --version --color' ;;
     'run end') echo '--which --outcome -h --help -V --version --color' ;;
-    'before-a-write') echo '--host -h --help -V --version --color' ;;
+    'before-a-write') echo '--host --agent-key -h --help -V --version --color' ;;
     'tally') echo '-h --help -V --version --color' ;;
     'corrections') echo '-h --help -V --version --color' ;;
     'handback') echo '--schema -h --help -V --version --color' ;;

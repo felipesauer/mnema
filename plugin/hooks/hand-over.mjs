@@ -269,13 +269,52 @@ export function whatTheVerbSays(verb, cwd, { namesAStranger = false } = {}, hand
  * @returns {string | null}
  */
 export function whatTheVerbAnswers(argv, cwd, input) {
-  const ran = spawnSync(binaryToRun(), [...argv], {
+  return answerOf(ranTheVerb(argv, cwd, input));
+}
+
+/**
+ * One run of the verb with the payload on stdin, the second stream kept for {@link refusesTheFlag}
+ * and read by nothing else.
+ *
+ * @param {readonly string[]} argv
+ * @param {string} cwd
+ * @param {string} input
+ * @returns {import('node:child_process').SpawnSyncReturns<string>}
+ */
+function ranTheVerb(argv, cwd, input) {
+  return spawnSync(binaryToRun(), [...argv], {
     cwd,
     input,
     encoding: 'utf-8',
-    stdio: ['pipe', 'pipe', 'ignore'],
+    stdio: ['pipe', 'pipe', 'pipe'],
   });
-  if (ran.error !== undefined || ran.status !== 0) return null;
+}
+
+/**
+ * Whether a run did not happen to the end: the program was not found, or timed out.
+ *
+ * A CLOSED INPUT IS NOT THAT. A `mnema` that refuses an option at its arguments exits before it
+ * reads the payload, and a payload larger than the pipe then meets a closed one: `spawnSync`
+ * reports `EPIPE`, with the `status` and the second stream the program left, so what it said is
+ * read as it would be had the write gone through.
+ *
+ * @param {import('node:child_process').SpawnSyncReturns<string>} ran
+ * @returns {boolean}
+ */
+function didNotRun(ran) {
+  return (
+    ran.error !== undefined && /** @type {NodeJS.ErrnoException} */ (ran.error).code !== 'EPIPE'
+  );
+}
+
+/**
+ * What a run of the verb says for the host, or `null` where it says nothing.
+ *
+ * @param {import('node:child_process').SpawnSyncReturns<string>} ran
+ * @returns {string | null}
+ */
+function answerOf(ran) {
+  if (didNotRun(ran) || ran.status !== 0) return null;
   const text = ran.stdout ?? '';
   return text.trim() === '' || text.trim() === '{}' ? null : text;
 }
@@ -309,7 +348,17 @@ export async function whatTheGateAnswers(argv, env, cwd, payload) {
   const input = await payload();
   const tools = flagValue(argv, '--tools');
   if (tools !== undefined && !tools.split(',').includes(toolNameOf(input))) return null;
-  return whatTheVerbAnswers(['before-a-write', '--host', host], cwd, input);
+  const asked = ['before-a-write', '--host', host];
+  const agent = flagValue(argv, '--agent-key');
+  if (agent === undefined) return whatTheVerbAnswers(asked, cwd, input);
+  // THE AGENT'S KEY IS ASKED FOR, NOT ASSUMED: a `mnema` older than the option refuses it by name
+  // and would answer nothing — a gate that stops gating — so it is asked again without, and signs
+  // as it always did.
+  const withAgent = [...asked, '--agent-key', agent];
+  const ran = ranTheVerb(withAgent, cwd, input);
+  return refusesTheFlag(ran, ['--agent-key'])
+    ? whatTheVerbAnswers(asked, cwd, input)
+    : answerOf(ran);
 }
 
 /**
@@ -386,7 +435,7 @@ function running(verb, flags, cwd) {
  * @returns {boolean}
  */
 function refusesTheFlag(ran, flags) {
-  if (ran.error !== undefined || ran.status === 0) return false;
+  if (didNotRun(ran) || ran.status === 0) return false;
   const said = ran.stderr ?? '';
   return flags.some((flag) => flag.startsWith('--') && said.includes(flag));
 }

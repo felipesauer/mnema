@@ -165,7 +165,12 @@ import {
   type SwitchableChannel,
 } from '../record-framing.js';
 import type { ScopedLinkBreak } from '../record-integrity.js';
-import { forwardReplacement, type Landed, type Replacement } from '../recorded-content.js';
+import {
+  forwardReplacement,
+  type Landed,
+  type PersonSigned,
+  type Replacement,
+} from '../recorded-content.js';
 import {
   linkBreaksOf,
   THE_CHAIN_AS_IT_STANDS_NOW,
@@ -191,8 +196,8 @@ import {
   refuseUnlocated,
   type WorkspaceTree,
 } from './locate.js';
-import { routeWrite } from './route.js';
-import { openWrite, type Session } from './session.js';
+import { personSignedIn, routedTo, routeWrite } from './route.js';
+import { openWrite, type Session, whichOfWrite } from './session.js';
 
 /** A memory was captured, or the requested scope was not available here. */
 export type CaptureResult =
@@ -234,15 +239,16 @@ export type CreateTaskResult =
 
 /** A task moved (ok), or the gate refused (a typed reason in the envelope). */
 export type TransitionResult =
-  | (Replacement & {
-      readonly ok: true;
-      /** The task's id (the one that moved). */
-      readonly id: string;
-      /** The short human-facing alias (`t-xxxx`), derived from the id. */
-      readonly alias: string;
-      /** The state the task is now in, resolved by the gate. */
-      readonly to: string;
-    })
+  | (Replacement &
+      PersonSigned & {
+        readonly ok: true;
+        /** The task's id (the one that moved). */
+        readonly id: string;
+        /** The short human-facing alias (`t-xxxx`), derived from the id. */
+        readonly alias: string;
+        /** The state the task is now in, resolved by the gate. */
+        readonly to: string;
+      })
   | {
       readonly ok: false;
       /** The gate's (or operation's) typed code — e.g. ILLEGAL_TRANSITION. */
@@ -271,23 +277,24 @@ export type RecordDecisionResult =
 
 /** A decision moved (ok), or the gate refused (a typed reason in the envelope). */
 export type DecisionTransitionResult =
-  | (Replacement & {
-      readonly ok: true;
-      /** The decision's id (the one that moved). */
-      readonly id: string;
-      /** The decision's citable `ADR-<n>` label, resolved from the projection. */
-      readonly adr: string;
-      /** The state the decision is now in, resolved by the gate. */
-      readonly to: string;
-      /** On a supersede whose successor is still `proposed`: nothing is in force until accepted. */
-      readonly notice?: string;
-      /**
-       * Present when an AGENT ruled it accepted: the agent's name. The reply says so (see
-       * `agent-accepts.ts`), because the person working with the agent is told through the
-       * same transcript the agent is.
-       */
-      readonly acceptedByAgent?: string;
-    })
+  | (Replacement &
+      PersonSigned & {
+        readonly ok: true;
+        /** The decision's id (the one that moved). */
+        readonly id: string;
+        /** The decision's citable `ADR-<n>` label, resolved from the projection. */
+        readonly adr: string;
+        /** The state the decision is now in, resolved by the gate. */
+        readonly to: string;
+        /** On a supersede whose successor is still `proposed`: nothing is in force until accepted. */
+        readonly notice?: string;
+        /**
+         * Present when an AGENT ruled it accepted: the agent's name. The reply says so (see
+         * `agent-accepts.ts`), because the person working with the agent is told through the
+         * same transcript the agent is.
+         */
+        readonly acceptedByAgent?: string;
+      })
   | {
       readonly ok: false;
       /** The gate's (or operation's) typed code — e.g. ILLEGAL_TRANSITION. */
@@ -316,15 +323,16 @@ export type CreateSkillResult =
 
 /** A skill moved (ok), or the gate refused (a typed reason in the envelope). */
 export type SkillTransitionResult =
-  | (Replacement & {
-      readonly ok: true;
-      /** The skill's id (the one that moved). */
-      readonly id: string;
-      /** The skill's short name, resolved from the projection (DISPLAY only). */
-      readonly name: string;
-      /** The state the skill is now in, resolved by the gate. */
-      readonly to: string;
-    })
+  | (Replacement &
+      PersonSigned & {
+        readonly ok: true;
+        /** The skill's id (the one that moved). */
+        readonly id: string;
+        /** The skill's short name, resolved from the projection (DISPLAY only). */
+        readonly name: string;
+        /** The state the skill is now in, resolved by the gate. */
+        readonly to: string;
+      })
   | {
       readonly ok: false;
       /** The gate's (or operation's) typed code — e.g. ILLEGAL_TRANSITION. */
@@ -360,11 +368,11 @@ export function runCaptureMemory(
   // shapes them into a tool error and the agent sees the capture did not happen.
   const route = routeWrite(session, 'memory.captured', input);
   if (!route.ok) return route;
-  const { ctx, run } = openWrite(session, route.scope, route.target);
+  const { ctx, run, which } = openWrite(session, route.scope, route.target);
   const captured = ctx.writer.exclusively(() => {
     const written = captureMemory(ctx, {
       content: input.content,
-      which: session.which,
+      which,
       run,
     });
     // Checkpoint so the capture is fully signed the moment the tool returns.
@@ -376,7 +384,13 @@ export function runCaptureMemory(
   if (!captured.ok) {
     return { ok: false, code: captured.code, message: captured.message };
   }
-  return { ok: true, id: captured.id, scope: route.scope, ...forwardReplacement(captured) };
+  return {
+    ok: true,
+    id: captured.id,
+    scope: route.scope,
+    ...routedTo(session, route),
+    ...forwardReplacement(captured),
+  };
 }
 
 /** An observation was recorded, or the requested scope was not available here. */
@@ -441,13 +455,13 @@ export function runRecordObservation(
   if (!about.ok) return ambiguousLabel(about.message);
   const route = routeWrite(session, 'observation.recorded', input);
   if (!route.ok) return route;
-  const { ctx, run } = openWrite(session, route.scope, route.target);
+  const { ctx, run, which } = openWrite(session, route.scope, route.target);
   const recorded = ctx.writer.exclusively(() => {
     const written = recordObservation(ctx, {
       about: about.id,
       topic: input.topic,
       text: input.text,
-      which: session.which,
+      which,
       run,
     });
     // Checkpoint so the record is fully signed the moment the tool returns.
@@ -457,7 +471,13 @@ export function runRecordObservation(
   if (!recorded.ok) {
     return { ok: false, code: recorded.code, message: recorded.message };
   }
-  return { ok: true, id: recorded.id, scope: route.scope, ...forwardReplacement(recorded) };
+  return {
+    ok: true,
+    id: recorded.id,
+    scope: route.scope,
+    ...routedTo(session, route),
+    ...forwardReplacement(recorded),
+  };
 }
 
 /**
@@ -480,13 +500,13 @@ export function runRecordHandoff(
 ): FactRecordedResult {
   const route = routeWrite(session, 'handoff.recorded', input);
   if (!route.ok) return route;
-  const { ctx, run } = openWrite(session, route.scope, route.target);
+  const { ctx, run, which } = openWrite(session, route.scope, route.target);
   const recorded = ctx.writer.exclusively(() => {
     const written = recordHandoff(ctx, {
       task: input.task,
       fromAgent: input.from,
       toAgent: input.to,
-      which: session.which,
+      which,
       run,
     });
     // Checkpoint so the record is fully signed the moment the tool returns.
@@ -502,6 +522,7 @@ export function runRecordHandoff(
     ok: true,
     recorded: [recorded.fromAgent, recorded.toAgent],
     scope: route.scope,
+    ...routedTo(session, route),
     ...forwardReplacement(recorded),
   };
 }
@@ -563,13 +584,13 @@ export function runLinkKnowledge(
   if (!target.ok) return ambiguousLabel(target.message);
   const unresolved = linkRefusal({ subject: subject.id, target: target.id });
   if (unresolved !== undefined) return { ok: false, code: 'UNKNOWN_TARGET', message: unresolved };
-  const { ctx, run } = openWrite(session, route.scope, route.target);
+  const { ctx, run, which } = openWrite(session, route.scope, route.target);
   const recorded = ctx.writer.exclusively(() => {
     const written = linkKnowledge(ctx, {
       subject: subject.id,
       target: target.id,
       rel: input.rel,
-      which: session.which,
+      which,
       run,
     });
     // Checkpoint so the record is fully signed the moment the tool returns.
@@ -604,6 +625,7 @@ export function runLinkKnowledge(
     ok: true,
     recorded: [recorded.rel],
     scope: route.scope,
+    ...routedTo(session, route),
     ...(reach !== undefined ? { reach } : {}),
     ...(subjectScope !== undefined ? { subjectScope } : {}),
     ...forwardReplacement(recorded),
@@ -631,11 +653,11 @@ export function runCreateTask(
 ): CreateTaskResult {
   const route = routeWrite(session, 'task.created', input);
   if (!route.ok) return route;
-  const { ctx, run } = openWrite(session, route.scope, route.target);
+  const { ctx, run, which } = openWrite(session, route.scope, route.target);
   const created = ctx.writer.exclusively(() => {
     const written = createTask(ctx, {
       title: input.title,
-      which: session.which,
+      which,
       run,
     });
     // Checkpoint so the new task is fully signed the moment the tool returns.
@@ -653,6 +675,7 @@ export function runCreateTask(
     id: created.id,
     alias: deriveAlias('task', created.id),
     scope: route.scope,
+    ...routedTo(session, route),
     ...forwardReplacement(created),
   };
 }
@@ -698,14 +721,14 @@ export function runTaskTransition(
   const located = locateEntity(session, input.id);
   if (located.outcome !== 'found') return refuseUnlocated(session, 'task', input.id, located);
 
-  const { ctx, run } = openWrite(session, located.home.scope, located.home.target);
+  const { ctx, run, which } = openWrite(session, located.home.scope, located.home.target);
   const fields = proofToFields(input);
   const moved = ctx.writer.exclusively(() => {
     const written = transitionTask(ctx, {
       id: input.id,
       action: input.action,
       ...(fields !== undefined ? { fields } : {}),
-      which: session.which,
+      which,
       run,
     });
     // Checkpoint so the transition is fully signed the moment the tool returns.
@@ -720,6 +743,7 @@ export function runTaskTransition(
     id: input.id,
     alias: deriveAlias('task', input.id),
     to: moved.to,
+    ...personSignedIn(session, located.home.scope, located.home.target),
     ...forwardReplacement(moved),
   };
 }
@@ -770,13 +794,13 @@ export function runRecordDecision(
 ): RecordDecisionResult {
   const route = routeWrite(session, 'decision.recorded', input);
   if (!route.ok) return route;
-  const { ctx, run } = openWrite(session, route.scope, route.target);
+  const { ctx, run, which } = openWrite(session, route.scope, route.target);
   const recorded = ctx.writer.exclusively(() => {
     const written = recordDecision(ctx, {
       title: input.title,
       rationale: input.rationale,
       ...(input.alternatives !== undefined ? { alternatives: input.alternatives } : {}),
-      which: session.which,
+      which,
       run,
     });
     // Checkpoint so the record is fully signed the moment the tool returns.
@@ -794,6 +818,7 @@ export function runRecordDecision(
     id: recorded.id,
     adr: recorded.adr,
     scope: route.scope,
+    ...routedTo(session, route),
     ...forwardReplacement(recorded),
   };
 }
@@ -857,11 +882,11 @@ export function runDecisionTransition(
   // Every call through this server is an agent's, whose name is the session's.
   const turnedAway = agentMayAccept(workspaceCaches(session), {
     action: input.action,
-    agent: session.which,
+    agent: whichOfWrite(session, located.home.scope, located.home.target),
   });
   if (turnedAway !== undefined) return { ok: false, ...turnedAway };
 
-  const { ctx, run } = openWrite(session, located.home.scope, located.home.target);
+  const { ctx, run, which } = openWrite(session, located.home.scope, located.home.target);
   const fields = decisionProofToFields(input);
   // Every move carries the session's `which` (the executing agent) and `run`, so
   // the transition is attributed to the agent even when it lands in the public
@@ -869,8 +894,8 @@ export function runDecisionTransition(
   // exactly as it is on a task move.
   // Asked again inside the write, under the tail's lock (`DecisionTransitionInput.refusedWhen`).
   const refusedWhen = () =>
-    agentMayAccept(workspaceCaches(session), { action: input.action, agent: session.which });
-  const stamp = { which: session.which, run, refusedWhen };
+    agentMayAccept(workspaceCaches(session), { action: input.action, agent: which });
+  const stamp = { which, run, refusedWhen };
   const moved = ctx.writer.exclusively(() => {
     const written =
       input.action === 'supersede'
@@ -916,9 +941,8 @@ export function runDecisionTransition(
     adr,
     to: moved.to,
     ...(notice !== undefined ? { notice } : {}),
-    ...(input.action === 'accept' && session.which !== undefined
-      ? { acceptedByAgent: session.which }
-      : {}),
+    ...(input.action === 'accept' && which !== undefined ? { acceptedByAgent: which } : {}),
+    ...personSignedIn(session, located.home.scope, located.home.target),
     ...forwardReplacement(moved),
   };
 }
@@ -956,12 +980,12 @@ export function runRetractNote(
 ): RetractNoteResult {
   const located = locateEntity(session, input.id, 'records');
   if (located.outcome !== 'found') return refuseUnlocated(session, 'note', input.id, located);
-  const { ctx, run } = openWrite(session, located.home.scope, located.home.target);
+  const { ctx, run, which } = openWrite(session, located.home.scope, located.home.target);
   const retracted = ctx.writer.exclusively(() => {
     const written = retractNote(ctx, {
       id: input.id,
       reason: input.reason,
-      which: session.which,
+      which,
       run,
     });
     // Checkpoint so the retraction is fully signed the moment the tool returns.
@@ -974,6 +998,7 @@ export function runRetractNote(
     id: retracted.id,
     note: retracted.note,
     scope: located.home.scope,
+    ...personSignedIn(session, located.home.scope, located.home.target),
     ...forwardReplacement(retracted),
   };
 }
@@ -1020,9 +1045,9 @@ export function runRetractLink(
       message: `no link ${oneLine(edge.subject)} —${oneLine(edge.rel)}→ ${oneLine(edge.target)} is in this project or the global tree`,
     };
   }
-  const { ctx, run } = openWrite(session, scope);
+  const { ctx, run, which } = openWrite(session, scope);
   const retracted = ctx.writer.exclusively(() => {
-    const written = retractLink(ctx, { ...edge, reason: input.reason, which: session.which, run });
+    const written = retractLink(ctx, { ...edge, reason: input.reason, which, run });
     // Checkpoint so the retraction is fully signed the moment the tool returns.
     if (written.ok) ctx.writer.checkpoint();
     return written;
@@ -1072,12 +1097,12 @@ export function runCreateSkill(
 ): CreateSkillResult {
   const route = routeWrite(session, 'skill.created', input);
   if (!route.ok) return route;
-  const { ctx, run } = openWrite(session, route.scope, route.target);
+  const { ctx, run, which } = openWrite(session, route.scope, route.target);
   const created = ctx.writer.exclusively(() => {
     const written = createSkill(ctx, {
       name: input.name,
       body: input.body,
-      which: session.which,
+      which,
       run,
     });
     // Checkpoint so the propose is fully signed the moment the tool returns.
@@ -1095,6 +1120,7 @@ export function runCreateSkill(
     id: created.id,
     name: created.name,
     scope: route.scope,
+    ...routedTo(session, route),
     ...forwardReplacement(created),
   };
 }
@@ -1138,13 +1164,13 @@ export function runSkillTransition(
     };
   }
 
-  const { ctx, run } = openWrite(session, located.home.scope, located.home.target);
+  const { ctx, run, which } = openWrite(session, located.home.scope, located.home.target);
   const fields = skillProofToFields(input);
   // Every move carries the session's `which` (the executing agent) and `run`, so
   // the transition is attributed to the agent even when it lands in the public
   // tree — who (the machine) != which (the agent) is preserved on a skill move
   // exactly as it is on a task move.
-  const stamp = { which: session.which, run };
+  const stamp = { which, run };
   const args = { id: input.id, ...(fields !== undefined ? { fields } : {}), ...stamp };
   const moved = ctx.writer.exclusively(() => {
     const written =
@@ -1168,7 +1194,14 @@ export function runSkillTransition(
   // project), through the one function that resolves a moved display and falls back
   // to the id.
   const name = movedDisplay('skill', located.home.chainRoot, input.id, upcasters);
-  return { ok: true, id: input.id, name, to: moved.to, ...forwardReplacement(moved) };
+  return {
+    ok: true,
+    id: input.id,
+    name,
+    to: moved.to,
+    ...personSignedIn(session, located.home.scope, located.home.target),
+    ...forwardReplacement(moved),
+  };
 }
 
 /**
@@ -1783,7 +1816,7 @@ function recordConsultations(
   const fresh = already === undefined ? skills : skills.filter((skill) => !already.has(skill.id));
   if (fresh.length === 0) return { ok: true };
 
-  const { ctx, run } = openWrite(session, route.scope);
+  const { ctx, run, which } = openWrite(session, route.scope);
   // The set for this run, created on the first consultation recorded against it.
   const recordedInRun = already ?? new Set<string>();
   session.consulted.set(root, recordedInRun);
@@ -1796,7 +1829,7 @@ function recordConsultations(
     for (const skill of fresh) {
       const done = recordConsultation(ctx, {
         skill: skill.id,
-        which: session.which,
+        which,
         run,
       });
       if (!done.ok) {
@@ -2595,7 +2628,7 @@ function recordFacts(
   const kind = refusing ? 'channel.refused' : 'channel.asked';
   const route = routeWrite(session, kind, {});
   if (!route.ok) return { ok: false };
-  const { ctx, run } = openWrite(session, route.scope);
+  const { ctx, run, which } = openWrite(session, route.scope);
   return ctx.writer.exclusively(() => {
     let appended = 0;
     for (const at of ats) {
@@ -2604,7 +2637,7 @@ function recordFacts(
           channel,
           rule: rule.id,
           path: at.relative ?? at.path,
-          which: session.which,
+          which,
           run,
         };
         const done = refusing ? recordChannelRefused(ctx, input) : recordChannelAsked(ctx, input);
@@ -2655,13 +2688,13 @@ function recordServices(session: Session, channels: readonly CountedChannel[]): 
   // runs inside the edit gate, whose reply must reach the host whatever the tail does — a thrown
   // busy tail here used to turn the whole reply into a tool error, which the host reads as "go on".
   try {
-    const { ctx, run } = openWrite(session, route.scope);
+    const { ctx, run, which } = openWrite(session, route.scope);
     const recordedInRun = already ?? new Set<string>();
     session.served.set(root, recordedInRun);
     ctx.writer.exclusively(() => {
       let appended = 0;
       for (const channel of fresh) {
-        const done = recordChannelServed(ctx, { channel, which: session.which, run });
+        const done = recordChannelServed(ctx, { channel, which, run });
         if (!done.ok) break;
         session.replacementsOwed.add(done.replaced);
         recordedInRun.add(channel);

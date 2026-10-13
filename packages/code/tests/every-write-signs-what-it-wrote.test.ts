@@ -31,10 +31,10 @@ import { runDecisionImport } from '../src/commands/decision-import.js';
 import { runDecisionTransition } from '../src/commands/decision-transition.js';
 import { runHandoff } from '../src/commands/handoff.js';
 import { type InitRefused, type InitResult, runInit } from '../src/commands/init.js';
-import { runCheckerEnroll, runKeyEnroll } from '../src/commands/key-enroll.js';
+import { runAgentEnroll, runCheckerEnroll, runKeyEnroll } from '../src/commands/key-enroll.js';
 import { runKeyGithub } from '../src/commands/key-github.js';
-import { runKeyRequest } from '../src/commands/key-request.js';
-import { runCheckerRetire, runKeyRevoke } from '../src/commands/key-revoke.js';
+import { runAgentRequest, runKeyRequest } from '../src/commands/key-request.js';
+import { runAgentRetire, runCheckerRetire, runKeyRevoke } from '../src/commands/key-revoke.js';
 import { runKeySigstore } from '../src/commands/key-sigstore.js';
 import { runLink } from '../src/commands/link.js';
 import { runMemory } from '../src/commands/memory.js';
@@ -173,18 +173,20 @@ const CODE_SRC = join(HERE, 'src');
  * backup: `declareBackup`, and `enrollBackup`, which `init` enrolls and declares it with. 44
  * since a link can be retracted: `retractLink`. 46 since a stack can be adopted and removed:
  * `adoptStack` and `removeStack`. 48 since an identity can enrol and retire an agent key:
- * `enrollAgent` and `retireAgent`.
+ * `enrollAgent` and `retireAgent`. 50 since the roster can vouch for and retire an agent:
+ * `enrollAgentFromRequest` and `retireAgentKey`.
  */
-const CORE_OPERATIONS_THAT_APPEND = 48;
+const CORE_OPERATIONS_THAT_APPEND = 50;
 
 /** The stack the cases install. */
 const HELLO_STACK = fileURLToPath(new URL('../../stacks/fixtures/hello-stack', import.meta.url));
 
 /**
  * How many paths of the shipped surface reach one of them. 44 since `runKeySigstore`; 46 since a
- * stack is installed and removed (`applyStackInstall`, `removeInstalledStack`).
+ * stack is installed and removed (`applyStackInstall`, `removeInstalledStack`); 48 since a person
+ * can enrol and retire an agent key (`runAgentEnroll`, `runAgentRetire`).
  */
-const SURFACE_WRITE_PATHS = 46;
+const SURFACE_WRITE_PATHS = 48;
 
 /** What `runInit` answered when it did not refuse; a refusal ends the setup. */
 function founded(result: InitResult | InitRefused): InitResult {
@@ -539,6 +541,18 @@ describe('every write path leaves the record fully signed', () => {
         drive: () => {
           const made = founded(runInit(ctx));
           if (!made.created) throw new Error('init founded nothing');
+          // A repository from the start, so the private tree sits where git keeps it for every
+          // row after this one: the project is a commit by the `check run` row, and a tree that
+          // moved there would take the events of the agent rows with it.
+          const inited = spawnSync('git', ['init', '-q'], {
+            cwd: project,
+            env: {
+              PATH: process.env.PATH ?? '',
+              HOME: env.home,
+              GIT_CONFIG_GLOBAL: GIT_WITHOUT_MAINTENANCE,
+            },
+          });
+          if (inited.status !== 0) throw new Error('git init failed');
           const fingerprint = made.identity?.backup?.fingerprint;
           if (fingerprint === undefined) throw new Error('init made no backup key');
           backupKey = fingerprint;
@@ -731,6 +745,31 @@ describe('every write path leaves the record fully signed', () => {
         },
       },
       {
+        // The agent's key is made in a folder of its own under the data directory, and the
+        // person's key vouches for it: the facts the verb appends are the person's.
+        at: 'commands/key-enroll.ts:enrolIn',
+        drive: () => {
+          const anchor = founded(runInit({ cwd: project, env })).anchor;
+          const asked = ok('key request --agent', runAgentRequest(ctx, { anchor, name: 'claude' }));
+          void ok('key enroll --agent', runAgentEnroll(ctx, { request: asked.request }));
+        },
+      },
+      {
+        // The agent enrolled above, retired by the person who enrolled it.
+        at: 'commands/key-revoke.ts:runAgentRetire',
+        drive: () => {
+          const keys = join(env.home, '.mnema', 'agents', 'claude', 'keys');
+          const keyFile = readdirSync(keys).find((name) => name.endsWith('.key')) as string;
+          void ok(
+            'key revoke --agent',
+            runAgentRetire(ctx, {
+              fingerprint: keyFile.slice(0, -'.key'.length),
+              reason: 'the machine was lent out',
+            }),
+          );
+        },
+      },
+      {
         at: 'commands/check.ts:runCheckDeclare',
         drive: () =>
           void ok(
@@ -765,7 +804,6 @@ describe('every write path leaves the record fully signed', () => {
             });
             if (ran.status !== 0) throw new Error(`git ${args.join(' ')} failed`);
           };
-          git('init', '-q');
           git('add', '.');
           git('commit', '-q', '-m', 'the tree the check runs at');
           const keys = join(resolveTrees(project, otherMachine('runner')).keyRoot, 'keys');

@@ -1220,6 +1220,15 @@ Stated plainly, because a published format invites all three readings:
   three parties checking each other has a kind of assurance this one still does not
   have. The step that is taken is the technical one; the step that is not is
   somebody else.
+- **A key is an agent's only in the record that enrols it as one.** The role is a fact
+  of a record (§6.2), not a property of the key: another record, which has not heard of
+  that `agent.enrolled`, can enrol the same key as an ordinary member when one of its
+  members vouches for it, and both readers accept that. Nothing in the format stops a
+  key from being an agent of one identity and a member of another, in different
+  records; it is stopped only inside one record, where the two claims are a membership
+  of more than one identity. The product's `key request --key` refuses a key file kept
+  in its agents' folder by the place the file really is (links followed), not by what
+  it holds, so a link to it is refused and a copy kept elsewhere is not recognised.
 - **A change to the format is visible, and that is all that is promised about
   changing it.** This entry used to say that the per-kind field declarations were
   not published, and that in consequence an implementation built from this

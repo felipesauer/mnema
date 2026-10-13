@@ -50,6 +50,7 @@ import {
   screened,
 } from '../content/screen.js';
 import { GITHUB_SERVICE, SIGSTORE_SERVICE, sigstoreAccountOf } from '../identity/account.js';
+import { agentNameRefusal } from '../identity/agent-name.js';
 import {
   IdentityUnavailableError,
   type Membership,
@@ -648,14 +649,18 @@ export function revokeKey(
  *
  * The name goes through the content door as a NAME: every fact the key signs carries it as its
  * `which`, compared byte for byte, so a credential in it refuses the write rather than being
- * redacted into another agent's name. What the reader holds the fact to is FORMAT.md section 6.2.
+ * redacted into another agent's name. It is then held to the shape of a name this product enrols
+ * ({@link agentNameRefusal}) — narrower than what a reader accepts, because the name is also the
+ * folder the key lives in. What the reader holds the fact to is FORMAT.md section 6.2.
  */
 export function enrollAgent(
   ctx: WriteContext,
   input: { agentFp: string; name: string; reverseSig: string },
-): IdentityOk | ScreenRefusal | AppendRefusal {
+): IdentityOk | ScreenRefusal | AgentNameRefusal | AppendRefusal {
   const text = screenContent({ name: input.name });
   if (!text.ok) return text;
+  const unnamed = agentNameRefusal(text.fields.name);
+  if (unnamed !== undefined) return { ok: false, code: 'BAD_AGENT_NAME', message: unnamed };
 
   return ctx.writer.exclusively(() => {
     const anchor = ensureFounded(ctx);
@@ -699,6 +704,13 @@ export function retireAgent(
     ctx.writer.checkpoint();
     return { ok: true, anchor, ...screened(text.replaced) };
   });
+}
+
+/** The name is not one this product enrols an agent key under; nothing was written. */
+export interface AgentNameRefusal {
+  readonly ok: false;
+  readonly code: 'BAD_AGENT_NAME';
+  readonly message: string;
 }
 
 /** The account was named: this identity now says it is that GitHub account. */

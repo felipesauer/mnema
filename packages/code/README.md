@@ -556,7 +556,7 @@ own identity as the agent is refused — whoever authorized the work cannot also
 executed it.
 
 Nothing verifies the name: `--which` is a declaration, exactly as the MCP server's
-is the client's own announced name. What is *proven* is the signature — the
+is the client's own announced name, unless an agent key signed it (then the name the record enrolled the key under). What is *proven* is the signature — the
 identity that authorized the write, which is derived from the key and never typed.
 
 The one value refused is a `--which` that names *nobody* — `--which "$AGENT_NAME"`
@@ -715,8 +715,10 @@ atomically with mode `0600`). The signed format is untouched: it is the same key
 signatures, no event or checkpoint says whether a key is protected, and `mnema verify` never
 opens a private key, so a record written with a protected key verifies with no passphrase at all.
 Anything that **signs** needs the same passphrase: at a terminal, `mnema` asks for it once per
-command; where there is no terminal — the environment the host starts an agent's server in, a hook,
-a pipe — it needs `MNEMA_KEY_PASSPHRASE` set to the same value. With it missing or wrong a write is refused
+command; where there is no terminal — a script, a pipe — it needs `MNEMA_KEY_PASSPHRASE` set to the
+same value. An agent's host and a hook have no terminal either, and are **not** the place for the
+passphrase: they sign with a key of their own (`key request --agent`, `key enroll
+--agent`, below). With the passphrase missing or wrong a write is refused
 (`KEY_IS_PROTECTED`, `KEY_PASSPHRASE_WRONG`), nothing is recorded, and no second identity is
 created on the way. `mnema key unprotect` writes the files back in the clear, and a wrong
 passphrase changes none of them.
@@ -833,16 +835,75 @@ results in the working tree for your workflow to commit or upload.
 The record can also say that a key is an identity's agent: a key a person lets a program sign with,
 without handing it the key that enrols, revokes and declares. A member of the identity writes an
 `agent.enrolled` naming the key and a name, and the key signs, over the UTF-8 of
-`agent-enroll:<anchor>:<agentFp>:<name>`, that it consents to that name. This release reads and
-judges those two facts (`agent.enrolled`, `agent.retired`); the commands that write them are not
-in it.
+`agent-enroll:<anchor>:<agentFp>:<name>`, that it consents to that name. `mnema verify` judges those
+two facts (`agent.enrolled`, `agent.retired`), and three verbs write them.
+
+**Making one, enrolling it, retiring it.**
+
+```sh
+mnema key request --agent claude --anchor <identity>     # where the agent's key will live
+mnema key enroll --agent <the line it printed>           # where your own key is
+mnema key revoke --agent <fingerprint> --reason "<why>"  # when it should sign nothing more
+```
+
+`request` makes the key in a folder of its own, `agents/<name>/` under the data directory (`~/.mnema`,
+or `$MNEMA_HOME`), never beside your own key, and writes it in the clear: the host that signs with it
+has no terminal to ask a passphrase at. A name begins with a lower-case letter or a digit, then holds
+letters, digits, dots, dashes and underscores, up to 64 characters in all, and it is also the folder. `enroll` is run where your own key
+is, and asks its passphrase at the terminal where the key has one. It records `agent.enrolled` in the
+project's committed tree and, where the key lives on this machine, in the project's private tree and the
+machine's global one too (outside a project, the global tree alone), so what the agent writes in each is
+signed by it: one line per tree says `enrolled`, `already` or `skipped`, and it exits 1, with what the
+other trees took kept, when one tree refuses. Where the key lives here, `mnema key enroll --agent <name>` takes
+the name for the line; a line from elsewhere (a CI runner's key) is enrolled in the committed tree alone.
+A tree created after the verb ran is not enrolled: run it again, and the trees that have the agent say
+`already`. A key retired in any of the trees is refused in all of them, and nothing is written.
+It says so when your key is unencrypted, because then anything that can read your home can sign
+as you and the agent key separates nothing. `key revoke <fingerprint>` refuses an agent key and names
+the verb that retires it, and an agent key does not count as one of an identity's keys where the last
+one may not be retired. `key revoke --agent` retires it in every tree of this machine that enrolled it (another machine's private and global trees keep counting it until it is retired there). A retired key
+is never enrolled again: `key request --agent <name>` after a retirement puts the retired key in
+`agents/<name>/retired/` (it is never deleted) and makes the agent a new key under the same name, which
+`enroll` takes in the same way. The record allows more than one active key under a name, each counted by
+its own fingerprint, because a person with two machines has two keys under the name a host's manifest
+fixes; `enroll` says when it finds another and does not refuse.
+
+**Signing with it.** `mnema mcp --agent-key <name>` (or `MNEMA_AGENT_KEY=<name>`, which a `mnema` from
+before the option ignores where an argument would stop it; the flag wins) and `mnema before-a-write
+--host <host> --agent-key <name>` sign with that key in each tree whose record enrols it under exactly
+that name (`key enroll --agent` writes the committed, the private and the global tree), and the `which`
+of every fact is the name the record of the tree it lands in gives the signing key, whatever the client
+announced. In a tree whose record does not enrol it — a project the verb has not been run in, a tree made
+since, a machine with no key under that name — the person's key signs, and the `which` stays declared;
+where your own key is protected and `MNEMA_KEY_PASSPHRASE` is not in the environment, or is not on this
+machine, the write is refused (`AGENT_NOT_ENROLLED`; in the hook what is not done is the recording of the fact, and the
+reply to the host is unchanged and says why), naming the verb `key enroll --agent`, and nothing is signed, minted or founded. The
+server says, on its error stream, one line for each tree where the agent is not the one that signs, when it opens
+and again when the session lands on a project. A key the record retired in any tree the process reaches is
+not passed over to yours: its writes are refused in all of them (`REVOKED_KEY`). A key the record proves a member
+of two identities signs for neither (`AMBIGUOUS_MEMBERSHIP`). A name this product does not enrol is ignored,
+with a word. The hooks of `corrections` still sign with your key.
+In Claude Code, VS Code and Cursor, which read one manifest, the plugin's `agent_key` option is empty by
+default (that the option, and `MNEMA_AGENT_KEY`, reach the server was not measured on VS Code or Cursor); the manifests of Codex, Copilot CLI and Gemini CLI name their own host; the hook files of
+every host whose hooks are processes pass the host's name too. `mnema doctor` lists the agent keys
+this machine holds against the record of each tree (the committed, the private and the global one) and, on a machine that
+holds an agent key already, names the agents the files generated for each host ask for that no key is held under; it says
+too when `MNEMA_AGENT_KEY`, in the environment of the `doctor` itself and not the host's, names one it does not hold.
+For a host with no manifest of this plugin, put `--agent-key <name>` in the host's user configuration, not in a
+project's: a host's project configuration is what the model writes, so the choice of key does not go there.
+
+`mnema show <id>` marks a decision's recorder or ruler that an agent key signed (`agent claude, attested
+by its own key`), and `mnema audit accountability` says, beside an author, `claude 40 (38 attested)` for an agent whose
+key signed some of its facts; with `--json` each agent carries how many of its facts the record's own agent key
+signed (`attested`, absent where none). That is read from the index, as `show` reads everything; `mnema verify`
+is what judges it.
 
 **What `mnema verify` holds an agent key to.** The key is a member of the identity that enrolled it,
 and what it signs is refused unless all of this holds: its `who` is that identity's anchor; its
 `which` is, byte for byte, the name the key was enrolled under; and its kind is not one that
 changes who may sign or what a key may sign (`identity.founded`, `key.enrolled`, `key.revoked`,
 `backup.declared`, `checker.enrolled`, `checker.retired`, `agent.enrolled`, `agent.retired`,
-`account.linked`). A key already in an identity, or holding a role, cannot be enrolled as an agent.
+`account.linked`). A key already in an identity, holding a role, or retired from one, cannot be enrolled as an agent.
 A name may not begin or end with a character of the set `FORMAT.md` section 6.2 writes out, and may
 not be the anchor itself. The Python reader in `packages/chain/verifier` judges the same, and the two
 are tested to agree.
@@ -958,6 +1019,9 @@ and which projects of `~/.claude.json` still declare the server, those whose dir
 exists included (`claude mcp remove` does not reach them; the line says what to delete). It reads
 files on this machine and, asked alone, writes nothing; it does not ask the registry, so a package
 that is published and not installed here is outside what it can say.
+
+Where this machine holds an agent key it also says, for each, in which of the trees it reaches the record enrols
+it, and says when `MNEMA_AGENT_KEY` in the environment of the `doctor` itself names one this machine does not hold.
 
 In a project inside a git repository it also names each worktree that still holds private notes
 in `.mnema/private/`, where they lived before the private tree moved into the repository's git
@@ -1485,6 +1549,23 @@ it landed in, a root the client stops announcing is kept, and the one move the
 landing can make is from the global tree into a project. `bootstrap` says how many
 times the client has said so — **including zero**, because a re-read that changed
 nothing and one that never happened would otherwise look the same.
+
+When a workspace holds several projects, the answers of `search`, `read_record` and the `audit_*`
+reads name a project by its directory's name when no other project of the workspace has it, and by its
+whole path when one does; both are what a write's `project` argument takes, and `bootstrap` gives the
+paths (`tests/the-answers-name-a-project-as-a-write-takes-it.test.ts`). A name that a second
+project later shares is refused as ambiguous, not resolved; but a name carried to a new connection
+whose workspace holds a different directory of that name resolves to that one.
+
+A write that names a `project` says, in its reply, the absolute directory it fell in
+(`In the project at /home/you/work/api.`). The name may have come from an earlier answer of
+another connection, and the same name can mean another directory in this one; the path says
+which, after the write, and does not refuse it. A write that named no project, or that landed
+in the global tree, says nothing of the sort
+(`tests/a-routed-write-says-where-it-landed.test.ts`). When the server signs as an agent and the write
+went to another project of the workspace whose tree does not enrol that agent, the reply adds a line
+saying the person's key signed it and the agent it names is declared, not attested
+(`tests/a-write-the-person-signs-for-an-agent-says-so.test.ts`).
 
 `--project` is how you make certain which record a session serves:
 `"args": ["mcp", "--project", "/home/you/work/api"]`. Without it the project is

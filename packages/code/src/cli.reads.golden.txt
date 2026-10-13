@@ -245,7 +245,6 @@ $ mnema status --actor <anchor> --json
 |     "actor": "<anchor>",
 |     "lastRun": null,
 |     "focus": {
-|       "actor": "<anchor>",
 |       "openRuns": []
 |     }
 |   },
@@ -272,7 +271,6 @@ $ mnema resume --actor <anchor> --json
 |   "actor": "<anchor>",
 |   "lastRun": null,
 |   "focus": {
-|     "actor": "<anchor>",
 |     "openRuns": []
 |   }
 | }
@@ -377,7 +375,6 @@ $ mnema resume --actor <anchor> --json
 |   "lastRun": {
 |     "id": "<run-first>",
 |     "agent": "agent-alpha",
-|     "who": "<anchor>",
 |     "open": false,
 |     "startedAt": "<at:01>",
 |     "wrote": [
@@ -429,7 +426,6 @@ $ mnema resume --actor <anchor> --json
 |     "thisSession": false
 |   },
 |   "focus": {
-|     "actor": "<anchor>",
 |     "openRuns": []
 |   }
 | }
@@ -1534,7 +1530,6 @@ $ mnema status --actor <anchor> --json
 |     "lastRun": {
 |       "id": "<run-second>",
 |       "agent": "agent-beta",
-|       "who": "<anchor>",
 |       "open": true,
 |       "startedAt": "<at:33>",
 |       "wrote": [],
@@ -1543,12 +1538,10 @@ $ mnema status --actor <anchor> --json
 |       "ageSeconds": <seconds>
 |     },
 |     "focus": {
-|       "actor": "<anchor>",
 |       "openRuns": [
 |         {
 |           "id": "<run-second>",
 |           "agent": "agent-beta",
-|           "who": "<anchor>",
 |           "open": true,
 |           "startedAt": "<at:33>",
 |           "wrote": [],
@@ -1634,7 +1627,6 @@ $ mnema resume --actor <anchor> --json
 |   "lastRun": {
 |     "id": "<run-second>",
 |     "agent": "agent-beta",
-|     "who": "<anchor>",
 |     "open": true,
 |     "startedAt": "<at:33>",
 |     "wrote": [],
@@ -1643,12 +1635,10 @@ $ mnema resume --actor <anchor> --json
 |     "ageSeconds": <seconds>
 |   },
 |   "focus": {
-|     "actor": "<anchor>",
 |     "openRuns": [
 |       {
 |         "id": "<run-second>",
 |         "agent": "agent-beta",
-|         "who": "<anchor>",
 |         "open": true,
 |         "startedAt": "<at:33>",
 |         "wrote": [],

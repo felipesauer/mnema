@@ -57,7 +57,7 @@
  * THAT file — what reaches it today and what that reaches instead — so it can be drained
  * one row at a time. It can only shrink.
  *
- * AND IT CANNOT DISSOLVE ITSELF. The ledger's keys are 71 path strings. Under a rule that
+ * AND IT CANNOT DISSOLVE ITSELF. The ledger's keys are 70 path strings. Under a rule that
  * read path literals, listing a file as debt would witness it and every entry would go
  * stale the moment it was written. Naming requires an IMPORT here, so a table of strings
  * names nothing — asserted below rather than assumed.
@@ -339,10 +339,6 @@ const UNWITNESSED: Readonly<Record<string, Debt>> = {
   'packages/code/src/completion/zsh.ts': {
     reached: 'nobody imports it',
     why: "The zsh rendering, the only one carrying `_describe` descriptions; nothing imports `zshScript`, and with zsh absent its output is merely handed to bash's parser.",
-  },
-  'packages/code/src/mcp/route.ts': {
-    reached: 'nobody imports it',
-    why: "The MCP's one write-destination resolver; mcp-write-routing.test.ts reaches it two hops via tools.ts and asserts which disk a write hit — its wording is only ever a substring.",
   },
   'packages/code/src/presentation/consultation.ts': {
     reached: 'nobody imports it',
@@ -662,7 +658,7 @@ const THE_SHAPE_OF_WHAT_IS_LEFT: Readonly<Record<string, number>> = {
   completion: 4,
   commands: 2,
   barrels: 3,
-  scattered: 12,
+  scattered: 11,
 };
 
 /** Which group of the shape above a debt row belongs to. One reading, so nothing falls in two. */
@@ -930,6 +926,7 @@ const CLAUSES_PER_FILE: Readonly<Record<string, number>> = {
   'packages/code/tests/a-floor-under-the-window.test.ts': 16,
   'packages/code/tests/a-home-of-its-own.test.ts': 8,
   'packages/code/tests/a-hook-is-turned-on-by-a-person.test.ts': 7,
+  'packages/code/tests/a-hook-that-cannot-record-still-asks-and-says-so-once.test.ts': 9,
   'packages/code/tests/a-host-that-runs-commands-asks-for-a-person.test.ts': 12,
   'packages/code/tests/a-key-can-be-protected.test.ts': 11,
   'packages/code/tests/a-label-a-stranger-can-look-up.test.ts': 5,
@@ -937,20 +934,26 @@ const CLAUSES_PER_FILE: Readonly<Record<string, number>> = {
   'packages/code/tests/a-line-of-success-is-one-line.test.ts': 7,
   'packages/code/tests/a-link-can-be-retracted.test.ts': 12,
   'packages/code/tests/a-long-text-comes-from-one-place.test.ts': 8,
+  'packages/code/tests/a-lost-tail-is-not-called-an-idle-agent.test.ts': 13,
   'packages/code/tests/a-marker-is-not-a-reason.test.ts': 7,
   'packages/code/tests/a-marker-is-not-a-title.test.ts': 7,
   'packages/code/tests/a-move-reads-the-record-once.test.ts': 13,
   'packages/code/tests/a-note-can-be-retracted.test.ts': 11,
   'packages/code/tests/a-palette-for-the-words.test.ts': 25,
+  'packages/code/tests/a-passphrase-in-the-environment-opens-the-persons-key.test.ts': 12,
   'packages/code/tests/a-picture-of-the-record.test.ts': 8,
   'packages/code/tests/a-private-write-asks-git.test.ts': 13,
   'packages/code/tests/a-project-inherits-a-record.test.ts': 8,
   'packages/code/tests/a-read-asked-again-draws-what-changed.test.ts': 19,
+  'packages/code/tests/a-refresh-landing-in-a-project-signs-as-the-agent.test.ts': 10,
   'packages/code/tests/a-refusal-is-one-line.test.ts': 7,
   'packages/code/tests/a-refusal-leaves-nothing.test.ts': 13,
   'packages/code/tests/a-refused-group-flag-leaves-the-record.test.ts': 7,
   'packages/code/tests/a-report-is-built-from-an-allowlist.test.ts': 10,
   'packages/code/tests/a-report-needs-a-person.test.ts': 19,
+  'packages/code/tests/a-request-for-a-person-refuses-a-key-file-kept-in-the-agents-folder.test.ts': 6,
+  'packages/code/tests/a-retired-agent-key-without-a-tail-is-called-retired.test.ts': 7,
+  'packages/code/tests/a-routed-write-says-where-it-landed.test.ts': 11,
   'packages/code/tests/a-rule-carries-its-check.test.ts': 9,
   'packages/code/tests/a-rule-says-who-ruled-it.test.ts': 11,
   'packages/code/tests/a-rule-that-refuses-a-write.test.ts': 17,
@@ -967,7 +970,12 @@ const CLAUSES_PER_FILE: Readonly<Record<string, number>> = {
   'packages/code/tests/a-terminal-of-its-own.test.ts': 19,
   'packages/code/tests/a-tool-answers-without-indentation.test.ts': 11,
   'packages/code/tests/a-verb-that-went-under-a-noun-is-not-a-verb-any-more.test.ts': 3,
+  'packages/code/tests/a-write-routed-to-another-project-signs-as-the-agent.test.ts': 15,
   'packages/code/tests/a-write-says-what-it-founded.test.ts': 14,
+  'packages/code/tests/a-write-the-person-signs-for-an-agent-says-so.test.ts': 13,
+  'packages/code/tests/an-agent-key-of-another-kind-is-named-with-its-article.test.ts': 3,
+  'packages/code/tests/an-agent-key-signs-for-its-host.test.ts': 18,
+  'packages/code/tests/an-agent-request-says-the-kind-of-key-it-refuses-and-where-a-file-key-goes.test.ts': 7,
   'packages/code/tests/another-run-consulted-this-path.test.ts': 13,
   'packages/code/tests/both-surfaces-one-vocabulary.test.ts': 18,
   'packages/code/tests/cli-e2e.test.ts': 15,
@@ -1029,6 +1037,8 @@ const CLAUSES_PER_FILE: Readonly<Record<string, number>> = {
   'packages/code/tests/host-contract/what-the-host-hands-the-server.test.ts': 4,
   'packages/code/tests/host-contract/what-the-host-hands-the-server.vscode.test.ts': 3,
   'packages/code/tests/host-contract/without-mnema-the-hooks-fail-open.test.ts': 6,
+  'packages/code/tests/key-revoke-agent-refused-in-the-first-tree.test.ts': 6,
+  'packages/code/tests/key-revoke-protected-person-and-checker.test.ts': 5,
   'packages/code/tests/mcp-audit-across-workspace.test.ts': 12,
   'packages/code/tests/mcp-configured-project.test.ts': 11,
   'packages/code/tests/mcp-context.test.ts': 8,
@@ -1081,6 +1091,7 @@ const CLAUSES_PER_FILE: Readonly<Record<string, number>> = {
   'packages/code/tests/the-address-says-what-it-covers.test.ts': 14,
   'packages/code/tests/the-agent-is-told-the-record-does-not-chain.test.ts': 11,
   'packages/code/tests/the-agent-is-told-what-it-has.test.ts': 16,
+  'packages/code/tests/the-answers-name-a-project-as-a-write-takes-it.test.ts': 17,
   'packages/code/tests/the-antigravity-cli-rises-only-with-a-capture.test.ts': 4,
   'packages/code/tests/the-bare-name-asks.test.ts': 15,
   'packages/code/tests/the-binary-a-page-promises-is-the-one-that-speaks.test.ts': 7,
@@ -1143,6 +1154,7 @@ const CLAUSES_PER_FILE: Readonly<Record<string, number>> = {
   'packages/code/tests/the-opening-and-the-doctor-say-no-more-than-they-prove.test.ts': 10,
   'packages/code/tests/the-opening-fits-the-height.test.ts': 17,
   'packages/code/tests/the-opening-fits-the-screen.test.ts': 17,
+  'packages/code/tests/the-opening-refusal-says-which-trees-it-checked.test.ts': 11,
   'packages/code/tests/the-origin-travels-beside-the-label.test.ts': 17,
   'packages/code/tests/the-page-shows-its-seams.test.ts': 19,
   'packages/code/tests/the-panel.test.ts': 21,
@@ -1172,7 +1184,9 @@ const CLAUSES_PER_FILE: Readonly<Record<string, number>> = {
   'packages/code/tests/the-record-you-can-see.test.ts': 17,
   'packages/code/tests/the-recordings-are-what-the-binary-draws.test.ts': 13,
   'packages/code/tests/the-red-says-why-it-went-red.test.ts': 7,
+  'packages/code/tests/the-refusal-names-only-what-it-checked.test.ts': 12,
   'packages/code/tests/the-refusal-names-the-way-out.test.ts': 14,
+  'packages/code/tests/the-refusal-of-an-unenrolled-agent-says-why-the-persons-key-cannot-sign.test.ts': 11,
   'packages/code/tests/the-refused-run-is-refused-everywhere.test.ts': 13,
   'packages/code/tests/the-rule-has-an-address.test.ts': 11,
   'packages/code/tests/the-rule-reaches-the-writing.test.ts': 15,
@@ -1223,7 +1237,7 @@ const CLAUSES_PER_FILE: Readonly<Record<string, number>> = {
   'packages/context/src/context/brief.test.ts': 7,
   'packages/context/src/context/decisions.test.ts': 5,
   'packages/context/src/context/disposition.test.ts': 5,
-  'packages/context/src/context/focus.test.ts': 4,
+  'packages/context/src/context/focus.test.ts': 5,
   'packages/context/src/context/next-action.test.ts': 4,
   'packages/context/src/context/presence.test.ts': 5,
   'packages/context/src/context/search.test.ts': 6,
@@ -1249,7 +1263,7 @@ const CLAUSES_PER_FILE: Readonly<Record<string, number>> = {
   'packages/context/tests/readme-example.test.ts': 4,
   'packages/context/tests/support/chain.ts': 7,
   'packages/context/tests/the-bench-leaves-nothing-behind.test.ts': 5,
-  'packages/core/src/a-reason-states-something.test.ts': 21,
+  'packages/core/src/a-reason-states-something.test.ts': 22,
   'packages/core/src/adr/bridges.test.ts': 6,
   'packages/core/src/adr/published-templates.test.ts': 2,
   'packages/core/src/adr/read.test.ts': 3,
@@ -1262,13 +1276,19 @@ const CLAUSES_PER_FILE: Readonly<Record<string, number>> = {
   'packages/core/src/content/screen.test.ts': 3,
   'packages/core/src/content/secrets.properties.test.ts': 6,
   'packages/core/src/content/secrets.test.ts': 2,
+  'packages/core/src/identity/a-forged-enrolment-before-a-valid-one-does-not-hide-it.test.ts': 10,
   'packages/core/src/identity/account.test.ts': 2,
+  'packages/core/src/identity/agents.test.ts': 17,
   'packages/core/src/identity/alias.test.ts': 3,
+  'packages/core/src/identity/an-agent-enrolled-at-the-same-moment-is-already-enrolled.test.ts': 11,
+  'packages/core/src/identity/an-agent-fact-counts-only-as-proven-and-first.test.ts': 10,
+  'packages/core/src/identity/an-agent-key-keeps-one-name-across-trees.test.ts': 9,
   'packages/core/src/identity/anchor.test.ts': 2,
   'packages/core/src/identity/authority.test.ts': 3,
   'packages/core/src/identity/founded-beside.test.ts': 13,
   'packages/core/src/identity/handshake.test.ts': 6,
   'packages/core/src/identity/id.test.ts': 3,
+  'packages/core/src/identity/restore-refuses-an-agent-key.test.ts': 10,
   'packages/core/src/identity/restore.test.ts': 11,
   'packages/core/src/identity/roster.test.ts': 13,
   'packages/core/src/identity/the-roster-sees-the-other-session.test.ts': 11,
@@ -1532,6 +1552,7 @@ const PRODUCTION_FILES: readonly string[] = [
   'packages/code/src/mcp/instructions.ts',
   'packages/code/src/mcp/lifecycle.ts',
   'packages/code/src/mcp/locate.ts',
+  'packages/code/src/mcp/project-in-answers.ts',
   'packages/code/src/mcp/route.ts',
   'packages/code/src/mcp/server.ts',
   'packages/code/src/mcp/session.ts',
@@ -1622,6 +1643,7 @@ const PRODUCTION_FILES: readonly string[] = [
   'packages/code/src/site/browser/path.ts',
   'packages/code/src/site/page.ts',
   'packages/code/src/site/verifier-bundle.ts',
+  'packages/code/src/the-persons-key-in-the-clear.ts',
   'packages/code/src/transcripts.ts',
   'packages/code/src/tree-sources.ts',
   'packages/code/src/user-corrections.ts',
@@ -1742,6 +1764,7 @@ const PRODUCTION_FILES: readonly string[] = [
   'packages/core/src/db/schema.ts',
   'packages/core/src/db/sqlite.ts',
   'packages/core/src/identity/account.ts',
+  'packages/core/src/identity/agent-name.ts',
   'packages/core/src/identity/alias.ts',
   'packages/core/src/identity/anchor.ts',
   'packages/core/src/identity/authority.ts',
@@ -1888,8 +1911,9 @@ describe('every file has a test that names it', () => {
     // 84 with the report verb's wiring, which a-report-is-built-from-an-allowlist drives through the program.
     // 85 with the stack group's wiring, which a-stack-goes-where-nothing-is drives through the built binary.
     // 84 once the second reader's record test asserts on the verifier's canonicalIdentityForm.
-    expect(found.size).toBe(84);
-    expect(byReach('nobody imports it')).toBe(84);
+    // 83 once the test that names a project in an answer imports the write-destination resolver.
+    expect(found.size).toBe(83);
+    expect(byReach('nobody imports it')).toBe(83);
     expect(byReach('imported, and no assertion observes it')).toBe(0);
   });
 
@@ -1911,7 +1935,7 @@ describe('every file has a test that names it', () => {
     // Announced in the header and, until now, kept by hand. A shared excuse is how a table
     // like this turns into a rubber stamp, and a row drained to a stub is how it starts.
     const reasons = Object.values(UNWITNESSED).map((one) => one.why);
-    expect(reasons).toHaveLength(84);
+    expect(reasons).toHaveLength(83);
     expect(new Set(reasons).size).toBe(reasons.length);
     // The shortest reason standing is 156 characters; the floor is under it and well over
     // anything that could be written without saying what reaches that file.
@@ -1953,7 +1977,7 @@ describe('every file has a test that names it', () => {
   });
 
   it('cannot be dissolved by the ledger that describes it', () => {
-    // The keys below are 71 paths, and the production census names every product file.
+    // The keys below are 70 paths, and the production census names every product file.
     // Naming requires an IMPORT, so listing a file here cannot witness it — and this file,
     // which mentions every one of them, imports no product file at all.
     const self = TEST_TREE.find((one) =>

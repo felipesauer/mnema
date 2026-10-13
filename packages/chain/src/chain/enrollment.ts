@@ -448,8 +448,7 @@ export function resolveIdentity(
           inAnyIdentity(validKeys, agentFp) ||
           checkers.has(agentFp) ||
           agents.has(agentFp) ||
-          retired.has(agentFp) ||
-          retiredAgents.has(agentFp)
+          retired.has(agentFp)
         ) {
           issues.push({
             tail,

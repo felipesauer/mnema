@@ -203,8 +203,8 @@ const VERB_OF: Readonly<Record<string, string>> = {
   [NOTES_HOOK]: 'recall --hook',
   [TALLY_HOOK]: 'tally',
   [CORRECTIONS_HOOK]: 'corrections',
-  [CURSOR_HOOK]: 'before-a-write --host cursor',
-  [GATE_HOOK]: 'before-a-write --host vscode',
+  [CURSOR_HOOK]: 'before-a-write --host cursor --agent-key cursor',
+  [GATE_HOOK]: 'before-a-write --host vscode --agent-key vscode',
   [HANDBACK_HOOK]: 'handback',
 };
 
@@ -1155,8 +1155,8 @@ describe('the record arrives unasked', () => {
       'recall --hook',
       'tally',
       'corrections',
-      'before-a-write --host cursor',
-      'before-a-write --host vscode',
+      'before-a-write --host cursor --agent-key cursor',
+      'before-a-write --host vscode --agent-key vscode',
       'handback',
     ]);
     expect([...reached]).toEqual(Object.values(VERB_OF));
@@ -1172,8 +1172,8 @@ describe('the record arrives unasked', () => {
       'recall --hook: reads',
       'tally: reads',
       'corrections: mutates',
-      'before-a-write --host cursor: mutates',
-      'before-a-write --host vscode: mutates',
+      'before-a-write --host cursor --agent-key cursor: mutates',
+      'before-a-write --host vscode --agent-key vscode: mutates',
       'handback: reads',
     ]);
   });

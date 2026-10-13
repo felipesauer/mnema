@@ -266,6 +266,10 @@ const CLASSIFIED: Readonly<Record<string, { verdict: Verdict; why: string }>> = 
     verdict: 'minted',
     why: 'two counts this reading computed',
   },
+  'accountability.ts «{} {} ({} attested)» #1': {
+    verdict: 'collapsed',
+    why: 'the name an agent key was enrolled under, read back out of the record',
+  },
   'decision.ts «Moved {} of {}; the rest were refused above and nothing was written for them.» #1':
     {
       verdict: 'minted',
@@ -355,6 +359,100 @@ const CLASSIFIED: Readonly<Record<string, { verdict: Verdict; why: string }>> = 
     verdict: 'collapsed',
     why: 'the project root, discovered from the cwd — the same value `init` prints',
   },
+  'key.ts «Created the key of the agent {}: {}» #1': {
+    verdict: 'minted',
+    why: 'a name held to the agent-name form before a key is made, and a fingerprint computed from the key',
+  },
+  'key.ts «Requesting for the agent {}: key {}» #1': {
+    verdict: 'minted',
+    why: 'the same name, held to the same form, and a fingerprint computed from the key spoken for',
+  },
+  'key.ts «to be enrolled in {} as "{}"» #1': {
+    verdict: 'minted',
+    why: 'the anchor `--anchor` resolved to, and the name held to the agent-name form',
+  },
+  "key.ts «its key lives in {}, in the clear: the agent's host signs with it and has no terminal to ask a passphrase at» #1":
+    {
+      verdict: 'collapsed',
+      why: 'the agent’s key root under the data directory, which `$MNEMA_HOME` may place anywhere a directory name can be',
+    },
+  'key.ts «Enrolled agent {}: key {}» #1': {
+    verdict: 'minted',
+    why: 'a name the request carried and the door held to the agent-name form, and a fingerprint computed from its key',
+  },
+  'key.ts «Nothing signs with it until the host is told to: \\`mnema mcp --agent-key {}\\`, or the plugin’s \\`agent_key\\` option» #1':
+    {
+      verdict: 'collapsed',
+      why: 'the name the request carried, which the door held to the agent-name form where it is worded; the tag is the second fence',
+    },
+  'key.ts «Key {} is already the agent "{}" — nothing recorded.» #1': {
+    verdict: 'minted',
+    why: 'a fingerprint computed from the key the request carried, and the name the record holds for it',
+  },
+  'key.ts «Nothing recorded for the agent {}: key {} — a tree refused it» #1': {
+    verdict: 'minted',
+    why: 'a name the request carried and the door held to the agent-name form, and a fingerprint computed from its key',
+  },
+  'key.ts «it signs for {}{}, and names itself "{}" on everything it signs» #1': {
+    verdict: 'minted',
+    why: 'the anchor of the identity that vouched, a phrase this surface chose or nothing, and the name held to the agent-name form',
+  },
+  'key.ts «{}: enrolled for {}, recorded in {}» #1': {
+    verdict: 'collapsed',
+    why: 'the name of a tree this surface chose, the anchor the tree speaks for, and the root of that tree, which a project directory or $MNEMA_HOME may place anywhere a directory name can be',
+  },
+  'key.ts «{}: already the agent for {}, nothing recorded» #1': {
+    verdict: 'collapsed',
+    why: 'the name of a tree this surface chose, said by the one table that names them, and the anchor the tree speaks for',
+  },
+  'key.ts «its key is the file you named, {}, which this did not install: it stays where you keep it, and a host signs with it only once it is put at {}» #1':
+    {
+      verdict: 'collapsed',
+      why: 'the path the person typed, which a directory name may break, and the agent’s key root, which `$MNEMA_HOME` may place anywhere',
+    },
+  'key.ts «{}: enrolled, recorded in {}» #1': {
+    verdict: 'collapsed',
+    why: 'the name of a tree this surface chose, and the root of that tree, which a project directory or $MNEMA_HOME may place anywhere a directory name can be',
+  },
+  'key.ts «{}: already the agent, nothing recorded» #1': {
+    verdict: 'collapsed',
+    why: 'the name of a tree this surface chose, said by the one table that names them',
+  },
+  'key.ts «{}: skipped — {}» #1': {
+    verdict: 'collapsed',
+    why: 'the name of a tree this surface chose, and the reason this product wrote for leaving it out',
+  },
+  'key.ts «{}: skipped — {}» #2': {
+    verdict: 'collapsed',
+    why: 'the name of a tree this surface chose, and the reason this product wrote for leaving it out',
+  },
+  'key.ts «{}: retired, recorded in {}» #1': {
+    verdict: 'collapsed',
+    why: 'the name of a tree this surface chose, and the root of that tree, which a project directory or $MNEMA_HOME may place anywhere a directory name can be',
+  },
+  'key.ts «the key {} was retired by the record and is never enrolled again: it was put aside in {}, not deleted» #1':
+    {
+      verdict: 'collapsed',
+      why: 'a fingerprint read from the name of a file in the agent’s key root, and the folder the file was moved to under it',
+    },
+  'key.ts «the record already counts {} other active {} as "{}" ({}) — one per machine is expected; \\`mnema key revoke --agent <fingerprint> --reason "<why>"\\` retires one» #1':
+    {
+      verdict: 'collapsed',
+      why: 'a count, a word chosen from it, the name the record enrols the agent under, and the first characters of fingerprints the record holds',
+    },
+  'key.ts «Note: {}» #1': {
+    verdict: 'minted',
+    why: 'a constant sentence of this product',
+  },
+  'key.ts «Retired agent {}: key {}» #1': {
+    verdict: 'minted',
+    why: 'the name the record held for a key it counted as an agent, and the fingerprint matched against it',
+  },
+  'key.ts «it signs nothing from here on — retired by {}» #2': {
+    verdict: 'minted',
+    why: 'the anchor of the identity that signed the retirement',
+  },
+  'key.ts «{}» #3': { verdict: 'minted', why: 'a ternary of two of this surface’s own clauses' },
   'check.ts «Declared the check of {}» #1': {
     verdict: 'minted',
     why: 'the id of a decision the write found in the record, or it refused',
@@ -843,7 +941,14 @@ describe('every line this wiring words is classified', () => {
     // 112 with the line `unlink` prints for the edge it took back.
     // 115 with the five lines `stack add` and `stack remove` print.
     // 122 with the seven lines `stack export`, `check`, `enable` and `disable` print.
-    expect(FOUND.sites.length).toBe(122);
+    // 134 with the twelve lines the three agent verbs print.
+    // 135 with the agent an agent key attested, on the line of the author in `audit accountability`.
+    // 141 with the lines the agent verbs print for each tree they enrol or retire in, the key put aside
+    // by a rotation, and the other keys under the name, less the one line the enrolment printed alone.
+    // 145 with the line a tree that refused leaves in place of "Enrolled agent", the identity a tree
+    // took the key for, and the line that says a key read from a file is not installed.
+    // 146 with the line a successful enrolment ends on, saying the host is still to be told.
+    expect(FOUND.sites.length).toBe(146);
   });
 
   it('reads the verdict off the source rather than believing the table', () => {
@@ -863,9 +968,9 @@ describe('every line this wiring words is classified', () => {
   it('found sites of both kinds, and the scanner sees a tag when there is one', () => {
     // Neither arm of the case above may be empty, or half of it is vacuous.
     const verdicts = Object.values(CLASSIFIED).map((said) => said.verdict);
-    expect(verdicts.filter((verdict) => verdict === 'collapsed').length).toBe(62);
-    expect(verdicts.filter((verdict) => verdict === 'minted').length).toBe(60);
-    expect(FOUND.sites.filter((site) => site.tagged).length).toBe(62);
+    expect(verdicts.filter((verdict) => verdict === 'collapsed').length).toBe(75);
+    expect(verdicts.filter((verdict) => verdict === 'minted').length).toBe(71);
+    expect(FOUND.sites.filter((site) => site.tagged).length).toBe(75);
   });
 
   it('every reason says where the value comes from', () => {
@@ -991,6 +1096,9 @@ describe('a value from outside cannot forge a second line', () => {
  * somebody closed and nobody drove, and the reconciliation below is what says so.
  */
 const UNREACHABLE: Readonly<Record<string, string>> = {
+  'accountability.ts «{} {} ({} attested)» #1':
+    'the name is the one an agent key was enrolled under, which the name form holds to one line before ' +
+    'the record has it; the tag is the second fence',
   'stack.ts «Installed {} {}: {} files written.» #1':
     'the name is held to the stack-name form and the version to a version’s characters before the ' +
     'plan exists, so no line break reaches the line; the tag is the second fence',
@@ -1045,6 +1153,28 @@ const UNREACHABLE: Readonly<Record<string, string>> = {
   'key.ts «Your copy at {} was read, not moved — keep it where it is.» #1': 'the same restore',
   'key.ts «recorded in {}» #1': 'needs a request from a second machine',
   'key.ts «recorded in {}» #2': 'the same request',
+  'key.ts «{}: enrolled, recorded in {}» #1':
+    'needs a data directory whose name holds a line break, for the agent verb that enrols in every tree',
+  'key.ts «{}: already the agent, nothing recorded» #1':
+    'the table of tree names holds three constant words, so no break reaches the line',
+  'key.ts «{}: enrolled for {}, recorded in {}» #1':
+    'the same data directory, for a machine that joined an identity; the anchor is an identity id of the record',
+  'key.ts «{}: already the agent for {}, nothing recorded» #1':
+    'three constant words and an identity id of the record, so no break reaches the line',
+  'key.ts «its key is the file you named, {}, which this did not install: it stays where you keep it, and a host signs with it only once it is put at {}» #1':
+    'needs a key file whose name holds a line break, which a request made from it would have to read as a private key',
+  'key.ts «{}: skipped — {}» #1':
+    'the name is one of three constants and the reason is this product’s own sentence',
+  'key.ts «{}: skipped — {}» #2': 'the same, for the retirement',
+  'key.ts «Nothing signs with it until the host is told to: \\`mnema mcp --agent-key {}\\`, or the plugin’s \\`agent_key\\` option» #1':
+    'the name is the one the request carried, held to the agent-name form by the door, so no break reaches the line',
+  'key.ts «{}: retired, recorded in {}» #1': 'the same data directory, for the retirement',
+  'key.ts «the key {} was retired by the record and is never enrolled again: it was put aside in {}, not deleted» #1':
+    'the folder is under the agent’s key root, which a name of the agent-name form cannot break',
+  'key.ts «the record already counts {} other active {} as "{}" ({}) — one per machine is expected; \\`mnema key revoke --agent <fingerprint> --reason "<why>"\\` retires one» #1':
+    'the name is the agent-name form and the rest is a count and hex',
+  "key.ts «its key lives in {}, in the clear: the agent's host signs with it and has no terminal to ask a passphrase at» #1":
+    'needs a data directory whose NAME holds a line break',
   'check.ts «failed {}: {}» #1':
     'needs a checker key enrolled in the record, and a program that fails',
   'check.ts «recorded in {}» #1': 'the same checker run',
