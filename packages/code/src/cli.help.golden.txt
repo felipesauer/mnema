@@ -625,10 +625,11 @@ $ mnema brief --help
 | somebody’s own method and this document would replace every word of it — the
 | line `@MNEMA.md` in a `CLAUDE.md` brings the file above in with it, where a
 | sentence naming the file is read only if the agent chooses to open it.
-| The mnema plugin hands this document to a Claude Code session with no file at all,
+| The mnema plugin hands this document to a Claude Code session without writing a file,
 | with `--hook`: past what a hook carries, the host would replace the whole text with a
 | file path, so there the rules stop at a whole one and the document says how many it
-| left out. Without the flag nothing is cut. With it the copy also counts, last, the
+| left out. Without the flag nothing is cut. With it the copy also leaves out the
+| paragraph on regenerating the file, and counts, last, the
 | decision documents in this checkout the record has no decision for, as
 | `mnema status` does — a fact about one disk, so the file never carries it. It also
 | names, there, the stacks the record has adopted and how many places their files part
