@@ -23,6 +23,8 @@ import { type CliIo, run } from '../src/program.js';
 
 const PASSPHRASE = 'MNEMA_KEY_PASSPHRASE';
 
+type Reply = { isError?: boolean; content: { text: string }[] };
+
 let sandbox: string;
 let home: string;
 let repo: string;
