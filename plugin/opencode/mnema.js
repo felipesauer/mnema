@@ -16,6 +16,9 @@ const WRITES = new Set(['write', 'edit', 'apply_patch']);
 /** How long `mnema` is given to answer, in milliseconds. */
 const WAIT = 15000;
 
+/** The agent whose key signs what the gate records, where the record enrols it. */
+const AGENT = ['--agent-key', 'opencode'];
+
 /** One run of `mnema`, both streams kept; a run that did not finish carries an `error`. */
 function run(args, cwd, input) {
   return spawnSync(process.platform === 'win32' ? 'mnema.cmd' : 'mnema', args, {
@@ -41,6 +44,16 @@ function whatItSays(verb, cwd) {
   return [alsoSaid === '' ? ran.stdout : [ran.stdout, alsoSaid].join('\n\n')];
 }
 
+/**
+ * One run of the gate, asked with the key of the agent this module signs as, and asked again
+ * without it by a `mnema` too old to know the option, which refuses it by name.
+ */
+function askTheGate(cwd, input) {
+  const gate = ['before-a-write', '--host', 'opencode'];
+  const ran = run([...gate, ...AGENT], cwd, input);
+  return ran.status !== 0 && ran.stderr.includes('--agent-key') ? run(gate, cwd, input) : ran;
+}
+
 export const Mnema = async ({ directory }) => {
   let known;
   /** Asked once: the PATH does not change under a running host. */
@@ -63,8 +76,7 @@ export const Mnema = async ({ directory }) => {
     },
     'tool.execute.before': async (input, output) => {
       if (!WRITES.has(input.tool) || !ours()) return;
-      const ran = run(
-        ['before-a-write', '--host', 'opencode'],
+      const ran = askTheGate(
         directory,
         JSON.stringify({ tool_name: input.tool, tool_input: output.args }),
       );

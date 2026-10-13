@@ -133,10 +133,10 @@ export const FED_BY_KIND: { readonly [K in EventKind]: readonly ProjectionTable[
   // adopted digest, never off this cache; the reference index still holds both facts.
   'stack.adopted': [...EVERY_KIND_FEEDS],
   'stack.removed': [...EVERY_KIND_FEEDS],
-  // An agent key's role, read off the chain by the verifier's fold and its census, never off this
-  // cache; the roster readings this cache stores for do not take agent keys in.
-  'agent.enrolled': [...EVERY_KIND_FEEDS],
-  'agent.retired': [...EVERY_KIND_FEEDS],
+  // An agent key is a member of the identity that enrolled it: the roster a write asks before it
+  // appends counts it, so the facts are kept with the other membership facts.
+  'agent.enrolled': [...EVERY_KIND_FEEDS, ...MEMBERSHIP],
+  'agent.retired': [...EVERY_KIND_FEEDS, ...MEMBERSHIP],
 };
 
 /**

@@ -338,10 +338,15 @@ const SURFACE = fileURLToPath(new URL('../src', import.meta.url));
  * identity still counts the key — each with why what it reads is not who writes here.
  */
 const NEED_NOT_ASK: Readonly<Record<string, string>> = {
+  'commands/key-enroll.ts':
+    'the identity a tree speaks for, asked of the tree an agent is about to be enrolled in, so the ' +
+    'key that lives here consents to that identity and no other; the vouch that follows is the ' +
+    'core’s `enrollAgentFromRequest`, which refuses a key the roster no longer counts ' +
+    '(`CANNOT_VOUCH`) before it appends',
   'mcp/session.ts':
     'the asker a session’s reads name, read from the private or the global tree — trees no ' +
-    'retirement reaches, since `key revoke` writes the public one alone; every write the ' +
-    'session makes asks its own tree before it appends',
+    'retirement of a person’s key reaches, since `key revoke` of one writes the public one ' +
+    'alone; every write the session makes asks its own tree before it appends',
 };
 
 describe('every file of this surface that says who writes asks what the write asks', () => {

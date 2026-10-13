@@ -14,6 +14,7 @@
  */
 
 import type { Command } from 'commander';
+import { agentKeyFromEnvironment } from '../env.js';
 import { here } from './context.js';
 import { type Declared, mutatesTheRecord, type Wiring } from './verb.js';
 
@@ -57,7 +58,14 @@ export function registerMcp(program: Command, wiring: Wiring): Declared {
       '--project <dir>',
       'the project to serve — an ABSOLUTE path; omitted, the project comes from the host workspace roots, or from the working directory when the host declares none',
     )
-    .action(async (opts: { project?: string }) => {
+    // The agent whose key this server signs with, where the record enrols it. A flag, and the
+    // environment for the host files that cannot carry one (`MNEMA_AGENT_KEY`, which a `mnema`
+    // older than this option ignores, where an unknown option would stop it): the flag wins.
+    .option(
+      '--agent-key <name>',
+      "sign as the agent of that name in each tree whose record enrols its key (made with `mnema key request --agent <name> --anchor <id>`, enrolled with `mnema key enroll --agent <name>`); in a tree that does not, the person's key signs and the facts' agent is declared, not attested, or the write is refused where the person's key is protected and MNEMA_KEY_PASSPHRASE is not in the environment, or is not on this machine. Also read from MNEMA_AGENT_KEY",
+    )
+    .action(async (opts: { project?: string; agentKey?: string }) => {
       // Loaded HERE, not at module scope: the MCP SDK is the heaviest import in
       // the product and only this one verb uses it, so importing it at the top
       // made every other command pay for a server it never starts.
@@ -72,11 +80,13 @@ export function registerMcp(program: Command, wiring: Wiring): Declared {
       // consults it only for a client that announces no workspace roots, and what it
       // walks up from is this process's directory — the one the host started it in.
       const { cwd, env } = here();
+      const agentKey = opts.agentKey ?? agentKeyFromEnvironment(process.env);
       const { connect } = buildMcpServer({
         cwd,
         env,
         log: (line) => io.err(line),
         ...(opts.project !== undefined ? { configProject: opts.project } : {}),
+        ...(agentKey !== undefined ? { agentKey } : {}),
       });
       // stdout carries the JSON-RPC protocol, so the server writes every
       // diagnostic to stderr. This action does not return until the transport

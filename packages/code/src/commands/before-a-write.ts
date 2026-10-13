@@ -43,11 +43,14 @@ import { dirname } from 'node:path';
 import { catalogUpcasters, listPrivateKeyFingerprints } from '@mnema/chain';
 import { type RunHere, runsHere } from '@mnema/context';
 import {
+  agentNameRefusal,
+  agentSignsIn,
   chainRootForScope,
   type DiscoveryEnv,
   resolveScope,
   resolveTrees,
   systemClock,
+  withAgentKey,
 } from '@mnema/core';
 import {
   authorizingAnchor,
@@ -79,6 +82,12 @@ export interface BeforeAWriteContext {
   readonly cwd: string;
   /** The discovery environment (`$HOME`, `$MNEMA_HOME`). */
   readonly env: DiscoveryEnv;
+  /**
+   * The agent whose key signs what this hook records, where the project's record enrols it —
+   * `--agent-key`. Where it does, the facts' `which` is the name the record gives that key,
+   * not the host's name; anywhere else the person's key signs and `which` is the host.
+   */
+  readonly agentKey?: string | undefined;
 }
 
 /**
@@ -151,7 +160,13 @@ export function runBeforeAPath(
   },
 ): BeforeAWriteDone {
   const { paths } = input;
-  const trees = resolveTrees(ctx.cwd, ctx.env);
+  const resolved = resolveTrees(ctx.cwd, ctx.env);
+  // A name this product does not enrol is no agent: the hook answers as it always did, and says so.
+  const unnamed = ctx.agentKey === undefined ? undefined : agentNameRefusal(ctx.agentKey);
+  const trees =
+    ctx.agentKey === undefined || unnamed !== undefined
+      ? resolved
+      : withAgentKey(resolved, ctx.env, ctx.agentKey);
   if (trees.projectPublic === undefined) return silent();
   // The project root is the PARENT of its `.mnema/`, the directory every address is written
   // against; a relative path is the host's, written against where it started the hook.
@@ -177,7 +192,10 @@ export function runBeforeAPath(
   // reason and on the second stream, never by letting the write through.
   const before = anchorsBefore(treesOf(trees));
   const recorded = recordTheCharge(() => recordWhatItMet(trees, met, input.which));
-  const unrecorded = recorded.ok ? [] : [unrecordedCharge(met.grade, recorded.why)];
+  const unrecorded = [
+    ...(unnamed === undefined ? [] : [`The agent key was ignored: ${unnamed}`]),
+    ...(recorded.ok ? [] : [unrecordedCharge(met.grade, recorded.why)]),
+  ];
   const reason = withWhoIsHere(
     [met.reason, ...unrecorded, ...foundingsSince(before)].join('\n\n'),
     others,
@@ -200,6 +218,9 @@ function recordWhatItMet(
 ): { readonly ok: boolean; readonly why?: string } {
   const refusing = met.grade === 'refuse';
   const scope = resolveScope(refusing ? 'channel.refused' : 'channel.asked', { which });
+  // WHERE THE RECORD ENROLS THE AGENT'S KEY, THE FACTS ARE ITS: signed by it, under the name the
+  // record gave it. The host's name stands everywhere else (the person's key signs there).
+  const named = agentSignsIn(trees, scope)?.name ?? which;
   const writer = openTreeForWriting(trees, scope);
   const ctx = {
     writer,
@@ -215,7 +236,7 @@ function recordWhatItMet(
           channel,
           rule: rule.id,
           path: at.relative ?? at.path,
-          which,
+          which: named,
         };
         const done = refusing ? recordChannelRefused(ctx, input) : recordChannelAsked(ctx, input);
         if (!done.ok) {
@@ -226,7 +247,7 @@ function recordWhatItMet(
     }
     // A SERVICE FACT THAT DID NOT LAND IS A GAP IN THE EVIDENCE, NOT AN UN-ASKING: the askings are
     // on the chain, so the charge rides — the MCP tool's rule for the same two facts.
-    if (!refusing) recordChannelServed(ctx, { channel: ASKS_A_PERSON_CHANNEL, which });
+    if (!refusing) recordChannelServed(ctx, { channel: ASKS_A_PERSON_CHANNEL, which: named });
     writer.checkpoint();
     return { ok: true };
   });

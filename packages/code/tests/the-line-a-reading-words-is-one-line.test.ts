@@ -1309,14 +1309,16 @@ const CLASSIFIED: Readonly<Record<string, { verdict: Verdict; why: string }>> = 
     verdict: 'collapsed',
     why: 'the decision’s title — text whoever recorded it wrote',
   },
-  'record.ts «recorded by {}» actorText(context.anchors, body.record.recordedBy) #1': {
-    verdict: 'composed',
-    why: 'the actor of the recording event, worded by actorText below: an anchor in its short form, and an act clause whose agent name is collapsed there',
-  },
-  'record.ts «accepted by {}» actorText(context.anchors, body.record.acceptedBy) #1': {
-    verdict: 'composed',
-    why: 'the actor of the accepting event, worded by actorText below, for the reason the recording actor is',
-  },
+  'record.ts «recorded by {}» actorText(context.anchors, body.record.recordedBy, context.attested?.recordedBy === true) #1':
+    {
+      verdict: 'composed',
+      why: 'the actor of the recording event, worded by actorText below: an anchor in its short form, and an act clause whose agent name is collapsed there',
+    },
+  'record.ts «accepted by {}» actorText(context.anchors, body.record.acceptedBy, context.attested?.acceptedBy === true) #1':
+    {
+      verdict: 'composed',
+      why: 'the actor of the accepting event, worded by actorText below, for the reason the recording actor is',
+    },
   'record.ts «{} ({})» oneLine(anchorText(anchors, actor.who)) #1': {
     verdict: 'collapsed',
     why: 'the identity named on the envelope of the event, in the short form this record’s other reads print it in',
@@ -1325,9 +1327,13 @@ const CLASSIFIED: Readonly<Record<string, { verdict: Verdict; why: string }>> = 
     verdict: 'composed',
     why: 'either this surface’s word for an act with no agent, or the agent clause below, whose name is collapsed',
   },
-  'record.ts «agent {}» oneLine(actor.which) #1': {
+  'record.ts «agent {}{}» oneLine(actor.which) #1': {
     verdict: 'collapsed',
     why: 'the agent’s name as the event carries it, text whoever opened that session wrote',
+  },
+  "record.ts «agent {}{}» attested ? ', attested by its own key' : '' #1": {
+    verdict: 'minted',
+    why: 'one of two clauses of this product’s own, chosen by whether the record’s agent key signed the fact',
   },
   'record.ts «supersedes {}» oneLine(body.record.supersedes) #1': {
     verdict: 'collapsed',
@@ -2249,7 +2255,7 @@ describe('every value this layer puts on a line is classified', () => {
     // composers with its two template values; then 253 until the rules in force began saying who
     // accepted them (`brief.ts`, `record.ts`); 294 until `mnema rules` printed the four numbers
     // of the relation that refuses a write; 301 with the three the trunk added meanwhile; 395 with the lines `mnema site` prints; 306 once the document counts the rules that refuse a write; 367 with the pages of the git bridge; 377 with its shallow sentence and the recipe aging prints; 389 with the section for an inherited record; 415 with the mark on a link taken back, in the graph and its diagram; 418 once the closing paragraph words a host's ceiling in its own unit; 425 with the paragraph naming the stacks adopted.
-    expect(FOUND.sites.length).toBe(426);
+    expect(FOUND.sites.length).toBe(427);
   });
 
   it('reads the verdict off the source rather than believing the table', () => {
@@ -2271,7 +2277,7 @@ describe('every value this layer puts on a line is classified', () => {
     const verdicts = Object.values(CLASSIFIED).map((said) => said.verdict);
     const count = (verdict: Verdict): number => verdicts.filter((said) => said === verdict).length;
     expect(count('collapsed')).toBe(113);
-    expect(count('minted')).toBe(241);
+    expect(count('minted')).toBe(242);
     expect(count('composed')).toBe(72);
     expect(FOUND.sites.filter((site) => /\boneLine\b/.test(site.expression))).toHaveLength(113);
   });

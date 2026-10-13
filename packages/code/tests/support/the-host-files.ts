@@ -101,6 +101,24 @@ const hostVariable = (name: string): string => `$${'{'}${name}}`;
 /** How long the host waits for a hook, in seconds. */
 const TIMEOUT = 15;
 
+/**
+ * What a hook that records says of the key it records with: the agent a host's hooks sign as is
+ * named for the host (`--agent-key <host>`), where the project's record enrols a key under that
+ * name — and the person's key signs everywhere else. The same name the host's server is started
+ * with, where the host's file can say it (`agentServerEnv`).
+ */
+const signsAs = (host: HostName): readonly string[] => ['--agent-key', host];
+
+/**
+ * The environment a manifest that names its host starts the server with: the agent it signs as,
+ * read by `mnema mcp` from `MNEMA_AGENT_KEY` — an environment variable and not an argument,
+ * because a `mnema` older than the option ignores a variable and refuses an argument, and a server
+ * that does not start over a plugin update is worse than one that signs as the person.
+ */
+const agentServerEnv = (host: HostName): { readonly MNEMA_AGENT_KEY: string } => ({
+  MNEMA_AGENT_KEY: host,
+});
+
 /** The tools Claude Code writes a file through — and Cursor, which names its write as it does. */
 const CLAUDE_WRITES = 'Write|Edit|NotebookEdit';
 
@@ -186,6 +204,7 @@ function beforeAWrite(name: HostName): readonly Json[] {
               '--host',
               hookHost,
               ...(env === undefined ? ['--tools', tools.join(',')] : ['--where', env]),
+              ...signsAs(hookHost),
             ],
             env,
             tools,
@@ -262,7 +281,7 @@ export function codexHooksJson(): string {
       PreToolUse: [
         {
           matcher: tools.join('|'),
-          hooks: [command('edit-refuses-a-write.mjs', ['--host', 'codex'])],
+          hooks: [command('edit-refuses-a-write.mjs', ['--host', 'codex', ...signsAs('codex')])],
         },
       ],
     },
@@ -304,7 +323,7 @@ export function copilotHooksJson(): string {
           hooks: [
             {
               type: 'command',
-              command: `${nodeRuns(handler, ['--host', 'copilot'])}; exit 0`,
+              command: `${nodeRuns(handler, ['--host', 'copilot', ...signsAs('copilot')])}; exit 0`,
               timeout: TIMEOUT,
             },
           ],
@@ -352,6 +371,9 @@ export function opencodePlugin(): string {
     '/** How long `mnema` is given to answer, in milliseconds. */',
     `const WAIT = ${TIMEOUT * 1000};`,
     '',
+    '/** The agent whose key signs what the gate records, where the record enrols it. */',
+    `const AGENT = ['--agent-key', '${'opencode'}'];`,
+    '',
     '/** One run of `mnema`, both streams kept; a run that did not finish carries an `error`. */',
     'function run(args, cwd, input) {',
     "  return spawnSync(process.platform === 'win32' ? 'mnema.cmd' : 'mnema', args, {",
@@ -377,6 +399,16 @@ export function opencodePlugin(): string {
     "  return [alsoSaid === '' ? ran.stdout : [ran.stdout, alsoSaid].join('\\n\\n')];",
     '}',
     '',
+    '/**',
+    ' * One run of the gate, asked with the key of the agent this module signs as, and asked again',
+    ' * without it by a `mnema` too old to know the option, which refuses it by name.',
+    ' */',
+    'function askTheGate(cwd, input) {',
+    "  const gate = ['before-a-write', '--host', 'opencode'];",
+    '  const ran = run([...gate, ...AGENT], cwd, input);',
+    "  return ran.status !== 0 && ran.stderr.includes('--agent-key') ? run(gate, cwd, input) : ran;",
+    '}',
+    '',
     'export const Mnema = async ({ directory }) => {',
     '  let known;',
     '  /** Asked once: the PATH does not change under a running host. */',
@@ -399,8 +431,7 @@ export function opencodePlugin(): string {
     '    },',
     "    'tool.execute.before': async (input, output) => {",
     '      if (!WRITES.has(input.tool) || !ours()) return;',
-    '      const ran = run(',
-    "        ['before-a-write', '--host', 'opencode'],",
+    '      const ran = askTheGate(',
     '        directory,',
     '        JSON.stringify({ tool_name: input.tool, tool_input: output.args }),',
     '      );',
@@ -441,7 +472,9 @@ export function geminiExtensionJson(): string {
     version: version(),
     description:
       "Puts the project's committed mnema record into the session's opening context without the agent asking, with the notes recorded for it on this machine beside it, refuses a write where a rule of that record refuses it, and connects the mnema MCP server so the agent can record its own work.",
-    mcpServers: { mnema: { command: 'mnema', args: ['mcp'] } },
+    mcpServers: {
+      mnema: { command: 'mnema', args: ['mcp'], env: agentServerEnv('gemini') },
+    },
   };
   return `${printed(file)}\n`;
 }
@@ -510,6 +543,9 @@ export function geminiHookScript(): string {
     '/** How long `mnema` is given to answer, in milliseconds. */',
     `const WAIT = ${TIMEOUT * 1000};`,
     '',
+    '/** The agent whose key signs what the gate records, where the record enrols it. */',
+    `const AGENT = ['--agent-key', '${'gemini'}'];`,
+    '',
     '/**',
     ' * One run of `mnema`, both streams kept; a run that did not finish carries an `error`.',
     ' * @param {string[]} args',
@@ -569,7 +605,10 @@ export function geminiHookScript(): string {
     "      : { hookSpecificOutput: { hookEventName: 'SessionStart', additionalContext: text } };",
     '  }',
     "  if (mode !== 'gate') return undefined;",
-    "  const ran = run(['before-a-write', '--host', 'gemini'], cwd, raw);",
+    "  const gate = ['before-a-write', '--host', 'gemini'];",
+    '  let ran = run([...gate, ...AGENT], cwd, raw);',
+    '  // A `mnema` too old to know the option refuses it by name: asked again without it.',
+    "  if (ran.status !== 0 && ran.stderr.includes('--agent-key')) ran = run(gate, cwd, raw);",
     '  if (ran.error !== undefined || ran.status !== 0) return undefined;',
     '  const said = JSON.parse(ran.stdout);',
     "  return said.decision === 'deny' ? { decision: 'deny', reason: said.reason } : undefined;",
@@ -609,12 +648,22 @@ function manifest(name: string, description: string): string {
           'Absolute path of the mnema binary the plugin runs. Leave it as mnema to run the first one on your PATH.',
         default: 'mnema',
       },
+      agent_key: {
+        type: 'string',
+        title: 'Agent key',
+        description:
+          'The name of an agent key made with `mnema key request --agent <name>` and enrolled with `mnema key enroll --agent`, for the server to sign with. Leave it empty to sign with your own key. This file is read by Claude Code, VS Code and Cursor alike, so no name is filled in for you.',
+        default: '',
+      },
     },
     mcpServers: {
       mnema: {
         command: 'node',
         args: [`${hostVariable('CLAUDE_PLUGIN_ROOT')}/server/launch.mjs`, 'mcp'],
-        env: { MNEMA_PLUGIN_BINARY: hostVariable('user_config.mnema_path') },
+        env: {
+          MNEMA_PLUGIN_BINARY: hostVariable('user_config.mnema_path'),
+          MNEMA_AGENT_KEY: hostVariable('user_config.agent_key'),
+        },
       },
     },
   };
@@ -681,7 +730,9 @@ function codexManifest(
     version: version(),
     description,
     keywords: ['audit-trail', 'append-only', 'accountability', 'adr', 'local-first'],
-    mcpServers: { mnema: { command: 'mnema', args: ['mcp'] } },
+    mcpServers: {
+      mnema: { command: 'mnema', args: ['mcp'], env: agentServerEnv('codex') },
+    },
     ...rest,
   };
   return `${printed(file)}\n`;
@@ -729,7 +780,9 @@ function copilotManifest(
     repository: 'https://github.com/felipesauer/mnema',
     license: 'Apache-2.0',
     keywords: ['audit-trail', 'append-only', 'accountability', 'adr', 'local-first'],
-    mcpServers: { mnema: { command: 'mnema', args: ['mcp'], cwd: '.' } },
+    mcpServers: {
+      mnema: { command: 'mnema', args: ['mcp'], cwd: '.', env: agentServerEnv('copilot') },
+    },
     ...rest,
   };
   return `${printed(file)}\n`;

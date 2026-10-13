@@ -12,9 +12,14 @@ import {
 } from '@mnema/chain';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { declareCheck, enrollChecker, retireChecker } from '../checks/operations.js';
-import { requestEnrollment } from '../identity/handshake.js';
+import { requestAgentEnrollment, requestEnrollment } from '../identity/handshake.js';
 import { IdentityUnavailableError, rosterOf } from '../identity/membership.js';
-import { enrollFromRequest, revokeMember } from '../identity/roster.js';
+import {
+  enrollAgentFromRequest,
+  enrollFromRequest,
+  retireAgentKey,
+  revokeMember,
+} from '../identity/roster.js';
 import {
   captureMemory,
   linkKnowledge,
@@ -40,11 +45,13 @@ import {
 } from './decision-operations.js';
 import {
   type AnchorContext,
+  enrollAgent,
   enrollKey,
   ensureFounded,
   establishIdentity,
   linkAccount,
   recordedAnchorOf,
+  retireAgent,
   revokeKey,
 } from './identity-operations.js';
 import { createTask, transitionTask, type WriteContext } from './operations.js';
@@ -184,7 +191,8 @@ describe('a checkout the key left writes nothing, through every write of the sur
     const joiner = requestEnrollment({ anchor, keyRoot: keyRoot() });
     const another = requestEnrollment({ anchor, keyRoot: keyRoot() });
     const checking = requestEnrollment({ anchor, keyRoot: keyRoot(), asChecker: true });
-    if (!joiner.ok || !another.ok || !checking.ok) throw new Error('setup: requests');
+    const agent = requestAgentEnrollment({ anchor, name: 'claude', keyRoot: keyRoot() });
+    if (!joiner.ok || !another.ok || !checking.ok || !agent.ok) throw new Error('setup: requests');
 
     const retired = revokeMember(member, {
       fingerprint: left.writer.signerFingerprint,
@@ -207,6 +215,7 @@ describe('a checkout the key left writes nothing, through every write of the sur
         joiner,
         another,
         checking,
+        agent,
       },
     };
   }
@@ -390,6 +399,16 @@ describe('a checkout the key left writes nothing, through every write of the sur
       drive: (as) => revokeKey(as, { revokedFp: 'e'.repeat(64), reason: 'r' }),
     },
     {
+      op: 'enrollAgent',
+      refusedBy: 'the anchor',
+      drive: (as) => enrollAgent(as, { agentFp: 'd'.repeat(64), name: 'claude', reverseSig: 'ab' }),
+    },
+    {
+      op: 'retireAgent',
+      refusedBy: 'the anchor',
+      drive: (as) => retireAgent(as, { agentFp: 'd'.repeat(64), reason: 'r' }),
+    },
+    {
       op: 'linkAccount',
       refusedBy: 'the anchor',
       drive: (as) => linkAccount(as, { account: 'octocat' }),
@@ -437,6 +456,18 @@ describe('a checkout the key left writes nothing, through every write of the sur
         }),
     },
     {
+      op: 'enrollAgentFromRequest',
+      refusedBy: 'the roster',
+      drive: (as, _, s) => enrollAgentFromRequest(as, { request: s.fixtures.agent.request }),
+    },
+    {
+      // Driven AFTER the enrolment above, whose control made the key it retires here an agent.
+      op: 'retireAgentKey',
+      refusedBy: 'the roster',
+      drive: (as, _, s) =>
+        retireAgentKey(as, { fingerprint: s.fixtures.agent.fingerprint, reason: 'r' }),
+    },
+    {
       // Driven AFTER the enrollment above, whose control brought in the key it retires here.
       op: 'revokeMember',
       refusedBy: 'the roster',
@@ -451,9 +482,13 @@ describe('a checkout the key left writes nothing, through every write of the sur
   /** The exports that append nothing, each with the reason — the other half of the reconciliation. */
   const APPENDS_NOTHING: Readonly<Record<string, string>> = {
     authorizingAnchor: 'reads which anchor this installation serves',
+    agentKeyConflictIn:
+      'reads the records of several trees for a conflict an agent enrolment would meet; appends nothing',
     decideAnchor: 'settles the same question without writing',
+    decodeAgentRequest: 'parses an agent request line',
     decodeKeyRequest: 'parses a request line',
     deferredWrite: 'pairs a signer with a writer it has not opened',
+    encodeAgentRequest: 'serializes one',
     encodeKeyRequest: 'serializes one',
     onTheRecordAsItStands: 'holds the lock around a judgement; the write is the caller’s',
     openTreeForWriting: 'opens a writer; the write is the caller’s',
@@ -461,6 +496,8 @@ describe('a checkout the key left writes nothing, through every write of the sur
       'asks the question every append asks — whether the recorded identity counts the key',
     runRuleChecks:
       'signs under the checker’s own anchor, which no identity retires; a key that is not a checker is refused before it appends',
+    requestAgentEnrollment:
+      'produces an agent request and may mint the agent’s key, in the agent’s own key root',
     requestEnrollment: 'produces a request and may mint a key, in the key root',
     restoreKey: 'records an anchor from the record — the way out this refusal names',
     signerFor: 'reads who would sign in a tree',
