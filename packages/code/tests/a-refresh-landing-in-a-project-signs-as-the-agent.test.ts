@@ -105,6 +105,9 @@ describe('a session that opened outside any project and is told its workspace', 
     refreshWorkspace(session, [pathToFileURL(other).href]);
     expect(session.inProject).toBe(true);
     expect(session.which).toBe('claude');
+    // Who the session is here: the identity the agent joined, which the short form `audit` printed
+    // is the head of — not the anchor of a key the person never had on this machine.
+    expect(session.who.slice(0, (identity as string).length)).toBe(identity);
 
     const done = runRecordDecision(session, { title: 'After the landing', rationale: 'because' });
     closeSession(session);
