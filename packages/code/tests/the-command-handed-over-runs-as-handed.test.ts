@@ -669,7 +669,7 @@ export const HANDED_OVER: Readonly<
   'CHANGELOG.md': { line: 27, name: 34, flag: 1 },
   'README.md': { line: 1, name: 10 },
   'SECURITY.md': { name: 2 },
-  'docs/agent-hosts.md': { line: 4, name: 2 },
+  'docs/agent-hosts.md': { line: 4, name: 3 },
   'docs/evidence.md': { line: 1, flag: 1 },
   'docs/features.md': { line: 7, name: 11 },
   'docs/first-record.md': { line: 1, name: 4 },
