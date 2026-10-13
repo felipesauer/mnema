@@ -1611,7 +1611,7 @@ const CLASSIFIED: Readonly<Record<string, { verdict: Verdict; why: string }>> = 
       verdict: 'collapsed',
       why: 'the name an agent request carried, which `agentNameRefusal` has already held to the agent-name form where it is worded; the tag is the second fence',
     },
-  '@mnema/core identity/roster.ts «in any tree of this machine — \\`mnema key request --agent {} --anchor <your identity>\\` » oneLine(request.name) #1':
+  '@mnema/core identity/roster.ts «in any tree it reaches from here — \\`mnema key request --agent {} --anchor <your identity>\\` » oneLine(request.name) #1':
     {
       verdict: 'collapsed',
       why: 'the name an agent request carried, held to the agent-name form by the core’s own door before a tree is asked; the tag is the second fence',

@@ -671,7 +671,7 @@ export function agentKeyConflictIn(
         code: 'RETIRED_AGENT',
         message:
           `the key ${oneLine(fingerprint)} was retired in ${oneLine(where)} and is never enrolled again, ` +
-          `in any tree of this machine — \`mnema key request --agent ${oneLine(request.name)} --anchor <your identity>\` ` +
+          `in any tree it reaches from here — \`mnema key request --agent ${oneLine(request.name)} --anchor <your identity>\` ` +
           'makes the agent a new key, and `mnema key enroll --agent <the line it prints>` puts it in force',
       };
     }

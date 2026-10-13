@@ -630,6 +630,20 @@ describe('the hook records as the agent the record names', () => {
     // The same hook without the agent key cannot sign: the person's key is protected.
     const without = runBeforeAWrite({ cwd: repo, env }, { host: 'vscode', payload });
     expect(without.notes.join('\n')).toContain('could not be recorded');
+    // What is not done is the RECORDING: the answer to the host is the same refusal, and says why.
+    const answer = (result: typeof done): { decision: string; reason: string } => {
+      const output = (
+        result.ok ? result.reply : {}
+      ) as { hookSpecificOutput?: { permissionDecision?: string; permissionDecisionReason?: string } };
+      return {
+        decision: output.hookSpecificOutput?.permissionDecision ?? '',
+        reason: output.hookSpecificOutput?.permissionDecisionReason ?? '',
+      };
+    };
+    expect(answer(done).decision).toBe('deny');
+    expect(answer(without).decision).toBe('deny');
+    expect(answer(without).reason.startsWith(answer(done).reason)).toBe(true);
+    expect(answer(without).reason).toContain('could not be recorded');
     expect(events().filter((event) => event.kind === 'channel.refused')).toHaveLength(1);
   });
 });
@@ -743,7 +757,7 @@ describe('mnema doctor says what the agent keys are', () => {
     );
     const none = findings();
     expect(none[0]).toBe(
-      'attention this machine holds the agent key "claude", and no record of this project or this machine enrols it: a host asked to sign as "claude" signs as you where it is not enrolled, and what it records there is declared, not attested — or is refused, where your own key is protected. `mnema key enroll --agent claude` where your own key is enrols it in every tree.',
+      'attention this machine holds the agent key "claude", and no record of this project or this machine enrols it: a host asked to sign as "claude" signs as you where it is not enrolled, and what it records there is declared, not attested — or is refused, where your own key is protected and MNEMA_KEY_PASSPHRASE is not in the environment, or is not on this machine. `mnema key enroll --agent claude` enrols it in every tree this reaches.',
     );
     // The person's key is in the clear, and an agent key exists: the separation is nothing.
     expect(
@@ -753,7 +767,7 @@ describe('mnema doctor says what the agent keys are', () => {
     // Enrolled in the committed tree alone: the other two are said as lacking it.
     enrolledIn('public', lineOf(requested));
     expect(findings()[0]).toBe(
-      'attention this machine holds the agent key "claude", and the record enrols it in the committed tree and not in the private and global trees: a host asked to sign as "claude" signs as you where it is not enrolled, and what it records there is declared, not attested — or is refused, where your own key is protected. `mnema key enroll --agent claude` where your own key is enrols it in every tree.',
+      'attention this machine holds the agent key "claude", and the record enrols it in the committed tree and not in the private and global trees: a host asked to sign as "claude" signs as you where it is not enrolled, and what it records there is declared, not attested — or is refused, where your own key is protected and MNEMA_KEY_PASSPHRASE is not in the environment, or is not on this machine. `mnema key enroll --agent claude` enrols it in every tree this reaches.',
     );
 
     await did(undefined, 'key', 'enroll', '--agent', 'claude');
@@ -771,7 +785,7 @@ describe('mnema doctor says what the agent keys are', () => {
       'lent out',
     );
     expect(findings()[0]).toBe(
-      'attention the agent key "claude" was retired in the committed, private and global trees: it signs nothing in any tree of this machine, and a host asked to sign as it is refused — `mnema key request --agent claude --anchor <your identity>` makes the agent a new key (the retired one is put aside, not deleted), then `mnema key enroll --agent <the line it prints>` puts it in force.',
+      'attention the agent key "claude" was retired in the committed, private and global trees: it signs nothing in any tree it reaches from here, and a host asked to sign as it is refused — `mnema key request --agent claude --anchor <your identity>` makes the agent a new key (the retired one is put aside, not deleted), then `mnema key enroll --agent <the line it prints>` puts it in force.',
     );
   });
 
@@ -782,7 +796,7 @@ describe('mnema doctor says what the agent keys are', () => {
     write.checkpoint();
 
     expect(findings()[0]).toBe(
-      'attention the agent key "claude" was retired in the global tree and is still enrolled in the committed and private trees: it signs nothing in any tree of this machine, and a host asked to sign as it is refused — `mnema key request --agent claude --anchor <your identity>` makes the agent a new key (the retired one is put aside, not deleted), then `mnema key enroll --agent <the line it prints>` puts it in force.',
+      'attention the agent key "claude" was retired in the global tree and is still enrolled in the committed and private trees: it signs nothing in any tree it reaches from here, and a host asked to sign as it is refused — `mnema key request --agent claude --anchor <your identity>` makes the agent a new key (the retired one is put aside, not deleted), then `mnema key enroll --agent <the line it prints>` puts it in force.',
     );
   });
 
@@ -835,7 +849,7 @@ describe('mnema doctor says what the agent keys are', () => {
     write.checkpoint();
 
     expect(findings()[0]).toBe(
-      'attention the agent key "claude" was retired in the global tree, and the record of the committed tree proves it a member of more than one identity: it signs nothing in any tree of this machine, and a host asked to sign as it is refused — `mnema key request --agent claude --anchor <your identity>` makes the agent a new key (the retired one is put aside, not deleted), then `mnema key enroll --agent <the line it prints>` puts it in force.',
+      'attention the agent key "claude" was retired in the global tree, and the record of the committed tree proves it a member of more than one identity: it signs nothing in any tree it reaches from here, and a host asked to sign as it is refused — `mnema key request --agent claude --anchor <your identity>` makes the agent a new key (the retired one is put aside, not deleted), then `mnema key enroll --agent <the line it prints>` puts it in force.',
     );
   });
 
@@ -847,7 +861,7 @@ describe('mnema doctor says what the agent keys are', () => {
     // One line for each host that runs a hook, but the one whose key is held.
     expect(lines).toHaveLength(5);
     expect(lines).toContain(
-      'fine the files this plugin generates for Gemini CLI sign as the agent "gemini", and this machine holds no key under that name: that host signs as you — `mnema key request --agent gemini --anchor <your identity>` makes one, if you want what it records attested.',
+      'fine the files this plugin generates for Gemini CLI sign as the agent "gemini", and this machine holds no key under that name: that host signs as you, or is refused where your own key is protected and MNEMA_KEY_PASSPHRASE is not in the environment, or is not on this machine — `mnema key request --agent gemini --anchor <your identity>` makes one, if you want what it records attested.',
     );
     expect(lines.some((line) => line.includes('"codex"'))).toBe(false);
   });

@@ -261,8 +261,9 @@ hook files of VS Code, Cursor, Codex, Copilot CLI, Gemini CLI and OpenCode pass 
 `mnema before-a-write --agent-key`, asked again without it of a `mnema` that does not know it. Where
 the record of a tree enrols no key under that name, the server says so on its error stream, once for
 each such tree, and signs there with your own, and what it records is declared, not attested; where your
-key is protected, which the host has no terminal to open, that write is refused and nothing is signed,
-and the refusal names the verb `key enroll --agent`. That a host passes a manifest's `env` to the server
+own key is protected and `MNEMA_KEY_PASSPHRASE` is not in the environment, or is not on this machine, that write is
+refused and nothing is signed, and the refusal names the verb `key enroll --agent` (in the hook what is not done is
+the recording of the fact: the reply to the host is unchanged and says why). That a host passes a manifest's `env` to the server
 was not measured on the hosts named here, only on Claude Code's documentation; `mnema doctor` says what
 a machine holds.
 

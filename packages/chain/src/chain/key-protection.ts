@@ -78,7 +78,8 @@ export class KeyIsProtectedError extends CodedError {
         'not set, and there is no terminal to ask at. Run the command in a terminal, which asks. ' +
         'A host that signs for an agent has no terminal, and is not given the passphrase: it is ' +
         'given a key of its own — `mnema key request --agent <name> --anchor <your identity>` makes ' +
-        'one, and `mnema key enroll --agent <the line it prints>` puts it in force.',
+        'one, and `mnema key enroll --agent <the line it prints>` puts it in force, then tell the host ' +
+        "to sign with it (`mnema mcp --agent-key <name>`, the plugin's `agent_key` option).",
     );
   }
 }

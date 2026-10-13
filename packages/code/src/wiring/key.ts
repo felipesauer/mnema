@@ -88,8 +88,8 @@ export function registerKey(program: Command, wiring: Wiring): Declared {
     .option(
       '--agent <name>',
       "ask to be enrolled as an AGENT of that identity under <name>: a key of its own, made in the agent's folder " +
-        "of this machine's data directory and never beside yours, that signs for the identity and names that agent on everything it signs. " +
-        "The line consents to that one identity; in a tree that speaks for another, `key enroll --agent <name>` on this machine makes the consent again under that tree's identity",
+        "of this machine's data directory and never beside yours (or the one --key names, which is not made), that signs for the identity and names that agent on everything it signs. " +
+        "The line consents to that one identity; in the private and global trees, where the key lives on this machine and the tree speaks for another, `key enroll --agent <name>` on this machine makes the consent again under that tree's identity",
     )
     .action(async (opts: { anchor: string; key?: string; checker?: boolean; agent?: string }) => {
       if (opts.agent !== undefined) {
@@ -215,7 +215,7 @@ export function registerKey(program: Command, wiring: Wiring): Declared {
     )
     .option(
       '--agent',
-      "enroll a key as an agent of this identity — in the project's committed tree and, where the key lives on this machine, its private tree and the machine's global one (the line `mnema key request --agent <name> --anchor <id>` printed, or the agent's name where its key is here). In a tree that speaks for another identity than the line's, the key's consent is made again under that tree's identity",
+      "enroll a key as an agent of this identity — in the project's committed tree and, where the key lives on this machine, its private tree and the machine's global one (the line `mnema key request --agent <name> --anchor <id>` printed, or the agent's name where its key is here). In the private and global trees, where the key lives on this machine and the tree speaks for another identity than the line's, the key's consent is made again under that tree's identity; the committed tree takes the line's identity or refuses.",
     )
     .action(async (request: string, opts: { checker?: boolean; agent?: boolean }) => {
       if (opts.agent === true) {
@@ -301,6 +301,15 @@ export function registerKey(program: Command, wiring: Wiring): Declared {
               render(
                 fact(
                   'Commit and share the record: another machine reads it to know the agent signs.',
+                ),
+              ),
+            );
+          }
+          if (wrote) {
+            io.out(
+              render(
+                fact(
+                  onOneLine`Nothing signs with it until the host is told to: \`mnema mcp --agent-key ${result.name}\`, or the plugin’s \`agent_key\` option`,
                 ),
               ),
             );
@@ -471,7 +480,7 @@ export function registerKey(program: Command, wiring: Wiring): Declared {
     )
     .option(
       '--agent',
-      'retire an agent key of this identity in every tree that enrolled it: from then on it signs nothing, and is never enrolled again',
+      'retire an agent key of this identity in every tree of this machine that enrolled it: from then on it signs nothing, and is never enrolled again',
     )
     .addHelpText('after', RECORD_CONTRACT_HELP)
     .action(
@@ -687,7 +696,7 @@ export function registerKey(program: Command, wiring: Wiring): Declared {
       io.out(
         render(
           fact(
-            'Anything that signs now needs the passphrase: a terminal asks for it, and MNEMA_KEY_PASSPHRASE set to the same value answers where there is none. An agent’s host or a hook has no terminal and is not to be given it — give it a key of its own: `mnema key request --agent <name> --anchor <your identity>`, then `mnema key enroll --agent <the line it prints>`. The record and its verification are as they were.',
+            'Anything that signs now needs the passphrase: a terminal asks for it, and MNEMA_KEY_PASSPHRASE set to the same value answers where there is none. An agent’s host or a hook has no terminal and is not to be given it — give it a key of its own: `mnema key request --agent <name> --anchor <your identity>`, then `mnema key enroll --agent <the line it prints>`, then tell the host to sign with it (`mnema mcp --agent-key <name>`, the plugin’s `agent_key` option). The record and its verification are as they were.',
           ),
         ),
       );

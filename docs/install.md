@@ -57,7 +57,8 @@ Claude Code may end the install saying that `userConfig` options are not yet set
 plugin's `mnema_path` option, which has the default `mnema` (the first one on your `PATH`), and its
 `agent_key` option, which is empty (the server signs with your own key): the host lists an option as
 unset until you give it a value, and nothing needs doing unless you want to run another binary or
-sign as an agent (`/plugin configure mnema@mnema`).
+sign as an agent (`/plugin configure mnema@mnema`). That VS Code and Cursor, which read this same manifest, pass the
+option on to the server was not measured.
 
 The plugin connects the MCP server too, so registering the server yourself as well is
 redundant: a session would be offered every tool twice, under two prefixes.
@@ -206,6 +207,7 @@ package of that name is installed; whether VS Code's `settings.json` tells its a
 plugin is; which projects of `~/.claude.json` still declare the server, including ones whose
 directory no longer exists (`claude mcp remove` does not reach those, and `doctor` says what to
 delete); and, for each agent key this machine holds, in which of the project's committed tree, its private
-tree and the machine's global one the record enrols it, retired it or does not name it, which agents the
-files this plugin generates for each host ask for that no key is held under, whether `MNEMA_AGENT_KEY` names one
-this machine does not hold, and whether your own key is still unprotected while an agent key exists. Asked alone it writes nothing and does not ask the registry.
+tree and the machine's global one the record enrols it, retired it or does not name it and, on a machine that holds an
+agent key already, which agents the files this plugin generates for each host ask for that no key is held under,
+whether `MNEMA_AGENT_KEY` in the environment of the `doctor` itself names one this machine does not hold, and whether
+your own key is still unprotected while an agent key exists. Asked alone it writes nothing and does not ask the registry.

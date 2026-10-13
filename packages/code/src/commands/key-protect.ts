@@ -9,8 +9,8 @@
  *
  * THE PASSPHRASE IS READ FROM THE ENVIRONMENT (`MNEMA_KEY_PASSPHRASE`) AND NOT FROM A FLAG, an
  * argument or a prompt. A flag is in `ps` and in the shell's history; a prompt cannot be answered
- * by the agent's server or a hook, which have to be given the same passphrase to sign at all, and
- * a verb that took it a different way from the signing it enables would be two places that must
+ * by the agent's server or a hook, which are not given the passphrase at all (an agent signs with a
+ * key of its own), and a verb that took it a different way from the signing it enables would be two places that must
  * agree. Both verbs read it where signing reads it.
  */
 

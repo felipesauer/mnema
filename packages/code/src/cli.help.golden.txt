@@ -1228,7 +1228,8 @@ $ mnema doctor --help
 |   settings.json, for whether its agent is told where the plugin is; and the projects of
 |   ~/.claude.json that still declare the server; and, in a project inside a git repository,
 |   each worktree’s .mnema/private/, where private notes lived before they moved into the
-|   repository’s git directory.
+|   repository’s git directory; and the agent keys this machine holds, against the record of
+|   each tree it reaches, with the `MNEMA_AGENT_KEY` of its own environment.
 | Asked alone it writes nothing and exits 0 whatever it finds: each line says what to do.
 | `--fix vscode` writes: it shows what it will change, keeps a copy of settings.json beside
 | it, keeps the file’s comments, and refuses a file it cannot edit safely.
@@ -1297,8 +1298,10 @@ $ mnema mcp --help
 |                       <name> --anchor <id>`, enrolled with `mnema key enroll
 |                       --agent <name>`); in a tree that does not, the person's
 |                       key signs and the facts' agent is declared, not attested,
-|                       or the write is refused where that key is protected. Also
-|                       read from MNEMA_AGENT_KEY
+|                       or the write is refused where the person's key is
+|                       protected and MNEMA_KEY_PASSPHRASE is not in the
+|                       environment, or is not on this machine. Also read from
+|                       MNEMA_AGENT_KEY
 |   -h, --help          display help for command
 
 ### mnema run --help
@@ -1337,8 +1340,9 @@ $ mnema before-a-write --help
 |                       each tree whose record enrols it (made with `mnema key
 |                       request --agent <name> --anchor <id>`), and name the agent
 |                       the record of that tree gives that key; in a tree that
-|                       does not, the person's key signs, or the write is refused
-|                       where that key is protected
+|                       does not, the person's key signs, or, where that key is
+|                       protected, the fact is not recorded (the reply to the host
+|                       is unchanged and says why)
 |   -h, --help          display help for command
 |
 | What it reads and what it prints:
@@ -2348,11 +2352,13 @@ $ mnema key request --help
 |                   run`, such as a CI runner)
 |   --agent <name>  ask to be enrolled as an AGENT of that identity under <name>:
 |                   a key of its own, made in the agent's folder of this machine's
-|                   data directory and never beside yours, that signs for the
-|                   identity and names that agent on everything it signs. The line
-|                   consents to that one identity; in a tree that speaks for
-|                   another, `key enroll --agent <name>` on this machine makes the
-|                   consent again under that tree's identity
+|                   data directory and never beside yours (or the one --key names,
+|                   which is not made), that signs for the identity and names that
+|                   agent on everything it signs. The line consents to that one
+|                   identity; in the private and global trees, where the key lives
+|                   on this machine and the tree speaks for another, `key enroll
+|                   --agent <name>` on this machine makes the consent again under
+|                   that tree's identity
 |   -h, --help      display help for command
 
 ### mnema key enroll --help
@@ -2371,9 +2377,10 @@ $ mnema key enroll --help
 |               committed tree and, where the key lives on this machine, its
 |               private tree and the machine's global one (the line `mnema key
 |               request --agent <name> --anchor <id>` printed, or the agent's name
-|               where its key is here). In a tree that speaks for another identity
+|               where its key is here). In the private and global trees, where the
+|               key lives on this machine and the tree speaks for another identity
 |               than the line's, the key's consent is made again under that tree's
-|               identity
+|               identity; the committed tree takes the line's identity or refuses.
 |   -h, --help  display help for command
 
 ### mnema key github --help
@@ -2424,9 +2431,9 @@ $ mnema key revoke --help
 |   --reason <text>  why it is being retired (recorded in the fact)
 |   --checker        retire a key that signs check results: from then on it signs
 |                    nothing, and is never enrolled again
-|   --agent          retire an agent key of this identity in every tree that
-|                    enrolled it: from then on it signs nothing, and is never
-|                    enrolled again
+|   --agent          retire an agent key of this identity in every tree of this
+|                    machine that enrolled it: from then on it signs nothing, and
+|                    is never enrolled again
 |   -h, --help       display help for command
 |
 | What recording means here:

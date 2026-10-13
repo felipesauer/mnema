@@ -692,7 +692,7 @@ function treesSaid(scopes: readonly Scope[]): string {
  * each, in which of the project's committed tree, its private tree and the machine's global one the
  * record enrols it under its name — a host asked to sign as it then does, in that tree — and in
  * which it does not, where that host signs as the person instead (declared, not attested), or is
- * refused when the person's key is protected. A key retired in any tree is retired for all, and a
+ * refused when the person's key is protected. A key retired in any tree this reaches is retired in all of them, and a
  * key enrolled in one tree and retired in another is said as both.
  *
  * Then the agents the files this product generates for each host ask for, by the names of the
@@ -735,7 +735,7 @@ function agentKeyFindings(ctx: DoctorContext): Finding[] {
       out.push(
         finding(
           'attention',
-          `the agent key "${quoted}" was retired in ${treesSaid(retired)}${enrolled.length > 0 ? ` and is still enrolled in ${treesSaid(enrolled)}` : ''}${ambiguous.length > 0 ? `, and the record of ${treesSaid(ambiguous)} proves it a member of more than one identity` : ''}: it signs nothing in any tree of this machine, and a host asked to sign as it is refused — \`mnema key request --agent ${quoted} --anchor <your identity>\` makes the agent a new key (the retired one is put aside, not deleted), then \`mnema key enroll --agent <the line it prints>\` puts it in force.`,
+          `the agent key "${quoted}" was retired in ${treesSaid(retired)}${enrolled.length > 0 ? ` and is still enrolled in ${treesSaid(enrolled)}` : ''}${ambiguous.length > 0 ? `, and the record of ${treesSaid(ambiguous)} proves it a member of more than one identity` : ''}: it signs nothing in any tree it reaches from here, and a host asked to sign as it is refused — \`mnema key request --agent ${quoted} --anchor <your identity>\` makes the agent a new key (the retired one is put aside, not deleted), then \`mnema key enroll --agent <the line it prints>\` puts it in force.`,
         ),
       );
     } else if (ambiguous.length > 0) {
@@ -763,7 +763,7 @@ function agentKeyFindings(ctx: DoctorContext): Finding[] {
       out.push(
         finding(
           'attention',
-          `this machine holds the agent key "${quoted}", and ${enrolled.length > 0 ? `the record enrols it in ${treesSaid(enrolled)} and not in ${treesSaid(lacking)}` : 'no record of this project or this machine enrols it'}: a host asked to sign as "${quoted}" signs as you where it is not enrolled, and what it records there is declared, not attested — or is refused, where your own key is protected. \`mnema key enroll --agent ${quoted}\` where your own key is enrols it in every tree.`,
+          `this machine holds the agent key "${quoted}", and ${enrolled.length > 0 ? `the record enrols it in ${treesSaid(enrolled)} and not in ${treesSaid(lacking)}` : 'no record of this project or this machine enrols it'}: a host asked to sign as "${quoted}" signs as you where it is not enrolled, and what it records there is declared, not attested — or is refused, where your own key is protected and MNEMA_KEY_PASSPHRASE is not in the environment, or is not on this machine. \`mnema key enroll --agent ${quoted}\` enrols it in every tree this reaches.`,
         ),
       );
     }
@@ -775,7 +775,7 @@ function agentKeyFindings(ctx: DoctorContext): Finding[] {
       out.push(
         finding(
           'fine',
-          `the files this plugin generates for ${oneLine(HOSTS[host].title)} sign as the agent "${host}", and this machine holds no key under that name: that host signs as you — \`mnema key request --agent ${host} --anchor <your identity>\` makes one, if you want what it records attested.`,
+          `the files this plugin generates for ${oneLine(HOSTS[host].title)} sign as the agent "${host}", and this machine holds no key under that name: that host signs as you, or is refused where your own key is protected and MNEMA_KEY_PASSPHRASE is not in the environment, or is not on this machine — \`mnema key request --agent ${host} --anchor <your identity>\` makes one, if you want what it records attested.`,
         ),
       );
     }
