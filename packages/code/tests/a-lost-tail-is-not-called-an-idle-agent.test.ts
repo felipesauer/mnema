@@ -10,10 +10,17 @@
 
 import { mkdirSync, mkdtempSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
-import { join } from 'node:path';
+import { basename, join } from 'node:path';
 import { pathToFileURL } from 'node:url';
-import { listTails, tailDir } from '@mnema/chain';
-import { type DiscoveryEnv, resolveTrees } from '@mnema/core';
+import {
+  catalogUpcasters,
+  generateKeyPair,
+  listTails,
+  persistKeyPair,
+  tailDir,
+} from '@mnema/chain';
+import { type DiscoveryEnv, orderedEvents, resolveTrees } from '@mnema/core';
+import { deferredWrite, enrollFromRequest, requestEnrollment } from '@mnema/core/write';
 import { Client } from '@modelcontextprotocol/sdk/client/index.js';
 import { InMemoryTransport } from '@modelcontextprotocol/sdk/inMemory.js';
 import { ListRootsRequestSchema } from '@modelcontextprotocol/sdk/types.js';
@@ -109,13 +116,6 @@ async function censusLine(fingerprint: string): Promise<string> {
   return line;
 }
 
-function personsFingerprint(): string {
-  const mine = listTails({ root: publicRoot() }).map((name) => name.split('-')[0] as string);
-  const person = mine.find((fp) => fp !== agentFp);
-  if (person === undefined) throw new Error('setup: no tail of the person');
-  return person;
-}
-
 let agentFp: string;
 
 beforeEach(async () => {
@@ -158,12 +158,24 @@ describe('the census of a committed key with no tail', () => {
     expect(line).toContain('its tail may have been dropped (a botched merge) or removed');
   });
 
-  it('keeps the chain’s own sentence for a person’s key, in a record that holds an agent', async () => {
+  it('keeps the chain’s own sentence for a colleague’s key, in a record that holds an agent', async () => {
     await theAgentSigns();
-    const person = personsFingerprint();
-    rmSync(tailDir({ root: publicRoot() }, tailOf(person)), { recursive: true });
+    // A key of the identity that joined and never wrote here: the record enrols it, it has no tail.
+    const elsewhere = mkdtempSync(join(sandbox, 'the-colleague-'));
+    const keyFile = persistKeyPair({ root: elsewhere }, generateKeyPair());
+    const colleague = basename(keyFile, '.key');
+    const joining = requestEnrollment({
+      anchor: orderedEvents({ root: publicRoot() }, catalogUpcasters()).find(
+        (event) => event.kind === 'identity.founded',
+      )?.subject as string,
+      keyRoot: elsewhere,
+    });
+    if (!joining.ok) throw new Error(joining.message);
+    const write = deferredWrite(resolveTrees(repo, env), 'public');
+    expect(enrollFromRequest(write, { request: joining.request }).ok).toBe(true);
+    write.checkpoint();
 
-    const line = await censusLine(person);
+    const line = await censusLine(colleague);
 
     expect(line).toContain('the tail may have been dropped (a botched merge), never written');
     expect(line).not.toContain('the key of the agent');
