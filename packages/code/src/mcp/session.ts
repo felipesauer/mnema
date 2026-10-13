@@ -143,8 +143,6 @@ export interface OpenRun {
   readonly trees: ResolvedTrees;
   /** The scope the run was opened in, within those trees. */
   readonly scope: Scope;
-  /** The agent the run was opened for, the one its end names ({@link whichOfWrite}). */
-  readonly which: string;
 }
 
 /**
@@ -1005,7 +1003,7 @@ function ensureRun(session: Session, trees: ResolvedTrees, scope: Scope): string
   if (!started.ok) {
     throw new Error(`could not open a session run: ${started.code} — ${started.message}`);
   }
-  session.runs.set(root, { id: started.id, trees, scope, which: whichIn(trees, scope, session) });
+  session.runs.set(root, { id: started.id, trees, scope });
   // The run is this connection's own fact, and the name it carries is the one the client
   // announced — the value the door screens. What it replaced is owed to the reply that
   // caused the opening, which is the first reply able to say it.
