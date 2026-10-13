@@ -82,7 +82,7 @@ tag, with its own changelog.
   id only that project holds) was signed with the person's root: it minted a key on a machine that held only the
   agent's, or signed as the person in silence where that project enrols the agent. The close of a run, which chooses
   its key when it is written, no longer stamps the `which` read when the run opened (a person who enrolled the agent
-  while the host was open made `verify` report a `run.ended` its `which` did not name). `mnema key restore` refuses
+  while the host was open made `verify` report a `run.ended` its `which` did not name). Restoring a key refuses
   an agent key (`AN_AGENT_KEY`) before anything is written; a second `key enroll --agent` landing at the same moment
   is "already enrolled", not a member's key. `verify` says of an agent key with no tail both that it may have signed
   nothing yet and that its tail may have been dropped; a refusal for a retired key promises only the trees it
