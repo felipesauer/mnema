@@ -55,7 +55,7 @@
  */
 
 import { dirname } from 'node:path';
-import { catalogUpcasters, type TransitionFields } from '@mnema/chain';
+import { catalogUpcasters, type KeyIsProtectedError, type TransitionFields } from '@mnema/chain';
 import {
   type AccountabilityFilter,
   type AddressReach,
@@ -103,6 +103,7 @@ import {
   deriveAlias,
   IdentityUnavailableError,
   isSearchKind,
+  keyRefusalIn,
   locateLinkScope,
   type ProjectionCache,
   type ReferenceDirection,
@@ -1936,11 +1937,17 @@ export type GuardResult =
   | {
       readonly ok: false;
       /**
-       * No tree of the workspace holds a task with this id, or several records do — or nobody signs
-       * in the task's tree and the write this simulates would be refused there, with the code that
-       * refusal carries.
+       * No tree of the workspace holds a task with this id, or several records do — or the key of
+       * this machine would be refused in the task's tree (nobody signs there, or the person's key is
+       * protected by a passphrase that is not at hand) and the write this simulates would be refused
+       * with the code that refusal carries. Held by the three tests of
+       * `a-session-opens-where-nothing-signs.test.ts` that pair the guard with the write.
        */
-      readonly code: 'UNKNOWN_TASK' | 'AMBIGUOUS_RECORD' | IdentityUnavailableError['code'];
+      readonly code:
+        | 'UNKNOWN_TASK'
+        | 'AMBIGUOUS_RECORD'
+        | IdentityUnavailableError['code']
+        | KeyIsProtectedError['code'];
       /** The human-readable reason. */
       readonly message: string;
     };
@@ -1956,11 +1963,16 @@ export type GuardResult =
  * another project.
  *
  * The authority simulated is the machine's own — never a client-supplied value — and the one that
- * signs in the TASK's tree: the same answer whichever root the workspace lists first, and, where
- * no enrolled agent signs in that tree and the person's own key is not on this machine, the enrolment
- * refusal (and `REVOKED_KEY`, where the agent was retired). It does NOT foresee the refusal
- * that comes from the KEY itself (the person's key protected with no passphrase at hand, an
- * agent that was retired): there the guard can say ALLOWED and the write be refused. It is paired with the actor's
+ * signs in the TASK's tree: the same answer whichever root the workspace lists first. It asks the
+ * key what the write would ask ({@link keyRefusalIn}, which opens no key and makes none) and answers
+ * the refusal the write would give — the agent not enrolled in that tree, or retired, or the
+ * person's key protected by a passphrase with none in the environment — in the write's own words and
+ * code, before the gate is consulted, as the write does (the three tests of
+ * `a-session-opens-where-nothing-signs.test.ts` that pair the guard with `task_transition`). What a
+ * read cannot know it does not say: a passphrase that is set but wrong, the record busy at that
+ * moment, another write changing the task before the move; and where this machine has no key at all
+ * the gate's own `MISSING_WHO` stands, though the first write there makes the key and passes. It is
+ * paired with the actor's
  * focus, so the agent gets "you may (or may not) do this, and here is what you
  * are in the middle of" in one read. The proof (`note`/`reason`/`feedback`) and
  * `which` are simulated exactly as a real move would carry them: with the
@@ -1997,13 +2009,18 @@ export function runGuardTool(
   }
   // The gate is asked as the write would be: by whoever signs in the TASK's tree, and not by the
   // session's `who`, which is the anchor of the first tree that had someone and so changes with the
-  // order of the roots. Where nobody signs in that tree the write would be refused, for a reason the
-  // gate does not know, so the answer is that refusal. Where nothing would refuse and no key exists
-  // yet (before the first write), the gate's own answer stands: a transition needs a human who
-  // authorized it.
+  // order of the roots. Where the key of this machine would be refused in that tree the write would
+  // be refused, for a reason the gate does not know, so the answer is that refusal: the write meets
+  // its key before the gate. Where nothing would refuse and no key exists yet (before the first
+  // write), the gate's own answer stands: a transition needs a human who authorized it.
+  const trees = located.home.target?.trees ?? session.trees;
+  const keyRefusal = keyRefusalIn(trees, located.home.scope);
+  if (keyRefusal !== undefined) {
+    return { ok: false, code: keyRefusal.code, message: keyRefusal.message };
+  }
   let who: string;
   try {
-    who = anchorIn(located.home.target?.trees ?? session.trees, located.home.scope) ?? '';
+    who = anchorIn(trees, located.home.scope) ?? '';
   } catch (error) {
     if (error instanceof IdentityUnavailableError) {
       return { ok: false, code: error.code, message: error.message };

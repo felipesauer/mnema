@@ -624,3 +624,87 @@ describe('the guard of a workspace of two projects, the agent enrolled in the se
     }
   });
 });
+
+/** What the guard and the write each said of one move of `task`, in one connection. */
+async function pairOf(client: Client, task: string, action: string): Promise<Seen> {
+  const asked = await call(client, 'guard', { id: task, action });
+  const guard = asked.isError
+    ? textOf(asked)
+    : JSON.stringify(JSON.parse(textOf(asked).split('\n')[0] as string).verdict);
+  const moved = await call(client, 'task_transition', { id: task, action });
+  return { guard, wrote: moved.isError ? textOf(moved) : 'written' };
+}
+
+/** The person's key put under a passphrase, the variable set for that one command and taken away. */
+async function protectThePersonsKey(): Promise<string> {
+  process.env.MNEMA_KEY_PASSPHRASE = 'correct horse';
+  try {
+    await did('key', 'protect');
+  } finally {
+    delete process.env.MNEMA_KEY_PASSPHRASE;
+  }
+  const keys = join(home, '.mnema', 'identity', 'keys');
+  return join(keys, readdirSync(keys).filter((name) => name.endsWith('.key'))[0] as string);
+}
+
+const NOT_RECORDED = ' The fact was NOT recorded.';
+
+describe('the guard asks the key this machine would sign with, and answers the refusal the write gives', () => {
+  it('says the person’s key is protected where no passphrase is at hand', async () => {
+    const { task } = await theTeamsRecord();
+    const file = await protectThePersonsKey();
+    const refusal = `Refused (KEY_IS_PROTECTED): the private key at ${file} is protected by a passphrase and MNEMA_KEY_PASSPHRASE is not set, and there is no terminal to ask at. Run the command in a terminal, which asks. A host that signs for an agent has no terminal, and is not given the passphrase: it is given a key of its own — \`mnema key request --agent <name> --anchor <your identity>\` makes one, and \`mnema key enroll --agent <the line it prints>\` puts it in force, then tell the host to sign with it (\`mnema mcp --agent-key <name>\`, the plugin's \`agent_key\` option).`;
+
+    const seen: Seen[] = [];
+    await connected([repo], undefined, async (client) => {
+      seen.push(await pairOf(client, task, 'cancel'));
+      seen.push(await pairOf(client, task, 'submit'));
+    });
+
+    expect(seen).toEqual([
+      { guard: refusal, wrote: `${refusal}${NOT_RECORDED}` },
+      { guard: refusal, wrote: `${refusal}${NOT_RECORDED}` },
+    ]);
+  });
+
+  it('says the agent is not enrolled in the task’s tree where the person’s key that would sign instead is protected, and lets the project that enrols it through', async () => {
+    const w = await aWorkspaceOfTwo();
+    await protectThePersonsKey();
+    const refusal =
+      'Refused (AGENT_NOT_ENROLLED): the agent "claude" is not enrolled in this project\'s committed tree, and the key that would sign instead, yours, is protected by a passphrase and MNEMA_KEY_PASSPHRASE is not in the environment. In a terminal in this project: `mnema key enroll --agent claude`. Nothing was written.';
+
+    const seen: Record<string, Seen> = {};
+    await connected([w.one, w.two], 'claude', async (client) => {
+      seen.cancelFirst = await pairOf(client, w.taskOne, 'cancel');
+      seen.submitFirst = await pairOf(client, w.taskOne, 'submit');
+      seen.submitSecond = await pairOf(client, w.taskTwo, 'submit');
+    });
+
+    expect(seen).toEqual({
+      cancelFirst: { guard: refusal, wrote: `${refusal}${NOT_RECORDED}` },
+      submitFirst: { guard: refusal, wrote: `${refusal}${NOT_RECORDED}` },
+      submitSecond: { guard: ALLOWED, wrote: 'written' },
+    });
+  });
+
+  it('says the agent key was retired where the person’s key is in the clear', async () => {
+    const { task } = await theTeamsRecord();
+    const fingerprint = await theAgent(true);
+    const write = deferredWrite(resolveTrees(repo, env), 'global');
+    expect(retireAgentKey(write, { fingerprint, reason: 'lent out' }).ok).toBe(true);
+    write.checkpoint();
+    const refusal =
+      'Refused (REVOKED_KEY): the agent key "claude" was retired in this machine\'s global tree, and a retired key signs nothing in any tree it reaches from here. In a terminal, `mnema key request --agent claude --anchor <your identity>` makes the agent a new key and `mnema key enroll --agent <the line it prints>` puts it in force. Nothing was written.';
+
+    const seen: Seen[] = [];
+    await connected([repo], 'claude', async (client) => {
+      seen.push(await pairOf(client, task, 'cancel'));
+      seen.push(await pairOf(client, task, 'submit'));
+    });
+
+    expect(seen).toEqual([
+      { guard: refusal, wrote: `${refusal}${NOT_RECORDED}` },
+      { guard: refusal, wrote: `${refusal}${NOT_RECORDED}` },
+    ]);
+  });
+});

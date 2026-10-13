@@ -1532,10 +1532,14 @@ function registerTools(tool: ToolRegistrar, ensureSession: () => Promise<Session
         'ALLOWED (with the state the move would reach) or REFUSED (with the gate’s ' +
         'reason — an illegal move, missing proof, or who == which). Pass the same ' +
         'proof you would carry (note/reason/feedback) to see if that proof suffices. ' +
-        'The verdict is paired with your current focus. The task is looked for in ' +
-        'EVERY project of this workspace — the same search `task_transition` makes, so ' +
-        'a verdict here and the move agree; an id no tree of it holds is refused, ' +
-        'naming the projects searched. Read-only.' +
+        'It also refuses, with the write’s own code and words, what this machine’s key would ' +
+        'be refused in the task’s tree: a key protected by a passphrase that is not set, an ' +
+        'agent that tree does not enrol, an agent retired. It cannot know a wrong passphrase, ' +
+        'a record busy at that moment, or another write changing the task before your move; ' +
+        'and with no key on the machine yet it says who is missing, though the first write ' +
+        'makes the key. The verdict is paired with your current focus. The task is looked ' +
+        'for in EVERY project of this workspace, as `task_transition` looks; an id no tree ' +
+        'of it holds is refused, naming the projects searched. Read-only.' +
         OPEN_RUN_CONTRACT,
       inputSchema: {
         id: z.string().min(1).describe('The task id to test.'),

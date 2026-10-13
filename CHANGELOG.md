@@ -87,9 +87,8 @@ tag, with its own changelog.
   the verb to run. The key of a machine that has none is made at its first write, as before, and no longer to answer a
   read. `guard` reads the move and its proof by the tree of the task, whichever root the host listed first, and where
   no enrolled agent signs in that tree and your own key is not on this machine it says the enrolment refusal (and
-  `REVOKED_KEY`, where the agent was retired). It does not foresee a refusal that comes from
-  the key (the person's key protected with no passphrase at hand, an agent that was retired): there `guard` can say
-  ok and the write be refused, as it could before. One limit stays: a connection whose first
+  `REVOKED_KEY`, where the agent was retired). It also says the refusal that comes from the key (see Fixed below).
+  One limit stays: a connection whose first
   signer is in a project it did not list first reads `resume` and `focus` with no actor and no last run, because those
   read the trees of the project it opened in.
 - **The command line and the hook read `MNEMA_AGENT_KEY`, and make nothing for the agent.** The verbs that write a
@@ -160,6 +159,16 @@ tag, with its own changelog.
 
 ### Fixed
 
+- **`guard` says the refusal the key of this machine would give the move, where it used to say ok.** `guard` answered
+  `ok` for a task whose write was then refused for the key: the person's key protected by a passphrase with none in the
+  environment (`KEY_IS_PROTECTED`), an agent that the task's tree does not enrol while the person's key that would sign
+  instead is protected (`AGENT_NOT_ENROLLED`), an agent whose key was retired (`REVOKED_KEY`). An agent that obeyed `guard`
+  and supplied the missing `reason` was refused all the same. It now asks the key the way the write does, before the
+  gate, without opening a key or making one, and answers the write's own refusal in its words and code (without
+  ` The fact was NOT recorded.`). It cannot know a passphrase that is set but wrong (`KEY_PASSPHRASE_WRONG`), the
+  record busy at that moment (`TAIL_BUSY`, `KEY_ROOT_BUSY`), or another write changing the task before the move; and
+  where the machine has no key at all it still says `MISSING_WHO`, though the first write there makes the key and
+  passes.
 - **An agent key asked for under a name that is not an agent's refuses the write, and makes nothing.** With
   `MNEMA_AGENT_KEY=Claude` (or `--agent-key`) on a machine that held only the agent's folder, the command line and the
   server dropped the name, made your key and founded an identity in the public record, which is what the entry above

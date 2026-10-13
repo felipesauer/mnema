@@ -69,6 +69,7 @@ export {
   deferredWrite,
   type KeyChoice,
   keyChoiceIn,
+  keyRefusalIn,
   type OpenTreeOptions,
   type Origin,
   openTreeForWriting,
