@@ -1486,6 +1486,13 @@ landing can make is from the global tree into a project. `bootstrap` says how ma
 times the client has said so — **including zero**, because a re-read that changed
 nothing and one that never happened would otherwise look the same.
 
+A write that names a `project` says, in its reply, the absolute directory it fell in
+(`In the project at /home/you/work/api.`). The name may have come from an earlier answer of
+another connection, and the same name can mean another directory in this one; the path says
+which, after the write, and does not refuse it. A write that named no project, or that landed
+in the global tree, says nothing of the sort
+(`tests/a-routed-write-says-where-it-landed.test.ts`).
+
 `--project` is how you make certain which record a session serves:
 `"args": ["mcp", "--project", "/home/you/work/api"]`. Without it the project is
 whichever workspace folder the host happens to announce first that has a

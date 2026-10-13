@@ -2104,6 +2104,7 @@ function recorded(
         line,
         ...(extra.after ?? []),
         landedNotice(result.scope),
+        ...(result.project !== undefined ? [`  In the project at ${result.project}.`] : []),
         ...replacementNotice(result.replaced),
       ].join('\n'),
     ],

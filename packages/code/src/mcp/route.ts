@@ -130,6 +130,26 @@ export function routeWrite(
 }
 
 /**
+ * The directory a write fell in, for the reply to say — and only when the CALLER named
+ * the project.
+ *
+ * A name read off an earlier answer can outlive the connection it was learnt in: after
+ * a reload the workspace may hold a different directory by that name, and the write
+ * resolves to it. Nothing can refuse a valid name; what is left is to say, in the one
+ * reply the caller reads, the absolute path — the spelling that cannot mean two places.
+ *
+ * Nothing is said when the caller named nothing (no name was echoed, so there is none
+ * to mistake), nor for a write that landed in the global tree: that tree is the
+ * machine's, and a directory named beside it would say it fell somewhere it did not.
+ */
+export function routedTo(route: { readonly scope: Scope; readonly target?: WriteTarget }): {
+  readonly project?: string;
+} {
+  if (route.target === undefined || route.scope === 'global') return {};
+  return { project: route.target.dir };
+}
+
+/**
  * The tree a kind lands in at a destination that says nothing — the core's rule
  * inside a project, the global tree outside one.
  *

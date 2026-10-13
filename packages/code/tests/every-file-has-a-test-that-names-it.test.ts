@@ -951,6 +951,7 @@ const CLAUSES_PER_FILE: Readonly<Record<string, number>> = {
   'packages/code/tests/a-refused-group-flag-leaves-the-record.test.ts': 7,
   'packages/code/tests/a-report-is-built-from-an-allowlist.test.ts': 10,
   'packages/code/tests/a-report-needs-a-person.test.ts': 19,
+  'packages/code/tests/a-routed-write-says-where-it-landed.test.ts': 11,
   'packages/code/tests/a-rule-carries-its-check.test.ts': 9,
   'packages/code/tests/a-rule-says-who-ruled-it.test.ts': 11,
   'packages/code/tests/a-rule-that-refuses-a-write.test.ts': 17,

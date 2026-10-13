@@ -212,6 +212,12 @@ export interface Replacement {
  */
 export interface Landed {
   readonly scope: Scope;
+  /**
+   * The absolute directory of the project the CALLER named, when the write was routed by
+   * the `project` argument and fell in a project's tree. Absent otherwise — the command
+   * line has no such argument, and a write that named nothing echoed no name.
+   */
+  readonly project?: string;
 }
 
 /**
