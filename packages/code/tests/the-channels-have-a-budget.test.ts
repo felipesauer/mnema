@@ -1,6 +1,6 @@
 /**
- * EVERY CHANNEL THE MODEL READS HAS A BUDGET, in bytes and in tokens, and a text that grows one
- * shows in the diff of the golden beside this file.
+ * THE CHANNELS BELOW HAVE A BUDGET, in bytes and in tokens, and a text that grows one shows in
+ * the diff of the golden beside this file.
  *
  * WHAT IS HELD: each channel — what a session opens with (the brief a hook hands over, and the
  * notes), the edge of an edit (what is pushed, what asks for a person, what refuses), the
@@ -9,6 +9,11 @@
  * `the-channels-have-a-budget.golden.txt` as UTF-8 bytes and as `o200k_base` tokens. A person
  * who adds a sentence to a channel updates the golden (`pnpm vitest run -u <this file>`), and
  * the reviewer reads the delta in the diff.
+ *
+ * NOT MEASURED: of the thirteen `ModelChannel`s, `exported-skill`, `host-rules-file`,
+ * `agent-accepts`, `session-tally`, `subagent-handback`, `edit-first-write-gate` and
+ * `user-corrections`; the answer of ten of the twelve tools that write (`record_decision` and
+ * `capture_memory` are here) and of `guard`. Their definitions are all counted.
  *
  * WHAT IT IS NOT: the tokenizer is OpenAI's, open and offline, a RELATIVE measure to compare a
  * channel before and after, not the count a Claude model is billed. The figure for Claude is the

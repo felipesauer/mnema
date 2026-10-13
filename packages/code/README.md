@@ -1559,8 +1559,8 @@ nothing and one that never happened would otherwise look the same.
 
 When a workspace holds several projects, the answers of `search`, `read_record` and the `audit_*`
 reads name a project by its directory's name when no other project of the workspace has it, and by its
-whole path when one does; both are what a write's `project` argument takes, and `bootstrap` gives the
-paths (`tests/the-answers-name-a-project-as-a-write-takes-it.test.ts`). A name that a second
+whole path when one does; both are what a write's `project` argument takes, and `bootstrap`, from two
+projects up, gives the paths (`tests/the-answers-name-a-project-as-a-write-takes-it.test.ts`). A name that a second
 project later shares is refused as ambiguous, not resolved; but a name carried to a new connection
 whose workspace holds a different directory of that name resolves to that one.
 

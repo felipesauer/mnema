@@ -2225,7 +2225,7 @@ function moved(
  * (the run waits for the first write), so nothing in the payload could say it.
  *
  * It travels as its OWN content block, never merged into the JSON: the payload stays
- * byte-identical to what a caller parsed before this sentence existed, and the
+ * the same document a caller parsed before this sentence existed, and the
  * derivation stays the context package's — a note about the connection has no business
  * inside a shape the domain defines.
  *
@@ -2253,15 +2253,15 @@ function moved(
  * function, and this one is the read's half of it.
  *
  * THE FACT RIDES AS ITS OWN BLOCK, never inside the JSON, for the reason
- * {@link withRunState} already gives: the payload stays byte-identical to what a caller
- * parsed before this existed, and `bootstrap`'s object is served byte for byte through
- * two doors, so a field added here would make the two disagree. And it rides in the
+ * {@link withRunState} already gives: the payload stays the same document a caller
+ * parsed before this existed, and `bootstrap`'s object is served as the same object through
+ * two doors (the CLI's `--json` indented, the MCP's payload not), so a field added here would make the two disagree. And it rides in the
  * SAME reply rather than behind a "call `verify`": a channel that states half a fact and
  * points at a tool for the rest has stated nothing (`record-framing.ts`), and `verify` is
  * not a tool of this server at all.
  *
  * THE PAYLOAD IS WRITTEN WITHOUT INDENTATION, for every read. Nobody reads it as a page —
- * the host parses it and the model is billed for every space of it on every call — and
+ * the host parses it and the model reads every space of it on every call — and
  * `JSON.parse` gives back the same document either way
  * (`tests/a-tool-answers-without-indentation.test.ts`).
  */

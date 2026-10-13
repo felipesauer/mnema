@@ -1,5 +1,5 @@
 /**
- * WHAT THE MODEL IS CHARGED FOR THE SERVER'S TOOLS, read off the request a host sends the stand-in.
+ * WHAT THE HOST SENDS OF THE SERVER'S TOOLS, read off the request a host sends the stand-in.
  *
  * A request carries a list of tool definitions; the ones the plugin's server declares are picked
  * out by the name the host gives them, and each is counted AS THE HOST WROTE IT: the bytes of the

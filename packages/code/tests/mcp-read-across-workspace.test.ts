@@ -440,7 +440,7 @@ describe('over the real transport', () => {
 
     const result = runReadRecordTool(session, { id: held });
     if (!result.ok) throw new Error('unreachable');
-    const payload = JSON.stringify(result.value, null, 2);
+    const payload = JSON.stringify(result.value);
     // Parsed back, the field is the directory as it is on disk — one field, one value.
     expect((JSON.parse(payload) as { project: string }).project).toBe(project);
     // And the newline never reached the text: it is escaped inside the string.

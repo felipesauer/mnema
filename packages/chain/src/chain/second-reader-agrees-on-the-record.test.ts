@@ -42,7 +42,7 @@
  * refusing too much LOOKS LIKE RIGOUR (gap G25). With no declarations published, the only
  * derivation of the envelope available to a stranger was the intersection of the vectors'
  * top-level keys — which section 7 stated as a fact — so the second reader REFUSED an honest
- * event carrying `which`, a field sixteen of the twenty-three published vectors carry. It is
+ * event carrying `which`, a field sixteen of the twenty-three vectors published then carried. It is
  * the quieter failure of the two: an acceptance is found by building an attack, and an
  * over-refusal is found only by building an honest input, which is not where anybody looks.
  *

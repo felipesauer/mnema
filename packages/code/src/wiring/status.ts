@@ -48,8 +48,8 @@ export function registerStatus(program: Command, wiring: Wiring): Declared {
       // first because a notice under a screenful of status is a notice nobody reads.
       for (const line of linkBreakNotice(result.linkBreaks)) io.err(render(line));
       if (opts.json === true) {
-        // The faithful object, byte for byte what the agent surface serves — which is
-        // the property that keeps one derivation from becoming two.
+        // The faithful object, the same one the agent surface serves (indented here, not
+        // there) — which is the property that keeps one derivation from becoming two.
         io.out(JSON.stringify(result.status, null, 2));
         return;
       }
@@ -61,7 +61,7 @@ export function registerStatus(program: Command, wiring: Wiring): Declared {
           anchorText(result.anchors, result.status.resume.actor),
           // The two facts on this screen that are not the derivation's: both are read
           // from the disk and neither is in `--json`, which serves the opening context
-          // byte for byte and nothing else (`commands/status.ts`).
+          // as derived and nothing else (`commands/status.ts`).
           result.outside,
           result.neverImported,
           result.asThisMachine,

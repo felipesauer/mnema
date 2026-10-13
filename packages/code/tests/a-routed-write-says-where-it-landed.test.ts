@@ -7,8 +7,8 @@
  * new workspace may hold a different `api` than the one the name was learnt in, and the
  * write — signed, append-only — resolves to it without a word. Nothing can refuse it,
  * the name is valid. What can be done is to make the landing visible at once, in the
- * one reply the caller reads: the absolute path, the only spelling that cannot mean two
- * places.
+ * one reply the caller reads: the absolute path, which tells two directories apart where a
+ * name shared by both does not (one directory can still have two paths, through a symlink).
  *
  * Seven verbs take `project`, so each is driven here, over the real transport, and the
  * expected path is the directory the test made, and the files that grew on disk say which
