@@ -384,10 +384,27 @@ const CLASSIFIED: Readonly<Record<string, { verdict: Verdict; why: string }>> = 
     verdict: 'minted',
     why: 'a fingerprint computed from the key the request carried, and the name the record holds for it',
   },
-  'key.ts «it signs for {}, and names itself "{}" on everything it signs» #1': {
+  'key.ts «Nothing recorded for the agent {}: key {} — a tree refused it» #1': {
     verdict: 'minted',
-    why: 'the anchor of the identity that vouched, and the name held to the agent-name form',
+    why: 'a name the request carried and the door held to the agent-name form, and a fingerprint computed from its key',
   },
+  'key.ts «it signs for {}{}, and names itself "{}" on everything it signs» #1': {
+    verdict: 'minted',
+    why: 'the anchor of the identity that vouched, a phrase this surface chose or nothing, and the name held to the agent-name form',
+  },
+  'key.ts «{}: enrolled for {}, recorded in {}» #1': {
+    verdict: 'collapsed',
+    why: 'the name of a tree this surface chose, the anchor the tree speaks for, and the root of that tree, which a project directory or $MNEMA_HOME may place anywhere a directory name can be',
+  },
+  'key.ts «{}: already the agent for {}, nothing recorded» #1': {
+    verdict: 'collapsed',
+    why: 'the name of a tree this surface chose, said by the one table that names them, and the anchor the tree speaks for',
+  },
+  'key.ts «its key is the file you named, {}, which this did not install: it stays where you keep it, and a host signs with it only once it is put in {}» #1':
+    {
+      verdict: 'collapsed',
+      why: 'the path the person typed, which a directory name may break, and the agent’s key root, which `$MNEMA_HOME` may place anywhere',
+    },
   'key.ts «{}: enrolled, recorded in {}» #1': {
     verdict: 'collapsed',
     why: 'the name of a tree this surface chose, and the root of that tree, which a project directory or $MNEMA_HOME may place anywhere a directory name can be',
@@ -923,7 +940,9 @@ describe('every line this wiring words is classified', () => {
     // 135 with the agent an agent key attested, on the line of the author in `audit accountability`.
     // 141 with the lines the agent verbs print for each tree they enrol or retire in, the key put aside
     // by a rotation, and the other keys under the name, less the one line the enrolment printed alone.
-    expect(FOUND.sites.length).toBe(141);
+    // 145 with the line a tree that refused leaves in place of "Enrolled agent", the identity a tree
+    // took the key for, and the line that says a key read from a file is not installed.
+    expect(FOUND.sites.length).toBe(145);
   });
 
   it('reads the verdict off the source rather than believing the table', () => {
@@ -943,9 +962,9 @@ describe('every line this wiring words is classified', () => {
   it('found sites of both kinds, and the scanner sees a tag when there is one', () => {
     // Neither arm of the case above may be empty, or half of it is vacuous.
     const verdicts = Object.values(CLASSIFIED).map((said) => said.verdict);
-    expect(verdicts.filter((verdict) => verdict === 'collapsed').length).toBe(71);
-    expect(verdicts.filter((verdict) => verdict === 'minted').length).toBe(70);
-    expect(FOUND.sites.filter((site) => site.tagged).length).toBe(71);
+    expect(verdicts.filter((verdict) => verdict === 'collapsed').length).toBe(74);
+    expect(verdicts.filter((verdict) => verdict === 'minted').length).toBe(71);
+    expect(FOUND.sites.filter((site) => site.tagged).length).toBe(74);
   });
 
   it('every reason says where the value comes from', () => {
@@ -1132,6 +1151,12 @@ const UNREACHABLE: Readonly<Record<string, string>> = {
     'needs a data directory whose name holds a line break, for the agent verb that enrols in every tree',
   'key.ts «{}: already the agent, nothing recorded» #1':
     'the table of tree names holds three constant words, so no break reaches the line',
+  'key.ts «{}: enrolled for {}, recorded in {}» #1':
+    'the same data directory, for a machine that joined an identity; the anchor is an identity id of the record',
+  'key.ts «{}: already the agent for {}, nothing recorded» #1':
+    'three constant words and an identity id of the record, so no break reaches the line',
+  'key.ts «its key is the file you named, {}, which this did not install: it stays where you keep it, and a host signs with it only once it is put in {}» #1':
+    'needs a key file whose name holds a line break, which a request made from it would have to read as a private key',
   'key.ts «{}: skipped — {}» #1':
     'the name is one of three constants and the reason is this product’s own sentence',
   'key.ts «{}: skipped — {}» #2': 'the same, for the retirement',
