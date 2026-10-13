@@ -446,9 +446,9 @@ describe('mnema status — the opening read, over a record that reaches every ce
   }, 30_000);
 
   it('keeps that fact out of `--json`, which is the derivation and nothing else', async () => {
-    // The promise the two doors make each other: `mnema status --json` is byte for byte
-    // what the MCP's `bootstrap` serves. A count of FILES IN ONE CHECKOUT inside that
-    // object would be a fact the agent surface cannot produce and that moves when
+    // The promise the two doors make each other: `mnema status --json` is the same
+    // object the MCP's `bootstrap` serves (indented in one, compact in the other). A count of
+    // FILES IN ONE CHECKOUT inside that object would be a fact the agent surface cannot produce and that moves when
     // somebody switches branch, so it rides beside the derivation and not in it.
     const initiated = await mnema('init');
     const identity = initiated.find((line) => line.trim().startsWith('identity:')) as string;
@@ -581,9 +581,8 @@ describe('the two surfaces answer with one derivation', () => {
       env,
     });
     try {
-      // The same serialization the tool's payload block carries, so what is compared is
-      // what each door hands over rather than two objects that happen to be alike.
-      const fromMcp = JSON.parse(JSON.stringify(runBootstrap(session), null, 2)) as unknown;
+      // A JSON round trip, so what is compared is a parsed document and not two live objects.
+      const fromMcp = JSON.parse(JSON.stringify(runBootstrap(session))) as unknown;
 
       // The session's actor IS the machine's anchor — the same identity the CLI was
       // handed — so the two are answering the same question and not two.
