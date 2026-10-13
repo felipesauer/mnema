@@ -1799,12 +1799,12 @@ const CLASSIFIED: Readonly<Record<string, { verdict: Verdict; why: string }>> = 
       verdict: 'collapsed',
       why: 'the anchor that refusal is about',
     },
-  '@mnema/core identity/roster.ts «{} is the only key {} has — retiring it would leave the » oneLine(input.fingerprint) #1':
+  "@mnema/core identity/roster.ts «{} is the only key of {} that is not an agent's — retiring it would leave the » oneLine(input.fingerprint) #1":
     {
       verdict: 'collapsed',
       why: 'the same positional, on the branch where the key IS a member and is the last one',
     },
-  '@mnema/core identity/roster.ts «{} is the only key {} has — retiring it would leave the » oneLine(anchor) #1':
+  "@mnema/core identity/roster.ts «{} is the only key of {} that is not an agent's — retiring it would leave the » oneLine(anchor) #1":
     {
       verdict: 'collapsed',
       why: 'the anchor that would be left unable to sign',

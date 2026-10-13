@@ -356,7 +356,7 @@ export function revokeMember(
             ok: false,
             code: 'LAST_KEY',
             message:
-              `${oneLine(input.fingerprint)} is the only key ${oneLine(anchor)} has — retiring it would leave the ` +
+              `${oneLine(input.fingerprint)} is the only key of ${oneLine(anchor)} that is not an agent's — retiring it would leave the ` +
               'identity unable to sign anything again, including a repair. Enroll the replacement ' +
               'first, then retire this one',
           },
