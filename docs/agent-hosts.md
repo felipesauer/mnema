@@ -100,9 +100,9 @@ and Cursor are not covered: nothing here says they sign with an agent key, or th
 None of the three denies the reading of `~/.mnema` by default. Whoever sets one up lists the data directory (the
 folder of the agent keys is inside it) among the paths denied to reads.
 
-### Claude Code: four things together
+### Claude Code: the settings that, together, should keep the key out of reach
 
-For the model's shell and file tools not to reach any key, all of these hold at once:
+From the host's documentation, and not tried here, these settings together should keep the model's shell and file tools from reaching any key:
 
 1. the sandbox is on;
 2. `sandbox.filesystem.denyRead` names the data directory;
@@ -128,7 +128,8 @@ do not rely on either until you have tried it.
 
 Under a `strict-*` profile reads are restricted; under `permissive-open` they are not. In a container that holds the
 whole process, the CLI runs inside it and, by inference from that page and not from a line of it, so do the MCP servers it
-launches. Mount the agent's folder into the container and nothing else of the data directory.
+launches. The agent's folder is what the key needs; whether the server needs more of the data directory (the global tree) in the container
+was not tried. On a CI runner, see [the Action's page](../packages/action/README.md#an-agent-in-ci).
 
 ### What is left to the machine, and the record does not see it
 
