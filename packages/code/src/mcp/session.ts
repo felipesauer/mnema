@@ -1171,8 +1171,16 @@ function sessionAnchor(trees: ResolvedTrees, first: Scope): string {
   }
   // NO TREE OF THIS SESSION HAS ANYONE TO SIGN. The refusal is the one the opening asks, before any
   // write has a tree, so it names none: the first tree tried is the private one, and a refusal
-  // saying so reads as the tree the write about to be made was for.
-  const choice = keyChoiceIn(trees, first, 'any tree this session reaches');
+  // saying so reads as the tree the write about to be made was for. It says what was CHECKED —
+  // the session's own project and the global tree — and no more: another project of the workspace
+  // may enrol the agent, and a write routed to it is no part of this question.
+  const choice = keyChoiceIn(
+    trees,
+    first,
+    trees.projectPublic === undefined
+      ? 'the global tree'
+      : "this project's trees or the global tree",
+  );
   throw choice?.signs === 'nobody' ? choice.refusal : (refusal as IdentityUnavailableError);
 }
 

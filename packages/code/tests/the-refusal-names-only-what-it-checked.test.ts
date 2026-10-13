@@ -176,7 +176,7 @@ describe('the refusal of the opening of a session', () => {
 
     expect(reply?.isError).toBe(true);
     expect(textOf(reply)).toContain(
-      'the agent "claude" is not enrolled in any tree this session reaches, and the key that would sign instead, yours, is not on this machine. In a terminal in this project: `mnema key enroll --agent claude`.',
+      'the agent "claude" is not enrolled in this project\'s trees or the global tree, and the key that would sign instead, yours, is not on this machine. In a terminal in this project: `mnema key enroll --agent claude`.',
     );
     expect(textOf(reply)).not.toContain('private tree');
   });
