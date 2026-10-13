@@ -517,9 +517,10 @@ export function openSession(input: OpenSessionInput): Session {
       input.cwd !== undefined ? { cwd: input.cwd } : { roots: input.roots },
     ),
   );
-  const { inProject, project, rung, workspaceProjects, passedOver } = resolved;
+  const { inProject, project, rung, passedOver } = resolved;
   const log = input.log ?? (() => {});
   const agentKey = usableAgentKey(input.agentKey, log);
+  const workspaceProjects = withTheAgentIn(resolved.workspaceProjects, input.env, agentKey);
   const trees = withTheAgent(resolved.trees, input.env, agentKey);
 
   // WHERE THE ANCHOR IS READ FROM, and nothing else. This is not a write default —
@@ -723,7 +724,11 @@ export function refreshWorkspace(session: Session, roots: readonly string[]): Wo
   session.inProject = resolved.inProject;
   session.rung = resolved.rung;
   if (resolved.project !== undefined) session.project = resolved.project;
-  session.workspaceProjects = resolved.workspaceProjects;
+  session.workspaceProjects = withTheAgentIn(
+    resolved.workspaceProjects,
+    session.env,
+    session.agentKey,
+  );
   session.who = who;
 
   return {
@@ -777,6 +782,24 @@ function withTheAgent(
   agentKey: string | undefined,
 ): ResolvedTrees {
   return agentKey === undefined ? trees : withAgentKey(trees, env, agentKey);
+}
+
+/**
+ * The projects of the workspace, each with its trees told which agent to sign as. A write can be
+ * routed to any of them — by the `project` argument, or by an id only one holds — and the trees of
+ * a project that were not given the agent would sign there with the person's root: minting a key on
+ * a machine that holds only the agent's, or signing as the person, in silence, where the project
+ * enrols the agent.
+ */
+function withTheAgentIn(
+  projects: readonly WriteTarget[],
+  env: DiscoveryEnv,
+  agentKey: string | undefined,
+): WriteTarget[] {
+  return projects.map((project) => ({
+    ...project,
+    trees: withTheAgent(project.trees, env, agentKey),
+  }));
 }
 
 /**
@@ -1076,13 +1099,16 @@ export function closeSession(session: Session): SessionClose {
     for (const run of session.runs.values()) {
       try {
         const ctx = writeContext(run.trees, run.scope, session.caches);
-        // Closed BY the agent that connected — the same `which` every fact of this
-        // session carries, and the same one the run was opened for, because on this
-        // surface the connection is both. Taken from the session rather than asked
-        // of the client: it is already in hand, and a close whose executor came from
-        // the wire could name an agent other than the one that did the work.
+        // Closed BY the agent that connected, named as the record names it NOW: the key that
+        // signs this close is chosen here, not when the run opened, and a person who enrolled
+        // the agent while the host was open would otherwise have it sign a `run.ended` whose
+        // `which` is the client's — the one disagreement `verify` reads as a break. Taken from
+        // the session, never asked of the client.
         const ended = ctx.writer.exclusively(() => {
-          const closing = endRun(ctx, { run: run.id, which: run.which });
+          const closing = endRun(ctx, {
+            run: run.id,
+            which: whichIn(run.trees, run.scope, session),
+          });
           if (closing.ok) ctx.writer.checkpoint();
           return closing;
         });
