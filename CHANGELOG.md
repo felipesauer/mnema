@@ -135,6 +135,13 @@ tag, with its own changelog.
   is "already enrolled", not a member's key. `verify` says of an agent key with no tail both that it may have signed
   nothing yet and that its tail may have been dropped; a refusal for a retired key promises only the trees it
   reached, and the refusal at a session's opening names no single tree.
+- **A write routed to a project that does not enrol the agent says the person signed it.** The reply of a write sent
+  to another project of the workspace (the `project` argument, or a transition on an id only that project holds)
+  carries one more line where the server was asked to sign as an agent, the project's tree does not enrol it, and the
+  person's key signed: the agent the facts name is declared, not attested. Nothing is said without an agent, where
+  the agent signs, or in the global tree. The refusal at a session's opening says it checked this project's trees
+  and the global tree, not "any tree this session reaches"; the sentence of a request or refusal the hook could not
+  record no longer ends in two full stops.
 - **The second reader binds every event in a signed range to the checkpoint's signer.** The product
   refused an event whose `signerFp` is not the key that signed the checkpoint over it, and an event
   whose `which` is its `who`; `FORMAT.md` said neither, and the Python verifier read an event's own
