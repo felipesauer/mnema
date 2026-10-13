@@ -61,6 +61,7 @@ export {
 } from './resolve.js';
 export {
   type AgentStanding,
+  agentRetiredIn,
   agentSignsIn,
   agentStanding,
   chainRootForScope,
@@ -70,8 +71,10 @@ export {
   type Origin,
   openTreeForWriting,
   type RoutedKind,
+  reachableTrees,
   resolveScope,
   type Scope,
   signerFor,
   TreeUnavailableError,
+  treeWords,
 } from './routing.js';

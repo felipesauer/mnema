@@ -1596,6 +1596,46 @@ const CLASSIFIED: Readonly<Record<string, { verdict: Verdict; why: string }>> = 
     verdict: 'collapsed',
     why: 'the name the record holds for a key it counts as an agent, written by whoever vouched',
   },
+  '@mnema/core identity/roster.ts «enrolled again — \\`mnema key request --agent {} --anchor <your identity>\\` » oneLine(request.name) #1':
+    {
+      verdict: 'collapsed',
+      why: 'the name an agent request carried, which `agentNameRefusal` has already held to the agent-name form where it is worded; the tag is the second fence',
+    },
+  '@mnema/core identity/roster.ts «in any tree of this machine — \\`mnema key request --agent {} --anchor <your identity>\\` » oneLine(request.name) #1':
+    {
+      verdict: 'collapsed',
+      why: 'the name an agent request carried, held to the agent-name form by the core’s own door before a tree is asked; the tag is the second fence',
+    },
+  '@mnema/core identity/roster.ts «the key {} is already {}\'s agent "{}" in {} — » oneLine(fingerprint) #1':
+    {
+      verdict: 'collapsed',
+      why: 'a fingerprint a caller typed, or one decoded from the request a caller handed over',
+    },
+  '@mnema/core identity/roster.ts «the key {} is already {}\'s agent "{}" in {} — » oneLine(held) #1':
+    {
+      verdict: 'collapsed',
+      why: 'the name the record holds for a key it counts as an agent, written by whoever vouched',
+    },
+  '@mnema/core identity/roster.ts «the key {} is already {}\'s agent "{}" in {} — » oneLine(proven.anchor) #1':
+    {
+      verdict: 'collapsed',
+      why: 'the anchor of the identity the record proves the key a member of, which the record names',
+    },
+  '@mnema/core identity/roster.ts «the key {} is already {}\'s agent "{}" in {} — » oneLine(where) #1':
+    {
+      verdict: 'collapsed',
+      why: 'how a tree is said by the caller: three constant phrases of this product, held through the tag as the second fence',
+    },
+  '@mnema/core identity/roster.ts «the key {} was retired in {} and is never enrolled again, » oneLine(fingerprint) #1':
+    {
+      verdict: 'collapsed',
+      why: 'a fingerprint a caller typed, or one decoded from the request a caller handed over',
+    },
+  '@mnema/core identity/roster.ts «the key {} was retired in {} and is never enrolled again, » oneLine(where) #1':
+    {
+      verdict: 'collapsed',
+      why: 'how a tree is said by the caller: three constant phrases of this product, held through the tag as the second fence',
+    },
   '@mnema/core identity/roster.ts «the key {} is an agent key of {} — an agent is not » oneLine(holder.anchor) #1':
     {
       verdict: 'collapsed',
@@ -1896,9 +1936,9 @@ describe('every value the domain puts in a sentence is classified', () => {
     // are equal. The scale is stated, and so is what the HANDOFF said — twenty-three
     // sites, twelve in `core` and eleven in `chain` — because it counted sentences
     // written at a `message:` or a `detail:` directly, and a value is not a sentence.
-    expect(SITES.length).toBe(256);
+    expect(SITES.length).toBe(264);
     expect(FOUND[0]?.sites.length).toBe(93);
-    expect(FOUND[1]?.sites.length).toBe(163);
+    expect(FOUND[1]?.sites.length).toBe(171);
     expect(FOUND.flatMap((layer) => layer.wording).length).toBeGreaterThan(15);
   });
 
@@ -1948,11 +1988,11 @@ describe('every value the domain puts in a sentence is classified', () => {
     // No arm of the case above may be empty, or that much of it is vacuous.
     const verdicts = Object.values(CLASSIFIED).map((said) => said.verdict);
     const count = (verdict: Verdict): number => verdicts.filter((said) => said === verdict).length;
-    expect(count('collapsed')).toBe(172);
+    expect(count('collapsed')).toBe(180);
     expect(count('minted')).toBe(61);
     expect(count('composed')).toBe(23);
     expect(SITES.filter((site) => new RegExp(`\\b${DOOR}\\b`).test(site.expression))).toHaveLength(
-      172,
+      180,
     );
   });
 

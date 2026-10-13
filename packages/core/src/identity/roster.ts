@@ -24,7 +24,12 @@
  * as it found it (`code/tests/a-refusal-leaves-nothing.test.ts`).
  */
 
-import { type ChainSigner, committedPublicKey, materializePublicKey } from '@mnema/chain';
+import {
+  type ChainSigner,
+  catalogUpcasters,
+  committedPublicKey,
+  materializePublicKey,
+} from '@mnema/chain';
 import {
   type ScreenedWrite,
   type ScreenRefusal,
@@ -594,7 +599,8 @@ export function enrollAgentFromRequest(
             code: 'RETIRED_AGENT',
             message:
               `the key ${oneLine(fingerprint)} was taken out of an identity in this record and is never ` +
-              'enrolled again — make a new key for the agent with `mnema key request --agent`',
+              `enrolled again — \`mnema key request --agent ${oneLine(request.name)} --anchor <your identity>\` ` +
+              'makes the agent a new key, and `mnema key enroll --agent <the line it prints>` puts it in force',
           },
         };
       }
@@ -613,6 +619,59 @@ export function enrollAgentFromRequest(
       };
     },
   );
+}
+
+/** The agent key is held or retired somewhere a write to the other trees would contradict. */
+export interface AgentKeyConflict {
+  readonly ok: false;
+  readonly code: 'RETIRED_AGENT' | 'AGENT_UNDER_ANOTHER_NAME';
+  readonly message: string;
+}
+
+/**
+ * Whether the records of several trees, read apart from any write, already say something about the
+ * key an agent request carries that enrolling it in the others would contradict: it was retired in
+ * one — and a key retired anywhere is retired everywhere this machine writes, so enrolling it in
+ * the rest would only make a tree that lets it sign — or it is an agent under ANOTHER name in one,
+ * and the record keeps a key to the name it was enrolled under. `where` is how each tree is said.
+ *
+ * It decides nothing about a request that holds up (a line that does not decode, a name the product
+ * does not enrol, a consent for another identity): each tree's own operation refuses those.
+ */
+export function agentKeyConflictIn(
+  trees: readonly { readonly tree: string; readonly where: string }[],
+  input: EnrollAgentInput,
+): AgentKeyConflict | undefined {
+  const request = decodeAgentRequest(input.request);
+  if (request === null) return undefined;
+  const fingerprint = request.key.fingerprint;
+  for (const { tree, where } of trees) {
+    const query = { tree, upcasters: catalogUpcasters() };
+    const proven = membershipIn(query, request.key);
+    if (!proven.ok) {
+      if (proven.code !== 'REVOKED_KEY') continue;
+      return {
+        ok: false,
+        code: 'RETIRED_AGENT',
+        message:
+          `the key ${oneLine(fingerprint)} was retired in ${oneLine(where)} and is never enrolled again, ` +
+          `in any tree of this machine — \`mnema key request --agent ${oneLine(request.name)} --anchor <your identity>\` ` +
+          'makes the agent a new key, and `mnema key enroll --agent <the line it prints>` puts it in force',
+      };
+    }
+    if (proven.membership !== 'agent') continue;
+    const held = rosterByRole(query, proven.anchor).agents.get(fingerprint);
+    if (held !== undefined && held !== request.name) {
+      return {
+        ok: false,
+        code: 'AGENT_UNDER_ANOTHER_NAME',
+        message:
+          `the key ${oneLine(fingerprint)} is already ${oneLine(proven.anchor)}'s agent "${oneLine(held)}" in ${oneLine(where)} — ` +
+          'a key keeps the name it was enrolled under, so retire it first and make the agent a key of its own',
+      };
+    }
+  }
+  return undefined;
 }
 
 /** What retiring an agent key needs. */

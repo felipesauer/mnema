@@ -81,6 +81,8 @@ export {
 } from './identity/restore.js';
 // Operating the roster: enrolling a requested key, and retiring one.
 export {
+  type AgentKeyConflict,
+  agentKeyConflictIn,
   type EnrollAgentErr,
   type EnrollAgentInput,
   type EnrollAgentOk,

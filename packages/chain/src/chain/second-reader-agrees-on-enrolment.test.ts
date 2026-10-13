@@ -1252,6 +1252,40 @@ describe('the two readers agree on records the product itself wrote — an agent
     expect(second).toEqual(product);
   });
 
+  it('two keys enrolled under one name, one per machine: green on both, each counted by its own key', () => {
+    const { a, g, anchor } = personAndAgent();
+    // The same name on a second machine: the format keys an agent by its fingerprint, never by its
+    // name, so two live keys named "claude" are two agents of one name.
+    const h = generateKeyPair();
+    commitPublicKey(h);
+    writeTail(
+      `${a.fingerprint}-i1`,
+      [founding(a), enrolAgent(anchor, a, g, { when: 2 }), enrolAgent(anchor, a, h, { when: 3 })],
+      a,
+    );
+    writeTail(
+      `${g.fingerprint}-i2`,
+      [byAgent(anchor, g, 't-1', 4), byAgent(anchor, g, 't-2', 5)],
+      g,
+    );
+    writeTail(`${h.fingerprint}-i3`, [byAgent(anchor, h, 't-3', 6)], h);
+
+    const { productOk, verdict, refused } = bothReaders();
+    expect(refused, 'the second reader refuses two keys under one name').toEqual([]);
+    expect(productOk).toBe(true);
+    expect(verdict).toBe('VERIFIED');
+    const { product, second } = agentCensus();
+    expect(product).toEqual(['attested claude 1', 'attested claude 2']);
+    expect(second).toEqual(product);
+    expect(
+      verify(root, catalogUpcasters())
+        .census.flatMap((note) =>
+          note.kind === 'attested-which' ? [`${note.agentFp} ${note.events}`] : [],
+        )
+        .sort(),
+    ).toEqual([`${g.fingerprint} 2`, `${h.fingerprint} 1`].sort());
+  });
+
   it('an agent key under another `which`: refused by both', () => {
     const { a, g, anchor } = personAndAgent();
     writeTail(`${a.fingerprint}-i1`, [founding(a), enrolAgent(anchor, a, g)], a);

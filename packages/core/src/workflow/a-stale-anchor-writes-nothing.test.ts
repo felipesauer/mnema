@@ -482,6 +482,8 @@ describe('a checkout the key left writes nothing, through every write of the sur
   /** The exports that append nothing, each with the reason — the other half of the reconciliation. */
   const APPENDS_NOTHING: Readonly<Record<string, string>> = {
     authorizingAnchor: 'reads which anchor this installation serves',
+    agentKeyConflictIn:
+      'reads the records of several trees for a conflict an agent enrolment would meet; appends nothing',
     decideAnchor: 'settles the same question without writing',
     decodeAgentRequest: 'parses an agent request line',
     decodeKeyRequest: 'parses a request line',

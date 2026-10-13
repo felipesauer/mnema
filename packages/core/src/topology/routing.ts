@@ -328,6 +328,28 @@ export function openTreeForWriting(
   });
 }
 
+/**
+ * The first tree this process reaches whose record RETIRED the key the configured agent holds on
+ * this machine, with that key's fingerprint — or undefined when none did, no agent is configured,
+ * or the machine holds no key under its name. It is the question that makes `key request --agent`
+ * a rotation: a key retired anywhere is retired for every tree ({@link keyRootFor}), so the agent
+ * needs a new one, and the retired one is put aside rather than asked for again.
+ */
+export function agentRetiredIn(
+  trees: ResolvedTrees,
+): { readonly scope: Scope; readonly fingerprint: string } | undefined {
+  const agent = trees.agent;
+  if (agent === undefined) return undefined;
+  const fingerprint = localKeyFingerprint({ root: agent.keyRoot });
+  if (fingerprint === null) return undefined;
+  for (const tree of reachableTrees(trees)) {
+    if (readingAt(tree.chainRoot, fingerprint, agent).standing === 'retired') {
+      return { scope: tree.scope, fingerprint };
+    }
+  }
+  return undefined;
+}
+
 /** What the record said of the agent key in a tree, as of the extent it was read at. */
 const agentReadings = new Map<
   string,
@@ -341,7 +363,7 @@ interface AgentReading {
 }
 
 /** The trees of `trees` this process can reach: the project's two, when there is a project, and the machine's. */
-function reachableTrees(trees: ResolvedTrees): { scope: Scope; chainRoot: string }[] {
+export function reachableTrees(trees: ResolvedTrees): { scope: Scope; chainRoot: string }[] {
   const reached: { scope: Scope; chainRoot: string }[] = [];
   for (const scope of ['public', 'private', 'global'] as const) {
     const chainRoot = chainRootForScope(trees, scope);
@@ -367,6 +389,11 @@ const TREE_WORDS: Readonly<Record<Scope, string>> = {
   private: "this project's private tree",
   global: "this machine's global tree",
 };
+
+/** How `scope`'s tree is said in a sentence a person reads. */
+export function treeWords(scope: Scope): string {
+  return TREE_WORDS[scope];
+}
 
 /**
  * Who signs in one tree when an agent is configured: the agent, the person, or nobody — a refusal

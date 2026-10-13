@@ -28,8 +28,18 @@
  * root is the agent's own folder under the data directory, never the person's.
  */
 
-import { resolve } from 'node:path';
-import { agentKeyRoot, agentNameRefusal, type DiscoveryEnv, resolveTrees } from '@mnema/core';
+import { mkdirSync, readdirSync, renameSync } from 'node:fs';
+import { dirname, join, resolve } from 'node:path';
+import { privateKeyPath } from '@mnema/chain';
+import {
+  agentKeyRoot,
+  agentNameRefusal,
+  agentRetiredIn,
+  type DiscoveryEnv,
+  type ResolvedTrees,
+  resolveTrees,
+  withAgentKey,
+} from '@mnema/core';
 import { type RequestSource, requestAgentEnrollment, requestEnrollment } from '@mnema/core/write';
 import { resolveAnchorInRecord } from '../anchors.js';
 
@@ -108,6 +118,11 @@ export interface AgentRequestMade extends KeyRequestMade {
   readonly name: string;
   /** The agent's own key root: `<data directory>/agents/<name>`. */
   readonly keyRoot: string;
+  /**
+   * The key the record retired that this request put aside, in `<key root>/retired/`, to make the
+   * agent a new one: its fingerprint, and where it went. Absent when nothing was retired.
+   */
+  readonly rotated?: { readonly retired: string; readonly keptIn: string };
 }
 
 /**
@@ -133,6 +148,13 @@ export function runAgentRequest(
     return { ok: false, reason: 'REFUSED', code: anchor.code, message: anchor.message };
   }
   const keyRoot = agentKeyRoot(ctx.env, input.name);
+  // A key the record retired is never enrolled again, so asking for the agent's key again is asking
+  // for a new one: the retired key is put aside, not deleted — a key somebody may still hold is
+  // evidence — and the folder keeps one live key, which is the one every reader of it adopts.
+  const rotated =
+    input.privateKeyPath === undefined
+      ? setAsideTheRetiredKey(withAgentKey(trees, ctx.env, input.name), keyRoot)
+      : undefined;
   const made = requestAgentEnrollment({
     anchor: anchor.anchor,
     name: input.name,
@@ -153,5 +175,26 @@ export function runAgentRequest(
     minted: made.minted,
     name: made.name,
     keyRoot,
+    ...(rotated !== undefined ? { rotated } : {}),
   };
+}
+
+/**
+ * Moves the key the configured agent holds on this machine out of `keys/` into `retired/`, when a
+ * tree this process reaches retired it, and says where it went.
+ */
+function setAsideTheRetiredKey(
+  trees: ResolvedTrees,
+  keyRoot: string,
+): { readonly retired: string; readonly keptIn: string } | undefined {
+  const retired = agentRetiredIn(trees);
+  if (retired === undefined) return undefined;
+  const from = dirname(privateKeyPath({ root: keyRoot }, retired.fingerprint));
+  const keptIn = join(keyRoot, 'retired');
+  mkdirSync(keptIn, { recursive: true });
+  for (const name of readdirSync(from)) {
+    if (name.startsWith(`${retired.fingerprint}.`))
+      renameSync(join(from, name), join(keptIn, name));
+  }
+  return { retired: retired.fingerprint, keptIn };
 }

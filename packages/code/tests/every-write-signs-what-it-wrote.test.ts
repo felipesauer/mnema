@@ -541,6 +541,18 @@ describe('every write path leaves the record fully signed', () => {
         drive: () => {
           const made = founded(runInit(ctx));
           if (!made.created) throw new Error('init founded nothing');
+          // A repository from the start, so the private tree sits where git keeps it for every
+          // row after this one: the project is a commit by the `check run` row, and a tree that
+          // moved there would take the events of the agent rows with it.
+          const inited = spawnSync('git', ['init', '-q'], {
+            cwd: project,
+            env: {
+              PATH: process.env.PATH ?? '',
+              HOME: env.home,
+              GIT_CONFIG_GLOBAL: GIT_WITHOUT_MAINTENANCE,
+            },
+          });
+          if (inited.status !== 0) throw new Error('git init failed');
           const fingerprint = made.identity?.backup?.fingerprint;
           if (fingerprint === undefined) throw new Error('init made no backup key');
           backupKey = fingerprint;
@@ -735,7 +747,7 @@ describe('every write path leaves the record fully signed', () => {
       {
         // The agent's key is made in a folder of its own under the data directory, and the
         // person's key vouches for it: the facts the verb appends are the person's.
-        at: 'commands/key-enroll.ts:runAgentEnroll',
+        at: 'commands/key-enroll.ts:enrolIn',
         drive: () => {
           const anchor = founded(runInit({ cwd: project, env })).anchor;
           const asked = ok('key request --agent', runAgentRequest(ctx, { anchor, name: 'claude' }));
@@ -792,7 +804,6 @@ describe('every write path leaves the record fully signed', () => {
             });
             if (ran.status !== 0) throw new Error(`git ${args.join(' ')} failed`);
           };
-          git('init', '-q');
           git('add', '.');
           git('commit', '-q', '-m', 'the tree the check runs at');
           const keys = join(resolveTrees(project, otherMachine('runner')).keyRoot, 'keys');

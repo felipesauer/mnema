@@ -106,6 +106,7 @@ export {
 // is — the same reason `TreeUnavailableError` lives on the read surface.
 export {
   agentKeysIn,
+  agentsOf,
   IdentityUnavailableError,
   type MembershipRefusalCode,
 } from './identity/membership.js';
@@ -228,6 +229,7 @@ export {
   type AgentSigning,
   type AgentStanding,
   agentKeyRoot,
+  agentRetiredIn,
   agentSignsIn,
   agentStanding,
   type BirthProbe,
@@ -255,6 +257,7 @@ export {
   privateTreeVisibility,
   type ResolvedTrees,
   type RoutedKind,
+  reachableTrees,
   replayingBirthProbe,
   replayingRecordProbe,
   resolveScope,
@@ -263,6 +266,7 @@ export {
   TreeUnavailableError,
   tailsHeld,
   treesSearched,
+  treeWords,
   whyNoProjectRootAt,
   withAgentKey,
 } from './topology/index.js';

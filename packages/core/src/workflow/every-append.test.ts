@@ -691,6 +691,8 @@ describe('every write refuses what no read could accept', () => {
    * wrongly is a lie somebody has to write down.
    */
   const APPENDS_NOTHING: Readonly<Record<string, string>> = {
+    agentKeyConflictIn:
+      'reads the records of several trees for a conflict an agent enrolment would meet; appends nothing',
     authorizingAnchor: 'reads which anchor this installation serves; appends nothing',
     decideAnchor: 'settles the same question without writing',
     decodeAgentRequest: 'parses an agent request line',

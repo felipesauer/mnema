@@ -13,6 +13,7 @@
  * here is any separation: the agent's shell reads the files of the same user.
  */
 
+import { createHash } from 'node:crypto';
 import {
   cpSync,
   existsSync,
@@ -21,14 +22,21 @@ import {
   readdirSync,
   readFileSync,
   rmSync,
+  statSync,
   writeFileSync,
 } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { pathToFileURL } from 'node:url';
-import { type CatalogEvent, catalogUpcasters } from '@mnema/chain';
+import { type CatalogEvent, catalogUpcasters, generateKeyPair, persistKeyPair } from '@mnema/chain';
 import { type DiscoveryEnv, orderedEvents, resolveTrees } from '@mnema/core';
-import { deferredWrite, enrollAgentFromRequest } from '@mnema/core/write';
+import {
+  deferredWrite,
+  enrollAgentFromRequest,
+  enrollFromRequest,
+  requestEnrollment,
+  retireAgentKey,
+} from '@mnema/core/write';
 import { Client } from '@modelcontextprotocol/sdk/client/index.js';
 import { InMemoryTransport } from '@modelcontextprotocol/sdk/inMemory.js';
 import { ListRootsRequestSchema } from '@modelcontextprotocol/sdk/types.js';
@@ -120,9 +128,6 @@ async function anAgent(name: string, passphrase?: string): Promise<string> {
     await identity(),
   );
   await did(passphrase, 'key', 'enroll', '--agent', lineOf(requested));
-  // Until the verb writes them itself: the agent is in force in the private and the global tree too.
-  enrolledIn('private', lineOf(requested));
-  enrolledIn('global', lineOf(requested));
   return fingerprintIn(requested);
 }
 
@@ -906,5 +911,414 @@ describe('the which of a write is the one the record gives the key that signs it
     expect(written[0]?.signerFp).toBe(fingerprintIn(requested));
     const verified = await mnema(undefined, 'verify', '--global');
     expect(verified.failed, verified.out + verified.err).toBe(false);
+  });
+});
+
+/** Every file of the three trees, by relative name and bytes: what a refusal must leave as it was. */
+function digestOfTheTrees(): string {
+  const trees = resolveTrees(repo, env);
+  const hash = createHash('sha256');
+  for (const root of [trees.projectPublic, trees.projectPrivate, trees.global]) {
+    if (root === undefined || !existsSync(root)) continue;
+    for (const name of (readdirSync(root, { recursive: true }) as string[]).sort()) {
+      const path = join(root, name);
+      hash.update(`${root}\n${name}\n`);
+      if (statSync(path).isFile()) hash.update(readFileSync(path));
+    }
+  }
+  return hash.digest('hex');
+}
+
+const agentFacts = (scope: Scope) =>
+  eventsOf(scope).filter((event) => event.kind === 'agent.enrolled');
+
+describe('key enroll --agent enrols the agent in the private and the global tree too', () => {
+  it('writes one vouch in each tree, the same consent in all, founded by the person and never by the agent', async () => {
+    const requested = await did(
+      undefined,
+      'key',
+      'request',
+      '--agent',
+      'claude',
+      '--anchor',
+      await identity(),
+    );
+    const person = events().find((event) => event.kind === 'identity.founded')?.signerFp;
+
+    const said = await did(undefined, 'key', 'enroll', '--agent', lineOf(requested));
+
+    expect(said).toContain('committed tree: enrolled');
+    expect(said).toContain('private tree: enrolled');
+    expect(said).toContain('global tree: enrolled');
+    const reverseSigs = (['public', 'private', 'global'] as const).map((scope) => {
+      const enrolled = agentFacts(scope);
+      expect(enrolled, scope).toHaveLength(1);
+      expect(enrolled[0]?.payload).toMatchObject({
+        agentFp: fingerprintIn(requested),
+        name: 'claude',
+      });
+      return ((enrolled[0] as CatalogEvent).payload as { reverseSig: string }).reverseSig;
+    });
+    expect(new Set(reverseSigs).size).toBe(1);
+    // The person founded the two trees the verb opened, and the agent's key signed nothing there.
+    for (const scope of ['private', 'global'] as const) {
+      const all = eventsOf(scope);
+      expect(all[0]?.kind, scope).toBe('identity.founded');
+      expect(all[0]?.signerFp, scope).toBe(person);
+      expect(
+        all.some((event) => event.signerFp === fingerprintIn(requested)),
+        scope,
+      ).toBe(false);
+    }
+    const verified = await mnema(undefined, 'verify', '--global');
+    expect(verified.failed, verified.out + verified.err).toBe(false);
+  });
+
+  it('says already, and writes nothing, the second time', async () => {
+    const fingerprint = await anAgent('claude');
+    const line = lineOf(
+      await did(undefined, 'key', 'request', '--agent', 'claude', '--anchor', await identity()),
+    );
+    const before = digestOfTheTrees();
+
+    const again = await mnema(undefined, 'key', 'enroll', '--agent', line);
+
+    expect(again.failed).toBe(false);
+    expect(again.out).toContain(`Key ${fingerprint} is already the agent "claude"`);
+    expect(again.out).toContain('committed tree: already the agent');
+    expect(again.out).toContain('private tree: already the agent');
+    expect(again.out).toContain('global tree: already the agent');
+    for (const scope of ['public', 'private', 'global'] as const) {
+      expect(agentFacts(scope), scope).toHaveLength(1);
+    }
+    expect(digestOfTheTrees()).toBe(before);
+  });
+
+  it('takes the agent’s name for the line, where its key is on this machine, and refuses one it holds no key for', async () => {
+    await did(undefined, 'key', 'request', '--agent', 'claude', '--anchor', await identity());
+
+    const said = await did(undefined, 'key', 'enroll', '--agent', 'claude');
+
+    expect(said).toContain('committed tree: enrolled');
+    expect(said).toContain('global tree: enrolled');
+    for (const scope of ['public', 'private', 'global'] as const) {
+      expect(agentFacts(scope), scope).toHaveLength(1);
+    }
+    const unknown = await mnema(undefined, 'key', 'enroll', '--agent', 'gemini');
+    expect(unknown.failed).toBe(true);
+    expect(unknown.err).toContain('NO_AGENT_KEY');
+    expect(unknown.err).toContain('this machine holds no key for the agent "gemini"');
+    expect(existsSync(join(home, '.mnema', 'agents', 'gemini'))).toBe(false);
+  });
+
+  it('enrols a key that lives elsewhere in the committed tree alone', async () => {
+    // A key made on another machine, say a CI runner's: its private half is only a file here.
+    const elsewhere = mkdtempSync(join(sandbox, 'the-runner-'));
+    const keyFile = persistKeyPair({ root: elsewhere }, generateKeyPair());
+    const requested = await did(
+      undefined,
+      'key',
+      'request',
+      '--agent',
+      'ci',
+      '--anchor',
+      await identity(),
+      '--key',
+      keyFile,
+    );
+    expect(existsSync(join(home, '.mnema', 'agents', 'ci'))).toBe(false);
+
+    const said = await did(undefined, 'key', 'enroll', '--agent', lineOf(requested));
+
+    expect(said).toContain('committed tree: enrolled');
+    expect(said).toContain('private tree: skipped — the key is not on this machine');
+    expect(said).toContain('global tree: skipped — the key is not on this machine');
+    expect(agentFacts('public')).toHaveLength(1);
+    expect(agentFacts('private')).toHaveLength(0);
+    expect(agentFacts('global')).toHaveLength(0);
+  });
+
+  it('refuses a key retired in any tree, in all of them, and writes nothing', async () => {
+    const requested = await did(
+      undefined,
+      'key',
+      'request',
+      '--agent',
+      'claude',
+      '--anchor',
+      await identity(),
+    );
+    const line = lineOf(requested);
+    await did(undefined, 'key', 'enroll', '--agent', line);
+    // Retired in the machine's global tree alone.
+    const write = deferredWrite(resolveTrees(repo, env), 'global');
+    expect(
+      retireAgentKey(write, { fingerprint: fingerprintIn(requested), reason: 'lent out' }).ok,
+    ).toBe(true);
+    write.checkpoint();
+    const before = digestOfTheTrees();
+
+    const refused = await mnema(undefined, 'key', 'enroll', '--agent', line);
+
+    expect(refused.failed).toBe(true);
+    expect(refused.err).toContain('RETIRED_AGENT');
+    expect(refused.err).toContain("this machine's global tree");
+    expect(digestOfTheTrees()).toBe(before);
+  });
+});
+
+describe('a machine that joined the identity enrols its agent in trees that speak for an identity of their own', () => {
+  /** Runs what follows as the machine whose home is `where`. */
+  function asTheMachineAt(where: string): void {
+    process.env.HOME = where;
+    env = { home: where };
+  }
+
+  it('has the agent key consent afresh for the identity each of its own trees speaks for', async () => {
+    const anchorOfTheFirst = await identity();
+    const joiner = join(sandbox, 'home-of-the-second-machine');
+    mkdirSync(joiner, { recursive: true });
+    // The second machine asks to join, and the first vouches for it.
+    asTheMachineAt(joiner);
+    const joining = (await did(undefined, 'key', 'request', '--anchor', anchorOfTheFirst))
+      .split('\n')
+      .find((line) => line.startsWith('mnema-key-request:'));
+    asTheMachineAt(home);
+    await did(undefined, 'key', 'enroll', joining as string);
+    // Then the second machine makes its own agent key and enrols it.
+    asTheMachineAt(joiner);
+    const requested = await did(
+      undefined,
+      'key',
+      'request',
+      '--agent',
+      'claude',
+      '--anchor',
+      anchorOfTheFirst,
+    );
+
+    const said = await did(undefined, 'key', 'enroll', '--agent', lineOf(requested));
+
+    expect(said).toContain('committed tree: enrolled');
+    expect(said).toContain('private tree: enrolled');
+    expect(said).toContain('global tree: enrolled');
+    const reverseSigs = (['public', 'private', 'global'] as const).map(
+      (scope) => (agentFacts(scope)[0]?.payload as { reverseSig: string } | undefined)?.reverseSig,
+    );
+    // Under the first machine's identity in the committed tree, and the second's own elsewhere:
+    // the consent differs, because it covers the identity.
+    expect(new Set(reverseSigs).size).toBe(2);
+    expect(reverseSigs[1]).toBe(reverseSigs[2]);
+    expect(reverseSigs[0]).not.toBe(reverseSigs[1]);
+    const verified = await mnema(undefined, 'verify', '--global');
+    expect(verified.failed, verified.out + verified.err).toBe(false);
+  });
+});
+
+describe('where key enroll --agent has a tree it cannot enrol in, or no project', () => {
+  it('exits 1 with what was written kept and the refusal said, when one tree refuses and the others took it', async () => {
+    const requested = await did(
+      undefined,
+      'key',
+      'request',
+      '--agent',
+      'claude',
+      '--anchor',
+      await identity(),
+    );
+    // The private tree already counts the key as a member of the identity: it cannot be its agent.
+    const joining = requestEnrollment({
+      anchor: events().find((event) => event.kind === 'identity.founded')?.subject as string,
+      keyRoot: join(home, '.mnema', 'agents', 'claude'),
+    });
+    if (!joining.ok) throw new Error(joining.message);
+    const inPrivate = deferredWrite(resolveTrees(repo, env), 'private');
+    expect(enrollFromRequest(inPrivate, { request: joining.request }).ok).toBe(true);
+    inPrivate.checkpoint();
+
+    const said = await mnema(undefined, 'key', 'enroll', '--agent', lineOf(requested));
+
+    expect(said.failed).toBe(true);
+    expect(said.err).toContain('A_MEMBER_KEY');
+    expect(said.err).toContain('the private tree did not take it, and what the others took stays');
+    expect(said.out).toContain('committed tree: enrolled');
+    expect(said.out).toContain('global tree: enrolled');
+    expect(agentFacts('public')).toHaveLength(1);
+    expect(agentFacts('private')).toHaveLength(0);
+    expect(agentFacts('global')).toHaveLength(1);
+  });
+
+  it('enrols in the machine’s global tree alone outside a project, where it used to refuse', async () => {
+    await did(undefined, 'key', 'request', '--agent', 'claude', '--anchor', await identity());
+    const elsewhere = join(sandbox, 'not-a-project');
+    mkdirSync(elsewhere, { recursive: true });
+    process.chdir(elsewhere);
+
+    const said = await did(undefined, 'key', 'enroll', '--agent', 'claude');
+
+    expect(said).toContain('global tree: enrolled');
+    expect(said).not.toContain('committed tree');
+    expect(said).not.toContain('Commit and share the record');
+    expect(agentFacts('global')).toHaveLength(1);
+    expect(agentFacts('public')).toHaveLength(0);
+  });
+});
+
+describe('retiring an agent, and making it a new key', () => {
+  /** A decision and a note through the agent's server, each into the tree its kind goes to. */
+  async function theAgentWrites(): Promise<Reply[]> {
+    const replies: Reply[] = [];
+    await connected('claude-code', 'claude', repo, async (client) => {
+      replies.push(await decide(client, `a decision of ${replies.length}`));
+      replies.push(
+        (await client.callTool({
+          name: 'capture_memory',
+          arguments: { content: `a note of ${replies.length}` },
+        })) as Reply,
+      );
+    });
+    return replies;
+  }
+
+  it('retires it in every tree that enrolled it, and no tree then lets it sign, nor the person’s key in its place', async () => {
+    const fingerprint = await anAgent('claude');
+
+    const said = await did(
+      undefined,
+      'key',
+      'revoke',
+      '--agent',
+      fingerprint,
+      '--reason',
+      'lent out',
+    );
+
+    expect(said).toContain('committed tree: retired');
+    expect(said).toContain('private tree: retired');
+    expect(said).toContain('global tree: retired');
+    for (const scope of ['public', 'private', 'global'] as const) {
+      expect(
+        eventsOf(scope).filter((event) => event.kind === 'agent.retired'),
+        scope,
+      ).toHaveLength(1);
+    }
+    const verified = await mnema(undefined, 'verify', '--global');
+    expect(verified.failed, verified.out + verified.err).toBe(false);
+    const before = eventsOf('public').length + eventsOf('private').length;
+    const replies = await theAgentWrites();
+    expect(replies.map((reply) => reply.isError)).toEqual([true, true]);
+    for (const reply of replies) expect(textOf(reply)).toContain('Refused (REVOKED_KEY)');
+    expect(eventsOf('public').length + eventsOf('private').length).toBe(before);
+  });
+
+  it('refuses the agent in every tree when only the machine’s global tree retired it', async () => {
+    const fingerprint = await anAgent('claude');
+    const write = deferredWrite(resolveTrees(repo, env), 'global');
+    expect(retireAgentKey(write, { fingerprint, reason: 'lent out' }).ok).toBe(true);
+    write.checkpoint();
+    const before = digestOfTheTrees();
+
+    const replies = await theAgentWrites();
+
+    expect(replies.map((reply) => reply.isError)).toEqual([true, true]);
+    for (const reply of replies) {
+      expect(textOf(reply)).toContain('Refused (REVOKED_KEY)');
+      expect(textOf(reply)).toContain("this machine's global tree");
+    }
+    expect(digestOfTheTrees()).toBe(before);
+  });
+
+  it('makes the retired agent a new key under the same name, puts the old one aside, and the new one signs', async () => {
+    const old = await anAgent('claude');
+    await connected('claude-code', 'claude', repo, async (client) => {
+      await decide(client, 'before the rotation');
+    });
+    await did(undefined, 'key', 'revoke', '--agent', old, '--reason', 'lent out');
+    const agentRoot = join(home, '.mnema', 'agents', 'claude');
+
+    const requested = await did(
+      undefined,
+      'key',
+      'request',
+      '--agent',
+      'claude',
+      '--anchor',
+      await identity(),
+    );
+
+    const fresh = fingerprintIn(requested);
+    expect(requested).toContain(`the key ${old} was retired by the record`);
+    expect(fresh).not.toBe(old);
+    expect(keysIn(agentRoot)).toEqual([`${fresh}.key`]);
+    expect(existsSync(join(agentRoot, 'retired', `${old}.key`))).toBe(true);
+    expect(existsSync(join(agentRoot, 'retired', `${old}.pub`))).toBe(true);
+
+    const enrolled = await did(undefined, 'key', 'enroll', '--agent', lineOf(requested));
+    expect(enrolled).toContain('committed tree: enrolled');
+    const replies = await theAgentWrites();
+    expect(replies.map((reply) => reply.isError)).not.toContain(true);
+    const decision = events()
+      .filter((event) => event.kind === 'decision.recorded')
+      .at(-1);
+    expect(decision?.which).toBe('claude');
+    expect(decision?.signerFp).toBe(fresh);
+    const verified = await mnema(undefined, 'verify', '--global');
+    expect(verified.failed, verified.out + verified.err).toBe(false);
+    // Both keys are the agent "claude" in the record, each counted by its own fingerprint.
+    expect(
+      [
+        ...new Set(
+          (await census())
+            .filter((note) => note.kind === 'attested-which')
+            .map((note) => (note as { agentFp?: string }).agentFp),
+        ),
+      ].sort(),
+    ).toEqual([old, fresh].sort());
+  });
+
+  it('keeps a key the record has not retired, when asked for the agent again', async () => {
+    const fingerprint = await anAgent('claude');
+
+    const again = await did(
+      undefined,
+      'key',
+      'request',
+      '--agent',
+      'claude',
+      '--anchor',
+      await identity(),
+    );
+
+    expect(again).toContain(`Requesting for the agent claude: key ${fingerprint}`);
+    expect(existsSync(join(home, '.mnema', 'agents', 'claude', 'retired'))).toBe(false);
+  });
+
+  it('says, when a second machine’s key is enrolled under the name, that the record counts the other', async () => {
+    const first = await anAgent('claude');
+    // The second machine makes its own key under the same name.
+    const second = join(sandbox, 'home-of-the-other-machine');
+    mkdirSync(second, { recursive: true });
+    process.env.HOME = second;
+    env = { home: second };
+    const requested = await did(
+      undefined,
+      'key',
+      'request',
+      '--agent',
+      'claude',
+      '--anchor',
+      await identity(),
+    );
+    process.env.HOME = home;
+    env = { home };
+
+    const said = await did(undefined, 'key', 'enroll', '--agent', lineOf(requested));
+
+    expect(said).toContain('committed tree: enrolled');
+    expect(said).toContain('private tree: skipped');
+    expect(said).toContain(
+      `the record already counts 1 other active key as "claude" (${first.slice(0, 12)}) — one per machine is expected`,
+    );
+    expect(agentFacts('public')).toHaveLength(2);
   });
 });

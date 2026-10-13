@@ -116,6 +116,15 @@ export function registerKey(program: Command, wiring: Wiring): Declared {
             : `Requesting for the agent ${result.name}: key ${result.fingerprint}` +
                 `${result.source === 'file' ? ' (read from the file you named, not installed)' : ''}`,
         );
+        if (result.rotated !== undefined) {
+          io.out(
+            render(
+              fact(
+                onOneLine`the key ${result.rotated.retired} was retired by the record and is never enrolled again: it was put aside in ${result.rotated.keptIn}, not deleted`,
+              ),
+            ),
+          );
+        }
         io.out(render(fact(`to be enrolled in ${result.anchor} as "${result.name}"`)));
         io.out(
           render(
@@ -218,13 +227,11 @@ export function registerKey(program: Command, wiring: Wiring): Declared {
         const { runAgentEnroll } = await import('../commands/key-enroll.js');
         const result = runAgentEnroll(here(), { request });
         if (result.ok) {
-          if (result.alreadyAgent) {
-            io.out(
-              `Key ${result.fingerprint} is already the agent "${result.name}" — nothing recorded.`,
-            );
-            return;
-          }
-          io.out(`Enrolled agent ${result.name}: key ${result.fingerprint}`);
+          io.out(
+            result.alreadyAgent
+              ? `Key ${result.fingerprint} is already the agent "${result.name}" — nothing recorded.`
+              : `Enrolled agent ${result.name}: key ${result.fingerprint}`,
+          );
           io.out(
             render(
               fact(
@@ -232,20 +239,56 @@ export function registerKey(program: Command, wiring: Wiring): Declared {
               ),
             ),
           );
-          io.out(render(fact(onOneLine`recorded in ${result.root}`)));
+          const names = {
+            public: 'committed tree',
+            private: 'private tree',
+            global: 'global tree',
+          };
+          for (const tree of result.trees) {
+            if (tree.state === 'refused') {
+              reportRefusal(wiring, {
+                reason: 'REFUSED',
+                code: tree.code ?? 'REFUSED',
+                message: `the ${names[tree.scope]} did not take it, and what the others took stays — ${tree.why ?? ''}`,
+              });
+              continue;
+            }
+            io.out(
+              render(
+                fact(
+                  tree.state === 'enrolled'
+                    ? onOneLine`${names[tree.scope]}: enrolled, recorded in ${tree.root}`
+                    : tree.state === 'already'
+                      ? onOneLine`${names[tree.scope]}: already the agent, nothing recorded`
+                      : onOneLine`${names[tree.scope]}: skipped — ${tree.why ?? ''}`,
+                ),
+              ),
+            );
+          }
+          if (result.alsoUnderTheName.length > 0) {
+            io.out(
+              render(
+                fact(
+                  onOneLine`the record already counts ${result.alsoUnderTheName.length} other active ${result.alsoUnderTheName.length === 1 ? 'key' : 'keys'} as "${result.name}" (${result.alsoUnderTheName.map((one) => one.slice(0, 12)).join(', ')}) — one per machine is expected; \`mnema key revoke --agent <fingerprint> --reason "<why>"\` retires one`,
+                ),
+              ),
+            );
+          }
           if (result.personsKeyInTheClear) {
             const { THE_AGENT_KEY_SEPARATES_NOTHING } = await import(
               '../the-persons-key-in-the-clear.js'
             );
             io.out(render(fact(`Note: ${THE_AGENT_KEY_SEPARATES_NOTHING}`)));
           }
-          io.out(
-            render(
-              fact(
-                'Commit and share the record: another machine reads it to know the agent signs.',
+          if (result.trees.some((tree) => tree.scope === 'public' && tree.state === 'enrolled')) {
+            io.out(
+              render(
+                fact(
+                  'Commit and share the record: another machine reads it to know the agent signs.',
+                ),
               ),
-            ),
-          );
+            );
+          }
           return;
         }
         reportRefusal(wiring, result, {
@@ -432,6 +475,30 @@ export function registerKey(program: Command, wiring: Wiring): Declared {
             io.out(`Retired agent ${result.name}: key ${result.fingerprint}`);
             reportReplacement(result, io);
             io.out(render(fact(`it signs nothing from here on — retired by ${result.anchor}`)));
+            const names = {
+              public: 'committed tree',
+              private: 'private tree',
+              global: 'global tree',
+            };
+            for (const tree of result.trees) {
+              if (tree.state === 'refused') {
+                reportRefusal(wiring, {
+                  reason: 'REFUSED',
+                  code: tree.code ?? 'REFUSED',
+                  message: `the ${names[tree.scope]} did not take the retirement, and what the others took stays — ${tree.why ?? ''}`,
+                });
+                continue;
+              }
+              io.out(
+                render(
+                  fact(
+                    tree.state === 'retired'
+                      ? onOneLine`${names[tree.scope]}: retired, recorded in ${tree.root}`
+                      : onOneLine`${names[tree.scope]}: skipped — ${tree.why ?? ''}`,
+                  ),
+                ),
+              );
+            }
             io.out(
               render(
                 fact(
