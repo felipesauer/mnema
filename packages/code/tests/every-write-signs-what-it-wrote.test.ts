@@ -176,9 +176,11 @@ const CODE_SRC = join(HERE, 'src');
  * `enrollAgent` and `retireAgent`. 50 since the roster can vouch for and retire an agent:
  * `enrollAgentFromRequest` and `retireAgentKey`. 53 since a session's run is written by the write
  * that needs it: `prepareRun` and the half it hands that write (`appendRunStarted`), and
- * `ensureFounded`'s own founding half (`foundedAnchor`).
+ * `ensureFounded`'s own founding half (`foundedAnchor`). 56 since the door asks an operation's
+ * fact before anything is founded: `appendFact`, `appendFacts`, and the half they share
+ * (`foundedThenBuilt`), which every operation now reaches the founding and the append through.
  */
-const CORE_OPERATIONS_THAT_APPEND = 53;
+const CORE_OPERATIONS_THAT_APPEND = 56;
 
 /** The stack the cases install. */
 const HELLO_STACK = fileURLToPath(new URL('../../stacks/fixtures/hello-stack', import.meta.url));

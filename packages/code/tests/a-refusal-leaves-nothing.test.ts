@@ -129,8 +129,13 @@ function treeOf(project: string): string[] {
 }
 
 /**
- * The project's PRIVATE tree, `.git/mnema`, the way {@link treeOf} sees the public one — the empty
- * list where it does not exist. A note lands there, so a refusal of a note is asked of it.
+ * Every FILE of the project's PRIVATE tree, `.git/mnema`, with its digest — the empty list where it
+ * does not exist. A note lands there, so a refusal of a note is asked of it.
+ *
+ * Files, not directories, and not `locks/`: a server write takes the tail's hold before the
+ * operation decides, and on a private tree that never existed that hold leaves the empty
+ * directories its lock lives in. They hold nothing, they are under `.git`, so no clone receives
+ * them, and they come from the hold and not from the door this is about.
  */
 function privateTreeOf(project: string): string[] {
   const root = join(project, '.git', 'mnema');
@@ -138,14 +143,10 @@ function privateTreeOf(project: string): string[] {
   const walk = (dir: string): void => {
     for (const name of readdirSync(dir).sort()) {
       const path = join(dir, name);
-      if (isTheDerivedCache(path)) continue;
+      if (isTheDerivedCache(path) || name === 'locks') continue;
       const shown = path.slice(project.length + 1);
-      if (statSync(path).isDirectory()) {
-        out.push(`D ${shown}`);
-        walk(path);
-      } else {
-        out.push(`F ${createHash('sha256').update(readFileSync(path)).digest('hex')} ${shown}`);
-      }
+      if (statSync(path).isDirectory()) walk(path);
+      else out.push(`F ${createHash('sha256').update(readFileSync(path)).digest('hex')} ${shown}`);
     }
   };
   if (existsSync(root)) walk(root);
