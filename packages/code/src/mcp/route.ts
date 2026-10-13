@@ -241,7 +241,13 @@ export function nameOfProject(
 ): string | undefined {
   if (dir === undefined) return undefined;
   const name = basename(dir);
-  const sharing = workspace.workspaceProjects.filter((project) => basename(project.dir) === name);
+  // Compared normalized: a model echoes a name in NFC, so two directories that differ only
+  // in normalization are homonyms here, and answer by path, where the exact name would
+  // land a write in whichever of them spells it that way.
+  const same = name.normalize('NFC');
+  const sharing = workspace.workspaceProjects.filter(
+    (project) => basename(project.dir).normalize('NFC') === same,
+  );
   return sharing.length === 1 && sharing[0]?.dir === dir ? name : dir;
 }
 

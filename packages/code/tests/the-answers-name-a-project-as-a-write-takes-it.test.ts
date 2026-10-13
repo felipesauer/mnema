@@ -15,7 +15,7 @@
 
 import { mkdirSync, mkdtempSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
-import { join } from 'node:path';
+import { basename, join } from 'node:path';
 import { pathToFileURL } from 'node:url';
 import { ensureTree, memoryCaptured } from '@mnema/chain';
 import type { TimelineEntry } from '@mnema/context';
@@ -81,6 +81,27 @@ describe('nameOfProject', () => {
     expect(nameOfProject(session, apiTwo)).toBe(apiTwo);
     expect(nameOfProject(session, undefined)).toBeUndefined();
     closeSession(session);
+  });
+
+  it('gives the path of a project the workspace does not hold, even when another one has its name', () => {
+    const session = openOn(alpha, apiOne);
+    expect(nameOfProject(session, beta)).toBe(beta);
+    expect(nameOfProject(session, apiTwo)).toBe(apiTwo);
+    expect(nameOfProject(session, apiOne)).toBe('api');
+    closeSession(session);
+  });
+
+  it('treats two directories whose names differ only in Unicode normalization as homonyms', () => {
+    const nfc = makeProject('nfc', 'caf\u00e9');
+    const nfd = makeProject('nfd', 'cafe\u0301');
+    expect(basename(nfc)).not.toBe(basename(nfd));
+    const both = openOn(nfc, nfd);
+    expect(nameOfProject(both, nfc)).toBe(nfc);
+    expect(nameOfProject(both, nfd)).toBe(nfd);
+    closeSession(both);
+    const alone = openOn(nfd);
+    expect(nameOfProject(alone, nfd)).toBe('cafe\u0301');
+    closeSession(alone);
   });
 
   it('round-trips: picking what an answer would say returns the project, in every workspace', () => {
