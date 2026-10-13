@@ -183,7 +183,7 @@ tag, with its own changelog.
   `identity.founded` and no checkpoint, so `verify --require=signed` failed for the whole project; through the server
   it left 6, with a signed `run.started`, and the refusal said "This key founded an identity of its own", and a refused
   `record_observation` left the same in the private tree without a word. Every operation now asks the fact first and
-  founds after: each of those refusals leaves nothing in the `HOME`, the public or the private tree, on the command line
+  founds after: each of those refusals of the fact leaves nothing in the `HOME`, the public or the private tree, on the command line
   and through the server, and the first write that lands founds as before. The refusals' words, and what `verify`
   accepts, are unchanged.
 - **The `project` in an answer is the absolute path again, not the directory's name.** `search`, `read_record`, `audit_refs`,

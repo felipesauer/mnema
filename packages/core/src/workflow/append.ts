@@ -25,8 +25,10 @@
  * `Refused (UNREADABLE_EVENT)` — because an empty argument is an ordinary bad input
  * and an agent has to be able to read it and retry, not receive a stack trace.
  * An operation's first fact comes through {@link appendFact} (or {@link appendFacts}),
- * which asks this door BEFORE the founding the fact needs, so the refusal is all a
- * refused first write leaves.
+ * which asks this door BEFORE the founding the fact needs, so a refused first write leaves
+ * nothing behind. The one refusal that can still come after the founding is the server's own
+ * session run, whose event is built inside the founding (`NOT_A_REFERENCE` on a client name
+ * that is a marker).
  *
  * AND IT IS NOT THE ONLY GUARD. The writer itself refuses the same events before
  * sealing (`refuseUnreadable`), which is what makes "no unreadable entry can be
@@ -243,8 +245,9 @@ function foundedThenBuilt(
  * HOME it was more than that: the refusal also made the machine's key, and the founding sat on a
  * tail with no checkpoint, so `verify --require=signed` failed for the whole project; through the
  * server it opened and signed a session run too, and said "This key founded an identity of its
- * own". The founding comes after this door now ({@link appendFact}), and a refusal leaves the tree
- * and the key root as it found them (`every-append.test.ts`, the virgin-tree cases;
+ * own". The founding comes after this door now ({@link appendFact}), and a refusal of the fact
+ * leaves the tree and the key root as it found them (the server's session run, a client name
+ * that is a marker, can still be refused after the founding; `every-append.test.ts`, the virgin-tree cases;
  * `code/tests/a-refusal-leaves-nothing.test.ts`, one case per class on the binary). The words stay
  * "the fact": they are what the agent reads, and they are true.
  */
