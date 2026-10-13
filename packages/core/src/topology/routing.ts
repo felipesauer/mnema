@@ -590,8 +590,9 @@ function agentReadingIn(chainRoot: string, fingerprint: string, name: string): A
  * `.gitignore` and an installation id. (It touched more — the key's public half, the tail's
  * directory and its proof — until those moved to the writer's first append.)
  * A caller whose answer may write nothing — a refusal the record decides — asks this instead of
- * opening, and a tree it only asked about stays byte for byte as it was. Like opening, it can mint
- * the key at the key root on first use: a signer is somebody. A caller that asks in order to READ
+ * opening, and a tree it only asked about stays byte for byte as it was. Like opening, it answers
+ * a machine with no key with the key this process would make, kept only by a writer's first append
+ * (`keyToSignWith` in `@mnema/chain`): a signer is somebody. A caller that asks in order to READ
  * (the anchor a session speaks for, what a guard simulates) asks {@link signerHeldFor}, which makes
  * no key.
  *

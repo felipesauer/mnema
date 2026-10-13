@@ -45,10 +45,11 @@ export interface OpenOptions extends WriterOptions {
 
 /**
  * Opens the chain at `chainRoot` for this machine to write to, signing with the
- * key at `options.keyRoot`. Loads (or, on first use, mints) the person's pair
- * from the key root, and reads (or, on first use, mints) the per-chain
- * installation id. The writer only ever touches the chain root; the key root is
- * read here and nowhere else.
+ * key at `options.keyRoot`. Loads the person's pair from the key root, and reads
+ * (or, on first use, mints) the per-chain installation id. A key root that holds
+ * no key yet gets a pair made in memory, and that pair and its installation id are
+ * kept by the writer's first append (`keyToSignWith`) — so a write refused before
+ * it leaves the machine with no key, as it found it.
  *
  * NOTHING A CLONE RECEIVES IS WRITTEN HERE. This used to materialize the key's
  * public half "so the chain is anonymously verifiable", and the writer's
@@ -98,9 +99,9 @@ export function openChainForWriting(chainRoot: string, options: OpenOptions): Ch
  * from the record, or a question about who is writing — asks this first, opens a writer only
  * once it knows it will write, and leaves the tree byte for byte as it found it.
  *
- * The KEY ROOT is the one thing it can change, exactly as opening does: a machine with no key
- * yet gets one minted there, because a signer needs a key to be anybody at all. That is the
- * person's directory, never the chain's.
+ * Nor the key root: a machine with no key yet is answered with the key this process would make
+ * (`keyToSignWith`), the one a writer it opens signs with and keeps at its first append. A signer
+ * needs a key to be anybody at all; asking who it is is not a write.
  */
 export function signerAt(chainRoot: string, options: { readonly keyRoot: string }): ChainSigner {
   // WHO SIGNS, WITHOUT OPENING THE KEY: a protected key would otherwise make this question need

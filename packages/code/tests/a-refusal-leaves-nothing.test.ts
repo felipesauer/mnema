@@ -360,19 +360,96 @@ describe('a refusal from the operation’s own door leaves nothing a clone recei
       expect(refused.stderr).toContain(`Refused (${code})`);
       expect(refused.stderr).not.toMatch(/nothing was recorded/i);
 
-      const after = treeOf(project);
-      expect(before.filter((line) => !after.includes(line))).toEqual([]);
-      // ONE new entry: the installation id of B's key, which opening the writer still mints.
-      const added = after.filter((line) => !before.includes(line));
-      expect(added).toHaveLength(1);
-      const [, , installation] = (added[0] as string).split(' ');
-      expect(installation).toMatch(/^\.mnema\/keys\/[0-9a-f]{64}\.inst$/);
-      // And git keeps it out of every clone, by the tree's own `.gitignore`: nothing a clone
-      // receives. The status is asked too, so a new entry git WOULD publish reddens here by name.
-      expect(git(project, 'check-ignore', '-q', installation as string).status).toBe(0);
+      // B's machine had no key, so it has none now, and the tree holds not even an installation
+      // id: the key and its id are kept at the first append, and nothing was appended.
+      expect(treeOf(project)).toEqual(before);
+      expect(readdirSync(homeB)).toEqual([]);
+      // The status is asked too, so a new entry git WOULD publish reddens here by name.
       expect(git(project, 'status', '--porcelain', '--untracked-files=all').stdout).toBe(
         git(join(p0, 'project'), 'status', '--porcelain', '--untracked-files=all').stdout,
       );
+    } finally {
+      rmSync(project, { recursive: true, force: true });
+    }
+  });
+
+  /**
+   * A FIRST WRITE THE GATE REFUSED MADE THE MACHINE'S KEY, and through the server FOUNDED with it.
+   * Measured on the binary from an empty HOME: `task move cancel` with no reason was refused
+   * (`MISSING_PROOF`) and left a key pair under the HOME and an installation id in the project;
+   * through the server, whose run opened before the operation decided, it also left a public key,
+   * an anchor and a tail holding `identity.founded` and `run.started` — and the refusal said "This
+   * key founded an identity of its own".
+   */
+  it('a first write the gate refuses makes no key and founds nothing — the command line', () => {
+    const project = mkdtempSync(join(tmpdir(), 'mnema-a-refusal-leaves-nothing-gate-'));
+    try {
+      cpSync(join(p0, 'project'), project, { recursive: true });
+      const before = treeOf(project);
+      const refused = mnemaIn(project, homeB, 'task', 'move', 'cancel', taskOfA);
+      expect(refused.status, refused.stderr).toBe(1);
+      expect(refused.stderr).toContain('Refused (MISSING_PROOF)');
+      expect(treeOf(project)).toEqual(before);
+      expect(readdirSync(homeB)).toEqual([]);
+      // And the first write the gate accepts still founds, as it did.
+      const accepted = mnemaIn(project, homeB, 'task', 'move', 'cancel', taskOfA, '--reason', 'r');
+      expect(accepted.status, accepted.stderr).toBe(0);
+      expect(accepted.stdout).toContain('CANCELED');
+      expect(readdirSync(join(homeB, '.mnema', 'identity', 'keys'))).toHaveLength(2);
+      expect(mnemaIn(project, homeB, 'verify').status).toBe(0);
+    } finally {
+      rmSync(project, { recursive: true, force: true });
+    }
+  });
+
+  it('a first write the gate refuses makes no key and founds nothing — the server', async () => {
+    const project = mkdtempSync(join(tmpdir(), 'mnema-a-refusal-leaves-nothing-gate-mcp-'));
+    try {
+      cpSync(join(p0, 'project'), project, { recursive: true });
+      const before = treeOf(project);
+      const lines: string[] = [];
+      const { server } = buildMcpServer({
+        cwd: project,
+        env: { home: homeB },
+        log: (line) => lines.push(line),
+      });
+      const client = new Client({ name: 'claude-code', version: '1.0.0' }, { capabilities: {} });
+      const [clientTransport, serverTransport] = InMemoryTransport.createLinkedPair();
+      await Promise.all([client.connect(clientTransport), server.connect(serverTransport)]);
+      const said = (reply: unknown): string =>
+        ((reply as { content?: { text?: string }[] }).content ?? []).map((c) => c.text).join('\n');
+      const move = (args: Record<string, string>) =>
+        client.callTool({ name: 'task_transition', arguments: { id: taskOfA, ...args } });
+
+      const refused = (await move({ action: 'cancel' })) as { isError?: boolean };
+      expect(refused.isError).toBe(true);
+      expect(said(refused)).toContain('MISSING_PROOF');
+      expect(said(refused)).not.toContain('founded an identity');
+      expect(treeOf(project)).toEqual(before);
+      expect(readdirSync(homeB)).toEqual([]);
+
+      // The same session's first accepted write founds, opens its run and lands, in that order.
+      const accepted = (await move({ action: 'cancel', reason: 'r' })) as { isError?: boolean };
+      expect(accepted.isError, said(accepted)).not.toBe(true);
+      expect(said(accepted)).toContain('This key founded an identity of its own');
+      expect(lines.some((line) => /^session run \S+ opened in /.test(line))).toBe(true);
+      await client.close();
+      const verified = mnemaIn(project, homeB, 'verify');
+      expect(verified.status, verified.stdout + verified.stderr).toBe(0);
+      // B's tail, in the order it was written: the founding, the run, then the move.
+      const [key] = readdirSync(join(homeB, '.mnema', 'identity', 'keys')).filter((name) =>
+        name.endsWith('.key'),
+      );
+      const tails = join(project, '.mnema', 'tails');
+      const [tail] = readdirSync(tails).filter((name) =>
+        name.startsWith((key as string).slice(0, 64)),
+      );
+      const written = readFileSync(join(tails, tail as string, '000001.jsonl'), 'utf-8');
+      expect(
+        [...written.matchAll(/"(identity\.founded|run\.started|task\.transitioned)"/g)].map(
+          (m) => m[1],
+        ),
+      ).toEqual(['identity.founded', 'run.started', 'task.transitioned']);
     } finally {
       rmSync(project, { recursive: true, force: true });
     }

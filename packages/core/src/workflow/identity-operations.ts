@@ -315,6 +315,14 @@ export type RecordedAnchor =
  * Returns the anchor this installation serves either way.
  */
 export function ensureFounded(ctx: WriteContext): string {
+  const anchor = foundedAnchor(ctx);
+  // The caller's own first fact, when it has one (`WriteContext.beforeTheFirstFact`): after the
+  // founding, which it must follow, and before the operation's, which may cite it.
+  ctx.beforeTheFirstFact?.();
+  return anchor;
+}
+
+function foundedAnchor(ctx: WriteContext): string {
   const recorded = recordedAnchorOf(ctx);
   if (recorded !== undefined) {
     if (!recorded.counted) throw recorded.refusal;

@@ -26,7 +26,7 @@ import { openChainForWriting, signerAt, verify } from './chain.js';
 import { checkpointHash, serializeCheckpoint, signCheckpoint } from './checkpoint.js';
 import { entryHash, writtenAsBuilt, writtenAsStored } from './hash.js';
 import { deriveAnchor, generateKeyPair, publicKeyToPem } from './keys.js';
-import { listPrivateKeyFingerprints, loadOrCreateKeyPair } from './keystore.js';
+import { loadOrCreateKeyPair } from './keystore.js';
 import { checkpointsPath, publicKeyPath, segmentPath, tailProofPath } from './layout.js';
 import { serializeOtsProof } from './ots.js';
 import { holdsRecord, listTails, orderedSegments, readTailEntries } from './store.js';

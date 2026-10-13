@@ -100,6 +100,13 @@ export interface WriteContext {
    * answer here would let a retired key write, which is the one thing it exists to stop.
    */
   readonly roster?: (anchor: string) => ReadonlySet<string> | undefined;
+  /**
+   * What the caller owes the tree before this context's first fact and after its founding — the
+   * MCP session's run, prepared before the operation and written only once it has decided to
+   * write. Called by `ensureFounded`, which every operation calls between its last refusal and
+   * its first append; the caller makes it run once.
+   */
+  readonly beforeTheFirstFact?: () => void;
 }
 
 /**

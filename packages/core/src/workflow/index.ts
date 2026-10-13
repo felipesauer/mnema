@@ -97,6 +97,8 @@ export {
   type EndRunInput,
   type EndRunOk,
   endRun,
+  type PreparedRun,
+  prepareRun,
   type StartRunError,
   type StartRunInput,
   type StartRunOk,

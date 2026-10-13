@@ -36,7 +36,6 @@ import {
   writeFileSync,
   writeSync,
 } from 'node:fs';
-import { resolve } from 'node:path';
 import { decodeStoredBytes } from '../events/stored-json.js';
 import { CodedError } from './coded-error.js';
 import {
@@ -103,9 +102,9 @@ export function loadOrCreateKeyPair(layout: ChainLayout): KeyPair {
       const minted = findLocalKeyPair(layout);
       if (minted !== null) return minted;
       // The key this process already answered "who signs" with, when it did: one key per process.
-      const keyPair = unkept.get(resolve(layout.root)) ?? generateKeyPair();
+      const keyPair = unkept.get(layout.root) ?? generateKeyPair();
       persistKeyPair(layout, keyPair);
-      unkept.delete(resolve(layout.root));
+      unkept.delete(layout.root);
       return keyPair;
     });
   } catch (error) {
@@ -117,6 +116,7 @@ export function loadOrCreateKeyPair(layout: ChainLayout): KeyPair {
 /**
  * The keys made in this process for a key root that held none, and not kept yet — by key root.
  * One per root, so every question this process asks about who signs there gets the same answer.
+ * Keyed by the root as given: every surface names a key root by one string (`ResolvedTrees.keyRoot`).
  */
 const unkept = new Map<string, KeyPair>();
 
@@ -146,9 +146,8 @@ export interface KeyToSignWith {
 export function keyToSignWith(layout: ChainLayout): KeyToSignWith {
   const existing = findLocalKeyPair(layout);
   if (existing !== null) return { keyPair: existing };
-  const root = resolve(layout.root);
-  const keyPair = unkept.get(root) ?? generateKeyPair();
-  unkept.set(root, keyPair);
+  const keyPair = unkept.get(layout.root) ?? generateKeyPair();
+  unkept.set(layout.root, keyPair);
   return { keyPair, keep: () => keepKeyPair(layout, keyPair) };
 }
 
@@ -167,7 +166,7 @@ function keepKeyPair(layout: ChainLayout, keyPair: KeyPair): void {
     if (error instanceof TailBusyError) throw new KeyRootBusyError(error.tailLock, error.heldBy);
     throw error;
   } finally {
-    unkept.delete(resolve(layout.root));
+    unkept.delete(layout.root);
   }
 }
 
