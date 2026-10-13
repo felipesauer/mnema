@@ -130,7 +130,9 @@ describe('a hook asked to sign as an agent the record does not enrol, where the 
     expect(reason).toContain(
       "This request for a person could not be recorded in the project's record, so the record does not show it:",
     );
-    expect(reason).toContain('a host has no terminal to ask at');
+    expect(reason).toContain(
+      'yours, is protected by a passphrase and MNEMA_KEY_PASSPHRASE is not in the environment',
+    );
     expect(reason.trimEnd().endsWith('Nothing was written.')).toBe(true);
     expect(done.notes).toEqual([reason.slice(reason.indexOf('This request for a person'))]);
     expect(askedEvents()).toHaveLength(0);
