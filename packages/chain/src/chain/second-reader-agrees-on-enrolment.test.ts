@@ -1338,6 +1338,23 @@ describe('the two readers agree on records the product itself wrote — an agent
     expect(refused.join('\n')).toContain('for an identity other than the one that enrolled it');
   });
 
+  it('a record that has not heard of the agent enrolment takes the key as an ordinary member: green on both', () => {
+    // Only B's record: B founds, and B's own key vouches for the key g — an `agent.enrolled` in
+    // another record never reaches this one. The key is a plain member here and writes as B.
+    const g = generateKeyPair();
+    const b = generateKeyPair();
+    commitPublicKey(b);
+    commitPublicKey(g);
+    const bAnchor = deriveAnchor(b.fingerprint);
+    writeTail(`${b.fingerprint}-i1`, [founding(b), enrolled(bAnchor, b, g, 2)], b);
+    writeTail(`${g.fingerprint}-i2`, [task(bAnchor, g, 't-1', 3, {})], g);
+
+    const { productOk, verdict, refused } = bothReaders();
+    expect(refused, 'the second reader refuses an ordinary member').toEqual([]);
+    expect(productOk).toBe(true);
+    expect(verdict).toBe('VERIFIED');
+  });
+
   it('an agent key signing a change to who may sign — its own retirement too: refused by both', () => {
     const { a, g, anchor } = personAndAgent();
     const h = generateKeyPair();
