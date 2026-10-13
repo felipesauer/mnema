@@ -1951,14 +1951,15 @@ export type GuardResult =
  * locates the task's home tree ({@link locateEntity}), takes THAT tree's cache, reads
  * the task's current state as the `from`, and calls the context package's pure
  * {@link guardWithFocus} — no writer, no event. The verdict is the gate's own, the
- * SAME function `task_transition` consults, over the SAME locate, so a guard that
- * says ALLOWED and a move that succeeds can never drift — including for a task in
- * another project, where a guard that refused what the move then did would be worse
- * than either answer alone.
+ * SAME function `task_transition` consults, over the SAME locate, so what the gate
+ * decides about the move and its proof is one answer — including for a task in
+ * another project.
  *
  * The authority simulated is the machine's own — never a client-supplied value — and the one that
  * signs in the TASK's tree: the same answer whichever root the workspace lists first, and, where
- * nobody signs in that tree, the refusal the write would carry. It is paired with the actor's
+ * no enrolled agent signs in that tree, the enrolment refusal. It does NOT foresee the refusal
+ * that comes from the KEY itself (the person's key protected with no passphrase at hand, an
+ * agent that was retired): there the guard can say ALLOWED and the write be refused. It is paired with the actor's
  * focus, so the agent gets "you may (or may not) do this, and here is what you
  * are in the middle of" in one read. The proof (`note`/`reason`/`feedback`) and
  * `which` are simulated exactly as a real move would carry them: with the

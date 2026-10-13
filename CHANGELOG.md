@@ -85,8 +85,10 @@ tag, with its own changelog.
   refused, and which of two roots a host listed first could decide whether the project that enrols the agent could be
   written in at all. The session opens and serves its reads now, and each write is refused in the tree it was for, with
   the verb to run. The key of a machine that has none is made at its first write, as before, and no longer to answer a
-  read. `guard` answers what the write would do in the tree of the task, whichever root the host listed first: where
-  nobody signs in that tree it says the refusal the write would carry. One limit stays: a connection whose first
+  read. `guard` reads the move and its proof by the tree of the task, whichever root the host listed first, and where
+  no enrolled agent signs in that tree it says the enrolment refusal. It does not foresee a refusal that comes from
+  the key (the person's key protected with no passphrase at hand, an agent that was retired): there `guard` can say
+  ok and the write be refused, as it could before. One limit stays: a connection whose first
   signer is in a project it did not list first reads `resume` and `focus` with no actor and no last run, because those
   read the trees of the project it opened in.
 - **The command line and the hook read `MNEMA_AGENT_KEY`, and make nothing for the agent.** The verbs that write a

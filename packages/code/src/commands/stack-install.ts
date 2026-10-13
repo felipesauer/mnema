@@ -84,7 +84,7 @@ export type StackScope = 'public' | 'private' | 'global';
 export type StackTarget = { readonly scope: StackScope } | { readonly to: string };
 
 /** What every stack command reads from its surroundings. */
-export interface StackContext extends Pick<AgentWrites, 'agentKey'> {
+export interface StackContext extends Pick<AgentWrites, 'agentKey' | 'say'> {
   readonly cwd: string;
   readonly env: DiscoveryEnv;
 }

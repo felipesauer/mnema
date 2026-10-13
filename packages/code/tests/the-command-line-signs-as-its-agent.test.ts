@@ -17,7 +17,8 @@
 
 import { cpSync, existsSync, mkdirSync, mkdtempSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
-import { join } from 'node:path';
+import { dirname, join } from 'node:path';
+import { fileURLToPath } from 'node:url';
 import { type CatalogEvent, catalogUpcasters } from '@mnema/chain';
 import { type DiscoveryEnv, orderedEvents, resolveTrees } from '@mnema/core';
 import { deferredWrite, enrollAgentFromRequest } from '@mnema/core/write';
@@ -29,6 +30,14 @@ import {
 } from '../src/commands/write-as-the-agent.js';
 import { type CliIo, run } from '../src/program.js';
 
+const STACK = join(
+  dirname(fileURLToPath(import.meta.url)),
+  '..',
+  '..',
+  'stacks',
+  'examples',
+  'evidence-first',
+);
 const AGENT = 'MNEMA_AGENT_KEY';
 const PASSPHRASE = 'MNEMA_KEY_PASSPHRASE';
 
@@ -325,6 +334,38 @@ describe('a name that is not one this product enrols', () => {
     ).toHaveLength(1);
     expect(ofKind('public', 'decision.recorded').at(-1)?.which).toBeUndefined();
     expect(existsSync(join(home, '.mnema', 'escape'))).toBe(false);
+  });
+});
+
+describe('a name that is not one this product enrols, on the verbs that install and remove a stack', () => {
+  const ignoredLines = (said: Said): string[] =>
+    said.err.split('\n').filter((line) => line.includes('The agent key was ignored'));
+
+  async function installed(agent: string | undefined): Promise<Said[]> {
+    const digest = (
+      await did(undefined, 'stack', 'add', STACK, '--scope', 'public', '--dry-run')
+    ).match(/digest\s+([0-9a-f]{64})/)?.[1] as string;
+    const add = await mnema(agent, 'stack', 'add', STACK, '--scope', 'public', '--expect', digest);
+    const remove = await mnema(agent, 'stack', 'remove', 'evidence-first', '--scope', 'public');
+    return [add, remove];
+  }
+
+  it('says once, on the error stream, that the key was ignored, for add and for remove', async () => {
+    const [add, remove] = await installed('../x');
+
+    expect(add?.failed, add?.out + (add?.err ?? '')).toBe(false);
+    expect(remove?.failed, remove?.out + (remove?.err ?? '')).toBe(false);
+    expect(ignoredLines(add as Said)).toHaveLength(1);
+    expect(ignoredLines(remove as Said)).toHaveLength(1);
+    expect((add as Said).out).toContain('The adoption is recorded in the public tree.');
+    expect((remove as Said).out).toContain('The removal is recorded.');
+  });
+
+  it('says nothing of it for a name that is one', async () => {
+    const [add, remove] = await installed('ci');
+
+    expect(ignoredLines(add as Said)).toEqual([]);
+    expect(ignoredLines(remove as Said)).toEqual([]);
   });
 });
 
