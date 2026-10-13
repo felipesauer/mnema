@@ -83,6 +83,9 @@ const STARTED_WITH = process.env[THE_VARIABLE];
 export const HOME_OF_ITS_OWN = join(tmpdir(), `mnema-home-${process.pid}-${randomUUID()}`);
 process.env.HOME = HOME_OF_ITS_OWN;
 delete process.env[THE_VARIABLE];
+// The agent a shell asked the verbs that write to sign as would change every one of them: a case
+// that wants it writes it.
+delete process.env.MNEMA_AGENT_KEY;
 
 /**
  * Whether `path` is the machine's home — or, with `inside`, a directory under it.

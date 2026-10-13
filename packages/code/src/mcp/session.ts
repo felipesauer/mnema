@@ -76,7 +76,7 @@ import {
   authorizingAnchor,
   endRun,
   openTreeForWriting,
-  signerFor,
+  signerHeldFor,
   startRun,
   type WriteContext,
 } from '@mnema/core/write';
@@ -332,13 +332,19 @@ export interface Session {
   /**
    * The authorizing anchor (the machine's key) — the `who` and the bootstrap actor.
    *
-   * Mutable for one case only: a session that landed on the global tree and then
+   * ABSENT where no tree of the session has a key that signs without being made: a machine with
+   * no key of its own, a host asked for an agent no tree enrols and a person who holds no key, a
+   * retired key, a key the record proves a member of two identities. The session still opens and
+   * reads, and each write is refused in its own tree (the refusal comes from the write); the first
+   * write on a machine with no key makes it, and {@link ensureRun} asks again once it has.
+   *
+   * Mutable for two cases: a session that landed on the global tree and then
    * learned of a project reads its anchor from the project's private tree, which is
    * the tree the question is asked of there. An installation records the anchor it
    * serves PER TREE, so a `who` left over from the global tree would attribute the
-   * project's work to the answer another tree gave.
+   * project's work to the answer another tree gave. And the one above: the first write.
    */
-  who: string;
+  who?: string | undefined;
   /**
    * This session's runs — the roots of authority its writes pin to — one per tree a
    * write has landed in, keyed by that tree's CHAIN ROOT.
@@ -491,12 +497,11 @@ export interface Session {
  * identity founding — so a client that connects and never calls a write leaves the
  * project exactly as it found it.
  *
- * Throws in the two conditions under which no honest session exists, and in no
- * other. The operator configured a project that is relative or is no project
- * ({@link configuredProject}) — the server was told what to serve and will not serve
- * something else. Or the anchor is unanswerable (the record proves this key belongs
- * to two identities, or to one that retired it). The first fires BEFORE anything is
- * touched: the trees resolve first.
+ * Throws in ONE condition, and in no other: the operator configured a project that is
+ * relative or is no project ({@link configuredProject}) — the server was told what to
+ * serve and will not serve something else. It fires BEFORE anything is touched: the
+ * trees resolve first. It never throws for a key: where nobody signs, the session opens
+ * with no `who` and reads, and it is each write that is refused, in its own tree.
  *
  * "EXACTLY AS IT FOUND IT" WAS FALSE UNTIL THE ANCHOR STOPPED BEING READ OFF A WRITER.
  * It was decided through {@link writeContext}, which opens one, and opening one touches
@@ -504,7 +509,8 @@ export interface Session {
  * call was `audit_accountability` gave the PRIVATE tree this key's public half, an
  * installation id and a tail with its proof — on the first connection of every key, the
  * key that founded the project included. Nothing was appended, and the claim was about
- * files. The anchor is asked of the signer now ({@link anchorIn}), which opens nothing;
+ * files. The anchor is asked of the signer now ({@link anchorIn}), which opens nothing
+ * and makes no key: a machine with no key has no anchor until its first write.
  * `a-refusal-leaves-nothing.test.ts` digests the tree around a connection that reads.
  */
 export function openSession(input: OpenSessionInput): Session {
@@ -542,7 +548,7 @@ export function openSession(input: OpenSessionInput): Session {
   // is the whole point — it used to be taken after the run had been appended
   // precisely because founding had settled it, and there is no run to take it after
   // any more. It appends nothing.
-  const who = sessionAnchor(trees, anchorTree);
+  const who = sessionAnchor(trees, anchorTree, log);
   // SAID PER TREE, because the person needs to hear it somewhere and the key is chosen per tree: a
   // server asked to sign as an agent that signs as the person in one tree, or is refused there, is
   // the one thing a plugin update must not do in silence.
@@ -668,8 +674,8 @@ export interface WorkspaceRefresh {
  * The `who` moves in exactly one case, and only because the landing did: the anchor
  * is recorded per tree, so a session that walks from the global tree into a project
  * asks the project's private tree the question it used to ask the global one. Read
- * BEFORE anything is assigned, so a session whose anchor turns out to be unanswerable
- * is left exactly as it was rather than half-moved.
+ * BEFORE anything is assigned, so a session is never half-moved: and where nobody signs
+ * in the project it lands on, the answer is none, as at the opening.
  */
 export function refreshWorkspace(session: Session, roots: readonly string[]): WorkspaceRefresh {
   // Counted first, and counted even when the answer below is "nothing": the count is
@@ -696,12 +702,15 @@ export function refreshWorkspace(session: Session, roots: readonly string[]): Wo
     .map((project) => project.dir)
     .filter((dir) => !known.has(dir));
   const landed = resolved.inProject && !session.inProject;
-  // Before a single field moves. `authorizingAnchor` consults the record and can
-  // refuse (a key the record proves belongs to two identities), and a session left
-  // holding a project's trees with the global tree's `who` would attribute that
-  // project's work to an answer another tree gave.
+  // Before a single field moves, and never refused for a key: a session left holding a
+  // project's trees with the global tree's `who` would attribute that project's work to an
+  // answer another tree gave, and one that has no `who` there says so, as at the opening.
   const who = landed
-    ? sessionAnchor(withTheAgent(resolved.trees, session.env, session.agentKey), 'private')
+    ? sessionAnchor(
+        withTheAgent(resolved.trees, session.env, session.agentKey),
+        'private',
+        session.log,
+      )
     : session.who;
 
   const trees = withTheAgent(resolved.trees, session.env, session.agentKey);
@@ -1004,6 +1013,10 @@ function ensureRun(session: Session, trees: ResolvedTrees, scope: Scope): string
     throw new Error(`could not open a session run: ${started.code} — ${started.message}`);
   }
   session.runs.set(root, { id: started.id, trees, scope });
+  // A machine that had no key made one to write this: the session has someone to speak for now.
+  if (session.who === undefined) {
+    session.who = sessionAnchor(session.trees, session.inProject ? 'private' : 'global', () => {});
+  }
   // The run is this connection's own fact, and the name it carries is the one the client
   // announced — the value the door screens. What it replaced is owed to the reply that
   // caused the opening, which is the first reply able to say it.
@@ -1135,51 +1148,52 @@ export function closeSession(session: Session): SessionClose {
 /**
  * The anchor this machine authorizes as in one of the session's trees — DECIDED, as a write
  * decides it (a key another machine enrolled serves the identity it joined), and asked of the
- * SIGNER rather than of a writer, so asking touches nothing.
+ * SIGNER rather than of a writer, so asking touches nothing and makes nothing.
  *
- * It throws what {@link authorizingAnchor} throws: a key the record proves belongs to two
- * identities, or one the record retired, has no honest anchor, and the session does not open.
+ * Undefined where no key of this machine signs in the tree without being made. It throws what
+ * {@link authorizingAnchor} and the choice of key throw — a key the record proves belongs to two
+ * identities, one the record retired, an agent the tree does not enrol — and the caller decides
+ * what a session does with it.
  */
-function anchorIn(trees: ResolvedTrees, scope: Scope): string {
+export function anchorIn(trees: ResolvedTrees, scope: Scope): string | undefined {
+  const writer = signerHeldFor(trees, scope);
+  if (writer === undefined) return undefined;
   return authorizingAnchor({
-    writer: signerFor(trees, scope),
+    writer,
     layout: { root: chainRootForScope(trees, scope) as string },
     upcasters: catalogUpcasters(),
   });
 }
 
 /**
- * {@link anchorIn} for the session's own `who`: of `first`, and — where an agent is asked for, the
- * record of that tree does not enrol it, and the person has no key here to sign instead — of the
+ * {@link anchorIn} for the session's own `who`: of `first`, and — where nobody signs there — of the
  * next tree that has someone to sign, so a session whose agent is enrolled in the committed tree
- * alone still opens, and its writes to the other trees are the ones refused.
+ * alone still has an anchor, and its writes to the other trees are the ones refused.
+ *
+ * It never throws for a key. Where no tree has anyone, the session has no anchor and opens all the
+ * same: the refusal belongs to the write, in the tree the write is for. What stopped the question,
+ * where the person was asked for and no agent explains it, is said once in the log.
  */
-function sessionAnchor(trees: ResolvedTrees, first: Scope): string {
-  let refusal: IdentityUnavailableError | undefined;
+function sessionAnchor(
+  trees: ResolvedTrees,
+  first: Scope,
+  log: (line: string) => void,
+): string | undefined {
+  let unanswered: IdentityUnavailableError | undefined;
   for (const scope of [first, 'public', 'global'] as const) {
     if (chainRootForScope(trees, scope) === undefined) continue;
     try {
-      return anchorIn(trees, scope);
+      const anchor = anchorIn(trees, scope);
+      if (anchor !== undefined) return anchor;
     } catch (error) {
-      if (!(error instanceof IdentityUnavailableError) || error.code !== 'AGENT_NOT_ENROLLED') {
-        throw error;
-      }
-      refusal ??= error;
+      if (!(error instanceof IdentityUnavailableError)) throw error;
+      unanswered ??= error;
     }
   }
-  // NO TREE OF THIS SESSION HAS ANYONE TO SIGN. The refusal is the one the opening asks, before any
-  // write has a tree, so it names none: the first tree tried is the private one, and a refusal
-  // saying so reads as the tree the write about to be made was for. It says what was CHECKED —
-  // the session's own project and the global tree — and no more: another project of the workspace
-  // may enrol the agent, and a write routed to it is no part of this question.
-  const choice = keyChoiceIn(
-    trees,
-    first,
-    trees.projectPublic === undefined
-      ? 'the global tree'
-      : "this project's trees or the global tree",
-  );
-  throw choice?.signs === 'nobody' ? choice.refusal : (refusal as IdentityUnavailableError);
+  if (unanswered !== undefined && trees.agent === undefined) {
+    log(oneLine(`no identity to open the session as here: ${unanswered.message}`));
+  }
+  return undefined;
 }
 
 /**

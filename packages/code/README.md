@@ -875,8 +875,10 @@ its own fingerprint, because a person with two machines has two keys under the n
 fixes; `enroll` says when it finds another and does not refuse.
 
 **Signing with it.** `mnema mcp --agent-key <name>` (or `MNEMA_AGENT_KEY=<name>`, which a `mnema` from
-before the option ignores where an argument would stop it; the flag wins) and `mnema before-a-write
---host <host> --agent-key <name>` sign with that key in each tree whose record enrols it under exactly
+before the option ignores where an argument would stop it; the flag wins), `mnema before-a-write
+--host <host> --agent-key <name>` (read from the variable too; the flag wins) and the verbs of the command
+line that write a fact an agent's key may sign (every writing verb but `init`, `key …` and `check run`, which
+do not read the variable), with `MNEMA_AGENT_KEY=<name>` in their environment, sign with that key in each tree whose record enrols it under exactly
 that name (`key enroll --agent` writes the committed, the private and the global tree), and the `which`
 of every fact is the name the record of the tree it lands in gives the signing key, whatever the client
 announced. In a tree whose record does not enrol it — a project the verb has not been run in, a tree made
@@ -884,11 +886,17 @@ since, a machine with no key under that name — the person's key signs, and the
 where your own key is protected and `MNEMA_KEY_PASSPHRASE` is not in the environment, or is not on this
 machine, the write is refused (`AGENT_NOT_ENROLLED`; in the hook what is not done is the recording of the fact, and the
 reply to the host is unchanged and says why), naming the verb `key enroll --agent`, and nothing is signed, minted or founded. The
+server opens and serves its reads on a machine where no key signs, each write is refused in the tree it was for, and a
+session that only reads makes no key. The
 server says, on its error stream, one line for each tree where the agent is not the one that signs, when it opens
 and again when the session lands on a project. A key the record retired in any tree the process reaches is
 not passed over to yours: its writes are refused in all of them (`REVOKED_KEY`). A key the record proves a member
 of two identities signs for neither (`AMBIGUOUS_MEMBERSHIP`). A name this product does not enrol is ignored,
-with a word. The hooks of `corrections` still sign with your key.
+with a word. A `--which` that names another than the record's name is not recorded where the agent
+signs, and a line on the error stream says so; `mnema memory` and `mnema observe` with the variable and no
+`--scope` go to the private tree, where a CI runner has no key that enrols the agent: the write is refused.
+The hooks of `corrections` sign with your key unless `MNEMA_AGENT_KEY` is in their environment (the manifests
+pass it to the server only).
 In Claude Code, VS Code and Cursor, which read one manifest, the plugin's `agent_key` option is empty by
 default (that the option, and `MNEMA_AGENT_KEY`, reach the server was not measured on VS Code or Cursor); the manifests of Codex, Copilot CLI and Gemini CLI name their own host; the hook files of
 every host whose hooks are processes pass the host's name too. `mnema doctor` lists the agent keys

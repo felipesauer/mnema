@@ -47,7 +47,7 @@ import {
   USER_CORRECTIONS_CHANNEL,
 } from '../record-framing.js';
 import { RECORD_CONTRACT_HELP } from '../recorded-content.js';
-import { here } from './context.js';
+import { here, hereWriting } from './context.js';
 import { enumeratedArgument, scopeOption } from './enumerated.js';
 import { writeLines } from './io.js';
 import { declaredAgent, INVALID, parseScope, WHICH_HELP } from './options.js';
@@ -149,7 +149,7 @@ function position(group: Command, wiring: Wiring, word: 'off' | 'on', descriptio
         io.fail();
         return;
       }
-      const result = runSwitch(here(), {
+      const result = runSwitch(hereWriting(wiring), {
         channel,
         on,
         ...(opts.reason !== undefined ? { reason: opts.reason } : {}),

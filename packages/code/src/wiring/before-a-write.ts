@@ -36,7 +36,7 @@ export function registerBeforeAWrite(program: Command, wiring: Wiring): Declared
     )
     .option(
       '--agent-key <name>',
-      "sign what this hook records with the key of that agent in each tree whose record enrols it (made with `mnema key request --agent <name> --anchor <id>`), and name the agent the record of that tree gives that key; in a tree that does not, the person's key signs, or, where that key is protected, the fact is not recorded (the reply to the host is unchanged and says why)",
+      "sign what this hook records with the key of that agent in each tree whose record enrols it (made with `mnema key request --agent <name> --anchor <id>`), and name the agent the record of that tree gives that key; in a tree that does not, the person's key signs, or, where that key is protected, the fact is not recorded (the reply to the host is unchanged and says why). Also read from MNEMA_AGENT_KEY",
     )
     .addHelpText(
       'after',

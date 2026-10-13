@@ -42,7 +42,6 @@ import {
   chainRootForScope,
   type DiscoveryEnv,
   locateEntityScope,
-  resolveTrees,
   SKILL_ACTIONS,
 } from '@mnema/core';
 import {
@@ -54,9 +53,10 @@ import {
 } from '@mnema/core/write';
 import { movedDisplay } from '../moved-record.js';
 import { forwardReplacement, type Replacement } from '../recorded-content.js';
+import { type AgentWrites, treesToWrite, whichOfTheWrite } from './write-as-the-agent.js';
 
 /** What the transition command needs — injected so it is testable. */
-export interface SkillTransitionContext {
+export interface SkillTransitionContext extends Pick<AgentWrites, 'agentKey' | 'say'> {
   /** The working directory to resolve the project from. */
   readonly cwd: string;
   /** The discovery environment (`$HOME`, `$MNEMA_HOME`). */
@@ -114,7 +114,8 @@ export function runSkillTransition(
   input: { id: string; action: string; proof?: SkillTransitionProof; which?: string; run?: string },
 ): SkillTransitioned | SkillTransitionRefused {
   const upcasters = catalogUpcasters();
-  const trees = resolveTrees(ctx.cwd, ctx.env);
+  const writing = treesToWrite(ctx);
+  const { trees } = writing;
 
   // Find the tree the skill lives in; the move must follow it there. When no tree
   // holds it, distinguish "you are not in a project" from "this project has no
@@ -140,6 +141,7 @@ export function runSkillTransition(
   }
 
   const root = chainRootForScope(trees, scope) as string;
+  const which = whichOfTheWrite(writing, scope, input.which);
   const writer = openTreeForWriting(trees, scope);
   const opCtx = { writer, layout: { root }, upcasters };
   const fields = proofToFields(input.proof);
@@ -148,7 +150,7 @@ export function runSkillTransition(
   const args = {
     id: input.id,
     ...(fields !== undefined ? { fields } : {}),
-    ...(input.which !== undefined ? { which: input.which } : {}),
+    ...(which !== undefined ? { which } : {}),
     ...(input.run !== undefined ? { run: input.run } : {}),
   };
   const moved = writer.exclusively(() => {

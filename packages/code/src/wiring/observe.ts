@@ -11,7 +11,7 @@
 import type { Command } from 'commander';
 import { RECORD_CONTRACT_HELP } from '../recorded-content.js';
 import { addBodySourceOptions } from './body-source.js';
-import { here } from './context.js';
+import { hereWriting } from './context.js';
 import { scopeOption } from './enumerated.js';
 import { REFUSED } from './from-the-group.js';
 import { onOneLine } from './on-one-line.js';
@@ -67,7 +67,7 @@ export function registerObserve(program: Command, wiring: Wiring): Declared {
       }
       const named = await idOrRefuse(wiring, about);
       if (named === undefined) return;
-      const result = runObserve(here(), {
+      const result = runObserve(hereWriting(wiring), {
         about: named,
         topic: opts.topic,
         text,

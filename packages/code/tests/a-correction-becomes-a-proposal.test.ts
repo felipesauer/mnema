@@ -51,6 +51,14 @@ async function did(...argv: string[]): Promise<void> {
   expect(failed, `${argv.join(' ')}: ${err.join(' / ')}`).toBe(false);
 }
 
+/** Runs `mnema <argv>` in process and answers what it printed. */
+async function captured(...argv: string[]): Promise<string> {
+  const out: string[] = [];
+  const io: CliIo = { out: (line) => out.push(line), err: () => {}, fail: () => {} };
+  await run(argv, io);
+  return out.join('\n');
+}
+
 /** What a person typed, on the `n`th line of a transcript. */
 function typed(text: string, extra: Record<string, unknown> = {}): string {
   return JSON.stringify({
@@ -86,8 +94,14 @@ function payload(event: string, file: string): string {
 }
 
 /** What the verb answers, as the host parses it. */
-function answer(input: string): { reply: Record<string, unknown>; notes: readonly string[] } {
-  const done = runCorrections({ cwd: repo, env }, { payload: input });
+function answer(
+  input: string,
+  agentKey?: string,
+): { reply: Record<string, unknown>; notes: readonly string[] } {
+  const done = runCorrections(
+    { cwd: repo, env, ...(agentKey === undefined ? {} : { agentKey }) },
+    { payload: input },
+  );
   return {
     reply: JSON.parse(JSON.stringify(done.reply)) as Record<string, unknown>,
     notes: done.notes,
@@ -203,6 +217,36 @@ describe('mnema corrections', () => {
     expect(answer(payload('Stop', file))).toEqual({ reply: {}, notes: [] });
     expect(decisionsIn('projectPrivate')).toHaveLength(0);
     expect(decisionsIn('projectPublic')).toHaveLength(0);
+  });
+
+  it('reads the agent the environment names, like any verb that writes: asked for one the private tree does not enrol, with the person’s key protected, it records nothing and says why', async () => {
+    await did('switch', 'on', 'user-corrections');
+    const anchor = (await captured('audit', 'accountability')).match(/mnid:[0-9a-f]{8}/)?.[0];
+    await did('key', 'request', '--agent', 'ci', '--anchor', anchor as string);
+    process.env.MNEMA_KEY_PASSPHRASE = 'correct horse';
+    try {
+      await did('key', 'protect');
+    } finally {
+      delete process.env.MNEMA_KEY_PASSPHRASE;
+    }
+    const file = transcript(CORRECTED);
+
+    // The refusal is thrown below the write and the entry's catch prints it, as for every verb.
+    const said = (agent?: string): string => {
+      try {
+        answer(payload('Stop', file), agent);
+      } catch (error) {
+        return error instanceof Error ? error.message : String(error);
+      }
+      return '';
+    };
+    expect(said('ci')).toBe(
+      'the agent "ci" is not enrolled in this project\'s private tree, and the key that would sign instead, yours, is protected by a passphrase and MNEMA_KEY_PASSPHRASE is not in the environment. In a terminal in this project: `mnema key enroll --agent ci`. Nothing was written.',
+    );
+    expect(decisionsIn('projectPrivate')).toHaveLength(0);
+    // Without it, the same hook asks the person's key alone, and does not speak of the agent.
+    expect(said()).not.toContain('the agent "ci"');
+    expect(decisionsIn('projectPrivate')).toHaveLength(0);
   });
 
   it('records each correction as a proposal in the private tree, once, citing its line', async () => {

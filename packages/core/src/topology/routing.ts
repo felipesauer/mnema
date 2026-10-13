@@ -409,27 +409,18 @@ export type KeyChoice =
  * verb, at a terminal, puts it right. Undefined where no agent is configured, or the tree is not
  * there. It is what a server says of its agent per tree, and what `mnema doctor` says.
  */
-export function keyChoiceIn(
-  trees: ResolvedTrees,
-  scope: Scope,
-  where?: string,
-): KeyChoice | undefined {
+export function keyChoiceIn(trees: ResolvedTrees, scope: Scope): KeyChoice | undefined {
   const chainRoot = chainRootForScope(trees, scope);
   if (trees.agent === undefined || chainRoot === undefined) return undefined;
-  return chooseTheKey(trees, chainRoot, where);
+  return chooseTheKey(trees, chainRoot);
 }
 
-/**
- * `where` names the place a "not enrolled" refusal speaks of, for a caller that asks before any
- * write has a tree: the opening of a session asks one tree, and a refusal naming it would read as
- * the tree the first write is for.
- */
-function chooseTheKey(trees: ResolvedTrees, chainRoot: string, saying?: string): KeyChoice {
+function chooseTheKey(trees: ResolvedTrees, chainRoot: string): KeyChoice {
   const agent = trees.agent;
   if (agent === undefined) return { signs: 'person' };
   const fingerprint = localKeyFingerprint({ root: agent.keyRoot });
   const here = reachableTrees(trees).find((tree) => tree.chainRoot === chainRoot)?.scope;
-  const where = saying ?? (here === undefined ? 'this tree' : TREE_WORDS[here]);
+  const where = here === undefined ? 'this tree' : TREE_WORDS[here];
   if (fingerprint !== null) {
     // RETIRED IN ANY TREE THIS PROCESS REACHES IS RETIRED TO WRITE IN ALL: the retirement is a
     // fact of one record, and a tree that never heard of the key would otherwise let the host that
@@ -585,9 +576,11 @@ function agentReadingIn(chainRoot: string, fingerprint: string, name: string): A
  * {@link openTreeForWriting} touches the tree before anything is appended: the public tree's
  * `.gitignore` and an installation id. (It touched more — the key's public half, the tail's
  * directory and its proof — until those moved to the writer's first append.)
- * A caller whose answer may write nothing — the anchor a machine will write as, or a refusal the
- * record decides — asks this instead, and a tree it only asked about stays byte for byte as it
- * was. Like opening, it can mint the key at the key root on first use: a signer is somebody.
+ * A caller whose answer may write nothing — a refusal the record decides — asks this instead of
+ * opening, and a tree it only asked about stays byte for byte as it was. Like opening, it can mint
+ * the key at the key root on first use: a signer is somebody. A caller that asks in order to READ
+ * (the anchor a session speaks for, what a guard simulates) asks {@link signerHeldFor}, which makes
+ * no key.
  *
  * Throws {@link TreeUnavailableError} for a scope whose tree is not present, as opening does.
  */
@@ -605,6 +598,29 @@ export function signerFor(trees: ResolvedTrees, scope: Scope): ChainSigner {
     return signerAt(chainRoot, { keyRoot: trees.keyRoot });
   }
   return signerAt(chainRoot, { keyRoot: keyRootFor(trees, chainRoot) });
+}
+
+/**
+ * {@link signerFor}, for a caller that asks who WOULD sign in order to read: it never makes a key.
+ *
+ * Undefined where the answer would have to be minted — no agent is asked for and the person's key
+ * root holds no key, so signing here is a first use and a first use is a write. Everywhere else it
+ * answers as {@link signerFor} does, and throws what it throws: where an agent is asked for, the
+ * person's absent key is the refusal that says which verb puts it right, not a key to make. A session
+ * that only reads asks this, so a connection that never writes leaves the machine as it found it.
+ */
+export function signerHeldFor(trees: ResolvedTrees, scope: Scope): ChainSigner | undefined {
+  const chainRoot = chainRootForScope(trees, scope);
+  if (chainRoot === undefined) {
+    throw new TreeUnavailableError(`no ${scope} tree in this context`);
+  }
+  if (
+    chooseTheKey(trees, chainRoot).signs === 'person' &&
+    localKeyFingerprint({ root: trees.keyRoot }) === null
+  ) {
+    return undefined;
+  }
+  return signerFor(trees, scope);
 }
 
 /**

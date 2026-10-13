@@ -17,7 +17,7 @@
 
 import type { Command } from 'commander';
 import { SCOPES, scopeChoices } from '../vocabulary.js';
-import { here } from './context.js';
+import { type HereWriting, here, hereWriting } from './context.js';
 import { enumeratedOption } from './enumerated.js';
 import { onOneLine } from './on-one-line.js';
 import { reportRefusal, reportUsage } from './report.js';
@@ -57,6 +57,22 @@ function targetOf(
   }
   if (to !== undefined) return { to };
   return { scope: (scope ?? 'public') as 'public' | 'private' | 'global' };
+}
+
+/**
+ * The same context, saying each line once: an install asks where it writes in more than one step,
+ * and the line about an agent key that was ignored is one line, not one per step.
+ */
+function onceSaid(ctx: HereWriting): HereWriting {
+  const told = new Set<string>();
+  return {
+    ...ctx,
+    say: (line) => {
+      if (told.has(line)) return;
+      told.add(line);
+      ctx.say(line);
+    },
+  };
 }
 
 /**
@@ -134,7 +150,7 @@ export function registerStack(program: Command, wiring: Wiring): Declared {
         const { applyStackInstall, planLines, planStackInstall, targetRefusal } = await import(
           '../commands/stack-install.js'
         );
-        const ctx = here();
+        const ctx = onceSaid(hereWriting(wiring));
         const nowhere = targetRefusal(ctx, target);
         if (nowhere !== undefined) {
           reportRefusal(wiring, said(nowhere));
@@ -195,7 +211,7 @@ export function registerStack(program: Command, wiring: Wiring): Declared {
       const target = targetOf(wiring, opts.scope, opts.to);
       if (target === undefined) return;
       const { removeInstalledStack } = await import('../commands/stack-install.js');
-      const removed = removeInstalledStack(here(), {
+      const removed = removeInstalledStack(onceSaid(hereWriting(wiring)), {
         name,
         target,
         ...(opts.dryRun === true ? { dryRun: true } : {}),

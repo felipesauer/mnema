@@ -17,7 +17,7 @@ import {
   reachNotice,
   subjectReachNotice,
 } from '../recorded-content.js';
-import { here } from './context.js';
+import { hereWriting } from './context.js';
 import { scopeOption } from './enumerated.js';
 import { writeLines } from './io.js';
 import { onOneLine } from './on-one-line.js';
@@ -67,7 +67,7 @@ export function registerLink(program: Command, wiring: Wiring): Declared {
           io.fail();
           return;
         }
-        const result = runLink(here(), {
+        const result = runLink(hereWriting(wiring), {
           subject,
           target,
           rel: opts.rel,

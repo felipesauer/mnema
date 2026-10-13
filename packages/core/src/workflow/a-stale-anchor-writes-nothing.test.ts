@@ -503,6 +503,7 @@ describe('a checkout the key left writes nothing, through every write of the sur
       'installs an agent’s key into its own folder and records no anchor: the agent’s key is read from the record',
     restoreKey: 'records an anchor from the record — the way out this refusal names',
     signerFor: 'reads who would sign in a tree',
+    signerHeldFor: 'reads who would sign in a tree, and makes no key',
   };
 
   it('classifies every function the writing surface exports', () => {

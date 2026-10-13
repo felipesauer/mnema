@@ -18,7 +18,7 @@
 import type { Command } from 'commander';
 import { fact } from '../presentation/detail.js';
 import { RECORD_CONTRACT_HELP } from '../recorded-content.js';
-import { here } from './context.js';
+import { hereWriting } from './context.js';
 import { onOneLine } from './on-one-line.js';
 import { declaredAgent } from './options.js';
 import { reportRefusal, reportReplacement, reportUsage } from './report.js';
@@ -54,7 +54,7 @@ export function registerRun(program: Command, wiring: Wiring): Declared {
     .option('--goal <text>', 'what this session sets out to do')
     .action(async (opts: { which: string; goal?: string }) => {
       const { runRunStart } = await import('../commands/run-start.js');
-      const result = runRunStart(here(), {
+      const result = runRunStart(hereWriting(wiring), {
         agent: opts.which,
         ...(opts.goal !== undefined ? { goal: opts.goal } : {}),
       });
@@ -121,7 +121,7 @@ export function registerRun(program: Command, wiring: Wiring): Declared {
         );
         return;
       }
-      const result = runRunEnd(here(), {
+      const result = runRunEnd(hereWriting(wiring), {
         run: target,
         which: opts.which,
         ...(opts.outcome !== undefined ? { outcome: opts.outcome } : {}),

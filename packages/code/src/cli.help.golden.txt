@@ -241,7 +241,7 @@ $ mnema decision --help
 | Options:
 |   --alternatives <text>                  what was considered and turned down, and why not (optional). A decision is immutable, so this is recorded at birth: an option rejected later is a new decision, or supersedes this one.
 |   --scope <scope>                        where the decision is born: public (team-visible), private (this machine, this project), or global (personal, cross-project). Omitted, a decision lands in the public tree (a declaration about the project).
-|   --which <agent>                        the agent that executed this, when an agent (a script, a CI step) is driving mnema — omit it when you are acting directly. Declared, never assumed; it names the executor. See --scope for where the fact lands. A value that names no agent (an unset variable) is refused, never credited to you.
+|   --which <agent>                        the agent that executed this, when an agent (a script, a CI step) is driving mnema — omit it when you are acting directly. Declared — by this flag, or by MNEMA_AGENT_KEY — never assumed; where that agent’s key signs, the fact names the agent as the record does. It names the executor. See --scope for where the fact lands. A value that names no agent (an unset variable) is refused, never credited to you.
 |   --stdin                                read the rationale from standard input instead of the line
 |   --body-file <path>                     read the rationale from this file instead of the line
 |   -h, --help                             display help for command
@@ -282,7 +282,9 @@ $ mnema link --help
 |                    the project’s records).
 |   --which <agent>  the agent that executed this, when an agent (a script, a CI
 |                    step) is driving mnema — omit it when you are acting
-|                    directly. Declared, never assumed; it names the executor. See
+|                    directly. Declared — by this flag, or by MNEMA_AGENT_KEY —
+|                    never assumed; where that agent’s key signs, the fact names
+|                    the agent as the record does. It names the executor. See
 |                    --scope for where the fact lands. A value that names no agent
 |                    (an unset variable) is refused, never credited to you.
 |   -h, --help       display help for command
@@ -342,7 +344,9 @@ $ mnema memory --help
 |                       itself with --which defaults to private.
 |   --which <agent>     the agent that executed this, when an agent (a script, a
 |                       CI step) is driving mnema — omit it when you are acting
-|                       directly. Declared, never assumed; it names the executor.
+|                       directly. Declared — by this flag, or by MNEMA_AGENT_KEY —
+|                       never assumed; where that agent’s key signs, the fact
+|                       names the agent as the record does. It names the executor.
 |                       See --scope for where the fact lands. A value that names
 |                       no agent (an unset variable) is refused, never credited to
 |                       you.
@@ -377,7 +381,9 @@ $ mnema observe --help
 |                       itself with --which defaults to private.
 |   --which <agent>     the agent that executed this, when an agent (a script, a
 |                       CI step) is driving mnema — omit it when you are acting
-|                       directly. Declared, never assumed; it names the executor.
+|                       directly. Declared — by this flag, or by MNEMA_AGENT_KEY —
+|                       never assumed; where that agent’s key signs, the fact
+|                       names the agent as the record does. It names the executor.
 |                       See --scope for where the fact lands. A value that names
 |                       no agent (an unset variable) is refused, never credited to
 |                       you.
@@ -437,11 +443,13 @@ $ mnema skill --help
 |                                 the project).
 |   --which <agent>               the agent that executed this, when an agent (a
 |                                 script, a CI step) is driving mnema — omit it
-|                                 when you are acting directly. Declared, never
-|                                 assumed; it names the executor. See --scope for
-|                                 where the fact lands. A value that names no
-|                                 agent (an unset variable) is refused, never
-|                                 credited to you.
+|                                 when you are acting directly. Declared — by this
+|                                 flag, or by MNEMA_AGENT_KEY — never assumed;
+|                                 where that agent’s key signs, the fact names the
+|                                 agent as the record does. It names the executor.
+|                                 See --scope for where the fact lands. A value
+|                                 that names no agent (an unset variable) is
+|                                 refused, never credited to you.
 |   --stdin                       read the pattern from standard input instead of
 |                                 the line
 |   --body-file <path>            read the pattern from this file instead of the
@@ -515,11 +523,14 @@ $ mnema task --help
 |   --which <agent>                       the agent that executed this, when an
 |                                         agent (a script, a CI step) is driving
 |                                         mnema — omit it when you are acting
-|                                         directly. Declared, never assumed; it
-|                                         names the executor. See --scope for
-|                                         where the fact lands. A value that names
-|                                         no agent (an unset variable) is refused,
-|                                         never credited to you.
+|                                         directly. Declared — by this flag, or by
+|                                         MNEMA_AGENT_KEY — never assumed; where
+|                                         that agent’s key signs, the fact names
+|                                         the agent as the record does. It names
+|                                         the executor. See --scope for where the
+|                                         fact lands. A value that names no agent
+|                                         (an unset variable) is refused, never
+|                                         credited to you.
 |   -h, --help                            display help for command
 |
 | Commands:
@@ -1343,7 +1354,7 @@ $ mnema before-a-write --help
 |                       the record of that tree gives that key; in a tree that
 |                       does not, the person's key signs, or, where that key is
 |                       protected, the fact is not recorded (the reply to the host
-|                       is unchanged and says why)
+|                       is unchanged and says why). Also read from MNEMA_AGENT_KEY
 |   -h, --help          display help for command
 |
 | What it reads and what it prints:
@@ -1442,10 +1453,12 @@ $ mnema decision record --help
 |                          the public tree (a declaration about the project).
 |   --which <agent>        the agent that executed this, when an agent (a script,
 |                          a CI step) is driving mnema — omit it when you are
-|                          acting directly. Declared, never assumed; it names the
-|                          executor. See --scope for where the fact lands. A value
-|                          that names no agent (an unset variable) is refused,
-|                          never credited to you.
+|                          acting directly. Declared — by this flag, or by
+|                          MNEMA_AGENT_KEY — never assumed; where that agent’s key
+|                          signs, the fact names the agent as the record does. It
+|                          names the executor. See --scope for where the fact
+|                          lands. A value that names no agent (an unset variable)
+|                          is refused, never credited to you.
 |   --stdin                read the rationale from standard input instead of the
 |                          line
 |   --body-file <path>     read the rationale from this file instead of the line
@@ -1544,8 +1557,10 @@ $ mnema decision import --help
 |                      tree.
 |   --which <agent>    the agent that executed this, when an agent (a script, a CI
 |                      step) is driving mnema — omit it when you are acting
-|                      directly. Declared, never assumed; it names the executor.
-|                      See --scope for where the fact lands. A value that names no
+|                      directly. Declared — by this flag, or by MNEMA_AGENT_KEY —
+|                      never assumed; where that agent’s key signs, the fact names
+|                      the agent as the record does. It names the executor. See
+|                      --scope for where the fact lands. A value that names no
 |                      agent (an unset variable) is refused, never credited to
 |                      you.
 |   -h, --help         display help for command
@@ -1600,7 +1615,9 @@ $ mnema skill create --help
 |                       (a declaration about the project).
 |   --which <agent>     the agent that executed this, when an agent (a script, a
 |                       CI step) is driving mnema — omit it when you are acting
-|                       directly. Declared, never assumed; it names the executor.
+|                       directly. Declared — by this flag, or by MNEMA_AGENT_KEY —
+|                       never assumed; where that agent’s key signs, the fact
+|                       names the agent as the record does. It names the executor.
 |                       See --scope for where the fact lands. A value that names
 |                       no agent (an unset variable) is refused, never credited to
 |                       you.
@@ -1901,7 +1918,9 @@ $ mnema task create --help
 |                    board).
 |   --which <agent>  the agent that executed this, when an agent (a script, a CI
 |                    step) is driving mnema — omit it when you are acting
-|                    directly. Declared, never assumed; it names the executor. See
+|                    directly. Declared — by this flag, or by MNEMA_AGENT_KEY —
+|                    never assumed; where that agent’s key signs, the fact names
+|                    the agent as the record does. It names the executor. See
 |                    --scope for where the fact lands. A value that names no agent
 |                    (an unset variable) is refused, never credited to you.
 |   -h, --help       display help for command
@@ -1964,7 +1983,9 @@ $ mnema task handoff --help
 |                    (coordination between actors).
 |   --which <agent>  the agent that executed this, when an agent (a script, a CI
 |                    step) is driving mnema — omit it when you are acting
-|                    directly. Declared, never assumed; it names the executor. See
+|                    directly. Declared — by this flag, or by MNEMA_AGENT_KEY —
+|                    never assumed; where that agent’s key signs, the fact names
+|                    the agent as the record does. It names the executor. See
 |                    --scope for where the fact lands. A value that names no agent
 |                    (an unset variable) is refused, never credited to you.
 |   -h, --help       display help for command
@@ -2038,7 +2059,9 @@ $ mnema switch off --help
 |                    this machine and no committed file can report it.
 |   --which <agent>  the agent that executed this, when an agent (a script, a CI
 |                    step) is driving mnema — omit it when you are acting
-|                    directly. Declared, never assumed; it names the executor. See
+|                    directly. Declared — by this flag, or by MNEMA_AGENT_KEY —
+|                    never assumed; where that agent’s key signs, the fact names
+|                    the agent as the record does. It names the executor. See
 |                    --scope for where the fact lands. A value that names no agent
 |                    (an unset variable) is refused, never credited to you.
 |   -h, --help       display help for command
@@ -2073,7 +2096,9 @@ $ mnema switch on --help
 |                    this machine and no committed file can report it.
 |   --which <agent>  the agent that executed this, when an agent (a script, a CI
 |                    step) is driving mnema — omit it when you are acting
-|                    directly. Declared, never assumed; it names the executor. See
+|                    directly. Declared — by this flag, or by MNEMA_AGENT_KEY —
+|                    never assumed; where that agent’s key signs, the fact names
+|                    the agent as the record does. It names the executor. See
 |                    --scope for where the fact lands. A value that names no agent
 |                    (an unset variable) is refused, never credited to you.
 |   -h, --help       display help for command

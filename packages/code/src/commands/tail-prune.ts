@@ -33,12 +33,13 @@
  */
 
 import { catalogUpcasters, tailDir } from '@mnema/chain';
-import { chainRootForScope, type DiscoveryEnv, locateTailScope, resolveTrees } from '@mnema/core';
+import { chainRootForScope, type DiscoveryEnv, locateTailScope } from '@mnema/core';
 import { authorizeTailPrune, openTreeForWriting } from '@mnema/core/write';
 import { forwardReplacement, type Landed, type Replacement } from '../recorded-content.js';
+import { type AgentWrites, treesToWrite, whichOfTheWrite } from './write-as-the-agent.js';
 
 /** What the prune command needs — injected so it is testable. */
-export interface TailPruneContext {
+export interface TailPruneContext extends Pick<AgentWrites, 'agentKey' | 'say'> {
   /** The working directory to resolve the project from. */
   readonly cwd: string;
   /** The discovery environment (`$HOME`, `$MNEMA_HOME`). */
@@ -94,7 +95,8 @@ export function runTailPrune(
   input: { tail: string; reason: string; which?: string; run?: string },
 ): CutAuthorized | CutRefused {
   const upcasters = catalogUpcasters();
-  const trees = resolveTrees(ctx.cwd, ctx.env);
+  const writing = treesToWrite(ctx);
+  const { trees } = writing;
 
   // The tree that holds the tail; the waiver has to land THERE. When no tree does,
   // distinguish "you are not in a project" from "this record simply has no such
@@ -107,6 +109,7 @@ export function runTailPrune(
   }
 
   const root = chainRootForScope(trees, scope) as string;
+  const which = whichOfTheWrite(writing, scope, input.which);
   const writer = openTreeForWriting(trees, scope);
   const authorized = writer.exclusively(() => {
     const written = authorizeTailPrune(
@@ -114,7 +117,7 @@ export function runTailPrune(
       {
         tail: input.tail,
         reason: input.reason,
-        ...(input.which !== undefined ? { which: input.which } : {}),
+        ...(which !== undefined ? { which } : {}),
         ...(input.run !== undefined ? { run: input.run } : {}),
       },
     );

@@ -45,6 +45,7 @@ import { join } from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 import { catalogUpcasters, ensureTree } from '@mnema/chain';
 import { type DiscoveryEnv, orderedEvents, PROJECT_DIR, resolveTrees } from '@mnema/core';
+import { signerFor } from '@mnema/core/write';
 import { Client } from '@modelcontextprotocol/sdk/client/index.js';
 import { InMemoryTransport } from '@modelcontextprotocol/sdk/inMemory.js';
 import { ListRootsRequestSchema } from '@modelcontextprotocol/sdk/types.js';
@@ -60,15 +61,16 @@ import { openSession, refreshWorkspace } from '../src/mcp/session.js';
  * asked. That side effect was a defect — a connection that only reads gave the private tree
  * a public half, an installation and a tail — and it is gone: asking opens nothing now, so a
  * tree nobody asked and a tree that was asked look the same on the disk. The question is
- * counted at `signerFor`, which the session asks and nothing here stubs: the real function
- * answers every call.
+ * counted at `signerHeldFor`, which the session asks and nothing here stubs: the real function
+ * answers every call. The machine holds a key (`beforeEach`), because a machine with none has no
+ * anchor to compare, and the answers below would be equal for being equally absent.
  */
 const asked = vi.hoisted(() => ({ roots: [] as (string | undefined)[] }));
 vi.mock('@mnema/core/write', async (importActual) => {
   const actual = await importActual<typeof import('@mnema/core/write')>();
   return {
     ...actual,
-    signerFor: (...args: Parameters<typeof actual.signerFor>) => {
+    signerHeldFor: (...args: Parameters<typeof actual.signerHeldFor>) => {
       const [trees, scope] = args;
       asked.roots.push(
         scope === 'private'
@@ -77,7 +79,7 @@ vi.mock('@mnema/core/write', async (importActual) => {
             ? trees.projectPublic
             : trees.global,
       );
-      return actual.signerFor(...args);
+      return actual.signerHeldFor(...args);
     },
   };
 });
@@ -160,6 +162,8 @@ beforeEach(() => {
   sandbox = mkdtempSync(join(tmpdir(), 'mnema-learns-'));
   env = { home: sandbox };
   logged = [];
+  // The machine's own key, made the way the first write makes it: nothing else here writes.
+  signerFor(resolveTrees(sandbox, env), 'global');
 });
 
 afterEach(() => {

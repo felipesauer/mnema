@@ -56,9 +56,15 @@ import {
   THE_READING_THAT_OPENED_THESE,
   withScopedCaches,
 } from '../tree-sources.js';
+import {
+  type AgentWrites,
+  originOfTheWrite,
+  treesToWrite,
+  whichOfTheWrite,
+} from './write-as-the-agent.js';
 
 /** What the switch commands need — injected so they are testable. */
-export interface SwitchContext {
+export interface SwitchContext extends Pick<AgentWrites, 'agentKey' | 'say'> {
   /** The working directory to resolve the trees from. */
   readonly cwd: string;
   /** The discovery environment (`$HOME`, `$MNEMA_HOME`). */
@@ -207,11 +213,18 @@ export function runSwitch(
   if (!isSwitchable(input.channel)) {
     return { ok: false, reason: 'UNKNOWN_CHANNEL', channel: input.channel };
   }
-  const trees = resolveTrees(ctx.cwd, ctx.env);
-  const scope = resolveScope('channel.switched', { which: input.which }, input.scope);
+  const writing = treesToWrite(ctx);
+  const { trees } = writing;
+  const scope = resolveScope(
+    'channel.switched',
+    originOfTheWrite(writing, input.which),
+    input.scope,
+  );
   if (scope !== 'global' && trees.projectPublic === undefined) {
     return { ok: false, reason: 'NO_PROJECT' };
   }
+
+  const which = whichOfTheWrite(writing, scope, input.which);
 
   const writer = openTreeForWriting(trees, scope);
   const recorded = writer.exclusively(() => {
@@ -225,7 +238,7 @@ export function runSwitch(
         channel: input.channel,
         on: input.on,
         ...(input.reason !== undefined ? { reason: input.reason } : {}),
-        ...(input.which !== undefined ? { which: input.which } : {}),
+        ...(which !== undefined ? { which } : {}),
         ...(input.run !== undefined ? { run: input.run } : {}),
       },
     );

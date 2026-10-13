@@ -31,13 +31,14 @@
  */
 
 import { catalogUpcasters, type TransitionFields } from '@mnema/chain';
-import { chainRootForScope, type DiscoveryEnv, deriveAlias, resolveTrees } from '@mnema/core';
+import { chainRootForScope, type DiscoveryEnv, deriveAlias } from '@mnema/core';
 import { openTreeForWriting, transitionTask } from '@mnema/core/write';
 import { forwardReplacement, type Replacement } from '../recorded-content.js';
 import { locateEntityScopeKept } from '../tree-sources.js';
+import { type AgentWrites, treesToWrite, whichOfTheWrite } from './write-as-the-agent.js';
 
 /** What the transition command needs — injected so it is testable. */
-export interface TaskTransitionContext {
+export interface TaskTransitionContext extends Pick<AgentWrites, 'agentKey' | 'say'> {
   /** The working directory to resolve the project from. */
   readonly cwd: string;
   /** The discovery environment (`$HOME`, `$MNEMA_HOME`). */
@@ -95,7 +96,8 @@ export function runTaskTransition(
   input: { id: string; action: string; proof?: TaskTransitionProof; which?: string; run?: string },
 ): TaskTransitioned | TaskTransitionRefused {
   const upcasters = catalogUpcasters();
-  const trees = resolveTrees(ctx.cwd, ctx.env);
+  const writing = treesToWrite(ctx);
+  const { trees } = writing;
 
   // Find the tree the task lives in; the move must follow it there. When no tree
   // holds the task, distinguish "you are not in a project" (a human moves
@@ -106,6 +108,8 @@ export function runTaskTransition(
       ? { ok: false, reason: 'NO_PROJECT' }
       : { ok: false, reason: 'UNKNOWN_TASK' };
   }
+
+  const which = whichOfTheWrite(writing, scope, input.which);
 
   const writer = openTreeForWriting(trees, scope);
   const fields = proofToFields(input.proof);
@@ -120,7 +124,7 @@ export function runTaskTransition(
         id: input.id,
         action: input.action,
         ...(fields !== undefined ? { fields } : {}),
-        ...(input.which !== undefined ? { which: input.which } : {}),
+        ...(which !== undefined ? { which } : {}),
         ...(input.run !== undefined ? { run: input.run } : {}),
       },
     );

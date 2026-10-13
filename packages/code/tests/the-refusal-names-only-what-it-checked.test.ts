@@ -155,8 +155,8 @@ describe('the refusal to write with a retired agent key', () => {
   });
 });
 
-describe('the refusal of the opening of a session', () => {
-  it('names no single tree when no tree has anyone to sign', async () => {
+describe('the refusal of a write on a session that has no one to sign', () => {
+  it('names the tree the write was for, and no other', async () => {
     const identity = (await did('audit', 'accountability')).match(/mnid:[0-9a-f]{8}/)?.[0];
     await did('key', 'request', '--agent', 'claude', '--anchor', identity as string);
     // A machine that mounts the agent's folder and nothing of the person's, and a record that
@@ -176,8 +176,9 @@ describe('the refusal of the opening of a session', () => {
 
     expect(reply?.isError).toBe(true);
     expect(textOf(reply)).toContain(
-      'the agent "claude" is not enrolled in this project\'s trees or the global tree, and the key that would sign instead, yours, is not on this machine. In a terminal in this project: `mnema key enroll --agent claude`.',
+      'the agent "claude" is not enrolled in this project\'s committed tree, and the key that would sign instead, yours, is not on this machine. In a terminal in this project: `mnema key enroll --agent claude`.',
     );
     expect(textOf(reply)).not.toContain('private tree');
+    expect(textOf(reply)).not.toContain('global tree');
   });
 });

@@ -24,7 +24,7 @@
 
 import type { Command } from 'commander';
 import { RECORD_CONTRACT_HELP } from '../recorded-content.js';
-import { here } from './context.js';
+import { hereWriting } from './context.js';
 import {
   actionsRequiring,
   enumeratedArgument,
@@ -88,7 +88,7 @@ export function registerTask(program: Command, wiring: Wiring): Declared {
       io.fail();
       return;
     }
-    const result = runTask(here(), {
+    const result = runTask(hereWriting(wiring), {
       title,
       ...(scope !== undefined ? { scope } : {}),
       ...(given.which !== undefined ? { which: given.which } : {}),
@@ -154,7 +154,7 @@ export function registerTask(program: Command, wiring: Wiring): Declared {
         io.fail();
         return;
       }
-      const result = runTaskTransition(here(), {
+      const result = runTaskTransition(hereWriting(wiring), {
         id,
         action,
         proof: {

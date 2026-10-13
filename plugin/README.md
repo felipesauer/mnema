@@ -262,7 +262,7 @@ hook files of VS Code, Cursor, Codex, Copilot CLI, Gemini CLI and OpenCode pass 
 the record of a tree enrols no key under that name, the server says so on its error stream, once for
 each such tree, and signs there with your own, and what it records is declared, not attested; where your
 own key is protected and `MNEMA_KEY_PASSPHRASE` is not in the environment, or is not on this machine, that write is
-refused and nothing is signed, and the refusal names the verb `key enroll --agent` (in the hook what is not done is
+refused and nothing is signed, and the server still opens and serves what it reads, and the refusal names the verb `key enroll --agent` (in the hook what is not done is
 the recording of the fact: the reply to the host is unchanged and says why). That a host passes a manifest's `env` to the server
 was not measured on the hosts named here, only on Claude Code's documentation; and that VS Code and Cursor
 hand the server the `agent_key` option was not measured either; `mnema doctor` says what a machine holds. What a

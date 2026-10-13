@@ -45,7 +45,7 @@
 import type { Command } from 'commander';
 import { fact } from '../presentation/detail.js';
 import { RECORD_CONTRACT_HELP } from '../recorded-content.js';
-import { here } from './context.js';
+import { here, hereWriting } from './context.js';
 import { writeLines } from './io.js';
 import { noSuchRecord } from './no-such-record.js';
 import { onOneLine } from './on-one-line.js';
@@ -115,7 +115,7 @@ export function registerTail(program: Command, wiring: Wiring): Declared {
         io.fail();
         return;
       }
-      const result = runTailPrune(here(), {
+      const result = runTailPrune(hereWriting(wiring), {
         tail: named,
         reason: opts.reason,
         ...(opts.which !== undefined ? { which: opts.which } : {}),

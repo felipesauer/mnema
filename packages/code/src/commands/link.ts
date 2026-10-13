@@ -34,7 +34,6 @@ import {
   type DiscoveryEnv,
   locateEntityScope,
   resolveScope,
-  resolveTrees,
   type Scope,
 } from '@mnema/core';
 import { linkKnowledge, openTreeForWriting } from '@mnema/core/write';
@@ -42,9 +41,15 @@ import { reachOfAddress } from '../governed-tree.js';
 import { resolveAddress } from '../label-as-address.js';
 import { linkRefusal } from '../link-target.js';
 import { forwardReplacement, type Landed, type Replacement } from '../recorded-content.js';
+import {
+  type AgentWrites,
+  originOfTheWrite,
+  treesToWrite,
+  whichOfTheWrite,
+} from './write-as-the-agent.js';
 
 /** What the link command needs — injected so it is testable. */
-export interface LinkContext {
+export interface LinkContext extends Pick<AgentWrites, 'agentKey' | 'say'> {
   /** The working directory to resolve the project from. */
   readonly cwd: string;
   /** The discovery environment (`$HOME`, `$MNEMA_HOME`). */
@@ -123,8 +128,13 @@ export function runLink(
     run?: string;
   },
 ): LinkRecorded | LinkRefused {
-  const trees = resolveTrees(ctx.cwd, ctx.env);
-  const scope = resolveScope('knowledge.linked', { which: input.which }, input.scope);
+  const writing = treesToWrite(ctx);
+  const { trees } = writing;
+  const scope = resolveScope(
+    'knowledge.linked',
+    originOfTheWrite(writing, input.which),
+    input.scope,
+  );
   if (scope !== 'global' && trees.projectPublic === undefined) {
     return { ok: false, reason: 'NO_PROJECT' };
   }
@@ -140,6 +150,8 @@ export function runLink(
   if (unresolved !== undefined) return refusedLink('UNKNOWN_TARGET', unresolved);
   const ends = { subject: subject.id, target: target.id };
 
+  const which = whichOfTheWrite(writing, scope, input.which);
+
   const writer = openTreeForWriting(trees, scope);
   const recorded = writer.exclusively(() => {
     const written = linkKnowledge(
@@ -152,7 +164,7 @@ export function runLink(
         subject: ends.subject,
         target: ends.target,
         rel: input.rel,
-        ...(input.which !== undefined ? { which: input.which } : {}),
+        ...(which !== undefined ? { which } : {}),
         ...(input.run !== undefined ? { run: input.run } : {}),
       },
     );

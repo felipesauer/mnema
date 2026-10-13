@@ -24,18 +24,18 @@
  */
 
 import { catalogUpcasters } from '@mnema/chain';
-import {
-  chainRootForScope,
-  type DiscoveryEnv,
-  resolveScope,
-  resolveTrees,
-  type Scope,
-} from '@mnema/core';
+import { chainRootForScope, type DiscoveryEnv, resolveScope, type Scope } from '@mnema/core';
 import { captureMemory, openTreeForWriting } from '@mnema/core/write';
 import { forwardReplacement, type Landed, type Replacement } from '../recorded-content.js';
+import {
+  type AgentWrites,
+  originOfTheWrite,
+  treesToWrite,
+  whichOfTheWrite,
+} from './write-as-the-agent.js';
 
 /** What the memory command needs — injected so it is testable. */
-export interface MemoryContext {
+export interface MemoryContext extends Pick<AgentWrites, 'agentKey' | 'say'> {
   /** The working directory to resolve the project from. */
   readonly cwd: string;
   /** The discovery environment (`$HOME`, `$MNEMA_HOME`). */
@@ -79,14 +79,21 @@ export function runMemory(
   ctx: MemoryContext,
   input: { content: string; scope?: Scope; which?: string; run?: string },
 ): MemoryCaptured | MemoryRefused {
-  const trees = resolveTrees(ctx.cwd, ctx.env);
-  const scope = resolveScope('memory.captured', { which: input.which }, input.scope);
+  const writing = treesToWrite(ctx);
+  const { trees } = writing;
+  const scope = resolveScope(
+    'memory.captured',
+    originOfTheWrite(writing, input.which),
+    input.scope,
+  );
   // A project scope needs a project; global does not. Guard the resolved scope,
   // not the flag, so an omitted flag (default public) outside a project refuses
   // just as an explicit `--scope public` would.
   if (scope !== 'global' && trees.projectPublic === undefined) {
     return { ok: false, reason: 'NO_PROJECT' };
   }
+
+  const which = whichOfTheWrite(writing, scope, input.which);
 
   const writer = openTreeForWriting(trees, scope);
   const captured = writer.exclusively(() => {
@@ -98,7 +105,7 @@ export function runMemory(
       },
       {
         content: input.content,
-        ...(input.which !== undefined ? { which: input.which } : {}),
+        ...(which !== undefined ? { which } : {}),
         ...(input.run !== undefined ? { run: input.run } : {}),
       },
     );

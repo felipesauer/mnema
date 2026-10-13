@@ -522,7 +522,7 @@ export function buildMcpServer(options: McpServerOptions): {
           `session opened: project=${opened.project ?? '(none — the global tree)'} ` +
             `(${landingOf(opened)}) ` +
             `workspaceProjects=${opened.workspaceProjects.length} ` +
-            `who=${opened.who} ` +
+            `who=${opened.who ?? "(none yet — no key of this machine signs in this session's own trees)"} ` +
             'runs=(none — the first write to a tree opens that tree’s run)',
         ),
       );
@@ -1569,9 +1569,10 @@ function registerTools(tool: ToolRegistrar, ensureSession: () => Promise<Session
         ...(which !== undefined ? { which } : {}),
       });
       if (!result.ok) {
-        // No tree of the workspace holds the task, or two records do — surface it as
-        // a tool error so the agent
-        // sees there is no such task, not a misleadable empty verdict.
+        // No tree of the workspace holds the task, or two records do, or nobody signs in the
+        // task's tree and the write would be refused there: surface it as a tool error so the
+        // agent sees there is no such task, or the refusal the move would have, not a
+        // misleadable verdict.
         return refused(active, result);
       }
       // A REFUSED verdict is NOT a tool error — the dry-run succeeded and its

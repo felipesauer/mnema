@@ -41,8 +41,8 @@ tag, with its own changelog.
   <fingerprint> --reason <why>` retires it in every tree of this machine that enrolled it, and `key revoke` of an agent key names that
   verb. A key retired in a tree this machine reaches is retired for every tree it reaches: `mnema key request --agent <name> --anchor <id>` then puts the retired key
   in `agents/<name>/retired/` and makes the agent a new one under the same name. An agent key is not counted among an
-  identity's own keys where the last one may not be retired. `mnema mcp --agent-key <name>` (or `MNEMA_AGENT_KEY`) and
-  `mnema before-a-write --host <host> --agent-key <name>` sign with the key in each tree whose record enrols it under
+  identity's own keys where the last one may not be retired. `mnema mcp --agent-key <name>`, `mnema before-a-write --host <host> --agent-key <name>` (each also
+  read from `MNEMA_AGENT_KEY`) and the verbs of the command line that write sign with the key in each tree whose record enrols it under
   that name, and the `which` of what they record is the name the record of that tree gave the key, not what the client
   announced; in a tree that does not enrol it the person's key signs, as before, and the server says so for each such
   tree (and again when the session lands on a project) — and where the person's key is protected and `MNEMA_KEY_PASSPHRASE` is not in the environment, or is not on this machine, the write is
@@ -79,6 +79,33 @@ tag, with its own changelog.
 
 ### Changed
 
+- **`mnema mcp` opens and reads where no key signs, and a connection that only reads makes no key.** A machine with no
+  key of its own, a host asked for an agent that no tree enrols while the person's key is not on the machine, a retired
+  key, a key the record proves a member of two identities: the session opened for none of them, so even `bootstrap` was
+  refused, and which of two roots a host listed first could decide whether the project that enrols the agent could be
+  written in at all. The session opens and serves its reads now, and each write is refused in the tree it was for, with
+  the verb to run. The key of a machine that has none is made at its first write, as before, and no longer to answer a
+  read. `guard` reads the move and its proof by the tree of the task, whichever root the host listed first, and where
+  no enrolled agent signs in that tree and your own key is not on this machine it says the enrolment refusal (and
+  `REVOKED_KEY`, where the agent was retired). It does not foresee a refusal that comes from
+  the key (the person's key protected with no passphrase at hand, an agent that was retired): there `guard` can say
+  ok and the write be refused, as it could before. One limit stays: a connection whose first
+  signer is in a project it did not list first reads `resume` and `focus` with no actor and no last run, because those
+  read the trees of the project it opened in.
+- **The command line and the hook read `MNEMA_AGENT_KEY`, and make nothing for the agent.** The verbs that write a
+  fact an agent's key may sign (`decision record`, `decision move`, `decision import`, `memory`, `observe`, `task`,
+  `skill`, `link`, `unlink`, `retract`, `handoff`, `switch`, `tail prune`, `run`, `stack`, `check declare`, and the
+  `corrections` and `promote`, which write through them) now read the variable as the server does: where the record of
+  the tree written enrols the agent's key, the fact is signed by it and names the agent the record gives it, and a `--which` that names
+  another is not recorded (one line on the error stream says so); where it does not, your own key signs when it opens
+  without a terminal, and the `which` is the name the variable asked for, declared; where it does not open, the
+  write is refused (`AGENT_NOT_ENROLLED`, `REVOKED_KEY`, `AMBIGUOUS_MEMBERSHIP`) and no key and no identity is made for
+  the agent. Before, a machine that held only the agent's folder and no key of yours made a key and founded an
+  identity in the public record when a verb ran with the variable. `mnema memory` and `mnema observe` with the
+  variable and no `--scope` go to the private tree, as with `--which`. `mnema before-a-write` reads it too (the flag
+  wins). `init`, `key …` and `check run` do not read it: what they write is a fact of the person's, and the format
+  refuses an agent's key there. A name this product does not enrol is ignored, with a line on the error stream. `mnema
+  doctor` no longer says the process signs as you where your own key may be protected or absent.
 - **The pages and the help of the agent key say what the code does, and no more.** The refusal of a write where the
   person's key would sign in place of an agent's is for a key that is protected and with no `MNEMA_KEY_PASSPHRASE` in the
   environment, or not on this machine (the pages said a protected key and no terminal; no terminal is looked for), and in

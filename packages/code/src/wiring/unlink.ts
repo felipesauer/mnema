@@ -9,7 +9,7 @@
 
 import type { Command } from 'commander';
 import { RECORD_CONTRACT_HELP } from '../recorded-content.js';
-import { here } from './context.js';
+import { hereWriting } from './context.js';
 import { noSuchRecord } from './no-such-record.js';
 import { onOneLine } from './on-one-line.js';
 import { declaredAgent } from './options.js';
@@ -53,7 +53,7 @@ export function registerUnlink(program: Command, wiring: Wiring): Declared {
           io.fail();
           return;
         }
-        const result = runUnlink(here(), {
+        const result = runUnlink(hereWriting(wiring), {
           subject,
           target,
           rel: opts.rel,

@@ -21,7 +21,7 @@ import type { runDecisionTransition } from '../commands/decision-transition.js';
 import { fact } from '../presentation/detail.js';
 import { RECORD_CONTRACT_HELP, replacementNotice } from '../recorded-content.js';
 import { addBodySourceOptions } from './body-source.js';
-import { here } from './context.js';
+import { hereWriting } from './context.js';
 import {
   actionsRequiring,
   DECISION_MOVE_ACTIONS,
@@ -135,7 +135,7 @@ export function registerDecision(program: Command, wiring: Wiring): Declared {
       io.fail();
       return;
     }
-    const result = runDecision(here(), {
+    const result = runDecision(hereWriting(wiring), {
       title,
       rationale,
       ...(given.alternatives !== undefined ? { alternatives: given.alternatives } : {}),
@@ -193,7 +193,7 @@ export function registerDecision(program: Command, wiring: Wiring): Declared {
     // back, so stopping would only leave the rest undone for no reason the person gave).
     let moved = 0;
     for (const id of ids) {
-      const result = runDecisionTransition(here(), {
+      const result = runDecisionTransition(hereWriting(wiring), {
         id,
         action,
         proof: { ...(opts.note !== undefined ? { note: opts.note } : {}) },
@@ -240,7 +240,7 @@ export function registerDecision(program: Command, wiring: Wiring): Declared {
       io.fail();
       return;
     }
-    const result = runDecisionTransition(here(), {
+    const result = runDecisionTransition(hereWriting(wiring), {
       id: oldId,
       action: 'supersede',
       by: newId,
@@ -365,7 +365,7 @@ export function registerDecision(program: Command, wiring: Wiring): Declared {
       io.fail();
       return;
     }
-    const result = runDecisionImport(here(), {
+    const result = runDecisionImport(hereWriting(wiring), {
       from: dir,
       ...(format !== undefined ? { format } : {}),
       ...(opts.write === true ? { write: true } : {}),

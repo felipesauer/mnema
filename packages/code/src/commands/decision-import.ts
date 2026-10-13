@@ -85,9 +85,15 @@ import {
   withScopedCaches,
 } from '../tree-sources.js';
 import { IMPORT_SCOPES } from '../vocabulary.js';
+import {
+  type AgentWrites,
+  originOfTheWrite,
+  treesToWrite,
+  whichOfTheWrite,
+} from './write-as-the-agent.js';
 
 /** What the import needs — injected so it is testable. */
-export interface DecisionImportContext {
+export interface DecisionImportContext extends Pick<AgentWrites, 'agentKey' | 'say'> {
   /** The working directory to resolve the project from. */
   readonly cwd: string;
   /** The discovery environment (`$HOME`, `$MNEMA_HOME`). */
@@ -294,7 +300,8 @@ export function runDecisionImport(
     run?: string;
   },
 ): ImportDone | ImportRefused {
-  const trees = resolveTrees(ctx.cwd, ctx.env);
+  const writing = treesToWrite(ctx);
+  const { trees } = writing;
   if (trees.projectPublic === undefined) return { ok: false, reason: 'NO_PROJECT' };
   const root = dirname(trees.projectPublic);
   const directory = resolve(ctx.cwd, input.from);
@@ -315,7 +322,11 @@ export function runDecisionImport(
     return digest !== undefined && inside(root, path) === undefined ? `${at}#${digest}` : at;
   };
 
-  const scope = resolveScope('decision.recorded', { which: input.which }, input.scope);
+  const scope = resolveScope(
+    'decision.recorded',
+    originOfTheWrite(writing, input.which),
+    input.scope,
+  );
   if (!IMPORT_SCOPES.includes(scope)) return { ok: false, reason: 'GLOBAL_TREE' };
   const scan = format === 'adr' ? scanAdrDirectory(directory) : scanBridge(format, directory);
   const refused = scan.refused.map((refusal) => named(refusal, originOf));
@@ -356,6 +367,7 @@ export function runDecisionImport(
     };
   }
 
+  const which = whichOfTheWrite(writing, scope, input.which);
   const writer = openTreeForWriting(trees, scope);
   const context = { writer, layout, upcasters: catalogUpcasters() };
   // What the record holds derived from each file, as of `knownAt`: read again only when the
@@ -379,7 +391,7 @@ export function runDecisionImport(
       title: document.title,
       rationale: document.rationale,
       ...(document.alternatives !== undefined ? { alternatives: document.alternatives } : {}),
-      ...(input.which !== undefined ? { which: input.which } : {}),
+      ...(which !== undefined ? { which } : {}),
       ...(input.run !== undefined ? { run: input.run } : {}),
     });
     if (!recorded.ok) {
@@ -392,7 +404,7 @@ export function runDecisionImport(
       subject: recorded.id,
       target: document.path,
       rel: DERIVED_FROM_RELATION,
-      ...(input.which !== undefined ? { which: input.which } : {}),
+      ...(which !== undefined ? { which } : {}),
       ...(input.run !== undefined ? { run: input.run } : {}),
     });
     if (!linked.ok) {

@@ -13,7 +13,7 @@
  */
 
 import type { Command } from 'commander';
-import { here } from './context.js';
+import { hereWriting } from './context.js';
 import { type Declared, mutatesTheRecord, type Wiring } from './verb.js';
 
 /** Registers `mnema corrections` on the program. */
@@ -45,7 +45,7 @@ export function registerCorrections(program: Command, wiring: Wiring): Declared 
       const { runCorrections } = await import('../commands/corrections.js');
       const { fact } = await import('../presentation/detail.js');
       const payload = io.input === undefined ? '' : await io.input();
-      const done = runCorrections(here(), { payload });
+      const done = runCorrections(hereWriting(wiring), { payload });
       for (const note of done.notes) io.err(render(fact(note, 0)));
       io.out(JSON.stringify(done.reply));
     });
