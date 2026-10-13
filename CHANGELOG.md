@@ -24,6 +24,28 @@ tag, with its own changelog.
 
 ### Changed
 
+- **A write routed by `project` says the absolute directory it fell in.** The seven write tools that take `project`
+  (`capture_memory`, `record_observation`, `record_handoff`, `link_knowledge`, `create_task`, `record_decision`,
+  `create_skill`) now end their confirmation with `  In the project at <path>.`, after the line that says which
+  tree it landed in. A `project` can be a name read off an earlier answer, and a conversation can outlive the
+  connection it learnt the name in: after a reload the workspace may hold another directory by that name, and the
+  write, signed and append-only, resolves to it. The path is the spelling that cannot mean two places; this makes the
+  landing visible at once, it does not refuse the write. A write that named no project says nothing new, and neither
+  does one that landed in the global tree, which belongs to no project. For a 50-byte path the line adds 72 bytes and
+  21 tokens to a confirmation (`capture_memory`: 146 to 218 bytes, 44 to 65 tokens), o200k, a relative measure and
+  not what a model is billed; the confirmations the budget golden measures name no project, so the golden does not
+  move.
+- **A reported run no longer repeats its actor, and the focus inside a resume no longer names it.** A run in
+  `bootstrap`, `resume`, `focus` and `guard` carried `who`, and `resume.focus` carried `actor`, each the same value as the
+  `actor` the answer already gives (every run listed there is one of the actor's). They are left out of the
+  derivation, so the MCP tools and the `--json` of the CLI's `status` and `resume` serve the same shape: `who`
+  is gone from every run (the `focus` that `guard` pairs with its verdict loses it too) and `resume.focus` is
+  `{ openRuns }`. The `focus` read on its own and the `focus` of a `guard` keep their own `actor`; no other field moves.
+  Dropping the field is a change to the public API of `@mnema/context`: `ReportedRun` no longer has `who` and
+  `Resume.focus` no longer has `actor`.
+  `bootstrap` 2,418 to 2,104 bytes (936 to 784 tokens, o200k), `resume` 1,441 to 1,127 (591 to 439), `focus` 899 to
+  743 (371 to 295), and ten open runs save ten more `who`. A reader that took the actor from a run takes it from the
+  answer's `actor`.
 - **The tools of the MCP server answer in JSON without indentation.** Every read (`bootstrap`, `focus`, `resume`,
   `search`, `read_record`, `skills`, the `audit_*` reads, `governing_rules`, `next_actions`) wrote its payload indented
   by two spaces, which the host hands to the model as text and which is billed on every call. The document is the
@@ -41,6 +63,20 @@ tag, with its own changelog.
   working on it wrote.", which keeps the claim about who wrote the rules and drops the repeated subject. The rules, their
   ids and the sentence about another run are the same. 46 B fewer at every edit (rules pushed 380 to 334 bytes, 102 to
   93 tokens, o200k; the pause 564 to 518, 147 to 138). The opening of a session and the notes keep their two sentences.
+- **The `project` in an answer is the directory's name when no other project of the workspace has it.** `search`
+  (`hits`, `hidden`), `read_record`, `audit_refs` (`nodes`, `links`), `audit_timeline` (one per entry),
+  `audit_accountability`, `audit_antipatterns` and `audit_exposure` (`findings`, `scanned`) said the project by its
+  absolute path, repeated at every hit. They now say `api` where the workspace has one `api`, and the whole path
+  where two projects share the name. Both are spellings a write's `project` argument already took, so the value an
+  answer gives goes back into a write and lands in the same project; a name that became ambiguous after being
+  given is refused as `AMBIGUOUS_PROJECT`, not resolved to the wrong one. The record stays as it was: the signed
+  `event` of `audit_timeline` is served byte for byte, and the `path` of `governing_rules` and what `bootstrap`
+  says of the workspace still give the absolute path. Two directories whose names differ only in Unicode
+  normalization count as sharing a name: they answer by path, and the bare name of either is refused as ambiguous. The budget golden measures eight answers, with the
+  fixture's path scrubbed to the 13 bytes of `/work/project`: the largest, `audit_timeline`, goes from 2,518 bytes
+  (1,066 tokens) to 2,482 (1,058) and a `search` from 1,305 (464) to 1,251 (452), in o200k, a relative measure, not
+  what a model is billed. The gain grows with the length of the path: it is the path minus the name, once per
+  `project`.
 
 ### Fixed
 

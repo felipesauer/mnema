@@ -57,7 +57,7 @@
  * THAT file — what reaches it today and what that reaches instead — so it can be drained
  * one row at a time. It can only shrink.
  *
- * AND IT CANNOT DISSOLVE ITSELF. The ledger's keys are 71 path strings. Under a rule that
+ * AND IT CANNOT DISSOLVE ITSELF. The ledger's keys are 70 path strings. Under a rule that
  * read path literals, listing a file as debt would witness it and every entry would go
  * stale the moment it was written. Naming requires an IMPORT here, so a table of strings
  * names nothing — asserted below rather than assumed.
@@ -339,10 +339,6 @@ const UNWITNESSED: Readonly<Record<string, Debt>> = {
   'packages/code/src/completion/zsh.ts': {
     reached: 'nobody imports it',
     why: "The zsh rendering, the only one carrying `_describe` descriptions; nothing imports `zshScript`, and with zsh absent its output is merely handed to bash's parser.",
-  },
-  'packages/code/src/mcp/route.ts': {
-    reached: 'nobody imports it',
-    why: "The MCP's one write-destination resolver; mcp-write-routing.test.ts reaches it two hops via tools.ts and asserts which disk a write hit — its wording is only ever a substring.",
   },
   'packages/code/src/presentation/consultation.ts': {
     reached: 'nobody imports it',
@@ -662,7 +658,7 @@ const THE_SHAPE_OF_WHAT_IS_LEFT: Readonly<Record<string, number>> = {
   completion: 4,
   commands: 2,
   barrels: 3,
-  scattered: 12,
+  scattered: 11,
 };
 
 /** Which group of the shape above a debt row belongs to. One reading, so nothing falls in two. */
@@ -951,6 +947,7 @@ const CLAUSES_PER_FILE: Readonly<Record<string, number>> = {
   'packages/code/tests/a-refused-group-flag-leaves-the-record.test.ts': 7,
   'packages/code/tests/a-report-is-built-from-an-allowlist.test.ts': 10,
   'packages/code/tests/a-report-needs-a-person.test.ts': 19,
+  'packages/code/tests/a-routed-write-says-where-it-landed.test.ts': 11,
   'packages/code/tests/a-rule-carries-its-check.test.ts': 9,
   'packages/code/tests/a-rule-says-who-ruled-it.test.ts': 11,
   'packages/code/tests/a-rule-that-refuses-a-write.test.ts': 17,
@@ -1081,6 +1078,7 @@ const CLAUSES_PER_FILE: Readonly<Record<string, number>> = {
   'packages/code/tests/the-address-says-what-it-covers.test.ts': 14,
   'packages/code/tests/the-agent-is-told-the-record-does-not-chain.test.ts': 11,
   'packages/code/tests/the-agent-is-told-what-it-has.test.ts': 16,
+  'packages/code/tests/the-answers-name-a-project-as-a-write-takes-it.test.ts': 17,
   'packages/code/tests/the-antigravity-cli-rises-only-with-a-capture.test.ts': 4,
   'packages/code/tests/the-bare-name-asks.test.ts': 15,
   'packages/code/tests/the-binary-a-page-promises-is-the-one-that-speaks.test.ts': 7,
@@ -1223,7 +1221,7 @@ const CLAUSES_PER_FILE: Readonly<Record<string, number>> = {
   'packages/context/src/context/brief.test.ts': 7,
   'packages/context/src/context/decisions.test.ts': 5,
   'packages/context/src/context/disposition.test.ts': 5,
-  'packages/context/src/context/focus.test.ts': 4,
+  'packages/context/src/context/focus.test.ts': 5,
   'packages/context/src/context/next-action.test.ts': 4,
   'packages/context/src/context/presence.test.ts': 5,
   'packages/context/src/context/search.test.ts': 6,
@@ -1532,6 +1530,7 @@ const PRODUCTION_FILES: readonly string[] = [
   'packages/code/src/mcp/instructions.ts',
   'packages/code/src/mcp/lifecycle.ts',
   'packages/code/src/mcp/locate.ts',
+  'packages/code/src/mcp/project-in-answers.ts',
   'packages/code/src/mcp/route.ts',
   'packages/code/src/mcp/server.ts',
   'packages/code/src/mcp/session.ts',
@@ -1888,8 +1887,9 @@ describe('every file has a test that names it', () => {
     // 84 with the report verb's wiring, which a-report-is-built-from-an-allowlist drives through the program.
     // 85 with the stack group's wiring, which a-stack-goes-where-nothing-is drives through the built binary.
     // 84 once the second reader's record test asserts on the verifier's canonicalIdentityForm.
-    expect(found.size).toBe(84);
-    expect(byReach('nobody imports it')).toBe(84);
+    // 83 once the test that names a project in an answer imports the write-destination resolver.
+    expect(found.size).toBe(83);
+    expect(byReach('nobody imports it')).toBe(83);
     expect(byReach('imported, and no assertion observes it')).toBe(0);
   });
 
@@ -1911,7 +1911,7 @@ describe('every file has a test that names it', () => {
     // Announced in the header and, until now, kept by hand. A shared excuse is how a table
     // like this turns into a rubber stamp, and a row drained to a stub is how it starts.
     const reasons = Object.values(UNWITNESSED).map((one) => one.why);
-    expect(reasons).toHaveLength(84);
+    expect(reasons).toHaveLength(83);
     expect(new Set(reasons).size).toBe(reasons.length);
     // The shortest reason standing is 156 characters; the floor is under it and well over
     // anything that could be written without saying what reaches that file.
@@ -1953,7 +1953,7 @@ describe('every file has a test that names it', () => {
   });
 
   it('cannot be dissolved by the ledger that describes it', () => {
-    // The keys below are 71 paths, and the production census names every product file.
+    // The keys below are 70 paths, and the production census names every product file.
     // Naming requires an IMPORT, so listing a file here cannot witness it — and this file,
     // which mentions every one of them, imports no product file at all.
     const self = TEST_TREE.find((one) =>
