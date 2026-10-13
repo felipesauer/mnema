@@ -212,7 +212,7 @@ export function registerKey(program: Command, wiring: Wiring): Declared {
     )
     .option(
       '--agent',
-      'enroll a key as an agent of this identity (the line `mnema key request --agent <name> --anchor <id>` printed)',
+      "enroll a key as an agent of this identity — in the project's committed tree and, where the key lives on this machine, its private tree and the machine's global one (the line `mnema key request --agent <name> --anchor <id>` printed, or the agent's name where its key is here)",
     )
     .action(async (request: string, opts: { checker?: boolean; agent?: boolean }) => {
       if (opts.agent === true) {
@@ -455,7 +455,7 @@ export function registerKey(program: Command, wiring: Wiring): Declared {
     )
     .option(
       '--agent',
-      'retire an agent key of this identity: from then on it signs nothing, and is never enrolled again',
+      'retire an agent key of this identity in every tree that enrolled it: from then on it signs nothing, and is never enrolled again',
     )
     .addHelpText('after', RECORD_CONTRACT_HELP)
     .action(
@@ -671,7 +671,7 @@ export function registerKey(program: Command, wiring: Wiring): Declared {
       io.out(
         render(
           fact(
-            'Anything that signs now needs MNEMA_KEY_PASSPHRASE set to the same passphrase: this shell, the host an agent runs in, a hook. The record and its verification are as they were.',
+            'Anything that signs now needs the passphrase: a terminal asks for it, and MNEMA_KEY_PASSPHRASE set to the same value answers where there is none. An agent’s host or a hook has no terminal and is not to be given it — give it a key of its own: `mnema key request --agent <name> --anchor <your identity>`, then `mnema key enroll --agent <the line it prints>`. The record and its verification are as they were.',
           ),
         ),
       );

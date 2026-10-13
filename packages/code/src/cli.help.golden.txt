@@ -1292,11 +1292,13 @@ $ mnema mcp --help
 |   --project <dir>     the project to serve — an ABSOLUTE path; omitted, the
 |                       project comes from the host workspace roots, or from the
 |                       working directory when the host declares none
-|   --agent-key <name>  sign as the agent of that name where the project's record
+|   --agent-key <name>  sign as the agent of that name in each tree whose record
 |                       enrols its key (made with `mnema key request --agent
-|                       <name> --anchor <id>`); elsewhere the person's key signs,
-|                       and the facts' agent is declared, not attested. Also read
-|                       from MNEMA_AGENT_KEY
+|                       <name> --anchor <id>`, enrolled with `mnema key enroll
+|                       --agent <name>`); in a tree that does not, the person's
+|                       key signs and the facts' agent is declared, not attested,
+|                       or the write is refused where that key is protected. Also
+|                       read from MNEMA_AGENT_KEY
 |   -h, --help          display help for command
 
 ### mnema run --help
@@ -1331,11 +1333,12 @@ $ mnema before-a-write --help
 | Options:
 |   --host <host>       the host whose hook runs this, and whose payload arrives
 |                       on stdin: vscode, cursor, codex, copilot, opencode, gemini
-|   --agent-key <name>  sign what this hook records with the key of that agent
-|                       where the project's record enrols it (made with `mnema key
+|   --agent-key <name>  sign what this hook records with the key of that agent in
+|                       each tree whose record enrols it (made with `mnema key
 |                       request --agent <name> --anchor <id>`), and name the agent
-|                       the record gives that key; elsewhere the person's key
-|                       signs
+|                       the record of that tree gives that key; in a tree that
+|                       does not, the person's key signs, or the write is refused
+|                       where that key is protected
 |   -h, --help          display help for command
 |
 | What it reads and what it prints:
@@ -2361,8 +2364,11 @@ $ mnema key enroll --help
 | Options:
 |   --checker   enroll a key that signs check results only (the line `mnema key
 |               request --checker --anchor <id>` printed)
-|   --agent     enroll a key as an agent of this identity (the line `mnema key
-|               request --agent <name> --anchor <id>` printed)
+|   --agent     enroll a key as an agent of this identity — in the project's
+|               committed tree and, where the key lives on this machine, its
+|               private tree and the machine's global one (the line `mnema key
+|               request --agent <name> --anchor <id>` printed, or the agent's name
+|               where its key is here)
 |   -h, --help  display help for command
 
 ### mnema key github --help
@@ -2413,8 +2419,9 @@ $ mnema key revoke --help
 |   --reason <text>  why it is being retired (recorded in the fact)
 |   --checker        retire a key that signs check results: from then on it signs
 |                    nothing, and is never enrolled again
-|   --agent          retire an agent key of this identity: from then on it signs
-|                    nothing, and is never enrolled again
+|   --agent          retire an agent key of this identity in every tree that
+|                    enrolled it: from then on it signs nothing, and is never
+|                    enrolled again
 |   -h, --help       display help for command
 |
 | What recording means here:

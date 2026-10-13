@@ -63,10 +63,13 @@ import {
   chainRootForScope,
   type DiscoveryEnv,
   IdentityUnavailableError,
+  keyChoiceIn,
   type PassedOverTree,
   type ReplacedClass,
   type ResolvedTrees,
+  reachableTrees,
   type Scope,
+  treeWords,
   withAgentKey,
 } from '@mnema/core';
 import {
@@ -296,8 +299,13 @@ export interface Session {
    */
   refreshes: number;
   /**
-   * The connecting agent as the client ANNOUNCED it (`clientInfo.name`) — the
-   * value handed to every write, where the content door screens it.
+   * The connecting agent as the committed tree reads it — the client's announcement, or the name the
+   * record gives the agent key there. It routes (it is present for any agent) and nothing else: what
+   * a write STAMPS is {@link SessionWrite.which}, read per write from the tree it lands in, because
+   * the key is chosen per tree and the name has to be the one that tree's record gives that key.
+   *
+   * Where the client's name is stamped it is the value handed to the write, where the content door
+   * screens it.
    *
    * It is deliberately the announced name and not the screened one. If the
    * announced name holds a credential, the door replaces it and REPORTS what it
@@ -320,7 +328,7 @@ export interface Session {
   /**
    * The agent this server was asked to sign as, where it is enrolled (`openSession`). The trees
    * carry it for the choice of key (`agentSignsIn`); it is kept here to build the trees of a
-   * re-read the same way, and to say once when it is not in force.
+   * re-read the same way, and to say, for each tree, when it is not in force.
    */
   readonly agentKey?: string;
   /**
@@ -536,11 +544,15 @@ export function openSession(input: OpenSessionInput): Session {
   // precisely because founding had settled it, and there is no run to take it after
   // any more. It appends nothing.
   const who = sessionAnchor(trees, anchorTree);
-  // SAID ONCE, because the person needs to hear it somewhere: a server asked to sign as an agent
-  // that signs as the person instead is the one thing a plugin update must not do in silence.
-  if (agentKey !== undefined && inProject && agentSignsIn(trees, 'public') === undefined) {
-    log(
-      `agent key "${agentKey}" is not in force in this project — this machine holds no key under that name, or the committed record does not enrol it as "${agentKey}": signing with the person's key, so the agent the facts name is declared, not attested. \`mnema key request --agent ${agentKey} --anchor <identity>\`, then \`mnema key enroll --agent <the line>\` where you hold your own key, puts it in force`,
+  // SAID PER TREE, because the person needs to hear it somewhere and the key is chosen per tree: a
+  // server asked to sign as an agent that signs as the person in one tree, or is refused there, is
+  // the one thing a plugin update must not do in silence.
+  if (agentKey !== undefined) {
+    sayWhereTheAgentIsNotInForce(
+      trees,
+      agentKey,
+      reachableTrees(trees).map((tree) => tree.scope),
+      log,
     );
   }
 
@@ -696,6 +708,17 @@ export function refreshWorkspace(session: Session, roots: readonly string[]): Wo
   const trees = withTheAgent(resolved.trees, session.env, session.agentKey);
   session.roots = union;
   session.trees = trees;
+  // The session now reaches the project's trees, which it did not: said once, as at the opening.
+  if (landed && session.agentKey !== undefined) {
+    sayWhereTheAgentIsNotInForce(
+      trees,
+      session.agentKey,
+      reachableTrees(trees)
+        .map((tree) => tree.scope)
+        .filter((scope) => scope !== 'global'),
+      session.log,
+    );
+  }
   session.which = whichOf(trees, session.clientName);
   session.inProject = resolved.inProject;
   session.rung = resolved.rung;
@@ -708,6 +731,30 @@ export function refreshWorkspace(session: Session, roots: readonly string[]): Wo
     learned,
     ...(landed && resolved.project !== undefined ? { landedOn: resolved.project } : {}),
   };
+}
+
+/**
+ * One line for each of `scopes` where the agent this server was asked to sign as is not the one
+ * that signs: in that tree the person's key signs instead, and what the facts name is declared, not
+ * attested — or, where the person's key cannot be opened without a terminal, the write is refused.
+ * Neither says anything about a passphrase: the way out is the verb a person runs at a terminal.
+ */
+function sayWhereTheAgentIsNotInForce(
+  trees: ResolvedTrees,
+  agentKey: string,
+  scopes: readonly Scope[],
+  log: (line: string) => void,
+): void {
+  for (const scope of scopes) {
+    const choice = keyChoiceIn(trees, scope);
+    if (choice === undefined || choice.signs === 'agent') continue;
+    const where = treeWords(scope);
+    log(
+      choice.signs === 'nobody'
+        ? oneLine(`agent key "${agentKey}" is not in force in ${where}: ${choice.refusal.message}`)
+        : `agent key "${agentKey}" is not in force in ${where} — this machine holds no key under that name, or the record there does not enrol it as "${agentKey}": a write there is signed with the person's key, so the agent the facts name is declared, not attested. \`mnema key enroll --agent ${agentKey}\` where you hold your own key puts it in force (\`mnema key request --agent ${agentKey} --anchor <identity>\` first, if this machine holds no key under that name)`,
+    );
+  }
 }
 
 /**

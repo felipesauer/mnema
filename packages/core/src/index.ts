@@ -238,6 +238,8 @@ export {
   type DiscoveryEnv,
   discover,
   type HeldTail,
+  type KeyChoice,
+  keyChoiceIn,
   type LeftBehind,
   locateEntityScope,
   locateEntityScopeWith,

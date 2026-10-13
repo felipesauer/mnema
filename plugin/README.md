@@ -251,15 +251,18 @@ launcher runs the `PATH`'s `mnema`.
 
 The plugin's second option, `agent_key`, is empty: the server signs with your own key. Give it the
 name of an agent key (`mnema key request --agent <name> --anchor <identity>`, then `mnema key enroll
---agent <the line>` where your own key is) and the server signs with that key where the project's
-committed record enrols it, naming the agent the record gives it on everything it records. The
+--agent <the line>` where your own key is, which enrols it in the project's committed, private and
+global trees) and the server signs with that key in each tree whose record enrols it, naming the agent
+the record gives it on everything it records. The
 manifest passes it as `MNEMA_AGENT_KEY`, which a `mnema` from before the option ignores. One manifest
 is read by Claude Code, VS Code and Cursor, so no name is filled in for you; Codex, Copilot CLI and
 Gemini CLI read a manifest of their own, which names the host (`codex`, `copilot`, `gemini`), and the
 hook files of VS Code, Cursor, Codex, Copilot CLI, Gemini CLI and OpenCode pass the host's name to
 `mnema before-a-write --agent-key`, asked again without it of a `mnema` that does not know it. Where
-the record enrols no key under that name, the server says so on its error stream and signs with your
-own, and what it records is declared, not attested. That a host passes a manifest's `env` to the server
+the record of a tree enrols no key under that name, the server says so on its error stream, once for
+each such tree, and signs there with your own, and what it records is declared, not attested; where your
+key is protected, which the host has no terminal to open, that write is refused and nothing is signed,
+and the refusal names the verb `key enroll --agent`. That a host passes a manifest's `env` to the server
 was not measured on the hosts named here, only on Claude Code's documentation; `mnema doctor` says what
 a machine holds.
 

@@ -44,16 +44,20 @@ import { basename, delimiter, dirname, join } from 'node:path';
 import { listPrivateKeyFingerprints } from '@mnema/chain';
 import {
   AGENT_NAME,
+  type AgentStanding,
   agentKeyRoot,
   agentStanding,
   type DiscoveryEnv,
   movePrivateTree,
   type PrivateTreesLeftBehind,
   privateTreesLeftBehind,
+  reachableTrees,
   resolveTrees,
+  type Scope,
   withAgentKey,
 } from '@mnema/core';
 import { agentKeyFromEnvironment } from '../env.js';
+import { HOOK_HOSTS, HOSTS } from '../host-names.js';
 import { oneLine } from '../one-line.js';
 import {
   personsKeyInTheClear,
@@ -668,15 +672,35 @@ function stackFindings(ctx: DoctorContext): Finding[] {
   }));
 }
 
+/** How a tree is said in a list of trees. */
+const TREE_NAMES: Readonly<Record<Scope, string>> = {
+  public: 'committed',
+  private: 'private',
+  global: 'global',
+};
+
+/** "the committed, private and global trees" for the scopes given, in the order they were. */
+function treesSaid(scopes: readonly Scope[]): string {
+  const names = scopes.map((scope) => TREE_NAMES[scope]);
+  const list =
+    names.length > 1 ? `${names.slice(0, -1).join(', ')} and ${names.at(-1)}` : (names[0] ?? '');
+  return `the ${list} ${names.length === 1 ? 'tree' : 'trees'}`;
+}
+
 /**
- * The agent keys this machine holds, against this project's record: for each, whether the
- * committed tree enrols it under its name — a host asked to sign as it then does — or names it
- * not, in which case that host signs as the person and what it records is declared, not
- * attested. Said too: a host that asks for an agent whose key this machine does not hold, and a
- * person's key in the clear, which leaves the agent key a label and nothing more.
+ * The agent keys this machine holds, against the record of EACH tree this process reaches: for
+ * each, in which of the project's committed tree, its private tree and the machine's global one the
+ * record enrols it under its name — a host asked to sign as it then does, in that tree — and in
+ * which it does not, where that host signs as the person instead (declared, not attested), or is
+ * refused when the person's key is protected. A key retired in any tree is retired for all, and a
+ * key enrolled in one tree and retired in another is said as both.
  *
- * Nothing is said on a machine that holds no agent key and is asked for none, which is every
- * machine that never ran `mnema key request --agent`.
+ * Then the agents the files this product generates for each host ask for, by the names of the
+ * hosts that run a hook (`HOOK_HOSTS`): a name this machine holds no key under is a host that signs
+ * as the person. They are said only on a machine that holds an agent key already, so a machine that
+ * never ran `mnema key request --agent` hears nothing. `MNEMA_AGENT_KEY` in the environment the
+ * doctor itself runs in is one source more, and a person's key in the clear is said, because it
+ * leaves an agent key a label and nothing more.
  */
 function agentKeyFindings(ctx: DoctorContext): Finding[] {
   const dir = dirname(agentKeyRoot(ctx.env, 'x'));
@@ -696,38 +720,62 @@ function agentKeyFindings(ctx: DoctorContext): Finding[] {
   });
   const out: Finding[] = [];
   const resolved = resolveTrees(ctx.cwd, ctx.env);
-  const enrolledHere: string[] = [];
+  const scopes = reachableTrees(resolved).map((tree) => tree.scope);
   for (const name of held) {
-    if (resolved.projectPublic === undefined) {
-      out.push(
-        finding(
-          'fine',
-          `this machine holds the agent key "${oneLine(name)}"; there is no project here to say whether its record enrols it.`,
-        ),
-      );
-      continue;
-    }
-    const standing = agentStanding(withAgentKey(resolved, ctx.env, name), 'public');
-    if (standing === 'enrolled') {
-      enrolledHere.push(name);
-      out.push(
-        finding(
-          'fine',
-          `the agent key "${oneLine(name)}" is enrolled in this project: a host asked to sign as it does, and what it records is attested: nothing to do.`,
-        ),
-      );
-    } else if (standing === 'retired') {
+    const withAgent = withAgentKey(resolved, ctx.env, name);
+    const standing = new Map(scopes.map((scope) => [scope, agentStanding(withAgent, scope)]));
+    const where = (state: AgentStanding): Scope[] =>
+      scopes.filter((scope) => standing.get(scope) === state);
+    const enrolled = where('enrolled');
+    const retired = where('retired');
+    const ambiguous = where('ambiguous');
+    const lacking = where('absent');
+    const quoted = oneLine(name);
+    if (retired.length > 0) {
       out.push(
         finding(
           'attention',
-          `the agent key "${oneLine(name)}" was retired by this project's record: it signs nothing, and a host asked to sign as it is refused — ask the host for another agent, or none.`,
+          `the agent key "${quoted}" was retired in ${treesSaid(retired)}${enrolled.length > 0 ? ` and is still enrolled in ${treesSaid(enrolled)}` : ''}: it signs nothing in any tree of this machine, and a host asked to sign as it is refused — \`mnema key request --agent ${quoted} --anchor <your identity>\` makes the agent a new key (the retired one is put aside, not deleted), then \`mnema key enroll --agent <the line it prints>\` puts it in force.`,
+        ),
+      );
+    } else if (ambiguous.length > 0) {
+      out.push(
+        finding(
+          'attention',
+          `the record of ${treesSaid(ambiguous)} proves the agent key "${quoted}" a member of more than one identity: it signs for neither, and a host asked to sign as it is refused until the record says which.`,
+        ),
+      );
+    } else if (lacking.length === 0 && enrolled.length > 0) {
+      out.push(
+        finding(
+          'fine',
+          `the agent key "${quoted}" is enrolled in ${treesSaid(enrolled)}: a host asked to sign as it does, and what it records is attested: nothing to do.`,
+        ),
+      );
+    } else if (scopes.includes('public') === false) {
+      out.push(
+        finding(
+          'fine',
+          `this machine holds the agent key "${quoted}"; there is no project here to say whether its record enrols it${lacking.length > 0 ? `, and the machine's global tree does not` : ''}.`,
         ),
       );
     } else {
       out.push(
         finding(
           'attention',
-          `this machine holds the agent key "${oneLine(name)}", and this project's record does not enrol it: a host asked to sign as "${oneLine(name)}" signs as you instead, and what it records is declared, not attested — \`mnema key request --agent ${oneLine(name)} --anchor <your identity>\`, then \`mnema key enroll --agent <the line>\` where your own key is.`,
+          `this machine holds the agent key "${quoted}", and ${enrolled.length > 0 ? `the record enrols it in ${treesSaid(enrolled)} and not in ${treesSaid(lacking)}` : 'no record of this project or this machine enrols it'}: a host asked to sign as "${quoted}" signs as you where it is not enrolled, and what it records there is declared, not attested — or is refused, where your own key is protected. \`mnema key enroll --agent ${quoted}\` where your own key is enrols it in every tree.`,
+        ),
+      );
+    }
+  }
+  // The names the generated files of the hosts ask for, said only once the machine holds a key.
+  if (held.length > 0) {
+    for (const host of HOOK_HOSTS) {
+      if (held.includes(host)) continue;
+      out.push(
+        finding(
+          'fine',
+          `the files this plugin generates for ${oneLine(HOSTS[host].title)} sign as the agent "${host}", and this machine holds no key under that name: that host signs as you — \`mnema key request --agent ${host} --anchor <your identity>\` makes one, if you want what it records attested.`,
         ),
       );
     }

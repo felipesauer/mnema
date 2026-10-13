@@ -717,11 +717,15 @@ describe('mnema doctor says what the agent keys are', () => {
       .findings.filter((one) => one.topic === 'agent-key')
       .map((one) => `${one.state} ${one.line}`);
 
+  /** The lines that name the agents the files generated for each host ask for. */
+  const hostLines = (all: readonly string[]): string[] =>
+    all.filter((line) => line.startsWith('fine the files this plugin generates for '));
+
   it('says nothing on a machine that holds no agent key and is asked for none', () => {
     expect(findings()).toEqual([]);
   });
 
-  it('says a key this project does not enrol signs as the person, then that it is enrolled, then that it was retired', async () => {
+  it('says, tree by tree, where the record enrols a key this machine holds and where it does not', async () => {
     const requested = await did(
       undefined,
       'key',
@@ -731,17 +735,24 @@ describe('mnema doctor says what the agent keys are', () => {
       '--anchor',
       await identity(),
     );
-    const before = findings();
-    expect(before[0]).toContain('attention this machine holds the agent key "claude"');
-    expect(before[0]).toContain('declared, not attested');
+    const none = findings();
+    expect(none[0]).toBe(
+      'attention this machine holds the agent key "claude", and no record of this project or this machine enrols it: a host asked to sign as "claude" signs as you where it is not enrolled, and what it records there is declared, not attested — or is refused, where your own key is protected. `mnema key enroll --agent claude` where your own key is enrols it in every tree.',
+    );
     // The person's key is in the clear, and an agent key exists: the separation is nothing.
     expect(
-      before.some((line) => line.includes('separates nothing while your own key is in the clear')),
+      none.some((line) => line.includes('separates nothing while your own key is in the clear')),
     ).toBe(true);
 
-    await did(undefined, 'key', 'enroll', '--agent', lineOf(requested));
+    // Enrolled in the committed tree alone: the other two are said as lacking it.
+    enrolledIn('public', lineOf(requested));
     expect(findings()[0]).toBe(
-      'fine the agent key "claude" is enrolled in this project: a host asked to sign as it does, and what it records is attested: nothing to do.',
+      'attention this machine holds the agent key "claude", and the record enrols it in the committed tree and not in the private and global trees: a host asked to sign as "claude" signs as you where it is not enrolled, and what it records there is declared, not attested — or is refused, where your own key is protected. `mnema key enroll --agent claude` where your own key is enrols it in every tree.',
+    );
+
+    await did(undefined, 'key', 'enroll', '--agent', 'claude');
+    expect(findings()[0]).toBe(
+      'fine the agent key "claude" is enrolled in the committed, private and global trees: a host asked to sign as it does, and what it records is attested: nothing to do.',
     );
 
     await did(
@@ -753,7 +764,33 @@ describe('mnema doctor says what the agent keys are', () => {
       '--reason',
       'lent out',
     );
-    expect(findings()[0]).toContain('attention the agent key "claude" was retired by this project');
+    expect(findings()[0]).toBe(
+      'attention the agent key "claude" was retired in the committed, private and global trees: it signs nothing in any tree of this machine, and a host asked to sign as it is refused — `mnema key request --agent claude --anchor <your identity>` makes the agent a new key (the retired one is put aside, not deleted), then `mnema key enroll --agent <the line it prints>` puts it in force.',
+    );
+  });
+
+  it('says a key retired in one tree is still enrolled in the others', async () => {
+    const fingerprint = await anAgent('claude');
+    const write = deferredWrite(resolveTrees(repo, env), 'global');
+    expect(retireAgentKey(write, { fingerprint, reason: 'lent out' }).ok).toBe(true);
+    write.checkpoint();
+
+    expect(findings()[0]).toBe(
+      'attention the agent key "claude" was retired in the global tree and is still enrolled in the committed and private trees: it signs nothing in any tree of this machine, and a host asked to sign as it is refused — `mnema key request --agent claude --anchor <your identity>` makes the agent a new key (the retired one is put aside, not deleted), then `mnema key enroll --agent <the line it prints>` puts it in force.',
+    );
+  });
+
+  it('names, from the hosts this product ports, each agent the generated files ask for that no key is held under', async () => {
+    await anAgent('codex');
+
+    const lines = hostLines(findings());
+
+    // One line for each host that runs a hook, but the one whose key is held.
+    expect(lines).toHaveLength(5);
+    expect(lines).toContain(
+      'fine the files this plugin generates for Gemini CLI sign as the agent "gemini", and this machine holds no key under that name: that host signs as you — `mnema key request --agent gemini --anchor <your identity>` makes one, if you want what it records attested.',
+    );
+    expect(lines.some((line) => line.includes('"codex"'))).toBe(false);
   });
 
   it('says a host asked for an agent this machine holds no key for, and stays quiet once the key is protected', async () => {
@@ -767,9 +804,11 @@ describe('mnema doctor says what the agent keys are', () => {
 
     await anAgent('claude', 'correct horse');
     await did('correct horse', 'key', 'protect');
-    expect(findings()).toEqual([
-      'fine the agent key "claude" is enrolled in this project: a host asked to sign as it does, and what it records is attested: nothing to do.',
-    ]);
+    const said = findings();
+    expect(said[0]).toBe(
+      'fine the agent key "claude" is enrolled in the committed, private and global trees: a host asked to sign as it does, and what it records is attested: nothing to do.',
+    );
+    expect(said.filter((line) => !line.startsWith('fine the files this plugin'))).toHaveLength(1);
   });
 });
 
@@ -1320,5 +1359,68 @@ describe('retiring an agent, and making it a new key', () => {
       `the record already counts 1 other active key as "claude" (${first.slice(0, 12)}) — one per machine is expected`,
     );
     expect(agentFacts('public')).toHaveLength(2);
+  });
+});
+
+describe('the server says, tree by tree, where its agent is not the one that signs', () => {
+  const declaredIn = (where: string): string =>
+    `agent key "claude" is not in force in ${where} — this machine holds no key under that name, or the record there does not enrol it as "claude": a write there is signed with the person's key, so the agent the facts name is declared, not attested. \`mnema key enroll --agent claude\` where you hold your own key puts it in force (\`mnema key request --agent claude --anchor <identity>\` first, if this machine holds no key under that name)`;
+
+  it('says one line for the tree it opens in, and one for each tree of a project it lands on, and does not repeat', async () => {
+    await did(undefined, 'key', 'request', '--agent', 'claude', '--anchor', await identity());
+    const lines: string[] = [];
+
+    const session = openSession({
+      roots: [],
+      clientName: 'evil',
+      env,
+      agentKey: 'claude',
+      log: (line) => lines.push(line),
+    });
+    expect(lines).toEqual([declaredIn("this machine's global tree")]);
+
+    refreshWorkspace(session, [pathToFileURL(repo).href]);
+    expect(lines).toEqual([
+      declaredIn("this machine's global tree"),
+      declaredIn("this project's committed tree"),
+      declaredIn("this project's private tree"),
+    ]);
+
+    refreshWorkspace(session, [pathToFileURL(repo).href]);
+    expect(lines).toHaveLength(3);
+  });
+
+  it('says every tree at the opening inside a project, and says what a protected person’s key makes of it', async () => {
+    const requested = await did(
+      undefined,
+      'key',
+      'request',
+      '--agent',
+      'claude',
+      '--anchor',
+      await identity(),
+    );
+    // Enrolled in the committed tree alone, the person's key then protected.
+    enrolledIn('public', lineOf(requested));
+    await did('correct horse', 'key', 'protect');
+    const lines: string[] = [];
+
+    openSession({
+      cwd: repo,
+      clientName: 'evil',
+      env,
+      agentKey: 'claude',
+      log: (line) => lines.push(line),
+    });
+
+    const said = lines.filter((line) => line.startsWith('agent key "claude"'));
+    expect(said).toHaveLength(2);
+    expect(said[0]).toContain("is not in force in this project's private tree: the agent");
+    expect(said[0]).toContain('mnema key enroll --agent claude');
+    expect(said[1]).toContain("is not in force in this machine's global tree: the agent");
+    for (const line of said) {
+      expect(line).not.toContain('MNEMA_KEY_PASSPHRASE');
+      expect(line).not.toContain('environment');
+    }
   });
 });

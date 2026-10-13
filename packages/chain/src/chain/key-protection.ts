@@ -75,9 +75,10 @@ export class KeyIsProtectedError extends CodedError {
   constructor(readonly path: string) {
     super(
       `the private key at ${path} is protected by a passphrase and ${KEY_PASSPHRASE_VARIABLE} is ` +
-        `not set, and there is no terminal to ask at. Set it to the passphrase the key was ` +
-        'protected with — in the environment of the process that signs, which for an agent is the ' +
-        'environment the host started the server in — or run the command in a terminal, which asks.',
+        'not set, and there is no terminal to ask at. Run the command in a terminal, which asks. ' +
+        'A host that signs for an agent has no terminal, and is not given the passphrase: it is ' +
+        'given a key of its own — `mnema key request --agent <name> --anchor <your identity>` makes ' +
+        'one, and `mnema key enroll --agent <the line it prints>` puts it in force.',
     );
   }
 }

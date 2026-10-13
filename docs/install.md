@@ -205,6 +205,7 @@ whether the mnema MCP server is declared more than once, and whether a second `m
 package of that name is installed; whether VS Code's `settings.json` tells its agent where the
 plugin is; which projects of `~/.claude.json` still declare the server, including ones whose
 directory no longer exists (`claude mcp remove` does not reach those, and `doctor` says what to
-delete); and, for each agent key this machine holds, whether this project's record enrols it, retired it
-or does not name it, whether `MNEMA_AGENT_KEY` names one this machine does not hold, and whether your own key is
-still unprotected while an agent key exists. Asked alone it writes nothing and does not ask the registry.
+delete); and, for each agent key this machine holds, in which of the project's committed tree, its private
+tree and the machine's global one the record enrols it, retired it or does not name it, which agents the
+files this plugin generates for each host ask for that no key is held under, whether `MNEMA_AGENT_KEY` names one
+this machine does not hold, and whether your own key is still unprotected while an agent key exists. Asked alone it writes nothing and does not ask the registry.

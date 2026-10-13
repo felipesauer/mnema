@@ -23,13 +23,21 @@ tag, with its own changelog.
 - **The verbs that make, enrol and retire an agent key, and a server and hooks that sign with one.**
   `mnema key request --agent <name> --anchor <id>` makes the key in the agent's own folder under the data directory
   (`agents/<name>/`, in the clear, never beside the person's key) and prints a line; `mnema key enroll --agent <line>`
-  records it in the committed tree with the person's key (and says when that key is unencrypted, which leaves the
-  separation to nothing); `mnema key revoke --agent <fingerprint> --reason <why>` retires it, and `key revoke` of an
-  agent key names that verb. An agent key is not counted among an identity's own keys where the last one may not be
-  retired. `mnema mcp --agent-key <name>` (or `MNEMA_AGENT_KEY`) and `mnema before-a-write --host <host> --agent-key <name>` sign with
-  the key where the project's committed record enrols it under that name, and the `which` of what they record is the
-  name the record gave the key, not what the client announced; elsewhere the person's key signs, as before, and the
-  server says so once. The hook files and manifests the host table generates pass the host's name, and the plugin has
+  records it with the person's key in the committed tree and, where the key lives on this machine, in the project's
+  private tree and the machine's global one (outside a project, the global tree alone; `mnema key enroll --agent <name>`
+  takes the name for the line; one line per tree says what happened, and the verb exits 1 when a tree refuses what the
+  others took), and says when that key is unencrypted, which leaves the separation to nothing; `mnema key revoke --agent
+  <fingerprint> --reason <why>` retires it in every tree that enrolled it, and `key revoke` of an agent key names that
+  verb. A key retired anywhere is retired for every tree: `mnema key request --agent <name> --anchor <id>` then puts the retired key
+  in `agents/<name>/retired/` and makes the agent a new one under the same name. An agent key is not counted among an
+  identity's own keys where the last one may not be retired. `mnema mcp --agent-key <name>` (or `MNEMA_AGENT_KEY`) and
+  `mnema before-a-write --host <host> --agent-key <name>` sign with the key in each tree whose record enrols it under
+  that name, and the `which` of what they record is the name the record of that tree gave the key, not what the client
+  announced; in a tree that does not enrol it the person's key signs, as before, and the server says so for each such
+  tree (and again when the session lands on a project) — and where the person's key is protected and the host has no
+  terminal, the write is refused (`AGENT_NOT_ENROLLED`), naming the verb `key enroll --agent`, and nothing is signed or
+  minted. The advice to put the passphrase in the environment of an agent's host is gone from the refusal of a
+  protected key and from `key protect`. The hook files and manifests the host table generates pass the host's name, and the plugin has
   an `agent_key` option, empty by default. `mnema show <id>` marks a decision an agent key recorded or ruled
   (`attested by its own key`), `mnema audit accountability` says `claude 40 (38 attested)` beside an author for an agent whose key signed some of its facts, and with `--json` it carries `attested` beside an agent's count where
   there is one, and `mnema doctor` lists the agent keys of the machine against the project's record. The core now

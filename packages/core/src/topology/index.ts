@@ -67,6 +67,8 @@ export {
   chainRootForScope,
   type DeferredWrite,
   deferredWrite,
+  type KeyChoice,
+  keyChoiceIn,
   type OpenTreeOptions,
   type Origin,
   openTreeForWriting,

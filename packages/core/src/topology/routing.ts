@@ -399,9 +399,21 @@ export function treeWords(scope: Scope): string {
  * Who signs in one tree when an agent is configured: the agent, the person, or nobody — a refusal
  * that says which verb, at a terminal, puts it right.
  */
-type KeyChoice =
+export type KeyChoice =
   | { readonly signs: 'agent' | 'person' }
   | { readonly signs: 'nobody'; readonly refusal: IdentityUnavailableError };
+
+/**
+ * Who signs in `scope`'s tree when an agent is configured, decided as a write decides it and
+ * without writing or minting anything: the agent, the person, or nobody — a refusal that says which
+ * verb, at a terminal, puts it right. Undefined where no agent is configured, or the tree is not
+ * there. It is what a server says of its agent per tree, and what `mnema doctor` says.
+ */
+export function keyChoiceIn(trees: ResolvedTrees, scope: Scope): KeyChoice | undefined {
+  const chainRoot = chainRootForScope(trees, scope);
+  if (trees.agent === undefined || chainRoot === undefined) return undefined;
+  return chooseTheKey(trees, chainRoot);
+}
 
 function chooseTheKey(trees: ResolvedTrees, chainRoot: string): KeyChoice {
   const agent = trees.agent;
