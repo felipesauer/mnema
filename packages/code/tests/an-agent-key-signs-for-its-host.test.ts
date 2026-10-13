@@ -370,10 +370,14 @@ describe('the verbs that make an agent key', () => {
     expect(enrolled).toContain(
       'the agent key separates nothing while your own key is in the clear',
     );
-    expect(events().filter((event) => event.kind === 'agent.enrolled')).toHaveLength(1);
-    expect(await did(undefined, 'key', 'enroll', '--agent', line)).toContain(
-      'is already the agent "claude"',
+    // Enrolled is not signing: the host is still to be told which key to sign with.
+    expect(enrolled).toContain(
+      '`mnema mcp --agent-key claude`, or the plugin’s `agent_key` option',
     );
+    expect(events().filter((event) => event.kind === 'agent.enrolled')).toHaveLength(1);
+    const again = await did(undefined, 'key', 'enroll', '--agent', line);
+    expect(again).toContain('is already the agent "claude"');
+    expect(again).not.toContain('--agent-key');
     expect(events().filter((event) => event.kind === 'agent.enrolled')).toHaveLength(1);
 
     // Said once the person's key is protected, no longer.
@@ -386,7 +390,9 @@ describe('the verbs that make an agent key', () => {
       '--anchor',
       await identity(),
     );
-    await did('correct horse', 'key', 'protect');
+    expect(await did('correct horse', 'key', 'protect')).toContain(
+      'then tell the host to sign with it (`mnema mcp --agent-key <name>`, the plugin’s `agent_key` option)',
+    );
     expect(await did('correct horse', 'key', 'enroll', '--agent', lineOf(another))).not.toContain(
       'separates nothing',
     );
@@ -632,9 +638,9 @@ describe('the hook records as the agent the record names', () => {
     expect(without.notes.join('\n')).toContain('could not be recorded');
     // What is not done is the RECORDING: the answer to the host is the same refusal, and says why.
     const answer = (result: typeof done): { decision: string; reason: string } => {
-      const output = (
-        result.ok ? result.reply : {}
-      ) as { hookSpecificOutput?: { permissionDecision?: string; permissionDecisionReason?: string } };
+      const output = (result.ok ? result.reply : {}) as {
+        hookSpecificOutput?: { permissionDecision?: string; permissionDecisionReason?: string };
+      };
       return {
         decision: output.hookSpecificOutput?.permissionDecision ?? '',
         reason: output.hookSpecificOutput?.permissionDecisionReason ?? '',
