@@ -307,7 +307,9 @@ function ambiguityOf(
   const opening = `this key belongs to more than one identity in that record (${oneLine(anchors.join(', '))}) — which one it should speak for here is not a choice to make on its behalf`;
   // An identity can retire this key only where its roster counts the key and holds another: the
   // revocation refuses a key it does not count, and the last one.
-  const rosters = new Map(anchors.map((anchor) => [anchor, rosterOf(query, anchor)] as const));
+  const rosters = new Map(
+    anchors.map((anchor) => [anchor, personsRosterOf(query, anchor)] as const),
+  );
   const counts = (anchor: string): boolean => rosters.get(anchor)?.has(key.fingerprint) === true;
   const keeps = anchors.filter(
     (anchor) => !counts(anchor) || (rosters.get(anchor)?.size ?? 0) <= 1,

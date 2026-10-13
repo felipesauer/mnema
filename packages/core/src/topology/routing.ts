@@ -331,8 +331,14 @@ export function openTreeForWriting(
 /** What the record said of the agent key in a tree, as of the extent it was read at. */
 const agentReadings = new Map<
   string,
-  { readonly extent: string; readonly standing: AgentStanding }
+  { readonly extent: string; readonly reading: AgentReading }
 >();
+
+/** An {@link AgentStanding}, with what the record said when it was the ambiguity. */
+interface AgentReading {
+  readonly standing: AgentStanding;
+  readonly ambiguity?: string;
+}
 
 /** The trees of `trees` this process can reach: the project's two, when there is a project, and the machine's. */
 function reachableTrees(trees: ResolvedTrees): { scope: Scope; chainRoot: string }[] {
@@ -345,14 +351,14 @@ function reachableTrees(trees: ResolvedTrees): { scope: Scope; chainRoot: string
 }
 
 /** What the record at `chainRoot` says of `fingerprint` as the agent `agent`, read once per extent. */
-function standingAt(chainRoot: string, fingerprint: string, agent: AgentSigning): AgentStanding {
+function readingAt(chainRoot: string, fingerprint: string, agent: AgentSigning): AgentReading {
   const extent = chainExtent({ root: chainRoot });
   const key = `${chainRoot}\n${agent.keyRoot}\n${agent.name}\n${fingerprint}`;
   const seen = agentReadings.get(key);
-  if (seen?.extent === extent) return seen.standing;
-  const standing = agentStandingIn(chainRoot, fingerprint, agent.name);
-  agentReadings.set(key, { extent, standing });
-  return standing;
+  if (seen?.extent === extent) return seen.reading;
+  const reading = agentReadingIn(chainRoot, fingerprint, agent.name);
+  agentReadings.set(key, { extent, reading });
+  return reading;
 }
 
 /** How a tree is said in a sentence a person reads. */
@@ -382,7 +388,19 @@ function chooseTheKey(trees: ResolvedTrees, chainRoot: string): KeyChoice {
     // holds it sign as the person, or found an identity for it. Never a way for the retired key's
     // host to pass to the person's key.
     for (const tree of reachableTrees(trees)) {
-      if (standingAt(tree.chainRoot, fingerprint, agent) !== 'retired') continue;
+      const reading = readingAt(tree.chainRoot, fingerprint, agent);
+      // A key the record proves a member of two identities speaks for neither: it is no way to
+      // fall to the person's key either, which would make the ambiguity the door out of the agent.
+      if (reading.standing === 'ambiguous') {
+        return {
+          signs: 'nobody',
+          refusal: new IdentityUnavailableError(
+            'AMBIGUOUS_MEMBERSHIP',
+            `the agent key "${agent.name}" cannot sign: ${reading.ambiguity ?? 'the record proves it a member of more than one identity'} Nothing was written.`,
+          ),
+        };
+      }
+      if (reading.standing !== 'retired') continue;
       return {
         signs: 'nobody',
         refusal: new IdentityUnavailableError(
@@ -391,7 +409,7 @@ function chooseTheKey(trees: ResolvedTrees, chainRoot: string): KeyChoice {
         ),
       };
     }
-    if (standingAt(chainRoot, fingerprint, agent) === 'enrolled') return { signs: 'agent' };
+    if (readingAt(chainRoot, fingerprint, agent).standing === 'enrolled') return { signs: 'agent' };
   }
   // The record of this tree does not enrol the agent: the person's key signs, and the facts say
   // their `which` is declared. It is never MADE here: a root with no key mints one on first use,
@@ -470,7 +488,7 @@ export function agentSignsIn(trees: ResolvedTrees, scope: Scope): AgentSigning |
 }
 
 /** What the record at one tree says of an agent key: it enrols it, it retired it, or it names it not. */
-export type AgentStanding = 'enrolled' | 'retired' | 'absent';
+export type AgentStanding = 'enrolled' | 'retired' | 'ambiguous' | 'absent';
 
 /**
  * What the record of `scope`'s tree says of the agent configured in `trees` — read from the record
@@ -483,23 +501,33 @@ export function agentStanding(trees: ResolvedTrees, scope: Scope): AgentStanding
   const agent = trees.agent;
   if (agent === undefined || chainRoot === undefined) return undefined;
   const fingerprint = localKeyFingerprint({ root: agent.keyRoot });
-  return fingerprint === null ? undefined : agentStandingIn(chainRoot, fingerprint, agent.name);
+  return fingerprint === null
+    ? undefined
+    : agentReadingIn(chainRoot, fingerprint, agent.name).standing;
 }
 
 /** What the record at `chainRoot` says of the key `fingerprint` as the agent `name`. */
-function agentStandingIn(chainRoot: string, fingerprint: string, name: string): AgentStanding {
+function agentReadingIn(chainRoot: string, fingerprint: string, name: string): AgentReading {
   const half = committedPublicKey({ root: chainRoot }, fingerprint);
-  if (half === null) return 'absent';
+  if (half === null) return { standing: 'absent' };
   const query = { tree: chainRoot, upcasters: catalogUpcasters() };
   const proven = membershipIn(query, half);
   // A key the record RETIRED is still the agent's key for the choice of key: it is the key that
   // writes here, and the write is refused by the record (`REVOKED_KEY`) instead of passing to the
   // person's key, which would make retiring an agent the way to have its host sign as the person.
-  if (!proven.ok) return proven.code === 'REVOKED_KEY' ? 'retired' : 'absent';
-  if (proven.membership !== 'agent') return 'absent';
-  return rosterByRole(query, proven.anchor).agents.get(fingerprint) === name
-    ? 'enrolled'
-    : 'absent';
+  if (!proven.ok) {
+    if (proven.code === 'REVOKED_KEY') return { standing: 'retired' };
+    // The ambiguity is a refusal and never a "not enrolled": the person's key signing in its
+    // place is the one thing a record that cannot say whose the key is must not allow.
+    return proven.code === 'AMBIGUOUS_MEMBERSHIP'
+      ? { standing: 'ambiguous', ambiguity: proven.message }
+      : { standing: 'absent' };
+  }
+  if (proven.membership !== 'agent') return { standing: 'absent' };
+  return {
+    standing:
+      rosterByRole(query, proven.anchor).agents.get(fingerprint) === name ? 'enrolled' : 'absent',
+  };
 }
 
 /**

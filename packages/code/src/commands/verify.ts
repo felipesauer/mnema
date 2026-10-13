@@ -69,13 +69,16 @@ import {
   weakerLevel,
 } from '@mnema/chain';
 import {
+  agentKeysIn,
   type DiscoveryEnv,
+  orderedEvents,
   privateTreeVisibility,
   type ResolvedTrees,
   resolveTrees,
   type Scope,
 } from '@mnema/core';
 import { recordTrees, type ScopedTree } from '../intelligence-source.js';
+import { oneLine } from '../one-line.js';
 
 /** What verify needs — injected so it is testable. */
 export interface VerifyContext {
@@ -223,7 +226,7 @@ function coverProject(
     kind: 'verdict',
     scope: 'public',
     root,
-    result: verify(root, upcasters, { keyRoot: trees.keyRoot }),
+    result: verifiedTree(root, upcasters, trees.keyRoot),
   };
   const rest = recordTrees(trees, undefined)
     .filter((tree) => tree.scope !== 'public' && (tree.scope !== 'global' || global))
@@ -531,7 +534,46 @@ function reportOn(tree: ScopedTree, upcasters: UpcasterRegistry, keyRoot: string
   if (!holdsRecord({ root })) {
     return { kind: 'no-record', scope: tree.scope, root };
   }
-  return { kind: 'verdict', scope: tree.scope, root, result: verify(root, upcasters, { keyRoot }) };
+  return {
+    kind: 'verdict',
+    scope: tree.scope,
+    root,
+    result: verifiedTree(root, upcasters, keyRoot),
+  };
+}
+
+/**
+ * The chain's verdict over one tree, with the one note the chain cannot word: a committed key with
+ * no tail that the record ENROLS AS AN AGENT has simply not signed here yet. The chain says of any
+ * such key that its tail "may have been dropped (a botched merge)", which is the right fear for a
+ * colleague's key and a false one for an agent enrolled a minute ago — and `mnema key enroll
+ * --agent` is run before the host writes, so every agent starts as that note. The verdict, the
+ * level, the issues and the clause count are the chain's, untouched; only the sentence of the
+ * note for an agent key changes, and only where no waiver already accounts for the key.
+ */
+function verifiedTree(root: string, upcasters: UpcasterRegistry, keyRoot: string): VerifyResult {
+  const result = verify(root, upcasters, { keyRoot });
+  if (!result.census.some((note) => note.kind === 'key-without-tail')) return result;
+  // A record the chain called unreadable cannot be replayed, and holds no agent to name.
+  let agents: ReturnType<typeof agentKeysIn>;
+  try {
+    agents = agentKeysIn(orderedEvents({ root }, upcasters), root);
+  } catch {
+    return result;
+  }
+  if (agents.size === 0) return result;
+  return {
+    ...result,
+    census: result.census.map((note) => {
+      if (note.kind !== 'key-without-tail' || note.waivers.length > 0) return note;
+      const agent = agents.get(note.fingerprint);
+      if (agent === undefined) return note;
+      return {
+        ...note,
+        detail: `the key of the agent "${oneLine(agent.name)}" of ${oneLine(agent.anchor)}: the record enrols it and it has signed nothing here yet, so it has no tail until it does`,
+      };
+    }),
+  };
 }
 
 /**

@@ -1596,10 +1596,10 @@ const CLASSIFIED: Readonly<Record<string, { verdict: Verdict; why: string }>> = 
     verdict: 'collapsed',
     why: 'the name the record holds for a key it counts as an agent, written by whoever vouched',
   },
-  '@mnema/core identity/roster.ts «the key {} is an agent key of {} — an agent is not » oneLine(anchor) #1':
+  '@mnema/core identity/roster.ts «the key {} is an agent key of {} — an agent is not » oneLine(holder.anchor) #1':
     {
       verdict: 'collapsed',
-      why: 'the anchor of the identity this machine writes as, which the record names',
+      why: 'the anchor of the identity the record holds the agent key for, which the record names',
     },
   '@mnema/core identity/roster.ts «the key {} is an agent key of {} — an agent is not » oneLine(fingerprint) #1':
     {

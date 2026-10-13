@@ -18,17 +18,24 @@ import {
   catalogUpcasters,
   committedPublicKey,
   localKeyFingerprint,
+  materializePublicKey,
   openChainForWriting,
   readAnchor,
   verify,
 } from '@mnema/chain';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
+import { enrollChecker, retireChecker } from '../checks/operations.js';
 import { captureMemory } from '../knowledge/operations.js';
 import { orderedEvents } from '../projections/order.js';
 import type { ResolvedTrees } from '../topology/resolve.js';
 import { agentSignsIn, openTreeForWriting, signerFor } from '../topology/routing.js';
 import type { Clock } from '../workflow/clock.js';
-import { decideAnchor, enrollAgent, ensureFounded } from '../workflow/identity-operations.js';
+import {
+  decideAnchor,
+  enrollAgent,
+  ensureFounded,
+  retireAgent,
+} from '../workflow/identity-operations.js';
 import type { WriteContext } from '../workflow/operations.js';
 import { AGENT_NAME } from './agent-name.js';
 import {
@@ -336,6 +343,124 @@ describe('enrollAgentFromRequest — a member vouches for an agent', () => {
   });
 });
 
+describe('a key that holds the agent role of one identity joins no other', () => {
+  it('is refused by the other identity’s member, and names the identity that holds it', () => {
+    const { m, anchor } = person();
+    const claude = agentRequest(anchor, 'claude');
+    expect(enrollAgentFromRequest(m.ctx, { request: claude.request }).ok).toBe(true);
+    // Another identity in the same record, with a member of its own.
+    const other = open(tmp('mnema-agents-other-person-'));
+    const otherAnchor = ensureFounded(other.ctx);
+    expect(otherAnchor).not.toBe(anchor);
+    const joining = requestEnrollment({ anchor: otherAnchor, keyRoot: claude.keyRoot });
+    if (!joining.ok) throw new Error('no request');
+
+    const refused = enrollFromRequest(other.ctx, { request: joining.request });
+
+    expect(refused).toMatchObject({ ok: false, code: 'AN_AGENT_KEY' });
+    expect((refused as { message: string }).message).toContain(anchor);
+    expect(count('key.enrolled')).toBe(0);
+  });
+});
+
+describe('what the record is read to say of an agent fact that does not hold up', () => {
+  /** The agent key's request for `claude`, its half committed in the tree, and the raw facts at hand. */
+  function aKeyWithConsent() {
+    const { m, anchor } = person();
+    const claude = agentRequest(anchor, 'claude');
+    const decoded = decodeAgentRequest(claude.request);
+    if (decoded === null) throw new Error('unreadable');
+    materializePublicKey({ root: tree }, decoded.key);
+    return { m, anchor, claude, decoded };
+  }
+
+  it('does not take an enrolment whose consent was given to another name for a membership, or a role', () => {
+    const { m, anchor, claude, decoded } = aKeyWithConsent();
+    // The fact names "gemini"; the key consented to "claude".
+    const raw = enrollAgent(m.ctx, {
+      agentFp: claude.fingerprint,
+      name: 'gemini',
+      reverseSig: decoded.reverseSig,
+    });
+    expect(raw.ok).toBe(true);
+
+    expect(membershipIn(query(), decoded.key)).toMatchObject({ ok: false, code: 'NOT_A_MEMBER' });
+    expect(agentsOf(query(), anchor).size).toBe(0);
+    expect(rosterOf(query(), anchor).has(claude.fingerprint)).toBe(false);
+    expect(personsRosterOf(query(), anchor)).toEqual(new Set([m.fingerprint]));
+  });
+
+  it('keeps a person’s key a person’s when an agent enrolment of it follows, and when its retirement does', () => {
+    const { m, anchor } = person();
+    // The founding key itself consents to be an agent of its own identity, and is "enrolled".
+    const made = requestAgentEnrollment({ anchor, name: 'claude', keyRoot: m.keyRoot });
+    if (!made.ok) throw new Error('no request');
+    const decoded = decodeAgentRequest(made.request);
+    if (decoded === null) throw new Error('unreadable');
+    expect(
+      enrollAgent(m.ctx, { agentFp: m.fingerprint, name: 'claude', reverseSig: decoded.reverseSig })
+        .ok,
+    ).toBe(true);
+    expect(membershipIn(query(), decoded.key)).toMatchObject({ ok: true, membership: 'founded' });
+
+    // And a retirement of a key that holds no agent role takes nothing back.
+    expect(retireAgent(m.ctx, { agentFp: m.fingerprint, reason: 'not an agent' }).ok).toBe(true);
+    expect(membershipIn(query(), decoded.key)).toMatchObject({ ok: true, membership: 'founded' });
+  });
+
+  it('says of a key held as an agent by one identity and as a member by another that the second must let it go', () => {
+    const { m, anchor, claude, decoded } = aKeyWithConsent();
+    const other = open(tmp('mnema-agents-other-person-'));
+    const otherAnchor = ensureFounded(other.ctx);
+    // It joined the second identity first; then the first identity's record also names it an agent
+    // (the product refuses that now, so the fact is written raw).
+    const joining = requestEnrollment({ anchor: otherAnchor, keyRoot: claude.keyRoot });
+    if (!joining.ok) throw new Error('no request');
+    expect(enrollFromRequest(other.ctx, { request: joining.request }).ok).toBe(true);
+    expect(
+      enrollAgent(m.ctx, {
+        agentFp: claude.fingerprint,
+        name: 'claude',
+        reverseSig: decoded.reverseSig,
+      }).ok,
+    ).toBe(true);
+
+    const proven = membershipIn(query(), decoded.key);
+
+    expect(proven).toMatchObject({ ok: false, code: 'AMBIGUOUS_MEMBERSHIP' });
+    // An agent key is retired by its own verb, so it is the member identity that lets it go.
+    expect((proven as { message: string }).message).toContain(
+      `It speaks for ${anchor} again once ${otherAnchor} lets it go`,
+    );
+  });
+
+  it('does not let an agent vouch for a checker, nor retire one', () => {
+    const { m, anchor } = person();
+    const claude = agentRequest(anchor, 'claude');
+    expect(enrollAgentFromRequest(m.ctx, { request: claude.request }).ok).toBe(true);
+    const asAgent = open(claude.keyRoot);
+    const made = requestEnrollment({
+      anchor,
+      keyRoot: tmp('mnema-agents-checker-'),
+      asChecker: true,
+    });
+    if (!made.ok) throw new Error('no request');
+
+    expect(enrollChecker(asAgent.ctx, { request: made.request })).toMatchObject({
+      ok: false,
+      code: 'CANNOT_VOUCH',
+    });
+    expect(count('checker.enrolled')).toBe(0);
+
+    // The person vouches; the agent cannot retire it.
+    expect(enrollChecker(m.ctx, { request: made.request }).ok).toBe(true);
+    expect(
+      retireChecker(asAgent.ctx, { fingerprint: made.fingerprint, reason: 'leaked' }),
+    ).toMatchObject({ ok: false, code: 'CANNOT_VOUCH' });
+    expect(count('checker.retired')).toBe(0);
+  });
+});
+
 describe('the last key of an identity is the last that is not an agent’s', () => {
   it('refuses to retire the only own key while an agent holds the identity up', () => {
     const { m, anchor } = person();
@@ -508,6 +633,33 @@ describe('which key a tree is signed with', () => {
     expect(localKeyFingerprint({ root: none })).toBeNull();
     expect(existsSync(join(none, 'keys'))).toBe(false);
     expect(count('identity.founded')).toBe(1);
+  });
+
+  it('refuses a key the record proves a member of two identities, and does not pass to the person’s key', () => {
+    const { m, anchor } = person();
+    const claude = agentRequest(anchor, 'claude');
+    const decoded = decodeAgentRequest(claude.request);
+    if (decoded === null) throw new Error('unreadable');
+    materializePublicKey({ root: tree }, decoded.key);
+    const other = open(tmp('mnema-agents-other-person-'));
+    const otherAnchor = ensureFounded(other.ctx);
+    const joining = requestEnrollment({ anchor: otherAnchor, keyRoot: claude.keyRoot });
+    if (!joining.ok) throw new Error('no request');
+    expect(enrollFromRequest(other.ctx, { request: joining.request }).ok).toBe(true);
+    expect(
+      enrollAgent(m.ctx, {
+        agentFp: claude.fingerprint,
+        name: 'claude',
+        reverseSig: decoded.reverseSig,
+      }).ok,
+    ).toBe(true);
+
+    const trees = treesOf(m.keyRoot, { name: 'claude', keyRoot: claude.keyRoot });
+
+    expect(refusalOf(() => openTreeForWriting(trees, 'public'))).toMatchObject({
+      code: 'AMBIGUOUS_MEMBERSHIP',
+    });
+    expect(agentSignsIn(trees, 'public')).toBeUndefined();
   });
 
   it('does not take the agent for a name it was not enrolled under', () => {

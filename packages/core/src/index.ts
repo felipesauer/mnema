@@ -105,6 +105,7 @@ export {
 // so a surface needs to be able to name the class to report it as the refusal it
 // is — the same reason `TreeUnavailableError` lives on the read surface.
 export {
+  agentKeysIn,
   IdentityUnavailableError,
   type MembershipRefusalCode,
 } from './identity/membership.js';

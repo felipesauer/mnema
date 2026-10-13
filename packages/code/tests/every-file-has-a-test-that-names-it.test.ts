@@ -1264,7 +1264,7 @@ const CLAUSES_PER_FILE: Readonly<Record<string, number>> = {
   'packages/core/src/content/secrets.properties.test.ts': 6,
   'packages/core/src/content/secrets.test.ts': 2,
   'packages/core/src/identity/account.test.ts': 2,
-  'packages/core/src/identity/agents.test.ts': 16,
+  'packages/core/src/identity/agents.test.ts': 17,
   'packages/core/src/identity/alias.test.ts': 3,
   'packages/core/src/identity/anchor.test.ts': 2,
   'packages/core/src/identity/authority.test.ts': 3,

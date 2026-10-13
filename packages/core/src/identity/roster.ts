@@ -32,6 +32,7 @@ import {
   screened,
 } from '../content/screen.js';
 import { oneLine } from '../one-line.js';
+import { orderedEvents } from '../projections/order.js';
 import type { AppendRefusal } from '../workflow/append.js';
 import {
   type Judged,
@@ -54,7 +55,13 @@ import {
 } from '../workflow/operations.js';
 import { agentNameRefusal } from './agent-name.js';
 import { decodeAgentRequest, decodeKeyRequest } from './handshake.js';
-import { membershipIn, provesAgentConsent, provesConsent, rosterByRole } from './membership.js';
+import {
+  agentKeysIn,
+  membershipIn,
+  provesAgentConsent,
+  provesConsent,
+  rosterByRole,
+} from './membership.js';
 
 /** What enrolling a requested key needs. */
 export interface EnrollRequestInput {
@@ -149,17 +156,19 @@ export function enrollFromRequest(
   return onTheRecordAsItStands(
     writing,
     () => rosterAsItStands(ctx, signer),
-    ({ decided, roster, agents }): Judged<EnrollRequestOk | EnrollRequestErr> => {
+    ({ decided, roster, agentKeys }): Judged<EnrollRequestOk | EnrollRequestErr> => {
       const anchor = decided.anchor;
-      // A key that holds the agent role is in an identity already, and the verifier refuses a
-      // second enrolment of it: said here, while refusing is free.
-      if (agents.has(fingerprint)) {
+      // A key that holds the agent role is in an identity already — THIS one or any other the
+      // record holds — and the verifier refuses a second enrolment of it: said here, while
+      // refusing is free.
+      const holder = agentKeys.get(fingerprint);
+      if (holder !== undefined) {
         return {
           refuse: {
             ok: false,
             code: 'AN_AGENT_KEY',
             message:
-              `the key ${oneLine(fingerprint)} is an agent key of ${oneLine(anchor)} — an agent is not ` +
+              `the key ${oneLine(fingerprint)} is an agent key of ${oneLine(holder.anchor)} — an agent is not ` +
               'a member that joins, and the record takes a key in one role only',
           },
         };
@@ -392,13 +401,19 @@ function rosterAsItStands(
   readonly roster: Set<string>;
   /** The agent keys it holds, each with the name it was enrolled under. */
   readonly agents: ReadonlyMap<string, string>;
+  /** Every key that holds the agent role under ANY identity of the record, and whose. */
+  readonly agentKeys: ReadonlyMap<string, { readonly anchor: string; readonly name: string }>;
 } {
   const decided = decideAnchor({ writer: signer, layout: ctx.layout, upcasters: ctx.upcasters });
   const { persons, agents } = rosterByRole(
     { tree: ctx.layout.root, upcasters: ctx.upcasters },
     decided.anchor,
   );
-  return { decided, roster: persons, agents };
+  const agentKeys = agentKeysIn(
+    orderedEvents({ root: ctx.layout.root }, ctx.upcasters),
+    ctx.layout.root,
+  );
+  return { decided, roster: persons, agents, agentKeys };
 }
 
 /**
