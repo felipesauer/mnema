@@ -165,7 +165,12 @@ import {
   type SwitchableChannel,
 } from '../record-framing.js';
 import type { ScopedLinkBreak } from '../record-integrity.js';
-import { forwardReplacement, type Landed, type Replacement } from '../recorded-content.js';
+import {
+  forwardReplacement,
+  type Landed,
+  type PersonSigned,
+  type Replacement,
+} from '../recorded-content.js';
 import {
   linkBreaksOf,
   THE_CHAIN_AS_IT_STANDS_NOW,
@@ -191,7 +196,7 @@ import {
   refuseUnlocated,
   type WorkspaceTree,
 } from './locate.js';
-import { routedTo, routeWrite } from './route.js';
+import { personSignedIn, routedTo, routeWrite } from './route.js';
 import { openWrite, type Session, whichOfWrite } from './session.js';
 
 /** A memory was captured, or the requested scope was not available here. */
@@ -234,15 +239,16 @@ export type CreateTaskResult =
 
 /** A task moved (ok), or the gate refused (a typed reason in the envelope). */
 export type TransitionResult =
-  | (Replacement & {
-      readonly ok: true;
-      /** The task's id (the one that moved). */
-      readonly id: string;
-      /** The short human-facing alias (`t-xxxx`), derived from the id. */
-      readonly alias: string;
-      /** The state the task is now in, resolved by the gate. */
-      readonly to: string;
-    })
+  | (Replacement &
+      PersonSigned & {
+        readonly ok: true;
+        /** The task's id (the one that moved). */
+        readonly id: string;
+        /** The short human-facing alias (`t-xxxx`), derived from the id. */
+        readonly alias: string;
+        /** The state the task is now in, resolved by the gate. */
+        readonly to: string;
+      })
   | {
       readonly ok: false;
       /** The gate's (or operation's) typed code — e.g. ILLEGAL_TRANSITION. */
@@ -271,23 +277,24 @@ export type RecordDecisionResult =
 
 /** A decision moved (ok), or the gate refused (a typed reason in the envelope). */
 export type DecisionTransitionResult =
-  | (Replacement & {
-      readonly ok: true;
-      /** The decision's id (the one that moved). */
-      readonly id: string;
-      /** The decision's citable `ADR-<n>` label, resolved from the projection. */
-      readonly adr: string;
-      /** The state the decision is now in, resolved by the gate. */
-      readonly to: string;
-      /** On a supersede whose successor is still `proposed`: nothing is in force until accepted. */
-      readonly notice?: string;
-      /**
-       * Present when an AGENT ruled it accepted: the agent's name. The reply says so (see
-       * `agent-accepts.ts`), because the person working with the agent is told through the
-       * same transcript the agent is.
-       */
-      readonly acceptedByAgent?: string;
-    })
+  | (Replacement &
+      PersonSigned & {
+        readonly ok: true;
+        /** The decision's id (the one that moved). */
+        readonly id: string;
+        /** The decision's citable `ADR-<n>` label, resolved from the projection. */
+        readonly adr: string;
+        /** The state the decision is now in, resolved by the gate. */
+        readonly to: string;
+        /** On a supersede whose successor is still `proposed`: nothing is in force until accepted. */
+        readonly notice?: string;
+        /**
+         * Present when an AGENT ruled it accepted: the agent's name. The reply says so (see
+         * `agent-accepts.ts`), because the person working with the agent is told through the
+         * same transcript the agent is.
+         */
+        readonly acceptedByAgent?: string;
+      })
   | {
       readonly ok: false;
       /** The gate's (or operation's) typed code — e.g. ILLEGAL_TRANSITION. */
@@ -316,15 +323,16 @@ export type CreateSkillResult =
 
 /** A skill moved (ok), or the gate refused (a typed reason in the envelope). */
 export type SkillTransitionResult =
-  | (Replacement & {
-      readonly ok: true;
-      /** The skill's id (the one that moved). */
-      readonly id: string;
-      /** The skill's short name, resolved from the projection (DISPLAY only). */
-      readonly name: string;
-      /** The state the skill is now in, resolved by the gate. */
-      readonly to: string;
-    })
+  | (Replacement &
+      PersonSigned & {
+        readonly ok: true;
+        /** The skill's id (the one that moved). */
+        readonly id: string;
+        /** The skill's short name, resolved from the projection (DISPLAY only). */
+        readonly name: string;
+        /** The state the skill is now in, resolved by the gate. */
+        readonly to: string;
+      })
   | {
       readonly ok: false;
       /** The gate's (or operation's) typed code — e.g. ILLEGAL_TRANSITION. */
@@ -380,7 +388,7 @@ export function runCaptureMemory(
     ok: true,
     id: captured.id,
     scope: route.scope,
-    ...routedTo(route),
+    ...routedTo(session, route),
     ...forwardReplacement(captured),
   };
 }
@@ -467,7 +475,7 @@ export function runRecordObservation(
     ok: true,
     id: recorded.id,
     scope: route.scope,
-    ...routedTo(route),
+    ...routedTo(session, route),
     ...forwardReplacement(recorded),
   };
 }
@@ -514,7 +522,7 @@ export function runRecordHandoff(
     ok: true,
     recorded: [recorded.fromAgent, recorded.toAgent],
     scope: route.scope,
-    ...routedTo(route),
+    ...routedTo(session, route),
     ...forwardReplacement(recorded),
   };
 }
@@ -617,7 +625,7 @@ export function runLinkKnowledge(
     ok: true,
     recorded: [recorded.rel],
     scope: route.scope,
-    ...routedTo(route),
+    ...routedTo(session, route),
     ...(reach !== undefined ? { reach } : {}),
     ...(subjectScope !== undefined ? { subjectScope } : {}),
     ...forwardReplacement(recorded),
@@ -667,7 +675,7 @@ export function runCreateTask(
     id: created.id,
     alias: deriveAlias('task', created.id),
     scope: route.scope,
-    ...routedTo(route),
+    ...routedTo(session, route),
     ...forwardReplacement(created),
   };
 }
@@ -735,6 +743,7 @@ export function runTaskTransition(
     id: input.id,
     alias: deriveAlias('task', input.id),
     to: moved.to,
+    ...personSignedIn(session, located.home.scope, located.home.target),
     ...forwardReplacement(moved),
   };
 }
@@ -809,7 +818,7 @@ export function runRecordDecision(
     id: recorded.id,
     adr: recorded.adr,
     scope: route.scope,
-    ...routedTo(route),
+    ...routedTo(session, route),
     ...forwardReplacement(recorded),
   };
 }
@@ -933,6 +942,7 @@ export function runDecisionTransition(
     to: moved.to,
     ...(notice !== undefined ? { notice } : {}),
     ...(input.action === 'accept' && which !== undefined ? { acceptedByAgent: which } : {}),
+    ...personSignedIn(session, located.home.scope, located.home.target),
     ...forwardReplacement(moved),
   };
 }
@@ -988,6 +998,7 @@ export function runRetractNote(
     id: retracted.id,
     note: retracted.note,
     scope: located.home.scope,
+    ...personSignedIn(session, located.home.scope, located.home.target),
     ...forwardReplacement(retracted),
   };
 }
@@ -1109,7 +1120,7 @@ export function runCreateSkill(
     id: created.id,
     name: created.name,
     scope: route.scope,
-    ...routedTo(route),
+    ...routedTo(session, route),
     ...forwardReplacement(created),
   };
 }
@@ -1183,7 +1194,14 @@ export function runSkillTransition(
   // project), through the one function that resolves a moved display and falls back
   // to the id.
   const name = movedDisplay('skill', located.home.chainRoot, input.id, upcasters);
-  return { ok: true, id: input.id, name, to: moved.to, ...forwardReplacement(moved) };
+  return {
+    ok: true,
+    id: input.id,
+    name,
+    to: moved.to,
+    ...personSignedIn(session, located.home.scope, located.home.target),
+    ...forwardReplacement(moved),
+  };
 }
 
 /**

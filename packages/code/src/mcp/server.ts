@@ -112,6 +112,7 @@ import { linkBreakBlock, linkBreakBlockOnWrite } from '../record-integrity.js';
 import {
   type Landed,
   landedNotice,
+  type PersonSigned,
   RECOMMENDED_RELATIONS,
   RECORD_CONTRACT,
   type Replacement,
@@ -2081,6 +2082,20 @@ function landingOf(session: Session): string {
 }
 
 /**
+ * The one line a write owes when the PERSON's key signed it in a project the agent is not
+ * enrolled in: the opening says it for the session's own trees, and a write routed elsewhere
+ * would otherwise carry a `which` the record only declares, with nothing to say so. The words are
+ * the opening's; the directory is the absolute path, as the line that names where a write fell.
+ */
+function personSignedNotice(result: PersonSigned): string[] {
+  const said = result.personSigned;
+  if (said === undefined) return [];
+  return [
+    `  The agent key "${oneLine(said.agent)}" is not enrolled in the project at ${oneLine(said.project)}: this write is signed with the person's key, so the agent it names is declared, not attested.`,
+  ];
+}
+
+/**
  * A BIRTH tool's successful reply: what landed, WHERE it landed, and what the
  * content door replaced on the way in.
  *
@@ -2125,6 +2140,7 @@ function recorded(
         ...(result.project !== undefined
           ? [`  In the project at ${oneLine(result.project)}.`]
           : []),
+        ...personSignedNotice(result),
         ...replacementNotice(result.replaced),
       ].join('\n'),
     ],
@@ -2156,7 +2172,7 @@ function recorded(
 function moved(
   session: Session,
   line: string,
-  result: Replacement,
+  result: Replacement & PersonSigned,
   // What a particular move owes beyond the acknowledgement: the one sentence an acceptance by
   // an agent says about itself, right after the line, and the notice a supersede whose successor
   // is still proposed ends with. A parameter, as `recorded`'s is, so no other move's reply gains
@@ -2169,6 +2185,7 @@ function moved(
       [
         line,
         ...(extra.after ?? []),
+        ...personSignedNotice(result),
         ...replacementNotice(result.replaced),
         ...(extra.notice !== undefined ? [extra.notice] : []),
       ].join('\n'),

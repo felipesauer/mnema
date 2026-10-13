@@ -54,12 +54,14 @@
 import { basename, isAbsolute, resolve } from 'node:path';
 import {
   chainRootForScope,
+  keyChoiceIn,
   type ResolvedTrees,
   type RoutedKind,
   resolveScope,
   type Scope,
 } from '@mnema/core';
 import { oneLine } from '../one-line.js';
+import type { PersonSigned } from '../recorded-content.js';
 import type { WorkspaceProject } from './context.js';
 import type { Session, WriteTarget } from './session.js';
 
@@ -142,11 +144,33 @@ export function routeWrite(
  * to mistake), nor for a write that landed in the global tree: that tree is the
  * machine's, and a directory named beside it would say it fell somewhere it did not.
  */
-export function routedTo(route: { readonly scope: Scope; readonly target?: WriteTarget }): {
-  readonly project?: string;
-} {
+export function routedTo(
+  session: Session,
+  route: { readonly scope: Scope; readonly target?: WriteTarget },
+): { readonly project?: string } & PersonSigned {
   if (route.target === undefined || route.scope === 'global') return {};
-  return { project: route.target.dir };
+  return { project: route.target.dir, ...personSignedIn(session, route.scope, route.target) };
+}
+
+/**
+ * Whether the PERSON's key signs a write into `scope` of the project it was routed to, when the
+ * server was asked to sign as an agent — the fact the opening says for the trees of the session
+ * and cannot say for a project the write is routed to afterwards.
+ *
+ * Said only when all of these hold: an agent is configured; the write was ROUTED (a `project`, or
+ * an id another project holds — `target` is absent for the session's own trees, which the opening
+ * already spoke of); it is not in the global tree, which is the machine's and not the project's;
+ * and the key choice there is the person's. A tree where the agent signs has nothing to say, and
+ * one where nobody can sign refuses the write before there is a reply.
+ */
+export function personSignedIn(
+  session: Session,
+  scope: Scope,
+  target: WriteTarget | undefined,
+): PersonSigned {
+  if (session.agentKey === undefined || target === undefined || scope === 'global') return {};
+  if (keyChoiceIn(target.trees, scope)?.signs !== 'person') return {};
+  return { personSigned: { agent: session.agentKey, project: target.dir } };
 }
 
 /**
