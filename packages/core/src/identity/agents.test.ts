@@ -26,7 +26,7 @@ import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { captureMemory } from '../knowledge/operations.js';
 import { orderedEvents } from '../projections/order.js';
 import type { ResolvedTrees } from '../topology/resolve.js';
-import { agentSignsIn, signerFor } from '../topology/routing.js';
+import { agentSignsIn, openTreeForWriting, signerFor } from '../topology/routing.js';
 import type { Clock } from '../workflow/clock.js';
 import { decideAnchor, enrollAgent, ensureFounded } from '../workflow/identity-operations.js';
 import type { WriteContext } from '../workflow/operations.js';
@@ -39,6 +39,7 @@ import {
 } from './handshake.js';
 import {
   agentsOf,
+  IdentityUnavailableError,
   membershipIn,
   personsRosterOf,
   provesAgentConsent,
@@ -85,9 +86,9 @@ interface Machine {
   readonly fingerprint: string;
 }
 
-function open(keyRoot: string): Machine {
-  const writer = openChainForWriting(tree, { keyRoot });
-  const layout: ChainLayout = { root: tree };
+function open(keyRoot: string, chainRoot = tree): Machine {
+  const writer = openChainForWriting(chainRoot, { keyRoot });
+  const layout: ChainLayout = { root: chainRoot };
   return {
     keyRoot,
     writer,
@@ -107,6 +108,17 @@ function agentRequest(anchor: string, name: string, keyRoot = tmp('mnema-agents-
   const made = requestAgentEnrollment({ anchor, name, keyRoot });
   if (!made.ok) throw new Error(`the test could not make a request: ${made.code}`);
   return { ...made, keyRoot };
+}
+
+/** What a call refused with: the refusal a surface answers by its code, or nothing when it did not throw. */
+function refusalOf(attempt: () => unknown): IdentityUnavailableError | undefined {
+  try {
+    attempt();
+  } catch (error) {
+    if (error instanceof IdentityUnavailableError) return error;
+    throw error;
+  }
+  return undefined;
 }
 
 function count(kind: string): number {
@@ -437,7 +449,7 @@ describe('which key a tree is signed with', () => {
     expect(signerFor(treesOf(m.keyRoot), 'public').signerFingerprint).toBe(m.fingerprint);
   });
 
-  it('is still the agent’s once the record retired it, so a retired agent is refused and never passes to the person', () => {
+  it('signs nothing once the record retired the key, and never passes to the person’s key', () => {
     const { m, anchor } = person();
     const claude = agentRequest(anchor, 'claude');
     expect(enrollAgentFromRequest(m.ctx, { request: claude.request }).ok).toBe(true);
@@ -446,7 +458,56 @@ describe('which key a tree is signed with', () => {
     );
 
     const trees = treesOf(m.keyRoot, { name: 'claude', keyRoot: claude.keyRoot });
-    expect(signerFor(trees, 'public').signerFingerprint).toBe(claude.fingerprint);
+    expect(agentSignsIn(trees, 'public')).toBeUndefined();
+    for (const scope of ['public', 'private', 'global'] as const) {
+      expect(
+        refusalOf(() => openTreeForWriting(trees, scope)),
+        scope,
+      ).toMatchObject({
+        code: 'REVOKED_KEY',
+      });
+    }
+  });
+
+  it('refuses to sign in a tree that never heard of a key another tree of the machine retired', () => {
+    const { m, anchor } = person();
+    const claude = agentRequest(anchor, 'claude');
+    const trees = treesOf(m.keyRoot, { name: 'claude', keyRoot: claude.keyRoot });
+    // Enrolled and retired in the machine's global tree only.
+    const inGlobal = open(m.keyRoot, trees.global);
+    ensureFounded(inGlobal.ctx);
+    expect(enrollAgentFromRequest(inGlobal.ctx, { request: claude.request }).ok).toBe(true);
+    expect(
+      retireAgentKey(inGlobal.ctx, { fingerprint: claude.fingerprint, reason: 'lent out' }).ok,
+    ).toBe(true);
+
+    const refusal = refusalOf(() => openTreeForWriting(trees, 'public'));
+    expect(refusal?.code).toBe('REVOKED_KEY');
+    expect(refusal?.message).toContain("this machine's global tree");
+    expect(refusal?.message).toContain('mnema key request --agent claude');
+    expect(refusal?.message).toContain('mnema key enroll --agent');
+    expect(count('agent.enrolled')).toBe(0);
+  });
+
+  it('refuses where the record does not enrol the agent and the person has no key here, and mints none', () => {
+    const { anchor } = person();
+    const claude = agentRequest(anchor, 'claude');
+    const none = tmp('mnema-agents-no-key-');
+    const trees = treesOf(none, { name: 'claude', keyRoot: claude.keyRoot });
+
+    for (const attempt of [
+      () => openTreeForWriting(trees, 'public'),
+      () => signerFor(trees, 'public'),
+    ]) {
+      const refusal = refusalOf(attempt);
+      expect(refusal?.code).toBe('AGENT_NOT_ENROLLED');
+      expect(refusal?.message).toContain('mnema key enroll --agent claude');
+      expect(refusal?.message).not.toContain('MNEMA_KEY_PASSPHRASE');
+      expect(refusal?.message).not.toContain('environment');
+    }
+    expect(localKeyFingerprint({ root: none })).toBeNull();
+    expect(existsSync(join(none, 'keys'))).toBe(false);
+    expect(count('identity.founded')).toBe(1);
   });
 
   it('does not take the agent for a name it was not enrolled under', () => {

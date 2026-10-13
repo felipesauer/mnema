@@ -746,6 +746,7 @@ export const HANDED_OVER: Readonly<
   'packages/core/src/checks/operations.ts': { line: 4 },
   'packages/core/src/identity/membership.ts': { line: 7 },
   'packages/core/src/identity/roster.ts': { line: 2, flag: 1 },
+  'packages/core/src/topology/routing.ts': { line: 5 },
   'packages/core/src/workflow/identity-operations.ts': { name: 1 },
   'packages/sdk/README.md': { line: 2, name: 4 },
   'packages/stacks/README.md': { line: 1, name: 2 },

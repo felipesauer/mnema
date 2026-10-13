@@ -96,7 +96,14 @@ export type IdentityRefusalCode =
    * The key is enrolled in this tree as a CHECKER: it signs check results under its own anchor
    * and nothing else, so founding an identity with it would be a fact the record refuses.
    */
-  | 'A_CHECKER_KEY';
+  | 'A_CHECKER_KEY'
+  /**
+   * An agent is asked for, the record of this tree does not enrol its key, and the key that would
+   * sign instead — the person's — cannot be opened without a terminal (it is protected) or is not
+   * on this machine. Founding or minting a key to get through would be an identity the person
+   * never asked for, so nothing is signed; the way out is a verb at a terminal.
+   */
+  | 'AGENT_NOT_ENROLLED';
 
 /** The record proves this key belongs to exactly one identity. */
 export interface MembershipProven {

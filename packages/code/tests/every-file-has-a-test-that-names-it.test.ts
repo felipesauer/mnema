@@ -968,7 +968,7 @@ const CLAUSES_PER_FILE: Readonly<Record<string, number>> = {
   'packages/code/tests/a-tool-answers-without-indentation.test.ts': 11,
   'packages/code/tests/a-verb-that-went-under-a-noun-is-not-a-verb-any-more.test.ts': 3,
   'packages/code/tests/a-write-says-what-it-founded.test.ts': 14,
-  'packages/code/tests/an-agent-key-signs-for-its-host.test.ts': 16,
+  'packages/code/tests/an-agent-key-signs-for-its-host.test.ts': 17,
   'packages/code/tests/another-run-consulted-this-path.test.ts': 13,
   'packages/code/tests/both-surfaces-one-vocabulary.test.ts': 18,
   'packages/code/tests/cli-e2e.test.ts': 15,

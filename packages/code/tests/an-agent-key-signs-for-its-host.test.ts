@@ -14,6 +14,7 @@
  */
 
 import {
+  cpSync,
   existsSync,
   mkdirSync,
   mkdtempSync,
@@ -27,6 +28,7 @@ import { join } from 'node:path';
 import { pathToFileURL } from 'node:url';
 import { type CatalogEvent, catalogUpcasters } from '@mnema/chain';
 import { type DiscoveryEnv, orderedEvents, resolveTrees } from '@mnema/core';
+import { deferredWrite, enrollAgentFromRequest } from '@mnema/core/write';
 import { Client } from '@modelcontextprotocol/sdk/client/index.js';
 import { InMemoryTransport } from '@modelcontextprotocol/sdk/inMemory.js';
 import { ListRootsRequestSchema } from '@modelcontextprotocol/sdk/types.js';
@@ -118,6 +120,9 @@ async function anAgent(name: string, passphrase?: string): Promise<string> {
     await identity(),
   );
   await did(passphrase, 'key', 'enroll', '--agent', lineOf(requested));
+  // Until the verb writes them itself: the agent is in force in the private and the global tree too.
+  enrolledIn('private', lineOf(requested));
+  enrolledIn('global', lineOf(requested));
   return fingerprintIn(requested);
 }
 
@@ -770,5 +775,120 @@ describe('whether the person’s own key leaves the separation to nothing', () =
     await did('correct horse', 'key', 'protect');
     expect(personsKeyInTheClear(root)).toBe(false);
     expect(personsKeyInTheClear(join(sandbox, 'no-key-here'))).toBeUndefined();
+  });
+});
+
+type Scope = 'public' | 'private' | 'global';
+
+/** The events of one tree of the project, or of the machine's global tree. */
+function eventsOf(scope: Scope): CatalogEvent[] {
+  const trees = resolveTrees(repo, env);
+  const root =
+    scope === 'public'
+      ? trees.projectPublic
+      : scope === 'private'
+        ? trees.projectPrivate
+        : trees.global;
+  return orderedEvents({ root: root as string }, catalogUpcasters());
+}
+
+/** Enrols the agent in one tree, as `key enroll --agent` does for each tree it writes. */
+function enrolledIn(scope: Scope, line: string): void {
+  const write = deferredWrite(resolveTrees(repo, env), scope);
+  const done = enrollAgentFromRequest(write, { request: line });
+  expect(done.ok, JSON.stringify(done)).toBe(true);
+  write.checkpoint();
+}
+
+describe('the agent key never makes the person’s key, nor an identity of its own', () => {
+  it('refuses where the record does not enrol it and the person has no key here, and founds nothing', async () => {
+    await did(undefined, 'key', 'request', '--agent', 'claude', '--anchor', await identity());
+    // A sandbox that mounts the agent's folder and nothing else.
+    const only = join(sandbox, 'only-the-agent');
+    cpSync(join(home, '.mnema', 'agents'), join(only, '.mnema', 'agents'), { recursive: true });
+    process.env.HOME = only;
+    env = { home: only };
+    const foundings = (): number =>
+      eventsOf('public').filter((event) => event.kind === 'identity.founded').length;
+    expect(foundings()).toBe(1);
+
+    let reply: Reply | undefined;
+    await connected('claude-code', 'claude', repo, async (client) => {
+      reply = await decide(client, 'in a sandbox with no key of mine');
+    });
+
+    expect(reply?.isError).toBe(true);
+    // The session does not open (nobody here can say who it is), so the words go out as thrown.
+    const said = textOf(reply as Reply);
+    expect(said).toContain('the agent "claude" is not enrolled in');
+    expect(said).toContain('mnema key enroll --agent');
+    expect(said).not.toContain('MNEMA_KEY_PASSPHRASE');
+    expect(said).not.toContain('environment');
+    expect(foundings()).toBe(1);
+    expect(eventsOf('public').some((event) => event.kind === 'decision.recorded')).toBe(false);
+    expect(keysIn(join(only, '.mnema', 'identity'))).toEqual([]);
+    expect(existsSync(join(only, '.mnema', 'global'))).toBe(false);
+  });
+});
+
+describe('a host with an agent key the record does not enrol, and a person’s key it cannot open', () => {
+  it('is refused in words that name the verb, and never told to set the passphrase in its environment', async () => {
+    await did(undefined, 'key', 'request', '--agent', 'claude', '--anchor', await identity());
+    await did('correct horse', 'key', 'protect');
+    const before = { public: eventsOf('public').length, private: eventsOf('private').length };
+
+    const replies: Reply[] = [];
+    await connected('claude-code', 'claude', repo, async (client) => {
+      replies.push(await decide(client, 'a decision no key can sign'));
+      replies.push(
+        (await client.callTool({
+          name: 'capture_memory',
+          arguments: { content: 'a note no key can sign' },
+        })) as Reply,
+      );
+    });
+
+    expect(replies.map((reply) => reply.isError)).toEqual([true, true]);
+    for (const reply of replies) {
+      const said = textOf(reply);
+      expect(said).toContain('Refused (AGENT_NOT_ENROLLED)');
+      expect(said).toContain('mnema key enroll --agent claude');
+      expect(said).toContain('The fact was NOT recorded.');
+      expect(said).not.toContain('MNEMA_KEY_PASSPHRASE');
+      expect(said).not.toContain('environment');
+    }
+    expect({ public: eventsOf('public').length, private: eventsOf('private').length }).toEqual(
+      before,
+    );
+  });
+});
+
+describe('the which of a write is the one the record gives the key that signs it, tree by tree', () => {
+  it('names the agent where the machine’s global tree enrols it, outside a project, whatever the client announced', async () => {
+    const requested = await did(
+      undefined,
+      'key',
+      'request',
+      '--agent',
+      'claude',
+      '--anchor',
+      await identity(),
+    );
+    enrolledIn('global', lineOf(requested));
+    const elsewhere = join(sandbox, 'elsewhere');
+    mkdirSync(elsewhere, { recursive: true });
+
+    await connected('evil', 'claude', elsewhere, async (client) => {
+      await client.callTool({
+        name: 'capture_memory',
+        arguments: { content: 'outside a project' },
+      });
+    });
+
+    const written = eventsOf('global').filter((event) => event.kind === 'memory.captured');
+    expect(written.map((event) => event.which)).toEqual(['claude']);
+    expect(written[0]?.signerFp).toBe(fingerprintIn(requested));
+    const verified = await mnema(undefined, 'verify', '--global');
+    expect(verified.failed, verified.out + verified.err).toBe(false);
   });
 });

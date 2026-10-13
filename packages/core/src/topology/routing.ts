@@ -35,6 +35,7 @@
  * invisibility for it.
  */
 
+import { readFileSync } from 'node:fs';
 import type { EventKind } from '@mnema/chain';
 import {
   type ChainSigner,
@@ -43,11 +44,14 @@ import {
   chainExtent,
   committedPublicKey,
   ensureTree,
+  isProtected,
+  listPrivateKeyFiles,
   localKeyFingerprint,
   openChainForWriting,
+  passphraseFromEnvironment,
   signerAt,
 } from '@mnema/chain';
-import { membershipIn, rosterByRole } from '../identity/membership.js';
+import { IdentityUnavailableError, membershipIn, rosterByRole } from '../identity/membership.js';
 import { canonicalIdentity } from '../identity/who.js';
 import type { DeferredWriteContext } from '../workflow/operations.js';
 import { PrivateTreeVisibleError, privateTreeVisibility } from './private-tree.js';
@@ -295,6 +299,8 @@ export function openTreeForWriting(
   if (chainRoot === undefined) {
     throw new TreeUnavailableError(`no ${scope} tree in this context`);
   }
+  // Decided first: a write the key refuses leaves the tree as it found it, `.gitignore` included.
+  const keyRoot = keyRootFor(trees, chainRoot);
   // A project write, public or private, first makes the public tree own the
   // `.gitignore` that hides `private/`. `projectPublic` is defined whenever
   // `projectPrivate` is (both come from the same discovered project), so this is
@@ -315,19 +321,118 @@ export function openTreeForWriting(
   // installation id in its own git directory — so each writes its own tail (`git-place.ts`).
   const installationRoot = scope === 'private' ? trees.projectPrivateInstallation : undefined;
   return openChainForWriting(chainRoot, {
-    keyRoot: keyRootFor(trees, chainRoot),
+    keyRoot,
     citeHeads: true,
     ...(installationRoot === undefined ? {} : { installationRoot }),
     ...options,
   });
 }
 
-/** What the record said about the agent key in a tree, as of the extent it was read at. */
-const agentReadings = new Map<string, { readonly extent: string; readonly enrolled: boolean }>();
+/** What the record said of the agent key in a tree, as of the extent it was read at. */
+const agentReadings = new Map<
+  string,
+  { readonly extent: string; readonly standing: AgentStanding }
+>();
+
+/** The trees of `trees` this process can reach: the project's two, when there is a project, and the machine's. */
+function reachableTrees(trees: ResolvedTrees): { scope: Scope; chainRoot: string }[] {
+  const reached: { scope: Scope; chainRoot: string }[] = [];
+  for (const scope of ['public', 'private', 'global'] as const) {
+    const chainRoot = chainRootForScope(trees, scope);
+    if (chainRoot !== undefined) reached.push({ scope, chainRoot });
+  }
+  return reached;
+}
+
+/** What the record at `chainRoot` says of `fingerprint` as the agent `agent`, read once per extent. */
+function standingAt(chainRoot: string, fingerprint: string, agent: AgentSigning): AgentStanding {
+  const extent = chainExtent({ root: chainRoot });
+  const key = `${chainRoot}\n${agent.keyRoot}\n${agent.name}\n${fingerprint}`;
+  const seen = agentReadings.get(key);
+  if (seen?.extent === extent) return seen.standing;
+  const standing = agentStandingIn(chainRoot, fingerprint, agent.name);
+  agentReadings.set(key, { extent, standing });
+  return standing;
+}
+
+/** How a tree is said in a sentence a person reads. */
+const TREE_WORDS: Readonly<Record<Scope, string>> = {
+  public: "this project's committed tree",
+  private: "this project's private tree",
+  global: "this machine's global tree",
+};
+
+/**
+ * Who signs in one tree when an agent is configured: the agent, the person, or nobody — a refusal
+ * that says which verb, at a terminal, puts it right.
+ */
+type KeyChoice =
+  | { readonly signs: 'agent' | 'person' }
+  | { readonly signs: 'nobody'; readonly refusal: IdentityUnavailableError };
+
+function chooseTheKey(trees: ResolvedTrees, chainRoot: string): KeyChoice {
+  const agent = trees.agent;
+  if (agent === undefined) return { signs: 'person' };
+  const fingerprint = localKeyFingerprint({ root: agent.keyRoot });
+  const here = reachableTrees(trees).find((tree) => tree.chainRoot === chainRoot)?.scope;
+  const where = here === undefined ? 'this tree' : TREE_WORDS[here];
+  if (fingerprint !== null) {
+    // RETIRED IN ANY TREE THIS PROCESS REACHES IS RETIRED TO WRITE IN ALL: the retirement is a
+    // fact of one record, and a tree that never heard of the key would otherwise let the host that
+    // holds it sign as the person, or found an identity for it. Never a way for the retired key's
+    // host to pass to the person's key.
+    for (const tree of reachableTrees(trees)) {
+      if (standingAt(tree.chainRoot, fingerprint, agent) !== 'retired') continue;
+      return {
+        signs: 'nobody',
+        refusal: new IdentityUnavailableError(
+          'REVOKED_KEY',
+          `the agent key "${agent.name}" was retired in ${TREE_WORDS[tree.scope]}, and a retired key signs nothing in any tree of this machine. In a terminal, \`mnema key request --agent ${agent.name} --anchor <your identity>\` makes the agent a new key and \`mnema key enroll --agent <the line it prints>\` puts it in force. Nothing was written.`,
+        ),
+      };
+    }
+    if (standingAt(chainRoot, fingerprint, agent) === 'enrolled') return { signs: 'agent' };
+  }
+  // The record of this tree does not enrol the agent: the person's key signs, and the facts say
+  // their `which` is declared. It is never MADE here: a root with no key mints one on first use,
+  // and the key that minted would found an identity nobody asked for, in a record others read.
+  const persons = thePersonsKeyOpens(trees);
+  const whyNot =
+    persons === 'absent'
+      ? 'is not on this machine'
+      : persons === 'protected'
+        ? 'is protected by a passphrase, and a host has no terminal to ask at'
+        : undefined;
+  if (whyNot === undefined) return { signs: 'person' };
+  const how =
+    fingerprint === null
+      ? `\`mnema key request --agent ${agent.name} --anchor <your identity>\`, then \`mnema key enroll --agent <the line it prints>\``
+      : `\`mnema key enroll --agent ${agent.name}\``;
+  return {
+    signs: 'nobody',
+    refusal: new IdentityUnavailableError(
+      'AGENT_NOT_ENROLLED',
+      `the agent "${agent.name}" is not enrolled in ${where}, and the key that would sign instead, yours, ${whyNot}. In a terminal in this project: ${how}. Nothing was written.`,
+    ),
+  };
+}
+
+/** Whether the person's key at the key root can be opened without a terminal: it is there, in the clear or with its passphrase to hand. */
+function thePersonsKeyOpens(trees: ResolvedTrees): 'opens' | 'absent' | 'protected' {
+  const layout = { root: trees.keyRoot };
+  const fingerprint = localKeyFingerprint(layout);
+  if (fingerprint === null) return 'absent';
+  if (passphraseFromEnvironment() !== undefined) return 'opens';
+  const file = listPrivateKeyFiles(layout).find((path) =>
+    path.endsWith(`/keys/${fingerprint}.key`),
+  );
+  return file !== undefined && isProtected(readFileSync(file, 'utf-8')) ? 'protected' : 'opens';
+}
 
 /**
  * The key root a tree is signed from: the AGENT's where the record enrols the agent's key in that
- * tree under exactly the name it is configured as, and the person's everywhere else.
+ * tree under exactly the name it is configured as, and the person's everywhere else — when the
+ * person's key can be opened there.
  *
  * Per tree, because enrolment is: an agent enrolled in the committed tree of a project is no
  * member of that project's private tree or of the machine's global one, and a key a tree never
@@ -341,20 +446,16 @@ const agentReadings = new Map<string, { readonly extent: string; readonly enroll
  * with in a tree (an anchor is recorded for it) can still sit under another folder name than the
  * one the record enrols it as, and a write stamped with the configured name would be one that
  * `verify` refuses. The record is read once per extent it has.
+ *
+ * NEVER MAKES A KEY: the fall back to the person's key only loads it. Where it cannot be opened
+ * without a terminal or is not here, the write is refused, in words that name the verb to run.
+ *
+ * @throws {IdentityUnavailableError} `AGENT_NOT_ENROLLED` or `REVOKED_KEY`, as above.
  */
 export function keyRootFor(trees: ResolvedTrees, chainRoot: string): string {
-  const agent = trees.agent;
-  if (agent === undefined) return trees.keyRoot;
-  const fingerprint = localKeyFingerprint({ root: agent.keyRoot });
-  if (fingerprint === null) return trees.keyRoot;
-  const layout = { root: chainRoot };
-  const extent = chainExtent(layout);
-  const key = `${chainRoot}\n${agent.keyRoot}\n${agent.name}`;
-  const seen = agentReadings.get(key);
-  if (seen?.extent === extent) return seen.enrolled ? agent.keyRoot : trees.keyRoot;
-  const enrolled = agentStandingIn(chainRoot, fingerprint, agent.name) !== 'absent';
-  agentReadings.set(key, { extent, enrolled });
-  return enrolled ? agent.keyRoot : trees.keyRoot;
+  const choice = chooseTheKey(trees, chainRoot);
+  if (choice.signs === 'nobody') throw choice.refusal;
+  return choice.signs === 'agent' ? (trees.agent as AgentSigning).keyRoot : trees.keyRoot;
 }
 
 /**
@@ -365,7 +466,7 @@ export function keyRootFor(trees: ResolvedTrees, chainRoot: string): string {
 export function agentSignsIn(trees: ResolvedTrees, scope: Scope): AgentSigning | undefined {
   const chainRoot = chainRootForScope(trees, scope);
   if (trees.agent === undefined || chainRoot === undefined) return undefined;
-  return keyRootFor(trees, chainRoot) === trees.agent.keyRoot ? trees.agent : undefined;
+  return chooseTheKey(trees, chainRoot).signs === 'agent' ? trees.agent : undefined;
 }
 
 /** What the record at one tree says of an agent key: it enrols it, it retired it, or it names it not. */
@@ -418,6 +519,14 @@ export function signerFor(trees: ResolvedTrees, scope: Scope): ChainSigner {
   const chainRoot = chainRootForScope(trees, scope);
   if (chainRoot === undefined) {
     throw new TreeUnavailableError(`no ${scope} tree in this context`);
+  }
+  const choice = chooseTheKey(trees, chainRoot);
+  if (choice.signs === 'nobody') {
+    // WHO WOULD SIGN, were the write not refused: the person's key, named by its file and not
+    // opened, so asking needs no passphrase. Where there is none to name, the refusal stands —
+    // a signer made here would be a key minted for a write that cannot happen.
+    if (localKeyFingerprint({ root: trees.keyRoot }) === null) throw choice.refusal;
+    return signerAt(chainRoot, { keyRoot: trees.keyRoot });
   }
   return signerAt(chainRoot, { keyRoot: keyRootFor(trees, chainRoot) });
 }

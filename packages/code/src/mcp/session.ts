@@ -62,6 +62,7 @@ import {
   agentSignsIn,
   chainRootForScope,
   type DiscoveryEnv,
+  IdentityUnavailableError,
   type PassedOverTree,
   type ReplacedClass,
   type ResolvedTrees,
@@ -139,6 +140,8 @@ export interface OpenRun {
   readonly trees: ResolvedTrees;
   /** The scope the run was opened in, within those trees. */
   readonly scope: Scope;
+  /** The agent the run was opened for, the one its end names ({@link whichOfWrite}). */
+  readonly which: string;
 }
 
 /**
@@ -532,7 +535,7 @@ export function openSession(input: OpenSessionInput): Session {
   // is the whole point — it used to be taken after the run had been appended
   // precisely because founding had settled it, and there is no run to take it after
   // any more. It appends nothing.
-  const who = anchorIn(trees, anchorTree);
+  const who = sessionAnchor(trees, anchorTree);
   // SAID ONCE, because the person needs to hear it somewhere: a server asked to sign as an agent
   // that signs as the person instead is the one thing a plugin update must not do in silence.
   if (agentKey !== undefined && inProject && agentSignsIn(trees, 'public') === undefined) {
@@ -687,7 +690,7 @@ export function refreshWorkspace(session: Session, roots: readonly string[]): Wo
   // holding a project's trees with the global tree's `who` would attribute that
   // project's work to an answer another tree gave.
   const who = landed
-    ? anchorIn(withTheAgent(resolved.trees, session.env, session.agentKey), 'private')
+    ? sessionAnchor(withTheAgent(resolved.trees, session.env, session.agentKey), 'private')
     : session.who;
 
   const trees = withTheAgent(resolved.trees, session.env, session.agentKey);
@@ -740,6 +743,22 @@ function whichOf(trees: ResolvedTrees, clientName: string): string {
 }
 
 /**
+ * The `which` of a write into `scope`'s tree of `trees`: the name the record of THAT tree gives the
+ * key that signs there, and what the client announced where the person's key signs. Asked per
+ * write and per tree because the key is chosen per tree: one connection can sign a project's
+ * committed tree as the person and the machine's global tree as the agent, and a `which` read from
+ * the committed tree alone would stamp the second with a name its record does not give the key.
+ */
+function whichIn(trees: ResolvedTrees, scope: Scope, session: Pick<Session, 'clientName'>): string {
+  return agentSignsIn(trees, scope)?.name ?? session.clientName;
+}
+
+/** {@link whichIn} for a write that has not been opened yet, to the destination it will be routed to. */
+export function whichOfWrite(session: Session, scope: Scope, target?: WriteTarget): string {
+  return whichIn(target?.trees ?? session.trees, scope, session);
+}
+
+/**
  * The cascade's input, built from what a connection said at the handshake — ONE builder
  * for {@link openSession} and for every {@link refreshWorkspace}, so the two cannot come
  * to run different cascades.
@@ -768,6 +787,11 @@ export interface SessionWrite {
    * resolves the reference without the others.
    */
   readonly run: string;
+  /**
+   * The agent every fact of this write names: the name the record gives the key that signs in
+   * THIS tree, and what the client announced where the person's key signs ({@link whichIn}).
+   */
+  readonly which: string;
 }
 
 /**
@@ -837,7 +861,11 @@ export function openWrite(session: Session, scope: Scope, target?: WriteTarget):
   // would leave a load-bearing ordering to the evaluation order of its properties —
   // which is exactly the kind of thing a tidy-up reorders without knowing it mattered.
   const run = ensureRun(session, trees, scope);
-  return { run, ctx: writeContext(trees, scope, session.caches) };
+  return {
+    run,
+    ctx: writeContext(trees, scope, session.caches),
+    which: whichIn(trees, scope, session),
+  };
 }
 
 /**
@@ -900,14 +928,14 @@ function ensureRun(session: Session, trees: ResolvedTrees, scope: Scope): string
   const ctx = writeContext(trees, scope, session.caches);
   // The opening and its signature in ONE hold of the tail's lock: see SIGNED HERE below.
   const started = ctx.writer.exclusively(() => {
-    const opened = startRun(ctx, { agent: session.which });
+    const opened = startRun(ctx, { agent: whichIn(trees, scope, session) });
     if (opened.ok) ctx.writer.checkpoint();
     return opened;
   });
   if (!started.ok) {
     throw new Error(`could not open a session run: ${started.code} — ${started.message}`);
   }
-  session.runs.set(root, { id: started.id, trees, scope });
+  session.runs.set(root, { id: started.id, trees, scope, which: whichIn(trees, scope, session) });
   // The run is this connection's own fact, and the name it carries is the one the client
   // announced — the value the door screens. What it replaced is owed to the reply that
   // caused the opening, which is the first reply able to say it.
@@ -1007,7 +1035,7 @@ export function closeSession(session: Session): SessionClose {
         // of the client: it is already in hand, and a close whose executor came from
         // the wire could name an agent other than the one that did the work.
         const ended = ctx.writer.exclusively(() => {
-          const closing = endRun(ctx, { run: run.id, which: session.which });
+          const closing = endRun(ctx, { run: run.id, which: run.which });
           if (closing.ok) ctx.writer.checkpoint();
           return closing;
         });
@@ -1047,6 +1075,28 @@ function anchorIn(trees: ResolvedTrees, scope: Scope): string {
     layout: { root: chainRootForScope(trees, scope) as string },
     upcasters: catalogUpcasters(),
   });
+}
+
+/**
+ * {@link anchorIn} for the session's own `who`: of `first`, and — where an agent is asked for, the
+ * record of that tree does not enrol it, and the person has no key here to sign instead — of the
+ * next tree that has someone to sign, so a session whose agent is enrolled in the committed tree
+ * alone still opens, and its writes to the other trees are the ones refused.
+ */
+function sessionAnchor(trees: ResolvedTrees, first: Scope): string {
+  let refusal: IdentityUnavailableError | undefined;
+  for (const scope of [first, 'public', 'global'] as const) {
+    if (chainRootForScope(trees, scope) === undefined) continue;
+    try {
+      return anchorIn(trees, scope);
+    } catch (error) {
+      if (!(error instanceof IdentityUnavailableError) || error.code !== 'AGENT_NOT_ENROLLED') {
+        throw error;
+      }
+      refusal ??= error;
+    }
+  }
+  throw refusal as IdentityUnavailableError;
 }
 
 /**
