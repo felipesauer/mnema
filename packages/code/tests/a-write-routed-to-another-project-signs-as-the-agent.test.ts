@@ -293,19 +293,31 @@ describe('the close of a run', () => {
       log: () => {},
     });
     // The run opens before the agent is enrolled: the person signs it, declared.
+    // The private tree and the global one open their runs here; the committed tree's opens after.
     expect(runCaptureMemory(session, { content: 'before the enrolment' }).ok).toBe(true);
+    expect(runCaptureMemory(session, { content: 'a global one', scope: 'global' }).ok).toBe(true);
     for (const scope of ['public', 'private', 'global'] as const) enrolledIn(repo, scope, line);
     expect(
       runRecordDecision(session, { title: 'After the enrolment', rationale: 'because' }).ok,
     ).toBe(true);
     closeSession(session);
 
-    const ended = eventsIn(repo, 'public').filter((event) => event.kind === 'run.ended');
-    expect(ended.length).toBeGreaterThan(0);
-    for (const event of ended) {
-      expect(event.signerFp).toBe(fingerprintIn(requested));
-      expect(event.which).toBe('claude');
+    // The run that opened BEFORE the enrolment is the one that tells: the public run opened after
+    // it and would say the same with a name frozen at the opening.
+    for (const scope of ['public', 'private', 'global'] as const) {
+      const ended = eventsIn(repo, scope).filter((event) => event.kind === 'run.ended');
+      expect(
+        ended.map((event) => [event.which, event.signerFp]),
+        scope,
+      ).toEqual([['claude', fingerprintIn(requested)]]);
     }
+    const opened = (scope: Scope): (string | undefined)[] =>
+      eventsIn(repo, scope)
+        .filter((event) => event.kind === 'run.started')
+        .map((event) => event.which);
+    expect(opened('private')).toEqual(['claude-code']);
+    expect(opened('global')).toEqual(['claude-code']);
+    expect(opened('public')).toEqual(['claude']);
     const verified = await mnema('verify');
     expect(verified.failed, verified.out + verified.err).toBe(false);
   });
