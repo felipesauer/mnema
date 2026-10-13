@@ -72,11 +72,16 @@ export {
 // It appends nothing, but it installs key material and records which anchor a key
 // serves, so it is a write: a read-only layer must not be able to name it.
 export {
+  type RestoreAgentErr,
+  type RestoreAgentErrorCode,
+  type RestoreAgentInput,
+  type RestoreAgentOk,
   type RestoredMembership,
   type RestoreErr,
   type RestoreErrorCode,
   type RestoreInput,
   type RestoreOk,
+  restoreAgentKey,
   restoreKey,
 } from './identity/restore.js';
 // Operating the roster: enrolling a requested key, and retiring one.

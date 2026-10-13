@@ -12,6 +12,17 @@ tag, with its own changelog.
 
 ### Added
 
+- **`mnema key restore --agent <name> <file>` puts an agent's key where a CI runner's agent signs with it, and the Action's page has the recipe.**
+  A runner begins every job empty, so the key comes from a secret: the verb installs it in the agent's own folder
+  under the data directory, and refuses before writing anything a key the project's committed record does not enrol as
+  that agent under that name, one the record retired, one that is not Ed25519 or is protected by a passphrase, and a
+  folder that already holds another key. It appends nothing to the record and writes nothing beside the person's key.
+  `key restore` without `--agent` now names this verb when it refuses an agent's key, and `key request --agent` refuses
+  a key given by file that is protected by a passphrase, and says, of one given by file, that it is not installed and
+  where the verb that installs it is. The page `packages/action/README.md` replaces its recipe for an agent in CI: the
+  old one said nothing of which key the agent writes with, and a runner without one minted a key on the first write and
+  founded an identity of its own in the public record, which `verify` read as clean. The step it publishes is run from
+  the page by a test, on a clone with an empty home.
 - **Two kinds for a key that signs as a person's agent: `agent.enrolled` and `agent.retired`.** An agent key is a
   member of the identity that enrolled it, under a name; `FORMAT.md` §6.2 says the role, and both readers (the product
   and the Python second reader) refuse a fact the key signs for another identity, under a `which` other than its name,

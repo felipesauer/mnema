@@ -303,6 +303,27 @@ const CLASSIFIED: Readonly<Record<string, { verdict: Verdict; why: string }>> = 
     verdict: 'minted',
     why: 'a fingerprint computed from the key material that was just installed',
   },
+  'key.ts «Restored the key of the agent {}: {}» #1': {
+    verdict: 'minted',
+    why: 'the name the agent-name form holds to one line, and a fingerprint computed from the key material that was just installed',
+  },
+  'key.ts «it signs for {} as "{}" where this project\'s record enrols it» #1': {
+    verdict: 'collapsed',
+    why: 'an anchor the record proved, and the name the record enrols the key under, which the agent-name form holds to one line',
+  },
+  'key.ts «private half installed at {}, in the clear» #1': {
+    verdict: 'collapsed',
+    why: 'a path under the agent’s own key root, which `$MNEMA_HOME` may place anywhere a directory name can be',
+  },
+  'key.ts «Your copy at {} was read, not moved.» #1': {
+    verdict: 'collapsed',
+    why: 'the positional itself, echoed back to say the copy was not consumed',
+  },
+  'key.ts «a server started with --agent-key {}, or with MNEMA_AGENT_KEY={} in its environment, or a hook started with --agent-key {}, signs with it» #1':
+    {
+      verdict: 'collapsed',
+      why: 'the name of the agent, which the agent-name form holds to one line',
+    },
   'key.ts «identity: {}» #1': { verdict: 'minted', why: 'an anchor the record proved' },
   'key.ts «{}» #1': { verdict: 'minted', why: 'a ternary of two of this surface’s own clauses' },
   "key.ts «Created this machine's key {}» #1": {
@@ -405,7 +426,7 @@ const CLASSIFIED: Readonly<Record<string, { verdict: Verdict; why: string }>> = 
     verdict: 'collapsed',
     why: 'the name of a tree this surface chose, said by the one table that names them, and the anchor the tree speaks for',
   },
-  'key.ts «its key is the file you named, {}, which this did not install: it stays where you keep it, and a host signs with it only once it is put at {}» #1':
+  'key.ts «its key is the file you named, {}, which this did not install: it stays where you keep it, and a host signs with it only once it is put at {} — \\`mnema key restore --agent {} <file>\\` does that where the agent runs» #1':
     {
       verdict: 'collapsed',
       why: 'the path the person typed, which a directory name may break, and the agent’s key root, which `$MNEMA_HOME` may place anywhere',
@@ -947,8 +968,8 @@ describe('every line this wiring words is classified', () => {
     // by a rotation, and the other keys under the name, less the one line the enrolment printed alone.
     // 145 with the line a tree that refused leaves in place of "Enrolled agent", the identity a tree
     // took the key for, and the line that says a key read from a file is not installed.
-    // 146 with the line a successful enrolment ends on, saying the host is still to be told.
-    expect(FOUND.sites.length).toBe(146);
+    // 151 with the five lines `key restore --agent` prints and the line a successful enrolment ends on.
+    expect(FOUND.sites.length).toBe(151);
   });
 
   it('reads the verdict off the source rather than believing the table', () => {
@@ -968,9 +989,9 @@ describe('every line this wiring words is classified', () => {
   it('found sites of both kinds, and the scanner sees a tag when there is one', () => {
     // Neither arm of the case above may be empty, or half of it is vacuous.
     const verdicts = Object.values(CLASSIFIED).map((said) => said.verdict);
-    expect(verdicts.filter((verdict) => verdict === 'collapsed').length).toBe(75);
-    expect(verdicts.filter((verdict) => verdict === 'minted').length).toBe(71);
-    expect(FOUND.sites.filter((site) => site.tagged).length).toBe(75);
+    expect(verdicts.filter((verdict) => verdict === 'collapsed').length).toBe(79);
+    expect(verdicts.filter((verdict) => verdict === 'minted').length).toBe(72);
+    expect(FOUND.sites.filter((site) => site.tagged).length).toBe(79);
   });
 
   it('every reason says where the value comes from', () => {
@@ -1151,6 +1172,13 @@ const UNREACHABLE: Readonly<Record<string, string>> = {
     'the same refusal, and a hash is hex',
   'key.ts «private half installed at {}» #1': 'needs a PEM to restore from',
   'key.ts «Your copy at {} was read, not moved — keep it where it is.» #1': 'the same restore',
+  'key.ts «Your copy at {} was read, not moved.» #1': 'the same restore, for an agent’s key',
+  'key.ts «private half installed at {}, in the clear» #1':
+    'needs the PEM of an agent key the record enrols, to restore from',
+  'key.ts «it signs for {} as "{}" where this project\'s record enrols it» #1':
+    'the same restore; the anchor is an identity id of the record and the name is held to the agent-name form',
+  'key.ts «a server started with --agent-key {}, or with MNEMA_AGENT_KEY={} in its environment, or a hook started with --agent-key {}, signs with it» #1':
+    'the same restore; the name is held to the agent-name form',
   'key.ts «recorded in {}» #1': 'needs a request from a second machine',
   'key.ts «recorded in {}» #2': 'the same request',
   'key.ts «{}: enrolled, recorded in {}» #1':
@@ -1161,7 +1189,7 @@ const UNREACHABLE: Readonly<Record<string, string>> = {
     'the same data directory, for a machine that joined an identity; the anchor is an identity id of the record',
   'key.ts «{}: already the agent for {}, nothing recorded» #1':
     'three constant words and an identity id of the record, so no break reaches the line',
-  'key.ts «its key is the file you named, {}, which this did not install: it stays where you keep it, and a host signs with it only once it is put at {}» #1':
+  'key.ts «its key is the file you named, {}, which this did not install: it stays where you keep it, and a host signs with it only once it is put at {} — \\`mnema key restore --agent {} <file>\\` does that where the agent runs» #1':
     'needs a key file whose name holds a line break, which a request made from it would have to read as a private key',
   'key.ts «{}: skipped — {}» #1':
     'the name is one of three constants and the reason is this product’s own sentence',

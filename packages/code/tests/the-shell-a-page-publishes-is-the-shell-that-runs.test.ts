@@ -219,6 +219,8 @@ export const PAGES: Readonly<Record<string, number>> = {
   'docs/first-record.md': 4,
   'docs/how-it-works.md': 1,
   'docs/site.md': 1,
+  // The recipe for an agent in CI: the job whose steps call `mnema`.
+  'packages/action/README.md': 1,
   // 65 since the package page's blocks on stacks and on `mnema report`.
   'packages/code/README.md': 68,
   'plugin/README.md': 6,

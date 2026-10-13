@@ -100,6 +100,8 @@ export {
   SHORT_ANCHOR_HEX,
   shortenAnchors,
 } from './identity/index.js';
+// How a kind of key is said with its article, for a refusal that names the kind.
+export { nameOfAKeyKind } from './identity/key-kind.js';
 // The refusal a write earns when the record does not name ONE identity for this
 // machine's key. It is thrown, not returned (the decision sits below every write),
 // so a surface needs to be able to name the class to report it as the refusal it
