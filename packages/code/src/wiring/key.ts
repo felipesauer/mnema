@@ -88,7 +88,8 @@ export function registerKey(program: Command, wiring: Wiring): Declared {
     .option(
       '--agent <name>',
       "ask to be enrolled as an AGENT of that identity under <name>: a key of its own, made in the agent's folder " +
-        "of this machine's data directory and never beside yours, that signs for the identity and names that agent on everything it signs",
+        "of this machine's data directory and never beside yours, that signs for the identity and names that agent on everything it signs. " +
+        "The line consents to that one identity; in a tree that speaks for another, `key enroll --agent <name>` on this machine makes the consent again under that tree's identity",
     )
     .action(async (opts: { anchor: string; key?: string; checker?: boolean; agent?: string }) => {
       if (opts.agent !== undefined) {
@@ -214,7 +215,7 @@ export function registerKey(program: Command, wiring: Wiring): Declared {
     )
     .option(
       '--agent',
-      "enroll a key as an agent of this identity — in the project's committed tree and, where the key lives on this machine, its private tree and the machine's global one (the line `mnema key request --agent <name> --anchor <id>` printed, or the agent's name where its key is here)",
+      "enroll a key as an agent of this identity — in the project's committed tree and, where the key lives on this machine, its private tree and the machine's global one (the line `mnema key request --agent <name> --anchor <id>` printed, or the agent's name where its key is here). In a tree that speaks for another identity than the line's, the key's consent is made again under that tree's identity",
     )
     .action(async (request: string, opts: { checker?: boolean; agent?: boolean }) => {
       if (opts.agent === true) {

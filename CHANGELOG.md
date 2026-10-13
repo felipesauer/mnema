@@ -66,6 +66,17 @@ tag, with its own changelog.
 
 ### Fixed
 
+- **The agent-key verbs say what they wrote, tree by tree, and refuse what cannot be an agent's key.** A
+  `key enroll --agent` run again over a partial enrolment no longer says `Enrolled agent` when nothing was
+  written; a tree that cannot be written after others took the vouch is named with what the others kept, for
+  `key revoke --agent` too, and a tree that refuses a retirement is no longer read as "no project". Outside a
+  project, a line that is not an agent request is refused as one, not as "the key is not on this machine". On a
+  machine that joined an identity each tree says which identity it took the key for. `key request --agent
+  --key` with a P-256 or an RSA key is refused at once (`UNREADABLE_KEY`), where it used to print a line that
+  `key enroll --agent` then refused as `UNPROVEN_REQUEST`; with `--key` it no longer says the key lives in a
+  folder it did not make. `mnema doctor` no longer leaves out that the record proves a retired agent key a
+  member of two identities. The help of `key enroll --agent` and `key request --agent` says that a tree that
+  speaks for another identity takes the key's consent made again.
 - **The second reader binds every event in a signed range to the checkpoint's signer.** The product
   refused an event whose `signerFp` is not the key that signed the checkpoint over it, and an event
   whose `which` is its `who`; `FORMAT.md` said neither, and the Python verifier read an event's own

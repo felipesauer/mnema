@@ -735,7 +735,7 @@ function agentKeyFindings(ctx: DoctorContext): Finding[] {
       out.push(
         finding(
           'attention',
-          `the agent key "${quoted}" was retired in ${treesSaid(retired)}${enrolled.length > 0 ? ` and is still enrolled in ${treesSaid(enrolled)}` : ''}: it signs nothing in any tree of this machine, and a host asked to sign as it is refused — \`mnema key request --agent ${quoted} --anchor <your identity>\` makes the agent a new key (the retired one is put aside, not deleted), then \`mnema key enroll --agent <the line it prints>\` puts it in force.`,
+          `the agent key "${quoted}" was retired in ${treesSaid(retired)}${enrolled.length > 0 ? ` and is still enrolled in ${treesSaid(enrolled)}` : ''}${ambiguous.length > 0 ? `, and the record of ${treesSaid(ambiguous)} proves it a member of more than one identity` : ''}: it signs nothing in any tree of this machine, and a host asked to sign as it is refused — \`mnema key request --agent ${quoted} --anchor <your identity>\` makes the agent a new key (the retired one is put aside, not deleted), then \`mnema key enroll --agent <the line it prints>\` puts it in force.`,
         ),
       );
     } else if (ambiguous.length > 0) {

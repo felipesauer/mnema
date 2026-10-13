@@ -32,9 +32,13 @@ import { pathToFileURL } from 'node:url';
 import { type CatalogEvent, catalogUpcasters, generateKeyPair, persistKeyPair } from '@mnema/chain';
 import { type DiscoveryEnv, orderedEvents, resolveTrees } from '@mnema/core';
 import {
+  decodeAgentRequest,
   deferredWrite,
+  enrollAgent,
   enrollAgentFromRequest,
   enrollFromRequest,
+  ensureFounded,
+  openTreeForWriting,
   requestAgentEnrollment,
   requestEnrollment,
   retireAgentKey,
@@ -779,6 +783,59 @@ describe('mnema doctor says what the agent keys are', () => {
 
     expect(findings()[0]).toBe(
       'attention the agent key "claude" was retired in the global tree and is still enrolled in the committed and private trees: it signs nothing in any tree of this machine, and a host asked to sign as it is refused — `mnema key request --agent claude --anchor <your identity>` makes the agent a new key (the retired one is put aside, not deleted), then `mnema key enroll --agent <the line it prints>` puts it in force.',
+    );
+  });
+
+  it('says both, where the key was retired in one tree and the record of another proves it a member of two identities', async () => {
+    const requested = await did(
+      undefined,
+      'key',
+      'request',
+      '--agent',
+      'claude',
+      '--anchor',
+      await identity(),
+    );
+    const line = lineOf(requested);
+    const decoded = decodeAgentRequest(line);
+    if (decoded === null) throw new Error('setup: the line does not decode');
+    const trees = resolveTrees(repo, env);
+    const publicRoot = trees.projectPublic as string;
+    // Another contributor of the same repository takes the key into their identity first.
+    const theirs = { ...trees, keyRoot: join(sandbox, 'the-other-contributor') };
+    const theirAnchor = ensureFounded({
+      writer: openTreeForWriting(theirs, 'public'),
+      layout: { root: publicRoot },
+      upcasters: catalogUpcasters(),
+    });
+    const joining = requestEnrollment({
+      anchor: theirAnchor,
+      keyRoot: join(home, '.mnema', 'agents', 'claude'),
+    });
+    if (!joining.ok) throw new Error(joining.message);
+    expect(
+      enrollFromRequest(deferredWrite(theirs, 'public'), { request: joining.request }).ok,
+    ).toBe(true);
+    // Then this machine's key enrols it as an agent of its own, which the record now cannot place.
+    expect(
+      enrollAgent(
+        {
+          writer: openTreeForWriting(trees, 'public'),
+          layout: { root: publicRoot },
+          upcasters: catalogUpcasters(),
+        },
+        { agentFp: decoded.key.fingerprint, name: 'claude', reverseSig: decoded.reverseSig },
+      ).ok,
+    ).toBe(true);
+    enrolledIn('global', line);
+    const write = deferredWrite(resolveTrees(repo, env), 'global');
+    expect(
+      retireAgentKey(write, { fingerprint: decoded.key.fingerprint, reason: 'lent out' }).ok,
+    ).toBe(true);
+    write.checkpoint();
+
+    expect(findings()[0]).toBe(
+      'attention the agent key "claude" was retired in the global tree, and the record of the committed tree proves it a member of more than one identity: it signs nothing in any tree of this machine, and a host asked to sign as it is refused — `mnema key request --agent claude --anchor <your identity>` makes the agent a new key (the retired one is put aside, not deleted), then `mnema key enroll --agent <the line it prints>` puts it in force.',
     );
   });
 
