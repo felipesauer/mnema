@@ -594,7 +594,7 @@ describe('the record arrives unasked', () => {
     const notes = cli('recall', '--hook');
     expect(notes).toContain(PRIVATE_NOTE);
     // UNDER THE CEILING THE HOOK'S COPY IS THE FILE'S, byte for byte, but for the paragraph that
-    // teaches regenerating the file: the flag cuts only a text that would not arrive as text,
+    // teaches regenerating the file: the flag cuts only a text that would not arrive as text.
     // (the session is handed the text, and has no use for how to regenerate the file).
     const recipe =
       /Regenerate this file with `mnema brief > <this file>`[\s\S]*?survives a regeneration\.\n\n/;
