@@ -176,9 +176,9 @@ import { identityFounded, openChainForWriting, taskBirth, verify } from '@mnema/
 const root = '.mnema/chain';
 const keyRoot = '/a/path/outside/the/repository';
 
-// One writer owns this machine's tail. The key pair is loaded from `keyRoot` — or
-// minted there on first use — and its PUBLIC half is copied into the chain, which
-// is what lets a stranger verify with no secret.
+// One writer owns this machine's tail. The key pair is loaded from `keyRoot` — or, where there is
+// none, made there when the first event is appended — and its PUBLIC half is copied into the
+// chain, which is what lets a stranger verify with no secret.
 const writer = openChainForWriting(root, { keyRoot });
 
 // The proof fields every event carries. Neither identity is a name somebody typed:

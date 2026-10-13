@@ -70,6 +70,7 @@ const BUILT_WITH: Readonly<Record<string, readonly unknown[]>> = {
   IdentityUnavailableError: ['UNKNOWN_ANCHOR', 'the record names no identity for this key'],
   KeyIsProtectedError: ['/keys/abc.key'],
   KeyPassphraseWrongError: ['/keys/abc.key'],
+  KeyMadeMeanwhileError: ['/home/x/.mnema/identity', 'f'.repeat(64)],
   KeyRootBusyError: ['/tmp/x.lock', 4242],
   NoPassphraseToProtectWithError: [],
   PrivateTreeVisibleError: [

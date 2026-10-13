@@ -59,16 +59,17 @@ describe('key root separate from chain — materialization', () => {
     const w = openChainForWriting(chainA, { keyRoot });
     const fp = w.signerFingerprint;
 
-    // The private key lives in the key root, never in the chain.
-    expect(existsSync(privateKeyPath({ root: keyRoot }, fp))).toBe(true);
-    expect(existsSync(privateKeyPath({ root: chainA }, fp))).toBe(false);
-
     // Opening publishes nothing: the public half reaches the chain with the tail it
     // verifies, at the first append. This case read it off the chain right after the
     // open, when opening materialized it — the residue a refused write left behind.
+    // And a machine's first key is kept there too, so the key root is still empty.
     expect(existsSync(publicKeyPath({ root: chainA }, fp))).toBe(false);
-    expect(existsSync(publicKeyPath({ root: keyRoot }, fp))).toBe(true);
+    expect(existsSync(publicKeyPath({ root: keyRoot }, fp))).toBe(false);
     foundAndWrite(w, 't-a');
+
+    // The private key lives in the key root, never in the chain.
+    expect(existsSync(privateKeyPath({ root: keyRoot }, fp))).toBe(true);
+    expect(existsSync(privateKeyPath({ root: chainA }, fp))).toBe(false);
 
     // The public key is materialized into the chain (what an anonymous verifier
     // reads), and also present in the key root (its own copy).
@@ -170,11 +171,13 @@ describe('listPrivateKeyFingerprints — the candidates for this machine identit
 
   it('names the key the machine minted, and nothing else in keys/', () => {
     const w = openChainForWriting(chainA, { keyRoot });
+    foundAndWrite(w, 't-a');
     expect(listPrivateKeyFingerprints({ root: keyRoot })).toEqual([w.signerFingerprint]);
   });
 
   it('does NOT count the cold backup: its private half is outside keys/', () => {
     const w = openChainForWriting(chainA, { keyRoot });
+    foundAndWrite(w, 't-a');
     const backup = ensureBackupKey({ root: keyRoot }, w.anchor);
 
     expect(backup?.created).toBe(true);
@@ -192,6 +195,7 @@ describe('listPrivateKeyFingerprints — the candidates for this machine identit
     // a key whose private half was deleted) is not a candidate identity: only a
     // `.key` is.
     const w = openChainForWriting(chainA, { keyRoot });
+    foundAndWrite(w, 't-a');
     const stranger = generateKeyPair();
     writeFileSync(
       publicKeyPath({ root: keyRoot }, stranger.fingerprint),

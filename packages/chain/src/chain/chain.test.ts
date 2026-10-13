@@ -1,6 +1,7 @@
 import {
   appendFileSync,
   cpSync,
+  existsSync,
   mkdirSync,
   mkdtempSync,
   readdirSync,
@@ -25,7 +26,7 @@ import { openChainForWriting, signerAt, verify } from './chain.js';
 import { checkpointHash, serializeCheckpoint, signCheckpoint } from './checkpoint.js';
 import { entryHash, writtenAsBuilt, writtenAsStored } from './hash.js';
 import { deriveAnchor, generateKeyPair, publicKeyToPem } from './keys.js';
-import { listPrivateKeyFingerprints, loadOrCreateKeyPair } from './keystore.js';
+import { loadOrCreateKeyPair } from './keystore.js';
 import { checkpointsPath, publicKeyPath, segmentPath, tailProofPath } from './layout.js';
 import { serializeOtsProof } from './ots.js';
 import { holdsRecord, listTails, orderedSegments, readTailEntries } from './store.js';
@@ -1324,7 +1325,7 @@ function swapPublicKeyForAStranger(chainRoot: string): void {
   const pub = readdirSync(dir).find((n) => n.endsWith('.pub')) as string;
   const strangerRoot = mkdtempSync(join(tmpdir(), 'mnema-stranger-'));
   try {
-    openChain(strangerRoot); // mints a fresh pair
+    loadOrCreateKeyPair({ root: strangerRoot }); // mints a fresh pair
     const strangerPub = readdirSync(join(strangerRoot, 'keys')).find((n) =>
       n.endsWith('.pub'),
     ) as string;
@@ -1371,7 +1372,7 @@ function copyKeyOnly(fromRoot: string, intoRoot: string): void {
 }
 
 describe('signerAt — who would sign, read without opening the chain', () => {
-  it('touches nothing in the chain, and mints a key at the key root only where there is none', () => {
+  it('touches nothing in the chain, and keeps no key at the key root even where there is none', () => {
     const chainRoot = join(root, 'chain');
     const keyRoot = join(root, 'identity');
     mkdirSync(chainRoot, { recursive: true });
@@ -1379,12 +1380,16 @@ describe('signerAt — who would sign, read without opening the chain', () => {
     const signer = signerAt(chainRoot, { keyRoot });
     // No public half, no installation id, no tail: the chain is exactly as it was.
     expect(readdirSync(chainRoot)).toEqual([]);
-    // A signer is somebody, so a machine with no key gets one — at the key root, once.
-    expect(listPrivateKeyFingerprints({ root: keyRoot })).toEqual([signer.signerFingerprint]);
+    // A signer is somebody, so a machine with no key gets one — held in this process, and kept
+    // only by a writer's first append: asking who would sign is not a write.
+    expect(existsSync(keyRoot)).toBe(false);
     expect(signer.anchor).toBe(deriveAnchor(signer.signerFingerprint));
     expect(signer.hasAnchor).toBe(false);
     expect(signerAt(chainRoot, { keyRoot }).signerFingerprint).toBe(signer.signerFingerprint);
-    expect(listPrivateKeyFingerprints({ root: keyRoot })).toHaveLength(1);
+    expect(openChainForWriting(chainRoot, { keyRoot }).signerFingerprint).toBe(
+      signer.signerFingerprint,
+    );
+    expect(existsSync(keyRoot)).toBe(false);
   });
 
   it('says what the writer says about who is writing, before and after an anchor is recorded', () => {

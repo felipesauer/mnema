@@ -21,6 +21,7 @@ import { join } from 'node:path';
 import {
   catalogUpcasters,
   enrollmentMessage,
+  loadOrCreateKeyPair,
   materializePublicKey,
   noteRetracted,
   openChainForWriting,
@@ -48,6 +49,8 @@ function tmp(prefix: string): string {
 
 /** A writer over the shared tree for the key at a fresh key root. */
 function machine(prefix: string, keyRoot = tmp(prefix)): WriteContext & { keyRoot: string } {
+  // A machine that has its key: a first key is kept only at a first append.
+  loadOrCreateKeyPair({ root: keyRoot });
   const writer = openChainForWriting(tree, { keyRoot });
   return { writer, layout: { root: tree }, upcasters, keyRoot };
 }

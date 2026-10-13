@@ -55,6 +55,8 @@ function secondMachine(): { tail: string; anchor: string } {
       );
     }
   }
+  // This tree's own key may not be kept yet (a first key is kept at a first append).
+  mkdirSync(join(root, 'keys'), { recursive: true });
   for (const key of readdirSync(join(elsewhere, 'keys'))) {
     if (!key.endsWith('.pub')) continue;
     writeFileSync(join(root, 'keys', key), readFileSync(join(elsewhere, 'keys', key), 'utf-8'));

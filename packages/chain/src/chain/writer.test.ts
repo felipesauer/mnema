@@ -34,7 +34,7 @@ import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { identityFounded, memoryCaptured, taskBirth, taskCreated } from '../events/build.js';
 import { EventParseError } from '../events/parse.js';
 import { catalogUpcasters } from '../events/registry.js';
-import { openChainForWriting, verify } from './chain.js';
+import { openChainForWriting, signerAt, verify } from './chain.js';
 import {
   type Checkpoint,
   checkpointHash,
@@ -42,7 +42,8 @@ import {
   signCheckpoint,
 } from './checkpoint.js';
 import type { Entry } from './entry.js';
-import { loadOrCreateKeyPair } from './keystore.js';
+import { generateKeyPair } from './keys.js';
+import { KeyMadeMeanwhileError, loadOrCreateKeyPair, persistKeyPair } from './keystore.js';
 import { type ChainLayout, checkpointsPath, segmentPath, tailDir } from './layout.js';
 import {
   lastTailCheckpoint,
@@ -654,6 +655,9 @@ describe('a tail is born at its first append, not when its writer opens', () => 
   function openApart(): ChainWriter {
     const keyRoot = mkdtempSync(join(tmpdir(), 'mnema-writer-keyroot-'));
     keyRoots.push(keyRoot);
+    // A machine that already has its key: a first key is made at the first append too, and
+    // the describe below asks that of its own.
+    loadOrCreateKeyPair({ root: keyRoot });
     return openChainForWriting(root, { keyRoot });
   }
   const keyRoots: string[] = [];
@@ -710,5 +714,62 @@ describe('a tail is born at its first append, not when its writer opens', () => 
     const w = openApart();
     expect(w.checkpoint()).toBeNull();
     expect(filesUnder(root)).toEqual([`keys/${w.signerFingerprint}.inst`]);
+  });
+});
+
+describe("a machine's first key is made at its writer's first append, not when it opens", () => {
+  function filesUnder(dir: string, base = dir): string[] {
+    const out: string[] = [];
+    for (const entry of readdirSync(dir, { withFileTypes: true })) {
+      const path = join(dir, entry.name);
+      if (entry.isDirectory()) out.push(...filesUnder(path, base));
+      else out.push(path.slice(base.length + 1));
+    }
+    return out.sort();
+  }
+  let keyRoot: string;
+  beforeEach(() => {
+    keyRoot = mkdtempSync(join(tmpdir(), 'mnema-first-key-'));
+  });
+  afterEach(() => {
+    rmSync(keyRoot, { recursive: true, force: true });
+  });
+
+  it('leaves the key root and the chain empty when the writer appends nothing', () => {
+    const w = openChainForWriting(root, { keyRoot });
+    // Who would sign is known before anything is kept, and it is the key the writer holds.
+    expect(signerAt(root, { keyRoot }).signerFingerprint).toBe(w.signerFingerprint);
+    expect(() => w.append(taskCreated(env(w, 't-1'), { title: '' }))).toThrow(EventParseError);
+    expect(w.checkpoint()).toBeNull();
+    expect(filesUnder(keyRoot)).toEqual([]);
+    expect(filesUnder(root)).toEqual([]);
+  });
+
+  it('keeps that same key, and its installation id, at the first append', () => {
+    const w = openChainForWriting(root, { keyRoot });
+    const fp = w.signerFingerprint;
+    found(w);
+    w.checkpoint();
+    expect(filesUnder(keyRoot)).toEqual(['.gitignore', `keys/${fp}.key`, `keys/${fp}.pub`]);
+    expect(filesUnder(root)).toContain(`keys/${fp}.inst`);
+    expect(verify(root).ok).toBe(true);
+    // The next writer reads the key that was kept, and the tail it writes is the same one.
+    const again = openChainForWriting(root, { keyRoot });
+    expect(again.signerFingerprint).toBe(fp);
+    expect(again.tail).toBe(w.tail);
+  });
+
+  it('refuses the append when another process made the key in the meantime, and keeps nothing', () => {
+    const w = openChainForWriting(root, { keyRoot });
+    // What another process's mint leaves: a whole pair under the key root.
+    const theirs = generateKeyPair();
+    persistKeyPair({ root: keyRoot }, theirs);
+    expect(() => found(w)).toThrow(KeyMadeMeanwhileError);
+    expect(filesUnder(keyRoot).filter((f) => f.endsWith('.key'))).toEqual([
+      `keys/${theirs.fingerprint}.key`,
+    ]);
+    expect(filesUnder(root)).toEqual([]);
+    // And the next writer signs with the key that is there.
+    expect(openChainForWriting(root, { keyRoot }).signerFingerprint).toBe(theirs.fingerprint);
   });
 });

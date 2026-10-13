@@ -92,6 +92,7 @@ export {
   committedPublicKey,
   DanglingInstallationIdError,
   type KeyFileChange,
+  KeyMadeMeanwhileError,
   KeyRootBusyError,
   listAnchoredFingerprints,
   listPrivateKeyFiles,

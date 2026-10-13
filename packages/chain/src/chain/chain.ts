@@ -15,8 +15,9 @@ import { catalogUpcasters } from '../events/registry.js';
 import type { UpcasterRegistry } from '../events/upcaster.js';
 import {
   type ChainSigner,
+  installationIdToKeep,
+  keyToSignWith,
   loadOrCreateInstallationId,
-  loadOrCreateKeyPair,
   localKeyFingerprint,
   signerOf,
 } from './keystore.js';
@@ -44,10 +45,11 @@ export interface OpenOptions extends WriterOptions {
 
 /**
  * Opens the chain at `chainRoot` for this machine to write to, signing with the
- * key at `options.keyRoot`. Loads (or, on first use, mints) the person's pair
- * from the key root, and reads (or, on first use, mints) the per-chain
- * installation id. The writer only ever touches the chain root; the key root is
- * read here and nowhere else.
+ * key at `options.keyRoot`. Loads the person's pair from the key root, and reads
+ * (or, on first use, mints) the per-chain installation id. A key root that holds
+ * no key yet gets a pair made in memory, and that pair and its installation id are
+ * kept by the writer's first append (`keyToSignWith`) — so a write refused before
+ * it leaves the machine with no key, as it found it.
  *
  * NOTHING A CLONE RECEIVES IS WRITTEN HERE. This used to materialize the key's
  * public half "so the chain is anonymously verifiable", and the writer's
@@ -68,36 +70,45 @@ export interface OpenOptions extends WriterOptions {
  */
 export function openChainForWriting(chainRoot: string, options: OpenOptions): ChainWriter {
   const chainLayout: ChainLayout = { root: chainRoot };
-  const keyPair = loadOrCreateKeyPair({ root: options.keyRoot });
-  const installationId = loadOrCreateInstallationId(
-    { root: options.installationRoot ?? chainRoot },
-    keyPair.fingerprint,
-  );
+  const key = keyToSignWith({ root: options.keyRoot });
+  const installationLayout: ChainLayout = { root: options.installationRoot ?? chainRoot };
   const upcasters = options.upcasters ?? catalogUpcasters();
-  return new ChainWriter(chainLayout, keyPair, installationId, upcasters, options);
+  const keepKey = key.keep;
+  if (keepKey === undefined) {
+    const installationId = loadOrCreateInstallationId(installationLayout, key.keyPair.fingerprint);
+    return new ChainWriter(chainLayout, key.keyPair, installationId, upcasters, options);
+  }
+  // A machine with no key yet: the key, and its installation id here, are kept at the writer's
+  // first append — so a write refused before it leaves the machine and the tree as they were.
+  const installation = installationIdToKeep(installationLayout, key.keyPair.fingerprint);
+  return new ChainWriter(chainLayout, key.keyPair, installation.id, upcasters, options, () => {
+    keepKey();
+    installation.keep();
+  });
 }
 
 /**
  * Who would sign in the chain at `chainRoot` with the key at `options.keyRoot` — read WITHOUT
  * opening the chain for writing, so nothing inside the chain is touched.
  *
- * Opening a writer is not free even when nothing is appended: it mints the key's installation id
- * in the chain. It USED TO do more — materialize the key's public half and give the tail its
+ * Opening a writer is not free even when nothing is appended: for a key already kept it makes the
+ * key's installation id in the chain (a key not made yet is kept, with its id, only at the first
+ * append). It USED TO do more — materialize the key's public half and give the tail its
  * directory and its proof of ownership — and those three moved to the first append (see
  * {@link openChainForWriting}), so what opening leaves now is one local file that git ignores.
  * A file all the same: a caller whose answer may turn out to write nothing — a refusal decided
  * from the record, or a question about who is writing — asks this first, opens a writer only
  * once it knows it will write, and leaves the tree byte for byte as it found it.
  *
- * The KEY ROOT is the one thing it can change, exactly as opening does: a machine with no key
- * yet gets one minted there, because a signer needs a key to be anybody at all. That is the
- * person's directory, never the chain's.
+ * Nor the key root: a machine with no key yet is answered with the key this process would make
+ * (`keyToSignWith`), the one a writer it opens signs with and keeps at its first append. A signer
+ * needs a key to be anybody at all; asking who it is is not a write.
  */
 export function signerAt(chainRoot: string, options: { readonly keyRoot: string }): ChainSigner {
   // WHO SIGNS, WITHOUT OPENING THE KEY: a protected key would otherwise make this question need
   // the passphrase. The key is opened where it signs, at the writer.
   const keyRoot = { root: options.keyRoot };
-  const fingerprint = localKeyFingerprint(keyRoot) ?? loadOrCreateKeyPair(keyRoot).fingerprint;
+  const fingerprint = localKeyFingerprint(keyRoot) ?? keyToSignWith(keyRoot).keyPair.fingerprint;
   return signerOf({ root: chainRoot }, fingerprint);
 }
 

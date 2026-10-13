@@ -75,8 +75,8 @@ import {
   authorizingAnchor,
   endRun,
   openTreeForWriting,
+  prepareRun,
   signerHeldFor,
-  startRun,
   type WriteContext,
 } from '@mnema/core/write';
 import { FoundingWatch } from '../a-new-identity.js';
@@ -400,12 +400,12 @@ export interface Session {
   readonly caches: CacheRegistry;
   /**
    * What this connection's writes founded, owed to the next reply. A session writes into a tree
-   * for the first time through {@link ensureRun} — the run opens before anything else is
-   * appended there — and that is the one write that can found an identity; the watch is armed
+   * for the first time through {@link ensureRun} — its run is the first fact there, after the
+   * founding it needs — and that is the one write that can found an identity; the watch is armed
    * there and emptied where a reply is composed (`replied` and `refused` in `server.ts`, and the
-   * hook's reply in `tools.ts`). A refusal is one of those replies: the run opens before the
-   * operation decides, so a refused first write founds too, and its refusal says so. See
-   * `a-new-identity.ts` for what is said.
+   * hook's reply in `tools.ts`). A refusal is one of those replies, and says a founding only when
+   * one landed: the run is written once the operation has decided to write, so a first write the
+   * operation refuses founds nothing. See `a-new-identity.ts` for what is said.
    */
   readonly founding: FoundingWatch;
   /**
@@ -421,9 +421,10 @@ export interface Session {
   readonly replacementsOwed: ReplacementsOwed;
   /**
    * The chain roots this connection BEGAN writing to — {@link ensureRun} adds one before the
-   * run's first append, whether or not the run then opens. A run's opening is two writes when
+   * run's own append, whether or not the run then opens. A run's opening is two writes when
    * the key has no anchor there (the founding, then `run.started`), so a connection whose run
-   * failed to open may still have written the first. The close's log line reads this rather than
+   * failed to open may still have written the first. A write refused before its first fact
+   * begins nothing here. The close's log line reads this rather than
    * the run map alone, which is how it came to say "nothing was written" over a founding.
    */
   readonly writesBegun: Set<string>;
@@ -922,15 +923,16 @@ export function openWrite(session: Session, scope: Scope, target?: WriteTarget):
   // answer, unchanged, and the whole of the non-regression: a call that says nothing
   // lands exactly where it landed before this parameter existed.
   const trees = target?.trees ?? session.trees;
-  // Two statements, in this order, on purpose. Folding them into one object literal
-  // would leave a load-bearing ordering to the evaluation order of its properties —
-  // which is exactly the kind of thing a tidy-up reorders without knowing it mattered.
-  const run = ensureRun(session, trees, scope);
-  return {
-    run,
-    ctx: writeContext(trees, scope, session.caches),
-    which: whichIn(trees, scope, session),
-  };
+  const which = whichIn(trees, scope, session);
+  const open = session.runs.get(chainRootForScope(trees, scope) as string);
+  if (open !== undefined)
+    return { run: open.id, ctx: writeContext(trees, scope, session.caches), which };
+  // No run here yet: one is PREPARED, and written by the operation's own first fact, on the
+  // context the operation writes through — so a first call the operation refuses leaves no run,
+  // no founding and no key behind it (see `ensureRun`).
+  const ctx = writeContext(trees, scope, session.caches);
+  const pending = ensureRun(session, trees, scope, ctx);
+  return { run: pending.id, ctx: { ...ctx, beforeTheFirstFact: pending.start }, which };
 }
 
 /**
@@ -962,77 +964,95 @@ export class ReplacementsOwed {
 }
 
 /**
- * Opens the run for a destination if it has none, and returns its id.
+ * Prepares the run for a destination that has none: its id now, and `start`, which the write's
+ * own first fact calls (`WriteContext.beforeTheFirstFact`, from `ensureFounded`) to write it.
+ *
+ * THE RUN OPENED BEFORE THE OPERATION DECIDED, and a first call the operation refused founded
+ * anyway: measured on the binary from an empty HOME, `task_transition cancel` with no reason was
+ * refused (`MISSING_PROOF`) and left a key, an anchor and a tail holding `identity.founded` and
+ * `run.started`, and the refusal said "This key founded an identity of its own". So the run is
+ * written by the write that needs it, after the operation's last refusal, under its hold of the
+ * tail's lock, and the founding comes with it; the id the operation pins is minted beforehand.
  *
  * Synchronous from the check to the assignment, and that is a requirement rather
- * than a convenience: `startRun` needs no `await`, so nothing can interleave
- * between reading the empty entry and filling it, and concurrent writes to one tree
- * cannot each open a run of their own. An `await` anywhere in here would give every
- * write in flight to that tree the same empty entry to fill, and a connection would
- * end up with one run per write, each holding a fragment of one project's work.
- * There is no lock to add: the guarantee is that this function never yields.
+ * than a convenience: nothing between `openWrite` and the operation's append awaits,
+ * so nothing can interleave between reading the empty entry and filling it, and
+ * concurrent writes to one tree cannot each open a run of their own. An `await`
+ * anywhere on that path would give every write in flight to that tree the same empty
+ * entry to fill, and a connection would end up with one run per write, each holding
+ * a fragment of one project's work. There is no lock to add: the guarantee is that
+ * the path never yields.
  *
  * Concurrent writes to DIFFERENT trees do each open a run, and that is the point
  * rather than the same defect at a larger grain: they are different projects'
  * records, and one run cannot be the authority in a tree it is not written in.
  */
-function ensureRun(session: Session, trees: ResolvedTrees, scope: Scope): string {
+function ensureRun(
+  session: Session,
+  trees: ResolvedTrees,
+  scope: Scope,
+  ctx: WriteContext,
+): { readonly id: string; readonly start: () => void } {
   // The key exists before the run does, and identifies the tree the run will live
-  // in. An absent tree has no root to key by; `writeContext` below is what refuses
-  // it, so the honest error still comes from one place — and it throws before the
-  // map is ever asked to hold a key that is not a chain root.
+  // in. An absent tree has no root to key by; `writeContext` is what refuses it, and
+  // the caller has already built it.
   const root = chainRootForScope(trees, scope) as string;
-  const open = session.runs.get(root);
-  if (open !== undefined) return open.id;
 
-  // THE WATCH IS ARMED HERE, before the first thing this connection appends to the tree: the
-  // run's own opening is that first thing, and a key with no anchor in the tree founds on its
-  // way in. What the tree's anchors were a moment before is what the next reply compares with.
+  // THE WATCH IS ARMED HERE, before the first thing this connection may append to the tree: a
+  // key with no anchor in the tree founds on its way to the run. What the tree's anchors were a
+  // moment before is what the next reply compares with — and a write refused before it founds
+  // leaves them as they were, so the reply says nothing.
   session.founding.opened(root, scope);
-  session.writesBegun.add(root);
-  const ctx = writeContext(trees, scope, session.caches);
-  // The opening and its signature in ONE hold of the tail's lock: see SIGNED HERE below.
-  const started = ctx.writer.exclusively(() => {
-    const opened = startRun(ctx, { agent: whichIn(trees, scope, session) });
-    if (opened.ok) ctx.writer.checkpoint();
-    return opened;
-  });
-  if (!started.ok) {
-    throw new Error(`could not open a session run: ${started.code} — ${started.message}`);
+  const prepared = prepareRun(ctx, { agent: whichIn(trees, scope, session) });
+  if (!prepared.ok) {
+    throw new Error(`could not open a session run: ${prepared.code} — ${prepared.message}`);
   }
-  session.runs.set(root, { id: started.id, trees, scope });
-  // A machine that had no key made one to write this: the session has someone to speak for now.
-  if (session.who === undefined) {
-    session.who = sessionAnchor(session.trees, session.inProject ? 'private' : 'global', () => {});
-  }
-  // The run is this connection's own fact, and the name it carries is the one the client
-  // announced — the value the door screens. What it replaced is owed to the reply that
-  // caused the opening, which is the first reply able to say it.
-  session.replacementsOwed.add(started.replaced);
-  // SIGNED HERE, because opening a run is an act of writing and every act of writing
-  // signs what it wrote. Nothing above this line guarantees a later one: a call whose
-  // operation is REFUSED checkpoints nothing (by design — see the tools), so the
-  // founding and this `run.started` would rest on the hash chain alone with no writer
-  // ever coming back for them. Measured before this line existed: a session whose
-  // first tool call was refused left the tree at `hash-chain-only` with 2 events
-  // uncovered.
-  //
-  // It costs ONE checkpoint per session per tree, not one per call: the map lookup
-  // above returns early for every later write to this tree. See
-  // `every-write-signs-what-it-wrote.test.ts`. Signed inside the hold that opened it, above.
-  // The moment a reading connection became a writing one — in this tree, which the
-  // line names, because a connection now opens a run per project it writes to and a
-  // line that named only the run would leave a reader counting runs with no way to
-  // tell which project each belongs to. Named with the agent AS RECORDED — the value
-  // the operation reports it appended, never the announced one this session carries.
-  // This is the only line that may name the agent at all: the handshake has nothing
-  // screened to print, and printing the announced name would put a credential in the
-  // host's log in a product that replaces one before writing it, and leave the log
-  // and the chain naming two different agents for one session. Collapsed to one
-  // line, because the log is read one event per line and a name — or a chain root —
-  // holding a newline would write a second event nothing happened in.
-  session.log(oneLine(`session run ${started.id} opened in ${root} for which=${started.agent}`));
-  return started.id;
+  let started = false;
+  const start = (): void => {
+    // Once: `ensureFounded` runs before every fact of the operation, and before the run's own.
+    if (started) return;
+    started = true;
+    session.writesBegun.add(root);
+    const opened = prepared.start();
+    if (!opened.ok) {
+      throw new Error(`could not open a session run: ${opened.code} — ${opened.message}`);
+    }
+    // SIGNED HERE, because opening a run is an act of writing and every act of writing
+    // signs what it wrote. Nothing after this guarantees a later one: an operation whose
+    // own append is then refused checkpoints nothing (by design — see the tools), so the
+    // founding and this `run.started` would rest on the hash chain alone with no writer
+    // ever coming back for them. Measured before this line existed: a session whose
+    // first tool call was refused left the tree at `hash-chain-only` with 2 events
+    // uncovered. It costs ONE checkpoint per session per tree, not one per call: a tree
+    // with a run gets no `start`. See `every-write-signs-what-it-wrote.test.ts`.
+    ctx.writer.checkpoint();
+    session.runs.set(root, { id: opened.id, trees, scope });
+    // A machine that had no key made one to write this: the session has someone to speak for now.
+    if (session.who === undefined) {
+      session.who = sessionAnchor(
+        session.trees,
+        session.inProject ? 'private' : 'global',
+        () => {},
+      );
+    }
+    // The run is this connection's own fact, and the name it carries is the one the client
+    // announced — the value the door screens. What it replaced is owed to the reply that
+    // caused the opening, which is the first reply able to say it.
+    session.replacementsOwed.add(opened.replaced);
+    // The moment a reading connection became a writing one — in this tree, which the
+    // line names, because a connection now opens a run per project it writes to and a
+    // line that named only the run would leave a reader counting runs with no way to
+    // tell which project each belongs to. Named with the agent AS RECORDED — the value
+    // the operation reports it appended, never the announced one this session carries.
+    // This is the only line that may name the agent at all: the handshake has nothing
+    // screened to print, and printing the announced name would put a credential in the
+    // host's log in a product that replaces one before writing it, and leave the log
+    // and the chain naming two different agents for one session. Collapsed to one
+    // line, because the log is read one event per line and a name — or a chain root —
+    // holding a newline would write a second event nothing happened in.
+    session.log(oneLine(`session run ${opened.id} opened in ${root} for which=${opened.agent}`));
+  };
+  return { id: prepared.id, start };
 }
 
 /** What a close recorded, and what it could not: every run the connection opened. */

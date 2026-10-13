@@ -18,6 +18,7 @@ import {
   type ChainWriter,
   catalogUpcasters,
   enrollmentMessage,
+  loadOrCreateKeyPair,
   materializePublicKey,
   openChainForWriting,
   publicKeyPath,
@@ -284,6 +285,8 @@ describe('compareWithGithub', () => {
     const { root, writer: a } = aRecord();
     const anchor = a.anchor;
     const bKeys = tmp('mnema-github-keys-b-');
+    // B is a machine that has its key: a first key is kept only at a first append.
+    loadOrCreateKeyPair({ root: bKeys });
     const b = openChainForWriting(root, { keyRoot: bKeys, citeHeads: true });
     const bPrivate = createPrivateKey(
       readFileSync(join(bKeys, 'keys', `${b.signerFingerprint}.key`), 'utf-8'),

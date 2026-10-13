@@ -448,12 +448,11 @@ describe('the server says it where the agent reads', () => {
     await client.close();
   });
 
-  it('in the refusal of a first write, which founded on its way in — and the refusal says only the fact did not land', async () => {
-    // The run opens before the operation decides (`ensureRun`), so a key's first write into a
-    // tree founds there even when the operation then refuses. The refusal used to be composed
-    // by hand and asked the session nothing: the sentence waited for a next reply, and a
-    // connection that closed right after never heard it. And the refusal said "Nothing was
-    // recorded" with the founding and the run's start on the tail.
+  it('not in the refusal of a first write, which founds nothing — and the refusal says only the fact did not land', async () => {
+    // The run OPENED before the operation decided, so a key's first write into a tree founded
+    // there even when the operation then refused, and the refusal carried the founding's
+    // sentence. The run is written by the write that needs it now (`ensureRun`), after the
+    // operation's last refusal: a refused first write founds nothing, and says nothing of it.
     expect(mnema(homeA, 'init').status).toBe(0);
     expect(foundingsIn(repo)).toBe(1);
     const client = await connected(homeB);
@@ -466,9 +465,9 @@ describe('the server says it where the agent reads', () => {
     expect((reply as { isError?: boolean }).isError).toBe(true);
     const said = blocks(reply);
     expect(said[0]).toMatch(/^Refused \(CONTENT_TOO_LARGE\): /);
-    // What was written is read off the disk, not off the reply: B's founding is there.
-    expect(foundingsIn(repo)).toBe(2);
-    expect(said.filter((block) => block.includes(FOUNDED))).toHaveLength(1);
+    // What was written is read off the disk, not off the reply: no founding of B's is there.
+    expect(foundingsIn(repo)).toBe(1);
+    expect(said.filter((block) => block.includes(FOUNDED))).toEqual([]);
     // And the words are true beside it: the fact did not land, which is all the door knows.
     expect(said[0]).toContain('The fact was not recorded');
     expect(said.join('\n')).not.toMatch(/nothing was recorded/i);

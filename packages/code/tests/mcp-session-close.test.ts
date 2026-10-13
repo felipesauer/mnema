@@ -28,6 +28,7 @@ import { join } from 'node:path';
 import { pathToFileURL } from 'node:url';
 import { catalogUpcasters, ensureTree } from '@mnema/chain';
 import { type DiscoveryEnv, orderedEvents, PROJECT_DIR, resolveTrees } from '@mnema/core';
+import { openTreeForWriting, startRun } from '@mnema/core/write';
 import { Client } from '@modelcontextprotocol/sdk/client/index.js';
 import { InMemoryTransport } from '@modelcontextprotocol/sdk/inMemory.js';
 import { ListRootsRequestSchema } from '@modelcontextprotocol/sdk/types.js';
@@ -310,15 +311,19 @@ describe('a connection that ends', () => {
     await client.close();
   });
 
-  it('does not say nothing was written when a write began and its run did not open', async () => {
+  it('says nothing was written when the write that would open the run could not begin — and none was', async () => {
     // A run's opening is two writes for a key with no anchor in the tree — the founding, then
     // `run.started` — and the line said "(nothing was written)" whenever no run was in the map,
-    // which is false the moment the first of the two landed. Here the run cannot open at all:
-    // the tree's lock directory is a link to nothing, so the append that would open it throws.
+    // which is false the moment the first of the two lands; `writesBegun` tells the two apart.
+    // Here the tree's lock directory is a link to nothing. This case asserted "a write began",
+    // when the run opened before the operation decided and its attempt was counted as a write.
+    // The run is written by the write's first fact now, under the hold the operation takes, so
+    // a hold that cannot be taken writes nothing at all, and the line says so — read off the disk.
     const project = makeProject('proj');
     const locks = join(project, PROJECT_DIR, 'locks');
     rmSync(locks, { recursive: true, force: true });
     symlinkSync(join(sandbox, 'nowhere-at-all'), locks);
+    const before = kindsIn(project);
     const { client, end } = await connect([pathToFileURL(project).href]);
     const reply = await client.callTool({
       name: 'capture_memory',
@@ -328,11 +333,9 @@ describe('a connection that ends', () => {
 
     end();
 
+    expect(kindsIn(project)).toEqual(before);
     const closing = logged.filter((line) => line.startsWith('session closed:'));
-    expect(closing).toHaveLength(1);
-    expect(closing[0]).not.toContain('nothing was written');
-    expect(closing[0]).toContain('no run was opened; a write began in ');
-    expect(closing[0]).toContain('may be on disk');
+    expect(closing).toEqual(['session closed: no run was opened (nothing was written)']);
     await client.close();
   });
 
@@ -483,21 +486,26 @@ describe('what an open run says about itself', () => {
 
   it('says a run has recorded NOTHING rather than calling it idle for no time', async () => {
     // A run with no fact pinned to it is a real state, measured: a kill 5 ms after the
-    // append leaves exactly this. Reached here the way the surface can reach it — a
-    // write refused after its run had opened — and the point is what is NOT reported:
-    // `idleSeconds` is absent, because there is no last fact to measure from, and
-    // reporting the age there would be answering a different question with this one's
-    // name.
+    // append leaves exactly this. It was reached here through a write refused after its
+    // run had opened; a refused write opens no run now (its run is written by its first
+    // fact), so the run is opened the way `mnema run start` opens one, and the point is
+    // what is NOT reported: `idleSeconds` is absent, because there is no last fact to
+    // measure from, and reporting the age there would be answering a different question
+    // with this one's name.
     const project = makeProject('proj');
-    const { client, end } = await connect([pathToFileURL(project).href]);
-    const refused = (await writeSomething(client, { content: 'x'.repeat(70_000) })) as {
-      isError?: boolean;
+    const trees = resolveTrees(project, env);
+    const ctx = {
+      writer: openTreeForWriting(trees, 'public'),
+      layout: { root: trees.projectPublic as string },
+      upcasters: catalogUpcasters(),
     };
-    expect(refused.isError).toBe(true);
+    expect(startRun(ctx, { agent: 'claude-code' }).ok).toBe(true);
+    ctx.writer.checkpoint();
+    const { client, end } = await connect([pathToFileURL(project).href]);
 
     const runs = openRunsOf(await client.callTool({ name: 'focus' }));
     expect(runs).toHaveLength(1);
-    expect(runs[0]?.thisSession).toBe(true);
+    expect(runs[0]?.thisSession).toBe(false);
     expect(runs[0]?.ageSeconds).toBeTypeOf('number');
     expect(runs[0]).not.toHaveProperty('idleSeconds');
 

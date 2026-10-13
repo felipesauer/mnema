@@ -61,6 +61,7 @@
  */
 
 import { runEnded, runStarted } from '@mnema/chain';
+import type { ReplacedClass } from '../content/personal.js';
 import {
   type ScreenedWrite,
   type ScreenRefusal,
@@ -187,6 +188,26 @@ export interface EndRunInput {
  * has no prior state to judge.
  */
 export function startRun(ctx: WriteContext, input: StartRunInput): StartRunOk | StartRunError {
+  const prepared = prepareRun(ctx, input);
+  return prepared.ok ? prepared.start() : prepared;
+}
+
+/** A run whose id is minted and whose refusals are behind it, and whose fact is not written yet. */
+export interface PreparedRun {
+  readonly ok: true;
+  /** The id the run will have — what a write that opens it can pin itself to now. */
+  readonly id: string;
+  /** Founds where it must and appends the `run.started`: the half of {@link startRun} that writes. */
+  readonly start: () => StartRunOk | StartRunError;
+}
+
+/**
+ * {@link startRun} up to its first write: the screen, the authority check and the id. A caller
+ * that opens a run ON THE WAY TO ANOTHER WRITE prepares it and starts it only once that write is
+ * decided — the MCP session, so a first call the gate refuses leaves no run and no founding behind
+ * it. The id is still minted here, never supplied.
+ */
+export function prepareRun(ctx: WriteContext, input: StartRunInput): PreparedRun | StartRunError {
   // The agent label and the goal are free text, so they are screened first. The
   // SCREENED agent is what goes on, both in the payload and (canonicalized) on the
   // envelope, so the two halves cannot end up carrying different strings.
@@ -206,7 +227,23 @@ export function startRun(ctx: WriteContext, input: StartRunInput): StartRunOk | 
   // so two offline clones never mint the same run id, closing false-merge of
   // sessions at the root. Canonical by construction.
   const id = mintId();
+  const { fields } = text;
+  const replaced = [...text.replaced, ...agent.replaced];
+  return { ok: true, id, start: () => appendRunStarted(ctx, { id, who, which, fields, replaced }) };
+}
 
+/** The `run.started` a {@link PreparedRun} appends, with what its preparation decided. */
+function appendRunStarted(
+  ctx: WriteContext,
+  run: {
+    readonly id: string;
+    readonly who: string;
+    readonly which: string | undefined;
+    readonly fields: { readonly agent: string; readonly goal?: string | undefined };
+    readonly replaced: readonly ReplacedClass[];
+  },
+): StartRunOk | StartRunError {
+  const { id, who, which, fields } = run;
   // Found this installation's anchor before the fact, so the session's signer is
   // a key valid for its anchor at verify.
   // Once founded it appends nothing, and refuses an anchor that no longer counts
@@ -230,8 +267,8 @@ export function startRun(ctx: WriteContext, input: StartRunInput): StartRunOk | 
         ...(which !== undefined ? { which } : {}),
       },
       {
-        agent: text.fields.agent,
-        ...(text.fields.goal !== undefined ? { goal: text.fields.goal } : {}),
+        agent: fields.agent,
+        ...(fields.goal !== undefined ? { goal: fields.goal } : {}),
       },
     ),
   );
@@ -243,9 +280,9 @@ export function startRun(ctx: WriteContext, input: StartRunInput): StartRunOk | 
   return {
     ok: true,
     id,
-    agent: text.fields.agent,
-    ...(text.fields.goal !== undefined ? { goal: text.fields.goal } : {}),
-    ...screened([...text.replaced, ...agent.replaced]),
+    agent: fields.agent,
+    ...(fields.goal !== undefined ? { goal: fields.goal } : {}),
+    ...screened(run.replaced),
   };
 }
 

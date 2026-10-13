@@ -21,7 +21,7 @@ import {
   resolveTrees,
   type Scope,
 } from '@mnema/core';
-import { createTask, openTreeForWriting } from '@mnema/core/write';
+import { createTask, ensureFounded, openTreeForWriting } from '@mnema/core/write';
 import { readStackFiles } from '@mnema/stacks';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { runBeforeAWrite } from '../src/commands/before-a-write.js';
@@ -174,9 +174,11 @@ const CODE_SRC = join(HERE, 'src');
  * since a link can be retracted: `retractLink`. 46 since a stack can be adopted and removed:
  * `adoptStack` and `removeStack`. 48 since an identity can enrol and retire an agent key:
  * `enrollAgent` and `retireAgent`. 50 since the roster can vouch for and retire an agent:
- * `enrollAgentFromRequest` and `retireAgentKey`.
+ * `enrollAgentFromRequest` and `retireAgentKey`. 53 since a session's run is written by the write
+ * that needs it: `prepareRun` and the half it hands that write (`appendRunStarted`), and
+ * `ensureFounded`'s own founding half (`foundedAnchor`).
  */
-const CORE_OPERATIONS_THAT_APPEND = 50;
+const CORE_OPERATIONS_THAT_APPEND = 53;
 
 /** The stack the cases install. */
 const HELLO_STACK = fileURLToPath(new URL('../../stacks/fixtures/hello-stack', import.meta.url));
@@ -891,9 +893,14 @@ describe('every write path leaves the record fully signed', () => {
       {
         // The run's own opening, driven through the door rather than a tool, so what
         // this row proves is that the RUN is signed and not that some later write
-        // happened to cover it.
+        // happened to cover it. The door prepares it; the write's first fact writes it,
+        // at the point every operation founds (`ensureFounded`), under the hold every tool
+        // takes — and nothing is appended after, so nothing else signs.
         at: 'mcp/session.ts:ensureRun',
-        drive: () => void openWrite(on(), 'public'),
+        drive: () => {
+          const { ctx } = openWrite(on(), 'public');
+          ctx.writer.exclusively(() => ensureFounded(ctx));
+        },
       },
       {
         at: 'mcp/tools.ts:runCreateTask',

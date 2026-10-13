@@ -12,6 +12,7 @@ import {
   catalogUpcasters,
   enrollmentMessage,
   identityFounded,
+  loadOrCreateKeyPair,
   materializePublicKey,
   openChainForWriting,
   sign,
@@ -55,6 +56,8 @@ function tmp(prefix: string): string {
 /** A machine: its own key root, and a writer over the shared tree. */
 function machine(): { keyRoot: string; fingerprint: string; ctx: WriteContext } {
   const keyRoot = tmp('mnema-founded-beside-key-');
+  // A machine that has its key: a first key is kept only at a first append.
+  loadOrCreateKeyPair({ root: keyRoot });
   const writer = openChainForWriting(tree, { keyRoot });
   return {
     keyRoot,
@@ -135,6 +138,8 @@ describe('identitiesFoundedBeside — read off the record', () => {
     // Two sessions of B's one installation: one key root, one tree, so one tail.
     const keyRoot = tmp('mnema-founded-beside-key-');
     const session = (): { fingerprint: string; ctx: WriteContext } => {
+      // A machine that has its key: a first key is kept only at a first append.
+      loadOrCreateKeyPair({ root: keyRoot });
       const writer = openChainForWriting(tree, { keyRoot });
       return {
         fingerprint: writer.signerFingerprint,
