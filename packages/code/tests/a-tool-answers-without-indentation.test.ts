@@ -58,6 +58,19 @@ beforeAll(async () => {
   const id = said.match(/\(([0-9a-f-]{20,})\)/)?.[1];
   if (id === undefined) throw new Error(`setup: no id in ${said}`);
   decision = id;
+  // An adopted pattern, so `skills` answers a document with something in it: with none it answers
+  // `[]`, which has no indentation to take out and would pass the case below with or without the rule.
+  const made = (
+    await call('create_skill', {
+      name: 'One slice per PR',
+      body: 'A slice is one reviewable change with its tests.',
+    })
+  ).join('\n');
+  const skill = made.match(/\(([0-9a-f-]{20,})\)/)?.[1];
+  if (skill === undefined) throw new Error(`setup: no id in ${made}`);
+  for (const action of ['review', 'adopt']) {
+    await call('skill_transition', { id: skill, action, note: 'it reads well' });
+  }
 });
 
 afterAll(async () => {
@@ -95,5 +108,11 @@ describe('what a read tool answers', () => {
     const [found] = await call('search', {});
     const hits = (JSON.parse(found as string) as { hits: { id: string; title: string }[] }).hits;
     expect(hits.find((h) => h.id === decision)?.title).toBe('Retries use exponential backoff');
+
+    const [patterns] = await call('skills', {});
+    const adopted = JSON.parse(patterns as string) as { name: string; body?: string }[];
+    expect(adopted.map((s) => s.name)).toEqual(['One slice per PR']);
+    expect(adopted[0]?.body).toBe('A slice is one reviewable change with its tests.');
+    expect(patterns).not.toContain('\n');
   });
 });

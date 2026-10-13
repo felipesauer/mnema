@@ -22,19 +22,28 @@ tag, with its own changelog.
   second reader says the same counts, and none of them moves the verdict, the level or the exit. This version reads agent keys and no command of it
   enrols one yet. A binary from before stops reading a record that holds either kind, as for any kind it does not know.
 
+- **What each host charges for the plugin's 27 tool definitions is measured, per host, in the host's job.** The
+  first request the host's job reads, the one that carries a list of tools, is read off what each real host sends its
+  stand-in model. In it Claude Code (one `-p` pass; its interactive mode is not measured), the Copilot CLI, OpenCode
+  and Gemini CLI carry the whole definition of all 27 (49,498, 49,624, 50,551 and 56,324 bytes; 11,217, 11,357,
+  11,331 and 12,548 tokens in o200k, a relative measure, not what a model is billed), against 53,862 bytes and 12,136
+  tokens for the server's own listing; Codex carries none and one `tool_search` entry that lists the server (2,891
+  bytes, 672 tokens), and what its search returns for each tool is not measured; VS Code's agent is offered none of
+  them in its job, so it is not measured. Nothing about the tools changed; a case per host is red when the host wraps
+  a definition differently or a definition gains a word.
+
 ### Changed
 
 - **A write routed by `project` says the absolute directory it fell in.** The seven write tools that take `project`
   (`capture_memory`, `record_observation`, `record_handoff`, `link_knowledge`, `create_task`, `record_decision`,
-  `create_skill`) now end their confirmation with `  In the project at <path>.`, after the line that says which
+  `create_skill`) now add `  In the project at <path>.` to their confirmation, right after the line that says which
   tree it landed in. A `project` can be a name read off an earlier answer, and a conversation can outlive the
   connection it learnt the name in: after a reload the workspace may hold another directory by that name, and the
   write, signed and append-only, resolves to it. The path is the spelling that cannot mean two places; this makes the
   landing visible at once, it does not refuse the write. A write that named no project says nothing new, and neither
-  does one that landed in the global tree, which belongs to no project. For a 50-byte path the line adds 72 bytes and
-  21 tokens to a confirmation (`capture_memory`: 146 to 218 bytes, 44 to 65 tokens), o200k, a relative measure and
-  not what a model is billed; the confirmations the budget golden measures name no project, so the golden does not
-  move.
+  does one that landed in the global tree, which belongs to no project. The line is 22 bytes and the path (72 bytes for
+  a 50-byte path), and the tokens it takes depend on the path. The two write confirmations the budget golden measures
+  (`record_decision`, `capture_memory`) name no project, so the golden does not move.
 - **A reported run no longer repeats its actor, and the focus inside a resume no longer names it.** A run in
   `bootstrap`, `resume`, `focus` and `guard` carried `who`, and `resume.focus` carried `actor`, each the same value as the
   `actor` the answer already gives (every run listed there is one of the actor's). They are left out of the
@@ -43,8 +52,8 @@ tag, with its own changelog.
   `{ openRuns }`. The `focus` read on its own and the `focus` of a `guard` keep their own `actor`; no other field moves.
   Dropping the field is a change to the public API of `@mnema/context`: `ReportedRun` no longer has `who` and
   `Resume.focus` no longer has `actor`.
-  `bootstrap` 2,418 to 2,104 bytes (936 to 784 tokens, o200k), `resume` 1,441 to 1,127 (591 to 439), `focus` 899 to
-  743 (371 to 295), and ten open runs save ten more `who`. A reader that took the actor from a run takes it from the
+  `bootstrap` 2,418 to 2,104 bytes (936 to 784 tokens), `resume` 1,441 to 1,127 (591 to 439), `focus` 899 to
+  743 (371 to 295), in o200k, a relative measure; each open run past the first saves another `who`. A reader that took the actor from a run takes it from the
   answer's `actor`.
 - **The tools of the MCP server answer in JSON without indentation.** Every read (`bootstrap`, `focus`, `resume`,
   `search`, `read_record`, `skills`, the `audit_*` reads, `governing_rules`, `next_actions`) wrote its payload indented
@@ -68,10 +77,10 @@ tag, with its own changelog.
   `audit_accountability`, `audit_antipatterns` and `audit_exposure` (`findings`, `scanned`) said the project by its
   absolute path, repeated at every hit. They now say `api` where the workspace has one `api`, and the whole path
   where two projects share the name. Both are spellings a write's `project` argument already took, so the value an
-  answer gives goes back into a write and lands in the same project; a name that became ambiguous after being
+  answer gives goes back into a write of the same workspace and lands in the same project; a name that became ambiguous after being
   given is refused as `AMBIGUOUS_PROJECT`, not resolved to the wrong one. The record stays as it was: the signed
-  `event` of `audit_timeline` is served byte for byte, and the `path` of `governing_rules` and what `bootstrap`
-  says of the workspace still give the absolute path. Two directories whose names differ only in Unicode
+  `event` of `audit_timeline` is served unchanged, and the list of projects that `bootstrap` gives a workspace of two
+  or more is still by absolute path. Two directories whose names differ only in Unicode
   normalization count as sharing a name: they answer by path, and the bare name of either is refused as ambiguous. The budget golden measures eight answers, with the
   fixture's path scrubbed to the 13 bytes of `/work/project`: the largest, `audit_timeline`, goes from 2,518 bytes
   (1,066 tokens) to 2,482 (1,058) and a `search` from 1,305 (464) to 1,251 (452), in o200k, a relative measure, not
@@ -93,16 +102,6 @@ tag, with its own changelog.
 ## [0.2.0-beta] - 2026-10-11
 
 ### Added
-
-- **What each host charges for the plugin's 27 tool definitions is measured, per host, in the host's job.** The
-  first request the host's job reads, the one that carries a list of tools, is read off what each real host sends its
-  stand-in model. In it Claude Code (one `-p` pass; its interactive mode is not measured), the Copilot CLI, OpenCode
-  and Gemini CLI carry the whole definition of all 27 (49,498, 49,624, 50,551 and 56,324 bytes; 11,217, 11,357,
-  11,331 and 12,548 tokens in o200k, a relative measure, not what a model is billed), against 53,862 bytes and 12,136
-  tokens for the server's own listing; Codex carries none and one `tool_search` entry that lists the server (2,891
-  bytes, 672 tokens), and what its search returns for each tool is not measured; VS Code's agent is offered none of
-  them in its job, so it is not measured. Nothing about the tools changed; a case per host is red when the host wraps
-  a definition differently or a definition gains a word.
 
 - **`mnema verify --against-sigstore` names the run a Sigstore certificate carries.** From a GitHub
   Actions job, the note of each bundle now also says the repository, the workflow, the commit and the
