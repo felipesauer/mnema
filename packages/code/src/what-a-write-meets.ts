@@ -204,5 +204,5 @@ function whyNotRecorded(error: unknown): string {
 /** The sentence a reason carries when the charge it states could not be recorded. */
 export function unrecordedCharge(grade: WriteVerdict['grade'], why: string): string {
   const what = grade === 'refuse' ? 'This refusal' : 'This request for a person';
-  return `${what} could not be recorded in the project's record, so the record does not show it: ${why}.`;
+  return `${what} could not be recorded in the project's record, so the record does not show it: ${why.replace(/\.+$/, '')}.`;
 }
