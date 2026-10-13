@@ -138,6 +138,8 @@ export interface AgentRequestMade extends KeyRequestMade {
   readonly name: string;
   /** The agent's own key root: `<data directory>/agents/<name>`. */
   readonly keyRoot: string;
+  /** The file the key is kept in once it is at the agent's key root: `<keyRoot>/keys/<fingerprint>.key`. */
+  readonly keyFile: string;
   /**
    * The key the record retired that this request put aside, in `<key root>/retired/`, to make the
    * agent a new one: its fingerprint, and where it went. Absent when nothing was retired.
@@ -202,6 +204,7 @@ export function runAgentRequest(
     minted: made.minted,
     name: made.name,
     keyRoot,
+    keyFile: privateKeyPath({ root: keyRoot }, made.fingerprint),
     ...(rotated !== undefined ? { rotated } : {}),
   };
 }

@@ -666,7 +666,7 @@ export const NAMES_THAT_NEED_MORE: Readonly<
 export const HANDED_OVER: Readonly<
   Record<string, Readonly<Partial<Record<Reading['kind'], number>>>>
 > = {
-  'CHANGELOG.md': { line: 26, name: 34, flag: 1 },
+  'CHANGELOG.md': { line: 27, name: 34, flag: 1 },
   'README.md': { line: 1, name: 10 },
   'SECURITY.md': { name: 2 },
   'docs/evidence.md': { line: 1, flag: 1 },
@@ -677,7 +677,7 @@ export const HANDED_OVER: Readonly<
   'docs/packages.md': { line: 1, name: 2 },
   'docs/site.md': { line: 1, name: 3 },
   'docs/verify-without-installing.md': { name: 1 },
-  'docs/what-it-proves.md': { line: 3, name: 7 },
+  'docs/what-it-proves.md': { line: 4, name: 7 },
   'docs/where-it-fits.md': { line: 1, name: 2 },
   'examples/rules/README.md': { line: 1, name: 1 },
   'packages/action/README.md': { line: 6, name: 7 },

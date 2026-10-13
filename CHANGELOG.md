@@ -160,7 +160,7 @@ tag, with its own changelog.
   is put in the agent's folder.
 - **A limit, declared: the role of an agent key belongs to the record that enrols it.** A record that has not heard of
   an `agent.enrolled` can enrol the same key as an ordinary member, and both readers accept it there. `mnema key
-  request --key <file>` now refuses a file kept in the agents' folder (`AN_AGENT_KEY`); that checks where the file
+  request --anchor <id> --key <file>` now refuses a file kept in the agents' folder (`AN_AGENT_KEY`); that checks where the file
   lives, not what it holds, and a copy kept elsewhere is not recognised. `docs/what-it-proves.md` and `FORMAT.md`
   say it.
 

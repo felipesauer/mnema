@@ -12,7 +12,6 @@
  * member's signature, so no machine can admit itself.
  */
 
-import { privateKeyPath } from '@mnema/chain';
 import type { Command } from 'commander';
 import { fact } from '../presentation/detail.js';
 import { RECORD_CONTRACT_HELP } from '../recorded-content.js';
@@ -132,7 +131,7 @@ export function registerKey(program: Command, wiring: Wiring): Declared {
           render(
             fact(
               result.source === 'file'
-                ? onOneLine`its key is the file you named, ${opts.key ?? ''}, which this did not install: it stays where you keep it, and a host signs with it only once it is put at ${privateKeyPath({ root: result.keyRoot }, result.fingerprint)}`
+                ? onOneLine`its key is the file you named, ${opts.key ?? ''}, which this did not install: it stays where you keep it, and a host signs with it only once it is put at ${result.keyFile}`
                 : onOneLine`its key lives in ${result.keyRoot}, in the clear: the agent's host signs with it and has no terminal to ask a passphrase at`,
             ),
           ),

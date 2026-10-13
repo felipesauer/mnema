@@ -114,41 +114,36 @@ export function runKeyRevoke(
   ctx: KeyRevokeContext,
   input: { fingerprint: string; reason: string },
 ): KeyRevoked | KeyRevokeRefused {
-  return refusedWhereProtected(() => revokeOwnKey(ctx, input));
-}
+  return refusedWhereProtected((): KeyRevoked | KeyRevokeRefused => {
+    const trees = resolveTrees(ctx.cwd, ctx.env);
+    if (trees.projectPublic === undefined) {
+      return { ok: false, reason: 'NO_PROJECT' };
+    }
 
-function revokeOwnKey(
-  ctx: KeyRevokeContext,
-  input: { fingerprint: string; reason: string },
-): KeyRevoked | KeyRevokeRefused {
-  const trees = resolveTrees(ctx.cwd, ctx.env);
-  if (trees.projectPublic === undefined) {
-    return { ok: false, reason: 'NO_PROJECT' };
-  }
+    const write = deferredWrite(trees, 'public');
+    const revoked = revokeMember(write, { fingerprint: input.fingerprint, reason: input.reason });
+    if (!revoked.ok) {
+      return { ok: false, reason: 'REFUSED', code: revoked.code, message: revoked.message };
+    }
 
-  const write = deferredWrite(trees, 'public');
-  const revoked = revokeMember(write, { fingerprint: input.fingerprint, reason: input.reason });
-  if (!revoked.ok) {
-    return { ok: false, reason: 'REFUSED', code: revoked.code, message: revoked.message };
-  }
+    // The revocation signs its own checkpoint (the verifier only honors a covered one), so
+    // this covers whatever else the run appended and is otherwise a no-op.
+    write.checkpoint();
 
-  // The revocation signs its own checkpoint (the verifier only honors a covered one), so
-  // this covers whatever else the run appended and is otherwise a no-op.
-  write.checkpoint();
-
-  return {
-    ok: true,
-    fingerprint: revoked.fingerprint,
-    anchor: revoked.anchor,
-    self: revoked.self,
-    remaining: revoked.remaining,
-    root: trees.projectPublic,
-    ...(revoked.self
-      ? { keyFile: privateKeyPath({ root: trees.keyRoot }, revoked.fingerprint) }
-      : {}),
-    ...(revoked.stillMemberOf !== undefined ? { stillMemberOf: revoked.stillMemberOf } : {}),
-    ...forwardReplacement(revoked),
-  };
+    return {
+      ok: true,
+      fingerprint: revoked.fingerprint,
+      anchor: revoked.anchor,
+      self: revoked.self,
+      remaining: revoked.remaining,
+      root: trees.projectPublic,
+      ...(revoked.self
+        ? { keyFile: privateKeyPath({ root: trees.keyRoot }, revoked.fingerprint) }
+        : {}),
+      ...(revoked.stillMemberOf !== undefined ? { stillMemberOf: revoked.stillMemberOf } : {}),
+      ...forwardReplacement(revoked),
+    };
+  });
 }
 
 /** The checker key signs nothing from now on. */
@@ -173,34 +168,29 @@ export function runCheckerRetire(
   ctx: KeyRevokeContext,
   input: { fingerprint: string; reason: string },
 ): CheckerRetired | KeyRevokeRefused {
-  return refusedWhereProtected(() => retireCheckerKey(ctx, input));
-}
-
-function retireCheckerKey(
-  ctx: KeyRevokeContext,
-  input: { fingerprint: string; reason: string },
-): CheckerRetired | KeyRevokeRefused {
-  const trees = resolveTrees(ctx.cwd, ctx.env);
-  if (trees.projectPublic === undefined) {
-    return { ok: false, reason: 'NO_PROJECT' };
-  }
-  const write = deferredWrite(trees, 'public');
-  const retired = retireChecker(write, { fingerprint: input.fingerprint, reason: input.reason });
-  if (!retired.ok) {
-    return { ok: false, reason: 'REFUSED', code: retired.code, message: retired.message };
-  }
-  // The retirement signs its own checkpoint (the reader honours only a covered one); this
-  // covers a founding it may have appended alongside, and is a no-op otherwise.
-  write.checkpoint();
-  return {
-    ok: true,
-    fingerprint: retired.fingerprint,
-    checker: retired.checker,
-    retiredBy: retired.retiredBy,
-    alreadyRetired: retired.alreadyRetired,
-    root: trees.projectPublic,
-    ...forwardReplacement(retired),
-  };
+  return refusedWhereProtected((): CheckerRetired | KeyRevokeRefused => {
+    const trees = resolveTrees(ctx.cwd, ctx.env);
+    if (trees.projectPublic === undefined) {
+      return { ok: false, reason: 'NO_PROJECT' };
+    }
+    const write = deferredWrite(trees, 'public');
+    const retired = retireChecker(write, { fingerprint: input.fingerprint, reason: input.reason });
+    if (!retired.ok) {
+      return { ok: false, reason: 'REFUSED', code: retired.code, message: retired.message };
+    }
+    // The retirement signs its own checkpoint (the reader honours only a covered one); this
+    // covers a founding it may have appended alongside, and is a no-op otherwise.
+    write.checkpoint();
+    return {
+      ok: true,
+      fingerprint: retired.fingerprint,
+      checker: retired.checker,
+      retiredBy: retired.retiredBy,
+      alreadyRetired: retired.alreadyRetired,
+      root: trees.projectPublic,
+      ...forwardReplacement(retired),
+    };
+  });
 }
 
 /** What `key revoke --agent` did in one tree. */
