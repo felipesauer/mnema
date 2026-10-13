@@ -409,18 +409,27 @@ export type KeyChoice =
  * verb, at a terminal, puts it right. Undefined where no agent is configured, or the tree is not
  * there. It is what a server says of its agent per tree, and what `mnema doctor` says.
  */
-export function keyChoiceIn(trees: ResolvedTrees, scope: Scope): KeyChoice | undefined {
+export function keyChoiceIn(
+  trees: ResolvedTrees,
+  scope: Scope,
+  where?: string,
+): KeyChoice | undefined {
   const chainRoot = chainRootForScope(trees, scope);
   if (trees.agent === undefined || chainRoot === undefined) return undefined;
-  return chooseTheKey(trees, chainRoot);
+  return chooseTheKey(trees, chainRoot, where);
 }
 
-function chooseTheKey(trees: ResolvedTrees, chainRoot: string): KeyChoice {
+/**
+ * `where` names the place a "not enrolled" refusal speaks of, for a caller that asks before any
+ * write has a tree: the opening of a session asks one tree, and a refusal naming it would read as
+ * the tree the first write is for.
+ */
+function chooseTheKey(trees: ResolvedTrees, chainRoot: string, saying?: string): KeyChoice {
   const agent = trees.agent;
   if (agent === undefined) return { signs: 'person' };
   const fingerprint = localKeyFingerprint({ root: agent.keyRoot });
   const here = reachableTrees(trees).find((tree) => tree.chainRoot === chainRoot)?.scope;
-  const where = here === undefined ? 'this tree' : TREE_WORDS[here];
+  const where = saying ?? (here === undefined ? 'this tree' : TREE_WORDS[here]);
   if (fingerprint !== null) {
     // RETIRED IN ANY TREE THIS PROCESS REACHES IS RETIRED TO WRITE IN ALL: the retirement is a
     // fact of one record, and a tree that never heard of the key would otherwise let the host that
@@ -444,7 +453,7 @@ function chooseTheKey(trees: ResolvedTrees, chainRoot: string): KeyChoice {
         signs: 'nobody',
         refusal: new IdentityUnavailableError(
           'REVOKED_KEY',
-          `the agent key "${agent.name}" was retired in ${TREE_WORDS[tree.scope]}, and a retired key signs nothing in any tree of this machine. In a terminal, \`mnema key request --agent ${agent.name} --anchor <your identity>\` makes the agent a new key and \`mnema key enroll --agent <the line it prints>\` puts it in force. Nothing was written.`,
+          `the agent key "${agent.name}" was retired in ${TREE_WORDS[tree.scope]}, and a retired key signs nothing in any tree it reaches from here. In a terminal, \`mnema key request --agent ${agent.name} --anchor <your identity>\` makes the agent a new key and \`mnema key enroll --agent <the line it prints>\` puts it in force. Nothing was written.`,
         ),
       };
     }

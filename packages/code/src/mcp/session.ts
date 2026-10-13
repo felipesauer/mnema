@@ -1169,7 +1169,11 @@ function sessionAnchor(trees: ResolvedTrees, first: Scope): string {
       refusal ??= error;
     }
   }
-  throw refusal as IdentityUnavailableError;
+  // NO TREE OF THIS SESSION HAS ANYONE TO SIGN. The refusal is the one the opening asks, before any
+  // write has a tree, so it names none: the first tree tried is the private one, and a refusal
+  // saying so reads as the tree the write about to be made was for.
+  const choice = keyChoiceIn(trees, first, 'any tree this session reaches');
+  throw choice?.signs === 'nobody' ? choice.refusal : (refusal as IdentityUnavailableError);
 }
 
 /**
