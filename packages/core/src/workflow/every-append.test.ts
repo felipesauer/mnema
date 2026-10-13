@@ -136,12 +136,12 @@ describe('every write refuses what no read could accept', () => {
     root = mkdtempSync(join(tmpdir(), 'mnema-append-'));
     keyRoot = mkdtempSync(join(tmpdir(), 'mnema-append-key-'));
     ctx = { writer: openChainForWriting(root, { keyRoot: root }), layout: { root }, upcasters };
-    // Founded up front, as `mnema init` leaves every project it creates. It matters
-    // for the count below: an operation founds this installation's anchor on its way
-    // in, so on a tree nobody had ever written to the FIRST refused write would
-    // still leave that founding behind (see `refuse` in append.ts, and the virgin
-    // tree case at the end of this file, which pins that behaviour rather than
-    // hiding it). Founding here isolates what the sweep is about.
+    // Founded up front, as `mnema init` leaves every project it creates, so the sweep below
+    // runs on a tree with a record to replay. THIS SAID it mattered for the count: "on a tree
+    // nobody had ever written to the FIRST refused write would still leave that founding
+    // behind". It does not any more — the door refuses before anything is founded
+    // (`appendFact` in append.ts) — and the virgin-tree cases at the end of this file drive
+    // every case with no setup on a tree nobody wrote to, and hold it at nothing.
     ensureFounded(ctx);
   });
 
@@ -663,31 +663,80 @@ describe('every write refuses what no read could accept', () => {
     }
   });
 
-  it('leaves a virgin tree founded and otherwise empty, and says so', () => {
-    // The one thing this door does NOT match about the size limit, pinned rather
-    // than left to be rediscovered. A write founds this installation's anchor before
-    // it builds its fact, so on a tree nobody had ever written to a refusal leaves
-    // exactly one event: the founding. It is readable, it verifies, and the next
-    // successful write would have needed it anyway — which is why the refusal says
-    // THE FACT was not recorded and not "nothing was".
-    const virgin = mkdtempSync(join(tmpdir(), 'mnema-virgin-'));
-    try {
-      const fresh: WriteContext = {
-        writer: openChainForWriting(virgin, { keyRoot: virgin }),
-        layout: { root: virgin },
-        upcasters,
-      };
-      expect(orderedEvents(fresh.layout, upcasters).length).toBe(0);
+  /** Every file under `dir`, as a path relative to it — the empty list for a virgin one. */
+  function filesUnder(dir: string): string[] {
+    return readdirSync(dir, { recursive: true, withFileTypes: true })
+      .filter((entry) => entry.isFile())
+      .map((entry) => relative(dir, join(entry.parentPath, entry.name)))
+      .sort();
+  }
 
-      const refused = createTask(fresh, { title: '' });
+  /**
+   * A tree nobody ever wrote to, and a key root that holds no key yet: the first write of a
+   * machine, into a project of its own. The writer is open, and opening it keeps nothing.
+   */
+  function virginTree(): { readonly tree: string; readonly keys: string; readonly ctx: WriteContext } {
+    const tree = mkdtempSync(join(tmpdir(), 'mnema-virgin-'));
+    const keys = mkdtempSync(join(tmpdir(), 'mnema-virgin-key-'));
+    const fresh: WriteContext = {
+      writer: openChainForWriting(tree, { keyRoot: keys }),
+      layout: { root: tree },
+      upcasters,
+    };
+    return { tree, keys, ctx: fresh };
+  }
+
+  it('leaves a virgin tree virgin — no founding, no key — and says the fact was not recorded', () => {
+    // THIS TEST WAS "leaves a virgin tree founded and otherwise empty, and says so", and it pinned
+    // the founding a refusal left: an operation founded its anchor on its way in, before the door
+    // saw the fact. Measured on the binary from an empty HOME, that founding was a key under the
+    // HOME, a public key, an anchor and a tail holding `identity.founded` and no checkpoint —
+    // enough for `verify --require=signed` to fail on the whole project. The door refuses before
+    // the founding now, so the refusal leaves the tree and the key root as it found them.
+    const virgin = virginTree();
+    try {
+      ctx = virgin.ctx;
+      const refused = createTask(ctx, { title: '' });
       expect(refused.ok).toBe(false);
       if (refused.ok) return;
+      expect(refused.code).toBe('UNREADABLE_EVENT');
       expect(refused.message).toContain('The fact was NOT recorded');
 
-      const events = orderedEvents(fresh.layout, upcasters);
-      expect(events.map((event) => event.kind)).toEqual(['identity.founded']);
+      expect(orderedEvents(ctx.layout, upcasters)).toEqual([]);
+      expect(filesUnder(virgin.tree)).toEqual([]);
+      expect(filesUnder(virgin.keys)).toEqual([]);
     } finally {
-      rmSync(virgin, { recursive: true, force: true });
+      rmSync(virgin.tree, { recursive: true, force: true });
+      rmSync(virgin.keys, { recursive: true, force: true });
+    }
+  });
+
+  it('founds nothing and keeps no key on a virgin tree, for every case that needs no setup', () => {
+    // The guard that holds EVERY operation to the order, not one: each case the sweep can drive
+    // with nothing written first is driven on its own tree nobody wrote to, with a key root that
+    // holds no key. An operation that founds before its fact is checked — a site that calls
+    // `ensureFounded` and then `appendEvent`, instead of `appendFact` — leaves the founding here.
+    //
+    // The cases with a `prepare` are not here, and cannot be: their setup writes, and a write
+    // founds. They are `retractNote`, `retractLink`, `declareCheck`, `runRuleChecks`,
+    // `retireChecker`, `endRun`, `retireAgentKey`, `revokeMember` and `authorizeTailPrune`.
+    const driven = cases().filter((probe) => probe.prepare === undefined);
+    expect(driven.length).toBeGreaterThan(30);
+    for (const probe of driven) {
+      const where = `${probe.op}(${probe.field})`;
+      const virgin = virginTree();
+      try {
+        ctx = virgin.ctx;
+        const result = probe.drive();
+        expect(result.ok, where).toBe(false);
+        expect(result.code, where).toBe('UNREADABLE_EVENT');
+        expect(orderedEvents(ctx.layout, upcasters), where).toEqual([]);
+        expect(filesUnder(virgin.tree), where).toEqual([]);
+        expect(filesUnder(virgin.keys), where).toEqual([]);
+      } finally {
+        rmSync(virgin.tree, { recursive: true, force: true });
+        rmSync(virgin.keys, { recursive: true, force: true });
+      }
     }
   });
 

@@ -37,6 +37,7 @@ import { spawnSync } from 'node:child_process';
 import { createHash } from 'node:crypto';
 import {
   cpSync,
+  existsSync,
   mkdirSync,
   mkdtempSync,
   readdirSync,
@@ -124,6 +125,30 @@ function treeOf(project: string): string[] {
     }
   };
   walk(join(project, '.mnema'));
+  return out;
+}
+
+/**
+ * The project's PRIVATE tree, `.git/mnema`, the way {@link treeOf} sees the public one — the empty
+ * list where it does not exist. A note lands there, so a refusal of a note is asked of it.
+ */
+function privateTreeOf(project: string): string[] {
+  const root = join(project, '.git', 'mnema');
+  const out: string[] = [];
+  const walk = (dir: string): void => {
+    for (const name of readdirSync(dir).sort()) {
+      const path = join(dir, name);
+      if (isTheDerivedCache(path)) continue;
+      const shown = path.slice(project.length + 1);
+      if (statSync(path).isDirectory()) {
+        out.push(`D ${shown}`);
+        walk(path);
+      } else {
+        out.push(`F ${createHash('sha256').update(readFileSync(path)).digest('hex')} ${shown}`);
+      }
+    }
+  };
+  if (existsSync(root)) walk(root);
   return out;
 }
 
@@ -327,8 +352,12 @@ describe('a refusal from the operation’s own door leaves nothing a clone recei
 
   /**
    * The thirteen verbs the census on the binary found leaving the four entries, each with the
-   * argument its own door refuses. A function per case, because three of them name an entity of A's
-   * that exists only once `beforeAll` has run.
+   * argument its own door refuses — and then the four refusals of the APPEND door, one per class,
+   * which came after the founding: measured on the binary from an empty HOME, each left a key
+   * under the HOME, a public key, an anchor and a tail holding `identity.founded` and no
+   * checkpoint, so `verify --require=signed` failed for the whole project. The door is asked
+   * before the founding now (`appendFact` in the core). A function per case, because three of
+   * them name an entity of A's that exists only once `beforeAll` has run.
    */
   const CASES: readonly (readonly [string, string, () => string[]])[] = [
     ['memory', 'CONTENT_TOO_LARGE', () => ['memory', BIG]],
@@ -348,6 +377,14 @@ describe('a refusal from the operation’s own door leaves nothing a clone recei
     ['skill move', 'ILLEGAL_TRANSITION', () => ['skill', 'move', 'deprecate', skillOfA]],
     ['decision move', 'UNKNOWN_ACTION', () => ['decision', 'move', 'reopen', decisionOfA]],
     ['run end', 'UNKNOWN_RUN', () => ['run', 'end', UNKNOWN, '--which', 'ci']],
+    ['task create', 'UNREADABLE_EVENT', () => ['task', 'create', '']],
+    ['task create', 'NOT_A_TITLE', () => ['task', 'create', '<title>']],
+    ['decision record', 'NOT_A_REASON', () => ['decision', 'record', 'Use UTC', '***']],
+    [
+      'observe',
+      'NOT_A_REFERENCE',
+      () => ['observe', '<id>', '--topic', 'clocks', '--text', 'it was slow'],
+    ],
   ];
 
   it.each(CASES)('%s, refused as %s', (_verb, code, argv) => {
@@ -355,14 +392,17 @@ describe('a refusal from the operation’s own door leaves nothing a clone recei
     try {
       cpSync(join(p0, 'project'), project, { recursive: true });
       const before = treeOf(project);
+      const beforePrivate = privateTreeOf(project);
       const refused = mnemaIn(project, homeB, ...argv());
       expect(refused.status, refused.stderr).toBe(1);
       expect(refused.stderr).toContain(`Refused (${code})`);
       expect(refused.stderr).not.toMatch(/nothing was recorded/i);
+      expect(refused.stdout + refused.stderr).not.toContain('founded an identity');
 
       // B's machine had no key, so it has none now, and the tree holds not even an installation
       // id: the key and its id are kept at the first append, and nothing was appended.
       expect(treeOf(project)).toEqual(before);
+      expect(privateTreeOf(project)).toEqual(beforePrivate);
       expect(readdirSync(homeB)).toEqual([]);
       // The status is asked too, so a new entry git WOULD publish reddens here by name.
       expect(git(project, 'status', '--porcelain', '--untracked-files=all').stdout).toBe(
@@ -450,6 +490,85 @@ describe('a refusal from the operation’s own door leaves nothing a clone recei
           (m) => m[1],
         ),
       ).toEqual(['identity.founded', 'run.started', 'task.transitioned']);
+    } finally {
+      rmSync(project, { recursive: true, force: true });
+    }
+  });
+
+  /**
+   * THE APPEND DOOR, THROUGH THE SERVER. Its refusal came after the founding, and the server's run
+   * came with the founding: measured on the binary from an empty HOME, `create_task` `<title>` and
+   * `record_decision` `***` each left a key under the HOME, a public key, an anchor, and a tail
+   * holding `identity.founded` and `run.started`, signed, with "This key founded an identity of its
+   * own" in the refusal; `record_observation` about `<id>` left the same in the PRIVATE tree, where
+   * a note lands, and said nothing about it.
+   *
+   * One case per class the protocol reaches. `UNREADABLE_EVENT` is not one of them: every text a
+   * write tool hands the door is `z.string().min(1)` in its schema, so an empty one is refused by
+   * the SDK before any tool runs; the only `z.string()` without it are a move's proof fields, which
+   * an empty value leaves out as absence, and the filters of a read. The command line reaches it,
+   * above (`task create ''`).
+   */
+  it('a first write the append door refuses makes no key and founds nothing — the server', async () => {
+    const project = mkdtempSync(join(tmpdir(), 'mnema-a-refusal-leaves-nothing-door-mcp-'));
+    try {
+      cpSync(join(p0, 'project'), project, { recursive: true });
+      const before = treeOf(project);
+      const beforePrivate = privateTreeOf(project);
+      const { server } = buildMcpServer({ cwd: project, env: { home: homeB }, log: () => {} });
+      const client = new Client({ name: 'claude-code', version: '1.0.0' }, { capabilities: {} });
+      const [clientTransport, serverTransport] = InMemoryTransport.createLinkedPair();
+      await Promise.all([client.connect(clientTransport), server.connect(serverTransport)]);
+      const said = (reply: unknown): string =>
+        ((reply as { content?: { text?: string }[] }).content ?? []).map((c) => c.text).join('\n');
+
+      const refusals: readonly (readonly [string, string, Record<string, string>])[] = [
+        ['NOT_A_TITLE', 'create_task', { title: '<title>' }],
+        ['NOT_A_REASON', 'record_decision', { title: 'Use UTC', rationale: '***' }],
+        ['NOT_A_REFERENCE', 'record_observation', { about: '<id>', topic: 'clocks', text: 'slow' }],
+      ];
+      for (const [code, name, args] of refusals) {
+        const refused = (await client.callTool({ name, arguments: args })) as { isError?: boolean };
+        expect(refused.isError, `${name}: ${said(refused)}`).toBe(true);
+        expect(said(refused)).toContain(`Refused (${code})`);
+        expect(said(refused)).not.toContain('founded an identity');
+        expect(treeOf(project), name).toEqual(before);
+        expect(privateTreeOf(project), name).toEqual(beforePrivate);
+        expect(readdirSync(homeB), name).toEqual([]);
+      }
+
+      // The same session's first accepted write founds, opens its run and lands, in that order —
+      // and stamped in that order: the fact is built after the founding, never before it.
+      const accepted = (await client.callTool({
+        name: 'create_task',
+        arguments: { title: 'an accepted first write' },
+      })) as { isError?: boolean };
+      expect(accepted.isError, said(accepted)).not.toBe(true);
+      expect(said(accepted)).toContain('This key founded an identity of its own');
+      await client.close();
+      const [key] = readdirSync(join(homeB, '.mnema', 'identity', 'keys')).filter((name) =>
+        name.endsWith('.key'),
+      );
+      const tails = join(project, '.mnema', 'tails');
+      const [tail] = readdirSync(tails).filter((name) =>
+        name.startsWith((key as string).slice(0, 64)),
+      );
+      const written = readFileSync(join(tails, tail as string, '000001.jsonl'), 'utf-8')
+        .split('\n')
+        .filter((line) => line !== '')
+        .map((line) => (JSON.parse(line) as { event: { kind: string; at: string } }).event);
+      expect(written.map((event) => event.kind)).toEqual([
+        'identity.founded',
+        'run.started',
+        'task.created',
+        'task.transitioned',
+      ]);
+      const stamps = written.map((event) => event.at);
+      expect(stamps).toEqual([...stamps].sort());
+      for (const argv of [['verify'], ['verify', '--require=signed']]) {
+        const verified = mnemaIn(project, homeB, ...argv);
+        expect(verified.status, verified.stdout + verified.stderr).toBe(0);
+      }
     } finally {
       rmSync(project, { recursive: true, force: true });
     }
