@@ -70,6 +70,7 @@ import {
 } from '@mnema/chain';
 import {
   agentKeysIn,
+  agentsOf,
   type DiscoveryEnv,
   orderedEvents,
   privateTreeVisibility,
@@ -552,7 +553,8 @@ function reportOn(tree: ScopedTree, upcasters: UpcasterRegistry, keyRoot: string
  * wrote from one whose tail was lost, and a sentence saying "nothing signed yet" would hide the
  * second from the one who most needs it. The verdict, the level, the issues and the clause count
  * are the chain's, untouched; only the sentence of the note for an agent key changes, and only
- * where no waiver already accounts for the key.
+ * where no waiver already accounts for the key. A key the record has since RETIRED is said to be
+ * retired, not enrolled: it is the one thing the sentence must not call it.
  */
 function verifiedTree(root: string, upcasters: UpcasterRegistry, keyRoot: string): VerifyResult {
   const result = verify(root, upcasters, { keyRoot });
@@ -571,9 +573,13 @@ function verifiedTree(root: string, upcasters: UpcasterRegistry, keyRoot: string
       if (note.kind !== 'key-without-tail' || note.waivers.length > 0) return note;
       const agent = agents.get(note.fingerprint);
       if (agent === undefined) return note;
+      const held = agentsOf({ tree: root, upcasters }, agent.anchor).has(note.fingerprint);
+      const standing = held
+        ? 'the record enrols it, and it has no tail on disk — it may have signed nothing here yet,'
+        : 'the record retired it, and it has no tail on disk — it may have signed nothing here,';
       return {
         ...note,
-        detail: `the key of the agent "${oneLine(agent.name)}" of ${oneLine(agent.anchor)}: the record enrols it, and it has no tail on disk — it may have signed nothing here yet, or its tail may have been dropped (a botched merge) or removed; nothing here can tell which`,
+        detail: `the key of the agent "${oneLine(agent.name)}" of ${oneLine(agent.anchor)}: ${standing} or its tail may have been dropped (a botched merge) or removed; nothing here can tell which`,
       };
     }),
   };
