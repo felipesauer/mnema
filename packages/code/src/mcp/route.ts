@@ -135,7 +135,7 @@ export function routeWrite(
  * The directory a write fell in, for the reply to say — and only when the CALLER named
  * the project.
  *
- * A name read off an earlier answer can outlive the connection it was learnt in: after
+ * A name the caller carried can outlive the connection it was learnt in: after
  * a reload the workspace may hold a different directory by that name, and the write
  * resolves to it. Nothing can refuse a valid name; what is left is to say, in the one
  * reply the caller reads, the absolute path: it tells two directories apart where a name shared by

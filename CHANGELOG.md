@@ -120,7 +120,7 @@ tag, with its own changelog.
 - **A write routed by `project` says the absolute directory it fell in.** The seven write tools that take `project`
   (`capture_memory`, `record_observation`, `record_handoff`, `link_knowledge`, `create_task`, `record_decision`,
   `create_skill`) now add `  In the project at <path>.` to their confirmation, right after the line that says which
-  tree it landed in. A `project` can be a name read off an earlier answer, and a conversation can outlive the
+  tree it landed in. A `project` can be a name the caller carried, and a conversation can outlive the
   connection it learnt the name in: after a reload the workspace may hold another directory by that name, and the
   write, signed and append-only, resolves to it. The path tells two directories apart where a name shared by both
   does not (one directory can still have two paths, through a symlink); this makes the landing visible at once, it

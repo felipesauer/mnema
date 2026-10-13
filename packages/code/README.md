@@ -1570,7 +1570,7 @@ its directory's name: a name can mean another directory on the next connection, 
 (`tests/an-answer-says-the-path-of-a-project.test.ts`). A write's `project` takes the path or the name.
 
 A write that names a `project` says, in its reply, the absolute directory it fell in
-(`In the project at /home/you/work/api.`). The name may have come from an earlier answer of
+(`In the project at /home/you/work/api.`). The name may be one the caller carried from
 another connection, and the same name can mean another directory in this one; the path says
 which, after the write, and does not refuse it. A write that named no project, or that landed
 in the global tree, says nothing of the sort
