@@ -169,6 +169,11 @@ tag, with its own changelog.
   record busy at that moment (`TAIL_BUSY`, `KEY_ROOT_BUSY`), or another write changing the task before the move; and
   where the machine has no key at all it still says `MISSING_WHO`, though the first write there makes the key and
   passes.
+- **Refusing to retire the last key of an identity no longer says it is "the only key" while an agent's key is still enrolled.**
+  The refusal now reads "the only key of <identity> that is not an agent's", which is what is true: an agent's key
+  cannot sign an enrollment, so it is the last key able to repair the identity. A comment in the brief command that said
+  the plugin hands the document over "with no file at all" now says "without writing a file", as the verb's own page does.
+
 - **An agent key asked for under a name that is not an agent's refuses the write, and makes nothing.** With
   `MNEMA_AGENT_KEY=Claude` (or `--agent-key`) on a machine that held only the agent's folder, the command line and the
   server dropped the name, made your key and founded an identity in the public record, which is what the entry above
