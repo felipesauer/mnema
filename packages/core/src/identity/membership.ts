@@ -104,7 +104,12 @@ export type IdentityRefusalCode =
    * would be an identity the person never asked for, so nothing is signed; the way out is the verb
    * that enrols the agent.
    */
-  | 'AGENT_NOT_ENROLLED';
+  | 'AGENT_NOT_ENROLLED'
+  /**
+   * An agent is asked for under a name this product does not enrol. It is no agent and the
+   * person's key is not the answer to a request for one, so nothing is signed, made or founded.
+   */
+  | 'AGENT_NAME_REFUSED';
 
 /** The record proves this key belongs to exactly one identity. */
 export interface MembershipProven {

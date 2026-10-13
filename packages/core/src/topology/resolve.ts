@@ -93,6 +93,12 @@ export interface DiscoveryEnv {
 export interface AgentSigning {
   readonly name: string;
   readonly keyRoot: string;
+  /**
+   * Why the name is not one this product enrols, when it is not (`agentNameRefusal`). Such an agent
+   * signs nowhere and has no folder: every write is refused, naming the name that came, and
+   * {@link keyRoot} is not a place anything reads or makes.
+   */
+  readonly unnamed?: string;
 }
 
 /**
@@ -140,9 +146,13 @@ export function agentKeyRoot(env: DiscoveryEnv, name: string): string {
 /**
  * `trees`, with the agent `name` to sign as where the record enrols it. The name is the one the
  * agent was enrolled under, which is also its folder: a value that is not an agent name
- * (`agentNameRefusal`) throws before it reaches the file system.
+ * (`agentNameRefusal`) never reaches the file system. It is not dropped either — the agent was
+ * asked for, and a write that fell back to the person's key would answer a question nobody asked —
+ * so it comes back marked, and every write in these trees is refused ({@link AgentSigning.unnamed}).
  */
 export function withAgentKey(trees: ResolvedTrees, env: DiscoveryEnv, name: string): ResolvedTrees {
+  const unnamed = agentNameRefusal(name);
+  if (unnamed !== undefined) return { ...trees, agent: { name, keyRoot: trees.keyRoot, unnamed } };
   return { ...trees, agent: { name, keyRoot: agentKeyRoot(env, name) } };
 }
 
