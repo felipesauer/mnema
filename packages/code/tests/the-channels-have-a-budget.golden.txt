@@ -8,10 +8,10 @@ instructions                                 2044 B      470 tok
 edit: rules pushed                            334 B       93 tok
 edit: asks for a person                       518 B      138 tok
 edit: refuses the write                       646 B      185 tok
-tool answer: bootstrap                       2418 B      936 tok
+tool answer: bootstrap                       2104 B      784 tok
 tool answer: skills                           305 B       90 tok
-tool answer: focus                            899 B      371 tok
-tool answer: resume                          1441 B      591 tok
+tool answer: focus                            743 B      295 tok
+tool answer: resume                          1127 B      439 tok
 tool answer: search                          1251 B      452 tok
 tool answer: search ["term"]                  231 B       85 tok
 tool answer: read_record ["id"]               691 B      271 tok
