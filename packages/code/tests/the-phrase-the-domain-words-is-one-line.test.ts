@@ -1543,6 +1543,16 @@ const CLASSIFIED: Readonly<Record<string, { verdict: Verdict; why: string }>> = 
       verdict: 'collapsed',
       why: 'a FILE NAME in the key root, stripped of its suffix — whatever the directory holds',
     },
+  '@mnema/core identity/restore.ts «the key {} is an agent key of {} — it signs » oneLine(keyPair.fingerprint) #1':
+    {
+      verdict: 'collapsed',
+      why: 'the fingerprint re-derived from the private key file `key restore` was handed, in the refusal that says the key is an agent’s',
+    },
+  '@mnema/core identity/restore.ts «the key {} is an agent key of {} — it signs » oneLine(found.anchor) #1':
+    {
+      verdict: 'collapsed',
+      why: 'the identity the record proves the key an agent of, named by whoever vouched for it',
+    },
   '@mnema/core identity/handshake.ts «"{}" is not an identity id — an identity looks like » oneLine(input.anchor) #2':
     {
       verdict: 'collapsed',
@@ -1936,9 +1946,9 @@ describe('every value the domain puts in a sentence is classified', () => {
     // are equal. The scale is stated, and so is what the HANDOFF said — twenty-three
     // sites, twelve in `core` and eleven in `chain` — because it counted sentences
     // written at a `message:` or a `detail:` directly, and a value is not a sentence.
-    expect(SITES.length).toBe(264);
+    expect(SITES.length).toBe(266);
     expect(FOUND[0]?.sites.length).toBe(93);
-    expect(FOUND[1]?.sites.length).toBe(171);
+    expect(FOUND[1]?.sites.length).toBe(173);
     expect(FOUND.flatMap((layer) => layer.wording).length).toBeGreaterThan(15);
   });
 
@@ -1988,11 +1998,11 @@ describe('every value the domain puts in a sentence is classified', () => {
     // No arm of the case above may be empty, or that much of it is vacuous.
     const verdicts = Object.values(CLASSIFIED).map((said) => said.verdict);
     const count = (verdict: Verdict): number => verdicts.filter((said) => said === verdict).length;
-    expect(count('collapsed')).toBe(180);
+    expect(count('collapsed')).toBe(182);
     expect(count('minted')).toBe(61);
     expect(count('composed')).toBe(23);
     expect(SITES.filter((site) => new RegExp(`\\b${DOOR}\\b`).test(site.expression))).toHaveLength(
-      180,
+      182,
     );
   });
 

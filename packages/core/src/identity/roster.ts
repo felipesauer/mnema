@@ -566,21 +566,22 @@ export function enrollAgentFromRequest(
           refuse: { ok: true, fingerprint, name: request.name, anchor, alreadyAgent: true },
         };
       }
-      if (held !== undefined) {
-        return {
-          refuse: {
-            ok: false,
-            code: 'AGENT_UNDER_ANOTHER_NAME',
-            message:
-              `the key ${oneLine(fingerprint)} is already ${oneLine(anchor)}'s agent "${oneLine(held)}" — ` +
-              'a key keeps the name it was enrolled under, so retire it first and make the agent a key of its own',
-          },
-        };
+      if (held !== undefined) return { refuse: underAnotherName(fingerprint, anchor, held) };
+      const query = { tree: ctx.layout.root, upcasters: ctx.upcasters };
+      const membership = membershipIn(query, request.key);
+      // The record is read ONCE MORE here, outside the reading `agents` came from, and another
+      // enrolment of this very key may have landed in between: the key is then proven an agent of
+      // this identity, which is the role it was asked for and not a member's. Said by what the
+      // record holds now, under the name it holds it.
+      if (membership.ok && membership.membership === 'agent' && membership.anchor === anchor) {
+        const now = rosterByRole(query, anchor).agents.get(fingerprint);
+        if (now === request.name) {
+          return {
+            refuse: { ok: true, fingerprint, name: request.name, anchor, alreadyAgent: true },
+          };
+        }
+        if (now !== undefined) return { refuse: underAnotherName(fingerprint, anchor, now) };
       }
-      const membership = membershipIn(
-        { tree: ctx.layout.root, upcasters: ctx.upcasters },
-        request.key,
-      );
       if (membership.ok || membership.code === 'AMBIGUOUS_MEMBERSHIP') {
         return {
           refuse: {
@@ -619,6 +620,21 @@ export function enrollAgentFromRequest(
       };
     },
   );
+}
+
+/** The refusal of a key that already holds a name as an agent of `anchor`: a key keeps the name it was enrolled under. */
+function underAnotherName(
+  fingerprint: string,
+  anchor: string,
+  held: string,
+): { readonly ok: false; readonly code: 'AGENT_UNDER_ANOTHER_NAME'; readonly message: string } {
+  return {
+    ok: false,
+    code: 'AGENT_UNDER_ANOTHER_NAME',
+    message:
+      `the key ${oneLine(fingerprint)} is already ${oneLine(anchor)}'s agent "${oneLine(held)}" — ` +
+      'a key keeps the name it was enrolled under, so retire it first and make the agent a key of its own',
+  };
 }
 
 /** The agent key is held or retired somewhere a write to the other trees would contradict. */
