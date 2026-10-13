@@ -291,13 +291,30 @@ function ranTheVerb(argv, cwd, input) {
 }
 
 /**
+ * Whether a run did not happen to the end: the program was not found, or timed out.
+ *
+ * A CLOSED INPUT IS NOT THAT. A `mnema` that refuses an option at its arguments exits before it
+ * reads the payload, and a payload larger than the pipe then meets a closed one: `spawnSync`
+ * reports `EPIPE`, with the `status` and the second stream the program left, so what it said is
+ * read as it would be had the write gone through.
+ *
+ * @param {import('node:child_process').SpawnSyncReturns<string>} ran
+ * @returns {boolean}
+ */
+function didNotRun(ran) {
+  return (
+    ran.error !== undefined && /** @type {NodeJS.ErrnoException} */ (ran.error).code !== 'EPIPE'
+  );
+}
+
+/**
  * What a run of the verb says for the host, or `null` where it says nothing.
  *
  * @param {import('node:child_process').SpawnSyncReturns<string>} ran
  * @returns {string | null}
  */
 function answerOf(ran) {
-  if (ran.error !== undefined || ran.status !== 0) return null;
+  if (didNotRun(ran) || ran.status !== 0) return null;
   const text = ran.stdout ?? '';
   return text.trim() === '' || text.trim() === '{}' ? null : text;
 }
@@ -418,7 +435,7 @@ function running(verb, flags, cwd) {
  * @returns {boolean}
  */
 function refusesTheFlag(ran, flags) {
-  if (ran.error !== undefined || ran.status === 0) return false;
+  if (didNotRun(ran) || ran.status === 0) return false;
   const said = ran.stderr ?? '';
   return flags.some((flag) => flag.startsWith('--') && said.includes(flag));
 }

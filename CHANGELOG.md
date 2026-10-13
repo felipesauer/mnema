@@ -119,6 +119,9 @@ tag, with its own changelog.
 
 ### Fixed
 
+- **The hook handler no longer fails to fall back when an older `mnema`, which refuses `--agent-key`, exits before
+  reading its input.** A payload larger than the pipe met the closed pipe, and the handler took that for a failed
+  run: it did not ask again without the option and answered nothing.
 - **The agent-key verbs say what they wrote, tree by tree, and refuse what cannot be an agent's key.** A
   `key enroll --agent` run again over a partial enrolment no longer says `Enrolled agent` when nothing was
   written; a tree that cannot be written after others took the vouch is named with what the others kept, for

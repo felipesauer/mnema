@@ -732,6 +732,86 @@ describe('the handler asks again without the agent key of a mnema that does not 
   });
 });
 
+describe('a mnema that exits before it reads its input is still asked the way it understands', () => {
+  /** A `mnema` that exits at the arguments, so a large payload meets a closed pipe. */
+  const exitingAt = (dir: string, name: string, refusal: string): string => {
+    const path = join(dir, name);
+    writeFileSync(
+      path,
+      [
+        '#!/bin/sh',
+        `echo "$@" >> '${join(dir, 'calls.txt')}'`,
+        `case "$*" in *--agent-key*) echo "${refusal}" >&2; exit 1;; esac`,
+        'cat >/dev/null',
+        'echo \'{"hookSpecificOutput":{"permissionDecision":"deny"}}\'',
+      ].join('\n'),
+      { mode: 0o755 },
+    );
+    return path;
+  };
+  const ask = async (
+    dir: string,
+    binary: string,
+    padding: number,
+  ): Promise<{ answered: string | null; calls: string[] }> => {
+    writeFileSync(join(dir, 'calls.txt'), '');
+    const before = process.env.CLAUDE_PLUGIN_OPTION_MNEMA_PATH;
+    process.env.CLAUDE_PLUGIN_OPTION_MNEMA_PATH = binary;
+    try {
+      const { whatTheGateAnswers } = await import('../../../plugin/hooks/hand-over.mjs');
+      const answered = await whatTheGateAnswers(
+        ['--host', 'vscode', '--tools', 'create_file', '--agent-key', 'vscode'],
+        {},
+        repo,
+        async () => JSON.stringify({ tool_name: 'create_file', content: 'x'.repeat(padding) }),
+      );
+      return {
+        answered,
+        calls: readFileSync(join(dir, 'calls.txt'), 'utf-8').trim().split('\n'),
+      };
+    } finally {
+      if (before === undefined) delete process.env.CLAUDE_PLUGIN_OPTION_MNEMA_PATH;
+      else process.env.CLAUDE_PLUGIN_OPTION_MNEMA_PATH = before;
+    }
+  };
+
+  it.each([
+    ['a payload larger than the pipe', 300_000],
+    ['a small payload', 10],
+  ])('falls back without the key for one that refuses the option, with %s', async (_, padding) => {
+    const dir = mkdtempSync(join(tmpdir(), 'mnema-old-binary-'));
+    try {
+      const { answered, calls } = await ask(
+        dir,
+        exitingAt(dir, 'old-mnema', "error: unknown option '--agent-key'"),
+        padding,
+      );
+      expect(answered).toContain('"permissionDecision":"deny"');
+      expect(calls).toEqual([
+        'before-a-write --host vscode --agent-key vscode',
+        'before-a-write --host vscode',
+      ]);
+    } finally {
+      rmSync(dir, { recursive: true, force: true });
+    }
+  });
+
+  it('does not take a closed pipe for a refusal of the option when it exited for another reason', async () => {
+    const dir = mkdtempSync(join(tmpdir(), 'mnema-failing-binary-'));
+    try {
+      const { answered, calls } = await ask(
+        dir,
+        exitingAt(dir, 'failing-mnema', 'error: the record cannot be read'),
+        300_000,
+      );
+      expect(answered).toBeNull();
+      expect(calls).toEqual(['before-a-write --host vscode --agent-key vscode']);
+    } finally {
+      rmSync(dir, { recursive: true, force: true });
+    }
+  });
+});
+
 describe('mnema doctor says what the agent keys are', () => {
   const findings = (processEnv: NodeJS.ProcessEnv = {}): string[] =>
     runDoctor({
