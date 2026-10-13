@@ -86,14 +86,15 @@ tag, with its own changelog.
   written in at all. The session opens and serves its reads now, and each write is refused in the tree it was for, with
   the verb to run. The key of a machine that has none is made at its first write, as before, and no longer to answer a
   read. `guard` reads the move and its proof by the tree of the task, whichever root the host listed first, and where
-  no enrolled agent signs in that tree it says the enrolment refusal. It does not foresee a refusal that comes from
+  no enrolled agent signs in that tree and your own key is not on this machine it says the enrolment refusal (and
+  `REVOKED_KEY`, where the agent was retired). It does not foresee a refusal that comes from
   the key (the person's key protected with no passphrase at hand, an agent that was retired): there `guard` can say
   ok and the write be refused, as it could before. One limit stays: a connection whose first
   signer is in a project it did not list first reads `resume` and `focus` with no actor and no last run, because those
   read the trees of the project it opened in.
 - **The command line and the hook read `MNEMA_AGENT_KEY`, and make nothing for the agent.** The verbs that write a
   fact an agent's key may sign (`decision record`, `decision move`, `decision import`, `memory`, `observe`, `task`,
-  `skill`, `link`, `unlink`, `retract`, `handoff`, `switch`, `tail prune`, `run`, `stack`, `check` declare, and the
+  `skill`, `link`, `unlink`, `retract`, `handoff`, `switch`, `tail prune`, `run`, `stack`, `check declare`, and the
   `corrections` and `promote`, which write through them) now read the variable as the server does: where the record of
   the tree written enrols the agent's key, the fact is signed by it and names the agent the record gives it, and a `--which` that names
   another is not recorded (one line on the error stream says so); where it does not, your own key signs when it opens

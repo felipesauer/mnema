@@ -1957,7 +1957,8 @@ export type GuardResult =
  *
  * The authority simulated is the machine's own — never a client-supplied value — and the one that
  * signs in the TASK's tree: the same answer whichever root the workspace lists first, and, where
- * no enrolled agent signs in that tree, the enrolment refusal. It does NOT foresee the refusal
+ * no enrolled agent signs in that tree and the person's own key is not on this machine, the enrolment
+ * refusal (and `REVOKED_KEY`, where the agent was retired). It does NOT foresee the refusal
  * that comes from the KEY itself (the person's key protected with no passphrase at hand, an
  * agent that was retired): there the guard can say ALLOWED and the write be refused. It is paired with the actor's
  * focus, so the agent gets "you may (or may not) do this, and here is what you

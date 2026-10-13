@@ -60,10 +60,6 @@ function targetOf(
 }
 
 /**
- * A refusal as the report takes it: no project is the product's one sentence for it, and any
- * other carries what stands in the way folded into its one line.
- */
-/**
  * The same context, saying each line once: an install asks where it writes in more than one step,
  * and the line about an agent key that was ignored is one line, not one per step.
  */
@@ -79,6 +75,10 @@ function onceSaid(ctx: HereWriting): HereWriting {
   };
 }
 
+/**
+ * A refusal as the report takes it: no project is the product's one sentence for it, and any
+ * other carries what stands in the way folded into its one line.
+ */
 function said(refused: { code: string; message: string; lines?: readonly string[] }): {
   reason: string;
   code: string;
