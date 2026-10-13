@@ -34,7 +34,7 @@
 import type { Command } from 'commander';
 import { RECORD_CONTRACT_HELP } from '../recorded-content.js';
 import { addBodySourceOptions } from './body-source.js';
-import { here } from './context.js';
+import { here, hereWriting } from './context.js';
 import {
   actionsRequiring,
   enumeratedArgument,
@@ -167,7 +167,7 @@ export function registerSkill(program: Command, wiring: Wiring): Declared {
       io.fail();
       return;
     }
-    const result = runSkill(here(), {
+    const result = runSkill(hereWriting(wiring), {
       name,
       body,
       ...(scope !== undefined ? { scope } : {}),
@@ -226,7 +226,7 @@ export function registerSkill(program: Command, wiring: Wiring): Declared {
       io.fail();
       return;
     }
-    const result = runSkillTransition(here(), {
+    const result = runSkillTransition(hereWriting(wiring), {
       id,
       action,
       proof: {

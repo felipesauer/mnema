@@ -28,18 +28,18 @@
  */
 
 import { catalogUpcasters } from '@mnema/chain';
-import {
-  chainRootForScope,
-  type DiscoveryEnv,
-  resolveScope,
-  resolveTrees,
-  type Scope,
-} from '@mnema/core';
+import { chainRootForScope, type DiscoveryEnv, resolveScope, type Scope } from '@mnema/core';
 import { openTreeForWriting, recordDecision } from '@mnema/core/write';
 import { forwardReplacement, type Landed, type Replacement } from '../recorded-content.js';
+import {
+  type AgentWrites,
+  originOfTheWrite,
+  treesToWrite,
+  whichOfTheWrite,
+} from './write-as-the-agent.js';
 
 /** What the decision command needs — injected so it is testable. */
-export interface DecisionContext {
+export interface DecisionContext extends Pick<AgentWrites, 'agentKey' | 'say'> {
   /** The working directory to resolve the project from. */
   readonly cwd: string;
   /** The discovery environment (`$HOME`, `$MNEMA_HOME`). */
@@ -87,17 +87,26 @@ export function runDecision(
     alternatives?: string;
     scope?: Scope;
     which?: string;
+    /** The `which` is a name the product declares itself, not one a person typed: no line speaks of it. */
+    whichIsOwn?: true;
     run?: string;
   },
 ): DecisionRecorded | DecisionRefused {
-  const trees = resolveTrees(ctx.cwd, ctx.env);
-  const scope = resolveScope('decision.recorded', { which: input.which }, input.scope);
+  const writing = treesToWrite(ctx);
+  const { trees } = writing;
+  const scope = resolveScope(
+    'decision.recorded',
+    originOfTheWrite(writing, input.which),
+    input.scope,
+  );
   // A project scope needs a project; global does not. Guard the resolved scope,
   // not the flag, so an omitted flag (default public) outside a project refuses
   // just as an explicit `--scope public` would.
   if (scope !== 'global' && trees.projectPublic === undefined) {
     return { ok: false, reason: 'NO_PROJECT' };
   }
+
+  const which = whichOfTheWrite(writing, scope, input.which, input.whichIsOwn === undefined);
 
   const writer = openTreeForWriting(trees, scope);
   const recorded = writer.exclusively(() => {
@@ -111,7 +120,7 @@ export function runDecision(
         title: input.title,
         rationale: input.rationale,
         ...(input.alternatives !== undefined ? { alternatives: input.alternatives } : {}),
-        ...(input.which !== undefined ? { which: input.which } : {}),
+        ...(which !== undefined ? { which } : {}),
         ...(input.run !== undefined ? { run: input.run } : {}),
       },
     );

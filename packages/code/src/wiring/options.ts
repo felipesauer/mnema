@@ -19,7 +19,9 @@ import { type Reporter, reportUsage } from './report.js';
  * The help for `--which`, one wording on every writing verb.
  *
  * `which` is the agent that EXECUTED, and it is DECLARED, not detected — there is
- * nothing on a command line to detect it from. Omitting it says a person acted
+ * nothing on a command line to detect it from. (A shell that exports `MNEMA_AGENT_KEY` declares
+ * it once for every verb that writes, and where the record enrols that agent's key the fact names
+ * the agent as the record does, whatever this flag says.) Omitting it says a person acted
  * directly, which is what the record then asserts, so an agent driving the CLI (a
  * script, a CI step, an agent with no MCP server) has to name itself or the record
  * credits its work to the person. The MCP surface has the same field filled from
@@ -36,9 +38,10 @@ import { type Reporter, reportUsage } from './report.js';
  */
 export const WHICH_HELP =
   'the agent that executed this, when an agent (a script, a CI step) is driving ' +
-  'mnema — omit it when you are acting directly. Declared, never assumed; it names ' +
-  'the executor. See --scope for where the fact lands. A value that ' +
-  'names no agent (an unset variable) is refused, never credited to you.';
+  'mnema — omit it when you are acting directly. Declared — by this flag, or by ' +
+  'MNEMA_AGENT_KEY — never assumed; where that agent’s key signs, the fact names the ' +
+  'agent as the record does. It names the executor. See --scope for where the fact lands. ' +
+  'A value that names no agent (an unset variable) is refused, never credited to you.';
 
 /**
  * What a `--which` that names nobody is told.

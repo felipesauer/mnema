@@ -130,6 +130,7 @@ export function runCorrections(
       rationale: rationaleOf(one),
       scope: 'private',
       which: READER,
+      whichIsOwn: true,
     });
     if (done.ok) adrs.push(done.adr);
     else {

@@ -13,7 +13,7 @@
 
 import type { Command } from 'commander';
 import { RECORD_CONTRACT_HELP } from '../recorded-content.js';
-import { here } from './context.js';
+import { hereWriting } from './context.js';
 import { scopeOption } from './enumerated.js';
 import { fromTheGroup, REFUSED } from './from-the-group.js';
 import { onOneLine } from './on-one-line.js';
@@ -52,7 +52,7 @@ export function registerHandoff(task: Command, wiring: Wiring): Declared {
         io.fail();
         return;
       }
-      const result = runHandoff(here(), {
+      const result = runHandoff(hereWriting(wiring), {
         task: taskId,
         fromAgent: from,
         toAgent: to,

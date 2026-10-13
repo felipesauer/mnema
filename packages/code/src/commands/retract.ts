@@ -20,13 +20,13 @@ import {
   type DiscoveryEnv,
   locateEntityScopeWith,
   replayingRecordProbe,
-  resolveTrees,
 } from '@mnema/core';
 import { openTreeForWriting, retractNote } from '@mnema/core/write';
 import { forwardReplacement, type Landed, type Replacement } from '../recorded-content.js';
+import { type AgentWrites, treesToWrite, whichOfTheWrite } from './write-as-the-agent.js';
 
 /** What the retract command needs — injected so it is testable. */
-export interface RetractContext {
+export interface RetractContext extends Pick<AgentWrites, 'agentKey' | 'say'> {
   /** The working directory to resolve the project from. */
   readonly cwd: string;
   /** The discovery environment (`$HOME`, `$MNEMA_HOME`). */
@@ -64,11 +64,14 @@ export function runRetract(
   input: { id: string; reason: string; which?: string; run?: string },
 ): NoteRetracted | RetractRefused {
   const upcasters = catalogUpcasters();
-  const trees = resolveTrees(ctx.cwd, ctx.env);
+  const writing = treesToWrite(ctx);
+  const { trees } = writing;
   const scope = locateEntityScopeWith(trees, input.id, replayingRecordProbe(upcasters));
   if (scope === undefined) {
     return { ok: false, reason: trees.projectPublic === undefined ? 'NO_PROJECT' : 'UNKNOWN_NOTE' };
   }
+
+  const which = whichOfTheWrite(writing, scope, input.which);
 
   const writer = openTreeForWriting(trees, scope);
   const retracted = writer.exclusively(() => {
@@ -77,7 +80,7 @@ export function runRetract(
       {
         id: input.id,
         reason: input.reason,
-        ...(input.which !== undefined ? { which: input.which } : {}),
+        ...(which !== undefined ? { which } : {}),
         ...(input.run !== undefined ? { run: input.run } : {}),
       },
     );

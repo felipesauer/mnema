@@ -9,7 +9,7 @@
 import type { Command } from 'commander';
 import { RECORD_CONTRACT_HELP } from '../recorded-content.js';
 import { addBodySourceOptions } from './body-source.js';
-import { here } from './context.js';
+import { hereWriting } from './context.js';
 import { scopeOption } from './enumerated.js';
 import { REFUSED } from './from-the-group.js';
 import { declaredAgent, INVALID, parseScope, WHICH_HELP } from './options.js';
@@ -53,7 +53,7 @@ export function registerMemory(program: Command, wiring: Wiring): Declared {
         io.fail();
         return;
       }
-      const result = runMemory(here(), {
+      const result = runMemory(hereWriting(wiring), {
         content,
         ...(scope !== undefined ? { scope } : {}),
         ...(opts.which !== undefined ? { which: opts.which } : {}),

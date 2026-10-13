@@ -954,7 +954,7 @@ describe('mnema doctor says what the agent keys are', () => {
 
   it('says a host asked for an agent this machine holds no key for, and stays quiet once the key is protected', async () => {
     expect(findings({ MNEMA_AGENT_KEY: 'gemini' })).toEqual([
-      'attention MNEMA_AGENT_KEY asks this process to sign as the agent "gemini", and this machine holds no key under that name: it signs as you instead — `mnema key request --agent gemini --anchor <your identity>` makes one.',
+      'attention MNEMA_AGENT_KEY asks this process to sign as the agent "gemini", and this machine holds no key under that name: this process, and a command run with it, signs as you — or is refused, where your own key is protected and MNEMA_KEY_PASSPHRASE is not in the environment, or is not on this machine — `mnema key request --agent gemini --anchor <your identity>` makes one.',
     ]);
     // The placeholder a host that does not know the substitution leaves as it was written.
     const unsubstituted = ['$', '{user_config.agent_key}'].join('');
@@ -1021,7 +1021,7 @@ describe('the agent key never makes the person’s key, nor an identity of its o
     });
 
     expect(reply?.isError).toBe(true);
-    // The session does not open (nobody here can say who it is), so the words go out as thrown.
+    // The session opens and reads; the write is the one refused, in the words of its tree.
     const said = textOf(reply as Reply);
     expect(said).toContain('the agent "claude" is not enrolled in');
     expect(said).toContain('mnema key enroll --agent');

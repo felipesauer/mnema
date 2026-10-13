@@ -14,13 +14,14 @@
  */
 
 import { catalogUpcasters } from '@mnema/chain';
-import { chainRootForScope, type DiscoveryEnv, locateLinkScope, resolveTrees } from '@mnema/core';
+import { chainRootForScope, type DiscoveryEnv, locateLinkScope } from '@mnema/core';
 import { openTreeForWriting, retractLink } from '@mnema/core/write';
 import { resolveAddress } from '../label-as-address.js';
 import { forwardReplacement, type Landed, type Replacement } from '../recorded-content.js';
+import { type AgentWrites, treesToWrite, whichOfTheWrite } from './write-as-the-agent.js';
 
 /** What the unlink command needs — injected so it is testable. */
-export interface UnlinkContext {
+export interface UnlinkContext extends Pick<AgentWrites, 'agentKey' | 'say'> {
   /** The working directory to resolve the project from. */
   readonly cwd: string;
   /** The discovery environment (`$HOME`, `$MNEMA_HOME`). */
@@ -66,11 +67,14 @@ export function runUnlink(
   const edge = { subject: subject.id, target: target.id, rel: input.rel };
 
   const upcasters = catalogUpcasters();
-  const trees = resolveTrees(ctx.cwd, ctx.env);
+  const writing = treesToWrite(ctx);
+  const { trees } = writing;
   const scope = locateLinkScope(trees, edge, upcasters);
   if (scope === undefined) {
     return { ok: false, reason: trees.projectPublic === undefined ? 'NO_PROJECT' : 'UNKNOWN_LINK' };
   }
+
+  const which = whichOfTheWrite(writing, scope, input.which);
 
   const writer = openTreeForWriting(trees, scope);
   const retracted = writer.exclusively(() => {
@@ -79,7 +83,7 @@ export function runUnlink(
       {
         ...edge,
         reason: input.reason,
-        ...(input.which !== undefined ? { which: input.which } : {}),
+        ...(which !== undefined ? { which } : {}),
         ...(input.run !== undefined ? { run: input.run } : {}),
       },
     );

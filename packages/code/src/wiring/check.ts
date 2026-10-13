@@ -14,7 +14,7 @@
 import type { Command } from 'commander';
 import { fact } from '../presentation/detail.js';
 import { RECORD_CONTRACT_HELP } from '../recorded-content.js';
-import { here } from './context.js';
+import { here, hereWriting } from './context.js';
 import { onOneLine } from './on-one-line.js';
 import { declaredAgent } from './options.js';
 import { idOrRefuse, reportRecorded, reportRefusal } from './report.js';
@@ -58,7 +58,7 @@ export function registerCheck(program: Command, wiring: Wiring): Declared {
       const { runCheckDeclare } = await import('../commands/check.js');
       const named = await idOrRefuse(wiring, rule);
       if (named === undefined) return;
-      const result = runCheckDeclare(here(), {
+      const result = runCheckDeclare(hereWriting(wiring), {
         rule: named,
         command,
         args,

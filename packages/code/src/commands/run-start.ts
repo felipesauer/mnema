@@ -30,12 +30,13 @@
  */
 
 import { catalogUpcasters } from '@mnema/chain';
-import { canonicalIdentity, chainRootForScope, type DiscoveryEnv, resolveTrees } from '@mnema/core';
+import { canonicalIdentity, chainRootForScope, type DiscoveryEnv } from '@mnema/core';
 import { openTreeForWriting, startRun } from '@mnema/core/write';
 import { forwardReplacement, type Replacement } from '../recorded-content.js';
+import { type AgentWrites, treesToWrite, whichOfTheWrite } from './write-as-the-agent.js';
 
 /** What the run-start command needs — injected so it is testable. */
-export interface RunStartContext {
+export interface RunStartContext extends Pick<AgentWrites, 'agentKey' | 'say'> {
   /** The working directory to resolve the project from. */
   readonly cwd: string;
   /** The discovery environment (`$HOME`, `$MNEMA_HOME`). */
@@ -77,8 +78,8 @@ export function runRunStart(
 ): RunStarted | RunStartRefused {
   // The core's rule for "was an agent named", applied before anything is opened:
   // a blank one would reach the chain as a run that names nobody.
-  const agent = canonicalIdentity(input.agent);
-  if (agent === undefined) {
+  const named = canonicalIdentity(input.agent);
+  if (named === undefined) {
     return {
       ok: false,
       reason: 'REFUSED',
@@ -87,12 +88,14 @@ export function runRunStart(
     };
   }
 
-  const trees = resolveTrees(ctx.cwd, ctx.env);
+  const writing = treesToWrite(ctx);
+  const { trees } = writing;
   const root = chainRootForScope(trees, 'public');
   if (root === undefined) {
     return { ok: false, reason: 'NO_PROJECT' };
   }
 
+  const agent = whichOfTheWrite(writing, 'public', named) ?? named;
   const writer = openTreeForWriting(trees, 'public');
   const started = writer.exclusively(() => {
     const written = startRun(

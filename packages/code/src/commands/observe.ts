@@ -28,18 +28,18 @@
  */
 
 import { catalogUpcasters } from '@mnema/chain';
-import {
-  chainRootForScope,
-  type DiscoveryEnv,
-  resolveScope,
-  resolveTrees,
-  type Scope,
-} from '@mnema/core';
+import { chainRootForScope, type DiscoveryEnv, resolveScope, type Scope } from '@mnema/core';
 import { openTreeForWriting, recordObservation } from '@mnema/core/write';
 import { forwardReplacement, type Landed, type Replacement } from '../recorded-content.js';
+import {
+  type AgentWrites,
+  originOfTheWrite,
+  treesToWrite,
+  whichOfTheWrite,
+} from './write-as-the-agent.js';
 
 /** What the observe command needs — injected so it is testable. */
-export interface ObserveContext {
+export interface ObserveContext extends Pick<AgentWrites, 'agentKey' | 'say'> {
   /** The working directory to resolve the project from. */
   readonly cwd: string;
   /** The discovery environment (`$HOME`, `$MNEMA_HOME`). */
@@ -85,11 +85,18 @@ export function runObserve(
     run?: string;
   },
 ): ObservationRecorded | ObserveRefused {
-  const trees = resolveTrees(ctx.cwd, ctx.env);
-  const scope = resolveScope('observation.recorded', { which: input.which }, input.scope);
+  const writing = treesToWrite(ctx);
+  const { trees } = writing;
+  const scope = resolveScope(
+    'observation.recorded',
+    originOfTheWrite(writing, input.which),
+    input.scope,
+  );
   if (scope !== 'global' && trees.projectPublic === undefined) {
     return { ok: false, reason: 'NO_PROJECT' };
   }
+
+  const which = whichOfTheWrite(writing, scope, input.which);
 
   const writer = openTreeForWriting(trees, scope);
   const recorded = writer.exclusively(() => {
@@ -103,7 +110,7 @@ export function runObserve(
         about: input.about,
         topic: input.topic,
         text: input.text,
-        ...(input.which !== undefined ? { which: input.which } : {}),
+        ...(which !== undefined ? { which } : {}),
         ...(input.run !== undefined ? { run: input.run } : {}),
       },
     );

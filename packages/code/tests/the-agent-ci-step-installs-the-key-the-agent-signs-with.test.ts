@@ -429,10 +429,15 @@ describe('what the page says about it', () => {
     expect(prose).not.toContain("host's own configuration");
   });
 
-  it('gives the hook the flag only, and the server the flag or the variable', () => {
-    expect(pageProse()).toContain(
-      "signs with the agent's key when it is given `--agent-key ci` or has `MNEMA_AGENT_KEY=ci` in its environment, and the hook (`mnema before-a-write --host <host> --agent-key ci`) when it is given the flag.",
+  it('gives the server and the hook the flag or the variable, and says what the command line does with it', () => {
+    const prose = pageProse();
+    expect(prose).toContain(
+      "signs with the agent's key when it is given `--agent-key ci` or has `MNEMA_AGENT_KEY=ci` in its environment, and the hook (`mnema before-a-write --host <host> --agent-key ci`) when it is given the flag or has `MNEMA_AGENT_KEY`.",
     );
+    expect(prose).toContain(
+      'The command line reads `MNEMA_AGENT_KEY` too: a write made by hand in the job, such as a decision recorded from a step, signs as the agent where the committed record enrols it, and is refused elsewhere (`AGENT_NOT_ENROLLED`); nothing is minted. `mnema memory` without `--scope` goes to the private tree, as `capture_memory` does, and is refused there.',
+    );
+    expect(prose).not.toContain('The command line does not read `MNEMA_AGENT_KEY`');
   });
 
   it('says the file is read, not moved or deleted, and that the step removes its own', () => {

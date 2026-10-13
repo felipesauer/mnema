@@ -41,7 +41,7 @@
  */
 
 import { catalogUpcasters, type TransitionFields } from '@mnema/chain';
-import { chainRootForScope, DECISION_ACTIONS, type DiscoveryEnv, resolveTrees } from '@mnema/core';
+import { chainRootForScope, DECISION_ACTIONS, type DiscoveryEnv } from '@mnema/core';
 import {
   acceptDecision,
   openTreeForWriting,
@@ -57,9 +57,10 @@ import {
 } from '../moved-record.js';
 import { forwardReplacement, type Replacement } from '../recorded-content.js';
 import { locateEntityScopeKept, withScopedCaches } from '../tree-sources.js';
+import { type AgentWrites, treesToWrite, whichOfTheWrite } from './write-as-the-agent.js';
 
 /** What the transition command needs — injected so it is testable. */
-export interface DecisionTransitionContext {
+export interface DecisionTransitionContext extends Pick<AgentWrites, 'agentKey' | 'say'> {
   /** The working directory to resolve the project from. */
   readonly cwd: string;
   /** The discovery environment (`$HOME`, `$MNEMA_HOME`). */
@@ -134,7 +135,8 @@ export function runDecisionTransition(
   },
 ): DecisionTransitioned | DecisionTransitionRefused {
   const upcasters = catalogUpcasters();
-  const trees = resolveTrees(ctx.cwd, ctx.env);
+  const writing = treesToWrite(ctx);
+  const { trees } = writing;
 
   // A label that names one decision becomes its id here, for the decision and for a successor; one
   // that names several is refused with their ids before anything is looked up or written.
@@ -158,6 +160,7 @@ export function runDecisionTransition(
       : { ok: false, reason: 'UNKNOWN_DECISION' };
   }
 
+  const which = whichOfTheWrite(writing, scope, input.which);
   const root = chainRootForScope(trees, scope) as string;
   const writer = openTreeForWriting(trees, scope);
   const opCtx = { writer, layout: { root }, upcasters };
@@ -189,7 +192,7 @@ export function runDecisionTransition(
   // as it found it. Only an act declared with `--which` is an agent's on this surface; a person
   // at the prompt is not asked, and neither is any action but `accept`.
   const turnedAway = withScopedCaches(trees, (sources) =>
-    agentMayAccept(sources, { action: input.action, agent: input.which }),
+    agentMayAccept(sources, { action: input.action, agent: which }),
   );
   if (turnedAway !== undefined) return { ok: false, reason: 'REFUSED', ...turnedAway };
 
@@ -199,11 +202,11 @@ export function runDecisionTransition(
   // above and before the append is still seen (`DecisionTransitionInput.refusedWhen`).
   const stillAllowed = () =>
     withScopedCaches(trees, (sources) =>
-      agentMayAccept(sources, { action: input.action, agent: input.which }),
+      agentMayAccept(sources, { action: input.action, agent: which }),
     );
   const stamp = {
     refusedWhen: stillAllowed,
-    ...(input.which !== undefined ? { which: input.which } : {}),
+    ...(which !== undefined ? { which } : {}),
     ...(input.run !== undefined ? { run: input.run } : {}),
   };
   const moved = writer.exclusively(() => {
@@ -253,9 +256,7 @@ export function runDecisionTransition(
     adr,
     to: moved.to,
     ...(notice !== undefined ? { notice } : {}),
-    ...(input.action === 'accept' && input.which !== undefined
-      ? { acceptedByAgent: input.which }
-      : {}),
+    ...(input.action === 'accept' && which !== undefined ? { acceptedByAgent: which } : {}),
     ...forwardReplacement(moved),
   };
 }

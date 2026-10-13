@@ -784,7 +784,7 @@ function agentKeyFindings(ctx: DoctorContext): Finding[] {
     out.push(
       finding(
         'attention',
-        `${'MNEMA_AGENT_KEY'} asks this process to sign as the agent "${oneLine(asked)}", and this machine holds no key under that name: it signs as you instead — \`mnema key request --agent ${oneLine(asked)} --anchor <your identity>\` makes one.`,
+        `${'MNEMA_AGENT_KEY'} asks this process to sign as the agent "${oneLine(asked)}", and this machine holds no key under that name: this process, and a command run with it, signs as you — or is refused, where your own key is protected and MNEMA_KEY_PASSPHRASE is not in the environment, or is not on this machine — \`mnema key request --agent ${oneLine(asked)} --anchor <your identity>\` makes one.`,
       ),
     );
   }

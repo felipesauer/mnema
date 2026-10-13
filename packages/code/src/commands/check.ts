@@ -36,9 +36,10 @@ import {
 } from '@mnema/core/write';
 import { forwardReplacement, type Landed, type Replacement } from '../recorded-content.js';
 import { withCache } from '../tree-sources.js';
+import { type AgentWrites, treesToWrite, whichOfTheWrite } from './write-as-the-agent.js';
 
 /** What the check commands need — injected so they are testable. */
-export interface CheckContext {
+export interface CheckContext extends Pick<AgentWrites, 'agentKey' | 'say'> {
   /** The working directory to resolve the project from. */
   readonly cwd: string;
   /** The discovery environment (`$HOME`, `$MNEMA_HOME`). */
@@ -66,9 +67,11 @@ export function runCheckDeclare(
   ctx: CheckContext,
   input: { rule: string; command: string; args: readonly string[]; which?: string },
 ): CheckDeclared | CheckRefused {
-  const trees = resolveTrees(ctx.cwd, ctx.env);
+  const writing = treesToWrite(ctx);
+  const { trees } = writing;
   const root = trees.projectPublic;
   if (root === undefined) return { ok: false, reason: 'NO_PROJECT' };
+  const which = whichOfTheWrite(writing, 'public', input.which);
   const writer = openTreeForWriting(trees, 'public');
   const declared = writer.exclusively(() => {
     const written = declareCheck(
@@ -77,7 +80,7 @@ export function runCheckDeclare(
         rule: input.rule,
         command: input.command,
         ...(input.args.length > 0 ? { args: input.args } : {}),
-        ...(input.which !== undefined ? { which: input.which } : {}),
+        ...(which !== undefined ? { which } : {}),
       },
     );
     if (written.ok) writer.checkpoint();

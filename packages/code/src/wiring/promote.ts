@@ -20,7 +20,7 @@
 
 import type { Command } from 'commander';
 import { RECORD_CONTRACT_HELP } from '../recorded-content.js';
-import { here } from './context.js';
+import { here, hereWriting } from './context.js';
 import { writeLines } from './io.js';
 import { reportRecorded, reportRefusal, reportUsage } from './report.js';
 import { PIN_REFUSED } from './run-pin.js';
@@ -107,7 +107,7 @@ export function registerPromote(program: Command, wiring: Wiring): Declared {
       }
       const { runPromote } = await import('../commands/promote.js');
       const { promotionDone } = await import('../presentation/promoted.js');
-      const result = runPromote(here(), {
+      const result = runPromote(hereWriting(wiring), {
         id,
         evidence: opts.evidence ?? [],
         ...(run !== undefined ? { run } : {}),

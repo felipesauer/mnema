@@ -56,7 +56,6 @@ import {
   isStackVersion,
   orderedEvents,
   type ResolvedTrees,
-  resolveTrees,
 } from '@mnema/core';
 import { adoptStack, openTreeForWriting, removeStack } from '@mnema/core/write';
 import {
@@ -71,6 +70,12 @@ import { HOST_NAMES, HOSTS, type Place } from '../host-names.js';
 import { oneLine } from '../one-line.js';
 import { readStackSignature, type StackSignature } from './stack-signature.js';
 import type { SourceRead } from './stack-source.js';
+import {
+  type AgentWrites,
+  treesToWrite,
+  type Writing,
+  whichOfTheWrite,
+} from './write-as-the-agent.js';
 
 /** The three trees a stack is adopted into. */
 export type StackScope = 'public' | 'private' | 'global';
@@ -79,7 +84,7 @@ export type StackScope = 'public' | 'private' | 'global';
 export type StackTarget = { readonly scope: StackScope } | { readonly to: string };
 
 /** What every stack command reads from its surroundings. */
-export interface StackContext {
+export interface StackContext extends Pick<AgentWrites, 'agentKey'> {
   readonly cwd: string;
   readonly env: DiscoveryEnv;
 }
@@ -169,6 +174,8 @@ export interface Where {
   /** Every receipt folder whose files land under the same base — a project's two trees. */
   readonly neighbours: readonly string[];
   readonly trees?: ResolvedTrees;
+  /** The `which` the adoption or the removal is written with: the agent's, where its key signs. */
+  readonly which?: string;
 }
 
 export function whereOf(ctx: StackContext, target: StackTarget): Where | StackRefused {
@@ -184,12 +191,20 @@ export function whereOf(ctx: StackContext, target: StackTarget): Where | StackRe
     const receipts = join(base, '.mnema-stacks');
     return { base, side: 'project', receipts, neighbours: [receipts] };
   }
-  const trees = resolveTrees(ctx.cwd, ctx.env);
+  const writing = treesToWrite(ctx);
+  const { trees } = writing;
   const receiptsOf = (scope: StackScope): string =>
     join(chainRootForScope(trees, scope) as string, 'stacks');
   if (target.scope === 'global') {
     const receipts = receiptsOf('global');
-    return { base: ctx.env.home, side: 'user', receipts, neighbours: [receipts], trees };
+    return {
+      base: ctx.env.home,
+      side: 'user',
+      receipts,
+      neighbours: [receipts],
+      trees,
+      ...whichOf(writing, 'global'),
+    };
   }
   if (trees.projectPublic === undefined) {
     return refuse(
@@ -203,7 +218,14 @@ export function whereOf(ctx: StackContext, target: StackTarget): Where | StackRe
     receipts: receiptsOf(target.scope),
     neighbours: [receiptsOf('public'), receiptsOf('private')],
     trees,
+    ...whichOf(writing, target.scope),
   };
+}
+
+/** The `which` of a write in `scope`, as the other verbs stamp it; absent where nobody is named. */
+function whichOf(writing: Writing, scope: StackScope): { readonly which?: string } {
+  const which = whichOfTheWrite(writing, scope, undefined);
+  return which === undefined ? {} : { which };
 }
 
 /**
@@ -809,6 +831,7 @@ export function applyStackInstall(
         version: plan.version,
         digest: plan.digest,
         scope,
+        ...(where.which !== undefined ? { which: where.which } : {}),
       },
     );
     if (!adopted.ok) {
@@ -983,7 +1006,7 @@ export function removeInstalledStack(
         layout: { root: chainRootForScope(trees, scope) as string },
         upcasters: catalogUpcasters(),
       },
-      { name: input.name },
+      { name: input.name, ...(where.which !== undefined ? { which: where.which } : {}) },
     );
     if (!removedFact.ok) return refuse(removedFact.code, removedFact.message);
     writer.checkpoint();

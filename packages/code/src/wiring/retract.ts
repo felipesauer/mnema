@@ -8,7 +8,7 @@
 
 import type { Command } from 'commander';
 import { RECORD_CONTRACT_HELP } from '../recorded-content.js';
-import { here } from './context.js';
+import { hereWriting } from './context.js';
 import { noSuchRecord } from './no-such-record.js';
 import { declaredAgent } from './options.js';
 import { reportRecorded, reportRefusal } from './report.js';
@@ -44,7 +44,7 @@ export function registerRetract(program: Command, wiring: Wiring): Declared {
         io.fail();
         return;
       }
-      const result = runRetract(here(), {
+      const result = runRetract(hereWriting(wiring), {
         id,
         reason: opts.reason,
         ...(opts.which !== undefined ? { which: opts.which } : {}),
