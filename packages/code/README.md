@@ -1565,12 +1565,9 @@ landing can make is from the global tree into a project. `bootstrap` says how ma
 times the client has said so — **including zero**, because a re-read that changed
 nothing and one that never happened would otherwise look the same.
 
-When a workspace holds several projects, the answers of `search`, `read_record` and the `audit_*`
-reads name a project by its directory's name when no other project of the workspace has it, and by its
-whole path when one does; both are what a write's `project` argument takes, and `bootstrap`, from two
-projects up, gives the paths (`tests/the-answers-name-a-project-as-a-write-takes-it.test.ts`). A name that a second
-project later shares is refused as ambiguous, not resolved; but a name carried to a new connection
-whose workspace holds a different directory of that name resolves to that one.
+The answers of `search`, `read_record` and the `audit_*` reads name a project by its absolute path, never by
+its directory's name: a name can mean another directory on the next connection, a path cannot
+(`tests/an-answer-says-the-path-of-a-project.test.ts`). A write's `project` takes the path or the name.
 
 A write that names a `project` says, in its reply, the absolute directory it fell in
 (`In the project at /home/you/work/api.`). The name may have come from an earlier answer of

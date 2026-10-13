@@ -575,10 +575,7 @@ describe('accountability names it, whenever somebody asks', () => {
     const served = JSON.parse(reply.content[0]?.text as string) as {
       byProject: { project?: string; byWho: Author[] }[];
     };
-    // The one project of this workspace is named by its directory, which is `repo`.
-    const here = served.byProject.find((entry) => entry.project === 'repo');
-    expect(here).toBeDefined();
-    const agents = here?.byWho ?? [];
+    const agents = served.byProject.find((entry) => entry.project === repo)?.byWho ?? [];
 
     const printed = (
       JSON.parse(mnema(auditor, 'audit', 'accountability', '--json').stdout) as { byWho: Author[] }
