@@ -58,7 +58,6 @@
 
 import { catalogUpcasters } from '@mnema/chain';
 import {
-  agentNameRefusal,
   agentSignsIn,
   chainRootForScope,
   type DiscoveryEnv,
@@ -324,9 +323,11 @@ export interface Session {
    */
   readonly clientName: string;
   /**
-   * The agent this server was asked to sign as, where it is enrolled (`openSession`). The trees
-   * carry it for the choice of key (`agentSignsIn`); it is kept here to build the trees of a
-   * re-read the same way, and to say, for each tree, when it is not in force.
+   * The agent this server was asked to sign as (`openSession`), whatever the name: one the record
+   * enrols, one it does not, and one that is no agent name at all (`agentNameRefusal`), whose
+   * trees refuse every write. The trees carry it for the choice of key (`agentSignsIn`); it is
+   * kept here to build the trees of a re-read the same way, and to say, for each tree, when it is
+   * not in force.
    */
   readonly agentKey?: string;
   /**
@@ -523,7 +524,7 @@ export function openSession(input: OpenSessionInput): Session {
   );
   const { inProject, project, rung, passedOver } = resolved;
   const log = input.log ?? (() => {});
-  const agentKey = usableAgentKey(input.agentKey, log);
+  const agentKey = input.agentKey;
   const workspaceProjects = withTheAgentIn(resolved.workspaceProjects, input.env, agentKey);
   const trees = withTheAgent(resolved.trees, input.env, agentKey);
 
@@ -767,19 +768,6 @@ function sayWhereTheAgentIsNotInForce(
         : `agent key "${agentKey}" is not in force in ${where} — this machine holds no key under that name, or the record there does not enrol it as "${agentKey}": a write there is signed with the person's key, so the agent the facts name is declared, not attested. \`mnema key enroll --agent ${agentKey}\` where you hold your own key puts it in force (\`mnema key request --agent ${agentKey} --anchor <identity>\` first, if this machine holds no key under that name)`,
     );
   }
-}
-
-/**
- * The agent name this server will try to sign as: the one it was given, when it is a name this
- * product enrols — and otherwise none, said once, because a server that does not start over a
- * misspelt option is worse than one that signs as the person and says so.
- */
-function usableAgentKey(name: string | undefined, log: (line: string) => void): string | undefined {
-  if (name === undefined) return undefined;
-  const unnamed = agentNameRefusal(name);
-  if (unnamed === undefined) return name;
-  log(`agent key ignored — ${oneLine(unnamed)}; this server signs with the person's key`);
-  return undefined;
 }
 
 /** `trees`, told which agent to sign as where the record enrols it, when one is configured. */

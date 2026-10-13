@@ -46,6 +46,7 @@ import {
   AGENT_NAME,
   type AgentStanding,
   agentKeyRoot,
+  agentNameRefusal,
   agentStanding,
   type DiscoveryEnv,
   movePrivateTree,
@@ -780,7 +781,14 @@ function agentKeyFindings(ctx: DoctorContext): Finding[] {
       );
     }
   }
-  if (asked !== undefined && !held.includes(asked)) {
+  if (asked !== undefined && agentNameRefusal(asked) !== undefined) {
+    out.push(
+      finding(
+        'attention',
+        `MNEMA_AGENT_KEY asks this process to sign as "${oneLine(asked.length > 64 ? `${asked.slice(0, 64)}…` : asked)}", which is not a name an agent key is enrolled under, so a write made with it is refused (AGENT_NAME_REFUSED) and nothing is written: the name is a lower-case word of letters, digits, dots, dashes and underscores, 1 to 64 characters, starting with a letter or a digit. Set it to the name of an agent key, or unset it.`,
+      ),
+    );
+  } else if (asked !== undefined && !held.includes(asked)) {
     out.push(
       finding(
         'attention',

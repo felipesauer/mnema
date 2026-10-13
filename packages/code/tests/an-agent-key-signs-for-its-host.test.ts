@@ -579,13 +579,14 @@ describe('the server signs as the agent the record names', () => {
     expect(session.which).toBe('claude');
   });
 
-  it('ignores a name that is not one this product enrols, and says so', async () => {
+  it('serves a name that is not one this product enrols, makes no folder, and refuses its writes', async () => {
     let reply: Reply | undefined;
-    const log = await connected('claude-code', '../escape', repo, async (client) => {
+    await connected('claude-code', '../escape', repo, async (client) => {
       reply = await decide(client, 'a misspelt option');
     });
-    expect(reply?.isError).not.toBe(true);
-    expect(log.join('\n')).toContain('agent key ignored');
+    expect(reply?.isError).toBe(true);
+    expect(textOf(reply as Reply)).toContain('AGENT_NAME_REFUSED');
+    expect(events().some((event) => event.kind === 'decision.recorded')).toBe(false);
     expect(existsSync(join(home, '.mnema', 'escape'))).toBe(false);
   });
 
@@ -651,6 +652,105 @@ describe('the hook records as the agent the record names', () => {
     expect(answer(without).reason.startsWith(answer(done).reason)).toBe(true);
     expect(answer(without).reason).toContain('could not be recorded');
     expect(events().filter((event) => event.kind === 'channel.refused')).toHaveLength(1);
+  });
+});
+
+/**
+ * Every file under `dir` with a hash of what it holds, and every directory, even an empty one: a
+ * photograph of a tree, to compare two. An empty `identity/` is nothing a file listing sees, and it
+ * is what a write that made a key folder and then stopped leaves. A `locks/` directory holds the
+ * read caches a reading opens, which are no key and no fact.
+ */
+function photographOf(dir: string): string[] {
+  if (!existsSync(dir)) return [];
+  return readdirSync(dir, { recursive: true, withFileTypes: true })
+    .filter(
+      (entry) =>
+        !entry.parentPath.endsWith('/locks') && !(entry.isDirectory() && entry.name === 'locks'),
+    )
+    .map((entry) => {
+      const file = join(entry.parentPath, entry.name);
+      if (entry.isDirectory()) return `${file}/`;
+      return `${file} ${createHash('sha256').update(readFileSync(file)).digest('hex')}`;
+    })
+    .sort();
+}
+
+describe('a machine that holds only an agent’s key, asked for a name that is no agent’s', () => {
+  const WRONG = 'Claude';
+  /** The form the refusal says is accepted, and the name that came. */
+  const says = (text: string): void => {
+    expect(text).toContain('AGENT_NAME_REFUSED');
+    expect(text).toContain(`"${WRONG}"`);
+    expect(text).toContain('lower-case word');
+  };
+  const payloadOfAWrite = (): string =>
+    JSON.stringify({
+      hook_event_name: 'PreToolUse',
+      tool_name: 'create_file',
+      tool_input: { filePath: join(repo, 'src', 'billing', 'invoice.ts'), content: 'x' },
+      cwd: repo,
+    });
+
+  /** The machine of an agent alone: its folder, and the person's key and identity not on it. */
+  async function anAgentAlone(): Promise<void> {
+    const decision = (await did(undefined, 'decision', 'record', 'Billing is frozen', 'why')).match(
+      /\(([0-9a-f-]{20,})\)/,
+    )?.[1];
+    await did(undefined, 'decision', 'move', 'accept', decision as string, '--note', 'agreed');
+    await did(undefined, 'link', decision as string, 'src/billing', '--rel', 'refuses-a-write');
+    await anAgent('ci');
+    rmSync(join(home, '.mnema', 'identity'), { recursive: true, force: true });
+  }
+  const photograph = (): string[] => [
+    ...photographOf(join(home, '.mnema')),
+    ...photographOf(join(repo, '.mnema')),
+  ];
+
+  it('refuses the command line, names the name and the form, and makes nothing', async () => {
+    await anAgentAlone();
+    const before = photograph();
+    process.env.MNEMA_AGENT_KEY = WRONG;
+    let said: Said;
+    try {
+      said = await mnema(undefined, 'decision', 'record', 'A typo in the variable', 'why');
+    } finally {
+      delete process.env.MNEMA_AGENT_KEY;
+    }
+
+    expect(said.failed).toBe(true);
+    says(said.out + said.err);
+    expect(photograph()).toEqual(before);
+    expect(existsSync(join(home, '.mnema', 'identity'))).toBe(false);
+  });
+
+  it('refuses the server’s write, and a connection that only reads leaves the machine as it was', async () => {
+    await anAgentAlone();
+    const before = photograph();
+    let reply: Reply | undefined;
+    await connected('claude-code', WRONG, repo, async (client) => {
+      reply = await decide(client, 'a typo in the variable');
+    });
+
+    expect(reply?.isError).toBe(true);
+    says(textOf(reply as Reply));
+    expect(photograph()).toEqual(before);
+  });
+
+  it('does not record what the hook met, and says why, and the charge is still answered', async () => {
+    await anAgentAlone();
+    const before = photograph();
+
+    const done = runBeforeAWrite(
+      { cwd: repo, env, agentKey: WRONG },
+      { host: 'vscode', payload: payloadOfAWrite() },
+    );
+
+    expect(done.notes.join('\n')).toContain('could not be recorded');
+    expect(done.notes.join('\n')).toContain(`"${WRONG}" cannot sign`);
+    expect(done.notes.join('\n')).toContain('lower-case word');
+    expect(JSON.stringify(done)).toContain('deny');
+    expect(photograph()).toEqual(before);
   });
 });
 
@@ -955,6 +1055,10 @@ describe('mnema doctor says what the agent keys are', () => {
   it('says a host asked for an agent this machine holds no key for, and stays quiet once the key is protected', async () => {
     expect(findings({ MNEMA_AGENT_KEY: 'gemini' })).toEqual([
       'attention MNEMA_AGENT_KEY asks this process to sign as the agent "gemini", and this machine holds no key under that name: this process, and a command run with it, signs as you — or is refused, where your own key is protected and MNEMA_KEY_PASSPHRASE is not in the environment, or is not on this machine — `mnema key request --agent gemini --anchor <your identity>` makes one.',
+    ]);
+    // A name that is no agent's is refused, and the line says so, not that the process signs as the person.
+    expect(findings({ MNEMA_AGENT_KEY: 'Claude' })).toEqual([
+      'attention MNEMA_AGENT_KEY asks this process to sign as "Claude", which is not a name an agent key is enrolled under, so a write made with it is refused (AGENT_NAME_REFUSED) and nothing is written: the name is a lower-case word of letters, digits, dots, dashes and underscores, 1 to 64 characters, starting with a letter or a digit. Set it to the name of an agent key, or unset it.',
     ]);
     // The placeholder a host that does not know the substitution leaves as it was written.
     const unsubstituted = ['$', '{user_config.agent_key}'].join('');

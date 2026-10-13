@@ -325,22 +325,20 @@ describe('an agent the record does not enrol, and a person who can sign', () => 
 });
 
 describe('a name that is not one this product enrols', () => {
-  it('is ignored, says so once, and the person signs', async () => {
+  it('is refused, naming the name and the form, and the person does not sign in its place', async () => {
+    const before = eventsOf('public').length;
     const said = await mnema('../escape', 'decision', 'record', 'A misspelt variable', 'why');
 
-    expect(said.failed, said.err).toBe(false);
-    expect(
-      said.err.split('\n').filter((line) => line.includes('agent key was ignored')),
-    ).toHaveLength(1);
-    expect(ofKind('public', 'decision.recorded').at(-1)?.which).toBeUndefined();
+    expect(said.failed).toBe(true);
+    expect(said.out + said.err).toContain('AGENT_NAME_REFUSED');
+    expect(said.out + said.err).toContain('"../escape"');
+    expect(said.out + said.err).toContain('lower-case word');
+    expect(eventsOf('public')).toHaveLength(before);
     expect(existsSync(join(home, '.mnema', 'escape'))).toBe(false);
   });
 });
 
 describe('a name that is not one this product enrols, on the verbs that install and remove a stack', () => {
-  const ignoredLines = (said: Said): string[] =>
-    said.err.split('\n').filter((line) => line.includes('The agent key was ignored'));
-
   async function installed(agent: string | undefined): Promise<Said[]> {
     const digest = (
       await did(undefined, 'stack', 'add', STACK, '--scope', 'public', '--dry-run')
@@ -350,22 +348,21 @@ describe('a name that is not one this product enrols, on the verbs that install 
     return [add, remove];
   }
 
-  it('says once, on the error stream, that the key was ignored, for add and for remove', async () => {
+  it('refuses the adoption, and writes neither', async () => {
+    const before = eventsOf('public').length;
     const [add, remove] = await installed('../x');
 
-    expect(add?.failed, add?.out + (add?.err ?? '')).toBe(false);
-    expect(remove?.failed, remove?.out + (remove?.err ?? '')).toBe(false);
-    expect(ignoredLines(add as Said)).toHaveLength(1);
-    expect(ignoredLines(remove as Said)).toHaveLength(1);
-    expect((add as Said).out).toContain('The adoption is recorded in the public tree.');
-    expect((remove as Said).out).toContain('The removal is recorded.');
+    expect(add?.failed).toBe(true);
+    expect(remove?.failed).toBe(true);
+    expect((add?.out ?? '') + (add?.err ?? '')).toContain('AGENT_NAME_REFUSED');
+    expect(eventsOf('public')).toHaveLength(before);
   });
 
   it('says nothing of it for a name that is one', async () => {
     const [add, remove] = await installed('ci');
 
-    expect(ignoredLines(add as Said)).toEqual([]);
-    expect(ignoredLines(remove as Said)).toEqual([]);
+    expect(add?.out + (add?.err ?? '')).not.toContain('AGENT_NAME_REFUSED');
+    expect(remove?.out + (remove?.err ?? '')).not.toContain('AGENT_NAME_REFUSED');
   });
 });
 
@@ -457,23 +454,18 @@ describe('the hook reads the variable, and the flag still wins', () => {
 });
 
 describe('the three questions a verb asks before it writes', () => {
-  it('builds the trees for the agent asked for, and for no agent where the name is not one', () => {
-    const lines: string[] = [];
-    const say = (line: string): void => {
-      lines.push(line);
-    };
-
-    const asked = treesToWrite({ cwd: repo, env, agentKey: 'ci', say });
-    const unnamed = treesToWrite({ cwd: repo, env, agentKey: '../escape', say });
-    const none = treesToWrite({ cwd: repo, env, say });
+  it('builds the trees for the agent asked for, and trees that refuse where the name is not one', () => {
+    const asked = treesToWrite({ cwd: repo, env, agentKey: 'ci' });
+    const unnamed = treesToWrite({ cwd: repo, env, agentKey: '../escape' });
+    const none = treesToWrite({ cwd: repo, env });
 
     expect(asked.agentKey).toBe('ci');
     expect(asked.trees.agent?.name).toBe('ci');
+    expect(asked.trees.agent?.unnamed).toBeUndefined();
     expect(unnamed.agentKey).toBeUndefined();
-    expect(unnamed.trees.agent).toBeUndefined();
+    expect(unnamed.trees.agent?.unnamed).toMatch(/lower-case word/);
     expect(none.agentKey).toBeUndefined();
-    expect(lines).toHaveLength(1);
-    expect(lines[0]).toMatch(/^The agent key was ignored: /);
+    expect(none.trees.agent).toBeUndefined();
   });
 
   it('takes the origin from what was declared, else from the agent asked for', () => {

@@ -339,7 +339,7 @@ export function agentRetiredIn(
   trees: ResolvedTrees,
 ): { readonly scope: Scope; readonly fingerprint: string } | undefined {
   const agent = trees.agent;
-  if (agent === undefined) return undefined;
+  if (agent === undefined || agent.unnamed !== undefined) return undefined;
   const fingerprint = localKeyFingerprint({ root: agent.keyRoot });
   if (fingerprint === null) return undefined;
   for (const tree of reachableTrees(trees)) {
@@ -418,6 +418,17 @@ export function keyChoiceIn(trees: ResolvedTrees, scope: Scope): KeyChoice | und
 function chooseTheKey(trees: ResolvedTrees, chainRoot: string): KeyChoice {
   const agent = trees.agent;
   if (agent === undefined) return { signs: 'person' };
+  // A NAME THAT IS NO AGENT'S IS NOT A REQUEST THE PERSON'S KEY ANSWERS: the variable was set, so a
+  // machine that holds only an agent's key must not make one, nor found an identity, for a typo.
+  if (agent.unnamed !== undefined) {
+    return {
+      signs: 'nobody',
+      refusal: new IdentityUnavailableError(
+        'AGENT_NAME_REFUSED',
+        `the agent key ${JSON.stringify(agent.name.length > 64 ? `${agent.name.slice(0, 64)}…` : agent.name)} cannot sign: ${agent.unnamed}. Nothing was written.`,
+      ),
+    };
+  }
   const fingerprint = localKeyFingerprint({ root: agent.keyRoot });
   const here = reachableTrees(trees).find((tree) => tree.chainRoot === chainRoot)?.scope;
   const where = here === undefined ? 'this tree' : TREE_WORDS[here];
@@ -538,7 +549,9 @@ export type AgentStanding = 'enrolled' | 'retired' | 'ambiguous' | 'absent';
 export function agentStanding(trees: ResolvedTrees, scope: Scope): AgentStanding | undefined {
   const chainRoot = chainRootForScope(trees, scope);
   const agent = trees.agent;
-  if (agent === undefined || chainRoot === undefined) return undefined;
+  if (agent === undefined || agent.unnamed !== undefined || chainRoot === undefined) {
+    return undefined;
+  }
   const fingerprint = localKeyFingerprint({ root: agent.keyRoot });
   return fingerprint === null
     ? undefined

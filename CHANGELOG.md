@@ -104,7 +104,7 @@ tag, with its own changelog.
   identity in the public record when a verb ran with the variable. `mnema memory` and `mnema observe` with the
   variable and no `--scope` go to the private tree, as with `--which`. `mnema before-a-write` reads it too (the flag
   wins). `init`, `key …` and `check run` do not read it: what they write is a fact of the person's, and the format
-  refuses an agent's key there. A name this product does not enrol is ignored, with a line on the error stream. `mnema
+  refuses an agent's key there. A name this product does not enrol is refused, as the entry under Fixed says. `mnema
   doctor` no longer says the process signs as you where your own key may be protected or absent.
 - **The pages and the help of the agent key say what the code does, and no more.** The refusal of a write where the
   person's key would sign in place of an agent's is for a key that is protected and with no `MNEMA_KEY_PASSPHRASE` in the
@@ -160,6 +160,13 @@ tag, with its own changelog.
 
 ### Fixed
 
+- **An agent key asked for under a name that is not an agent's refuses the write, and makes nothing.** With
+  `MNEMA_AGENT_KEY=Claude` (or `--agent-key`) on a machine that held only the agent's folder, the command line and the
+  server dropped the name, made your key and founded an identity in the public record, which is what the entry above
+  says no longer happens. The name now asks for an agent all the same, and a name this product does not enrol
+  (`AGENT_NAME_REFUSED`) is refused on the command line and by the server, naming the name that came and the form
+  accepted: no key, no identity, no fact. The server still opens and reads; it is each write that is refused. In the
+  hook it is the recording of the fact that is not done, the reply to the host unchanged and saying why.
 - **The `project` in an answer is the absolute path again, not the directory's name.** `search`, `read_record`, `audit_refs`,
   `audit_timeline`, `audit_accountability`, `audit_antipatterns` and `audit_exposure` had begun to say `api` where the
   workspace held one `api`. A name is not stable between connections: with a workspace of `work/api` and `work/alpha`

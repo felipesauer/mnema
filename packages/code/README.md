@@ -891,8 +891,9 @@ session that only reads makes no key. The
 server says, on its error stream, one line for each tree where the agent is not the one that signs, when it opens
 and again when the session lands on a project. A key the record retired in any tree the process reaches is
 not passed over to yours: its writes are refused in all of them (`REVOKED_KEY`). A key the record proves a member
-of two identities signs for neither (`AMBIGUOUS_MEMBERSHIP`). A name this product does not enrol is ignored,
-with a word. A `--which` that names another than the record's name is not recorded where the agent
+of two identities signs for neither (`AMBIGUOUS_MEMBERSHIP`). A name this product does not enrol is no agent and
+no stand-in: every write is refused (`AGENT_NAME_REFUSED`), naming the name that came and the form accepted, and
+nothing is made, your own key and an identity included; in the hook it is the recording that is not done. A `--which` that names another than the record's name is not recorded where the agent
 signs, and a line on the error stream says so; `mnema memory` and `mnema observe` with the variable and no
 `--scope` go to the private tree, where a CI runner has no key that enrols the agent: the write is refused.
 The hooks of `corrections` sign with your key unless `MNEMA_AGENT_KEY` is in their environment (the manifests

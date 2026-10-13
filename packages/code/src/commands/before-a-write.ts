@@ -43,7 +43,6 @@ import { dirname } from 'node:path';
 import { catalogUpcasters, listPrivateKeyFingerprints } from '@mnema/chain';
 import { type RunHere, runsHere } from '@mnema/context';
 import {
-  agentNameRefusal,
   agentSignsIn,
   chainRootForScope,
   type DiscoveryEnv,
@@ -161,12 +160,10 @@ export function runBeforeAPath(
 ): BeforeAWriteDone {
   const { paths } = input;
   const resolved = resolveTrees(ctx.cwd, ctx.env);
-  // A name this product does not enrol is no agent: the hook answers as it always did, and says so.
-  const unnamed = ctx.agentKey === undefined ? undefined : agentNameRefusal(ctx.agentKey);
+  // A name this product does not enrol still asks for an agent: its trees refuse what the hook would
+  // record, and the person's key does not stand in. The charge itself is answered all the same.
   const trees =
-    ctx.agentKey === undefined || unnamed !== undefined
-      ? resolved
-      : withAgentKey(resolved, ctx.env, ctx.agentKey);
+    ctx.agentKey === undefined ? resolved : withAgentKey(resolved, ctx.env, ctx.agentKey);
   if (trees.projectPublic === undefined) return silent();
   // The project root is the PARENT of its `.mnema/`, the directory every address is written
   // against; a relative path is the host's, written against where it started the hook.
@@ -192,10 +189,7 @@ export function runBeforeAPath(
   // reason and on the second stream, never by letting the write through.
   const before = anchorsBefore(treesOf(trees));
   const recorded = recordTheCharge(() => recordWhatItMet(trees, met, input.which));
-  const unrecorded = [
-    ...(unnamed === undefined ? [] : [`The agent key was ignored: ${unnamed}`]),
-    ...(recorded.ok ? [] : [unrecordedCharge(met.grade, recorded.why)]),
-  ];
+  const unrecorded = [...(recorded.ok ? [] : [unrecordedCharge(met.grade, recorded.why)])];
   const reason = withWhoIsHere(
     [met.reason, ...unrecorded, ...foundingsSince(before)].join('\n\n'),
     others,

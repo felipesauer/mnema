@@ -9,7 +9,8 @@
  *
  * What the key does is the core's, and it is the server's: where the agent's key is enrolled by
  * the tree written, it signs; where it is not, the person's signs when it opens, and where it
- * does not, the write is refused and NOTHING IS MADE (no key of the person's, no identity). What
+ * does not, the write is refused and NOTHING IS MADE (no key of the person's, no identity); so is
+ * a name that is not an agent's at all. What
  * is added here is the `which`:
  *   - where the agent signs, the name the RECORD gives it, whatever `--which` said, because
  *     `verify` refuses a fact its key signs under another name and no gate of the core does;
@@ -49,21 +50,18 @@ export interface Writing {
 
 /**
  * The trees to write in. With an agent asked for, they sign as it where the record enrols it; a
- * name this product does not enrol is no agent, the line that says so is the one the hook says,
- * and the person's key signs as it always did.
+ * name this product does not enrol makes trees that refuse every write, with the name that came
+ * and the form accepted, and nothing is made.
  */
 export function treesToWrite(ctx: AgentWrites): Writing {
   const resolved = resolveTrees(ctx.cwd, ctx.env);
   const said = ctx.say === undefined ? {} : { say: ctx.say };
   if (ctx.agentKey === undefined) return { trees: resolved, ...said };
-  const unnamed = agentNameRefusal(ctx.agentKey);
-  if (unnamed !== undefined) {
-    ctx.say?.(`The agent key was ignored: ${unnamed}`);
-    return { trees: resolved, ...said };
-  }
+  // A NAME THAT IS NOT ONE IS STILL AN AGENT ASKED FOR: its trees refuse every write, naming it, and
+  // the person's key never answers in its place (`withAgentKey`).
   return {
     trees: withAgentKey(resolved, ctx.env, ctx.agentKey),
-    agentKey: ctx.agentKey,
+    ...(agentNameRefusal(ctx.agentKey) === undefined ? { agentKey: ctx.agentKey } : {}),
     ...said,
   };
 }

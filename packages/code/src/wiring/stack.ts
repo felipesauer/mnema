@@ -61,7 +61,7 @@ function targetOf(
 
 /**
  * The same context, saying each line once: an install asks where it writes in more than one step,
- * and the line about an agent key that was ignored is one line, not one per step.
+ * and a line said to the second stream is one line, not one per step.
  */
 function onceSaid(ctx: HereWriting): HereWriting {
   const told = new Set<string>();
