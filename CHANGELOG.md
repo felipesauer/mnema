@@ -79,6 +79,10 @@ tag, with its own changelog.
 
 ### Changed
 
+- **The README's Quick start accepts the decision it records, and says what the `verify` line is.** A decision is born
+  `proposed`; `mnema decision move accept <id> --note "…"` puts it in force. `verify` reads the signed record, not the
+  decision's state: it prints the same one line, the green, for a proposed decision and for an accepted one.
+
 - **`mnema mcp` opens and reads where no key signs, and a connection that only reads makes no key.** A machine with no
   key of its own, a host asked for an agent that no tree enrols while the person's key is not on the machine, a retired
   key, a key the record proves a member of two identities: the session opened for none of them, so even `bootstrap` was
@@ -175,6 +179,15 @@ tag, with its own changelog.
 
 ### Fixed
 
+- **A write refuses a tail cut inside what its last checkpoint signed (`TAIL_DAMAGED`), and leaves it as it was.**
+  Before reading the checkpoint, the writer cut the tail's end back to its last newline, so a signed line truncated
+  by an edit, a merge or a disk went with it, and so did a signed line that had only lost its newline (which `verify`
+  read as whole). The next event then reused a seq the checkpoint had signed, failed to be signed, and the write
+  exited 1 while the decision it carried showed in `status`. Both append doors now refuse first, under the tail's
+  lock, when the last complete line is below the checkpoint's last seq, and every byte of the tail stays where it
+  was. The refusal says what `verify` does with it: it fails on a signed line that is cut or missing, and passes on one
+  that only lost its newline, so a pass does not clear the tail. Half a line above the last checkpoint, which is what a crash leaves, is still cut and
+  written past.
 - **The second reader refuses a stored line holding an integer no double holds, where it used to stop.** Past the
   largest double, `mnema_verify.py` raised an `OverflowError`, and past 4,300 digits a `ValueError` (the limit Python
   puts on converting digits), and either one ended the reading with a traceback and no verdict. It now refuses the

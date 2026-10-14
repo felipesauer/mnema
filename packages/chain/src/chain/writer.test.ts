@@ -52,7 +52,7 @@ import {
   readTailEntries,
   readTailTip,
 } from './store.js';
-import type { ChainWriter } from './writer.js';
+import { type ChainWriter, DamagedTailError } from './writer.js';
 
 let root: string;
 
@@ -490,6 +490,104 @@ describe('the writer resumes from the end of the tail', () => {
 
     const resumed = openChain({ maxUnsignedEvents: NEVER });
     expect(() => resumed.checkpoint()).toThrow(/seq 0\.\.3: the range covers 4 event\(s\) but 3/);
+  });
+});
+
+describe('the writer does not write over a tail cut inside what a checkpoint signed', () => {
+  /** Every file of the tail and its bytes, so "left as it was" is asserted byte for byte. */
+  function tailBytes(): Record<string, string> {
+    const dir = tailDir(layout(), tailIdOf());
+    const files: Record<string, string> = {};
+    for (const name of readdirSync(dir, { recursive: true }) as string[]) {
+      try {
+        files[name] = readFileSync(join(dir, name)).toString('base64');
+      } catch {
+        // a directory
+      }
+    }
+    return files;
+  }
+
+  /** Founding + two tasks (seq 0..2), all three signed by one checkpoint. */
+  function signedThroughTwo(): void {
+    const w = openFounded({ maxUnsignedEvents: NEVER });
+    appendTasks(w, 2);
+    expect(forceCheckpoint(w).toSeq).toBe(2);
+  }
+
+  function expectBothDoorsRefuse(): void {
+    const before = tailBytes();
+    const resumed = openChain({ maxUnsignedEvents: NEVER });
+    for (const write of [
+      () => resumed.append(taskCreated(env(resumed, 't-after'), { title: 'after' })),
+      () =>
+        resumed.appendAll(taskBirth(env(resumed, 't-born'), { title: 'born', initial: 'draft' })),
+    ]) {
+      let thrown: unknown;
+      try {
+        write();
+      } catch (error) {
+        thrown = error;
+      }
+      expect(thrown).toBeInstanceOf(DamagedTailError);
+      expect((thrown as DamagedTailError).code).toBe('TAIL_DAMAGED');
+      const message = (thrown as Error).message;
+      expect(message).toMatch(/signed through seq 2/);
+      expect(message).toMatch(/was not appended, and the tail was left as it was/);
+      // What the sentence says of `verify` is what `verify` does here, not a promise it cannot keep.
+      expect(message).toMatch(/passes on a signed line that only lost its newline/);
+      expect(message).not.toMatch(/names a line that does not read/);
+      expect(tailBytes()).toEqual(before);
+    }
+    expect(resumed.checkpoint()).toBeNull();
+    expect(tailBytes()).toEqual(before);
+  }
+
+  it('refuses at both doors when the cut falls inside the last signed line, and cuts nothing', () => {
+    signedThroughTwo();
+    const segment = segmentPath(layout(), tailIdOf(), 1);
+    truncateSync(segment, readFileSync(segment).length - 40);
+    expect(verify(root).ok).toBe(false);
+    expectBothDoorsRefuse();
+  });
+
+  it('refuses, and keeps, a signed last line that only lost its newline', () => {
+    signedThroughTwo();
+    const segment = segmentPath(layout(), tailIdOf(), 1);
+    truncateSync(segment, readFileSync(segment).length - 1);
+    // The readers take the line as it is: the record is whole, and stays whole.
+    expect(verify(root).ok).toBe(true);
+    expectBothDoorsRefuse();
+    expect(verify(root).ok).toBe(true);
+  });
+
+  it('refuses when whole signed lines are missing, with no fragment left', () => {
+    signedThroughTwo();
+    const segment = segmentPath(layout(), tailIdOf(), 1);
+    const lines = readFileSync(segment, 'utf-8')
+      .split('\n')
+      .filter((line) => line.length > 0);
+    writeFileSync(segment, `${lines.slice(0, 2).join('\n')}\n`, 'utf-8');
+    expect(verify(root).ok).toBe(false);
+    expectBothDoorsRefuse();
+  });
+
+  it('still heals half a line above the last checkpoint, and writes', () => {
+    signedThroughTwo();
+    const signed = readTailEntries(layout(), tailIdOf(), upcasters).at(-1);
+    const w = openChain({ maxUnsignedEvents: NEVER });
+    appendTasks(w, 1, 2); // seq 3, not signed
+    const segment = segmentPath(layout(), tailIdOf(), 1);
+    truncateSync(segment, readFileSync(segment).length - 40);
+
+    const resumed = openChain({ maxUnsignedEvents: NEVER });
+    const next = resumed.append(taskCreated(env(resumed, 't-after'), { title: 'after' }));
+    expect(next.link.seq).toBe(3);
+    expect(next.link.prev).toBe(signed?.link.hash);
+    forceCheckpoint(resumed);
+    const result = verify(root);
+    expect(result.ok).toBe(true);
+    expect(result.fullySigned).toBe(true);
   });
 });
 
