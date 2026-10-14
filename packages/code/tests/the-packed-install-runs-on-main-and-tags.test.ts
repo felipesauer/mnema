@@ -50,6 +50,6 @@ describe('the packed install runs where it is meant to', () => {
     expect(SCRIPT).toMatch(/^run init$/m);
     expect(SCRIPT).toMatch(/^run decision record /m);
     expect(SCRIPT).toMatch(/^run verify$/m);
-    expect(SCRIPT).toMatch(/env -i HOME="\$home"/);
+    expect(SCRIPT).toContain('-i HOME="$home" PATH=');
   });
 });
