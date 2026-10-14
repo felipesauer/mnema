@@ -36,10 +36,12 @@
  * one (2.2 s) — so a third session waiting behind two such holds ran out of the lock's 2 s:
  * measured on the binary, three moves of three different decisions at once refused
  * `TAIL_BUSY` in 1 of 3 tries at 50 thousand events and in 3 of 3 at 75 and at 100 thousand.
- * Both reads come from the projection the tree keeps now (`read-the-record.ts`), so what the
- * lock is held for is the arrivals and the append: at 100 thousand events, 27 moves in nine
- * rounds of three refused none on a record that had been read, against 7 of 18 before; on one
- * nobody had read yet it refused 1 of 18, where the first writer builds the projection once.
+ * Both reads were then taken from the projection the tree keeps, which made the hold the
+ * arrivals and the append — and made the gate judge a file nothing signs: a row of it edited by
+ * hand let every machine append a move its own gate refuses. The subject a gate judges is read
+ * off the chain now, by the lines that name it (`read-the-record.ts`, `subjectEvents`), which
+ * costs one reading of the segments' bytes rather than a replay; the roster is still the
+ * projection's, brought forward.
  *
  * The judgement is handed the earlier reading alongside the new one, so a move
  * whose subject changed under it can say so in words of its own

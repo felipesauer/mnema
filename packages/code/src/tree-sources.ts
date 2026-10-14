@@ -88,9 +88,12 @@ export function withCache<T>(
  * replaying its chain.
  *
  * A move used to walk the whole record to find where its subject lives and then read the record
- * again for what the gate judges; at 100 thousand events each walk was about 2 s. The projection
- * is the reading the judgement takes, so the search takes it too, brought forward to the chain as
- * it stands. One thing a projection cannot answer: it holds only COMPLETE entities, and a birth is
+ * again for what the gate judges; at 100 thousand events each walk was about 2 s. The search takes
+ * the projection, brought forward to the chain as it stands. It is a HINT and not the judgement:
+ * the gate then reads the subject off the chain of the tree this names (`subjectEvents`), so a
+ * projection edited to name the wrong tree sends the move to a chain that never saw the subject,
+ * and the move is refused there rather than written there. One thing a projection cannot answer:
+ * it holds only COMPLETE entities, and a birth is
  * two appends, so a truncated birth is invisible to it. When no projection holds the id the chain
  * is replayed, exactly as the MCP's locate does (`mcp/locate.ts`), so the refusal a half-written
  * birth gets is the one it always got — and an id nobody holds, which is refused anyway, is the

@@ -24,11 +24,21 @@
  * kind can cite. A run opened in another project is therefore unknown here, which
  * is the answer that keeps a session from vouching for work in a repository it
  * never saw.
+ *
+ * WHAT IT IS PROVEN BY. The run's own events on the chain (`subjectEvents`), folded by the run
+ * projection's fold — not the projection the tree keeps, which is a file beside the record that
+ * nothing signs: a row of it edited to say a closed run is open would have let a fact be pinned to
+ * a session the record had closed.
  */
 
-import { catalogUpcasters } from '@mnema/chain';
-import { canonicalId, chainRootForScope, type DiscoveryEnv, resolveTrees } from '@mnema/core';
-import { withCache } from './tree-sources.js';
+import { catalogUpcasters, subjectEvents } from '@mnema/chain';
+import {
+  canonicalId,
+  chainRootForScope,
+  type DiscoveryEnv,
+  projectRuns,
+  resolveTrees,
+} from '@mnema/core';
 
 /** What resolving a pinned run needs — injected so it is testable. */
 export interface PinnedRunContext {
@@ -94,10 +104,11 @@ export function resolvePinnedRun(
   }
 
   const id = canonicalId(raw);
-  const found = withCache(root, catalogUpcasters(), (cache) =>
-    id === undefined ? null : cache.getRun(id),
-  );
-  if (found === null) {
+  const found =
+    id === undefined
+      ? undefined
+      : projectRuns(subjectEvents({ root }, catalogUpcasters(), [id]).get(id) ?? []).get(id);
+  if (found === undefined) {
     return {
       ok: false,
       code: 'UNKNOWN_RUN',
