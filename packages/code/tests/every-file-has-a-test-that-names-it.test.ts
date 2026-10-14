@@ -45,10 +45,12 @@
  *      it would produce can have been observed. This counted as an import until the
  *      second reading of the scanner, and six files were called witnessed on the strength
  *      of it alone — `writer.ts`, `record-effect.ts`, `run-pin.ts`, `intelligence/
- *      events.ts`, `sources.ts` and `workflow/clock.ts`, each then a row below. FIVE of
+ *      events.ts`, `sources.ts` and `workflow/clock.ts`, each then a row below. FOUR of
  *      them still are: `run-pin.ts` was drained when the guard over a refused run began
  *      importing its sentinel as a VALUE and asserting about what a program handed it
- *      answers (`the-refused-run-is-refused-everywhere.test.ts`).
+ *      answers (`the-refused-run-is-refused-everywhere.test.ts`), and `writer.ts` when its
+ *      own test began importing the refusal it throws over a damaged tail as a value and
+ *      asserting on what it carries (`writer.test.ts`).
  *
  * THE LEDGER IS A BOOK OF DEBT, NOT A DISPENSATION. It is reconciled in FOUR directions at
  * once: a product file with no witness that is not in it is accused, an entry that has
@@ -307,10 +309,6 @@ const UNWITNESSED: Readonly<Record<string, Debt>> = {
   'packages/chain/src/chain/enrollment.ts': {
     reached: 'nobody imports it',
     why: 'resolveIdentity, the enrollment fold: no test calls it, and enrollment.test.ts only regex-matches its issue wording inside the flattened issues array of verify().',
-  },
-  'packages/chain/src/chain/writer.ts': {
-    reached: 'nobody imports it',
-    why: 'The ChainWriter class: six tests name it and all six spell `import type`, taking their writer from openChainForWriting in chain.ts instead, so every assertion observes a value THAT module returned.',
   },
   'packages/chain/src/events/envelope.ts': {
     reached: 'nobody imports it',
@@ -662,7 +660,7 @@ const THE_SHAPE_OF_WHAT_IS_LEFT: Readonly<Record<string, number>> = {
   completion: 4,
   commands: 2,
   barrels: 3,
-  scattered: 12,
+  scattered: 11,
 };
 
 /** Which group of the shape above a debt row belongs to. One reading, so nothing falls in two. */
@@ -1927,8 +1925,9 @@ describe('every file has a test that names it', () => {
     // 84 with the report verb's wiring, which a-report-is-built-from-an-allowlist drives through the program.
     // 85 with the stack group's wiring, which a-stack-goes-where-nothing-is drives through the built binary.
     // 84 once the second reader's record test asserts on the verifier's canonicalIdentityForm.
-    expect(found.size).toBe(84);
-    expect(byReach('nobody imports it')).toBe(84);
+    // 83 once the writer's test asserts on the refusal it throws over a damaged tail.
+    expect(found.size).toBe(83);
+    expect(byReach('nobody imports it')).toBe(83);
     expect(byReach('imported, and no assertion observes it')).toBe(0);
   });
 
@@ -1950,7 +1949,7 @@ describe('every file has a test that names it', () => {
     // Announced in the header and, until now, kept by hand. A shared excuse is how a table
     // like this turns into a rubber stamp, and a row drained to a stub is how it starts.
     const reasons = Object.values(UNWITNESSED).map((one) => one.why);
-    expect(reasons).toHaveLength(84);
+    expect(reasons).toHaveLength(83);
     expect(new Set(reasons).size).toBe(reasons.length);
     // The shortest reason standing is 156 characters; the floor is under it and well over
     // anything that could be written without saying what reaches that file.

@@ -64,6 +64,7 @@ function classesCarryingACode(): string[] {
  */
 const BUILT_WITH: Readonly<Record<string, readonly unknown[]>> = {
   TailBusyError: ['/tmp/x.lock', 4242, 2000],
+  DamagedTailError: ['f'.repeat(64), 6, 5],
   UnwrittenInstallationIdError: ['/tmp/x.inst', 2000],
   DanglingInstallationIdError: ['/tmp/x.inst', '/nowhere'],
   UnsettledInstallationIdError: ['/tmp/x.inst', 2000],
