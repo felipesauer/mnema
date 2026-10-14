@@ -1569,7 +1569,7 @@ nothing and one that never happened would otherwise look the same.
 
 The answers of `search`, `read_record` and the `audit_*` reads name a project by its absolute path, never by
 its directory's name: a name can mean another directory on the next connection, a path cannot
-(`tests/an-answer-says-the-path-of-a-project.test.ts`). A write's `project` takes the path or the name.
+(`tests/an-answer-says-the-path-of-a-project.test.ts`). A write's `project` takes only the path: a bare name is refused as `UNKNOWN_PROJECT`, with the paths to use, and nothing is written.
 
 A write that names a `project` says, in its reply, the absolute directory it fell in
 (`In the project at /home/you/work/api.`). The name may be one the caller carried from

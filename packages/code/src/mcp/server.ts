@@ -187,7 +187,7 @@ const SERVER_NAME = 'mnema';
  * applies, and the ones that drifted would be indistinguishable from the ones that
  * did not. The rule itself lives in one function for the same reason.
  *
- * It names both accepted spellings and says what omitting it does, because the
+ * It names the one accepted spelling (the path) and says what omitting it does, because the
  * silent default is the thing an agent has to be able to predict: a call that says
  * nothing lands where the session landed, which is right when the work is there and
  * wrong when it is not — and only the caller knows which.
@@ -197,8 +197,8 @@ const PROJECT_ARG = z
   .min(1)
   .optional()
   .describe(
-    'Which project of this workspace the fact belongs to — its full path, or the ' +
-      'name of its directory. Omitted, it lands in the project this session ' +
+    'Which project of this workspace the fact belongs to — its absolute path, as ' +
+      'this server gave it; a bare name is refused. Omitted, it lands in the project this session ' +
       'resolved to (the one `bootstrap` names). Pass it whenever the work being ' +
       'recorded happened in a different project of this workspace.',
   );
