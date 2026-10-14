@@ -172,6 +172,9 @@ tag, with its own changelog.
   puts on converting digits), and either one ended the reading with a traceback and no verdict. It now refuses the
   line under section 1, as the product does: a JavaScript reader holds such a number as `Infinity`, which has no
   spelling. The exit status was not 0 either way, so no record read as verified.
+- **The README's quick start says five release tarballs.** It said four after `@mnema/stacks` made them five, and an
+  install of only four answers 404 for `@mnema/stacks`, which `@mnema/code` depends on. The test that holds the install
+  line to `docs/install.md` now holds that count too.
 - **The words of the agent-name refusal say what the code does.** The server says the refusal of a name that is no
   agent's once, at its opening, and no longer once for each tree it reaches. The `guard` description lists the codes it
   answers with, `AGENT_NAME_REFUSED` and `AMBIGUOUS_MEMBERSHIP` among them, and no longer says it refuses every agent a
