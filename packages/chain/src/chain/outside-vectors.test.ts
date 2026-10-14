@@ -442,3 +442,50 @@ describe('the stored line of section 4 against JSONTestSuite', () => {
     ]);
   });
 });
+
+/**
+ * AN INTEGER NO DOUBLE HOLDS. JavaScript reads one past the largest double as `Infinity`, which
+ * has no spelling, so the product refuses the line. No file of the suite above is one: its
+ * largest integer has thirty digits. The second reader raised instead of refusing, and a raise
+ * stops the reading with no verdict: past 309 digits `float()` overflows, and past 4,300 Python
+ * will not convert the digits at all (the limit of 3.11, and of the security releases of 3.9
+ * and 3.10).
+ */
+describe('a stored line holding an integer no double holds', () => {
+  const lines: Readonly<Record<string, string>> = {
+    'past the largest double': `{"n":${'9'.repeat(400)}}`,
+    'past it, negative': `{"n":-${'9'.repeat(400)}}`,
+    'past the digits Python converts': `{"n":${'9'.repeat(5000)}}`,
+  };
+
+  it('is refused by both readers, and the second one says so rather than raising', () => {
+    const product = Object.fromEntries(
+      Object.entries(lines).map(([name, line]) => {
+        try {
+          parseStoredLine(Buffer.from(line), false, parseCanonicalLine, () => name);
+          return [name, 'accepted'];
+        } catch (error) {
+          return [name, error instanceof UnreadableLineError ? 'refused' : String(error)];
+        }
+      }),
+    );
+    const second = python(
+      [
+        'import json',
+        'from mnemaverify.canonical import is_canonical_line',
+        'from mnemaverify.verdict import Refusal',
+        'out = {}',
+        'for name, line in json.load(sys.stdin).items():',
+        '    try:',
+        '        out[name] = "accepted" if is_canonical_line(line.encode())[0] else "refused"',
+        '    except Refusal:',
+        '        out[name] = "refused"',
+        'print(json.dumps(out))',
+      ],
+      lines,
+    );
+    const refused = Object.fromEntries(Object.keys(lines).map((name) => [name, 'refused']));
+    expect(product).toEqual(refused);
+    expect(second).toEqual(refused);
+  });
+});

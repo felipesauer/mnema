@@ -150,7 +150,13 @@ def _number(v: int | float) -> str:
         # the double spelling are the same string, so the fast path is not a second rule.
         if -_MAX_EXACT_INT < v < _MAX_EXACT_INT:
             return str(v)
-        return _double(float(v))
+        try:
+            as_double = float(v)
+        except OverflowError as exc:
+            # Past the largest double a JavaScript reader holds Infinity, which has no spelling;
+            # float() raises here instead, and a raise stops the reading with no verdict.
+            raise Refusal("1", "Infinity" if v > 0 else "-Infinity") from exc
+        return _double(as_double)
     return _double(v)
 
 
@@ -254,6 +260,10 @@ def strict_loads(text: str) -> Any:
         raise Refusal("1", f"not JSON: {exc}") from exc
     except RecursionError as exc:
         raise Refusal("1", "nested deeper than this reader can follow") from exc
+    except ValueError as exc:
+        # An integer of more digits than Python converts (4,300 since 3.11, and in the security
+        # releases of 3.9 and 3.10) raises a plain ValueError, which is not a JSONDecodeError.
+        raise Refusal("1", f"a number this reader will not convert: {exc}") from exc
 
 
 def utf8_text(raw: bytes) -> str:

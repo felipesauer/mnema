@@ -167,6 +167,11 @@ tag, with its own changelog.
 
 ### Fixed
 
+- **The second reader refuses a stored line holding an integer no double holds, where it used to stop.** Past the
+  largest double, `mnema_verify.py` raised an `OverflowError`, and past 4,300 digits a `ValueError` (the limit Python
+  puts on converting digits), and either one ended the reading with a traceback and no verdict. It now refuses the
+  line under section 1, as the product does: a JavaScript reader holds such a number as `Infinity`, which has no
+  spelling. The exit status was not 0 either way, so no record read as verified.
 - **The README's quick start says five release tarballs.** It said four after `@mnema/stacks` made them five, and an
   install of only four answers 404 for `@mnema/stacks`, which `@mnema/code` depends on. The test that holds the install
   line to `docs/install.md` now holds that count too.
