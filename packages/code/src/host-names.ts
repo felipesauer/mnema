@@ -280,7 +280,7 @@ export const HOSTS = {
     },
     note:
       'The refusal fails open, as on every host: a gate that cannot answer — no `mnema` on the ' +
-      'PATH (held by its test), an error, or a hook past its 15 seconds (read in ' +
+      'PATH (held by its test) or a hook that errors (read in ' +
       `[\`pre_tool_use.rs\`](${CODEX_SOURCE}/codex-rs/hooks/src/events/pre_tool_use.rs#L205-L288)) — ` +
       'lets the patch through. The opening is cut to Codex’s own ceiling, 2,500 tokens of 4 ' +
       `UTF-8 bytes ([\`output_spill.rs\`](${CODEX_SOURCE}/codex-rs/hooks/src/output_spill.rs#L12)), ` +
