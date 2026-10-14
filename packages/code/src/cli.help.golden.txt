@@ -270,8 +270,8 @@ $ mnema link --help
 | Arguments:
 |   subject          the entity that originates the link
 |   target           what it points at: another id, or a path (an address, under
-|                    --rel governs, asks-for-a-person or refuses-a-write); in the
-|                    public tree a path outside the project is refused
+|                    --rel governs, asks-for-a-person or refuses-a-write; one
+|                    outside the project is refused in the public tree)
 |
 | Options:
 |   --rel <label>    the relation (recommended: supersedes, relates-to,
