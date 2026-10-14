@@ -1456,7 +1456,7 @@ it, so a rule it addressed at a path no longer governs, asks or refuses there; t
 names what (`refs`, `diagram`, the `references` tool) keeps the link and marks it
 `(retracted by its author)`. Only the identity that recorded the link takes it back; a
 retraction another identity signed anyway is not applied, and `mnema verify` names it in a census
-line. The retraction follows the link to the first tree here that holds a link of that edge, so
+line. The retraction follows the link to the first tree that holds a link of that edge: in this project first, and through the MCP then in the other projects of the workspace, writing in the project that holds it, which its reply names (and says when the person's key signed it because the agent is not enrolled there). So
 when another identity recorded the same edge in an earlier tree it is refused there, and nothing
 points it at the later one.
 
