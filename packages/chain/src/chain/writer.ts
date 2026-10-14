@@ -63,8 +63,9 @@ import {
   signCheckpoint,
 } from './checkpoint.js';
 import { type Cited, HeadsToCite } from './cited-heads.js';
+import { CodedError } from './coded-error.js';
 import { appendDurably } from './durable.js';
-import { type Entry, sealEntry, serializeEntry } from './entry.js';
+import { type Entry, parseEntry, sealEntry, serializeEntry } from './entry.js';
 import type { WrittenEvent } from './hash.js';
 import type { KeyPair } from './keys.js';
 import { materializePublicKey, signerOf, writeAnchor } from './keystore.js';
@@ -76,7 +77,7 @@ import {
   tailLockPath,
   tailProofPath,
 } from './layout.js';
-import { linesFromEnd } from './lines.js';
+import { linesFromEnd, parseStoredLine } from './lines.js';
 import { lastTailCheckpoint, orderedSegments, readTailTip } from './store.js';
 import { withTailLock } from './tail-lock.js';
 import { serializeTailProof, signTailProof } from './tailproof.js';
@@ -184,6 +185,13 @@ export class ChainWriter {
    * a running process fills is the same form, so the two paths cannot drift.
    */
   private pending: WrittenEvent[] = [];
+
+  /**
+   * Set by `recover()` when the tail's end falls short of what its last checkpoint signed, and
+   * thrown by both append doors before anything is sealed ({@link DamagedTailError}). Cleared by
+   * the next recovery that finds the tail whole again.
+   */
+  private damage: DamagedTailError | undefined;
 
   /**
    * The tail as this writer last left it. Compared under the lock before every act;
@@ -426,18 +434,26 @@ export class ChainWriter {
    * events still to be signed.
    *
    * The order is load-bearing:
-   *   1. HEAL FIRST. A crash mid-append can leave a partial line with no newline
-   *      at the end of the last segment. Truncating it before anything parses
-   *      means the reader below sees a file that ends in a newline, so a torn
-   *      fragment that happens to PARSE cannot become the head — a head that
-   *      the very next step would delete from disk, leaving the next append
-   *      chained to a hash no reader can find. (Readers that do not heal — the
+   *   1. CHECKPOINTS FIRST. How far back the tail must be read is decided by the
+   *      coverage, and so is whether a torn end may be cut at all.
+   *   2. THE TIP, AND THE FRAGMENT IN IT. A crash mid-append can leave a partial
+   *      line with no newline at the end of the last segment. The tip is read with
+   *      that fragment still on disk, and a fragment that happens to PARSE is
+   *      left out of it, so it cannot become the head — a head the cut below
+   *      deletes, leaving the next append chained to a hash no reader can find.
+   *      One read of the END of the tail then answers the remaining questions —
+   *      the last complete entry is the head, and the entries above the coverage
+   *      are the events the next checkpoint owes a signature.
+   *   3. THE CUT, ONLY ABOVE THE COVERAGE. THIS USED TO HEAL FIRST, before the
+   *      checkpoint was read, and so cut whatever the end held: a signed line
+   *      truncated by an edit, or one that had only lost its newline, went with
+   *      the fragment, and the next append reused a seq the checkpoint had already
+   *      signed and then failed to sign — reporting a failure about a fact that
+   *      had landed. A last complete line below the checkpoint's `toSeq` is not
+   *      something a crash leaves ({@link DamagedTailError}), so then nothing is
+   *      cut, and both append doors refuse. Above the coverage the fragment is the
+   *      crash's, and it is cut as it always was. (Readers that do not heal — the
    *      verifier, the replay — still tolerate the fragment on read.)
-   *   2. CHECKPOINTS BEFORE THE TAIL. How far back the tail must be read is
-   *      decided by the coverage: everything above the last checkpointed seq.
-   *   3. THE TIP. One read of the END of the tail answers both remaining
-   *      questions — the last entry is the head, and the entries above the
-   *      coverage are the events the next checkpoint owes a signature.
    *
    * Every one of those reads enters its file from the END and stops at what it
    * came for, so none of them grows with the tail. That matters because the
@@ -446,24 +462,45 @@ export class ChainWriter {
    * was rebuilt to remove.
    */
   private recover(): void {
-    const segments = orderedSegments(this.layout, this.tailId);
-    const lastSegment = segments.at(-1);
-    if (lastSegment !== undefined) {
-      const match = /(\d+)\.jsonl$/.exec(lastSegment);
-      this.segment = match ? Number.parseInt(match[1] as string, 10) : 1;
-      // Truncates back to the end of the last COMPLETE line, so the next append
-      // continues a clean tail instead of landing after the fragment — which
-      // would turn a once-benign torn line into a mid-file malformed line that
-      // every later read throws on. A complete append always ends in a newline,
-      // so this only ever removes a genuine crash fragment.
-      this.segmentBytes = healTornTail(lastSegment);
-    }
     const lastCp = lastTailCheckpoint(this.layout, this.tailId);
     if (lastCp !== undefined) {
       this.lastCheckpointedSeq = lastCp.toSeq;
       this.lastCheckpointHash = checkpointHash(lastCp);
     }
-    const tip = readTailTip(this.layout, this.tailId, this.upcasters, this.lastCheckpointedSeq);
+    const segments = orderedSegments(this.layout, this.tailId);
+    const lastSegment = segments.at(-1);
+    let fragment: TornFragment | undefined;
+    if (lastSegment !== undefined) {
+      const match = /(\d+)\.jsonl$/.exec(lastSegment);
+      this.segment = match ? Number.parseInt(match[1] as string, 10) : 1;
+      fragment = tornFragment(lastSegment, this.upcasters);
+      this.segmentBytes = fragment?.start ?? Math.max(sizeOf(lastSegment), 0);
+    }
+    // A fragment that parses is the walk's first entry and not a line the tail holds, so the
+    // walk goes one entry further down to still reach the coverage without it.
+    const walked = readTailTip(
+      this.layout,
+      this.tailId,
+      this.upcasters,
+      this.lastCheckpointedSeq - (fragment?.parses ? 1 : 0),
+    );
+    const tip = fragment?.parses ? walked.slice(0, -1) : walked;
+    const lastComplete = tip.at(-1)?.link.seq ?? -1;
+    if (lastCp !== undefined && lastComplete < lastCp.toSeq) {
+      // Nothing is cut, nothing is owed a signature, and both append doors refuse.
+      this.damage = new DamagedTailError(this.tailId, lastCp.toSeq, lastComplete);
+      this.nextSeq = lastCp.toSeq + 1;
+      this.pending = [];
+      return;
+    }
+    this.damage = undefined;
+    // Truncates back to the end of the last COMPLETE line, so the next append
+    // continues a clean tail instead of landing after the fragment — which
+    // would turn a once-benign torn line into a mid-file malformed line that
+    // every later read throws on. Above the coverage, a complete append always
+    // ends in a newline, so this only ever removes a genuine crash fragment.
+    if (lastSegment !== undefined && fragment !== undefined)
+      truncateSync(lastSegment, fragment.start);
     const last = tip.at(-1);
     if (last !== undefined) {
       this.head = last.link.hash;
@@ -513,6 +550,7 @@ export class ChainWriter {
   }
 
   private appendLocked(handed: CatalogEvent): Entry {
+    this.refuseDamagedTail();
     // The citations are read under the lock, so the heads are the ones on disk as this lands.
     const cited = this.cite(handed);
     const event = cited.event;
@@ -574,6 +612,7 @@ export class ChainWriter {
   }
 
   private appendAllLocked(handed: readonly CatalogEvent[]): Entry[] {
+    this.refuseDamagedTail();
     // The batch is one act: its first event cites, and the rest follow it by `seq`.
     const cited = this.cite(handed[0] as CatalogEvent);
     const events = [cited.event, ...handed.slice(1)];
@@ -610,6 +649,15 @@ export class ChainWriter {
 
     this.capUnsignedWindow();
     return entries;
+  }
+
+  /**
+   * Refuses to append to a tail whose end falls short of what its last checkpoint signed
+   * ({@link DamagedTailError}). First in both append doors, so it runs under the lock, after the
+   * recovery that found the damage, and before anything is cited, born or sealed.
+   */
+  private refuseDamagedTail(): void {
+    if (this.damage !== undefined) throw this.damage;
   }
 
   /** `event` as this writer writes it: citing what it read, when it cites ({@link HeadsToCite}). */
@@ -741,6 +789,42 @@ export class ChainWriter {
 }
 
 /**
+ * A tail whose end on disk falls short of what its last checkpoint signed: the last complete
+ * line is below the checkpoint's `toSeq` — a signed line was cut, lost its newline, or is gone.
+ *
+ * A crash cannot leave a tail in this state. A line reaches its segment, newline and all, in one
+ * durable append, and only then can a checkpoint sign it; so the only unterminated piece a crash
+ * leaves is ABOVE the coverage, and that one the writer still cuts off and writes past. Below the
+ * coverage the bytes are something else — an edit, a bad merge, a disk — and they are evidence:
+ * `verify` names what is wrong with them. Cutting them back to the last newline erased that
+ * evidence, chained the next event to a seq the checkpoint had already signed, and then failed
+ * to sign it, so the write reported a failure about a fact that had landed. A signed line that
+ * only lost its newline is read whole by both readers, and was cut all the same.
+ *
+ * So it is a REFUSAL, thrown by both append doors under the tail's lock and before anything is
+ * sealed, and the tail is left byte for byte as it was found.
+ */
+export class DamagedTailError extends CodedError {
+  readonly code = 'TAIL_DAMAGED';
+
+  constructor(
+    readonly tail: string,
+    readonly signedThrough: number,
+    readonly lastComplete: number,
+  ) {
+    const found =
+      lastComplete < 0 ? 'no complete line' : `its last complete line is seq ${lastComplete}`;
+    super(
+      `this machine's tail ${tail} is signed through seq ${signedThrough}, and ${found}: a line ` +
+        'its last checkpoint signed is cut, is missing or has lost its newline, which no crash ' +
+        'leaves. This write was not appended, and the tail was left as it was. Put its files back ' +
+        'as they were committed before writing again (`mnema verify` names a line that does not read).',
+    );
+    this.name = 'DamagedTailError';
+  }
+}
+
+/**
  * Refuses an event that no reader could accept, BEFORE it is sealed.
  *
  * This is the narrowest point there is. An entry reaches a tail through exactly
@@ -791,29 +875,40 @@ function ensureDir(filePath: string): void {
   if (!existsSync(dir)) mkdirSync(dir, { recursive: true });
 }
 
+/** The unterminated piece a segment ends in: where it begins, and whether it reads as an entry. */
+interface TornFragment {
+  /** The byte after the segment's last newline — where a cut leaves the segment. */
+  readonly start: number;
+  /** Whether the piece parses: a line that lost only its newline does. */
+  readonly parses: boolean;
+}
+
 /**
- * Heals a segment's torn trailing fragment and returns the size to resume from.
- * If the file ends in a newline it is intact — its full size is returned and
- * nothing is written. Otherwise a crash left a partial final line: the file is
- * truncated back to just after the last newline (or to empty if there is none),
- * and that length is returned, so the next append continues a clean tail.
+ * A segment's torn trailing fragment, or undefined when the segment ends in a newline (or is
+ * empty). It reads; it does not cut — whether the piece may be cut is the coverage's to say
+ * (`recover()`).
  *
  * It asks the backward walk for the file's LAST line and needs nothing else: an
- * intact file answers with the empty line that a trailing newline leaves, whose
- * offset IS the file's size, and a torn one answers with the fragment, whose
- * offset is where to cut. One chunk, whatever the segment weighs — reading it
- * whole would put the segment's full size back on every single write, right
- * beside the parse this recovery no longer does.
+ * intact file answers with the empty line that a trailing newline leaves, and a
+ * torn one answers with the fragment, whose offset is where to cut. One chunk,
+ * whatever the segment weighs — reading it whole would put the segment's full size
+ * back on every single write.
  *
  * Works in bytes, not characters: the offset is the byte after the last `\n`, so
  * a multi-byte UTF-8 character split across the crash boundary is removed whole
- * with the rest of the fragment.
+ * with the rest of the fragment. The piece is parsed the way the tip parses it, so
+ * "it parses" means the tip took it as an entry.
  */
-function healTornTail(segmentPath: string): number {
+function tornFragment(segmentPath: string, upcasters: UpcasterRegistry): TornFragment | undefined {
   for (const line of linesFromEnd(segmentPath)) {
-    if (line.bytes.length === 0) return line.start; // ends in a newline: intact
-    truncateSync(segmentPath, line.start);
-    return line.start;
+    if (line.bytes.length === 0) return undefined; // ends in a newline: intact
+    const read = parseStoredLine(
+      line.bytes,
+      true,
+      (text) => parseEntry(text, upcasters),
+      () => segmentPath,
+    );
+    return { start: line.start, parses: read !== null };
   }
-  return 0; // an empty file: nothing to heal, nothing written
+  return undefined; // an empty file: nothing torn
 }

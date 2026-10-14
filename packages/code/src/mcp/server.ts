@@ -751,8 +751,9 @@ function declaringInto(
  *   - `destructiveHint` is false for every tool. The record is append-only and no tool
  *     removes or rewrites what it holds: every byte a file held before a call is where it
  *     was after it. The one byte a write ever takes back is the torn fragment a crashed
- *     append left at a segment's end, which was never a sealed event (`healTornTail`,
- *     `writer.ts`); the sandbox the case exercises holds no such fragment.
+ *     append left at a segment's end, above what any checkpoint signed (`recover`,
+ *     `writer.ts`); below it a write refuses and cuts nothing (`TAIL_DAMAGED`). The sandbox
+ *     the case exercises holds no such fragment.
  *   - `idempotentHint` is true for a read, where asking again changes nothing again, and
  *     false for every write — no promise, rather than one kept only sometimes. Most writes
  *     append the event they exist for on every call. Two record at most once per RUN —
