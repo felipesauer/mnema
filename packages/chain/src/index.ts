@@ -201,6 +201,7 @@ export {
 } from './chain/witness-request.js';
 export {
   ChainWriter,
+  DamagedTailError,
   DEFAULT_MAX_SEGMENT_BYTES,
   DEFAULT_MAX_UNSIGNED_EVENTS,
   type WriterOptions,
