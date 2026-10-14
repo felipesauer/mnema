@@ -979,7 +979,7 @@ const CLAUSES_PER_FILE: Readonly<Record<string, number>> = {
   'packages/code/tests/a-verb-that-went-under-a-noun-is-not-a-verb-any-more.test.ts': 3,
   'packages/code/tests/a-write-routed-to-another-project-signs-as-the-agent.test.ts': 15,
   'packages/code/tests/a-write-says-what-it-founded.test.ts': 14,
-  'packages/code/tests/a-write-the-person-signs-for-an-agent-says-so.test.ts': 13,
+  'packages/code/tests/a-write-the-person-signs-for-an-agent-says-so.test.ts': 15,
   'packages/code/tests/an-agent-key-of-another-kind-is-named-with-its-article.test.ts': 3,
   'packages/code/tests/an-agent-key-signs-for-its-host.test.ts': 18,
   'packages/code/tests/an-agent-request-says-the-kind-of-key-it-refuses-and-where-a-file-key-goes.test.ts': 7,
