@@ -159,6 +159,11 @@ tag, with its own changelog.
 
 ### Fixed
 
+- **The second reader refuses a stored line holding an integer no double holds, where it used to stop.** Past the
+  largest double, `mnema_verify.py` raised an `OverflowError`, and past 4,300 digits a `ValueError` (the limit Python
+  puts on converting digits), and either one ended the reading with a traceback and no verdict. It now refuses the
+  line under section 1, as the product does: a JavaScript reader holds such a number as `Infinity`, which has no
+  spelling. The exit status was not 0 either way, so no record read as verified.
 - **The words of the agent-name refusal say what the code does.** The server says the refusal of a name that is no
   agent's once, at its opening, and no longer once for each tree it reaches. The `guard` description lists the codes it
   answers with, `AGENT_NAME_REFUSED` and `AMBIGUOUS_MEMBERSHIP` among them, and no longer says it refuses every agent a
