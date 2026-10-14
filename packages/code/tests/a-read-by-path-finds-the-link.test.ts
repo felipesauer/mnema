@@ -140,6 +140,12 @@ describe.each(doors)('%s', (name, door) => {
     expect(door('x.md')).toHaveLength(0);
   });
 
+  it('does not reach a link of a relation that carries no address, recorded relative: that is some other text', () => {
+    link('x.md', 'derived-from');
+    expect(door(join(repo, 'x.md'))).toHaveLength(0);
+    expect(door('x.md')).toHaveLength(1);
+  });
+
   it('does not reach a private link of that path: the reduction is the public tree’s', () => {
     link('src', 'governs', 'private');
     expect(door(absolute())).toHaveLength(0);
@@ -155,6 +161,18 @@ describe.each(doors)('%s', (name, door) => {
   it(`${name} keeps a relative target answering to itself, as it did`, () => {
     link('src');
     expect(door('src')).toHaveLength(1);
+  });
+});
+
+describe('an event both spellings name', () => {
+  it('is one entry of the timeline: the path as the subject of a link that records it relative', () => {
+    runLink({ cwd: repo, env }, { subject: join(repo, 'src'), target: 'src', rel: 'governs' });
+    const cli = runTimeline({ cwd: repo, env }, { id: join(repo, 'src') });
+    if (!cli.ok) throw new Error(cli.reason);
+    expect(cli.entries.filter((e) => e.kind === 'knowledge.linked')).toHaveLength(1);
+    const tool = runTimelineTool(session(), { id: join(repo, 'src') });
+    if (!tool.ok) throw new Error(tool.code);
+    expect(tool.value.filter((e) => e.kind === 'knowledge.linked')).toHaveLength(1);
   });
 });
 

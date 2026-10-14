@@ -179,7 +179,8 @@ tag, with its own changelog.
   recorded as typed, and so is any other relation (`derived-from` cites the file a proposal was read from). The private
   and global trees stay on one machine and keep taking any path, as typed. The `--help` of `link` says so. `unlink` and `retract_link` take the
   same absolute path back: the target as typed is looked for first (a link recorded absolute by an earlier version stays
-  retractable), then the one `link` would have recorded.
+  retractable), then the one `link` would have recorded. `refs`, `timeline`, `audit_refs` and `audit_timeline` take it
+  too: asked by the absolute path, they also find the links recorded relative to the root, each edge once.
 
 ### Fixed
 
