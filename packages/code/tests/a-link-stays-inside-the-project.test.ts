@@ -106,6 +106,7 @@ describe('the one function', () => {
   it('says so for a path that leaves the root and for nothing else', () => {
     expect(outsideTheProject('governs', '/etc/passwd', '/p')).toContain('"/etc/passwd"');
     expect(outsideTheProject('governs', '../x', '/p')).toBeDefined();
+    expect(outsideTheProject('governs', '..', '/p')).toBeDefined();
     expect(outsideTheProject('governs', '/p/src', '/p')).toBeUndefined();
     expect(outsideTheProject('governs', 'src/a', '/p')).toBeUndefined();
     expect(outsideTheProject('governs', 'an-id', '/p')).toBeUndefined();
