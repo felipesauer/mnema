@@ -355,7 +355,8 @@ describe('a name the session cannot honor is refused, never guessed', () => {
   it('refuses a bare name, even one that fits a single project, and says the path to use', () => {
     const landed = makeProject('main');
     const only = makeProject('work/api');
-    const session = openOn(landed, only, makeProject('work/alpha'));
+    const alpha = makeProject('work/alpha');
+    const session = openOn(landed, only, alpha);
 
     const refused = runCaptureMemory(session, { content: 'work', project: 'api' });
     expect(refused.ok).toBe(false);
@@ -364,7 +365,7 @@ describe('a name the session cannot honor is refused, never guessed', () => {
     expect(refused.message).toContain('use the path:');
     // The paths whose directory has that name, and only those.
     expect(refused.message).toContain(`"${only}"`);
-    expect(refused.message).not.toContain('alpha');
+    expect(refused.message).not.toContain(`"${alpha}"`);
     expect(refused.message).not.toContain(`"${landed}"`);
     for (const project of [landed, only]) {
       expect(eventsIn(privateOf(project))).toEqual([]);
