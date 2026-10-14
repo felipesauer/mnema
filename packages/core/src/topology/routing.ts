@@ -45,6 +45,7 @@ import {
   committedPublicKey,
   ensureTree,
   isProtected,
+  KeyIsProtectedError,
   listPrivateKeyFiles,
   localKeyFingerprint,
   openChainForWriting,
@@ -413,6 +414,36 @@ export function keyChoiceIn(trees: ResolvedTrees, scope: Scope): KeyChoice | und
   const chainRoot = chainRootForScope(trees, scope);
   if (trees.agent === undefined || chainRoot === undefined) return undefined;
   return chooseTheKey(trees, chainRoot);
+}
+
+/**
+ * The refusal a write into `scope`'s tree would meet from the KEY of this machine, said before the
+ * write is tried: what {@link chooseTheKey} refuses where an agent is configured (whichever code),
+ * and the person's key protected by a passphrase with none in the environment where it is not. Undefined
+ * where the key would sign, where the tree is not there, and where there is no key at all on the
+ * machine: that write founds one, so nothing here refuses it.
+ *
+ * It reads the record and the key FILE's protection and opens nothing: no key is decrypted and none
+ * is made, no lock is taken. So it cannot know a passphrase that is set but wrong
+ * (`KEY_PASSPHRASE_WRONG`, found only by opening), the record busy at that moment (`TAIL_BUSY`,
+ * `KEY_ROOT_BUSY`), or another write changing the task between the question and the move.
+ */
+export function keyRefusalIn(
+  trees: ResolvedTrees,
+  scope: Scope,
+): IdentityUnavailableError | KeyIsProtectedError | undefined {
+  const chainRoot = chainRootForScope(trees, scope);
+  if (chainRoot === undefined) return undefined;
+  if (trees.agent !== undefined) {
+    const choice = chooseTheKey(trees, chainRoot);
+    return choice.signs === 'nobody' ? choice.refusal : undefined;
+  }
+  if (thePersonsKeyOpens(trees) !== 'protected') return undefined;
+  const fingerprint = localKeyFingerprint({ root: trees.keyRoot }) as string;
+  const file = listPrivateKeyFiles({ root: trees.keyRoot }).find((path) =>
+    path.endsWith(`/keys/${fingerprint}.key`),
+  );
+  return new KeyIsProtectedError(file as string);
 }
 
 function chooseTheKey(trees: ResolvedTrees, chainRoot: string): KeyChoice {

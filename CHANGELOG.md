@@ -70,11 +70,11 @@ tag, with its own changelog.
   first request that carries a list of tools is read off what each real host sends its stand-in model, in the
   non-interactive run the contract starts (`claude -p`, `copilot -p`, `opencode run`, `gemini -p`, `codex exec`);
   no interactive mode is measured. In it Claude Code, the Copilot CLI, OpenCode and Gemini CLI carry the whole
-  definition of all 27 (49,498, 49,624, 50,551 and 56,324 bytes; 11,217, 11,357, 11,331 and 12,548 tokens in o200k,
-  a relative measure), against 53,862 bytes and 12,136 tokens for the server's own listing; Codex carries none and
+  definition of all 27 (49,882, 50,008, 50,935 and 56,708 bytes; 11,304, 11,444, 11,418 and 12,635 tokens in o200k,
+  a relative measure), against 54,246 bytes and 12,223 tokens for the server's own listing; Codex carries none and
   one `tool_search` entry that lists the server (2,891 bytes, 672 tokens), and what its search returns for each tool
   is not measured; VS Code's agent is offered none of them in its job, so it is not measured. The figures are those
-  of the binary the job installs. Nothing about the tools changed; a case per host is red when that binary wraps a
+  of the binary the job installs. Only the description of `guard` changed, and it is longer (the entry under Fixed); a case per host is red when that binary wraps a
   definition differently or a definition gains a word.
 
 ### Changed
@@ -87,9 +87,8 @@ tag, with its own changelog.
   the verb to run. The key of a machine that has none is made at its first write, as before, and no longer to answer a
   read. `guard` reads the move and its proof by the tree of the task, whichever root the host listed first, and where
   no enrolled agent signs in that tree and your own key is not on this machine it says the enrolment refusal (and
-  `REVOKED_KEY`, where the agent was retired). It does not foresee a refusal that comes from
-  the key (the person's key protected with no passphrase at hand, an agent that was retired): there `guard` can say
-  ok and the write be refused, as it could before. One limit stays: a connection whose first
+  `REVOKED_KEY`, where the agent was retired). It also says the refusal that comes from the key (see Fixed below).
+  One limit stays: a connection whose first
   signer is in a project it did not list first reads `resume` and `focus` with no actor and no last run, because those
   read the trees of the project it opened in.
 - **The command line and the hook read `MNEMA_AGENT_KEY`, and make nothing for the agent.** The verbs that write a
@@ -160,6 +159,17 @@ tag, with its own changelog.
 
 ### Fixed
 
+- **`guard` says the refusal the key of this machine would give the move, where it used to say ok.** `guard` answered
+  `ok` for a task whose write was then refused for the key: the person's key protected by a passphrase with none in the
+  environment (`KEY_IS_PROTECTED`), an agent that the task's tree does not enrol while the person's key that would sign
+  instead is protected (`AGENT_NOT_ENROLLED`), an agent whose key was retired, whether or not your own key is on this
+  machine (`REVOKED_KEY`). An agent that obeyed `guard` and supplied the missing `reason` was refused all the same.
+  It now asks the key the way the write does, before the gate, without opening a key or making one, and answers the
+  write's own refusal in its words and code (without
+  ` The fact was NOT recorded.`). It cannot know a passphrase that is set but wrong (`KEY_PASSPHRASE_WRONG`), the
+  record busy at that moment (`TAIL_BUSY`, `KEY_ROOT_BUSY`), or another write changing the task before the move; and
+  where the machine has no key at all it still says `MISSING_WHO`, though the first write there makes the key and
+  passes.
 - **Refusing to retire the last key of an identity no longer says it is "the only key" while an agent's key is still enrolled.**
   The refusal now reads "the only key of <identity> that is not an agent's", which is what is true: an agent's key
   cannot sign an enrollment, so it is the last key able to repair the identity. A comment in the brief command that said

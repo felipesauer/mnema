@@ -242,6 +242,7 @@ export {
   type HeldTail,
   type KeyChoice,
   keyChoiceIn,
+  keyRefusalIn,
   type LeftBehind,
   locateEntityScope,
   locateEntityScopeWith,
