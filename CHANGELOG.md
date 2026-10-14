@@ -71,7 +71,7 @@ tag, with its own changelog.
   non-interactive run the contract starts (`claude -p`, `copilot -p`, `opencode run`, `gemini -p`, `codex exec`);
   no interactive mode is measured. In it Claude Code, the Copilot CLI, OpenCode and Gemini CLI carry the whole
   definition of all 27 (50,050, 50,176, 51,103 and 56,876 bytes; 11,352, 11,492, 11,466 and 12,683 tokens in o200k,
-  a relative measure), against 54,246 bytes and 12,223 tokens for the server's own listing; Codex carries none and
+  a relative measure), against 54,414 bytes and 12,271 tokens for the server's own listing; Codex carries none and
   one `tool_search` entry that lists the server (2,891 bytes, 672 tokens), and what its search returns for each tool
   is not measured; VS Code's agent is offered none of them in its job, so it is not measured. The figures are those
   of the binary the job installs. Only the description of `guard` changed, and it is longer (the entry under Fixed); a case per host is red when that binary wraps a

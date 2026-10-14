@@ -41,7 +41,7 @@ tool definition: skills                      2534 B      589 tok
 tool definition: focus                       1230 B      286 tok
 tool definition: resume                      1309 B      303 tok
 tool definition: next_actions                 842 B      194 tok
-tool definition: guard                       2730 B      628 tok
+tool definition: guard                       2898 B      676 tok
 tool definition: search                      2711 B      629 tok
 tool definition: read_record                 1386 B      322 tok
 tool definition: audit_timeline               981 B      225 tok
@@ -51,4 +51,4 @@ tool definition: rules_before_an_edit        2440 B      546 tok
 tool definition: audit_accountability        1997 B      440 tok
 tool definition: audit_exposure              1651 B      363 tok
 tool definition: audit_antipatterns          1465 B      314 tok
-tool definitions: all 27                    54246 B    12223 tok
+tool definitions: all 27                    54414 B    12271 tok
