@@ -37,14 +37,13 @@
  *
  * ## What it refuses, and why refusing is the safe side
  *
- * A name that matches nothing, and a name that matches TWO projects. The second is
- * the ordinary shape of a real workspace rather than a corner: two checkouts with
- * the same directory name — `~/work/api` beside `~/side/api` — is what a person
- * doing exactly the work this exists for tends to have open. Guessing between them
- * writes the fact into the wrong repository and reports success, which is the defect
- * this module exists to remove, one level down. Refusing costs the caller one round
- * trip and a longer argument; the refusal names every project it could have meant,
- * so the second attempt is unambiguous.
+ * Anything that is not the absolute path of a project of the workspace. A bare name is
+ * refused even when it fits one project and fits it today: a name is not stable between
+ * connections, and a write is signed and append-only. After a reload the same `api` can be
+ * another checkout of it, and a write that guessed the new one would report success from a
+ * repository nobody named. Refusing costs the caller one round trip; the refusal names the
+ * paths it could have meant (the ones whose directory has that name, else all), so the
+ * second attempt is exact.
  *
  * Both sentences live here, beside the rule, for the reason {@link locate.js} keeps
  * its own: a refusal is a statement about the search, and every caller that asks
@@ -83,9 +82,9 @@ export type WriteRoute =
   | {
       readonly ok: false;
       /**
-       * `UNKNOWN_PROJECT` (no project of this workspace goes by that name),
-       * `AMBIGUOUS_PROJECT` (more than one does), or `SCOPE_UNAVAILABLE` (the scope
-       * names a tree the destination does not have).
+       * `UNKNOWN_PROJECT` (the argument is not the absolute path of a project of
+       * this workspace) or `SCOPE_UNAVAILABLE` (the scope names a tree the
+       * destination does not have).
        */
       readonly code: string;
       /** The human-readable reason, one line. */
@@ -135,13 +134,13 @@ export function routeWrite(
  * The directory a write fell in, for the reply to say — and only when the CALLER named
  * the project.
  *
- * A name the caller carried can outlive the connection it was learnt in: after
- * a reload the workspace may hold a different directory by that name, and the write
- * resolves to it. Nothing can refuse a valid name; what is left is to say, in the one
- * reply the caller reads, the absolute path: it tells two directories apart where a name shared by
- * both does not (one directory can still have two paths, through a symlink).
+ * A path the caller carried can outlive the connection it was learnt in: after
+ * a reload the workspace may hold different projects, and a path that is not among them
+ * is refused. Only a path routes a write, so what the caller echoes is what it was
+ * handed; the reply still says the absolute path the write fell in, which is the fact the
+ * caller can check (one directory can still have two paths, through a symlink).
  *
- * Nothing is said when the caller named nothing (no name was echoed, so there is none
+ * Nothing is said when the caller named nothing (no project was echoed, so there is none
  * to mistake), nor for a write that landed in the global tree: that tree is the
  * machine's, and a directory named beside it would say it fell somewhere it did not.
  */
@@ -209,54 +208,73 @@ type Picked =
   | { readonly ok: false; readonly code: string; readonly message: string };
 
 /**
- * The project a `project` argument names, by TWO spellings — the whole path, or the
- * directory's own name.
+ * The project a `project` argument names, by its absolute path and by nothing else.
  *
- * The path is the exact answer and is checked first: it is what the session reports
- * about itself (the opening read names the projects by path), so a caller echoing
- * back what it was told always resolves, and a path cannot be ambiguous because two
- * projects cannot be one directory. The bare name is the convenient one, and it is
- * what an agent has when a person says "record that in nferural" — so it is
- * accepted, and refused when it fits more than one project.
+ * A write is signed and append-only, and no field of an event names the project it
+ * was routed to, so a write that fell in the wrong directory cannot be found or
+ * undone afterwards. A bare name is the one spelling that can mean another directory
+ * on the next connection: a conversation outlives a reload, the workspace after it may
+ * hold a different `api`, and the same word then resolves there without a refusal. A
+ * path cannot mean anything else, and it is what the server itself says (the opening
+ * read, every answer, the reply to a routed write), so the only value a caller ever
+ * needs to echo is one it was handed. A name is therefore refused, with the paths to
+ * use in its place.
  *
  * A path counts as a path only when it is ABSOLUTE, and that is not fussiness. This
  * server's working directory is whatever the host spawned it with. It used to be
  * described here as having "nothing to do with the projects"; for a client that
  * declares no workspace roots it is now what the cascade finds the session's own
  * project from (`context.ts`, rung 3) — and that is exactly why it cannot also decide
- * what a caller's relative name means. It is one directory, chosen by the host, and a
- * workspace holds several projects. So resolving a relative argument against the
- * process's cwd would sometimes produce a
- * real project's path by accident, and the accident is precisely the case the bare
- * name refuses: a workspace with two `api` directories where `api` resolved against
- * one parent silently picks that one. A relative path therefore falls through to the
- * name match, which does not find it, and the refusal shows the caller both
- * spellings it could have used.
+ * what a caller's relative path means. It is one directory, chosen by the host, and a
+ * workspace holds several projects. Resolving a relative argument against the
+ * process's cwd would sometimes produce a real project's path by accident.
  *
  * A path is matched WHOLE and never walked up. The cascade walks up — a package of a
  * monorepo is a place to work — and this deliberately does not: adopting a nearby
  * project for an argument that missed is how a write lands in a project nobody named,
  * and every path this could walk up from is a path the caller can spell exactly. The
  * refusal names the projects, so a subdirectory earns a list rather than a guess.
+ *
+ * Reads are not routed here and are not changed by this: they take no `project`.
  */
 function pickProject(session: Session, name: string): Picked {
   const projects = session.workspaceProjects;
-  if (isAbsolute(name)) {
-    // `resolve` so a trailing slash, a `.` or a `..` still matches the one spelling
-    // the list holds — the same directory, written two ways.
-    const wanted = resolve(name);
-    const found = projects.find((project) => project.dir === wanted);
-    if (found !== undefined) return { ok: true, target: found };
-    return { ok: false, code: 'UNKNOWN_PROJECT', message: noSuchProject(name, projects) };
+  if (!isAbsolute(name)) {
+    return { ok: false, code: 'UNKNOWN_PROJECT', message: pathsToUse(name, projects) };
   }
-
-  const matches = projects.filter((project) => basename(project.dir) === name);
-  const only = matches[0];
-  if (only !== undefined && matches.length === 1) return { ok: true, target: only };
-  if (matches.length > 1) {
-    return { ok: false, code: 'AMBIGUOUS_PROJECT', message: severalProjects(name, matches) };
-  }
+  // `resolve` so a trailing slash, a `.` or a `..` still matches the one spelling
+  // the list holds — the same directory, written two ways.
+  const wanted = resolve(name);
+  const found = projects.find((project) => project.dir === wanted);
+  if (found !== undefined) return { ok: true, target: found };
   return { ok: false, code: 'UNKNOWN_PROJECT', message: noSuchProject(name, projects) };
+}
+
+/**
+ * What a refusal says when the argument is not an absolute path: that a write takes only
+ * the path, and the paths of this session — the ones whose directory has that name, when
+ * some do, else all of them.
+ *
+ * It says how to succeed rather than only what went wrong, because the caller cannot
+ * derive it. The name it used may well be the name of a project here, and that is exactly
+ * the case: it is right about where the work belongs and wrong about the spelling. The
+ * paths that end in that name come first because they are the ones it most likely meant;
+ * when none does, the whole list is the only help there is, and omitting the argument
+ * would put the fact back in the project the name was passed to avoid.
+ */
+function pathsToUse(name: string, projects: readonly WriteTarget[]): string {
+  if (projects.length === 0) {
+    return (
+      `project "${oneLine(name)}" is not a project this session can write to — this ` +
+      'session resolved to no project, so there is none to name'
+    );
+  }
+  const same = projects.filter((project) => basename(project.dir) === name);
+  const listed = same.length > 0 ? same : projects;
+  return (
+    `project "${oneLine(name)}" is not an absolute path, and a write takes only the full ` +
+    `path of a project — use the path: ${namedProjects(listed)}`
+  );
 }
 
 /**
@@ -278,23 +296,7 @@ function noSuchProject(name: string, projects: readonly WriteTarget[]): string {
   }
   return (
     `project "${oneLine(name)}" is not a project this session can write to — these are, ` +
-    `by full path or by the directory name at its end: ${namedProjects(projects)}`
-  );
-}
-
-/**
- * What a refusal says when a name fits more than one project: which ones, and that
- * the full path settles it.
- *
- * It says how to succeed rather than only what went wrong, because the caller cannot
- * derive it: from where the agent stands, the name it used is the name of the project
- * — that two directories share it is a fact about the person's disk that only this
- * session can see.
- */
-function severalProjects(name: string, matches: readonly WriteTarget[]): string {
-  return (
-    `project "${oneLine(name)}" names ${matches.length} of this workspace's projects — ` +
-    `${namedProjects(matches)} — so it does not say which; pass the full path of the one meant`
+    `by full path: ${namedProjects(projects)}`
   );
 }
 

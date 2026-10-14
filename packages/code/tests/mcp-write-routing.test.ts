@@ -30,7 +30,7 @@
 
 import { mkdirSync, mkdtempSync, readdirSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
-import { basename, join } from 'node:path';
+import { join } from 'node:path';
 import { pathToFileURL } from 'node:url';
 import { type CatalogEvent, catalogUpcasters, ensureTree, verify } from '@mnema/chain';
 import { type DiscoveryEnv, orderedEvents, PROJECT_DIR, projectRuns } from '@mnema/core';
@@ -253,7 +253,7 @@ describe('three projects, one session', () => {
     expect(runCaptureMemory(session, { content: 'normalized here', project: laravel }).ok).toBe(
       true,
     );
-    expect(runCaptureMemory(session, { content: 'and here', project: 'nferural' }).ok).toBe(true);
+    expect(runCaptureMemory(session, { content: 'and here', project: nferural }).ok).toBe(true);
 
     for (const project of [legacy, laravel, nferural]) {
       expect(factsIn(privateOf(project))).toEqual(['memory.captured']);
@@ -319,7 +319,7 @@ describe('three projects, one session', () => {
 
     expect(runCaptureMemory(session, { content: 'implicit' }).ok).toBe(true);
     expect(runCaptureMemory(session, { content: 'by path', project: here }).ok).toBe(true);
-    expect(runCaptureMemory(session, { content: 'by name', project: basename(here) }).ok).toBe(
+    expect(runCaptureMemory(session, { content: 'by path again', project: `${here}/` }).ok).toBe(
       true,
     );
 
@@ -352,11 +352,31 @@ describe('a name the session cannot honor is refused, never guessed', () => {
     expect(session.runs.size).toBe(0);
   });
 
-  it('refuses a basename that names TWO projects, rather than taking the first', () => {
+  it('refuses a bare name, even one that fits a single project, and says the path to use', () => {
+    const landed = makeProject('main');
+    const only = makeProject('work/api');
+    const alpha = makeProject('work/alpha');
+    const session = openOn(landed, only, alpha);
+
+    const refused = runCaptureMemory(session, { content: 'work', project: 'api' });
+    expect(refused.ok).toBe(false);
+    if (refused.ok) throw new Error('unreachable');
+    expect(refused.code).toBe('UNKNOWN_PROJECT');
+    expect(refused.message).toContain('use the path:');
+    // The paths whose directory has that name, and only those.
+    expect(refused.message).toContain(`"${only}"`);
+    expect(refused.message).not.toContain(`"${alpha}"`);
+    expect(refused.message).not.toContain(`"${landed}"`);
+    for (const project of [landed, only]) {
+      expect(eventsIn(privateOf(project))).toEqual([]);
+    }
+    expect(session.runs.size).toBe(0);
+  });
+
+  it('refuses a basename that names TWO projects, listing both paths, and the path settles it', () => {
     // The ordinary shape of a real workspace: two checkouts with the same directory
-    // name. Taking the first is exactly the silent misfiling this exists against.
-    // The session lands on a third project, so neither candidate has been opened for
-    // writing and the untouched-disk claim below is about the refusal alone.
+    // name. The session lands on a third project, so neither candidate has been opened
+    // for writing and the untouched-disk claim below is about the refusal alone.
     const landed = makeProject('main');
     const workApi = makeProject('work/api');
     const sideApi = makeProject('side/api');
@@ -365,22 +385,35 @@ describe('a name the session cannot honor is refused, never guessed', () => {
     const refused = runCaptureMemory(session, { content: 'work', project: 'api' });
     expect(refused.ok).toBe(false);
     if (refused.ok) throw new Error('unreachable');
-    expect(refused.code).toBe('AMBIGUOUS_PROJECT');
+    expect(refused.code).toBe('UNKNOWN_PROJECT');
+    expect(refused.message).toContain('use the path:');
     expect(refused.message).toContain(`"${workApi}"`);
     expect(refused.message).toContain(`"${sideApi}"`);
-    // A refusal touches NO disk, in either candidate: resolving a name is path
-    // matching over what the client announced, and nothing is opened until it
-    // resolves. Not one event, and not the private tree a write would have created.
+    // A refusal touches NO disk, in either candidate: not one event, and not the
+    // private tree a write would have created.
     for (const project of [workApi, sideApi]) {
       expect(eventsIn(privateOf(project))).toEqual([]);
       expect(readdirSync(join(project, PROJECT_DIR))).not.toContain('private');
     }
 
-    // And the full path settles it, which is what the refusal said to do.
     expect(runCaptureMemory(session, { content: 'work', project: sideApi }).ok).toBe(true);
     expect(factsIn(privateOf(sideApi))).toEqual(['memory.captured']);
     expect(factsIn(privateOf(workApi))).toEqual([]);
     closeSession(session);
+  });
+
+  it('lists every project of the session when no directory has the name given', () => {
+    const first = makeProject('first');
+    const second = makeProject('second');
+    const session = openOn(first, second);
+
+    const refused = runCaptureMemory(session, { content: 'work', project: 'nowhere' });
+    expect(refused.ok).toBe(false);
+    if (refused.ok) throw new Error('unreachable');
+    expect(refused.code).toBe('UNKNOWN_PROJECT');
+    expect(refused.message).toContain('use the path:');
+    expect(refused.message).toContain(`"${first}"`);
+    expect(refused.message).toContain(`"${second}"`);
   });
 
   it('refuses a RELATIVE path rather than resolving it against a cwd nobody chose', () => {
@@ -593,7 +626,7 @@ describe('over the real transport', () => {
 
     await client.callTool({
       name: 'capture_memory',
-      arguments: { content: 'over there', project: basename(second) },
+      arguments: { content: 'over there', project: second },
     });
 
     expect(factsIn(privateOf(second))).toEqual(['memory.captured']);

@@ -35,7 +35,7 @@
 
 import { mkdirSync, mkdtempSync, readdirSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
-import { basename, join } from 'node:path';
+import { join } from 'node:path';
 import { pathToFileURL } from 'node:url';
 import { ensureTree } from '@mnema/chain';
 import { type DiscoveryEnv, PROJECT_DIR } from '@mnema/core';
@@ -456,7 +456,7 @@ describe('over the real transport', () => {
 
     const captured = await client.callTool({
       name: 'capture_memory',
-      arguments: { content: 'recorded over there', project: basename(second) },
+      arguments: { content: 'recorded over there', project: second },
     });
     // The write's reply is prose with the minted id in it ("Captured memory <id>").
     const id = replyText(captured).match(/[0-9a-f-]{36}/)?.[0] as string;
