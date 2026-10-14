@@ -259,6 +259,7 @@ export {
   type PatternProvenance,
   patternProvenance,
 } from './intelligence/provenance.js';
+export type { RecordedAs } from './intelligence/recorded-as.js';
 export {
   effectiveDepth,
   REFERENCE_DEFAULT_DEPTH,
@@ -269,7 +270,6 @@ export {
   type ReferenceQuery,
   references,
 } from './intelligence/references.js';
-export type { RecordedAs } from './intelligence/recorded-as.js';
 export {
   type TimelineEntry,
   timeline,
