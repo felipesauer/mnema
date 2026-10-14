@@ -719,7 +719,8 @@ export function refreshWorkspace(session: Session, roots: readonly string[]): Wo
   session.roots = union;
   session.trees = trees;
   // The session now reaches the project's trees, which it did not: said once, as at the opening.
-  if (landed && session.agentKey !== undefined) {
+  // (A name that is no agent's was said at the opening, whatever tree the session reaches.)
+  if (landed && session.agentKey !== undefined && trees.agent?.unnamed === undefined) {
     sayWhereTheAgentIsNotInForce(
       trees,
       session.agentKey,
@@ -759,6 +760,14 @@ function sayWhereTheAgentIsNotInForce(
   scopes: readonly Scope[],
   log: (line: string) => void,
 ): void {
+  // A NAME THAT IS NO AGENT'S IS REFUSED THE SAME IN EVERY TREE: said once, not once for each.
+  if (trees.agent?.unnamed !== undefined) {
+    const choice = scopes.length === 0 ? undefined : keyChoiceIn(trees, scopes[0] as Scope);
+    if (choice?.signs === 'nobody') {
+      log(oneLine(`agent key "${agentKey}" is not in force: ${choice.refusal.message}`));
+    }
+    return;
+  }
   for (const scope of scopes) {
     const choice = keyChoiceIn(trees, scope);
     if (choice === undefined || choice.signs === 'agent') continue;

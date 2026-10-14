@@ -1534,7 +1534,9 @@ function registerTools(tool: ToolRegistrar, ensureSession: () => Promise<Session
         'proof you would carry (note/reason/feedback) to see if that proof suffices. ' +
         'It also refuses, with the write’s own code and words, what this machine’s key would ' +
         'be refused in the task’s tree: a key protected by a passphrase that is not set, an ' +
-        'agent that tree does not enrol, an agent retired. It cannot know a wrong passphrase, ' +
+        'agent that tree does not enrol where the person’s key that would sign instead is not ' +
+        'at hand, an agent retired (`AGENT_NOT_ENROLLED`, `REVOKED_KEY`, `KEY_IS_PROTECTED`, ' +
+        '`AGENT_NAME_REFUSED`, `AMBIGUOUS_MEMBERSHIP`). It cannot know a wrong passphrase, ' +
         'a record busy at that moment, or another write changing the task before your move; ' +
         'and with no key on the machine yet it says who is missing, though the first write ' +
         'makes the key. The verdict is paired with your current focus. The task is looked ' +

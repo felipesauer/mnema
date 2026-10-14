@@ -320,6 +320,19 @@ describe('a machine that holds only the agent, and the agent is not enrolled', (
   });
 });
 
+describe('a server asked to sign as a name that is no agent’s', () => {
+  it('says so once at the opening, not once for each tree it reaches', async () => {
+    await theTeamsRecord();
+    const log = await connected([repo], 'Claude', async (client) => {
+      await call(client, 'search', { term: 'parser' });
+    });
+
+    const said = log.filter((line) => line.startsWith('agent key "Claude"'));
+    expect(said).toHaveLength(1);
+    expect(said[0]).toContain('cannot sign: ');
+  });
+});
+
 describe('a machine that holds only the agent, and the record has retired it', () => {
   async function writesAndReads(): Promise<{ read: Reply; wrote: Reply[]; log: string[] }> {
     let read: Reply | undefined;
