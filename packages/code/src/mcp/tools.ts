@@ -104,7 +104,6 @@ import {
   IdentityUnavailableError,
   isSearchKind,
   keyRefusalIn,
-  locateLinkScope,
   type ProjectionCache,
   type ReferenceDirection,
   type ReplacedClass,
@@ -150,7 +149,13 @@ import {
   scopedEventsOf,
 } from '../intelligence-source.js';
 import { type Addressed, addressed, resolveLabel } from '../label-as-address.js';
-import { isLabelShaped, linkRefusal, outsideTheProject, targetAsRecorded } from '../link-target.js';
+import {
+  isLabelShaped,
+  linkRefusal,
+  locateLinkAsRecorded,
+  outsideTheProject,
+  targetAsRecorded,
+} from '../link-target.js';
 import {
   movedDisplay,
   successorOnlyForASupersede,
@@ -1041,7 +1046,7 @@ export type RetractLinkResult =
  * `retract_link` — takes a link back, the MCP counterpart of `mnema unlink`, and the same two
  * steps in the same order: both ends are addresses first (an `ADR-<n>` label becomes the id of
  * the one decision it names, as `link_knowledge` records it), the link is followed to the tree
- * it was recorded in ({@link locateLinkScope}), and the write is the core's {@link retractLink},
+ * it was recorded in ({@link locateLinkAsRecorded}), and the write is the core's {@link retractLink},
  * which refuses any identity but the one that recorded the link, saying whose it is. Attributed
  * to the connecting agent (`which`) and pinned to the run, as every write of this server is.
  */
@@ -1053,15 +1058,18 @@ export function runRetractLink(
   if (!subject.ok) return ambiguousLabel(subject.message);
   const target = addressedIn(session, input.target);
   if (!target.ok) return ambiguousLabel(target.message);
-  const edge = { subject: subject.id, target: target.id, rel: input.rel };
-  const scope = locateLinkScope(session.trees, edge, catalogUpcasters());
-  if (scope === undefined) {
+  const typed = { subject: subject.id, target: target.id, rel: input.rel };
+  // The target as typed first, then as the public tree records an absolute path under the root.
+  const located = locateLinkAsRecorded(session.trees, typed, catalogUpcasters());
+  if (located === undefined) {
     return {
       ok: false,
       code: 'UNKNOWN_LINK',
-      message: `no link ${oneLine(edge.subject)} —${oneLine(edge.rel)}→ ${oneLine(edge.target)} is in this project or the global tree`,
+      message: `no link ${oneLine(typed.subject)} —${oneLine(typed.rel)}→ ${oneLine(typed.target)} is in this project or the global tree`,
     };
   }
+  const { scope } = located;
+  const edge = { ...typed, target: located.target };
   const { ctx, run, which } = openWrite(session, scope);
   const retracted = ctx.writer.exclusively(() => {
     const written = retractLink(ctx, { ...edge, reason: input.reason, which, run });

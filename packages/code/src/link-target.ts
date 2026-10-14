@@ -13,8 +13,9 @@
  * is legitimately cross-tree, and an address may name a path the tree does not hold yet.
  */
 
-import { isAbsolute } from 'node:path';
-import { ADDRESS_RELATIONS } from '@mnema/core';
+import { dirname, isAbsolute } from 'node:path';
+import type { UpcasterRegistry } from '@mnema/chain';
+import { ADDRESS_RELATIONS, locateLinkScope, type ResolvedTrees, type Scope } from '@mnema/core';
 import { addressLiesOutside, addressRelativeToRoot } from './governed-tree.js';
 import { oneLine } from './one-line.js';
 
@@ -65,4 +66,27 @@ export function targetAsRecorded(rel: string, target: string, root: string): str
   if (!(ADDRESS_RELATIONS as readonly string[]).includes(rel)) return target;
   if (!isAbsolute(target)) return target;
   return addressRelativeToRoot(target, root);
+}
+
+/**
+ * Finds the tree a link is in by the target as TYPED, and failing that by the target as the public
+ * tree would have recorded it (`targetAsRecorded`): a link written absolute by an earlier version is
+ * still found by what it was written as, and one this version wrote relative is found by the
+ * absolute path that named it. The typed form is asked first, so when both exist the one written
+ * as typed is the one that is found. The reduced form is asked of the public tree alone, as it is
+ * the only tree `link` reduces for. Returns where it is and the target as that tree holds it.
+ */
+export function locateLinkAsRecorded(
+  trees: ResolvedTrees,
+  edge: { readonly subject: string; readonly target: string; readonly rel: string },
+  upcasters: UpcasterRegistry,
+): { readonly scope: Scope; readonly target: string } | undefined {
+  const typed = locateLinkScope(trees, edge, upcasters);
+  if (typed !== undefined) return { scope: typed, target: edge.target };
+  if (trees.projectPublic === undefined) return undefined;
+  const target = targetAsRecorded(edge.rel, edge.target, dirname(trees.projectPublic));
+  if (target === edge.target) return undefined;
+  // The public tree is searched first, so a `public` answer is the public tree's own.
+  const scope = locateLinkScope(trees, { ...edge, target }, upcasters);
+  return scope === 'public' ? { scope, target } : undefined;
 }
