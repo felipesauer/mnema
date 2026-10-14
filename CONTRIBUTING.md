@@ -99,7 +99,9 @@ maintainer does it, the packages are installed from the release's tarballs.
 
 1. **Start from a merged trunk.** The version is already in the five `package.json` files and the
    changelog has a section for it, both merged through a pull request. Run the gates on what is
-   committed.
+   committed. The workflow `packed-install.yml` runs on the trunk push and on the tag, and packs the five,
+   installs them together into an empty prefix and an empty `HOME`, and runs `init`, `decision record` and
+   `verify` with the installed binary; it is not a required check, so read its result before tagging.
 2. **Pack the five publishable packages**, `@mnema/chain`, `@mnema/core`, `@mnema/context`,
    `@mnema/stacks` and `@mnema/code`, with `pnpm pack` (for example `pnpm --filter @mnema/chain pack`, once for each).
    The result is one tarball per package, named `mnema-<package>-<version>.tgz`. The other
