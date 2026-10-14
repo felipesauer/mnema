@@ -156,6 +156,14 @@ tag, with its own changelog.
   ids and the sentence about another run are the same. 46 B fewer at each edit where one of them speaks (rules pushed 380 to 334 bytes,
   102 to 93 tokens, o200k; the pause 564 to 518, 147 to 138; the hold on a first write is the same sentence, not
   measured separately). The opening of a session and the notes keep their two sentences.
+- **A write's `project` takes only the absolute path of a project of the session, never the name of its directory.**
+  `capture_memory`, `record_observation`, `record_handoff`, `link_knowledge`, `create_task`, `record_decision` and
+  `create_skill` refuse `project: "api"` as `UNKNOWN_PROJECT`, with "use the path:" and the paths of the session whose
+  directory is called that (all of them when none is), and write nothing. A name is not stable between connections, and
+  the record is signed and append-only: after a reload, the `api` a conversation carried landed in another checkout of
+  it without a refusal. The reply to a write routed by `project` still says the directory it fell in. The reads are
+  unchanged. `AMBIGUOUS_PROJECT`, which only the name could earn, is gone; the description of `project` in the tool
+  definitions changes, and so do their weights (see the contract tests).
 
 ### Fixed
 
@@ -220,7 +228,7 @@ tag, with its own changelog.
   workspace held one `api`. A name is not stable between connections: with a workspace of `work/api` and `work/alpha`
   that said `api`, and a reload into one of `clones/api` and `work/alpha`, the same `api` echoed into a write landed
   in `clones/api`, in a repository nobody had named, and nothing refused it. The path echoed there is refused as
-  `UNKNOWN_PROJECT` and writes nothing. A write's `project` still takes the path or the directory's name, and the
+  `UNKNOWN_PROJECT` and writes nothing. A write's `project` takes only the path (see Changed), and the
   reply to a write routed by `project` still says the directory it fell in. The cost is what the shorter name had saved:
   the budget golden's eight answers grow back by the path minus the name, once per `project`.
 - **The hook handler no longer fails to fall back when an older `mnema`, which refuses `--agent-key`, exits before

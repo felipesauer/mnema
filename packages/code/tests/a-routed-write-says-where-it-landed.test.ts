@@ -1,14 +1,11 @@
 /**
  * A WRITE THAT NAMED A PROJECT SAYS WHICH DIRECTORY IT FELL IN.
  *
- * The answers of the read tools name a project by its directory's name when no other
- * project of the workspace has it. That name is what a conversation carries back into
- * `project` on a write, and a conversation outlives the connection: after a reload the
- * new workspace may hold a different `api` than the one the name was learnt in, and the
- * write — signed, append-only — resolves to it without a word. Nothing can refuse it,
- * the name is valid. What can be done is to make the landing visible at once, in the
- * one reply the caller reads: the absolute path, which tells two directories apart where a
- * name shared by both does not (one directory can still have two paths, through a symlink).
+ * A write takes only the absolute path of a project, never the name of its directory: a
+ * name a conversation carries can mean another directory after a reload, and the write
+ * — signed, append-only — would resolve to it without a word. A name is refused with the
+ * paths to use. What a path routes still says, in the one reply the caller reads, the
+ * absolute path it fell in (one directory can still have two paths, through a symlink).
  *
  * Seven verbs take `project`, so each is driven here, over the real transport, and the
  * expected path is the directory the test made, and the files that grew on disk say which
@@ -73,6 +70,18 @@ function held(dir: string): Record<string, string> {
   return out;
 }
 
+/** What the caller reads of a refusal: the text, with the refusal confirmed. */
+async function refusal(
+  client: Client,
+  name: string,
+  args: Record<string, unknown>,
+): Promise<string> {
+  const reply = await client.callTool({ name, arguments: args });
+  expect(reply.isError).toBe(true);
+  const blocks = reply.content as { type: string; text: string }[];
+  return blocks.map((block) => block.text).join('\n');
+}
+
 /** What the caller reads: every text block of the reply, in order. */
 async function say(client: Client, name: string, args: Record<string, unknown>): Promise<string> {
   const reply = await client.callTool({ name, arguments: args });
@@ -93,21 +102,21 @@ const VERBS: readonly { name: string; args: Record<string, unknown> }[] = [
 
 describe('a write routed by `project` says the absolute path it fell in', () => {
   for (const verb of VERBS) {
-    it(`${verb.name}: the name routes it, the reply says where`, async () => {
+    it(`${verb.name}: the name is refused with the path to use, and nothing is written`, async () => {
       const first = makeProject('area', 'first');
       const second = makeProject('area', 'second');
       const client = await connect(first, second);
 
       const before = { first: held(first), second: held(second) };
 
-      const text = await say(client, verb.name, { ...verb.args, project: 'second' });
+      const text = await refusal(client, verb.name, { ...verb.args, project: 'second' });
 
-      // Said once, with the path the disk confirms: only `second` grew.
-      expect(text.split(`\n  In the project at ${second}.`)).toHaveLength(2);
-      expect(text.split('In the project at')).toHaveLength(2);
+      expect(text).toContain('Refused (UNKNOWN_PROJECT)');
+      expect(text).toContain(`use the path: "${second}"`);
       expect(text).not.toContain(first);
+      expect(text).not.toContain('In the project at');
       expect(held(first)).toEqual(before.first);
-      expect(held(second)).not.toEqual(before.second);
+      expect(held(second)).toEqual(before.second);
       await client.close();
     });
 
@@ -136,8 +145,9 @@ describe('a write routed by `project` says the absolute path it fell in', () => 
     });
   }
 
-  it('a name carried over a reconnection lands in the OTHER `api`, and the path shows it', async () => {
-    // The conversation learnt `api` in one workspace and writes by it in two.
+  it('a name carried over a reconnection is refused, and the path written is the one asked for', async () => {
+    // The conversation learnt `api` in one workspace and writes by it in two. Before, the
+    // name resolved to the other `api` without a word; now only a path routes a write.
     const oldApi = makeProject('one', 'api');
     const oldOther = makeProject('one', 'alpha');
     const newApi = makeProject('two', 'api');
@@ -145,13 +155,27 @@ describe('a write routed by `project` says the absolute path it fell in', () => 
 
     const before = await connect(oldApi, oldOther);
     const afterReload = await connect(newApi, newOther);
+    const held0 = { newApi: held(newApi), newOther: held(newOther) };
 
-    const first = await say(before, 'capture_memory', { content: 'a', project: 'api' });
-    const second = await say(afterReload, 'capture_memory', { content: 'b', project: 'api' });
+    const refused = await refusal(afterReload, 'capture_memory', { content: 'b', project: 'api' });
+    expect(refused).toContain('Refused (UNKNOWN_PROJECT)');
+    expect(refused).toContain(`use the path: "${newApi}"`);
+    expect(held(newApi)).toEqual(held0.newApi);
+    expect(held(newOther)).toEqual(held0.newOther);
 
+    // The path the first connection was told is not in the new workspace: refused, nothing written.
+    const stale = await refusal(afterReload, 'capture_memory', { content: 'c', project: oldApi });
+    expect(stale).toContain('Refused (UNKNOWN_PROJECT)');
+    expect(held(newApi)).toEqual(held0.newApi);
+
+    // Echoing the absolute path writes in the right place, and the reply says which.
+    const first = await say(before, 'capture_memory', { content: 'a', project: oldApi });
+    const second = await say(afterReload, 'capture_memory', { content: 'b', project: newApi });
     expect(first).toContain(`\n  In the project at ${oldApi}.`);
     expect(second).toContain(`\n  In the project at ${newApi}.`);
     expect(second).not.toContain(oldApi);
+    expect(held(newApi)).not.toEqual(held0.newApi);
+    expect(held(newOther)).toEqual(held0.newOther);
     await before.close();
     await afterReload.close();
   });
@@ -165,7 +189,7 @@ describe('a write routed by `project` says the absolute path it fell in', () => 
 
       const text = await say(client, verb.name, {
         ...verb.args,
-        project: 'second',
+        project: second,
         scope: 'global',
       });
 

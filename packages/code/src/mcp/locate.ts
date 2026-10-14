@@ -328,10 +328,9 @@ export type UnlocatedRefusal<K extends LocatableKind> = {
  * were, so a tool that reached for the first when the walk came back with two holders
  * would report an id nobody can act on as an id nobody has.
  *
- * `AMBIGUOUS_RECORD` and not the router's `AMBIGUOUS_PROJECT`, though the shape is
- * the router's: that code says "your `project` argument named two, pass the full
- * path", and the remedy is the one thing no caller here can do — these tools take no
- * `project`, on purpose. A code whose remedy does not exist is worse than a new code.
+ * `AMBIGUOUS_RECORD` and not a code that tells the caller to pass a `project`: that is
+ * the one thing no caller here can do — these tools take no `project`, on purpose. A
+ * code whose remedy does not exist is worse than a new code.
  */
 export function refuseUnlocated<K extends LocatableKind>(
   session: Session,

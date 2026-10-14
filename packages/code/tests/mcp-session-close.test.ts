@@ -214,8 +214,8 @@ describe('a connection that ends', () => {
     const c = makeProject('gamma');
     const { client, end } = await connect([a, b, c].map((p) => pathToFileURL(p).href));
     await writeSomething(client);
-    await writeSomething(client, { project: 'beta' });
-    await writeSomething(client, { project: 'gamma' });
+    await writeSomething(client, { project: b });
+    await writeSomething(client, { project: c });
 
     end();
 
@@ -269,7 +269,7 @@ describe('a connection that ends', () => {
       'agent-two-projects',
     );
     await writeSomething(client);
-    await writeSomething(client, { project: 'beta' });
+    await writeSomething(client, { project: b });
 
     end();
 
@@ -473,7 +473,7 @@ describe('what an open run says about itself', () => {
     const beforeSecondProject = openRunsOf(await client.callTool({ name: 'focus' }));
     expect(beforeSecondProject.map((r) => r.thisSession)).toEqual([true]);
 
-    await writeSomething(client, { project: 'beta' });
+    await writeSomething(client, { project: b });
 
     const after = openRunsOf(await client.callTool({ name: 'focus' }));
     expect(after.map((r) => r.thisSession)).toEqual([true]);
