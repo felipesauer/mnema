@@ -1075,7 +1075,7 @@ function registerTools(tool: ToolRegistrar, ensureSession: () => Promise<Session
       // is nothing under it to count. The agent gets
       // the same fact the command line prints, from the same wording, because an agent
       // recording a gate for somebody is exactly who most needs to see its reach.
-      return recorded(active, `Linked ${subject} —${result.recorded[0]}→ ${target}`, result, {
+      return recorded(active, `Linked ${subject} —${result.recorded[0]}→ ${result.recordedTarget ?? target}`, result, {
         after: reachNotice(result.reach),
       });
     },

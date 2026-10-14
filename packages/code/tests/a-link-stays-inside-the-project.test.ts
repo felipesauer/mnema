@@ -155,6 +155,8 @@ describe('an absolute path under the root', () => {
     });
     expect(linked.ok).toBe(true);
     expect(publicTargets()).toEqual([recorded]);
+    // the reply names what the tree holds, not what was typed
+    expect(linked.ok && linked.recordedTarget).toBe(recorded);
   });
 
   it('reports the same reach whether it was typed absolute or relative, on both doors', () => {

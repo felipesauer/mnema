@@ -540,6 +540,8 @@ export type LinkRecordedResult =
   | (Extract<FactRecordedResult, { readonly ok: true }> & {
       /** What the address covers, absent for a relation whose target is an id. */
       readonly reach?: AddressReach;
+      /** The target as the tree holds it, present only where that is not what was typed (an absolute path under the root, recorded relative). */
+      readonly recordedTarget?: string;
       /**
        * WHICH TREE HOLDS THE RULE THIS LINK NAMES — absent when none here does.
        *
@@ -641,6 +643,7 @@ export function runLinkKnowledge(
     scope: route.scope,
     ...routedTo(session, route),
     ...(reach !== undefined ? { reach } : {}),
+    ...(recordedTarget !== target.id ? { recordedTarget } : {}),
     ...(subjectScope !== undefined ? { subjectScope } : {}),
     ...forwardReplacement(recorded),
   };
