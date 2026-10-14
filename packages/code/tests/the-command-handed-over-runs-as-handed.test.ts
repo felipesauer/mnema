@@ -692,6 +692,7 @@ export const HANDED_OVER: Readonly<
   'packages/action/README.md': { line: 14, name: 12 },
   'packages/chain/FORMAT.md': { line: 3 },
   'packages/chain/src/chain/key-protection.ts': { line: 3 },
+  'packages/chain/src/chain/writer.ts': { name: 1 },
   'packages/code/README.md': { line: 82, name: 105, flag: 2 },
   'packages/code/src/a-new-identity.ts': { line: 2, name: 1 },
   'packages/code/src/agent-accepts.ts': { line: 4 },
