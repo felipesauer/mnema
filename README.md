@@ -64,7 +64,8 @@ claude plugin marketplace add felipesauer/mnema   # the plugin hands each sessio
 claude plugin install mnema@mnema
 cd your-repository && mnema init
 mnema decision record "Keep money as integer cents" "Float sums drift; cents are exact."
-mnema verify
+mnema decision move accept <id> --note "Agreed in review."   # a decision enters proposed; accepting puts it in force
+mnema verify   # reads the signed record, whatever the decisions' states; one line saying it is intact is the green
 ```
 
 The whole install, the other hosts and the first record, line by line, are in
