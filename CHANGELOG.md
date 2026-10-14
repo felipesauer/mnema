@@ -5,8 +5,8 @@ Notable changes to the packages in this repository are recorded here. The format
 [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 The line before this one, the 0.x alpha published as `@felipesauer/mnema`, is deprecated on
-npm and lives on the [`archive/alpha-0.14`](https://github.com/felipesauer/mnema/tree/archive/alpha-0.14)
-tag, with its own changelog.
+npm and lives at [this commit](https://github.com/felipesauer/mnema/tree/ef736fc6b1f682a513f02f335ad5b7e2e338eca6),
+with its own changelog.
 
 ## [Unreleased]
 
@@ -78,6 +78,11 @@ tag, with its own changelog.
   definition differently or a definition gains a word.
 
 ### Changed
+
+- **The GitHub pre-releases `v0.1.0-beta` and `v0.2.0-beta` and every tag, `archive/alpha-0.14` included, were
+  withdrawn, and until the packages are on npm the mnema is installed from the source** (`docs/install.md`).
+  `mnema doctor` and the plugin's hand-over hook no longer print a release URL: they say that nothing is on npm yet and
+  give the address of that page. The version sections below point to the commit they came from.
 
 - **The README's Quick start accepts the decision it records, and says what the `verify` line is.** A decision is born
   `proposed`; `mnema decision move accept <id> --note "…"` puts it in force. `verify` reads the signed record, not the
@@ -844,5 +849,5 @@ Requires Node ≥ 22.12.0; the packages are ESM-only.
   committed tree (`packages/chain/FORMAT.md` §4.1).
 
 [Unreleased]: https://github.com/felipesauer/mnema/commits/main
-[0.2.0-beta]: https://github.com/felipesauer/mnema/releases/tag/v0.2.0-beta
-[0.1.0-beta]: https://github.com/felipesauer/mnema/releases/tag/v0.1.0-beta
+[0.2.0-beta]: https://github.com/felipesauer/mnema/tree/a8907992a60527d2d3dad1c61bafce983e54af46
+[0.1.0-beta]: https://github.com/felipesauer/mnema/tree/1c17287fa389b2ef75f1d2ea71d4c7fbca54889d

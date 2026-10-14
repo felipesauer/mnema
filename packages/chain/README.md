@@ -135,7 +135,7 @@ witnesses do different halves of that, and neither does the other's:
 npm i @mnema/chain
 ```
 
-Nothing is on npm yet, so that answers 404 until the first publication; the [install page](../../docs/install.md) has the install of the pre-release `v0.2.0-beta` from its tarballs.
+Nothing is on npm yet, so that answers 404 until the first publication; the [install page](../../docs/install.md) has the install from the source.
 
 **This package is released on its own, and that is the point of it.** This section
 used to say it was internal and never published, and the channel it named — the

@@ -219,17 +219,8 @@ anybody for anything, so a checkpoint cannot fail because a calendar was down.
 ## Install
 
 **Nothing is on npm yet**, so `npm i -g @mnema/code` answers 404 until the first
-publication. Until then, install the pre-release `v0.2.0-beta`: this package depends on
-`@mnema/chain`, `@mnema/core`, `@mnema/context` and `@mnema/stacks`, so the five tarballs go in one command.
-
-```sh
-npm i -g \
-  https://github.com/felipesauer/mnema/releases/download/v0.2.0-beta/mnema-chain-0.2.0-beta.tgz \
-  https://github.com/felipesauer/mnema/releases/download/v0.2.0-beta/mnema-core-0.2.0-beta.tgz \
-  https://github.com/felipesauer/mnema/releases/download/v0.2.0-beta/mnema-context-0.2.0-beta.tgz \
-  https://github.com/felipesauer/mnema/releases/download/v0.2.0-beta/mnema-stacks-0.2.0-beta.tgz \
-  https://github.com/felipesauer/mnema/releases/download/v0.2.0-beta/mnema-code-0.2.0-beta.tgz
-```
+publication. Until then, it is built from the source: [the install page](../../docs/install.md)
+has the steps.
 
 Once the packages are published, this is the install:
 
