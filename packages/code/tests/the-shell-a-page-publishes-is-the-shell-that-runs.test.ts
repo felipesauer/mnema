@@ -214,7 +214,7 @@ export const NOT_CHECKED: Readonly<Record<string, string>> = {
  * lower to swallow a block that stopped being read.
  */
 export const PAGES: Readonly<Record<string, number>> = {
-  'README.md': 3,
+  'README.md': 4,
   'docs/agent-hosts.md': 3,
   'docs/first-record.md': 4,
   'docs/how-it-works.md': 1,
