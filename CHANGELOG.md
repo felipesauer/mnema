@@ -79,9 +79,9 @@ tag, with its own changelog.
 
 ### Changed
 
-- **The README's Quick start accepts the decision it records before it runs `verify`, and says what the `verify` line is.**
-  A decision is born `proposed`; `mnema decision move accept <id> --note "…"` puts it in force, and the one line
-  `verify` prints for a record with nothing wrong in it is the green.
+- **The README's Quick start accepts the decision it records, and says what the `verify` line is.** A decision is born
+  `proposed`; `mnema decision move accept <id> --note "…"` puts it in force. `verify` reads the signed record, not the
+  decision's state: it prints the same one line, the green, for a proposed decision and for an accepted one.
 
 - **`mnema mcp` opens and reads where no key signs, and a connection that only reads makes no key.** A machine with no
   key of its own, a host asked for an agent that no tree enrols while the person's key is not on the machine, a retired
