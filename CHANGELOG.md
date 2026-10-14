@@ -177,7 +177,9 @@ tag, with its own changelog.
   path under the root is recorded relative to it (`/work/repo/src` is written `src`, the root itself `.`), by the same
   reduction the gates compare by, so that a clone with another root reads the same address. A relative target is
   recorded as typed, and so is any other relation (`derived-from` cites the file a proposal was read from). The private
-  and global trees stay on one machine and keep taking any path, as typed. The `--help` of `link` says so.
+  and global trees stay on one machine and keep taking any path, as typed. The `--help` of `link` says so. `unlink` and `retract_link` take the
+  same absolute path back: the target as typed is looked for first (a link recorded absolute by an earlier version stays
+  retractable), then the one `link` would have recorded.
 
 ### Fixed
 
