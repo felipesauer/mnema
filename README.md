@@ -59,7 +59,7 @@ installing this.
 ## Quick start
 
 ```sh
-# install: npm i -g the four release tarballs; the exact line is in docs/install.md
+# install: npm i -g the five release tarballs; the exact line is in docs/install.md
 claude plugin marketplace add felipesauer/mnema   # the plugin hands each session the record
 claude plugin install mnema@mnema
 cd your-repository && mnema init

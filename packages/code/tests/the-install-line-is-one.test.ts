@@ -2,7 +2,10 @@
  * THE INSTALL LINE IS ONE. Until the packages are published, `npm i -g @mnema/code` answers 404,
  * and `docs/install.md` gives the install of the pre-release from the five tarballs of its GitHub
  * release. `mnema doctor` and the plugin's hand-over hook say how to install too; a third
- * spelling of the line would send a person to a URL that page does not give.
+ * spelling of the line would send a person to a URL that page does not give. The README's quick
+ * start does not spell the line and sends the reader to that page, but it says how many tarballs
+ * there are: it said four after `@mnema/stacks` made them five, and an install of four answers 404
+ * on the fifth.
  *
  * `docs/install.md` is the source: its five URLs are read off the page and each of the other two must
  * carry exactly those, in that order.
@@ -33,6 +36,12 @@ describe('the install of the pre-release', () => {
       expect.stringMatching(/^mnema-stacks-/),
       expect.stringMatching(/^mnema-code-/),
     ]);
+  });
+
+  it('is counted as many in the README’s quick start, which points at the page for the line', () => {
+    const words = ['zero', 'one', 'two', 'three', 'four', 'five', 'six', 'seven', 'eight', 'nine'];
+    const readme = readFileSync(join(REPO, 'README.md'), 'utf-8');
+    expect(readme).toContain(`npm i -g the ${words[README_URLS.length]} release tarballs`);
   });
 
   it('names the version of the package, in the page, in the doctor and in the hook', () => {
