@@ -10,23 +10,23 @@ behaviour the way code does, and this file is where the next row's evidence goes
 
 ## "Nobody asked me to record this."
 
-The field data quoted in `packages/code/src/mcp/instructions.ts`: 6 of 9,448 tool calls over
-twelve days went to this server, and the three that wrote came after a person typed that it
-should be used. It is one project over twelve days, so it says what happened there and not how
-often it happens.
+The field reading on `docs/evidence.md`, under "Historical": from 10 to 22 September 2026, in
+one project and eight sessions of Claude Code, 6 of 9,448 tool calls went to this server, and
+the three that wrote came after a person typed that it should be used. It is one project, so it
+says what happened there and not how often it happens.
 
 ## "I will find the tool when I need it."
 
-The same passage of `packages/code/src/mcp/instructions.ts`: every tool search the agent made
-was a `select:` of a name it had already decided on, never a search by what a tool does. The
-host's documentation, quoted there, says a host that defers tools loads only tool names and
+The same reading on `docs/evidence.md`: every tool search the agent made was a `select:` of a
+name it had already decided on, never a search by what a tool does. The host's documentation,
+quoted in `packages/code/src/mcp/instructions.ts`, says a host that defers tools loads only tool names and
 server instructions at session start.
 
 ## "I already saved it in my own memory."
 
-`packages/code/src/commands/recall.ts` (the opening paragraph): over twelve days in one project,
-the host's own memory was written more than twenty times with nobody asking, and this record's
-three notes were written after a person asked. It shows where an agent's notes went in those
+The same reading on `docs/evidence.md`: in those eight sessions the host's own memory was
+written 23 times with nobody asking, and this record's three notes were written after a person
+asked. It shows where an agent's notes went in those
 sessions. It does not show why, and the row does not claim to know the agent's reason.
 
 ## "The person said it in the conversation, so it is written down."
