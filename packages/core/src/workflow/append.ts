@@ -26,9 +26,9 @@
  * and an agent has to be able to read it and retry, not receive a stack trace.
  * An operation's first fact comes through {@link appendFact} (or {@link appendFacts}),
  * which asks this door BEFORE the founding the fact needs, so a refused first write leaves
- * nothing behind. The one refusal that can still come after the founding is the server's own
- * session run, whose event is built inside the founding (`NOT_A_REFERENCE` on a client name
- * that is a marker).
+ * nothing behind. The server's own session run is asked there too
+ * (`WriteContext.askedBeforeFounding`), so a client name that is a marker (`NOT_A_REFERENCE`)
+ * is refused before the founding as well.
  *
  * AND IT IS NOT THE ONLY GUARD. The writer itself refuses the same events before
  * sealing (`refuseUnreadable`), which is what makes "no unreadable entry can be
@@ -218,6 +218,17 @@ export function appendFacts(
  */
 const ASKED_ONLY = new Date(0).toISOString();
 
+/**
+ * What the door would say of a fact nothing is appending yet — built as {@link appendFact} builds
+ * it for the asking, with no clock read and no founding: the refusal it earns, or undefined.
+ */
+export function askTheDoor(
+  ctx: WriteContext,
+  build: (stamp: FactStamp) => CatalogEvent,
+): AppendRefusal | undefined {
+  return refuse(build({ at: ASKED_ONLY, anchor: authorizingAnchor(ctx) }));
+}
+
 /** The half {@link appendFact} and {@link appendFacts} share: ask, found, then build for real. */
 function foundedThenBuilt(
   ctx: WriteContext,
@@ -229,6 +240,8 @@ function foundedThenBuilt(
     const refusal = refuse(event);
     if (refusal !== undefined) return refusal;
   }
+  const owed = ctx.askedBeforeFounding?.();
+  if (owed !== undefined) return owed;
   const anchor = ensureFounded(ctx);
   const at = (ctx.clock ?? systemClock)();
   return { ok: true, events: build({ at, anchor }), anchor };
@@ -246,8 +259,8 @@ function foundedThenBuilt(
  * tail with no checkpoint, so `verify --require=signed` failed for the whole project; through the
  * server it opened and signed a session run too, and said "This key founded an identity of its
  * own". The founding comes after this door now ({@link appendFact}), and a refusal of the fact
- * leaves the tree and the key root as it found them (the server's session run, a client name
- * that is a marker, can still be refused after the founding; `every-append.test.ts`, the virgin-tree cases;
+ * leaves the tree and the key root as it found them (the server's session run too, whose client
+ * name may be a marker; `every-append.test.ts`, the virgin-tree cases;
  * `code/tests/a-refusal-leaves-nothing.test.ts`, one case per class on the binary). The words stay
  * "the fact": they are what the agent reads, and they are true.
  */

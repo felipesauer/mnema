@@ -71,7 +71,7 @@ import {
 import { resolveExecutingAgent, type SelfAuthorizedErr } from '../identity/authority.js';
 import { canonicalId, mintId } from '../identity/id.js';
 import { oneLine } from '../one-line.js';
-import { type AppendRefusal, appendFact } from './append.js';
+import { type AppendRefusal, appendFact, askTheDoor } from './append.js';
 import {
   type Judged,
   onTheRecordAsItStands,
@@ -198,6 +198,8 @@ export interface PreparedRun {
   readonly id: string;
   /** Founds where it must and appends the `run.started`: the half of {@link startRun} that writes. */
   readonly start: () => StartRunOk | StartRunError;
+  /** What the door says of the `run.started` {@link start} will append, asked before anything is founded. */
+  readonly ask: () => AppendRefusal | undefined;
 }
 
 /**
@@ -228,7 +230,46 @@ export function prepareRun(ctx: WriteContext, input: StartRunInput): PreparedRun
   const id = mintId();
   const { fields } = text;
   const replaced = [...text.replaced, ...agent.replaced];
-  return { ok: true, id, start: () => appendRunStarted(ctx, { id, who, which, fields, replaced }) };
+  const run = { id, who, which, fields, replaced };
+  return {
+    ok: true,
+    id,
+    start: () => appendRunStarted(ctx, run),
+    ask: () => askTheDoor(ctx, (stamp) => runStartedOf(run, stamp.at, ctx)),
+  };
+}
+
+/** The `run.started` a prepared run appends — and, built with an instant no clock gave, the one the door is asked. */
+function runStartedOf(
+  run: {
+    readonly id: string;
+    readonly who: string;
+    readonly which: string | undefined;
+    readonly fields: { readonly agent: string; readonly goal?: string | undefined };
+  },
+  at: string,
+  ctx: WriteContext,
+): ReturnType<typeof runStarted> {
+  const { id, who, which, fields } = run;
+  return runStarted(
+    {
+      at,
+      who,
+      signerFp: ctx.writer.signerFingerprint,
+      subject: id,
+      // The same agent lives in the payload (`agent`) and, canonicalized, on
+      // the envelope (`which`) — the uniform slot scope resolution and actor
+      // attribution read; omitted from the envelope only if it does not
+      // canonicalize to an identity (the payload still carries the raw agent).
+      // No `run` on the envelope: this event IS the run's birth — its subject
+      // is the run — so it belongs to no parent run.
+      ...(which !== undefined ? { which } : {}),
+    },
+    {
+      agent: fields.agent,
+      ...(fields.goal !== undefined ? { goal: fields.goal } : {}),
+    },
+  );
 }
 
 /** The `run.started` a {@link PreparedRun} appends, with what its preparation decided. */
@@ -242,30 +283,10 @@ function appendRunStarted(
     readonly replaced: readonly ReplacedClass[];
   },
 ): StartRunOk | StartRunError {
-  const { id, who, which, fields } = run;
+  const { id, fields } = run;
   // The door asks the fact first, then founds this installation's anchor, so the fact's
   // signer is a key valid for its anchor at verify (see `appendFact`).
-  const appended = appendFact(ctx, ({ at }) =>
-    runStarted(
-      {
-        at,
-        who,
-        signerFp: ctx.writer.signerFingerprint,
-        subject: id,
-        // The same agent lives in the payload (`agent`) and, canonicalized, on
-        // the envelope (`which`) — the uniform slot scope resolution and actor
-        // attribution read; omitted from the envelope only if it does not
-        // canonicalize to an identity (the payload still carries the raw agent).
-        // No `run` on the envelope: this event IS the run's birth — its subject
-        // is the run — so it belongs to no parent run.
-        ...(which !== undefined ? { which } : {}),
-      },
-      {
-        agent: fields.agent,
-        ...(fields.goal !== undefined ? { goal: fields.goal } : {}),
-      },
-    ),
-  );
+  const appended = appendFact(ctx, ({ at }) => runStartedOf(run, at, ctx));
   if (!appended.ok) return appended;
   // Both reports, merged like every other operation's — and the count is right
   // rather than doubled because the screen is idempotent: this agent name went

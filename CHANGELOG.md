@@ -201,6 +201,12 @@ tag, with its own changelog.
   founds after: each of those refusals of the fact leaves nothing in the `HOME`, the public or the private tree, on the command line
   and through the server, and the first write that lands founds as before. The refusals' words, and what `verify`
   accepts, are unchanged.
+- **A client whose name is a marker (`<id>`) no longer founds on a first write the server then refuses.** The server's
+  session run carries the client's name, and the door refuses a name that is a marker (`NOT_A_REFERENCE`) — but it
+  asked the run only after the founding, so an otherwise accepted first write left a key, an anchor and a tail holding
+  only `identity.founded`, and `verify --require=signed` failed for the whole project. The run is asked with the
+  operation's own fact, before anything is founded: that write is refused with the same words, leaves nothing in the
+  `HOME`, the public or the private tree, and a client with a name of its own founds as before.
 - **The `project` in an answer is the absolute path again, not the directory's name.** `search`, `read_record`, `audit_refs`,
   `audit_timeline`, `audit_accountability`, `audit_antipatterns` and `audit_exposure` had begun to say `api` where the
   workspace held one `api`. A name is not stable between connections: with a workspace of `work/api` and `work/alpha`

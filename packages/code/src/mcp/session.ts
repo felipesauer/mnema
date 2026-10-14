@@ -932,7 +932,7 @@ export function openWrite(session: Session, scope: Scope, target?: WriteTarget):
   // no founding and no key behind it (see `ensureRun`).
   const ctx = writeContext(trees, scope, session.caches);
   const pending = ensureRun(session, trees, scope, ctx);
-  return { run: pending.id, ctx: { ...ctx, beforeTheFirstFact: pending.start }, which };
+  return { run: pending.id, ctx: { ...ctx, beforeTheFirstFact: pending.start, askedBeforeFounding: pending.ask }, which };
 }
 
 /**
@@ -992,7 +992,11 @@ function ensureRun(
   trees: ResolvedTrees,
   scope: Scope,
   ctx: WriteContext,
-): { readonly id: string; readonly start: () => void } {
+): {
+  readonly id: string;
+  readonly start: () => void;
+  readonly ask: NonNullable<WriteContext['askedBeforeFounding']>;
+} {
   // The key exists before the run does, and identifies the tree the run will live
   // in. An absent tree has no root to key by; `writeContext` is what refuses it, and
   // the caller has already built it.
@@ -1052,7 +1056,7 @@ function ensureRun(
     // holding a newline would write a second event nothing happened in.
     session.log(oneLine(`session run ${opened.id} opened in ${root} for which=${opened.agent}`));
   };
-  return { id: prepared.id, start };
+  return { id: prepared.id, start, ask: prepared.ask };
 }
 
 /** What a close recorded, and what it could not: every run the connection opened. */
