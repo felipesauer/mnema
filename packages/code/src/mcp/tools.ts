@@ -1097,6 +1097,7 @@ export function runRetractLink(
     target: retracted.target,
     rel: retracted.rel,
     scope,
+    ...routedTo(session, { scope, ...(home !== undefined ? { target: home } : {}) }),
     ...forwardReplacement(retracted),
   };
 }
