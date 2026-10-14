@@ -675,7 +675,7 @@ export const HANDED_OVER: Readonly<
   Record<string, Readonly<Partial<Record<Reading['kind'], number>>>>
 > = {
   'CHANGELOG.md': { line: 28, name: 38, flag: 1 },
-  'README.md': { line: 1, name: 10 },
+  'README.md': { line: 2, name: 10 },
   'SECURITY.md': { name: 2 },
   'docs/agent-hosts.md': { line: 4, name: 3 },
   'docs/evidence.md': { line: 1, flag: 1 },
