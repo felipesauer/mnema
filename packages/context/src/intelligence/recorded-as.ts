@@ -20,9 +20,16 @@ export interface RecordedAs {
   readonly chainRoot: string;
 }
 
-/** Whether this tree is the one `recordedAs` speaks for. */
-export function isTheTreeThatReduced(source: ScopedCache, recordedAs: RecordedAs): boolean {
-  return source.chainRoot === recordedAs.chainRoot;
+/**
+ * The reduction that is this tree's own, if any. A workspace of several projects may reduce one
+ * typed path under more than one root, one reduction per project; a tree answers only for the
+ * one its own project made, never for another project's.
+ */
+export function theReductionOf(
+  source: ScopedCache,
+  recordedAs: readonly RecordedAs[],
+): RecordedAs | undefined {
+  return recordedAs.find((reduced) => reduced.chainRoot === source.chainRoot);
 }
 
 /** Whether an event is a link of an address relation: the only kind the other spelling answers for. */

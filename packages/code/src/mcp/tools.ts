@@ -106,6 +106,7 @@ import {
   keyRefusalIn,
   type ProjectionCache,
   type ReferenceDirection,
+  type ResolvedTrees,
   type ReplacedClass,
   type Scope,
   SEARCH_KINDS,
@@ -205,7 +206,7 @@ import {
   type WorkspaceTree,
 } from './locate.js';
 import { personSignedIn, routedTo, routeWrite } from './route.js';
-import { anchorIn, openWrite, type Session, whichOfWrite } from './session.js';
+import { anchorIn, openWrite, type Session, type WriteTarget, whichOfWrite } from './session.js';
 
 /** A memory was captured, or the requested scope was not available here. */
 export type CaptureResult =
@@ -1060,18 +1061,29 @@ export function runRetractLink(
   const target = addressedIn(session, input.target);
   if (!target.ok) return ambiguousLabel(target.message);
   const typed = { subject: subject.id, target: target.id, rel: input.rel };
-  // The target as typed first, then as the public tree records an absolute path under the root.
-  const located = locateLinkAsRecorded(session.trees, typed, catalogUpcasters());
+  // The target as typed first, then as the public tree records an absolute path under the root,
+  // project by project: the session's own first, then the others of the workspace. The write goes
+  // to the project that holds the link, as it does for any entity the workspace holds elsewhere.
+  const upcasters = catalogUpcasters();
+  let located: ReturnType<typeof locateLinkAsRecorded>;
+  let home: WriteTarget | undefined;
+  for (const project of [undefined, ...session.workspaceProjects]) {
+    located = locateLinkAsRecorded(project?.trees ?? session.trees, typed, upcasters);
+    if (located !== undefined) {
+      home = project;
+      break;
+    }
+  }
   if (located === undefined) {
     return {
       ok: false,
       code: 'UNKNOWN_LINK',
-      message: `no link ${oneLine(typed.subject)} —${oneLine(typed.rel)}→ ${oneLine(typed.target)} is in this project or the global tree`,
+      message: `no link ${oneLine(typed.subject)} —${oneLine(typed.rel)}→ ${oneLine(typed.target)} is in this workspace or the global tree`,
     };
   }
   const { scope } = located;
   const edge = { ...typed, target: located.target };
-  const { ctx, run, which } = openWrite(session, scope);
+  const { ctx, run, which } = openWrite(session, scope, home);
   const retracted = ctx.writer.exclusively(() => {
     const written = retractLink(ctx, { ...edge, reason: input.reason, which, run });
     // Checkpoint so the retraction is fully signed the moment the tool returns.
@@ -2299,6 +2311,15 @@ function requireProject(
 }
 
 /**
+ * The project trees of the workspace: the session's own, and the other projects it was told of.
+ * What a path is recorded as depends on the project whose root contains it, so a reading that
+ * takes a path asks every project, not the primary alone.
+ */
+function projectsOf(session: Session): ResolvedTrees[] {
+  return [session.trees, ...session.workspaceProjects.map((project) => project.trees)];
+}
+
+/**
  * `audit_timeline` — the whole history of one entity across every project of the
  * workspace.
  *
@@ -2322,7 +2343,7 @@ export function runTimelineTool(session: Session, input: { id: string }): Timeli
   if (refused !== undefined) return refused;
   const named = addressedIn(session, input.id);
   if (!named.ok) return ambiguousLabel(named.message);
-  const recordedAs = targetRecordedAs(session.trees, named.id);
+  const recordedAs = targetRecordedAs(projectsOf(session), named.id);
   return { ok: true, value: timeline(workspaceCaches(session), named.id, recordedAs) };
 }
 
@@ -2362,7 +2383,7 @@ export function runReferencesTool(
   if (refused !== undefined) return refused;
   const named = addressedIn(session, input.id);
   if (!named.ok) return ambiguousLabel(named.message);
-  const recordedAs = targetRecordedAs(session.trees, named.id);
+  const recordedAs = targetRecordedAs(projectsOf(session), named.id);
   return {
     ok: true,
     value: references(workspaceCaches(session), {

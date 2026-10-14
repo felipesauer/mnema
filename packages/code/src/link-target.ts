@@ -75,19 +75,28 @@ function reducedToRoot(target: string, root: string): string {
 }
 
 /**
- * The other spelling a READ may find a link's target under: what the public tree records an
- * absolute path under the project root as, for the readings that take the text of a target
- * (`refs`, `timeline`, `audit_refs`, `audit_timeline`). It is the same reduction `link` writes
- * with, so a read and a write cannot disagree on what a path is recorded as. Undefined when there is
- * no other spelling (an id, a relative path, no project): the target as typed is then the only one.
- * What it may answer for is the reading's to decide by relation and by tree (`RecordedAs`): a
- * relation that carries no address records the target as typed, and only the public tree reduces.
+ * The other spellings a READ may find a link's target under: what each project's public tree
+ * records an absolute path under THAT project's root as, for the readings that take the text of a
+ * target (`refs`, `timeline`, `audit_refs`, `audit_timeline`). It is the same reduction `link`
+ * writes with, so a read and a write cannot disagree on what a path is recorded as. A workspace
+ * holds several projects, and the path is reduced against each root that contains it: one
+ * reduction per project, each answering for that project's public tree alone (`RecordedAs`).
+ * Undefined when no project has another spelling (an id, a relative path, no project): the target
+ * as typed is then the only one. What each may answer for is the reading's to decide by relation
+ * and by tree: a relation that carries no address records the target as typed.
  */
-export function targetRecordedAs(trees: ResolvedTrees, target: string): RecordedAs | undefined {
-  if (trees.projectPublic === undefined) return undefined;
-  const reduced = reducedToRoot(target, dirname(trees.projectPublic));
-  if (reduced === target) return undefined;
-  return { target: reduced, chainRoot: trees.projectPublic };
+export function targetRecordedAs(
+  projects: readonly ResolvedTrees[],
+  target: string,
+): readonly RecordedAs[] | undefined {
+  const spellings = new Map<string, RecordedAs>();
+  for (const trees of projects) {
+    if (trees.projectPublic === undefined) continue;
+    const reduced = reducedToRoot(target, dirname(trees.projectPublic));
+    if (reduced === target) continue;
+    spellings.set(trees.projectPublic, { target: reduced, chainRoot: trees.projectPublic });
+  }
+  return spellings.size === 0 ? undefined : [...spellings.values()];
 }
 
 /**

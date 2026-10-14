@@ -2,7 +2,7 @@ import { ADDRESS_RELATIONS } from '@mnema/core';
 import { describe, expect, it } from 'vitest';
 import type { ScopedCache } from '../sources.js';
 import type { CatalogEvent } from './events.js';
-import { isAnAddressLink, isTheTreeThatReduced } from './recorded-as.js';
+import { isAnAddressLink, theReductionOf } from './recorded-as.js';
 
 /** The one field each predicate reads of an event, with the rest of the envelope left out. */
 const event = (kind: string, rel: string): CatalogEvent =>
@@ -28,8 +28,14 @@ describe('the tree that reduced a target', () => {
   const asked = { target: 'src', chainRoot: '/work/repo/.mnema' };
 
   it('is the one whose chain root it names, and no other', () => {
-    expect(isTheTreeThatReduced(tree('/work/repo/.mnema'), asked)).toBe(true);
-    expect(isTheTreeThatReduced(tree('/work/repo/.mnema-private'), asked)).toBe(false);
-    expect(isTheTreeThatReduced(tree('/work/other/.mnema'), asked)).toBe(false);
+    expect(theReductionOf(tree('/work/repo/.mnema'), [asked])).toBe(asked);
+    expect(theReductionOf(tree('/work/repo/.mnema-private'), [asked])).toBeUndefined();
+    expect(theReductionOf(tree('/work/other/.mnema'), [asked])).toBeUndefined();
+  });
+
+  it('answers with the reduction of its own project when several projects reduced the path', () => {
+    const other = { target: 'lib/src', chainRoot: '/work/other/.mnema' };
+    expect(theReductionOf(tree('/work/other/.mnema'), [asked, other])).toBe(other);
+    expect(theReductionOf(tree('/work/repo/.mnema'), [asked, other])).toBe(asked);
   });
 });

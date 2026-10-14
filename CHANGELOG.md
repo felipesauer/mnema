@@ -180,7 +180,11 @@ tag, with its own changelog.
   and global trees stay on one machine and keep taking any path, as typed. The `--help` of `link` says so. `unlink` and `retract_link` take the
   same absolute path back: the target as typed is looked for first (a link recorded absolute by an earlier version stays
   retractable), then the one `link` would have recorded. `refs`, `timeline`, `audit_refs` and `audit_timeline` take it
-  too: asked by the absolute path, they also find the links recorded relative to the root, each edge once.
+  too: asked by the absolute path, they also find the links recorded relative to the root, each edge once, and in a
+  workspace of several projects the path is reduced against the root that contains it and read in that project's
+  tree (`audit_refs`, `audit_timeline`, `retract_link`; the last also follows a link to the project that holds it).
+  An edge of `refs` and `audit_refs` found that way still ends at the path as typed (`to`) and says what the tree
+  holds in `recorded` (`"recorded": "src"`); an edge found as typed has no such field.
 
 ### Fixed
 

@@ -21,6 +21,8 @@ import { runLink } from '../src/commands/link.js';
 import { runReferences } from '../src/commands/references.js';
 import { runTimeline } from '../src/commands/timeline.js';
 import { openSession } from '../src/mcp/session.js';
+import { renderPlain } from '../src/presentation/plain.js';
+import { referenceReport } from '../src/presentation/references.js';
 import { runReferencesTool, runTimelineTool } from '../src/mcp/tools.js';
 
 let sandbox: string;
@@ -179,7 +181,11 @@ describe('an event both spellings name', () => {
 describe('the sentence a reading with no edge keeps', () => {
   it('refs says it still, for the absolute path of a target nothing links', () => {
     const read = runReferences({ cwd: repo, env }, { id: join(repo, 'nowhere') });
-    expect(read).toMatchObject({ ok: true, graph: { links: [] } });
+    if (!read.ok) throw new Error(read.reason);
+    expect(read.graph.links).toEqual([]);
+    expect(referenceReport(renderPlain, read.graph).join('\n')).toContain(
+      'nothing references it, and it references nothing.',
+    );
   });
 });
 
@@ -200,5 +206,54 @@ describe('what the graph names as its origin', () => {
     expect(out).toMatchObject({ ok: true, graph: { links: [] } });
     const into = runReferences({ cwd: repo, env }, { id: join(repo, 'src'), direction: 'in' });
     expect(into).toMatchObject({ ok: true, graph: { links: [{ from: 'rule-1' }] } });
+  });
+});
+
+describe('what the graph says of an edge found under the other spelling', () => {
+  const asked = () => join(repo, 'src');
+  const refs = (id: string) => {
+    const read = runReferences({ cwd: repo, env }, { id });
+    if (!read.ok) throw new Error(read.reason);
+    return read.graph;
+  };
+
+  it('ends it at the path as typed and says what the tree holds, in `recorded`', () => {
+    link(asked());
+    expect(refs(asked()).links.map((l) => [l.from, l.to, l.recorded])).toEqual([
+      ['rule-1', asked(), 'src'],
+    ]);
+  });
+
+  it('says nothing of `recorded` for an edge found as typed', () => {
+    link('src');
+    const links = refs('src').links;
+    expect(links).toHaveLength(1);
+    expect(links[0]).not.toHaveProperty('recorded');
+  });
+
+  it('keeps an edge whose subject is the path as it was recorded: it is not ended at itself', () => {
+    runLink({ cwd: repo, env }, { subject: asked(), target: 'src', rel: 'governs' });
+    const graph = refs(asked());
+    expect(graph.links.map((l) => [l.from, l.to])).toEqual([[asked(), 'src']]);
+    expect(graph.links[0]).not.toHaveProperty('recorded');
+    expect(graph.nodes.map((node) => node.id)).toContain('src');
+  });
+
+  it('tells the two forms apart when the tree holds both', () => {
+    linkedAbsolute(asked());
+    link('src');
+    const links = refs(asked()).links;
+    expect(links).toHaveLength(2);
+    expect(links.map((l) => [l.to, l.recorded]).sort()).toEqual([
+      [asked(), 'src'],
+      [asked(), undefined],
+    ].sort());
+  });
+
+  it('gives the same through the tool', () => {
+    link(asked());
+    const read = runReferencesTool(session(), { id: asked() });
+    if (!read.ok) throw new Error(read.code);
+    expect(read.value.links.map((l) => [l.to, l.recorded])).toEqual([[asked(), 'src']]);
   });
 });

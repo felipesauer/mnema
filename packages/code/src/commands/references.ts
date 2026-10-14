@@ -84,7 +84,7 @@ export function runReferences(
   if (trees.projectPublic === undefined) {
     return { ok: false, reason: 'NO_PROJECT' };
   }
-  const recordedAs = targetRecordedAs(trees, input.id);
+  const recordedAs = targetRecordedAs([trees], input.id);
   return withScopedCaches(trees, (sources) => ({
     ok: true,
     linkBreaks: linkBreaksOf(sources, THE_READING_THAT_OPENED_THESE),
