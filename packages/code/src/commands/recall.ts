@@ -4,11 +4,12 @@
  * WHAT IT EXISTS TO CLOSE. A note an agent records here did not come back. The document a
  * session opens with (`mnema brief`) carries what GOVERNS — the decisions in force and the
  * adopted patterns — and a memory or an observation governs nothing, so it is in no line of
- * it. Measured on a real project over twelve days, in the same sessions: the host's own
- * memory, whose writes come back at the next session on their own, was written more than
- * twenty times with nobody asking; this record's three notes were written after a person asked,
- * and no session after them was ever handed a word of what they said. A place whose
- * writing comes back is written to; one whose writing vanishes is not.
+ * it. Read in the field, in the same sessions of one project: the host's own memory, whose
+ * writes come back at the next session on their own, was written with nobody asking; this
+ * record's notes were written after a person asked, and no session after them was ever handed
+ * a word of what they said (the day, the host and the counts are on `docs/evidence.md`, under
+ * "Historical"). A place whose writing comes back is written to; one whose writing vanishes is
+ * not.
  *
  * WHY IT IS NOT A PART OF THE DOCUMENT, which is where a reader will look first. An agent's
  * note lands in the tree that does NOT travel — a memory and an observation are routed by

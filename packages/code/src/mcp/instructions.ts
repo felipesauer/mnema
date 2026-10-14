@@ -9,12 +9,13 @@
  * "only tool names and server instructions load at session start"
  * (code.claude.com/docs/en/mcp, *Scale with MCP tool search*). So before
  * an agent decides to reach for a tool of this server, the only words of this server it has
- * read are the twenty-five names and this. Measured in the field, the names alone were not
- * enough: 6 of 9,448 tool calls over twelve days went to this server, the three that wrote
- * came after a person typed that it should be used, and every tool search the agent made
- * was a `select:` of a name it had already decided on — never a search by what a tool
- * does. The host's own advice for this field is the gap in one sentence: say what the tools
- * are for and WHEN to search for them. That is what this is.
+ * read are the tool names and this. Read in the field, the names alone were not enough: almost
+ * none of the agent's tool calls went to this server, the ones that wrote came after a person
+ * typed that it should be used, and every tool search the agent made was a `select:` of a name
+ * it had already decided on — never a search by what a tool does. The day, the host and the
+ * counts are on `docs/evidence.md`, under "Historical". The host's own advice for this field
+ * is the gap in one sentence: say what the tools are for and WHEN to search for them. That is
+ * what this is.
  *
  * IT MAY SAY WHAT TO DO, AND THE FRAMING OF THE RECORD MAY NOT — and the line between the
  * two is the one `record-framing.ts` already draws. The framing is about RECORD text,
