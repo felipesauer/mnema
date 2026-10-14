@@ -240,7 +240,7 @@ type Picked =
 function pickProject(session: Session, name: string): Picked {
   const projects = session.workspaceProjects;
   if (!isAbsolute(name)) {
-    return { ok: false, code: 'UNKNOWN_PROJECT', message: useThePath(name, projects) };
+    return { ok: false, code: 'UNKNOWN_PROJECT', message: pathsToUse(name, projects) };
   }
   // `resolve` so a trailing slash, a `.` or a `..` still matches the one spelling
   // the list holds — the same directory, written two ways.
@@ -262,7 +262,7 @@ function pickProject(session: Session, name: string): Picked {
  * when none does, the whole list is the only help there is, and omitting the argument
  * would put the fact back in the project the name was passed to avoid.
  */
-function useThePath(name: string, projects: readonly WriteTarget[]): string {
+function pathsToUse(name: string, projects: readonly WriteTarget[]): string {
   if (projects.length === 0) {
     return (
       `project "${oneLine(name)}" is not a project this session can write to — this ` +
