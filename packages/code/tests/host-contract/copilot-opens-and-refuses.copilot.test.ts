@@ -9,7 +9,7 @@
  * copilot` answers, and what `mnema brief --hook` prints — is `a-rule-that-refuses-a-write.test.ts`
  * and the brief's own cases. What Copilot does with them is Copilot's, read here off the requests
  * it sends a stand-in for the model and off the file that was or was not written.
- * NOT HELD: that the model reads what arrived; the ceiling of a hook's text and the 15 seconds a
+ * NOT HELD: that the model reads what arrived; the ceiling of a hook's text and the timeout a
  * hook has (read in the documentation, not measured); and any file a shell command writes.
  */
 

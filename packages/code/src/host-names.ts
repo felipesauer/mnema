@@ -337,7 +337,8 @@ export const HOSTS = {
       'hook that exits non-zero denies the call there (read in ' +
       `[the hooks reference](${COPILOT_DOCS}/reference/hooks-reference.md)), so the plugin's ends ` +
       'in `exit 0` whatever happened — no `mnema` on the PATH is held by its test; a hook past ' +
-      'its 15 seconds is let through by the host (read, not measured). The opening is the same ' +
+      'its timeout is let through by the host (read, not measured: [read 14 October 2026](' +
+      `${COPILOT_DOCS}/reference/hooks-reference.md#exit-codes-for-command-hooks)). The opening is the same ` +
       'text Claude Code gets, cut at 10,000 units, far under the 10 MiB the host accumulates ' +
       '(read, not measured). Run without a person (`copilot -p`), a hook’s `ask` is a denial ' +
       '(held by its test); with one, the host asks (held by its test). The model is any ' +
@@ -524,13 +525,17 @@ export const HOSTS = {
     // `tests/the-antigravity-cli-rises-only-with-a-capture.test.ts` keeps the cells below from
     // climbing before a capture of that day is committed.
     note:
-      'Only its documentation was read, on 10 October 2026. It documents hooks in a dialect of its ' +
-      'own, in a `hooks.json` kept in the project’s `.agents` folder or in an installed plugin: ' +
-      'five events (`PreToolUse`, `PostToolUse`, `PreInvocation`, `PostInvocation`, `Stop`) and no ' +
-      '`SessionStart`; a `PreToolUse` answers `allow`, `deny`, `ask`, `force_ask` or ' +
-      '`deny_unless_prior_grant` and is handed `toolCall.name` and `toolCall.args`; the tools that ' +
-      'write are `write_to_file`, `replace_file_content` and `multi_replace_file_content`, each ' +
-      'with its path under `TargetFile`; a `PreInvocation` can add a message to the conversation. ' +
+      'Only its documentation was read, on 10 October 2026, and its hooks page again on ' +
+      '14 October 2026 ([read 14 October 2026](https://antigravity.google/docs/hooks)). It ' +
+      'documents hooks in a dialect of its own, in a `hooks.json` kept in the project’s ' +
+      '`.agents` folder or in an installed plugin: six events (`SessionStart`, `PreToolUse`, ' +
+      '`PostToolUse`, `PreInvocation`, `PostInvocation`, `Stop`); a `SessionStart` answers with ' +
+      '`injectSteps`, steps put into the conversation before the first model invocation; a ' +
+      '`PreToolUse` answers `allow`, `deny`, `ask`, `force_ask` or `deny_unless_prior_grant` and ' +
+      'is handed `toolCall.name` and `toolCall.args`; the tools that write are `write_to_file`, ' +
+      '`replace_file_content` and `multi_replace_file_content`, each with its path under ' +
+      '`TargetFile`; a `PreInvocation` can add a message to the conversation. All of it is ' +
+      'documented, not measured: nobody has run the host here. ' +
       'This plugin ships no hooks file in that dialect and no reader of that payload, so nothing ' +
       'above the first rung is promised for it. The script that reads it is ' +
       '`plugin/captures/antigravity-cli-script.md`.',
