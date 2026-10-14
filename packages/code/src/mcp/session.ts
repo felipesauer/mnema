@@ -932,7 +932,11 @@ export function openWrite(session: Session, scope: Scope, target?: WriteTarget):
   // no founding and no key behind it (see `ensureRun`).
   const ctx = writeContext(trees, scope, session.caches);
   const pending = ensureRun(session, trees, scope, ctx);
-  return { run: pending.id, ctx: { ...ctx, beforeTheFirstFact: pending.start, askedBeforeFounding: pending.ask }, which };
+  return {
+    run: pending.id,
+    ctx: { ...ctx, beforeTheFirstFact: pending.start, askedBeforeFounding: pending.ask },
+    which,
+  };
 }
 
 /**
