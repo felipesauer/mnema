@@ -224,6 +224,16 @@ describe('canonicalId — the form of a reference to an already-minted id', () =
     expect(canonicalId('  x  ')).toBe('  x  ');
   });
 
+  it('folds no case and resolves no alias — a reference is a subject only as the same string', () => {
+    // A gate finds its subject's lines by the bytes of this string (`subjectEvents`), and every
+    // fold keys a subject by it: were this to fold case or turn `ADR-1` into an id, a line
+    // spelt the other way would be about the subject and not be found.
+    const minted = mintId();
+    expect(canonicalId(minted.toUpperCase())).toBe(minted.toUpperCase());
+    expect(canonicalId(minted.toUpperCase())).not.toBe(minted);
+    expect(canonicalId('ADR-1')).toBe('ADR-1');
+  });
+
   it('rejects a non-string, empty, or unrepresentable reference', () => {
     expect(canonicalId(undefined)).toBeUndefined();
     expect(canonicalId(42)).toBeUndefined();

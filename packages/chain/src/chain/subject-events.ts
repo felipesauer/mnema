@@ -13,22 +13,35 @@
  * session waiting behind two of them run out of the lock's wait (`TAIL_BUSY`).
  *
  * WHAT THIS DOES INSTEAD: it searches the BYTES of every segment for the subject's id as the
- * envelope writes it — `"subject":` and the id as a canonical JSON string — and parses only the
- * lines that contain it, through the same parse every reader uses. Why that is the whole set:
+ * envelope writes it — `"subject":"<id>"` — and parses only the lines that contain it, through the
+ * same parse every reader uses. That is the whole set under three conditions, and each is held by
+ * a case of `subject-events.test.ts`:
  *
- *   - Every line a reader accepts is canonical (FORMAT.md §4: a line that is not exactly the
- *     canonical serialization of the value it holds — a space, a key out of order, a letter
- *     written as an escape, another Unicode composition — is refused, by both readers). In a
- *     canonical line the envelope's `subject` is written as exactly those bytes. So a line about
- *     the subject that this search does not find is a line no reader accepts: the record is
- *     broken there for `verify` and for every read that reaches it, whatever this returns.
- *   - A line that contains the bytes but is not about the subject — a payload object with a key
- *     of that name; the id in free text does not match, since a quote inside a string is written
- *     `\"` — is parsed and then dropped by the subject it really has. The search can only find
- *     too much, never too little.
- *   - A line the search finds is parsed in full ({@link parseStoredLine}, {@link parseEntry}), so
- *     what it hands back is refused exactly where a replay would refuse it, torn last line
- *     included.
+ *   1. THE ID IS WRITTEN AS ITSELF. The canonical form escapes `"`, `\` and the control
+ *      characters and NFC-composes the rest (FORMAT.md §1), so an id of printable ASCII without
+ *      `"` or `\` has one spelling in a canonical line: its own bytes ({@link writtenAsItself}).
+ *      Every id the product mints is such an id (a UUIDv7 in lower-case hex and dashes; an anchor
+ *      is hex). An id outside that class is not searched for: every line is parsed for it, as a
+ *      replay would, so a spelling this module did not foresee cannot hide a line.
+ *   2. AN ID IS THE SAME SUBJECT ONLY AS THE SAME STRING. A line is kept when its envelope's
+ *      `subject` IS the id, compared exactly, which is how every fold keys a subject:
+ *      `canonicalId` composes NFC and nothing else, folds no case and resolves no alias. If a
+ *      reader ever folds case or resolves an `ADR-<n>` label inside the fold, a line spelt the
+ *      other way is about the subject and this search does not find it: it is no longer the
+ *      proof.
+ *   3. EVERY LINE IT FINDS IS READ BY `parseCanonicalLine` ({@link parseStoredLine},
+ *      {@link parseEntry}), and every line a reader accepts is canonical (FORMAT.md §4: a line
+ *      that is not exactly the canonical serialization of the value it holds — a space, a key
+ *      out of order, a letter written as an escape, another Unicode composition — is refused, by
+ *      both readers). So a line about the subject that names it some other way, and so is not
+ *      found, is a line no reader accepts: the record is broken there for `verify` and for every
+ *      read that reaches it, whatever this returns. And a line that is found is refused exactly
+ *      where a replay would refuse it, torn last line included.
+ *
+ * A line that contains the bytes but is not about the subject — a payload object with a key of
+ * that name; the id in free text does not match, since a quote inside a string is written `\"` —
+ * is parsed and then dropped by the subject it really has. The search can only find too much,
+ * never too little.
  *
  * THE ORDER. Inside a tail the order is the tail's own, always (FORMAT.md, "Reading many tails"),
  * so a subject every event of which is on one tail is ordered by where its lines are, and that is
@@ -49,7 +62,6 @@
 
 import { readFileSync } from 'node:fs';
 
-import { canonicalStringify } from '../events/canonical.js';
 import type { CatalogEvent } from '../events/catalog.js';
 import type { UpcasterRegistry } from '../events/upcaster.js';
 import { causalOrder } from './causal-order.js';
@@ -86,6 +98,15 @@ interface TailKeys {
 }
 
 /**
+ * Whether the canonical form writes `id` as its own bytes, so a canonical line that names it as a
+ * subject holds exactly `"subject":"<id>"`: printable ASCII, and neither `"` nor `\`, which are
+ * the two printable characters it escapes (FORMAT.md §1).
+ */
+export function writtenAsItself(id: string): boolean {
+  return /^[\x20-\x7e]+$/.test(id) && !id.includes('"') && !id.includes('\\');
+}
+
+/**
  * The events whose envelope `subject` is each of `ids`, in the order a replay of this tree folds
  * them — every one of them, and nothing else. An id with none maps to an empty list.
  *
@@ -99,11 +120,13 @@ export function subjectEvents(
 ): Map<string, CatalogEvent[]> {
   const tails = listTails(layout);
   const segments = tails.map((tail) => orderedSegments(layout, tail));
-  const wanted = [...new Set(ids)].map((id) => ({
-    id,
-    needle: Buffer.from(`"subject":${canonicalStringify(id)}`, 'utf8'),
-  }));
-  const found = new Map<string, Found[]>(wanted.map(({ id }) => [id, []]));
+  const unique = [...new Set(ids)];
+  const searched = unique
+    .filter(writtenAsItself)
+    .map((id) => ({ id, needle: Buffer.from(`"subject":"${id}"`, 'latin1') }));
+  // Not written as itself: no search by bytes is trusted to see every spelling of it.
+  const walkedFor = new Set(unique.filter((id) => !writtenAsItself(id)));
+  const found = new Map<string, Found[]>(unique.map((id) => [id, []]));
 
   segments.forEach((files, tail) => {
     files.forEach((file, segment) => {
@@ -111,7 +134,20 @@ export function subjectEvents(
       const isLast = segment === files.length - 1;
       // A line two needles both find is parsed once.
       const parsed = new Map<number, Entry | null>();
-      for (const { id, needle } of wanted) {
+      const entryAt = (start: number, end: number, newline: number): Entry | null => {
+        let entry = parsed.get(start);
+        if (entry === undefined) {
+          entry = parseStoredLine(
+            raw.subarray(start, end),
+            isLast && newline < 0,
+            (text) => parseEntry(text, upcasters),
+            () => `${file} byte offset ${start}`,
+          );
+          parsed.set(start, entry);
+        }
+        return entry;
+      };
+      for (const { id, needle } of searched) {
         const mine = found.get(id) as Found[];
         let from = 0;
         for (;;) {
@@ -121,27 +157,38 @@ export function subjectEvents(
           const newline = raw.indexOf(NEWLINE, hit);
           const end = newline < 0 ? raw.length : newline;
           from = end + 1;
-          let entry = parsed.get(start);
-          if (entry === undefined) {
-            entry = parseStoredLine(
-              raw.subarray(start, end),
-              isLast && newline < 0,
-              (text) => parseEntry(text, upcasters),
-              () => `${file} byte offset ${start}`,
-            );
-            parsed.set(start, entry);
-          }
+          const entry = entryAt(start, end, newline);
           if (entry !== null && entry.event.subject === id) {
             mine.push({ tail, segment, start, event: entry.event });
           }
         }
+      }
+      if (walkedFor.size === 0) return;
+      // Every line, parsed, as a replay reads it: the empty piece after a newline is no line.
+      let start = 0;
+      while (start < raw.length) {
+        const newline = raw.indexOf(NEWLINE, start);
+        const end = newline < 0 ? raw.length : newline;
+        if (end > start) {
+          const entry = entryAt(start, end, newline);
+          if (entry !== null && walkedFor.has(entry.event.subject)) {
+            (found.get(entry.event.subject) as Found[]).push({
+              tail,
+              segment,
+              start,
+              event: entry.event,
+            });
+          }
+        }
+        if (newline < 0) break;
+        start = newline + 1;
       }
     });
   });
 
   const answer = new Map<string, CatalogEvent[]>();
   let rank: Map<Found, number> | undefined;
-  for (const { id } of wanted) {
+  for (const id of unique) {
     const mine = found.get(id) as Found[];
     // Found tail by tail, segment by segment, line by line: on one tail that IS the order.
     if (new Set(mine.map((one) => one.tail)).size > 1) {

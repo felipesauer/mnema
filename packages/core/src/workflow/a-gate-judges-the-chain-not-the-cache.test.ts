@@ -196,6 +196,18 @@ describe('a gate judges the subject as the chain has it', () => {
     expect(movesOf(phantom)).toEqual([]);
   });
 
+  it('an id in another case is another subject: refused as unknown, as the replay has none', () => {
+    const ctx = session();
+    const { id } = ok(recordDecision(ctx, { title: 'Use X', rationale: 'because' }));
+    const upper = id.toUpperCase();
+
+    const accepted = acceptDecision(ctx, { id: upper, fields: { note: 'yes' } });
+
+    expect(accepted).toMatchObject({ ok: false, code: 'UNKNOWN_DECISION' });
+    expect(events().some((e) => e.subject === upper)).toBe(false);
+    expect(movesOf(id)).toEqual(['null->proposed']);
+  });
+
   it('and the converse: a projection edited to refuse a legal move does not stop it', () => {
     const ctx = session();
     const { id } = ok(recordDecision(ctx, { title: 'Use X', rationale: 'because' }));

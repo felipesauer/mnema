@@ -20,7 +20,7 @@ import { openChainForWriting } from './chain.js';
 import { tailDir } from './layout.js';
 import { UnreadableLineError } from './lines.js';
 import { readTailEntries } from './store.js';
-import { subjectEvents } from './subject-events.js';
+import { subjectEvents, writtenAsItself } from './subject-events.js';
 
 const upcasters = catalogUpcasters();
 const RUN = '0a1b2c3d-0000-4000-8000-00000000abcd';
@@ -86,6 +86,74 @@ describe('the events about a subject, by the bytes that name it', () => {
         ?.map((e) => e.kind),
     ).toEqual(['run.started']);
     expect(() => readTailEntries({ root }, tail, upcasters)).toThrow(UnreadableLineError);
+  });
+
+  it('searches by bytes only an id the canonical form writes as itself', () => {
+    // A minted id (UUIDv7, lower-case hex and dashes) and an anchor (hex) are written as
+    // themselves; a quote, a backslash, a control character or a letter outside ASCII is not.
+    expect(writtenAsItself(RUN)).toBe(true);
+    expect(writtenAsItself('9a9b7666de4e5646bab858882ff59165')).toBe(true);
+    for (const other of ['', 'say "hi"', 'a\\b', 'line\nbreak', 'ação', 'a b']) {
+      expect(writtenAsItself(other)).toBe(false);
+    }
+  });
+
+  it('an id written otherwise than as itself is still found, by reading every line', () => {
+    // The canonical form writes these with an escape, or composed: a search for the id's own
+    // bytes would not see them, so they are not searched for.
+    const quoted = 'say "hi"';
+    const accented = 'ação';
+    const writer = openChainForWriting(root, { keyRoot });
+    const env = (subject: string, at: string) => ({
+      at,
+      who: writer.anchor,
+      signerFp: writer.signerFingerprint,
+      subject,
+    });
+    writer.append(memoryCaptured(env(quoted, '2026-10-01T00:00:01.000Z'), { content: 'one' }));
+    writer.append(memoryCaptured(env(accented, '2026-10-01T00:00:02.000Z'), { content: 'two' }));
+    writer.append(memoryCaptured(env(quoted, '2026-10-01T00:00:03.000Z'), { content: 'three' }));
+
+    const found = subjectEvents({ root }, upcasters, [quoted, accented, RUN]);
+    expect(found.get(quoted)?.map((e) => e.at)).toEqual([
+      '2026-10-01T00:00:01.000Z',
+      '2026-10-01T00:00:03.000Z',
+    ]);
+    expect(found.get(accented)?.map((e) => e.at)).toEqual(['2026-10-01T00:00:02.000Z']);
+    expect(found.get(RUN)).toEqual([]);
+  });
+
+  it('an id is the same subject only as the same string: another case is another subject', () => {
+    // Every fold keys a subject by the exact string; so does this, or a line the fold reads
+    // would be one this does not, or the other way round.
+    writeARun();
+    const upper = RUN.toUpperCase();
+    const found = subjectEvents({ root }, upcasters, [upper, RUN]);
+    expect(found.get(upper)).toEqual([]);
+    expect(found.get(RUN)?.map((e) => e.kind)).toEqual(['run.started', 'run.ended']);
+  });
+
+  it('a line it finds in another Unicode composition is refused, as every reader refuses it', () => {
+    // Valid JSON holding the same value — what a lenient parse would accept. It is not the
+    // canonical serialization of that value, so `parseCanonicalLine` refuses it.
+    const writer = openChainForWriting(root, { keyRoot });
+    writer.append(
+      memoryCaptured(
+        {
+          at: '2026-10-01T00:00:01.000Z',
+          who: writer.anchor,
+          signerFp: writer.signerFingerprint,
+          subject: RUN,
+        },
+        { content: 'café' },
+      ),
+    );
+    const dir = tailDir({ root }, writer.tail);
+    const segment = join(dir, readdirSync(dir).find((name) => name.endsWith('.jsonl')) as string);
+    writeFileSync(segment, readFileSync(segment, 'utf8').replace('café', 'café'.normalize('NFD')));
+
+    expect(() => subjectEvents({ root }, upcasters, [RUN])).toThrow(UnreadableLineError);
+    expect(() => readTailEntries({ root }, writer.tail, upcasters)).toThrow(UnreadableLineError);
   });
 
   it('a line it finds that does not parse is refused, as a replay refuses it', () => {
