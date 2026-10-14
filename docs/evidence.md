@@ -162,6 +162,15 @@ so they are stated as what they were: the day, the model, the number of runs.
 - **Where an agent puts a rule it does not have.** On 27 August 2026, in 16 cells of one arm, with
   no decision available, the agent in 2 of the 16 wrote nothing and ended its turn asking the
   person for the rule. That capture measured no arm, and it does not say why.
+- **In the field, the agent did not reach for the record.** From 10 to 22 September 2026, in one
+  real project and eight sessions of Claude Code (31 transcripts, its subagents' included), 6 of
+  9,448 tool calls went to this server: three `record_observation`, two `resume` and one `search`.
+  The three that wrote came after a person typed that the server should be used, and every tool
+  search the agent made was a `select:` of a name it had already decided on, never a search by
+  what a tool does. In the same eight sessions the host's own memory, whose writes come back at
+  the next session on their own, was written 23 times with nobody asking, and no later session
+  was handed a word of the three notes. It is one project, so it says what happened there and not
+  how often it happens.
 
 ## Not held yet
 
