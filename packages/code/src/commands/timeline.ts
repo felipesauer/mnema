@@ -25,6 +25,7 @@
 import { type TimelineEntry, timeline } from '@mnema/context';
 import { type DiscoveryEnv, resolveTrees } from '@mnema/core';
 import { type AnchorForms, anchorForms } from '../anchors.js';
+import { targetRecordedAs } from '../link-target.js';
 import {
   linkBreaksOf,
   type ScopedLinkBreak,
@@ -82,11 +83,12 @@ export function runTimeline(
   if (trees.projectPublic === undefined) {
     return { ok: false, reason: 'NO_PROJECT' };
   }
+  const recordedAs = targetRecordedAs(trees, input.id);
   return withScopedCaches(trees, (sources) => ({
     ok: true,
     linkBreaks: linkBreaksOf(sources, THE_READING_THAT_OPENED_THESE),
     id: input.id,
-    entries: timeline(sources, input.id),
+    entries: timeline(sources, input.id, recordedAs),
     anchors: anchorForms(sources),
   }));
 }

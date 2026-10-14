@@ -155,6 +155,7 @@ import {
   locateLinkAsRecorded,
   outsideTheProject,
   targetAsRecorded,
+  targetRecordedAs,
 } from '../link-target.js';
 import {
   movedDisplay,
@@ -2321,7 +2322,8 @@ export function runTimelineTool(session: Session, input: { id: string }): Timeli
   if (refused !== undefined) return refused;
   const named = addressedIn(session, input.id);
   if (!named.ok) return ambiguousLabel(named.message);
-  return { ok: true, value: timeline(workspaceCaches(session), named.id) };
+  const recordedAs = targetRecordedAs(session.trees, named.id);
+  return { ok: true, value: timeline(workspaceCaches(session), named.id, recordedAs) };
 }
 
 /** The `audit_refs` result — the graph around an entity, or a refusal. */
@@ -2360,7 +2362,15 @@ export function runReferencesTool(
   if (refused !== undefined) return refused;
   const named = addressedIn(session, input.id);
   if (!named.ok) return ambiguousLabel(named.message);
-  return { ok: true, value: references(workspaceCaches(session), { ...input, id: named.id }) };
+  const recordedAs = targetRecordedAs(session.trees, named.id);
+  return {
+    ok: true,
+    value: references(workspaceCaches(session), {
+      ...input,
+      id: named.id,
+      ...(recordedAs !== undefined ? { recordedAs } : {}),
+    }),
+  };
 }
 
 /** The `governing_rules` result — the rules addressed at a path, or a refusal. */

@@ -15,6 +15,7 @@
 
 import { dirname, isAbsolute } from 'node:path';
 import type { UpcasterRegistry } from '@mnema/chain';
+import type { RecordedAs } from '@mnema/context';
 import { ADDRESS_RELATIONS, locateLinkScope, type ResolvedTrees, type Scope } from '@mnema/core';
 import { addressLiesOutside, addressRelativeToRoot } from './governed-tree.js';
 import { oneLine } from './one-line.js';
@@ -64,8 +65,29 @@ export function outsideTheProject(rel: string, target: string, root: string): st
  */
 export function targetAsRecorded(rel: string, target: string, root: string): string {
   if (!(ADDRESS_RELATIONS as readonly string[]).includes(rel)) return target;
+  return reducedToRoot(target, root);
+}
+
+/** The one reduction: an absolute path goes relative to the root, anything else stays as it is. */
+function reducedToRoot(target: string, root: string): string {
   if (!isAbsolute(target)) return target;
   return addressRelativeToRoot(target, root);
+}
+
+/**
+ * The other spelling a READ may find a link's target under: what the public tree records an
+ * absolute path under the project root as, for the readings that take the text of a target
+ * (`refs`, `timeline`, `audit_refs`, `audit_timeline`). It is the same reduction `link` writes
+ * with, so a read and a write cannot disagree on what a path is recorded as. Undefined when there is
+ * no other spelling (an id, a relative path, no project): the target as typed is then the only one.
+ * What it may answer for is the reading's to decide by relation and by tree (`RecordedAs`): a
+ * relation that carries no address records the target as typed, and only the public tree reduces.
+ */
+export function targetRecordedAs(trees: ResolvedTrees, target: string): RecordedAs | undefined {
+  if (trees.projectPublic === undefined) return undefined;
+  const reduced = reducedToRoot(target, dirname(trees.projectPublic));
+  if (reduced === target) return undefined;
+  return { target: reduced, chainRoot: trees.projectPublic };
 }
 
 /**

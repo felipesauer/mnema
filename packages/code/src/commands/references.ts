@@ -24,6 +24,7 @@
 
 import { type ReferenceDirection, type ReferenceGraph, references } from '@mnema/context';
 import { type DiscoveryEnv, resolveTrees } from '@mnema/core';
+import { targetRecordedAs } from '../link-target.js';
 import { isReferenceDirection } from '../reference-directions.js';
 import {
   linkBreaksOf,
@@ -83,11 +84,13 @@ export function runReferences(
   if (trees.projectPublic === undefined) {
     return { ok: false, reason: 'NO_PROJECT' };
   }
+  const recordedAs = targetRecordedAs(trees, input.id);
   return withScopedCaches(trees, (sources) => ({
     ok: true,
     linkBreaks: linkBreaksOf(sources, THE_READING_THAT_OPENED_THESE),
     graph: references(sources, {
       id: input.id,
+      ...(recordedAs !== undefined ? { recordedAs } : {}),
       ...(direction !== undefined ? { direction } : {}),
       ...(input.depth !== undefined ? { depth: input.depth } : {}),
     }),

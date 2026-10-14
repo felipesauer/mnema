@@ -269,6 +269,7 @@ export {
   type ReferenceQuery,
   references,
 } from './intelligence/references.js';
+export type { RecordedAs } from './intelligence/recorded-as.js';
 export {
   type TimelineEntry,
   timeline,

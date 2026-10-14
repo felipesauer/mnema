@@ -56,6 +56,7 @@
 import type { ReferenceRole, ReferenceRow, Scope } from '@mnema/core';
 import type { ScopedCache } from '../sources.js';
 import type { CatalogEvent, EventKind } from './events.js';
+import { isAnAddressLink, isTheTreeThatReduced, type RecordedAs } from './recorded-as.js';
 
 /** One event in an entity's history, normalized to what a reader needs. */
 export interface TimelineEntry {
@@ -98,11 +99,15 @@ export interface TimelineEntry {
  * being referred to by it. The index applies that rule per tree, and an event
  * belongs to exactly one tree, so it holds across the merge too.
  */
-export function timeline(sources: readonly ScopedCache[], entityId: string): TimelineEntry[] {
+export function timeline(
+  sources: readonly ScopedCache[],
+  entityId: string,
+  recordedAs?: RecordedAs,
+): TimelineEntry[] {
   const streams = sources
     .map((source) => ({
       source,
-      rows: source.cache.references(entityId),
+      rows: rowsOf(source, entityId, recordedAs),
       cursor: 0,
     }))
     .filter((stream) => stream.rows.length > 0);
@@ -125,6 +130,25 @@ export function timeline(sources: readonly ScopedCache[], entityId: string): Tim
  * tree ever gains a third. A stream that copied them would be a second place for the
  * list of them to be maintained.
  */
+/**
+ * One tree's rows for the entity, in the tree's own order. In the tree that reduced a target, the
+ * links of an address relation that point at the other spelling are the entity's too, and an event
+ * the two spellings both name is one row.
+ */
+function rowsOf(
+  source: ScopedCache,
+  entityId: string,
+  recordedAs: RecordedAs | undefined,
+): readonly ReferenceRow[] {
+  const own = source.cache.references(entityId);
+  if (recordedAs === undefined || !isTheTreeThatReduced(source, recordedAs)) return own;
+  const held = new Set(own.map((row) => row.ord));
+  const reduced = source.cache
+    .references(recordedAs.target)
+    .filter((row) => row.role === 'target' && isAnAddressLink(row.event) && !held.has(row.ord));
+  return [...own, ...reduced].sort((a, b) => a.ord - b.ord);
+}
+
 interface Stream {
   readonly source: ScopedCache;
   readonly rows: readonly ReferenceRow[];
