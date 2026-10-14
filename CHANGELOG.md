@@ -173,7 +173,8 @@ tag, with its own changelog.
   read as whole). The next event then reused a seq the checkpoint had signed, failed to be signed, and the write
   exited 1 while the decision it carried showed in `status`. Both append doors now refuse first, under the tail's
   lock, when the last complete line is below the checkpoint's last seq, and every byte of the tail stays where it
-  was, for `verify` to name. Half a line above the last checkpoint, which is what a crash leaves, is still cut and
+  was. The refusal says what `verify` does with it: it fails on a signed line that is cut or missing, and passes on one
+  that only lost its newline, so a pass does not clear the tail. Half a line above the last checkpoint, which is what a crash leaves, is still cut and
   written past.
 - **The second reader refuses a stored line holding an integer no double holds, where it used to stop.** Past the
   largest double, `mnema_verify.py` raised an `OverflowError`, and past 4,300 digits a `ValueError` (the limit Python

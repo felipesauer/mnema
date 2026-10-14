@@ -531,7 +531,12 @@ describe('the writer does not write over a tail cut inside what a checkpoint sig
       }
       expect(thrown).toBeInstanceOf(DamagedTailError);
       expect((thrown as DamagedTailError).code).toBe('TAIL_DAMAGED');
-      expect((thrown as Error).message).toMatch(/signed through seq 2/);
+      const message = (thrown as Error).message;
+      expect(message).toMatch(/signed through seq 2/);
+      expect(message).toMatch(/was not appended, and the tail was left as it was/);
+      // What the sentence says of `verify` is what `verify` does here, not a promise it cannot keep.
+      expect(message).toMatch(/passes on a signed line that only lost its newline/);
+      expect(message).not.toMatch(/names a line that does not read/);
       expect(tailBytes()).toEqual(before);
     }
     expect(resumed.checkpoint()).toBeNull();
@@ -542,6 +547,7 @@ describe('the writer does not write over a tail cut inside what a checkpoint sig
     signedThroughTwo();
     const segment = segmentPath(layout(), tailIdOf(), 1);
     truncateSync(segment, readFileSync(segment).length - 40);
+    expect(verify(root).ok).toBe(false);
     expectBothDoorsRefuse();
   });
 
@@ -562,6 +568,7 @@ describe('the writer does not write over a tail cut inside what a checkpoint sig
       .split('\n')
       .filter((line) => line.length > 0);
     writeFileSync(segment, `${lines.slice(0, 2).join('\n')}\n`, 'utf-8');
+    expect(verify(root).ok).toBe(false);
     expectBothDoorsRefuse();
   });
 

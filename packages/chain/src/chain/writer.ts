@@ -796,7 +796,7 @@ export class ChainWriter {
  * durable append, and only then can a checkpoint sign it; so the only unterminated piece a crash
  * leaves is ABOVE the coverage, and that one the writer still cuts off and writes past. Below the
  * coverage the bytes are something else — an edit, a bad merge, a disk — and they are evidence:
- * `verify` names what is wrong with them. Cutting them back to the last newline erased that
+ * `verify` fails on a cut or missing signed line. Cutting them back to the last newline erased that
  * evidence, chained the next event to a seq the checkpoint had already signed, and then failed
  * to sign it, so the write reported a failure about a fact that had landed. A signed line that
  * only lost its newline is read whole by both readers, and was cut all the same.
@@ -817,8 +817,10 @@ export class DamagedTailError extends CodedError {
     super(
       `this machine's tail ${tail} is signed through seq ${signedThrough}, and ${found}: a line ` +
         'its last checkpoint signed is cut, is missing or has lost its newline, which no crash ' +
-        'leaves. This write was not appended, and the tail was left as it was. Put its files back ' +
-        'as they were committed before writing again (`mnema verify` names a line that does not read).',
+        'leaves. This write was not appended, and the tail was left as it was. `mnema verify` fails ' +
+        'on a signed line that is cut or missing, and passes on a signed line that only lost its ' +
+        'newline, so a pass does not clear this tail: compare its files with the last copy you ' +
+        'trust (the repository, a backup) and put them back before writing again.',
     );
     this.name = 'DamagedTailError';
   }
