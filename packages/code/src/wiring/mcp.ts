@@ -63,7 +63,7 @@ export function registerMcp(program: Command, wiring: Wiring): Declared {
     // older than this option ignores, where an unknown option would stop it): the flag wins.
     .option(
       '--agent-key <name>',
-      "sign as the agent of that name in each tree whose record enrols its key (made with `mnema key request --agent <name> --anchor <id>`, enrolled with `mnema key enroll --agent <name>`); in a tree that does not, the person's key signs and the facts' agent is declared, not attested, or the write is refused where the person's key is protected and MNEMA_KEY_PASSPHRASE is not in the environment, or is not on this machine. Also read from MNEMA_AGENT_KEY",
+      "sign as the agent of that name in each tree whose record enrols its key (made with `mnema key request --agent <name> --anchor <id>`, enrolled with `mnema key enroll --agent <name>`); in a tree that does not, the person's key signs and the facts' agent is declared, not attested, or the write is refused where the person's key is protected and MNEMA_KEY_PASSPHRASE is not in the environment, or is not on this machine. A name that is no agent's (not a lower-case word of letters, digits, dots, dashes and underscores, starting with a letter or a digit) is refused, on each write. Also read from MNEMA_AGENT_KEY",
     )
     .action(async (opts: { project?: string; agentKey?: string }) => {
       // Loaded HERE, not at module scope: the MCP SDK is the heaviest import in

@@ -9,7 +9,7 @@
  * invocation asked to exit with.
  */
 
-import { CodedError } from '@mnema/chain';
+import { CodedError, KeyMadeMeanwhileError } from '@mnema/chain';
 import { describe, expect, it } from 'vitest';
 import { INTERNAL_ERROR_EXIT, InternalError } from './internal-error.js';
 import { renderPlain } from './presentation/plain.js';
@@ -99,6 +99,17 @@ describe('the last-resort catch', () => {
       'mnema hit an internal error: the tail has two heads: this is a fault in mnema, not a refusal of the command',
     ]);
     expect(said.exit).toBe(INTERNAL_ERROR_EXIT);
+  });
+
+  it('says the first key made meanwhile as a refusal under its own code, with exit 1', async () => {
+    const said = await whatItThrows(
+      () => new KeyMadeMeanwhileError('/home/x/.mnema/identity', 'f'.repeat(64)),
+    );
+    expect(said.err).toHaveLength(1);
+    expect(said.err[0]).toContain('Refused (KEY_MADE_MEANWHILE)');
+    expect(said.err[0]).toContain('Nothing was written.');
+    expect(said.err[0]).not.toContain('internal error');
+    expect(said.exit).toBe(1);
   });
 
   it('writes nothing on stdout in either case', async () => {

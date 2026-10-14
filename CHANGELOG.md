@@ -45,7 +45,7 @@ tag, with its own changelog.
   read from `MNEMA_AGENT_KEY`) and the verbs of the command line that write sign with the key in each tree whose record enrols it under
   that name, and the `which` of what they record is the name the record of that tree gave the key, not what the client
   announced; in a tree that does not enrol it the person's key signs, as before, and the server says so for each such
-  tree (and again when the session lands on a project) — and where the person's key is protected and `MNEMA_KEY_PASSPHRASE` is not in the environment, or is not on this machine, the write is
+  tree (and again when the session lands on a project; a name that is no agent's at all is said once, when it opens) — and where the person's key is protected and `MNEMA_KEY_PASSPHRASE` is not in the environment, or is not on this machine, the write is
   refused (`AGENT_NOT_ENROLLED`), naming the verb `key enroll --agent`, and nothing is signed or minted (in the hook
   what is not done is the recording of the fact: the reply to the host is unchanged and says why). The advice to put the passphrase in the environment of an agent's host is gone from the refusal of a
   protected key and from `key protect`. The hook files and manifests the host table generates pass the host's name, and the plugin has
@@ -70,8 +70,8 @@ tag, with its own changelog.
   first request that carries a list of tools is read off what each real host sends its stand-in model, in the
   non-interactive run the contract starts (`claude -p`, `copilot -p`, `opencode run`, `gemini -p`, `codex exec`);
   no interactive mode is measured. In it Claude Code, the Copilot CLI, OpenCode and Gemini CLI carry the whole
-  definition of all 27 (49,882, 50,008, 50,935 and 56,708 bytes; 11,304, 11,444, 11,418 and 12,635 tokens in o200k,
-  a relative measure), against 54,246 bytes and 12,223 tokens for the server's own listing; Codex carries none and
+  definition of all 27 (50,050, 50,176, 51,103 and 56,876 bytes; 11,352, 11,492, 11,466 and 12,683 tokens in o200k,
+  a relative measure), against 54,414 bytes and 12,271 tokens for the server's own listing; Codex carries none and
   one `tool_search` entry that lists the server (2,891 bytes, 672 tokens), and what its search returns for each tool
   is not measured; VS Code's agent is offered none of them in its job, so it is not measured. The figures are those
   of the binary the job installs. Only the description of `guard` changed, and it is longer (the entry under Fixed); a case per host is red when that binary wraps a
@@ -159,6 +159,12 @@ tag, with its own changelog.
 
 ### Fixed
 
+- **The words of the agent-name refusal say what the code does.** The server says the refusal of a name that is no
+  agent's once, at its opening, and no longer once for each tree it reaches. The `guard` description lists the codes it
+  answers with, `AGENT_NAME_REFUSED` and `AMBIGUOUS_MEMBERSHIP` among them, and no longer says it refuses every agent a
+  tree does not enrol (it does where the person's key that would sign instead is not at hand), and the `--help` of
+  `--agent-key` on `mcp` and on `before-a-write` says that a name that is no agent's is refused. The command line
+  labels `KEY_MADE_MEANWHILE` as it does every other refusal.
 - **`guard` says the refusal the key of this machine would give the move, where it used to say ok.** `guard` answered
   `ok` for a task whose write was then refused for the key: the person's key protected by a passphrase with none in the
   environment (`KEY_IS_PROTECTED`), an agent that the task's tree does not enrol while the person's key that would sign
@@ -190,7 +196,8 @@ tag, with its own changelog.
   made at the first write that lands now, as the entry above says: it is kept, with its installation id, at the first
   append, and the server writes its run after the operation's last refusal, in the hold of that write. Two processes
   making a machine's first write at one instant still make one key: the one that keeps second refuses
-  (`KEY_MADE_MEANWHILE`), writes nothing, and its next write signs with the key that is there.
+  (`KEY_MADE_MEANWHILE`), writes nothing, and its next write signs with the key that is there. The command line says it like every other refusal,
+  `Refused (KEY_MADE_MEANWHILE): …`.
 - **A first write refused for what it says makes no key and founds nothing either.** The refusals that judge the fact
   itself — `UNREADABLE_EVENT` (`task create ''`), `NOT_A_TITLE` (`<title>`), `NOT_A_REASON` (`***`) and
   `NOT_A_REFERENCE` (`observe '<id>'`) — came after the founding. From an empty `HOME`, in a project another key
@@ -198,14 +205,15 @@ tag, with its own changelog.
   `identity.founded` and no checkpoint, so `verify --require=signed` failed for the whole project; through the server
   it left 6, with a signed `run.started`, and the refusal said "This key founded an identity of its own", and a refused
   `record_observation` left the same in the private tree without a word. Every operation now asks the fact first and
-  founds after: each of those refusals of the fact leaves nothing in the `HOME`, the public or the private tree, on the command line
-  and through the server, and the first write that lands founds as before. The refusals' words, and what `verify`
+  founds after: each of those refusals of the fact leaves no file in the `HOME`, the public or the private tree, on the command line
+  and through the server (a refusal in the global or the private tree leaves its `locks/` folder there, empty), and the
+  first write that lands founds as before. The refusals' words, and what `verify`
   accepts, are unchanged.
 - **A client whose name is a marker (`<id>`) no longer founds on a first write the server then refuses.** The server's
   session run carries the client's name, and the door refuses a name that is a marker (`NOT_A_REFERENCE`) — but it
   asked the run only after the founding, so an otherwise accepted first write left a key, an anchor and a tail holding
   only `identity.founded`, and `verify --require=signed` failed for the whole project. The run is asked with the
-  operation's own fact, before anything is founded: that write is refused with the same words, leaves nothing in the
+  operation's own fact, before anything is founded: that write is refused with the same words, leaves no file in the
   `HOME`, the public or the private tree, and a client with a name of its own founds as before.
 - **The `project` in an answer is the absolute path again, not the directory's name.** `search`, `read_record`, `audit_refs`,
   `audit_timeline`, `audit_accountability`, `audit_antipatterns` and `audit_exposure` had begun to say `api` where the

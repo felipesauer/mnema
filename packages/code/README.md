@@ -889,7 +889,8 @@ reply to the host is unchanged and says why), naming the verb `key enroll --agen
 server opens and serves its reads on a machine where no key signs, each write is refused in the tree it was for, and a
 session that only reads makes no key. The
 server says, on its error stream, one line for each tree where the agent is not the one that signs, when it opens
-and again when the session lands on a project. A key the record retired in any tree the process reaches is
+and again when the session lands on a project; a name that is no agent's at all is said once, when it opens, and not
+again for each tree or when the session lands. A key the record retired in any tree the process reaches is
 not passed over to yours: its writes are refused in all of them (`REVOKED_KEY`). A key the record proves a member
 of two identities signs for neither (`AMBIGUOUS_MEMBERSHIP`). A name this product does not enrol is no agent and
 no stand-in: every write is refused (`AGENT_NAME_REFUSED`), naming the name that came and the form accepted, and

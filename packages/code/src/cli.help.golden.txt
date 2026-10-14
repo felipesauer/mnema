@@ -1312,8 +1312,10 @@ $ mnema mcp --help
 |                       key signs and the facts' agent is declared, not attested,
 |                       or the write is refused where the person's key is
 |                       protected and MNEMA_KEY_PASSPHRASE is not in the
-|                       environment, or is not on this machine. Also read from
-|                       MNEMA_AGENT_KEY
+|                       environment, or is not on this machine. A name that is no
+|                       agent's (not a lower-case word of letters, digits, dots,
+|                       dashes and underscores, starting with a letter or a digit)
+|                       is refused, on each write. Also read from MNEMA_AGENT_KEY
 |   -h, --help          display help for command
 
 ### mnema run --help
@@ -1354,7 +1356,10 @@ $ mnema before-a-write --help
 |                       the record of that tree gives that key; in a tree that
 |                       does not, the person's key signs, or, where that key is
 |                       protected, the fact is not recorded (the reply to the host
-|                       is unchanged and says why). Also read from MNEMA_AGENT_KEY
+|                       is unchanged and says why); a name that is no agent's (not
+|                       a lower-case word of letters, digits, dots, dashes and
+|                       underscores, starting with a letter or a digit) is refused
+|                       the same way. Also read from MNEMA_AGENT_KEY
 |   -h, --help          display help for command
 |
 | What it reads and what it prints:
