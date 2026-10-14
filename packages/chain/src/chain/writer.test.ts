@@ -52,7 +52,7 @@ import {
   readTailEntries,
   readTailTip,
 } from './store.js';
-import { type ChainWriter, DamagedTailError } from './writer.js';
+import { type ChainWriter, TailDamagedError } from './writer.js';
 
 let root: string;
 
@@ -529,8 +529,8 @@ describe('the writer does not write over a tail cut inside what a checkpoint sig
       } catch (error) {
         thrown = error;
       }
-      expect(thrown).toBeInstanceOf(DamagedTailError);
-      expect((thrown as DamagedTailError).code).toBe('TAIL_DAMAGED');
+      expect(thrown).toBeInstanceOf(TailDamagedError);
+      expect((thrown as TailDamagedError).code).toBe('TAIL_DAMAGED');
       const message = (thrown as Error).message;
       expect(message).toMatch(/signed through seq 2/);
       expect(message).toMatch(/was not appended, and the tail was left as it was/);
