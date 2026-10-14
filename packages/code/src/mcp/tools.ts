@@ -150,7 +150,7 @@ import {
   scopedEventsOf,
 } from '../intelligence-source.js';
 import { type Addressed, addressed, resolveLabel } from '../label-as-address.js';
-import { isLabelShaped, linkRefusal } from '../link-target.js';
+import { isLabelShaped, linkRefusal, outsideTheProject } from '../link-target.js';
 import {
   movedDisplay,
   successorOnlyForASupersede,
@@ -586,6 +586,15 @@ export function runLinkKnowledge(
   if (!target.ok) return ambiguousLabel(target.message);
   const unresolved = linkRefusal({ subject: subject.id, target: target.id });
   if (unresolved !== undefined) return { ok: false, code: 'UNKNOWN_TARGET', message: unresolved };
+  // The public tree travels to every clone: a target no clone can open is refused there, as the
+  // command line refuses it. The private and global trees take any path.
+  const publicRoot =
+    route.scope === 'public' && trees.projectPublic !== undefined
+      ? dirname(trees.projectPublic)
+      : undefined;
+  const outside =
+    publicRoot === undefined ? undefined : outsideTheProject(input.rel, target.id, publicRoot);
+  if (outside !== undefined) return { ok: false, code: 'OUTSIDE_PROJECT', message: outside };
   const { ctx, run, which } = openWrite(session, route.scope, route.target);
   const recorded = ctx.writer.exclusively(() => {
     const written = linkKnowledge(ctx, {

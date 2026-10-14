@@ -431,11 +431,26 @@ export function reachOfAddress(
   ceiling: number = WALK_CEILING,
 ): AddressReach | undefined {
   if (!(ADDRESS_RELATIONS as readonly string[]).includes(rel)) return undefined;
-  return addressReach({
-    address: target,
-    root,
-    tree: { walk: (visit) => walkProject(root, visit, ceiling) },
-  });
+  return reachOver(target, root, (visit) => walkProject(root, visit, ceiling));
+}
+
+/** The one call that derives a reach: the walk is the caller's, so a question that needs none can pass an empty one. */
+function reachOver(
+  address: string,
+  root: string,
+  walk: (visit: (relative: string) => void) => WalkOutcome,
+): AddressReach {
+  return addressReach({ address, root, tree: { walk } });
+}
+
+/**
+ * Whether an address lies outside the project: the same reduction every gate and every reach goes
+ * through (`..` resolved textually, an absolute path made relative when it lies under `root`),
+ * asked without a walk. An address that names nothing in the project is the one this answers `true`
+ * for, which is also the one {@link reachOfAddress} reports as "covers nothing here".
+ */
+export function addressLiesOutside(address: string, root: string): boolean {
+  return reachOver(address, root, () => ({ skipped: [], truncated: false })).address === undefined;
 }
 
 /**

@@ -164,6 +164,14 @@ tag, with its own changelog.
   it without a refusal. The reply to a write routed by `project` still says the directory it fell in. The reads are
   unchanged. `AMBIGUOUS_PROJECT`, which only the name could earn, is gone; the description of `project` in the tool
   definitions changes, and so do their weights (see the contract tests).
+- **Linking, by the command line or by `link_knowledge`, refuses in the public tree a target that is a path outside the project.**
+  A link from a rule to `/etc/passwd` under `governs` was accepted and committed to the tree every clone receives, an
+  address no clone can open (the reply said it "covers nothing here", after the fact was signed). It is now refused as
+  `OUTSIDE_PROJECT` before a writer is opened, under the relations that carry an address (`governs`,
+  `asks-for-a-person`, `refuses-a-write`): an absolute path that does not lie under the project root, or a relative one
+  that climbs out of it (`../x`). A path inside the project, spelled any way, an id, and any other relation
+  (`derived-from` cites the file a proposal was read from) are taken as before. The private and global trees stay on one
+  machine and keep taking any path. The `--help` of `link` says so.
 
 ### Fixed
 
