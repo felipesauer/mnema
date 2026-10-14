@@ -21,9 +21,9 @@ import { runLink } from '../src/commands/link.js';
 import { runReferences } from '../src/commands/references.js';
 import { runTimeline } from '../src/commands/timeline.js';
 import { openSession } from '../src/mcp/session.js';
+import { runReferencesTool, runTimelineTool } from '../src/mcp/tools.js';
 import { renderPlain } from '../src/presentation/plain.js';
 import { referenceReport } from '../src/presentation/references.js';
-import { runReferencesTool, runTimelineTool } from '../src/mcp/tools.js';
 
 let sandbox: string;
 let repo: string;
@@ -244,10 +244,12 @@ describe('what the graph says of an edge found under the other spelling', () => 
     link('src');
     const links = refs(asked()).links;
     expect(links).toHaveLength(2);
-    expect(links.map((l) => [l.to, l.recorded]).sort()).toEqual([
-      [asked(), 'src'],
-      [asked(), undefined],
-    ].sort());
+    expect(links.map((l) => [l.to, l.recorded]).sort()).toEqual(
+      [
+        [asked(), 'src'],
+        [asked(), undefined],
+      ].sort(),
+    );
   });
 
   it('gives the same through the tool', () => {
