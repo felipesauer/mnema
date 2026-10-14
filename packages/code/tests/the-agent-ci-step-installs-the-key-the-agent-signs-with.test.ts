@@ -338,6 +338,11 @@ describe('the step the page publishes for an agent in CI', () => {
       },
     );
     expect(second.status, `${second.stdout}${second.stderr}`).toBe(0);
+    // Its exit says the record is signed; the line below is the second reader saying, in its own
+    // words, that the same three facts are attested by the agent's key (section 6.2).
+    expect(second.stdout).toContain(
+      `3 event(s) attested by an agent key enrolled as "ci" (${fingerprint.slice(0, 12)}`,
+    );
   });
 
   it('refuses the agent a write to a tree the runner cannot enrol it in, and founds nothing', async () => {
