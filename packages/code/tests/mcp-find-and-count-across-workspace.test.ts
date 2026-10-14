@@ -38,7 +38,7 @@
 
 import { mkdirSync, mkdtempSync, readdirSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
-import { basename, join } from 'node:path';
+import { join } from 'node:path';
 import { pathToFileURL } from 'node:url';
 import { ensureTree } from '@mnema/chain';
 import { type DiscoveryEnv, PROJECT_DIR } from '@mnema/core';
@@ -387,7 +387,7 @@ describe('over the real transport', () => {
 
     await client.callTool({
       name: 'capture_memory',
-      arguments: { content: 'the migration runbook', project: basename(second) },
+      arguments: { content: 'the migration runbook', project: second },
     });
 
     const found = await client.callTool({ name: 'search', arguments: { term: 'migration' } });

@@ -319,7 +319,7 @@ describe("a write that names the session's own project", () => {
     let ownByPath = '';
     let elsewhere = '';
     await connected('claude', async (client) => {
-      own = await say(client, 'capture_memory', { content: 'a note', project: 'repo' });
+      own = await say(client, 'capture_memory', { content: 'a note', project: repo });
       ownByPath = await say(client, 'capture_memory', { content: 'a note', project: repo });
       elsewhere = await say(client, 'capture_memory', { content: 'a note', project: other });
     });

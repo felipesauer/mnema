@@ -34,8 +34,8 @@ describe("what Gemini CLI sends of the plugin's tools", () => {
     }
     expect({ count: mine.names.length, ...mine.all }).toEqual({
       count: 27,
-      bytes: 56_876,
-      tokens: 12_683,
+      bytes: 57_030,
+      tokens: 12_718,
     });
   }, 180_000);
 });

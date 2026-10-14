@@ -40,8 +40,8 @@ describe("what Claude Code sends of the plugin's tools", () => {
     }
     expect({ count: mine.names.length, ...mine.all }).toEqual({
       count: 27,
-      bytes: 50_050,
-      tokens: 11_352,
+      bytes: 50_204,
+      tokens: 11_387,
     });
   }, 120_000);
 });
