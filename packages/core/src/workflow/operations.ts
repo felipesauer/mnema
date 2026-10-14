@@ -112,6 +112,14 @@ export interface WriteContext {
    * (`code/tests/a-refusal-leaves-nothing.test.ts`, the append door through the server).
    */
   readonly beforeTheFirstFact?: () => void;
+  /**
+   * What the door says of the fact {@link beforeTheFirstFact} will write, asked BEFORE the founding
+   * with the operation's own: a refusal here (a client name that is a marker) writes no key and
+   * founds nothing, as the operation's own would. THIS WAS NOT ASKED, and the run's event, built
+   * inside the founding, was refused after it, leaving `identity.founded` on a tail with no
+   * checkpoint. Absent where there is no run to write.
+   */
+  readonly askedBeforeFounding?: () => AppendRefusal | undefined;
 }
 
 /**

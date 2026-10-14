@@ -575,6 +575,41 @@ describe('a refusal from the operation’s own door leaves nothing a clone recei
     }
   });
 
+  /**
+   * THE SERVER'S OWN RUN, ASKED BEFORE THE FOUNDING. A client whose name is a marker (`<id>`) has
+   * its `run.started` refused by the door (`NOT_A_REFERENCE`), and that event was built inside the
+   * founding, so the refusal came after it: an otherwise accepted first write left a key, an
+   * anchor and a tail holding only `identity.founded`, and `verify --require=signed` exited 1.
+   */
+  it('a first write from a client named by a marker makes no key and founds nothing — the server', async () => {
+    const project = mkdtempSync(join(tmpdir(), 'mnema-a-refusal-leaves-nothing-marker-'));
+    try {
+      cpSync(join(p0, 'project'), project, { recursive: true });
+      const before = treeOf(project);
+      const beforePrivate = privateTreeOf(project);
+      const { server } = buildMcpServer({ cwd: project, env: { home: homeB }, log: () => {} });
+      const client = new Client({ name: '<id>', version: '1.0.0' }, { capabilities: {} });
+      const [clientTransport, serverTransport] = InMemoryTransport.createLinkedPair();
+      await Promise.all([client.connect(clientTransport), server.connect(serverTransport)]);
+      const refused = (await client.callTool({
+        name: 'create_task',
+        arguments: { title: 'an otherwise accepted write' },
+      })) as { isError?: boolean; content?: { text?: string }[] };
+      const said = (refused.content ?? []).map((c) => c.text).join('\n');
+      expect(refused.isError, said).toBe(true);
+      expect(said).toContain('NOT_A_REFERENCE');
+      expect(said).not.toContain('founded an identity');
+      expect(treeOf(project)).toEqual(before);
+      expect(privateTreeOf(project)).toEqual(beforePrivate);
+      expect(readdirSync(homeB)).toEqual([]);
+      await client.close();
+      const verified = mnemaIn(project, homeB, 'verify', '--require=signed');
+      expect(verified.status, verified.stdout + verified.stderr).toBe(0);
+    } finally {
+      rmSync(project, { recursive: true, force: true });
+    }
+  });
+
   it('where the door words the refusal, it says the fact did not land — not that nothing did', () => {
     const project = mkdtempSync(join(tmpdir(), 'mnema-a-refusal-leaves-nothing-words-'));
     try {
