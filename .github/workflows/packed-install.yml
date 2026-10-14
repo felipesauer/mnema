@@ -1,0 +1,56 @@
+name: Packed install
+
+# THE FIVE PACKAGES, PACKED AND INSTALLED TOGETHER, THE WAY A PERSON INSTALLS THEM. Every other job
+# runs the workspace's own `dist` beside its own `node_modules`, where a package that the tarballs
+# leave out, a file `files` does not list and a `workspace:*` that never became a version all
+# resolve anyway. This one packs the publishable packages with `pnpm pack`, installs the tarballs
+# in ONE `npm i -g` into an empty prefix with an empty HOME and cache, and runs the installed
+# binary through `init`, `decision record` and `verify` in an empty project. It goes red if a
+# package is missing, if the install cannot resolve, if the binary does not print the version of
+# the package or does not run, or if `verify` does not say the record is intact.
+#
+# WHEN. On a push to `main` and on a `v*` tag, NOT on a pull request: it packs and installs five
+# packages, which a pull request does not need to pay for on every push, and the tag is the moment
+# the tarballs a release attaches are made. It is not a required check and nothing waits for it.
+#
+# WHAT IT DOES NOT PROVE. It installs from the tarballs of the commit it runs on, not from the
+# release's own URLs (the last step of "Cutting a release" still does that by hand), and it runs
+# on one Node, the newest 24. It needs no secret and no account, and publishes nothing.
+#
+# THE STEPS ARE `.github/the-packed-install/run.sh`, so that the same command runs on a
+# workstation: `pnpm build && bash .github/the-packed-install/run.sh`.
+
+on:
+  push:
+    branches: [main]
+    tags: ['v*']
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  the-packed-install:
+    name: the packed install
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - uses: pnpm/action-setup@0977fd99725f1db4007ccb2928dbb4e90d06cc86 # v6.0.10
+
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: '24'
+          cache: 'pnpm'
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Build
+        run: pnpm build
+
+      - name: Pack the five, install them together, init, record, verify
+        run: bash .github/the-packed-install/run.sh

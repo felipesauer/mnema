@@ -1165,6 +1165,7 @@ const CLAUSES_PER_FILE: Readonly<Record<string, number>> = {
   'packages/code/tests/the-opening-fits-the-screen.test.ts': 17,
   'packages/code/tests/the-opening-refusal-says-which-trees-it-checked.test.ts': 12,
   'packages/code/tests/the-origin-travels-beside-the-label.test.ts': 17,
+  'packages/code/tests/the-packed-install-runs-on-main-and-tags.test.ts': 4,
   'packages/code/tests/the-page-shows-its-seams.test.ts': 19,
   'packages/code/tests/the-panel.test.ts': 21,
   'packages/code/tests/the-pattern-leaves-in-the-hosts-shape.test.ts': 6,
