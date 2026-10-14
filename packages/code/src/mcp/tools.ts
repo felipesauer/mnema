@@ -150,7 +150,7 @@ import {
   scopedEventsOf,
 } from '../intelligence-source.js';
 import { type Addressed, addressed, resolveLabel } from '../label-as-address.js';
-import { isLabelShaped, linkRefusal, outsideTheProject } from '../link-target.js';
+import { isLabelShaped, linkRefusal, outsideTheProject, targetAsRecorded } from '../link-target.js';
 import {
   movedDisplay,
   successorOnlyForASupersede,
@@ -595,11 +595,14 @@ export function runLinkKnowledge(
   const outside =
     publicRoot === undefined ? undefined : outsideTheProject(input.rel, target.id, publicRoot);
   if (outside !== undefined) return { ok: false, code: 'OUTSIDE_PROJECT', message: outside };
+  // What the public tree records is the target relative to the root when it was typed absolute.
+  const recordedTarget =
+    publicRoot === undefined ? target.id : targetAsRecorded(input.rel, target.id, publicRoot);
   const { ctx, run, which } = openWrite(session, route.scope, route.target);
   const recorded = ctx.writer.exclusively(() => {
     const written = linkKnowledge(ctx, {
       subject: subject.id,
-      target: target.id,
+      target: recordedTarget,
       rel: input.rel,
       which,
       run,
@@ -616,7 +619,7 @@ export function runLinkKnowledge(
   // whenever the caller named one. A write that landed outside a project has no root
   // for an address to be relative to and reports no reach.
   const root = trees.projectPublic === undefined ? undefined : dirname(trees.projectPublic);
-  const reach = root === undefined ? undefined : reachOfAddress(recorded.rel, target.id, root);
+  const reach = root === undefined ? undefined : reachOfAddress(recorded.rel, recordedTarget, root);
   // WHERE THE RULE THIS LINK NAMES LIVES, asked here for the same reason the command
   // line asks it: a link is accepted with a subject in any tree or in none, and this is
   // the moment the caller can still write the rule where it belongs. The rule is the

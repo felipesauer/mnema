@@ -16,7 +16,7 @@ import { type DiscoveryEnv, orderedEvents, projectLinks, resolveTrees } from '@m
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { runInit } from '../src/commands/init.js';
 import { runLink } from '../src/commands/link.js';
-import { outsideTheProject } from '../src/link-target.js';
+import { outsideTheProject, targetAsRecorded } from '../src/link-target.js';
 import { openSession } from '../src/mcp/session.js';
 import { runLinkKnowledge } from '../src/mcp/tools.js';
 
@@ -110,5 +110,96 @@ describe('the one function', () => {
     expect(outsideTheProject('governs', 'src/a', '/p')).toBeUndefined();
     expect(outsideTheProject('governs', 'an-id', '/p')).toBeUndefined();
     expect(outsideTheProject('derived-from', '/etc/passwd', '/p')).toBeUndefined();
+  });
+});
+
+/**
+ * AN ABSOLUTE PATH UNDER THE ROOT IS RECORDED RELATIVE TO IT.
+ *
+ * `<root>/src` committed as typed is "inside" on the machine that wrote it and "outside" in a clone
+ * with another root: the defect the refusal above closes for paths that leave, still open for paths
+ * that stay. The public tree takes the reduction the gates compare by; an already-relative target,
+ * a `derived-from` target and the private and global trees are recorded as typed.
+ */
+describe('an absolute path under the root', () => {
+  const SPELLINGS: ReadonlyArray<readonly [(root: string) => string, string]> = [
+    [(root) => join(root, 'src'), 'src'],
+    [(root) => `${root}/a/../src`, 'src'],
+    [(root) => `${root}/src/new.ts`, 'src/new.ts'],
+    [(root) => root, '.'],
+  ];
+
+  function tool() {
+    return openSession({
+      clientName: 'agent-alpha',
+      roots: [pathToFileURL(repo).href],
+      env,
+    });
+  }
+
+  it.each(SPELLINGS)('is recorded relative by the command line (%#)', (spell, recorded) => {
+    const linked = runLink(
+      { cwd: repo, env },
+      { subject: 'rule-1', target: spell(repo), rel: 'governs' },
+    );
+    expect(linked.ok).toBe(true);
+    expect(publicTargets()).toEqual([recorded]);
+  });
+
+  it.each(SPELLINGS)('is recorded relative by the tool (%#)', (spell, recorded) => {
+    const linked = runLinkKnowledge(tool(), {
+      subject: 'rule-1',
+      target: spell(repo),
+      rel: 'governs',
+    });
+    expect(linked.ok).toBe(true);
+    expect(publicTargets()).toEqual([recorded]);
+  });
+
+  it('reports the same reach whether it was typed absolute or relative, on both doors', () => {
+    const typed = runLink(
+      { cwd: repo, env },
+      { subject: 'rule-1', target: join(repo, 'src'), rel: 'governs' },
+    );
+    const plain = runLink({ cwd: repo, env }, { subject: 'rule-1', target: 'src', rel: 'governs' });
+    expect(typed.ok && plain.ok).toBe(true);
+    if (!(typed.ok && plain.ok)) return;
+    expect(typed.target).toBe('src');
+    expect(typed.reach).toBeDefined();
+    expect(typed.reach).toEqual(plain.reach);
+    const door = runLinkKnowledge(tool(), {
+      subject: 'rule-2',
+      target: join(repo, 'src'),
+      rel: 'governs',
+    });
+    expect(door.ok && door.reach).toEqual(plain.reach);
+  });
+
+  it('leaves an already-relative target exactly as typed', () => {
+    for (const target of ['src/', './src', 'an-id']) {
+      runLink({ cwd: repo, env }, { subject: 'rule-1', target, rel: 'governs' });
+    }
+    expect(publicTargets()).toEqual(['src/', './src', 'an-id']);
+  });
+
+  it('is recorded as typed under derived-from, and in the private and global trees', () => {
+    runLink(
+      { cwd: repo, env },
+      { subject: 'rule-1', target: join(repo, 'src'), rel: 'derived-from' },
+    );
+    expect(publicTargets()).toEqual([join(repo, 'src')]);
+    const private_ = runLink(
+      { cwd: repo, env },
+      { subject: 'rule-1', target: join(repo, 'src'), rel: 'governs', scope: 'private' },
+    );
+    expect(private_.ok && private_.target).toBe(join(repo, 'src'));
+  });
+
+  it('is one function: absolute under the root reduces, nothing else moves', () => {
+    expect(targetAsRecorded('governs', '/p/src', '/p')).toBe('src');
+    expect(targetAsRecorded('refuses-a-write', '/p/a/../src', '/p')).toBe('src');
+    expect(targetAsRecorded('governs', '/p', '/p')).toBe('.');
+    expect(targetAsRecorded('governs', 'src/', '/p')).toBe('src/');
+    expect(targetAsRecorded('derived-from', '/p/src', '/p')).toBe('/p/src');
   });
 });

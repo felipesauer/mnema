@@ -20,7 +20,9 @@
  * id, one several carry is refused with their ids, and one no decision carries is refused outright
  * (`link-target.ts`) — a label is never recorded as it was typed, on either end. So is a path
  * outside the project, as the target of an address relation, in the public tree that reaches every
- * clone (`outsideTheProject`); the private and global trees take any path.
+ * clone (`outsideTheProject`); the private and global trees take any path. A path inside, typed
+ * absolute, is recorded relative to the root in the public tree (`targetAsRecorded`): an absolute
+ * path names one machine's root, and a clone with another would read it as outside.
  *
  * The birth scope is a per-action choice: an explicit `scope` wins; when omitted,
  * the KIND decides — a link asserts a relation between records of the project, so
@@ -41,7 +43,7 @@ import {
 import { linkKnowledge, openTreeForWriting } from '@mnema/core/write';
 import { reachOfAddress } from '../governed-tree.js';
 import { resolveAddress } from '../label-as-address.js';
-import { linkRefusal, outsideTheProject } from '../link-target.js';
+import { linkRefusal, outsideTheProject, targetAsRecorded } from '../link-target.js';
 import { forwardReplacement, type Landed, type Replacement } from '../recorded-content.js';
 import {
   type AgentWrites,
@@ -156,7 +158,12 @@ export function runLink(
   const outside =
     publicRoot === undefined ? undefined : outsideTheProject(input.rel, target.id, publicRoot);
   if (outside !== undefined) return refusedLink('OUTSIDE_PROJECT', outside);
-  const ends = { subject: subject.id, target: target.id };
+  // And what the public tree records is the target relative to the root when it was typed absolute.
+  const ends = {
+    subject: subject.id,
+    target:
+      publicRoot === undefined ? target.id : targetAsRecorded(input.rel, target.id, publicRoot),
+  };
 
   const which = whichOfTheWrite(writing, scope, input.which);
 

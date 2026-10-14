@@ -454,6 +454,16 @@ export function addressLiesOutside(address: string, root: string): boolean {
 }
 
 /**
+ * The address as the gates compare it: relative to `root`, POSIX, `..` resolved, the root itself
+ * `.`. An address that lies outside the project has no such form and comes back as it was given.
+ * The one reduction a recorded address is written through, so what a clone reads is what this
+ * machine's gates decided by.
+ */
+export function addressRelativeToRoot(address: string, root: string): string {
+  return reachOver(address, root, () => ({ skipped: [], truncated: false })).address ?? address;
+}
+
+/**
  * Walks the project's files, calling `visit` with each project-relative POSIX path.
  *
  * Counts entries that are FILES and descends into entries that are DIRECTORIES, which

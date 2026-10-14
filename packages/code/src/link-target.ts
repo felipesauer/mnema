@@ -14,7 +14,8 @@
  */
 
 import { ADDRESS_RELATIONS } from '@mnema/core';
-import { addressLiesOutside } from './governed-tree.js';
+import { isAbsolute } from 'node:path';
+import { addressLiesOutside, addressRelativeToRoot } from './governed-tree.js';
 import { oneLine } from './one-line.js';
 
 /** Whether a word has the shape of a decision label (`ADR-` and a number). */
@@ -48,7 +49,20 @@ export function linkRefusal(ends: {
  */
 export function outsideTheProject(rel: string, target: string, root: string): string | undefined {
   if (!(ADDRESS_RELATIONS as readonly string[]).includes(rel)) return undefined;
-  if (!target.includes('/') && target !== '..') return undefined;
   if (!addressLiesOutside(target, root)) return undefined;
   return `"${oneLine(target)}" is outside this project, and a link in the public tree reaches every clone, none of which can open that path. Link a path inside the project, or record the link with --scope private. Nothing was recorded.`;
+}
+
+/**
+ * The target as the PUBLIC tree records it. An absolute path under the project root is written
+ * relative to it, through the reduction the gates compare by (`addressRelativeToRoot`): an absolute
+ * path is "inside" only on the machine whose root it names, and in a clone with another root it
+ * would be an address outside the project, which is the one thing that tree must not carry. A
+ * target already relative, a relation that carries no address, and a path outside (refused before
+ * this is asked) are recorded as typed.
+ */
+export function targetAsRecorded(rel: string, target: string, root: string): string {
+  if (!(ADDRESS_RELATIONS as readonly string[]).includes(rel)) return target;
+  if (!isAbsolute(target)) return target;
+  return addressRelativeToRoot(target, root);
 }

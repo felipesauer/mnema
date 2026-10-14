@@ -42,7 +42,7 @@ export function registerLink(program: Command, wiring: Wiring): Declared {
       // Somebody reading this to record a gate still needs to be told which label has the
       // power, which is why each is named and none is dropped — the third, which refuses a
       // write, included.
-      'what it points at: another id, or a path (an address, under --rel governs, asks-for-a-person or refuses-a-write; one outside the project is refused in the public tree)',
+      'what it points at: another id, or a path (an address, under --rel governs, asks-for-a-person or refuses-a-write; one outside the project is refused in the public tree, and an absolute one inside it is recorded relative to the root)',
     )
     .requiredOption('--rel <label>', `the relation (${RECOMMENDED_RELATIONS})`)
     .addOption(
