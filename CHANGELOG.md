@@ -45,7 +45,7 @@ tag, with its own changelog.
   read from `MNEMA_AGENT_KEY`) and the verbs of the command line that write sign with the key in each tree whose record enrols it under
   that name, and the `which` of what they record is the name the record of that tree gave the key, not what the client
   announced; in a tree that does not enrol it the person's key signs, as before, and the server says so for each such
-  tree (and again when the session lands on a project) — and where the person's key is protected and `MNEMA_KEY_PASSPHRASE` is not in the environment, or is not on this machine, the write is
+  tree (and again when the session lands on a project; a name that is no agent's at all is said once, when it opens) — and where the person's key is protected and `MNEMA_KEY_PASSPHRASE` is not in the environment, or is not on this machine, the write is
   refused (`AGENT_NOT_ENROLLED`), naming the verb `key enroll --agent`, and nothing is signed or minted (in the hook
   what is not done is the recording of the fact: the reply to the host is unchanged and says why). The advice to put the passphrase in the environment of an agent's host is gone from the refusal of a
   protected key and from `key protect`. The hook files and manifests the host table generates pass the host's name, and the plugin has
