@@ -129,17 +129,11 @@ const WHICH_PROGRAM = '--identify';
 const THIS_PRODUCT = '@mnema/code';
 
 /**
- * How the product is installed until it is on npm: the five tarballs of the GitHub release, in
- * one command, the line `docs/install.md` gives (`the-install-line-is-one.test.ts` holds them
- * together). Move it to `npm install -g @mnema/code` when the packages are published.
+ * Where the install is written, until the packages are on npm: the page spells the steps, and
+ * `the-install-line-is-one.test.ts` holds this line to it. Move it to `npm install -g @mnema/code`
+ * when the packages are published.
  */
-const PRERELEASE = '0.2.0-beta';
-const PRERELEASE_INSTALL = `npm i -g ${['chain', 'core', 'context', 'stacks', 'code']
-  .map(
-    (name) =>
-      `https://github.com/felipesauer/mnema/releases/download/v${PRERELEASE}/mnema-${name}-${PRERELEASE}.tgz`,
-  )
-  .join(' ')}`;
+const INSTALL_PAGE = 'https://github.com/felipesauer/mnema/blob/main/docs/install.md';
 
 /** How much of what a stranger answered is quoted back — enough to recognize it. */
 const QUOTED = 120;
@@ -207,7 +201,7 @@ export function aStranger(stranger) {
     `The mnema plugin did not run the program named mnema first on this session's PATH: it is not ${THIS_PRODUCT}.`,
     `Asked \`mnema --identify\`, which ${THIS_PRODUCT} answers with its name and version, it ${answered}.`,
     "So this project's record was not handed to this session, and the MCP server the plugin declares starts that same program.",
-    `\`which -a mnema\` lists every program of that name on the PATH; the plugin runs the first, and ${THIS_PRODUCT} installs one: until the packages are published, the pre-release (\`${PRERELEASE_INSTALL}\`).`,
+    `\`which -a mnema\` lists every program of that name on the PATH; the plugin runs the first, and ${THIS_PRODUCT} installs one: nothing is on npm yet, so it is built from the source (${INSTALL_PAGE}).`,
   ].join('\n');
 }
 

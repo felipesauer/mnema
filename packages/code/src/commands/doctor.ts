@@ -64,7 +64,6 @@ import {
   personsKeyInTheClear,
   THE_AGENT_KEY_SEPARATES_NOTHING,
 } from '../the-persons-key-in-the-clear.js';
-import { VERSION } from '../version.js';
 import { type Plan, planFix, readLocations, SETTING, settingsCandidates } from './doctor-vscode.js';
 import { stacksHere } from './stack-inspect.js';
 
@@ -153,16 +152,10 @@ function binariesOnPath(processEnv: NodeJS.ProcessEnv): { path: string; real: st
 }
 
 /**
- * The install of the pre-release, until the packages are published: `@mnema/code` depends on the
- * other four, so the five tarballs of the GitHub release go in one command. It is the line the
- * install page (`docs/install.md`) gives, and `the-install-line-is-one.test.ts` holds the two together.
+ * Where the install is written, until the packages are on npm. The page is the only place that
+ * spells the steps, and `the-install-line-is-one.test.ts` holds this line to it.
  */
-const PRERELEASE_INSTALL = `npm i -g ${['chain', 'core', 'context', 'stacks', 'code']
-  .map(
-    (name) =>
-      `https://github.com/felipesauer/mnema/releases/download/v${VERSION}/mnema-${name}-${VERSION}.tgz`,
-  )
-  .join(' ')}`;
+const INSTALL_PAGE = 'https://github.com/felipesauer/mnema/blob/main/docs/install.md';
 
 function binaryFindings(ctx: DoctorContext): Finding[] {
   const binaries = binariesOnPath(ctx.processEnv);
@@ -174,7 +167,7 @@ function binaryFindings(ctx: DoctorContext): Finding[] {
         state: 'attention',
         line:
           'no “mnema” on the PATH: the plugin and any MCP entry that runs `mnema mcp` cannot start it — ' +
-          `install the pre-release v${VERSION} (\`npm i -g @mnema/code\` answers 404 until the packages are published) with \`${PRERELEASE_INSTALL}\`, or put the directory of this binary on the PATH.`,
+          `nothing is on npm yet, so \`npm i -g @mnema/code\` answers 404: build from the source (${INSTALL_PAGE}), or put the directory of this binary on the PATH.`,
       },
     ];
   }

@@ -664,17 +664,17 @@ export const NAMES_THAT_NEED_MORE: Readonly<
  * moved the same three rows, so two changes in two files collided in one line. Each file has its
  * own row now, in the form `PAGES` of the shell guard has, and the comparison stays exact in both
  * directions: a file that begins handing commands over is a row somebody has to write, and a
- * file whose commands all went is a row somebody has to remove. The totals above, 259 lines, 305
+ * file whose commands all went is a row somebody has to remove. The totals above, 257 lines, 306
  * names, 8 flags and 4 unwritten, are the sum of the rows. The history of each total is in the
  * version control of this file.
  *
- * THE INSTALL PAGE'S LINE ROW IS 5 NOW: its install block gives the five tarballs of the pre-release,
- * one more than the four it gave before `@mnema/stacks` was one of them.
+ * THE INSTALL PAGE'S LINE ROW IS 3 NOW: its install block is the install from the
+ * source, and the pre-release's tarball URLs it gave before are gone.
  */
 export const HANDED_OVER: Readonly<
   Record<string, Readonly<Partial<Record<Reading['kind'], number>>>>
 > = {
-  'CHANGELOG.md': { line: 29, name: 38, flag: 1 },
+  'CHANGELOG.md': { line: 29, name: 39, flag: 1 },
   'README.md': { line: 2, name: 10 },
   'SECURITY.md': { name: 2 },
   'docs/agent-hosts.md': { line: 4, name: 3 },
@@ -682,7 +682,7 @@ export const HANDED_OVER: Readonly<
   'docs/features.md': { line: 7, name: 11 },
   'docs/first-record.md': { line: 1, name: 4 },
   'docs/how-it-works.md': { line: 2, name: 1 },
-  'docs/install.md': { line: 5, name: 4 },
+  'docs/install.md': { line: 3, name: 4 },
   'docs/packages.md': { line: 1, name: 2 },
   'docs/site.md': { line: 1, name: 3 },
   'docs/verify-without-installing.md': { name: 1 },

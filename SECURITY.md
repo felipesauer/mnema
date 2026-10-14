@@ -2,14 +2,12 @@
 
 ## Supported versions
 
-Fixes are made on the default branch. The `@mnema/*` packages built from it have
-pre-releases on GitHub, the latest `v0.2.0-beta`, as tarballs, and nothing on npm yet
-(`npm view @mnema/code version` says whether that is still so). Until a release, the supported
-version is the default branch itself; after one, the latest release.
+Fixes are made on the default branch, `main`, and it is the supported version: there is no release
+and no tag, and nothing is on npm yet (`npm view @mnema/code version` says whether that is still so).
 
 The 0.x alpha published earlier as `@felipesauer/mnema` is the previous line. It is
-deprecated on npm (`npm view @felipesauer/mnema deprecated` says so), it lives on the
-`archive/alpha-0.14` tag, kept as it was, and it receives no fixes.
+deprecated on npm (`npm view @felipesauer/mnema deprecated` says so), it lives at
+commit `ef736fc6b1f682a513f02f335ad5b7e2e338eca6`, kept as it was, and it receives no fixes.
 
 ## Reporting a vulnerability
 

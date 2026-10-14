@@ -9,7 +9,6 @@
 
 <p>
 <a href="https://github.com/felipesauer/mnema/actions/workflows/ci.yml"><img alt="CI" src="https://img.shields.io/github/actions/workflow/status/felipesauer/mnema/ci.yml?branch=main&amp;style=flat-square&amp;label=CI&amp;color=997dbf"></a>
-<a href="https://github.com/felipesauer/mnema/releases"><img alt="Release" src="https://img.shields.io/github/v/release/felipesauer/mnema?include_prereleases&amp;style=flat-square&amp;label=release&amp;color=997dbf"></a>
 <a href="LICENSE"><img alt="License: Apache-2.0" src="https://img.shields.io/badge/license-Apache--2.0-997dbf?style=flat-square"></a>
 <img alt="Node 24.15.0 or a later 24, or 26.0.0 or later" src="https://img.shields.io/badge/node-%5E24.15.0%20%7C%7C%20%E2%89%A526.0.0-997dbf?style=flat-square">
 </p>
@@ -59,7 +58,7 @@ installing this.
 ## Quick start
 
 ```sh
-# install: npm i -g the five release tarballs; the exact line is in docs/install.md
+# install: build from source until the packages are on npm; the exact lines are in docs/install.md
 claude plugin marketplace add felipesauer/mnema   # the plugin hands each session the record
 claude plugin install mnema@mnema
 cd your-repository && mnema init
@@ -119,9 +118,7 @@ of a session, (c) a refusal before a write, (d) a pause for a person.
 
 Each cell of the full table, how each one is known — held by a test, read once on a real host, or
 documented and not measured — and the notes on each host are in
-[How each claim is held](docs/evidence.md#each-hosts-rung). The plugins of Codex, Copilot CLI,
-OpenCode and Gemini CLI need a `mnema` of `v0.2.0-beta` or newer: the earlier pre-release does not
-know them ([why](docs/install.md#which-mnema-the-newer-plugins-need)).
+[How each claim is held](docs/evidence.md#each-hosts-rung).
 
 ## Features
 

@@ -50,7 +50,7 @@ offline — the projection is deterministic, but the merge policy is a separate 
 npm i @mnema/core
 ```
 
-Nothing is on npm yet, so that answers 404 until the first publication; the [install page](../../docs/install.md) has the install of the pre-release `v0.2.0-beta` from its tarballs.
+Nothing is on npm yet, so that answers 404 until the first publication; the [install page](../../docs/install.md) has the install from the source.
 
 **It is released because `@mnema/code` depends on it, not because you should install
 it.** This section used to say it was internal and never published; what falsified that
