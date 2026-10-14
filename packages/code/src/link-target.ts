@@ -13,8 +13,8 @@
  * is legitimately cross-tree, and an address may name a path the tree does not hold yet.
  */
 
-import { ADDRESS_RELATIONS } from '@mnema/core';
 import { isAbsolute } from 'node:path';
+import { ADDRESS_RELATIONS } from '@mnema/core';
 import { addressLiesOutside, addressRelativeToRoot } from './governed-tree.js';
 import { oneLine } from './one-line.js';
 
