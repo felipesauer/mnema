@@ -188,10 +188,10 @@ export class ChainWriter {
 
   /**
    * Set by `recover()` when the tail's end falls short of what its last checkpoint signed, and
-   * thrown by both append doors before anything is sealed ({@link DamagedTailError}). Cleared by
+   * thrown by both append doors before anything is sealed ({@link TailDamagedError}). Cleared by
    * the next recovery that finds the tail whole again.
    */
-  private damage: DamagedTailError | undefined;
+  private damage: TailDamagedError | undefined;
 
   /**
    * The tail as this writer last left it. Compared under the lock before every act;
@@ -450,7 +450,7 @@ export class ChainWriter {
    *      the fragment, and the next append reused a seq the checkpoint had already
    *      signed and then failed to sign — reporting a failure about a fact that
    *      had landed. A last complete line below the checkpoint's `toSeq` is not
-   *      something a crash leaves ({@link DamagedTailError}), so then nothing is
+   *      something a crash leaves ({@link TailDamagedError}), so then nothing is
    *      cut, and both append doors refuse. Above the coverage the fragment is the
    *      crash's, and it is cut as it always was. (Readers that do not heal — the
    *      verifier, the replay — still tolerate the fragment on read.)
@@ -488,7 +488,7 @@ export class ChainWriter {
     const lastComplete = tip.at(-1)?.link.seq ?? -1;
     if (lastCp !== undefined && lastComplete < lastCp.toSeq) {
       // Nothing is cut, nothing is owed a signature, and both append doors refuse.
-      this.damage = new DamagedTailError(this.tailId, lastCp.toSeq, lastComplete);
+      this.damage = new TailDamagedError(this.tailId, lastCp.toSeq, lastComplete);
       this.nextSeq = lastCp.toSeq + 1;
       this.pending = [];
       return;
@@ -653,7 +653,7 @@ export class ChainWriter {
 
   /**
    * Refuses to append to a tail whose end falls short of what its last checkpoint signed
-   * ({@link DamagedTailError}). First in both append doors, so it runs under the lock, after the
+   * ({@link TailDamagedError}). First in both append doors, so it runs under the lock, after the
    * recovery that found the damage, and before anything is cited, born or sealed.
    */
   private refuseDamagedTail(): void {
@@ -804,7 +804,7 @@ export class ChainWriter {
  * So it is a REFUSAL, thrown by both append doors under the tail's lock and before anything is
  * sealed, and the tail is left byte for byte as it was found.
  */
-export class DamagedTailError extends CodedError {
+export class TailDamagedError extends CodedError {
   readonly code = 'TAIL_DAMAGED';
 
   constructor(
@@ -822,7 +822,7 @@ export class DamagedTailError extends CodedError {
         'newline, so a pass does not clear this tail: compare its files with the last copy you ' +
         'trust (the repository, a backup) and put them back before writing again.',
     );
-    this.name = 'DamagedTailError';
+    this.name = 'TailDamagedError';
   }
 }
 
