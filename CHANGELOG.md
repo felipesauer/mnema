@@ -193,6 +193,19 @@ with its own changelog.
 
 ### Fixed
 
+- **A clone that rewrites line ends no longer turns an honest record red, and when it happens anyway the refusal
+  says CRLF.** A `git clone` with `core.autocrlf=true` (the Git for Windows default) put a carriage return at the
+  end of every line of the record, and both `verify` and the second reader refused it whole with the sentence a
+  tampered line gets. The project tree now carries a `.gitattributes` holding `* -text`, written like its
+  `.gitignore` at the first write and added to an older tree at its next one; it reaches a clone once it is
+  committed. A line whose only difference from its signed bytes is a final `\r` is still refused, by both readers,
+  and the cause now names the CRLF and the remedy. `FORMAT.md` also says what both readers always did with an empty
+  line in the middle of a file: it is passed over.
+- **Every character the Unicode standard says draws nothing is made visible.** The soft hyphen, the Hangul fillers,
+  the variation selectors (both blocks), the musical and interlinear format marks and the line and paragraph
+  separators came out raw in `show`, `search`, `status` and `--json`; the class written as an escape is now every
+  Default_Ignorable_Code_Point, the two separators, U+FFF9 to U+FFFB and U+13430 to U+1343F, as a fixed list at
+  Unicode 17. A selector after an emoji is escaped too (`❤\ufe0f`).
 - **A gate judges a move on the subject as the chain has it, not on the projection kept beside the record.** The
   state a decision, a task or a skill is in, whether a run is still open, and whether a subject or a supersede's
   successor exists at all were read from the projection a tree keeps in `locks/projection.db`, a cache nothing signs: edited by hand, it let a
