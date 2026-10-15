@@ -59,9 +59,26 @@ function python(args: readonly string[], input?: string) {
 const textArb: fc.Arbitrary<string> = fc.oneof(
   fc.string({ unit: 'binary', maxLength: 12 }).filter((text) => !/\p{Surrogate}/u.test(text)),
   fc
-    .array(fc.constantFrom('e', '\u00e9', 'e\u0301', '\u00c5', 'A\u030a', '\ufb03', '😀', 'ß', '"', '\\', '\n', '/', '<'), {
-      maxLength: 6,
-    })
+    .array(
+      fc.constantFrom(
+        'e',
+        '\u00e9',
+        'e\u0301',
+        '\u00c5',
+        'A\u030a',
+        '\ufb03',
+        '😀',
+        'ß',
+        '"',
+        '\\',
+        '\n',
+        '/',
+        '<',
+      ),
+      {
+        maxLength: 6,
+      },
+    )
     .map((parts) => parts.join('')),
 );
 
