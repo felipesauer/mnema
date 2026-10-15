@@ -27,8 +27,17 @@ with its own changelog.
   a move by a machine that cited nothing, sorted by its clock before what it had read, or made out of a state its own
   tail had already seen the subject leave; each is now not applied, and named. A machine that cited nothing and whose
   tail holds nothing of the subject is held to a state the subject had been in, so two such machines moving one subject
-  out of one state are still a divergence. The second reader does not judge moves yet. A binary from before applies
-  every move.
+  out of one state are still a divergence. A binary from before applies every move.
+- **The Python reader beside the format judges the same moves, and names a retraction it does not apply.** It reads
+  the tables from the `workflows` of `event-schema.json`, judges every move where the merged order puts it, and names a
+  move they do not allow as a note with the same rule, at the same tail and `seq`, as `verify`'s census; a note or a
+  link taken back by an identity that did not write it is named the same way (§6.4). Neither moves its verdict. A new
+  case holds the two readers to the same list over one record per rule, two machines with and without citations, and
+  drawn records on two tails; `mutate.py` gains the move as an input both readers accept, and its `verify … record`
+  prints one more `ok` on a record that holds a move. A record with a refused line is refused once by the Python
+  reader: the tail is left out of its enrolment fold, which said every later event of the tail was signed by a key
+  not valid for its anchor when the founding line was the one refused; and it names CRLF in the checkpoints and the
+  tail proof with a case for each.
 - **`mnema key restore --agent <name> <file>` puts an agent's key where a CI runner's agent signs with it, and the Action's page has the recipe.**
   A runner begins every job empty, so the key comes from a secret: the verb installs it in the agent's own folder
   under the data directory, and refuses before writing anything a key the project's committed record does not enrol as

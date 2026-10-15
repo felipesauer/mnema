@@ -29,8 +29,10 @@ than inferred from an exemplar:
         in the fold, which is a different claim from "the signature verifies"
         (`enrolment`, gap G21)
 
-And one that is a reading rather than a check, so it names and never refuses:
+And two that are readings rather than checks, so they name and never refuse:
 
+    6.4 a note or a link taken back by an identity that did not write it, named as not
+        applied (`retraction`)
     6.7 the workflows: every move judged at its point in the merged order, against the tables
         `event-schema.json` publishes, and a move they do not allow named as not applied
         (`workflow`)
@@ -43,7 +45,7 @@ import os
 import re
 from typing import NamedTuple
 
-from . import bitcoin, enrolment, gaps, ots, schema, workflow
+from . import bitcoin, enrolment, gaps, ots, retraction, schema, workflow
 from .canonical import CRLF, ends_in_crlf_only
 from .checkpoint import Checkpoint, binding_break, read_checkpoint, read_tailproof
 from .ed25519 import verify as ed25519_verify
@@ -896,6 +898,7 @@ def verify_record(root: str, report: Report, require: str = "chained") -> None:
 
     folded = _without_refused_tails(report, entries_by_tail, refused_by_tail)
     resolution = _check_enrolment(report, folded, covered_by_tail, ring)
+    _check_retractions(report, folded)
     _check_moves(report, folded, declarations)
     _say_keys_without_tail(report, ring, tail_ids, resolution)
     _check_requirement(report, require, entries_by_tail, covered_by_tail)
@@ -904,7 +907,7 @@ def verify_record(root: str, report: Report, require: str = "chained") -> None:
 def _without_refused_tails(
     report: Report, entries_by_tail: dict[str, list[Entry]], refused_by_tail: dict[str, str]
 ) -> dict[str, list[Entry]]:
-    """The tails the folds of sections 6.2 and 6.7 read: every one but a tail with a refused line.
+    """The tails the folds of sections 6.2, 6.4 and 6.7 read: every tail but one with a refused line.
 
     A fold read past a line this reader could not read is the chain walk's hole again, one layer
     up. Measured: a segment whose first line carries a byte-order mark is refused at that line,
@@ -916,12 +919,19 @@ def _without_refused_tails(
     for tail_id, where in refused_by_tail.items():
         report.unchecked(
             "6.2",
-            f"the folds of sections 6.2 and 6.7 did not read this tail: {where} was refused "
+            f"the folds of sections 6.2, 6.4 and 6.7 did not read this tail: {where} was refused "
             "above, and a fold read past a line this reader could not read would judge every "
             "event after it by what that line would have said",
             tail_id,
         )
     return {tail: entries for tail, entries in entries_by_tail.items() if tail not in refused_by_tail}
+
+
+def _check_retractions(report: Report, entries_by_tail: dict[str, list[Entry]]) -> None:
+    """Section 6.4: a retraction by an identity that did not write what it names - named, never
+    refused, because the event is intact and its key speaks for its own `who`."""
+    for found in retraction.foreign_retractions(entries_by_tail):
+        report.note("6.4", f"{found.detail} (rule {found.rule})", f"{found.tail} seq {found.seq}")
 
 
 def _check_moves(

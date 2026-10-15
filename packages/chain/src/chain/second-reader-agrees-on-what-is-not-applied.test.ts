@@ -1,23 +1,26 @@
 /**
- * THE TWO READERS JUDGE THE SAME MOVES (FORMAT.md §6.7).
+ * THE TWO READERS LEAVE THE SAME FACTS UNAPPLIED, AND NAME THEM ALIKE.
  *
- * A move of a workflow is judged by every reader at its point in the merged order, against the
- * table `event-schema.json` publishes; a move it does not allow is not applied, and is named,
- * informational. The product names it in its census (`illegal-move`, with the rule); the second
- * reader names it as a note, with the same rule, at the same tail and seq. This file holds the two
- * to the same list:
+ * Two rules of the format decide what a reader applies rather than what verifies, and a fact one
+ * of them does not apply is named, informational, and is not a break. A move of a workflow is
+ * judged at its point in the merged order against the table `event-schema.json` publishes
+ * (FORMAT.md §6.7); a note or a link is taken back only by the identity that wrote it (§6.4). The
+ * product names each in its census (`illegal-move` with its rule, `foreign-retraction`,
+ * `foreign-link-retraction`); the second reader names each as a note, with the same rule, at the
+ * same tail and seq. This file holds the two to the same list:
  *
- *   - one record per rule, each written with the product's writer and its own keys, where the
- *     rule the move breaks comes from the section, and the second reader has to name what the
+ *   - one record per rule of §6.7, each written with the product's writer and its own keys, where
+ *     the rule the move breaks comes from the section, and the second reader has to name what the
  *     product names, no more and no fewer;
  *   - two machines on one record, with and without the citations that say what each had read;
- *   - and records drawn under the seed the other property files use: two tails, moves legal and
- *     not, births and runs, clocks that disagree and citations that come and go. Neither reader's
+ *   - records drawn under the seed the other property files use: two tails, moves legal and not,
+ *     births and runs, clocks that disagree and citations that come and go. Neither reader's
  *     answer is computed here; one is compared with the other, and the draw is held to reach every
- *     rule of the section and the legal moves too, so the agreement is not over one kind of case.
+ *     rule of the section and the legal moves too, so the agreement is not over one kind of case;
+ *   - and the retractions of §6.4, by the identity that wrote the note or the link and by another.
  *
- * Every record here is honest in its bytes, so both readers verify it whatever its moves: a move
- * the workflow does not allow is not a break, in either.
+ * Every record here is honest in its bytes, so both readers verify it whatever it holds: a fact
+ * a reader does not apply is not a break, in either.
  *
  * It needs `python3` and fails rather than skips without it, as its siblings do.
  */
@@ -33,6 +36,10 @@ import { afterEach, describe, expect, it } from 'vitest';
 import {
   decisionTransitioned,
   identityFounded,
+  knowledgeLinked,
+  linkRetracted,
+  memoryCaptured,
+  noteRetracted,
   runEnded,
   runStarted,
   skillTransitioned,
@@ -70,7 +77,7 @@ function fresh(prefix: string): string {
   return dir;
 }
 
-/** One move not applied, as both readers say where it is and which rule it broke. */
+/** One fact not applied, as both readers say where it is and which rule it broke. */
 interface Named {
   readonly tail: string;
   readonly seq: number;
@@ -82,13 +89,18 @@ function byPlace(a: Named, b: Named): number {
   return a.seq - b.seq;
 }
 
-/** What each reader says of `record`: its verdict, and the moves it does not apply. */
+/** What each reader says of `record`: its verdict, and the facts it does not apply. */
 function bothReaders(record: string) {
   const here = verify(record, catalogUpcasters());
   const product = here.census
-    .flatMap((note) =>
-      note.kind === 'illegal-move' ? [{ tail: note.tail, seq: note.seq, rule: note.rule }] : [],
-    )
+    .flatMap((note) => {
+      if (note.kind === 'illegal-move')
+        return [{ tail: note.tail, seq: note.seq, rule: note.rule }];
+      if (note.kind === 'foreign-retraction' || note.kind === 'foreign-link-retraction') {
+        return [{ tail: note.tail, seq: note.seq, rule: note.kind }];
+      }
+      return [];
+    })
     .sort(byPlace);
   const run = python([VERIFIER, '--json', 'record', record]);
   const there = JSON.parse(run.stdout) as {
@@ -96,12 +108,15 @@ function bothReaders(record: string) {
     findings: { level: string; section: string; what: string; where: string }[];
   };
   const second = there.findings
-    .filter((finding) => finding.section === '6.7' && finding.level === 'note')
+    .filter(
+      (finding) =>
+        (finding.section === '6.7' || finding.section === '6.4') && finding.level === 'note',
+    )
     .map((finding) => {
       const rule = /\(rule ([a-z-]+)\)$/.exec(finding.what)?.[1];
       const place = /^(\S+) seq (\d+)$/.exec(finding.where);
       if (rule === undefined || place === null) {
-        throw new Error(`a §6.7 note with no rule or no place: ${JSON.stringify(finding)}`);
+        throw new Error(`a note with no rule or no place: ${JSON.stringify(finding)}`);
       }
       return { tail: place[1] as string, seq: Number(place[2]), rule };
     })
@@ -517,6 +532,55 @@ describe('drawn records on two machines, in both readers', () => {
         'successor',
       ]);
       expect(unnamed).toBeGreaterThan([...reached.values()].reduce((sum, n) => sum + n, 0));
+    },
+    CASE_TIMEOUT,
+  );
+});
+
+describe('a note or a link taken back (§6.4): both readers name the same retraction not applied', () => {
+  /** A note and a link written on A, each taken back by `by` — A itself, or B. */
+  function takenBack(by: 'a' | 'b') {
+    const record = fresh('mnema-retraction-record-');
+    const machines = { a: machine(record), b: machine(record) };
+    const a = machines.a;
+    a.writer.append(memoryCaptured(a.env('m-1'), { content: 'the build needs node 24' }));
+    a.writer.append(knowledgeLinked(a.env('x-1'), { target: 'x-2', rel: 'relates-to' }));
+    const retractor = machines[by];
+    retractor.writer.append(noteRetracted(retractor.env('m-1'), { reason: 'wrong' }));
+    retractor.writer.append(
+      linkRetracted(retractor.env('x-1'), { target: 'x-2', rel: 'relates-to', reason: 'wrong' }),
+    );
+    // Neither names a note or an edge the record holds: no author to compare with.
+    retractor.writer.append(noteRetracted(retractor.env('m-9'), { reason: 'none' }));
+    machines.a.writer.checkpoint();
+    machines.b.writer.checkpoint();
+    return { record, b: machines.b.writer.tail };
+  }
+
+  it(
+    'by the identity that wrote them, names nothing',
+    () => {
+      const said = bothReaders(takenBack('a').record);
+      expect(said.product).toEqual([]);
+      expect(said.second).toEqual(said.product);
+      expect(said.secondVerdict).toBe('VERIFIED');
+    },
+    CASE_TIMEOUT,
+  );
+
+  it(
+    'by another identity, names both, and the note and the link still stand',
+    () => {
+      const { record, b } = takenBack('b');
+      const said = bothReaders(record);
+      expect(said.product).toEqual([
+        { tail: b, seq: 1, rule: 'foreign-retraction' },
+        { tail: b, seq: 2, rule: 'foreign-link-retraction' },
+      ]);
+      expect(said.second).toEqual(said.product);
+      expect(said.productOk).toBe(true);
+      expect(said.secondFails).toEqual([]);
+      expect(said.secondVerdict).toBe('VERIFIED');
     },
     CASE_TIMEOUT,
   );

@@ -666,7 +666,7 @@ const MUTATIONS = [
   {
     // A move the workflow does not allow (FORMAT.md section 6.7) is not applied and is named,
     // and it is not a break: both readers verify the record, and
-    // `second-reader-agrees-on-the-moves.test.ts` holds them to naming the same move.
+    // `second-reader-agrees-on-what-is-not-applied.test.ts` holds them to naming the same move.
     name: 'appended-move-the-workflow-does-not-allow',
     refusals: 0,
     section: '6.7',
