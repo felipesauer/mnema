@@ -2,9 +2,18 @@ import { execFileSync } from 'node:child_process';
 import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { dirname, join } from 'node:path';
+import { fileURLToPath } from 'node:url';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { gitignorePath } from './layout.js';
 import { ensureTree } from './tree.js';
+
+/**
+ * The file that turns git's automatic maintenance off, handed to every git a test starts to
+ * write a repository. Named by path and not imported: this package imports nothing outside itself.
+ */
+const GIT_WITHOUT_MAINTENANCE = fileURLToPath(
+  new URL('../../../code/tests/support/without-maintenance.gitconfig', import.meta.url),
+);
 
 let root: string;
 
@@ -126,5 +135,68 @@ describe('ensureTree — self-contained .gitignore', () => {
     ensureTree({ root: nested });
     expect(existsSync(nested)).toBe(true);
     expect(existsSync(join(nested, '.gitignore'))).toBe(true);
+  });
+});
+
+describe('ensureTree — a .gitattributes that keeps git from rewriting line ends', () => {
+  const attributes = (): string => join(root, '.gitattributes');
+
+  it('writes `* -text`, so a checkout never turns the record into lines that are not its bytes', () => {
+    ensureTree({ root });
+    const rules = readFileSync(attributes(), 'utf-8')
+      .split('\n')
+      .filter((l) => l.length > 0 && !l.startsWith('#'));
+    expect(rules).toEqual(['* -text']);
+  });
+
+  it('writes it into a tree made before it existed, at the next write, and touches nothing else', () => {
+    const ignore = '/private/\n/locks/\n';
+    writeFileSync(gitignorePath({ root }), ignore, 'utf-8');
+    expect(ensureTree({ root })).toBe(false);
+    expect(readFileSync(attributes(), 'utf-8')).toContain('\n* -text\n');
+    expect(readFileSync(gitignorePath({ root }), 'utf-8')).toBe(ignore);
+  });
+
+  it('adds only the missing line to a .gitattributes of the person, and leaves one that has it', () => {
+    writeFileSync(attributes(), '*.md diff', 'utf-8');
+    ensureTree({ root });
+    expect(readFileSync(attributes(), 'utf-8')).toBe('*.md diff\n* -text\n');
+    for (const body of ['* -text\n', '*.md diff\r\n* -text\r\n']) {
+      writeFileSync(attributes(), body, 'utf-8');
+      ensureTree({ root });
+      expect(readFileSync(attributes(), 'utf-8')).toBe(body);
+    }
+  });
+
+  it('a clone with core.autocrlf=true checks the tails out byte for byte, and git is the one asked', () => {
+    // MEASURED BEFORE THIS FILE EXISTED: `git -c core.autocrlf=true clone` put a carriage return
+    // at the end of every line of an honest record, and both readers refused it whole.
+    const work = mkdtempSync(join(tmpdir(), 'mnema-gitattributes-'));
+    try {
+      const repo = join(work, 'repo');
+      const git = (cwd: string, ...args: string[]): string =>
+        execFileSync('git', ['-c', 'user.name=t', '-c', 'user.email=t@example.invalid', ...args], {
+          cwd,
+          encoding: 'utf-8',
+          env: {
+            ...process.env,
+            GIT_CONFIG_NOSYSTEM: '1',
+            GIT_CONFIG_GLOBAL: GIT_WITHOUT_MAINTENANCE,
+          },
+        });
+      mkdirSync(repo);
+      git(repo, 'init', '-q');
+      ensureTree({ root: join(repo, '.mnema') });
+      const segment = join('.mnema', 'tails', 'ffff-0001', '000001.jsonl');
+      const bytes = '{"a":1}\n{"b":2}\n';
+      mkdirSync(join(repo, dirname(segment)), { recursive: true });
+      writeFileSync(join(repo, segment), bytes);
+      git(repo, 'add', '.mnema');
+      git(repo, 'commit', '-qm', 'record');
+      git(work, '-c', 'core.autocrlf=true', 'clone', '-q', repo, 'clone');
+      expect(readFileSync(join(work, 'clone', segment), 'utf-8')).toBe(bytes);
+    } finally {
+      rmSync(work, { recursive: true, force: true });
+    }
   });
 });

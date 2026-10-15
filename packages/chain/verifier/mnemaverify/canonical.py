@@ -297,3 +297,26 @@ def is_canonical_line(raw: bytes) -> tuple[bool, Any]:
         return canonical_bytes(value) == raw, value
     except RecursionError as exc:
         raise Refusal("1", "nested deeper than this reader can follow") from exc
+
+
+CRLF = (
+    "the line ends in CRLF, as a checkout that rewrites line ends leaves it (git with "
+    "core.autocrlf), so these are not the bytes the proof was taken over; '* -text' in the "
+    "tree's .gitattributes keeps git from doing it"
+)
+
+
+def ends_in_crlf_only(raw: bytes) -> bool:
+    """True when a carriage return at the end is ALL that stands between a line and its bytes.
+
+    It is what a checkout that rewrites line ends (git with `core.autocrlf=true`, the Git for
+    Windows default) leaves on every line. The line is still refused - the bytes on disk are
+    not the bytes that were signed - but the cause says CRLF, as FORMAT.md section 4 has both
+    readers say, instead of the sentence a tampered line gets.
+    """
+    if not raw.endswith(b"\r"):
+        return False
+    try:
+        return is_canonical_line(raw[:-1])[0]
+    except Refusal:
+        return False

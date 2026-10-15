@@ -796,7 +796,7 @@ const CLAUSES_PER_FILE: Readonly<Record<string, number>> = {
   'packages/chain/src/chain/terminal-passphrase.test.ts': 2,
   'packages/chain/src/chain/the-census-says-what-a-backup-is.test.ts': 12,
   'packages/chain/src/chain/the-verdict-over-a-broken-tail.test.ts': 8,
-  'packages/chain/src/chain/tree.test.ts': 7,
+  'packages/chain/src/chain/tree.test.ts': 8,
   'packages/chain/src/chain/upcast-vs-proof.test.ts': 13,
   'packages/chain/src/chain/verify-costs-what-the-record-holds.test.ts': 10,
   'packages/chain/src/chain/waiver.test.ts': 13,

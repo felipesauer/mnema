@@ -274,6 +274,26 @@ describe('a line that is not the canonical serialization of its value is refused
     expect(() => parseCanonicalLine(decomposed)).toThrow(NOT_CANONICAL);
   });
 
+  it('names CRLF when a carriage return at the end is all that differs, and only then', () => {
+    // A checkout with `core.autocrlf=true` leaves exactly this on every line, and the generic
+    // sentence reads as tampering over a record nobody touched. Still a refusal: the bytes on
+    // disk are not the bytes that were signed.
+    const record = copyOf('witnessed-record');
+    const entry = lineOf(join(tailOf(record), '000001.jsonl'), 3);
+    const checkpoint = lineOf(join(tailOf(record), 'checkpoints.jsonl'), 1);
+    const proof = readFileSync(join(tailOf(record), 'tailproof.json'), 'utf-8').trim();
+    const CRLF = /line ends in CRLF/;
+    expect(() => parseEntry(`${entry}\r`, catalogUpcasters())).toThrow(CRLF);
+    expect(() => parseCheckpoint(`${checkpoint}\r`)).toThrow(CRLF);
+    expect(() => parseTailProof(`${proof}\r`)).toThrow(CRLF);
+    expect(() => parseEntry(`${entry}\r`, catalogUpcasters())).toThrow(NOT_CANONICAL);
+    for (const other of [`${entry.replace('":', '": ')}\r`, `${entry} `, `${entry}\r\r`]) {
+      expect(() => parseEntry(other, catalogUpcasters()), JSON.stringify(other.slice(-3))).toThrow(
+        /\(whitespace, key order, Unicode composition or spelling differ\)/,
+      );
+    }
+  });
+
   it('refuses a line with no canonical bytes at all — a lone surrogate — at the parse', () => {
     expect(() => parseCanonicalLine('{"a":"\\ud800"}')).toThrow(
       /a value the format has no bytes for/,
@@ -389,6 +409,20 @@ const AGREEMENTS: readonly Agreement[] = [
       refusals: 1,
     },
   })),
+  {
+    name: 'line-ends-rewritten-to-crlf',
+    verdict: 'refused',
+    product: {
+      layer: 'T1',
+      says: 'line 3: not the canonical serialization of what it holds: the line ends in CRLF',
+    },
+    second: {
+      section: '4',
+      says: 'the stored line is not the canonical serialization of what it holds: the line ends in CRLF',
+      where: '000001.jsonl:3',
+      refusals: 1,
+    },
+  },
   { name: 'aligned-cut', verdict: 'accepted' },
   { name: 'refounded-record', verdict: 'accepted' },
 ];

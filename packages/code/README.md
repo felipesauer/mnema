@@ -1787,6 +1787,7 @@ key really signed.
 
 ```
 <repo>/.mnema/              the project record — commit this, the team shares it
+  .gitattributes            `* -text`: a checkout never rewrites the signed lines' ends
   tails/<id>/witness/       external attestations over this tail's checkpoints (T3)
   locks/                    gitignored: writers' locks, and the projection a read keeps
 <git common dir>/mnema/<encoded path>/private/

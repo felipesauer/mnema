@@ -193,6 +193,19 @@ with its own changelog.
 
 ### Fixed
 
+- **A clone that rewrites line ends no longer turns an honest record red, and when it happens anyway the refusal
+  says CRLF.** A `git clone` with `core.autocrlf=true` (the Git for Windows default) put a carriage return at the
+  end of every line of the record, and both `verify` and the second reader refused it whole with the sentence a
+  tampered line gets. The project tree now carries a `.gitattributes` holding `* -text`, written like its
+  `.gitignore` at the first write and added to an older tree at its next one; it reaches a clone once it is
+  committed. A line whose only difference from its signed bytes is a final `\r` is still refused, by both readers,
+  and the cause now names the CRLF and the remedy. `FORMAT.md` also says what both readers always did with an empty
+  line in the middle of a file: it is passed over.
+- **Every character the Unicode standard says draws nothing is made visible.** The soft hyphen, the Hangul fillers,
+  the variation selectors (both blocks), the musical and interlinear format marks and the line and paragraph
+  separators came out raw in `show`, `search`, `status` and `--json`; the class written as an escape is now every
+  Default_Ignorable_Code_Point, the two separators, U+FFF9 to U+FFFB and U+13430 to U+1343F, as a fixed list at
+  Unicode 17. A selector after an emoji is escaped too (`❤\ufe0f`).
 - **The install page's steps work with a Node installed by the system.** `npm i -g` of the packed tarballs stopped at
   `EACCES` on `/usr/lib/node_modules/@mnema` where npm's global prefix is `/usr`; the steps now install under
   `~/.local` (`--prefix ~/.local`, with `~/.local/bin` on the `PATH`), `corepack enable` takes `--install-directory

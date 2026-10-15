@@ -820,6 +820,16 @@ def whitespace_in_a_signed_line(root: str) -> tuple[bool, str]:
     )
 
 
+def line_ends_rewritten_to_crlf(root: str) -> tuple[bool, str]:
+    """A carriage return before the newline: what a checkout with `core.autocrlf=true` leaves.
+
+    The value is untouched (a `\\r` is JSON whitespace), so every hash still closes; the bytes
+    on disk are not the bytes that were signed, and both readers refuse the line - naming the
+    CRLF, so a record nobody touched is not read as a tampered one.
+    """
+    return _respelled(root, lambda line: line + b"\r", "the line end rewritten to CRLF")
+
+
 def key_order_in_a_signed_line(root: str) -> tuple[bool, str]:
     """The line's two keys swapped, `link` before `event`, every byte of each value unchanged."""
 
@@ -985,6 +995,7 @@ MUTATIONS = {
     "tail-proof-removed": tail_proof_removed,
     "whitespace-in-a-signed-line": whitespace_in_a_signed_line,
     "key-order-in-a-signed-line": key_order_in_a_signed_line,
+    "line-ends-rewritten-to-crlf": line_ends_rewritten_to_crlf,
     "decomposed-text-in-a-signed-line": decomposed_text_in_a_signed_line,
     "checkpoint-by-a-checker-over-the-persons-event": checkpoint_by_a_checker_over_the_persons_event,
     "which-is-who-in-a-signed-range": which_is_who_in_a_signed_range,
