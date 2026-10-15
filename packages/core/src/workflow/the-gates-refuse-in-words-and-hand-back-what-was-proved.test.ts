@@ -144,6 +144,12 @@ describe('the task gate', () => {
     expect(gate({ ...cancel, fields: null as never })).toEqual(lacking);
   });
 
+  it('admits a move whose required proof is present', () => {
+    expect(gate({ from: 'DRAFT', action: 'cancel', who, fields: { reason: 'no longer' } })).toEqual(
+      { ok: true, to: 'CANCELED', action: 'cancel', fields: { reason: 'no longer' } },
+    );
+  });
+
   it('hands back what was proved, and no `fields` when none was', () => {
     expect(gate(submit)).toStrictEqual({ ok: true, to: 'READY', action: 'submit' });
     expect(gate({ ...submit, fields: { note: 'n' } })).toStrictEqual({
