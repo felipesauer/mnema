@@ -24,9 +24,11 @@ with its own changelog.
   of one state where the second writer had seen the first are not said as a divergence any more, and `show` and
   `brief` say that a divergence is moves on machines that had not seen each other. A record read differently from
   before: two moves out of one state on one tail (writes that raced before the tail had a lock, before 2 October), and
-  a move by a machine that cited nothing of a subject born on another one, sorted before what it had read or concurrent
-  with another move; each is now not applied, and named. The second reader does not judge moves yet. A binary from
-  before applies every move.
+  a move by a machine that cited nothing, sorted by its clock before what it had read, or made out of a state its own
+  tail had already seen the subject leave; each is now not applied, and named. A machine that cited nothing and whose
+  tail holds nothing of the subject is held to a state the subject had been in, so two such machines moving one subject
+  out of one state are still a divergence. The second reader does not judge moves yet. A binary from before applies
+  every move.
 - **`mnema key restore --agent <name> <file>` puts an agent's key where a CI runner's agent signs with it, and the Action's page has the recipe.**
   A runner begins every job empty, so the key comes from a secret: the verb installs it in the agent's own folder
   under the data directory, and refuses before writing anything a key the project's committed record does not enrol as
