@@ -300,3 +300,12 @@ export const ANCHOR_SUFFIX = '.anchor';
 export function gitignorePath(layout: ChainLayout): string {
   return join(layout.root, '.gitignore');
 }
+
+/**
+ * Path to the chain's OWN `.gitattributes`, beside its `.gitignore`: it keeps git from
+ * rewriting the line ends of the tree on checkout (`ensureTree`), so a clone holds the bytes
+ * that were signed.
+ */
+export function gitattributesPath(layout: ChainLayout): string {
+  return join(layout.root, '.gitattributes');
+}

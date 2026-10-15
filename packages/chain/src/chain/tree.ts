@@ -5,7 +5,9 @@
  * parts of it must NEVER reach git: the private subtree (`private/`), and every
  * machine-local key material file (private keys, installation ids, anchors). The
  * chain owns its whole tree — including what within it is ignored — so it writes
- * its OWN `.gitignore` at the tree root and never touches the project's.
+ * its OWN `.gitignore` at the tree root and never touches the project's. For the same
+ * reason it writes its own `.gitattributes`, so a checkout never rewrites the line ends of
+ * the bytes that were signed.
  *
  * The `.gitignore` is written LAZILY, the first time the tree is ensured (which
  * is the first write into it), not by an `init` command: a capture that happened
@@ -25,7 +27,7 @@
 
 import { appendFileSync, existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 
-import { type ChainLayout, gitignorePath } from './layout.js';
+import { type ChainLayout, gitattributesPath, gitignorePath } from './layout.js';
 
 /**
  * The chain's own `.gitignore`, self-contained at the tree root. It ignores the
@@ -61,29 +63,64 @@ const GITIGNORE_CONTENT = [
 const LOCKS_LINE = '/locks/';
 
 /**
- * Ensures a PROJECT tree exists at `layout.root` and carries its own
- * `.gitignore`. Creates the tree directory if absent and writes the `.gitignore`
- * only if one is not already there; an older one that lacks the `/locks/` line gets
- * that line appended and nothing else. Idempotent: safe to call before every write.
- * Returns true if it wrote the `.gitignore` this call (it was absent), false if
- * one already existed (even if a line was appended to it).
+ * The chain's own `.gitattributes`. A line of the record is refused unless its bytes are the
+ * canonical bytes that were signed (`FORMAT.md` section 4), and a checkout that rewrites line
+ * ends — `core.autocrlf=true`, the Git for Windows default, or a `* text eol=crlf` at the
+ * repository's root — puts a carriage return at the end of every line. MEASURED: such a
+ * clone of an honest record was refused whole by both readers. `-text` turns off only that
+ * conversion; `git diff` still shows the lines as text. It reaches a clone only once it is
+ * committed, and a tool other than git (an archive, an editor that normalises on save) is
+ * not stopped by it — the readers then name the carriage return in their refusal.
+ */
+const GITATTRIBUTES_CONTENT = [
+  "# Managed by mnema — this file governs only mnema's own tree.",
+  '# The record is signed bytes: never rewrite its line ends on checkout.',
+  '* -text',
+  '',
+].join('\n');
+
+const NO_EOL_LINE = '* -text';
+
+/**
+ * Ensures a PROJECT tree exists at `layout.root` and carries its own `.gitignore` and
+ * `.gitattributes`. Creates the tree directory if absent and writes each file only if it
+ * is not already there; an older `.gitignore` that lacks the `/locks/` line, or a
+ * `.gitattributes` that lacks `* -text`, gets that line appended and nothing else — which
+ * is how a tree made before either line existed gets it, at its next write. Idempotent:
+ * safe to call before every write. Returns true if it wrote the `.gitignore` this call (it
+ * was absent), false if one already existed (even if a line was appended to it).
  */
 export function ensureTree(layout: ChainLayout): boolean {
   mkdirSync(layout.root, { recursive: true });
-  const path = gitignorePath(layout);
+  ensureLine(gitattributesPath(layout), GITATTRIBUTES_CONTENT, (l) => l === NO_EOL_LINE, NO_EOL_LINE);
+  // A tree made before the writers' lock directory existed has no line for it, and a lock left
+  // by a killed holder would be committed.
+  return ensureLine(
+    gitignorePath(layout),
+    GITIGNORE_CONTENT,
+    (l) => l === LOCKS_LINE || l === 'locks/',
+    LOCKS_LINE,
+  );
+}
+
+/**
+ * Writes `content` at `path` when nothing is there (returning true); otherwise appends `line`
+ * at the end when no trimmed line of the file satisfies `has`, and touches nothing else.
+ */
+function ensureLine(
+  path: string,
+  content: string,
+  has: (trimmed: string) => boolean,
+  line: string,
+): boolean {
   if (!existsSync(path)) {
-    writeFileSync(path, GITIGNORE_CONTENT, 'utf-8');
+    writeFileSync(path, content, 'utf-8');
     return true;
   }
-  // A tree made before the writers' lock directory existed has no line for it, and a lock left
-  // by a killed holder would be committed. Add that one line, at the end; touch nothing else.
   const existing = readFileSync(path, 'utf-8');
-  const hasLocks = existing
-    .split(/\r?\n/)
-    .some((l) => l.trim() === LOCKS_LINE || l.trim() === 'locks/');
-  if (!hasLocks) {
+  if (!existing.split(/\r?\n/).some((l) => has(l.trim()))) {
     const gap = existing === '' || existing.endsWith('\n') ? '' : '\n';
-    appendFileSync(path, `${gap}${LOCKS_LINE}\n`, 'utf-8');
+    appendFileSync(path, `${gap}${line}\n`, 'utf-8');
   }
   return false;
 }
