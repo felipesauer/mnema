@@ -27,6 +27,7 @@ const RUN = '0a1b2c3d-0000-4000-8000-00000000abcd';
 
 let root: string;
 let keyRoot: string;
+const machineKeys: string[] = [];
 
 beforeEach(() => {
   root = mkdtempSync(join(tmpdir(), 'mnema-subject-'));
@@ -36,6 +37,7 @@ beforeEach(() => {
 afterEach(() => {
   rmSync(root, { recursive: true, force: true });
   rmSync(keyRoot, { recursive: true, force: true });
+  for (const dir of machineKeys.splice(0)) rmSync(dir, { recursive: true, force: true });
 });
 
 function writeARun(): string {
@@ -60,8 +62,10 @@ function writeARun(): string {
 
 /** A writer of its own tail, with a key of its own, that says each event by its instant. */
 function machine(options: { citeHeads?: boolean } = {}) {
+  const machineKey = mkdtempSync(join(tmpdir(), 'mnema-subject-machine-'));
+  machineKeys.push(machineKey);
   const writer = openChainForWriting(root, {
-    keyRoot: mkdtempSync(join(tmpdir(), 'mnema-subject-machine-')),
+    keyRoot: machineKey,
     maxUnsignedEvents: 10_000,
     ...options,
   });
