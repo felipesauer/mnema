@@ -3,16 +3,22 @@
  *
  * Claude Code, OpenCode, the Copilot CLI and Gemini CLI each send the server's tool definitions
  * whole, and `host-contract/the-tool-definitions-the-host-sends{,.opencode,.copilot,.gemini}.test.ts`
- * pin what they weigh. Those four run only in the host-contract job, so a description edited and
- * tested locally went green here and red in CI. This test closes that: it lists the server's own
- * tools, wraps each as a host does, and holds the figure the host contract pins to what the
- * listing now weighs, plus what the host itself adds around a definition (its name prefix, its
- * own rewrite of the schema), which is measured once and written below.
+ * pin what they weigh. Those four run only in the host-contract job. The golden in
+ * `the-channels-have-a-budget.test.ts` already goes red locally on an edited description, but
+ * regenerating it with `-u` turned the run green again while the four pinned figures stayed
+ * stale, and only CI saw that. This test is the one thing that ties those four figures to the
+ * server: it lists the server's own tools, wraps each as a host does, and holds the pinned figure
+ * to what the listing now weighs, plus what the host itself adds around a definition (its name
+ * prefix, its own rewrite of the schema), which is measured once and written below.
  *
  * WHAT IS HELD: the bytes of the pinned figure, exactly (they add up per tool, so a character more
- * or fewer in a description moves them), and the tokens within a few (a tokenizer does not add up,
- * so the same edit may move them by one more or fewer than it moved the listing). NOT HELD: the
- * host's own figure; only the host-contract run measures that. When this fails, run
+ * or fewer in a description moves them), and the tokens within `TOKEN_SLACK` (a tokenizer does not
+ * add up, so the same edit may move them by one more or fewer than it moved the listing).
+ *
+ * NOT HELD: an edit that keeps the byte count (say `decision` swapped for `dxcxsxon`) leaves the
+ * bytes where they were and moves the tokens by a few per host, which the slack absorbs, so this
+ * test stays green; the host contract's own `toEqual` is what catches it. Nor is the host's real
+ * figure held: only the host-contract run measures that. When this fails, run
  * `pnpm test:host-contract` for the host named, put its figures in that file, and, if a host changed
  * how it wraps a definition, the new overhead here.
  */
