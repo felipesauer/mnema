@@ -219,6 +219,15 @@ function opened(relative: string): string {
   return readFileSync(full, 'utf8');
 }
 
+/**
+ * Every case founds a project with `init` in its `beforeEach` and then imports, accepts and reads
+ * back through the real program. Measured alone, a case takes under 0.7 s; with the machine kept
+ * busy by forty-eight spinning loops, up to 1.9 s, against the
+ * shared 5 s for the case and 10 s for the hook. The limit is given room for a machine an order
+ * of magnitude slower, not removed.
+ */
+const A_PROJECT_PER_CASE = 30_000;
+
 beforeEach(async () => {
   sandbox = mkdtempSync(join(tmpdir(), 'mnema-citation-'));
   repo = join(sandbox, 'repo');
@@ -243,7 +252,7 @@ beforeEach(async () => {
   process.chdir(repo);
   const initiated = await mnema('init');
   expect(initiated.failed, initiated.err.join(' / ')).toBe(false);
-});
+}, A_PROJECT_PER_CASE);
 
 afterEach(() => {
   delete process.env.MNEMA_RUN;
@@ -256,7 +265,9 @@ afterEach(() => {
 });
 
 describe('a rule that arrives unasked carries a path that opens', () => {
-  it('opens from the committed document, each rule with its own source', async () => {
+  it('opens from the committed document, each rule with its own source', {
+    timeout: A_PROJECT_PER_CASE,
+  }, async () => {
     const rules = await importedAndAccepted();
     const text = await briefText();
 
@@ -286,7 +297,9 @@ describe('a rule that arrives unasked carries a path that opens', () => {
     expect(provenancesIn(text).sort()).toEqual([`docs/adr/${GATEWAY}`, `docs/adr/${LEDGER}`]);
   });
 
-  it('opens from the rules pushed at an edit, per path', async () => {
+  it('opens from the rules pushed at an edit, per path', {
+    timeout: A_PROJECT_PER_CASE,
+  }, async () => {
     const rules = await importedAndAccepted();
     await addressAt(rules.get(GATEWAY) as string, 'src/collate', 'governs');
     await addressAt(rules.get(LEDGER) as string, 'src/ledger', 'governs');
@@ -310,7 +323,9 @@ describe('a rule that arrives unasked carries a path that opens', () => {
     expect(opened(provenancesIn(ledger)[0] as string)).toContain(LEDGER_BODY);
   });
 
-  it('opens from the charge that stops a write, per path', async () => {
+  it('opens from the charge that stops a write, per path', {
+    timeout: A_PROJECT_PER_CASE,
+  }, async () => {
     // THE SITE THE ITEM DID NOT NAME, and the sharpest of the three: this text comes back
     // as the result of a REFUSED call, to a reader whose work has stopped and who is most
     // likely to want the argument before arguing with it.
@@ -328,7 +343,9 @@ describe('a rule that arrives unasked carries a path that opens', () => {
 });
 
 describe('what the channels say when the record asserts no provenance', () => {
-  it('gives a rule decided here no provenance at all, on all three', async () => {
+  it('gives a rule decided here no provenance at all, on all three', {
+    timeout: A_PROJECT_PER_CASE,
+  }, async () => {
     // THE CONTRAST. Without it, a product that stamped the field on everything would pass
     // every case above. Absent, and the line is whole without it. Nothing is imported in
     // this case, so the ADRs on disk are a directory the record never read.
@@ -359,7 +376,9 @@ describe('what the channels say when the record asserts no provenance', () => {
 });
 
 describe('a rule the record derives from more than one source', () => {
-  it('carries every one of them, in the record’s own order, on one line', async () => {
+  it('carries every one of them, in the record’s own order, on one line', {
+    timeout: A_PROJECT_PER_CASE,
+  }, async () => {
     const rules = await importedAndAccepted();
     const gateway = rules.get(GATEWAY) as string;
     // A second source for ONE of the two rules, linked by hand — the shape a document that
@@ -387,7 +406,9 @@ describe('a rule the record derives from more than one source', () => {
 });
 
 describe('a provenance asserted privately about a public rule', () => {
-  it('reaches none of the three, and `mnema refs` serves it', async () => {
+  it('reaches none of the three, and `mnema refs` serves it', {
+    timeout: A_PROJECT_PER_CASE,
+  }, async () => {
     const rules = await importedAndAccepted();
     const gateway = rules.get(GATEWAY) as string;
     await addressAt(gateway, 'src/collate', 'governs');
@@ -422,7 +443,9 @@ describe('a provenance asserted privately about a public rule', () => {
 });
 
 describe('the line of a pushed provenance is one line', () => {
-  it('cannot be split in two by the target, on either channel', async () => {
+  it('cannot be split in two by the target, on either channel', {
+    timeout: A_PROJECT_PER_CASE,
+  }, async () => {
     // THE N+1 SITE OF THE LINE RULE, and the two channels where it costs most. A
     // `derived-from` target reaches the chain without being checked to exist, so it is a
     // caller's string on exactly the terms the rule's name is — and on these channels a
@@ -475,7 +498,7 @@ describe('the word a provenance is introduced with has one source', () => {
     ]);
   });
 
-  it('is what every one of the four actually prints', async () => {
+  it('is what every one of the four actually prints', { timeout: A_PROJECT_PER_CASE }, async () => {
     // The other half, and without it the case above passes on four modules that import a
     // constant and print something else. Asserted on the BYTES of all four channels — the
     // three that push and the read that serves one record whole.
@@ -494,7 +517,9 @@ describe('the word a provenance is introduced with has one source', () => {
     }
   });
 
-  it('is what the refusal prints too, the fifth, through the decision every hook asks', async () => {
+  it('is what the refusal prints too, the fifth, through the decision every hook asks', {
+    timeout: A_PROJECT_PER_CASE,
+  }, async () => {
     const rule = await gatewayRule();
     await addressAt(rule, 'src/collate', 'refuses-a-write');
     const refused = withScopedCaches(resolveTrees(repo, env), (sources) =>

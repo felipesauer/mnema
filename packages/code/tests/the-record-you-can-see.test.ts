@@ -48,7 +48,12 @@ import {
   type Ran,
   type Step,
 } from './support/pty.js';
-import { screenOf, theFirstScreenWhere, theFirstScreenWith } from './support/screen.js';
+import {
+  screenOf,
+  theFirstScreenWhere,
+  theFirstScreenWith,
+  theSettledScreen,
+} from './support/screen.js';
 
 /** The built CLI — the same file the `mnema` bin points at. */
 const CLI = new URL('../dist/cli.js', import.meta.url).pathname;
@@ -379,6 +384,26 @@ function clears(): Step {
   return { types: `${CLEAR}\r`, until: aFrameSince(PROMPT), what: 'started the page over' };
 }
 
+/**
+ * A SETTLED PAGE WHOSE ROW BEING TYPED IS `line`, once a frame has arrived since the step began.
+ * A replay that finds no page, or throws, is not a page showing it.
+ */
+function aPageTyping(
+  line: string,
+  columns: number,
+  rows: number,
+): (bytes: string, since: number) => boolean {
+  const arrived = aFrameSince(PROMPT);
+  return (bytes, since) => {
+    if (!arrived(bytes, since)) return false;
+    try {
+      return rowBeingTyped(theSettledScreen(bytes, columns, rows)) === line;
+    } catch {
+      return false;
+    }
+  };
+}
+
 /** What the row being typed is, on a screen — the last row that carries the prompt. */
 function rowBeingTyped(screen: { readonly rows: readonly string[] }): string {
   const typed = screen.rows.filter((row) => row.includes(PROMPT));
@@ -500,6 +525,12 @@ describe('a prefix that names several lists them, each beside the line it came f
         clears(),
         {
           types: `show ${shared}${COMPLETES}`,
+          // THE SAME COMPARISON OF TWO INDEXES the case that finishes a named record stopped
+          // waiting by, and not shown to fail: the title is on the roll from the search, so this
+          // can hold before the step's own key is written when the `/clear` echo has not arrived.
+          // Measured on the case alone under about fifty busy loops with two workers: ten runs of
+          // this wait and ten of the page-typing one, none red. It stays as it was until a red
+          // is reproduced.
           until: (bytes) => bytes.lastIndexOf(shown[0]?.title as string) > bytes.lastIndexOf(CLEAR),
           what: 'listed the records it could still be',
         },
@@ -695,18 +726,28 @@ describe('what it offers is what the session showed, and never the record', () =
         clears(),
         {
           types: `show ${missing}${COMPLETES}`,
-          until: (bytes) => bytes.lastIndexOf(`show ${hidden.id}`) > bytes.lastIndexOf(CLEAR),
+          // THE PAGE ANSWERS, NOT A COMPARISON OF TWO INDEXES. This was `lastIndexOf(show <id>) >
+          // lastIndexOf(CLEAR)`, and it is true while CLEAR has not arrived: -1 loses to any
+          // index, and the roll's echo of the earlier `show` is in the bytes already. On a loaded
+          // machine the step before ends on a frame that was in flight, so this answered before
+          // its own key was written, the leaving keys followed, and the console went away with
+          // the completion never drawn. The row being typed is a property of a page, which is
+          // also what the case asserts below.
+          until: aPageTyping(`${PROMPT} show ${hidden.id}`, columns, rows),
           what: 'finished the record the show had named',
         },
         leaves,
       ],
     });
 
-    // FOUND BY THE PAGE'S OWN PROPERTY, and this case is why that locator exists. It was the
-    // last index left in the file and it went red twice in three loaded runs; the obvious repair
-    // — the first frame whose bytes hold `mnema> show <id>` — is AMBIGUOUS here, because the
-    // session ran that very line earlier and the roll kept its echo. The two are the same
-    // characters in two places, and only a PAGE can say which is the row being typed
+    // FOUND BY THE PAGE'S OWN PROPERTY, and this case is why that locator exists. The wait above
+    // is the page-typing one; two waits in this file still compare `lastIndexOf` with
+    // `lastIndexOf(CLEAR)`: the list of records beside a shared prefix, which is the same
+    // comparison and has not been seen red, and the refusal of an unnamed record, which holds
+    // only once `show <missing>` is typed, because that prefix is on no earlier row. The
+    // obvious repair — the first frame whose bytes hold `mnema> show <id>` — is AMBIGUOUS here,
+    // because the session ran that very line earlier and the roll kept its echo. The two are
+    // the same characters in two places, and only a PAGE can say which is the row being typed
     // (`support/screen.ts`, {@link theFirstScreenWhere}).
     const typed = `${PROMPT} show ${hidden.id}`;
     const screen = theFirstScreenWhere(

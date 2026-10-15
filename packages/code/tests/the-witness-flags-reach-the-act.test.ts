@@ -68,8 +68,20 @@ afterAll(() => {
   rmSync(sandbox, { recursive: true, force: true });
 });
 
+/**
+ * A `stamp` case asks a resolver about each calendar it was given, and `.invalid` never
+ * resolves, so what it waits for is a name server saying so. Measured in this process, a case
+ * takes 3 to 60 ms alone and at most 0.5 s with the machine kept busy by forty-eight spinning
+ * loops, against the shared 5 s; one case has stopped at five seconds on a loaded runner while
+ * passing alone, which a busy CPU does not reproduce and a slow name server does. The limit is
+ * given room for that, not removed.
+ */
+const A_NAME_SERVER_ANSWERS = 30_000;
+
 describe('the calendars a stamp is asked of', () => {
-  it('are the ones the caller typed, named back when they do not answer', async () => {
+  it('are the ones the caller typed, named back when they do not answer', {
+    timeout: A_NAME_SERVER_ANSWERS,
+  }, async () => {
     const { said, failed } = await invoke(
       'witness',
       'stamp',
@@ -80,7 +92,9 @@ describe('the calendars a stamp is asked of', () => {
     expect(failed).toBe(true);
   });
 
-  it('are ALL of them when several are typed, so the flag is a list and not a value', async () => {
+  it('are ALL of them when several are typed, so the flag is a list and not a value', {
+    timeout: A_NAME_SERVER_ANSWERS,
+  }, async () => {
     const { said } = await invoke(
       'witness',
       'stamp',
@@ -92,7 +106,9 @@ describe('the calendars a stamp is asked of', () => {
     expect(said).toContain('second.invalid');
   });
 
-  it('are NOT the defaults once the caller has named one', async () => {
+  it('are NOT the defaults once the caller has named one', {
+    timeout: A_NAME_SERVER_ANSWERS,
+  }, async () => {
     // The half a "did it fail" assertion cannot see: with the flag dropped on the
     // floor, the refusal would name the public calendars instead of the typed one.
     const { said } = await invoke(
@@ -106,7 +122,9 @@ describe('the calendars a stamp is asked of', () => {
     expect(said).not.toContain('catallaxy');
   });
 
-  it('leave nothing behind when no calendar answered — the record is untouched', async () => {
+  it('leave nothing behind when no calendar answered — the record is untouched', {
+    timeout: A_NAME_SERVER_ANSWERS,
+  }, async () => {
     // A stamp that could not be made writes no file: the alternative is a record that
     // claims to have asked somebody who was never reached.
     await invoke('witness', 'stamp', '--calendar', 'https://nobody.invalid');
