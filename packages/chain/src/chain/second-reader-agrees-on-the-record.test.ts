@@ -587,6 +587,8 @@ const MUTATIONS = [
     // ONE CAUSE, AND ONLY ONE. The founding line does not parse, and the events after it were
     // signed by the key it founded: a fold read past it refused each of them as signed by a key
     // not valid for its anchor, three causes the record does not contain beside the one it does.
+    // The second reader says those three once, as not judged
+    // (`second-reader-names-a-refused-founding-once.test.ts`).
     name: 'byte-order-mark-before-the-first-line',
     refusals: 1,
     section: '1',

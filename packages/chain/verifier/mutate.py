@@ -846,9 +846,10 @@ def byte_order_mark_before_the_first_line(root: str) -> tuple[bool, str]:
     """The three bytes an editor saving "UTF-8 with BOM" puts at the start of the segment.
 
     The first line, the founding of the identity, no longer parses, so the record is refused at
-    that line - and only there. The events after it were signed by the key that line founded,
-    and a reader that folded them without it would refuse each one as signed by a key not valid
-    for its anchor: causes the record does not contain, beside the one it does.
+    that line. The events after it were signed by the key that line founded, and a reader that
+    folded them without it would refuse each one as signed by a key not valid for its anchor:
+    causes the record does not contain, beside the one it does. The second reader says them
+    once, as not judged.
     """
     path = _segment(root)
     with open(path, "rb") as handle:

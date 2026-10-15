@@ -34,14 +34,14 @@ with its own changelog.
   link taken back by an identity that did not write it is named the same way (§6.4). Neither moves its verdict. A new
   case holds the two readers to the same list over one record per rule, two machines with and without citations, and
   drawn records on two tails; `mutate.py` gains the move as an input both readers accept, and its `verify … record`
-  prints one more `ok` on a record that holds a move. When a line of a tail does not read, the Python reader's folds
-  (§6.2, §6.4, §6.7) read that tail up to the line and say once, as not checked, that the rest of the tail was not
-  folded; a §6.2 cause is named only when the fold finds it reading past the line too, and one it finds only without
-  the later lines is said as not checked. So a founding line that does not parse no longer turns every later event
-  into a key not valid for its anchor, a forged event above the line is still named, and an agent enrolled above it
-  stays enrolled for its own tail. `verify` leaves the whole tail out of those folds instead, so for such a record the
-  two readers' lists of causes can differ; both refuse it. The Python reader also names CRLF in the checkpoints and
-  the tail proof, with a case for each.
+  prints one more `ok` on a record that holds a move. When the first line of a tail does not read (a byte-order mark
+  an editor put in front of the file) and no line that reads founds the identity of the tail's key, that line is the
+  one place the founding can stand: the Python reader now says once, as not judged, how many events that key signed
+  for its own anchor, instead of naming each as signed by a key not enrolled. Any other line that does not read is
+  read as before: the folds (§6.2, §6.4, §6.7) read every line that does, so a cause they name can be a consequence of
+  the refused line. `verify` leaves the whole tail out of those folds instead, so for such a record the two readers'
+  lists of causes can differ; both refuse it. The Python reader also names CRLF in the checkpoints and the tail
+  proof, with a case for each.
 - **`mnema key restore --agent <name> <file>` puts an agent's key where a CI runner's agent signs with it, and the Action's page has the recipe.**
   A runner begins every job empty, so the key comes from a secret: the verb installs it in the agent's own folder
   under the data directory, and refuses before writing anything a key the project's committed record does not enrol as
