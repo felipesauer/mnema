@@ -5,8 +5,8 @@ Notable changes to the packages in this repository are recorded here. The format
 [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 The line before this one, the 0.x alpha published as `@felipesauer/mnema`, is deprecated on
-npm and lives on the [`archive/alpha-0.14`](https://github.com/felipesauer/mnema/tree/archive/alpha-0.14)
-tag, with its own changelog.
+npm and lives at [this commit](https://github.com/felipesauer/mnema/tree/ef736fc6b1f682a513f02f335ad5b7e2e338eca6),
+with its own changelog.
 
 ## [Unreleased]
 
@@ -78,6 +78,11 @@ tag, with its own changelog.
   definition differently or a definition gains a word.
 
 ### Changed
+
+- **The GitHub pre-releases `v0.1.0-beta` and `v0.2.0-beta` and every tag, `archive/alpha-0.14` included, were
+  withdrawn, and until the packages are on npm the mnema is installed from the source** (`docs/install.md`).
+  `mnema doctor` and the plugin's hand-over hook no longer print a release URL: they say that nothing is on npm yet and
+  give the address of that page. The version sections below point to the commit they came from.
 
 - **The README's Quick start accepts the decision it records, and says what the `verify` line is.** A decision is born
   `proposed`; `mnema decision move accept <id> --note "…"` puts it in force. `verify` reads the signed record, not the
@@ -168,9 +173,47 @@ tag, with its own changelog.
   it without a refusal. The reply to a write routed by `project` still says the directory it fell in. The reads are
   unchanged. `AMBIGUOUS_PROJECT`, which only the name could earn, is gone; the description of `project` in the tool
   definitions changes, and so do their weights (see the contract tests).
+- **Linking, by the command line or by `link_knowledge`, refuses in the public tree a target that is a path outside the project.**
+  A link from a rule to `/etc/passwd` under `governs` was accepted and committed to the tree every clone receives, an
+  address no clone can open (the reply said it "covers nothing here", after the fact was signed). It is now refused as
+  `OUTSIDE_PROJECT` before a writer is opened, under the relations that carry an address (`governs`,
+  `asks-for-a-person`, `refuses-a-write`): an absolute path that does not lie under the project root, or a relative one
+  that climbs out of it (`../x`). A path inside the project, spelled any way, and an id are accepted, and an absolute
+  path under the root is recorded relative to it (`/work/repo/src` is written `src`, the root itself `.`), by the same
+  reduction the gates compare by, so that a clone with another root reads the same address. A relative target is
+  recorded as typed, and so is any other relation (`derived-from` cites the file a proposal was read from). The private
+  and global trees stay on one machine and keep taking any path, as typed. The `--help` of `link` says so. `unlink` and `retract_link` take the
+  same absolute path back: the target as typed is looked for first (a link recorded absolute by an earlier version stays
+  retractable), then the one `link` would have recorded. `refs`, `timeline`, `audit_refs` and `audit_timeline` take it
+  too: asked by the absolute path, they also find the links recorded relative to the root, each edge once, and in a
+  workspace of several projects the path is reduced against the root that contains it and read in that project's
+  tree (`audit_refs`, `audit_timeline`, `retract_link`; the last also follows a link to the project that holds it, and its reply says where the retraction fell and, when the agent is not enrolled there, that the person's key signed it).
+  An edge of `refs` and `audit_refs` found that way still ends at the path as typed (`to`) and says what the tree
+  holds in `recorded` (`"recorded": "src"`); an edge found as typed has no such field.
 
 ### Fixed
 
+- **The install page's steps work with a Node installed by the system.** `npm i -g` of the packed tarballs stopped at
+  `EACCES` on `/usr/lib/node_modules/@mnema` where npm's global prefix is `/usr`; the steps now install under
+  `~/.local` (`--prefix ~/.local`, with `~/.local/bin` on the `PATH`), `corepack enable` takes `--install-directory
+  ~/.local/bin`, and the page says when each needs permission. The block makes `~/.local/bin` and puts it on the `PATH`
+  before the first `pnpm` (the shim directory is not created for you, and where `pnpm` exists only as that shim it is not
+  found otherwise), and says the lines are for `sh`, not for Windows `cmd` or PowerShell. The test that holds the block
+  to the page now holds that order.
+- **A gate judges a move on the subject as the chain has it, not on the projection kept beside the record.** The
+  state a decision, a task or a skill is in, whether a run is still open, and whether a subject or a supersede's
+  successor exists at all were read from the projection a tree keeps in `locks/projection.db`, a cache nothing signs: edited by hand, it let a
+  rejected decision be accepted, a cancelled task started, a rejected pattern adopted, a run ended twice and a
+  decision superseded by one nobody recorded, each signed and passed by `verify`. They are read off the segments now,
+  by the lines that name the subject, so each of those moves is refused with the gate's own code
+  (`ILLEGAL_TRANSITION`, `UNKNOWN_BY`, `ALREADY_ENDED`), and a projection edited to send a move to another tree gets
+  it refused there. `MNEMA_RUN` is proven the same way. Measured on the binary at 100 thousand events
+  (123 MB of segments), a `decision move` costs about 0.33 s against 0.24 s before with the page cache warm, and
+  0.61 to 0.77 s (median 0.70 s) against 0.24 s with the segments evicted from it; three moves at once in nine
+  rounds refused none (`TAIL_BUSY`), as before. An id the canonical form does not write as itself is not searched
+  for by its bytes: every line is read for it. A move written by hand with a valid key still puts on the record what
+  the gate refuses, and `verify` does not judge transitions yet; `docs/what-it-proves.md` says so. Neither `show`
+  nor `brief` says any longer that two moves out of one state "did not see each other": on one tail the second had.
 - **A write refuses a tail cut inside what its last checkpoint signed (`TAIL_DAMAGED`), and leaves it as it was.**
   Before reading the checkpoint, the writer cut the tail's end back to its last newline, so a signed line truncated
   by an edit, a merge or a disk went with it, and so did a signed line that had only lost its newline (which `verify`
@@ -827,5 +870,5 @@ Requires Node ≥ 22.12.0; the packages are ESM-only.
   committed tree (`packages/chain/FORMAT.md` §4.1).
 
 [Unreleased]: https://github.com/felipesauer/mnema/commits/main
-[0.2.0-beta]: https://github.com/felipesauer/mnema/releases/tag/v0.2.0-beta
-[0.1.0-beta]: https://github.com/felipesauer/mnema/releases/tag/v0.1.0-beta
+[0.2.0-beta]: https://github.com/felipesauer/mnema/tree/a8907992a60527d2d3dad1c61bafce983e54af46
+[0.1.0-beta]: https://github.com/felipesauer/mnema/tree/1c17287fa389b2ef75f1d2ea71d4c7fbca54889d

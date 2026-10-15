@@ -1,7 +1,9 @@
 import { mkdirSync, mkdtempSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
-import type { DiscoveryEnv } from '@mnema/core';
+import { DatabaseSync } from 'node:sqlite';
+import { projectionCachePath } from '@mnema/chain';
+import { chainRootForScope, type DiscoveryEnv, ProjectionCache, resolveTrees } from '@mnema/core';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { runInit } from './commands/init.js';
 import { runRunEnd } from './commands/run-end.js';
@@ -110,6 +112,23 @@ describe('the pinned run (MNEMA_RUN)', () => {
   it('refuses RUN_ENDED once the session it names has been closed', () => {
     const { repo, env, id } = openedRun();
     expect(runRunEnd({ cwd: repo, env }, { run: id, which: 'claude-code' }).ok).toBe(true);
+
+    const result = resolvePinnedRun({ cwd: repo, env }, id);
+    expect(result).toMatchObject({ ok: false, code: 'RUN_ENDED' });
+  });
+
+  it('refuses RUN_ENDED for a closed run that the projection beside the record says is open', () => {
+    // The projection is a file nothing signs: a row edited to reopen the run must not let a
+    // fact be pinned to a session the record has closed.
+    const { repo, env, id } = openedRun();
+    expect(runRunEnd({ cwd: repo, env }, { run: id, which: 'claude-code' }).ok).toBe(true);
+    const root = chainRootForScope(resolveTrees(repo, env), 'public') as string;
+    const cache = ProjectionCache.open(root, { persist: true });
+    cache.refresh();
+    cache.close();
+    const db = new DatabaseSync(projectionCachePath({ root }));
+    db.prepare('UPDATE runs SET open = 1, ended_at = NULL WHERE id = ?').run(id);
+    db.close();
 
     const result = resolvePinnedRun({ cwd: repo, env }, id);
     expect(result).toMatchObject({ ok: false, code: 'RUN_ENDED' });

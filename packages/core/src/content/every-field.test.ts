@@ -908,6 +908,15 @@ describe('a name carrying a credential refuses the write, on every field of ever
   });
 });
 
+/**
+ * The cases below that loop over `which` and `run` drive every kind of the catalog into a sandbox
+ * of its own, once per kind. Measured with the suite running on two workers, they take 1.2 and
+ * 1.15 s to refuse and 0.94 s to carry, against the shared 5 s; under a loaded runner a refusing
+ * case has stopped at five seconds while passing alone. Nothing is spare, so the limit is given
+ * room for a machine an order of magnitude slower than the one measured, not removed.
+ */
+const EVERY_KIND_DRIVEN = 30_000;
+
 describe('the envelope’s own text goes through the door on every kind that carries it', () => {
   // `which` and `run` are the two fields a caller supplies on the ENVELOPE, so they
   // are the same two on every kind rather than a property of any one payload — and
@@ -928,7 +937,9 @@ describe('the envelope’s own text goes through the door on every kind that car
   });
 
   for (const path of shared) {
-    it(`carries "${path}" untouched, wherever a write puts it on the chain`, () => {
+    it(`carries "${path}" untouched, wherever a write puts it on the chain`, {
+      timeout: EVERY_KIND_DRIVEN,
+    }, () => {
       let carried = 0;
       for (const kind of CATALOG) {
         const driven = drive(kind, poisoningBodies(kind));
@@ -952,7 +963,9 @@ describe('the envelope’s own text goes through the door on every kind that car
       expect(carried, `no event carried "${path}"`).toBeGreaterThan(0);
     });
 
-    it(`refuses "${path}" carrying a credential, on every kind that takes it`, () => {
+    it(`refuses "${path}" carrying a credential, on every kind that takes it`, {
+      timeout: EVERY_KIND_DRIVEN,
+    }, () => {
       // The envelope's own axis for the refusal, and the shape that caught `which`
       // unscreened in the first place: driven ACROSS the surface at once, because a
       // per-kind proof would say the same thing twenty times and still miss a kind

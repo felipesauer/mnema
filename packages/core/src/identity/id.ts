@@ -282,6 +282,12 @@ export function mintedIdsIn(text: string): readonly MintedId[] {
  * The canonical form of an id reference (NFC, chain-representable), or undefined
  * when the value is none — not a string, empty, or a string the chain cannot
  * canonicalize deterministically.
+ *
+ * NFC IS ALL IT DOES: no case is folded and no `ADR-<n>` label is resolved, so a
+ * reference names a subject only as the exact string the subject's events carry. A
+ * gate finds those events by searching the record for that string's bytes
+ * (`subjectEvents`); were this, or a fold, to take another spelling as the same
+ * subject, the search would stop being the proof.
  */
 export function canonicalId(value: unknown): string | undefined {
   if (typeof value !== 'string' || value.length === 0) return undefined;

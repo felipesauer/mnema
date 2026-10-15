@@ -18,7 +18,11 @@
  * yet, so the core does not refuse a dangling reference and neither does the surface. What IS
  * refused is an `ADR-<n>` label: one that names exactly one decision is recorded as that decision's
  * id, one several carry is refused with their ids, and one no decision carries is refused outright
- * (`link-target.ts`) — a label is never recorded as it was typed, on either end.
+ * (`link-target.ts`) — a label is never recorded as it was typed, on either end. So is a path
+ * outside the project, as the target of an address relation, in the public tree that reaches every
+ * clone (`outsideTheProject`); the private and global trees take any path. A path inside, typed
+ * absolute, is recorded relative to the root in the public tree (`targetAsRecorded`): an absolute
+ * path names one machine's root, and a clone with another would read it as outside.
  *
  * The birth scope is a per-action choice: an explicit `scope` wins; when omitted,
  * the KIND decides — a link asserts a relation between records of the project, so
@@ -39,7 +43,7 @@ import {
 import { linkKnowledge, openTreeForWriting } from '@mnema/core/write';
 import { reachOfAddress } from '../governed-tree.js';
 import { resolveAddress } from '../label-as-address.js';
-import { linkRefusal } from '../link-target.js';
+import { linkRefusal, outsideTheProject, targetAsRecorded } from '../link-target.js';
 import { forwardReplacement, type Landed, type Replacement } from '../recorded-content.js';
 import {
   type AgentWrites,
@@ -148,7 +152,18 @@ export function runLink(
   if (!target.ok) return refusedLink('AMBIGUOUS_LABEL', target.message);
   const unresolved = linkRefusal({ subject: subject.id, target: target.id });
   if (unresolved !== undefined) return refusedLink('UNKNOWN_TARGET', unresolved);
-  const ends = { subject: subject.id, target: target.id };
+  // The public tree travels to every clone, so a target no clone can open is refused there; the
+  // private and global trees stay on this machine and take any path.
+  const publicRoot = scope === 'public' ? projectRoot(trees.projectPublic) : undefined;
+  const outside =
+    publicRoot === undefined ? undefined : outsideTheProject(input.rel, target.id, publicRoot);
+  if (outside !== undefined) return refusedLink('OUTSIDE_PROJECT', outside);
+  // And what the public tree records is the target relative to the root when it was typed absolute.
+  const ends = {
+    subject: subject.id,
+    target:
+      publicRoot === undefined ? target.id : targetAsRecorded(input.rel, target.id, publicRoot),
+  };
 
   const which = whichOfTheWrite(writing, scope, input.which);
 

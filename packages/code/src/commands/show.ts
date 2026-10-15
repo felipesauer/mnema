@@ -101,7 +101,7 @@ export interface ShowDone {
    */
   readonly linkBreaks: readonly ScopedLinkBreak[];
   /**
-   * The moves of this record out of one state that did not see each other — what two machines
+   * The moves of this record out of one state, on machines that had not seen each other or written past the gate — what two machines
    * moving one decision, pattern or task apart leave, and what a projection hides by keeping
    * the last `to` ({@link DivergentMove}). Empty for every record moved in one line, and for a
    * memory or an observation, which have no states. Read from the tree that holds the record,

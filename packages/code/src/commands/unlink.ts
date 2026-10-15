@@ -10,13 +10,16 @@
  * It names the edge exactly as `mnema link` takes it — two positionals and the `--rel` flag — and
  * resolves an `ADR-<n>` label on either end the way that verb does, so a link recorded by label is
  * taken back by the same label. It follows the link to the tree it was recorded in and takes no
- * `--scope`. Only the identity that recorded the link takes it back, with any key of it.
+ * `--scope`. An absolute path under the project root is found by the form `link` records it in
+ * (relative), after the form typed — which keeps a link an earlier version recorded absolute
+ * retractable. Only the identity that recorded the link takes it back, with any key of it.
  */
 
 import { catalogUpcasters } from '@mnema/chain';
-import { chainRootForScope, type DiscoveryEnv, locateLinkScope } from '@mnema/core';
+import { chainRootForScope, type DiscoveryEnv } from '@mnema/core';
 import { openTreeForWriting, retractLink } from '@mnema/core/write';
 import { resolveAddress } from '../label-as-address.js';
+import { locateLinkAsRecorded } from '../link-target.js';
 import { forwardReplacement, type Landed, type Replacement } from '../recorded-content.js';
 import { type AgentWrites, treesToWrite, whichOfTheWrite } from './write-as-the-agent.js';
 
@@ -64,15 +67,18 @@ export function runUnlink(
   if (!subject.ok) return refused('AMBIGUOUS_LABEL', subject.message);
   const target = resolveAddress(ctx, input.target);
   if (!target.ok) return refused('AMBIGUOUS_LABEL', target.message);
-  const edge = { subject: subject.id, target: target.id, rel: input.rel };
+  const typed = { subject: subject.id, target: target.id, rel: input.rel };
 
   const upcasters = catalogUpcasters();
   const writing = treesToWrite(ctx);
   const { trees } = writing;
-  const scope = locateLinkScope(trees, edge, upcasters);
-  if (scope === undefined) {
+  // The target as typed first, then as the public tree records an absolute path under the root.
+  const located = locateLinkAsRecorded(trees, typed, upcasters);
+  if (located === undefined) {
     return { ok: false, reason: trees.projectPublic === undefined ? 'NO_PROJECT' : 'UNKNOWN_LINK' };
   }
+  const { scope } = located;
+  const edge = { ...typed, target: located.target };
 
   const which = whichOfTheWrite(writing, scope, input.which);
 

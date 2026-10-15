@@ -76,6 +76,7 @@ import type {
 import { readRecord } from '../context/search.js';
 import type { ScopedCache } from '../sources.js';
 import type { EventKind } from './events.js';
+import { isAnAddressLink, type RecordedAs, theReductionOf } from './recorded-as.js';
 
 /** How far a walk goes when it does not say: the neighbourhood. */
 export const REFERENCE_DEFAULT_DEPTH = 1;
@@ -95,6 +96,12 @@ export interface ReferenceQuery {
   readonly direction?: ReferenceDirection;
   /** How many hops. Defaults to {@link REFERENCE_DEFAULT_DEPTH}, capped at {@link REFERENCE_MAX_DEPTH}. */
   readonly depth?: number;
+  /**
+   * The other spellings of `id` the public trees may hold it as, one per project whose root
+   * contains it. The links of an address relation that point at it, in the tree that reduced it, are
+   * the origin's own edges too: they end at `id` as asked, and say what the tree holds in `recorded`.
+   */
+  readonly recordedAs?: readonly RecordedAs[];
 }
 
 /** An entity the walk reached, and what the record knows about it. */
@@ -135,6 +142,11 @@ export interface ReferenceLink {
    * string: nothing here reads meaning into it.
    */
   readonly rel?: string;
+  /**
+   * The target as the tree holds it, present only when the edge was found under the other spelling
+   * of the origin: `to` is the origin as asked and this is what the record carries.
+   */
+  readonly recorded?: string;
   /**
    * Present, and true, when the edge is a link its own identity took back (`link.retracted`)
    * and has not linked again: the assertion is history and no longer acts. A graph of what
@@ -223,6 +235,27 @@ export function references(sources: readonly ScopedCache[], query: ReferenceQuer
   const expanded = new Map<string, Map<string, number>>();
   let depths = new Map<string, number>([[query.id, 0]]);
 
+  // The edges the origin has under its other spelling, ended at the origin as asked. Only their
+  // first hop is read here: what lies beyond them is walked from their far ends like any other.
+  const endedAtTheOrigin = new Set<string>();
+  if (query.recordedAs !== undefined && direction !== 'out') {
+    for (const source of sources) {
+      const reduction = theReductionOf(source, query.recordedAs);
+      if (reduction === undefined) continue;
+      const seed = [{ entity: reduction.target, depth: 0 }];
+      for (const edge of source.cache.walk(seed, 'in', 1)) {
+        if (edge.role !== 'target' || edge.to !== reduction.target) continue;
+        if (!isAnAddressLink(edge.event)) continue;
+        // An edge that STARTS at the origin is the origin's own and says what it says: its far end
+        // is the recorded text, a node of its own, and ending it at the origin would make a loop.
+        if (edge.from === query.id) continue;
+        const key = `${source.chainRoot}\0${edge.ord}\0${edge.role}`;
+        endedAtTheOrigin.add(key);
+        links.set(key, { ...toLink(edge, source), to: query.id, recorded: reduction.target });
+      }
+    }
+  }
+
   // A path that changes tree at every hop needs one round per hop to be
   // discovered, plus one round to confirm nothing further appears — so `probe`
   // hops need at most `probe + 1` rounds. The loop also stops the moment a round
@@ -251,7 +284,9 @@ export function references(sources: readonly ScopedCache[], query: ReferenceQuer
         // and the first of the next are the same key, and the later read wins.
         // NUL separates because no path, scope or role can hold one — written
         // as an escape and not as a raw byte, so that an editor shows it.
-        links.set(`${source.chainRoot}\0${edge.ord}\0${edge.role}`, link);
+        const key = `${source.chainRoot}\0${edge.ord}\0${edge.role}`;
+        // An edge found under the origin's other spelling keeps ending at the origin as asked.
+        if (!endedAtTheOrigin.has(key)) links.set(key, link);
       }
     }
     if (!seeded) break;

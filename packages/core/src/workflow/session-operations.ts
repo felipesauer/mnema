@@ -71,6 +71,7 @@ import {
 import { resolveExecutingAgent, type SelfAuthorizedErr } from '../identity/authority.js';
 import { canonicalId, mintId } from '../identity/id.js';
 import { oneLine } from '../one-line.js';
+import { projectRuns } from '../projections/run.js';
 import { type AppendRefusal, appendFact, askTheDoor } from './append.js';
 import {
   type Judged,
@@ -328,7 +329,7 @@ export function endRun(ctx: WriteContext, input: EndRunInput): EndRunOk | EndRun
   const id = canonicalId(input.run);
   return onTheRecordAsItStands(
     ctx,
-    () => standing(ctx, [id], (cache, one) => cache.getRun(one)),
+    () => standing(ctx, [id], projectRuns),
     (runs, earlier): Judged<EndRunOk | EndRunError> => {
       const current = id === undefined ? undefined : runs.get(id);
       if (id === undefined || current === undefined) {

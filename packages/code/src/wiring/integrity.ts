@@ -45,11 +45,17 @@ export function linkBreakNotice(breaks: readonly ScopedLinkBreak[]): readonly Li
  * passes them, and the state printed is the last one in the record's order — the line names
  * every move out of the state, picks none, and says which one the answer shows. Every value in
  * it came out of the record, so each goes through {@link onOneLine}.
+ *
+ * IT USED TO SAY THE MOVES "DID NOT SEE EACH OTHER", and two moves out of one state on ONE tail
+ * did: the second was written by a writer whose own tail held the first. That record is not made
+ * by two machines apart but past the gate — a move written by hand with a valid key, or by a
+ * version from before the gate judged the record under the lock — and the reading cannot yet tell
+ * the two apart, so the line names both.
  */
 export function divergenceNotice(divergent: readonly DivergentMove[]): readonly Line[] {
   return divergent.map((move) =>
     fact(
-      onOneLine`this ${move.kind} left ${move.from} more than once, by moves that did not see each other: to ${move.to.join(', then ')}. Each is a signed fact of the record; the state shown is the last of them in its order.`,
+      onOneLine`this ${move.kind} left ${move.from} more than once: to ${move.to.join(', then ')} — by moves on machines that had not seen each other, or by a move written past the gate. Each is a signed fact of the record; the state shown is the last of them in its order.`,
       0,
     ),
   );

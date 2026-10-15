@@ -11,11 +11,11 @@ name: Packed install
 #
 # WHEN. On a push to `main` and on a `v*` tag, NOT on a pull request: it packs and installs five
 # packages, which a pull request does not need to pay for on every push, and the tag is the moment
-# the tarballs a release attaches are made. It is not a required check and nothing waits for it.
+# the tarballs of a first publication are made (no tag exists until then, so the tag trigger sleeps).
+# It is not a required check and nothing waits for it.
 #
 # WHAT IT DOES NOT PROVE. It installs from the tarballs of the commit it runs on, not from the
-# release's own URLs (the last step of "Cutting a release" still does that by hand), and it runs
-# on one Node, the newest 24. It needs no secret and no account, and publishes nothing.
+# registry's own files, and it runs on one Node, the newest 24. It needs no secret and no account, and publishes nothing.
 #
 # THE STEPS ARE `.github/the-packed-install/run.sh`, so that the same command runs on a
 # workstation: `pnpm build && bash .github/the-packed-install/run.sh`.

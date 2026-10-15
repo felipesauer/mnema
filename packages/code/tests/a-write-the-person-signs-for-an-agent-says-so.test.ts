@@ -25,6 +25,8 @@ import { InMemoryTransport } from '@modelcontextprotocol/sdk/inMemory.js';
 import { ListRootsRequestSchema } from '@modelcontextprotocol/sdk/types.js';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { buildMcpServer } from '../src/mcp/server.js';
+import { openSession } from '../src/mcp/session.js';
+import { runLinkKnowledge, runRetractLink } from '../src/mcp/tools.js';
 import { type CliIo, run } from '../src/program.js';
 
 type Scope = 'public' | 'private' | 'global';
@@ -426,5 +428,95 @@ describe('a transition that lands in a project that does not enrol the agent', (
     });
 
     expect(noticesIn(text)).toEqual([THE_LINE(other)]);
+  });
+});
+
+describe('a link taken back from the project that holds it', () => {
+  const LANDED =
+    '  Landed in the public tree — committed with the repository, so it reaches every clone.';
+
+  async function retractedAs(target: string, holder: string): Promise<string> {
+    mkdirSync(join(holder, 'src'), { recursive: true });
+    let linked = '';
+    await connected(undefined, async (client) => {
+      linked = await say(client, 'link_knowledge', {
+        subject: 'rule-1',
+        target: join(holder, 'src'),
+        rel: 'governs',
+        project: holder,
+      });
+    });
+    expect(linked).toContain('Landed');
+    let text = '';
+    await connected('claude', async (client) => {
+      text = await say(client, 'retract_link', {
+        subject: 'rule-1',
+        target,
+        rel: 'governs',
+        reason: 'wrong path',
+      });
+    });
+    return text;
+  }
+
+  /** The tool's own result, with a session that signs as the agent `claude`. */
+  function resultOf(holder: string, target: string) {
+    const active = openSession({
+      clientName: 'evil',
+      roots: [repo, other].map((dir) => pathToFileURL(dir).href),
+      env,
+      agentKey: 'claude',
+      log: () => {},
+    });
+    const linked = runLinkKnowledge(active, {
+      subject: 'rule-1',
+      target: join(holder, 'src'),
+      rel: 'governs',
+      project: holder,
+    });
+    expect(linked, JSON.stringify(linked)).toMatchObject({ ok: true });
+    return runRetractLink(active, { subject: 'rule-1', target, rel: 'governs', reason: 'wrong' });
+  }
+
+  it('says where the retraction fell and that the person signed it, when that is another project', async () => {
+    await anAgent();
+    await aSecondProject();
+    const text = await retractedAs(join(other, 'src'), other);
+
+    expect(text.split('\n')).toContain(`  In the project at ${other}.`);
+    expect(noticesIn(text)).toEqual([THE_LINE(other)]);
+    expect(ofKind(other, 'link.retracted')).toHaveLength(1);
+  });
+
+  it("says nothing more than before when the link is the session's own project's", async () => {
+    await anAgent();
+    await aSecondProject();
+    const text = await retractedAs(join(repo, 'src'), repo);
+
+    expect(text.split('\n').slice(0, 2)).toEqual(['Retracted link rule-1 —governs→ src', LANDED]);
+    expect(text).not.toContain('In the project at');
+    expect(noticesIn(text)).toEqual([]);
+  });
+
+  it('carries the project and who signed in the result, for a link of another project', async () => {
+    await anAgent();
+    await aSecondProject();
+    mkdirSync(join(other, 'src'), { recursive: true });
+    expect(resultOf(other, join(other, 'src'))).toMatchObject({
+      ok: true,
+      scope: 'public',
+      project: other,
+      personSigned: { agent: 'claude', project: other },
+    });
+  });
+
+  it("carries neither in the result for the session's own project's link", async () => {
+    await anAgent();
+    await aSecondProject();
+    mkdirSync(join(repo, 'src'), { recursive: true });
+    const result = resultOf(repo, join(repo, 'src'));
+    expect(result).toMatchObject({ ok: true, scope: 'public' });
+    expect(result).not.toHaveProperty('project');
+    expect(result).not.toHaveProperty('personSigned');
   });
 });
