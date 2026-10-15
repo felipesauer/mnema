@@ -955,7 +955,7 @@ const CLAUSES_PER_FILE: Readonly<Record<string, number>> = {
   'packages/code/tests/a-passphrase-in-the-environment-opens-the-persons-key.test.ts': 12,
   'packages/code/tests/a-picture-of-the-record.test.ts': 8,
   'packages/code/tests/a-private-write-asks-git.test.ts': 13,
-  'packages/code/tests/a-project-inherits-a-record.test.ts': 8,
+  'packages/code/tests/a-project-inherits-a-record.test.ts': 9,
   'packages/code/tests/a-read-asked-again-draws-what-changed.test.ts': 19,
   'packages/code/tests/a-read-by-path-finds-the-link.test.ts': 16,
   'packages/code/tests/a-read-by-path-in-a-workspace-of-two-roots.test.ts': 10,

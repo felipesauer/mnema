@@ -26,7 +26,8 @@ with its own changelog.
   they said `unknown event kind`, or a version ahead of the known latest. The Python reader names the pair and what
   the table it read declares of the kind. A record this product's command line wrote is frozen in the repository, and
   both readers have to verify it with every move applied. A record read through the `inherit` verb that holds such a
-  line reads as unverified with `verify`'s summary, which does not carry the name.
+  line is refused by `inherit set` and `inherit update`, and shown as not read in the brief, with the same sentence
+  before `verify`'s summary.
 - **The workflows a decision, a task, a skill and a run move through are part of the format, and no reader applies a
   move they do not allow.** `FORMAT.md` §6.7 and the `workflows` object of `event-schema.json` hold the tables the gate
   already wrote by, so the artifact's digest changes. A move is judged at its point in the merged order: a birth once, a

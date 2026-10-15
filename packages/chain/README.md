@@ -323,10 +323,10 @@ applied (`src/chain/the-promise-between-versions.test.ts`).
 **A newer record, read by an older tool.** This does not work, and the format says so: a reader
 refuses a line whose `kind` and `v` no row of its table declares (`FORMAT.md` §4.1). Once a kind
 your binary does not know is in the committed tree, that binary stops reading the whole record,
-not only that event. The refusal names the kind and version, what that binary reads of the kind,
-and which mnema refuses; nothing in the record says which version wrote the line, so it cannot
-name the one that reads it (`FORMAT.md` §7.1). Read a record with a binary at least as new as the
-newest tool that wrote to it.
+not only that event. From the first publication on, the refusal names the kind and version, what
+that binary reads of the kind, and which mnema refuses; nothing in the record says which version
+wrote the line, so it cannot name the one that reads it (`FORMAT.md` §7.1). Read a record with a
+binary at least as new as the newest tool that wrote to it.
 
 **What an older tool reads without refusing.** A rule of authenticity or legality is never
 loosened inside a `kind` and `v` that already exist; a new permission is a new one, which an older
