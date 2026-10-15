@@ -113,8 +113,15 @@ const iso = (second: number): string =>
 
 type Act =
   | { readonly kind: 'task' }
-  | { readonly kind: 'birth'; readonly decision: string }
-  | { readonly kind: 'move'; readonly decision: string; readonly to: 'accepted' | 'rejected' };
+  | {
+      readonly kind: 'birth';
+      readonly decision: string;
+      /** The number the `ADR-` label is minted from; the op's own index when left out. */
+      readonly adr?: number;
+    }
+  | { readonly kind: 'move'; readonly decision: string; readonly to: 'accepted' | 'rejected' }
+  /** `decision` is superseded BY `by`: the subject is the superseded one. */
+  | { readonly kind: 'supersede'; readonly decision: string; readonly by: string };
 
 /** One thing one machine does, at the instant ITS clock gives — which may run backwards. */
 interface Op {
@@ -250,11 +257,21 @@ class Scribe {
       for (const event of decisionBirth(env(act.decision), {
         title: `title of ${act.decision}`,
         rationale: 'because',
-        adr: `ADR-${index}`,
+        adr: `ADR-${act.adr ?? index}`,
         initial: 'proposed',
       })) {
         this.put(op.slot, event);
       }
+    } else if (act.kind === 'supersede') {
+      this.put(
+        op.slot,
+        decisionTransitioned(env(act.decision), {
+          from: 'accepted',
+          to: 'superseded',
+          action: 'supersede',
+          by: act.by,
+        }),
+      );
     } else {
       this.put(
         op.slot,
@@ -1179,6 +1196,137 @@ describe('a subject read off its own lines is the subject the merge reads', () =
             );
           } finally {
             cleanUp(root);
+          }
+        },
+        40,
+      );
+    },
+    CASE_TIMEOUT,
+  );
+});
+
+// ---------------------------------------------------------------------------------------------
+// A supersede, and two decisions that carry the same label
+// ---------------------------------------------------------------------------------------------
+
+/**
+ * The history above never supersedes anything and never gives two decisions one `ADR-` label,
+ * so `supersededBy`, `supersedes` and `adrCollisions` were never asked a question. This one
+ * does both: labels are drawn from a range of three, which two machines meeting there must
+ * collide in, and a supersede names a successor that may or may not have been born.
+ */
+const collidingHistoryArb: fc.Arbitrary<Op[]> = fc
+  .tuple(
+    historyArb,
+    fc.array(
+      fc.record({ slot: slotArb, at: atArb, n: fc.nat({ max: 3 }), adr: fc.nat({ max: 2 }) }),
+      { maxLength: 6 },
+    ),
+    fc.array(
+      fc.record({ slot: slotArb, at: atArb, of: fc.nat({ max: 3 }), by: fc.nat({ max: 3 }) }),
+      { maxLength: 4 },
+    ),
+  )
+  .chain(([history, labelled, superseding]) => {
+    const extra: Op[] = [
+      ...labelled.map(
+        (one): Op => ({
+          slot: one.slot,
+          at: one.at,
+          act: { kind: 'birth', decision: `dec-n${one.n}`, adr: one.adr },
+        }),
+      ),
+      ...superseding
+        .filter((one) => one.of !== one.by)
+        .map(
+          (one): Op => ({
+            slot: one.slot,
+            at: one.at,
+            act: { kind: 'supersede', decision: `dec-n${one.of}`, by: `dec-n${one.by}` },
+          }),
+        ),
+    ];
+    return fc
+      .shuffledSubarray(extra, { minLength: extra.length, maxLength: extra.length })
+      .map((rest): Op[] => [...history, ...rest]);
+  });
+
+/**
+ * What the projection of decisions says, restated off the merged events in a few lines: a
+ * decision is the LAST record and the LAST transition that name it, it exists only with both,
+ * and a supersede writes `supersededBy` on its subject and `supersedes` on its successor.
+ */
+function expectedLinks(merged: readonly CatalogEvent[]) {
+  const label = new Map<string, string>();
+  const moved = new Set<string>();
+  const supersededBy = new Map<string, string>();
+  const supersedes = new Map<string, string>();
+  for (const event of merged) {
+    if (event.kind === 'decision.recorded') label.set(event.subject, event.payload.adr);
+    if (event.kind === 'decision.transitioned') {
+      moved.add(event.subject);
+      if (event.payload.by !== undefined) {
+        supersededBy.set(event.subject, event.payload.by);
+        supersedes.set(event.payload.by, event.subject);
+      }
+    }
+  }
+  const projected = [...label.keys()].filter((id) => moved.has(id)).sort();
+  const byLabel = new Map<string, string[]>();
+  for (const id of projected) {
+    const ids = byLabel.get(label.get(id) as string) ?? [];
+    ids.push(id);
+    byLabel.set(label.get(id) as string, ids);
+  }
+  return {
+    projected,
+    links: projected.map((id) => ({
+      id,
+      adr: label.get(id),
+      supersededBy: supersededBy.get(id),
+      supersedes: supersedes.get(id),
+    })),
+    collisions: [...byLabel]
+      .filter(([, ids]) => ids.length > 1)
+      .sort(([a], [b]) => (a < b ? -1 : a > b ? 1 : 0))
+      .map(([adr, ids]) => ({ adr, ids })),
+  };
+}
+
+describe('P2: the links and the label collisions of a supersede, over generated tails', () => {
+  it(
+    'a cache brought forward and a replay say what the naive reading says, in any order of the tails',
+    () => {
+      holds(
+        fc.tuple(collidingHistoryArb, permutationArb),
+        ([history, permutation]) => {
+          const root = freshDir('links');
+          const other = freshDir('links-permuted');
+          try {
+            const scribe = write(root, history);
+            write(other, history, permutation);
+            const want = expectedLinks(model(streamsOf(scribe.appended)));
+            for (const dir of [root, other]) {
+              const cache = ProjectionCache.open(dir, { upcasters });
+              try {
+                cache.rebuild();
+                const got = cache
+                  .listDecisions()
+                  .map((d) => ({
+                    id: d.id,
+                    adr: d.adr,
+                    supersededBy: d.supersededBy,
+                    supersedes: d.supersedes,
+                  }))
+                  .sort((a, b) => (a.id < b.id ? -1 : 1));
+                expect(got).toEqual(want.links);
+                expect(cache.adrCollisions()).toEqual(want.collisions);
+              } finally {
+                cache.close();
+              }
+            }
+          } finally {
+            cleanUp(root, other);
           }
         },
         40,
