@@ -10,6 +10,7 @@ import {
   makeBench,
   mergeTailInto,
   moveDecision,
+  moveDecisionAt,
   moveTask,
   supersedeDecision,
 } from '../../tests/support/chain.js';
@@ -308,12 +309,14 @@ describe('antipatterns — a decision two machines moved out of one state', () =
 
   it('says the decision and both moves, and picks neither', () => {
     // Two machines, each moving the decision from the `proposed` it could see; the tails
-    // meet afterwards. Neither move was refused — nothing could see the other.
+    // meet afterwards. Neither move was refused — nothing could see the other. The clone's
+    // move is stamped after the birth it had pulled: on the same instant, the tie would go
+    // by tail id, and a move sorted before its subject's birth is one no reader applies.
     const here = bench();
     const clone = bench();
     birthDecision(here, 'dec', 'Round the tax over the total');
     moveDecision(here, 'dec', 'proposed', 'accepted', 'accept');
-    moveDecision(clone, 'dec', 'proposed', 'rejected', 'reject');
+    moveDecisionAt(clone, 'dec', '2026-01-01T00:00:00.500Z', 'proposed', 'rejected', 'reject');
     mergeTailInto(here, clone);
 
     const merged = here.events();
