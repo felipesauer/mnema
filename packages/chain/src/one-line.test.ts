@@ -214,3 +214,76 @@ describe('the control bytes of a line are made visible', () => {
     expect(neutralized('\u05e9\u05dc\u05d5\u05dd')).toBe('\u05e9\u05dc\u05d5\u05dd');
   });
 });
+
+/**
+ * THE CLASS IS A PROPERTY, NOT A LIST OF THE CHARACTERS SOMEBODY THOUGHT OF. Measured on the
+ * binary with the class that named five blocks: a soft hyphen, the Hangul fillers, the
+ * variation selectors (both blocks \u2014 a payload smuggled one byte per selector needs only the
+ * sixteen of U+FE00 to carry four bits a character), the musical format marks and the
+ * interlinear annotation marks all came out raw in `show`, `search`, `status` and `--json`.
+ * The class is now every Default_Ignorable_Code_Point, the line and paragraph separators, the
+ * interlinear annotation marks and the Egyptian hieroglyph format controls \u2014 written as a
+ * fixed list at Unicode 17, so what a reader sees does not change with the Node it runs on.
+ */
+describe('every character the Unicode standard says draws nothing is made visible', () => {
+  const planted: readonly { at: string; point: number; name: string }[] = [
+    { at: 'U+00AD', point: 0x00ad, name: 'soft hyphen' },
+    { at: 'U+034F', point: 0x034f, name: 'combining grapheme joiner' },
+    { at: 'U+115F', point: 0x115f, name: 'Hangul choseong filler' },
+    { at: 'U+1160', point: 0x1160, name: 'Hangul jungseong filler' },
+    { at: 'U+180B', point: 0x180b, name: 'Mongolian free variation selector' },
+    { at: 'U+2028', point: 0x2028, name: 'line separator' },
+    { at: 'U+2029', point: 0x2029, name: 'paragraph separator' },
+    { at: 'U+3164', point: 0x3164, name: 'Hangul filler' },
+    { at: 'U+FE00', point: 0xfe00, name: 'variation selector 1' },
+    { at: 'U+FE0F', point: 0xfe0f, name: 'variation selector 16' },
+    { at: 'U+FFA0', point: 0xffa0, name: 'halfwidth Hangul filler' },
+    { at: 'U+FFF9', point: 0xfff9, name: 'interlinear annotation anchor' },
+    { at: 'U+FFFB', point: 0xfffb, name: 'interlinear annotation terminator' },
+    { at: 'U+13430', point: 0x13430, name: 'Egyptian hieroglyph vertical joiner' },
+    { at: 'U+1D173', point: 0x1d173, name: 'musical symbol begin beam' },
+    { at: 'U+E0100', point: 0xe0100, name: 'variation selector 17' },
+    { at: 'U+E01EF', point: 0xe01ef, name: 'variation selector 256' },
+  ];
+
+  it.each(planted)('writes $at ($name) as the escape JSON writes for it', ({ point }) => {
+    const ch = String.fromCodePoint(point);
+    const escaped = ch
+      .split('')
+      .map((unit) => `\\u${unit.charCodeAt(0).toString(16).padStart(4, '0')}`)
+      .join('');
+    expect(neutralized(`a${ch}b`)).toBe(`a${escaped}b`);
+    // The two separators are whitespace to `\s`, so the line rule makes them a space first.
+    expect(oneLine(`a${ch}b`)).toBe(/\s/u.test(ch) ? 'a b' : `a${escaped}b`);
+    expect(neutralized(neutralized(ch))).toBe(neutralized(ch));
+    const value = { title: `a${ch}b` };
+    expect(JSON.parse(neutralized(JSON.stringify(value)))).toEqual(value);
+  });
+
+  it('writes the selector after an emoji too, which is the price of seeing the others', () => {
+    expect(neutralized('\u2764\ufe0f')).toBe('\u2764\\ufe0f');
+  });
+
+  it('keeps a format mark that draws something, and the text around it', () => {
+    // The Arabic number sign and the end of ayah are drawn: escaping them would take text away.
+    expect(neutralized('\u0600\u0661 \u06dd')).toBe('\u0600\u0661 \u06dd');
+    expect(neutralized('caf\u00e9 \u4e2d\u6587 \u{1f600}')).toBe('caf\u00e9 \u4e2d\u6587 \u{1f600}');
+  });
+
+  it('covers every point the engine running it knows in the class, so a newer Unicode lights it', () => {
+    // The engine's own `\p{\u2026}` is the independent source: a Node whose Unicode adds a default
+    // ignorable point, or a separator, that the fixed list lacks turns this red.
+    const engine = /[\p{Default_Ignorable_Code_Point}\p{gc=Zl}\p{gc=Zp}]/u;
+    const missed: string[] = [];
+    let seen = 0;
+    for (let point = 0; point <= 0x10ffff; point += 1) {
+      if (point >= 0xd800 && point <= 0xdfff) continue;
+      const ch = String.fromCodePoint(point);
+      if (!engine.test(ch)) continue;
+      seen += 1;
+      if (neutralized(ch) === ch) missed.push(`U+${point.toString(16).toUpperCase()}`);
+    }
+    expect(seen, 'the engine knows the class at all').toBeGreaterThan(4000);
+    expect(missed).toEqual([]);
+  });
+});

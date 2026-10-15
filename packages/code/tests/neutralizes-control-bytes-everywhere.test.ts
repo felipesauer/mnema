@@ -82,10 +82,32 @@ function stringsOf(text: string): string[] {
   }
 }
 
+/**
+ * THE CHARACTERS THAT DRAW NOTHING, by the engine's own property — the independent source the
+ * product's fixed list is held against. Measured before the class grew: a soft hyphen, the
+ * Hangul fillers, the variation selectors of both blocks, a musical format mark and the
+ * interlinear annotation marks came out raw in `show`, `search`, `status` and `--json`.
+ */
+const DRAWS_NOTHING = /[\p{Default_Ignorable_Code_Point}\p{gc=Zl}\p{gc=Zp}\u{fff9}-\u{fffb}]/gu;
+const [SHY, HANGUL_FILLER, VS16, VS17, VS18, BEAM, LINE_SEP, ANCHOR, TERMINATOR] = [
+  0xad, 0x3164, 0xfe0f, 0xe0100, 0xe0101, 0x1d173, 0x2028, 0xfff9, 0xfffb,
+].map((point) => String.fromCodePoint(point));
+const HIDDEN_TITLE =
+  `Hidden soft${SHY}hyphen filler${HANGUL_FILLER}here x${VS17}${VS18} heart❤${VS16} ` +
+  `beam${BEAM} ann${ANCHOR}z${TERMINATOR} end`;
+const HIDDEN_RATIONALE = `two lines${LINE_SEP}one paragraph${SHY}`;
+
+function drawsNothingIn(text: string): string[] {
+  return [...text.matchAll(DRAWS_NOTHING)].map(
+    ([found]) => `U+${(found.codePointAt(0) ?? 0).toString(16)}`,
+  );
+}
+
 let sandbox: string;
 let home: string;
 let project: string;
 let decisionId: string;
+let hiddenId: string;
 
 function env(): Record<string, string> {
   return {
@@ -117,6 +139,9 @@ beforeAll(() => {
   decisionId = /[0-9a-f]{8}-[0-9a-f-]{27}/.exec(recorded)?.[0] ?? '';
   expect(decisionId).not.toBe('');
   expect(mnema('decision', 'move', 'accept', decisionId, '--note', `ok ${ESC}[2K`).status).toBe(0);
+  const hidden = mnema('decision', 'record', HIDDEN_TITLE, HIDDEN_RATIONALE).out;
+  hiddenId = /[0-9a-f]{8}-[0-9a-f-]{27}/.exec(hidden)?.[0] ?? '';
+  expect(hiddenId).not.toBe('');
   expect(mnema('link', decisionId, 'src', '--rel', 'governs').status).toBe(0);
   expect(mnema('memory', `a note ${ESC}[1;1H about ${TITLE}`).status).toBe(0);
   expect(
@@ -218,6 +243,41 @@ describe('what the command line prints', () => {
     // removes the actor's as well. The actor's is asserted gone by its context, not by its bytes.
     expect(ran.out).not.toContain(`${ESC}[31mred`);
     expect(ran.out).toContain('\\u001b[31mred');
+  });
+});
+
+describe('what the command line prints of a character that draws nothing', () => {
+  it('is not vacuous: the planted decision holds the class, and the scan sees it', () => {
+    expect(drawsNothingIn(`${HIDDEN_TITLE}${HIDDEN_RATIONALE}`)).toEqual([
+      'U+ad',
+      'U+3164',
+      'U+e0100',
+      'U+e0101',
+      'U+fe0f',
+      'U+1d173',
+      'U+fff9',
+      'U+fffb',
+      'U+2028',
+      'U+ad',
+    ]);
+    expect(drawsNothingIn('café שלום')).toEqual([]);
+  });
+
+  it.each([
+    ['show', true],
+    ['show --json', true],
+    ['search Hidden', false],
+    ['search Hidden --json', false],
+    ['status', false],
+    ['status --json', false],
+  ])('`mnema %s` writes each one as its escape (with the rationale: %s)', (argv, rationale) => {
+    const ran = mnema(...argv.replace('show', `show ${hiddenId}`).split(' '));
+    expect(ran.status, ran.out).toBe(0);
+    expect(ran.out).toContain('Hidden soft');
+    expect(drawsNothingIn(ran.out), ran.out).toEqual([]);
+    expect(ran.out).toContain('soft\\u00adhyphen filler\\u3164here x\\udb40\\udd00\\udb40\\udd01');
+    expect(ran.out).toContain('heart❤\\ufe0f beam\\ud834\\udd73 ann\\ufff9z\\ufffb end');
+    if (rationale) expect(ran.out).toContain('two lines\\u2028one paragraph\\u00ad');
   });
 });
 

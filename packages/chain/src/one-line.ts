@@ -111,15 +111,26 @@ export function oneLine(text: string): string {
 }
 
 /**
- * C0 but for tab and line feed, a CR that is not half of a CRLF, DEL, and C1 — and the
- * format characters that draw nothing or reorder what is drawn: zero-width and
- * joiner marks, the directional marks, embeddings, overrides and isolates, the word
- * joiner, the byte order mark and the Tag characters (U+E0000 to U+E007F). The Tags sit
- * outside the basic plane, so the `u` flag is what lets the class match them at all.
+ * C0 but for tab and line feed, a CR that is not half of a CRLF, DEL, and C1 — and every
+ * character that draws nothing or reorders what is drawn, BY PROPERTY rather than by the
+ * ones somebody thought of: every `Default_Ignorable_Code_Point` (the soft hyphen, the
+ * zero-width and joiner marks, the directional marks, embeddings, overrides and isolates,
+ * the Hangul fillers, all the variation selectors, the byte order mark, the musical format
+ * marks, the Tag characters and the rest of U+E0000 to U+E0FFF), the line and paragraph
+ * separators (U+2028, U+2029), the interlinear annotation marks (U+FFF9 to U+FFFB) and the
+ * Egyptian hieroglyph format controls (U+13430 to U+1343F).
+ *
+ * WRITTEN AS A FIXED LIST AT UNICODE 17, not as `\p{…}`: Node 22 and Node 24 carry different
+ * Unicode versions, and a class read from the engine would make what a reader sees depend on
+ * the Node it runs on. `one-line.test.ts` walks every code point the running engine places in
+ * the property and turns red on one the list lacks, which is how a newer Unicode is noticed.
+ * The format characters that DO draw something (the Arabic number signs, U+0600 to U+0605)
+ * are kept: escaping them would take visible text away. The points outside the basic plane
+ * need the `u` flag to be matched at all.
  */
 const CONTROL_BYTES =
   // biome-ignore lint/suspicious/noControlCharactersInRegex: matching control characters is this rule
-  /[\u0000-\u0008\u000b\u000c\u000e-\u001f\u007f-\u009f\u061c\u180e\u200b-\u200f\u202a-\u202e\u2060-\u2064\u2066-\u2069\ufeff\u{e0000}-\u{e007f}]|\r(?!\n)/gu;
+  /[\u0000-\u0008\u000b\u000c\u000e-\u001f\u007f-\u009f\u00ad\u034f\u061c\u115f\u1160\u17b4\u17b5\u180b-\u180f\u200b-\u200f\u2028-\u202e\u2060-\u206f\u3164\ufe00-\ufe0f\ufeff\uffa0\ufff0-\ufffb\u{13430}-\u{1343f}\u{1bca0}-\u{1bca3}\u{1d173}-\u{1d17a}\u{e0000}-\u{e0fff}]|\r(?!\n)/gu;
 
 /**
  * Every control byte in `text` made visible as the escape JSON writes for it — the one
