@@ -60,7 +60,7 @@ describe('the decision gate', () => {
     };
     expect(refusal({ fields: { note: '  ' } })).toEqual(lacking);
     expect(refusal({ fields: {} })).toEqual(lacking);
-    expect(refusal({ fields: undefined })).toEqual(lacking);
+    expect(refusal({ fields: undefined as never })).toEqual(lacking);
     expect(refusal({ fields: null as never })).toEqual(lacking);
   });
 
@@ -201,7 +201,7 @@ describe('the skill gate', () => {
     };
     expect(skillGate({ ...review, fields: { note: ' ' } })).toEqual(lacking);
     expect(skillGate({ ...review, fields: {} })).toEqual(lacking);
-    expect(skillGate({ ...review, fields: undefined })).toEqual(lacking);
+    expect(skillGate({ ...review, fields: undefined as never })).toEqual(lacking);
     expect(skillGate({ ...review, fields: null as never })).toEqual(lacking);
   });
 

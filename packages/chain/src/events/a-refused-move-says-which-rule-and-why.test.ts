@@ -19,11 +19,11 @@ function move(event: ReturnType<typeof decisionTransitioned>): MoveEvent {
 }
 
 interface Standing {
-  now?: string;
+  now?: string | undefined;
   /** The state the writer saw; `null` is a writer whose sight holds nothing of the subject. */
-  seen?: string | null;
-  held?: boolean;
-  born?: string[];
+  seen?: string | null | undefined;
+  held?: boolean | undefined;
+  born?: string[] | undefined;
 }
 
 /** What the reader knows; what it was not told throws when it is asked. */
