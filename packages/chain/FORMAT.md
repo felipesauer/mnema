@@ -741,8 +741,10 @@ A retraction of an edge the tree does not hold at all is neither applied nor nam
 (`packages/core/src/knowledge/only-the-identity-that-linked-retracts-it.test.ts`).
 
 A verification of the format does not need either rule — they decide what a reader SERVES, not
-what verifies — and the second reader beside this file reads neither retraction: it accepts each
-by its row of `event-schema.json`, as it accepts any kind. A binary from before the note rule
+what verifies — and neither moves a verdict in either reader. The second reader beside this file
+names a retraction neither rule applies, as this product's `verify` does, and accepts the record
+(`packages/chain/src/chain/second-reader-agrees-on-what-is-not-applied.test.ts`, "by another
+identity, names both"). A binary from before the note rule
 applied every note retraction, whoever signed it; a binary from before `link.retracted` refuses
 it as a (kind, v) its table does not hold (§4.1), so a record holding one does not verify there.
 
@@ -901,9 +903,23 @@ is in at its point of the merged order, or by its own tail's: a clock behind wha
 a move concurrent with another machine's out of a state its own tail had seen it leave, puts it
 among the moves not applied. Both are named, and neither changes a verdict.
 
-The second reader beside this file does not judge a move yet: it accepts each by its row of
-`event-schema.json`, as it accepts any kind, and ignores `workflows`. A binary from before this
-section applies every move, whatever its `from`, `action` and `to`.
+**A subject is one workflow's.** The state at a point and the state a writer saw are folded per
+kind and subject: a decision and a task that carry one `subject` are two subjects, and a run's end
+is judged against its own `run.started`. A `by` names a decision, so the births it is checked
+against are the decision workflow's.
+
+**Both readers judge.** The second reader beside this file reads the tables from the `workflows`
+of `event-schema.json`, never from a copy of its own, judges every move by the rules above, and
+names the moves it does not apply with the same rule at the same tail and `seq` as this product's
+census, the verdict unchanged
+(`packages/chain/src/chain/second-reader-agrees-on-what-is-not-applied.test.ts`, over one record
+per rule, two machines with and without citations, and drawn records on two tails).
+
+**A binary from before this section** — this product's, or the second reader's — applies every
+move, whatever its `from`, `action` and `to`, and names none: a record holding a move this section
+does not apply verifies there as it verifies here, and is read there as if the move were legal.
+That binary does not refuse it, and nothing in the record can make it: the move is a kind and a
+version it already reads (§4.1).
 
 ## 7. Versions, and why a proof is never recomputed over a reading
 

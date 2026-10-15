@@ -423,6 +423,29 @@ const AGREEMENTS: readonly Agreement[] = [
       refusals: 1,
     },
   },
+  ...(
+    [
+      ['checkpoint-line-ends-rewritten-to-crlf', 'T1', '6', 'checkpoints.jsonl:1 cp[0..1]'],
+      [
+        'tail-proof-ends-rewritten-to-crlf',
+        'T2/T4',
+        '-',
+        '7e5a72fd0ea237237651690087e4a87133dab8b78847efadde778f633214cca4-05e27e636158e547a09e594545603717',
+      ],
+    ] as const
+  ).map(([name, layer, section, where]) => ({
+    name,
+    verdict: 'refused' as const,
+    product: { layer, says: 'the line ends in CRLF' },
+    second: { section, says: 'the line ends in CRLF', where, refusals: 1 },
+  })),
+  {
+    name: 'byte-order-mark-before-the-first-line',
+    verdict: 'refused',
+    product: { layer: 'T1', says: 'line 1: not valid JSON' },
+    second: { section: '1', says: 'Unexpected UTF-8 BOM', where: '000001.jsonl:1', refusals: 1 },
+  },
+  { name: 'appended-move-the-workflow-does-not-allow', verdict: 'accepted' },
   { name: 'aligned-cut', verdict: 'accepted' },
   { name: 'refounded-record', verdict: 'accepted' },
 ];

@@ -47,7 +47,7 @@
  * over-refusal is found only by building an honest input, which is not where anybody looks.
  *
  * So every input `mutate.py` builds is now refused by BOTH readers, and the case that says
- * so is the count in `leaves exactly ONE row out of the refusal loop`.
+ * so is the count in `leaves exactly FIVE rows out of the refusal loop`.
  *
  * IT NEEDS `python3`, AND IT FAILS RATHER THAN SKIPS WITHOUT IT. A second reader nobody
  * runs is prose again, and a skipped case is a case nobody reads. Python 3 is on the runner
@@ -566,6 +566,37 @@ const MUTATIONS = [
     productBreaks: 'ok',
   },
   {
+    // The same checkout rewrites the two other files a tail holds, and each reader names the
+    // CRLF there too: the checkpoints file, and the tail's proof.
+    name: 'checkpoint-line-ends-rewritten-to-crlf',
+    refusals: 1,
+    section: '6',
+    says: 'the line ends in CRLF',
+    productLayer: 'T1',
+    productBreaks: 'ok',
+  },
+  {
+    name: 'tail-proof-ends-rewritten-to-crlf',
+    refusals: 1,
+    section: '-',
+    says: 'the line ends in CRLF',
+    productLayer: 'T2/T4',
+    productBreaks: 'ok',
+  },
+  {
+    // ONE CAUSE, AND ONLY ONE. The founding line does not parse, and the events after it were
+    // signed by the key it founded: a fold read past it refused each of them as signed by a key
+    // not valid for its anchor, three causes the record does not contain beside the one it does.
+    // The second reader says those three once, as not judged
+    // (`second-reader-names-a-refused-founding-once.test.ts`).
+    name: 'byte-order-mark-before-the-first-line',
+    refusals: 1,
+    section: '1',
+    says: 'Unexpected UTF-8 BOM',
+    productLayer: 'T1',
+    productBreaks: 'ok',
+  },
+  {
     // A ROLE KEY SPEAKING IN THE PERSON'S NAME. A checker key signs the checkpoint over an
     // event whose `signerFp` is the person's, so the enrolment fold, reading the event, sees a
     // key valid for the anchor and the checker's containment never meets it. The product bound
@@ -635,6 +666,18 @@ const MUTATIONS = [
     agreedAccepted: true,
   },
   {
+    // A move the workflow does not allow (FORMAT.md section 6.7) is not applied and is named,
+    // and it is not a break: both readers verify the record, and
+    // `second-reader-agrees-on-what-is-not-applied.test.ts` holds them to naming the same move.
+    name: 'appended-move-the-workflow-does-not-allow',
+    refusals: 0,
+    section: '6.7',
+    says: '',
+    productLayer: 'T1',
+    productBreaks: 'ok',
+    agreedAccepted: true,
+  },
+  {
     name: 'blank-segment-same-size',
     // The SECOND row that is not a refusal, and the reason the count below is 2. See the
     // INCOMPLETE describe: a checkpoint whose range outruns the entries present is the
@@ -659,9 +702,9 @@ describe('the second reader refuses, and the mutation that earns each refusal sh
   });
 
   /**
-   * Every row but the FOUR that are not refusals: the two `agreedAccepted` rows (a cut that
-   * takes events and their checkpoint together, a record erased and refounded), which BOTH
-   * readers accept and which `both-readers-read-the-same-bytes.test.ts` asserts, and the TWO
+   * Every row but the FIVE that are not refusals: the three `agreedAccepted` rows (a cut that
+   * takes events and their checkpoint together, a record erased and refounded, a move the
+   * workflow does not allow), which BOTH readers accept and which `both-readers-read-the-same-bytes.test.ts` asserts, and the TWO
    * below. Both of those are in the table so the enumeration
    * from `mutate.py list` above stays total, and both belong to the INCOMPLETE describe
    * below instead: a check that could not run is not a check that refused, and a loop that
@@ -691,13 +734,19 @@ describe('the second reader refuses, and the mutation that earns each refusal sh
     (mutation) => !('incomplete' in mutation) && !('agreedAccepted' in mutation),
   );
 
-  it('leaves exactly FOUR rows out of the refusal loop, and no row is an acceptance by one reader alone', () => {
-    expect(MUTATIONS.length - REFUSING.length).toBe(4);
+  it('leaves exactly FIVE rows out of the refusal loop, and no row is an acceptance by one reader alone', () => {
+    expect(MUTATIONS.length - REFUSING.length).toBe(5);
     expect(
       MUTATIONS.filter((m) => 'incomplete' in m || 'agreedAccepted' in m)
         .map((m) => m.name)
         .sort(),
-    ).toEqual(['aligned-cut', 'blank-segment-same-size', 'keys-removed', 'refounded-record']);
+    ).toEqual([
+      'aligned-cut',
+      'appended-move-the-workflow-does-not-allow',
+      'blank-segment-same-size',
+      'keys-removed',
+      'refounded-record',
+    ]);
     // NO ROW MAY BE AN ACCEPTANCE. This is the assertion the delivery is measured by: every
     // input `mutate.py` builds that the product refuses is refused here too.
     expect(

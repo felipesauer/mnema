@@ -28,15 +28,24 @@ than inferred from an exemplar:
     6.2 enrolment: the signer of every event is a key VALID FOR ITS ANCHOR at that point
         in the fold, which is a different claim from "the signature verifies"
         (`enrolment`, gap G21)
+
+And two that are readings rather than checks, so they name and never refuse:
+
+    6.4 a note or a link taken back by an identity that did not write it, named as not
+        applied (`retraction`)
+    6.7 the workflows: every move judged at its point in the merged order, against the tables
+        `event-schema.json` publishes, and a move they do not allow named as not applied
+        (`workflow`)
 """
 
 from __future__ import annotations
 
+import json
 import os
 import re
 from typing import NamedTuple
 
-from . import bitcoin, enrolment, gaps, ots, schema
+from . import bitcoin, enrolment, gaps, ots, retraction, schema, workflow
 from .canonical import CRLF, ends_in_crlf_only
 from .checkpoint import Checkpoint, binding_break, read_checkpoint, read_tailproof
 from .ed25519 import verify as ed25519_verify
@@ -129,8 +138,9 @@ TORN = (
 
 def _read_entries(
     report: Report, tail_dir: str, tail_id: str, declarations: schema.Schema | None
-) -> tuple[list[Entry], list[str]]:
-    """The entries a tail holds, and WHERE each line this reader refused to read was.
+) -> tuple[list[Entry], list[str], int]:
+    """The entries a tail holds, WHERE each line this reader refused to read was, and how many
+    entries stand before the first of those.
 
     A refused line is not an entry, and the checks that count entries by position (the chain
     walk, the root fold) cannot be run over a list with a hole in it: the hole reads as a
@@ -156,6 +166,7 @@ def _read_entries(
 
     entries: list[Entry] = []
     refused: list[str] = []
+    before_refused = -1
     for name in segments:
         path = os.path.join(tail_dir, name)
         # Only the LAST segment's end is the tail's end: an earlier one's is a seal.
@@ -171,6 +182,8 @@ def _read_entries(
                     report.note("4", f"the tail {TORN}", where)
                     continue
                 report.fail(refusal.section, refusal.what, where)
+                if not refused:
+                    before_refused = len(entries)
                 refused.append(where)
                 continue
             if not entry.line_is_canonical:
@@ -187,7 +200,7 @@ def _read_entries(
                 )
             _check_declarations(report, declarations, entry, where)
             entries.append(entry)
-    return entries, refused
+    return entries, refused, len(entries) if before_refused < 0 else before_refused
 
 
 def _check_declarations(
@@ -868,13 +881,15 @@ def verify_record(root: str, report: Report, require: str = "chained") -> None:
 
     entries_by_tail: dict[str, list[Entry]] = {}
     covered_by_tail: dict[str, int] = {}
+    # The tails whose FIRST line this reader refused, before any entry of theirs: where it was.
+    refused_first: dict[str, str] = {}
     for tail_id in tail_ids:
         tail_dir = os.path.join(tails_dir, tail_id)
         _check_tail_id(report, tail_id, ring)
         if _holds_nothing(tail_dir):
             _say_empty_tail(report, tail_dir, tail_id, ring)
             continue
-        entries, refused = _read_entries(report, tail_dir, tail_id, declarations)
+        entries, refused, before_refused = _read_entries(report, tail_dir, tail_id, declarations)
         _check_chain(report, entries, tail_id, refused)
         found = _check_checkpoints(report, tail_dir, tail_id, entries, ring, refused)
         _check_tailproof(report, tail_dir, tail_id, ring)
@@ -882,10 +897,65 @@ def verify_record(root: str, report: Report, require: str = "chained") -> None:
         _check_witness(report, tail_dir, tail_id, found.checkpoints, last_seq)
         entries_by_tail[tail_id] = entries
         covered_by_tail[tail_id] = found.covered_through
+        if refused and before_refused == 0:
+            refused_first[tail_id] = refused[0]
 
-    resolution = _check_enrolment(report, entries_by_tail, covered_by_tail, ring)
+    resolution = _check_enrolment(report, entries_by_tail, covered_by_tail, ring, refused_first)
+    _check_retractions(report, entries_by_tail)
+    _check_moves(report, entries_by_tail, declarations)
     _say_keys_without_tail(report, ring, tail_ids, resolution)
     _check_requirement(report, require, entries_by_tail, covered_by_tail)
+
+
+def _check_retractions(report: Report, entries_by_tail: dict[str, list[Entry]]) -> None:
+    """Section 6.4: a retraction by an identity that did not write what it names - named, never
+    refused, because the event is intact and its key speaks for its own `who`."""
+    for found in retraction.foreign_retractions(entries_by_tail):
+        report.note("6.4", f"{found.detail} (rule {found.rule})", f"{found.tail} seq {found.seq}")
+
+
+def _check_moves(
+    report: Report,
+    entries_by_tail: dict[str, list[Entry]],
+    declarations: schema.Schema | None,
+) -> None:
+    """Section 6.7, over the merged order of every tail: the moves the workflows do not allow.
+
+    Each is NAMED and none is refused - a move the workflow does not allow is intact, chained
+    and signed, and what it lacks is a place in the workflow - so a record that holds one
+    verifies, and its verdict says which move is not applied and by which rule.
+    """
+    if declarations is None:
+        return  # Section 4.1 has already said the declarations could not be read.
+    try:
+        tables = workflow.load(declarations.workflows, declarations.path)
+    except Refusal as refusal:
+        report.unchecked(
+            "6.7",
+            f"{refusal.what}, so no move of a workflow was judged",
+            declarations.path,
+        )
+        return
+    merged = enrolment.merged_order(entries_by_tail)
+    moves = sum(
+        1
+        for _tail, entry in merged.order
+        if entry.event.get("kind") in tables or entry.event.get("kind") == workflow.RUN_ENDED
+    )
+    rulings = workflow.judge(merged.order, merged.held, tables)
+    for ruling in rulings:
+        report.note(
+            "6.7",
+            f"a {ruling.kind} of {json.dumps(ruling.subject, ensure_ascii=True)}: {ruling.detail} "
+            f"- the workflow does not allow it, so it is not applied (rule {ruling.rule})",
+            f"{ruling.tail} seq {ruling.seq}",
+        )
+    if moves and not rulings:
+        report.ok(
+            "6.7",
+            f"every one of the {moves} move(s) is one the workflows allow, judged at its point in "
+            "the merged order against the tables event-schema.json publishes",
+        )
 
 
 def _holds_nothing(tail_dir: str) -> bool:
@@ -972,8 +1042,18 @@ def _check_enrolment(
     entries_by_tail: dict[str, list[Entry]],
     covered_by_tail: dict[str, int],
     ring: dict[str, PublicKey],
+    refused_first: dict[str, str],
 ) -> enrolment.Resolution | None:
-    """Section 6.2, folded over every tail at once, because enrolment spans them."""
+    """Section 6.2, folded over every tail at once, because enrolment spans them.
+
+    The fold reads every entry this reader could read, a tail with a refused line included, so
+    what a refused line held is missing from it and a cause may be that line's consequence: the
+    record is refused at the line already, and the causes are said as the fold finds them. One
+    consequence is not named, because it is certain: a refused FOUNDING (`refused_first`,
+    `_unread_foundings`). Its key is valid for its anchor from that line on or never, and the
+    reader cannot tell which, so the events that key signed for its own anchor are said once as
+    not judged instead of each as signed by a key not enrolled.
+    """
     if not ring:
         report.unchecked(
             "6.2",
@@ -1030,8 +1110,12 @@ def _check_enrolment(
             "an event is placed before a retirement by the time the key itself wrote",
         )
     issues = resolution.issues
+    unjudged = _unjudged_for_an_unread_founding(
+        report, issues, entries_by_tail, _unread_foundings(entries_by_tail, refused_first)
+    )
     for issue in issues:
-        report.fail("6.2", issue.detail, f"{issue.tail[:20]}... seq {issue.seq}", "G21")
+        if issue not in unjudged:
+            report.fail("6.2", issue.detail, f"{issue.tail[:20]}... seq {issue.seq}", "G21")
     if not issues:
         report.ok(
             "6.2",
@@ -1040,6 +1124,85 @@ def _check_enrolment(
             gap="G21",
         )
     return resolution
+
+
+def _unread_foundings(
+    entries_by_tail: dict[str, list[Entry]], refused_first: dict[str, str]
+) -> dict[str, tuple[str, str]]:
+    """The keys whose founding is a line this reader refused: key -> (its tail, where the line was).
+
+    Section 6.2: an identity is founded by `identity.founded`, self-signed by its founding key,
+    whose `subject` is that key's anchor - the fact that enrols the identity's FIRST key, and the
+    only one that can, since every other enrolment is signed by a key the anchor already holds.
+    Section 3: a tail id begins with the fingerprint of the key that writes it. So when a tail's
+    first line is refused, before any entry of the tail was read, and no line this reader did
+    read founds the anchor of that tail's key, the refused line is the one place that founding
+    can stand, and the key is "not enrolled" only because the line did not read. A refused line
+    anywhere else, or a first line whose key some line read does found, is not this.
+    """
+    founded: set[str] = set()
+    for entries in entries_by_tail.values():
+        for entry in entries:
+            event = entry.event
+            if event.get("kind") != "identity.founded":
+                continue
+            payload = event.get("payload")
+            founding = payload.get("foundingFp") if isinstance(payload, dict) else None
+            for named in (event.get("subject"), founding):
+                if isinstance(named, str):
+                    founded.add(named)
+    unread: dict[str, tuple[str, str]] = {}
+    for tail_id, where in refused_first.items():
+        key = tail_id.split("-", 1)[0]
+        if key in founded or enrolment.anchor_of(key) in founded:
+            continue
+        unread[key] = (tail_id, where)
+    return unread
+
+
+def _unjudged_for_an_unread_founding(
+    report: Report,
+    issues: list[enrolment.Issue],
+    entries_by_tail: dict[str, list[Entry]],
+    unread: dict[str, tuple[str, str]],
+) -> list[enrolment.Issue]:
+    """The causes of section 6.2 an unread founding accounts for, said once per key as not judged.
+
+    Only one cause: an event signed by the key the refused line would have founded, refused
+    because that key is not valid for the key's OWN anchor. Whether it is depends on that line
+    alone, so the event is not judged. Any other cause stands as the fold finds it - an event
+    the key signed for another anchor, one signed by another key (an agent the founding key
+    enrolled included) - because the founding would not have changed it; and nothing positive
+    is said that the fold would not say, since the fold itself is the one read with every line.
+    """
+    if not unread:
+        return []
+    signer_of = {
+        (tail, entry.seq): entry.event.get("signerFp")
+        for tail, entries in entries_by_tail.items()
+        for entry in entries
+    }
+    by_key: dict[str, list[enrolment.Issue]] = {}
+    for issue in issues:
+        signer = signer_of.get((issue.tail, issue.seq))
+        if (
+            isinstance(signer, str)
+            and signer in unread
+            and issue.not_valid_for == enrolment.anchor_of(signer)
+        ):
+            by_key.setdefault(signer, []).append(issue)
+    for key, unjudged in by_key.items():
+        tail_id, where = unread[key]
+        report.unchecked(
+            "6.2",
+            f"{len(unjudged)} event(s) signed by {key[:12]}... for its own anchor were not "
+            f"judged: the first line of its tail, {where}, was refused above, and no line this "
+            "reader read founds that anchor, so the refused line is where the founding stands "
+            "and whether the key was valid for its anchor rests on it",
+            tail_id,
+            "G21",
+        )
+    return [issue for unjudged in by_key.values() for issue in unjudged]
 
 
 def _say_keys_without_tail(

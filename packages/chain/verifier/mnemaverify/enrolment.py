@@ -66,7 +66,7 @@ from __future__ import annotations
 
 import hashlib
 from datetime import datetime, timezone
-from typing import Any, NamedTuple
+from typing import Any, NamedTuple, Optional
 
 from .checkpoint import IDENTITY_TRIM
 from .ed25519 import verify as ed25519_verify
@@ -117,6 +117,9 @@ class Issue(NamedTuple):
     tail: str
     seq: int
     detail: str
+    # The anchor whose set did not hold the signer, when that is the cause: the one cause a
+    # founding this reader could not read accounts for (`record`, section 6.2).
+    not_valid_for: Optional[str] = None
 
 
 class Resolution(NamedTuple):
@@ -142,7 +145,7 @@ class Resolution(NamedTuple):
     retired_agents: list[tuple[str, str, int]]
 
 
-def _merged(entries_by_tail: dict[str, list[Entry]]) -> Merged:
+def merged_order(entries_by_tail: dict[str, list[Entry]]) -> Merged:
     """Section 6.2's order, "Reading many tails" in full: `seq` within a tail; across tails the
     smallest `at` among the heads whose citations (`after`) have all been taken, then tail id.
 
@@ -218,7 +221,7 @@ def _merged(entries_by_tail: dict[str, list[Entry]]) -> Merged:
         if gap > 0:
             key = (tail, citing.seq)
             behind[key] = max(gap, behind.get(key, 0))
-    return Merged(merged, not_held, [(t, s, g) for (t, s), g in behind.items()], forced)
+    return Merged(merged, not_held, [(t, s, g) for (t, s), g in behind.items()], forced, held)
 
 
 class Merged(NamedTuple):
@@ -230,6 +233,9 @@ class Merged(NamedTuple):
     # (tail, seq, milliseconds) of every event stamped before an entry it cites.
     behind: list[tuple[str, int, int]]
     forced: int
+    # (citing tail, its position, cited tail, the cited position) of every citation honoured, the
+    # positions counted from 0 in each tail: what section 6.7 asks of what a writer had read.
+    held: list[tuple[str, int, str, int]]
 
 
 def _after(entry: Entry) -> list[str]:
@@ -307,7 +313,7 @@ def resolve(
         keys_of(anchor).add(fp)
         return True
 
-    merged = _merged(entries_by_tail)
+    merged = merged_order(entries_by_tail)
     for tail, entry in merged.order:
         event = entry.event
         seq = entry.seq
@@ -359,7 +365,12 @@ def resolve(
                 continue
             if signer not in keys_of(anchor):
                 issues.append(
-                    Issue(tail, seq, "agent.enrolled is signed by a key not valid for the anchor at this point")
+                    Issue(
+                        tail,
+                        seq,
+                        "agent.enrolled is signed by a key not valid for the anchor at this point",
+                        anchor,
+                    )
                 )
                 continue
             # Section 6.2's set, written out - not str.strip(), which takes U+001C..U+001F too.
@@ -399,7 +410,12 @@ def resolve(
                 continue
             if signer not in keys_of(anchor):
                 issues.append(
-                    Issue(tail, seq, "agent.retired is signed by a key not valid for the anchor at this point")
+                    Issue(
+                        tail,
+                        seq,
+                        "agent.retired is signed by a key not valid for the anchor at this point",
+                        anchor,
+                    )
                 )
                 continue
             if not isinstance(agent, str) or agents.get(agent, ("", ""))[0] != anchor:
@@ -424,7 +440,12 @@ def resolve(
                 continue
             if not isinstance(who, str) or signer not in keys_of(who):
                 issues.append(
-                    Issue(tail, seq, "checker.enrolled is signed by a key not valid for its who at this point")
+                    Issue(
+                        tail,
+                        seq,
+                        "checker.enrolled is signed by a key not valid for its who at this point",
+                        who,
+                    )
                 )
                 continue
             if not _consent_ok(ring, checker_message(who, checker), checker, payload.get("reverseSig")):
@@ -449,7 +470,12 @@ def resolve(
                 continue
             if not isinstance(who, str) or signer not in keys_of(who):
                 issues.append(
-                    Issue(tail, seq, "checker.retired is signed by a key not valid for its who at this point")
+                    Issue(
+                        tail,
+                        seq,
+                        "checker.retired is signed by a key not valid for its who at this point",
+                        who,
+                    )
                 )
                 continue
             # The revocation's gate: it refuses the key's LATER results, so an uncovered one,
@@ -495,7 +521,12 @@ def resolve(
                 continue
             if signer not in keys_of(anchor):
                 issues.append(
-                    Issue(tail, seq, "key.enrolled is signed by a key not valid for the anchor at this point")
+                    Issue(
+                        tail,
+                        seq,
+                        "key.enrolled is signed by a key not valid for the anchor at this point",
+                        anchor,
+                    )
                 )
                 continue
             if not _reverse_signature_ok(ring, anchor, new_fp, reverse):
@@ -514,7 +545,12 @@ def resolve(
                 continue
             if signer not in keys_of(anchor):
                 issues.append(
-                    Issue(tail, seq, "backup.declared is signed by a key not valid for the anchor at this point")
+                    Issue(
+                        tail,
+                        seq,
+                        "backup.declared is signed by a key not valid for the anchor at this point",
+                        anchor,
+                    )
                 )
                 continue
             if not isinstance(backup, str) or backup not in keys_of(anchor):
@@ -540,7 +576,12 @@ def resolve(
                 continue
             if signer not in keys_of(anchor):
                 issues.append(
-                    Issue(tail, seq, "key.revoked is signed by a key not valid for the anchor at this point")
+                    Issue(
+                        tail,
+                        seq,
+                        "key.revoked is signed by a key not valid for the anchor at this point",
+                        anchor,
+                    )
                 )
                 continue
             # Section 6.2's gate: a revocation removes a key that judges OTHER, possibly
@@ -561,6 +602,7 @@ def resolve(
                     seq,
                     f"the signer {str(signer)[:12]}... is not a key enrolled for "
                     f"{str(who)[:20]}... at this point",
+                    who if isinstance(who, str) else None,
                 )
             )
     # What the accepted facts name as their agent: an event some issue names was refused, and a
