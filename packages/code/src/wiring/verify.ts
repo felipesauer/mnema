@@ -973,6 +973,10 @@ function censusLocus(note: CensusNote): string {
       return note.note;
     case 'foreign-link-retraction':
       return note.link.subject;
+    // A move the workflow does not allow names what it moves: the id a person opens to see the
+    // state the readers keep.
+    case 'illegal-move':
+      return note.subject;
     // An agent named by a key the record holds to it, and one only stated: the first names the
     // key, the second the `which` the facts carry.
     case 'attested-which':

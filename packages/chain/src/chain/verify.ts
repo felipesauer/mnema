@@ -102,11 +102,14 @@
  */
 
 import { existsSync, readFileSync } from 'node:fs';
+import type { CatalogEvent } from '../events/catalog.js';
 import { mayRetract } from '../events/retraction.js';
 import { decodeStoredBytes } from '../events/stored-json.js';
 import type { UpcasterRegistry } from '../events/upcaster.js';
+import type { MoveEvent, MoveRule } from '../events/workflow.js';
 import { oneLine } from '../one-line.js';
 import { isBackupRegistration, listRegistrations } from './backup.js';
+import { causalOrder } from './causal-order.js';
 import { type Checkpoint, checkpointHash, verifyCheckpoint } from './checkpoint.js';
 import { type IdentityResolution, resolveIdentity } from './enrollment.js';
 import { describeLinkBreak, type Entry, linkBreakAt } from './entry.js';
@@ -120,6 +123,7 @@ import {
   type WitnessStatus,
 } from './level.js';
 import { UnreadableLineError } from './lines.js';
+import { illegalMoves } from './moves.js';
 import { entriesBetween } from './range.js';
 import {
   type CommittedKeys,
@@ -176,6 +180,7 @@ export type CensusNote =
   | PartialFinalLineNote
   | ForeignRetractionNote
   | ForeignLinkRetractionNote
+  | IllegalMoveNote
   | RetiredCheckerNote
   | RetiredAgentNote
   | CitationNotHeldNote
@@ -356,6 +361,30 @@ export interface ForeignLinkRetractionNote {
   /** The identities that asserted the edge, in tail order. */
   readonly authors: readonly string[];
   /** Where the retraction sits. */
+  readonly tail: string;
+  readonly seq: number;
+  readonly detail: string;
+}
+
+/**
+ * A move the workflow does not allow (FORMAT.md section 6.7), which no reader applies: the
+ * subject is read as if it had not been written.
+ *
+ * Not a break, for the reason a {@link ForeignRetractionNote} is not: the event is intact —
+ * hashed, chained, signed by a key of its own `who` — and what it lacks is a place in the
+ * workflow, a reading of the record rather than a fact about its bytes. A reader is told,
+ * because the person whose decision, task or skill it is has a move on the record that the
+ * readers do not apply, and a binary older than the rule applies it.
+ */
+export interface IllegalMoveNote {
+  readonly kind: 'illegal-move';
+  /** The decision, task, skill or run it moves (the event's subject). */
+  readonly subject: string;
+  /** The kind of the move. */
+  readonly move: MoveEvent['kind'];
+  /** Which rule it breaks. */
+  readonly rule: MoveRule;
+  /** Where the move sits. */
   readonly tail: string;
   readonly seq: number;
   readonly detail: string;
@@ -765,6 +794,7 @@ export function verifyChain(
     ...notes,
     ...foreignRetractions(tails, entriesByTail),
     ...foreignLinkRetractions(tails, entriesByTail),
+    ...movesNotApplied(entriesByTail),
     ...retiredCheckers(identity.retiredCheckers),
     ...retiredAgents(identity.retiredAgents),
     ...citationsNotHeld(identity.citations),
@@ -971,6 +1001,46 @@ function foreignRetractions(
     }
   }
   return found;
+}
+
+/**
+ * Every move the workflow does not allow (FORMAT.md section 6.7), judged in the merged order of
+ * every tail and named in that order. The order is merged again here rather than borrowed from
+ * the identity fold, so the census asks the same function the readers ask (`illegalMoves`).
+ */
+function movesNotApplied(entriesByTail: ReadonlyMap<string, readonly Entry[]>): IllegalMoveNote[] {
+  const tails = [...entriesByTail].map(([tail, entries]) => ({ tail, entries }));
+  const entryAt = (tail: number, position: number): Entry =>
+    (tails[tail] as (typeof tails)[number]).entries[position] as Entry;
+  const merged = causalOrder(
+    tails.map(({ tail, entries }) => ({ tree: 0, tail, length: entries.length })),
+    {
+      at: (tail, position) => (entryAt(tail, position).event as CatalogEvent).at,
+      hash: (tail, position) => entryAt(tail, position).link.hash,
+      after: (tail, position) => (entryAt(tail, position).event as CatalogEvent).after,
+    },
+  );
+  const cursors = tails.map(() => 0);
+  const order = merged.steps.map((tail) => {
+    const position = cursors[tail] as number;
+    cursors[tail] = position + 1;
+    return { event: entryAt(tail, position).event as CatalogEvent, tail, position };
+  });
+  return [...illegalMoves(order, merged.held)].map(([index, ruling]) => {
+    const { event, tail, position } = order[index] as (typeof order)[number];
+    const entry = entryAt(tail, position);
+    return {
+      kind: 'illegal-move',
+      subject: event.subject,
+      move: event.kind as MoveEvent['kind'],
+      rule: ruling.rule,
+      tail: (tails[tail] as (typeof tails)[number]).tail,
+      seq: entry.link.seq,
+      detail:
+        `a ${event.kind} of ${oneLine(event.subject)}: ${ruling.detail} — ` +
+        'the workflow does not allow it, so it is not applied',
+    };
+  });
 }
 
 /**
@@ -1650,6 +1720,8 @@ const CENSUS_CLAUSE: Readonly<Record<CensusNote['kind'], ((count: number) => str
     `${count} retraction(s) by an identity that did not write the note, not applied (see census — informational, not a break)`,
   'foreign-link-retraction': (count) =>
     `${count} link retraction(s) by an identity that did not record the link, not applied (see census — informational, not a break)`,
+  'illegal-move': (count) =>
+    `${count} move(s) the workflow does not allow, not applied (see census — informational, not a break)`,
   'retired-checker': (count) =>
     `${count} retired checker key(s) whose earlier check results are no longer vouched for (see census — informational, not a break)`,
   'retired-agent': (count) =>
