@@ -680,6 +680,23 @@ describe('the guard asks the key this machine would sign with, and answers the r
     ]);
   });
 
+  it('lets the move through, as the write does, where the person’s key is protected and the passphrase is at hand', async () => {
+    const { task } = await theTeamsRecord();
+    await protectThePersonsKey();
+
+    const seen: Seen[] = [];
+    process.env.MNEMA_KEY_PASSPHRASE = 'correct horse';
+    try {
+      await connected([repo], undefined, async (client) => {
+        seen.push(await pairOf(client, task, 'submit'));
+      });
+    } finally {
+      delete process.env.MNEMA_KEY_PASSPHRASE;
+    }
+
+    expect(seen).toEqual([{ guard: ALLOWED, wrote: 'written' }]);
+  });
+
   it('says the agent is not enrolled in the task’s tree where the person’s key that would sign instead is protected, and lets the project that enrols it through', async () => {
     const w = await aWorkspaceOfTwo();
     await protectThePersonsKey();
