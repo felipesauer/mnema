@@ -145,6 +145,7 @@ export {
   type TailRead,
   type TailSince,
 } from './chain/store.js';
+export { illegalMoves, type PlacedEvent } from './chain/moves.js';
 export { subjectEvents } from './chain/subject-events.js';
 export { DEFAULT_WAIT_MS, TailBusyError } from './chain/tail-lock.js';
 export { ensureTree } from './chain/tree.js';
@@ -314,3 +315,18 @@ export {
   UpcasterRegistry,
   type VersionedEvent,
 } from './events/upcaster.js';
+export {
+  type IllegalMove,
+  isMove,
+  judgeMove,
+  type MoveEvent,
+  type MoveRule,
+  type MoveStanding,
+  RUN_ENDED,
+  RUN_OPEN,
+  stateAfter,
+  type TransitionKind,
+  WORKFLOWS,
+  type Workflow,
+  type WorkflowMove,
+} from './events/workflow.js';
