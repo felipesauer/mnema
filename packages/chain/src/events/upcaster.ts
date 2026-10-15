@@ -148,17 +148,17 @@ function notHeld(kind: string, v: number, latest: number | undefined): string {
 }
 
 /**
- * The refusal {@link notHeld} words, found inside a message that carries it — a verdict's issue,
- * where the line's parse error is quoted — or `undefined` when the message is about something else.
+ * The refusal {@link notHeld} words, found inside a text that carries it — a verdict's issue, where
+ * the line's parse error is quoted — or `undefined` when the text is about something else.
  *
  * A reading that only has the verdict to hand (`verify` refused, and the caller words the refusal
  * from it) names the pair and the version this way, in the words every other reading gives.
  */
-export function contractNotHeldIn(message: string): string | undefined {
-  const start = message.indexOf(NOT_HELD_OPENS);
+export function contractNotHeldIn(text: string): string | undefined {
+  const start = text.indexOf(NOT_HELD_OPENS);
   if (start === -1) return undefined;
-  const end = message.indexOf(NOT_HELD_CLOSES, start);
-  return end === -1 ? undefined : message.slice(start, end + NOT_HELD_CLOSES.length);
+  const end = text.indexOf(NOT_HELD_CLOSES, start);
+  return end === -1 ? undefined : text.slice(start, end + NOT_HELD_CLOSES.length);
 }
 
 /** Thrown when the upcaster ladder is broken or an event is unreadable. */
