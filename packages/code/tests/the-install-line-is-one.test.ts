@@ -48,8 +48,24 @@ describe('the install from the source', () => {
     expect(BLOCK).toContain('git clone https://github.com/felipesauer/mnema.git');
     expect(BLOCK).toContain('pnpm install --frozen-lockfile');
     expect(BLOCK).toContain('pnpm build');
-    expect(BLOCK).toContain('npm i -g "$dest"/*.tgz');
+    expect(BLOCK).toContain('npm i -g --prefix ~/.local "$dest"/*.tgz');
+    expect(BLOCK).toContain('corepack enable --install-directory ~/.local/bin');
+    expect(BLOCK).toContain('export PATH="$HOME/.local/bin:$PATH"');
     expect(page).not.toMatch(/releases\/download/);
+  });
+
+  it('makes the shim directory and puts it on the PATH before the first pnpm runs', () => {
+    const at = (needle: string): number => BLOCK.indexOf(needle);
+    const bin = '$HOME/.local/bin';
+    // `corepack enable --install-directory` does not create the directory: it stops on ENOENT
+    expect(at(`mkdir -p "${bin}"`)).toBeGreaterThanOrEqual(0);
+    expect(at(`export PATH="${bin}:$PATH"`)).toBeGreaterThanOrEqual(0);
+    const firstPnpm = BLOCK.search(/\bpnpm /);
+    expect(firstPnpm).toBeGreaterThan(0);
+    // where pnpm exists only as that shim, a pnpm run before the export is `command not found`
+    expect(at(`mkdir -p "${bin}"`)).toBeLessThan(at('corepack enable'));
+    expect(at(`export PATH="${bin}:$PATH"`)).toBeLessThan(at('corepack enable'));
+    expect(at('corepack enable')).toBeLessThan(firstPnpm);
   });
 
   it('packs every package that is not private, the dependencies first and `code` last', () => {
