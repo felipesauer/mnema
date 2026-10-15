@@ -8,8 +8,10 @@
  * that gates actions will ask this projection "who authorized this run?", so
  * the authorizer is projected explicitly, not left implicit on events.
  *
- * Like every projection this is a pure, deterministic replay — no validation,
- * no re-judging; it replays facts. The rule mirrors tasks:
+ * Like every projection this is a pure, deterministic replay — no validation of
+ * its own: a second `run.ended`, or one with no `run.started` before it, is
+ * already left out of the stream it is handed (`order.ts`, FORMAT.md §6.7). The
+ * rule mirrors tasks:
  *   - a run EXISTS once its `run.started` is seen;
  *   - it is OPEN until a `run.ended` for the same run is seen;
  *   - its authorizer (`who`), agent, goal, and outcome are read literally.

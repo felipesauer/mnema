@@ -59,18 +59,28 @@ const env = (subject: string, n: number) => ({
   subject,
 });
 
-/** Appends a task that is born and then moved once. */
-function writeTaskMovedTo(w: ChainWriter, id: string, initial: string, to: string): void {
-  const [created, transitioned] = taskBirth(env(id, 0), { title: `title ${id}`, initial });
+/**
+ * Appends a task that is born and then moved once, by a move of the workflow (FORMAT.md §6.7): a
+ * move the workflow does not hold is one no reader applies.
+ */
+function writeTaskMovedTo(w: ChainWriter, id: string, to: 'READY' | 'CANCELED'): void {
+  const [created, transitioned] = taskBirth(env(id, 0), { title: `title ${id}`, initial: 'DRAFT' });
   w.append(created);
   w.append(transitioned);
-  w.append(taskTransitioned(env(id, 1), { from: initial, to, action: 'move' }));
+  w.append(
+    taskTransitioned(
+      env(id, 1),
+      to === 'READY'
+        ? { from: 'DRAFT', to, action: 'submit' }
+        : { from: 'DRAFT', to, action: 'cancel', fields: { reason: 'not needed' } },
+    ),
+  );
 }
 
 describe('ProjectionCache — rebuild materializes the chain', () => {
   it('projects a task after rebuild', () => {
     const w = openChainForWriting(chainRoot, { keyRoot: chainRoot });
-    writeTaskMovedTo(w, 't-1', 'draft', 'in-progress');
+    writeTaskMovedTo(w, 't-1', 'READY');
 
     const cache = openCache();
     cache.rebuild();
@@ -78,7 +88,7 @@ describe('ProjectionCache — rebuild materializes the chain', () => {
     expect(cache.getTask('t-1')).toEqual({
       id: 't-1',
       title: 'title t-1',
-      state: 'in-progress',
+      state: 'READY',
       createdAt: at(0),
       updatedAt: at(1),
     });
@@ -86,7 +96,7 @@ describe('ProjectionCache — rebuild materializes the chain', () => {
 
   it('is empty before rebuild (in-memory cache starts blank)', () => {
     const w = openChainForWriting(chainRoot, { keyRoot: chainRoot });
-    writeTaskMovedTo(w, 't-1', 'draft', 'done');
+    writeTaskMovedTo(w, 't-1', 'CANCELED');
     const cache = openCache();
     expect(cache.listTasks()).toEqual([]); // not populated until rebuild
     cache.rebuild();
@@ -95,22 +105,22 @@ describe('ProjectionCache — rebuild materializes the chain', () => {
 
   it('queries tasks by current state', () => {
     const w = openChainForWriting(chainRoot, { keyRoot: chainRoot });
-    writeTaskMovedTo(w, 't-1', 'draft', 'done');
-    writeTaskMovedTo(w, 't-2', 'draft', 'in-progress');
-    writeTaskMovedTo(w, 't-3', 'draft', 'done');
+    writeTaskMovedTo(w, 't-1', 'CANCELED');
+    writeTaskMovedTo(w, 't-2', 'READY');
+    writeTaskMovedTo(w, 't-3', 'CANCELED');
 
     const cache = openCache();
     cache.rebuild();
-    expect(cache.listTasksByState('done').map((t) => t.id)).toEqual(['t-1', 't-3']);
-    expect(cache.listTasksByState('in-progress').map((t) => t.id)).toEqual(['t-2']);
+    expect(cache.listTasksByState('CANCELED').map((t) => t.id)).toEqual(['t-1', 't-3']);
+    expect(cache.listTasksByState('READY').map((t) => t.id)).toEqual(['t-2']);
   });
 });
 
 describe('ProjectionCache — the cache is NOT the source (drop and replay)', () => {
   it('rebuilds identical state after the cache is wiped, from the chain alone', () => {
     const w = openChainForWriting(chainRoot, { keyRoot: chainRoot });
-    writeTaskMovedTo(w, 't-1', 'draft', 'in-progress');
-    writeTaskMovedTo(w, 't-2', 'triage', 'done');
+    writeTaskMovedTo(w, 't-1', 'READY');
+    writeTaskMovedTo(w, 't-2', 'CANCELED');
 
     const dbPath = join(chainRoot, 'cache.db');
     const first = openCache(dbPath);
@@ -132,22 +142,22 @@ describe('ProjectionCache — the cache is NOT the source (drop and replay)', ()
 
   it('a rebuild reflects the chain even after the cache was hand-corrupted', () => {
     const w = openChainForWriting(chainRoot, { keyRoot: chainRoot });
-    writeTaskMovedTo(w, 't-1', 'draft', 'done');
+    writeTaskMovedTo(w, 't-1', 'CANCELED');
 
     const cache = openCache();
     cache.rebuild();
-    expect(cache.getTask('t-1')?.state).toBe('done');
+    expect(cache.getTask('t-1')?.state).toBe('CANCELED');
 
     // A rebuild is defined entirely by the chain, so running it again from the
     // same chain converges to the same answer — the cache never drifts from it.
     cache.rebuild();
-    expect(cache.getTask('t-1')?.state).toBe('done');
+    expect(cache.getTask('t-1')?.state).toBe('CANCELED');
   });
 
   it('rebuild is idempotent: running it twice yields the same rows', () => {
     const w = openChainForWriting(chainRoot, { keyRoot: chainRoot });
-    writeTaskMovedTo(w, 't-1', 'draft', 'ready');
-    writeTaskMovedTo(w, 't-2', 'draft', 'done');
+    writeTaskMovedTo(w, 't-1', 'READY');
+    writeTaskMovedTo(w, 't-2', 'CANCELED');
 
     const cache = openCache();
     cache.rebuild();
@@ -158,18 +168,18 @@ describe('ProjectionCache — the cache is NOT the source (drop and replay)', ()
 
   it('picks up new events appended to the chain on the next rebuild', () => {
     const w = openChainForWriting(chainRoot, { keyRoot: chainRoot });
-    writeTaskMovedTo(w, 't-1', 'draft', 'in-progress');
+    writeTaskMovedTo(w, 't-1', 'READY');
 
     const cache = openCache();
     cache.rebuild();
-    expect(cache.getTask('t-1')?.state).toBe('in-progress');
+    expect(cache.getTask('t-1')?.state).toBe('READY');
 
     // Append a further transition, then rebuild: the cache follows the chain.
     w.append(
-      taskTransitioned(env('t-1', 2), { from: 'in-progress', to: 'done', action: 'finish' }),
+      taskTransitioned(env('t-1', 2), { from: 'READY', to: 'IN_PROGRESS', action: 'start' }),
     );
     cache.rebuild();
-    expect(cache.getTask('t-1')?.state).toBe('done');
+    expect(cache.getTask('t-1')?.state).toBe('IN_PROGRESS');
     expect(cache.getTask('t-1')?.updatedAt).toBe(at(2));
   });
 });
@@ -179,17 +189,17 @@ describe('ProjectionCache — multi-tail materialization', () => {
     const rootB = mkdtempSync(join(tmpdir(), 'mnema-cache-b-'));
     try {
       const a = openChainForWriting(chainRoot, { keyRoot: chainRoot });
-      writeTaskMovedTo(a, 't-a', 'draft', 'done');
+      writeTaskMovedTo(a, 't-a', 'CANCELED');
       const b = openChainForWriting(rootB, { keyRoot: rootB });
-      writeTaskMovedTo(b, 't-b', 'triage', 'in-progress');
+      writeTaskMovedTo(b, 't-b', 'READY');
       // Offline merge: copy B's tail and key into A's chain.
       cpSync(join(rootB, 'tails'), join(chainRoot, 'tails'), { recursive: true });
       cpSync(join(rootB, 'keys'), join(chainRoot, 'keys'), { recursive: true });
 
       const cache = openCache();
       cache.rebuild();
-      expect(cache.getTask('t-a')?.state).toBe('done');
-      expect(cache.getTask('t-b')?.state).toBe('in-progress');
+      expect(cache.getTask('t-a')?.state).toBe('CANCELED');
+      expect(cache.getTask('t-b')?.state).toBe('READY');
       expect(cache.listTasks()).toHaveLength(2);
     } finally {
       rmSync(rootB, { recursive: true, force: true });
@@ -249,12 +259,12 @@ describe('ProjectionCache — runs', () => {
 
   it('projects tasks and runs from the same chain side by side', () => {
     const w = openChainForWriting(chainRoot, { keyRoot: chainRoot });
-    writeTaskMovedTo(w, 't-1', 'draft', 'done');
+    writeTaskMovedTo(w, 't-1', 'CANCELED');
     w.append(runStarted(env('r-1', 3), { agent: 'claude' }));
 
     const cache = openCache();
     cache.rebuild();
-    expect(cache.getTask('t-1')?.state).toBe('done');
+    expect(cache.getTask('t-1')?.state).toBe('CANCELED');
     expect(cache.getRun('r-1')?.open).toBe(true);
   });
 });
@@ -399,12 +409,12 @@ describe('ProjectionCache — memories', () => {
 
   it('projects tasks and memories from the same tail side by side', () => {
     const w = openChainForWriting(chainRoot, { keyRoot: chainRoot });
-    writeTaskMovedTo(w, 't-1', 'draft', 'done');
+    writeTaskMovedTo(w, 't-1', 'CANCELED');
     w.append(memoryCaptured(env('m-1', 2), { content: 'knowledge' }));
 
     const cache = openCache();
     cache.rebuild();
-    expect(cache.getTask('t-1')?.state).toBe('done');
+    expect(cache.getTask('t-1')?.state).toBe('CANCELED');
     expect(cache.getMemory('m-1')?.content).toBe('knowledge');
     // The domains stay separate: the memory is not a task, the task not a memory.
     expect(cache.listTasks()).toHaveLength(1);
@@ -528,7 +538,11 @@ describe('ProjectionCache — observations, handoffs, links (the three knowledge
 });
 
 describe('ProjectionCache — skills', () => {
-  /** Writes a skill born proposed and moved to `to` via the given action. */
+  /**
+   * Writes a skill born proposed and moved to `to` via the given action, its last move at
+   * instant 1. An adoption is reached the way the workflow reaches it (FORMAT.md §6.7): reviewed
+   * first, at the same instant.
+   */
   function writeSkill(w: ChainWriter, id: string, to: string, action: string): void {
     const [created, transitioned] = skillBirth(env(id, 0), {
       name: `n ${id}`,
@@ -537,7 +551,19 @@ describe('ProjectionCache — skills', () => {
     });
     w.append(created);
     w.append(transitioned);
-    if (to !== 'proposed') {
+    if (to === 'adopted') {
+      w.append(
+        skillTransitioned(env(id, 1), {
+          from: 'proposed',
+          to: 'reviewed',
+          action: 'review',
+          fields: { note: 'n' },
+        }),
+      );
+      w.append(
+        skillTransitioned(env(id, 1), { from: 'reviewed', to, action, fields: { note: 'n' } }),
+      );
+    } else if (to !== 'proposed') {
       w.append(
         skillTransitioned(env(id, 1), { from: 'proposed', to, action, fields: { note: 'n' } }),
       );
@@ -641,17 +667,18 @@ describe('ProjectionCache — skills', () => {
 function writeEverything(w: ChainWriter): void {
   const [created, transitioned] = taskBirth(env('t-1', 0), {
     title: 'pineapple on the roadmap',
-    initial: 'draft',
+    initial: 'DRAFT',
   });
   w.append(created);
   w.append(transitioned);
   w.append(memoryCaptured(env('m-1', 1), { content: 'the pineapple was a mistake' }));
-  const [recorded, decided] = [
+  const [recorded, born, decided] = [
     decisionRecorded(env('d-1', 2), {
       adr: 'ADR-1',
       title: 'Ship it',
       rationale: 'because the pineapple ripened',
     }),
+    decisionTransitioned(env('d-1', 2), { from: null, to: 'proposed', action: 'create' }),
     decisionTransitioned(env('d-1', 3), {
       from: 'proposed',
       to: 'accepted',
@@ -660,6 +687,7 @@ function writeEverything(w: ChainWriter): void {
     }),
   ];
   w.append(recorded);
+  w.append(born);
   w.append(decided);
   const [skillCreated, skillMoved] = skillBirth(env('s-1', 4), {
     name: 'pineapple pattern',
@@ -778,13 +806,13 @@ describe('ProjectionCache — searching the record', () => {
 
   it('serves the CURRENT state of an entity that moved, not the one it was born in', () => {
     const w = openChainForWriting(chainRoot, { keyRoot: chainRoot });
-    writeTaskMovedTo(w, 't-1', 'draft', 'done');
+    writeTaskMovedTo(w, 't-1', 'CANCELED');
 
     const cache = openCache();
     cache.rebuild();
 
-    expect(cache.search({ term: 'title' }).hits[0]?.state).toBe('done');
-    expect(cache.search({ state: 'draft' }).hits).toEqual([]);
+    expect(cache.search({ term: 'title' }).hits[0]?.state).toBe('CANCELED');
+    expect(cache.search({ state: 'DRAFT' }).hits).toEqual([]);
   });
 });
 
@@ -995,7 +1023,7 @@ describe('ProjectionCache — the breaks as the chain stands now', () => {
 
   it('sees a break the held replay cannot, and names it as a full reading would', () => {
     const w = openChainForWriting(chainRoot, { keyRoot: chainRoot });
-    writeTaskMovedTo(w, 't-1', 'draft', 'in-progress');
+    writeTaskMovedTo(w, 't-1', 'READY');
     const cache = openCache();
     cache.rebuild();
     expect(cache.linkBreaks).toHaveLength(0);
@@ -1022,13 +1050,13 @@ describe('ProjectionCache — the breaks as the chain stands now', () => {
    */
   it('leaves the cache where it found it, so the next read still does the catch-up', () => {
     const w = openChainForWriting(chainRoot, { keyRoot: chainRoot });
-    writeTaskMovedTo(w, 't-1', 'draft', 'in-progress');
+    writeTaskMovedTo(w, 't-1', 'READY');
     const cache = openCache();
     cache.rebuild();
     expect(cache.getTask('t-2')).toBeNull();
 
     const later = openChainForWriting(chainRoot, { keyRoot: chainRoot });
-    writeTaskMovedTo(later, 't-2', 'draft', 'in-progress');
+    writeTaskMovedTo(later, 't-2', 'READY');
 
     // Asking twice over a chain that grew: the projections do not move either time.
     expect(cache.linkBreaksAsOfNow()).toHaveLength(0);
@@ -1047,7 +1075,7 @@ describe('ProjectionCache — the breaks as the chain stands now', () => {
    */
   it('answers as the cache stood when a tail is gone, which is not a break', () => {
     const w = openChainForWriting(chainRoot, { keyRoot: chainRoot });
-    writeTaskMovedTo(w, 't-1', 'draft', 'in-progress');
+    writeTaskMovedTo(w, 't-1', 'READY');
     const cache = openCache();
     cache.rebuild();
 
@@ -1065,7 +1093,7 @@ describe('ProjectionCache — the breaks as the chain stands now', () => {
    */
   it('names an already-broken tail once, not twice, when its arrivals refuse too', () => {
     const w = openChainForWriting(chainRoot, { keyRoot: chainRoot });
-    writeTaskMovedTo(w, 't-1', 'draft', 'in-progress');
+    writeTaskMovedTo(w, 't-1', 'READY');
     const tails = join(chainRoot, 'tails');
     const tail = readdirSync(tails)[0] as string;
     const file = join(tails, tail, '000001.jsonl');

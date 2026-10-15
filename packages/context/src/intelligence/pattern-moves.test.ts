@@ -186,17 +186,28 @@ describe('patternMoveWitness — which of three answers the record gives about a
     for (const id of ['sk-review', 'sk-adopt', 'sk-reject', 'sk-deprecate']) {
       birthSkill(b, id, `Pattern ${id}`);
     }
+    // Each walked by the workflow to the move a case is about: a move from a state the pattern
+    // is not in is one no reader applies (FORMAT.md §6.7), and would prove nothing here.
     moveSkill(b, 'sk-review', 'proposed', 'reviewed', 'review', { run: 'run-a' });
+    moveSkill(b, 'sk-adopt', 'proposed', 'reviewed', 'review', { run: 'run-a' });
     moveSkill(b, 'sk-adopt', 'reviewed', 'adopted', 'adopt', { run: 'run-a' });
     moveSkill(b, 'sk-reject', 'proposed', 'rejected', 'reject', { run: 'run-a' });
+    moveSkill(b, 'sk-deprecate', 'proposed', 'reviewed', 'review', { run: 'run-a' });
+    moveSkill(b, 'sk-deprecate', 'reviewed', 'adopted', 'adopt', { run: 'run-a' });
     deprecateSkill(b, 'sk-deprecate', { run: 'run-a' });
 
     const witness = patternMoveWitness(b.events());
     const all = [...witness.consulted, ...witness.movedWithoutConsulting, ...witness.notObservable];
-    expect(ids(all).sort()).toEqual(['sk-adopt', 'sk-review']);
     // A skill's BIRTH is a `skill.transitioned` too, and its action is not one of the
-    // two, so the birth pair of four patterns adds nothing to any answer.
-    expect(all).toHaveLength(2);
+    // two, so the birth pair of four patterns adds nothing to any answer; nor do the
+    // reject and the deprecate.
+    expect(all.map((move) => `${move.skill} ${move.action}`).sort()).toEqual([
+      'sk-adopt adopt',
+      'sk-adopt review',
+      'sk-deprecate adopt',
+      'sk-deprecate review',
+      'sk-review review',
+    ]);
   });
 
   it('carries the run and the agent the event carried, and neither key when it carried none', () => {

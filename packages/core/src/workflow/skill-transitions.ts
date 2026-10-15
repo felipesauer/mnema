@@ -7,7 +7,9 @@
  * workflow: fixed, opinionated, compiler-checked, never loaded from a project
  * file. It mirrors the task workflow's shape (from/action/to/requires) and,
  * unlike the decision table, carries NO relational move: replacing one skill
- * with another is a `knowledge.linked`, not a transition here.
+ * with another is a `knowledge.linked`, not a transition here. The rows are the
+ * format's (`WORKFLOWS` in `@mnema/chain`, FORMAT.md §6.7): the gate that writes
+ * a move and every reader that judges one read the same table.
  *
  * The proof rule follows the same principle as tasks and decisions — a mandatory
  * field is the universal textual WHY of the move: a verdict (`review`, `adopt`,
@@ -24,7 +26,7 @@
  *   - `rejected` and `deprecated` are terminal.
  */
 
-import type { TransitionFields } from '@mnema/chain';
+import { type TransitionFields, WORKFLOWS } from '@mnema/chain';
 import type { SkillState } from './skill-states.js';
 
 /** The proof fields the gate may require of a skill action. */
@@ -50,13 +52,7 @@ export interface SkillTransition {
  * deliberately NOT here: a skill is born through the chain's birth pair, not
  * requested through the gate.
  */
-export const SKILL_TRANSITIONS: readonly SkillTransition[] = [
-  { from: 'proposed', action: 'review', to: 'reviewed', requires: ['note'] },
-  { from: 'proposed', action: 'reject', to: 'rejected', requires: ['note'] },
-  { from: 'reviewed', action: 'adopt', to: 'adopted', requires: ['note'] },
-  { from: 'reviewed', action: 'reject', to: 'rejected', requires: ['note'] },
-  { from: 'adopted', action: 'deprecate', to: 'deprecated', requires: ['reason'] },
-];
+export const SKILL_TRANSITIONS: readonly SkillTransition[] = WORKFLOWS['skill.transitioned'].moves;
 
 /**
  * Finds the single legal transition for a (from, action) pair, or undefined if

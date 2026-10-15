@@ -2,33 +2,36 @@
  * Two moves of one subject out of one state: the shape two machines leave when each moved a
  * decision, a skill or a task the other had not seen move yet.
  *
- * WHY IT HAS TO BE SAID. A projection keeps the last `to` and never reads `from`
+ * WHY IT HAS TO BE SAID. A projection keeps the last `to` it applies
  * (`projections/decision.ts`), so a decision accepted on one machine and rejected on another,
  * both from `proposed`, reads as whichever move the merged order puts last — and nothing says
  * there were two. On ONE machine the second of two such moves is refused now (`STATE_MOVED`,
  * `workflow/as-the-record-stands.ts`); between machines nothing coordinates, both moves are
  * signed facts, and the only honest response is the one the `ADR-<n>` collision already gets:
- * detect it and say it, never re-judge or drop either move. `verify` is not asked: both
- * entries are well formed and signed, and its verdict does not change.
+ * detect it and say it, never drop either move. `verify` is not asked: both entries are well
+ * formed, signed and legal, and its verdict does not change.
+ *
+ * WHAT IT IS HANDED IS THE STREAM A READER APPLIES. The moves the workflow does not allow are
+ * already left out of it (`order.ts`, FORMAT.md §6.7), and that is what makes every pair below
+ * a pair of moves that did not see each other: a move out of a state its writer had seen the
+ * subject leave — on its own tail, or through what its tail cites — is not applied, so it is
+ * never here. It used to be: two moves out of one state on ONE tail were said as a divergence,
+ * when the second writer had seen the first.
  *
  * WHY "THE SAME `from` TWICE" IS ENOUGH, AND WHERE IT IS NOT. In a machine with no cycle a
- * subject leaves each state at most once, so two transitions carrying one `from` can only be
- * two moves on machines that had not seen each other, or a move written past the gate — whatever order the merge puts them in, and with no
- * clock compared. The decision and skill machines have no cycle, and the case that enumerates
- * their tables says so (`divergent-moves.test.ts`). The task machine HAS one (a reopened task
- * leaves `IN_PROGRESS` again), so this rule would accuse every honest reopen there.
+ * subject leaves each state at most once, so two applied transitions carrying one `from` can
+ * only be two moves on machines that had not seen each other — whatever order the merge puts
+ * them in, and with no clock compared. The decision and skill machines have no cycle, and the
+ * case that enumerates their tables says so (`divergent-moves.test.ts`). The task machine HAS one
+ * (a reopened task leaves `IN_PROGRESS` again), so this rule would accuse every honest reopen
+ * there.
  *
- * TASKS ARE READ BY ANOTHER RULE, AND IT LEANS ON THE ORDER. This said "tasks are not read
- * here, and a task moved twice out of one state between machines stays silent", and that
- * silence was the defect this reading exists for, left standing for one machine of three. A
- * task's moves are read in the record's order instead, and a move whose `from` is not the
- * state the record had the task in at that point — a move judged on a state another machine
- * had already moved it out of — is the divergence; the evidence is the move that left that
- * state before it, and this one. An honest reopen is not one: its `from` is where the task
- * stood. What this rule takes on is the merged order across tails, which is by each event's
- * own `at` (`order.ts`): a machine whose clock ran behind, moving a task right after pulling
- * another machine's move of it, can sort its move first and be said to have diverged when it
- * did not. Decisions and skills keep the rule that compares no clock.
+ * TASKS ARE READ BY ANOTHER RULE, AND IT LEANS ON THE ORDER. A task's moves are read in the
+ * record's order, and a move whose `from` is not the state the record had the task in at that
+ * point is the divergence; the evidence is the move that left that state before it, and this
+ * one. An honest reopen is not one: its `from` is where the task stood. Such a move is applied
+ * only when its writer had not seen the task leave that state (FORMAT.md §6.7), so what this
+ * names is, by the citations too, two moves that did not see each other.
  */
 
 import type { CatalogEvent } from '@mnema/chain';

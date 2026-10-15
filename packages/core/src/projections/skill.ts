@@ -1,18 +1,17 @@
 /**
  * The skill projection: fold an ordered event stream into current skill state.
  *
- * Like every projection this is a pure, deterministic replay — no validation, no
- * re-judging; it replays facts the gate already judged at write time. The rule
- * mirrors tasks and decisions:
+ * Like every projection this is a pure, deterministic replay — no validation of
+ * its own: a move the workflow does not allow is already left out of the stream
+ * it is handed (`order.ts`, FORMAT.md §6.7). The rule mirrors tasks and decisions:
  *   - a skill EXISTS once its `skill.created` is seen;
  *   - its STATE is the `to` of its last `skill.transitioned` (birth included);
  *   - its name and body are read literally from the record.
  *
  * A skill is NOT relational — there is no supersede, no `by`, none of the
  * two-sided link a decision's supersede folds. It is the simplest of the three
- * workflow projections: existence plus state, nothing more. Because state is
- * read from the literal `to`, never derived from a workflow, replaying old facts
- * yields the state that happened, not one re-derived from today's rules.
+ * workflow projections: existence plus state, nothing more. State is read from
+ * the literal `to` of the moves the workflow allows (FORMAT.md §6.7).
  *
  * IT ALSO FOLDS PROVENANCE — who proposed the pattern and who adopted it — and
  * that is the one thing it keeps beyond existence and state. A skill is the only

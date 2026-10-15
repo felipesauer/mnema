@@ -6,7 +6,9 @@
  * reaches, and which proof fields that action must carry. This is the whole
  * workflow: fixed, opinionated, compiler-checked, never loaded from a project
  * file. It mirrors the task workflow's shape; the difference is which proof a
- * decision's moves require.
+ * decision's moves require. The rows are the format's (`WORKFLOWS` in
+ * `@mnema/chain`, FORMAT.md §6.7): the gate that writes a move and every reader
+ * that judges one read the same table, so changing a row is changing the format.
  *
  * The proof rule follows the same principle as tasks — a mandatory field is the
  * universal textual WHY of the move, nothing that presumes a tool:
@@ -22,7 +24,7 @@
  * cannot be superseded again (the successor is the live decision now).
  */
 
-import type { TransitionFields } from '@mnema/chain';
+import { type TransitionFields, WORKFLOWS } from '@mnema/chain';
 import type { DecisionState } from './decision-states.js';
 
 /** The proof fields the gate may require of a decision action. */
@@ -48,12 +50,8 @@ export interface DecisionTransition {
  * is deliberately NOT here: a decision is born through the chain's birth pair,
  * not requested through the gate.
  */
-export const DECISION_TRANSITIONS: readonly DecisionTransition[] = [
-  { from: 'proposed', action: 'accept', to: 'accepted', requires: ['note'] },
-  { from: 'proposed', action: 'reject', to: 'rejected', requires: ['note'] },
-  { from: 'proposed', action: 'supersede', to: 'superseded', requires: ['reason'] },
-  { from: 'accepted', action: 'supersede', to: 'superseded', requires: ['reason'] },
-];
+export const DECISION_TRANSITIONS: readonly DecisionTransition[] =
+  WORKFLOWS['decision.transitioned'].moves;
 
 /**
  * Finds the single legal transition for a (from, action) pair, or undefined if

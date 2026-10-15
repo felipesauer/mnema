@@ -58,6 +58,8 @@ A decision enters `proposed` and is in force once `accepted`; changing your mind
 a new decision that supersedes the old one, never an edit of it. Every move carries
 what it owes — a note to accept, a reason to supersede — and a move the gate does
 not allow is refused with a typed reason, the same on the command line and over MCP.
+The diagram is part of the format ([`FORMAT.md`](../packages/chain/FORMAT.md) §6.7), so
+a move written past the gate, by hand, is one no reader applies, and `verify` names it.
 
 The `ADR-1` that `decision record` printed is the decision's **label**, and the move takes
 its **id**, the value in the parentheses beside it:

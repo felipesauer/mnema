@@ -1227,6 +1227,54 @@ const CLASSIFIED: Readonly<Record<string, { verdict: Verdict; why: string }>> = 
       verdict: 'collapsed',
       why: 'the identity a stored retraction names as its signer',
     },
+  // --- @mnema/chain: a move the workflow does not allow (FORMAT.md §6.7) ----------
+  '@mnema/chain chain/verify.ts «a {} of {}: {} — » event.kind #1': {
+    verdict: 'minted',
+    why: 'the kind of the move, one of the four the workflow judges: the parse admitted it by its row',
+  },
+  '@mnema/chain chain/verify.ts «a {} of {}: {} — » oneLine(event.subject) #1': {
+    verdict: 'collapsed',
+    why: 'the subject a stored move names — bytes in a tail, not a value this run made',
+  },
+  '@mnema/chain chain/verify.ts «a {} of {}: {} — » ruling.detail #1': {
+    verdict: 'composed',
+    why: 'the ruling `events/workflow.ts` words — every value in it is a site of its own there',
+  },
+  '@mnema/chain events/workflow.ts «a move {} → {} by "{}"{}» from === null ? \'null\' : oneLine(from) #1':
+    { verdict: 'collapsed', why: 'the state a stored move says it left, out of the record' },
+  '@mnema/chain events/workflow.ts «a move {} → {} by "{}"{}» oneLine(to) #1': {
+    verdict: 'collapsed',
+    why: 'the state a stored move says it reached, out of the record — a hand may write any',
+  },
+  '@mnema/chain events/workflow.ts «a move {} → {} by "{}"{}» oneLine(action) #1': {
+    verdict: 'collapsed',
+    why: 'the action a stored move names, out of the record',
+  },
+  '@mnema/chain events/workflow.ts «a move {} → {} by "{}"{}» detail #1': {
+    verdict: 'composed',
+    why: 'what the rule found, worded at each call of the same function — every value a site there',
+  },
+  '@mnema/chain events/workflow.ts «, where a birth is null → {} by "{}"» machine.birth.to #1': {
+    verdict: 'minted',
+    why: 'the first state of a workflow, a constant of the table `WORKFLOWS` holds',
+  },
+  '@mnema/chain events/workflow.ts «, where a birth is null → {} by "{}"» machine.birth.action #1':
+    { verdict: 'minted', why: 'the action of a birth, a constant of the table `WORKFLOWS` holds' },
+  "@mnema/chain events/workflow.ts « without the {} it requires» missing.join(', ') #1": {
+    verdict: 'minted',
+    why: 'the names of proof fields a row of `WORKFLOWS` requires, the closed `transitionFields`',
+  },
+  '@mnema/chain events/workflow.ts « naming a successor {} the record holds no birth of» oneLine(by) #1':
+    { verdict: 'collapsed', why: 'the successor id a stored supersede names, out of the record' },
+  '@mnema/chain events/workflow.ts « of a subject that was {} there, » oneLine(standing.now) #1': {
+    verdict: 'collapsed',
+    why: 'the state the fold reached, a `to` read off the record rather than made by this run',
+  },
+  "@mnema/chain events/workflow.ts «and {} to the one that wrote it» seen === undefined ? 'not born' : oneLine(seen) #1":
+    {
+      verdict: 'collapsed',
+      why: 'the state the writer saw, folded from `to` values read off the record',
+    },
   '@mnema/chain chain/verify.ts «write it ({} did) — only the identity that wrote a note takes it back, » oneLine(author) #1':
     {
       verdict: 'collapsed',
@@ -1984,6 +2032,8 @@ const NOT_A_SENTENCE: Readonly<Record<string, string>> = {
     'another clause of that same table, and a count on the same terms',
   '@mnema/chain chain/verify.ts «{} retraction(s) by an identity that did not write the note, not applied (see census — informational, not a break)» count':
     'another clause of that same table, and a count on the same terms',
+  '@mnema/chain chain/verify.ts «{} move(s) the workflow does not allow, not applied (see census — informational, not a break)» count':
+    'another clause of that same table, and a count on the same terms',
   '@mnema/chain chain/verify.ts «{} retired checker key(s) whose earlier check results are no longer vouched for (see census — informational, not a break)» count':
     'another clause of that same table, and a count on the same terms',
   '@mnema/chain chain/verify.ts «{} retired agent key(s) whose earlier facts are no longer vouched for (see census — informational, not a break)» count':
@@ -2019,8 +2069,8 @@ describe('every value the domain puts in a sentence is classified', () => {
     // are equal. The scale is stated, and so is what the HANDOFF said — twenty-three
     // sites, twelve in `core` and eleven in `chain` — because it counted sentences
     // written at a `message:` or a `detail:` directly, and a value is not a sentence.
-    expect(SITES.length).toBe(281);
-    expect(FOUND[0]?.sites.length).toBe(93);
+    expect(SITES.length).toBe(294);
+    expect(FOUND[0]?.sites.length).toBe(106);
     expect(FOUND[1]?.sites.length).toBe(188);
     expect(FOUND.flatMap((layer) => layer.wording).length).toBeGreaterThan(15);
   });
@@ -2033,7 +2083,7 @@ describe('every value the domain puts in a sentence is classified', () => {
     // refusal of a checkout whose recorded identity no longer counts its key
     // (`staleAnchorRefusal`): its five sentences go through it, and without it they would
     // be templates this walk never read as sentences at all.
-    expect(FOUND[0]?.sinks).toEqual(['push']);
+    expect(FOUND[0]?.sinks).toEqual(['push', 'ruled']);
     expect(FOUND[1]?.sinks).toEqual(['err', 'stale']);
     expect(FOUND[0]?.producers).toContain('keyWithoutTailDetail');
     expect(FOUND[0]?.producers).toContain('coverageClause');
@@ -2071,11 +2121,11 @@ describe('every value the domain puts in a sentence is classified', () => {
     // No arm of the case above may be empty, or that much of it is vacuous.
     const verdicts = Object.values(CLASSIFIED).map((said) => said.verdict);
     const count = (verdict: Verdict): number => verdicts.filter((said) => said === verdict).length;
-    expect(count('collapsed')).toBe(196);
-    expect(count('minted')).toBe(62);
-    expect(count('composed')).toBe(23);
+    expect(count('collapsed')).toBe(203);
+    expect(count('minted')).toBe(66);
+    expect(count('composed')).toBe(25);
     expect(SITES.filter((site) => new RegExp(`\\b${DOOR}\\b`).test(site.expression))).toHaveLength(
-      196,
+      203,
     );
   });
 

@@ -51,7 +51,9 @@ function machine(
   clock: () => string = () => '2026-10-01T00:00:00.000Z',
 ): DecisionWriteContext {
   return {
-    writer: openChainForWriting(tree, { keyRoot }),
+    // Citing the heads it read, as the product's writer does: what each machine saw is what
+    // keeps two moves it did not see from being judged illegal (FORMAT.md §6.7).
+    writer: openChainForWriting(tree, { keyRoot, citeHeads: true }),
     layout: { root: tree },
     upcasters,
     clock,

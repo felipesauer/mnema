@@ -46,6 +46,7 @@
 
 import type { CatalogEvent, EventKind, TransitionFields } from './catalog.js';
 import type { Envelope } from './envelope.js';
+import { WORKFLOWS, type Workflow } from './workflow.js';
 
 /**
  * The vocabulary a payload field rule is spelled in.
@@ -314,6 +315,8 @@ export interface PublishedSchema {
   readonly envelope: { readonly [field: string]: EnvelopeRule };
   readonly transitionFields: { readonly [field: string]: FieldRule };
   readonly contracts: readonly PublishedContract[];
+  /** The workflow each transition kind moves through (FORMAT.md §6.7). */
+  readonly workflows: { readonly [kind: string]: Workflow };
 }
 
 /**
@@ -328,6 +331,11 @@ export interface PublishedSchema {
  *
  * The rows are sorted by `(kind, v)` so the file has one order, and the order is
  * not the declaration order of a table somebody may reorder.
+ *
+ * `workflows` is the other half a reader needs, and it is the tables themselves rather than a
+ * copy: which moves each transition kind may make (`events/workflow.ts`, FORMAT.md §6.7). A
+ * field declaration says what a line may hold; a workflow says which of those lines a reader
+ * applies.
  */
 export function publishedSchema(latest: { readonly [kind: string]: number }): PublishedSchema {
   const contracts = Object.entries(PAYLOAD_SCHEMA)
@@ -344,6 +352,7 @@ export function publishedSchema(latest: { readonly [kind: string]: number }): Pu
     envelope: ENVELOPE_SCHEMA,
     transitionFields: TRANSITION_FIELDS_SCHEMA,
     contracts,
+    workflows: WORKFLOWS,
   };
 }
 

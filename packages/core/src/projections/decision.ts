@@ -2,9 +2,9 @@
  * The decision projection: fold an ordered event stream into current decision
  * state, and surface any collision of the citable `ADR-<n>` label.
  *
- * Like every projection this is a pure, deterministic replay — no validation,
- * no re-judging; it replays facts the gate already judged at write time. The
- * rule mirrors tasks:
+ * Like every projection this is a pure, deterministic replay — no validation of
+ * its own: a move the workflow does not allow is already left out of the stream
+ * it is handed (`order.ts`, FORMAT.md §6.7). The rule mirrors tasks:
  *   - a decision EXISTS once its `decision.recorded` is seen;
  *   - its STATE is the `to` of its last `decision.transitioned` (birth included);
  *   - its title, rationale, `alternatives` and `adr` label are read literally

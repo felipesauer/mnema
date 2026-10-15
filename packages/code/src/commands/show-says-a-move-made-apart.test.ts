@@ -97,7 +97,7 @@ describe('show of a record moved apart', () => {
       line.parts.map((part) => part.text).join(''),
     );
     expect(said).toEqual([
-      'this task left IN_PROGRESS more than once: to DONE, then BLOCKED — by moves on machines that had not seen each other, or by a move written past the gate. Each is a signed fact of the record; the state shown is the last of them in its order.',
+      'this task left IN_PROGRESS more than once: to DONE, then BLOCKED — by moves on machines that had not seen each other. Each is a signed fact of the record; the state shown is the last of them in its order.',
     ]);
   });
 

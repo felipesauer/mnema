@@ -149,6 +149,16 @@ describe('ensureTree — a .gitattributes that keeps git from rewriting line end
     expect(rules).toEqual(['* -text']);
   });
 
+  it('is, byte for byte, the file the record this repository keeps carries', () => {
+    // That tree was not written by `ensureTree`: nothing in this repository writes to its own
+    // record, so the file was put there by hand when the rule came in. Nothing else holds the
+    // two together, and the day one changes alone, the record this repository keeps stops
+    // having what every tree the product writes has.
+    const kept = fileURLToPath(new URL('../../../../.mnema/.gitattributes', import.meta.url));
+    ensureTree({ root });
+    expect(readFileSync(kept, 'utf-8')).toBe(readFileSync(attributes(), 'utf-8'));
+  });
+
   it('writes it into a tree made before it existed, at the next write, and touches nothing else', () => {
     const ignore = '/private/\n/locks/\n';
     writeFileSync(gitignorePath({ root }), ignore, 'utf-8');

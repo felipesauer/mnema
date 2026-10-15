@@ -574,9 +574,9 @@ const NO_DECISIONS = [
  */
 const MOVED_APART = [
   'One of the rules below was moved out of one state more than once, by moves on machines',
-  'that had not seen each other, or by a move written past the gate. Each move is a signed',
-  'fact, and nothing re-judges either: this file prints the state the last of them in the',
-  'record leaves. Read both before relying on it:',
+  'that had not seen each other. Each move is a signed fact, and nothing re-judges either:',
+  'this file prints the state the last of them in the record leaves. Read both before',
+  'relying on it:',
 ];
 
 const LABEL_NAMES_TWO = [

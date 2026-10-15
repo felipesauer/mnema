@@ -30,6 +30,12 @@
  *     The pure half of the citation properties (R1-R4, R8) is in `chain/src/chain/
  *     causal-order.properties.test.ts`.
  *
+ * WHAT THE READING LEAVES OUT IS NOT THE MERGE. The order a projection folds is the merge
+ * without the moves the workflow does not allow (FORMAT.md §6.7), so every model below is the
+ * merge it restates, judged by the readers' own `illegalMoves` ({@link applied}). The judgment is
+ * not what these cases hold — that is held where it is written (`chain/src/chain/moves.test.ts`)
+ * — and a model of it here would be a second copy of the rule rather than a check of the merge.
+ *
  * The seed is fixed so the CI is the same run every time; `FC_SEED` explores another. A
  * counterexample is printed by fast-check with the seed and the path that replays it.
  */
@@ -40,11 +46,13 @@ import { join } from 'node:path';
 import {
   type CanonicalValue,
   type CatalogEvent,
+  type CitationHeld,
   canonicalStringify,
   catalogUpcasters,
   decisionBirth,
   decisionTransitioned,
   identityFounded,
+  illegalMoves,
   listTails,
   openChainForWriting,
   orderedSegments,
@@ -254,8 +262,12 @@ class Scribe {
     if (act.kind === 'task') {
       this.put(op.slot, taskCreated(env(`task-${index}`), { title: `task ${index}` }));
     } else if (act.kind === 'birth') {
-      for (const event of decisionBirth(env(act.decision), {
-        title: `title of ${act.decision}`,
+      // A decision is born once: an id is minted unique (a UUIDv7), so the noise's is numbered
+      // like its label. Two births of one id would be the second one no reader applies
+      // (FORMAT.md §6.7), and two lines of the same bytes besides.
+      const subject = act.decision === X ? X : `${act.decision}-${index}`;
+      for (const event of decisionBirth(env(subject), {
+        title: `title of ${subject}`,
         rationale: 'because',
         adr: `ADR-${act.adr ?? index}`,
         initial: 'proposed',
@@ -319,19 +331,39 @@ const streamsOf = (appended: Appended): Stream[] =>
  * key, and the winner's tail advances by one. Quadratic, and nothing like a cursor walk.
  */
 function model(streams: readonly Stream[]): CatalogEvent[] {
-  const queues = streams.map((stream) => ({ key: stream.key, left: [...stream.events] }));
-  const out: CatalogEvent[] = [];
+  const queues = streams.map((stream, tail) => ({
+    key: stream.key,
+    tail,
+    taken: 0,
+    left: [...stream.events],
+  }));
+  const out: { event: CatalogEvent; tail: number; position: number }[] = [];
   for (;;) {
     const live = queues.filter((queue) => queue.left.length > 0);
-    if (live.length === 0) return out;
+    if (live.length === 0) return applied(out);
     live.sort((a, b) => {
       const atA = (a.left[0] as CatalogEvent).at;
       const atB = (b.left[0] as CatalogEvent).at;
       if (atA !== atB) return atA < atB ? -1 : 1;
       return a.key < b.key ? -1 : a.key > b.key ? 1 : 0;
     });
-    out.push((live[0] as (typeof live)[number]).left.shift() as CatalogEvent);
+    const next = live[0] as (typeof live)[number];
+    out.push({ event: next.left.shift() as CatalogEvent, tail: next.tail, position: next.taken });
+    next.taken += 1;
   }
+}
+
+/**
+ * What a reader folds of an order: the order without the moves the workflow does not allow,
+ * judged by the readers' own rule (see the module comment), against the citations `held` — none
+ * for the writers of this file that cite nothing.
+ */
+function applied(
+  order: readonly { event: CatalogEvent; tail: number; position: number }[],
+  held: readonly CitationHeld[] = [],
+): CatalogEvent[] {
+  const illegal = illegalMoves(order, held);
+  return order.filter((_, index) => !illegal.has(index)).map(({ event }) => event);
 }
 
 const read = (root: string): string[] => orderedEvents({ root }, upcasters).map(identity);
@@ -398,8 +430,12 @@ describe('the merge of many tails is its definition', () => {
         try {
           const { appended } = write(root, history);
           const merged = orderedEvents({ root }, upcasters);
+          // A tail's events in seq order — those a reader applies (see the module comment).
+          const kept = new Set(modelled(streamsOf(appended)));
           for (const [tail, events] of appended) {
-            expect(subsequenceOf(merged, events), `tail ${tail}`).toEqual(events.map(identity));
+            expect(subsequenceOf(merged, events), `tail ${tail}`).toEqual(
+              events.map(identity).filter((id) => kept.has(id)),
+            );
           }
         } finally {
           cleanUp(root);
@@ -442,7 +478,12 @@ describe('MR2: merging the parts and then the whole is merging the whole', () =>
     const right = freshDir('part-r');
     const whole = freshDir('whole');
     // A slot keeps its key wherever it is written, so a slot's tail is the same in all three.
-    const numbered = history.map((op, n) => ({ ...op, n }));
+    // A move is written to the tree its subject was born in, as the product routes it: X is born
+    // on machine 0, so a machine in the other part does not move it (a move there would be one of
+    // a subject that part never held, judged per tree, FORMAT.md §6.7).
+    const numbered = history
+      .map((op, n) => ({ ...op, n }))
+      .filter((op) => !(op.act.kind === 'move' && op.slot >= cut));
     const l = write(
       left,
       numbered.filter((op) => op.slot < cut),
@@ -800,11 +841,13 @@ describe('P2: a cache brought forward is a replay', () => {
 
 describe('clocks that disagree, with nothing cited: fixed and not endorsed', () => {
   it(
-    'uncited, a clock that runs behind sorts an honest task sequence out of its order, and the move is named as a divergence',
+    'uncited, a clock that runs behind sorts an honest task sequence out of its order, and the move is not applied',
     () => {
-      // Machine 0 births a task, moves it on, and reopens it. Machine 1 pulls the reopened task and
-      // cancels it, but its clock is behind, so the merge puts its move BEFORE the reopening. The
-      // record is honest; the reading of tasks leans on the order and names a divergence.
+      // Machine 0 births a task, submits it and starts it. Machine 1 pulls the started task and
+      // cancels it, but its clock is behind, so the merge puts its move BEFORE the start. The
+      // record is honest; its second writer cited nothing, so nothing says it saw the task at
+      // all, and the task was READY there: the cancel left a state the task was not in, and no
+      // reader applies it (FORMAT.md §6.7). `verify` names it.
       const root = freshDir('skew-task');
       try {
         const first = openChainForWriting(root, {
@@ -821,29 +864,38 @@ describe('clocks that disagree, with nothing cited: fixed and not endorsed', () 
           signerFp: writer.signerFingerprint,
           subject: 'task-honest',
         });
-        for (const event of taskBirth(env(first, 10), { title: 'a task', initial: 'draft' })) {
+        for (const event of taskBirth(env(first, 10), { title: 'a task', initial: 'DRAFT' })) {
           first.append(event);
         }
         first.append(
-          taskTransitioned(env(first, 20), { from: 'draft', to: 'ready', action: 'ready' }),
+          taskTransitioned(env(first, 20), { from: 'DRAFT', to: 'READY', action: 'submit' }),
         );
         first.append(
-          taskTransitioned(env(first, 30), { from: 'ready', to: 'draft', action: 'reopen' }),
+          taskTransitioned(env(first, 30), { from: 'READY', to: 'IN_PROGRESS', action: 'start' }),
         );
         second.append(
-          taskTransitioned(env(second, 25), { from: 'draft', to: 'cancelled', action: 'cancel' }),
+          taskTransitioned(env(second, 25), {
+            from: 'IN_PROGRESS',
+            to: 'CANCELED',
+            action: 'cancel',
+            fields: { reason: 'not needed' },
+          }),
         );
         const merged = orderedEvents({ root }, upcasters);
-        expect(merged.map((event) => event.at)).toEqual([
+        expect(merged.filter((event) => event.subject === 'task-honest').map((e) => e.at)).toEqual([
           iso(10),
           iso(10),
           iso(20),
-          iso(25),
           iso(30),
         ]);
-        const named = divergentMoves(merged).filter((move) => move.entityId === 'task-honest');
-        expect(named).toHaveLength(1);
-        expect(named[0]?.evidence).toHaveLength(2);
+        expect(divergentMoves(merged).filter((move) => move.entityId === 'task-honest')).toEqual(
+          [],
+        );
+        expect(
+          verify(root).census.filter(
+            (note) => note.kind === 'illegal-move' && note.subject === 'task-honest',
+          ),
+        ).toHaveLength(1);
       } finally {
         cleanUp(root);
       }
@@ -868,16 +920,30 @@ describe('clocks that disagree, with nothing cited: fixed and not endorsed', () 
             }));
             const { appended } = write(root, skewed);
             const merged = orderedEvents({ root }, upcasters);
-            // The order of a tail never changes, whatever the clocks say.
+            // The order of a tail never changes, whatever the clocks say — of what is applied.
+            const kept = new Set(modelled(streamsOf(appended)));
             for (const [tail, events] of appended) {
-              expect(subsequenceOf(merged, events), tail).toEqual(events.map(identity));
+              expect(subsequenceOf(merged, events), tail).toEqual(
+                events.map(identity).filter((id) => kept.has(id)),
+              );
             }
-            // The divergence is named whichever move the order puts last, and never silently.
+            // Two moves out of one state are named whichever the order puts last, and never
+            // silently: as a divergence when each writer saw the state it left, and otherwise as a
+            // move the workflow does not allow, which no reader applies and `verify` names
+            // (FORMAT.md §6.7). A writer that cites nothing saw no birth it did not write itself.
             const moves = skewed.filter((op) => op.act.kind === 'move');
+            const applied =
+              merged.filter(
+                (event) => event.kind === 'decision.transitioned' && event.subject === X,
+              ).length - 1;
             const named = divergentMoves(merged).filter((move) => move.entityId === X);
-            if (moves.length > 1) {
+            const notApplied = verify(root).census.filter(
+              (note) => note.kind === 'illegal-move' && note.subject === X,
+            );
+            expect(applied + notApplied.length).toBe(moves.length);
+            if (applied > 1) {
               expect(named).toHaveLength(1);
-              expect(named[0]?.evidence).toHaveLength(moves.length);
+              expect(named[0]?.evidence).toHaveLength(applied);
             } else {
               expect(named).toEqual([]);
             }
@@ -900,6 +966,7 @@ function tailsOnDisk(root: string) {
   return listTails({ root }).map((tail) => ({
     key: tail,
     entries: readTail({ root }, tail, upcasters).entries.map((entry) => ({
+      event: entry.event,
       id: identity(entry.event),
       at: entry.event.at,
       hash: entry.link.hash,
@@ -914,13 +981,42 @@ function tailsOnDisk(root: string) {
  * Quadratic, and it shares nothing with `causalOrder` but the sentence it restates.
  */
 function causalModel(root: string): string[] {
-  const queues = tailsOnDisk(root).map((tail) => ({ key: tail.key, left: [...tail.entries] }));
+  const tails = tailsOnDisk(root);
+  const queues = tails.map((tail, index) => ({
+    key: tail.key,
+    tail: index,
+    taken: 0,
+    left: [...tail.entries],
+  }));
   const held = new Set(queues.flatMap((queue) => queue.left.map((entry) => entry.hash)));
+  // Where each entry is, so a citation can be told to the judgment by tail and position.
+  const where = new Map<string, { tail: number; position: number }>();
+  for (const [index, tail] of tails.entries()) {
+    for (const [position, entry] of tail.entries.entries()) {
+      where.set(entry.hash, { tail: index, position });
+    }
+  }
+  const citations: CitationHeld[] = [];
+  for (const [index, tail] of tails.entries()) {
+    for (const [position, entry] of tail.entries.entries()) {
+      for (const hash of entry.after) {
+        const cited = where.get(hash);
+        if (cited !== undefined) {
+          citations.push({
+            tail: index,
+            position,
+            citedTail: cited.tail,
+            citedPosition: cited.position,
+          });
+        }
+      }
+    }
+  }
   const taken = new Set<string>();
-  const out: string[] = [];
+  const out: { event: CatalogEvent; tail: number; position: number }[] = [];
   for (;;) {
     const live = queues.filter((queue) => queue.left.length > 0);
-    if (live.length === 0) return out;
+    if (live.length === 0) return applied(out, citations).map(identity);
     const ready = live.filter((queue) =>
       (queue.left[0] as (typeof queue.left)[number]).after.every(
         (hash) => !held.has(hash) || taken.has(hash),
@@ -932,11 +1028,11 @@ function causalModel(root: string): string[] {
       if (atA !== atB) return atA < atB ? -1 : 1;
       return a.key < b.key ? -1 : a.key > b.key ? 1 : 0;
     });
-    const next = (
-      ready[0] as (typeof ready)[number]
-    ).left.shift() as (typeof queues)[number]['left'][number];
+    const queue = ready[0] as (typeof ready)[number];
+    const next = queue.left.shift() as (typeof queues)[number]['left'][number];
     taken.add(next.hash);
-    out.push(next.id);
+    out.push({ event: next.event, tail: queue.tail, position: queue.taken });
+    queue.taken += 1;
   }
 }
 
@@ -961,12 +1057,14 @@ describe('with citations: every machine cites the heads it read, as the product 
           for (const slot of [0, 1, 2])
             if (history.some((op) => op.slot === slot)) scribe.open(slot);
           for (const op of history) scribe.apply(op);
-          expect(read(root)).toEqual(causalModel(root));
+          const kept = causalModel(root);
+          expect(read(root)).toEqual(kept);
           const merged = orderedEvents({ root }, upcasters);
+          const applied = new Set(kept);
           for (const tail of tailsOnDisk(root)) {
             const mine = new Set(tail.entries.map((entry) => entry.id));
             expect(merged.map(identity).filter((id) => mine.has(id))).toEqual(
-              tail.entries.map((entry) => entry.id),
+              tail.entries.map((entry) => entry.id).filter((id) => applied.has(id)),
             );
           }
         } finally {
@@ -1122,7 +1220,12 @@ describe('with citations: every machine cites the heads it read, as the product 
         // C accepts X on a clone this record has not pulled.
         const c = open(elsewhere, 2);
         const accepted = c.append(
-          decisionTransitioned(env(c, 5), { from: 'proposed', to: 'accepted', action: 'accept' }),
+          decisionTransitioned(env(c, 5), {
+            from: 'proposed',
+            to: 'accepted',
+            action: 'accept',
+            fields: { note: 'yes' },
+          }),
         ).link.hash;
         const refreshed = () => {
           const cache = ProjectionCache.open(root, { upcasters, persist: true });
@@ -1133,14 +1236,28 @@ describe('with citations: every machine cites the heads it read, as the product 
           }
         };
         refreshed();
-        // B had pulled C's acceptance on its own clone and rejects X on top of it, with a clock
-        // behind; this record receives B's tail first, and C's only later.
+        // B had pulled C's acceptance on its own clone and supersedes X on top of it, by a
+        // decision A recorded, with a clock behind; this record receives B's tail first, and C's
+        // only later.
+        for (const event of decisionBirth(
+          { ...env(a, 1), subject: 'dec-y' },
+          {
+            title: 'y',
+            rationale: 'because',
+            adr: 'ADR-2',
+            initial: 'proposed',
+          },
+        )) {
+          a.append(event);
+        }
         const b = open(root, 1);
         b.append(
           decisionTransitioned(env(b, 2, [accepted]), {
             from: 'accepted',
-            to: 'rejected',
-            action: 'reject',
+            to: 'superseded',
+            action: 'supersede',
+            by: 'dec-y',
+            fields: { reason: 'y replaces it' },
           }),
         );
         refreshed();
@@ -1152,8 +1269,8 @@ describe('with citations: every machine cites the heads it read, as the product 
         try {
           live.refresh();
           replay.rebuild();
-          expect(replay.getDecision(X)?.state).toBe('rejected');
-          expect(live.getDecision(X)?.state).toBe('rejected');
+          expect(replay.getDecision(X)?.state).toBe('superseded');
+          expect(live.getDecision(X)?.state).toBe('superseded');
         } finally {
           live.close();
           replay.close();

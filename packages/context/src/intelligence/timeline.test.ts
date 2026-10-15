@@ -127,8 +127,11 @@ describe('timeline — the supersede is visible from BOTH sides', () => {
   it('carries the successor id in the payload the entry hands back', () => {
     const b = bench();
     birthDecision(b, 'd1', 'first');
+    // The successor is born first: a supersede naming a decision the record holds no birth of
+    // is a move no reader applies (FORMAT.md §6.7).
+    birthDecision(b, 'd2', 'second');
     supersedeDecision(b, 'd1', 'd2', 'proposed');
-    const entry = timeline([tree(b)], 'd2')[0];
+    const entry = timeline([tree(b)], 'd2').find((e) => e.event.subject === 'd1');
     expect(entry?.event.kind === 'decision.transitioned' && entry.event.payload.by).toBe('d2');
   });
 });

@@ -129,6 +129,7 @@ export {
   requiredLevel,
   weakerLevel,
 } from './chain/level.js';
+export { illegalMoves, type PlacedEvent } from './chain/moves.js';
 export {
   firstLinkBreakFrom,
   holdsRecord,
@@ -314,3 +315,18 @@ export {
   UpcasterRegistry,
   type VersionedEvent,
 } from './events/upcaster.js';
+export {
+  type IllegalMove,
+  isMove,
+  judgeMove,
+  type MoveEvent,
+  type MoveRule,
+  type MoveStanding,
+  RUN_ENDED,
+  RUN_OPEN,
+  stateAfter,
+  type TransitionKind,
+  WORKFLOWS,
+  type Workflow,
+  type WorkflowMove,
+} from './events/workflow.js';

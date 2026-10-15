@@ -54,6 +54,13 @@
  * same caveat as the search holds, and for the same reason: what the light read could misread is
  * a line that is not canonical, which no reader accepts.
  *
+ * THE MOVES ARE JUDGED, as a replay judges them (FORMAT.md §6.7, {@link illegalMoves}): a move
+ * the workflow does not allow is not returned, because no replay folds it. A subject's moves are
+ * judged against its own moves alone, which is all the judgment reads but for two things: what
+ * the writer of a move saw on other tails, which is the merge's citations (read when the subject
+ * is on more than one tail, and nothing to read when it is on one), and whether the successor a
+ * supersede names was born, which is one more search, for that id.
+ *
  * WHAT IT DOES NOT CHECK. It is not a verification: signatures, checkpoints and the links between
  * entries are `verify`'s. What it promises is narrower and is the one a gate needs: the events it
  * returns are the ones a replay of this tree would fold for these subjects, in the order it would
@@ -64,10 +71,11 @@ import { readFileSync } from 'node:fs';
 
 import type { CatalogEvent } from '../events/catalog.js';
 import type { UpcasterRegistry } from '../events/upcaster.js';
-import { causalOrder } from './causal-order.js';
+import { type CitationHeld, causalOrder } from './causal-order.js';
 import { type Entry, parseEntry } from './entry.js';
 import type { ChainLayout } from './layout.js';
 import { parseStoredLine } from './lines.js';
+import { illegalMoves, type PlacedEvent } from './moves.js';
 import { listTails, orderedSegments } from './store.js';
 
 const NEWLINE = 0x0a;
@@ -118,6 +126,50 @@ export function subjectEvents(
   upcasters: UpcasterRegistry,
   ids: readonly string[],
 ): Map<string, CatalogEvent[]> {
+  const read = readSubjects(layout, upcasters, ids);
+  // The successors the supersedes name, read for one thing: whether the record holds their birth.
+  const named = new Set<string>();
+  for (const placed of read.subjects.values()) {
+    for (const { event } of placed) {
+      if (event.kind === 'decision.transitioned' && event.payload.by !== undefined) {
+        named.add(event.payload.by);
+      }
+    }
+  }
+  const unread = [...named].filter((id) => !read.subjects.has(id));
+  const successors =
+    unread.length === 0
+      ? new Map<string, PlacedEvent[]>()
+      : readSubjects(layout, upcasters, unread).subjects;
+  const born = (id: string): boolean =>
+    (read.subjects.get(id) ?? successors.get(id) ?? []).some(
+      ({ event }) => event.kind === 'decision.transitioned' && event.payload.from === null,
+    );
+  const answer = new Map<string, CatalogEvent[]>();
+  for (const [id, placed] of read.subjects) {
+    const illegal = illegalMoves(placed, read.held, born);
+    answer.set(
+      id,
+      placed.filter((_, index) => !illegal.has(index)).map(({ event }) => event),
+    );
+  }
+  return answer;
+}
+
+/** What {@link readSubjects} found: each id's events, placed, and the citations of the merge. */
+interface SubjectsRead {
+  /** Each id's events in the order a replay folds them, with their tail and position. */
+  readonly subjects: Map<string, PlacedEvent[]>;
+  /** The citations the merge honoured, by the same tail indexes; empty when it did not run. */
+  readonly held: readonly CitationHeld[];
+}
+
+/** The events whose `subject` is each of `ids`, placed in the order a replay folds them, unjudged. */
+function readSubjects(
+  layout: ChainLayout,
+  upcasters: UpcasterRegistry,
+  ids: readonly string[],
+): SubjectsRead {
   const tails = listTails(layout);
   const segments = tails.map((tail) => orderedSegments(layout, tail));
   const unique = [...new Set(ids)];
@@ -186,22 +238,37 @@ export function subjectEvents(
     });
   });
 
-  const answer = new Map<string, CatalogEvent[]>();
-  let rank: Map<Found, number> | undefined;
+  const subjects = new Map<string, PlacedEvent[]>();
+  let merged: Merged | undefined;
   for (const id of unique) {
     const mine = found.get(id) as Found[];
-    // Found tail by tail, segment by segment, line by line: on one tail that IS the order.
+    // Found tail by tail, segment by segment, line by line: on one tail that IS the order, and
+    // the order of the lines found is all a judgment of moves on that one tail compares.
     if (new Set(mine.map((one) => one.tail)).size > 1) {
-      rank ??= mergedRank(segments, tails, upcasters, [...found.values()].flat());
-      const of = rank;
+      merged ??= mergedRank(segments, tails, upcasters, [...found.values()].flat());
+      const of = merged.rank;
       mine.sort((a, b) => (of.get(a) as number) - (of.get(b) as number));
     }
-    answer.set(
+    const at = merged?.position;
+    subjects.set(
       id,
-      mine.map((one) => one.event),
+      mine.map((one, index) => ({
+        event: one.event,
+        tail: one.tail,
+        position: at?.get(one) ?? index,
+      })),
     );
   }
-  return answer;
+  return { subjects, held: merged?.held ?? [] };
+}
+
+/** Where the merge of every tail puts each line found, and the citations it honoured. */
+interface Merged {
+  /** Each line's step in the merged order. */
+  readonly rank: Map<Found, number>;
+  /** Each line's position in its tail. */
+  readonly position: Map<Found, number>;
+  readonly held: readonly CitationHeld[];
 }
 
 /**
@@ -213,7 +280,7 @@ function mergedRank(
   tails: readonly string[],
   upcasters: UpcasterRegistry,
   found: readonly Found[],
-): Map<Found, number> {
+): Merged {
   const looked = tails.map(() => new Map<number, Map<number, Found>>());
   for (const one of found) {
     const bySegment = looked[one.tail] as Map<number, Map<number, Found>>;
@@ -238,13 +305,17 @@ function mergedRank(
   );
   const cursors = tails.map(() => 0);
   const rank = new Map<Found, number>();
+  const position = new Map<Found, number>();
   merged.steps.forEach((tail, step) => {
-    const position = cursors[tail] as number;
-    cursors[tail] = position + 1;
-    const one = atPosition[tail]?.get(position);
-    if (one !== undefined) rank.set(one, step);
+    const at = cursors[tail] as number;
+    cursors[tail] = at + 1;
+    const one = atPosition[tail]?.get(at);
+    if (one !== undefined) {
+      rank.set(one, step);
+      position.set(one, at);
+    }
   });
-  return rank;
+  return { rank, position, held: merged.held };
 }
 
 /**

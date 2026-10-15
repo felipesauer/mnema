@@ -50,6 +50,9 @@ describe('the bundled extension', () => {
   it('is its own sources and the two pure functions it asks of the workspace packages', () => {
     const workspace = sources.filter((file) => file.startsWith('..'));
     expect(workspace.sort()).toEqual([
+      // The states a decision can be in are the format's (FORMAT.md §6.7), and `decision-states`
+      // takes them from the table there: data, and nothing it opens.
+      '../chain/dist/events/workflow.js',
       '../context/dist/context/decisions.js',
       '../context/dist/context/disposition.js',
       '../core/dist/workflow/decision-states.js',

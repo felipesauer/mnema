@@ -37,6 +37,7 @@ import {
   decisionTransitioned,
   openChainForWriting,
   projectionCachePath,
+  readTail,
   tailDir,
 } from '@mnema/chain';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
@@ -44,7 +45,7 @@ import { ensureSchema, PROJECTION_TABLES } from '../db/schema.js';
 import { IN_MEMORY, openDatabase, type SqliteDatabase } from '../db/sqlite.js';
 import { captureMemory, recordObservation, retractNote } from '../knowledge/operations.js';
 import { switchChannel } from '../workflow/channel-operations.js';
-import { acceptDecision, recordDecision } from '../workflow/decision-operations.js';
+import { acceptDecision, recordDecision, rejectDecision } from '../workflow/decision-operations.js';
 import { createTask, transitionTask, type WriteContext } from '../workflow/operations.js';
 import { endRun, startRun } from '../workflow/session-operations.js';
 import { createSkill } from '../workflow/skill-operations.js';
@@ -212,7 +213,17 @@ describe('a cache kept in the tree is brought forward, not built again', () => {
     landed(acceptDecision(ctx, { id: decision, fields: { note: 'accepted' } }));
     landed(captureMemory(ctx, { content: 'one more memory' }));
     // A colleague's tail moves the same decision out of the same state: the one thing the
-    // reading of diverged moves exists to say.
+    // reading of diverged moves exists to say. The colleague had read the decision's birth and
+    // not the acceptance, and says so by citing the birth — a move from what its writer saw is
+    // a divergence, where one from a state nothing says it saw is a move no reader applies
+    // (FORMAT.md §6.7).
+    const born = readTail({ root }, ctx.writer.tail, upcasters).entries.find(
+      ({ event }) =>
+        event.kind === 'decision.transitioned' &&
+        event.subject === decision &&
+        event.payload.from === null,
+    );
+    if (born === undefined) throw new Error('setup: the decision has no birth on the tail');
     const colleague = mkdtempSync(join(tmpdir(), 'mnema-persisted-colleague-'));
     try {
       const other = openChainForWriting(root, { keyRoot: colleague });
@@ -223,6 +234,7 @@ describe('a cache kept in the tree is brought forward, not built again', () => {
             who: other.anchor,
             signerFp: other.signerFingerprint,
             subject: decision,
+            after: [born.link.hash],
           },
           { from: 'proposed', to: 'rejected', action: 'reject', fields: { note: 'not so' } },
         ),
@@ -238,6 +250,40 @@ describe('a cache kept in the tree is brought forward, not built again', () => {
     } finally {
       rmSync(colleague, { recursive: true, force: true });
     }
+  });
+
+  it('a move the workflow does not allow arrives, and the next read applies it no more than a replay does', () => {
+    // The move written by hand with the machine's own key, past every gate: `rejected → accepted`.
+    // The cache holds the decision rejected; the move arrives as a suffix of the order, and
+    // what is brought forward over it has to be what a replay folds — the decision rejected
+    // (FORMAT.md §6.7).
+    const ctx = writing();
+    const { decision } = aRecord(ctx);
+    landed(rejectDecision(ctx, { id: decision, fields: { note: 'no' } }));
+    ctx.writer.checkpoint();
+    const warm = persisted();
+    warm.refresh();
+    expect(warm.getDecision(decision)?.state).toBe('rejected');
+    warm.close();
+
+    ctx.writer.append(
+      decisionTransitioned(
+        {
+          at: new Date(Date.now() + 5_000).toISOString(),
+          who: ctx.writer.anchor,
+          signerFp: ctx.writer.signerFingerprint,
+          subject: decision,
+        },
+        { from: 'rejected', to: 'accepted', action: 'accept', fields: { note: 'by hand' } },
+      ),
+    );
+    ctx.writer.checkpoint();
+
+    const next = persisted();
+    next.refresh();
+    expect(next.getDecision(decision)?.state).toBe('rejected');
+    expect(rowsOf(projectionCachePath({ root }))).toEqual(rowsOfAReplay());
+    expect(answersOf(next)).toEqual(answersOf(replayed()));
   });
 
   it('a note taken back after the cache was read is taken back in the next read, in its row and in the index', () => {

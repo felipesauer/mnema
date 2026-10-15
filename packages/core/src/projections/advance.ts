@@ -24,6 +24,17 @@
  * Which of these an arrival needs is `fed-by.ts`'s question, and it is asked once, of the
  * kinds that arrived: a table no arrival feeds is not opened.
  *
+ * A MOVE IS JUDGED HERE AGAINST THE STATE THE CACHE HOLDS (FORMAT.md §6.7), because the
+ * arrivals alone are not the history a move is judged against. The judgment a replay makes
+ * needs, for a move the state at that point does not admit, the moves its writer saw — where
+ * its tail's citations reach — and this file holds no tail or citation. So an arrival is
+ * advanced over only when every move among the arrivals is admitted by the state the stored
+ * accumulators give: born, a row of the table, from the state the subject is in. Anything else
+ * — a divergence, a move the workflow does not allow — is rare, and {@link advance} answers
+ * false without writing, so the cache reads the record again and the replay judges it. That is
+ * also what keeps the divergences this file indexes again the replay's: a move the state admits
+ * leaves a subject's divergences as they were.
+ *
  * WHAT THE CALLER OWES, and none of it is checkable here: that `arrived` really is what
  * follows the order the cache was built from, at position `from` — the count of events the
  * cache covered. `chainArrivals` is what establishes it, and its refusals are the cases where
@@ -31,7 +42,14 @@
  * events, quietly (`reference-store.ts`).
  */
 
-import type { CatalogEvent } from '@mnema/chain';
+import {
+  type CatalogEvent,
+  isMove,
+  judgeMove,
+  RUN_ENDED,
+  RUN_OPEN,
+  stateAfter,
+} from '@mnema/chain';
 import type { ProjectionTable } from '../db/schema.js';
 import { inTransaction, type SqliteDatabase } from '../db/sqlite.js';
 import type { AccumulatorFold } from './accumulate.js';
@@ -143,9 +161,92 @@ function withRetractions<
 
 const TRANSITIONS = ['task.transitioned', 'decision.transitioned', 'skill.transitioned'] as const;
 
+/** Where each move kind's subject keeps its state in the cache, and how to read it there. */
+const STATE_OF = {
+  decision: { fold: decisionFold.name, now: (acc: string) => decisionFold.decode(acc).state },
+  task: { fold: taskFold.name, now: (acc: string) => taskFold.decode(acc).state },
+  skill: { fold: skillFold.name, now: (acc: string) => skillFold.decode(acc).state },
+  run: {
+    fold: runFold.name,
+    now: (acc: string): string | undefined => {
+      const run = runFold.decode(acc);
+      if (run.startedAt === undefined) return undefined;
+      return run.endedAt === undefined ? RUN_OPEN : RUN_ENDED;
+    },
+  },
+} as const;
+
+/** The workflow a move kind, or a run's start, keeps its subject's state in. */
+function familyOf(kind: CatalogEvent['kind']): keyof typeof STATE_OF | undefined {
+  if (kind === 'run.started' || kind === 'run.ended') return 'run';
+  if (kind === 'decision.transitioned') return 'decision';
+  if (kind === 'task.transitioned') return 'task';
+  if (kind === 'skill.transitioned') return 'skill';
+  return undefined;
+}
+
+/** What {@link admitted} throws when a move asks what its writer saw: this file cannot say. */
+const ASKS_WHAT_WAS_SEEN = Symbol('asks what its writer saw');
+
+/**
+ * Whether every move among `arrived` is admitted by the state the cache holds, stepped forward
+ * over the arrivals before it — the replay's judgment wherever this one can answer (see the
+ * module comment). A successor is born when the cache holds its state or an arrival is its birth,
+ * which is exactly "the record holds its birth", the cache covering everything before.
+ */
+function admitted(db: SqliteDatabase, arrived: readonly CatalogEvent[]): boolean {
+  const select = db.prepare('SELECT acc FROM fold_state WHERE fold = ? AND key = ?');
+  const now = new Map<string, string | undefined>();
+  const stateOf = (family: keyof typeof STATE_OF, id: string): string | undefined => {
+    const key = `${family}\u0000${id}`;
+    if (!now.has(key)) {
+      const stored = select.get(STATE_OF[family].fold, id) as { acc: string } | undefined;
+      now.set(key, stored === undefined ? undefined : STATE_OF[family].now(stored.acc));
+    }
+    return now.get(key);
+  };
+  const births = new Set<string>();
+  for (const event of arrived) {
+    if (event.kind === 'decision.transitioned' && event.payload.from === null) {
+      births.add(event.subject);
+    }
+  }
+  try {
+    for (const event of arrived) {
+      const family = familyOf(event.kind);
+      if (family === undefined) continue;
+      const key = `${family}\u0000${event.subject}`;
+      if (event.kind === 'run.started') {
+        if (stateOf(family, event.subject) === undefined) now.set(key, RUN_OPEN);
+        continue;
+      }
+      if (!isMove(event)) continue;
+      const ruling = judgeMove(event, {
+        now: stateOf(family, event.subject),
+        seen: () => {
+          throw ASKS_WHAT_WAS_SEEN;
+        },
+        held: () => {
+          throw ASKS_WHAT_WAS_SEEN;
+        },
+        born: (id) => births.has(id) || stateOf('decision', id) !== undefined,
+      });
+      if (ruling !== undefined) return false;
+      now.set(key, stateAfter(event));
+    }
+  } catch (thrown) {
+    if (thrown === ASKS_WHAT_WAS_SEEN) return false;
+    throw thrown;
+  }
+  return true;
+}
+
 /**
  * Brings a cache forward over `arrived`, the events that now follow the `from` it covered.
  * One transaction, like a rebuild: a failure rolls back to the cache as it stood.
+ *
+ * Returns false, having written nothing, when a move among the arrivals is one the state the
+ * cache holds cannot judge alone ({@link admitted}): the caller reads the record again.
  *
  * `fed` is what the arrivals feed, and it is worked out from their kinds. It is a parameter
  * so that a test can hand over ONE kind's row alone and prove that row is sufficient
@@ -156,8 +257,8 @@ export function advance(
   arrived: readonly CatalogEvent[],
   from: number,
   fed: ReadonlySet<ProjectionTable> = tablesFedBy(arrived.map((event) => event.kind)),
-): void {
-  inTransaction(db, () => {
+): boolean {
+  return inTransaction(db, () => {
     // The one thing about `from` that can be checked here, and it is the direction that
     // corrupts: a position the reference index already covers would be indexed twice, under
     // events that are not the ones it holds. A `from` that is too LARGE leaves a gap nothing
@@ -165,6 +266,7 @@ export function advance(
     if (db.prepare('SELECT 1 FROM refs WHERE ord >= ? LIMIT 1').get(from) !== undefined) {
       throw new RangeError('advance was given arrivals at a position the cache already covers');
     }
+    if (!admitted(db, arrived)) return false;
     // The reference index first: the moves that diverged are read back from it.
     if (fed.has('refs')) materializeReferences(db, arrived, from);
 
@@ -233,5 +335,6 @@ export function advance(
       }
       reindexDivergences(db, moved);
     }
+    return true;
   });
 }

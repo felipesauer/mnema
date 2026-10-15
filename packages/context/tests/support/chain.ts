@@ -28,8 +28,10 @@ import {
   skillConsulted,
   skillTransitioned,
   type TransitionFields,
+  type TransitionKind,
   taskBirth,
   taskTransitioned,
+  WORKFLOWS,
 } from '@mnema/chain';
 import {
   chainRootForScope,
@@ -193,14 +195,73 @@ export function endRun(b: Bench, id: string, outcome?: string): void {
   );
 }
 
+/**
+ * THE BIRTH LANDS WHERE THE WORKFLOW BEGINS, AND A LATER STATE IS WALKED TO. A birth into any
+ * other state is a move no reader applies (FORMAT.md §6.7): the subject would not exist at all.
+ * So a case that asks for a subject `accepted`, `adopted` or `DONE` gets it born where the
+ * workflow begins and moved there by the shortest path of rows, each with the proof its row
+ * requires — a record the product could have written.
+ */
+function walkTo(b: Bench, kind: TransitionKind, id: string, state: string): void {
+  const machine = WORKFLOWS[kind];
+  const path = pathTo(machine.birth.to, state, machine.moves);
+  for (const row of path) {
+    const fields: TransitionFields = Object.fromEntries(
+      row.requires.map((field) => [field, `${row.action} on the way to ${state}`]),
+    );
+    const envelope = { at: b.now(), who: b.who, signerFp: b.writer.signerFingerprint, subject: id };
+    const payload = {
+      from: row.from,
+      to: row.to,
+      action: row.action,
+      ...(row.requires.length > 0 ? { fields } : {}),
+    };
+    b.writer.append(
+      kind === 'decision.transitioned'
+        ? decisionTransitioned(envelope, payload)
+        : kind === 'task.transitioned'
+          ? taskTransitioned(envelope, payload)
+          : skillTransitioned(envelope, payload),
+    );
+  }
+}
+
+/** The shortest path of rows from one state to another, never through a move that names `by`. */
+function pathTo(
+  from: string,
+  to: string,
+  moves: readonly {
+    from: string;
+    action: string;
+    to: string;
+    requires: readonly (keyof TransitionFields)[];
+    by?: true;
+  }[],
+): (typeof moves)[number][] {
+  const reached = new Map<string, (typeof moves)[number][]>([[from, []]]);
+  const queue = [from];
+  while (queue.length > 0) {
+    const at = queue.shift() as string;
+    if (at === to) return reached.get(at) as (typeof moves)[number][];
+    for (const row of moves) {
+      if (row.from !== at || row.by === true || reached.has(row.to)) continue;
+      reached.set(row.to, [...(reached.get(at) as (typeof moves)[number][]), row]);
+      queue.push(row.to);
+    }
+  }
+  throw new Error(`the bench cannot reach ${to} from ${from} by the workflow`);
+}
+
 /** Appends a task's birth pair (created + initial transition), returning its id. */
 export function birthTask(b: Bench, id: string, title: string, initial = 'DRAFT'): string {
+  const first = WORKFLOWS['task.transitioned'].birth.to;
   for (const e of taskBirth(
     { at: b.now(), who: b.who, signerFp: b.writer.signerFingerprint, subject: id },
-    { title, initial },
+    { title, initial: first },
   )) {
     b.writer.append(e);
   }
+  walkTo(b, 'task.transitioned', id, initial);
   return id;
 }
 
@@ -297,7 +358,7 @@ export function birthDecision(
       title,
       rationale,
       adr,
-      initial,
+      initial: WORKFLOWS['decision.transitioned'].birth.to,
       // Every bench decision carries what it turned down, and that is deliberate:
       // this layer serves NAMES and never bodies, and a decision's body is now two
       // fields. A fixture that left the second one absent would let every "never
@@ -307,6 +368,7 @@ export function birthDecision(
   )) {
     b.writer.append(e);
   }
+  walkTo(b, 'decision.transitioned', id, initial);
   return id;
 }
 
@@ -398,10 +460,11 @@ export function birthSkill(
       subject: id,
       ...(which !== undefined ? { which } : {}),
     },
-    { name, body, initial },
+    { name, body, initial: WORKFLOWS['skill.transitioned'].birth.to },
   )) {
     b.writer.append(e);
   }
+  walkTo(b, 'skill.transitioned', id, initial);
   return id;
 }
 

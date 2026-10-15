@@ -584,19 +584,18 @@ describe('the brief declares a rule moved out of one state more than once', () =
     );
   });
 
-  it('says the two ways a state is left twice, as `show` does, and not that the moves were blind', () => {
-    // Two moves out of one state on ONE tail saw each other: the second writer's tail held
-    // the first. Such a record is made past the gate, not by two machines apart, and the
-    // reading cannot yet tell the two apart — so the paragraph names both, in `show`'s words.
+  it('says a state left twice by machines that had not seen each other, as `show` does', () => {
+    // A move written past the gate is no longer one of these: no reader applies it, so it never
+    // reaches a divergence (FORMAT.md §6.7). What is left is the one cause, in `show`'s words.
     const lines = briefDocument(governance({ ...rules, divergent: [apart] }));
     const at = lines.findIndex((line) => line.startsWith('One of the rules below'));
     const end = lines.indexOf('', at);
     expect(at).toBeGreaterThan(0);
     expect(lines.slice(at, end).join(' ')).toBe(
       'One of the rules below was moved out of one state more than once, by moves on machines ' +
-        'that had not seen each other, or by a move written past the gate. Each move is a signed ' +
-        'fact, and nothing re-judges either: this file prints the state the last of them in the ' +
-        'record leaves. Read both before relying on it:',
+        'that had not seen each other. Each move is a signed fact, and nothing re-judges either: ' +
+        'this file prints the state the last of them in the record leaves. Read both before ' +
+        'relying on it:',
     );
   });
 

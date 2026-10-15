@@ -2,8 +2,9 @@
  * The task projection: fold an ordered event stream into current task state.
  *
  * This is a PURE, deterministic replay. It does not validate — the workflow
- * gate already ran at write time and its verdict is baked into the facts; a
- * projection replays facts, it never re-judges them. Given the same ordered
+ * gate ran at write time, and every reader leaves out of the stream it hands a
+ * fold any move the workflow does not allow (`order.ts`, FORMAT.md §6.7); a
+ * projection replays what is left. Given the same ordered
  * events it always produces the same result, so it can be run in memory, or to
  * rebuild the cache, or incrementally, and always agree.
  *
@@ -13,9 +14,10 @@
  *   - its TITLE is from `task.created`.
  *
  * A subject with transitions but no `task.created` does not exist and is not
- * projected — state without existence is not a task. Because state is read from
- * the literal `to`, never derived from a workflow, replaying old facts yields
- * the state that happened, not one re-derived from today's rules.
+ * projected — state without existence is not a task. State is read from the
+ * literal `to` of the moves the workflow allows; the workflow is part of the
+ * format (FORMAT.md §6.7), so a fact written long ago is judged by the tables a
+ * record of its version is judged by, not by rules a product changed on its own.
  */
 
 import type { CatalogEvent } from '@mnema/chain';
