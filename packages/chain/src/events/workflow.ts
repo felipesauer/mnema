@@ -21,7 +21,10 @@
  * tail holds before it, and those up to the entries its tail cites in `after`. The second is
  * what keeps two machines that moved one decision without seeing each other a divergence, as
  * the format has always said, and not an illegal move; the first is what reads a record whose
- * writers cited nothing — every record from before citations — as it was written.
+ * writers cited nothing — every record from before citations — as it was written. A writer
+ * whose sight holds nothing of the subject at all (its tail never said what it read) is held to
+ * a state the subject had been in before the move, so two such machines that moved one subject
+ * apart remain a divergence too.
  */
 
 import { oneLine } from '../one-line.js';
@@ -164,6 +167,13 @@ export interface MoveStanding {
    * which is the rare case, so a reader that cannot answer it cheaply may stop there.
    */
   seen(): string | undefined;
+  /**
+   * Whether the subject was in `state` at some point before this move, in the merged order and
+   * by the moves that were legal. Asked only when {@link seen} is undefined while the subject is
+   * born — a writer whose sight holds nothing of it, which is a tail that never says what it
+   * read: written before an event named its heads, or by a writer that names none.
+   */
+  held(state: string): boolean;
   /** Whether the record holds the birth of decision `id` — what a successor must name. */
   born(id: string): boolean;
 }
@@ -202,6 +212,10 @@ export function judgeMove(event: MoveEvent, standing: MoveStanding): IllegalMove
   if (from === standing.now) return undefined;
   const seen = standing.seen();
   if (from === seen) return undefined;
+  // A writer whose sight holds nothing of the subject did not say what it read, and the record
+  // cannot say it for it: it is held to a state the subject had been in, which is what keeps
+  // two such machines moving one subject apart a divergence.
+  if (seen === undefined && standing.held(from)) return undefined;
   return ruled(
     'not-the-state-seen',
     event,

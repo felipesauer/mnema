@@ -14,6 +14,8 @@
  * own tail holds before it and, on every other tail, the ones up to the last entry its tail
  * cites at or before it. The citations are the merge's own (`causalOrder`'s `held`), so a
  * citation of a hash the record does not hold reads as nothing seen, as it is nothing ordered.
+ * When that sight holds nothing of the subject, the move is held to a state the subject had
+ * been in before it: the moves applied so far, which this pass keeps anyway.
  *
  * THE COST is one step per event and one per move, plus a walk back over one subject's moves
  * for each move the merged state does not admit — a divergence, or an illegal move, both rare.
@@ -88,6 +90,7 @@ export function illegalMoves(
         }
         return undefined;
       },
+      held: (state) => applied.some((move) => move.to === state),
       born: isBorn,
     });
     if (ruling !== undefined) {

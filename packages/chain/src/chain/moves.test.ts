@@ -133,6 +133,31 @@ describe('across tails, a writer is judged by what it cites', () => {
     // decision was no longer in, and its writer, citing nothing, saw no birth at all.
     expect(rules(order)).toEqual([[6, 'not-the-state-seen']]);
   });
+
+  it('keeps two machines that cited nothing a divergence, and names a move from a state never reached', () => {
+    // Tail 1 holds nothing of the decision before its move: what it read is not on the record,
+    // so it is held to a state the decision had been in. `proposed` was; `accepted` never was.
+    const [recorded, born] = birth() as [CatalogEvent, CatalogEvent];
+    const [other, otherBorn] = birth('d-2') as [CatalogEvent, CatalogEvent];
+    const supersede = decisionTransitioned(env(4), {
+      from: 'accepted',
+      to: 'superseded',
+      action: 'supersede',
+      by: 'd-2',
+      fields: { reason: 'r' },
+    });
+    const apart = placed([0, recorded], [0, born], [0, reject(1)], [1, accept(2)]);
+    expect(rules(apart)).toEqual([]);
+    const never = placed(
+      [0, recorded],
+      [0, born],
+      [0, other],
+      [0, otherBorn],
+      [0, reject(1)],
+      [1, supersede],
+    );
+    expect(rules(never)).toEqual([[5, 'not-the-state-seen']]);
+  });
 });
 
 describe('the rest of the rule', () => {

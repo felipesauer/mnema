@@ -7,6 +7,7 @@ import { afterEach, describe, expect, it } from 'vitest';
 import {
   type Bench,
   birthTask,
+  capture,
   endRun,
   makeBench,
   moveTask,
@@ -86,9 +87,11 @@ describe('accountability — who authorized what, which agent executed', () => {
     // the same facts written in either order, and with the no-agent count above, equal to
     // and below the named ones, must read the same.
     const b = bench();
-    endRun(b, 'run-1'); // no which
-    endRun(b, 'run-2'); // no which
-    endRun(b, 'run-3'); // no which
+    // Three facts with no agent, written first. They are notes rather than ends of runs: a run
+    // that never started has no end a reader applies (FORMAT.md §6.7).
+    capture(b, 'mem-1', 'a'); // no which
+    capture(b, 'mem-2', 'b'); // no which
+    capture(b, 'mem-3', 'c'); // no which
     startRun(b, 'run-4', { agent: 'codex' });
     startRun(b, 'run-5', { agent: 'claude' });
     startRun(b, 'run-6', { agent: 'claude' });

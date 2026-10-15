@@ -861,7 +861,8 @@ applies it only when it is legal:
   is never reached; every field the row `requires` is present in `fields`; the row with `"by":
   true` names in `by` a decision whose birth the record holds and that is not its own subject,
   and no other row carries a `by`; and **`from` is the state the subject is in at that point, or
-  the state its writer saw.**
+  the state its writer saw** — or, when what its writer saw holds nothing of the subject, a state
+  the subject had been in before that point.
 - **`run.ended`** is legal when the run has a `run.started` before it and no `run.ended` applied
   before it, or when the run was open in what its writer saw.
 
@@ -872,7 +873,12 @@ and, on every other tail, the entries up to the last one its own tail cites in `
 before it. A citation of a hash the record does not hold reads as nothing seen, as it is
 nothing ordered. The first of the two is what reads a record whose writers cited nothing as it
 was written; the second is what keeps two machines that moved one subject without seeing each
-other a divergence and not an illegal move ("What is detected", in "Reading many tails").
+other a divergence and not an illegal move ("What is detected", in "Reading many tails"). A
+writer whose own tail holds nothing of the subject before the move, and that cites nothing of it,
+did not say what it read, and the bytes cannot say it for it: it is held to a state the subject
+had been in before that point — the `to` of a move applied before it, the birth's among them —
+so two such machines that moved one subject out of one state are a divergence too, and a move
+out of a state the subject never reached is still not applied.
 
 **A move that is not legal is not applied, and it is not a break.** A reader reads the subject
 as if the move had not been written — its state, the moves it says it made, the divergences —
@@ -890,10 +896,10 @@ with two exceptions it could write before it judged the chain and cited what it 
 out of one state on one tail — two writes that raced before the tail had a lock, or a projection
 edited on the disk — are one move and a second one its writer had seen leave that state: the
 second is not applied, and is named. And a machine that cited nothing (every record before
-citations) and moved a subject born on another machine saw, as far as the bytes say, no birth:
-its move is legal only from the state the subject is in at its point of the merged order, so a
-clock behind what it had read, or a move concurrent with another machine's, puts it among the
-moves not applied. Both are named, and neither changes a verdict.
+citations) and moved a subject its own tail had moved before is judged by the state the subject
+is in at its point of the merged order, or by its own tail's: a clock behind what it had read, or
+a move concurrent with another machine's out of a state its own tail had seen it leave, puts it
+among the moves not applied. Both are named, and neither changes a verdict.
 
 The second reader beside this file does not judge a move yet: it accepts each by its row of
 `event-schema.json`, as it accepts any kind, and ignores `workflows`. A binary from before this
@@ -1268,7 +1274,8 @@ beside it (MR4: "what is read of X is what the model reads of X"). Nothing here 
 `at` stays the wall clock its writer stamped. Where nothing is cited, a machine whose clock is
 behind still sorts its events earlier than events it had already read; that is what a record
 written before citations reads as, fixed and not endorsed. A writer that cited nothing is judged
-by the state its subject is in at its point of that sequence (§6.7), so a move it made on top of
+by the state its subject is in at its point of that sequence, or by what its own tail holds of it
+(§6.7), so a move it made on top of
 what it had read, sorted before it, is one no reader applies (clocks that disagree, with nothing
 cited: "uncited, a clock that runs behind sorts an honest task sequence out of its order, and the
 move is not applied").

@@ -36,6 +36,9 @@ function standing(now: string | undefined, seen?: string, born: string[] = []): 
       if (seen === undefined) throw new Error('seen was asked of a move the state admits');
       return seen;
     },
+    held: () => {
+      throw new Error('held was asked of a move whose writer saw the subject');
+    },
     born: (id) => born.includes(id),
   };
 }
@@ -122,6 +125,46 @@ describe('a move is judged from the state it left', () => {
       fields: { note: 'n' },
     });
     expect(judgeMove(reject, standing('accepted', 'proposed'))).toBeUndefined();
+  });
+
+  it('holds a writer that cites no sight of its subject to a state the subject had been in', () => {
+    // A tail written before an event said which heads it was written on (or by a writer that
+    // does not say): its own lines hold nothing of the subject, so what it saw is not on the
+    // record. Two such machines moving one decision out of `proposed` are still a divergence;
+    // a move out of a state the subject never reached is still refused.
+    const declaresNothing = (now: string, held: string[]): MoveStanding => ({
+      now,
+      seen: () => undefined,
+      held: (state) => held.includes(state),
+      born: () => false,
+    });
+    const reject = decisionTransitioned(env, {
+      from: 'proposed',
+      to: 'rejected',
+      action: 'reject',
+      fields: { note: 'n' },
+    });
+    expect(
+      judgeMove(reject, declaresNothing('accepted', ['proposed', 'accepted'])),
+    ).toBeUndefined();
+    const supersede = decisionTransitioned(env, {
+      from: 'accepted',
+      to: 'superseded',
+      action: 'supersede',
+      by: 'd-2',
+      fields: { reason: 'r' },
+    });
+    expect(
+      judgeMove(supersede, {
+        ...declaresNothing('rejected', ['proposed', 'rejected']),
+        born: () => true,
+      }),
+    ).toEqual({
+      rule: 'not-the-state-seen',
+      detail:
+        'a move accepted → superseded by "supersede" of a subject that was rejected there, ' +
+        'and not born to the one that wrote it',
+    });
   });
 });
 

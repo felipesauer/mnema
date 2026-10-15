@@ -226,6 +226,9 @@ function admitted(db: SqliteDatabase, arrived: readonly CatalogEvent[]): boolean
         seen: () => {
           throw ASKS_WHAT_WAS_SEEN;
         },
+        held: () => {
+          throw ASKS_WHAT_WAS_SEEN;
+        },
         born: (id) => births.has(id) || stateOf('decision', id) !== undefined,
       });
       if (ruling !== undefined) return false;

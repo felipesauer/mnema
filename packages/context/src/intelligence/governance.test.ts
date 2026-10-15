@@ -404,8 +404,10 @@ describe('governance — what a rule IS travels with it, and is never judged', (
     // the judgement is the caller's.
     const b = bench();
     birthDecision(b, 'old', 'the call that was replaced');
+    birthDecision(b, 'new', 'the call that replaced it');
     moveDecision(b, 'old', 'proposed', 'accepted', 'accept');
-    moveDecision(b, 'old', 'accepted', 'superseded', 'supersede');
+    // A supersede names its successor, or no reader applies it (FORMAT.md §6.7).
+    supersedeDecision(b, 'old', 'new');
     link(b, 'old', 'src', 'governs');
 
     const [rule] = governingRules([tree(b)], asking('src/file.ts', ['src'])).rules;
