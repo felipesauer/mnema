@@ -28,15 +28,22 @@ than inferred from an exemplar:
     6.2 enrolment: the signer of every event is a key VALID FOR ITS ANCHOR at that point
         in the fold, which is a different claim from "the signature verifies"
         (`enrolment`, gap G21)
+
+And one that is a reading rather than a check, so it names and never refuses:
+
+    6.7 the workflows: every move judged at its point in the merged order, against the tables
+        `event-schema.json` publishes, and a move they do not allow named as not applied
+        (`workflow`)
 """
 
 from __future__ import annotations
 
+import json
 import os
 import re
 from typing import NamedTuple
 
-from . import bitcoin, enrolment, gaps, ots, schema
+from . import bitcoin, enrolment, gaps, ots, schema, workflow
 from .canonical import CRLF, ends_in_crlf_only
 from .checkpoint import Checkpoint, binding_break, read_checkpoint, read_tailproof
 from .ed25519 import verify as ed25519_verify
@@ -868,6 +875,8 @@ def verify_record(root: str, report: Report, require: str = "chained") -> None:
 
     entries_by_tail: dict[str, list[Entry]] = {}
     covered_by_tail: dict[str, int] = {}
+    # The tails holding a line this reader refused to read, each with the first such line.
+    refused_by_tail: dict[str, str] = {}
     for tail_id in tail_ids:
         tail_dir = os.path.join(tails_dir, tail_id)
         _check_tail_id(report, tail_id, ring)
@@ -882,10 +891,81 @@ def verify_record(root: str, report: Report, require: str = "chained") -> None:
         _check_witness(report, tail_dir, tail_id, found.checkpoints, last_seq)
         entries_by_tail[tail_id] = entries
         covered_by_tail[tail_id] = found.covered_through
+        if refused:
+            refused_by_tail[tail_id] = refused[0]
 
-    resolution = _check_enrolment(report, entries_by_tail, covered_by_tail, ring)
+    folded = _without_refused_tails(report, entries_by_tail, refused_by_tail)
+    resolution = _check_enrolment(report, folded, covered_by_tail, ring)
+    _check_moves(report, folded, declarations)
     _say_keys_without_tail(report, ring, tail_ids, resolution)
     _check_requirement(report, require, entries_by_tail, covered_by_tail)
+
+
+def _without_refused_tails(
+    report: Report, entries_by_tail: dict[str, list[Entry]], refused_by_tail: dict[str, str]
+) -> dict[str, list[Entry]]:
+    """The tails the folds of sections 6.2 and 6.7 read: every one but a tail with a refused line.
+
+    A fold read past a line this reader could not read is the chain walk's hole again, one layer
+    up. Measured: a segment whose first line carries a byte-order mark is refused at that line,
+    the founding of the identity with it, and the enrolment fold then refused every later event
+    of the tail as signed by a key not valid for its anchor - eight causes the record does not
+    contain beside the one it does. The tail's events are not judged by either fold, and that is
+    said, which changes no verdict: the refused line has already refused the record.
+    """
+    for tail_id, where in refused_by_tail.items():
+        report.unchecked(
+            "6.2",
+            f"the folds of sections 6.2 and 6.7 did not read this tail: {where} was refused "
+            "above, and a fold read past a line this reader could not read would judge every "
+            "event after it by what that line would have said",
+            tail_id,
+        )
+    return {tail: entries for tail, entries in entries_by_tail.items() if tail not in refused_by_tail}
+
+
+def _check_moves(
+    report: Report,
+    entries_by_tail: dict[str, list[Entry]],
+    declarations: schema.Schema | None,
+) -> None:
+    """Section 6.7, over the merged order of every tail: the moves the workflows do not allow.
+
+    Each is NAMED and none is refused - a move the workflow does not allow is intact, chained
+    and signed, and what it lacks is a place in the workflow - so a record that holds one
+    verifies, and its verdict says which move is not applied and by which rule.
+    """
+    if declarations is None:
+        return  # Section 4.1 has already said the declarations could not be read.
+    try:
+        tables = workflow.load(declarations.workflows, declarations.path)
+    except Refusal as refusal:
+        report.unchecked(
+            "6.7",
+            f"{refusal.what}, so no move of a workflow was judged",
+            declarations.path,
+        )
+        return
+    merged = enrolment.merged_order(entries_by_tail)
+    moves = sum(
+        1
+        for _tail, entry in merged.order
+        if entry.event.get("kind") in tables or entry.event.get("kind") == workflow.RUN_ENDED
+    )
+    rulings = workflow.judge(merged.order, merged.held, tables)
+    for ruling in rulings:
+        report.note(
+            "6.7",
+            f"a {ruling.kind} of {json.dumps(ruling.subject, ensure_ascii=True)}: {ruling.detail} "
+            f"- the workflow does not allow it, so it is not applied (rule {ruling.rule})",
+            f"{ruling.tail} seq {ruling.seq}",
+        )
+    if moves and not rulings:
+        report.ok(
+            "6.7",
+            f"every one of the {moves} move(s) is one the workflows allow, judged at its point in "
+            "the merged order against the tables event-schema.json publishes",
+        )
 
 
 def _holds_nothing(tail_dir: str) -> bool:

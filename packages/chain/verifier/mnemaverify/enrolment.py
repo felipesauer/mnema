@@ -142,7 +142,7 @@ class Resolution(NamedTuple):
     retired_agents: list[tuple[str, str, int]]
 
 
-def _merged(entries_by_tail: dict[str, list[Entry]]) -> Merged:
+def merged_order(entries_by_tail: dict[str, list[Entry]]) -> Merged:
     """Section 6.2's order, "Reading many tails" in full: `seq` within a tail; across tails the
     smallest `at` among the heads whose citations (`after`) have all been taken, then tail id.
 
@@ -218,7 +218,7 @@ def _merged(entries_by_tail: dict[str, list[Entry]]) -> Merged:
         if gap > 0:
             key = (tail, citing.seq)
             behind[key] = max(gap, behind.get(key, 0))
-    return Merged(merged, not_held, [(t, s, g) for (t, s), g in behind.items()], forced)
+    return Merged(merged, not_held, [(t, s, g) for (t, s), g in behind.items()], forced, held)
 
 
 class Merged(NamedTuple):
@@ -230,6 +230,9 @@ class Merged(NamedTuple):
     # (tail, seq, milliseconds) of every event stamped before an entry it cites.
     behind: list[tuple[str, int, int]]
     forced: int
+    # (citing tail, its position, cited tail, the cited position) of every citation honoured, the
+    # positions counted from 0 in each tail: what section 6.7 asks of what a writer had read.
+    held: list[tuple[str, int, str, int]]
 
 
 def _after(entry: Entry) -> list[str]:
@@ -307,7 +310,7 @@ def resolve(
         keys_of(anchor).add(fp)
         return True
 
-    merged = _merged(entries_by_tail)
+    merged = merged_order(entries_by_tail)
     for tail, entry in merged.order:
         event = entry.event
         seq = entry.seq

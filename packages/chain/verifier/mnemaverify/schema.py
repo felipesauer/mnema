@@ -83,6 +83,9 @@ class Schema(NamedTuple):
     rules: dict[str, str]
     path: str
     unknown_rules: list[str]
+    # Section 6.7's tables, as the file holds them; `workflow.load` reads them, so a table that is
+    # not one leaves the moves unjudged and the field declarations as they are.
+    workflows: Any = None
 
     def top_level_keys(self) -> frozenset[str]:
         """Section 4.1: the keys of `envelope`, plus `payload`."""
@@ -126,7 +129,7 @@ def load(path: str = DEFAULT_SCHEMA) -> Schema:
     for contract in contracts.values():
         used |= set(contract.payload.values())
     unknown = sorted(used - KNOWN_RULES)
-    return Schema(envelope, transition, contracts, rules, path, unknown)
+    return Schema(envelope, transition, contracts, rules, path, unknown, document.get("workflows"))
 
 
 def _rule_map(value: Any, where: str, path: str) -> dict[str, str]:
