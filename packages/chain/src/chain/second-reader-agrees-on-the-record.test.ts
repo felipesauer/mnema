@@ -555,6 +555,17 @@ const MUTATIONS = [
     productBreaks: 'ok',
   },
   {
+    // The fourth re-spelling, the one a checkout makes on its own: a `\r` before the newline.
+    // Refused like the other three, and both readers name the CRLF instead of the sentence a
+    // tampered line gets.
+    name: 'line-ends-rewritten-to-crlf',
+    refusals: 1,
+    section: '4',
+    says: 'the line ends in CRLF',
+    productLayer: 'T1',
+    productBreaks: 'ok',
+  },
+  {
     // A ROLE KEY SPEAKING IN THE PERSON'S NAME. A checker key signs the checkpoint over an
     // event whose `signerFp` is the person's, so the enrolment fold, reading the event, sees a
     // key valid for the anchor and the checker's containment never meets it. The product bound

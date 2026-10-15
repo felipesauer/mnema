@@ -206,9 +206,24 @@ export function parseCanonicalLine(text: string): unknown {
   }
   if (canonical !== text) {
     throw new StoredJsonError(
-      'not the canonical serialization of what it holds (whitespace, key order, Unicode ' +
-        'composition or spelling differ), so these are not the bytes the proof was taken over',
+      `${canonical}\r` === text
+        ? CRLF_REFUSAL
+        : 'not the canonical serialization of what it holds (whitespace, key order, Unicode ' +
+            'composition or spelling differ), so these are not the bytes the proof was taken over',
     );
   }
   return parsed;
 }
+
+/**
+ * The refusal when a carriage return at the end is ALL that stands between a line and its
+ * canonical bytes — what a checkout that rewrites line ends leaves on every line (git with
+ * `core.autocrlf=true`, the Git for Windows default). Still a refusal: the bytes on disk are
+ * not the bytes that were signed, and tolerating the `\r` would make them so for good. It
+ * names the cause instead of the sentence a tampered line gets. The second reader says the
+ * same (`CRLF` in its `canonical.py`).
+ */
+const CRLF_REFUSAL =
+  'not the canonical serialization of what it holds: the line ends in CRLF, as a checkout ' +
+  'that rewrites line ends leaves it (git with core.autocrlf), so these are not the bytes the ' +
+  "proof was taken over; '* -text' in the tree's .gitattributes keeps git from doing it";

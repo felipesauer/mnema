@@ -37,6 +37,7 @@ import re
 from typing import NamedTuple
 
 from . import bitcoin, enrolment, gaps, ots, schema
+from .canonical import CRLF, ends_in_crlf_only
 from .checkpoint import Checkpoint, binding_break, read_checkpoint, read_tailproof
 from .ed25519 import verify as ed25519_verify
 from .entry import Entry, entry_hash, read_line
@@ -175,8 +176,13 @@ def _read_entries(
             if not entry.line_is_canonical:
                 report.fail(
                     "4",
-                    "the stored line is not the canonical serialization of what it holds, so "
-                    "the bytes on disk are not the bytes the entry hash was taken over",
+                    "the stored line is not the canonical serialization of what it holds"
+                    + (
+                        f": {CRLF}"
+                        if ends_in_crlf_only(raw)
+                        else ", so the bytes on disk are not the bytes the entry hash was "
+                        "taken over"
+                    ),
                     where,
                 )
             _check_declarations(report, declarations, entry, where)
@@ -384,7 +390,13 @@ def _check_checkpoints(
         label = f"{where} {checkpoint.label}"
 
         if not checkpoint.line_is_canonical:
-            report.fail("6", "the stored checkpoint line is not canonical", label, "G13")
+            report.fail(
+                "6",
+                "the stored checkpoint line is not canonical"
+                + (f": {CRLF}" if ends_in_crlf_only(raw) else ""),
+                label,
+                "G13",
+            )
         if checkpoint.stored["tail"] != tail_id:
             report.fail("6", "the checkpoint names another tail", label)
         if checkpoint.stored["prev"] != previous_hash:
@@ -535,7 +547,12 @@ def _check_tailproof(
         "G10",
     )
     if not proof.file_is_canonical:
-        report.fail("-", "tailproof.json is not canonical", tail_id, "G10")
+        report.fail(
+            "-",
+            "tailproof.json is not canonical" + (f": {CRLF}" if ends_in_crlf_only(raw) else ""),
+            tail_id,
+            "G10",
+        )
     if proof.stored["tail"] != tail_id:
         report.fail("-", "tailproof.json names another tail", tail_id, "G10")
     _check_signature(
