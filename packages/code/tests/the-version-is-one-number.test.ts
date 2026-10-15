@@ -37,6 +37,7 @@ import { execFileSync } from 'node:child_process';
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { READER_VERSION } from '@mnema/chain';
 import { describe, expect, it } from 'vitest';
 import { VERSION } from '../src/version.js';
 
@@ -124,6 +125,14 @@ describe('the manifests this workspace ships agree on one version', () => {
       ({ where, version }) => `${where} says ${version}, the program says ${VERSION}`,
     );
     expect(disagree).toEqual([]);
+  });
+
+  it('is the number the record reader names when it refuses a line', () => {
+    // The second constant, and the reason it is held here: `@mnema/chain` cannot import this
+    // package, and its refusal of a `kind` and `v` it holds no contract for names the mnema
+    // that refuses (`FORMAT.md` §7.1). A release that bumped one and not the other would have
+    // a refusal name a version nobody installed.
+    expect(READER_VERSION).toBe(VERSION);
   });
 });
 

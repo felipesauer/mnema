@@ -316,7 +316,8 @@ admits a reader applies, and §6.7 is its normative statement.
   event already carries (§7). A reader looks up the row whose `kind` and `v` both
   match the line, and **refuses a line whose pair no row declares** — a version
   ahead of the table is a contract the reader does not have, not one it may guess
-  at. A kind that gains a second version gains a second row; the file's shape does
+  at. The refusal names the pair and what the reader holds of that kind (§7.1).
+  A kind that gains a second version gains a second row; the file's shape does
   not change, which is what makes such a change one visible row in a diff.
 - **The top-level keys of an event are the keys of `envelope`, plus `payload`.**
   Six envelope fields are required and three — `which`, `run` and `after` — are
@@ -919,7 +920,9 @@ per rule, two machines with and without citations, and drawn records on two tail
 move, whatever its `from`, `action` and `to`, and names none: a record holding a move this section
 does not apply verifies there as it verifies here, and is read there as if the move were legal.
 That binary does not refuse it, and nothing in the record can make it: the move is a kind and a
-version it already reads (§4.1).
+version it already reads (§4.1). This section tightened rules inside kinds and versions that
+already existed, before the first publication; §7.1 says why the promise between versions starts
+after it.
 
 ## 7. Versions, and why a proof is never recomputed over a reading
 
@@ -957,6 +960,71 @@ published rather than described.
 **`after` moved no `v`.** It is envelope, not a payload contract, and both digests are
 taken over the written form as they always were. A reader from before it refuses a record
 that carries one, because the envelope is closed (§4.1): the consequence a new kind has too.
+
+### 7.1 What one version promises another
+
+From the first version of this product published to the npm registry, every version keeps two
+promises about the records the others wrote, and one rule that makes the second possible. They
+are this product's, and the test named below holds both readers beside this document to them.
+
+- **Backward: a version reads every record an earlier one wrote.** Every line a published
+  version wrote is read by every later one under the contract its `kind` and `v` selected —
+  lifted through the registered upcasters when that kind has gained a later `v` — and the proof
+  is taken over the line as written (§7, above). A later version does not refuse such a line for
+  its shape. This is a promise about reading the lines, not about the verdict over them (below).
+- **Forward: a version refuses by name what it cannot read.** A line whose `kind` and `v` no row
+  of a reader's table declares is refused (§4.1), never guessed at and never skipped, and the
+  refusal names the pair, what the reader reads of that kind, and, in this product, which mnema
+  refuses: *mnema \<version\> does not read "memory.foretold" at v1: it reads no version of that
+  kind. If a newer mnema wrote the line, read the record with it.* (or *it reads that kind up to
+  v1*, for a version ahead of the one it holds). The second reader names the pair and what the
+  table it read declares of the kind. Nothing in a record says which version wrote a line, and no
+  field is added to say it, so the refusal names the version that does not read the line rather
+  than the one that does. This product's `verify` fails on it.
+- **A rule of authenticity or of legality is never loosened within an existing `kind` and `v`.**
+  What a line may carry (§4.1), which key may sign it (§6.2), who may take a note or a link back
+  (§6.4) and which moves a workflow allows (§6.7) stay what they were for every `kind` and `v`
+  that already exists. A new permission, one between records included, is a new `kind` or a new
+  `v`, which a version from before it refuses by naming the version, as above. The envelope is
+  shared by every kind, so it gains no field within an existing `kind` and `v` either, as `after`
+  did before the first publication. This is what keeps the forward promise whole: a permission
+  added inside an existing pair would be read by a version from before it as a forged, illegal or
+  broken line, with nothing refused, so two versions would read the same bytes two ways and
+  neither would say why.
+
+`packages/chain/src/chain/the-promise-between-versions.test.ts` holds a record to each promise.
+Backward, `__fixtures__/written-by-an-earlier-binary`, a record this product's command line wrote
+on 15 October 2026 and that is never written again — an identity with its backup key, a note
+taken back, three decisions accepted, superseded and rejected, a task blocked, sent back from
+review, approved, reopened and completed, a link that governs a path: both readers verify it,
+every move applied, nothing refused. Forward, a signed, chained and checkpointed record whose
+third line carries a kind no version declares, and then a version ahead of the one declared:
+both readers refuse it with the words above.
+
+**What the promise does not cover.**
+
+- **What came before the first publication.** The versions released before it changed rules
+  inside kinds and versions that already existed. §6.4 made a retraction its author's and §6.7
+  put the workflows in the format: a binary from before them reads a later record under its own
+  rules — it applies the retraction or the move a later one does not, and refuses no line for it.
+  `after` entered the envelope with no new `v`: a binary from before it refuses a line that
+  carries one by naming the field, not the version (§7, above). And those binaries' refusals of a
+  pair they do not hold name the kind, and for a version ahead the two versions, but not the
+  mnema that refuses. That is why the promise starts at the first publication rather than
+  earlier.
+- **A rule tightened within an existing `kind` and `v` after it.** The promise forbids loosening;
+  it does not forbid tightening. A later version may come to leave unapplied or name what an
+  earlier one applied, as §6.7 did, or to fail a record an earlier one verified, on a rule other
+  than a line's shape; then the two read the same bytes two ways: the earlier one applies the
+  line as its rule allows and refuses nothing, because the line is a pair it reads. What bounds
+  such a change is the backward promise — the later version still reads every line an earlier one
+  wrote — and that it is a change to this document and to the changelog, visible in a diff. It is
+  not a refusal a version from before it can give.
+- **Reading forward.** No version reads a pair it does not hold: it refuses. A reader that
+  skipped the line and read the rest would say a record verifies with facts in it that it cannot
+  judge.
+- **The order between tails.** It rests on the writers' clocks and on what each cites ("Reading
+  many tails"), a limit stated there and outside this promise.
 
 ## 8. The external witness (T3)
 
@@ -1339,7 +1407,7 @@ Stated plainly, because a published format invites all three readings:
   of more than one identity. The product's `key request --key` refuses a key file kept
   in its agents' folder by the place the file really is (links followed), not by what
   it holds, so a link to it is refused and a copy kept elsewhere is not recognised.
-- **A change to the format is visible, and that is all that is promised about
+- **A change to the format is visible, and §7.1 is all that is promised about
   changing it.** This entry used to say that the per-kind field declarations were
   not published, and that in consequence an implementation built from this
   document could not refuse a newly APPENDED event carrying a field no kind
@@ -1350,7 +1418,8 @@ Stated plainly, because a published format invites all three readings:
   remains true is the sentence above it: there is no standards body, no registry
   and no committed process. What IS committed is that a change to the bytes moves a
   published digest and a change to a contract moves a row of a published file, and
-  both are visible.
+  both are visible; and, from the first publication, what one version promises
+  another (§7.1).
 - **Publishing the format adds no witness — and §8 is not the format's doing
   either.** The threat sections 1–7 do not cover is an edit made *with* the signing
   key: a key holder can rewrite and re-sign, and everything there will verify.

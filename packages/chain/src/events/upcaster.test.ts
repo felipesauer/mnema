@@ -20,9 +20,11 @@ describe('UpcasterRegistry', () => {
     expect(() => reg.upcast({ kind: 'nope.gone', v: 1 })).toThrow(UpcasterError);
   });
 
-  it('throws when an event is ahead of the known latest (needs a newer catalog)', () => {
+  it('throws when an event is ahead of the known latest, naming both versions', () => {
     const reg = new UpcasterRegistry();
-    expect(() => reg.upcast({ kind: 'task.transitioned', v: 2 })).toThrow(/ahead of the known/);
+    expect(() => reg.upcast({ kind: 'task.transitioned', v: 2 })).toThrow(
+      /does not read "task\.transitioned" at v2: it reads that kind up to v1\./,
+    );
   });
 
   it('refuses to register two upcasters for the same rung', () => {
