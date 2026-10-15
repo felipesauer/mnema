@@ -36,7 +36,7 @@ import { createHash } from 'node:crypto';
 import { readdirSync, readFileSync, statSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { LATEST_VERSION, type LinkBreak } from '@mnema/chain';
+import { LATEST_VERSION, type LinkBreak, WORKFLOWS } from '@mnema/chain';
 import type { SqliteDatabase } from '../db/sqlite.js';
 import type { ChainFrontier, TailReach } from './order.js';
 
@@ -62,7 +62,8 @@ let stamp: string | undefined;
 /**
  * A digest of everything that decides what a row of this cache contains, computed once per
  * process: the bytes of the projection and schema modules (compiled or source, whichever is
- * running), and the version every kind of the catalog is read at. Test files, type
+ * running), the version every kind of the catalog is read at, and the workflows a move is
+ * judged by. Test files, type
  * declarations and source maps are not code that runs, and are left out so that building the
  * documentation of a module does not throw away a cache.
  */
@@ -80,6 +81,9 @@ export function productStamp(): string {
     }
   }
   hash.update(JSON.stringify(LATEST_VERSION));
+  // The workflows decide which moves a row applies (FORMAT.md §6.7), and they live in the chain
+  // package, outside the directories above: a table changed there is a cache built by other code.
+  hash.update(JSON.stringify(WORKFLOWS));
   stamp = hash.digest('hex').slice(0, 32);
   return stamp;
 }

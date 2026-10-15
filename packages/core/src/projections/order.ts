@@ -39,6 +39,12 @@
  * merge policy, conflict surfacing) is the domain's concern, layered on top.
  * This only guarantees the replay is deterministic and faithful to each tail's
  * proven order.
+ *
+ * WHAT IT DOES LEAVE OUT: a move the workflow does not allow (FORMAT.md §6.7). Every reader
+ * judges the moves of the merged order by the same tables ({@link illegalMoves}) and applies
+ * none it refuses, so the order a projection folds is the record without them. A move left
+ * out here is left out of every fold, the reference index and the divergences alike — which is
+ * what "not applied" means — and `verify` names it in its census.
  */
 
 import {
@@ -47,6 +53,7 @@ import {
   causalOrder,
   type Entry,
   firstLinkBreakFrom,
+  illegalMoves,
   type LinkBreak,
   listTails,
   orderedSegments,
@@ -492,8 +499,10 @@ export function chainArrivals(
 
   // The SAME merge the whole order goes through, over the arrivals alone. It is the
   // same function and the same keys, which is what makes the result the tail of the
-  // order rather than a second convention for interleaving.
-  const { events } = mergeStreams(streams);
+  // order rather than a second convention for interleaving. The moves are NOT judged here:
+  // the arrivals alone are not the history a move is judged against, and the advance judges
+  // each against the state the cache holds (`advance.ts`).
+  const { events } = mergeStreams(streams, false);
   return {
     suffix: true,
     events,
@@ -617,9 +626,13 @@ export function orderedEventsOfRecord(
   upcasters: UpcasterRegistry,
 ): RecordOrder {
   const perChain = layouts.map((layout, index) => streamsOf(layout, upcasters, index));
+  // A move is judged inside its own chain, as a citation resolves there: what each chain leaves
+  // out is left out of the union too, so the two views never disagree about one move.
+  const chains = perChain.map((streams) => mergeStreams(streams));
+  const left = new Set(chains.flatMap((chain) => [...chain.left]));
   return {
-    chains: perChain.map((streams) => mergeStreams(streams).events),
-    across: mergeStreams(perChain.flat()).events,
+    chains: chains.map((chain) => chain.events),
+    across: mergeStreams(perChain.flat(), false).events.filter((event) => !left.has(event)),
   };
 }
 
@@ -654,9 +667,17 @@ function streamsOf(layout: ChainLayout, upcasters: UpcasterRegistry, tree: numbe
  * citations it could not place: the hashes cited that the streams' trees do not hold, which
  * the order ignored. The streams are read and never consumed, so one reading serves several
  * merges.
+ *
+ * `judged` leaves out the moves the workflow does not allow ({@link illegalMoves}), and says
+ * which in `left`. It is false only where the streams are of several trees, whose moves were
+ * judged tree by tree already.
  */
-function mergeStreams(streams: readonly TailStream[]): {
+function mergeStreams(
+  streams: readonly TailStream[],
+  judged = true,
+): {
   readonly events: CatalogEvent[];
+  readonly left: ReadonlySet<CatalogEvent>;
   readonly unresolved: string[];
 } {
   const eventAt = (tail: number, position: number): CatalogEvent =>
@@ -674,10 +695,21 @@ function mergeStreams(streams: readonly TailStream[]): {
     },
   );
   const cursors = streams.map(() => 0);
+  const placed = merged.steps.map((tail) => {
+    const position = cursors[tail] as number;
+    cursors[tail] = position + 1;
+    return { event: eventAt(tail, position), tail, position };
+  });
+  const illegal = judged ? illegalMoves(placed, merged.held) : new Map();
   const events: CatalogEvent[] = [];
-  for (const step of merged.steps) {
-    events.push(eventAt(step, cursors[step] as number));
-    cursors[step] = (cursors[step] as number) + 1;
-  }
-  return { events, unresolved: [...new Set(merged.notHeld.map((citation) => citation.hash))] };
+  const left = new Set<CatalogEvent>();
+  placed.forEach(({ event }, index) => {
+    if (illegal.has(index)) left.add(event);
+    else events.push(event);
+  });
+  return {
+    events,
+    left,
+    unresolved: [...new Set(merged.notHeld.map((citation) => citation.hash))],
+  };
 }

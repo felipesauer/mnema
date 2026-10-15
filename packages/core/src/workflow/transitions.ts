@@ -5,7 +5,9 @@
  * reaches, and which proof fields that action must carry. This is the whole
  * workflow: fixed, opinionated, compiler-checked. It is not loaded from a
  * project file, so "what is a legal transition" can never be untrusted runtime
- * data — it is code that is read and reviewed like any other.
+ * data — it is code that is read and reviewed like any other. The rows are the
+ * format's (`WORKFLOWS` in `@mnema/chain`, FORMAT.md §6.7): the gate that writes
+ * a move and every reader that judges one read the same table.
  *
  * `requires` names the proof fields (from the chain's `TransitionFields`) an
  * action must carry to be authorized. The principle: a mandatory field is the
@@ -16,7 +18,7 @@
  * acceptance criteria, and estimates are not proof and are not here at all.
  */
 
-import type { TransitionFields } from '@mnema/chain';
+import { type TransitionFields, WORKFLOWS } from '@mnema/chain';
 import type { TaskState } from './states.js';
 
 /** The proof fields the gate may require of an action. */
@@ -53,20 +55,7 @@ export interface Transition {
  * is deliberately NOT here: a task is born through the chain's birth pair, not
  * requested through the gate, so `create` is never a user-requestable move.
  */
-export const TRANSITIONS: readonly Transition[] = [
-  { from: 'DRAFT', action: 'submit', to: 'READY', requires: [] },
-  { from: 'DRAFT', action: 'cancel', to: 'CANCELED', requires: ['reason'] },
-  { from: 'READY', action: 'start', to: 'IN_PROGRESS', requires: [] },
-  { from: 'READY', action: 'cancel', to: 'CANCELED', requires: ['reason'] },
-  { from: 'IN_PROGRESS', action: 'block', to: 'BLOCKED', requires: ['reason'] },
-  { from: 'IN_PROGRESS', action: 'submit_review', to: 'IN_REVIEW', requires: [] },
-  { from: 'IN_PROGRESS', action: 'complete', to: 'DONE', requires: ['note'] },
-  { from: 'IN_PROGRESS', action: 'cancel', to: 'CANCELED', requires: ['reason'] },
-  { from: 'BLOCKED', action: 'unblock', to: 'IN_PROGRESS', requires: [] },
-  { from: 'IN_REVIEW', action: 'approve', to: 'DONE', requires: ['note'] },
-  { from: 'IN_REVIEW', action: 'request_changes', to: 'IN_PROGRESS', requires: ['feedback'] },
-  { from: 'DONE', action: 'reopen', to: 'IN_PROGRESS', requires: ['reason'] },
-];
+export const TRANSITIONS: readonly Transition[] = WORKFLOWS['task.transitioned'].moves;
 
 /**
  * Finds the single legal transition for a (from, action) pair, or undefined if

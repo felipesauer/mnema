@@ -101,6 +101,7 @@ describe('C1: a decision superseded on a machine whose clock is behind', () => {
         from: 'proposed',
         to: 'accepted',
         action: 'accept',
+        fields: { note: 'yes' },
       }),
     );
     // B pulls, and at 10:10 real time (09:10 by its clock) records D2 and supersedes D1 by it.
@@ -109,7 +110,7 @@ describe('C1: a decision superseded on a machine whose clock is behind', () => {
         title: 'two',
         rationale: 'because',
         adr: 'ADR-2',
-        initial: 'accepted',
+        initial: 'proposed',
       }),
     );
     b.append(
@@ -118,6 +119,7 @@ describe('C1: a decision superseded on a machine whose clock is behind', () => {
         to: 'superseded',
         action: 'supersede',
         by: 'd2',
+        fields: { reason: 'two replaces it' },
       }),
     );
     const decisions = projectDecisions(read());
@@ -125,27 +127,37 @@ describe('C1: a decision superseded on a machine whose clock is behind', () => {
   }
 
   it('without a citation the superseded decision reads as in force — the defect', () => {
-    expect(supersede(false)).toEqual({ d1: 'accepted', d2: 'accepted' });
+    // Read by `at`, the supersede comes before D1 was born, so it moves nothing (FORMAT.md §6.7).
+    expect(supersede(false)).toEqual({ d1: 'accepted', d2: 'proposed' });
   });
 
-  it('with the citation it reads superseded, and its successor in force', () => {
-    expect(supersede(true)).toEqual({ d1: 'superseded', d2: 'accepted' });
+  it('with the citation it reads superseded, and its successor stands', () => {
+    expect(supersede(true)).toEqual({ d1: 'superseded', d2: 'proposed' });
   });
 });
 
 describe('C2: a task moved on a machine whose clock is behind', () => {
-  function cancelAfterReopen(cite: boolean) {
+  function cancelAfterStart(cite: boolean) {
     const { a, b, on, read } = twoMachines(cite);
-    a.appendAll(taskBirth(on(a, byA(10), 't1'), { title: 'a task', initial: 'draft' }));
+    a.appendAll(taskBirth(on(a, byA(10), 't1'), { title: 'a task', initial: 'DRAFT' }));
     a.append(
-      taskTransitioned(on(a, byA(20), 't1'), { from: 'draft', to: 'ready', action: 'ready' }),
+      taskTransitioned(on(a, byA(20), 't1'), { from: 'DRAFT', to: 'READY', action: 'submit' }),
     );
     a.append(
-      taskTransitioned(on(a, byA(30), 't1'), { from: 'ready', to: 'draft', action: 'reopen' }),
+      taskTransitioned(on(a, byA(30), 't1'), {
+        from: 'READY',
+        to: 'IN_PROGRESS',
+        action: 'start',
+      }),
     );
-    // B pulls the reopened task and cancels it, stamped before the reopening by its clock.
+    // B pulls the started task and cancels it, stamped before the start by its clock.
     b.append(
-      taskTransitioned(on(b, byB(85), 't1'), { from: 'draft', to: 'cancelled', action: 'cancel' }),
+      taskTransitioned(on(b, byB(85), 't1'), {
+        from: 'IN_PROGRESS',
+        to: 'CANCELED',
+        action: 'cancel',
+        fields: { reason: 'not needed' },
+      }),
     );
     const events = read();
     return {
@@ -154,12 +166,14 @@ describe('C2: a task moved on a machine whose clock is behind', () => {
     };
   }
 
-  it('without a citation the task reads reopened, and an honest move is named a divergence', () => {
-    expect(cancelAfterReopen(false)).toEqual({ state: 'draft', divergent: 1 });
+  it('without a citation the cancel is read before the start it followed, and is not applied — the defect', () => {
+    // Its writer cited nothing, so nothing says it saw the task at all; by `at` the task was
+    // READY there, which is not the state the cancel left (FORMAT.md §6.7).
+    expect(cancelAfterStart(false)).toEqual({ state: 'IN_PROGRESS', divergent: 0 });
   });
 
   it('with the citation it reads cancelled, and nothing is named', () => {
-    expect(cancelAfterReopen(true)).toEqual({ state: 'cancelled', divergent: 0 });
+    expect(cancelAfterStart(true)).toEqual({ state: 'CANCELED', divergent: 0 });
   });
 });
 

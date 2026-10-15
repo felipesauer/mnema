@@ -48,19 +48,25 @@ interface Applied {
  * The moves of `order` a reader does not apply, by their index in `order`, each with its rule.
  *
  * `order` is one tree's merged order (a citation resolves inside its own tree), and `held` the
- * citations that merge honoured, by the same tail indexes.
+ * citations that merge honoured, by the same tail indexes. `born` says whether the record holds
+ * the birth of the decision a supersede names; left out, the births are the ones `order` holds,
+ * which is the answer when `order` is the whole record. A reader of a few subjects hands its own.
  */
 export function illegalMoves(
   order: readonly PlacedEvent[],
   held: readonly CitationHeld[],
+  born?: (id: string) => boolean,
 ): Map<number, IllegalMove> {
   const saw = sightOf(held);
   const births = new Set<string>();
-  for (const { event } of order) {
-    if (event.kind === 'decision.transitioned' && event.payload.from === null) {
-      births.add(event.subject);
+  if (born === undefined) {
+    for (const { event } of order) {
+      if (event.kind === 'decision.transitioned' && event.payload.from === null) {
+        births.add(event.subject);
+      }
     }
   }
+  const isBorn = born ?? ((id: string) => births.has(id));
   const subjects = new Map<string, Applied[]>();
   const illegal = new Map<number, IllegalMove>();
   order.forEach((placed, index) => {
@@ -82,7 +88,7 @@ export function illegalMoves(
         }
         return undefined;
       },
-      born: (id) => births.has(id),
+      born: isBorn,
     });
     if (ruling !== undefined) {
       illegal.set(index, ruling);

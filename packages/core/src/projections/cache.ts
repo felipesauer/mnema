@@ -406,7 +406,9 @@ export class ProjectionCache {
    * changed any other way — a tail pruned, a tail gone, a fact arriving stamped before
    * something already covered — cannot be described as a suffix, and this replays the whole
    * thing. So does a file that was built by other code, or whose sealed segments are not the
-   * ones it saw ({@link CacheOptions.persist}).
+   * ones it saw ({@link CacheOptions.persist}). And so does an arrival that is a move the state
+   * held here cannot judge alone — a divergence, or a move the workflow does not allow (FORMAT.md
+   * §6.7): the replay is what judges it against the moves its writer saw (`advance.ts`).
    *
    * It is not a cheaper rebuild, it is the same result by a shorter route: the
    * tables it leaves behind are the ones a full replay would have written, which is asserted
@@ -438,14 +440,20 @@ export class ProjectionCache {
         const expected = this.generation;
         const moved = inTransaction(
           this.db,
-          () => {
+          (): boolean | 'judge-it-whole' => {
             if (readGeneration(this.db) !== expected) return false;
-            advance(this.db, arrived.events, from);
+            // A move the state this file holds cannot judge alone (FORMAT.md §6.7): the
+            // replay judges it, against the moves its writer saw.
+            if (!advance(this.db, arrived.events, from)) return 'judge-it-whole';
             this.store(arrived.frontier, this.breaks, expected + 1);
             return true;
           },
           { immediate: true },
         );
+        if (moved === 'judge-it-whole') {
+          this.replay();
+          return;
+        }
         if (moved) {
           this.frontier = arrived.frontier;
           this.generation = expected + 1;
