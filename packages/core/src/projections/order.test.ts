@@ -112,30 +112,30 @@ describe('orderedEvents — within-tail proven order beats a non-monotonic clock
     const w = openChainForWriting(rootA, { keyRoot: rootA });
     const [c, b] = taskBirth(env('t-1', '2026-07-21T00:00:05.000Z'), {
       title: 't',
-      initial: 'draft',
+      initial: 'DRAFT',
     });
     w.append(c);
     w.append(b);
     w.append(
       taskTransitioned(env('t-1', '2026-07-21T00:00:10.000Z'), {
-        from: 'draft',
-        to: 'in-progress',
-        action: 'start',
+        from: 'DRAFT',
+        to: 'READY',
+        action: 'submit',
       }),
     );
     w.append(
       taskTransitioned(env('t-1', '2026-07-21T00:00:08.000Z'), {
-        from: 'in-progress',
-        to: 'done',
-        action: 'finish',
+        from: 'READY',
+        to: 'IN_PROGRESS',
+        action: 'start',
       }),
     );
 
     const tos = orderedEvents({ root: rootA }, upcasters)
       .filter((e) => e.kind === 'task.transitioned')
       .map((e) => (e.kind === 'task.transitioned' ? e.payload.to : ''));
-    // Proven order, not clock order: draft (birth) → in-progress → done.
-    expect(tos).toEqual(['draft', 'in-progress', 'done']);
+    // Proven order, not clock order: DRAFT (birth) → READY → IN_PROGRESS.
+    expect(tos).toEqual(['DRAFT', 'READY', 'IN_PROGRESS']);
   });
 });
 
