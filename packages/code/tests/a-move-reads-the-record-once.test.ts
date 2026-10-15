@@ -1,15 +1,21 @@
 /**
- * That a move reads the record ONCE before it writes.
+ * That a move REPLAYS the record at most once before it writes, and reads it once more only to find
+ * the lines about its subject.
  *
  * `task move` and `decision move` used to read it twice outside the lock: once to find the tree
  * the entity was born in (a replay of the chain) and once for what the gate judges (the kept
- * projection, brought forward). At 100 thousand events each was about 2 s. They are one reading
- * now: the tree is found in the projection the judgement reads.
+ * projection, brought forward). At 100 thousand events each was about 2 s. The tree is found in the
+ * projection the tree keeps, and a projection already kept is not walked again.
  *
- * WHAT IS COUNTED is the segment files the chain is read from whole: every replay of a tail reads
- * its segments, so a second walk of the record, by whichever door, shows as a second read of the
- * same file. It is counted on a record whose projection is already kept, which is every move but
- * the first on a clone.
+ * WHAT THE GATE JUDGES IS NOT TAKEN FROM THAT PROJECTION ANY MORE: it is a file beside the record
+ * that nothing signs, and a row of it edited by hand let a gate append a move it refuses. The gate
+ * searches the segments for the lines that name its subject (`subjectEvents`) and parses those
+ * alone, so every move reads each segment ONE more time, as bytes, and that reading is not a replay.
+ *
+ * WHAT IS COUNTED is the segment files read whole, split by who read them: the gate's search, and
+ * every other reading — a replay of a tail reads its segments, so a second walk of the record, by
+ * whichever door, shows as a second read of the same file. It is counted on a record whose
+ * projection is already kept, which is every move but the first on a clone.
  */
 
 import { mkdirSync, mkdtempSync, rmSync } from 'node:fs';
@@ -47,13 +53,18 @@ afterEach(() => {
   rmSync(sandbox, { recursive: true, force: true });
 });
 
-/** Runs `act`; returns how many times each file under the tree was read whole, by path. */
-function readsDuring(act: () => void): Map<string, number> {
+/** What `act` read of the tail's segment files, whole: by the gate's search, and otherwise. */
+function wholeReads(act: () => void): { readonly searched: number; readonly walked: number } {
   const real = fs.readFileSync;
-  const seen = new Map<string, number>();
+  let searched = 0;
+  let walked = 0;
   (fs as { readFileSync: unknown }).readFileSync = (...args: unknown[]) => {
     const path = String(args[0]);
-    if (path.startsWith(root)) seen.set(path, (seen.get(path) ?? 0) + 1);
+    if (path.startsWith(root) && path.endsWith('.jsonl')) {
+      // By the frame that asked: the stack names the module, as built or as mapped to its source.
+      if (/subject-events\.[jt]s/.test(new Error().stack ?? '')) searched += 1;
+      else walked += 1;
+    }
     return (real as (...a: unknown[]) => unknown)(...args);
   };
   syncBuiltinESMExports();
@@ -63,14 +74,7 @@ function readsDuring(act: () => void): Map<string, number> {
     (fs as { readFileSync: unknown }).readFileSync = real;
     syncBuiltinESMExports();
   }
-  return seen;
-}
-
-/** How many times the tail's segment file was read whole while `act` ran. */
-function wholeReads(act: () => void): number {
-  let total = 0;
-  for (const [path, times] of readsDuring(act)) if (path.endsWith('.jsonl')) total += times;
-  return total;
+  return { searched, walked };
 }
 
 /** Brings the projection forward and keeps it, as any read before the move would have. */
@@ -91,17 +95,17 @@ function aDecision(title: string): string {
 }
 
 describe('a move reads the record once', () => {
-  it('task move on a record nobody has read: the one reading is the one that builds the projection', () => {
+  it('task move on a record nobody has read: the one walk is the one that builds the projection', () => {
     const id = aTask();
     const moved = { ok: false as boolean };
     const reads = wholeReads(() => {
       moved.ok = runTaskTransition({ cwd: repo, env }, { id, action: 'submit' }).ok;
     });
     expect(moved.ok).toBe(true);
-    expect(reads).toBe(1);
+    expect(reads).toEqual({ searched: 1, walked: 1 });
   });
 
-  it('task move on a record whose projection is kept: the chain is not walked at all', () => {
+  it('task move on a record whose projection is kept: the chain is not walked, only searched', () => {
     const id = aTask();
     keep();
     const moved = { ok: false as boolean };
@@ -109,10 +113,10 @@ describe('a move reads the record once', () => {
       moved.ok = runTaskTransition({ cwd: repo, env }, { id, action: 'submit' }).ok;
     });
     expect(moved.ok).toBe(true);
-    expect(reads).toBe(0);
+    expect(reads).toEqual({ searched: 1, walked: 0 });
   });
 
-  it('decision move: neither the lookup nor the report that follows the write walks the chain', () => {
+  it('decision move: neither the lookup nor the report that follows the write walks the chain; the gate searches it', () => {
     const id = aDecision('use sqlite');
     keep();
     const moved = { adr: '' };
@@ -124,7 +128,7 @@ describe('a move reads the record once', () => {
       if (result.ok) moved.adr = result.adr;
     });
     expect(moved.adr).toMatch(/^ADR-\d+$/);
-    expect(reads).toBe(0);
+    expect(reads).toEqual({ searched: 1, walked: 0 });
   });
 
   it('a supersede by a proposal still says nothing is in force, read from the kept projection', () => {
@@ -141,6 +145,6 @@ describe('a move reads the record once', () => {
       if (result.ok) moved.notice = result.notice ?? '';
     });
     expect(moved.notice).toContain('is still proposed');
-    expect(reads).toBe(0);
+    expect(reads).toEqual({ searched: 1, walked: 0 });
   });
 });

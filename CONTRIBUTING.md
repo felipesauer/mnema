@@ -90,46 +90,17 @@ real run of a host did with each. A change to the `description` is the change th
 for, since that line decides when the skill is offered. If an eval is added later, this section
 names how to run it.
 
-## Cutting a release
+## Releases
 
-This is how a pre-release is cut (`v0.1.0-beta` was the first), and it is the whole procedure. It is the
-maintainer's to run, not a pull request's. **Publishing to npm is the maintainer's own act and no
-part of this procedure, automatic or otherwise**: nothing here runs `npm publish`, and until the
-maintainer does it, the packages are installed from the release's tarballs.
-
-1. **Start from a merged trunk.** The version is already in the five `package.json` files and the
-   changelog has a section for it, both merged through a pull request. Run the gates on what is
-   committed. The workflow `packed-install.yml` runs on the trunk push and on the tag, and packs the five,
-   installs them together into an empty prefix and an empty `HOME`, and runs `init`, `decision record` and
-   `verify` with the installed binary; it is not a required check, so read its result before tagging.
-2. **Pack the five publishable packages**, `@mnema/chain`, `@mnema/core`, `@mnema/context`,
-   `@mnema/stacks` and `@mnema/code`, with `pnpm pack` (for example `pnpm --filter @mnema/chain pack`, once for each).
-   The result is one tarball per package, named `mnema-<package>-<version>.tgz`. The other
-   packages of the workspace are private and are not packed.
-3. **Write `SHA256SUMS`**: the SHA-256 digest of each of the five tarballs, one line per file, in
-   `sha256sum`'s format (the digest, two spaces, the file name).
-4. **Tag the commit with an annotated tag**, `v<version>`, on the trunk commit the tarballs were
-   built from, and push the tag.
-5. **Create the GitHub release as a pre-release** on that tag, with the five tarballs and
-   `SHA256SUMS` attached. Its notes give the install command, which has to name all five tarballs
-   (`@mnema/code` depends on the other four at its exact version; `v0.1.0-beta` was cut before
-   `@mnema/stacks` was one of them, and has four; `v0.2.0-beta` is the first with five), say that the packages are not
-   on npm, and state the Node floor.
-6. **Prove the install the notes give, from the release itself.** In a throwaway `HOME`, never
-   your own, run the notes' `npm i -g` with the five release URLs together, and check that the
-   binary it puts on the `PATH` prints the version of the tag. Check the tarballs against
-   `SHA256SUMS` too.
+There is no tag and no release until the first publication on npm, and the procedure for one will be
+written with it. **Publishing to npm is the maintainer's own act**: nothing here runs `npm publish`.
+What exists today is the check of the package: it packs the five publishable packages, installs them
+together into an empty prefix and an empty `HOME`, and runs `init`, `decision record` and `verify` with
+the installed binary.
 
 ```sh
-npm i -g \
-  https://github.com/felipesauer/mnema/releases/download/v<version>/mnema-chain-<version>.tgz \
-  https://github.com/felipesauer/mnema/releases/download/v<version>/mnema-core-<version>.tgz \
-  https://github.com/felipesauer/mnema/releases/download/v<version>/mnema-context-<version>.tgz \
-  https://github.com/felipesauer/mnema/releases/download/v<version>/mnema-stacks-<version>.tgz \
-  https://github.com/felipesauer/mnema/releases/download/v<version>/mnema-code-<version>.tgz
+pnpm build && bash .github/the-packed-install/run.sh
 ```
-
-A release that was cut wrongly is not deleted on the spot: ask the maintainer first.
 
 ## A pull request
 

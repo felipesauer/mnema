@@ -183,7 +183,9 @@ describe('the command line says what an address covers', () => {
 
   it('answers "outside this project" rather than a fraction of nothing', async () => {
     file('src/a.ts');
-    const said = await address('/etc');
+    // In the public tree such an address is refused; the private tree is one machine's own.
+    const said = await mnema('link', 'rule-1', '/etc', '--rel', 'governs', '--scope', 'private');
+    expect(said.failed, said.err.join(' / ')).toBe(false);
     expect(reachLine(said)).toBe(
       '  That address lies outside this project, so it covers nothing here.',
     );

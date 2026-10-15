@@ -29,12 +29,6 @@ __pycache__/
 # A local workbench, never committed.
 .refactor/
 
-# This repository keeps no mnema record of its own: a .mnema/ here is what a run of the binary
-# left behind, and it is ignored whole so none of it is ever committed. A project that adopts
-# mnema does the opposite — `mnema init` writes a .gitignore that commits the chain and the
-# public keys and ignores only the rebuildable cache and the private key.
-.mnema/
-
 # What `pnpm --filter @mnema/vscode package` writes. Built on request, never reviewed.
 *.vsix
 

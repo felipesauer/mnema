@@ -512,8 +512,20 @@ async function through(
   return { said, held: eventsOf(door) };
 }
 
+/**
+ * A case here starts the real binary once per door: `founded` and the set-up are a spawn each,
+ * and every step is one more. Measured with the suite running on two workers, the scenarios take
+ * 1.5 to 1.9 s, the read that compares a project with the outside 2.2 s and the session-start
+ * hook 1 s, against the shared 5 s; the same cases have stopped at five seconds on a loaded
+ * runner while passing alone. No spawn is spare, so the limit is given room for a machine an
+ * order of magnitude slower than the one measured, not removed.
+ */
+const SPAWNS_PER_DOOR = 30_000;
+
 describe('an ADR label typed where an id belongs', () => {
-  it('moves the one decision it names, on the three doors', async () => {
+  it('moves the one decision it names, on the three doors', {
+    timeout: SPAWNS_PER_DOOR,
+  }, async () => {
     const said = async (name: Door['name']): Promise<{ id: string; moves: string[] }> => {
       const door = founded(name);
       door.mnema('decision', 'record', 'use postgres', 'why', '--which', AGENT);
@@ -580,7 +592,7 @@ describe('an email address a write carried', () => {
 
 describe('the same input through the three doors', () => {
   for (const scenario of SCENARIOS) {
-    it(scenario.name, async () => {
+    it(scenario.name, { timeout: SPAWNS_PER_DOOR }, async () => {
       const cli = await through('cli', scenario);
       const mcp = await through('mcp', scenario);
       const sdk = await through('sdk', scenario);
@@ -600,7 +612,9 @@ describe('the same input through the three doors', () => {
 // ---------------------------------------------------------------------------
 
 describe('the reads', () => {
-  it('say the same from a project and the same refusal from outside one', async () => {
+  it('say the same from a project and the same refusal from outside one', {
+    timeout: SPAWNS_PER_DOOR,
+  }, async () => {
     const cli = founded('cli');
     cli.mnema(
       'decision',
@@ -707,7 +721,9 @@ describe('the hook before a write', () => {
 describe('the hook at the start of a session', () => {
   const signal = { signal: new AbortController().signal };
 
-  it('hands over the document the plugin hands over, and nothing from outside a project', async () => {
+  it('hands over the document the plugin hands over, and nothing from outside a project', {
+    timeout: SPAWNS_PER_DOOR,
+  }, async () => {
     const cli = founded('cli');
     const id = /\(([0-9a-f-]{36})\)/.exec(
       cli.mnema('decision', 'record', 'keep the api versioned', 'clients pin to it').out,

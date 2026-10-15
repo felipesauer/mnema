@@ -44,6 +44,7 @@ import {
 import { resolveExecutingAgent } from '../identity/authority.js';
 import { canonicalId, mintId } from '../identity/id.js';
 import { oneLine } from '../one-line.js';
+import { projectDecisions } from '../projections/decision.js';
 import { type AppendRefusal, appendFact, appendFacts } from './append.js';
 import {
   type Judged,
@@ -203,7 +204,10 @@ export function recordDecision(
   // cache", and the premise was that the only way to be current was to replay the whole
   // record, which cost about 1 s at 100 thousand events and held the lock for as long when
   // it had to be read again under it. A cache brought forward over what arrived is the
-  // chain as it stands, and costs the arrivals. Unlike
+  // chain as it stands, unless somebody edited it, and costs the arrivals — which is enough for a
+  // label and not for a gate: a count edited by hand repeats a label, and a repeated label is a
+  // collision the reader already names, while what a MOVE is judged on is read off the chain
+  // ({@link standing}). Unlike
   // the id, the label can collide between offline clones (both mint `ADR-7`);
   // that is a legibility clash the projection surfaces, never a merge (the ids
   // stay distinct). Between two sessions of this installation it cannot: the count
@@ -315,7 +319,7 @@ function transition(
   const successor = by === undefined ? undefined : canonicalId(by);
   return onTheRecordAsItStands(
     ctx,
-    () => standing(ctx, [id, successor], (cache, one) => cache.getDecision(one)),
+    () => standing(ctx, [id, successor], projectDecisions),
     (decisions, earlier): Judged<DecisionTransitionOk | DecisionWriteError> => {
       const vetoed = input.refusedWhen?.();
       if (vetoed !== undefined) return { refuse: { ok: false, ...vetoed } };

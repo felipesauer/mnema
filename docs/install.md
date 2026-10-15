@@ -6,20 +6,30 @@ record to the host's sessions. Install the binary first, then the plugin for you
 ## The binary
 
 **Nothing is on npm yet**, so `npm i -g @mnema/code` answers 404 until the first
-publication. Until then, install the pre-release `v0.2.0-beta`: `@mnema/code` depends on
-the other four packages, so the five tarballs go in one command.
+publication. Until then, build it from the source. It needs Node `^24.15.0 || >=26.0.0`; the
+pnpm version comes from the repository's `packageManager` through corepack. `@mnema/code`
+depends on the other four packages, so the five tarballs go in one command:
 
 ```sh
-npm i -g \
-  https://github.com/felipesauer/mnema/releases/download/v0.2.0-beta/mnema-chain-0.2.0-beta.tgz \
-  https://github.com/felipesauer/mnema/releases/download/v0.2.0-beta/mnema-core-0.2.0-beta.tgz \
-  https://github.com/felipesauer/mnema/releases/download/v0.2.0-beta/mnema-context-0.2.0-beta.tgz \
-  https://github.com/felipesauer/mnema/releases/download/v0.2.0-beta/mnema-stacks-0.2.0-beta.tgz \
-  https://github.com/felipesauer/mnema/releases/download/v0.2.0-beta/mnema-code-0.2.0-beta.tgz
+git clone https://github.com/felipesauer/mnema.git && cd mnema
+mkdir -p "$HOME/.local/bin" && export PATH="$HOME/.local/bin:$PATH"   # add the export to your shell's startup file
+corepack enable --install-directory ~/.local/bin && pnpm install --frozen-lockfile && pnpm build
+dest="$(mktemp -d)"
+for p in chain core context stacks code; do (cd "packages/$p" && pnpm pack --pack-destination "$dest"); done
+npm i -g --prefix ~/.local "$dest"/*.tgz
 ```
 
-The release carries a `SHA256SUMS` beside them. Once the packages are published, this is
-the install:
+`--prefix ~/.local` installs under your own home, so it needs no root. Without it, a Node installed by the
+system has npm's global prefix at `/usr`, and `npm i -g` stops at `EACCES` on `/usr/lib/node_modules/@mnema`.
+Likewise a plain `corepack enable` writes its `pnpm` shim beside `node` and needs permission there; the
+`--install-directory ~/.local/bin` above puts it in your home instead (if you installed Node under your own
+home, a plain `corepack enable` is enough).
+
+The lines are for `sh` and a `~` the shell expands; they do not run as written in the Windows `cmd` or PowerShell.
+
+To update, `git pull` in the clone and run the same steps again.
+
+Once the packages are published, this is the install:
 
 ```sh
 npm i -g @mnema/code
@@ -32,12 +42,12 @@ is ESM-only. `npm view @mnema/code version` says whether the publication has hap
 404 means it has not. To run it from a clone instead, see
 [Building it from source](build-from-source.md).
 
-**If `npm i -g` fails with a permissions error** (Node installed by the system, so npm's global
-prefix is `/usr` and writing there needs `sudo`), install under your own home instead, with the
-same arguments after the flag, and put its `bin` on the `PATH`:
+**If `npm i -g @mnema/code` fails with a permissions error** (Node installed by the system, so npm's
+global prefix is `/usr` and writing there needs `sudo`), install under your own home instead, and put
+its `bin` on the `PATH`:
 
 ```sh
-npm i -g --prefix ~/.local @mnema/code   # or the five tarballs above
+npm i -g --prefix ~/.local @mnema/code
 export PATH="$HOME/.local/bin:$PATH"     # add this line to your shell's startup file
 ```
 
@@ -170,18 +180,6 @@ for it, and the extension's hooks file gives each hook 15 seconds; on Windows `m
 run at all, since Node does not start a `.cmd` without a shell — the script is then silent; that was
 not run. A run without a person (`gemini -p`) in a folder the host does not trust does not start
 unless it is told to trust it (`--skip-trust`).
-
-## Which `mnema` the newer plugins need
-
-The plugin files of Codex, Copilot CLI, OpenCode and
-Gemini CLI come from `main`, and the refusal they ask for is answered by
-`mnema before-a-write --host codex` (`copilot`, `opencode`, `gemini`), a host the earlier
-pre-release `v0.1.0-beta` does not know: measured on that tag, it answers
-`--host takes one of vscode, cursor` and exits 1, and each plugin lets the write through in silence.
-With `v0.1.0-beta`, then, these four hosts get the server and the opening and **no refusal and, in
-Copilot CLI, no pause for a person**; Codex's opening is also not cut to its own ceiling (the
-document is cut at 10,000 units, which Codex may truncate on a long record). The refusal needs
-`v0.2.0-beta` or a later release; `mnema --version` says which one you have.
 
 ## Any other host with an MCP client
 

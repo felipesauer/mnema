@@ -104,10 +104,10 @@ import {
   IdentityUnavailableError,
   isSearchKind,
   keyRefusalIn,
-  locateLinkScope,
   type ProjectionCache,
   type ReferenceDirection,
   type ReplacedClass,
+  type ResolvedTrees,
   type Scope,
   SEARCH_KINDS,
   SKILL_ACTIONS,
@@ -150,7 +150,14 @@ import {
   scopedEventsOf,
 } from '../intelligence-source.js';
 import { type Addressed, addressed, resolveLabel } from '../label-as-address.js';
-import { isLabelShaped, linkRefusal } from '../link-target.js';
+import {
+  isLabelShaped,
+  linkRefusal,
+  locateLinkAsRecorded,
+  outsideTheProject,
+  targetAsRecorded,
+  targetRecordedAs,
+} from '../link-target.js';
 import {
   movedDisplay,
   successorOnlyForASupersede,
@@ -199,7 +206,7 @@ import {
   type WorkspaceTree,
 } from './locate.js';
 import { personSignedIn, routedTo, routeWrite } from './route.js';
-import { anchorIn, openWrite, type Session, whichOfWrite } from './session.js';
+import { anchorIn, openWrite, type Session, type WriteTarget, whichOfWrite } from './session.js';
 
 /** A memory was captured, or the requested scope was not available here. */
 export type CaptureResult =
@@ -540,6 +547,8 @@ export type LinkRecordedResult =
   | (Extract<FactRecordedResult, { readonly ok: true }> & {
       /** What the address covers, absent for a relation whose target is an id. */
       readonly reach?: AddressReach;
+      /** The target as the tree holds it, present only where that is not what was typed (an absolute path under the root, recorded relative). */
+      readonly recordedTarget?: string;
       /**
        * WHICH TREE HOLDS THE RULE THIS LINK NAMES — absent when none here does.
        *
@@ -586,11 +595,23 @@ export function runLinkKnowledge(
   if (!target.ok) return ambiguousLabel(target.message);
   const unresolved = linkRefusal({ subject: subject.id, target: target.id });
   if (unresolved !== undefined) return { ok: false, code: 'UNKNOWN_TARGET', message: unresolved };
+  // The public tree travels to every clone: a target no clone can open is refused there, as the
+  // command line refuses it. The private and global trees take any path.
+  const publicRoot =
+    route.scope === 'public' && trees.projectPublic !== undefined
+      ? dirname(trees.projectPublic)
+      : undefined;
+  const outside =
+    publicRoot === undefined ? undefined : outsideTheProject(input.rel, target.id, publicRoot);
+  if (outside !== undefined) return { ok: false, code: 'OUTSIDE_PROJECT', message: outside };
+  // What the public tree records is the target relative to the root when it was typed absolute.
+  const recordedTarget =
+    publicRoot === undefined ? target.id : targetAsRecorded(input.rel, target.id, publicRoot);
   const { ctx, run, which } = openWrite(session, route.scope, route.target);
   const recorded = ctx.writer.exclusively(() => {
     const written = linkKnowledge(ctx, {
       subject: subject.id,
-      target: target.id,
+      target: recordedTarget,
       rel: input.rel,
       which,
       run,
@@ -607,7 +628,7 @@ export function runLinkKnowledge(
   // whenever the caller named one. A write that landed outside a project has no root
   // for an address to be relative to and reports no reach.
   const root = trees.projectPublic === undefined ? undefined : dirname(trees.projectPublic);
-  const reach = root === undefined ? undefined : reachOfAddress(recorded.rel, target.id, root);
+  const reach = root === undefined ? undefined : reachOfAddress(recorded.rel, recordedTarget, root);
   // WHERE THE RULE THIS LINK NAMES LIVES, asked here for the same reason the command
   // line asks it: a link is accepted with a subject in any tree or in none, and this is
   // the moment the caller can still write the rule where it belongs. The rule is the
@@ -629,6 +650,7 @@ export function runLinkKnowledge(
     scope: route.scope,
     ...routedTo(session, route),
     ...(reach !== undefined ? { reach } : {}),
+    ...(recordedTarget !== target.id ? { recordedTarget } : {}),
     ...(subjectScope !== undefined ? { subjectScope } : {}),
     ...forwardReplacement(recorded),
   };
@@ -1026,7 +1048,7 @@ export type RetractLinkResult =
  * `retract_link` — takes a link back, the MCP counterpart of `mnema unlink`, and the same two
  * steps in the same order: both ends are addresses first (an `ADR-<n>` label becomes the id of
  * the one decision it names, as `link_knowledge` records it), the link is followed to the tree
- * it was recorded in ({@link locateLinkScope}), and the write is the core's {@link retractLink},
+ * it was recorded in ({@link locateLinkAsRecorded}), and the write is the core's {@link retractLink},
  * which refuses any identity but the one that recorded the link, saying whose it is. Attributed
  * to the connecting agent (`which`) and pinned to the run, as every write of this server is.
  */
@@ -1038,16 +1060,30 @@ export function runRetractLink(
   if (!subject.ok) return ambiguousLabel(subject.message);
   const target = addressedIn(session, input.target);
   if (!target.ok) return ambiguousLabel(target.message);
-  const edge = { subject: subject.id, target: target.id, rel: input.rel };
-  const scope = locateLinkScope(session.trees, edge, catalogUpcasters());
-  if (scope === undefined) {
+  const typed = { subject: subject.id, target: target.id, rel: input.rel };
+  // The target as typed first, then as the public tree records an absolute path under the root,
+  // project by project: the session's own first, then the others of the workspace. The write goes
+  // to the project that holds the link, as it does for any entity the workspace holds elsewhere.
+  const upcasters = catalogUpcasters();
+  let located: ReturnType<typeof locateLinkAsRecorded>;
+  let home: WriteTarget | undefined;
+  for (const project of [undefined, ...session.workspaceProjects]) {
+    located = locateLinkAsRecorded(project?.trees ?? session.trees, typed, upcasters);
+    if (located !== undefined) {
+      home = project;
+      break;
+    }
+  }
+  if (located === undefined) {
     return {
       ok: false,
       code: 'UNKNOWN_LINK',
-      message: `no link ${oneLine(edge.subject)} —${oneLine(edge.rel)}→ ${oneLine(edge.target)} is in this project or the global tree`,
+      message: `no link ${oneLine(typed.subject)} —${oneLine(typed.rel)}→ ${oneLine(typed.target)} is in this workspace or the global tree`,
     };
   }
-  const { ctx, run, which } = openWrite(session, scope);
+  const { scope } = located;
+  const edge = { ...typed, target: located.target };
+  const { ctx, run, which } = openWrite(session, scope, home);
   const retracted = ctx.writer.exclusively(() => {
     const written = retractLink(ctx, { ...edge, reason: input.reason, which, run });
     // Checkpoint so the retraction is fully signed the moment the tool returns.
@@ -1061,6 +1097,7 @@ export function runRetractLink(
     target: retracted.target,
     rel: retracted.rel,
     scope,
+    ...routedTo(session, { scope, ...(home !== undefined ? { target: home } : {}) }),
     ...forwardReplacement(retracted),
   };
 }
@@ -1940,7 +1977,7 @@ export type GuardResult =
        * No tree of the workspace holds a task with this id, or several records do — or the key of
        * this machine would be refused in the task's tree (nobody signs there, or the person's key is
        * protected by a passphrase that is not at hand) and the write this simulates would be refused
-       * with the code that refusal carries. Held by the three tests of
+       * with the code that refusal carries. Held by the four tests of
        * `a-session-opens-where-nothing-signs.test.ts` that pair the guard with the write.
        */
       readonly code:
@@ -1967,7 +2004,7 @@ export type GuardResult =
  * key what the write would ask ({@link keyRefusalIn}, which opens no key and makes none) and answers
  * the refusal the write would give — the agent not enrolled in that tree, or retired, or the
  * person's key protected by a passphrase with none in the environment — in the write's own words and
- * code, before the gate is consulted, as the write does (the three tests of
+ * code, before the gate is consulted, as the write does (the four tests of
  * `a-session-opens-where-nothing-signs.test.ts` that pair the guard with `task_transition`). What a
  * read cannot know it does not say: a passphrase that is set but wrong, the record busy at that
  * moment, another write changing the task before the move; and where this machine has no key at all
@@ -2275,6 +2312,15 @@ function requireProject(
 }
 
 /**
+ * The project trees of the workspace: the session's own, and the other projects it was told of.
+ * What a path is recorded as depends on the project whose root contains it, so a reading that
+ * takes a path asks every project, not the primary alone.
+ */
+function projectsOf(session: Session): ResolvedTrees[] {
+  return [session.trees, ...session.workspaceProjects.map((project) => project.trees)];
+}
+
+/**
  * `audit_timeline` — the whole history of one entity across every project of the
  * workspace.
  *
@@ -2298,7 +2344,8 @@ export function runTimelineTool(session: Session, input: { id: string }): Timeli
   if (refused !== undefined) return refused;
   const named = addressedIn(session, input.id);
   if (!named.ok) return ambiguousLabel(named.message);
-  return { ok: true, value: timeline(workspaceCaches(session), named.id) };
+  const recordedAs = targetRecordedAs(projectsOf(session), named.id);
+  return { ok: true, value: timeline(workspaceCaches(session), named.id, recordedAs) };
 }
 
 /** The `audit_refs` result — the graph around an entity, or a refusal. */
@@ -2337,7 +2384,15 @@ export function runReferencesTool(
   if (refused !== undefined) return refused;
   const named = addressedIn(session, input.id);
   if (!named.ok) return ambiguousLabel(named.message);
-  return { ok: true, value: references(workspaceCaches(session), { ...input, id: named.id }) };
+  const recordedAs = targetRecordedAs(projectsOf(session), named.id);
+  return {
+    ok: true,
+    value: references(workspaceCaches(session), {
+      ...input,
+      id: named.id,
+      ...(recordedAs !== undefined ? { recordedAs } : {}),
+    }),
+  };
 }
 
 /** The `governing_rules` result — the rules addressed at a path, or a refusal. */

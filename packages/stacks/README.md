@@ -125,7 +125,7 @@ entries of an index folder, and `--json` gives them to a program; it reads the f
 npm i @mnema/stacks
 ```
 
-Nothing is on npm yet, so that answers 404 until the first publication; the [install page](../../docs/install.md) has the install of the pre-release `v0.2.0-beta` from its tarballs.
+Nothing is on npm yet, so that answers 404 until the first publication; the [install page](../../docs/install.md) has the install from the source.
 
 **It is released because `@mnema/code` depends on it**: `mnema stack add` validates and digests a stack with this
 library before it writes anything. The exports are the surface that verb needed and move when it moves; the part
