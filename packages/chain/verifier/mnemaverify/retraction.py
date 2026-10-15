@@ -51,9 +51,9 @@ def foreign_retractions(entries_by_tail: dict[str, list[Entry]]) -> list[Foreign
             if kind in NOTE_KINDS:
                 authors[str(event.get("subject"))] = event.get("who")
             elif kind == "knowledge.linked":
-                whos = asserters.setdefault(_edge(event), [])
-                if event.get("who") not in whos:
-                    whos.append(event.get("who"))
+                linked = asserters.setdefault(_edge(event), [])
+                if event.get("who") not in linked:
+                    linked.append(event.get("who"))
     found: list[Foreign] = []
     for tail in tails:
         for entry in entries_by_tail[tail]:
