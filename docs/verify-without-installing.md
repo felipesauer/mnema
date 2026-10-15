@@ -28,6 +28,12 @@ prints what it does **not** check before it prints a verdict. Writing it found
 twenty-seven points where the specification was not enough to work from, and those
 are the deliverable half of it — `mnema_verify.py gaps` lists them.
 
+What it does not judge yet is the workflows. [`FORMAT.md`](../packages/chain/FORMAT.md)
+§6.7 makes the moves a decision, a task, a skill and a run may make part of the format, and
+this product's `verify` names in its census a move they do not allow; the second reader
+accepts every move by its row of `event-schema.json` and names none yet. The two verdicts
+agree on such a record — both verify it — and only the product's says the note.
+
 What a second reader does not buy is worth saying here too: it is independent in
 the technical sense — another language, written from the document, sharing no
 code — and not in the social one, being the same author and the same repository.

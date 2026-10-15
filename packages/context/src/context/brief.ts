@@ -186,7 +186,7 @@ export interface Brief {
   readonly collisions: readonly AdrCollision[];
   /**
    * The decisions and patterns PRINTED above that left one state more than once, by moves on
-   * machines that had not seen each other, or by a move written past the gate — what two machines
+   * machines that had not seen each other — what two machines
    * moving one rule apart leave (`divergentMoves` in
    * @mnema/core). Empty in the ordinary case, which keeps the document's bytes what they were.
    *

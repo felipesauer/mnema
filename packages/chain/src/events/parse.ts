@@ -4,9 +4,9 @@
  * A line read from the chain is untrusted bytes: it may be malformed, from a
  * newer catalog, forged, or simply wrong. Parsing turns it into a
  * `CatalogEvent` or fails loudly — it never returns a half-valid event. This is
- * STRUCTURAL validation (the shape the catalog promises), not the workflow
- * gate: the gate ran once at write time and its verdict is already baked into
- * the fact. Reading replays the fact; it does not re-judge it.
+ * STRUCTURAL validation (the shape the catalog promises), not the workflow: a
+ * move the workflow does not allow is a line this parses, and that the reading
+ * of the record does not apply (`workflow.ts`, FORMAT.md §6.7).
  *
  * A closed catalog means a CLOSED SHAPE: an event may carry ONLY the fields its
  * kind declares. WHAT A KIND DECLARES LIVES IN `schema.ts` AND NOWHERE ELSE —

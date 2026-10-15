@@ -305,8 +305,12 @@ schema.
 
 ```json
 {"schemaVersion":1,"describedBy":"FORMAT.md","rules":{…},"envelope":{…},"transitionFields":{…},
- "contracts":[{"kind":"memory.captured","v":1,"payload":{"content":"string"}}, …]}
+ "contracts":[{"kind":"memory.captured","v":1,"payload":{"content":"string"}}, …],
+ "workflows":{"decision.transitioned":{"states":[…],"birth":{…},"moves":[…]}, …}}
 ```
+
+The `workflows` object is not a field declaration: it says which of the lines a declaration
+admits a reader applies, and §6.7 is its normative statement.
 
 - **A contract is selected by `kind` and `v` together**, which is the pair every
   event already carries (§7). A reader looks up the row whose `kind` and `v` both
@@ -828,6 +832,73 @@ these kinds refuses them as a (kind, v) its table does not hold (§4.1), so a re
 does not verify there
 (`packages/chain/src/chain/second-reader-agrees-on-enrolment.test.ts`).
 
+### 6.7 A move of a workflow
+
+Four kinds move a subject through a workflow: `decision.transitioned`, `task.transitioned` and
+`skill.transitioned`, each through the table the `workflows` object of `event-schema.json`
+holds under its kind, and `run.ended`, which closes a run. Nothing about their bytes, their
+chaining or their signature differs from any other kind, and they are **not part of the fold of
+§6.2**. What this section adds is which of them a reader applies.
+
+A table has the workflow's `states`, its `birth` and its `moves`. Each move is a row: a `from`
+state, an `action`, the `to` state it reaches, the proof fields it `requires` (names of
+`transitionFields`, §4.1), and, on the two rows of the decision workflow whose action is
+`supersede`, `"by": true`. In summary, and normatively in the file:
+
+| kind | birth | moves |
+|---|---|---|
+| `decision.transitioned` | `null → proposed` by `create` | `proposed → accepted` by `accept`, `proposed → rejected` by `reject` (each requires `note`); `proposed → superseded` and `accepted → superseded` by `supersede` (requires `reason`, names `by`) |
+| `task.transitioned` | `null → DRAFT` by `create` | twelve rows, among them `DONE → IN_PROGRESS` by `reopen`: the one workflow with a cycle |
+| `skill.transitioned` | `null → proposed` by `create` | `review`, `adopt`, `reject` (each requires `note`) and `adopted → deprecated` by `deprecate` (requires `reason`) |
+
+**A reader judges every move at its point in the merged order** of "Reading many tails", and
+applies it only when it is legal:
+
+- **A birth** (`from: null`) is legal when its `action` and `to` are the table's `birth`, and the
+  subject has no state yet. A second birth of a subject is not applied.
+- **Any other move** is legal when the subject has a state at that point (a birth before it);
+  `(from, action)` is a row and `to` is that row's `to`, so a state that is not one of the table's
+  is never reached; every field the row `requires` is present in `fields`; the row with `"by":
+  true` names in `by` a decision whose birth the record holds and that is not its own subject,
+  and no other row carries a `by`; and **`from` is the state the subject is in at that point, or
+  the state its writer saw.**
+- **`run.ended`** is legal when the run has a `run.started` before it and no `run.ended` applied
+  before it, or when the run was open in what its writer saw.
+
+**The state at a point** is the `to` of the last move applied before it, in the merged order —
+so a move that is not applied moves nothing after it either. **The state its writer saw** is
+the same fold over only the moves its writer had read: the entries of its own tail before it,
+and, on every other tail, the entries up to the last one its own tail cites in `after` at or
+before it. A citation of a hash the record does not hold reads as nothing seen, as it is
+nothing ordered. The first of the two is what reads a record whose writers cited nothing as it
+was written; the second is what keeps two machines that moved one subject without seeing each
+other a divergence and not an illegal move ("What is detected", in "Reading many tails").
+
+**A move that is not legal is not applied, and it is not a break.** A reader reads the subject
+as if the move had not been written — its state, the moves it says it made, the divergences —
+and this product's `verify` names the move in its census, with the rule it broke, informational,
+the exit unchanged: the precedent of a stranger's retraction (§6.4). The event is intact,
+hashed, chained and signed by a key of its own `who`; what it lacks is a place in the workflow,
+which is a reading of the record rather than a fact about its bytes
+(`packages/chain/src/events/workflow.test.ts`; `packages/chain/src/chain/moves.test.ts`;
+`packages/chain/src/chain/the-census-names-a-move-the-workflow-does-not-allow.test.ts`;
+`packages/core/src/projections/a-move-the-workflow-does-not-allow-is-not-applied.test.ts`).
+
+**A record this section reads differently from before it.** The product's writer judges a move
+by the same table before it appends, so a record it wrote holds no move this section refuses,
+with two exceptions it could write before it judged the chain and cited what it read. Two moves
+out of one state on one tail — two writes that raced before the tail had a lock, or a projection
+edited on the disk — are one move and a second one its writer had seen leave that state: the
+second is not applied, and is named. And a machine that cited nothing (every record before
+citations) and moved a subject born on another machine saw, as far as the bytes say, no birth:
+its move is legal only from the state the subject is in at its point of the merged order, so a
+clock behind what it had read, or a move concurrent with another machine's, puts it among the
+moves not applied. Both are named, and neither changes a verdict.
+
+The second reader beside this file does not judge a move yet: it accepts each by its row of
+`event-schema.json`, as it accepts any kind, and ignores `workflows`. A binary from before this
+section applies every move, whatever its `from`, `action` and `to`.
+
 ## 7. Versions, and why a proof is never recomputed over a reading
 
 Every event carries `kind` and `v`. Together they select exactly one payload
@@ -1121,10 +1192,11 @@ and not again until that tail moves"). A writer cites the tails of its own recor
 **What a citation fixes.** Three honest records the selection by `at` alone read wrong, each
 written by a machine whose clock is an hour behind, on top of what it had pulled
 (`packages/core/src/projections/the-order-follows-what-was-read.test.ts`): a decision superseded
-there read as still in force; a task cancelled there read as reopened, with the cancellation named
-as a divergence; a link retracted there went on standing. With the citation each reads as it
-happened ("with the citation it reads superseded, and its successor in force"; "with the citation
-it reads cancelled, and nothing is named"; "with the citation the link is retracted"). The fourth is
+there read as still in force; a task cancelled there read as started, its cancellation a move
+from a state the task was not in (§6.7); a link retracted there went on standing. With the
+citation each reads as it happened ("with the citation it reads superseded, and its successor
+stands"; "with the citation it reads cancelled, and nothing is named"; "with the citation the link
+is retracted"). The fourth is
 §6.2's: an enrolled machine's first event refused by `verify` on an honest record.
 
 **The order does not depend on how the reader met the tails.** The tails read as the same sequence
@@ -1177,7 +1249,11 @@ are listed in (MR2: "with no two heads on the same instant, the parts joined are
 signed by machines that had not seen each other; the reader names them whichever of the two the
 sequence puts last, and removes neither
 (`packages/core/src/projections/divergent-moves.test.ts`, "says the decision two machines moved
-out of `proposed`, with both moves as evidence"). A task has a state machine with a cycle, so the
+out of `proposed`, with both moves as evidence"). Two moves out of one state where the writer of
+the second had seen the first are not that: the second is a move the workflow does not allow
+(§6.7), not applied and named in the census, and no divergence is said of it
+(`packages/core/src/projections/a-move-the-workflow-does-not-allow-is-not-applied.test.ts`,
+"takes a second move out of one state, on the tail that saw the first, for no divergence"). A task has a state machine with a cycle, so the
 same fact cannot be read from its `from` alone: tasks are read by their position in the sequence
 (`packages/core/src/projections/divergent-moves.test.ts`, "the task table has one — a reopened
 task leaves a state again — so tasks are read by their order"). Two decisions of one record that
@@ -1190,15 +1266,18 @@ moves neither of which cites the other. The state a projection shows is the one 
 the sequence leaves, so it is whichever move the selection puts last, and the divergence is named
 beside it (MR4: "what is read of X is what the model reads of X"). Nothing here corrects a clock:
 `at` stays the wall clock its writer stamped. Where nothing is cited, a machine whose clock is
-behind still sorts its events earlier than events it had already read, and for tasks that can make
-an honest sequence read as a divergence; that is what a record written before citations reads as,
-fixed and not endorsed (clocks that disagree, with nothing cited: "uncited, a clock that runs
-behind sorts an honest task sequence out of its order, and the move is named as a divergence").
+behind still sorts its events earlier than events it had already read; that is what a record
+written before citations reads as, fixed and not endorsed. A writer that cited nothing is judged
+by the state its subject is in at its point of that sequence (§6.7), so a move it made on top of
+what it had read, sorted before it, is one no reader applies (clocks that disagree, with nothing
+cited: "uncited, a clock that runs behind sorts an honest task sequence out of its order, and the
+move is not applied").
 What does not change under any clock is the order inside a tail, and that two moves out of one
-state of a decision are named (the same: "uncited, a machine with a skewed clock keeps its own
-order, and two moves out of one state are always named"). Whether two moves of a task that do not
-cite each other were concurrent is not yet read from the citations: tasks are still read by their
-position.
+state of a decision are named — as a divergence, or as a move not applied (the same: "uncited, a
+machine with a skewed clock keeps its own order, and two moves out of one state are always
+named"). A move of a task out of a state the task had already left at that point is applied
+only when its writer had not seen it leave (§6.7), so the moves the task reading names are, by
+the citations too, moves that did not see each other.
 
 ## What this document does **not** promise
 

@@ -46,16 +46,17 @@ export function linkBreakNotice(breaks: readonly ScopedLinkBreak[]): readonly Li
  * every move out of the state, picks none, and says which one the answer shows. Every value in
  * it came out of the record, so each goes through {@link onOneLine}.
  *
- * IT USED TO SAY THE MOVES "DID NOT SEE EACH OTHER", and two moves out of one state on ONE tail
- * did: the second was written by a writer whose own tail held the first. That record is not made
- * by two machines apart but past the gate — a move written by hand with a valid key, or by a
- * version from before the gate judged the record under the lock — and the reading cannot yet tell
- * the two apart, so the line names both.
+ * IT SAYS THE MOVES DID NOT SEE EACH OTHER, and that is now what the reading holds it to. Two
+ * moves out of one state where the writer of the second had seen the first — on one tail, or
+ * citing it — are not a divergence: the second is a move the workflow does not allow, which no
+ * reader applies and `verify` names (FORMAT.md §6.7). For a while this line named both causes,
+ * because the reading could not tell a move written past the gate from two machines apart; the
+ * reading tells them apart now, and a move past the gate never reaches this line.
  */
 export function divergenceNotice(divergent: readonly DivergentMove[]): readonly Line[] {
   return divergent.map((move) =>
     fact(
-      onOneLine`this ${move.kind} left ${move.from} more than once: to ${move.to.join(', then ')} — by moves on machines that had not seen each other, or by a move written past the gate. Each is a signed fact of the record; the state shown is the last of them in its order.`,
+      onOneLine`this ${move.kind} left ${move.from} more than once: to ${move.to.join(', then ')} — by moves on machines that had not seen each other. Each is a signed fact of the record; the state shown is the last of them in its order.`,
       0,
     ),
   );

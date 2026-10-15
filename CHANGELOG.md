@@ -12,6 +12,21 @@ with its own changelog.
 
 ### Added
 
+- **The workflows a decision, a task, a skill and a run move through are part of the format, and no reader applies a
+  move they do not allow.** `FORMAT.md` §6.7 and the `workflows` object of `event-schema.json` hold the tables the gate
+  already wrote by, so the artifact's digest changes. A move is judged at its point in the merged order: a birth once, a
+  row of its table with the proof the row requires, a supersede naming a decision the record holds, a run ended once,
+  and a `from` that is the state the subject is in there or the one its writer saw (its own tail, and what it cites). A
+  move written by hand with a valid key that breaks one of these (a rejected decision accepted, a state that does not
+  exist) stays on the record and is applied by no reading: not by `show`, `status` or `brief`, not by the projection
+  kept in the tree, and not by the reading of one subject a gate judges a move on. `verify` names it in its census
+  (`illegal-move`, with the rule), informational: the verdict, the level and the exit are what they were. Two moves out
+  of one state where the second writer had seen the first are not said as a divergence any more, and `show` and
+  `brief` say that a divergence is moves on machines that had not seen each other. A record read differently from
+  before: two moves out of one state on one tail (writes that raced before the tail had a lock, before 2 October), and
+  a move by a machine that cited nothing of a subject born on another one, sorted before what it had read or concurrent
+  with another move; each is now not applied, and named. The second reader does not judge moves yet. A binary from
+  before applies every move.
 - **`mnema key restore --agent <name> <file>` puts an agent's key where a CI runner's agent signs with it, and the Action's page has the recipe.**
   A runner begins every job empty, so the key comes from a secret: the verb installs it in the agent's own folder
   under the data directory, and refuses before writing anything a key the project's committed record does not enrol as

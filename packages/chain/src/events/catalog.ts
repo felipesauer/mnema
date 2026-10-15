@@ -89,8 +89,11 @@ export interface TaskCreatedV1 extends Envelope {
  * instead, a historical action the current catalog no longer lists would be
  * rejected on read — the very drift the literal-string design exists to avoid.
  *
- * Every field is optional here; the gate is what makes one mandatory for a given
- * action. A reader replays the fact as written and does not re-judge it.
+ * Every field is optional here; the workflow is what makes one mandatory for a
+ * given action — the gate when it writes, and every reader when it reads, which
+ * does not apply a move without the proof its row requires (`workflow.ts`,
+ * FORMAT.md §6.7). The line still parses: the shape is this file's, the rule is
+ * the workflow's.
  */
 export interface TransitionFields {
   /** Why a task was canceled, blocked, or reopened. */
@@ -113,11 +116,11 @@ export interface TransitionFields {
  * `from` is `null` for exactly one transition: the one that gives a task its
  * initial state at birth. A task's state is never carried by its creation
  * event; it is only ever established by a transition, and the birth transition
- * (`from: null`, `action: "create"`) is the first of them. That single rule —
- * "current state is the `to` of the last transition" — reads state without ever
- * consulting the workflow, so replaying a task written long ago yields the
- * state that was recorded, not one re-derived from a workflow that has since
- * moved on.
+ * (`from: null`, `action: "create"`) is the first of them. The rule is that
+ * "current state is the `to` of the last transition the workflow allows": the
+ * workflow is part of the format (`workflow.ts`, FORMAT.md §6.7), so a task
+ * written long ago is read by the tables of the format it was written in, and a
+ * table does not change without the format changing.
  *
  * `fields` carries the transition's proof (the why, links). It is optional at
  * this layer; the workflow gate decides which fields a given action must carry.
@@ -206,7 +209,7 @@ export interface DecisionRecordedV1 extends Envelope {
  *
  * `from` is `null` for exactly one transition: the birth that gives a decision
  * its initial state. The same rule as tasks — current state is the `to` of the
- * last transition, read without ever consulting the workflow.
+ * last transition the workflow allows (FORMAT.md §6.7).
  */
 export interface DecisionTransitionedV1 extends Envelope {
   readonly kind: 'decision.transitioned';
@@ -701,7 +704,7 @@ export interface SkillCreatedV1 extends Envelope {
  *
  * `from` is `null` for exactly one transition: the birth that gives a skill its
  * initial state. The same rule as tasks and decisions — current state is the
- * `to` of the last transition, read without ever consulting the workflow.
+ * `to` of the last transition the workflow allows (FORMAT.md §6.7).
  */
 export interface SkillTransitionedV1 extends Envelope {
   readonly kind: 'skill.transitioned';

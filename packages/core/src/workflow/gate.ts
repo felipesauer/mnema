@@ -2,8 +2,9 @@
  * The gate: the pure function that decides whether a requested task transition
  * is authorized, and turns it into the fact to record.
  *
- * This is where "what is a legal move" is enforced, once, at write time (a
- * projection later replays the fact without re-judging it). The gate is a pure
+ * This is where "what is a legal move" is enforced at write time, by the table
+ * every reader judges a move by again when it reads (FORMAT.md §6.7: a move the
+ * table does not allow is not applied). The gate is a pure
  * function of its inputs — no clock, no I/O, no chain — so it is exhaustively
  * testable and always agrees with itself. It answers one question: given the
  * task's current state and a requested action, may this move be recorded, and

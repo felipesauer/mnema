@@ -6,7 +6,8 @@
  * these, which run the gate FIRST and append ONLY if the gate authorized the
  * move. That is the write-time enforcement the whole design rests on: an event
  * reaches the chain only after the gate judged it legal, proven, and
- * authorized, so a projection can later replay it without re-judging.
+ * authorized — by the same table every reader judges it by when it reads
+ * (FORMAT.md §6.7), so what the gate writes is what the readers apply.
  *
  * Reading the current state comes from the chain itself (the source of truth),
  * not the SQLite cache — a stale cache must never let an illegal move through.
