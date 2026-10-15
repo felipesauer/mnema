@@ -198,7 +198,7 @@ function admitted(db: SqliteDatabase, arrived: readonly CatalogEvent[]): boolean
   const select = db.prepare('SELECT acc FROM fold_state WHERE fold = ? AND key = ?');
   const now = new Map<string, string | undefined>();
   const stateOf = (family: keyof typeof STATE_OF, id: string): string | undefined => {
-    const key = `${family} ${id}`;
+    const key = `${family}\u0000${id}`;
     if (!now.has(key)) {
       const stored = select.get(STATE_OF[family].fold, id) as { acc: string } | undefined;
       now.set(key, stored === undefined ? undefined : STATE_OF[family].now(stored.acc));
@@ -215,7 +215,7 @@ function admitted(db: SqliteDatabase, arrived: readonly CatalogEvent[]): boolean
     for (const event of arrived) {
       const family = familyOf(event.kind);
       if (family === undefined) continue;
-      const key = `${family} ${event.subject}`;
+      const key = `${family}\u0000${event.subject}`;
       if (event.kind === 'run.started') {
         if (stateOf(family, event.subject) === undefined) now.set(key, RUN_OPEN);
         continue;

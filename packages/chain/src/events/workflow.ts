@@ -109,6 +109,9 @@ export type TransitionKind = keyof typeof WORKFLOWS;
  */
 export type MoveEvent = Extract<CatalogEvent, { readonly kind: TransitionKind | 'run.ended' }>;
 
+/** A move of one of the three tables: every move but a run's end. */
+type TransitionMove = Exclude<MoveEvent, { readonly kind: 'run.ended' }>;
+
 /** The state a run is in: `open` from its start, `ended` from its end. */
 export const RUN_OPEN = 'open';
 export const RUN_ENDED = 'ended';
@@ -170,70 +173,76 @@ export function judgeMove(event: MoveEvent, standing: MoveStanding): IllegalMove
   if (event.kind === 'run.ended') return judgeEnd(event, standing);
   const machine: Workflow = WORKFLOWS[event.kind];
   const { from, to, action } = event.payload;
-  const said = `${from === null ? 'null' : oneLine(from)} → ${oneLine(to)} by "${oneLine(action)}"`;
   if (from === null) {
-    if (standing.now !== undefined) {
-      return { rule: 'born-twice', detail: `a birth (${said}) of a subject born already` };
-    }
+    if (standing.now !== undefined)
+      return ruled('born-twice', event, ', a birth of a subject born already');
     if (action !== machine.birth.action || to !== machine.birth.to) {
-      return {
-        rule: 'not-in-the-table',
-        detail: `a birth ${said}, where a birth is null → ${machine.birth.to} by "${machine.birth.action}"`,
-      };
+      return ruled(
+        'not-in-the-table',
+        event,
+        `, where a birth is null → ${machine.birth.to} by "${machine.birth.action}"`,
+      );
     }
-    return judgeSuccessor(event, undefined, said, standing);
+    return judgeSuccessor(event, undefined, standing);
   }
   if (standing.now === undefined) {
-    return { rule: 'not-born', detail: `a move ${said} of a subject with no birth before it` };
+    return ruled('not-born', event, ' of a subject with no birth before it');
   }
   const row = machine.moves.find((move) => move.from === from && move.action === action);
   if (row === undefined || row.to !== to) {
-    return { rule: 'not-in-the-table', detail: `a move ${said}, which the workflow does not hold` };
+    return ruled('not-in-the-table', event, ', which the workflow does not hold');
   }
   const fields: TransitionFields = event.payload.fields ?? {};
   const missing = row.requires.filter((field) => fields[field] === undefined);
   if (missing.length > 0) {
-    return {
-      rule: 'proof-missing',
-      detail: `a move ${said} without the ${missing.join(', ')} it requires`,
-    };
+    return ruled('proof-missing', event, ` without the ${missing.join(', ')} it requires`);
   }
-  const successor = judgeSuccessor(event, row, said, standing);
+  const successor = judgeSuccessor(event, row, standing);
   if (successor !== undefined) return successor;
   if (from === standing.now) return undefined;
   const seen = standing.seen();
   if (from === seen) return undefined;
-  return {
-    rule: 'not-the-state-seen',
-    detail:
-      `a move ${said} of a subject that was ${oneLine(standing.now)} there, ` +
+  return ruled(
+    'not-the-state-seen',
+    event,
+    ` of a subject that was ${oneLine(standing.now)} there, ` +
       `and ${seen === undefined ? 'not born' : oneLine(seen)} to the one that wrote it`,
+  );
+}
+
+/**
+ * A ruling, worded: the move as it was written — every value of it out of the record, so each
+ * goes through `oneLine` — and then what the rule found.
+ */
+function ruled(rule: MoveRule, event: TransitionMove, detail: string): IllegalMove {
+  const { from, to, action } = event.payload;
+  return {
+    rule,
+    detail: `a move ${from === null ? 'null' : oneLine(from)} → ${oneLine(to)} by "${oneLine(action)}"${detail}`,
   };
 }
 
 /** The `by` of a move: named, born and not the subject where the row asks; absent elsewhere. */
 function judgeSuccessor(
-  event: Exclude<MoveEvent, { readonly kind: 'run.ended' }>,
+  event: TransitionMove,
   row: WorkflowMove | undefined,
-  said: string,
   standing: MoveStanding,
 ): IllegalMove | undefined {
   const by = event.kind === 'decision.transitioned' ? event.payload.by : undefined;
   if (row?.by !== true) {
     if (by === undefined) return undefined;
-    return { rule: 'successor', detail: `a move ${said} that names a successor it does not take` };
+    return ruled('successor', event, ' that names a successor it does not take');
   }
-  if (by === undefined) {
-    return { rule: 'successor', detail: `a move ${said} that names no successor` };
-  }
+  if (by === undefined) return ruled('successor', event, ' that names no successor');
   if (by === event.subject) {
-    return { rule: 'successor', detail: `a move ${said} that names its own subject as successor` };
+    return ruled('successor', event, ' that names its own subject as successor');
   }
   if (!standing.born(by)) {
-    return {
-      rule: 'successor',
-      detail: `a move ${said} naming a successor ${oneLine(by)} the record holds no birth of`,
-    };
+    return ruled(
+      'successor',
+      event,
+      ` naming a successor ${oneLine(by)} the record holds no birth of`,
+    );
   }
   return undefined;
 }
