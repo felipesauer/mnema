@@ -48,7 +48,9 @@ describe('the install from the source', () => {
     expect(BLOCK).toContain('git clone https://github.com/felipesauer/mnema.git');
     expect(BLOCK).toContain('pnpm install --frozen-lockfile');
     expect(BLOCK).toContain('pnpm build');
-    expect(BLOCK).toContain('npm i -g "$dest"/*.tgz');
+    expect(BLOCK).toContain('npm i -g --prefix ~/.local "$dest"/*.tgz');
+    expect(BLOCK).toContain('corepack enable --install-directory ~/.local/bin');
+    expect(BLOCK).toContain('export PATH="$HOME/.local/bin:$PATH"');
     expect(page).not.toMatch(/releases\/download/);
   });
 

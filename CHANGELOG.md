@@ -193,6 +193,11 @@ with its own changelog.
 
 ### Fixed
 
+- **The install page's steps work with a Node installed by the system.** `npm i -g` of the packed tarballs stopped at
+  `EACCES` on `/usr/lib/node_modules/@mnema` where npm's global prefix is `/usr`; the steps now install under
+  `~/.local` (`--prefix ~/.local`, with `~/.local/bin` on the `PATH`), `corepack enable` takes `--install-directory
+  ~/.local/bin`, and the page says when each needs permission.
+
 - **A write refuses a tail cut inside what its last checkpoint signed (`TAIL_DAMAGED`), and leaves it as it was.**
   Before reading the checkpoint, the writer cut the tail's end back to its last newline, so a signed line truncated
   by an edit, a merge or a disk went with it, and so did a signed line that had only lost its newline (which `verify`
