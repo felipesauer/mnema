@@ -93,7 +93,7 @@ function byPlace(a: Named, b: Named): number {
 function bothReaders(record: string) {
   const here = verify(record, catalogUpcasters());
   const product = here.census
-    .flatMap((note) => {
+    .flatMap((note): Named[] => {
       if (note.kind === 'illegal-move')
         return [{ tail: note.tail, seq: note.seq, rule: note.rule }];
       if (note.kind === 'foreign-retraction' || note.kind === 'foreign-link-retraction') {
@@ -445,7 +445,7 @@ function writeDrawn(births: readonly Machine[], steps: readonly Drawn[]): string
         subject,
         table.birth.to,
       );
-    } else {
+    } else if (step.step === 'move') {
       const table = TABLES[step.what];
       const state = views[step.on].get(subject);
       const fromHere = table.moves.filter((row) => row.from === state);
