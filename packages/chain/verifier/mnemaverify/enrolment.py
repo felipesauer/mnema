@@ -68,6 +68,7 @@ import hashlib
 from datetime import datetime, timezone
 from typing import Any, NamedTuple, Optional
 
+from .canonical import utf16_order
 from .checkpoint import IDENTITY_TRIM
 from .ed25519 import verify as ed25519_verify
 from .entry import Entry
@@ -153,7 +154,9 @@ def merged_order(entries_by_tail: dict[str, list[Entry]]) -> Merged:
     hold is ignored and returned. If no head is ready - a cycle, which takes a SHA-256
     collision - the smallest `at` among all heads goes anyway, so the order is total.
     """
-    tails = sorted(tail for tail, entries in entries_by_tail.items() if entries)
+    tails = sorted(
+        (tail for tail, entries in entries_by_tail.items() if entries), key=utf16_order
+    )
     cited = {
         hash_
         for tail in tails
@@ -199,7 +202,7 @@ def merged_order(entries_by_tail: dict[str, list[Entry]]) -> Merged:
     merged: list[tuple[str, Entry]] = []
     forced = 0
     while cursors:
-        live = sorted(cursors)
+        live = sorted(cursors, key=utf16_order)
         chosen = first([tail for tail in live if ready(tail)])
         if chosen is None:
             chosen = first(live)
