@@ -48,7 +48,12 @@ import {
   type Ran,
   type Step,
 } from './support/pty.js';
-import { screenOf, theFirstScreenWhere, theFirstScreenWith } from './support/screen.js';
+import {
+  screenOf,
+  theFirstScreenWhere,
+  theFirstScreenWith,
+  theSettledScreen,
+} from './support/screen.js';
 
 /** The built CLI — the same file the `mnema` bin points at. */
 const CLI = new URL('../dist/cli.js', import.meta.url).pathname;
@@ -379,6 +384,26 @@ function clears(): Step {
   return { types: `${CLEAR}\r`, until: aFrameSince(PROMPT), what: 'started the page over' };
 }
 
+/**
+ * A SETTLED PAGE WHOSE ROW BEING TYPED IS `line`, once a frame has arrived since the step began.
+ * A replay that finds no page, or throws, is not a page showing it.
+ */
+function aPageTyping(
+  line: string,
+  columns: number,
+  rows: number,
+): (bytes: string, since: number) => boolean {
+  const arrived = aFrameSince(PROMPT);
+  return (bytes, since) => {
+    if (!arrived(bytes, since)) return false;
+    try {
+      return rowBeingTyped(theSettledScreen(bytes, columns, rows)) === line;
+    } catch {
+      return false;
+    }
+  };
+}
+
 /** What the row being typed is, on a screen — the last row that carries the prompt. */
 function rowBeingTyped(screen: { readonly rows: readonly string[] }): string {
   const typed = screen.rows.filter((row) => row.includes(PROMPT));
@@ -695,7 +720,14 @@ describe('what it offers is what the session showed, and never the record', () =
         clears(),
         {
           types: `show ${missing}${COMPLETES}`,
-          until: (bytes) => bytes.lastIndexOf(`show ${hidden.id}`) > bytes.lastIndexOf(CLEAR),
+          // THE PAGE ANSWERS, NOT A COMPARISON OF TWO INDEXES. This was `lastIndexOf(show <id>) >
+          // lastIndexOf(CLEAR)`, and it is true while CLEAR has not arrived: -1 loses to any
+          // index, and the roll's echo of the earlier `show` is in the bytes already. On a loaded
+          // machine the step before ends on a frame that was in flight, so this answered before
+          // its own key was written, the leaving keys followed, and the console went away with
+          // the completion never drawn. The row being typed is a property of a page, which is
+          // also what the case asserts below.
+          until: aPageTyping(`${PROMPT} show ${hidden.id}`, columns, rows),
           what: 'finished the record the show had named',
         },
         leaves,
