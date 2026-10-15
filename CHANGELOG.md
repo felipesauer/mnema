@@ -206,6 +206,13 @@ with its own changelog.
   separators came out raw in `show`, `search`, `status` and `--json`; the class written as an escape is now every
   Default_Ignorable_Code_Point, the two separators, U+FFF9 to U+FFFB and U+13430 to U+1343F, as a fixed list at
   Unicode 17. A selector after an emoji is escaped too (`❤\ufe0f`).
+- **The install page's steps work with a Node installed by the system.** `npm i -g` of the packed tarballs stopped at
+  `EACCES` on `/usr/lib/node_modules/@mnema` where npm's global prefix is `/usr`; the steps now install under
+  `~/.local` (`--prefix ~/.local`, with `~/.local/bin` on the `PATH`), `corepack enable` takes `--install-directory
+  ~/.local/bin`, and the page says when each needs permission. The block makes `~/.local/bin` and puts it on the `PATH`
+  before the first `pnpm` (the shim directory is not created for you, and where `pnpm` exists only as that shim it is not
+  found otherwise), and says the lines are for `sh`, not for Windows `cmd` or PowerShell. The test that holds the block
+  to the page now holds that order.
 - **A gate judges a move on the subject as the chain has it, not on the projection kept beside the record.** The
   state a decision, a task or a skill is in, whether a run is still open, and whether a subject or a supersede's
   successor exists at all were read from the projection a tree keeps in `locks/projection.db`, a cache nothing signs: edited by hand, it let a
