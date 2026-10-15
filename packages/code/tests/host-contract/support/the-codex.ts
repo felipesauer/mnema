@@ -30,7 +30,7 @@ import { decodedWhole } from '../../support/arriving.js';
 import { GIT_WITHOUT_MAINTENANCE } from '../../support/git-without-maintenance.js';
 import { aSandbox, REPO, type TheProjectToWrite, type TheSandbox } from './a-sandbox.js';
 import { openWithOneRetry, sayInTheJobSummary } from './one-retry.js';
-import { destinationsIn, isLoopback, refuseUnlessLoopbackOnly } from './the-host.js';
+import { destinationsOrRefuse, refuseUnlessLoopbackOnly } from './the-host.js';
 
 /** The command hook that answers the permission decision it is told. */
 export const A_HOOK_THAT_ANSWERS = fileURLToPath(
@@ -303,10 +303,7 @@ async function aCodexSessionOnce(
   });
   await standIn.close();
 
-  const destinations = destinationsIn(existsSync(strace) ? readFileSync(strace, 'utf-8') : '');
-  const outward = destinations.filter((address) => !isLoopback(address));
-  if (outward.length > 0)
-    throw new Error(`the host reached beyond loopback: ${JSON.stringify(outward)}`);
+  const destinations = destinationsOrRefuse(strace);
   if (destinations.length === 0) {
     throw new Error(
       'strace saw the host connect nowhere, so it read nothing: the instrument is blind',

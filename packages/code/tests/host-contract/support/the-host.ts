@@ -27,7 +27,14 @@
  */
 
 import { spawn, spawnSync } from 'node:child_process';
-import { existsSync, mkdirSync, readFileSync, realpathSync, writeFileSync } from 'node:fs';
+import {
+  copyFileSync,
+  existsSync,
+  mkdirSync,
+  readFileSync,
+  realpathSync,
+  writeFileSync,
+} from 'node:fs';
 import { type NetworkInterfaceInfo, networkInterfaces } from 'node:os';
 import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -162,13 +169,71 @@ function needStrace(): void {
  * Whether the host uses it is not known here, so the namespace, not this reader, is what stops it.
  */
 export function destinationsIn(strace: string): string[] {
-  const found = new Set<string>();
+  return [...new Set(linesThatNameAnAddress(strace).map((named) => named.address))];
+}
+
+/** Each line of an strace log that names an address, with the address it names. */
+function linesThatNameAnAddress(strace: string): { address: string; line: string }[] {
+  const named: { address: string; line: string }[] = [];
   for (const line of strace.split('\n')) {
     if (!/(connect|sendto|sendmsg|sendmmsg)\(/.test(line) || !/AF_INET6?/.test(line)) continue;
     const address = line.match(/inet_addr\("([^"]+)"\)|inet_pton\(AF_INET6, "([^"]+)"/);
-    found.add(address === null ? line.trim().slice(0, 160) : (address[1] ?? address[2] ?? ''));
+    named.push({
+      address: address === null ? line.trim().slice(0, 160) : (address[1] ?? address[2] ?? ''),
+      line: line.trim(),
+    });
   }
-  return [...found];
+  return named;
+}
+
+/** The most lines of strace a refusal prints; the rest is counted, and is in the preserved log. */
+const MOST_LINES_PRINTED = 20;
+
+/**
+ * The refusal for a host that reached an address that is not loopback: the addresses, and under
+ * them every line of the strace that named one, whole, so the call, the address and the port are
+ * read from the failure itself. It is the same verdict as `destinationsIn` and `isLoopback` give;
+ * it only keeps what they reduce away. `undefined` when nothing left.
+ */
+export function theRefusalFor(strace: string): string | undefined {
+  const outward = linesThatNameAnAddress(strace).filter((named) => !isLoopback(named.address));
+  if (outward.length === 0) return undefined;
+  const addresses = [...new Set(outward.map((named) => named.address))];
+  const lines = [...new Set(outward.map((named) => named.line))];
+  const shown = lines.slice(0, MOST_LINES_PRINTED).map((line) => `  ${line}`);
+  if (lines.length > shown.length) shown.push(`  ... and ${lines.length - shown.length} more`);
+  return `the host reached beyond loopback: ${JSON.stringify(addresses)}\n${shown.join('\n')}`;
+}
+
+/** The directory a failed case leaves its strace in, when the run names one. */
+export const EVIDENCE_DIRECTORY = 'MNEMA_HOST_CONTRACT_EVIDENCE';
+
+let preserved = 0;
+
+/**
+ * Reads the strace the host ran under and returns where it connected; throws when that was
+ * beyond loopback. Before it throws, the log is copied to the directory named by
+ * `MNEMA_HOST_CONTRACT_EVIDENCE` (when set), because the sandbox that holds it is removed with the
+ * case. The verdict is `theRefusalFor`'s, and is not changed by whether a copy could be made.
+ */
+export function destinationsOrRefuse(straceFile: string): string[] {
+  const text = existsSync(straceFile) ? readFileSync(straceFile, 'utf-8') : '';
+  const refusal = theRefusalFor(text);
+  if (refusal !== undefined) {
+    const into = process.env[EVIDENCE_DIRECTORY];
+    if (into !== undefined && into !== '') {
+      try {
+        mkdirSync(into, { recursive: true });
+        preserved += 1;
+        const name = `${process.env.MNEMA_HOST_CONTRACT_HOST ?? 'host'}-${process.pid}-${preserved}.connect.strace`;
+        copyFileSync(straceFile, join(into, name));
+      } catch {
+        // The verdict is the refusal; a log that could not be kept does not change it.
+      }
+    }
+    throw new Error(refusal);
+  }
+  return destinationsIn(text);
 }
 
 /** Whether an address is the machine talking to itself. */
@@ -315,11 +380,12 @@ export async function aSession(spec: TheSpec = {}): Promise<TheSession> {
 
   const read = (name: string): string =>
     existsSync(join(out, name)) ? readFileSync(join(out, name), 'utf-8') : '';
-  const destinations = destinationsIn(read('connect.strace'));
-  const outward = destinations.filter((address) => !isLoopback(address));
-  if (outward.length > 0) {
+  let destinations: string[];
+  try {
+    destinations = destinationsOrRefuse(join(out, 'connect.strace'));
+  } catch (refusal) {
     box.remove();
-    throw new Error(`the host reached beyond loopback: ${JSON.stringify(outward)}`);
+    throw refusal;
   }
   if (destinations.length === 0) {
     box.remove();

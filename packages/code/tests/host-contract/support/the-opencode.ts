@@ -30,7 +30,7 @@ import { join } from 'node:path';
 import { afterEach } from 'vitest';
 import { decodedWhole } from '../../support/arriving.js';
 import { aSandbox, PLUGIN, type TheProjectToWrite, type TheSandbox } from './a-sandbox.js';
-import { destinationsIn, isLoopback, refuseUnlessLoopbackOnly } from './the-host.js';
+import { destinationsOrRefuse, refuseUnlessLoopbackOnly } from './the-host.js';
 import { startTheStandIn, type TheCall, type TheRequest } from './the-stand-in-api.js';
 
 /** The made-up key OpenCode is handed. It names no account and opens nothing. */
@@ -263,11 +263,7 @@ async function anOpencodeSession(
   }
   await standIn.close();
 
-  const destinations = destinationsIn(existsSync(strace) ? readFileSync(strace, 'utf-8') : '');
-  const outward = destinations.filter((address) => !isLoopback(address));
-  if (outward.length > 0) {
-    throw new Error(`the host reached beyond loopback: ${JSON.stringify(outward)}`);
-  }
+  const destinations = destinationsOrRefuse(strace);
   if (destinations.length === 0) {
     throw new Error(
       'strace saw the host connect nowhere, so it read nothing: the instrument is blind',
