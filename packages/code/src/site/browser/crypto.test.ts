@@ -81,6 +81,15 @@ describe('the page SHA-256 against FIPS 180-4', () => {
   });
 });
 
+/**
+ * The million-"a" vector is the slow case. Against the shared 5 s, on a machine kept at a load
+ * average of 50 to 100 (48 busy loops on 16 cores, two workers) it took 6.8 to 12.2 s and
+ * stopped at five seconds in six runs of six, while the SHA-256 of the same message took 0.1 to
+ * 0.6 s. The vector is the point, so the limit is given room for a machine several times slower
+ * than that one, not removed.
+ */
+const SHA512_MILLION_A = 30_000;
+
 describe('the page SHA-512 against FIPS 180-4', () => {
   const vectors: readonly (readonly [string, Uint8Array, string])[] = [
     [
@@ -107,9 +116,13 @@ describe('the page SHA-512 against FIPS 180-4', () => {
     ],
   ];
 
-  it.each(vectors)('prints the standard digest of %s', (_name, message, digest) => {
-    expect(hex(sha512(message))).toBe(digest);
-  });
+  it.each(vectors)(
+    'prints the standard digest of %s',
+    { timeout: SHA512_MILLION_A },
+    (_name, message, digest) => {
+      expect(hex(sha512(message))).toBe(digest);
+    },
+  );
 });
 
 describe('the page Ed25519', () => {
