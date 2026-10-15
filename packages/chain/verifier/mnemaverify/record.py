@@ -881,9 +881,8 @@ def verify_record(root: str, report: Report, require: str = "chained") -> None:
 
     entries_by_tail: dict[str, list[Entry]] = {}
     covered_by_tail: dict[str, int] = {}
-    # The tails holding a line this reader refused to read: the first such line, and how many
-    # entries stand before it.
-    refused_by_tail: dict[str, tuple[str, int]] = {}
+    # The tails whose FIRST line this reader refused, before any entry of theirs: where it was.
+    refused_first: dict[str, str] = {}
     for tail_id in tail_ids:
         tail_dir = os.path.join(tails_dir, tail_id)
         _check_tail_id(report, tail_id, ring)
@@ -898,52 +897,14 @@ def verify_record(root: str, report: Report, require: str = "chained") -> None:
         _check_witness(report, tail_dir, tail_id, found.checkpoints, last_seq)
         entries_by_tail[tail_id] = entries
         covered_by_tail[tail_id] = found.covered_through
-        if refused:
-            refused_by_tail[tail_id] = (refused[0], before_refused)
+        if refused and before_refused == 0:
+            refused_first[tail_id] = refused[0]
 
-    folded = _fold_up_to_refused(report, entries_by_tail, refused_by_tail)
-    resolution = _check_enrolment(report, folded, covered_by_tail, ring, entries_by_tail)
-    _check_retractions(report, folded)
-    _check_moves(report, folded, declarations)
+    resolution = _check_enrolment(report, entries_by_tail, covered_by_tail, ring, refused_first)
+    _check_retractions(report, entries_by_tail)
+    _check_moves(report, entries_by_tail, declarations)
     _say_keys_without_tail(report, ring, tail_ids, resolution)
     _check_requirement(report, require, entries_by_tail, covered_by_tail)
-
-
-def _fold_up_to_refused(
-    report: Report,
-    entries_by_tail: dict[str, list[Entry]],
-    refused_by_tail: dict[str, tuple[str, int]],
-) -> dict[str, list[Entry]]:
-    """What the folds of sections 6.2, 6.4 and 6.7 read: each tail up to its first refused line.
-
-    A fold read past a line this reader could not read is the chain walk's hole again, one layer
-    up. Measured: a segment whose first line carries a byte-order mark is refused at that line,
-    the founding of the identity with it, and the enrolment fold then refused every later event
-    of the tail as signed by a key not valid for its anchor - causes the record does not contain
-    beside the one it does. A fold that read NONE of the tail lost what stood before the line
-    instead: a forged event above it went unnamed, and an agent enrolled above it was enrolled no
-    longer, so every event the agent signed in its own tail was refused. So the folds read what
-    stands before a tail's first refused line, and what comes after it is said, once per tail,
-    as not folded. That changes no verdict: the refused line has already refused the record.
-    """
-    folded: dict[str, list[Entry]] = {}
-    for tail_id, entries in entries_by_tail.items():
-        if tail_id not in refused_by_tail:
-            folded[tail_id] = entries
-            continue
-        where, before = refused_by_tail[tail_id]
-        folded[tail_id] = entries[:before]
-        after = len(entries) - before
-        if after:
-            report.unchecked(
-                "6.2",
-                f"the folds of sections 6.2, 6.4 and 6.7 read this tail up to {where}, which was "
-                f"refused above, and not the {after} entr{'y' if after == 1 else 'ies'} after it: "
-                "a fold read past a line this reader could not read would judge each of them by "
-                "what that line would have said",
-                tail_id,
-            )
-    return folded
 
 
 def _check_retractions(report: Report, entries_by_tail: dict[str, list[Entry]]) -> None:
@@ -1081,15 +1042,17 @@ def _check_enrolment(
     entries_by_tail: dict[str, list[Entry]],
     covered_by_tail: dict[str, int],
     ring: dict[str, PublicKey],
-    readable_by_tail: dict[str, list[Entry]],
+    refused_first: dict[str, str],
 ) -> enrolment.Resolution | None:
     """Section 6.2, folded over every tail at once, because enrolment spans them.
 
-    `entries_by_tail` is what the fold reads, each tail up to its first refused line, and
-    `readable_by_tail` every entry this reader could read. When the two differ, a cause the fold
-    finds only up to a refused line rests on an entry it did not read - an agent enrolled after
-    the line, in a tail other than the agent's own, reads as enrolled by nobody - so a cause is
-    named when the fold finds it read past the line too, and the rest are said as not checked.
+    The fold reads every entry this reader could read, a tail with a refused line included, so
+    what a refused line held is missing from it and a cause may be that line's consequence: the
+    record is refused at the line already, and the causes are said as the fold finds them. One
+    consequence is not named, because it is certain: a refused FOUNDING (`refused_first`,
+    `_unread_foundings`). Its key is valid for its anchor from that line on or never, and the
+    reader cannot tell which, so the events that key signed for its own anchor are said once as
+    not judged instead of each as signed by a key not enrolled.
     """
     if not ring:
         report.unchecked(
@@ -1147,24 +1110,12 @@ def _check_enrolment(
             "an event is placed before a retirement by the time the key itself wrote",
         )
     issues = resolution.issues
-    named = issues
-    if issues and any(
-        len(entries) != len(readable_by_tail[tail]) for tail, entries in entries_by_tail.items()
-    ):
-        past = enrolment.resolve(readable_by_tail, covered_by_tail, ring).issues
-        found_past = {(issue.tail, issue.seq, issue.detail) for issue in past}
-        named = [issue for issue in issues if (issue.tail, issue.seq, issue.detail) in found_past]
-        if len(named) < len(issues):
-            report.unchecked(
-                "6.2",
-                f"{len(issues) - len(named)} event(s) the fold of section 6.2 refuses reading "
-                "each tail only up to its first refused line are not refused: read past that "
-                "line, the fold does not find the same cause, so what decides each is in an "
-                "entry it did not fold",
-                gap="G21",
-            )
-    for issue in named:
-        report.fail("6.2", issue.detail, f"{issue.tail[:20]}... seq {issue.seq}", "G21")
+    unjudged = _unjudged_for_an_unread_founding(
+        report, issues, entries_by_tail, _unread_foundings(entries_by_tail, refused_first)
+    )
+    for issue in issues:
+        if issue not in unjudged:
+            report.fail("6.2", issue.detail, f"{issue.tail[:20]}... seq {issue.seq}", "G21")
     if not issues:
         report.ok(
             "6.2",
@@ -1173,6 +1124,85 @@ def _check_enrolment(
             gap="G21",
         )
     return resolution
+
+
+def _unread_foundings(
+    entries_by_tail: dict[str, list[Entry]], refused_first: dict[str, str]
+) -> dict[str, tuple[str, str]]:
+    """The keys whose founding is a line this reader refused: key -> (its tail, where the line was).
+
+    Section 6.2: an identity is founded by `identity.founded`, self-signed by its founding key,
+    whose `subject` is that key's anchor - the fact that enrols the identity's FIRST key, and the
+    only one that can, since every other enrolment is signed by a key the anchor already holds.
+    Section 3: a tail id begins with the fingerprint of the key that writes it. So when a tail's
+    first line is refused, before any entry of the tail was read, and no line this reader did
+    read founds the anchor of that tail's key, the refused line is the one place that founding
+    can stand, and the key is "not enrolled" only because the line did not read. A refused line
+    anywhere else, or a first line whose key some line read does found, is not this.
+    """
+    founded: set[str] = set()
+    for entries in entries_by_tail.values():
+        for entry in entries:
+            event = entry.event
+            if event.get("kind") != "identity.founded":
+                continue
+            payload = event.get("payload")
+            founding = payload.get("foundingFp") if isinstance(payload, dict) else None
+            for named in (event.get("subject"), founding):
+                if isinstance(named, str):
+                    founded.add(named)
+    unread: dict[str, tuple[str, str]] = {}
+    for tail_id, where in refused_first.items():
+        key = tail_id.split("-", 1)[0]
+        if key in founded or enrolment.anchor_of(key) in founded:
+            continue
+        unread[key] = (tail_id, where)
+    return unread
+
+
+def _unjudged_for_an_unread_founding(
+    report: Report,
+    issues: list[enrolment.Issue],
+    entries_by_tail: dict[str, list[Entry]],
+    unread: dict[str, tuple[str, str]],
+) -> list[enrolment.Issue]:
+    """The causes of section 6.2 an unread founding accounts for, said once per key as not judged.
+
+    Only one cause: an event signed by the key the refused line would have founded, refused
+    because that key is not valid for the key's OWN anchor. Whether it is depends on that line
+    alone, so the event is not judged. Any other cause stands as the fold finds it - an event
+    the key signed for another anchor, one signed by another key (an agent the founding key
+    enrolled included) - because the founding would not have changed it; and nothing positive
+    is said that the fold would not say, since the fold itself is the one read with every line.
+    """
+    if not unread:
+        return []
+    signer_of = {
+        (tail, entry.seq): entry.event.get("signerFp")
+        for tail, entries in entries_by_tail.items()
+        for entry in entries
+    }
+    by_key: dict[str, list[enrolment.Issue]] = {}
+    for issue in issues:
+        signer = signer_of.get((issue.tail, issue.seq))
+        if (
+            isinstance(signer, str)
+            and signer in unread
+            and issue.not_valid_for == enrolment.anchor_of(signer)
+        ):
+            by_key.setdefault(signer, []).append(issue)
+    for key, unjudged in by_key.items():
+        tail_id, where = unread[key]
+        report.unchecked(
+            "6.2",
+            f"{len(unjudged)} event(s) signed by {key[:12]}... for its own anchor were not "
+            f"judged: the first line of its tail, {where}, was refused above, and no line this "
+            "reader read founds that anchor, so the refused line is where the founding stands "
+            "and whether the key was valid for its anchor rests on it",
+            tail_id,
+            "G21",
+        )
+    return [issue for unjudged in by_key.values() for issue in unjudged]
 
 
 def _say_keys_without_tail(
