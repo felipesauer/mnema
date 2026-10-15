@@ -9,10 +9,27 @@
  */
 
 import { spawnSync } from 'node:child_process';
-import { existsSync, mkdirSync, mkdtempSync, readdirSync, readFileSync, rmSync } from 'node:fs';
+import {
+  appendFileSync,
+  existsSync,
+  mkdirSync,
+  mkdtempSync,
+  readdirSync,
+  readFileSync,
+  rmSync,
+  writeFileSync,
+} from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import {
+  type CatalogEvent,
+  canonicalStringify,
+  entryHash,
+  memoryCaptured,
+  READER_VERSION,
+  writtenAsBuilt,
+} from '@mnema/chain';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { POINTER_FILE } from '../src/inherited-record.js';
 import { GIT_WITHOUT_MAINTENANCE } from './support/git-without-maintenance.js';
@@ -154,4 +171,133 @@ describe('inheriting, as a person types it', () => {
     expect(refused.err).toContain('could not be reached');
     expect(existsSync(join(project, '.mnema', POINTER_FILE))).toBe(false);
   }, 60_000);
+});
+
+/**
+ * Appends to the origin's tail a line carrying `kind` and `v`, chained to the last one — what a
+ * newer writer leaves for this reader. Nothing else is wrong with it where the reading stops: a
+ * line no contract reads is refused at the parse, before any signature is looked at.
+ */
+function appendAhead(dir: string, kind: string, v: number): void {
+  const tails = join(dir, '.mnema', 'tails');
+  const segments = readdirSync(tails, { recursive: true, encoding: 'utf-8' })
+    .filter((name) => /\d+\.jsonl$/.test(name))
+    .sort();
+  const segment = join(tails, segments.at(-1) as string);
+  const stored = readFileSync(segment, 'utf-8').split('\n').filter(Boolean);
+  const last = JSON.parse(stored.at(-1) as string) as {
+    event: { who: string; signerFp: string };
+    link: { tail: string; seq: number; hash: string };
+  };
+  const built = memoryCaptured(
+    {
+      who: last.event.who,
+      signerFp: last.event.signerFp,
+      at: '2026-10-15T00:00:09.000Z',
+      subject: 'm-ahead',
+    },
+    { content: 'Written by a newer writer.' },
+  );
+  const event = { ...built, kind, v } as unknown as CatalogEvent;
+  const seq = last.link.seq + 1;
+  const prev = last.link.hash;
+  const hash = entryHash({ event: writtenAsBuilt(event), tail: last.link.tail, seq, prev });
+  appendFileSync(
+    segment,
+    `${canonicalStringify({ event: event as never, link: { tail: last.link.tail, seq, prev, hash } })}\n`,
+  );
+}
+
+describe('an origin whose record holds a line this mnema has no contract for', () => {
+  // The refusal every other reading of such a record gives (`FORMAT.md` §7.1): the pair, what this
+  // reader holds of that kind, and which mnema refuses.
+  const refusal = (said: string) =>
+    `mnema ${READER_VERSION} does not read ${said}. If a newer mnema wrote the line, read the ` +
+    'record with it.';
+
+  it.each([
+    ['memory.foretold', 1, '"memory.foretold" at v1: it reads no version of that kind'],
+    ['memory.captured', 2, '"memory.captured" at v2: it reads that kind up to v1'],
+  ])(
+    'refuses %s at v%i by naming it, in `inherit set`, `inherit update` and the brief',
+    (kind, v, said) => {
+      const source = join(sandbox, 'decisions');
+      const project = join(sandbox, 'service');
+      const other = join(sandbox, 'other-service');
+      const homeS = join(sandbox, 'home-s');
+      const homeP = join(sandbox, 'home-p');
+      for (const dir of [source, project, other, homeS, homeP]) mkdirSync(dir, { recursive: true });
+      git(source, 'init', '-q', '-b', 'main');
+      expect(mnema(source, homeS, 'init').status).toBe(0);
+      decide(source, homeS, 'Postgres in every new service');
+      const clean = commit(source);
+      expect(mnema(project, homeP, 'init').status).toBe(0);
+      expect(mnema(other, homeP, 'init').status).toBe(0);
+      // The control: the same origin, before the line, is read.
+      const pointed = mnema(project, homeP, 'inherit', 'set', source, '--write');
+      expect(pointed.status, pointed.err).toBe(0);
+      expect(pointed.out).toContain('+ Postgres in every new service');
+
+      appendAhead(source, kind, v);
+      const ahead = commit(source);
+
+      const set = mnema(other, homeP, 'inherit', 'set', source);
+      expect(set.status).not.toBe(0);
+      expect(set.err).toContain('The record at that commit is not read, so no pointer is moved.');
+      expect(set.err).toContain(refusal(said));
+
+      const update = mnema(project, homeP, 'inherit', 'update');
+      expect(update.status).not.toBe(0);
+      expect(update.err).toContain(refusal(said));
+      expect(JSON.parse(readFileSync(join(project, '.mnema', POINTER_FILE), 'utf-8')).commit).toBe(
+        clean,
+      );
+
+      // A pointer written by hand at the commit `update` refused; this machine already holds it.
+      writeFileSync(
+        join(project, '.mnema', POINTER_FILE),
+        `${JSON.stringify({ origin: source, commit: ahead })}\n`,
+      );
+      const brief = mnema(project, homeP, 'brief');
+      expect(brief.status, brief.err).toBe(0);
+      const section = brief.out.split('## Inherited decisions (not read)')[1] ?? '';
+      expect(section).toContain(`the record there did not verify: `);
+      expect(section).toContain(refusal(said));
+      expect(section).not.toContain('Postgres');
+    },
+    120_000,
+  );
+
+  it('does not name a version when the line is unread for another reason: it was altered', () => {
+    const source = join(sandbox, 'decisions');
+    const project = join(sandbox, 'service');
+    const homeS = join(sandbox, 'home-s');
+    const homeP = join(sandbox, 'home-p');
+    for (const dir of [source, project, homeS, homeP]) mkdirSync(dir, { recursive: true });
+    git(source, 'init', '-q', '-b', 'main');
+    expect(mnema(source, homeS, 'init').status).toBe(0);
+    decide(source, homeS, 'Postgres in every new service');
+    const tails = join(source, '.mnema', 'tails');
+    const segment = join(
+      tails,
+      readdirSync(tails, { recursive: true, encoding: 'utf-8' })
+        .filter((name) => /\d+\.jsonl$/.test(name))
+        .sort()
+        .at(-1) as string,
+    );
+    const before = readFileSync(segment, 'utf-8');
+    writeFileSync(
+      segment,
+      before.replace('Postgres in every new service', 'MySQL in every new service'),
+    );
+    expect(readFileSync(segment, 'utf-8')).not.toBe(before);
+    commit(source);
+    expect(mnema(project, homeP, 'init').status).toBe(0);
+
+    const set = mnema(project, homeP, 'inherit', 'set', source);
+    expect(set.status).not.toBe(0);
+    expect(set.err).toContain('The record at that commit is not read, so no pointer is moved.');
+    expect(set.err).not.toContain('does not read');
+    expect(set.err).not.toContain(READER_VERSION);
+  }, 90_000);
 });

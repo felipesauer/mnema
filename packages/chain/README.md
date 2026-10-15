@@ -307,21 +307,33 @@ either is one new row in the published `event-schema.json`, visible in a diff (`
 
 **What does not change silently.** A change to the bytes of an event moves a published digest in
 `canonical-vectors.json`, and a change to a contract moves a row of `event-schema.json`; a test
-holds each. That is the whole of the commitment: the format is this product's own, with no
-standards body and no promised process for changing it (`FORMAT.md`, "What this document does
+holds each. That, and what one version promises another from the first publication on
+(`FORMAT.md` §7.1, below), is the whole of the commitment: the format is this product's own, with
+no standards body and no promised process for changing it (`FORMAT.md`, "What this document does
 **not** promise").
 
 **An older record, read by a newer tool.** A line written under an old `v` is lifted to today's
 contract when it is read, and the proof is still taken over the form that was written, so an
 upgrade does not make an honest old record report as tampered
 (`src/chain/upcast-vs-proof.test.ts`). Today no kind carries a `v` above 1, so no upcaster has
-yet been needed; the page does not promise one for a change that has not happened.
+yet been needed; the page does not promise one for a change that has not happened. A record this
+product's command line wrote is kept frozen, and both readers have to verify it, every move
+applied (`src/chain/the-promise-between-versions.test.ts`).
 
 **A newer record, read by an older tool.** This does not work, and the format says so: a reader
 refuses a line whose `kind` and `v` no row of its table declares (`FORMAT.md` §4.1). Once a kind
 your binary does not know is in the committed tree, that binary stops reading the whole record,
-not only that event. Read a record with a binary at least as new as the newest tool that wrote
-to it.
+not only that event. From the first publication on, the refusal names the kind and version, what
+that binary reads of the kind, and which mnema refuses; nothing in the record says which version
+wrote the line, so it cannot name the one that reads it (`FORMAT.md` §7.1). Read a record with a
+binary at least as new as the newest tool that wrote to it.
+
+**What an older tool reads without refusing.** A rule of authenticity or legality is never
+loosened inside a `kind` and `v` that already exist; a new permission is a new one, which an older
+tool refuses as above. A rule can be tightened, and before the first publication some were: a
+binary from before the workflows entered the format (`FORMAT.md` §6.7) applies every move a newer
+one does not, and refuses nothing for it. The promise does not forbid such a tightening after the
+first publication either; `FORMAT.md` §7.1 says what it covers and what it does not.
 
 ## License
 
