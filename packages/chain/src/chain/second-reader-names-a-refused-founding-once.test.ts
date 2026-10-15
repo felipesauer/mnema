@@ -232,12 +232,11 @@ describe('a person and the agent they enrolled', () => {
   ) {
     mkdirSync(tailDir({ root }, tailId), { recursive: true });
     const hashes = hashesOf(tailId, events);
-    const lines = events.map((event, seq) =>
-      canonicalStringify({
-        event: event as never,
-        link: { tail: tailId, seq, prev: seq === 0 ? null : hashes[seq - 1], hash: hashes[seq] },
-      }),
-    );
+    const lines = events.map((event, seq) => {
+      const prev: string | null = seq === 0 ? null : (hashes[seq - 1] as string);
+      const hash = hashes[seq] as string;
+      return canonicalStringify({ event: event as never, link: { tail: tailId, seq, prev, hash } });
+    });
     writeFileSync(segmentPath({ root }, tailId, 1), `${lines.join('\n')}\n`);
     writeFileSync(
       tailProofPath({ root }, tailId),
