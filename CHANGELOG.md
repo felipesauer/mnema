@@ -19,14 +19,14 @@ with its own changelog.
   authenticity or legality is never loosened inside a `kind` and `v` that exist — a new permission, one between
   records included, is a new `kind` or `v`, and the envelope gains no field inside an existing one. The section also
   says what is not covered: the rules changed before the first publication (the workflows, the retraction by its
-  author, `after` in the envelope), a rule tightened inside an existing `kind` and `v` after it, which an older binary reads under its
-  own rule without refusing anything, and the order between tails. `verify`, and a read such as `status` that stops on
-  such a line, now say `mnema <version> does not read "<kind>" at v<n>: it reads that kind up to v<m>` (or `no version of that
-  kind`), and that a newer mnema reads the line if one wrote it; before, they said `unknown event kind`, or a version
-  ahead of the known latest. The Python reader names the pair and what the table it read declares of the kind. A
-  record this product's command line wrote is frozen in the repository, and both readers have to verify it with every
-  move applied. A record read through `mnema inherit` that holds such a line reads as unverified with `verify`'s
-  summary, which does not carry the name.
+  author, `after` in the envelope), a rule tightened inside an existing `kind` and `v` after it, which an older binary
+  reads under its own rule without refusing anything, and the order between tails. `verify`, and a read such as
+  `status` that stops on such a line, now say *mnema \<version\> does not read "\<kind\>" at v\<n\>: it reads that
+  kind up to v\<m\>* (or *no version of that kind*), and that a newer mnema reads the line if one wrote it; before,
+  they said `unknown event kind`, or a version ahead of the known latest. The Python reader names the pair and what
+  the table it read declares of the kind. A record this product's command line wrote is frozen in the repository, and
+  both readers have to verify it with every move applied. A record read through the `inherit` verb that holds such a
+  line reads as unverified with `verify`'s summary, which does not carry the name.
 - **The workflows a decision, a task, a skill and a run move through are part of the format, and no reader applies a
   move they do not allow.** `FORMAT.md` §6.7 and the `workflows` object of `event-schema.json` hold the tables the gate
   already wrote by, so the artifact's digest changes. A move is judged at its point in the merged order: a birth once, a
