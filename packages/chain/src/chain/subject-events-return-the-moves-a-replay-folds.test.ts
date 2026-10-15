@@ -9,7 +9,7 @@
  * in a tail that is merged is refused whatever subject it is about.
  */
 
-import { appendFileSync, mkdtempSync, readdirSync, rmSync } from 'node:fs';
+import { appendFileSync, mkdtempSync, readdirSync, readFileSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
@@ -217,6 +217,9 @@ describe('a tail that is merged is read line by line, and a line of the wrong sh
     'a citation that is not quoted': `{"event":{"after":[${HASH}],"at":"x"},"link":{"hash":"${HASH}"}}`,
     'a citation list not followed by the instant': `{"event":{"after":["${HASH}"],"zz":"x"},"link":{"hash":"${HASH}"}}`,
     'an instant after the citations that is never closed': `{"event":{"after":["${HASH}"],"at":"x`,
+    'a citation of the right length with no quote at either end': `{"event":{"after":[a${HASH}a],"at":"x"},"link":{"hash":"${HASH}"}}`,
+    'a citation of the right length that opens with no quote': `{"event":{"after":[a${HASH}"],"at":"x"},"link":{"hash":"${HASH}"}}`,
+    'a citation of the right length that closes with no quote': `{"event":{"after":["${HASH}a],"at":"x"},"link":{"hash":"${HASH}"}}`,
     'a line of another shape': `{"link":{"hash":"${HASH}"},"event":{"at":"x"}}`,
   };
 
@@ -232,7 +235,9 @@ describe('a tail that is merged is read line by line, and a line of the wrong sh
       c.note('someone-else', T(4));
       const dir = tailDir({ root }, c.tail);
       const file = join(dir, readdirSync(dir).find((n) => n.endsWith('.jsonl')) as string);
-      appendFileSync(file, `${line}\n`);
+      // The line, and then a good one: what closes a quote the line left open is on the next.
+      const good = readFileSync(file, 'utf8').split('\n')[0];
+      appendFileSync(file, `${line}\n${good}\n`);
 
       expect(() => subjectEvents({ root }, upcasters, [D1])).toThrow(UnreadableLineError);
     });
