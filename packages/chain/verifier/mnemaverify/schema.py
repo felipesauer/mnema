@@ -180,10 +180,16 @@ def rebuild(schema: Schema, event: Any) -> Rebuilt:
         raise Refusal("4.1", f"event {kind!r} carries no whole-number `v` of at least 1")
     contract = schema.contracts.get((kind, v))
     if contract is None:
+        # Section 7.1: the refusal names the pair and what this table holds of the kind. Which
+        # version declares the pair no line can say, so it names the table it was read against.
+        held = [held_v for (held_kind, held_v) in schema.contracts if held_kind == kind]
+        holds = f"{kind} up to v{max(held)}" if held else f"no version of {kind}"
         raise Refusal(
             "4.1",
-            f"no published contract declares {kind}@{v}: a reader refuses a pair the table "
-            "does not declare rather than guessing at the fields",
+            f"no published contract declares {kind}@{v}: the table this reader read declares "
+            f"{holds}. A reader refuses a pair the table does not declare rather than guessing "
+            "at the fields; if a newer mnema wrote the line, the event-schema.json published "
+            "with it declares the pair",
         )
 
     declared_top = schema.top_level_keys()

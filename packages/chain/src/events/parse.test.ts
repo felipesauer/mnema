@@ -635,7 +635,9 @@ describe('parseEvent — rejects malformed input', () => {
   });
 
   it('rejects an unknown kind (not in the catalog)', () => {
-    expect(() => parseEvent('{"kind":"task.deleted","v":1}', reg)).toThrow(/unknown event kind/);
+    expect(() => parseEvent('{"kind":"task.deleted","v":1}', reg)).toThrow(
+      /does not read "task\.deleted" at v1: it reads no version of that kind\./,
+    );
   });
 
   it('rejects an empty-string `from` (only null, never "", is the valued absence)', () => {

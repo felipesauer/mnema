@@ -39,6 +39,7 @@
  * exercised against a taller ladder than the current catalog happens to have.
  */
 
+import { READER_VERSION } from '../version.js';
 import { type CatalogEvent, LATEST_VERSION } from './catalog.js';
 
 /** A parsed-but-not-yet-current event: known kind, some prior version. */
@@ -103,14 +104,8 @@ export class UpcasterRegistry {
   upcast(event: VersionedEvent): CatalogEvent {
     const kind = event.kind;
     const latest = this.latest[kind];
-    if (latest === undefined) {
-      throw new UpcasterError(`unknown event kind "${kind}"`);
-    }
-    if (event.v > latest) {
-      throw new UpcasterError(
-        `event kind "${kind}" is at version ${event.v}, ahead of the known latest ${latest} — ` +
-          'reading it needs a newer catalog',
-      );
+    if (latest === undefined || event.v > latest) {
+      throw new UpcasterError(notHeld(kind, event.v, latest));
     }
 
     let current = event;
@@ -132,6 +127,24 @@ export class UpcasterRegistry {
 
     return current as unknown as CatalogEvent;
   }
+}
+
+/**
+ * The refusal of a line whose `kind` and `v` this reader holds no contract for (`FORMAT.md` §7.1).
+ *
+ * It names the pair, what this reader holds of that kind, and which mnema this reader is. It
+ * cannot name the version that reads the line — nothing in a record says which binary wrote it —
+ * so it names the one that does not, and the person reading it knows to look for a newer one.
+ */
+function notHeld(kind: string, v: number, latest: number | undefined): string {
+  const holds =
+    latest === undefined
+      ? 'it reads no version of that kind'
+      : `it reads that kind up to v${latest}`;
+  return (
+    `mnema ${READER_VERSION} does not read ${JSON.stringify(kind)} at v${v}: ${holds}. ` +
+    'If a newer mnema wrote the line, read the record with it.'
+  );
 }
 
 /** Thrown when the upcaster ladder is broken or an event is unreadable. */

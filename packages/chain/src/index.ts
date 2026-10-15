@@ -330,3 +330,4 @@ export {
   type Workflow,
   type WorkflowMove,
 } from './events/workflow.js';
+export { READER_VERSION } from './version.js';
