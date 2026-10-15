@@ -1977,7 +1977,7 @@ export type GuardResult =
        * No tree of the workspace holds a task with this id, or several records do — or the key of
        * this machine would be refused in the task's tree (nobody signs there, or the person's key is
        * protected by a passphrase that is not at hand) and the write this simulates would be refused
-       * with the code that refusal carries. Held by the three tests of
+       * with the code that refusal carries. Held by the four tests of
        * `a-session-opens-where-nothing-signs.test.ts` that pair the guard with the write.
        */
       readonly code:
@@ -2004,7 +2004,7 @@ export type GuardResult =
  * key what the write would ask ({@link keyRefusalIn}, which opens no key and makes none) and answers
  * the refusal the write would give — the agent not enrolled in that tree, or retired, or the
  * person's key protected by a passphrase with none in the environment — in the write's own words and
- * code, before the gate is consulted, as the write does (the three tests of
+ * code, before the gate is consulted, as the write does (the four tests of
  * `a-session-opens-where-nothing-signs.test.ts` that pair the guard with `task_transition`). What a
  * read cannot know it does not say: a passphrase that is set but wrong, the record busy at that
  * moment, another write changing the task before the move; and where this machine has no key at all
