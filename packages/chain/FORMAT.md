@@ -215,9 +215,11 @@ first write was refused — asserts nothing. A reader:
 - says it once, as information, and removes nothing. Its directory still names its
   key's tail, so that key is not one "with no tail" (§6.5).
 
-Only a line of no length — the piece after a file's final newline — is no line: a
-line of whitespace is not canonical (§1.6), so a segment holding one is not empty;
-it is read, and refused. The cost, said: a tail
+Only a line of no length is no line — the piece after a file's final newline, and,
+wherever it falls, the nothing between two newlines in a row: both readers pass over
+it. It holds no bytes and moves none that a hash covers, and a writer never leaves
+one. A line of whitespace is not canonical (§1.6), so a segment holding one is not
+empty; it is read, and refused. The cost, said: a tail
 whose segments and checkpoints were deleted with its tail proof kept reads as one
 that never held anything. That is no new blindness — the same tail deleted whole,
 with its key, already leaves nothing for a reader to cross — and only a copy of the
@@ -239,7 +241,13 @@ carriage return left by a checkout that rewrote line endings — is refused, eve
 its value recomputes every hash and signature: the bytes on disk are then not the
 bytes the proof was taken over. The same holds for a checkpoint line and the tail
 proof, and both readers refuse each of them
-(`packages/chain/src/chain/both-readers-read-the-same-bytes.test.ts`). A stored block
+(`packages/chain/src/chain/both-readers-read-the-same-bytes.test.ts`). When a carriage
+return at the end is all that differs, both readers say CRLF in the refusal: it is what
+git leaves on every line of a checkout with `core.autocrlf=true`. A writer puts a
+`.gitattributes` holding `* -text` at the root of a project tree, beside its
+`.gitignore`, so git does not rewrite the line ends of a clone; it reaches a clone once
+it is committed, and an archive or an editor that rewrites them is not stopped by it.
+A stored block
 header that is not canonical is not read either, so the attestation it would have
 checked is not counted; the product drops that one line and the second reader the
 whole sidecar, which is a difference in what is left uncheckable, not in what is
