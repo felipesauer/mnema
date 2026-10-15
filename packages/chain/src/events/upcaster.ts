@@ -129,6 +129,9 @@ export class UpcasterRegistry {
   }
 }
 
+const NOT_HELD_OPENS = `mnema ${READER_VERSION} does not read `;
+const NOT_HELD_CLOSES = 'If a newer mnema wrote the line, read the record with it.';
+
 /**
  * The refusal of a line whose `kind` and `v` this reader holds no contract for (`FORMAT.md` §7.1).
  *
@@ -141,10 +144,21 @@ function notHeld(kind: string, v: number, latest: number | undefined): string {
     latest === undefined
       ? 'it reads no version of that kind'
       : `it reads that kind up to v${latest}`;
-  return (
-    `mnema ${READER_VERSION} does not read ${JSON.stringify(kind)} at v${v}: ${holds}. ` +
-    'If a newer mnema wrote the line, read the record with it.'
-  );
+  return `${NOT_HELD_OPENS}${JSON.stringify(kind)} at v${v}: ${holds}. ${NOT_HELD_CLOSES}`;
+}
+
+/**
+ * The refusal {@link notHeld} words, found inside a message that carries it — a verdict's issue,
+ * where the line's parse error is quoted — or `undefined` when the message is about something else.
+ *
+ * A reading that only has the verdict to hand (`verify` refused, and the caller words the refusal
+ * from it) names the pair and the version this way, in the words every other reading gives.
+ */
+export function contractNotHeldIn(message: string): string | undefined {
+  const start = message.indexOf(NOT_HELD_OPENS);
+  if (start === -1) return undefined;
+  const end = message.indexOf(NOT_HELD_CLOSES, start);
+  return end === -1 ? undefined : message.slice(start, end + NOT_HELD_CLOSES.length);
 }
 
 /** Thrown when the upcaster ladder is broken or an event is unreadable. */

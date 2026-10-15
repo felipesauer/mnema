@@ -309,6 +309,7 @@ export { PROOF_FIELDS, proofFields, transitionProse } from './events/proof.js';
 export { catalogUpcasters } from './events/registry.js';
 export { mayRetract } from './events/retraction.js';
 export {
+  contractNotHeldIn,
   type LatestVersions,
   type Upcaster,
   UpcasterError,

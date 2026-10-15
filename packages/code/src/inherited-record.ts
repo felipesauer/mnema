@@ -28,7 +28,7 @@ import { execFileSync } from 'node:child_process';
 import { createHash } from 'node:crypto';
 import { existsSync, mkdirSync, readFileSync, renameSync, rmSync, writeFileSync } from 'node:fs';
 import { dirname, join, resolve } from 'node:path';
-import { catalogUpcasters, verify } from '@mnema/chain';
+import { catalogUpcasters, contractNotHeldIn, type VerifyResult, verify } from '@mnema/chain';
 import { brief } from '@mnema/context';
 import type { ResolvedTrees } from '@mnema/core';
 import {
@@ -233,6 +233,21 @@ function materialize(home: string, repo: string, commit: string): string {
   return join(dest, '.mnema');
 }
 
+/**
+ * Why a record that did not verify is not read: the verdict's summary, after the refusal of a line
+ * no contract of this reader reads, when that is the cause. The summary only says a tail could not
+ * be read; every other reading of such a record names the pair and which mnema refuses
+ * (`FORMAT.md` §7.1), and this one has only the verdict to say it from.
+ */
+function whyNotRead(verdict: VerifyResult): string {
+  const named = new Set<string>();
+  for (const issue of verdict.issues) {
+    const refusal = contractNotHeldIn(issue.detail);
+    if (refusal !== undefined) named.add(refusal);
+  }
+  return [...named, verdict.summary].join(' ');
+}
+
 /** The decisions in force of one extracted record, once it verifies — or why it does not. */
 function readRecord(
   root: string,
@@ -242,7 +257,7 @@ function readRecord(
   try {
     const upcasters = catalogUpcasters();
     const verdict = verify(root, upcasters);
-    if (!verdict.ok) return { ok: false, why: verdict.summary };
+    if (!verdict.ok) return { ok: false, why: whyNotRead(verdict) };
     const decisions = withCache(
       root,
       upcasters,
