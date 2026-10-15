@@ -284,10 +284,34 @@ jobs:
       - name: Allow a network namespace of our own
         run: sudo sysctl -w kernel.apparmor_restrict_unprivileged_userns=0
 
+      # WHAT THE RUNNER IS, printed before the cases: which resolver its `resolv.conf` names, and
+      # where it runs. Nothing here is a secret: the file, the resolver's status, and three names
+      # the image sets; no environment is dumped.
+      - name: Say what the runner is
+        run: |
+          echo "RUNNER_ENVIRONMENT=${RUNNER_ENVIRONMENT:-}  ImageOS=${ImageOS:-}  ImageVersion=${ImageVersion:-}"
+          echo "--- /etc/resolv.conf"
+          cat /etc/resolv.conf
+          if command -v resolvectl >/dev/null 2>&1; then
+            echo "--- resolvectl status"
+            resolvectl status || true
+          fi
+
+      # A case that finds the host beyond loopback copies its strace here before its sandbox goes.
       - name: Hold the contract, with only loopback
         env:
           MNEMA_HOST_CONTRACT_HOST: codex
+          MNEMA_HOST_CONTRACT_EVIDENCE: ${{ runner.temp }}/host-contract-evidence
         run: unshare -rn bash -c 'ip link set lo up && exec ./node_modules/.bin/vitest run --config vitest.host-contract.config.ts'
+
+      - name: Keep the strace of a host that reached beyond loopback
+        if: failure()
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: host-contract-codex-strace-${{ matrix.version }}
+          path: ${{ runner.temp }}/host-contract-evidence
+          if-no-files-found: ignore
+          retention-days: 7
 
   # THE SAME CONTRACT FOR THE COPILOT CLI. The binary is the one npm installs from `@github/copilot`
   # (its platform package, `@github/copilot-linux-x64`), under the license in the package, which
