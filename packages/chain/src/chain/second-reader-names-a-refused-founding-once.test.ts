@@ -22,18 +22,27 @@
  * whole tail out of the folds once one line of it does not read, so the list of causes the two
  * readers give for such a record can differ. The verdict cannot: both refuse it.
  *
- * THE PROPERTY holds both halves over drawn records - every `mutate.py` record, and records of
- * two tails, a person's and an agent's, with citations across them - with a line that is not an
- * entry put at, or put in place of, any line of any tail. Its oracle is the same record WITHOUT
- * that line and without the damaged tail's checkpoints (so the fold reads the same entries under
- * the same coverage) and with no refused line at all, so no handling of a refused line can bend
- * it: the folds of the damaged record give exactly the oracle's findings, but for the causes of a
- * refused founding, which leave and come back as the one line that counts them.
+ * THE PROPERTY holds both halves over drawn records - every `mutate.py` record, and records of a
+ * person and an agent with citations across their tails, a second founding of the person's key
+ * (in their tail or one of its own), and a key no line founds, or one founded below its first
+ * line - with a line that is not an entry put at, or put in place of, a line of each tail in
+ * turn. Its oracle is the same record WITHOUT that line and without the damaged tail's
+ * checkpoints (so the fold reads the same entries under the same coverage) and with no refused
+ * line at all, so no handling of a refused line can bend it: the folds of the damaged record give
+ * exactly the oracle's findings, but for the causes of a refused founding - the tail's first line,
+ * put before its first entry or in place of it, its key founded by no line of the oracle - which
+ * leave and come back as the one line that counts them.
+ *
+ * THE RECORDS BY VALUE pin the two cases that are not a refused founding though the key's own
+ * causes are there to take - the key founded again by a line that reads, and a refused line below
+ * the first in the tail of a key no line founds - and their neighbours, each read finding for
+ * finding as the same reader reads it with no founding ever taken as unread.
  *
  * It needs `python3` and fails rather than skips without it, as its siblings do.
  */
 
 import { spawnSync } from 'node:child_process';
+import { createHash } from 'node:crypto';
 import {
   appendFileSync,
   cpSync,
@@ -61,7 +70,7 @@ import { canonicalStringify } from '../events/canonical.js';
 import type { CatalogEvent } from '../events/catalog.js';
 import { serializeCheckpoint, signCheckpoint } from './checkpoint.js';
 import { entryHash, writtenAsBuilt } from './hash.js';
-import { deriveAnchor, generateKeyPair, type KeyPair, publicKeyToPem, sign } from './keys.js';
+import { deriveAnchor, type KeyPair, keyPairFromPrivatePem, publicKeyToPem, sign } from './keys.js';
 import { checkpointsPath, publicKeyPath, segmentPath, tailDir, tailProofPath } from './layout.js';
 import { serializeTailProof, signTailProof } from './tailproof.js';
 
@@ -255,27 +264,62 @@ describe('a person and the agent they enrolled', () => {
   /**
    * What a drawn record is made of. The person's tail: the founding at second 1, then one task per
    * entry of `person` at the second it gives, the `agent.enrolled` in place of the task at
-   * `enrolAt` (if any) and citing the agent's entry `cites` (if any). The agent's tail: one task
-   * per second of `agent`, signed by the agent for the person. `foreign`: one task the person's
-   * key signs for the AGENT's anchor, which no founding ever makes valid.
+   * `enrolAt` (if any) and citing the agent's entry `cites` (if any). The agent's tail (if `agent`
+   * has an entry): one task per second of `agent`, signed by the agent for the person. `foreign`:
+   * one task the person's key signs for the AGENT's anchor, which no founding ever makes valid.
+   * `refound`: a second founding of the person's key, after the person's entry `after`, or in a
+   * tail of its own. `stray`: a key no line founds, one task per second signed for its OWN anchor,
+   * in its own tail. Every key is drawn from `keys`, so a shape is the same record on every run.
    */
   interface Shape {
+    readonly keys: number;
     readonly person: readonly number[];
     readonly enrolAt: number | null;
     readonly cites: number | null;
     readonly agent: readonly number[];
     readonly foreign: boolean;
+    readonly refound: {
+      readonly after: number;
+      readonly at: number;
+      readonly ownTail: boolean;
+    } | null;
+    readonly stray: readonly number[];
+    readonly strayFoundedAfter: number | null;
+  }
+
+  const NOTHING_ELSE: Shape = {
+    keys: 0,
+    person: [],
+    enrolAt: null,
+    cites: null,
+    agent: [],
+    foreign: false,
+    refound: null,
+    stray: [],
+    strayFoundedAfter: null,
+  };
+
+  /** An Ed25519 key from a label: the same key, so the same order of tails, on every run. */
+  function keyFrom(label: string): KeyPair {
+    const seed = createHash('sha256').update(`a refused founding: ${label}`).digest();
+    const der = Buffer.concat([Buffer.from('302e020100300506032b657004220420', 'hex'), seed]);
+    return keyPairFromPrivatePem(
+      `-----BEGIN PRIVATE KEY-----\n${der.toString('base64')}\n-----END PRIVATE KEY-----\n`,
+    );
   }
 
   function personAndAgent(shape: Shape) {
     const root = join(fresh(), 'record');
-    const a = generateKeyPair();
-    const g = generateKeyPair();
+    const a = keyFrom(`${shape.keys} person`);
+    const g = keyFrom(`${shape.keys} agent`);
+    const s = keyFrom(`${shape.keys} stray`);
     commitPublicKey(root, a);
     commitPublicKey(root, g);
+    commitPublicKey(root, s);
     const anchor = deriveAnchor(a.fingerprint);
     const personTail = `${a.fingerprint}-i1`;
     const agentTail = `${g.fingerprint}-i2`;
+    const strayTail = `${s.fingerprint}-i4`;
     const agent = shape.agent.map((n, i) =>
       taskCreated(
         { at: at(n), who: anchor, signerFp: g.fingerprint, subject: `g-${i}`, which: 'claude' },
@@ -286,12 +330,12 @@ describe('a person and the agent they enrolled', () => {
     const consent = Buffer.from(
       sign(agentEnrollmentMessage(anchor, g.fingerprint, 'claude'), g.privateKey),
     ).toString('hex');
-    const person: CatalogEvent[] = [
+    const founding = (n: number) =>
       identityFounded(
-        { at: at(1), who: anchor, signerFp: a.fingerprint, subject: anchor },
+        { at: at(n), who: anchor, signerFp: a.fingerprint, subject: anchor },
         { foundingFp: a.fingerprint },
-      ),
-    ];
+      );
+    const person: CatalogEvent[] = [founding(1)];
     shape.person.forEach((n, i) => {
       const base = { at: at(n), who: anchor, signerFp: a.fingerprint, subject: anchor };
       const cited = shape.cites === null ? undefined : agentHashes[shape.cites];
@@ -304,6 +348,9 @@ describe('a person and the agent they enrolled', () => {
             })
           : taskCreated({ ...base, subject: `p-${i}` }, { title: `p-${i}` }),
       );
+      if (shape.refound !== null && !shape.refound.ownTail && i === shape.refound.after) {
+        person.push(founding(shape.refound.at));
+      }
     });
     if (shape.foreign) {
       person.push(
@@ -319,8 +366,32 @@ describe('a person and the agent they enrolled', () => {
       );
     }
     writeTail(root, personTail, person, a);
-    writeTail(root, agentTail, agent, g);
-    return { root, personTail, agentTail, a, g };
+    if (agent.length > 0) writeTail(root, agentTail, agent, g);
+    if (shape.refound?.ownTail === true) {
+      writeTail(root, `${a.fingerprint}-i3`, [founding(shape.refound.at)], a);
+    }
+    if (shape.stray.length > 0) {
+      const own = deriveAnchor(s.fingerprint);
+      const stray: CatalogEvent[] = [];
+      shape.stray.forEach((n, i) => {
+        stray.push(
+          taskCreated(
+            { at: at(n), who: own, signerFp: s.fingerprint, subject: `s-${i}` },
+            { title: `s-${i}` },
+          ),
+        );
+        if (i === shape.strayFoundedAfter) {
+          stray.push(
+            identityFounded(
+              { at: at(n), who: own, signerFp: s.fingerprint, subject: own },
+              { foundingFp: s.fingerprint },
+            ),
+          );
+        }
+      });
+      writeTail(root, strayTail, stray, s);
+    }
+    return { root, personTail, agentTail, strayTail, a, g, s };
   }
 
   it('leaves the agent unenrolled and its events named, and a foreign anchor named, when the person’s founding is refused', () => {
@@ -329,6 +400,7 @@ describe('a person and the agent they enrolled', () => {
     // identity removes, and so is each of the agent's: its enrolment was not judged, so the agent
     // is enrolled by nothing this reader read - as the reading before said.
     const { root, personTail, a, g } = personAndAgent({
+      ...NOTHING_ELSE,
       person: [2, 3, 4, 5],
       enrolAt: 1,
       cites: null,
@@ -361,6 +433,7 @@ describe('a person and the agent they enrolled', () => {
     // first two events, and the cited one, before the enrolment: three causes, named as the
     // reading before named them, with nothing said in the record's favour.
     const { root, agentTail, g } = personAndAgent({
+      ...NOTHING_ELSE,
       person: [6],
       enrolAt: 0,
       cites: 2,
@@ -386,6 +459,7 @@ describe('a person and the agent they enrolled', () => {
   it('keeps the agent enrolled whether its enrolment is above or below a refused line in the person’s tail', () => {
     for (const junkAt of [8, 4]) {
       const { root, personTail } = personAndAgent({
+        ...NOTHING_ELSE,
         person: [2, 3, 4, 5, 6, 7, 8, 9],
         enrolAt: 4,
         cites: null,
@@ -398,6 +472,148 @@ describe('a person and the agent they enrolled', () => {
       expect(reading.fails).toEqual([`1 000001.jsonl:${junkAt}: ${JUNK_REFUSED}`]);
       expect(reading.notJudged).toEqual([]);
     }
+  });
+
+  /**
+   * A record read as this reader reads it, and read again by the same reader with no founding
+   * ever taken as unread: the reading every refused line got before a refused founding was said
+   * once, which each record below that is not one must still get, finding for finding.
+   */
+  const NOW_AND_BEFORE = `
+import json, sys
+sys.path.insert(0, ${JSON.stringify(VERIFIER_DIR)})
+from mnemaverify import record
+from mnemaverify.verdict import Report
+
+def read(root):
+    report = Report()
+    record.verify_record(root, report)
+    findings = [f.level.value + " " + f.section + " " + f.where + ": " + f.what for f in report.findings]
+    return {"verdict": report.verdict, "findings": findings}
+
+now = read(sys.argv[1])
+record._unread_foundings = lambda entries_by_tail, refused_first: {}
+print(json.dumps({"now": now, "before": read(sys.argv[1])}))
+`;
+
+  function nowAndBefore(root: string) {
+    const run = python(['-c', NOW_AND_BEFORE, root]);
+    if (run.status !== 0) throw new Error(`the second reader failed: ${run.stderr}`);
+    return JSON.parse(run.stdout) as Record<
+      'now' | 'before',
+      { verdict: string; findings: string[] }
+    >;
+  }
+
+  function putBom(segment: string): void {
+    writeFileSync(segment, BOM + readFileSync(segment, 'utf-8'));
+  }
+
+  function putJunkInPlaceOf(segment: string, line: number): void {
+    const lines = linesOf(segment);
+    lines.splice(line - 1, 1, JUNK);
+    writeFileSync(segment, `${lines.join('\n')}\n`);
+  }
+
+  /** The cause the fold gives an event `key` signed for its own anchor before any founding of it. */
+  const unenrolled = (key: KeyPair, seq: number) =>
+    `6.2 ${key.fingerprint.slice(0, 20)}... seq ${seq}: the signer ${key.fingerprint.slice(0, 12)}... ` +
+    `is not a key enrolled for ${deriveAnchor(key.fingerprint).slice(0, 20)}... at this point`;
+
+  type Built = ReturnType<typeof personAndAgent>;
+
+  const NOT_A_FOUNDING_UNREAD: ReadonlyArray<{
+    readonly title: string;
+    readonly shape: Partial<Shape>;
+    readonly damage: (built: Built) => void;
+    readonly fails: (built: Built) => string[];
+  }> = [
+    {
+      title: 'the first line refused, and the same key founded again further down its tail',
+      shape: { person: [2, 3, 5], refound: { after: 1, at: 4, ownTail: false } },
+      damage: ({ root, personTail }) => putBom(segmentPath({ root }, personTail, 1)),
+      fails: ({ a }) => [`1 000001.jsonl:1: ${BOM_REFUSED}`, unenrolled(a, 1), unenrolled(a, 2)],
+    },
+    {
+      title: 'the first line refused, and the same key founded again in a tail of its own',
+      shape: { person: [2, 3], refound: { after: 0, at: 4, ownTail: true } },
+      damage: ({ root, personTail }) => putBom(segmentPath({ root }, personTail, 1)),
+      fails: ({ a }) => [`1 000001.jsonl:1: ${BOM_REFUSED}`, unenrolled(a, 1), unenrolled(a, 2)],
+    },
+    {
+      title: 'a line put at the second line of the tail of a key no line founds',
+      shape: { person: [2], stray: [3, 4, 5] },
+      damage: ({ root, strayTail }) => putJunk(segmentPath({ root }, strayTail, 1), 2),
+      fails: ({ s }) => [
+        `1 000001.jsonl:2: ${JUNK_REFUSED}`,
+        unenrolled(s, 0),
+        unenrolled(s, 1),
+        unenrolled(s, 2),
+      ],
+    },
+    {
+      title: 'the second line of a founded tail in place of an entry',
+      shape: { person: [2, 3, 4], enrolAt: 1, agent: [5, 6] },
+      damage: ({ root, personTail }) => putJunkInPlaceOf(segmentPath({ root }, personTail, 1), 2),
+      fails: () => [`1 000001.jsonl:2: ${JUNK_REFUSED}`],
+    },
+    {
+      title: 'a line put at the second line of a founded tail',
+      shape: { person: [2, 3, 4], enrolAt: 1, agent: [5, 6] },
+      damage: ({ root, personTail }) => putJunk(segmentPath({ root }, personTail, 1), 2),
+      fails: () => [`1 000001.jsonl:2: ${JUNK_REFUSED}`],
+    },
+    {
+      title: 'a line put before a founding that reads',
+      shape: { person: [2, 3] },
+      damage: ({ root, personTail }) => putJunk(segmentPath({ root }, personTail, 1), 1),
+      fails: () => [`1 000001.jsonl:1: ${JUNK_REFUSED}`],
+    },
+    {
+      title: 'the first line of the agent’s tail refused, the person’s founding read',
+      shape: { person: [2, 3], enrolAt: 0, agent: [5, 6, 7] },
+      damage: ({ root, agentTail }) => putBom(segmentPath({ root }, agentTail, 1)),
+      fails: () => [`1 000001.jsonl:1: ${BOM_REFUSED}`],
+    },
+  ];
+
+  describe('a refused line that is not a founding no line read names every cause, as before', () => {
+    for (const { title, shape, damage, fails } of NOT_A_FOUNDING_UNREAD) {
+      it(title, () => {
+        const built = personAndAgent({ ...NOTHING_ELSE, ...shape });
+        damage(built);
+        const reading = secondReading(built.root);
+        expect(reading.verdict).toBe('REFUSED');
+        expect(reading.fails).toEqual(fails(built));
+        expect(reading.notJudged).toEqual([]);
+        const { now, before } = nowAndBefore(built.root);
+        expect(now).toEqual(before);
+      });
+    }
+  });
+
+  it('says once what a key no line founds signed for its own anchor, when a line is put before its tail’s first entry', () => {
+    // Put, not in place of: the line refused is still the tail's first, before any entry of it,
+    // and no line read founds the key, so it is where the founding can stand.
+    const built = personAndAgent({ ...NOTHING_ELSE, person: [2], stray: [3, 4, 5] });
+    putJunk(segmentPath({ root: built.root }, built.strayTail, 1), 1);
+    const { s } = built;
+    const reading = secondReading(built.root);
+    expect(reading.verdict).toBe('REFUSED');
+    expect(reading.fails).toEqual([`1 000001.jsonl:1: ${JUNK_REFUSED}`]);
+    expect(reading.notJudged).toEqual([
+      `6.2 ${built.strayTail}: ${NOT_JUDGED(3, s.fingerprint)}: the first line of its tail, ` +
+        '000001.jsonl:1, was refused above, and no line this reader read founds that anchor, so ' +
+        'the refused line is where the founding stands and whether the key was valid for its ' +
+        'anchor rests on it',
+    ]);
+    // The reading before named the three, one cause each; nothing else moved.
+    const { now, before } = nowAndBefore(built.root);
+    const three = [0, 1, 2].map((seq) => `FAIL ${unenrolled(s, seq)}`);
+    expect(before.findings.filter((f) => f.startsWith('FAIL 6.2'))).toEqual(three);
+    expect(now.findings.filter((f) => !f.includes('were not judged'))).toEqual(
+      before.findings.filter((f) => !three.includes(f)),
+    );
   });
 
   /**
@@ -418,7 +634,8 @@ def read(root):
     refused = any(f.level.value == "FAIL" and f.section == "1" for f in report.findings)
     return {"verdict": report.verdict, "folds": folds, "refused": refused}
 
-print(json.dumps({"damaged": read(sys.argv[1]), "oracle": read(sys.argv[2])}))
+pairs = sys.argv[1:]
+print(json.dumps([{"damaged": read(pairs[i]), "oracle": read(pairs[i + 1])} for i in range(0, len(pairs), 2)]))
 `;
 
   /** Every event a record's segments hold, by the place a 6.2 finding names it. */
@@ -444,35 +661,80 @@ print(json.dumps({"damaged": read(sys.argv[1]), "oracle": read(sys.argv[2])}))
     return byPlace;
   }
 
-  /** A record to damage: one `mutate.py` builds, or a person and their agent. */
+  /**
+   * A record to damage: one `mutate.py` builds, or a person and their agent - with, or without, a
+   * second founding of the person's key (in their tail or in one of its own), and a key no line
+   * founds signing for its own anchor.
+   */
   const aRecord = fc.oneof(
-    fc
-      .constantFrom(...(JSON.parse(python([MUTATE, 'list']).stdout) as string[]))
-      .map((mutation) => ({ mutation })),
-    fc
-      .record({
-        person: fc.array(fc.integer({ min: 2, max: 30 }), { minLength: 1, maxLength: 6 }),
-        enrolAt: fc.option(fc.nat({ max: 5 })),
-        cites: fc.option(fc.nat({ max: 3 })),
-        agent: fc.array(fc.integer({ min: 1, max: 30 }), { minLength: 1, maxLength: 4 }),
-        foreign: fc.boolean(),
-      })
-      .map((shape) => ({ shape })),
+    {
+      weight: 1,
+      arbitrary: fc
+        .constantFrom(...(JSON.parse(python([MUTATE, 'list']).stdout) as string[]))
+        .map((mutation) => ({ mutation })),
+    },
+    {
+      weight: 4,
+      arbitrary: fc
+        .record({
+          keys: fc.nat(),
+          person: fc.array(fc.integer({ min: 2, max: 30 }), { minLength: 1, maxLength: 6 }),
+          enrolAt: fc.option(fc.nat({ max: 5 })),
+          cites: fc.option(fc.nat({ max: 3 })),
+          agent: fc.array(fc.integer({ min: 1, max: 30 }), { minLength: 1, maxLength: 4 }),
+          foreign: fc.boolean(),
+          refound: fc.option(
+            fc.record({
+              after: fc.nat({ max: 5 }),
+              at: fc.integer({ min: 2, max: 30 }),
+              ownTail: fc.boolean(),
+            }),
+            { freq: 4 },
+          ),
+          stray: fc.oneof(
+            { weight: 1, arbitrary: fc.constant([]) },
+            {
+              weight: 5,
+              arbitrary: fc.array(fc.integer({ min: 1, max: 30 }), { minLength: 1, maxLength: 4 }),
+            },
+          ),
+          strayFoundedAfter: fc.oneof(
+            { weight: 2, arbitrary: fc.constant(null) },
+            { weight: 1, arbitrary: fc.nat({ max: 3 }) },
+          ),
+        })
+        .map((shape) => ({ shape })),
+    },
   );
 
   it(
     'the property: a line put at or in place of any line of any tail moves only what a refused founding accounts for',
     () => {
-      let foundings = 0;
-      let keptWithARefusedLine = 0;
-      let citedTailDamaged = 0;
+      const reach = {
+        foundings: 0,
+        foundingsPutBefore: 0,
+        keptWithARefusedLine: 0,
+        firstLineFoundedElsewhere: 0,
+        belowTheFirstLine: 0,
+        citedTailDamaged: 0,
+      };
       fc.assert(
         fc.property(
           aRecord,
-          fc.nat(),
-          fc.oneof(fc.constant(0), fc.nat()),
-          fc.boolean(),
-          (drawn, whichTail, whichLine, inPlace) => {
+          // One damage per tail: the first line, the second, or any - the first is where a
+          // founding stands, the second the first line that is not - put there or in its place.
+          fc.array(
+            fc.record({
+              whichLine: fc.oneof(
+                { weight: 2, arbitrary: fc.constant(0) },
+                { weight: 1, arbitrary: fc.constant(1) },
+                { weight: 1, arbitrary: fc.nat() },
+              ),
+              inPlace: fc.boolean(),
+            }),
+            { minLength: 4, maxLength: 4 },
+          ),
+          (drawn, perTail) => {
             const root =
               'mutation' in drawn
                 ? mutated(drawn.mutation)
@@ -486,115 +748,152 @@ print(json.dumps({"damaged": read(sys.argv[1]), "oracle": read(sys.argv[2])}))
                       drawn.shape.cites === null
                         ? null
                         : drawn.shape.cites % drawn.shape.agent.length,
+                    refound:
+                      drawn.shape.refound === null
+                        ? null
+                        : {
+                            ...drawn.shape.refound,
+                            after: drawn.shape.refound.after % drawn.shape.person.length,
+                          },
+                    strayFoundedAfter:
+                      drawn.shape.strayFoundedAfter === null || drawn.shape.stray.length === 0
+                        ? null
+                        : drawn.shape.strayFoundedAfter % drawn.shape.stray.length,
                   }).root;
-            const tails = tailsWithSegments(root);
-            if (tails.length === 0) return;
-            const tail = tails[whichTail % tails.length] as string;
+            // Each tail in turn is the damaged one, the others left whole: a copy of the record
+            // with the line put at line `line` of that tail, or in place of it, and its oracle -
+            // the same record without the line, and without the damaged tail's checkpoints, so
+            // its fold reads the same entries under the same coverage.
+            const damages = tailsWithSegments(root).map((tail, t) => {
+              const { whichLine, inPlace } = perTail[
+                t % perTail.length
+              ] as (typeof perTail)[number];
+              const damaged = join(fresh(), 'damaged');
+              const oracle = join(fresh(), 'oracle');
+              cpSync(root, damaged, { recursive: true });
+              cpSync(root, oracle, { recursive: true });
+              const segment = firstSegment(damaged, tail);
+              const lines = linesOf(segment);
+              const line = 1 + (whichLine % (inPlace ? lines.length : lines.length + 1));
+              if (inPlace) {
+                const kept = linesOf(firstSegment(oracle, tail));
+                kept.splice(line - 1, 1);
+                writeFileSync(
+                  firstSegment(oracle, tail),
+                  kept.length === 0 ? '' : `${kept.join('\n')}\n`,
+                );
+                lines.splice(line - 1, 1, JUNK);
+                writeFileSync(segment, `${lines.join('\n')}\n`);
+              } else {
+                putJunk(segment, line);
+              }
+              const checkpoints = join(oracle, 'tails', tail, 'checkpoints.jsonl');
+              if (existsSync(checkpoints)) rmSync(checkpoints);
+              return { tail, line, inPlace, damaged, oracle };
+            });
+            if (damages.length === 0) return;
 
-            // The oracle: the same record without the line, and without the damaged tail's
-            // checkpoints, so its fold reads the same entries under the same coverage.
-            const oracle = join(fresh(), 'oracle');
-            cpSync(root, oracle, { recursive: true });
-            const segment = firstSegment(root, tail);
-            const lines = linesOf(segment);
-            const line = 1 + (whichLine % (inPlace ? lines.length : lines.length + 1));
-            if (inPlace) {
-              const kept = linesOf(firstSegment(oracle, tail));
-              kept.splice(line - 1, 1);
-              writeFileSync(
-                firstSegment(oracle, tail),
-                kept.length === 0 ? '' : `${kept.join('\n')}\n`,
-              );
-              lines.splice(line - 1, 1, JUNK);
-              writeFileSync(segment, `${lines.join('\n')}\n`);
-            } else {
-              putJunk(segment, line);
-            }
-            const checkpoints = join(oracle, 'tails', tail, 'checkpoints.jsonl');
-            if (existsSync(checkpoints)) rmSync(checkpoints);
-
-            const run = python(['-c', BOTH, root, oracle]);
+            const run = python(['-c', BOTH, ...damages.flatMap((d) => [d.damaged, d.oracle])]);
             if (run.status !== 0) throw new Error(`${JSON.stringify(drawn)}: ${run.stderr}`);
-            const { damaged, oracle: expected } = JSON.parse(run.stdout) as Record<
-              'damaged' | 'oracle',
-              { verdict: string; folds: string[]; refused: boolean }
+            const readings = JSON.parse(run.stdout) as Array<
+              Record<'damaged' | 'oracle', { verdict: string; folds: string[]; refused: boolean }>
             >;
-            // An oracle that holds a refused line of its own is not one: the mutation refused a
-            // line already, and the two readings differ by more than the line put here.
-            if (expected.refused) return;
-            expect(damaged.refused).toBe(true);
-            expect(damaged.verdict).toBe('REFUSED');
+            damages.forEach(({ tail, line, inPlace, oracle }, i) => {
+              const { damaged, oracle: expected } = readings[i] as (typeof readings)[number];
+              const what = JSON.stringify({ drawn, tail, line, inPlace });
+              // An oracle that holds a refused line of its own is not one: the mutation refused a
+              // line already, and the two readings differ by more than the line put here.
+              if (expected.refused) return;
+              expect(damaged.refused, what).toBe(true);
+              expect(damaged.verdict, what).toBe('REFUSED');
 
-            // What a refused founding accounts for, from the record and the format alone: the line
-            // put in place of the tail's FIRST line, the tail's key (section 3) founded by no line
-            // that reads, and, of the oracle's causes, those of an event that key signed for its
-            // own anchor refused because the key is not valid there.
-            const events = eventsByPlace(oracle);
-            const key = tail.split('-')[0] as string;
-            const anchor = deriveAnchor(key);
-            const founded = [...events.values()].some(
-              (e) =>
-                e.kind === 'identity.founded' &&
-                (e.subject === anchor ||
-                  (e.payload as { foundingFp?: unknown }).foundingFp === key),
-            );
-            const accounted =
-              inPlace && line === 1 && !founded
-                ? expected.folds.filter((finding) => {
-                    const place = /^FAIL 6\.2 (\S+\.\.\. seq \d+): (.*)$/.exec(finding);
-                    if (place === null) return false;
-                    const event = events.get(place[1] as string);
-                    return (
-                      event !== undefined &&
-                      event.signerFp === key &&
-                      event.who === anchor &&
-                      /signed by a key not valid for|is not a key enrolled for/.test(
-                        place[2] as string,
-                      )
-                    );
-                  })
-                : [];
+              // What a refused founding accounts for, from the record and the format alone: the
+              // tail's FIRST line refused, before any entry of it (put in place of that line, or
+              // put before it), the tail's key (section 3) founded by no line that reads, and, of
+              // the oracle's causes, those of an event that key signed for its own anchor refused
+              // because the key is not valid there.
+              const events = eventsByPlace(oracle);
+              const key = tail.split('-')[0] as string;
+              const anchor = deriveAnchor(key);
+              const founded = [...events.values()].some(
+                (e) =>
+                  e.kind === 'identity.founded' &&
+                  (e.subject === anchor ||
+                    (e.payload as { foundingFp?: unknown }).foundingFp === key),
+              );
+              const ownCauses = expected.folds.filter((finding) => {
+                const place = /^FAIL 6\.2 (\S+\.\.\. seq \d+): (.*)$/.exec(finding);
+                if (place === null) return false;
+                const event = events.get(place[1] as string);
+                return (
+                  event !== undefined &&
+                  event.signerFp === key &&
+                  event.who === anchor &&
+                  /signed by a key not valid for|is not a key enrolled for/.test(place[2] as string)
+                );
+              });
+              const accounted = line === 1 && !founded ? ownCauses : [];
 
-            const notJudged = damaged.folds.filter((f) =>
-              f.includes('for its own anchor were not judged'),
-            );
-            expect(notJudged, JSON.stringify(drawn)).toEqual(
-              accounted.length === 0
-                ? []
-                : [
-                    expect.stringContaining(
-                      `UNCHECKED 6.2 ${tail}: ${NOT_JUDGED(accounted.length, key)}`,
-                    ),
-                  ],
-            );
-            // Every other finding of the folds is the oracle's, one for one: no cause dropped or
-            // invented, no `ok`, note or "not checked" it did not give.
-            expect(
-              damaged.folds.filter((f) => !notJudged.includes(f)),
-              JSON.stringify(drawn),
-            ).toEqual(expected.folds.filter((f) => !accounted.includes(f)));
+              const notJudged = damaged.folds.filter((f) =>
+                f.includes('for its own anchor were not judged'),
+              );
+              expect(notJudged, what).toEqual(
+                accounted.length === 0
+                  ? []
+                  : [
+                      expect.stringContaining(
+                        `UNCHECKED 6.2 ${tail}: ${NOT_JUDGED(accounted.length, key)}`,
+                      ),
+                    ],
+              );
+              // Every other finding of the folds is the oracle's, one for one: no cause dropped or
+              // invented, no `ok`, note or "not checked" it did not give.
+              expect(
+                damaged.folds.filter((f) => !notJudged.includes(f)),
+                what,
+              ).toEqual(expected.folds.filter((f) => !accounted.includes(f)));
 
-            if (accounted.length > 0) foundings += 1;
-            else if (expected.folds.some((f) => f.startsWith('FAIL 6.2')))
-              keptWithARefusedLine += 1;
-            if (
-              'shape' in drawn &&
-              drawn.shape.enrolAt !== null &&
-              drawn.shape.cites !== null &&
-              tail.endsWith('-i2')
-            ) {
-              citedTailDamaged += 1;
-            }
+              if (accounted.length > 0) {
+                reach.foundings += 1;
+                if (!inPlace) reach.foundingsPutBefore += 1;
+              } else if (expected.folds.some((f) => f.startsWith('FAIL 6.2'))) {
+                reach.keptWithARefusedLine += 1;
+              }
+              // The two cases a refused founding is NOT, though its key's own causes are there to
+              // take: the first line refused with the key founded by a line that reads, and a line
+              // below the first refused in the tail of a key no line founds.
+              if (ownCauses.length > 0 && line === 1 && founded)
+                reach.firstLineFoundedElsewhere += 1;
+              if (ownCauses.length > 0 && line > 1 && !founded) reach.belowTheFirstLine += 1;
+              if (
+                'shape' in drawn &&
+                drawn.shape.enrolAt !== null &&
+                drawn.shape.cites !== null &&
+                tail.endsWith('-i2')
+              ) {
+                reach.citedTailDamaged += 1;
+              }
+            });
           },
         ),
-        { seed: SEED, numRuns: 120 },
+        { seed: SEED, numRuns: 80 },
       );
-      // The draw reached both halves - a refused founding, and a refused line whose causes stand -
-      // and a damaged tail another tail's enrolment cites. A property that met none holds over
-      // nothing.
-      expect(foundings).toBeGreaterThan(0);
-      expect(keptWithARefusedLine).toBeGreaterThan(0);
-      expect(citedTailDamaged).toBeGreaterThan(0);
+      // The draw reached each half - a refused founding (in place of the first line, and put
+      // before it), a refused line whose causes stand, each case that is not a founding though its
+      // key's own causes are there - and a damaged tail another tail's enrolment cites. Every key
+      // comes from the draw, so the seed gives one reach (25, 11, 187, 14, 21, 42); a floor, not
+      // that reach, is what is held, so that another seed is held to "enough", not to "some".
+      const floor: typeof reach = {
+        foundings: 10,
+        foundingsPutBefore: 5,
+        keptWithARefusedLine: 10,
+        firstLineFoundedElsewhere: 10,
+        belowTheFirstLine: 5,
+        citedTailDamaged: 10,
+      };
+      for (const what of Object.keys(floor) as (keyof typeof reach)[]) {
+        expect(reach[what], what).toBeGreaterThanOrEqual(floor[what]);
+      }
     },
     CASE_TIMEOUT,
   );
