@@ -58,6 +58,94 @@ function writeARun(): string {
   return writer.tail;
 }
 
+/** A writer of its own tail, with a key of its own, that says each event by its instant. */
+function machine(options: { citeHeads?: boolean } = {}) {
+  const writer = openChainForWriting(root, {
+    keyRoot: mkdtempSync(join(tmpdir(), 'mnema-subject-machine-')),
+    maxUnsignedEvents: 10_000,
+    ...options,
+  });
+  return {
+    tail: writer.tail,
+    say: (subject: string, at: string) =>
+      writer.append(
+        memoryCaptured(
+          { at, who: writer.anchor, signerFp: writer.signerFingerprint, subject },
+          { content: at },
+        ),
+      ),
+  };
+}
+
+/** The one segment of a tail. */
+function segmentOf(tail: string): string {
+  const dir = tailDir({ root }, tail);
+  return join(dir, readdirSync(dir).find((name) => name.endsWith('.jsonl')) as string);
+}
+
+const T = (n: number) => `2026-10-01T00:00:0${n}.000Z`;
+
+describe('the events about a subject on more than one tail', () => {
+  it('are in the order of the merge, not tail by tail', () => {
+    const a = machine();
+    const b = machine();
+    // Either tail alone, then the other, would read 1 3 2 or 2 1 3 — never 1 2 3.
+    a.say(RUN, T(1));
+    b.say(RUN, T(2));
+    a.say(RUN, T(3));
+    b.say('someone-else', T(0));
+
+    const found = subjectEvents({ root }, upcasters, [RUN]).get(RUN);
+    expect(found?.map((event) => event.at)).toEqual([T(1), T(2), T(3)]);
+  });
+
+  it('hold back a head that cites a tail not yet taken, as the merge does', () => {
+    const a = machine();
+    const b = machine({ citeHeads: true });
+    a.say(RUN, T(5));
+    // Written after a's head is read: it cites it, and so comes after it despite its instant.
+    const cites = b.say(RUN, T(1));
+    expect(cites.event.after).toHaveLength(1);
+
+    const found = subjectEvents({ root }, upcasters, [RUN]).get(RUN);
+    expect(found?.map((event) => event.at)).toEqual([T(5), T(1)]);
+  });
+
+  it('are in the order of the merge when a tail ends without its newline', () => {
+    const a = machine();
+    const b = machine();
+    a.say(RUN, T(1));
+    b.say(RUN, T(2));
+    a.say(RUN, T(3));
+    // A complete last line with no newline after it: read by parsing, not by its bytes.
+    for (const tail of [a.tail, b.tail]) {
+      const file = segmentOf(tail);
+      writeFileSync(file, readFileSync(file, 'utf8').replace(/\n$/, ''));
+    }
+
+    const found = subjectEvents({ root }, upcasters, [RUN]).get(RUN);
+    expect(found?.map((event) => event.at)).toEqual([T(1), T(2), T(3)]);
+  });
+
+  it('drop a torn last line, and order an id written otherwise by the merge', () => {
+    const quoted = 'say "hi"';
+    const a = machine();
+    const b = machine();
+    a.say(quoted, T(1));
+    b.say(quoted, T(2));
+    a.say(quoted, T(3));
+    b.say(quoted, T(4));
+    const file = segmentOf(b.tail);
+    const text = readFileSync(file, 'utf8');
+    // The last line cut short: a tail whose writer died in the middle of it.
+    writeFileSync(file, text.slice(0, text.length - 40));
+
+    const found = subjectEvents({ root }, upcasters, [quoted, RUN]);
+    expect(found.get(quoted)?.map((event) => event.at)).toEqual([T(1), T(2), T(3)]);
+    expect(found.get(RUN)).toEqual([]);
+  });
+});
+
 describe('the events about a subject, by the bytes that name it', () => {
   it('finds every event about the subject, in order, and none that only mentions it', () => {
     writeARun();
