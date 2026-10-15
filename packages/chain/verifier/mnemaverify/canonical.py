@@ -311,8 +311,8 @@ def ends_in_crlf_only(raw: bytes) -> bool:
 
     It is what a checkout that rewrites line ends (git with `core.autocrlf=true`, the Git for
     Windows default) leaves on every line. The line is still refused - the bytes on disk are
-    not the bytes that were signed - but the cause says CRLF, which is what the product says
-    too (`CRLF_REFUSAL` in its `stored-json.ts`), instead of the sentence a tampered line gets.
+    not the bytes that were signed - but the cause says CRLF, as FORMAT.md section 4 has both
+    readers say, instead of the sentence a tampered line gets.
     """
     if not raw.endswith(b"\r"):
         return False

@@ -2,9 +2,18 @@ import { execFileSync } from 'node:child_process';
 import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { dirname, join } from 'node:path';
+import { fileURLToPath } from 'node:url';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { gitignorePath } from './layout.js';
 import { ensureTree } from './tree.js';
+
+/**
+ * The file that turns git's automatic maintenance off, handed to every git a test starts to
+ * write a repository. Named by path and not imported: this package imports nothing outside itself.
+ */
+const GIT_WITHOUT_MAINTENANCE = fileURLToPath(
+  new URL('../../../code/tests/support/without-maintenance.gitconfig', import.meta.url),
+);
 
 let root: string;
 
@@ -169,7 +178,11 @@ describe('ensureTree — a .gitattributes that keeps git from rewriting line end
         execFileSync('git', ['-c', 'user.name=t', '-c', 'user.email=t@example.invalid', ...args], {
           cwd,
           encoding: 'utf-8',
-          env: { ...process.env, GIT_CONFIG_NOSYSTEM: '1' },
+          env: {
+            ...process.env,
+            GIT_CONFIG_NOSYSTEM: '1',
+            GIT_CONFIG_GLOBAL: GIT_WITHOUT_MAINTENANCE,
+          },
         });
       mkdirSync(repo);
       git(repo, 'init', '-q');
