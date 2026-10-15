@@ -579,16 +579,18 @@ function theFixedRowsBetween(opened: Screen, later: Screen): number {
  *
  * THE FRAME AT THE WIDTH IS NOT THE ONE THIS CASE IS ABOUT, which is the one refinement the
  * usual locator needed here. {@link theSettledScreen} answers with the LAST frame drawn at a
- * size, and the last thing a driven session does is LEAVE: the key that leaves puts the row
- * being typed on the roll on its way out, so the page it answers with is the answer's page
- * shifted by one row — and the count below is a row of the answer.
+ * size, and the last thing a driven session does is LEAVE: the page it answers with is the page
+ * the session ended on, not the one the answer settled on. Measured at the floor, the heading
+ * sits on the same row in both and the last one only redraws the row under the line that says
+ * the answer is done (a prompt glyph where the settled page has a blank). The count below is a
+ * row of the answer, so it is asked of the page the answer settled on.
  *
  * SO THE PAGE IS THE FIRST ONE CARRYING THE HEADING THAT CLOSES THE LIST AND THE LINE THE
  * SESSION SAYS UNDER AN ANSWER ONCE IT IS DONE. IT WAS THE HEADING AND THE LAST WORD OF THE LAST
  * SENTENCE, and that word is not only the answer's: the sentence that closes the empty list of
  * decisions ends on it too, above the heading, so the page it found was the first one with the
  * heading on it. That page is one frame before the page the caller is left with: the line that
- * says the answer is done, and the prompt under it, come in the NEXT frame and push the roll up
+ * says the answer is done, and the blank row under it, come in the NEXT frame and push the roll up
  * two rows. The stick measured the page before them — and when a loaded machine drew the two in
  * one frame it measured the page after, two rows apart. Measured: 14 where it expected 16, in
  * one run of ninety on the runners; not reproduced on a machine kept busy (twelve runs), and
@@ -615,9 +617,10 @@ function theAnswerOn(ran: Ran, columns: number, rows: number): Screen {
  * heading that closes it both past the top of the window.
  *
  * IT WAS FIVE, THEN SIX, THEN TWENTY-THREE, THEN EIGHTEEN, THEN SIXTEEN, AND IT IS FOURTEEN. The
- * sixteen was the page one frame BEFORE the line that says the answer is done and the prompt under
- * it came in; those two rows push the roll up, and the page a caller is left with is the page
- * they are on ({@link theAnswerOn}). The sixteen before it: two rows of the
+ * sixteen was measured when the console did not yet draw the line that says the answer is done:
+ * that line, and the blank row under it, cost two rows of the answer at the shortest window, and
+ * the page a caller is left with is the page they are on ({@link theAnswerOn}). The sixteen
+ * before it: two rows of the
  * answer moved BELOW the landmark when the patterns' heading started saying how many are
  * awaiting a judgement — this counts what is above `## Patterns adopted`, and the document now
  * carries a blank and a sentence under it. The window shows the same twenty-three rows of roll
