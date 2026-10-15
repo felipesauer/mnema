@@ -267,7 +267,9 @@ describe('every character the Unicode standard says draws nothing is made visibl
   it('keeps a format mark that draws something, and the text around it', () => {
     // The Arabic number sign and the end of ayah are drawn: escaping them would take text away.
     expect(neutralized('\u0600\u0661 \u06dd')).toBe('\u0600\u0661 \u06dd');
-    expect(neutralized('caf\u00e9 \u4e2d\u6587 \u{1f600}')).toBe('caf\u00e9 \u4e2d\u6587 \u{1f600}');
+    expect(neutralized('caf\u00e9 \u4e2d\u6587 \u{1f600}')).toBe(
+      'caf\u00e9 \u4e2d\u6587 \u{1f600}',
+    );
   });
 
   it('covers every point the engine running it knows in the class, so a newer Unicode lights it', () => {

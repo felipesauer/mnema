@@ -92,7 +92,12 @@ const NO_EOL_LINE = '* -text';
  */
 export function ensureTree(layout: ChainLayout): boolean {
   mkdirSync(layout.root, { recursive: true });
-  ensureLine(gitattributesPath(layout), GITATTRIBUTES_CONTENT, (l) => l === NO_EOL_LINE, NO_EOL_LINE);
+  ensureLine(
+    gitattributesPath(layout),
+    GITATTRIBUTES_CONTENT,
+    (l) => l === NO_EOL_LINE,
+    NO_EOL_LINE,
+  );
   // A tree made before the writers' lock directory existed has no line for it, and a lock left
   // by a killed holder would be committed.
   return ensureLine(

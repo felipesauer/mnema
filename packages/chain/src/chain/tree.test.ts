@@ -166,11 +166,11 @@ describe('ensureTree — a .gitattributes that keeps git from rewriting line end
     try {
       const repo = join(work, 'repo');
       const git = (cwd: string, ...args: string[]): string =>
-        execFileSync(
-          'git',
-          ['-c', 'user.name=t', '-c', 'user.email=t@example.invalid', ...args],
-          { cwd, encoding: 'utf-8', env: { ...process.env, GIT_CONFIG_NOSYSTEM: '1' } },
-        );
+        execFileSync('git', ['-c', 'user.name=t', '-c', 'user.email=t@example.invalid', ...args], {
+          cwd,
+          encoding: 'utf-8',
+          env: { ...process.env, GIT_CONFIG_NOSYSTEM: '1' },
+        });
       mkdirSync(repo);
       git(repo, 'init', '-q');
       ensureTree({ root: join(repo, '.mnema') });
