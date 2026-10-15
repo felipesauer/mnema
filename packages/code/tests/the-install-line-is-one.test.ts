@@ -54,6 +54,20 @@ describe('the install from the source', () => {
     expect(page).not.toMatch(/releases\/download/);
   });
 
+  it('makes the shim directory and puts it on the PATH before the first pnpm runs', () => {
+    const at = (needle: string): number => BLOCK.indexOf(needle);
+    const bin = '$HOME/.local/bin';
+    // `corepack enable --install-directory` does not create the directory: it stops on ENOENT
+    expect(at(`mkdir -p "${bin}"`)).toBeGreaterThanOrEqual(0);
+    expect(at(`export PATH="${bin}:$PATH"`)).toBeGreaterThanOrEqual(0);
+    const firstPnpm = BLOCK.search(/\bpnpm /);
+    expect(firstPnpm).toBeGreaterThan(0);
+    // where pnpm exists only as that shim, a pnpm run before the export is `command not found`
+    expect(at(`mkdir -p "${bin}"`)).toBeLessThan(at('corepack enable'));
+    expect(at(`export PATH="${bin}:$PATH"`)).toBeLessThan(at('corepack enable'));
+    expect(at('corepack enable')).toBeLessThan(firstPnpm);
+  });
+
   it('packs every package that is not private, the dependencies first and `code` last', () => {
     const loop = BLOCK.match(/for p in ([^;]+); do/)?.[1]?.split(' ') ?? [];
     expect([...loop].sort()).toEqual(PUBLISHABLE);

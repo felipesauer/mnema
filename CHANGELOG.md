@@ -196,7 +196,10 @@ with its own changelog.
 - **The install page's steps work with a Node installed by the system.** `npm i -g` of the packed tarballs stopped at
   `EACCES` on `/usr/lib/node_modules/@mnema` where npm's global prefix is `/usr`; the steps now install under
   `~/.local` (`--prefix ~/.local`, with `~/.local/bin` on the `PATH`), `corepack enable` takes `--install-directory
-  ~/.local/bin`, and the page says when each needs permission.
+  ~/.local/bin`, and the page says when each needs permission. The block makes `~/.local/bin` and puts it on the `PATH`
+  before the first `pnpm` (the shim directory is not created for you, and where `pnpm` exists only as that shim it is not
+  found otherwise), and says the lines are for `sh`, not for Windows `cmd` or PowerShell. The test that holds the block
+  to the page now holds that order.
 
 - **A write refuses a tail cut inside what its last checkpoint signed (`TAIL_DAMAGED`), and leaves it as it was.**
   Before reading the checkpoint, the writer cut the tail's end back to its last newline, so a signed line truncated

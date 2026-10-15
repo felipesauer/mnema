@@ -12,11 +12,11 @@ depends on the other four packages, so the five tarballs go in one command:
 
 ```sh
 git clone https://github.com/felipesauer/mnema.git && cd mnema
+mkdir -p "$HOME/.local/bin" && export PATH="$HOME/.local/bin:$PATH"   # add the export to your shell's startup file
 corepack enable --install-directory ~/.local/bin && pnpm install --frozen-lockfile && pnpm build
 dest="$(mktemp -d)"
 for p in chain core context stacks code; do (cd "packages/$p" && pnpm pack --pack-destination "$dest"); done
 npm i -g --prefix ~/.local "$dest"/*.tgz
-export PATH="$HOME/.local/bin:$PATH"   # add this line to your shell's startup file
 ```
 
 `--prefix ~/.local` installs under your own home, so it needs no root. Without it, a Node installed by the
@@ -24,6 +24,8 @@ system has npm's global prefix at `/usr`, and `npm i -g` stops at `EACCES` on `/
 Likewise a plain `corepack enable` writes its `pnpm` shim beside `node` and needs permission there; the
 `--install-directory ~/.local/bin` above puts it in your home instead (if you installed Node under your own
 home, a plain `corepack enable` is enough).
+
+The lines are for `sh` and a `~` the shell expands; they do not run as written in the Windows `cmd` or PowerShell.
 
 To update, `git pull` in the clone and run the same steps again.
 
