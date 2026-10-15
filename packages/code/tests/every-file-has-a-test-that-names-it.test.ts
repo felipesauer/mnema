@@ -760,6 +760,8 @@ const CLAUSES_PER_FILE: Readonly<Record<string, number>> = {
   'packages/action/src/record.test.ts': 2,
   'packages/action/src/run.test.ts': 11,
   'packages/chain/src/boundaries.test.ts': 3,
+  'packages/chain/src/chain/a-batch-remembers-the-heads-it-cited.test.ts': 9,
+  'packages/chain/src/chain/a-writer-rotates-at-the-size-it-may-hold-and-comes-back-to-it.test.ts': 10,
   'packages/chain/src/chain/backup.test.ts': 8,
   'packages/chain/src/chain/bitcoin.test.ts': 3,
   'packages/chain/src/chain/both-readers-read-the-same-bytes.test.ts': 13,
