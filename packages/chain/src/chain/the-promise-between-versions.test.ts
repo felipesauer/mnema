@@ -69,10 +69,17 @@ describe('backward: a record an earlier binary wrote is read by this one', () =>
     expect(here.census.map((note) => note.kind)).toEqual(['backup-key']);
   });
 
-  it('is verified by the second reader too, with nothing failed and nothing left unchecked', () => {
+  it('is verified by the second reader too, every move applied and nothing left unchecked', () => {
     const there = secondReading(EARLIER);
     expect(there.verdict).toBe('VERIFIED');
     expect(there.findings.filter((f) => f.level === 'FAIL' || f.level === 'UNCHECKED')).toEqual([]);
+    // The second reader names a move it does not apply, or a stranger's retraction, as a note
+    // of §6.7 or §6.4 under a verdict that stays VERIFIED, so the verdict alone would not say it.
+    expect(
+      there.findings
+        .filter((f) => f.section === '6.4' || f.section === '6.7')
+        .map((f) => `${f.level} ${f.section} ${f.what.slice(0, 30)}`),
+    ).toEqual(['ok 6.7 every one of the 17 move(s) is']);
   });
 });
 
