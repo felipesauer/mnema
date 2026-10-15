@@ -13,7 +13,7 @@
  *
  * WHY "THE SAME `from` TWICE" IS ENOUGH, AND WHERE IT IS NOT. In a machine with no cycle a
  * subject leaves each state at most once, so two transitions carrying one `from` can only be
- * two moves that did not see each other — whatever order the merge puts them in, and with no
+ * two moves on machines that had not seen each other, or a move written past the gate — whatever order the merge puts them in, and with no
  * clock compared. The decision and skill machines have no cycle, and the case that enumerates
  * their tables says so (`divergent-moves.test.ts`). The task machine HAS one (a reopened task
  * leaves `IN_PROGRESS` again), so this rule would accuse every honest reopen there.
@@ -71,7 +71,7 @@ export function divergentMoves(events: Iterable<CatalogEvent>): DivergentMove[] 
   const tasks = new TaskMoves();
   // A move repeated byte for byte is ONE move read twice — what a tail whose last entry was
   // duplicated holds, and what the link-break notice already reports as a record that does not
-  // chain — never two moves that did not see each other. Two machines' moves differ at least
+  // chain — never two moves on machines that had not seen each other. Two machines' moves differ at least
   // in who signed them.
   const read = new Set<string>();
   for (const event of events) {

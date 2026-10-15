@@ -573,9 +573,10 @@ const NO_DECISIONS = [
  * is a new decision, never a rewrite of an old one.
  */
 const MOVED_APART = [
-  'One of the rules below was moved out of one state more than once, by moves made apart',
-  'that did not see each other. Each move is a signed fact, and nothing re-judges either: this',
-  'file prints the state the last of them in the record leaves. Read both before relying on it:',
+  'One of the rules below was moved out of one state more than once, by moves on machines',
+  'that had not seen each other, or by a move written past the gate. Each move is a signed',
+  'fact, and nothing re-judges either: this file prints the state the last of them in the',
+  'record leaves. Read both before relying on it:',
 ];
 
 const LABEL_NAMES_TWO = [
@@ -1101,6 +1102,9 @@ function ambiguousLabels(collisions: readonly AdrCollision[]): string[] {
  * The declaration about rules moved apart, and nothing at all when none was — the same
  * doctrine as {@link ambiguousLabels}: the ordinary case adds no byte, and the lines it does
  * add go under the heading, above the bullets, in a shape that does not open with `- **`.
+ * Its cause is the one `show` gives in `divergenceNotice` (`wiring/integrity.ts`), in the same
+ * words: two moves out of one state on ONE tail saw each other, so "did not see each other"
+ * was not true of every record this paragraph is printed for.
  */
 function movedApart(divergent: readonly DivergentMove[], kind: 'decision' | 'skill'): string[] {
   const these = divergent.filter((move) => move.kind === kind);

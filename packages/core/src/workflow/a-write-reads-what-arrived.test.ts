@@ -1,11 +1,12 @@
 /**
- * A gated write reads the projection the tree keeps, brought forward to the chain as it stands, and
- * judges its caller's precondition under the lock.
+ * A gated write does not replay the record, and judges its caller's precondition under the lock.
  *
  *   - THE WRITE DOES NOT REPLAY THE RECORD. A row planted in the kept projection that no replay
- *     would write survives a numbered `recordDecision` and a transition: both read what arrived
- *     since, and the second reading `onTheRecordAsItStands` takes under the lock is the same cheap
- *     reading, which is what keeps a holder from keeping the lock for a whole replay.
+ *     would write survives a numbered `recordDecision` and a transition: the number is read from
+ *     the projection brought forward over what arrived since, and the transition reads only the
+ *     lines of the chain that name its subject (`standing`), so the second reading
+ *     `onTheRecordAsItStands` takes under the lock is never a whole replay either. What the
+ *     transition is judged on is NOT the projection: `a-gate-judges-the-chain-not-the-cache.test.ts`.
  *   - THE NUMBER STAYS RIGHT: the label is the count the chain has, including a decision another
  *     writer appended between two writes.
  *   - A PRECONDITION OF THE CALLER'S IS JUDGED AGAIN UNDER THE LOCK when the chain moved after the
@@ -20,6 +21,7 @@ import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { openDatabase } from '../db/sqlite.js';
 import { captureMemory } from '../knowledge/operations.js';
 import { ProjectionCache } from '../projections/cache.js';
+import { projectDecisions } from '../projections/decision.js';
 import { acceptDecision, recordDecision } from './decision-operations.js';
 import type { WriteContext } from './operations.js';
 import { asTheChainIs, standing } from './read-the-record.js';
@@ -109,9 +111,7 @@ describe('a write reads what arrived and not the whole record', () => {
     const one = landed(recordDecision(ctx, { title: 'one', rationale: 'because' }));
     ctx.writer.checkpoint();
     expect(asTheChainIs(ctx, (cache) => cache.countDecisions())).toBe(1);
-    const seen = standing(ctx, [one.id, undefined, 'nothing-here'], (cache, id) =>
-      cache.getDecision(id),
-    );
+    const seen = standing(ctx, [one.id, undefined, 'nothing-here'], projectDecisions);
     expect([...seen.keys()]).toEqual([one.id]);
   });
 });
