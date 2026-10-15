@@ -430,6 +430,35 @@ def appended_event_missing_a_declared_field(root: str) -> tuple[bool, str]:
     return True, f"seq {seq} appended with its payload.{dropped} left out"
 
 
+def appended_move_the_workflow_does_not_allow(root: str) -> tuple[bool, str]:
+    """A decision born, then moved rejected -> accepted, appended KEYLESSLY under its own signer.
+
+    NOT A REFUSAL, IN EITHER READER, and that is the row. Section 6.7 makes the workflows part
+    of the format, and a move no row of its table holds is not applied - but the event is
+    intact, chained and named by a key valid for its `who`, so it is not a break: both readers
+    verify the record, and both name the move, by the rule `not-in-the-table`.
+    """
+    template = _last_event(root)
+
+    def move(payload: dict) -> dict:
+        return {
+            "at": template["at"],
+            "kind": "decision.transitioned",
+            "payload": payload,
+            "signerFp": template["signerFp"],
+            "subject": "a-decision-moved-past-the-gate",
+            "v": 1,
+            "who": template["who"],
+        }
+
+    _append(root, move({"action": "create", "from": None, "to": "proposed"}))
+    _, seq = _append(
+        root,
+        move({"action": "accept", "fields": {"note": "by hand"}, "from": "rejected", "to": "accepted"}),
+    )
+    return True, f"seq {seq} appended: a move rejected -> accepted of a decision born proposed"
+
+
 def appended_event_by_an_unenrolled_key(root: str) -> tuple[bool, str]:
     """An event appended KEYLESSLY, naming a signer no enrolment ever authorized.
 
@@ -813,6 +842,24 @@ def _respelled(root: str, respell, what: str) -> tuple[bool, str]:
     return _rewrite(path, lines), f"{what}, on line {at + 1}"
 
 
+def byte_order_mark_before_the_first_line(root: str) -> tuple[bool, str]:
+    """The three bytes an editor saving "UTF-8 with BOM" puts at the start of the segment.
+
+    The first line, the founding of the identity, no longer parses, so the record is refused at
+    that line - and only there. The events after it were signed by the key that line founded,
+    and a reader that folded them without it would refuse each one as signed by a key not valid
+    for its anchor: causes the record does not contain, beside the one it does.
+    """
+    path = _segment(root)
+    with open(path, "rb") as handle:
+        before = handle.read()
+    if before.startswith(b"\xef\xbb\xbf"):
+        return False, "the segment already starts with a byte-order mark"
+    with open(path, "wb") as handle:
+        handle.write(b"\xef\xbb\xbf" + before)
+    return True, "a byte-order mark written before the first line of the segment"
+
+
 def whitespace_in_a_signed_line(root: str) -> tuple[bool, str]:
     """A space after the first colon: the JSON a pretty-printer or a merge tool writes."""
     return _respelled(
@@ -828,6 +875,33 @@ def line_ends_rewritten_to_crlf(root: str) -> tuple[bool, str]:
     CRLF, so a record nobody touched is not read as a tampered one.
     """
     return _respelled(root, lambda line: line + b"\r", "the line end rewritten to CRLF")
+
+
+def checkpoint_line_ends_rewritten_to_crlf(root: str) -> tuple[bool, str]:
+    """The same carriage return, on the first line of the checkpoints file.
+
+    A checkout rewrites every text file it is told to, and the checkpoints are one: the signed
+    message still verifies, because the value is untouched, and the line is not the bytes that
+    were written. Refused, and named as CRLF, like a segment's line.
+    """
+    path = _checkpoints(root)
+    lines = _read_lines(path)
+    if lines[0].endswith(b"\r"):
+        return False, "the first checkpoint line already ends in a carriage return"
+    lines[0] = lines[0] + b"\r"
+    return _rewrite(path, lines), "the first checkpoint line's end rewritten to CRLF"
+
+
+def tail_proof_ends_rewritten_to_crlf(root: str) -> tuple[bool, str]:
+    """The same carriage return, at the end of tailproof.json: the third file a checkout rewrites."""
+    path = os.path.join(_tail_dir(root), "tailproof.json")
+    with open(path, "rb") as handle:
+        body = handle.read().rstrip(b"\n")
+    if body.endswith(b"\r"):
+        return False, "tailproof.json already ends in a carriage return"
+    with open(path, "wb") as handle:
+        handle.write(body + b"\r\n")
+    return True, "the end of tailproof.json rewritten to CRLF"
 
 
 def key_order_in_a_signed_line(root: str) -> tuple[bool, str]:
@@ -993,9 +1067,13 @@ MUTATIONS = {
     "reordered-lines": reordered_lines,
     "refounded-record": refounded_record,
     "tail-proof-removed": tail_proof_removed,
+    "byte-order-mark-before-the-first-line": byte_order_mark_before_the_first_line,
     "whitespace-in-a-signed-line": whitespace_in_a_signed_line,
     "key-order-in-a-signed-line": key_order_in_a_signed_line,
     "line-ends-rewritten-to-crlf": line_ends_rewritten_to_crlf,
+    "checkpoint-line-ends-rewritten-to-crlf": checkpoint_line_ends_rewritten_to_crlf,
+    "tail-proof-ends-rewritten-to-crlf": tail_proof_ends_rewritten_to_crlf,
+    "appended-move-the-workflow-does-not-allow": appended_move_the_workflow_does_not_allow,
     "decomposed-text-in-a-signed-line": decomposed_text_in_a_signed_line,
     "checkpoint-by-a-checker-over-the-persons-event": checkpoint_by_a_checker_over_the_persons_event,
     "which-is-who-in-a-signed-range": which_is_who_in_a_signed_range,
