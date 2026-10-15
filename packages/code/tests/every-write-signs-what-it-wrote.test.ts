@@ -520,6 +520,15 @@ interface Driven {
 /** A path the sweep does not drive, and the reason — the honest half of the list. */
 const NOT_DRIVEN: Readonly<Record<string, string>> = {};
 
+/**
+ * The two CLI sweeps start the real binary once per row of {@link cliSweep}. Measured with the
+ * suite running on two workers, one takes 1.06 s and the other 0.91 s, against the shared 5 s;
+ * alone they take less, and under a loaded runner they have stopped at five seconds. Every row
+ * is a different write path and none is spare, so the limit is given room for a machine
+ * an order of magnitude slower than the one measured, not removed.
+ */
+const EVERY_CLI_WRITE = 30_000;
+
 describe('every write path leaves the record fully signed', () => {
   /**
    * The CLI surface, driven in one project, in order, so each act builds on the last.
@@ -1080,7 +1089,9 @@ describe('every write path leaves the record fully signed', () => {
     expect([...driven, ...Object.keys(NOT_DRIVEN)].sort()).toEqual(PATHS.map((p) => p.at).sort());
   });
 
-  it('leaves nothing above a checkpoint, after every CLI write there is', async () => {
+  it('leaves nothing above a checkpoint, after every CLI write there is', {
+    timeout: EVERY_CLI_WRITE,
+  }, async () => {
     const project = join(sandbox, 'repo');
     for (const row of cliSweep()) {
       const before = acrossTrees(project, env);
@@ -1109,7 +1120,9 @@ describe('every write path leaves the record fully signed', () => {
     expect(end.levels).toContain('fully-signed');
   });
 
-  it('signs every CLI write under the hold that wrote it, so a refusal never follows the fact', async () => {
+  it('signs every CLI write under the hold that wrote it, so a refusal never follows the fact', {
+    timeout: EVERY_CLI_WRITE,
+  }, async () => {
     const project = join(sandbox, 'repo');
     const trap = armTheGapBetweenTheFactAndItsSignature();
     try {
