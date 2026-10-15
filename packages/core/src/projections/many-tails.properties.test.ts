@@ -865,9 +865,12 @@ describe('clocks that disagree, with nothing cited: fixed and not endorsed', () 
           }),
         );
         const merged = orderedEvents({ root }, upcasters);
-        expect(merged.filter((event) => event.subject === 'task-honest').map((e) => e.at)).toEqual(
-          [iso(10), iso(10), iso(20), iso(30)],
-        );
+        expect(merged.filter((event) => event.subject === 'task-honest').map((e) => e.at)).toEqual([
+          iso(10),
+          iso(10),
+          iso(20),
+          iso(30),
+        ]);
         expect(divergentMoves(merged).filter((move) => move.entityId === 'task-honest')).toEqual(
           [],
         );
@@ -912,9 +915,10 @@ describe('clocks that disagree, with nothing cited: fixed and not endorsed', () 
             // move the workflow does not allow, which no reader applies and `verify` names
             // (FORMAT.md §6.7). A writer that cites nothing saw no birth it did not write itself.
             const moves = skewed.filter((op) => op.act.kind === 'move');
-            const applied = merged.filter(
-              (event) => event.kind === 'decision.transitioned' && event.subject === X,
-            ).length - 1;
+            const applied =
+              merged.filter(
+                (event) => event.kind === 'decision.transitioned' && event.subject === X,
+              ).length - 1;
             const named = divergentMoves(merged).filter((move) => move.entityId === X);
             const notApplied = verify(root).census.filter(
               (note) => note.kind === 'illegal-move' && note.subject === X,
@@ -970,12 +974,14 @@ function causalModel(root: string): string[] {
   const held = new Set(queues.flatMap((queue) => queue.left.map((entry) => entry.hash)));
   // Where each entry is, so a citation can be told to the judgment by tail and position.
   const where = new Map<string, { tail: number; position: number }>();
-  tails.forEach((tail, index) =>
-    tail.entries.forEach((entry, position) => where.set(entry.hash, { tail: index, position })),
-  );
+  for (const [index, tail] of tails.entries()) {
+    for (const [position, entry] of tail.entries.entries()) {
+      where.set(entry.hash, { tail: index, position });
+    }
+  }
   const citations: CitationHeld[] = [];
-  tails.forEach((tail, index) =>
-    tail.entries.forEach((entry, position) => {
+  for (const [index, tail] of tails.entries()) {
+    for (const [position, entry] of tail.entries.entries()) {
       for (const hash of entry.after) {
         const cited = where.get(hash);
         if (cited !== undefined) {
@@ -987,8 +993,8 @@ function causalModel(root: string): string[] {
           });
         }
       }
-    }),
-  );
+    }
+  }
   const taken = new Set<string>();
   const out: { event: CatalogEvent; tail: number; position: number }[] = [];
   for (;;) {
@@ -1216,12 +1222,15 @@ describe('with citations: every machine cites the heads it read, as the product 
         // B had pulled C's acceptance on its own clone and supersedes X on top of it, by a
         // decision A recorded, with a clock behind; this record receives B's tail first, and C's
         // only later.
-        for (const event of decisionBirth({ ...env(a, 1), subject: 'dec-y' }, {
-          title: 'y',
-          rationale: 'because',
-          adr: 'ADR-2',
-          initial: 'proposed',
-        })) {
+        for (const event of decisionBirth(
+          { ...env(a, 1), subject: 'dec-y' },
+          {
+            title: 'y',
+            rationale: 'because',
+            adr: 'ADR-2',
+            initial: 'proposed',
+          },
+        )) {
           a.append(event);
         }
         const b = open(root, 1);

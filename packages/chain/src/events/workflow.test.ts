@@ -48,13 +48,23 @@ describe('a move is judged by the table of its workflow', () => {
     expect(judgeMove(accept('proposed'), standing('proposed'))).toBeUndefined();
     expect(
       judgeMove(
-        taskTransitioned(env, { from: 'DONE', to: 'IN_PROGRESS', action: 'reopen', fields: { reason: 'r' } }),
+        taskTransitioned(env, {
+          from: 'DONE',
+          to: 'IN_PROGRESS',
+          action: 'reopen',
+          fields: { reason: 'r' },
+        }),
         standing('DONE'),
       ),
     ).toBeUndefined();
     expect(
       judgeMove(
-        skillTransitioned(env, { from: 'adopted', to: 'deprecated', action: 'deprecate', fields: { reason: 'r' } }),
+        skillTransitioned(env, {
+          from: 'adopted',
+          to: 'deprecated',
+          action: 'deprecate',
+          fields: { reason: 'r' },
+        }),
         standing('adopted'),
       ),
     ).toBeUndefined();
@@ -67,7 +77,11 @@ describe('a move is judged by the table of its workflow', () => {
   });
 
   it('refuses a state that is not one of the workflow, and an action it does not have', () => {
-    const banana = decisionTransitioned(env, { from: 'rejected', to: 'banana', action: 'teleport' });
+    const banana = decisionTransitioned(env, {
+      from: 'rejected',
+      to: 'banana',
+      action: 'teleport',
+    });
     expect(judgeMove(banana, standing('rejected'))).toMatchObject({ rule: 'not-in-the-table' });
     // A row's `from` and action, with another `to`: the row decides where the move lands.
     expect(judgeMove(accept('proposed', 'rejected'), standing('proposed'))).toMatchObject({
@@ -116,7 +130,9 @@ describe('a birth happens once, and lands where the workflow begins', () => {
 
   it('admits the first birth and refuses a second', () => {
     expect(judgeMove(birth('proposed'), standing(undefined))).toBeUndefined();
-    expect(judgeMove(birth('proposed'), standing('proposed'))).toMatchObject({ rule: 'born-twice' });
+    expect(judgeMove(birth('proposed'), standing('proposed'))).toMatchObject({
+      rule: 'born-twice',
+    });
   });
 
   it('refuses a birth into any state but the first', () => {
@@ -124,7 +140,10 @@ describe('a birth happens once, and lands where the workflow begins', () => {
       rule: 'not-in-the-table',
     });
     expect(
-      judgeMove(taskTransitioned(env, { from: null, to: 'DONE', action: 'create' }), standing(undefined)),
+      judgeMove(
+        taskTransitioned(env, { from: null, to: 'DONE', action: 'create' }),
+        standing(undefined),
+      ),
     ).toMatchObject({ rule: 'not-in-the-table' });
   });
 });
@@ -147,7 +166,9 @@ describe('a supersede names a successor the record holds', () => {
     expect(judgeMove(supersede('d-9'), standing('accepted', undefined, ['d-2']))).toMatchObject({
       rule: 'successor',
     });
-    expect(judgeMove(supersede(undefined), standing('accepted'))).toMatchObject({ rule: 'successor' });
+    expect(judgeMove(supersede(undefined), standing('accepted'))).toMatchObject({
+      rule: 'successor',
+    });
     expect(judgeMove(supersede('d-1'), standing('accepted', undefined, ['d-1']))).toMatchObject({
       rule: 'successor',
     });

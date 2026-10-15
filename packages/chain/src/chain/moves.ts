@@ -26,7 +26,7 @@ import {
   judgeMove,
   RUN_OPEN,
   stateAfter,
-  WORKFLOWS,
+  type WORKFLOWS,
 } from '../events/workflow.js';
 import type { CitationHeld } from './causal-order.js';
 
@@ -116,7 +116,10 @@ function site(placed: PlacedEvent): { tail: number; position: number } {
  */
 export function sightOf(
   held: readonly CitationHeld[],
-): (later: { tail: number; position: number }, earlier: { tail: number; position: number }) => boolean {
+): (
+  later: { tail: number; position: number },
+  earlier: { tail: number; position: number },
+) => boolean {
   const byTail = new Map<number, CitationHeld[]>();
   for (const citation of held) {
     const list = byTail.get(citation.tail) ?? [];

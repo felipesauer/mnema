@@ -138,7 +138,9 @@ export function subjectEvents(
   }
   const unread = [...named].filter((id) => !read.subjects.has(id));
   const successors =
-    unread.length === 0 ? new Map<string, PlacedEvent[]>() : readSubjects(layout, upcasters, unread).subjects;
+    unread.length === 0
+      ? new Map<string, PlacedEvent[]>()
+      : readSubjects(layout, upcasters, unread).subjects;
   const born = (id: string): boolean =>
     (read.subjects.get(id) ?? successors.get(id) ?? []).some(
       ({ event }) => event.kind === 'decision.transitioned' && event.payload.from === null,

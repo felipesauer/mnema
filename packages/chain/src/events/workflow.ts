@@ -107,10 +107,7 @@ export type TransitionKind = keyof typeof WORKFLOWS;
  * run has no table — it is open from its `run.started` and ends once — so its move is the one
  * kind here with no `from`.
  */
-export type MoveEvent = Extract<
-  CatalogEvent,
-  { readonly kind: TransitionKind | 'run.ended' }
->;
+export type MoveEvent = Extract<CatalogEvent, { readonly kind: TransitionKind | 'run.ended' }>;
 
 /** The state a run is in: `open` from its start, `ended` from its end. */
 export const RUN_OPEN = 'open';

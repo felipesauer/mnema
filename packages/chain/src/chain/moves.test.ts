@@ -55,7 +55,11 @@ describe('a move is judged against the moves before it that were legal', () => {
 
   it('applies nothing an illegal move did: a move from the state it claimed is judged as never reached', () => {
     const [recorded, born] = birth() as [CatalogEvent, CatalogEvent];
-    const forged = decisionTransitioned(env(2), { from: 'rejected', to: 'accepted', action: 'accept' });
+    const forged = decisionTransitioned(env(2), {
+      from: 'rejected',
+      to: 'accepted',
+      action: 'accept',
+    });
     const supersede = decisionTransitioned(env(3), {
       from: 'accepted',
       to: 'superseded',

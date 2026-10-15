@@ -129,6 +129,7 @@ export {
   requiredLevel,
   weakerLevel,
 } from './chain/level.js';
+export { illegalMoves, type PlacedEvent } from './chain/moves.js';
 export {
   firstLinkBreakFrom,
   holdsRecord,
@@ -145,7 +146,6 @@ export {
   type TailRead,
   type TailSince,
 } from './chain/store.js';
-export { illegalMoves, type PlacedEvent } from './chain/moves.js';
 export { subjectEvents } from './chain/subject-events.js';
 export { DEFAULT_WAIT_MS, TailBusyError } from './chain/tail-lock.js';
 export { ensureTree } from './chain/tree.js';

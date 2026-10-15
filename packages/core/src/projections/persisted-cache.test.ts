@@ -45,11 +45,7 @@ import { ensureSchema, PROJECTION_TABLES } from '../db/schema.js';
 import { IN_MEMORY, openDatabase, type SqliteDatabase } from '../db/sqlite.js';
 import { captureMemory, recordObservation, retractNote } from '../knowledge/operations.js';
 import { switchChannel } from '../workflow/channel-operations.js';
-import {
-  acceptDecision,
-  recordDecision,
-  rejectDecision,
-} from '../workflow/decision-operations.js';
+import { acceptDecision, recordDecision, rejectDecision } from '../workflow/decision-operations.js';
 import { createTask, transitionTask, type WriteContext } from '../workflow/operations.js';
 import { endRun, startRun } from '../workflow/session-operations.js';
 import { createSkill } from '../workflow/skill-operations.js';

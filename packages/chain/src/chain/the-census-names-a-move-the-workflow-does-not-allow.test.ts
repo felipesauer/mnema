@@ -42,7 +42,14 @@ function rejectedThen(...moves: { from: string; to: string; action: string }[]) 
     w.checkpoint();
   };
   act(identityFounded(env(w.anchor), { foundingFp: w.signerFingerprint }));
-  act(...decisionBirth(env('d-1'), { title: 'Use X', rationale: 'r', adr: 'ADR-1', initial: 'proposed' }));
+  act(
+    ...decisionBirth(env('d-1'), {
+      title: 'Use X',
+      rationale: 'r',
+      adr: 'ADR-1',
+      initial: 'proposed',
+    }),
+  );
   act(
     decisionTransitioned(env('d-1'), {
       from: 'proposed',
@@ -51,7 +58,8 @@ function rejectedThen(...moves: { from: string; to: string; action: string }[]) 
       fields: { note: 'no' },
     }),
   );
-  for (const move of moves) act(decisionTransitioned(env('d-1'), { ...move, fields: { note: 'yes' } }));
+  for (const move of moves)
+    act(decisionTransitioned(env('d-1'), { ...move, fields: { note: 'yes' } }));
   return w.tail;
 }
 

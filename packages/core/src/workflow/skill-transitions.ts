@@ -52,8 +52,7 @@ export interface SkillTransition {
  * deliberately NOT here: a skill is born through the chain's birth pair, not
  * requested through the gate.
  */
-export const SKILL_TRANSITIONS: readonly SkillTransition[] =
-  WORKFLOWS['skill.transitioned'].moves;
+export const SKILL_TRANSITIONS: readonly SkillTransition[] = WORKFLOWS['skill.transitioned'].moves;
 
 /**
  * Finds the single legal transition for a (from, action) pair, or undefined if
