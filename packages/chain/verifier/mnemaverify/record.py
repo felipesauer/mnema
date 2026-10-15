@@ -138,8 +138,9 @@ TORN = (
 
 def _read_entries(
     report: Report, tail_dir: str, tail_id: str, declarations: schema.Schema | None
-) -> tuple[list[Entry], list[str]]:
-    """The entries a tail holds, and WHERE each line this reader refused to read was.
+) -> tuple[list[Entry], list[str], int]:
+    """The entries a tail holds, WHERE each line this reader refused to read was, and how many
+    entries stand before the first of those.
 
     A refused line is not an entry, and the checks that count entries by position (the chain
     walk, the root fold) cannot be run over a list with a hole in it: the hole reads as a
@@ -165,6 +166,7 @@ def _read_entries(
 
     entries: list[Entry] = []
     refused: list[str] = []
+    before_refused = -1
     for name in segments:
         path = os.path.join(tail_dir, name)
         # Only the LAST segment's end is the tail's end: an earlier one's is a seal.
@@ -180,6 +182,8 @@ def _read_entries(
                     report.note("4", f"the tail {TORN}", where)
                     continue
                 report.fail(refusal.section, refusal.what, where)
+                if not refused:
+                    before_refused = len(entries)
                 refused.append(where)
                 continue
             if not entry.line_is_canonical:
@@ -196,7 +200,7 @@ def _read_entries(
                 )
             _check_declarations(report, declarations, entry, where)
             entries.append(entry)
-    return entries, refused
+    return entries, refused, len(entries) if before_refused < 0 else before_refused
 
 
 def _check_declarations(
@@ -877,15 +881,16 @@ def verify_record(root: str, report: Report, require: str = "chained") -> None:
 
     entries_by_tail: dict[str, list[Entry]] = {}
     covered_by_tail: dict[str, int] = {}
-    # The tails holding a line this reader refused to read, each with the first such line.
-    refused_by_tail: dict[str, str] = {}
+    # The tails holding a line this reader refused to read: the first such line, and how many
+    # entries stand before it.
+    refused_by_tail: dict[str, tuple[str, int]] = {}
     for tail_id in tail_ids:
         tail_dir = os.path.join(tails_dir, tail_id)
         _check_tail_id(report, tail_id, ring)
         if _holds_nothing(tail_dir):
             _say_empty_tail(report, tail_dir, tail_id, ring)
             continue
-        entries, refused = _read_entries(report, tail_dir, tail_id, declarations)
+        entries, refused, before_refused = _read_entries(report, tail_dir, tail_id, declarations)
         _check_chain(report, entries, tail_id, refused)
         found = _check_checkpoints(report, tail_dir, tail_id, entries, ring, refused)
         _check_tailproof(report, tail_dir, tail_id, ring)
@@ -894,37 +899,51 @@ def verify_record(root: str, report: Report, require: str = "chained") -> None:
         entries_by_tail[tail_id] = entries
         covered_by_tail[tail_id] = found.covered_through
         if refused:
-            refused_by_tail[tail_id] = refused[0]
+            refused_by_tail[tail_id] = (refused[0], before_refused)
 
-    folded = _without_refused_tails(report, entries_by_tail, refused_by_tail)
-    resolution = _check_enrolment(report, folded, covered_by_tail, ring)
+    folded = _fold_up_to_refused(report, entries_by_tail, refused_by_tail)
+    resolution = _check_enrolment(report, folded, covered_by_tail, ring, entries_by_tail)
     _check_retractions(report, folded)
     _check_moves(report, folded, declarations)
     _say_keys_without_tail(report, ring, tail_ids, resolution)
     _check_requirement(report, require, entries_by_tail, covered_by_tail)
 
 
-def _without_refused_tails(
-    report: Report, entries_by_tail: dict[str, list[Entry]], refused_by_tail: dict[str, str]
+def _fold_up_to_refused(
+    report: Report,
+    entries_by_tail: dict[str, list[Entry]],
+    refused_by_tail: dict[str, tuple[str, int]],
 ) -> dict[str, list[Entry]]:
-    """The tails the folds of sections 6.2, 6.4 and 6.7 read: every tail but one with a refused line.
+    """What the folds of sections 6.2, 6.4 and 6.7 read: each tail up to its first refused line.
 
     A fold read past a line this reader could not read is the chain walk's hole again, one layer
     up. Measured: a segment whose first line carries a byte-order mark is refused at that line,
     the founding of the identity with it, and the enrolment fold then refused every later event
-    of the tail as signed by a key not valid for its anchor - eight causes the record does not
-    contain beside the one it does. The tail's events are not judged by either fold, and that is
-    said, which changes no verdict: the refused line has already refused the record.
+    of the tail as signed by a key not valid for its anchor - causes the record does not contain
+    beside the one it does. A fold that read NONE of the tail lost what stood before the line
+    instead: a forged event above it went unnamed, and an agent enrolled above it was enrolled no
+    longer, so every event the agent signed in its own tail was refused. So the folds read what
+    stands before a tail's first refused line, and what comes after it is said, once per tail,
+    as not folded. That changes no verdict: the refused line has already refused the record.
     """
-    for tail_id, where in refused_by_tail.items():
-        report.unchecked(
-            "6.2",
-            f"the folds of sections 6.2, 6.4 and 6.7 did not read this tail: {where} was refused "
-            "above, and a fold read past a line this reader could not read would judge every "
-            "event after it by what that line would have said",
-            tail_id,
-        )
-    return {tail: entries for tail, entries in entries_by_tail.items() if tail not in refused_by_tail}
+    folded: dict[str, list[Entry]] = {}
+    for tail_id, entries in entries_by_tail.items():
+        if tail_id not in refused_by_tail:
+            folded[tail_id] = entries
+            continue
+        where, before = refused_by_tail[tail_id]
+        folded[tail_id] = entries[:before]
+        after = len(entries) - before
+        if after:
+            report.unchecked(
+                "6.2",
+                f"the folds of sections 6.2, 6.4 and 6.7 read this tail up to {where}, which was "
+                f"refused above, and not the {after} entr{'y' if after == 1 else 'ies'} after it: "
+                "a fold read past a line this reader could not read would judge each of them by "
+                "what that line would have said",
+                tail_id,
+            )
+    return folded
 
 
 def _check_retractions(report: Report, entries_by_tail: dict[str, list[Entry]]) -> None:
@@ -1062,8 +1081,16 @@ def _check_enrolment(
     entries_by_tail: dict[str, list[Entry]],
     covered_by_tail: dict[str, int],
     ring: dict[str, PublicKey],
+    readable_by_tail: dict[str, list[Entry]],
 ) -> enrolment.Resolution | None:
-    """Section 6.2, folded over every tail at once, because enrolment spans them."""
+    """Section 6.2, folded over every tail at once, because enrolment spans them.
+
+    `entries_by_tail` is what the fold reads, each tail up to its first refused line, and
+    `readable_by_tail` every entry this reader could read. When the two differ, a cause the fold
+    finds only up to a refused line rests on an entry it did not read - an agent enrolled after
+    the line, in a tail other than the agent's own, reads as enrolled by nobody - so a cause is
+    named when the fold finds it read past the line too, and the rest are said as not checked.
+    """
     if not ring:
         report.unchecked(
             "6.2",
@@ -1120,7 +1147,23 @@ def _check_enrolment(
             "an event is placed before a retirement by the time the key itself wrote",
         )
     issues = resolution.issues
-    for issue in issues:
+    named = issues
+    if issues and any(
+        len(entries) != len(readable_by_tail[tail]) for tail, entries in entries_by_tail.items()
+    ):
+        past = enrolment.resolve(readable_by_tail, covered_by_tail, ring).issues
+        found_past = {(issue.tail, issue.seq, issue.detail) for issue in past}
+        named = [issue for issue in issues if (issue.tail, issue.seq, issue.detail) in found_past]
+        if len(named) < len(issues):
+            report.unchecked(
+                "6.2",
+                f"{len(issues) - len(named)} event(s) the fold of section 6.2 refuses reading "
+                "each tail only up to its first refused line are not refused: read past that "
+                "line, the fold does not find the same cause, so what decides each is in an "
+                "entry it did not fold",
+                gap="G21",
+            )
+    for issue in named:
         report.fail("6.2", issue.detail, f"{issue.tail[:20]}... seq {issue.seq}", "G21")
     if not issues:
         report.ok(
