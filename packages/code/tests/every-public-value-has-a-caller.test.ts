@@ -383,14 +383,10 @@ function unwired(): string[] {
  * allowlist every dead guard ends as: a value that gains a caller has to LEAVE
  * this table or the assertion fails, and so does one that stops being exported.
  *
- * IT HOLDS TWO, and they are the same case: the pure folds over the whole record,
- * `projectTasks` and `projectRuns`. A write used to take its state from them, replaying the
- * chain on every call; it reads the projection the tree keeps now, so nothing in production
- * folds the whole record by these two any more. They stay exported because the command's own
- * tests read the chain by a replay and compare it with what the command says — an oracle that
- * shares nothing with the kept projection, which is what makes the comparison worth reading.
- * Empty is the strongest state this table has, and it was empty until then; the entry before
- * these was `@mnema/core listProjects` — the reader of a machine-local project index that
+ * IT HELD THE PURE FOLDS — `projectTasks`, `projectRuns`, `projectSkills` — for as long as a
+ * write took its state from the projection the tree keeps and nothing in production called them.
+ * A gate folds its subject's own events by them now, read off the chain, so they left. The
+ * entry before them was `@mnema/core listProjects` — the reader of a machine-local project index that
  * `init` wrote on every founding and nothing ever read, while telling the person it
  * had happened. It was removed rather than wired, because what a read covers comes
  * from the trees the client announces.
@@ -415,15 +411,6 @@ const UNWIRED: Readonly<Record<string, string>> = {
   '@mnema/sdk openRecord':
     'what a program that records and reads imports; nothing in this workspace is that program. ' +
     'the-three-doors-are-one.test.ts calls it.',
-  '@mnema/core projectRuns':
-    'the oracle of the run commands’ own tests: the runs as a replay of the chain says them, ' +
-    'read against what the command reports.',
-  '@mnema/core projectSkills':
-    'the oracle of the skill commands’ own tests: the skills as a replay of the chain says them, ' +
-    'read against what the command reports.',
-  '@mnema/core projectTasks':
-    'the oracle of the task commands’ own tests: the tasks as a replay of the chain says them, ' +
-    'read against what the command reports.',
 };
 
 /** What an exception table tolerates, and what it does not. */

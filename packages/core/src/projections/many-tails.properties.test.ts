@@ -50,6 +50,7 @@ import {
   orderedSegments,
   projectionCachePath,
   readTail,
+  subjectEvents,
   tailDir,
   taskBirth,
   taskCreated,
@@ -1143,6 +1144,45 @@ describe('with citations: every machine cites the heads it read, as the product 
       } finally {
         cleanUp(elsewhere, root);
       }
+    },
+    CASE_TIMEOUT,
+  );
+});
+
+describe('a subject read off its own lines is the subject the merge reads', () => {
+  // A gate reads the subject it judges by searching the segments for the lines that name it
+  // (`subjectEvents`), and a subject moved on more than one machine is placed by the merge over
+  // keys read off the bytes. Whatever the clocks said and whether or not anything was cited, what
+  // it hands back is the subsequence of the replay about that subject, and so is the state.
+  it(
+    'under clocks that disagree, cited or not, the events of every subject are the merge’s, in its order',
+    () => {
+      holds(
+        fc.tuple(skewedArb, fc.boolean()),
+        ([history, cite]) => {
+          const root = freshDir('subject');
+          try {
+            const scribe = new Scribe(root, new Map(), cite);
+            for (const slot of [0, 1, 2])
+              if (history.some((op) => op.slot === slot)) scribe.open(slot);
+            for (const op of history) scribe.apply(op);
+            const merged = orderedEvents({ root }, upcasters);
+            const subjects = [...new Set(merged.map((event) => event.subject))];
+            const read = subjectEvents({ root }, upcasters, subjects);
+            for (const subject of subjects) {
+              expect((read.get(subject) ?? []).map(identity)).toEqual(
+                merged.filter((event) => event.subject === subject).map(identity),
+              );
+            }
+            expect(projectDecisions(read.get(X) ?? []).get(X)?.state).toBe(
+              projectDecisions(merged).get(X)?.state,
+            );
+          } finally {
+            cleanUp(root);
+          }
+        },
+        40,
+      );
     },
     CASE_TIMEOUT,
   );

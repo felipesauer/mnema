@@ -68,6 +68,7 @@ import {
 import { resolveExecutingAgent } from '../identity/authority.js';
 import { canonicalId, mintId } from '../identity/id.js';
 import { oneLine } from '../one-line.js';
+import { projectTasks } from '../projections/task.js';
 import { type AppendRefusal, appendFact, appendFacts } from './append.js';
 import {
   type Judged,
@@ -264,7 +265,7 @@ export function transitionTask(
   const id = canonicalId(input.id);
   return onTheRecordAsItStands(
     ctx,
-    () => standing(ctx, [id], (cache, one) => cache.getTask(one)),
+    () => standing(ctx, [id], projectTasks),
     (tasks, earlier): Judged<TransitionOk | WriteError> => {
       const current = id === undefined ? undefined : tasks.get(id)?.state;
       if (id === undefined || current === undefined) {

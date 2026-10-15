@@ -292,23 +292,14 @@ const EAGER_DOMAIN: Readonly<Record<string, string>> = {
     'awaiting it at each of them — and it costs nothing TODAY because the declarations above ' +
     'already hold `@mnema/core` open.',
   'pinned-run.ts @mnema/chain':
-    'the entry builds the pinned-run resolver, and resolving a run replays the record. ' +
+    'the entry builds the pinned-run resolver, and resolving a run reads its lines off the chain. ' +
     'NOT a declaration: the resolver is memoized and sync, so deferring it means ' +
     'awaiting it at thirteen call sites — mechanical, type-checked, and worth nothing ' +
     'until the declarations stop holding the domain open.',
-  'pinned-run.ts @mnema/core': 'the same resolver, for the trees it resolves the run in.',
-  'tree-sources.ts @mnema/chain':
-    'THE SAME RESOLVER, ONE MODULE FURTHER OUT, and it reaches nothing `pinned-run.ts` ' +
-    'was not reaching already. Opening a projection cache and closing it are one call ' +
-    'now (`withCache`), because three of the six sites that opened one never closed it ' +
-    '— and `pinned-run.ts`, which runs on every write that reads MNEMA_RUN, was one of ' +
-    'the three. So the resolver goes through this module, and this module needs the ' +
-    'upcaster catalogue a replay reads with. MEASURED, with the domain already open ' +
-    '(n=30 fresh processes, alternated, base-vs-base control at 0.000 ms): the module ' +
-    'costs 0.67 ms to load, against a floor last measured at 143 ms — and another floor ' +
-    'module of its size, `one-line.ts`, costs 0.38 ms on the same bench. No package ' +
-    'arrives that was not already here.',
-  'tree-sources.ts @mnema/core': 'the same module, for the cache class it opens and closes.',
+  'pinned-run.ts @mnema/core':
+    'the same resolver, for the trees it resolves the run in and the fold it reads the run by. ' +
+    'It reached `tree-sources.ts` for a projection cache it opened and closed, and does not any ' +
+    'more: the run is proven off the chain, not off the projection kept beside it.',
   'recorded-content.ts @mnema/chain':
     '`mnema link --rel` names the catalog’s recommended relations in its help.',
   'recorded-content.ts @mnema/core':
@@ -400,9 +391,6 @@ const FLOOR_MODULES: readonly string[] = [
   'env.ts',
   'one-line.ts',
   'pinned-run.ts',
-  // Reached BY `pinned-run.ts`, which was already here: it owns the open-and-close pair
-  // the resolver goes through. The cost is in `EAGER_DOMAIN` above, with its number.
-  'tree-sources.ts',
   'presentation/detail.ts',
   'presentation/folded.ts',
   'presentation/items.ts',
@@ -595,7 +583,7 @@ describe('the floor is the declaration', () => {
     // And the SIZE, so the number this file's own doc states cannot drift from the
     // table it describes. It drifted twice before anybody noticed — the prose said
     // eight through two slices that made it ten and then eleven.
-    expect(Object.keys(EAGER_DOMAIN)).toHaveLength(15);
+    expect(Object.keys(EAGER_DOMAIN)).toHaveLength(13);
   });
 
   it('loads these modules and no others — the ceiling, by name', () => {

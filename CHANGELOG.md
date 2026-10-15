@@ -200,7 +200,20 @@ with its own changelog.
   before the first `pnpm` (the shim directory is not created for you, and where `pnpm` exists only as that shim it is not
   found otherwise), and says the lines are for `sh`, not for Windows `cmd` or PowerShell. The test that holds the block
   to the page now holds that order.
-
+- **A gate judges a move on the subject as the chain has it, not on the projection kept beside the record.** The
+  state a decision, a task or a skill is in, whether a run is still open, and whether a subject or a supersede's
+  successor exists at all were read from the projection a tree keeps in `locks/projection.db`, a cache nothing signs: edited by hand, it let a
+  rejected decision be accepted, a cancelled task started, a rejected pattern adopted, a run ended twice and a
+  decision superseded by one nobody recorded, each signed and passed by `verify`. They are read off the segments now,
+  by the lines that name the subject, so each of those moves is refused with the gate's own code
+  (`ILLEGAL_TRANSITION`, `UNKNOWN_BY`, `ALREADY_ENDED`), and a projection edited to send a move to another tree gets
+  it refused there. `MNEMA_RUN` is proven the same way. Measured on the binary at 100 thousand events
+  (123 MB of segments), a `decision move` costs about 0.33 s against 0.24 s before with the page cache warm, and
+  0.61 to 0.77 s (median 0.70 s) against 0.24 s with the segments evicted from it; three moves at once in nine
+  rounds refused none (`TAIL_BUSY`), as before. An id the canonical form does not write as itself is not searched
+  for by its bytes: every line is read for it. A move written by hand with a valid key still puts on the record what
+  the gate refuses, and `verify` does not judge transitions yet; `docs/what-it-proves.md` says so. Neither `show`
+  nor `brief` says any longer that two moves out of one state "did not see each other": on one tail the second had.
 - **A write refuses a tail cut inside what its last checkpoint signed (`TAIL_DAMAGED`), and leaves it as it was.**
   Before reading the checkpoint, the writer cut the tail's end back to its last newline, so a signed line truncated
   by an edit, a merge or a disk went with it, and so did a signed line that had only lost its newline (which `verify`

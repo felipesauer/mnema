@@ -39,6 +39,7 @@ import {
 import { resolveExecutingAgent, type SelfAuthorizedErr } from '../identity/authority.js';
 import { canonicalId, mintId } from '../identity/id.js';
 import { oneLine } from '../one-line.js';
+import { projectSkills } from '../projections/skill.js';
 import { type AppendRefusal, appendFact, appendFacts } from './append.js';
 import {
   type Judged,
@@ -324,7 +325,7 @@ function transition(
   const id = canonicalId(input.id);
   return onTheRecordAsItStands(
     ctx,
-    () => standing(ctx, [id], (cache, one) => cache.getSkill(one)),
+    () => standing(ctx, [id], projectSkills),
     (skills, earlier): Judged<SkillTransitionOk | SkillWriteError> => {
       const current = id === undefined ? undefined : skills.get(id);
       if (id === undefined || current === undefined) {

@@ -1,8 +1,15 @@
 import { mkdirSync, mkdtempSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
-import { catalogUpcasters, decisionBirth, verify } from '@mnema/chain';
-import { type DiscoveryEnv, orderedEvents, projectDecisions, resolveTrees } from '@mnema/core';
+import { DatabaseSync } from 'node:sqlite';
+import { catalogUpcasters, decisionBirth, projectionCachePath, verify } from '@mnema/chain';
+import {
+  type DiscoveryEnv,
+  orderedEvents,
+  ProjectionCache,
+  projectDecisions,
+  resolveTrees,
+} from '@mnema/core';
 import { openTreeForWriting } from '@mnema/core/write';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { runDecision } from './decision.js';
@@ -305,6 +312,61 @@ describe('mnema decision move — the transition follows the entity (coherence)'
       catalogUpcasters(),
     ).filter((e) => e.subject === id);
     expect(publicEvents).toEqual([]);
+  });
+
+  it('never moves a PRIVATE decision in the PUBLIC tree because the public projection claims it', () => {
+    // The tree a move goes to is found in the projections; a row edited into the public one sends
+    // the move there. What it finds there is the public CHAIN, which never saw the decision, so the
+    // gate refuses it and neither tree gains a move.
+    const { repo, env } = setup();
+    runInit({ cwd: repo, env });
+    const trees = resolveTrees(repo, env);
+    const publicRoot = trees.projectPublic as string;
+    const seed = runDecision({ cwd: repo, env }, { title: 'a public one', rationale: 'r' });
+    if (!seed.ok) throw new Error('setup: decision record refused');
+    const w = openTreeForWriting(trees, 'private');
+    const id = '01920000-0000-7000-8000-00000000abce';
+    w.appendAll(
+      decisionBirth(
+        {
+          at: '2026-07-24T00:00:00.000Z',
+          who: w.anchor,
+          signerFp: w.signerFingerprint,
+          subject: id,
+        },
+        {
+          title: 'a private decision',
+          rationale: 'this machine',
+          adr: 'ADR-1',
+          initial: 'proposed',
+        },
+      ),
+    );
+    w.checkpoint();
+    const cache = ProjectionCache.open(publicRoot, { persist: true });
+    cache.refresh();
+    cache.close();
+    const db = new DatabaseSync(projectionCachePath({ root: publicRoot }));
+    db.exec('CREATE TEMP TABLE ghost AS SELECT * FROM decisions');
+    db.prepare('UPDATE ghost SET id = ?').run(id);
+    db.exec('INSERT INTO decisions SELECT * FROM ghost');
+    db.close();
+
+    const moved = runDecisionTransition(
+      { cwd: repo, env },
+      { id, action: 'accept', proof: { note: 'ok' } },
+    );
+
+    expect(moved).toMatchObject({ ok: false, code: 'UNKNOWN_DECISION' });
+    const about = (root: string) =>
+      orderedEvents({ root }, catalogUpcasters())
+        .filter((e) => e.subject === id)
+        .map((e) => e.kind);
+    expect(about(publicRoot)).toEqual([]);
+    expect(about(trees.projectPrivate as string)).toEqual([
+      'decision.recorded',
+      'decision.transitioned',
+    ]);
   });
 });
 

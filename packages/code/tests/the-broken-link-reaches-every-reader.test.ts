@@ -131,6 +131,8 @@ const READS_THE_CHAIN = [
   'readTailEntries(',
   'readTailTip(',
   'readTailSince(',
+  // The lines that name a subject, read off the segments: what proves a pinned run.
+  'subjectEvents(',
 ];
 
 /**
