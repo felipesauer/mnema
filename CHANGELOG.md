@@ -17,9 +17,10 @@ with its own changelog.
   `assets/`, drawn by `.github/the-front-page/draw.mjs` in the front page's one accent. Every word on a picture is a
   literal of the package, held by a test to the file that says it; the id the command line prints, a new one on every
   run, is drawn elided, as `(…)`. Each picture paints its own page, so the dark one
-  still reads where a page shows it on white. The README points at the copy inside the tarball of
-  its own version on jsDelivr, so the image shows only once that version is published; a test holds the URL to the
-  version in `package.json`, and another holds that the tarball carries the file.
+  still reads where a page shows it on white. The README points at the file on the `main`
+  branch of the repository its `package.json` names, by `raw.githubusercontent.com`, with no version in the address:
+  the picture loads before anything is published and is not in the tarball. The script writes the block, and a test
+  holds each README to exactly that block and holds that no image address carries a version.
 - **A glossary.** `docs/glossary.md` defines, in one sentence each and with a link to the page that holds the
   definition, the words the documentation uses in a sense of its own: record, tree (public, private and global),
   tail, checkpoint, run, rung, stack, agent key, census and witness. The README's list of pages links to it.
