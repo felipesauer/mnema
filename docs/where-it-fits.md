@@ -30,8 +30,9 @@ Said as scope, because each of these is a choice with a reason behind it:
   and records what the agent decides.
 - **Not a copy somewhere else.** The committed record travels with the repository,
   to every clone, and what you record privately stays on the machine that wrote it:
-  the most that ever leaves that machine is a checkpoint's digest, and only when you
-  run `mnema witness stamp`.
+  with `mnema witness stamp` the most that leaves that machine is a checkpoint's digest;
+  with Sigstore the identity leaves by design, into a public log (see
+  [what it proves](what-it-proves.md): "Only the digest leaves the machine, with Sigstore too").
 - **Not access control.** The gate refuses an illegal move; it does not decide who
   may write.
 

@@ -1867,15 +1867,14 @@ function registerTools(tool: ToolRegistrar, ensureSession: () => Promise<Session
       }
       // The reply is JSON because the host parses it, and it is COMPACT because nothing
       // reads it as a document: the host's parser takes the first `{` and the bytes are
-      // paid for on every edit of every session.
+      // added to the request at each edit it is called for.
       //
       // NOT THROUGH `served`, AND IT IS THE ONE READ ON THIS SERVER THAT IS NOT. What
       // comes back here is a HOOK REPLY, not an answer to a caller, and the host's
       // contract for it was measured against the real binary:
       // anything that is not the reply JSON is
       // DISCARDED IN SILENCE — no error, no warning, nothing reaching the model. A
-      // notice spliced in here would therefore never be read by anybody, while being
-      // paid for on every edit of every session. It is listed in
+      // notice spliced in here would therefore never be read by anybody. It is listed in
       // `TOOLS_SERVING_NO_RECORD_CONTENT` with that reason, and `governing_rules` — the same
       // answer asked for rather than pushed — does carry it.
       return { content: [block(JSON.stringify(result.value))] };

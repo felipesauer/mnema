@@ -12,9 +12,21 @@ with its own changelog.
 
 ### Added
 
+- **The page says where the refusal of a write stops holding, and a test holds it.** A rule that refuses a write
+  opens when the hook cannot read the record: a line that is not JSON, or one of a kind this version does not know (a
+  newer mnema's line), makes the hook before a write fail with no reply, and the write goes where the host lets a failed
+  hook go on. `docs/features.md`, `docs/evidence.md` and the plugin's README say it, and the case that refused a line
+  that is not JSON now refuses one of an unknown kind too.
+
 - **A glossary.** `docs/glossary.md` defines, in one sentence each and with a link to the page that holds the
   definition, the words the documentation uses in a sense of its own: record, tree (public, private and global),
   tail, checkpoint, run, rung, stack, agent key, census and witness. The README's list of pages links to it.
+
+- **A page on what two machines see when they moved one decision apart.** `docs/convergence.md` runs the case
+  (one machine rejects a decision, another that had not read it accepts it, and the tails meet) and shows what `show`,
+  `brief` and `verify` print, then separates a divergence, which every reader applies and `show` says (and `brief`, of a
+  rule it prints, one left in force), from a move the workflow does not allow, which no reader applies and `verify`
+  names. Its example is run by a test, and the second machine's answers are held equal to the first's.
 
 - **The format says what one version promises another, and a refusal of a line a newer mnema wrote names the
   version.** `FORMAT.md` §7.1, from the first version published to the npm registry: every version reads every record

@@ -242,7 +242,7 @@ describe('over a record that does not chain, every read says so', () => {
     });
     const said = blocks(replied);
     // ONE block, and it parses: the host takes the reply JSON and discards everything
-    // else in silence, so a second block here would be paid for on every edit and read
+    // else in silence, so a second block here would be added to the request at each edit and read
     // by nobody.
     expect(said).toHaveLength(1);
     expect(() => JSON.parse(said[0] as string)).not.toThrow();
