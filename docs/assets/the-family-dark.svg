@@ -55,7 +55,7 @@
 @keyframes k50{0%{opacity:0}50.71%{opacity:0}52.14%{opacity:1}55.71%{opacity:1}57.14%{opacity:0}100%{opacity:0}}
 @keyframes k51{0%{transform:translate(562px,80px)}53.57%{transform:translate(562px,80px)}58.57%{transform:translate(620px,40px)}59.29%{transform:translate(620px,40px)}60%{transform:translate(562px,80px)}100%{transform:translate(562px,80px)}}
 @keyframes k52{0%{opacity:0}53.57%{opacity:0}54.43%{opacity:1}57.71%{opacity:1}58.93%{opacity:0}100%{opacity:0}}
-@keyframes k53{0%{opacity:0}53.57%{opacity:0}54.64%{opacity:0.9}58.93%{opacity:0}100%{opacity:0}}
+@keyframes k53{0%{opacity:0}53.57%{opacity:0}54.64%{opacity:1}58.93%{opacity:0}100%{opacity:0}}
 @keyframes k54{0%{opacity:0}58.21%{opacity:0}59.29%{opacity:1}62.86%{opacity:0}100%{opacity:0}}
 @keyframes k55{0%{opacity:0}61.43%{opacity:0}63.57%{opacity:1}92.86%{opacity:1}95%{opacity:0}100%{opacity:0}}
 @keyframes k56{0%{opacity:0}62.86%{opacity:0}65%{opacity:1}92.86%{opacity:1}95%{opacity:0}100%{opacity:0}}
@@ -65,7 +65,7 @@
 @keyframes k60{0%{opacity:0}62.14%{opacity:0}63.57%{opacity:1}67.14%{opacity:1}68.57%{opacity:0}100%{opacity:0}}
 @keyframes k61{0%{transform:translate(562px,130px)}65%{transform:translate(562px,130px)}70%{transform:translate(620px,130px)}70.71%{transform:translate(620px,130px)}71.43%{transform:translate(562px,130px)}100%{transform:translate(562px,130px)}}
 @keyframes k62{0%{opacity:0}65%{opacity:0}65.86%{opacity:1}69.14%{opacity:1}70.36%{opacity:0}100%{opacity:0}}
-@keyframes k63{0%{opacity:0}65%{opacity:0}66.07%{opacity:0.9}70.36%{opacity:0}100%{opacity:0}}
+@keyframes k63{0%{opacity:0}65%{opacity:0}66.07%{opacity:1}70.36%{opacity:0}100%{opacity:0}}
 @keyframes k64{0%{opacity:0}69.64%{opacity:0}70.71%{opacity:1}74.29%{opacity:0}100%{opacity:0}}
 @keyframes k65{0%{opacity:0}72.86%{opacity:0}75%{opacity:1}92.86%{opacity:1}95%{opacity:0}100%{opacity:0}}
 @keyframes k66{0%{opacity:0}74.29%{opacity:0}76.43%{opacity:1}92.86%{opacity:1}95%{opacity:0}100%{opacity:0}}
@@ -75,7 +75,7 @@
 @keyframes k70{0%{opacity:0}73.57%{opacity:0}75%{opacity:1}78.57%{opacity:1}80%{opacity:0}100%{opacity:0}}
 @keyframes k71{0%{transform:translate(562px,180px)}76.43%{transform:translate(562px,180px)}81.43%{transform:translate(620px,220px)}82.14%{transform:translate(620px,220px)}82.86%{transform:translate(562px,180px)}100%{transform:translate(562px,180px)}}
 @keyframes k72{0%{opacity:0}76.43%{opacity:0}77.29%{opacity:1}80.57%{opacity:1}81.79%{opacity:0}100%{opacity:0}}
-@keyframes k73{0%{opacity:0}76.43%{opacity:0}77.5%{opacity:0.9}81.79%{opacity:0}100%{opacity:0}}
+@keyframes k73{0%{opacity:0}76.43%{opacity:0}77.5%{opacity:1}81.79%{opacity:0}100%{opacity:0}}
 @keyframes k74{0%{opacity:0}81.07%{opacity:0}82.14%{opacity:1}85.71%{opacity:0}100%{opacity:0}}
 @media (prefers-reduced-motion: reduce){.a{animation:none!important}}
 </style>
