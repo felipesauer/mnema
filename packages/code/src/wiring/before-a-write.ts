@@ -8,7 +8,8 @@
  * per-edit gate for a host whose hooks are processes; the command is `commands/before-a-write.ts`.
  *
  * A HOST RUNS IT, NOT A PERSON, and two things follow. It exits 0 on every outcome that is not a
- * misuse of the verb itself, so the host never reads a failure as a reason to block anybody's
+ * misuse of the verb itself or a fault of the product — a record it cannot read included, which
+ * it answers `deny` — so the host never reads a failure as a reason to block anybody's
  * work; and what it has to say about a write it could not read goes to the second stream, which
  * the host logs and nobody decides by. `--host` is required rather than guessed: the plugin's hook
  * says which host it is written for, so a payload is never read in the wrong host's shape.
@@ -53,6 +54,11 @@ export function registerBeforeAWrite(program: Command, wiring: Wiring): Declared
         '  printed. They can be',
         '  switched off with `mnema switch off edit-refuses-a-write` and',
         '  `mnema switch off edit-asks-a-person`.',
+        '',
+        '  Where a line of the record is one this mnema cannot read, every write is',
+        '  answered `deny`, naming the line, and nothing is recorded: the rules that',
+        '  apply cannot be known. The switches read the same record, so they do not',
+        '  turn that off; update mnema, or restore the line.',
       ].join('\n'),
     )
     .action(async (opts: { host: string; agentKey?: string }) => {

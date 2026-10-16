@@ -149,6 +149,17 @@ with its own changelog.
 
 ### Changed
 
+- **A record the gate cannot read refuses the write, where it used to let it through.** When a line of the record is one
+  the reader refuses (not JSON, a kind or a field this version does not know, as a newer mnema's line is, or bytes that
+  are not canonical), the per-edit gate answered nothing: the command hook exited 1 with an empty reply and the MCP route
+  answered a tool error, and every host this plugin wires read either as leave to write. Both now answer `deny`, exit 0,
+  in each host's shape, for every write the gate is asked about, with the line named in the reader's words and the two
+  ways out: update mnema, or restore the line. Nothing is recorded, and a note goes to the second stream. Only that line
+  is caught: a busy tail or a fault of the product is not turned into a refusal, and a last line a crash cut short is
+  still dropped and refuses nothing. The cost: on a team with two versions, a line only the newer can read refuses
+  every write of the older in that project until it is updated, and switching the refusal off is no way out, because
+  the switch reads the same record. With no `mnema` on the PATH the gate still says nothing. `UnreadableLineError` is
+  now exported by `@mnema/chain`.
 - **The `@mnema/code` page on npm fits one reading, and the reference is its own page.** The package README held 1,877
   lines of every verb and tool; it now says what the package is, how to install it, the first record, what it proves and
   what it does not, and where to go next. The reference moved, whole, to [`docs/cli-reference.md`](docs/cli-reference.md).
