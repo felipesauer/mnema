@@ -26,9 +26,17 @@ import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { afterEach, describe, expect, it } from 'vitest';
 
-import { decisionTransitioned, identityFounded } from '../events/build.js';
+import {
+  decisionTransitioned,
+  enrollmentMessage,
+  identityFounded,
+  keyEnrolled,
+  memoryCaptured,
+  noteRetracted,
+} from '../events/build.js';
 import { catalogUpcasters } from '../events/registry.js';
 import { openChainForWriting, verify } from './chain.js';
+import { sign } from './keys.js';
 import { keyToSignWith } from './keystore.js';
 
 const VERIFIER = fileURLToPath(new URL('../../verifier/mnema_verify.py', import.meta.url));
@@ -96,6 +104,21 @@ function bothReaders(record: string) {
     productOk: here.ok,
     secondVerdict: there.verdict,
     secondFails: there.findings.filter((finding) => finding.level === 'FAIL'),
+    productRetractions: here.census.flatMap((note): Named[] =>
+      note.kind === 'foreign-retraction'
+        ? [{ tail: note.tail, seq: note.seq, rule: note.kind }]
+        : [],
+    ),
+    secondRetractions: there.findings
+      .filter((finding) => finding.section === '6.4' && finding.level === 'note')
+      .map((finding) => {
+        const place = /^(\S+) seq (\d+)$/u.exec(finding.where);
+        const rule = /\(rule ([a-z-]+)\)$/.exec(finding.what)?.[1];
+        if (rule === undefined || place === null) {
+          throw new Error(`a note with no rule or no place: ${JSON.stringify(finding)}`);
+        }
+        return { tail: place[1] as string, seq: Number(place[2]), rule };
+      }),
   };
 }
 
@@ -118,7 +141,12 @@ function oneKeyTwoInstallations(record: string) {
       maxUnsignedEvents: 10_000,
     });
   };
-  return { high: installedAs(BMP_HIGH), astral: installedAs(ASTRAL) };
+  return {
+    high: installedAs(BMP_HIGH),
+    astral: installedAs(ASTRAL),
+    keyPair: key.keyPair,
+    keyRoot,
+  };
 }
 
 const at = (seconds: number) => new Date(Date.UTC(2026, 9, 1) + seconds * 1000).toISOString();
@@ -157,6 +185,70 @@ describe('two heads that tie on `at`: the tail id decides, by UTF-16 code unit',
         { tail: high.tail, seq: 1, rule: 'born-twice' },
       ]);
       expect(said.second, 'the second reader, against the product').toEqual(said.product);
+      expect(said.productOk).toBe(true);
+      expect(said.secondFails).toEqual([]);
+      expect(said.secondVerdict).toBe('VERIFIED');
+    },
+    CASE_TIMEOUT,
+  );
+});
+
+describe('the last author of a note, when two tails write it at one instant', () => {
+  it(
+    'a retraction by the identity that wrote last by UTF-16 order is applied by both readers',
+    () => {
+      const record = fresh('mnema-order-record-');
+      const { high, astral, keyPair } = oneKeyTwoInstallations(record);
+      // The second identity, B, enrols the first one's key F: F speaks for both A and B.
+      const bRoot = fresh('mnema-order-b-key-');
+      const bKey = keyToSignWith({ root: bRoot });
+      bKey.keep?.();
+      const b = openChainForWriting(record, {
+        keyRoot: bRoot,
+        installationRoot: fresh('mnema-order-b-installation-'),
+        maxUnsignedEvents: 10_000,
+      });
+      const reverseSig = Buffer.from(
+        sign(enrollmentMessage(b.anchor, keyPair.fingerprint), keyPair.privateKey),
+      ).toString('hex');
+      b.append(
+        identityFounded(
+          { at: at(-3), who: b.anchor, signerFp: b.signerFingerprint, subject: b.anchor },
+          {
+            foundingFp: b.signerFingerprint,
+          },
+        ),
+      );
+      b.append(
+        keyEnrolled(
+          { at: at(-2), who: b.anchor, signerFp: b.signerFingerprint, subject: b.anchor },
+          { newFp: keyPair.fingerprint, reverseSig },
+        ),
+      );
+      const fAs = (who: string, seconds: number, subject: string) => ({
+        at: at(seconds),
+        who,
+        signerFp: high.signerFingerprint,
+        subject,
+      });
+      high.append(
+        identityFounded(fAs(high.anchor, -3, high.anchor), { foundingFp: high.signerFingerprint }),
+      );
+      // Both write m-1 at one instant. By UTF-16 the astral tail goes first, so the BMP tail's
+      // writer, A, wrote it last and may take it back; by code point it would be the astral
+      // tail's, B, and A's retraction would be foreign.
+      high.append(memoryCaptured(fAs(high.anchor, 10, 'm-1'), { content: 'x' }));
+      astral.append(memoryCaptured(fAs(b.anchor, 10, 'm-1'), { content: 'y' }));
+      high.append(noteRetracted(fAs(high.anchor, 30, 'm-1'), { reason: 'r' }));
+      high.checkpoint();
+      astral.checkpoint();
+      b.checkpoint();
+
+      const said = bothReaders(record);
+      expect(said.productRetractions, 'the product, against §6.4').toEqual([]);
+      expect(said.secondRetractions, 'the second reader, against the product').toEqual(
+        said.productRetractions,
+      );
       expect(said.productOk).toBe(true);
       expect(said.secondFails).toEqual([]);
       expect(said.secondVerdict).toBe('VERIFIED');
