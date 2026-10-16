@@ -258,7 +258,7 @@ describe('every package, and the family, draws what it is, in its own words', ()
     // Every element there in the last frame fades out at the same moment; one that went out
     // later stayed on the page by itself, the rest of the picture already gone.
     const exits = [
-      ...read(path).matchAll(/@keyframes (\w+)\{((?:[\d.]+%\{opacity:[\d.]+\})+)\}/g),
+      ...(drawn[path] ?? '').matchAll(/@keyframes (\w+)\{((?:[\d.]+%\{opacity:[\d.]+\})+)\}/g),
     ].map((m) => {
       const stops = [...(m[2] as string).matchAll(/([\d.]+)%\{opacity:([\d.]+)\}/g)].map(
         (s) => [Number(s[1]), Number(s[2])] as const,
