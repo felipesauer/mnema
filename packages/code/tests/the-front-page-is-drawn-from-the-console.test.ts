@@ -175,8 +175,12 @@ function wordsOf(svg: string): string[] {
 
 describe('every package draws what it is, in its own words', () => {
   const drawn = drawThePackages(THE_BLOCKS);
-  const manifest = (dir: string): { name: string; version: string } =>
-    JSON.parse(read(`packages/${dir}/package.json`)) as { name: string; version: string };
+  const manifest = (dir: string): { name: string; version: string; repository: { url: string } } =>
+    JSON.parse(read(`packages/${dir}/package.json`)) as {
+      name: string;
+      version: string;
+      repository: { url: string };
+    };
 
   it('draws the five published packages, dark and light', () => {
     expect(Object.keys(drawn).sort()).toEqual(
@@ -333,7 +337,19 @@ describe('every package draws what it is, in its own words', () => {
       expect(line).toContain(
         '<a href="https://github.com/felipesauer/mnema/actions/workflows/ci.yml"><img alt="CI"',
       );
-      expect(line).toContain('<a href="../../LICENSE"><img alt="License: Apache-2.0"');
+      // The npm page does not rewrite a relative address written in raw HTML, so the licence
+      // badge points at the file on `main` by the address of the repository the manifest names,
+      // and no address in the line of badges is relative.
+      const repo = /github\.com\/([^/]+\/[^/]+?)(?:\.git)?$/.exec(
+        manifest(dir).repository.url,
+      )?.[1];
+      expect(repo, 'the manifest does not name a GitHub repository').toBeDefined();
+      expect(line).toContain(
+        `<a href="https://github.com/${repo}/blob/main/LICENSE"><img alt="License: Apache-2.0"`,
+      );
+      const targets = [...line.matchAll(/\bhref="([^"]*)"/g)].map((m) => m[1] ?? '');
+      expect(targets).toHaveLength(2);
+      expect(targets.filter((t) => !t.startsWith('https://'))).toEqual([]);
     },
   );
 
