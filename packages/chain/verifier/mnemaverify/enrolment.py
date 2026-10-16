@@ -59,7 +59,7 @@ signed removal. A first enrolment restores nothing and is not gated.
 WHY THE FOLD RUNS OVER EVERY TAIL AT ONCE: a key enrolled on one machine authorizes events
 on another, so the order is the merge the document specifies - `seq` within a tail, which
 the hash chain proves and which nothing may override, and across tails the smallest `at`
-among the heads whose citations (`after`) have been taken, ties broken by tail id ascending.
+among the heads whose citations (`after`) have been taken, ties broken by tail id, smaller first by UTF-16 code unit.
 """
 
 from __future__ import annotations

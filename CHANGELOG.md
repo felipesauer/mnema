@@ -125,6 +125,13 @@ with its own changelog.
 
 ### Changed
 
+- **`FORMAT.md` and the chain package's page say what the two readers do, not what they once did.** The format no
+  longer says it leaves the workflow out (§6.7 is part of it), says the order of tails decides what §6.2 refuses and §6.7
+  names, writes the tie-break once (`at`, then the tree, then the tail id by UTF-16 code unit, which both readers now
+  follow), lists the seven rules a move can break, the cycles of the task workflow, the vectors beyond one per kind and
+  the two git files in the layout, and no longer says every gap found in the writing was closed. The package page draws
+  the tree as it is on disk, says a tail is a directory, that a birth whose state is not the workflow's own is not
+  applied, and what the format and the Python reader cover. No behaviour changed.
 - **The GitHub pre-releases `v0.1.0-beta` and `v0.2.0-beta` and every tag, `archive/alpha-0.14` included, were
   withdrawn, and until the packages are on npm the mnema is installed from the source** (`docs/install.md`).
   `mnema doctor` and the plugin's hand-over hook no longer print a release URL: they say that nothing is on npm yet and
