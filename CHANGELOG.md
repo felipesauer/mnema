@@ -24,6 +24,8 @@ with its own changelog.
   address: the page of an old version on npm shows today's picture from `main`, not the one that version was
   published with. The title, the picture and the badges are centred, each in an element npm keeps `align` on (an
   `h1` and two `p`, not a `div`); the script writes the title and the picture, and a test holds the three.
+  The licence badge at the top of each of those pages points at the file on `main` by an absolute address, because npm
+  leaves a relative one written in HTML as it is; a test holds that address and that no address in the badges is relative.
 - **The page says where the refusal of a write stops holding, and a test holds it.** A rule that refuses a write
   opens when the hook cannot read the record: a line that is not JSON, or one of a kind this version does not know (a
   newer mnema's line), makes the hook before a write fail with no reply, and the write goes where the host lets a failed
