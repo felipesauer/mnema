@@ -14,6 +14,7 @@
 import { mkdirSync, mkdtempSync, rmSync, symlinkSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
+import { TailBusyError, UnreadableLineError } from '@mnema/chain';
 import { type DiscoveryEnv, resolveTrees } from '@mnema/core';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { whatAWriteAsks } from '../src/edit-asks-a-person.js';
@@ -21,7 +22,11 @@ import { ourWordsInRefusing } from '../src/edit-refuses-a-write.js';
 import { type CliIo, run } from '../src/program.js';
 import { tellsWhatToDo } from '../src/record-framing.js';
 import { withScopedCaches } from '../src/tree-sources.js';
-import { type WriteVerdict, whatAWriteMeets } from '../src/what-a-write-meets.js';
+import {
+  refusalOfAnUnreadableRecord,
+  type WriteVerdict,
+  whatAWriteMeets,
+} from '../src/what-a-write-meets.js';
 
 let sandbox: string;
 let repo: string;
@@ -307,5 +312,33 @@ describe('a link does not step around a rule', () => {
     symlinkSync(join(outside, 'src', 'ledger'), join(repo, 'src', 'billing', 'away'));
 
     expect(meets('src/billing/away/posting.ts')).toBeUndefined();
+  });
+});
+
+describe('a record that cannot be read refuses the write, and nothing else does', () => {
+  const unreadable = new UnreadableLineError(
+    '/w/.mnema/tails/t/000001.jsonl byte offset 2104',
+    'mnema 0.2.0 does not read "bogus.kind" at v1: it reads no version of that kind. If a newer mnema wrote the line, read the record with it.',
+  );
+
+  it('answers the refusal, naming the line and the reader’s own words, and the ways out', () => {
+    const reason = refusalOfAnUnreadableRecord(unreadable);
+    expect(reason).toContain('The write is refused');
+    expect(reason).toContain(
+      'unreadable stored line at /w/.mnema/tails/t/000001.jsonl byte offset 2104',
+    );
+    expect(reason).toContain('If a newer mnema wrote the line, read the record with it.');
+    expect(reason).toContain('update mnema');
+    expect(reason).toContain('restore the line');
+    expect(reason).not.toContain('switch');
+  });
+
+  it('answers nothing for an error of the product, a busy tail, or anything that is not that line', () => {
+    expect(refusalOfAnUnreadableRecord(new TypeError('x is undefined'))).toBeUndefined();
+    expect(refusalOfAnUnreadableRecord(new TailBusyError('/w/lock', 42, 2000))).toBeUndefined();
+    expect(
+      refusalOfAnUnreadableRecord(new Error('unreadable stored line at x: y')),
+    ).toBeUndefined();
+    expect(refusalOfAnUnreadableRecord('unreadable stored line')).toBeUndefined();
   });
 });

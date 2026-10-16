@@ -220,6 +220,14 @@ function holdTheTail(): string {
   return lock;
 }
 
+/** The one segment of the public tree's one tail, where the setup wrote every line. */
+function theSegment(): string {
+  const root = resolveTrees(repo, env).projectPublic as string;
+  const tails = readdirSync(join(root, 'tails'));
+  expect(tails).toHaveLength(1);
+  return join(root, 'tails', tails[0] as string, '000001.jsonl');
+}
+
 /** The permission decision of a reply. */
 function decided(reply: Record<string, unknown>): { value?: string; reason?: string } {
   // Gemini CLI reads its decision at the top level of the reply, not under `hookSpecificOutput`.
@@ -379,25 +387,65 @@ describe('the verb a command host runs', () => {
     expect(waited).toBeLessThan(A_CHARGE_WAITS_MS + 500);
   });
 
-  it('answers no refusal when a stored line of the record cannot be read: the gate fails, and the docs say the refusal opens', () => {
-    // THE LIMIT THE PAGES DECLARE (`docs/features.md`, `docs/evidence.md`). The refusal is decided
-    // by reading the record; a line the reader refuses (one that is not JSON, or a kind it does not
-    // know, as a newer mnema's line is) makes the reading throw, so the verb gives no `deny` and
-    // the host, which lets a hook that failed go on, lets the write through.
-    const root = resolveTrees(repo, env).projectPublic as string;
-    const tails = readdirSync(join(root, 'tails'));
-    expect(tails).toHaveLength(1);
-    const segment = join(root, 'tails', tails[0] as string, '000001.jsonl');
+  it('refuses every write, in every host, when a stored line of the record cannot be read, and records nothing', () => {
+    // THE RECORD DECIDES THE REFUSAL, AND A RECORD THAT CANNOT BE READ CANNOT SAY THERE IS NONE. A
+    // line the reader refuses (not JSON, a kind it does not know as a newer mnema's line is, a
+    // field it does not know, bytes that are not canonical) is answered `deny`, with the reader's
+    // own refusal in the reason — at a path no rule addresses too, because which rules address it
+    // is exactly what cannot be read.
+    const segment = theSegment();
     const sound = readFileSync(segment, 'utf-8');
-    expect(decided(verb('gemini', 'src/billing/invoice.ts').reply).value).toBe('deny');
-    writeFileSync(segment, `${sound}not json at all\n`);
-    expect(() => verb('gemini', 'src/billing/invoice.ts')).toThrow(/unreadable stored line/);
     const last = sound.trimEnd().split('\n').at(-1) as string;
-    expect(last).toContain('"kind":"');
-    writeFileSync(segment, `${sound}${last.replace(/"kind":"[a-z.]+"/, '"kind":"bogus.kind"')}\n`);
-    expect(() => verb('gemini', 'src/billing/invoice.ts')).toThrow(/unreadable stored line/);
+    expect(last).toMatch(/"kind":"[a-z.]+"/);
+    expect(last).toMatch(/"payload":\{"/);
+    expect(last.startsWith('{"')).toBe(true);
+    const corrupted: Record<string, string> = {
+      'not JSON': 'not json at all',
+      'a kind it does not know': last.replace(/"kind":"[a-z.]+"/, '"kind":"bogus.kind"'),
+      'a field it does not know': last.replace('"payload":{"', '"payload":{"aaa_unknown":1,"'),
+      'bytes that are not canonical': `{ ${last.slice(1)}`,
+    };
+    expect(decided(verb('gemini', 'src/free.ts').reply).value).toBeUndefined();
+    for (const [what, line] of Object.entries(corrupted)) {
+      const bytes = `${sound}${line}\n`;
+      writeFileSync(segment, bytes);
+      for (const host of HOOK_HOSTS) {
+        for (const path of ['src/billing/invoice.ts', 'src/free.ts']) {
+          const { reply, notes } = verb(host, path);
+          const { value, reason } = decided(reply);
+          expect(value, `${what}, ${host}, ${path}`).toBe('deny');
+          expect(reason).toContain('The write is refused');
+          expect(reason).toContain(`unreadable stored line at ${segment}`);
+          expect(reason).toContain('update mnema');
+          expect(reason).not.toContain(refusing);
+          expect(notes.join('\n')).toContain('nothing was recorded');
+        }
+      }
+      // Nothing was appended: a `channel.refused` cites a rule, and no rule could be read.
+      expect(readFileSync(segment, 'utf-8')).toBe(bytes);
+    }
+    writeFileSync(segment, `${sound}${corrupted['a kind it does not know']}\n`);
+    expect(decided(verb('gemini', 'src/free.ts').reply).reason).toContain(
+      'does not read "bogus.kind" at v1: it reads no version of that kind. If a newer mnema wrote the line, read the record with it.',
+    );
     writeFileSync(segment, sound);
-    expect(decided(verb('gemini', 'src/billing/invoice.ts').reply).value).toBe('deny');
+    expect(decided(verb('gemini', 'src/billing/invoice.ts').reply).reason).toContain(refusing);
+    expect(decided(verb('gemini', 'src/free.ts').reply).value).toBeUndefined();
+  });
+
+  it('refuses nothing over a torn last line, which the reader drops: the rules answer as before', () => {
+    // A crash mid-append leaves the last line without its newline; the reader drops exactly that
+    // fragment, so it is not a line that cannot be read, and the gate is not shut by it.
+    const segment = theSegment();
+    const sound = readFileSync(segment, 'utf-8');
+    writeFileSync(segment, `${sound}{"event":{"kind":"decision.reco`);
+    for (const host of HOOK_HOSTS) {
+      expect(verb(host, 'src/free.ts').reply, host).toEqual({});
+      const { value, reason } = decided(verb(host, 'src/billing/invoice.ts').reply);
+      expect(value, host).toBe('deny');
+      expect(reason).toContain(refusing);
+      expect(reason).not.toContain('The write is refused');
+    }
   });
 
   it('asks while a live process holds the record, and says the fact is missing', {
@@ -639,6 +687,23 @@ describe('the MCP tool Claude Code’s hook calls', () => {
       'This refusal could not be recorded in the project',
     );
     expect(refusals()).toEqual([]);
+  });
+
+  it('refuses every write when a stored line cannot be read, as a reply and never as an error', () => {
+    const segment = theSegment();
+    const sound = readFileSync(segment, 'utf-8');
+    const last = sound.trimEnd().split('\n').at(-1) as string;
+    const bytes = `${sound}${last.replace(/"kind":"[a-z.]+"/, '"kind":"bogus.kind"')}\n`;
+    writeFileSync(segment, bytes);
+    for (const path of ['src/billing/invoice.ts', 'src/free.ts']) {
+      const specific = tool(path)['hookSpecificOutput'] as Record<string, string> | undefined;
+      expect(specific?.['permissionDecision'], path).toBe('deny');
+      expect(specific?.['permissionDecisionReason']).toContain('The write is refused');
+      expect(specific?.['permissionDecisionReason']).toContain(
+        'If a newer mnema wrote the line, read the record with it.',
+      );
+    }
+    expect(readFileSync(segment, 'utf-8')).toBe(bytes);
   });
 
   it('refuses while a live process holds the record, as a reply and never as an error', {

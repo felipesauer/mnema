@@ -23,7 +23,7 @@
  * before it answers the host, and answers the same whether or not they land ({@link recordTheCharge}).
  */
 
-import { DEFAULT_WAIT_MS, TailBusyError } from '@mnema/chain';
+import { DEFAULT_WAIT_MS, TailBusyError, UnreadableLineError } from '@mnema/chain';
 import { channelIsOn, type RulesAtPath, type ScopedCache } from '@mnema/context';
 import { whatAWriteAsks } from './edit-asks-a-person.js';
 import { editRefusesNotice } from './edit-refuses-a-write.js';
@@ -130,6 +130,32 @@ export function whatAWriteMeets(
   });
   return asked.length > 0 ? verdict('ask', once(asked)) : undefined;
 }
+
+/**
+ * The reason a write is refused when reading the record met a stored line the reader refuses,
+ * or `undefined` for anything else that was thrown, which the caller throws on.
+ *
+ * WHAT THE WRITE MEETS IS READ FROM THE RECORD, so a record that cannot be read cannot say the
+ * write meets nothing: the gate refuses rather than answering a silence the host would read as
+ * leave to write. Every write of the project is refused until the line reads, and the reason says
+ * which line, in the reader's own words (`FORMAT.md` §7.1: never guessed at, never skipped), and
+ * the two ways out. Switching the refusal off is not one of them: the switch reads the same record.
+ *
+ * ONLY THAT LINE. A busy tail is the charge's to wait out ({@link recordTheCharge}), and a fault of
+ * the product is a fault, never a refusal: neither is turned into one here.
+ */
+export function refusalOfAnUnreadableRecord(error: unknown): string | undefined {
+  if (!(error instanceof UnreadableLineError)) return undefined;
+  return [
+    'The write is refused: a line of this project’s record cannot be read by this mnema, so which rules apply to this path cannot be known.',
+    error.message,
+    'Every write in this project is refused until the line reads: update mnema if a newer one wrote the line, or restore the line from the repository’s history.',
+  ].join('\n\n');
+}
+
+/** The note on the second stream beside that refusal. */
+export const UNREADABLE_RECORD_NOTE =
+  'The record could not be read, so the write was refused and nothing was recorded.';
 
 function verdict(
   grade: WriteVerdict['grade'],
