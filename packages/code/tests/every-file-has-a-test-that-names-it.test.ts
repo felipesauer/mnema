@@ -1144,6 +1144,7 @@ const CLAUSES_PER_FILE: Readonly<Record<string, number>> = {
   'packages/code/tests/the-console-on-ink.test.ts': 19,
   'packages/code/tests/the-console-reads-stacks-and-turns-no-hook-on.test.ts': 9,
   'packages/code/tests/the-console-says-what-recurs-and-not-where.test.ts': 9,
+  'packages/code/tests/the-convergence-page-is-what-the-binary-prints.test.ts': 9,
   'packages/code/tests/the-converter-a-page-publishes-runs.test.ts': 9,
   'packages/code/tests/the-corner-says-what-its-level-covers.test.ts': 14,
   'packages/code/tests/the-cost-comes-from-the-host.test.ts': 6,
