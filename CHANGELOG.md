@@ -12,6 +12,10 @@ with its own changelog.
 
 ### Added
 
+- **A glossary.** `docs/glossary.md` defines, in one sentence each and with a link to the page that holds the
+  definition, the words the documentation uses in a sense of its own: record, tree (public, private and global),
+  tail, checkpoint, run, rung, stack, agent key, census and witness. The README's list of pages links to it.
+
 - **The format says what one version promises another, and a refusal of a line a newer mnema wrote names the
   version.** `FORMAT.md` §7.1, from the first version published to the npm registry: every version reads every record
   an earlier one wrote, under the contract its `kind` and `v` selected, the proof taken over the line as written; a

@@ -496,6 +496,10 @@ export const NAMES_THAT_NEED_MORE: Readonly<
     times: 1,
     why: 'the verb named as what turns a declared hook on, at a terminal; its `--help` hands the stack and the hook it needs',
   },
+  'docs/glossary.md: mnema stack add': {
+    times: 1,
+    why: 'the verb named in the one-sentence definition of a stack; the package page hands the line over',
+  },
   'docs/packages.md: mnema stack add': {
     times: 1,
     why: 'the verb named as why the stacks package is released; its `--help` hands the source and the --expect it needs',
@@ -681,6 +685,7 @@ export const HANDED_OVER: Readonly<
   'docs/evidence.md': { line: 1, flag: 1 },
   'docs/features.md': { line: 7, name: 11 },
   'docs/first-record.md': { line: 1, name: 4 },
+  'docs/glossary.md': { name: 3 },
   'docs/how-it-works.md': { line: 2, name: 1 },
   'docs/install.md': { line: 3, name: 4 },
   'docs/packages.md': { line: 1, name: 2 },

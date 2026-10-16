@@ -171,7 +171,7 @@ claim about the agent hosts is held, and which are not held yet, is in [`docs/ev
 [What a session is handed](docs/agent-hosts.md) · [Features](docs/features.md) · [What it proves](docs/what-it-proves.md) ·
 [Verify without installing](docs/verify-without-installing.md) · [The page that verifies itself](docs/site.md) ·
 [How each claim is held](docs/evidence.md) · [Where it fits](docs/where-it-fits.md) · [Packages](docs/packages.md) ·
-[Build from source](docs/build-from-source.md) · [Contributing](CONTRIBUTING.md)
+[Build from source](docs/build-from-source.md) · [Glossary](docs/glossary.md) · [Contributing](CONTRIBUTING.md)
 
 ## License
 
