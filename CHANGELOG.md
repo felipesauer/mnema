@@ -169,6 +169,16 @@ with its own changelog.
 
 ### Changed
 
+- **Every link in the body of a published package's README is a full address on `main`.** The five pages
+  (`@mnema/chain`, `@mnema/core`, `@mnema/context`, `@mnema/stacks` and `@mnema/code`) had 22 relative links, such as
+  `../../docs/install.md` and `./FORMAT.md`, that land on GitHub from the package's directory; the npm page resolves
+  them against the root of the repository and, read from the code of its renderer and not measured on the site, drops
+  the `blob/` and the directory, which leaves a missing page or the wrong directory. They are now
+  `https://github.com/felipesauer/mnema/blob/main/<path>` (`tree/main` for a directory). The price: a click on GitHub
+  now leads to `main`, not to the commit or the branch the page is read on. A test holds that no destination on those
+  pages is relative, and that each address of this repository on `main` names a tracked file (`blob`) or directory
+  (`tree`) and a heading that exists.
+
 - **Pages stop promising more than verify and the Action do.** The "what it proves" paragraph in the CLI reference
   and in the `@mnema/code` README said an edit to the record is made "impossible to hide"; verify shows when what is
   in the record has changed since it was signed, and a cut that leaves the last checkpoint in place, and does not catch
