@@ -129,7 +129,7 @@ describe('a stack is installed into the folders the host table names', () => {
     const plan = await planStackInstall(ctx, read, { target: { scope: 'public' } });
     if (!plan.ok) throw new Error(plan.message);
     expect(plan.unserved).toEqual({
-      skills: ['Goose', "Continue's command line (`cn`)", "Warp's agent"],
+      skills: ['Goose'],
       agents: [
         'Codex',
         'GitHub Copilot CLI',
@@ -139,8 +139,6 @@ describe('a stack is installed into the folders the host table names', () => {
         'Factory Droid',
         'Qwen Code',
         'Goose',
-        "Continue's command line (`cn`)",
-        "Warp's agent",
       ],
     });
     expect(plan.hooks.map((h) => h.name)).toEqual(['check']);

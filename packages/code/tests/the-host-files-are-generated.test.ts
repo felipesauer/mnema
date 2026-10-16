@@ -15,7 +15,7 @@ import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
 import { HOSTS } from '../src/host-names.js';
-import { GENERATED, generated, rungTable } from './support/the-host-files.js';
+import { GENERATED, generated, hostSummary, rungTable } from './support/the-host-files.js';
 
 const ROOT = join(import.meta.dirname, '..', '..', '..');
 
@@ -85,5 +85,28 @@ describe('the rung table', () => {
     expect(rung('Qwen Code')).toBe('(a), documented, not measured');
     // The editor was only read in Cursor's documentation; the plugin was not read running in it.
     expect(rung("Cursor's editor")).toBe('(a), documented, not measured');
+  });
+});
+
+describe('the host summary', () => {
+  const rows = hostSummary('').split('\n');
+  const row = (title: string) => rows.find((line) => line.includes(`**${title}**`)) ?? '';
+
+  it('lists the hosts of the table and no host the table dropped', () => {
+    const hosts = rows.slice(2);
+    expect(hosts).toHaveLength(Object.keys(HOSTS).length);
+    expect(rows.join('\n')).not.toMatch(/Continue|Warp/);
+  });
+
+  it('marks a cell read once against the host, as it marks one only documented', () => {
+    // VS Code: the server and the opening were read once; the rules file, refusal and pause are held by a test.
+    expect(row('VS Code')).toContain('MCP server · opening: read once');
+    expect(row('VS Code')).not.toContain('documented, not measured');
+    // Cursor's command line: the server, the opening and the refusal were read once.
+    expect(row('Cursor CLI')).toContain('MCP server · opening · refusal: read once');
+    // A host with only documented cells keeps its own mark, and a host held by tests carries neither.
+    expect(row('Goose')).toContain('documented, not measured');
+    expect(row('Goose')).not.toContain('read once');
+    expect(row('Claude Code')).not.toMatch(/read once|documented/);
   });
 });

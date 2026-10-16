@@ -974,18 +974,6 @@ const SHOWN: {
     light: `${LOBEHUB}/light/goose.png`,
     dark: `${LOBEHUB}/dark/goose.png`,
   },
-  continue: {
-    name: 'Continue CLI',
-    by: 'Continue · command line (`cn`)',
-    light: `${RAW}/continuedev/continue/5522c6f44ca0ac3528b37244818fbfa39b5af470/extensions/intellij/src/main/resources/META-INF/pluginIcon.svg`,
-    dark: `${RAW}/continuedev/continue/5522c6f44ca0ac3528b37244818fbfa39b5af470/extensions/intellij/src/main/resources/META-INF/pluginIcon_dark.svg`,
-  },
-  warp: {
-    name: 'Warp',
-    by: 'Warp · terminal',
-    light: `${RAW}/warpdotdev/warp/325d4d4701b41feb272487e89a6cf02bfba9f194/app/assets/bundled/svg/warp-logo-dark.svg`,
-    dark: `${RAW}/warpdotdev/warp/325d4d4701b41feb272487e89a6cf02bfba9f194/app/assets/bundled/svg/warp-logo-light.svg`,
-  },
 };
 
 /** The short word for each capability, in the order of the rungs. */
@@ -998,23 +986,34 @@ const SHORT: { readonly [C in Capability]: string } = {
 };
 
 /**
- * What a host gets, in short words: what a test holds or a run on the real host read, and, under
- * it, what only its documentation says.
+ * What a host gets, in short words: what a test holds, and, under it, what was read once against
+ * the real host and what only its documentation says, each with its own mark.
  */
 function whatItGets(name: HostName): string {
   const cells = HOSTS[name].cells;
   const all = Object.keys(SHORT) as Capability[];
-  const yes = all.filter((c) => {
+  const words = (held: readonly Capability[]) => held.map((c) => SHORT[c]).join(' · ');
+  const tested = all.filter((c) => {
     const cell = cells[c];
-    return cell.held !== 'not ported' && cell.held !== 'documentation' && cell.does;
+    return cell.held === 'a test' && cell.does;
+  });
+  const readOnce = all.filter((c) => {
+    const cell = cells[c];
+    return cell.held === 'not yet' && cell.does;
   });
   const documented = all.filter((c) => cells[c].held === 'documentation');
-  const said = yes.map((c) => SHORT[c]).join(' · ');
-  if (documented.length === 0) return said;
-  const words = documented.map((c) => SHORT[c]).join(' · ');
-  return said === ''
-    ? `${words}<br><sub>documented, not measured</sub>`
-    : `${said}<br><sub>${words}: documented, not measured</sub>`;
+  const said = words(tested);
+  const marks = [
+    ...(readOnce.length === 0 ? [] : [`${words(readOnce)}: read once`]),
+    ...(documented.length === 0 ? [] : [`${words(documented)}: documented, not measured`]),
+  ];
+  if (marks.length === 0) return said;
+  // A host whose every cell is documented says it once, without repeating the cells.
+  const under =
+    said === '' && readOnce.length === 0
+      ? `${words(documented)}<br><sub>documented, not measured</sub>`
+      : `${[said, ...marks.map((m) => `<sub>${m}</sub>`)].filter((x) => x !== '').join('<br>')}`;
+  return under;
 }
 
 /** A host's logo, the dark one where the page is dark. */
@@ -1042,8 +1041,6 @@ const INSTALLED_AT: { readonly [H in HostName]: string } = {
   droid: ANY_HOST,
   qwen: ANY_HOST,
   goose: ANY_HOST,
-  continue: ANY_HOST,
-  warp: ANY_HOST,
 };
 
 /** The summary: one row per host, with its rung and where its install is, for a page at `base`. */

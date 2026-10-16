@@ -184,9 +184,10 @@ unless it is told to trust it (`--skip-trust`).
 ## Any other host with an MCP client
 
 The hosts in the first rung of [the table](evidence.md#each-hosts-rung) — Cursor's editor,
-Antigravity's command line, Factory Droid, Qwen Code, Goose, Continue's command line and Warp's
-agent — get no plugin from this repository. Their own documentation says they take an MCP server
-and read a rules file; that was read, not run with this product. Declare the server the way the
+Antigravity's command line, Factory Droid, Qwen Code and Goose — get no plugin from this repository.
+Their own documentation says they take an MCP server and read a rules file; that was read, not run
+with this product. Any other client that takes an MCP server is in the same place, with the same
+nothing read about it. Declare the server the way the
 host's documentation says, as the command `mnema` with the one argument `mcp`, run in the project's
 root. The agent then has every tool of the server; nothing opens its sessions, refuses a write or
 pauses one.
