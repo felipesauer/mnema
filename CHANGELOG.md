@@ -15,7 +15,8 @@ with its own changelog.
 - **Each published package opens its README with a picture of what it does.** `@mnema/chain`, `@mnema/core`,
   `@mnema/context`, `@mnema/stacks` and `@mnema/code` each carry an animated picture, light and dark, in
   `assets/`, drawn by `.github/the-front-page/draw.mjs` in the front page's one accent. Every word on a picture is a
-  literal of the package, held by a test to the file that says it. The README points at the copy inside the tarball of
+  literal of the package, held by a test to the file that says it. Each picture paints its own page, so the dark one
+  still reads where a page shows it on white. The README points at the copy inside the tarball of
   its own version on jsDelivr, so the image shows only once that version is published; a test holds the URL to the
   version in `package.json`, and another holds that the tarball carries the file.
 - **The page says where the refusal of a write stops holding, and a test holds it.** A rule that refuses a write

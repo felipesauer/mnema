@@ -392,16 +392,15 @@ function shown(from, to, fade = 0.3, loop = LOOP) {
  * @param {number} to
  * @param {number} a
  * @param {number} b
- * @param {number} [loop]
  * @returns {{ move: [number, string][], fade: [number, string][] }}
  */
-function travel(from, to, a, b, loop = LOOP) {
+function travel(from, to, a, b) {
   return {
     move: [
       [0, `translateX(${a}px)`],
       [from, `translateX(${a}px)`],
       [to, `translateX(${b}px)`],
-      [loop, `translateX(${b}px)`],
+      [LOOP, `translateX(${b}px)`],
     ],
     fade: [
       [0, '0'],
@@ -409,7 +408,7 @@ function travel(from, to, a, b, loop = LOOP) {
       [from + 0.1, '1'],
       [to - 0.1, '1'],
       [to + 0.05, '0'],
-      [loop, '0'],
+      [LOOP, '0'],
     ],
   };
 }
@@ -652,9 +651,45 @@ const W_PKG = 720;
 const H_PKG = 240;
 
 /**
+ * The page of each theme. A package's picture carries its own, so the dark one, shown on a light
+ * page, still reads; on a dark page it is the page.
+ */
+const PAGE = Object.freeze({ dark: '#0d1117', light: '#ffffff' });
+
+/**
+ * One size for each role a text plays, on every package's picture: the package's name, the name
+ * on a box, a grey caption beside a thing, a literal of code or of output, and a row of a list or
+ * of a table. A text is drawn by its role and by nothing else.
+ */
+const TYPE = Object.freeze({
+  heading: { size: 15, weight: '600' },
+  label: { size: 13, weight: '600' },
+  caption: { size: 12, weight: '' },
+  code: { size: 12, weight: '' },
+  value: { size: 12, weight: '' },
+});
+
+/** @typedef {keyof typeof TYPE} Role */
+
+/** How far a text sits inside its box. */
+const PAD = 14;
+/** The baseline of the band at the foot of every package's picture. */
+const FOOT = 220;
+/** The advance of one character of the monospace face, as a share of its size. */
+const ADVANCE = 0.6;
+
+/**
+ * The width a line takes in a role.
+ * @param {Line} line
+ * @param {Role} role
+ */
+const widthOf = (line, role) => [...textOf(line)].length * TYPE[role].size * ADVANCE;
+
+/**
  * The paint of one theme, and the helpers that give an element its keyframes over a package's
  * own loop. An element that `stays` is there in the last frame and carries no opacity of its
- * own; one that `passes` is not, and carries `opacity="0"`.
+ * own; one that `passes` is not, and carries `opacity="0"`. Everything there in the last frame
+ * leaves at once, at `ends` (`leaves`), so nothing is left alone on the page at the end of a loop.
  * @param {number} loop
  * @param {'dark' | 'light'} theme
  */
@@ -675,6 +710,12 @@ function scene(loop, theme) {
   };
   const ends = loop - 0.7;
   /**
+   * The stops of an element there in the last frame, closed the way every such element closes.
+   * @param {[number, string][]} stops
+   * @returns {[number, string][]}
+   */
+  const leaves = (stops) => [...stops, [ends - 0.3, '1'], [ends, '0'], [loop, '0']];
+  /**
    * @param {[number, string][]} stops
    * @param {string} last the opacity of the last frame
    */
@@ -690,19 +731,29 @@ function scene(loop, theme) {
     ends,
     animate,
     goes,
+    leaves,
     /** @param {number} from */
-    stays: (from) => goes(shown(from, ends, 0.3, loop), '1'),
+    stays: (from) =>
+      goes(
+        leaves([
+          [0, '0'],
+          [from, '0'],
+          [from + 0.3, '1'],
+        ]),
+        '1',
+      ),
     /** @param {number} from @param {number} to */
     passes: (from, to) => goes(shown(from, to, 0.3, loop), '0'),
     /**
-     * A line as a text element.
+     * A line as a text element, in the size of its role.
      * @param {Line} line
      * @param {number} x
      * @param {number} y
-     * @param {{ fill?: string, size?: number, anchor?: string, weight?: string, attrs?: string }} [o]
+     * @param {Role} role
+     * @param {{ fill?: string, anchor?: string, attrs?: string }} [o]
      */
-    say: (line, x, y, o = {}) =>
-      `<text${o.attrs ? ` ${o.attrs}` : ''} x="${n(x)}" y="${n(y)}" font-family="${MONO}" font-size="${o.size ?? 11.5}"${o.weight ? ` font-weight="${o.weight}"` : ''} fill="${o.fill ?? text}"${o.anchor ? ` text-anchor="${o.anchor}"` : ''}>${escaped(textOf(line))}</text>`,
+    say: (line, x, y, role, o = {}) =>
+      `<text${o.attrs ? ` ${o.attrs}` : ''} x="${n(x)}" y="${n(y)}" font-family="${MONO}" font-size="${TYPE[role].size}"${TYPE[role].weight ? ` font-weight="${TYPE[role].weight}"` : ''} fill="${o.fill ?? (role === 'caption' ? muted : text)}"${o.anchor ? ` text-anchor="${o.anchor}"` : ''}>${escaped(textOf(line))}</text>`,
   };
 }
 
@@ -718,6 +769,14 @@ function hexagon(x, cy, a) {
   const dx = a * COS30;
   return `M${n(x)} ${n(cy - a)}L${n(x + dx)} ${n(cy - a / 2)}L${n(x + dx)} ${n(cy + a / 2)}L${n(x)} ${n(cy + a)}L${n(x - dx)} ${n(cy + a / 2)}L${n(x - dx)} ${n(cy - a / 2)}z`;
 }
+
+/**
+ * The width of a row of `count` cubes of edge `a`, `link` apart.
+ * @param {number} count
+ * @param {number} a
+ * @param {number} [link]
+ */
+const rowWidth = (count, a, link = 12) => count * 2 * a * COS30 + (count - 1) * link;
 
 /**
  * A row of cubes, each linked to the one before; `arrive[i]` is when cube i comes in, or
@@ -750,7 +809,7 @@ function cubes(s, x0, cy, a, arrive, link = 12) {
 }
 
 /**
- * A rounded box in the border grey, or lit in the accent.
+ * A rounded box in the muted grey, or lit in the accent.
  * @param {Scene} s
  * @param {number} x
  * @param {number} y
@@ -760,23 +819,25 @@ function cubes(s, x0, cy, a, arrive, link = 12) {
  */
 const box = (s, x, y, w, h, attrs) =>
   attrs === undefined
-    ? `<rect x="${n(x + 0.5)}" y="${n(y + 0.5)}" width="${n(w - 1)}" height="${n(h - 1)}" rx="8" fill="none" stroke="${s.border}"/>`
+    ? `<rect x="${n(x + 0.5)}" y="${n(y + 0.5)}" width="${n(w - 1)}" height="${n(h - 1)}" rx="8" fill="none" stroke="${s.muted}"/>`
     : `<rect ${attrs} x="${n(x + 0.5)}" y="${n(y + 0.5)}" width="${n(w - 1)}" height="${n(h - 1)}" rx="8" fill="${s.accent}" fill-opacity="0.1" stroke="${s.accent}" stroke-width="1.5"/>`;
 
 /**
- * An arrow in the muted grey, from (x1, y1) to (x2, y2), its head at the second.
+ * An arrow from (x1, y1) to (x2, y2), its head at the second, in the muted grey or the colour
+ * given.
  * @param {Scene} s
  * @param {number} x1
  * @param {number} y1
  * @param {number} x2
  * @param {number} y2
  * @param {string} [attrs]
+ * @param {string} [stroke]
  */
-function arrow(s, x1, y1, x2, y2, attrs) {
+function arrow(s, x1, y1, x2, y2, attrs, stroke = s.muted) {
   const angle = Math.atan2(y2 - y1, x2 - x1);
   const head = (/** @type {number} */ turn) =>
     `${n(x2 - 7 * Math.cos(angle + turn))} ${n(y2 - 7 * Math.sin(angle + turn))}`;
-  return `<path${attrs ? ` ${attrs}` : ''} d="M${n(x1)} ${n(y1)}L${n(x2)} ${n(y2)}M${head(0.5)}L${n(x2)} ${n(y2)}L${head(-0.5)}" fill="none" stroke="${s.muted}" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>`;
+  return `<path${attrs ? ` ${attrs}` : ''} d="M${n(x1)} ${n(y1)}L${n(x2)} ${n(y2)}M${head(0.5)}L${n(x2)} ${n(y2)}L${head(-0.5)}" fill="none" stroke="${stroke}" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>`;
 }
 
 // @mnema/chain: the chain, and who reads it.
@@ -798,7 +859,7 @@ const CHAIN_LINES = {
   altered: [
     said('entry hash mismatch: content or link was altered', 'packages/chain/src/chain/verify.ts'),
   ],
-  verify: [said('verify', 'packages/chain/src/index.ts')],
+  verify: [said('verify', 'packages/chain/README.md')],
   verified: [said('local integrity verified (T1/T2/T4)', 'packages/chain/src/chain/level.ts')],
   python: [said('mnema_verify.py', 'packages/chain/README.md')],
   VERIFIED: [said('VERIFIED', 'packages/chain/verifier/mnemaverify/verdict.py')],
@@ -807,18 +868,26 @@ const CHAIN_LINES = {
 /** @param {Scene} s */
 function chainStory(s) {
   const L = CHAIN_LINES;
-  const { loop, ends } = s;
   const a = 16;
-  const cy = 132;
-  const row = cubes(s, 40, cy, a, [1.6, 2.2, 2.8], 34);
+  const between = 34;
+  // The seal of the checkpoint, flush with the left edge, and the three blocks in its middle.
+  const seal = { x: 0, y: 100, w: 180, h: 64 };
+  const cy = seal.y + seal.h / 2;
+  const row = cubes(
+    s,
+    seal.x + (seal.w - rowWidth(3, a, between)) / 2,
+    cy,
+    a,
+    [1.6, 2.2, 2.8],
+    between,
+  );
   /** @type {string[]} */
   const out = [];
-  // An event comes in as a card and becomes the first block.
-  const card = travel(0.2, 1.5, 0, 24, loop);
+  // An event comes in as a card, and the first block takes its place.
   out.push(
-    `<g class="a" style="animation-name:${s.animate('transform', card.move)},${s.animate('opacity', card.fade)}" opacity="0">`,
-    `<rect x="0.5" y="56.5" width="148" height="25" rx="6" fill="${s.accent}" fill-opacity="0.12" stroke="${s.accent}" stroke-opacity="0.6"/>`,
-    s.say(L.event, 10, 73.5),
+    `<g ${s.passes(0.2, 1.9)}>`,
+    `<rect x="0.5" y="52.5" width="${n(widthOf(L.event, 'code') + 2 * PAD - 1)}" height="25" rx="6" fill="${s.accent}" fill-opacity="0.12" stroke="${s.accent}"/>`,
+    s.say(L.event, PAD, 70, 'code'),
     '</g>',
     ...row.out,
   );
@@ -828,7 +897,7 @@ function chainStory(s) {
   out.push(
     `<path ${s.stays(2.5)} d="${link(1)}" stroke="${s.accent}" stroke-width="2" stroke-linecap="round"/>`,
     `<path ${s.goes(
-      [
+      s.leaves([
         [0, '0'],
         [3.0, '0'],
         [3.3, '1'],
@@ -836,9 +905,7 @@ function chainStory(s) {
         [5.4, '0'],
         [7.6, '0'],
         [7.9, '1'],
-        [ends, '1'],
-        [loop, '0'],
-      ],
+      ]),
       '1',
     )} d="${link(2)}" stroke="${s.accent}" stroke-width="2" stroke-linecap="round"/>`,
     `<path ${s.passes(5.2, 7.8)} d="${link(2)}" stroke="${s.muted}" stroke-width="2" stroke-dasharray="3 4" stroke-linecap="round"/>`,
@@ -853,33 +920,29 @@ function chainStory(s) {
         [6.0, '0.9'],
         [7.4, '0.9'],
         [7.7, '0'],
-        [loop, '0'],
+        [s.loop, '0'],
       ],
       '0',
     )} d="${hexagon(row.at(1), cy, a)}" fill="${s.muted}"/>`,
-    s.say(L.link, row.at(0) - row.dx, cy + a + 30, {
-      fill: s.muted,
-      size: 11,
-      attrs: s.stays(2.4),
-    }),
+    s.say(L.link, seal.x, seal.y + seal.h + 16, 'caption', { attrs: s.stays(2.4) }),
   );
   // The checkpoint signs over all three.
-  const left = row.at(0) - row.dx - 12;
-  const right = row.at(2) + row.dx + 12;
   out.push(
-    `<rect ${s.stays(3.5)} x="${n(left)}" y="${cy - a - 12}" width="${n(right - left)}" height="${2 * a + 24}" rx="10" fill="${s.accent}" fill-opacity="0.06" stroke="${s.accent}" stroke-width="1.5"/>`,
-    s.say(L.checkpoint, left, cy - a - 20, { fill: s.accent, size: 11, attrs: s.stays(3.7) }),
-    s.say(L.altered, 0, 226, { attrs: s.passes(5.4, 7.6) }),
+    `<rect ${s.stays(3.5)} x="${n(seal.x + 0.5)}" y="${n(seal.y + 0.5)}" width="${seal.w - 1}" height="${seal.h - 1}" rx="10" fill="${s.accent}" fill-opacity="0.06" stroke="${s.accent}" stroke-width="1.5"/>`,
+    s.say(L.checkpoint, seal.x, seal.y - 10, 'caption', { attrs: s.stays(3.7) }),
+    s.say(L.altered, 0, FOOT, 'code', { attrs: s.passes(5.4, 7.6) }),
   );
-  // Two readers of the same tail, each in its own words for the same verdict.
+  // Two readers of the same tail, each in its own words for the same verdict; each arrow points
+  // at the middle of its reader's two lines.
   const rx = 420;
+  const right = seal.x + seal.w;
   out.push(
-    arrow(s, right + 8, cy - 8, rx - 14, 100, s.stays(8.8)),
-    arrow(s, right + 8, cy + 8, rx - 14, 164, s.stays(8.8)),
-    s.say(L.verify, rx, 96, { attrs: s.stays(9.0) }),
-    s.say(L.verified, rx, 116, { fill: s.accent, attrs: s.stays(9.4) }),
-    s.say(L.python, rx, 160, { attrs: s.stays(9.2) }),
-    s.say(L.VERIFIED, rx, 180, { fill: s.accent, attrs: s.stays(9.6) }),
+    arrow(s, right + 8, cy - 8, rx - 14, 106, s.stays(8.8)),
+    arrow(s, right + 8, cy + 8, rx - 14, 156, s.stays(8.8)),
+    s.say(L.verify, rx, 100, 'code', { attrs: s.stays(9.0) }),
+    s.say(L.verified, rx, 120, 'code', { attrs: s.stays(9.4) }),
+    s.say(L.python, rx, 150, 'code', { attrs: s.stays(9.2) }),
+    s.say(L.VERIFIED, rx, 170, 'code', { attrs: s.stays(9.6) }),
   );
   return out;
 }
@@ -915,42 +978,53 @@ function coreStory(s) {
   const L = CORE_LINES;
   /** @type {string[]} */
   const out = [];
-  const node = { w: 104, h: 26 };
+  // The states on three rows; every move of the table is an arrow with its head.
+  const node = { w: 108, h: 28 };
+  const col = 160;
+  const [top, middle, bottom] = [52, 112, 172];
+  const mid = (/** @type {number} */ y) => y + node.h / 2;
   /** @type {[Line, number, number][]} */
   const nodes = [
-    [L.proposed, 0, 112],
-    [L.accepted, 176, 60],
-    [L.rejected, 176, 112],
-    [L.superseded, 176, 164],
+    [L.proposed, 0, middle],
+    [L.accepted, col, top],
+    [L.superseded, col, middle],
+    [L.rejected, col, bottom],
   ];
-  const mid = (/** @type {number} */ y) => y + node.h / 2;
   for (const [line, x, y] of nodes) {
-    out.push(box(s, x, y, node.w, node.h), s.say(line, x + 10, y + 17.5, { size: 11 }));
+    out.push(box(s, x, y, node.w, node.h), s.say(line, x + PAD, y + 17, 'label'));
   }
-  for (const [, x, y] of nodes.slice(1)) out.push(arrow(s, node.w + 2, mid(112), x - 3, mid(y)));
-  out.push(
-    `<path d="M282 ${mid(60)}C306 ${mid(60)} 306 ${mid(164)} 284 ${mid(164)}" fill="none" stroke="${s.muted}" stroke-width="1.5" stroke-linecap="round"/>`,
-  );
+  for (const y of [top, middle, bottom])
+    out.push(arrow(s, node.w + 2, mid(middle), col - 3, mid(y)));
+  const axis = col + node.w / 2;
+  out.push(arrow(s, axis, top + node.h + 3, axis, middle - 3));
   // A move the table allows: the edge and the state light, and a block goes down to the chain.
   out.push(
-    s.say(L.request, 0, 100, { fill: s.accent, size: 11, attrs: s.passes(1.8, 4.2) }),
-    `<path ${s.stays(2.4)} d="M${node.w + 2} ${mid(112)}L173 ${mid(60)}" stroke="${s.accent}" stroke-width="2" stroke-linecap="round"/>`,
-    box(s, 176, 60, node.w, node.h, s.stays(2.8)),
+    s.say(L.request, 0, 100, 'code', { attrs: s.passes(1.8, 4.2) }),
+    `<path ${s.stays(2.4)} d="M${node.w + 2} ${mid(middle)}L${col - 3} ${mid(top)}" stroke="${s.accent}" stroke-width="2" stroke-linecap="round"/>`,
+    box(s, col, top, node.w, node.h, s.stays(2.8)),
   );
-  const chain = cubes(s, 420, 80, 12, [undefined, undefined, 3.4]);
+  // The table, flush with the right edge; the chain above it starts where it starts, and the fold
+  // comes down the axis of the middle block.
+  const tableW = Math.ceil(widthOf(L.row, 'value') + 2 * PAD);
+  const x0 = W_PKG - tableW;
+  const chain = cubes(s, x0, mid(top), 12, [undefined, undefined, 3.4]);
   out.push(...chain.out);
-  // A move it does not allow: the gate hands it back in words, and nothing goes down.
+  // A move it does not allow: asked of `rejected`, the gate hands it back in words, and nothing
+  // goes down.
+  const reach = col + node.w + 3;
   out.push(
-    s.say(L.again, 318, mid(112) + 4, { fill: s.accent, size: 11, attrs: s.passes(4.2, 6.4) }),
-    `<rect ${s.passes(4.4, 6.4)} x="176.5" y="112.5" width="${node.w - 1}" height="${node.h - 1}" rx="8" fill="none" stroke="${s.accent}" stroke-width="1.5" stroke-dasharray="4 3"/>`,
-    s.say(L.refused, 0, 226, { attrs: s.stays(4.8) }),
+    arrow(s, reach + 48, mid(bottom), reach, mid(bottom), s.passes(4.2, 6.4), s.accent),
+    s.say(L.again, reach + 56, bottom + 17, 'code', { attrs: s.passes(4.2, 6.4) }),
+    `<rect ${s.passes(4.4, 6.4)} x="${col + 0.5}" y="${bottom + 0.5}" width="${node.w - 1}" height="${node.h - 1}" rx="8" fill="none" stroke="${s.accent}" stroke-width="1.5" stroke-dasharray="4 3"/>`,
+    s.say(L.refused, 0, FOOT, 'code', { attrs: s.stays(4.8) }),
   );
   // The chain folded into a table, which is thrown away and folded again the same.
+  const down = chain.at(1);
   out.push(
-    arrow(s, 452, 100, 452, 144, s.stays(6.6)),
-    s.say(L.fold, 464, 126, { fill: s.muted, size: 11, attrs: s.stays(6.6) }),
+    arrow(s, down, mid(top) + 16, down, middle - 3, s.stays(6.6)),
+    s.say(L.fold, down + 12, 100, 'caption', { attrs: s.stays(6.6) }),
     `<g ${s.goes(
-      [
+      s.leaves([
         [0, '0'],
         [7.0, '0'],
         [7.3, '1'],
@@ -958,15 +1032,13 @@ function coreStory(s) {
         [8.9, '0'],
         [9.3, '0'],
         [9.6, '1'],
-        [s.ends, '1'],
-        [s.loop, '0'],
-      ],
+      ]),
       '1',
     )}>`,
-    box(s, 404, 150, 316, 32),
-    s.say(L.row, 414, 170.5, { size: 10.5 }),
+    box(s, x0, middle, tableW, node.h),
+    s.say(L.row, x0 + PAD, middle + 17, 'value'),
     '</g>',
-    s.say(L.rebuild, 404, 206, { fill: s.accent, size: 11, attrs: s.stays(9.0) }),
+    s.say(L.rebuild, x0, 160, 'caption', { attrs: s.stays(9.0) }),
   );
   return out;
 }
@@ -996,41 +1068,52 @@ function contextStory(s) {
   const L = CONTEXT_LINES;
   /** @type {string[]} */
   const out = [];
-  // The decisions of the chain, each in its state.
-  out.push(box(s, 0, 52, 180, 104));
-  [L.one, L.two, L.three].forEach((line, i) => {
-    out.push(s.say(line, 14, 80 + i * 28, { fill: s.muted, attrs: s.stays(0.2 + i * 0.3) }));
+  // The two panels share their rows: ADR-2 and ADR-3 sit on the same line on both sides.
+  const panel = { y: 52, h: 124 };
+  const [r1, r2, r3, r4, r5] = [80, 100, 120, 140, 160];
+  out.push(box(s, 0, panel.y, 180, panel.h));
+  /** @type {[Line, number][]} */
+  const chain = [
+    [L.one, r1],
+    [L.two, r3],
+    [L.three, r5],
+  ];
+  chain.forEach(([line, y], i) => {
+    out.push(s.say(line, PAD, y, 'value', { fill: s.muted, attrs: s.stays(0.2 + i * 0.3) }));
   });
-  out.push(box(s, 6, 90, 168, 26, s.stays(2.6)));
+  out.push(box(s, 6, r3 - 18, 168, 26, s.stays(2.6)));
   // bootstrap lets the ones in force through, and puts what waits on a person apart.
   out.push(
-    arrow(s, 190, 104, 394, 104, s.stays(2.0)),
-    s.say(L.bootstrap, 292, 96, { fill: s.accent, anchor: 'middle', attrs: s.stays(2.0) }),
-    box(s, 404, 52, 316, 104),
-    s.say(L.decisions, 418, 74, { fill: s.muted, size: 11, attrs: s.stays(2.4) }),
-    s.say(L.inForce, 418, 94, { attrs: s.stays(3.0) }),
-    s.say(L.awaiting, 418, 122, { fill: s.muted, size: 11, attrs: s.stays(4.6) }),
-    s.say(L.waits, 418, 142, { attrs: s.stays(5.0) }),
+    arrow(s, 190, r3 - 4, 394, r3 - 4, s.stays(2.0)),
+    s.say(L.bootstrap, 292, r2, 'caption', { anchor: 'middle', attrs: s.stays(2.0) }),
+    box(s, 404, panel.y, W_PKG - 404, panel.h),
+    s.say(L.decisions, 404 + PAD, r2, 'caption', { attrs: s.stays(2.4) }),
+    s.say(L.inForce, 404 + PAD, r3, 'value', { attrs: s.stays(3.0) }),
+    s.say(L.awaiting, 404 + PAD, r4, 'caption', { attrs: s.stays(4.6) }),
+    s.say(L.waits, 404 + PAD, r5, 'value', { attrs: s.stays(5.0) }),
   );
   // Asked for a path, it names the rule that refuses a write there.
   out.push(
-    s.say(L.asks, 0, 192, { fill: s.muted, attrs: s.stays(6.6) }),
-    s.say(L.path, 0, 214, { fill: s.accent, attrs: s.stays(7.4) }),
+    s.say(L.asks, 0, FOOT - 20, 'caption', { attrs: s.stays(6.6) }),
+    s.say(L.path, 0, FOOT, 'value', { attrs: s.stays(7.4) }),
   );
-  // And it writes nothing back.
+  // And it writes nothing back: the struck arrow runs on the middle of the foot's line.
+  const lane = FOOT - 4;
   out.push(
     `<g ${s.stays(9.0)}>`,
-    `<path d="M394 204H254" stroke="${s.muted}" stroke-width="1.5" stroke-dasharray="3 5" stroke-linecap="round"/>`,
-    `<path d="M260 198L254 204L260 210" fill="none" stroke="${s.muted}" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>`,
-    `<path d="M317 196L331 212M331 196L317 212" stroke="${s.accent}" stroke-width="2" stroke-linecap="round"/>`,
+    `<path d="M394 ${lane}H254" stroke="${s.muted}" stroke-width="1.5" stroke-dasharray="3 5" stroke-linecap="round"/>`,
+    `<path d="M260 ${lane - 6}L254 ${lane}L260 ${lane + 6}" fill="none" stroke="${s.muted}" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>`,
+    `<path d="M317 ${lane - 8}L331 ${lane + 8}M331 ${lane - 8}L317 ${lane + 8}" stroke="${s.accent}" stroke-width="2" stroke-linecap="round"/>`,
     '</g>',
-    s.say(L.only, 404, 208, { fill: s.accent, attrs: s.stays(9.4) }),
+    s.say(L.only, 404, FOOT, 'code', { attrs: s.stays(9.4) }),
   );
   return out;
 }
 
 // @mnema/stacks: the contract, the validator and the digest.
 const STACK_FILES = 'packages/stacks/tests/an-archive-is-read-never-unpacked.test.ts';
+/** The digest of the example stack, as the package's README states it. */
+export const DIGEST = 'df9d8d71cdc13bd89b45af349e677ecfcbe98949805278bd42f16e6c0498f9ed';
 const STACKS_LINES = {
   name: [said('@mnema/stacks', 'packages/stacks/package.json')],
   manifest: [said('stack.json', STACK_FILES)],
@@ -1041,12 +1124,9 @@ const STACKS_LINES = {
   validate: [said('validateStack', 'packages/stacks/src/index.ts')],
   refused: [said('mcp-server', 'packages/stacks/src/problem.ts')],
   line: [said('path NUL sha256(file) LF', 'packages/stacks/README.md')],
-  digest: [
-    said(
-      'df9d8d71cdc13bd89b45af349e677ecfcbe98949805278bd42f16e6c0498f9ed',
-      'packages/stacks/README.md',
-    ),
-  ],
+  // The digest whole, in two halves of one line each.
+  digest: [said(DIGEST.slice(0, 32), 'packages/stacks/README.md')],
+  digestEnd: [said(DIGEST.slice(32), 'packages/stacks/README.md')],
 };
 
 /** @param {Scene} s */
@@ -1054,33 +1134,41 @@ function stacksStory(s) {
   const L = STACKS_LINES;
   /** @type {string[]} */
   const out = [];
-  // The directory, line by line.
-  out.push(box(s, 0, 52, 200, 130));
+  // The directory, line by line, and under it the validator, as wide.
+  const folder = { w: 240, y: 52, h: 124 };
+  const rows = [80, 100, 120, 140];
+  out.push(box(s, 0, folder.y, folder.w, folder.h));
   [L.manifest, L.skill, L.agent, L.licence].forEach((line, i) => {
-    out.push(s.say(line, 14, 76 + i * 22, { attrs: s.stays(0.3 + i * 0.4) }));
+    out.push(s.say(line, PAD, rows[i] ?? 0, 'value', { attrs: s.stays(0.3 + i * 0.4) }));
   });
-  out.push(s.say(L.mcp, 14, 164, { fill: s.accent, attrs: s.passes(2.0, 4.6) }));
+  out.push(s.say(L.mcp, PAD, 160, 'value', { attrs: s.passes(2.0, 4.6) }));
   // The validator bars the server, and passes the directory once it is gone.
+  const gate = { y: 186, h: 40 };
+  const verdict = 130;
   out.push(
-    arrow(s, 208, 116, 254, 116, s.stays(1.8)),
-    box(s, 262, 92, 150, 50),
-    s.say(L.validate, 276, 112, { size: 11, attrs: s.stays(1.8) }),
-    s.say(L.refused, 276, 132, { fill: s.accent, size: 11, attrs: s.passes(2.6, 4.6) }),
-    `<path ${s.stays(4.8)} d="M278 127L284 133L296 121" fill="none" stroke="${s.accent}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>`,
+    box(s, 0, gate.y, folder.w, gate.h),
+    s.say(L.validate, PAD, gate.y + 24, 'label', { attrs: s.stays(1.8) }),
+    s.say(L.refused, verdict, gate.y + 24, 'code', { attrs: s.passes(2.6, 4.6) }),
+    `<path ${s.stays(4.8)} d="M${verdict} ${gate.y + 18}L${verdict + 6} ${gate.y + 24}L${verdict + 18} ${gate.y + 12}" fill="none" stroke="${s.accent}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>`,
   );
-  // Each file becomes a line, and the lines become the digest.
+  // Each file becomes a line, and the lines become the digest, all on one axis.
+  const axis = 482;
+  const into = axis - widthOf(L.line, 'caption') / 2 - 8;
+  const meet = 106;
+  const bend = (folder.w + into) / 2;
   out.push(`<g ${s.stays(5.6)}>`);
-  for (let i = 0; i < 4; i++) {
-    const y = 72 + i * 22;
+  for (const row of rows) {
+    const y = row - 4;
     out.push(
-      `<path d="M424 ${y}C448 ${y} 448 110 468 110" fill="none" stroke="${s.muted}" stroke-width="1"/>`,
+      `<path d="M${folder.w + 4} ${y}C${n(bend)} ${y} ${n(bend)} ${meet} ${n(into)} ${meet}" fill="none" stroke="${s.muted}" stroke-width="1.25"/>`,
     );
   }
   out.push(
     '</g>',
-    s.say(L.line, 476, 114, { fill: s.muted, size: 11, attrs: s.stays(6.0) }),
-    arrow(s, 560, 126, 560, 200, s.stays(7.0)),
-    s.say(L.digest, W_PKG, 226, { fill: s.accent, size: 10.5, anchor: 'end', attrs: s.stays(7.6) }),
+    s.say(L.line, axis, meet + 4, 'caption', { anchor: 'middle', attrs: s.stays(6.0) }),
+    arrow(s, axis, meet + 14, axis, FOOT - 36, s.stays(7.0)),
+    s.say(L.digest, axis, FOOT - 20, 'code', { anchor: 'middle', attrs: s.stays(7.6) }),
+    s.say(L.digestEnd, axis, FOOT, 'code', { anchor: 'middle', attrs: s.stays(7.6) }),
   );
   return out;
 }
@@ -1094,25 +1182,21 @@ const CODE_LINES = {
   mcp: [said('MCP', 'packages/code/README.md')],
   plugin: [said('plugin', 'packages/code/README.md')],
   record: [said('record_decision', 'packages/code/src/mcp/server.ts')],
-  recorded: [
-    said('Recorded decision', 'packages/code/src/mcp/server.ts'),
-    ' ',
-    said('ADR-3', HERO),
-  ],
+  // The two lines of output are whole lines of the golden: what stands for the id there stands
+  // for it here.
+  recorded: [said('Recorded decision ADR-1 (<decision-runbook>)', GOLDEN_WRITES)],
   accept: [said('mnema decision move accept', GOLDEN_WRITES)],
-  accepted: [
-    said('Decision', GOLDEN_WRITES),
-    ' ',
-    said('ADR-3', HERO),
-    ' → ',
-    said('accepted', GOLDEN_WRITES),
-  ],
+  accepted: [said('Decision ADR-1 (<decision-runbook>) → accepted', GOLDEN_WRITES)],
   hooks: [
     said('SessionStart', 'plugin/hooks/hooks.json'),
     ' · ',
     said('PreToolUse', 'plugin/hooks/hooks.json'),
   ],
-  deny: [said('deny · refuses-a-write', HERO)],
+  deny: [
+    said('deny', 'packages/code/src/host-hook.ts'),
+    ' · ',
+    said('refuses-a-write', 'packages/chain/src/events/catalog.ts'),
+  ],
   verify: [said('mnema verify', GOLDEN_READS)],
   verified: [said('local integrity verified (T1/T2/T4)', GOLDEN_READS)],
 };
@@ -1122,12 +1206,14 @@ function codeStory(s) {
   const L = CODE_LINES;
   /** @type {string[]} */
   const out = [];
-  const door = { w: 96, h: 44 };
+  // Each door is a box with its name and what goes through it; a dashed line runs from each
+  // door's edge to the one record, flush with the right edge.
+  const door = { w: 424, h: 44 };
   const [cli, mcp, hooks] = [56, 116, 176];
-  const tx = 116;
-  const cy = 138;
-  const record = cubes(s, 520, cy, 13, [undefined, undefined, 3.6, 5.4]);
-  // The three doors and the one record behind them.
+  const tx = 80;
+  const cy = mcp + door.h / 2;
+  const a = 13;
+  const record = cubes(s, W_PKG - rowWidth(4, a) - 1, cy, a, [undefined, undefined, 3.6, 5.4]);
   /** @type {[Line, number][]} */
   const doors = [
     [L.cli, cli],
@@ -1137,33 +1223,33 @@ function codeStory(s) {
   for (const [line, y] of doors) {
     out.push(
       box(s, 0, y, door.w, door.h),
-      s.say(line, door.w / 2, y + 27, { size: 12.5, anchor: 'middle', weight: '600' }),
-      `<path d="M410 ${y + door.h / 2}L504 ${cy}" stroke="${s.border}" stroke-width="1.5" stroke-dasharray="3 5" stroke-linecap="round"/>`,
+      s.say(line, PAD, y + 17, 'label'),
+      `<path d="M${door.w + 4} ${y + door.h / 2}L${n(record.at(0) - record.dx - 6)} ${cy}" stroke="${s.muted}" stroke-width="1.5" stroke-dasharray="3 5" stroke-linecap="round"/>`,
     );
   }
   out.push(...record.out);
   // An agent records through the MCP server.
   out.push(
     box(s, 0, mcp, door.w, door.h, s.stays(2.0)),
-    s.say(L.record, tx, mcp + 18, { attrs: s.stays(2.2) }),
-    s.say(L.recorded, tx, mcp + 36, { fill: s.accent, attrs: s.stays(3.0) }),
+    s.say(L.record, tx, mcp + 17, 'code', { attrs: s.stays(2.2) }),
+    s.say(L.recorded, tx, mcp + 35, 'code', { attrs: s.stays(3.0) }),
   );
   // A person accepts at the command line.
   out.push(
     box(s, 0, cli, door.w, door.h, s.stays(4.0)),
-    s.say(L.accept, tx, cli + 18, { attrs: s.passes(4.2, 8.4) }),
-    s.say(L.accepted, tx, cli + 36, { fill: s.accent, attrs: s.passes(4.8, 8.4) }),
+    s.say(L.accept, tx, cli + 17, 'code', { attrs: s.passes(4.2, 8.4) }),
+    s.say(L.accepted, tx, cli + 35, 'code', { attrs: s.passes(4.8, 8.4) }),
   );
   // Through the plugin's hooks the session opens with the rule, and a write under it is denied.
   out.push(
     box(s, 0, hooks, door.w, door.h, s.stays(6.0)),
-    s.say(L.hooks, tx, hooks + 18, { attrs: s.stays(6.2) }),
-    s.say(L.deny, tx, hooks + 36, { fill: s.accent, attrs: s.stays(7.0) }),
+    s.say(L.hooks, tx, hooks + 17, 'code', { attrs: s.stays(6.2) }),
+    s.say(L.deny, tx, hooks + 35, 'code', { attrs: s.stays(7.0) }),
   );
   // The command line verifies the record.
   out.push(
-    s.say(L.verify, tx, cli + 18, { attrs: s.stays(8.6) }),
-    s.say(L.verified, tx, cli + 36, { fill: s.accent, attrs: s.stays(9.4) }),
+    s.say(L.verify, tx, cli + 17, 'code', { attrs: s.stays(8.6) }),
+    s.say(L.verified, tx, cli + 35, 'code', { attrs: s.stays(9.4) }),
   );
   for (let i = 0; i < 4; i++) {
     out.push(
@@ -1176,7 +1262,7 @@ function codeStory(s) {
           [s.loop, '0'],
         ],
         '0',
-      )} d="${hexagon(record.at(i), cy, 13)}" fill="${s.accent}" fill-opacity="0.85"/>`,
+      )} d="${hexagon(record.at(i), cy, a)}" fill="${s.accent}" fill-opacity="0.85"/>`,
     );
   }
   return out;
@@ -1228,7 +1314,8 @@ function packagePicture(pkg, blocks, theme) {
     ...s.css,
     '@media (prefers-reduced-motion: reduce){.a{animation:none!important}}',
     '</style>',
-    s.say(pkg.lines.name, 0, 24, { size: 15, weight: '600' }),
+    `<rect width="${W_PKG}" height="${H_PKG}" fill="${PAGE[theme]}"/>`,
+    s.say(pkg.lines.name, 0, 24, 'heading'),
     `<g transform="translate(${n(W_PKG - markW)} 6) scale(${scale})">`,
     ...wordmark(blocks, s.accent, 0, 0),
     '</g>',

@@ -189,6 +189,43 @@ describe('every package draws what it is, in its own words', () => {
     expect(named.filter((name) => !defined.has(name))).toEqual([]);
   });
 
+  it.each(Object.keys(drawn))('%s leaves no element alone at the end of the loop', (path) => {
+    // Every element there in the last frame fades out at the same moment; one that went out
+    // later stayed on the page by itself, the rest of the picture already gone.
+    const exits = [
+      ...read(path).matchAll(/@keyframes (\w+)\{((?:[\d.]+%\{opacity:[\d.]+\})+)\}/g),
+    ].map((m) => {
+      const stops = [...(m[2] as string).matchAll(/([\d.]+)%\{opacity:([\d.]+)\}/g)].map(
+        (s) => [Number(s[1]), Number(s[2])] as const,
+      );
+      let out = stops.length - 1;
+      while (out > 0 && stops[out - 1]?.[1] === 0) out--;
+      return { name: m[1] as string, at: stops[out]?.[0] ?? 0 };
+    });
+    const counts = new Map<number, number>();
+    for (const { at } of exits) counts.set(at, (counts.get(at) ?? 0) + 1);
+    const together = [...counts].sort((a, b) => b[1] - a[1])[0]?.[0] ?? 0;
+    expect(exits.length).toBeGreaterThan(10);
+    expect(together).toBeLessThan(100);
+    expect(exits.filter(({ at }) => at > together)).toEqual([]);
+  });
+
+  it('draws the digest of the stack whole, as its README states it', () => {
+    const digest = /`([0-9a-f]{64})`/.exec(read('packages/stacks/README.md'))?.[1];
+    for (const theme of ['dark', 'light']) {
+      const words = wordsOf(read(`packages/stacks/assets/stacks-${theme}.svg`));
+      expect(words.filter((w) => /^[0-9a-f]{32}$/.test(w)).join('')).toBe(digest);
+    }
+  });
+
+  it('draws the output of the command line as whole lines of its golden', () => {
+    const golden = read('packages/code/src/cli.writes.golden.txt').split('\n');
+    const words = wordsOf(read('packages/code/assets/code-light.svg'));
+    const output = words.filter((w) => /^(?:Recorded decision|Decision) /.test(w));
+    expect(output).toHaveLength(2);
+    for (const line of output) expect(golden).toContain(`| ${line}`);
+  });
+
   it.each(PACKAGE_PICTURES.map((p) => p.dir))(
     'packages/%s/README.md opens with the picture of the version its manifest says',
     (dir) => {
