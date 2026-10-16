@@ -1574,7 +1574,7 @@ function family(blocks, theme) {
   out.push(
     `<ellipse ${s.stays(0.2)} cx="${mid}" cy="${hub.y + hub.h / 2}" rx="180" ry="135" fill="url(#glow)"/>`,
     `<rect ${s.stays(0.2)} x="${n(hub.x + 0.5)}" y="${n(hub.y + 0.5)}" width="${n(hub.w - 1)}" height="${n(hub.h - 1)}" rx="14" fill="url(#tint)" stroke="${s.accent}" stroke-width="1.5"/>`,
-    s.sayIn(L.name, mid, hub, 'heading', { anchor: 'middle', attrs: s.stays(0.4) }, -9),
+    s.sayIn(L.name, mid, hub, 'label', { anchor: 'middle', attrs: s.stays(0.4) }, -9),
   );
   const scale = 0.36;
   const markW = Math.max(...blocks.map((row) => [...row].length)) * CELL.w * scale;
@@ -1688,7 +1688,7 @@ function family(blocks, theme) {
       [T + 0.1, n(length)],
       [T + 0.6, '0'],
       [T + 1.05, '0'],
-      [T + 1.1, n(length)],
+      [T + 1.15, n(length)],
       [LOOP, n(length)],
     ]);
     const shows = s.animate('opacity', shown(T + 0.1, T + 1.0, 0.2, LOOP));
@@ -1715,7 +1715,7 @@ function family(blocks, theme) {
               [T + 0.5, at(sx, sy)],
               [T + 1.2, at(hx, hy)],
               [T + 1.3, at(hx, hy)],
-              [T + 1.35, at(sx, sy)],
+              [T + 1.4, at(sx, sy)],
               [LOOP, at(sx, sy)],
             ]
           : [
@@ -1723,7 +1723,7 @@ function family(blocks, theme) {
               [T + 0.5, at(hx, hy)],
               [T + 1.2, at(sx, sy)],
               [T + 1.3, at(sx, sy)],
-              [T + 1.35, at(hx, hy)],
+              [T + 1.4, at(hx, hy)],
               [LOOP, at(hx, hy)],
             ];
     const last = sat.flow === 'both' ? T + 1.4 : T + 1.2;
