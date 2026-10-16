@@ -189,6 +189,8 @@ import {
   type ChargeRecorded,
   reasonTold,
   recordTheCharge,
+  refusalOfAnUnreadableRecord,
+  UNREADABLE_RECORD_NOTE,
   unrecordedCharge,
   type WriteVerdict,
   whatAWriteMeets,
@@ -2534,6 +2536,22 @@ export function runRulesBeforeAnEditTool(
 ): IntelligenceResult<HookReply> {
   const refused = requireProject(session);
   if (refused !== undefined) return refused;
+  // A RECORD THAT CANNOT BE READ REFUSES THE WRITE, as a reply and never as a tool error, which the
+  // host would read as leave to write; the command hook answers the same (`runBeforeAPath`).
+  try {
+    return rulesBeforeAnEdit(session, input);
+  } catch (error) {
+    const refusal = refusalOfAnUnreadableRecord(error, workspaceTrees(session));
+    if (refusal === undefined) throw error;
+    session.log(UNREADABLE_RECORD_NOTE);
+    return { ok: true, value: hookReply(PRE_TOOL_USE, { refuse: refusal }) };
+  }
+}
+
+function rulesBeforeAnEdit(
+  session: Session,
+  input: { path: string },
+): IntelligenceResult<HookReply> {
   const caches = workspaceCaches(session);
   // THE SWITCHES ARE ASKED FIRST, before the path is even resolved, and the order is the
   // whole cost argument. Each is one indexed lookup per tree over a projection the session

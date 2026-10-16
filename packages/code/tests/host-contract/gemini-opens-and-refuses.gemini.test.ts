@@ -14,7 +14,7 @@
  * documents the opening as the first turn of the history; and any file a shell command writes.
  */
 
-import { existsSync, readFileSync } from 'node:fs';
+import { existsSync, mkdirSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
 import {
@@ -25,7 +25,14 @@ import {
   theUserTextsOf,
   writing,
 } from './support/the-gemini.js';
-import { aFile, decide, ruleAt, theChannelFactsOf } from './support/the-record-to-stand-on.js';
+import {
+  aFile,
+  aLineTheReaderRefuses,
+  decide,
+  ruleAt,
+  theChannelFactsOf,
+  theSegmentOf,
+} from './support/the-record-to-stand-on.js';
 
 describe('gemini cli opens with the record and refuses the write', () => {
   const start = aGeminiForEachCase();
@@ -92,6 +99,24 @@ describe('gemini cli opens with the record and refuses the write', () => {
     expect(readFileSync(file, 'utf-8')).toBe('export const total = 1;\n');
     expect(theResultOfTheCall(session)).toContain('refuses a write at src/frozen/invoice.ts');
     expect(theChannelFactsOf(session.project, session.home)['channel.refused']).toBe(1);
+  }, 180_000);
+
+  it('a record with a line the reader refuses: a write no rule addresses is not created, and the model reads why', async () => {
+    let bytes = '';
+    const session = await start({
+      project: (project) => {
+        ruleAt(project, 'Billing is frozen', 'src/frozen', 'refuses-a-write');
+        mkdirSync(join(project.dir, 'src/free'), { recursive: true });
+        bytes = aLineTheReaderRefuses(project);
+      },
+      call: writing('src/free/notes.ts'),
+    });
+    expect(existsSync(join(session.project, 'src/free/notes.ts'))).toBe(false);
+    const handed = theResultOfTheCall(session);
+    expect(handed, 'Gemini CLI never handed the model a result').toBeDefined();
+    expect(handed).toContain('The write is refused');
+    expect(handed).toContain('If a newer mnema wrote the line, read the record with it.');
+    expect(theSegmentOf(session.project)).toBe(bytes);
   }, 180_000);
 
   it('fails open: with no `mnema` on the PATH the script says nothing, and the file is created', async () => {
