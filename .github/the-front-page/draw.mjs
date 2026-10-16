@@ -2,7 +2,7 @@
 // `docs/assets/how-it-works-{dark,light}.svg` and the animated
 // `docs/assets/how-mnema-fits-{dark,light}.svg`; and one animated picture per published package,
 // `packages/<p>/assets/<p>-{dark,light}.svg`, with the block that opens the package's README and
-// points at the copy of the picture inside that version's tarball.
+// points at the file on the repository's `main` branch.
 //
 // THE BANNER IS THE CONSOLE'S WORDMARK. Its rows are read from `THE_BLOCKS`
 // (`packages/code/src/presentation/banner.ts`, through the build) and each glyph is drawn as
@@ -1338,7 +1338,7 @@ export const PACKAGE_PICTURES = Object.freeze([
 /**
  * What a package's manifest says that its picture and its README use.
  * @param {string} dir
- * @returns {{ name: string, version: string, description: string }}
+ * @returns {{ name: string, version: string, description: string, repository?: { url?: string } }}
  */
 function manifestOf(dir) {
   return JSON.parse(
@@ -1382,25 +1382,29 @@ function packagePicture(pkg, blocks, theme) {
 }
 
 /**
- * Where a published package's picture is served from: the copy inside the tarball of that very
- * version, so the page of a version shows the picture that version carries.
- * @param {string} name
- * @param {string} version
+ * Where a package's picture is served from: the file on the repository's `main` branch, by the
+ * address of the repository its manifest says. No version is in it, because the picture must
+ * load before any version is published and after the next one.
+ * @param {string} dir
  * @param {string} file
  */
-export const pictureUrl = (name, version, file) =>
-  `https://cdn.jsdelivr.net/npm/${name}@${version}/assets/${file}`;
+export function pictureUrl(dir, file) {
+  const url = manifestOf(dir).repository?.url ?? '';
+  const at = /github\.com[/:]([^/]+\/[^/]+?)(?:\.git)?$/.exec(url);
+  if (at === null) throw new Error(`packages/${dir}/package.json: no GitHub repository in ${url}`);
+  return `https://raw.githubusercontent.com/${at[1]}/main/packages/${dir}/assets/${file}`;
+}
 
 /**
- * The block a package's README opens with, under its title, for the version its manifest says.
+ * The block a package's README opens with, under its title.
  * @param {string} dir
  */
 export function pictureBlock(dir) {
-  const { name, version, description } = manifestOf(dir);
+  const { description } = manifestOf(dir);
   return [
     '<picture>',
-    `  <source media="(prefers-color-scheme: dark)" srcset="${pictureUrl(name, version, `${dir}-dark.svg`)}">`,
-    `  <img src="${pictureUrl(name, version, `${dir}-light.svg`)}" alt="${attribute(description)}" width="720">`,
+    `  <source media="(prefers-color-scheme: dark)" srcset="${pictureUrl(dir, `${dir}-dark.svg`)}">`,
+    `  <img src="${pictureUrl(dir, `${dir}-light.svg`)}" alt="${attribute(description)}" width="720">`,
     '</picture>',
   ].join('\n');
 }

@@ -533,7 +533,6 @@ describe('the second reader runs out of what the package publishes', () => {
       'LICENSE',
       'NOTICE',
       'README.md',
-      'assets',
       'canonical-vectors.json',
       'dist',
       'event-schema.json',

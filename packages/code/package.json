@@ -43,7 +43,6 @@
   "files": [
     "dist/",
     "!dist/.tsbuildinfo",
-    "assets/",
     "NOTICE"
   ],
   "homepage": "https://github.com/felipesauer/mnema",
