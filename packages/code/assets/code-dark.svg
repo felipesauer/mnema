@@ -15,10 +15,10 @@
 @keyframes k10{0%{opacity:0}63.64%{opacity:0}66.36%{opacity:1}90.91%{opacity:1}93.64%{opacity:0}100%{opacity:0}}
 @keyframes k11{0%{opacity:0}78.18%{opacity:0}80.91%{opacity:1}90.91%{opacity:1}93.64%{opacity:0}100%{opacity:0}}
 @keyframes k12{0%{opacity:0}85.45%{opacity:0}88.18%{opacity:1}90.91%{opacity:1}93.64%{opacity:0}100%{opacity:0}}
-@keyframes k13{0%{opacity:0}81.82%{opacity:0}83.64%{opacity:1}88.18%{opacity:0}100%{opacity:0}}
-@keyframes k14{0%{opacity:0}83.64%{opacity:0}85.45%{opacity:1}90%{opacity:0}100%{opacity:0}}
-@keyframes k15{0%{opacity:0}85.45%{opacity:0}87.27%{opacity:1}91.82%{opacity:0}100%{opacity:0}}
-@keyframes k16{0%{opacity:0}87.27%{opacity:0}89.09%{opacity:1}93.64%{opacity:0}100%{opacity:0}}
+@keyframes k13{0%{opacity:0}81.82%{opacity:0}84.55%{opacity:1}90.91%{opacity:1}93.64%{opacity:0}100%{opacity:0}}
+@keyframes k14{0%{opacity:0}83.64%{opacity:0}86.36%{opacity:1}90.91%{opacity:1}93.64%{opacity:0}100%{opacity:0}}
+@keyframes k15{0%{opacity:0}85.45%{opacity:0}88.18%{opacity:1}90.91%{opacity:1}93.64%{opacity:0}100%{opacity:0}}
+@keyframes k16{0%{opacity:0}87.27%{opacity:0}90%{opacity:1}90.91%{opacity:1}93.64%{opacity:0}100%{opacity:0}}
 @media (prefers-reduced-motion: reduce){.a{animation:none!important}}
 </style>
 <rect width="720" height="240" fill="#0d1117"/>
@@ -29,13 +29,13 @@
 </g>
 <path d="M0 40.5H720" stroke="#3d444d"/>
 <rect x="0.5" y="56.5" width="423" height="43" rx="8" fill="none" stroke="#9198a1"/>
-<text x="14" y="73" font-family="ui-monospace,SFMono-Regular,'SF Mono',Menlo,Consolas,'Liberation Mono',monospace" font-size="13" font-weight="600" fill="#f0f6fc">mnema</text>
+<text x="14" y="82" font-family="ui-monospace,SFMono-Regular,'SF Mono',Menlo,Consolas,'Liberation Mono',monospace" font-size="13" font-weight="600" fill="#f0f6fc">mnema</text>
 <path d="M428 78L586.93 138" stroke="#9198a1" stroke-width="1.5" stroke-dasharray="3 5" stroke-linecap="round"/>
 <rect x="0.5" y="116.5" width="423" height="43" rx="8" fill="none" stroke="#9198a1"/>
-<text x="14" y="133" font-family="ui-monospace,SFMono-Regular,'SF Mono',Menlo,Consolas,'Liberation Mono',monospace" font-size="13" font-weight="600" fill="#f0f6fc">MCP</text>
+<text x="14" y="142" font-family="ui-monospace,SFMono-Regular,'SF Mono',Menlo,Consolas,'Liberation Mono',monospace" font-size="13" font-weight="600" fill="#f0f6fc">MCP</text>
 <path d="M428 138L586.93 138" stroke="#9198a1" stroke-width="1.5" stroke-dasharray="3 5" stroke-linecap="round"/>
 <rect x="0.5" y="176.5" width="423" height="43" rx="8" fill="none" stroke="#9198a1"/>
-<text x="14" y="193" font-family="ui-monospace,SFMono-Regular,'SF Mono',Menlo,Consolas,'Liberation Mono',monospace" font-size="13" font-weight="600" fill="#f0f6fc">plugin</text>
+<text x="14" y="202" font-family="ui-monospace,SFMono-Regular,'SF Mono',Menlo,Consolas,'Liberation Mono',monospace" font-size="13" font-weight="600" fill="#f0f6fc">plugin</text>
 <path d="M428 198L586.93 138" stroke="#9198a1" stroke-width="1.5" stroke-dasharray="3 5" stroke-linecap="round"/>
 <path d="M604.19 125L615.45 131.5L604.19 138L592.93 131.5z" fill="#c4a0f5" fill-opacity="0.3"/>
 <path d="M592.93 131.5L604.19 138L604.19 151L592.93 144.5z" fill="#c4a0f5" fill-opacity="0.16"/>
@@ -61,18 +61,18 @@
 <path d="M707.74 125L719 131.5L719 144.5L707.74 151L696.48 144.5L696.48 131.5zM696.48 131.5L707.74 138L719 131.5M707.74 138V151" fill="none" stroke="#c4a0f5" stroke-width="1.75" stroke-linejoin="round"/>
 </g>
 <rect class="a" style="animation-name:k2" x="0.5" y="116.5" width="423" height="43" rx="8" fill="#c4a0f5" fill-opacity="0.1" stroke="#c4a0f5" stroke-width="1.5"/>
-<text class="a" style="animation-name:k3" x="80" y="133" font-family="ui-monospace,SFMono-Regular,'SF Mono',Menlo,Consolas,'Liberation Mono',monospace" font-size="12" fill="#f0f6fc">record_decision</text>
-<text class="a" style="animation-name:k4" x="80" y="151" font-family="ui-monospace,SFMono-Regular,'SF Mono',Menlo,Consolas,'Liberation Mono',monospace" font-size="12" fill="#f0f6fc">Recorded decision ADR-1 (&lt;decision-runbook&gt;)</text>
+<text class="a" style="animation-name:k3" x="80" y="131.7" font-family="ui-monospace,SFMono-Regular,'SF Mono',Menlo,Consolas,'Liberation Mono',monospace" font-size="12" fill="#f0f6fc">record_decision</text>
+<text class="a" style="animation-name:k4" x="80" y="151.7" font-family="ui-monospace,SFMono-Regular,'SF Mono',Menlo,Consolas,'Liberation Mono',monospace" font-size="12" fill="#f0f6fc">Recorded decision ADR-1 (…)</text>
 <rect class="a" style="animation-name:k5" x="0.5" y="56.5" width="423" height="43" rx="8" fill="#c4a0f5" fill-opacity="0.1" stroke="#c4a0f5" stroke-width="1.5"/>
-<text class="a" style="animation-name:k6" opacity="0" x="80" y="73" font-family="ui-monospace,SFMono-Regular,'SF Mono',Menlo,Consolas,'Liberation Mono',monospace" font-size="12" fill="#f0f6fc">mnema decision move accept</text>
-<text class="a" style="animation-name:k7" opacity="0" x="80" y="91" font-family="ui-monospace,SFMono-Regular,'SF Mono',Menlo,Consolas,'Liberation Mono',monospace" font-size="12" fill="#f0f6fc">Decision ADR-1 (&lt;decision-runbook&gt;) → accepted</text>
+<text class="a" style="animation-name:k6" opacity="0" x="80" y="71.7" font-family="ui-monospace,SFMono-Regular,'SF Mono',Menlo,Consolas,'Liberation Mono',monospace" font-size="12" fill="#f0f6fc">mnema decision move accept</text>
+<text class="a" style="animation-name:k7" opacity="0" x="80" y="91.7" font-family="ui-monospace,SFMono-Regular,'SF Mono',Menlo,Consolas,'Liberation Mono',monospace" font-size="12" fill="#f0f6fc">Decision ADR-1 (…) → accepted</text>
 <rect class="a" style="animation-name:k8" x="0.5" y="176.5" width="423" height="43" rx="8" fill="#c4a0f5" fill-opacity="0.1" stroke="#c4a0f5" stroke-width="1.5"/>
-<text class="a" style="animation-name:k9" x="80" y="193" font-family="ui-monospace,SFMono-Regular,'SF Mono',Menlo,Consolas,'Liberation Mono',monospace" font-size="12" fill="#f0f6fc">SessionStart · PreToolUse</text>
-<text class="a" style="animation-name:k10" x="80" y="211" font-family="ui-monospace,SFMono-Regular,'SF Mono',Menlo,Consolas,'Liberation Mono',monospace" font-size="12" fill="#f0f6fc">deny · refuses-a-write</text>
-<text class="a" style="animation-name:k11" x="80" y="73" font-family="ui-monospace,SFMono-Regular,'SF Mono',Menlo,Consolas,'Liberation Mono',monospace" font-size="12" fill="#f0f6fc">mnema verify</text>
-<text class="a" style="animation-name:k12" x="80" y="91" font-family="ui-monospace,SFMono-Regular,'SF Mono',Menlo,Consolas,'Liberation Mono',monospace" font-size="12" fill="#f0f6fc">local integrity verified (T1/T2/T4)</text>
-<path class="a" style="animation-name:k13" opacity="0" d="M604.19 125L615.45 131.5L615.45 144.5L604.19 151L592.93 144.5L592.93 131.5z" fill="#c4a0f5" fill-opacity="0.85"/>
-<path class="a" style="animation-name:k14" opacity="0" d="M638.71 125L649.97 131.5L649.97 144.5L638.71 151L627.45 144.5L627.45 131.5z" fill="#c4a0f5" fill-opacity="0.85"/>
-<path class="a" style="animation-name:k15" opacity="0" d="M673.23 125L684.48 131.5L684.48 144.5L673.23 151L661.97 144.5L661.97 131.5z" fill="#c4a0f5" fill-opacity="0.85"/>
-<path class="a" style="animation-name:k16" opacity="0" d="M707.74 125L719 131.5L719 144.5L707.74 151L696.48 144.5L696.48 131.5z" fill="#c4a0f5" fill-opacity="0.85"/>
+<text class="a" style="animation-name:k9" x="80" y="191.7" font-family="ui-monospace,SFMono-Regular,'SF Mono',Menlo,Consolas,'Liberation Mono',monospace" font-size="12" fill="#f0f6fc">SessionStart · PreToolUse</text>
+<text class="a" style="animation-name:k10" x="80" y="211.7" font-family="ui-monospace,SFMono-Regular,'SF Mono',Menlo,Consolas,'Liberation Mono',monospace" font-size="12" fill="#f0f6fc">deny · refuses-a-write</text>
+<text class="a" style="animation-name:k11" x="80" y="71.7" font-family="ui-monospace,SFMono-Regular,'SF Mono',Menlo,Consolas,'Liberation Mono',monospace" font-size="12" fill="#f0f6fc">mnema verify</text>
+<text class="a" style="animation-name:k12" x="80" y="91.7" font-family="ui-monospace,SFMono-Regular,'SF Mono',Menlo,Consolas,'Liberation Mono',monospace" font-size="12" fill="#f0f6fc">local integrity verified (T1/T2/T4)</text>
+<path class="a" style="animation-name:k13" d="M604.19 125L615.45 131.5L615.45 144.5L604.19 151L592.93 144.5L592.93 131.5z" fill="#c4a0f5"/>
+<path class="a" style="animation-name:k14" d="M638.71 125L649.97 131.5L649.97 144.5L638.71 151L627.45 144.5L627.45 131.5z" fill="#c4a0f5"/>
+<path class="a" style="animation-name:k15" d="M673.23 125L684.48 131.5L684.48 144.5L673.23 151L661.97 144.5L661.97 131.5z" fill="#c4a0f5"/>
+<path class="a" style="animation-name:k16" d="M707.74 125L719 131.5L719 144.5L707.74 151L696.48 144.5L696.48 131.5z" fill="#c4a0f5"/>
 </svg>

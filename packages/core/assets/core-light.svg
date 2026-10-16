@@ -2,8 +2,8 @@
 <title>@mnema/core</title>
 <style>
 .a{animation-duration:11s;animation-iteration-count:infinite;animation-timing-function:ease-in-out}
-@keyframes k0{0%{opacity:0}16.36%{opacity:0}19.09%{opacity:1}35.45%{opacity:1}38.18%{opacity:0}100%{opacity:0}}
-@keyframes k1{0%{opacity:0}21.82%{opacity:0}24.55%{opacity:1}90.91%{opacity:1}93.64%{opacity:0}100%{opacity:0}}
+@keyframes k0{0%{stroke:#59636e}21.82%{stroke:#59636e}24.55%{stroke:#997dbf}90.91%{stroke:#997dbf}93.64%{stroke:#59636e}100%{stroke:#59636e}}
+@keyframes k1{0%{opacity:0}16.36%{opacity:0}19.09%{opacity:1}35.45%{opacity:1}38.18%{opacity:0}100%{opacity:0}}
 @keyframes k2{0%{opacity:0}25.45%{opacity:0}28.18%{opacity:1}90.91%{opacity:1}93.64%{opacity:0}100%{opacity:0}}
 @keyframes k3{0%{opacity:0}30.91%{opacity:0}33.64%{opacity:1}90.91%{opacity:1}93.64%{opacity:0}100%{opacity:0}}
 @keyframes k4{0%{opacity:0}38.18%{opacity:0}40.91%{opacity:1}55.45%{opacity:1}58.18%{opacity:0}100%{opacity:0}}
@@ -24,19 +24,18 @@
 </g>
 <path d="M0 40.5H720" stroke="#d1d9e0"/>
 <rect x="0.5" y="112.5" width="107" height="27" rx="8" fill="none" stroke="#59636e"/>
-<text x="14" y="129" font-family="ui-monospace,SFMono-Regular,'SF Mono',Menlo,Consolas,'Liberation Mono',monospace" font-size="13" font-weight="600" fill="#1f2328">proposed</text>
+<text x="14" y="130" font-family="ui-monospace,SFMono-Regular,'SF Mono',Menlo,Consolas,'Liberation Mono',monospace" font-size="13" font-weight="600" fill="#1f2328">proposed</text>
 <rect x="160.5" y="52.5" width="107" height="27" rx="8" fill="none" stroke="#59636e"/>
-<text x="174" y="69" font-family="ui-monospace,SFMono-Regular,'SF Mono',Menlo,Consolas,'Liberation Mono',monospace" font-size="13" font-weight="600" fill="#1f2328">accepted</text>
+<text x="174" y="70" font-family="ui-monospace,SFMono-Regular,'SF Mono',Menlo,Consolas,'Liberation Mono',monospace" font-size="13" font-weight="600" fill="#1f2328">accepted</text>
 <rect x="160.5" y="112.5" width="107" height="27" rx="8" fill="none" stroke="#59636e"/>
-<text x="174" y="129" font-family="ui-monospace,SFMono-Regular,'SF Mono',Menlo,Consolas,'Liberation Mono',monospace" font-size="13" font-weight="600" fill="#1f2328">superseded</text>
+<text x="174" y="130" font-family="ui-monospace,SFMono-Regular,'SF Mono',Menlo,Consolas,'Liberation Mono',monospace" font-size="13" font-weight="600" fill="#1f2328">superseded</text>
 <rect x="160.5" y="172.5" width="107" height="27" rx="8" fill="none" stroke="#59636e"/>
-<text x="174" y="189" font-family="ui-monospace,SFMono-Regular,'SF Mono',Menlo,Consolas,'Liberation Mono',monospace" font-size="13" font-weight="600" fill="#1f2328">rejected</text>
-<path d="M110 126L157 66M150.57 68.77L157 66L155.85 72.91" fill="none" stroke="#59636e" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+<text x="174" y="190" font-family="ui-monospace,SFMono-Regular,'SF Mono',Menlo,Consolas,'Liberation Mono',monospace" font-size="13" font-weight="600" fill="#1f2328">rejected</text>
 <path d="M110 126L157 126M150.86 122.64L157 126L150.86 129.36" fill="none" stroke="#59636e" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
 <path d="M110 126L157 186M155.85 179.09L157 186L150.57 183.23" fill="none" stroke="#59636e" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+<path class="a" style="animation-name:k0" d="M110 126L157 66M150.57 68.77L157 66L155.85 72.91" fill="none" stroke="#997dbf" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
 <path d="M214 83L214 109M217.36 102.86L214 109L210.64 102.86" fill="none" stroke="#59636e" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
-<text class="a" style="animation-name:k0" opacity="0" x="0" y="100" font-family="ui-monospace,SFMono-Regular,'SF Mono',Menlo,Consolas,'Liberation Mono',monospace" font-size="12" fill="#1f2328">accept · note</text>
-<path class="a" style="animation-name:k1" d="M110 126L157 66" stroke="#997dbf" stroke-width="2" stroke-linecap="round"/>
+<text class="a" style="animation-name:k1" opacity="0" x="0" y="100" font-family="ui-monospace,SFMono-Regular,'SF Mono',Menlo,Consolas,'Liberation Mono',monospace" font-size="12" fill="#1f2328">accept · note</text>
 <rect class="a" style="animation-name:k2" x="160.5" y="52.5" width="107" height="27" rx="8" fill="#997dbf" fill-opacity="0.1" stroke="#997dbf" stroke-width="1.5"/>
 <path d="M370.39 54L380.78 60L370.39 66L360 60z" fill="#997dbf" fill-opacity="0.3"/>
 <path d="M360 60L370.39 66L370.39 78L360 72z" fill="#997dbf" fill-opacity="0.16"/>
@@ -55,14 +54,14 @@
 <path d="M435.96 54L446.35 60L446.35 72L435.96 78L425.57 72L425.57 60zM425.57 60L435.96 66L446.35 60M435.96 66V78" fill="none" stroke="#997dbf" stroke-width="1.75" stroke-linejoin="round"/>
 </g>
 <path class="a" style="animation-name:k4" opacity="0" d="M319 186L271 186M277.14 189.36L271 186L277.14 182.64" fill="none" stroke="#997dbf" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
-<text class="a" style="animation-name:k5" opacity="0" x="327" y="189" font-family="ui-monospace,SFMono-Regular,'SF Mono',Menlo,Consolas,'Liberation Mono',monospace" font-size="12" fill="#1f2328">accept</text>
+<text class="a" style="animation-name:k5" opacity="0" x="327" y="189.7" font-family="ui-monospace,SFMono-Regular,'SF Mono',Menlo,Consolas,'Liberation Mono',monospace" font-size="12" fill="#1f2328">accept</text>
 <rect class="a" style="animation-name:k6" opacity="0" x="160.5" y="172.5" width="107" height="27" rx="8" fill="none" stroke="#997dbf" stroke-width="1.5" stroke-dasharray="4 3"/>
 <text class="a" style="animation-name:k7" x="0" y="220" font-family="ui-monospace,SFMono-Regular,'SF Mono',Menlo,Consolas,'Liberation Mono',monospace" font-size="12" fill="#1f2328">cannot "accept" a decision in rejected</text>
 <path class="a" style="animation-name:k8" d="M403.18 82L403.18 109M406.53 102.86L403.18 109L399.82 102.86" fill="none" stroke="#59636e" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
 <text class="a" style="animation-name:k9" x="415.18" y="100" font-family="ui-monospace,SFMono-Regular,'SF Mono',Menlo,Consolas,'Liberation Mono',monospace" font-size="12" fill="#59636e">projectDecisions</text>
 <g class="a" style="animation-name:k10">
 <rect x="360.5" y="112.5" width="359" height="27" rx="8" fill="none" stroke="#59636e"/>
-<text x="374" y="129" font-family="ui-monospace,SFMono-Regular,'SF Mono',Menlo,Consolas,'Liberation Mono',monospace" font-size="12" fill="#1f2328">ADR-2 · Keep money as integer cents · accepted</text>
+<text x="374" y="129.7" font-family="ui-monospace,SFMono-Regular,'SF Mono',Menlo,Consolas,'Liberation Mono',monospace" font-size="12" fill="#1f2328">ADR-2 · Keep money as integer cents · accepted</text>
 </g>
 <text class="a" style="animation-name:k11" x="360" y="160" font-family="ui-monospace,SFMono-Regular,'SF Mono',Menlo,Consolas,'Liberation Mono',monospace" font-size="12" fill="#59636e">rebuild</text>
 </svg>

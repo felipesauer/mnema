@@ -25,20 +25,20 @@
 </g>
 <path d="M0 40.5H720" stroke="#3d444d"/>
 <rect x="0.5" y="52.5" width="239" height="123" rx="8" fill="none" stroke="#9198a1"/>
-<text class="a" style="animation-name:k0" x="14" y="80" font-family="ui-monospace,SFMono-Regular,'SF Mono',Menlo,Consolas,'Liberation Mono',monospace" font-size="12" fill="#f0f6fc">stack.json</text>
-<text class="a" style="animation-name:k1" x="14" y="100" font-family="ui-monospace,SFMono-Regular,'SF Mono',Menlo,Consolas,'Liberation Mono',monospace" font-size="12" fill="#f0f6fc">skills/hello/SKILL.md</text>
-<text class="a" style="animation-name:k2" x="14" y="120" font-family="ui-monospace,SFMono-Regular,'SF Mono',Menlo,Consolas,'Liberation Mono',monospace" font-size="12" fill="#f0f6fc">agents/greeter.md</text>
-<text class="a" style="animation-name:k3" x="14" y="140" font-family="ui-monospace,SFMono-Regular,'SF Mono',Menlo,Consolas,'Liberation Mono',monospace" font-size="12" fill="#f0f6fc">LICENSE</text>
-<text class="a" style="animation-name:k4" opacity="0" x="14" y="160" font-family="ui-monospace,SFMono-Regular,'SF Mono',Menlo,Consolas,'Liberation Mono',monospace" font-size="12" fill="#f0f6fc">.mcp.json</text>
+<text class="a" style="animation-name:k0" x="14" y="77.7" font-family="ui-monospace,SFMono-Regular,'SF Mono',Menlo,Consolas,'Liberation Mono',monospace" font-size="12" fill="#f0f6fc">stack.json</text>
+<text class="a" style="animation-name:k1" x="14" y="97.7" font-family="ui-monospace,SFMono-Regular,'SF Mono',Menlo,Consolas,'Liberation Mono',monospace" font-size="12" fill="#f0f6fc">skills/hello/SKILL.md</text>
+<text class="a" style="animation-name:k2" x="14" y="117.7" font-family="ui-monospace,SFMono-Regular,'SF Mono',Menlo,Consolas,'Liberation Mono',monospace" font-size="12" fill="#f0f6fc">agents/greeter.md</text>
+<text class="a" style="animation-name:k3" x="14" y="137.7" font-family="ui-monospace,SFMono-Regular,'SF Mono',Menlo,Consolas,'Liberation Mono',monospace" font-size="12" fill="#f0f6fc">LICENSE</text>
+<text class="a" style="animation-name:k4" opacity="0" x="14" y="157.7" font-family="ui-monospace,SFMono-Regular,'SF Mono',Menlo,Consolas,'Liberation Mono',monospace" font-size="12" fill="#f0f6fc">.mcp.json</text>
 <rect x="0.5" y="186.5" width="239" height="39" rx="8" fill="none" stroke="#9198a1"/>
 <text class="a" style="animation-name:k5" x="14" y="210" font-family="ui-monospace,SFMono-Regular,'SF Mono',Menlo,Consolas,'Liberation Mono',monospace" font-size="13" font-weight="600" fill="#f0f6fc">validateStack</text>
-<text class="a" style="animation-name:k6" opacity="0" x="130" y="210" font-family="ui-monospace,SFMono-Regular,'SF Mono',Menlo,Consolas,'Liberation Mono',monospace" font-size="12" fill="#f0f6fc">mcp-server</text>
+<text class="a" style="animation-name:k6" opacity="0" x="130" y="209.7" font-family="ui-monospace,SFMono-Regular,'SF Mono',Menlo,Consolas,'Liberation Mono',monospace" font-size="12" fill="#f0f6fc">mcp-server</text>
 <path class="a" style="animation-name:k7" d="M130 204L136 210L148 198" fill="none" stroke="#c4a0f5" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
 <g class="a" style="animation-name:k8">
-<path d="M244 76C313.8 76 313.8 106 387.6 106" fill="none" stroke="#9198a1" stroke-width="1.25"/>
-<path d="M244 96C313.8 96 313.8 106 387.6 106" fill="none" stroke="#9198a1" stroke-width="1.25"/>
-<path d="M244 116C313.8 116 313.8 106 387.6 106" fill="none" stroke="#9198a1" stroke-width="1.25"/>
-<path d="M244 136C313.8 136 313.8 106 387.6 106" fill="none" stroke="#9198a1" stroke-width="1.25"/>
+<path d="M244 74C313.8 74 313.8 106 387.6 106" fill="none" stroke="#9198a1" stroke-width="1.25"/>
+<path d="M244 94C313.8 94 313.8 106 387.6 106" fill="none" stroke="#9198a1" stroke-width="1.25"/>
+<path d="M244 114C313.8 114 313.8 106 387.6 106" fill="none" stroke="#9198a1" stroke-width="1.25"/>
+<path d="M244 134C313.8 134 313.8 106 387.6 106" fill="none" stroke="#9198a1" stroke-width="1.25"/>
 </g>
 <text class="a" style="animation-name:k9" x="482" y="110" font-family="ui-monospace,SFMono-Regular,'SF Mono',Menlo,Consolas,'Liberation Mono',monospace" font-size="12" fill="#9198a1" text-anchor="middle">path NUL sha256(file) LF</text>
 <path class="a" style="animation-name:k10" d="M482 120L482 184M485.36 177.86L482 184L478.64 177.86" fill="none" stroke="#9198a1" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>

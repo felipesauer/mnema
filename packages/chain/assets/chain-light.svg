@@ -9,7 +9,7 @@
 @keyframes k4{0%{opacity:0}22.73%{opacity:0}25.45%{opacity:1}90.91%{opacity:1}93.64%{opacity:0}100%{opacity:0}}
 @keyframes k5{0%{opacity:0}27.27%{opacity:0}30%{opacity:1}47.27%{opacity:1}49.09%{opacity:0}69.09%{opacity:0}71.82%{opacity:1}90.91%{opacity:1}93.64%{opacity:0}100%{opacity:0}}
 @keyframes k6{0%{opacity:0}47.27%{opacity:0}50%{opacity:1}68.18%{opacity:1}70.91%{opacity:0}100%{opacity:0}}
-@keyframes k7{0%{opacity:0}45.45%{opacity:0}46.82%{opacity:0.9}49.09%{opacity:0.2}50.91%{opacity:0.9}52.73%{opacity:0.2}54.55%{opacity:0.9}67.27%{opacity:0.9}70%{opacity:0}100%{opacity:0}}
+@keyframes k7{0%{opacity:0}45.45%{opacity:0}48.18%{opacity:0.9}52.73%{opacity:0.2}57.27%{opacity:0.9}61.82%{opacity:0.2}66.36%{opacity:0.9}67.27%{opacity:0.9}70%{opacity:0}100%{opacity:0}}
 @keyframes k8{0%{opacity:0}21.82%{opacity:0}24.55%{opacity:1}90.91%{opacity:1}93.64%{opacity:0}100%{opacity:0}}
 @keyframes k9{0%{opacity:0}31.82%{opacity:0}34.55%{opacity:1}90.91%{opacity:1}93.64%{opacity:0}100%{opacity:0}}
 @keyframes k10{0%{opacity:0}33.64%{opacity:0}36.36%{opacity:1}90.91%{opacity:1}93.64%{opacity:0}100%{opacity:0}}
@@ -30,8 +30,8 @@
 </g>
 <path d="M0 40.5H720" stroke="#d1d9e0"/>
 <g class="a" style="animation-name:k3" opacity="0">
-<rect x="0.5" y="52.5" width="149.4" height="25" rx="6" fill="#997dbf" fill-opacity="0.12" stroke="#997dbf"/>
-<text x="14" y="70" font-family="ui-monospace,SFMono-Regular,'SF Mono',Menlo,Consolas,'Liberation Mono',monospace" font-size="12" fill="#1f2328">decision.recorded</text>
+<rect x="0.5" y="52.5" width="150" height="25" rx="6" fill="#997dbf" fill-opacity="0.12" stroke="#997dbf"/>
+<text x="14" y="68.7" font-family="ui-monospace,SFMono-Regular,'SF Mono',Menlo,Consolas,'Liberation Mono',monospace" font-size="12" fill="#1f2328">decision.recorded</text>
 </g>
 <g class="a" style="animation-name:k0">
 <path d="M28.29 116L42.14 124L28.29 132L14.43 124z" fill="#997dbf" fill-opacity="0.3"/>

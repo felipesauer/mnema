@@ -16,7 +16,8 @@
  *     `packages/<p>/assets/`, held byte for byte here and painted in the same accent. Every word
  *     on it is a literal of the product, found here in the file the script names for it; no
  *     text on it is anything else, and none is a host's name, a count that changes, or a
- *     promise the package does not make.
+ *     promise the package does not make. The id a line of output prints is drawn elided, and a
+ *     text inside a box sits on the box's middle by the size of its role.
  *   - THE URL OF A PACKAGE'S PICTURE: the README of a package opens, under its title, with the
  *     block the script writes, pointing at the copy of the picture inside the tarball of the
  *     version its `package.json` says. A version bumped without drawing again leaves a URL to a
@@ -46,15 +47,27 @@ const DRAW = join(ROOT, '.github', 'the-front-page', 'draw.mjs');
 const ACCENT_FILE = join(ROOT, '.github', 'the-front-page', 'accent.mjs');
 
 type Line = readonly ({ said: string; where: string } | string)[];
-const { drawTheFrontPage, drawThePackages, PACKAGE_PICTURES, SEPARATORS, textOf, pictureBlock } =
-  (await import(pathToFileURL(DRAW).href)) as {
-    drawTheFrontPage: (blocks: readonly string[]) => Record<string, string>;
-    drawThePackages: (blocks: readonly string[]) => Record<string, string>;
-    PACKAGE_PICTURES: readonly { dir: string; lines: Readonly<Record<string, Line>> }[];
-    SEPARATORS: readonly string[];
-    textOf: (line: Line) => string;
-    pictureBlock: (dir: string) => string;
-  };
+const {
+  drawTheFrontPage,
+  drawThePackages,
+  PACKAGE_PICTURES,
+  SEPARATORS,
+  ELIDED,
+  TYPE,
+  HALF_ROW,
+  textOf,
+  pictureBlock,
+} = (await import(pathToFileURL(DRAW).href)) as {
+  drawTheFrontPage: (blocks: readonly string[]) => Record<string, string>;
+  drawThePackages: (blocks: readonly string[]) => Record<string, string>;
+  PACKAGE_PICTURES: readonly { dir: string; lines: Readonly<Record<string, Line>> }[];
+  SEPARATORS: readonly string[];
+  ELIDED: string;
+  TYPE: Readonly<Record<string, { size: number; centre: number }>>;
+  HALF_ROW: number;
+  textOf: (line: Line) => string;
+  pictureBlock: (dir: string) => string;
+};
 const { ACCENT } = (await import(pathToFileURL(ACCENT_FILE).href)) as {
   ACCENT: { dark: string; light: string };
 };
@@ -68,7 +81,7 @@ const NEUTRAL_SPREAD = 24;
 function coloursIn(svg: string): string[] {
   const named = [
     ...svg.matchAll(
-      /(?:fill|stroke|stop-color|flood-color|lighting-color|color)\s*[=:]\s*["']?([^"';\s>]+)/g,
+      /(?:fill|stroke|stop-color|flood-color|lighting-color|color)\s*[=:]\s*["']?([^"';\s>{}]+)/g,
     ),
   ].map((m) => m[1] as string);
   const hexes = [...svg.matchAll(/#[0-9a-fA-F]{3,8}\b/g)].map((m) => m[0]);
@@ -218,12 +231,61 @@ describe('every package draws what it is, in its own words', () => {
     }
   });
 
-  it('draws the output of the command line as whole lines of its golden', () => {
+  it('draws the output of the command line as lines of its golden, the id elided', () => {
+    // The command line prints a record's id in the parentheses, a new one on every run; the
+    // golden stands a placeholder there that no one ever sees. The picture draws neither: it
+    // draws the line up to the id, the id as a visible `(…)`, and the rest of the line.
     const golden = read('packages/code/src/cli.writes.golden.txt').split('\n');
     const words = wordsOf(read('packages/code/assets/code-light.svg'));
     const output = words.filter((w) => /^(?:Recorded decision|Decision) /.test(w));
     expect(output).toHaveLength(2);
-    for (const line of output) expect(golden).toContain(`| ${line}`);
+    for (const line of output) {
+      const [before, after, ...more] = line.split(` ${ELIDED}`);
+      expect(more).toEqual([]);
+      expect(after).toBeDefined();
+      const cut = `| ${before} (`;
+      const matches = golden.filter(
+        (g) => g.startsWith(cut) && /^<[a-z-]+>\)/.test(g.slice(cut.length)),
+      );
+      expect(matches.map((g) => g.slice(cut.length).replace(/^<[a-z-]+>\)/, ''))).toContain(after);
+    }
+  });
+
+  it.each(Object.keys(drawn))('%s centres every text in its box by its role', (path) => {
+    // A text inside a box sits where one rule puts it: its baseline is the middle of the box,
+    // plus how far the middle of a line's ink sits above its baseline in that size, plus a whole
+    // number of half rows. A column of a box with a single line sits on the middle itself. A `y`
+    // set by hand lands off that lattice and fails here.
+    const svg = drawn[path] ?? '';
+    const num = (tag: string, name: string): number =>
+      Number(new RegExp(`\\b${name}="([-\\d.]+)"`).exec(tag)?.[1] ?? Number.NaN);
+    const rects = [...svg.matchAll(/<rect\b[^>]*>/g)]
+      .map((m) => m[0])
+      .filter((t) => /\bx="/.test(t))
+      .map((t) => ({ x: num(t, 'x'), y: num(t, 'y'), w: num(t, 'width'), h: num(t, 'height') }));
+    const centreOf = (size: number): number => {
+      const role = Object.values(TYPE).find((r) => r.size === size);
+      expect(role).toBeDefined();
+      return role?.centre ?? Number.NaN;
+    };
+    const inBox = [...svg.matchAll(/<text\b[^>]*>/g)].flatMap((m) => {
+      const t = m[0];
+      const [x, y] = [num(t, 'x'), num(t, 'y')];
+      const box = rects
+        .filter((r) => x >= r.x && x <= r.x + r.w && y >= r.y && y <= r.y + r.h)
+        .sort((a, b) => a.w * a.h - b.w * b.h)[0];
+      if (box === undefined) return [];
+      const off = y - (box.y + box.h / 2) - centreOf(num(t, 'font-size'));
+      return [{ key: `${box.x},${box.y},${box.w},${box.h}|${x}`, half: off / HALF_ROW }];
+    });
+    expect(inBox.length).toBeGreaterThan(0);
+    expect(inBox.filter(({ half }) => Math.abs(half - Math.round(half)) > 0.001)).toEqual([]);
+    const columns = new Map<string, Set<number>>();
+    for (const { key, half } of inBox)
+      columns.set(key, (columns.get(key) ?? new Set()).add(Math.round(half)));
+    const single = [...columns].filter(([, rows]) => rows.size === 1);
+    expect(single.length).toBeGreaterThan(0);
+    expect(single.filter(([, rows]) => !rows.has(0)).map(([key]) => key)).toEqual([]);
   });
 
   it.each(PACKAGE_PICTURES.map((p) => p.dir))(
@@ -258,12 +320,12 @@ describe('every package draws what it is, in its own words', () => {
   );
 
   it.each(PACKAGE_PICTURES.map((p) => [p.dir, p.lines] as const))(
-    '%s joins its pieces with nothing but a separator',
+    '%s joins its pieces with nothing but a separator or the elided id',
     (_dir, lines) => {
       const joins = Object.values(lines).flatMap((line) =>
         line.filter((piece): piece is string => typeof piece === 'string'),
       );
-      expect(joins.filter((j) => !SEPARATORS.includes(j))).toEqual([]);
+      expect(joins.filter((j) => !SEPARATORS.includes(j) && j !== ELIDED)).toEqual([]);
     },
   );
 
