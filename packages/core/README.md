@@ -14,7 +14,7 @@
 </p>
 
 The work domain of [mnema](https://github.com/felipesauer/mnema), built on top of
-[`@mnema/chain`](../chain). Where the chain holds the signed record of *what
+[`@mnema/chain`](https://github.com/felipesauer/mnema/tree/main/packages/chain). Where the chain holds the signed record of *what
 happened*, core turns those events into something you can work with: the
 projections that replay the chain into a queryable cache, the workflow and the
 gate that decides which changes are allowed, and the identity layer that gives
@@ -61,7 +61,7 @@ offline — the projection is deterministic, but the merge policy is a separate 
 npm i @mnema/core
 ```
 
-Nothing is on npm yet, so that answers 404 until the first publication; the [install page](../../docs/install.md) has the install from the source.
+Nothing is on npm yet, so that answers 404 until the first publication; the [install page](https://github.com/felipesauer/mnema/blob/main/docs/install.md) has the install from the source.
 
 **It is released because `@mnema/code` depends on it, not because you should install
 it.** This section used to say it was internal and never published; what falsified that
