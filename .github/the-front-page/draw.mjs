@@ -1396,16 +1396,27 @@ export function pictureUrl(dir, file) {
 }
 
 /**
+ * A package's title, centred. npm keeps `align` on a heading, a paragraph and an image, and
+ * strips it from a `div`, so the centre is set on these and never on a wrapper.
+ * @param {string} dir
+ */
+export function titleLine(dir) {
+  return `<h1 align="center">${manifestOf(dir).name}</h1>`;
+}
+
+/**
  * The block a package's README opens with, under its title.
  * @param {string} dir
  */
 export function pictureBlock(dir) {
   const { description } = manifestOf(dir);
   return [
+    '<p align="center">',
     '<picture>',
     `  <source media="(prefers-color-scheme: dark)" srcset="${pictureUrl(dir, `${dir}-dark.svg`)}">`,
     `  <img src="${pictureUrl(dir, `${dir}-light.svg`)}" alt="${attribute(description)}" width="720">`,
     '</picture>',
+    '</p>',
   ].join('\n');
 }
 
@@ -1430,16 +1441,18 @@ export function drawThePackages(blocks) {
 }
 
 /**
- * A package's README with its picture block in place: replacing the one there is, or set under
- * the title where there is none.
+ * A package's README with its title and picture block in place: the first line is the title
+ * (a `# name` or the centred one), and the block replaces the one there is, or is set under it.
  * @param {string} readme
  * @param {string} block
+ * @param {string} title
  */
-export function withPicture(readme, block) {
-  const at = /<picture>[\s\S]*?<\/picture>/;
-  if (at.test(readme)) return readme.replace(at, block);
-  const title = readme.indexOf('\n');
-  return `${readme.slice(0, title + 1)}\n${block}\n${readme.slice(title + 1)}`;
+export function withPicture(readme, block, title) {
+  const at = /(?:<p align="center">\n)?<picture>[\s\S]*?<\/picture>(?:\n<\/p>)?/;
+  const first = readme.indexOf('\n');
+  const body = `${title}${readme.slice(first)}`;
+  if (at.test(body)) return body.replace(at, block);
+  return `${title}\n\n${block}\n${readme.slice(first + 1)}`;
 }
 
 // ---------------------------------------------------------------------------------------------
@@ -1479,7 +1492,7 @@ if (process.argv[1] !== undefined && import.meta.url === pathToFileURL(process.a
   Object.assign(drawn, drawThePackages(THE_BLOCKS));
   for (const { dir } of PACKAGE_PICTURES) {
     const readme = `packages/${dir}/README.md`;
-    drawn[readme] = withPicture(committedAt(readme), pictureBlock(dir));
+    drawn[readme] = withPicture(committedAt(readme), pictureBlock(dir), titleLine(dir));
   }
   let differs = 0;
   for (const [path, content] of Object.entries(drawn)) {

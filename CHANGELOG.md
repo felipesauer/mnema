@@ -20,7 +20,10 @@ with its own changelog.
   still reads where a page shows it on white. The README points at the file on the `main`
   branch of the repository its `package.json` names, by `raw.githubusercontent.com`, with no version in the address:
   the picture loads before anything is published and is not in the tarball. The script writes the block, and a test
-  holds each README to exactly that block and holds that no image address carries a version.
+  holds each README to exactly that block and holds that no image address carries a version. The price of that
+  address: the page of an old version on npm shows today's picture from `main`, not the one that version was
+  published with. The title, the picture and the badges are centred, each in an element npm keeps `align` on (an
+  `h1` and two `p`, not a `div`); the script writes the title and the picture, and a test holds the three.
 - **The page says where the refusal of a write stops holding, and a test holds it.** A rule that refuses a write
   opens when the hook cannot read the record: a line that is not JSON, or one of a kind this version does not know (a
   newer mnema's line), makes the hook before a write fail with no reply, and the write goes where the host lets a failed
