@@ -19,9 +19,10 @@
  *     promise the package does not make. The id a line of output prints is drawn elided, and a
  *     text inside a box sits on the box's middle by the size of its role.
  *   - THE URL OF A PACKAGE'S PICTURE: the README of a package opens, under its title, with the
- *     block the script writes, pointing at the copy of the picture inside the tarball of the
- *     version its `package.json` says. A version bumped without drawing again leaves a URL to a
- *     picture of another version, and fails here.
+ *     block the script writes, pointing at the file on the repository's `main` branch by the
+ *     address of the repository its `package.json` says, with no version in it, because a
+ *     version that is not published yet is a picture that does not load. Hand-editing the
+ *     address fails here.
  *   - THE BADGES: a shields.io badge in `README.md` or a package's README that sets a colour,
  *     in `color=` or in its path (`/badge/label-message-colour`), sets the light accent.
  *
@@ -289,20 +290,30 @@ describe('every package draws what it is, in its own words', () => {
   });
 
   it.each(PACKAGE_PICTURES.map((p) => p.dir))(
-    'packages/%s/README.md opens with the picture of the version its manifest says',
+    'packages/%s/README.md opens with exactly the block the script writes',
     (dir) => {
-      const { name, version } = manifest(dir);
+      const { name } = manifest(dir);
       const readme = read(`packages/${dir}/README.md`);
       expect(readme.startsWith(`# ${name}\n\n${pictureBlock(dir)}\n`)).toBe(true);
-      // Said here again by hand, so a script that wrote the wrong version would not agree with
-      // itself and pass.
-      const urls = [...readme.matchAll(/https:\/\/cdn\.jsdelivr\.net\/npm\/[^"\s)]+/g)].map(
+      // Said here again by hand, so a script that wrote the wrong owner, branch or path would
+      // not agree with itself and pass. The owner and the repository are the manifest's.
+      const urls = [...readme.matchAll(/https:\/\/raw\.githubusercontent\.com\/[^"\s)]+/g)].map(
         (m) => m[0],
       );
-      expect(urls).toEqual([
-        `https://cdn.jsdelivr.net/npm/${name}@${version}/assets/${dir}-dark.svg`,
-        `https://cdn.jsdelivr.net/npm/${name}@${version}/assets/${dir}-light.svg`,
-      ]);
+      const base = `https://raw.githubusercontent.com/felipesauer/mnema/main/packages/${dir}/assets`;
+      expect(urls).toEqual([`${base}/${dir}-dark.svg`, `${base}/${dir}-light.svg`]);
+    },
+  );
+
+  it.each(PACKAGE_PICTURES.map((p) => p.dir))(
+    'packages/%s/README.md names no version in the address of an image',
+    (dir) => {
+      const readme = read(`packages/${dir}/README.md`);
+      const images = [...readme.matchAll(/\b(?:src|srcset)="([^"]+)"/g)].map((m) => m[1] ?? '');
+      expect(images.length).toBeGreaterThanOrEqual(2);
+      // A version that is not published yet is a picture that does not load: no `@1.2.3`, no
+      // `@v1.2.3`, in the path of any image the page shows.
+      expect(images.filter((url) => /@v?\d/.test(url))).toEqual([]);
     },
   );
 

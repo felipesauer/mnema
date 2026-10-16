@@ -57,7 +57,7 @@
  */
 
 import { execFileSync } from 'node:child_process';
-import { mkdirSync, mkdtempSync, readdirSync, readFileSync, rmSync } from 'node:fs';
+import { existsSync, mkdirSync, mkdtempSync, readdirSync, readFileSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -283,23 +283,29 @@ describe('nothing travels that is a fact about this machine', () => {
     expect(empty, 'a package packed no dist/ — is the workspace built?').toEqual([]);
   });
 
-  it('carries every picture its page shows from inside its own tarball', () => {
-    // The README of a package points at its picture through the copy published inside the
-    // tarball of the same version (`cdn.jsdelivr.net/npm/<name>@<version>/<path>`). A page whose
-    // package does not carry that path shows a broken image on the registry, and nothing else
-    // would say so before the publish.
+  it('shows its pictures from the repository and carries none of them', () => {
+    // The README of a package points at its picture on the `main` branch of the repository
+    // (`raw.githubusercontent.com/<owner>/<repository>/main/<path>`), which does not depend on
+    // a version being published. So the file has to be in the repository at that path, and
+    // the tarball has no reason to carry a second copy.
     const shown = PUBLISHABLE.flatMap((m) =>
       [
         ...readFileSync(join(m.dir, 'README.md'), 'utf-8').matchAll(
-          /https:\/\/cdn\.jsdelivr\.net\/npm\/(@[^/@]+\/[^/@]+)@[^/]+\/([^"\s)]+)/g,
+          /https:\/\/raw\.githubusercontent\.com\/felipesauer\/mnema\/main\/([^"\s)]+)/g,
         ),
-      ].map((u) => ({ name: m.name, of: u[1] as string, path: u[2] as string })),
+      ].map((u) => ({ name: m.name, path: u[1] as string })),
     );
     expect(shown.length).toBe(2 * PUBLISHABLE.length);
-    const missing = shown
-      .filter(({ name, of, path }) => of !== name || !carried(name).includes(path))
-      .map(({ name, of, path }) => `${name}: ${of}/${path}`);
-    expect(missing).toEqual([]);
+    const absent = shown
+      .filter(({ path }) => !existsSync(join(ROOT, path)))
+      .map(({ name, path }) => `${name}: ${path}`);
+    expect(absent).toEqual([]);
+    const carriedAnyway = PUBLISHABLE.flatMap((m) =>
+      carried(m.name)
+        .filter((path) => path.startsWith('assets/'))
+        .map((path) => `${m.name}: ${path}`),
+    );
+    expect(carriedAnyway).toEqual([]);
   });
 });
 
@@ -533,7 +539,6 @@ describe('the second reader runs out of what the package publishes', () => {
       'LICENSE',
       'NOTICE',
       'README.md',
-      'assets',
       'canonical-vectors.json',
       'dist',
       'event-schema.json',

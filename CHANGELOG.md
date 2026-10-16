@@ -17,9 +17,10 @@ with its own changelog.
   `assets/`, drawn by `.github/the-front-page/draw.mjs` in the front page's one accent. Every word on a picture is a
   literal of the package, held by a test to the file that says it; the id the command line prints, a new one on every
   run, is drawn elided, as `(…)`. Each picture paints its own page, so the dark one
-  still reads where a page shows it on white. The README points at the copy inside the tarball of
-  its own version on jsDelivr, so the image shows only once that version is published; a test holds the URL to the
-  version in `package.json`, and another holds that the tarball carries the file.
+  still reads where a page shows it on white. The README points at the file on the `main`
+  branch of the repository its `package.json` names, by `raw.githubusercontent.com`, with no version in the address:
+  the picture loads before anything is published and is not in the tarball. The script writes the block, and a test
+  holds each README to exactly that block and holds that no image address carries a version.
 - **The page says where the refusal of a write stops holding, and a test holds it.** A rule that refuses a write
   opens when the hook cannot read the record: a line that is not JSON, or one of a kind this version does not know (a
   newer mnema's line), makes the hook before a write fail with no reply, and the write goes where the host lets a failed
