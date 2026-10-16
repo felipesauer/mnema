@@ -23,6 +23,7 @@
     "!dist/.tsbuildinfo",
     "stack.schema.json",
     "digest.sh",
+    "assets/",
     "NOTICE"
   ],
   "homepage": "https://github.com/felipesauer/mnema",
