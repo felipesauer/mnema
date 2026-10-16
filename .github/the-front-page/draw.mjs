@@ -1564,7 +1564,8 @@ function family(blocks, theme) {
   const out = [];
   // The glow and the tint of the cards, in the accent alone. On a light page they stay faint
   // enough that the accent's own lines over them keep three to one.
-  const [glow, tint] = theme === 'light' ? [[0.08, 0.03], [0.07, 0.02]] : [[0.16, 0.06], [0.12, 0.04]];
+  const glow = theme === 'light' ? [0.08, 0.03] : [0.16, 0.06];
+  const tint = theme === 'light' ? [0.07, 0.02] : [0.12, 0.04];
   const defs = [
     '<defs>',
     `<radialGradient id="glow" cx="0.5" cy="0.5" r="0.5"><stop offset="0" stop-color="${s.accent}" stop-opacity="${glow[0]}"/><stop offset="0.6" stop-color="${s.accent}" stop-opacity="${glow[1]}"/><stop offset="1" stop-color="${s.accent}" stop-opacity="0"/></radialGradient>`,
