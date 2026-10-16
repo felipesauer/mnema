@@ -1566,6 +1566,214 @@ function heads(x1, y1, x2, y2, at) {
   return (at.end ? head(x2, y2, angle) : '') + (at.start ? head(x1, y1, angle + Math.PI) : '');
 }
 
+// ---------------------------------------------------------------------------------------------
+// The family's vocabulary: what the family draws with, and every package's picture with it
+
+/**
+ * The paint of a theme beyond the accent and the greys: the glow behind the drawing and the tint
+ * of a card, both in the accent alone, and how strongly a landing cube and a tab are filled. On a
+ * light page they stay faint enough that the accent's own lines over them keep three to one.
+ * @param {'dark' | 'light'} theme
+ */
+function palette(theme) {
+  const accent = ACCENT[theme];
+  const glow = theme === 'light' ? [0.08, 0.03] : [0.16, 0.06];
+  const tint = theme === 'light' ? [0.07, 0.02] : [0.12, 0.04];
+  return {
+    defs: [
+      '<defs>',
+      `<radialGradient id="glow" cx="0.5" cy="0.5" r="0.5"><stop offset="0" stop-color="${accent}" stop-opacity="${glow[0]}"/><stop offset="0.6" stop-color="${accent}" stop-opacity="${glow[1]}"/><stop offset="1" stop-color="${accent}" stop-opacity="0"/></radialGradient>`,
+      `<linearGradient id="tint" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="${accent}" stop-opacity="${tint[0]}"/><stop offset="1" stop-color="${accent}" stop-opacity="${tint[1]}"/></linearGradient>`,
+      '</defs>',
+    ],
+    // On a light page a cube lights in the accent itself: anything fainter is under three to one
+    // against the glow behind it.
+    lit: theme === 'light' ? '1' : '0.85',
+    // A tab's edge keeps three to one against its own inside: on a light page, a fainter inside.
+    tab: theme === 'light' ? '0.05' : '0.12',
+  };
+}
+
+/** @typedef {{ x: number, y: number, w: number, h: number }} Frame */
+
+/**
+ * A tonal card: tinted inside and edged in the accent, or, for what stands apart, edged in grey,
+ * dashed, with nothing inside.
+ * @param {Scene} s
+ * @param {Frame} c
+ * @param {{ apart?: boolean, attrs?: string }} [o]
+ */
+const card = (s, c, o = {}) =>
+  `<rect${o.attrs ? ` ${o.attrs}` : ''} x="${n(c.x + 0.5)}" y="${n(c.y + 0.5)}" width="${n(c.w - 1)}" height="${n(c.h - 1)}" rx="10" fill="${o.apart ? 'none' : 'url(#tint)'}" stroke="${o.apart ? s.muted : s.accent}"${o.apart ? ' stroke-dasharray="5 4"' : ''}/>`;
+
+/**
+ * The frame of the hub: a tonal card with a heavier edge and rounder corners.
+ * @param {Scene} s
+ * @param {Frame} c
+ * @param {string} attrs
+ */
+const hubFrame = (s, c, attrs) =>
+  `<rect ${attrs} x="${n(c.x + 0.5)}" y="${n(c.y + 0.5)}" width="${n(c.w - 1)}" height="${n(c.h - 1)}" rx="14" fill="url(#tint)" stroke="${s.accent}" stroke-width="1.5"/>`;
+
+/**
+ * A light that comes and goes once, rising at `t`: up in 0.15 s, gone 0.5 s later.
+ * @param {Scene} s
+ * @param {number} t
+ * @param {number} [hold]
+ */
+const flash = (s, t, hold = 0.5) =>
+  s.goes(
+    [
+      [0, '0'],
+      [t, '0'],
+      [t + 0.15, '1'],
+      [t + 0.15 + hold, '0'],
+      [s.loop, '0'],
+    ],
+    '0',
+  );
+
+/**
+ * A ring that rises off the hub's edge as a read leaves it, at `t`.
+ * @param {Scene} s
+ * @param {Frame} hub
+ * @param {number} t
+ */
+const ring = (s, hub, t) =>
+  `<rect ${flash(s, t, 0.6)} x="${n(hub.x - 5.5)}" y="${n(hub.y - 5.5)}" width="${hub.w + 11}" height="${hub.h + 11}" rx="19" fill="none" stroke="${s.accent}" stroke-width="2"/>`;
+
+/**
+ * The pulse of a card's edge when what goes out reaches it, at `t`: inside the card's edge, and
+ * so inside the frame; in the accent, or in its own grey, dashed, for a card that stands apart.
+ * @param {Scene} s
+ * @param {Frame} c
+ * @param {number} t
+ * @param {boolean} [apart]
+ */
+function pulse(s, c, t, apart = false) {
+  const lights = s.goes(
+    [
+      [0, '0'],
+      [t - 0.05, '0'],
+      [t + 0.1, '1'],
+      [t + 0.6, '0'],
+      [s.loop, '0'],
+    ],
+    '0',
+  );
+  return apart
+    ? `<rect ${lights} x="${n(c.x + 1)}" y="${n(c.y + 1)}" width="${c.w - 2}" height="${c.h - 2}" rx="9.5" fill="none" stroke="${s.muted}" stroke-width="2" stroke-dasharray="5 4"/>`
+    : `<rect ${lights} x="${n(c.x + 1.5)}" y="${n(c.y + 1.5)}" width="${c.w - 3}" height="${c.h - 3}" rx="9" fill="none" stroke="${s.accent}" stroke-width="3"/>`;
+}
+
+/**
+ * The glow of a cube that lands at `t`, laid over it.
+ * @param {Scene} s
+ * @param {number} x
+ * @param {number} cy
+ * @param {number} a
+ * @param {number} t
+ * @param {string} lit how strongly it lights, by `palette`
+ */
+const landing = (s, x, cy, a, t, lit) =>
+  `<path ${flash(s, t)} d="${hexagon(x, cy, a)}" fill="${s.accent}" fill-opacity="${lit}"/>`;
+
+/** @typedef {'in' | 'out' | 'both'} Flow */
+
+/**
+ * A connection from (x1, y1), the end on the far side, to (x2, y2), the end on the hub's side:
+ * a dashed line, its heads where the record goes (`in` to the second end, `out` to the first,
+ * `both`), and a stroke that draws the line from where the record starts, at `T`, and leaves its
+ * dashes behind. Every property that moves comes back to where it opened while the element is out
+ * of sight, so the loop closes on itself. What stands apart is drawn in grey, dashed long.
+ * @param {Scene} s
+ * @param {[number, number, number, number]} ends
+ * @param {Flow} flow
+ * @param {number} T
+ * @param {boolean} [apart]
+ */
+function connection(s, ends, flow, T, apart = false) {
+  const [x1, y1, x2, y2] = ends;
+  const tone = apart ? s.muted : s.accent;
+  const length = Math.hypot(x2 - x1, y2 - y1);
+  const dash = apart
+    ? `stroke="${s.muted}" stroke-dasharray="8 5"`
+    : `stroke="${s.accent}" stroke-dasharray="3 5" stroke-linecap="round"`;
+  const out = [
+    `<path ${s.stays(T + 0.1)} d="M${n(x1)} ${n(y1)}L${n(x2)} ${n(y2)}" fill="none" ${dash} stroke-width="1.5"/>`,
+    `<path ${s.stays(T + 0.5)} d="${heads(x1, y1, x2, y2, { start: flow !== 'in', end: flow !== 'out' })}" fill="none" stroke="${tone}" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>`,
+  ];
+  const from = flow === 'out' ? [x2, y2, x1, y1] : [x1, y1, x2, y2];
+  const draw = s.animate('stroke-dashoffset', [
+    [0, n(length)],
+    [T + 0.1, n(length)],
+    [T + 0.6, '0'],
+    [T + 1.05, '0'],
+    [T + 1.15, n(length)],
+    [s.loop, n(length)],
+  ]);
+  const shows = s.animate('opacity', shown(T + 0.1, T + 1.0, 0.2, s.loop));
+  out.push(
+    `<path class="a" style="animation-name:${draw},${shows}" opacity="0" d="M${n(from[0] ?? 0)} ${n(from[1] ?? 0)}L${n(from[2] ?? 0)} ${n(from[3] ?? 0)}" fill="none" stroke="${s.accent}" stroke-width="2" stroke-linecap="round" stroke-dasharray="${n(length)} ${n(length)}"/>`,
+  );
+  return out;
+}
+
+/**
+ * The lit dot that runs a connection the way the record goes, from `T`: to the hub's end and back
+ * for what reads and writes, one way for the rest. Its `last` is when it reaches where it goes.
+ * @param {Scene} s
+ * @param {[number, number, number, number]} ends as `connection` takes them
+ * @param {Flow} flow
+ * @param {number} T
+ */
+function dot(s, ends, flow, T) {
+  const at = (/** @type {number} */ px, /** @type {number} */ py) =>
+    `translate(${n(px)}px,${n(py)}px)`;
+  const [sx, sy, hx, hy] = ends;
+  /** @type {[number, string][]} */
+  const move =
+    flow === 'both'
+      ? [
+          [0, at(sx, sy)],
+          [T + 0.4, at(sx, sy)],
+          [T + 0.9, at(hx, hy)],
+          [T + 1.4, at(sx, sy)],
+          [s.loop, at(sx, sy)],
+        ]
+      : flow === 'in'
+        ? [
+            [0, at(sx, sy)],
+            [T + 0.5, at(sx, sy)],
+            [T + 1.2, at(hx, hy)],
+            [T + 1.3, at(hx, hy)],
+            [T + 1.4, at(sx, sy)],
+            [s.loop, at(sx, sy)],
+          ]
+        : [
+            [0, at(hx, hy)],
+            [T + 0.5, at(hx, hy)],
+            [T + 1.2, at(sx, sy)],
+            [T + 1.3, at(sx, sy)],
+            [T + 1.4, at(hx, hy)],
+            [s.loop, at(hx, hy)],
+          ];
+  const last = flow === 'both' ? T + 1.4 : T + 1.2;
+  const glides = s.animate('transform', move);
+  const fades = s.animate('opacity', [
+    [0, '0'],
+    [move[1]?.[0] ?? 0, '0'],
+    [(move[1]?.[0] ?? 0) + 0.12, '1'],
+    [last - 0.12, '1'],
+    [last + 0.05, '0'],
+    [s.loop, '0'],
+  ]);
+  return {
+    last,
+    out: `<g class="a" style="animation-name:${glides},${fades}" opacity="0"><circle r="8" fill="${s.accent}" fill-opacity="0.22"/><circle r="4" fill="${s.accent}"/></g>`,
+  };
+}
+
 /**
  * The family in one theme.
  * @param {readonly string[]} blocks
@@ -1574,29 +1782,20 @@ function heads(x1, y1, x2, y2, at) {
 function family(blocks, theme) {
   const s = scene(LOOP, theme);
   const L = FAMILY_LINES;
-  const card = { w: 256, h: 60 };
+  const size = { w: 256, h: 60 };
   const hub = { x: 322, y: 10, w: 236, h: 240 };
   const mid = hub.x + hub.w / 2;
   const rows = [10, 100, 190];
   /** @type {string[]} */
   const out = [];
-  // The glow and the tint of the cards, in the accent alone. On a light page they stay faint
-  // enough that the accent's own lines over them keep three to one.
-  const glow = theme === 'light' ? [0.08, 0.03] : [0.16, 0.06];
-  const tint = theme === 'light' ? [0.07, 0.02] : [0.12, 0.04];
-  const defs = [
-    '<defs>',
-    `<radialGradient id="glow" cx="0.5" cy="0.5" r="0.5"><stop offset="0" stop-color="${s.accent}" stop-opacity="${glow[0]}"/><stop offset="0.6" stop-color="${s.accent}" stop-opacity="${glow[1]}"/><stop offset="1" stop-color="${s.accent}" stop-opacity="0"/></radialGradient>`,
-    `<linearGradient id="tint" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="${s.accent}" stop-opacity="${tint[0]}"/><stop offset="1" stop-color="${s.accent}" stop-opacity="${tint[1]}"/></linearGradient>`,
-    '</defs>',
-  ];
+  const paint = palette(theme);
 
   // Scene 0: the hub — its card on a glow around the wordmark, the wordmark, the chain one cube
   // after the other, the two surfaces under it, and what they are.
   // The glow reaches the top of the frame and stops there: none of it is cut off.
   out.push(
     `<ellipse ${s.stays(0.2)} cx="${mid}" cy="86" rx="180" ry="86" fill="url(#glow)"/>`,
-    `<rect ${s.stays(0.2)} x="${n(hub.x + 0.5)}" y="${n(hub.y + 0.5)}" width="${n(hub.w - 1)}" height="${n(hub.h - 1)}" rx="14" fill="url(#tint)" stroke="${s.accent}" stroke-width="1.5"/>`,
+    hubFrame(s, hub, s.stays(0.2)),
     s.sayIn(L.name, mid, hub, 'label', { anchor: 'middle', attrs: s.stays(0.4) }, -9),
   );
   const scale = 0.36;
@@ -1612,29 +1811,13 @@ function family(blocks, theme) {
   const link = 10;
   const cy = 140;
   const landed = [3.1, 4.7, 6.6, 11.4];
-  // On a light page the cube lights in the accent itself: anything fainter is under three to one
-  // against the glow behind it.
-  const lit = theme === 'light' ? '1' : '0.85';
   const record = cubes(s, mid - rowWidth(7, a, link) / 2, cy, a, [0.8, 1.0, 1.2, ...landed], link);
   out.push(...record.out);
   landed.forEach((t, i) => {
-    out.push(
-      `<path ${s.goes(
-        [
-          [0, '0'],
-          [t, '0'],
-          [t + 0.15, '1'],
-          [t + 0.65, '0'],
-          [LOOP, '0'],
-        ],
-        '0',
-      )} d="${hexagon(record.at(3 + i), cy, a)}" fill="${s.accent}" fill-opacity="${lit}"/>`,
-    );
+    out.push(landing(s, record.at(3 + i), cy, a, t, paint.lit));
   });
   // The two surfaces, each a tab hung from a rail under the one record.
   const tab = { w: 64, h: 24, y: 172 };
-  // A tab's edge keeps three to one against its own inside: on a light page, a fainter inside.
-  const tabFill = theme === 'light' ? '0.05' : '0.12';
   const rail = cy + a + 7;
   out.push(
     `<path ${s.stays(1.4)} d="M${n(record.at(0) - record.dx)} ${rail}H${n(record.at(6) + record.dx)}" stroke="${s.muted}" stroke-width="1.5" stroke-linecap="round"/>`,
@@ -1648,43 +1831,30 @@ function family(blocks, theme) {
     out.push(
       `<g ${s.stays(1.5 + i * 0.15)}>`,
       `<path d="M${n(at)} ${tab.y - 1}V${rail}" stroke="${s.muted}" stroke-width="1.5" stroke-linecap="round"/>`,
-      `<rect x="${n(/** @type {number} */ (x) + 0.5)}" y="${n(tab.y + 0.5)}" width="${tab.w - 1}" height="${tab.h - 1}" rx="6" fill="${s.accent}" fill-opacity="${tabFill}" stroke="${s.accent}"/>`,
+      `<rect x="${n(/** @type {number} */ (x) + 0.5)}" y="${n(tab.y + 0.5)}" width="${tab.w - 1}" height="${tab.h - 1}" rx="6" fill="${s.accent}" fill-opacity="${paint.tab}" stroke="${s.accent}"/>`,
       s.sayIn(/** @type {Line} */ (line), at, frame, 'label', { anchor: 'middle' }),
       '</g>',
     );
   });
   out.push(s.sayIn(L.surfaces, mid, hub, 'caption', { anchor: 'middle', attrs: s.stays(1.8) }, 9));
 
-  // A ring that rises off the hub as a read leaves it.
-  /** @param {number} t */
-  const ring = (t) =>
-    `<rect ${s.goes(
-      [
-        [0, '0'],
-        [t, '0'],
-        [t + 0.15, '1'],
-        [t + 0.75, '0'],
-        [LOOP, '0'],
-      ],
-      '0',
-    )} x="${n(hub.x - 5.5)}" y="${n(hub.y - 5.5)}" width="${hub.w + 11}" height="${hub.h + 11}" rx="19" fill="none" stroke="${s.accent}" stroke-width="2"/>`;
-
   // Scenes 1 to 6: each card comes in with its line, and a dot runs the line the way the record
   // goes.
   SATELLITES.forEach((sat, i) => {
     const T = 2.2 + 1.6 * i;
-    const x = sat.side === 0 ? 0 : W_FAMILY - card.w;
+    const x = sat.side === 0 ? 0 : W_FAMILY - size.w;
     const y = rows[sat.row] ?? 0;
-    const frame = { y, h: card.h };
+    const frame = { y, h: size.h };
     const tone = sat.apart ? s.muted : s.accent;
     // The card's edge on the hub's side, and the point of the hub's edge the line reaches.
-    const near = sat.side === 0 ? x + card.w + 4 : x - 4;
+    const near = sat.side === 0 ? x + size.w + 4 : x - 4;
     const far = sat.side === 0 ? hub.x - 4 : hub.x + hub.w + 4;
-    const cardY = y + card.h / 2;
+    const cardY = y + size.h / 2;
     const hubY = hub.y + hub.h / 2 + (sat.row - 1) * 50;
+    const box = { x, y, w: size.w, h: size.h };
     out.push(
       `<g ${s.stays(T)}>`,
-      `<rect x="${n(x + 0.5)}" y="${n(y + 0.5)}" width="${card.w - 1}" height="${card.h - 1}" rx="10" fill="${sat.apart ? 'none' : 'url(#tint)'}" stroke="${tone}"${sat.apart ? ' stroke-dasharray="5 4"' : ''}/>`,
+      card(s, box, { apart: sat.apart }),
       `<path transform="translate(${x + 12} ${y + 19})" d="${GLYPHS[/** @type {keyof typeof GLYPHS} */ (sat.glyph)]}" fill="none" stroke="${tone}" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>`,
       s.sayIn(L[/** @type {keyof typeof L} */ (sat.name)], x + 44, frame, 'label', {}, -1),
       '</g>',
@@ -1697,97 +1867,17 @@ function family(blocks, theme) {
         1,
       ),
     );
-    // The line, from the card to the hub, and its heads.
-    const [x1, y1, x2, y2] = [near, cardY, far, hubY];
-    const length = Math.hypot(x2 - x1, y2 - y1);
-    const dash = sat.apart
-      ? `stroke="${s.muted}" stroke-dasharray="8 5"`
-      : `stroke="${s.accent}" stroke-dasharray="3 5" stroke-linecap="round"`;
-    out.push(
-      `<path ${s.stays(T + 0.1)} d="M${n(x1)} ${n(y1)}L${n(x2)} ${n(y2)}" fill="none" ${dash} stroke-width="1.5"/>`,
-      `<path ${s.stays(T + 0.5)} d="${heads(x1, y1, x2, y2, { start: sat.flow !== 'in', end: sat.flow !== 'out' })}" fill="none" stroke="${tone}" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>`,
-    );
-    // The line draws itself from where the record starts, and leaves its dashes behind. Every
-    // property that moves comes back to where it opened while the element is out of sight, so the
-    // loop closes on itself.
-    const from = sat.flow === 'out' ? [x2, y2, x1, y1] : [x1, y1, x2, y2];
-    const draw = s.animate('stroke-dashoffset', [
-      [0, n(length)],
-      [T + 0.1, n(length)],
-      [T + 0.6, '0'],
-      [T + 1.05, '0'],
-      [T + 1.15, n(length)],
-      [LOOP, n(length)],
-    ]);
-    const shows = s.animate('opacity', shown(T + 0.1, T + 1.0, 0.2, LOOP));
-    out.push(
-      `<path class="a" style="animation-name:${draw},${shows}" opacity="0" d="M${n(from[0] ?? 0)} ${n(from[1] ?? 0)}L${n(from[2] ?? 0)} ${n(from[3] ?? 0)}" fill="none" stroke="${s.accent}" stroke-width="2" stroke-linecap="round" stroke-dasharray="${n(length)} ${n(length)}"/>`,
-    );
-    // The dot: to the hub and back for what reads and writes, one way for the rest.
-    const at = (/** @type {number} */ px, /** @type {number} */ py) =>
-      `translate(${n(px)}px,${n(py)}px)`;
-    const [sx, sy, hx, hy] = [x1, y1, x2, y2];
-    /** @type {[number, string][]} */
-    const move =
-      sat.flow === 'both'
-        ? [
-            [0, at(sx, sy)],
-            [T + 0.4, at(sx, sy)],
-            [T + 0.9, at(hx, hy)],
-            [T + 1.4, at(sx, sy)],
-            [LOOP, at(sx, sy)],
-          ]
-        : sat.flow === 'in'
-          ? [
-              [0, at(sx, sy)],
-              [T + 0.5, at(sx, sy)],
-              [T + 1.2, at(hx, hy)],
-              [T + 1.3, at(hx, hy)],
-              [T + 1.4, at(sx, sy)],
-              [LOOP, at(sx, sy)],
-            ]
-          : [
-              [0, at(hx, hy)],
-              [T + 0.5, at(hx, hy)],
-              [T + 1.2, at(sx, sy)],
-              [T + 1.3, at(sx, sy)],
-              [T + 1.4, at(hx, hy)],
-              [LOOP, at(hx, hy)],
-            ];
-    const last = sat.flow === 'both' ? T + 1.4 : T + 1.2;
-    const glides = s.animate('transform', move);
-    const fades = s.animate('opacity', [
-      [0, '0'],
-      [move[1]?.[0] ?? 0, '0'],
-      [(move[1]?.[0] ?? 0) + 0.12, '1'],
-      [last - 0.12, '1'],
-      [last + 0.05, '0'],
-      [LOOP, '0'],
-    ]);
-    out.push(
-      `<g class="a" style="animation-name:${glides},${fades}" opacity="0"><circle r="8" fill="${s.accent}" fill-opacity="0.22"/><circle r="4" fill="${s.accent}"/></g>`,
-    );
+    // The line, from the card to the hub, its heads, and the dot that runs it.
+    const ends = /** @type {[number, number, number, number]} */ ([near, cardY, far, hubY]);
+    const flow = /** @type {Flow} */ (sat.flow);
+    out.push(...connection(s, ends, flow, T, sat.apart));
+    const runs = dot(s, ends, flow, T);
+    out.push(runs.out);
     // A read leaves the hub as a ring, and lights the card it reaches. Stacks are not a read: the
     // hub installs them and signs the adoption, a cube on the chain; their card lights in its own
-    // grey, dashed as it is. Each light stays inside the card's edge, and so inside the frame.
-    if (sat.flow === 'out' && !sat.apart) out.push(ring(T + 0.5));
-    if (sat.flow !== 'in') {
-      const lights = s.goes(
-        [
-          [0, '0'],
-          [last - 0.05, '0'],
-          [last + 0.1, '1'],
-          [last + 0.6, '0'],
-          [LOOP, '0'],
-        ],
-        '0',
-      );
-      out.push(
-        sat.apart
-          ? `<rect ${lights} x="${n(x + 1)}" y="${n(y + 1)}" width="${card.w - 2}" height="${card.h - 2}" rx="9.5" fill="none" stroke="${s.muted}" stroke-width="2" stroke-dasharray="5 4"/>`
-          : `<rect ${lights} x="${n(x + 1.5)}" y="${n(y + 1.5)}" width="${card.w - 3}" height="${card.h - 3}" rx="9" fill="none" stroke="${s.accent}" stroke-width="3"/>`,
-      );
-    }
+    // grey, dashed as it is.
+    if (flow === 'out' && !sat.apart) out.push(ring(s, hub, T + 0.5));
+    if (flow !== 'in') out.push(pulse(s, box, runs.last, sat.apart));
   });
 
   return [
@@ -1798,7 +1888,7 @@ function family(blocks, theme) {
     ...s.css,
     '@media (prefers-reduced-motion: reduce){.a{animation:none!important}}',
     '</style>',
-    ...defs,
+    ...paint.defs,
     `<rect width="${W_FAMILY}" height="${H_FAMILY}" fill="${PAGE[theme]}"/>`,
     ...out,
     '</svg>',
