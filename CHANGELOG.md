@@ -125,6 +125,12 @@ with its own changelog.
 
 ### Changed
 
+- **The `@mnema/code` page on npm fits one reading, and the reference is its own page.** The package README held 1,877
+  lines of every verb and tool; it now says what the package is, how to install it, the first record, what it proves and
+  what it does not, and where to go next. The reference moved, whole, to [`docs/cli-reference.md`](docs/cli-reference.md).
+  In `docs/what-it-proves.md`, the row on an agent key's signature is one short cell, and the rest of it is the section
+  "An agent key, in full", below the table.
+
 - **`FORMAT.md` and the chain package's page say what the two readers do, not what they once did.** The format no
   longer says it leaves the workflow out (§6.7 is part of it), says the order of tails decides what §6.2 refuses and §6.7
   names, writes the tie-break once (`at`, then the tree, then the tail id by UTF-16 code unit, which both readers now

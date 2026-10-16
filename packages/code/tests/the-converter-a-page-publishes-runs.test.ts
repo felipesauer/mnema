@@ -19,7 +19,7 @@
  * three things nobody can work out for them at the top, and is RUN HERE against a table
  * this test writes rather than against the one it was born from.
  *
- * THE PAGE'S OWN BYTES RUN, unedited. The block is lifted from `packages/code/README.md`
+ * THE PAGE'S OWN BYTES RUN, unedited. The block is lifted from `docs/cli-reference.md`
  * between its two markers and executed by `node` in a sandbox whose `DECISIONS.md` and
  * `docs/decisions` are the paths the published script already names — so a script that
  * only works after a reader edits something this test quietly supplied would not pass. A
@@ -43,7 +43,7 @@ import { runInit } from '../src/commands/init.js';
 import { ROOT, read } from './support/published-examples.js';
 
 /** The page, and the two markers that bound the block a reader is meant to copy. */
-const PAGE = 'packages/code/README.md';
+const PAGE = 'docs/cli-reference.md';
 const BEGIN = '<!-- BEGIN converter -->';
 const END = '<!-- END converter -->';
 

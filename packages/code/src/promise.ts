@@ -15,7 +15,7 @@
  * without importing any of this. What it deliberately does NOT promise is identity, time,
  * or that nothing was removed — a record forged whole, with `.mnema` deleted and refounded
  * under another key, verifies clean and word for word like an honest one, and so does a
- * tail deleted together with its key. `packages/code/README.md` carries that argument in
+ * tail deleted together with its key. `docs/cli-reference.md` carries that argument in
  * full under "What it proves — and what it does not", and this sentence is the short form
  * of it rather than a stronger claim placed on top of it.
  *

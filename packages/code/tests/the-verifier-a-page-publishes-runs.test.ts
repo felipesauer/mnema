@@ -15,7 +15,7 @@
  * "nothing is executed to find out" — it answers *does the verb exist?*. These two lines
  * are `git` and `python3`, somebody else's programs, so that guard correctly passes over
  * them. `the-converter-a-page-publishes-runs.test.ts` runs a published block, but only the
- * one on `packages/code/README.md` bounded by its markers. The one command this product
+ * one on `docs/cli-reference.md` bounded by its markers. The one command this product
  * offers a stranger who does not want to install it was the one nothing ran.
  *
  * THE BROAD GUARD WAS CONSIDERED AND REFUSED, with its reason. The wide form — sweep every
