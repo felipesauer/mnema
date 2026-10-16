@@ -1,11 +1,17 @@
-# @mnema/stacks
+<h1 align="center">@mnema/stacks</h1>
 
+<p align="center">
 <picture>
-  <source media="(prefers-color-scheme: dark)" srcset="https://cdn.jsdelivr.net/npm/@mnema/stacks@0.2.0-beta/assets/stacks-dark.svg">
-  <img src="https://cdn.jsdelivr.net/npm/@mnema/stacks@0.2.0-beta/assets/stacks-light.svg" alt="The stack contract: the stack.json schema, the validator, and the canonical digest a stack is identified by. A pure library; it runs nothing." width="720">
+  <source media="(prefers-color-scheme: dark)" srcset="https://raw.githubusercontent.com/felipesauer/mnema/main/packages/stacks/assets/stacks-dark.svg">
+  <img src="https://raw.githubusercontent.com/felipesauer/mnema/main/packages/stacks/assets/stacks-light.svg" alt="The stack contract: the stack.json schema, the validator, and the canonical digest a stack is identified by. A pure library; it runs nothing." width="720">
 </picture>
+</p>
 
-[![CI](https://img.shields.io/github/actions/workflow/status/felipesauer/mnema/ci.yml?branch=main&style=flat-square&label=CI&color=997dbf)](https://github.com/felipesauer/mnema/actions/workflows/ci.yml) [![License: Apache-2.0](https://img.shields.io/badge/license-Apache--2.0-997dbf?style=flat-square)](../../LICENSE) ![Node 24.15.0 or a later 24, or 26.0.0 or later](https://img.shields.io/badge/node-%5E24.15.0%20%7C%7C%20%3E%3D26.0.0-997dbf?style=flat-square)
+<p align="center">
+<a href="https://github.com/felipesauer/mnema/actions/workflows/ci.yml"><img alt="CI" src="https://img.shields.io/github/actions/workflow/status/felipesauer/mnema/ci.yml?branch=main&amp;style=flat-square&amp;label=CI&amp;color=997dbf"></a>
+<a href="https://github.com/felipesauer/mnema/blob/main/LICENSE"><img alt="License: Apache-2.0" src="https://img.shields.io/badge/license-Apache--2.0-997dbf?style=flat-square"></a>
+<img alt="Node 24.15.0 or a later 24, or 26.0.0 or later" src="https://img.shields.io/badge/node-%5E24.15.0%20%7C%7C%20%3E%3D26.0.0-997dbf?style=flat-square">
+</p>
 
 The contract of a **stack** for [mnema](https://github.com/felipesauer/mnema): a directory that brings skills,
 agents and declared hooks to an agent, the validator that checks it, and the digest that identifies it. A pure

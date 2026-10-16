@@ -1,11 +1,17 @@
-# @mnema/code
+<h1 align="center">@mnema/code</h1>
 
+<p align="center">
 <picture>
-  <source media="(prefers-color-scheme: dark)" srcset="https://cdn.jsdelivr.net/npm/@mnema/code@0.2.0-beta/assets/code-dark.svg">
-  <img src="https://cdn.jsdelivr.net/npm/@mnema/code@0.2.0-beta/assets/code-light.svg" alt="Your decisions, handed to your agents' sessions and held at the edits they govern — append-only and signed in the repository, and checkable by anyone." width="720">
+  <source media="(prefers-color-scheme: dark)" srcset="https://raw.githubusercontent.com/felipesauer/mnema/main/packages/code/assets/code-dark.svg">
+  <img src="https://raw.githubusercontent.com/felipesauer/mnema/main/packages/code/assets/code-light.svg" alt="Your decisions, handed to your agents' sessions and held at the edits they govern — append-only and signed in the repository, and checkable by anyone." width="720">
 </picture>
+</p>
 
-[![CI](https://img.shields.io/github/actions/workflow/status/felipesauer/mnema/ci.yml?branch=main&style=flat-square&label=CI&color=997dbf)](https://github.com/felipesauer/mnema/actions/workflows/ci.yml) [![License: Apache-2.0](https://img.shields.io/badge/license-Apache--2.0-997dbf?style=flat-square)](../../LICENSE) ![Node 24.15.0 or a later 24, or 26.0.0 or later](https://img.shields.io/badge/node-%5E24.15.0%20%7C%7C%20%3E%3D26.0.0-997dbf?style=flat-square)
+<p align="center">
+<a href="https://github.com/felipesauer/mnema/actions/workflows/ci.yml"><img alt="CI" src="https://img.shields.io/github/actions/workflow/status/felipesauer/mnema/ci.yml?branch=main&amp;style=flat-square&amp;label=CI&amp;color=997dbf"></a>
+<a href="https://github.com/felipesauer/mnema/blob/main/LICENSE"><img alt="License: Apache-2.0" src="https://img.shields.io/badge/license-Apache--2.0-997dbf?style=flat-square"></a>
+<img alt="Node 24.15.0 or a later 24, or 26.0.0 or later" src="https://img.shields.io/badge/node-%5E24.15.0%20%7C%7C%20%3E%3D26.0.0-997dbf?style=flat-square">
+</p>
 
 Your decisions, handed to your agents' sessions and held at the edits they
 govern — append-only and signed in the repository, and checkable by anyone.
@@ -37,8 +43,9 @@ unproven.
 
 ## What it proves — and what it does not
 
-The record is **tamper-evident, not tamper-proof**: it does not stop an edit, it makes one
-impossible to hide. `mnema verify` reads the events and public keys of the project's trees, with
+The record is **tamper-evident, not tamper-proof**: it does not stop an edit, and `mnema verify`
+shows when what is in the record has changed since it was signed, and a cut that leaves the last
+checkpoint in place; it does not catch a cut off the end that takes the last checkpoint with it, or a whole tail deleted (a key left without a tail is noted, not failed). It reads the events and public keys of the project's trees, with
 no private key and no network, and prints each verdict verbatim.
 
 - It does not say every event is signed: the verdict names the level it reached, and only

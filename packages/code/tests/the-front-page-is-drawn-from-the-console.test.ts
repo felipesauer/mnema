@@ -22,9 +22,10 @@
  *     `docs/assets/`, is held to the same rules as a package's: its words are lines of the
  *     product, found in the files the script names, and nothing else.
  *   - THE URL OF A PACKAGE'S PICTURE: the README of a package opens, under its title, with the
- *     block the script writes, pointing at the copy of the picture inside the tarball of the
- *     version its `package.json` says. A version bumped without drawing again leaves a URL to a
- *     picture of another version, and fails here.
+ *     block the script writes, pointing at the file on the repository's `main` branch by the
+ *     address of the repository its `package.json` says, with no version in it, because a
+ *     version that is not published yet is a picture that does not load. Hand-editing the
+ *     address fails here.
  *   - THE BADGES: a shields.io badge in `README.md` or a package's README that sets a colour,
  *     in `color=` or in its path (`/badge/label-message-colour`), sets the light accent.
  *
@@ -226,8 +227,12 @@ describe('every package, and the family, draws what it is, in its own words', ()
     ),
   };
   const lined = LINED.flatMap((p) => [p.dark, p.light]);
-  const manifest = (dir: string): { name: string; version: string } =>
-    JSON.parse(read(`packages/${dir}/package.json`)) as { name: string; version: string };
+  const manifest = (dir: string): { name: string; version: string; repository: { url: string } } =>
+    JSON.parse(read(`packages/${dir}/package.json`)) as {
+      name: string;
+      version: string;
+      repository: { url: string };
+    };
 
   it('draws the five published packages, dark and light', () => {
     expect(Object.keys(packages).sort()).toEqual(
@@ -341,20 +346,74 @@ describe('every package, and the family, draws what it is, in its own words', ()
   });
 
   it.each(PACKAGE_PICTURES.map((p) => p.dir))(
-    'packages/%s/README.md opens with the picture of the version its manifest says',
+    'packages/%s/README.md opens with exactly the block the script writes',
     (dir) => {
-      const { name, version } = manifest(dir);
+      const { name } = manifest(dir);
       const readme = read(`packages/${dir}/README.md`);
-      expect(readme.startsWith(`# ${name}\n\n${pictureBlock(dir)}\n`)).toBe(true);
-      // Said here again by hand, so a script that wrote the wrong version would not agree with
-      // itself and pass.
-      const urls = [...readme.matchAll(/https:\/\/cdn\.jsdelivr\.net\/npm\/[^"\s)]+/g)].map(
+      expect(readme.startsWith(`<h1 align="center">${name}</h1>\n\n${pictureBlock(dir)}\n`)).toBe(
+        true,
+      );
+      // Said here again by hand, so a script that wrote the wrong owner, branch or path would
+      // not agree with itself and pass. The owner and the repository are the manifest's.
+      const urls = [...readme.matchAll(/https:\/\/raw\.githubusercontent\.com\/[^"\s)]+/g)].map(
         (m) => m[0],
       );
-      expect(urls).toEqual([
-        `https://cdn.jsdelivr.net/npm/${name}@${version}/assets/${dir}-dark.svg`,
-        `https://cdn.jsdelivr.net/npm/${name}@${version}/assets/${dir}-light.svg`,
+      const base = `https://raw.githubusercontent.com/felipesauer/mnema/main/packages/${dir}/assets`;
+      expect(urls).toEqual([`${base}/${dir}-dark.svg`, `${base}/${dir}-light.svg`]);
+    },
+  );
+
+  // The npm page keeps `align` on a paragraph and on an image but strips it from a `div`, so the
+  // centre is set on `<p>` and said here by hand, apart from the script that writes the block.
+  it.each(PACKAGE_PICTURES.map((p) => p.dir))(
+    'packages/%s/README.md centres its title, its picture and its badges',
+    (dir) => {
+      const { name } = manifest(dir);
+      const readme = read(`packages/${dir}/README.md`);
+      const block = pictureBlock(dir);
+      expect(block.startsWith('<p align="center">\n<picture>\n')).toBe(true);
+      expect(block.endsWith('</picture>\n</p>')).toBe(true);
+      const head = `<h1 align="center">${name}</h1>\n\n${block}\n\n`;
+      const top = readme.slice(head.length);
+      expect(readme.startsWith(head)).toBe(true);
+      const badges = /^<p align="center">\n([\s\S]*?)\n<\/p>\n/.exec(top);
+      expect(badges, 'the line of badges is not in a centred paragraph').not.toBeNull();
+      const line = badges?.[1] ?? '';
+      expect(line).not.toContain('](');
+      const images = [...line.matchAll(/<img alt="([^"]+)" src="https:\/\/img\.shields\.io\//g)];
+      expect(images.map((m) => m[1]?.split(':')[0]?.split(' ')[0])).toEqual([
+        'CI',
+        'License',
+        'Node',
       ]);
+      expect(line).toContain(
+        '<a href="https://github.com/felipesauer/mnema/actions/workflows/ci.yml"><img alt="CI"',
+      );
+      // The npm page does not rewrite a relative address written in raw HTML, so the licence
+      // badge points at the file on `main` by the address of the repository the manifest names,
+      // and no address in the line of badges is relative.
+      const repo = /github\.com\/([^/]+\/[^/]+?)(?:\.git)?$/.exec(
+        manifest(dir).repository.url,
+      )?.[1];
+      expect(repo, 'the manifest does not name a GitHub repository').toBeDefined();
+      expect(line).toContain(
+        `<a href="https://github.com/${repo}/blob/main/LICENSE"><img alt="License: Apache-2.0"`,
+      );
+      const targets = [...line.matchAll(/\bhref="([^"]*)"/g)].map((m) => m[1] ?? '');
+      expect(targets).toHaveLength(2);
+      expect(targets.filter((t) => !t.startsWith('https://'))).toEqual([]);
+    },
+  );
+
+  it.each(PACKAGE_PICTURES.map((p) => p.dir))(
+    'packages/%s/README.md names no version in the address of an image',
+    (dir) => {
+      const readme = read(`packages/${dir}/README.md`);
+      const images = [...readme.matchAll(/\b(?:src|srcset)="([^"]+)"/g)].map((m) => m[1] ?? '');
+      expect(images.length).toBeGreaterThanOrEqual(2);
+      // A version that is not published yet is a picture that does not load: no `@1.2.3`, no
+      // `@v1.2.3`, in the path of any image the page shows.
+      expect(images.filter((url) => /@v?\d/.test(url))).toEqual([]);
     },
   );
 
