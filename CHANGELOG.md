@@ -20,12 +20,6 @@ with its own changelog.
   still reads where a page shows it on white. The README points at the copy inside the tarball of
   its own version on jsDelivr, so the image shows only once that version is published; a test holds the URL to the
   version in `package.json`, and another holds that the tarball carries the file.
-- **The page says where the refusal of a write stops holding, and a test holds it.** A rule that refuses a write
-  opens when the hook cannot read the record: a line that is not JSON, or one of a kind this version does not know (a
-  newer mnema's line), makes the hook before a write fail with no reply, and the write goes where the host lets a failed
-  hook go on. `docs/features.md`, `docs/evidence.md` and the plugin's README say it, and the case that refused a line
-  that is not JSON now refuses one of an unknown kind too.
-
 - **A glossary.** `docs/glossary.md` defines, in one sentence each and with a link to the page that holds the
   definition, the words the documentation uses in a sense of its own: record, tree (public, private and global),
   tail, checkpoint, run, rung, stack, agent key, census and witness. The README's list of pages links to it.
@@ -153,12 +147,15 @@ with its own changelog.
   the reader refuses (not JSON, a kind or a field this version does not know, as a newer mnema's line is, or bytes that
   are not canonical), the per-edit gate answered nothing: the command hook exited 1 with an empty reply and the MCP route
   answered a tool error, and every host this plugin wires read either as leave to write. Both now answer `deny`, exit 0,
-  in each host's shape, for every write the gate is asked about, with the line named in the reader's words and the two
-  ways out: update mnema, or restore the line. Nothing is recorded, and a note goes to the second stream. Only that line
-  is caught: a busy tail or a fault of the product is not turned into a refusal, and a last line a crash cut short is
-  still dropped and refuses nothing. The cost: on a team with two versions, a line only the newer can read refuses
-  every write of the older in that project until it is updated, and switching the refusal off is no way out, because
-  the switch reads the same record. With no `mnema` on the PATH the gate still says nothing. `UnreadableLineError` is
+  in each host's shape, for every write the gate is asked about, with the tree (public, private or global) and the line
+  named in the reader's words, and the ways out: update mnema, or restore the line, from the repository's history for
+  the public tree and, for the private and the global tree, which are not versioned, from a copy or by repairing or
+  removing that line. Nothing is recorded, and a note goes to the second stream. Only that line is caught: a busy tail
+  or a fault of the product is not turned into a refusal, and a last line a crash cut short is still dropped and
+  refuses nothing. The cost: a line of the project's public or private tree refuses every write in that project, and a
+  line of the machine's global tree, which every project reads, refuses every write in every project of the machine;
+  on a team with two versions, a line only the newer can read refuses every write of the older in that project until
+  it is updated; and switching the refusal off is no way out, because the switch reads the same record. With no `mnema` on the PATH the gate still says nothing. `UnreadableLineError` is
   now exported by `@mnema/chain`.
 - **The `@mnema/code` page on npm fits one reading, and the reference is its own page.** The package README held 1,877
   lines of every verb and tool; it now says what the package is, how to install it, the first record, what it proves and

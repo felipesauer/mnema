@@ -55,10 +55,12 @@ export function registerBeforeAWrite(program: Command, wiring: Wiring): Declared
         '  switched off with `mnema switch off edit-refuses-a-write` and',
         '  `mnema switch off edit-asks-a-person`.',
         '',
-        '  Where a line of the record is one this mnema cannot read, every write is',
-        '  answered `deny`, naming the line, and nothing is recorded: the rules that',
-        '  apply cannot be known. The switches read the same record, so they do not',
-        '  turn that off; update mnema, or restore the line.',
+        '  Where a line of the record is one this mnema cannot read, every write in',
+        '  the project is answered `deny`, naming the tree and the line, and nothing',
+        '  is recorded: the rules that apply cannot be known. A line of the global',
+        '  tree does that in every project of this machine. The switches read the',
+        '  same record, so they do not turn that off; update mnema, or restore the',
+        '  line.',
       ].join('\n'),
     )
     .action(async (opts: { host: string; agentKey?: string }) => {

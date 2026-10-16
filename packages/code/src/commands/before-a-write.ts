@@ -39,7 +39,8 @@
  * for the host's own log; nothing reads them to decide.
  *
  * A RECORD THAT CANNOT BE READ IS A REFUSAL, NOT A SILENCE: a stored line the reader refuses
- * means which rules apply cannot be known, so every write is answered `deny`, with the reader's
+ * means which rules apply cannot be known, so every write that reads that tree is answered `deny`
+ * (the project's, or every project's for the machine-global tree), with the tree and the reader's
  * refusal in the reason and nothing recorded ({@link refusalOfAnUnreadableRecord}).
  */
 
@@ -67,6 +68,7 @@ import {
 import { anchorsBefore, foundingsSince, treesOf } from '../a-new-identity.js';
 import { asksAPerson, pathsOfAWrite, replyFor } from '../host-hook.js';
 import { type HookHost, hookTextOf } from '../host-names.js';
+import { recordTrees } from '../intelligence-source.js';
 import type { HookSaid } from '../mcp/hook-reply.js';
 import { type HookCeiling, hookCeilingOf } from '../presentation/within-a-hook.js';
 import { ASKS_A_PERSON_CHANNEL, REFUSES_A_WRITE_CHANNEL } from '../record-framing.js';
@@ -161,7 +163,8 @@ export function runBeforeAPath(ctx: BeforeAWriteContext, input: APathAsked): Bef
   try {
     return whatAPathMeets(ctx, input);
   } catch (error) {
-    const refusal = refusalOfAnUnreadableRecord(error);
+    const read = recordTrees(resolveTrees(ctx.cwd, ctx.env), undefined);
+    const refusal = refusalOfAnUnreadableRecord(error, read);
     if (refusal === undefined) throw error;
     return { ok: true, reply: input.reply({ refuse: refusal }), notes: [UNREADABLE_RECORD_NOTE] };
   }

@@ -138,7 +138,8 @@ curl -fsSL https://raw.githubusercontent.com/felipesauer/mnema/main/plugin/openc
 The module runs the first `mnema` on the `PATH`. It adds the document and the notes to each
 session's system prompt, and refuses a write — `write`, `edit` or `apply_patch` — where a rule
 refuses it, handing the model the rule as the call's error, and every write while a line of the
-record is one this mnema cannot read ([the limit](features.md)). It pauses nothing, so a rule that only
+record is one this mnema cannot read: in that project, or in every project of the machine when the
+line is in the global tree ([the limit](features.md)). It pauses nothing, so a rule that only
 asks is let through, and it does nothing where `mnema` is missing or is another program. Its
 opening goes through a hook OpenCode marks experimental, so it is held on one version of OpenCode
 (`.github/workflows/host-contract.yml` names it). `~/.config/opencode/plugins/` takes the same file
@@ -160,7 +161,8 @@ copilot plugin install mnema@mnema
 
 It opens each session with the document and the notes, refuses a write where a rule refuses it and,
 where a person is at the terminal, pauses a write where a rule asks for one; it refuses every write
-while a line of the record is one this mnema cannot read ([the limit](features.md)). `mnema-server-only@mnema`
+while a line of the record is one this mnema cannot read: in that project, or in every project of
+the machine when the line is in the global tree ([the limit](features.md)). `mnema-server-only@mnema`
 connects the server and runs no hook.
 
 ## Gemini CLI

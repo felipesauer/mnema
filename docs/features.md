@@ -13,8 +13,12 @@ Each line says what it does and what it leaves unproven; the page it points to h
   A record the gate cannot read is not that case: it refuses. Where a line of the record is one
   the reader refuses (not JSON, a kind or a field this version does not know, as a newer mnema's
   line is, or bytes that are not canonical), every write the gate is asked about is answered
-  `deny`, by the command and by the MCP route alike, with the line named in the reader's own words
-  and the two ways out: update mnema, or restore the line
+  `deny`, by the command and by the MCP route alike, with the tree and the line named in the
+  reader's own words. The reach is the tree's: a line of the project's public or private tree refuses
+  every write in that project, and a line of the machine's global tree, which every project reads,
+  refuses every write in every project of the machine. The ways out are said with it: update mnema,
+  or restore the line — from the repository's history for the public tree, and for the private and
+  the global tree, which are not versioned, from a copy, or by repairing or removing that line
   ([held by a test](../packages/code/tests/a-rule-that-refuses-a-write.test.ts), and in Claude
   Code, Gemini CLI and Codex by the host contract). Nothing is recorded, because a refusal fact
   cites a rule and no rule could be read. The cost is declared: on a team with two versions, a line

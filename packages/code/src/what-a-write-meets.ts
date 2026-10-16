@@ -23,8 +23,10 @@
  * before it answers the host, and answers the same whether or not they land ({@link recordTheCharge}).
  */
 
+import { sep } from 'node:path';
 import { DEFAULT_WAIT_MS, TailBusyError, UnreadableLineError } from '@mnema/chain';
 import { channelIsOn, type RulesAtPath, type ScopedCache } from '@mnema/context';
+import type { Scope } from '@mnema/core';
 import { whatAWriteAsks } from './edit-asks-a-person.js';
 import { editRefusesNotice } from './edit-refuses-a-write.js';
 import { placesOfAPath, readRefusesAWriteAt } from './governed-tree.js';
@@ -133,25 +135,71 @@ export function whatAWriteMeets(
 
 /**
  * The reason a write is refused when reading the record met a stored line the reader refuses,
- * or `undefined` for anything else that was thrown, which the caller throws on.
+ * or `undefined` for anything else that was thrown, which the caller throws on. `trees` are the
+ * trees the caller read, and the one whose chain holds the line's file is the tree it names.
  *
  * WHAT THE WRITE MEETS IS READ FROM THE RECORD, so a record that cannot be read cannot say the
  * write meets nothing: the gate refuses rather than answering a silence the host would read as
- * leave to write. Every write of the project is refused until the line reads, and the reason says
- * which line, in the reader's own words (`FORMAT.md` §7.1: never guessed at, never skipped), and
- * the two ways out. Switching the refusal off is not one of them: the switch reads the same record.
+ * leave to write. The reason says which tree and which line, in the reader's own words
+ * (`FORMAT.md` §7.1: never guessed at, never skipped), how far the refusal reaches — the
+ * project, or for the machine-global tree every project on the machine — and the ways out, which
+ * differ because only the public tree is kept by the repository. Switching the refusal off is
+ * not one of them: the switch reads the same record.
  *
  * ONLY THAT LINE. A busy tail is the charge's to wait out ({@link recordTheCharge}), and a fault of
  * the product is a fault, never a refusal: neither is turned into one here.
  */
-export function refusalOfAnUnreadableRecord(error: unknown): string | undefined {
+export function refusalOfAnUnreadableRecord(
+  error: unknown,
+  trees: readonly Pick<ScopedCache, 'scope' | 'chainRoot'>[],
+): string | undefined {
   if (!(error instanceof UnreadableLineError)) return undefined;
+  const words = UNREADABLE_IN[treeOfTheLine(error.locus, trees) ?? 'unknown'];
   return [
-    'The write is refused: a line of this project’s record cannot be read by this mnema, so which rules apply to this path cannot be known.',
+    `The write is refused: a line of ${words.tree} cannot be read by this mnema, so which rules apply to this path cannot be known.`,
     error.message,
-    'Every write in this project is refused until the line reads: update mnema if a newer one wrote the line, or restore the line from the repository’s history.',
+    words.out,
   ].join('\n\n');
 }
+
+/**
+ * The tree whose chain holds the file a locus names, among the trees the door resolved: the
+ * DEEPEST chain root it lies under, because outside a repository the private tree's chain sits
+ * inside the public one's.
+ */
+function treeOfTheLine(
+  locus: string,
+  trees: readonly Pick<ScopedCache, 'scope' | 'chainRoot'>[],
+): Scope | undefined {
+  const holding = trees
+    .filter(({ chainRoot }) => locus.startsWith(`${chainRoot}${sep}`))
+    .sort((a, b) => b.chainRoot.length - a.chainRoot.length);
+  return holding[0]?.scope;
+}
+
+const NOT_VERSIONED =
+  'This record is not versioned: update mnema if a newer one wrote the line, restore the file from a copy, or repair or remove the line named above.';
+
+/** What the refusal says of each tree: which it is, how far the refusal reaches, and the way out. */
+const UNREADABLE_IN: Readonly<Record<Scope | 'unknown', { tree: string; out: string }>> = {
+  public: {
+    tree: 'the project’s public record',
+    out: 'Every write in the project is refused until the line reads: update mnema if a newer one wrote the line, or restore the line from the repository’s history.',
+  },
+  private: {
+    tree: 'the project’s private record on this machine',
+    out: `Every write in the project is refused until the line reads. ${NOT_VERSIONED}`,
+  },
+  global: {
+    tree: 'this machine’s global record',
+    out: `This closes every project on this machine: every write in each is refused until the line reads. ${NOT_VERSIONED}`,
+  },
+  // Not reached by a door, which hands the trees it read; said rather than guessed if it is.
+  unknown: {
+    tree: 'the record',
+    out: 'Every write that reads this record is refused until the line reads: update mnema if a newer one wrote the line, restore the line from the repository’s history or the file from a copy, or repair or remove the line named above.',
+  },
+};
 
 /** The note on the second stream beside that refusal. */
 export const UNREADABLE_RECORD_NOTE =

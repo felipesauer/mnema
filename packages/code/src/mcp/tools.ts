@@ -2541,7 +2541,7 @@ export function runRulesBeforeAnEditTool(
   try {
     return rulesBeforeAnEdit(session, input);
   } catch (error) {
-    const refusal = refusalOfAnUnreadableRecord(error);
+    const refusal = refusalOfAnUnreadableRecord(error, workspaceTrees(session));
     if (refusal === undefined) throw error;
     session.log(UNREADABLE_RECORD_NOTE);
     return { ok: true, value: hookReply(PRE_TOOL_USE, { refuse: refusal }) };

@@ -220,12 +220,35 @@ function holdTheTail(): string {
   return lock;
 }
 
-/** The one segment of the public tree's one tail, where the setup wrote every line. */
-function theSegment(): string {
-  const root = resolveTrees(repo, env).projectPublic as string;
+/** The one segment of a tree's one tail — the public tree's unless told — where the setup wrote. */
+function theSegment(root = resolveTrees(repo, env).projectPublic as string): string {
   const tails = readdirSync(join(root, 'tails'));
   expect(tails).toHaveLength(1);
   return join(root, 'tails', tails[0] as string, '000001.jsonl');
+}
+
+/** The trees a line can be unreadable in beside the public one, and how the refusal names each. */
+const OTHER_TREES = [
+  {
+    scope: 'private',
+    root: () => resolveTrees(repo, env).projectPrivate as string,
+    named: 'the project’s private record on this machine',
+  },
+  {
+    scope: 'global',
+    root: () => resolveTrees(repo, env).global,
+    named: 'this machine’s global record',
+  },
+] as const;
+
+/** Appends to `segment` a copy of its last line under a kind no mnema knows; returns the bytes. */
+function aLineTheReaderRefusesIn(segment: string): string {
+  const sound = readFileSync(segment, 'utf-8');
+  const last = sound.trimEnd().split('\n').at(-1) as string;
+  expect(last).toMatch(/"kind":"[a-z.]+"/);
+  const bytes = `${sound}${last.replace(/"kind":"[a-z.]+"/, '"kind":"bogus.kind"')}\n`;
+  writeFileSync(segment, bytes);
+  return bytes;
 }
 
 /** The permission decision of a reply. */
@@ -431,6 +454,50 @@ describe('the verb a command host runs', () => {
     writeFileSync(segment, sound);
     expect(decided(verb('gemini', 'src/billing/invoice.ts').reply).reason).toContain(refusing);
     expect(decided(verb('gemini', 'src/free.ts').reply).value).toBeUndefined();
+  });
+
+  for (const tree of OTHER_TREES) {
+    it(`refuses every write, in every host, when a line of the ${tree.scope} tree cannot be read, and says which tree`, async () => {
+      // The private and the global tree are read for the rules too, so a line either holds that
+      // cannot be read shuts the gate as the public tree's does; neither is versioned, so the way
+      // out the reason gives is not the repository's history.
+      await did('memory', `a note kept ${tree.scope}`, '--scope', tree.scope);
+      const segment = theSegment(tree.root());
+      const bytes = aLineTheReaderRefusesIn(segment);
+      for (const host of HOOK_HOSTS) {
+        for (const path of ['src/billing/invoice.ts', 'src/free.ts']) {
+          const { value, reason } = decided(verb(host, path).reply);
+          expect(value, `${tree.scope}, ${host}, ${path}`).toBe('deny');
+          expect(reason).toContain(`a line of ${tree.named} cannot be read`);
+          expect(reason).toContain(`unreadable stored line at ${segment}`);
+          expect(reason).toContain('This record is not versioned');
+          expect(reason).not.toContain('repository’s history');
+        }
+      }
+      expect(readFileSync(segment, 'utf-8')).toBe(bytes);
+    });
+  }
+
+  it('closes every project on the machine when a line of the global tree cannot be read', async () => {
+    await did('memory', 'a note kept global', '--scope', 'global');
+    const other = join(sandbox, 'other');
+    mkdirSync(join(other, 'src'), { recursive: true });
+    process.chdir(other);
+    await did('init');
+    process.chdir(repo);
+    aLineTheReaderRefusesIn(theSegment(resolveTrees(repo, env).global));
+    for (const cwd of [repo, other]) {
+      const payload = JSON.stringify({
+        hook_event_name: 'BeforeTool',
+        cwd,
+        tool_name: 'write_file',
+        tool_input: { file_path: join(cwd, 'src', 'free.ts'), content: 'x\n' },
+      });
+      const done = runBeforeAWrite({ cwd, env }, { host: 'gemini', payload });
+      const { value, reason } = decided(JSON.parse(JSON.stringify(done.reply)));
+      expect(value, cwd).toBe('deny');
+      expect(reason).toContain('This closes every project on this machine');
+    }
   });
 
   it('refuses nothing over a torn last line, which the reader drops: the rules answer as before', () => {
@@ -705,6 +772,22 @@ describe('the MCP tool Claude Code’s hook calls', () => {
     }
     expect(readFileSync(segment, 'utf-8')).toBe(bytes);
   });
+
+  for (const tree of OTHER_TREES) {
+    it(`refuses every write when a line of the ${tree.scope} tree cannot be read, and says which tree`, async () => {
+      await did('memory', `a note kept ${tree.scope}`, '--scope', tree.scope);
+      const segment = theSegment(tree.root());
+      const bytes = aLineTheReaderRefusesIn(segment);
+      for (const path of ['src/billing/invoice.ts', 'src/free.ts']) {
+        const specific = tool(path)['hookSpecificOutput'] as Record<string, string> | undefined;
+        expect(specific?.['permissionDecision'], `${tree.scope}, ${path}`).toBe('deny');
+        const reason = specific?.['permissionDecisionReason'];
+        expect(reason).toContain(`a line of ${tree.named} cannot be read`);
+        expect(reason).toContain(`unreadable stored line at ${segment}`);
+      }
+      expect(readFileSync(segment, 'utf-8')).toBe(bytes);
+    });
+  }
 
   it('refuses while a live process holds the record, as a reply and never as an error', {
     timeout: 30_000,
