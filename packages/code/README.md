@@ -36,8 +36,8 @@ The record is **tamper-evident, not tamper-proof**: it does not stop an edit, it
 impossible to hide. `mnema verify` reads the events and public keys of the project's trees, with
 no private key and no network, and prints each verdict verbatim.
 
-- It does not say every event is signed: the verdict names the level it reached, and only the
-  first level means every event is covered.
+- It does not say every event is signed: the verdict names the level it reached, and only
+  `verified (T1/T2/T4)` means every event is covered.
 - It does not catch someone holding the signing key who rewrites and signs again; a witness
   outside the machine (`mnema witness stamp`) dates the record, and the history a git remote keeps
   is what shows a cut.
