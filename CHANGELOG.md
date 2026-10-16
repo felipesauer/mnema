@@ -15,7 +15,7 @@ with its own changelog.
 - **A picture of the mnema family.** `docs/assets/the-family-{light,dark}.svg`, drawn by
   `.github/the-front-page/draw.mjs` in the front page's one accent and on its loop: `@mnema/code` in the middle (the
   wordmark, the record's chain of blocks, and its two surfaces, `mnema` and `MCP`), with the SDK, a VS Code extension,
-  an agent in CI, the Action, `mnema site` and Stacks around it. The head of each line says which way the record goes:
+  an agent in CI, the Action, the site page and Stacks around it. The head of each line says which way the record goes:
   into the middle for what writes, out to the card for what reads, both for what does both; Stacks are drawn apart,
   grey and dashed. Every word on it is a line of the product, held by the same tests as a package's picture; the test
   of the one accent now reads a gradient by its stops. No page shows the picture yet.
