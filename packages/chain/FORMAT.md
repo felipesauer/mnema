@@ -1,6 +1,7 @@
 # The mnema chain format
 
-This document specifies the bytes. It is written so that **someone who did not
+This document specifies the bytes, and the rules by which a reader decides which of
+them it applies (§6.2, §6.4, §6.7). It is written so that **someone who did not
 write this code can implement a verifier from it**, run the published vectors
 against their implementation, and get the same digests we do.
 
@@ -18,10 +19,9 @@ unable to tell an authorized cut from tampering. On a line holding bytes that ar
 found by JSONTestSuite, the two used to part: the product decoded them to U+FFFD and found the
 line canonical, while this reader refused it. Both refuse it now, naming the same byte (§4,
 `packages/chain/src/chain/outside-vectors.test.ts`). Twenty-seven points
-where this document was **not enough** for that were found in the writing, and every one of
-them has been fixed here — `python3 verifier/mnema_verify.py gaps` lists them, with which
-were resolved by reading a specification, which by experiment against the published bytes,
-and which are still open.
+where this document was **not enough** for that were found in the writing.
+`python3 verifier/mnema_verify.py gaps` lists them, with which were resolved by reading a
+specification, which by experiment against the published bytes, and which are still open.
 
 Everything below is a statement about behaviour, and every one of them **names the
 test that holds it**. A claim with no test beside it is an intention, not a
@@ -53,10 +53,12 @@ compile until it has one.
 To check an implementation: canonicalize each `event` by the rules in §1, SHA-256
 the bytes, and compare with the row's `sha256`.
 
-The vectors are **exemplars, not a schema** — one event per kind, and a second
-`memory.captured` that carries the citation `after` (§4.1), from which a required
-field and an optional one that happens to be present look identical. The schema is
-the other artifact, `event-schema.json`, described in §4.1.
+The vectors are **exemplars, not a schema** — one event per kind, plus the cases that
+carry a rule of their own: a second `task.created` whose title is written in NFD, three
+`task.transitioned` (a birth, a move that carries proof fields, a move the task workflow
+allows), and a second `memory.captured` that carries the citation `after` (§4.1), from
+which a required field and an optional one that happens to be present look identical. The
+schema is the other artifact, `event-schema.json`, described in §4.1.
 
 ## 1. Canonicalization: an event becomes bytes
 
@@ -188,6 +190,8 @@ is false the moment they open one: a naive `*.jsonl` glob reads the checkpoints 
 if they were events. The layout, which only ever appeared here incidentally in §8:
 
 ```
+<record>/.gitattributes                         "* -text", written by this product's writer; not part of the proof
+<record>/.gitignore                             what git leaves out of the tree; not part of the proof
 <record>/keys/<fingerprint>.pub                 the public keys (§6)
 <record>/tails/<tailId>/NNNNNN.jsonl            the segments — six digits, in name order
 <record>/tails/<tailId>/checkpoints.jsonl       the signed checkpoints (§6)
@@ -521,9 +525,10 @@ them.
 one machine authorizes events on another — so the fold runs over **every tail
 merged into one order**: within a tail, `seq` order, which the hash chain proves
 and which nothing may override; across tails, among the heads whose citations
-(`after`) have all been taken, the one with the smallest `at` goes next, ties broken by
-tail id ascending. That is the same merge a reader uses for anything else that has to be
-deterministic across tails ("Reading many tails").
+(`after`) have all been taken, the one with the smallest `at` goes next, a tie going to
+the tail id that is smaller as text by UTF-16 code unit. That is the same merge a reader
+uses for anything else that has to be deterministic across tails ("Reading many tails",
+where the whole tie-break is written out).
 
 So a key's first event follows its enrolment whatever the two machines' clocks said, as
 long as it cites the head of the enroller's tail it had read — which is at or after the
@@ -851,7 +856,7 @@ state, an `action`, the `to` state it reaches, the proof fields it `requires` (n
 | kind | birth | moves |
 |---|---|---|
 | `decision.transitioned` | `null → proposed` by `create` | `proposed → accepted` by `accept`, `proposed → rejected` by `reject` (each requires `note`); `proposed → superseded` and `accepted → superseded` by `supersede` (requires `reason`, names `by`) |
-| `task.transitioned` | `null → DRAFT` by `create` | twelve rows, among them `DONE → IN_PROGRESS` by `reopen`: the one workflow with a cycle |
+| `task.transitioned` | `null → DRAFT` by `create` | twelve rows, with cycles: `IN_PROGRESS` to `BLOCKED` by `block` and back by `unblock`, to `IN_REVIEW` by `submit_review` and back by `request_changes`, to `DONE` by `complete` and back by `reopen`; the one workflow with cycles |
 | `skill.transitioned` | `null → proposed` by `create` | `review`, `adopt`, `reject` (each requires `note`) and `adopted → deprecated` by `deprecate` (requires `reason`) |
 
 **A reader judges every move at its point in the merged order** of "Reading many tails", and
@@ -882,6 +887,17 @@ did not say what it read, and the bytes cannot say it for it: it is held to a st
 had been in before that point — the `to` of a move applied before it, the birth's among them —
 so two such machines that moved one subject out of one state are a divergence too, and a move
 out of a state the subject never reached is still not applied.
+
+**The rule a move broke** is one of seven, named in the census and the same in both readers:
+`not-born` (a move of a subject with no birth before it, or the end of a run with no start before
+it); `born-twice` (a birth of a subject already born); `not-in-the-table` (a birth that is not the
+table's `birth`, or a `(from, action)` that is no row of it, or a `to` that is not that row's);
+`proof-missing` (a field the row requires is absent); `successor` (a `by` where the row takes none,
+none where it takes one, the move's own subject, or a decision the record holds no birth of);
+`not-the-state-seen` (`from` is neither the state at that point nor the one its writer saw); and
+`ended-twice` (the end of a run after an end its writer had seen). A birth that carries a `by` is
+`successor`, since the birth row takes none. A `run.started` of a run already started changes
+nothing and is not named: the first start stays, and the ends are judged against it.
 
 **A move that is not legal is not applied, and it is not a break.** A reader reads the subject
 as if the move had not been written — its state, the moves it says it made, the divergences —
@@ -1229,13 +1245,16 @@ hash chain (§3). Across tails, the bytes carry one kind of order and only one: 
 envelope's optional `after` (§4.1) names the entry hashes of the heads of other tails that the
 writer had read when it wrote. A reader that wants ONE sequence of events — to replay them into a
 state — has to choose the rest. This section says which choice the product's reader makes, and what
-it leaves undecided. Apart from §6.2, which folds enrolment in this same order, it describes what
+it leaves undecided. Apart from §6.2, which folds enrolment in this same order, and §6.7, which
+judges every move in it (and §6.4, which names it for the retraction that holds), it describes what
 the code does and is not part of what a verifier checks: another reader may order the tails
-otherwise without disagreeing about a single byte. Every sentence names the case that holds it.
-Unless another file is named, a case named P or MR is in
-`packages/core/src/projections/many-tails.properties.test.ts`, and a case named R1 to R4 or R8 in
-`packages/chain/src/chain/causal-order.properties.test.ts`; each compares the reader with a model of
-the sentence, a few lines long, written in the test.
+otherwise without disagreeing about a single byte. It would then disagree about what those two
+sections do with the bytes: §6.2 can refuse an event of an honest record that another order
+places before the enrolment it depends on, and §6.7 names the moves it does not apply where the
+order puts them. Every sentence names the case that holds it. Unless another file is named, a
+case named P, MR, R5 or R6 is in `packages/core/src/projections/many-tails.properties.test.ts`,
+and a case named R1 to R4 or R8 in `packages/chain/src/chain/causal-order.properties.test.ts`;
+each compares the reader with a model of the sentence, a few lines long, written in the test.
 
 **The order inside a tail is `seq`, always.** The reader never compares the `at` of two events of
 one tail, so a clock that stepped back between two appends does not move the later-sequenced event
@@ -1246,9 +1265,12 @@ clocks that disagree, the merge is the causal model, and every tail is read in s
 **The order across tails is a selection of heads.** Each tail is a queue, read from `seq` 0. At
 every step the reader looks at the first unread event of each tail that still has one — its head —
 and keeps the heads that are READY: every entry the head cites has already been taken. Among those
-it takes the head with the smallest `at`; a tie goes to the head of the tail with the smaller key,
-the key being the tail id compared as text (by UTF-16 code unit). The tail whose head was taken
-advances by one, and the step repeats until every tail is read. `at` is the text of the field,
+it takes the head with the smallest `at`. A tie goes to the head whose tree comes first in the list
+the reader was given, compared as a NUMBER, and then to the head of the tail with the smaller tail
+id, compared as text by UTF-16 code unit — the product's reader and the second reader beside this
+file compare tail ids that way. A reader of one record has one tree, so for it the tie goes to the
+tail id; several trees are taken up in "Several trees are merged by the same selection",
+below. The tail whose head was taken advances by one, and the step repeats until every tail is read. `at` is the text of the field,
 compared as text. So an event is never taken before what it cites, whatever the two clocks said (R1:
 "an entry is never taken before what it cites, whatever the instants say"). With no citation every
 head is ready, and the order is exactly the selection by `at` that every record was read in before
@@ -1343,7 +1365,7 @@ out of `proposed`, with both moves as evidence"). Two moves out of one state whe
 the second had seen the first are not that: the second is a move the workflow does not allow
 (§6.7), not applied and named in the census, and no divergence is said of it
 (`packages/core/src/projections/a-move-the-workflow-does-not-allow-is-not-applied.test.ts`,
-"takes a second move out of one state, on the tail that saw the first, for no divergence"). A task has a state machine with a cycle, so the
+"takes a second move out of one state, on the tail that saw the first, for no divergence"). A task has a state machine with cycles, so the
 same fact cannot be read from its `from` alone: tasks are read by their position in the sequence
 (`packages/core/src/projections/divergent-moves.test.ts`, "the task table has one — a reopened
 task leaves a state again — so tasks are read by their order"). Two decisions of one record that
@@ -1392,7 +1414,7 @@ Stated plainly, because a published format invites all three readings:
   signer other than the checkpoint over it — and §6 closes it. What that buys is
   technical independence — another language, another author-session, no shared
   code — and it is what surfaced the twenty-seven points where this document was
-  not enough, which are now fixed above.
+  not enough; the ones `gaps` still lists as unresolved are not fixed above.
   What it does **not** buy is social independence: same author, same repository,
   same interest in it working. A format with three implementations maintained by
   three parties checking each other has a kind of assurance this one still does not
@@ -1428,9 +1450,11 @@ Stated plainly, because a published format invites all three readings:
   dependency on Bitcoin and on a public calendar answering, not by anything
   publishing these bytes achieved. A record nobody stamped is exactly where it
   always was. See the "What it proves — and what it does not" table in `README.md`.
-- **This document specifies the bytes, not the workflow.** Which states a task
-  may move between, which scope a fact is written to, what a verifier's verdict
-  means — none of that is here.
+- **This document specifies the bytes and the rules that read them, not the
+  product's reading of them.** Which moves of a workflow a reader applies is here
+  (§6.7), as are the enrolment fold (§6.2) and who may take a note back (§6.4). Which
+  scope a fact is written to, and what a green verdict is worth to the person who
+  reads it, are not: those are the product's.
 
 ## The delivery channel, and what it is not
 

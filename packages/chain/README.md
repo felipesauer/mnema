@@ -19,11 +19,11 @@ have to trust for tamper-evidence is auditable on its own.
   fact the chain may hold, with deterministic canonicalization (event → bytes) and
   per-kind upcasters so the catalog can grow without rewriting the past. This
   line used to list four kinds by name (`task.created`, `task.transitioned`,
-  `run.started`, `run.ended`); the catalog holds twenty, and a list in prose is a
+  `run.started`, `run.ended`); the catalog holds many more, and a list in prose is a
   list that stops being true. `canonical-vectors.json` carries one frozen event
   per kind and is total over the catalog by type, so it is the list that cannot
   fall behind.
-- **An append-only chain** — each machine writes its own tail (a JSONL file);
+- **An append-only chain** — each machine writes its own tail (a directory of segments);
   entries are hash-chained so a changed or reordered event breaks the chain.
 - **Signed checkpoints** — an Ed25519 signature over a root recomputed from the
   event *content*, taken every so many events and chained to the previous one.
@@ -59,7 +59,7 @@ of the bytes or whose key it really was.
 | **Truncating a tail** — dropping the newest events off the end | Partly local. Checkpoints are chained, so dropping an *earlier* checkpoint while keeping a later one breaks the link and is caught (the later one's `prev` no longer resolves). But truncating off the *end* — dropping the last checkpoint and the events above it — leaves a shorter, internally consistent chain that verifies green: the hash chain cannot see events that are no longer there. `verify` already declares the window above the last checkpoint as unsigned (`fullySigned: false`, `uncheckpointedEvents`); end-truncation shrinks that window rather than tripping a break, so it is the residual only a copy of the record from before the cut closes — the history a git remote keeps; a timestamp does not. The verdict now NAMES how far it got: a shortened chain with some coverage left reads `verified (T1/T2/T4) up to the last checkpoint`, and one whose checkpoints went with the events reads `verified (T1 only) — no signature was checked`. It used to read `verified (T1/T2/T4)` in both cases, which was the sentence claiming a layer that had not run. *(The consumer in this workspace now does exactly that: `@mnema/code` seals a checkpoint at the end of every act of writing — a command, a tool call, the close of a session — so the residual is empty whenever nothing is mid-write. This paragraph used to name that as a future direction; it is present, and guarded by `every-write-signs-what-it-wrote.test.ts`. It does not change what THIS package promises: the residual is a property of the format, and a consumer that seals less often still verifies.)* |
 | **Deleting a whole tail** | Partly local. A committed public key is written before its machine's first event and names its tail, so deleting the tail while leaving the key shows up: `verify` crosses `keys/` against the tails present and flags the orphaned key — a signal to look, not a verdict (a key can also outlive its tail innocently). What that signal could not say, until `tail.pruned` existed, is *which* of its three readings applied. A waiver written **before** the cut — while the tail is still there, so its head hash and event count are checked against the disk — makes the note name the account instead: who authorized it, how many events, through which head. It answers the third reading only; a merge that dropped a tail and a machine that never wrote produce no waiver and read exactly as they always did. Deleting the tail *and* its key together still leaves nothing on disk to cross — only a copy from before, such as the history a git remote keeps, sees the files that were removed. |
 | **Trusting the signing key's origin** | **Not covered by local crypto.** The fingerprint binding proves *self-consistency* — the key that signed is the one committed — not a tie to any outside identity. Someone who rewrites everything, mints a fresh key, re-signs, and publishes the new public key passes green. The anchor that closes this is the key's provenance in an external witness: a committed public key has a history there. |
-| **Ordering across tails** | Within one tail, ordering is unforgeable — the hash chain fixes it. Across tails, a merged timeline is deterministic but *conventional*: it is not a trusted clock, and each event's `at` is self-declared. An aggregated timeline is a weaker guarantee than the per-tail chain, and reads only as strong as the honesty of the machines that wrote it. |
+| **Ordering across tails** | Within one tail, ordering is unforgeable — the hash chain fixes it. Across tails, a merged timeline is deterministic but *conventional*: it is not a trusted clock, and each event's `at` is self-declared. The order decides which moves of a workflow a reader applies and, in an unlucky record, which event a verifier refuses (`FORMAT.md` §6.2, §6.7), so an honest move written from a clock that ran behind can be named among the moves not applied (informational, never a failure). An aggregated timeline is a weaker guarantee than the per-tail chain, and reads only as strong as the honesty of the machines that wrote it. |
 
 `verify` reflects all of this. Its `ok` means *nothing verifiable is broken* —
 the hash chain holds and every signature it found checks out. It does **not**
@@ -203,8 +203,8 @@ const founding = identityFounded(
 
 // A task's birth is two atomic events: it exists (task.created) and it has an
 // initial state (task.transitioned from null). State lives only in transitions.
-// `initial` is a literal this package does not judge — which state a task starts
-// in belongs to the domain above (see `@mnema/core`), never to the proof engine.
+// `initial` is written as given, and a reader applies a birth only when it is the
+// workflow's own (`DRAFT`, `FORMAT.md` §6.7): any other is named among the moves not applied.
 const birth = taskBirth(
   { ...proof, subject: 'task-01' },
   { title: 'Ship the parser', initial: 'DRAFT' },
@@ -230,11 +230,14 @@ keys, which is what makes an outside audit possible.
 Everything a chain needs lives under one root directory:
 
 ```
-.mnema/chain/
-  tails/<machine>/         one tail per machine — appends never collide
-    <segment>.jsonl        the events, as sealed entries (size-segmented)
-    checkpoints.jsonl      the signed checkpoints for this tail
-  keys/<fingerprint>.pub   committed public keys, named by fingerprint
+<root>/
+  keys/<fingerprint>.pub       committed public keys, named by fingerprint
+  tails/<fingerprint>-<id>/    one tail per installation — appends never collide
+    NNNNNN.jsonl               the events, as sealed entries (six-digit segments)
+    checkpoints.jsonl          the signed checkpoints for this tail
+    tailproof.json             the key's signature over the tail's own id
+    witness/                   external attestations over the checkpoints
+  .gitattributes  .gitignore   beside the record in a project tree; not proof
 ```
 
 Only this tree is meant to be shared (committed to git, copied to a synced
@@ -258,7 +261,9 @@ reading `hash.ts` and `verify.ts` is the place to start.
 
 [`FORMAT.md`](./FORMAT.md) specifies the bytes: canonicalization, the framed
 hashing, the entry hash, the stored line, the content root, and the signed
-checkpoint. It is written for someone who did not write this code and wants to
+checkpoint; and the rules by which a reader decides what it applies: which key may
+sign (enrolment), who may take a note back, which moves of a workflow stand, and what
+one version of the format promises another. It is written for someone who did not write this code and wants to
 implement a verifier from it — every claim in it names the test that holds it, and
 the version tags in it are read out of the source by a guard.
 
@@ -275,9 +280,10 @@ guard holds the two byte for byte.
 the paragraph above from being a claim about a document nobody ever implemented: a
 verifier in Python, written **from** `FORMAT.md`, importing nothing of this package.
 It reproduces the 38 vectors and the four aggregate digests, checks T1, T2/T4 and T3
-over real records, and refuses every mutation in `verifier/mutate.py`. It found
-twenty-seven points where the document was not enough to write it from, all of which
-are now fixed in the document.
+over real records, judges enrolment, retractions and the moves of a workflow as the
+product does, and refuses every mutation in `verifier/mutate.py`. It found
+twenty-seven points where the document was not enough to write it from; the list says
+which are fixed and which are still open (`python3 verifier/mnema_verify.py gaps`).
 
 *Refuses every mutation* is a sentence this page carried while it was not quite true.
 One mutation was **accepted** — an event appended above the last checkpoint carrying a

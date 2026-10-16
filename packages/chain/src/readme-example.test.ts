@@ -72,8 +72,8 @@ describe('README example', () => {
 
       // A task's birth is two atomic events: it exists (task.created) and it has an
       // initial state (task.transitioned from null). State lives only in transitions.
-      // `initial` is a literal this package does not judge — which state a task starts
-      // in belongs to the domain above (see `@mnema/core`), never to the proof engine.
+      // `initial` is written as given, and a reader applies a birth only when it is the
+      // workflow's own (`DRAFT`, `FORMAT.md` §6.7): any other is named among the moves not applied.
       const birth = taskBirth(
         { ...proof, subject: 'task-01' },
         { title: 'Ship the parser', initial: 'DRAFT' },
