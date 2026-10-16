@@ -20,7 +20,10 @@ with its own changelog.
   still reads where a page shows it on white. The README points at the file on the `main`
   branch of the repository its `package.json` names, by `raw.githubusercontent.com`, with no version in the address:
   the picture loads before anything is published and is not in the tarball. The script writes the block, and a test
-  holds each README to exactly that block and holds that no image address carries a version.
+  holds each README to exactly that block and holds that no image address carries a version. The price of that
+  address: the page of an old version on npm shows today's picture from `main`, not the one that version was
+  published with. The title, the picture and the badges are centred, each in an element npm keeps `align` on (an
+  `h1` and two `p`, not a `div`); the script writes the title and the picture, and a test holds the three.
 - **A glossary.** `docs/glossary.md` defines, in one sentence each and with a link to the page that holds the
   definition, the words the documentation uses in a sense of its own: record, tree (public, private and global),
   tail, checkpoint, run, rung, stack, agent key, census and witness. The README's list of pages links to it.

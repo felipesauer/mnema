@@ -294,7 +294,9 @@ describe('every package draws what it is, in its own words', () => {
     (dir) => {
       const { name } = manifest(dir);
       const readme = read(`packages/${dir}/README.md`);
-      expect(readme.startsWith(`# ${name}\n\n${pictureBlock(dir)}\n`)).toBe(true);
+      expect(readme.startsWith(`<h1 align="center">${name}</h1>\n\n${pictureBlock(dir)}\n`)).toBe(
+        true,
+      );
       // Said here again by hand, so a script that wrote the wrong owner, branch or path would
       // not agree with itself and pass. The owner and the repository are the manifest's.
       const urls = [...readme.matchAll(/https:\/\/raw\.githubusercontent\.com\/[^"\s)]+/g)].map(
@@ -302,6 +304,36 @@ describe('every package draws what it is, in its own words', () => {
       );
       const base = `https://raw.githubusercontent.com/felipesauer/mnema/main/packages/${dir}/assets`;
       expect(urls).toEqual([`${base}/${dir}-dark.svg`, `${base}/${dir}-light.svg`]);
+    },
+  );
+
+  // The npm page keeps `align` on a paragraph and on an image but strips it from a `div`, so the
+  // centre is set on `<p>` and said here by hand, apart from the script that writes the block.
+  it.each(PACKAGE_PICTURES.map((p) => p.dir))(
+    'packages/%s/README.md centres its title, its picture and its badges',
+    (dir) => {
+      const { name } = manifest(dir);
+      const readme = read(`packages/${dir}/README.md`);
+      const block = pictureBlock(dir);
+      expect(block.startsWith('<p align="center">\n<picture>\n')).toBe(true);
+      expect(block.endsWith('</picture>\n</p>')).toBe(true);
+      const head = `<h1 align="center">${name}</h1>\n\n${block}\n\n`;
+      const top = readme.slice(head.length);
+      expect(readme.startsWith(head)).toBe(true);
+      const badges = /^<p align="center">\n([\s\S]*?)\n<\/p>\n/.exec(top);
+      expect(badges, 'the line of badges is not in a centred paragraph').not.toBeNull();
+      const line = badges?.[1] ?? '';
+      expect(line).not.toContain('](');
+      const images = [...line.matchAll(/<img alt="([^"]+)" src="https:\/\/img\.shields\.io\//g)];
+      expect(images.map((m) => m[1]?.split(':')[0]?.split(' ')[0])).toEqual([
+        'CI',
+        'License',
+        'Node',
+      ]);
+      expect(line).toContain(
+        '<a href="https://github.com/felipesauer/mnema/actions/workflows/ci.yml"><img alt="CI"',
+      );
+      expect(line).toContain('<a href="../../LICENSE"><img alt="License: Apache-2.0"');
     },
   );
 
