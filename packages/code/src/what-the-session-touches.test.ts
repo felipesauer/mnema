@@ -264,7 +264,7 @@ describe('the pages say how far back the reading reaches', () => {
     // a verb may not load what the verb runs (`the-floor-is-the-declaration.test.ts`) — so
     // this is the place a changed constant turns the help red.
     expect(page('packages/code/src/wiring/recall.ts')).toContain(`the last ${COMMITS} commits`);
-    for (const path of ['packages/code/README.md', 'plugin/README.md']) {
+    for (const path of ['docs/cli-reference.md', 'plugin/README.md']) {
       expect(page(path).replace(/\s+/g, ' '), path).toContain(`last ${IN_WORDS[COMMITS]} commits`);
     }
   });

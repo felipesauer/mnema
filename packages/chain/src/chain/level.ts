@@ -171,7 +171,7 @@ export const LEVEL_REQUIREMENTS = ['chained', 'signed', 'witnessed'] as const;
  *     is a decision nobody has taken.
  *
  * IT IS A CONSTANT AND NOT A PARAGRAPH, because it is printed in two places that must
- * not drift: `packages/code/README.md` says it in prose to a person, and `verify
+ * not drift: `docs/cli-reference.md` says it in prose to a person, and `verify
  * --json` carries it as a field to whatever reads the verdict. A reader of the JSON who
  * had to find the README to learn this is a reader who will not.
  *

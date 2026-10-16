@@ -8,7 +8,7 @@
  * middle of its own tail and signing it again. Three of the four exit 0 even under
  * `--require=signed`, and the second reader says VERIFIED over them too. Nothing inside the
  * directory remembers what it replaced — what does is git, which kept the commit the change
- * started from. So `packages/code/README.md` publishes a gate that asks it.
+ * started from. So `docs/cli-reference.md` publishes a gate that asks it.
  *
  * WHAT IS RUN. The block between the page's two markers, unedited, by `bash`, in a sandbox git
  * repository whose record the built binary made — `mnema` on the PATH is `dist/cli.js`, `HOME` is
@@ -48,7 +48,7 @@ import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { GIT_WITHOUT_MAINTENANCE } from './support/git-without-maintenance.js';
 import { ROOT, read } from './support/published-examples.js';
 
-const PAGE = 'packages/code/README.md';
+const PAGE = 'docs/cli-reference.md';
 const BEGIN = '<!-- BEGIN ci-recipe -->';
 const END = '<!-- END ci-recipe -->';
 const BINARY = join(ROOT, 'packages/code/dist/cli.js');

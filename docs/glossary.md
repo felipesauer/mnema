@@ -1,0 +1,14 @@
+# Glossary
+
+The words this documentation uses in a sense of its own, one sentence each, with the page that defines the word.
+
+- **record**: the signed, append-only facts about a project's decisions, patterns, notes and tasks, kept in the repository's `.mnema/` and committed with the code. [How it works](how-it-works.md)
+- **tree**: one place a record is kept. Three exist: the **public** tree is `.mnema/`, committed with the repository, so it reaches every clone; the **private** tree is under the project's `.git/mnema/` and stays on that machine; the **global** tree is `global/` in the data directory (`~/.mnema`, or `$MNEMA_HOME`) and keeps what outlives a project. Every write says which tree it landed in. [How it works](how-it-works.md), [Your first record](first-record.md)
+- **tail**: the directory of signed segments one machine writes inside a tree; a record holds one tail per machine, and each is proved in its own `seq` order by its own hash chain. [`FORMAT.md` §4](../packages/chain/FORMAT.md), [Reading many tails](../packages/chain/FORMAT.md)
+- **checkpoint**: a signature over a contiguous range of one tail's events, which `verify` checks; an event after the last checkpoint is chained but not yet signature-covered. [`FORMAT.md` §6](../packages/chain/FORMAT.md), [What it proves](what-it-proves.md)
+- **run**: a span of work that a `run.started` event opens and a `run.ended` event closes. [`FORMAT.md` §6.7](../packages/chain/FORMAT.md)
+- **rung**: how far a host goes with mnema, from (a) the MCP server and rules in a file, through (b) the opening of a session and (c) a refusal before a write, to (d) a pause for a person. [How each claim is held](evidence.md#each-hosts-rung)
+- **stack**: a set of skills and agents that `mnema stack add` installs from a plan shown whole, and whose adoption is recorded as a signed fact. [Stacks](../packages/stacks/README.md), [Features](features.md)
+- **agent key**: a key an agent signs with, which a member enrolled for that agent (`agent.enrolled`); it shows the member enrolled it, not that the agent is who a name says. [What it proves](what-it-proves.md), [What a session is handed](agent-hosts.md)
+- **census**: the counts and notes `verify` prints beside its verdict, such as the tails read, the backup keys that sign nothing, and the moves it does not apply; a census note is information, not a break. [Your first record](first-record.md), [Verify without installing](verify-without-installing.md)
+- **witness**: a party outside the repository that attests a checkpoint's digest. `mnema witness stamp` has the OpenTimestamps calendars attest it, so a chain rebuilt later cannot claim an older history. `mnema witness sigstore` is not a witness level: it dates the checkpoint only on Sigstore's log, and `--require witnessed` does not count it. [What it proves](what-it-proves.md), [`FORMAT.md` §8](../packages/chain/FORMAT.md)

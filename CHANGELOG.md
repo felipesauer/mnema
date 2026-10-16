@@ -12,6 +12,10 @@ with its own changelog.
 
 ### Added
 
+- **A glossary.** `docs/glossary.md` defines, in one sentence each and with a link to the page that holds the
+  definition, the words the documentation uses in a sense of its own: record, tree (public, private and global),
+  tail, checkpoint, run, rung, stack, agent key, census and witness. The README's list of pages links to it.
+
 - **A page on what two machines see when they moved one decision apart.** `docs/convergence.md` runs the case
   (one machine rejects a decision, another that had not read it accepts it, and the tails meet) and shows what `show`,
   `brief` and `verify` print, then separates a divergence, which every reader applies and `show` and `brief` say, from a
@@ -129,6 +133,12 @@ with its own changelog.
   definition differently or a definition gains a word.
 
 ### Changed
+
+- **The `@mnema/code` page on npm fits one reading, and the reference is its own page.** The package README held 1,877
+  lines of every verb and tool; it now says what the package is, how to install it, the first record, what it proves and
+  what it does not, and where to go next. The reference moved, whole, to [`docs/cli-reference.md`](docs/cli-reference.md).
+  In `docs/what-it-proves.md`, the row on an agent key's signature is one short cell, and the rest of it is the section
+  "An agent key, in full", below the table.
 
 - **`FORMAT.md` and the chain package's page say what the two readers do, not what they once did.** The format no
   longer says it leaves the workflow out (§6.7 is part of it), says the order of tails decides what §6.2 refuses and §6.7
