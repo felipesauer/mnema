@@ -5,20 +5,16 @@
   <img src="docs/assets/banner-light.svg" alt="mnema: a signed, append-only record of the decisions behind AI coding agents' work" width="640">
 </picture>
 
-<h3>Your decisions, handed to your agents' sessions and held at the edits they govern — append-only and signed in the repository, and checkable by anyone.</h3>
+<h3>mnema is the decision record for AI coding agents.</h3>
+
+<p>
+Your decisions, handed to your agents' sessions and held at the edits they govern — append-only and signed in the repository, and checkable by anyone.
+</p>
 
 <p>
 <a href="https://github.com/felipesauer/mnema/actions/workflows/ci.yml"><img alt="CI" src="https://img.shields.io/github/actions/workflow/status/felipesauer/mnema/ci.yml?branch=main&amp;style=flat-square&amp;label=CI&amp;color=997dbf"></a>
 <a href="LICENSE"><img alt="License: Apache-2.0" src="https://img.shields.io/badge/license-Apache--2.0-997dbf?style=flat-square"></a>
 <img alt="Node 24.15.0 or a later 24, or 26.0.0 or later" src="https://img.shields.io/badge/node-%5E24.15.0%20%7C%7C%20%E2%89%A526.0.0-997dbf?style=flat-square">
-</p>
-
-<p>
-mnema is a command line and an MCP server that keep the calls behind your AI coding agents' work —
-decisions, the rules they become, and notes — as signed, append-only facts in the repository. A
-session in Claude Code, Codex, GitHub Copilot CLI, Gemini CLI, OpenCode, VS Code or Cursor's
-command-line agent opens with the ones in force, a rule can refuse or pause the write it governs where the host allows, and
-<code>mnema verify</code> checks the record with no key and no network.
 </p>
 
 <picture>
@@ -42,23 +38,33 @@ command-line agent opens with the ones in force, a rule can refuse or pause the 
 </table>
 
 <p align="center">
-<sub>Claude Code · Codex · Copilot CLI · Gemini CLI · OpenCode · VS Code · Cursor · any MCP client · GitHub Action · SDK · <code>mnema site</code>. The Action, the SDK and the VS Code extension run from a checkout; nothing is on npm yet.</sub>
-</p>
-
-<p align="center">
 Tamper-evident, not tamper-proof: what is still in the record has not changed
 since it was signed, and a stranger can check that without your keys and without
 installing this.
 </p>
 
 <p align="center">
-<a href="#quick-start">Quick start</a> · <a href="#how-it-works">How it works</a> · <a href="#hosts">Hosts</a> · <a href="#features">Features</a> · <a href="#watch-it">Watch it</a> · <a href="#what-it-proves--and-what-it-does-not">What it proves</a> · <a href="#docs">Docs</a>
+<a href="#why">Why</a> · <a href="#status">Status</a> · <a href="#quick-start">Quick start</a> · <a href="#how-it-works">How it works</a> · <a href="#hosts">Hosts</a> · <a href="#features">Features</a> · <a href="#watch-it">Watch it</a> · <a href="#what-it-proves--and-what-it-does-not">What it proves</a> · <a href="#docs">Docs</a>
 </p>
+
+## Why
+
+Somebody will ask who decided this, what was turned down and why, and whether the record was touched since; mnema
+answers from the repository, with a command anybody can run ([Where it fits](docs/where-it-fits.md)). In one round of
+160 cells with Claude Haiku 4.5, the decision handed to the session as it opened took the agent from following it
+33.3% of the time to 100.0%; the host's own memory did as well, so what mnema changes is where the decision lives. In
+one real project, 6 of 9,448 tool calls went to this server: the record reaches the agent through the plugin's hooks,
+not by the agent asking ([How each claim is held](docs/evidence.md#historical)).
+
+## Status
+
+- **Nothing is on npm yet.** Installing means building from the source, and the exact lines are in [`docs/install.md`](docs/install.md).
+- **Node.** Requires Node 24.15.0 or a later 24, or 26.0.0 or later.
+- **From a checkout.** The GitHub Action, the SDK and the VS Code extension are not published, and run from a clone of this repository ([Packages](docs/packages.md)).
 
 ## Quick start
 
 ```sh
-# install: build from source until the packages are on npm; the exact lines are in docs/install.md
 claude plugin marketplace add felipesauer/mnema   # the plugin hands each session the record
 claude plugin install mnema@mnema
 cd your-repository && mnema init
