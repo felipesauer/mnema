@@ -81,7 +81,7 @@ describe('the install from the source', () => {
 
   it('is not spelled by the README, which points at the page', () => {
     const readme = readFileSync(join(REPO, 'README.md'), 'utf-8');
-    expect(readme).toContain('the exact lines are in docs/install.md');
+    expect(readme).toContain('the exact lines are in [`docs/install.md`](docs/install.md)');
     expect(readme).not.toMatch(RELEASE_URL);
     expect(readme).not.toMatch(/releases\/tag|\/releases"/);
   });

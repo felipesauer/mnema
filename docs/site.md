@@ -19,7 +19,7 @@ does not derive them again. Only the committed (public) tree is in the file, and
 text is: a repository that must not be read should not publish one.
 
 To publish it on GitHub Pages, build it in a workflow. The CLI is what writes the page; the
-[Action](../packages/action/) only reads the record and is not involved:
+[Action](../packages/action/) reads and verifies the record, writes to it only if handed a `checker-key`, and is not involved:
 
 ```yaml
 name: record-site

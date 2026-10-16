@@ -25,7 +25,7 @@ An agent decides things all day and leaves almost none of it behind. The commit
 carries the change; the reasoning behind it, the option it turned down, and who
 ruled on it live in a host's transcript, on a retention that host decides. mnema
 puts that half in the repository itself — as typed facts, signed when they are
-written and hash-chained, so an edit made afterwards cannot be made quietly.
+written and hash-chained, so a change made afterwards to what is there shows when the record is verified.
 
 This repository holds the whole product. **[`packages/code`](../packages/code/) is
 the one you install**: the `mnema` command line and its MCP server, two surfaces

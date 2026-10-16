@@ -155,13 +155,28 @@ with its own changelog.
   refuses nothing. The cost: a line of the project's public or private tree refuses every write in that project, and a
   line of the machine's global tree, which every project reads, refuses every write in every project of the machine;
   on a team with two versions, a line only the newer can read refuses every write of the older in that project until
-  it is updated; and switching the refusal off is no way out, because the switch reads the same record. With no `mnema` on the PATH the gate still says nothing. `UnreadableLineError` is
-  now exported by `@mnema/chain`.
+  it is updated; and switching the refusal off is no way out, because the switch reads the same record. With no
+  `mnema` on the PATH the gate still says nothing. `UnreadableLineError` is now exported by `@mnema/chain`.
+- **Pages stop promising more than verify and the Action do.** The "what it proves" paragraph in the CLI reference
+  and in the `@mnema/code` README said an edit to the record is made "impossible to hide"; verify shows when what is
+  in the record has changed since it was signed, and a cut that leaves the last checkpoint in place, and does not catch
+  a cut off the end that takes the last checkpoint with it, or a whole tail deleted. The reference's line on cutting
+  part of a tail no longer says every such cut stays loud. The page on packages
+  and the one on the site said the Action "only reads"; with a `checker-key` it also writes signed rule results to the
+  working tree. The page on how it works no longer says an edit "cannot be made quietly".
 - **The `@mnema/code` page on npm fits one reading, and the reference is its own page.** The package README held 1,877
   lines of every verb and tool; it now says what the package is, how to install it, the first record, what it proves and
   what it does not, and where to go next. The reference moved, whole, to [`docs/cli-reference.md`](docs/cli-reference.md).
   In `docs/what-it-proves.md`, the row on an agent key's signature is one short cell, and the rest of it is the section
   "An agent key, in full", below the table.
+
+- **The root README opens with what mnema is, why, and where it stands.** Under the banner, one line names the category
+  and the promise follows unchanged. A Why section says where an agent's choices usually live (a chat that ends, one
+  tool's memory, somebody's head) and that mnema writes them down in the repository instead, with their reasons and what
+  was turned down, signed and only growing, handed to each session where the host runs hooks and checkable offline; it
+  gives no result of its own and points to `docs/evidence.md` for what is measured and what is not. A Status section says, in one place, that nothing is on npm yet (with the install
+  page), the Node range, and that the GitHub Action, the SDK and the VS Code extension are not published; it replaces
+  the line under the opening and the comment at the top of the Quick start.
 
 - **`FORMAT.md` and the chain package's page say what the two readers do, not what they once did.** The format no
   longer says it leaves the workflow out (§6.7 is part of it), says the order of tails decides what §6.2 refuses and §6.7
