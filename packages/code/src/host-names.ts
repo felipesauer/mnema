@@ -653,50 +653,6 @@ export const HOSTS = {
     },
     places: { skills: NOT_PORTED, agents: NOT_PORTED },
   },
-  continue: {
-    title: "Continue's command line (`cn`)",
-    door: 'none',
-    cells: {
-      server: {
-        does: true,
-        held: 'documentation',
-        at: 'https://github.com/continuedev/continue/blob/5522c6f/extensions/cli/src/services/MCPService.ts',
-        read: READ_ON,
-      },
-      rulesFile: {
-        does: true,
-        held: 'documentation',
-        at: 'https://github.com/continuedev/continue/blob/5522c6f/core/config/markdown/loadMarkdownRules.ts',
-        read: READ_ON,
-      },
-      opens: { held: 'not ported' },
-      refuses: { held: 'not ported' },
-      asks: { held: 'not ported' },
-    },
-    places: { skills: NOT_PORTED, agents: NOT_PORTED },
-  },
-  warp: {
-    title: "Warp's agent",
-    door: 'none',
-    cells: {
-      server: {
-        does: true,
-        held: 'documentation',
-        at: 'https://github.com/warpdotdev/warp/blob/325d4d4/app/src/ai/agent_sdk/driver/mcp_startup.rs',
-        read: READ_ON,
-      },
-      rulesFile: {
-        does: true,
-        held: 'documentation',
-        at: 'https://github.com/warpdotdev/warp/blob/325d4d4/app/src/ai/agent_tips.rs',
-        read: READ_ON,
-      },
-      opens: { held: 'not ported' },
-      refuses: { held: 'not ported' },
-      asks: { held: 'not ported' },
-    },
-    places: { skills: NOT_PORTED, agents: NOT_PORTED },
-  },
 } as const satisfies Record<string, Host>;
 
 /** A host of {@link HOSTS}, by name. */
