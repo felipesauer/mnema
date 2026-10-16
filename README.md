@@ -53,8 +53,8 @@ Your agents settle choices all day: a library, an approach, an option turned dow
 that ends, in one tool's memory or in somebody's head, where nobody can check who decided them or whether they were
 changed since. mnema writes them down in the repository, next to the code, with their reasons and what was turned down.
 The record is signed and only grows: a change of mind is a new entry that supersedes the old one, never an edit. Where
-the host runs hooks, each session opens with the decisions in force, and anyone can check offline that the record was
-not altered. What is measured, and what is not, is on [the evidence page](docs/evidence.md).
+the host runs hooks, each session opens with the decisions in force, and anyone can check offline that what it holds
+was not changed since it was signed. What is measured, and what is not, is on [the evidence page](docs/evidence.md).
 
 ## Status
 
