@@ -333,13 +333,12 @@ export const SERVES_NO_RECORD_CONTENT: { readonly [path: string]: string } = {
  * `PreToolUse` hook, and the host's contract for that reply was measured against the
  * real binary — anything that is not the hook-reply
  * JSON is discarded in silence, with no error and nothing reaching the model. A notice
- * spliced into that reply would be read by nobody while being paid for on every edit of
- * every session. The same answer asked for rather than pushed is `governing_rules`, and
- * that one carries it.
+ * spliced into that reply would be read by nobody. The same answer asked for rather than
+ * pushed is `governing_rules`, and that one carries it.
  */
 export const TOOLS_SERVING_NO_RECORD_CONTENT: { readonly [tool: string]: string } = {
   rules_before_an_edit:
     'its reply is a hook reply the HOST parses, not an answer a model reads: measured ' +
     'against the real binary, anything that is not the reply JSON is discarded in ' +
-    'silence, so a notice here would reach nobody and be paid for on every edit',
+    'silence, so a notice here would reach nobody',
 };

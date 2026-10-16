@@ -12,6 +12,12 @@ with its own changelog.
 
 ### Added
 
+- **The page says where the refusal of a write stops holding, and a test holds it.** A rule that refuses a write
+  opens when the hook cannot read the record: a line that is not JSON, or one of a kind this version does not know (a
+  newer mnema's line), makes the hook before a write fail with no reply, and the write goes where the host lets a failed
+  hook go on. `docs/features.md`, `docs/evidence.md` and the plugin's README say it, and the case that refused a line
+  that is not JSON now refuses one of an unknown kind too.
+
 - **A glossary.** `docs/glossary.md` defines, in one sentence each and with a link to the page that holds the
   definition, the words the documentation uses in a sense of its own: record, tree (public, private and global),
   tail, checkpoint, run, rung, stack, agent key, census and witness. The README's list of pages links to it.

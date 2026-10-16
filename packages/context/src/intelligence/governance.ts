@@ -751,7 +751,7 @@ export function rulesInForceAt(
  * No gate applies. It does not mean the mechanism is missing and it does not mean the
  * channel is off — those are the caller's to distinguish, and both are answered where a
  * session opens. The three numbers that separate them belong to {@link governingRules},
- * which reports all of them to whoever asks, and never to a text paid for on every edit.
+ * which reports all of them to whoever asks, and never to a text a hook adds to the request at each edit.
  */
 export function asksForAPersonAt(
   sources: readonly ScopedCache[],
