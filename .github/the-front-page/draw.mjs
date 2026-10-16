@@ -1679,13 +1679,17 @@ function family(blocks, theme) {
       `<path ${s.stays(T + 0.1)} d="M${n(x1)} ${n(y1)}L${n(x2)} ${n(y2)}" fill="none" ${dash} stroke-width="1.5"/>`,
       `<path ${s.stays(T + 0.5)} d="${heads(x1, y1, x2, y2, { start: sat.flow !== 'in', end: sat.flow !== 'out' })}" fill="none" stroke="${tone}" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>`,
     );
-    // The line draws itself from where the record starts, and leaves its dashes behind.
+    // The line draws itself from where the record starts, and leaves its dashes behind. Every
+    // property that moves comes back to where it opened while the element is out of sight, so the
+    // loop closes on itself.
     const from = sat.flow === 'out' ? [x2, y2, x1, y1] : [x1, y1, x2, y2];
     const draw = s.animate('stroke-dashoffset', [
       [0, n(length)],
       [T + 0.1, n(length)],
       [T + 0.6, '0'],
-      [LOOP, '0'],
+      [T + 1.05, '0'],
+      [T + 1.1, n(length)],
+      [LOOP, n(length)],
     ]);
     const shows = s.animate('opacity', shown(T + 0.1, T + 1.0, 0.2, LOOP));
     out.push(
@@ -1710,13 +1714,17 @@ function family(blocks, theme) {
               [0, at(sx, sy)],
               [T + 0.5, at(sx, sy)],
               [T + 1.2, at(hx, hy)],
-              [LOOP, at(hx, hy)],
+              [T + 1.3, at(hx, hy)],
+              [T + 1.35, at(sx, sy)],
+              [LOOP, at(sx, sy)],
             ]
           : [
               [0, at(hx, hy)],
               [T + 0.5, at(hx, hy)],
               [T + 1.2, at(sx, sy)],
-              [LOOP, at(sx, sy)],
+              [T + 1.3, at(sx, sy)],
+              [T + 1.35, at(hx, hy)],
+              [LOOP, at(hx, hy)],
             ];
     const last = sat.flow === 'both' ? T + 1.4 : T + 1.2;
     const glides = s.animate('transform', move);
