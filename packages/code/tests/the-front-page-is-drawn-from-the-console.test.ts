@@ -18,6 +18,9 @@
  *     text on it is anything else, and none is a host's name, a count that changes, or a
  *     promise the package does not make. The id a line of output prints is drawn elided, and a
  *     text inside a box sits on the box's middle by the size of its role.
+ *   - THE FAMILY: the picture of `@mnema/code` and what stands around it, drawn into
+ *     `docs/assets/`, is held to the same rules as a package's: its words are lines of the
+ *     product, found in the files the script names, and nothing else.
  *   - THE URL OF A PACKAGE'S PICTURE: the README of a package opens, under its title, with the
  *     block the script writes, pointing at the copy of the picture inside the tarball of the
  *     version its `package.json` says. A version bumped without drawing again leaves a URL to a
@@ -51,6 +54,7 @@ const {
   drawTheFrontPage,
   drawThePackages,
   PACKAGE_PICTURES,
+  FAMILY_LINES,
   SEPARATORS,
   ELIDED,
   TYPE,
@@ -61,6 +65,7 @@ const {
   drawTheFrontPage: (blocks: readonly string[]) => Record<string, string>;
   drawThePackages: (blocks: readonly string[]) => Record<string, string>;
   PACKAGE_PICTURES: readonly { dir: string; lines: Readonly<Record<string, Line>> }[];
+  FAMILY_LINES: Readonly<Record<string, Line>>;
   SEPARATORS: readonly string[];
   ELIDED: string;
   TYPE: Readonly<Record<string, { size: number; centre: number }>>;
@@ -77,13 +82,22 @@ const ASSETS = 'docs/assets';
 /** The most two channels of a grey may differ by, out of 255. GitHub's own greys spread by 9 to 21. */
 const NEUTRAL_SPREAD = 24;
 
-/** Every colour a file names: in a paint attribute, in a style, and any hex anywhere else. */
+/**
+ * Every colour a file names: in a paint attribute, in a style, and any hex anywhere else. A paint
+ * that is a gradient of the same file (`url(#id)`) is read through its stops, which are colours
+ * named here like any other; a reference to anything else is kept, and is not a hex this reads.
+ */
 function coloursIn(svg: string): string[] {
+  const gradients = new Set(
+    [...svg.matchAll(/<(?:linear|radial)Gradient\b[^>]*\bid="([^"]+)"/g)].map((m) => m[1]),
+  );
   const named = [
     ...svg.matchAll(
-      /(?:fill|stroke|stop-color|flood-color|lighting-color|color)\s*[=:]\s*["']?([^"';\s>{}]+)/g,
+      /(?:fill|stroke|stop-color|flood-color|lighting-color|color)\s*[=:]\s*["']?(url\(#[^)"']+\)|[^"';\s>{}]+)/g,
     ),
-  ].map((m) => m[1] as string);
+  ]
+    .map((m) => m[1] as string)
+    .filter((c) => !gradients.has(/^url\(#([^)]+)\)$/.exec(c)?.[1] ?? ''));
   const hexes = [...svg.matchAll(/#[0-9a-fA-F]{3,8}\b/g)].map((m) => m[0]);
   const functions = [...svg.matchAll(/\b(?:rgba?|hsla?)\s*\(/g)].map((m) => m[0]);
   return [...named, ...hexes, ...functions];
@@ -133,7 +147,19 @@ describe('the front page is drawn from the console', () => {
       'how-it-works-light.svg',
       'how-mnema-fits-dark.svg',
       'how-mnema-fits-light.svg',
+      'the-family-dark.svg',
+      'the-family-light.svg',
     ]);
+  });
+
+  it('names the family in its text alternative, dark and light', () => {
+    const alt =
+      'The mnema family: @mnema/code, the command line and the MCP server over one record, with the SDK, a VS Code extension, an agent in CI, the GitHub Action, mnema site and Stacks around it';
+    for (const theme of ['dark', 'light']) {
+      const svg = drawn[`the-family-${theme}.svg`] ?? '';
+      expect(svg).toContain(` aria-label="${alt}"`);
+      expect(svg).toContain(`<title>${alt}</title>`);
+    }
   });
 
   it.each(Object.keys(drawn))('%s is what the script draws from the console today', (file) => {
@@ -172,13 +198,39 @@ function wordsOf(svg: string): string[] {
   return texts;
 }
 
-describe('every package draws what it is, in its own words', () => {
-  const drawn = drawThePackages(THE_BLOCKS);
+/**
+ * Every picture whose words are lines of the product: each package's, and the family's, by the
+ * path of each theme from the repository's root.
+ */
+const LINED = [
+  ...PACKAGE_PICTURES.map(({ dir, lines }) => ({
+    id: dir,
+    lines,
+    dark: `packages/${dir}/assets/${dir}-dark.svg`,
+    light: `packages/${dir}/assets/${dir}-light.svg`,
+  })),
+  {
+    id: 'family',
+    lines: FAMILY_LINES,
+    dark: `${ASSETS}/the-family-dark.svg`,
+    light: `${ASSETS}/the-family-light.svg`,
+  },
+];
+
+describe('every package, and the family, draws what it is, in its own words', () => {
+  const packages = drawThePackages(THE_BLOCKS);
+  const drawn: Record<string, string> = {
+    ...packages,
+    ...Object.fromEntries(
+      Object.entries(drawTheFrontPage(THE_BLOCKS)).map(([file, svg]) => [`${ASSETS}/${file}`, svg]),
+    ),
+  };
+  const lined = LINED.flatMap((p) => [p.dark, p.light]);
   const manifest = (dir: string): { name: string; version: string } =>
     JSON.parse(read(`packages/${dir}/package.json`)) as { name: string; version: string };
 
   it('draws the five published packages, dark and light', () => {
-    expect(Object.keys(drawn).sort()).toEqual(
+    expect(Object.keys(packages).sort()).toEqual(
       ['chain', 'code', 'context', 'core', 'stacks'].flatMap((p) => [
         `packages/${p}/assets/${p}-dark.svg`,
         `packages/${p}/assets/${p}-light.svg`,
@@ -186,11 +238,11 @@ describe('every package draws what it is, in its own words', () => {
     );
   });
 
-  it.each(Object.keys(drawn))('%s is what the script draws today', (path) => {
+  it.each(Object.keys(packages))('%s is what the script draws today', (path) => {
     expect(read(path)).toBe(drawn[path]);
   });
 
-  it.each(Object.keys(drawn))('%s moves by keyframes it defines', (path) => {
+  it.each(lined)('%s moves by keyframes it defines', (path) => {
     // A name with no keyframes leaves its element still, in the last frame, and the picture
     // reads as drawn: one was written before the story that names the keyframes had run.
     const svg = drawn[path] ?? '';
@@ -202,7 +254,7 @@ describe('every package draws what it is, in its own words', () => {
     expect(named.filter((name) => !defined.has(name))).toEqual([]);
   });
 
-  it.each(Object.keys(drawn))('%s leaves no element alone at the end of the loop', (path) => {
+  it.each(lined)('%s leaves no element alone at the end of the loop', (path) => {
     // Every element there in the last frame fades out at the same moment; one that went out
     // later stayed on the page by itself, the rest of the picture already gone.
     const exits = [
@@ -251,7 +303,7 @@ describe('every package draws what it is, in its own words', () => {
     }
   });
 
-  it.each(Object.keys(drawn))('%s centres every text in its box by its role', (path) => {
+  it.each(lined)('%s centres every text in its box by its role', (path) => {
     // A text inside a box sits where one rule puts it: its baseline is the middle of the box,
     // plus how far the middle of a line's ink sits above its baseline in that size, plus a whole
     // number of half rows. A column of a box with a single line sits on the middle itself. A `y`
@@ -306,9 +358,9 @@ describe('every package draws what it is, in its own words', () => {
     },
   );
 
-  const anchors = PACKAGE_PICTURES.flatMap(({ dir, lines }) =>
+  const anchors = LINED.flatMap(({ id, lines }) =>
     Object.values(lines).flatMap((line) =>
-      line.flatMap((piece) => (typeof piece === 'string' ? [] : [{ dir, ...piece }])),
+      line.flatMap((piece) => (typeof piece === 'string' ? [] : [{ dir: id, ...piece }])),
     ),
   );
 
@@ -319,7 +371,7 @@ describe('every package draws what it is, in its own words', () => {
     },
   );
 
-  it.each(PACKAGE_PICTURES.map((p) => [p.dir, p.lines] as const))(
+  it.each(LINED.map((p) => [p.id, p.lines] as const))(
     '%s joins its pieces with nothing but a separator or the elided id',
     (_dir, lines) => {
       const joins = Object.values(lines).flatMap((line) =>
@@ -329,23 +381,19 @@ describe('every package draws what it is, in its own words', () => {
     },
   );
 
-  it.each(PACKAGE_PICTURES.map((p) => p.dir))(
-    '%s puts no text on its picture but its lines',
-    (dir) => {
-      const lines = PACKAGE_PICTURES.find((p) => p.dir === dir)?.lines ?? {};
-      const said = new Set(Object.values(lines).map((line) => textOf(line)));
-      for (const theme of ['dark', 'light']) {
-        const words = wordsOf(drawn[`packages/${dir}/assets/${dir}-${theme}.svg`] ?? '');
-        expect(words.length).toBeGreaterThan(5);
-        expect(words.filter((w) => !said.has(w))).toEqual([]);
-      }
-    },
-  );
+  it.each(LINED)('$id puts no text on its picture but its lines', (picture) => {
+    const said = new Set(Object.values(picture.lines).map((line) => textOf(line)));
+    for (const path of [picture.dark, picture.light]) {
+      const words = wordsOf(drawn[path] ?? '');
+      expect(words.length).toBeGreaterThan(5);
+      expect(words.filter((w) => !said.has(w))).toEqual([]);
+    }
+  });
 
-  it.each(PACKAGE_PICTURES.map((p) => p.dir))(
-    '%s draws no host, no count that changes and no promise the package does not make',
-    (dir) => {
-      const words = wordsOf(drawn[`packages/${dir}/assets/${dir}-light.svg`] ?? '').join('\n');
+  it.each(LINED)(
+    '$id draws no host, no count that changes and no promise the package does not make',
+    (picture) => {
+      const words = wordsOf(drawn[picture.light] ?? '').join('\n');
       const hosts = Object.entries(HOSTS).flatMap(([key, host]) => [key, host.title]);
       expect(hosts.length).toBeGreaterThan(10);
       expect(hosts.filter((h) => words.toLowerCase().includes(h.toLowerCase()))).toEqual([]);
@@ -392,6 +440,17 @@ describe('the front page has one accent', () => {
     expect(whyNot('red', [ACCENT.dark])).toBeDefined();
     expect(whyNot('#9198a1', [ACCENT.dark])).toBeUndefined();
     expect(coloursIn('<rect style="fill: rgb(255, 0, 0)"/>').length).toBeGreaterThan(0);
+    // A gradient is read by its stops; a paint that points at no gradient of the file is not read.
+    const stops = (colour: string) =>
+      `<linearGradient id="g"><stop stop-color="${colour}"/></linearGradient><rect fill="url(#g)"/>`;
+    expect(coloursIn(stops(ACCENT.dark)).map((c) => whyNot(c, [ACCENT.dark]))).toEqual([
+      undefined,
+      undefined,
+    ]);
+    expect(coloursIn(stops('#2da44e')).map((c) => whyNot(c, [ACCENT.dark]))).toContainEqual(
+      expect.stringContaining('#2da44e'),
+    );
+    expect(whyNot(coloursIn('<rect fill="url(#elsewhere)"/>')[0] ?? '', [])).toBeDefined();
   });
 
   it('gives every shields.io badge that sets a colour the light accent', () => {
