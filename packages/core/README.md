@@ -1,5 +1,10 @@
 # @mnema/core
 
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="https://cdn.jsdelivr.net/npm/@mnema/core@0.2.0-beta/assets/core-dark.svg">
+  <img src="https://cdn.jsdelivr.net/npm/@mnema/core@0.2.0-beta/assets/core-light.svg" alt="The mnema work domain: the gate over the SHAPE of a change, projections, identity, and queries. Depends on @mnema/chain." width="720">
+</picture>
+
 [![CI](https://img.shields.io/github/actions/workflow/status/felipesauer/mnema/ci.yml?branch=main&style=flat-square&label=CI&color=997dbf)](https://github.com/felipesauer/mnema/actions/workflows/ci.yml) [![License: Apache-2.0](https://img.shields.io/badge/license-Apache--2.0-997dbf?style=flat-square)](../../LICENSE) ![Node 24.15.0 or a later 24, or 26.0.0 or later](https://img.shields.io/badge/node-%5E24.15.0%20%7C%7C%20%3E%3D26.0.0-997dbf?style=flat-square)
 
 The work domain of [mnema](https://github.com/felipesauer/mnema), built on top of

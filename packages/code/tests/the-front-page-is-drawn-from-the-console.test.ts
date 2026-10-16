@@ -12,6 +12,15 @@
  *     grey, whose channels lie within {@link NEUTRAL_SPREAD} of each other — or the accent of the
  *     theme the file is named for. Any other hue fails, and so does a colour written in a form
  *     this does not read (a name, `rgb()`, `hsl()`), rather than pass unread.
+ *   - THE PACKAGES: each published package has its own picture, drawn by the same script into
+ *     `packages/<p>/assets/`, held byte for byte here and painted in the same accent. Every word
+ *     on it is a literal of the product, found here in the file the script names for it; no
+ *     text on it is anything else, and none is a host's name, a count that changes, or a
+ *     promise the package does not make.
+ *   - THE URL OF A PACKAGE'S PICTURE: the README of a package opens, under its title, with the
+ *     block the script writes, pointing at the copy of the picture inside the tarball of the
+ *     version its `package.json` says. A version bumped without drawing again leaves a URL to a
+ *     picture of another version, and fails here.
  *   - THE BADGES: a shields.io badge in `README.md` or a package's README that sets a colour,
  *     in `color=` or in its path (`/badge/label-message-colour`), sets the light accent.
  *
@@ -28,6 +37,7 @@ import { readdirSync } from 'node:fs';
 import { join } from 'node:path';
 import { pathToFileURL } from 'node:url';
 import { describe, expect, it } from 'vitest';
+import { HOSTS } from '../src/host-names.js';
 import { THE_BLOCKS } from '../src/presentation/banner.js';
 import { ROOT, read } from './support/published-examples.js';
 
@@ -35,9 +45,16 @@ import { ROOT, read } from './support/published-examples.js';
 const DRAW = join(ROOT, '.github', 'the-front-page', 'draw.mjs');
 const ACCENT_FILE = join(ROOT, '.github', 'the-front-page', 'accent.mjs');
 
-const { drawTheFrontPage } = (await import(pathToFileURL(DRAW).href)) as {
-  drawTheFrontPage: (blocks: readonly string[]) => Record<string, string>;
-};
+type Line = readonly ({ said: string; where: string } | string)[];
+const { drawTheFrontPage, drawThePackages, PACKAGE_PICTURES, SEPARATORS, textOf, pictureBlock } =
+  (await import(pathToFileURL(DRAW).href)) as {
+    drawTheFrontPage: (blocks: readonly string[]) => Record<string, string>;
+    drawThePackages: (blocks: readonly string[]) => Record<string, string>;
+    PACKAGE_PICTURES: readonly { dir: string; lines: Readonly<Record<string, Line>> }[];
+    SEPARATORS: readonly string[];
+    textOf: (line: Line) => string;
+    pictureBlock: (dir: string) => string;
+  };
 const { ACCENT } = (await import(pathToFileURL(ACCENT_FILE).href)) as {
   ACCENT: { dark: string; light: string };
 };
@@ -78,7 +95,19 @@ function accentFor(file: string): string[] {
   return [ACCENT.dark, ACCENT.light];
 }
 
-const svgs = readdirSync(join(ROOT, ASSETS)).filter((f) => f.endsWith('.svg'));
+/** Every picture a page shows: the front page's, and each package's own. */
+const svgs = [
+  ...readdirSync(join(ROOT, ASSETS)).map((f) => `${ASSETS}/${f}`),
+  ...readdirSync(join(ROOT, 'packages')).flatMap((p) => {
+    try {
+      return readdirSync(join(ROOT, 'packages', p, 'assets')).map(
+        (f) => `packages/${p}/assets/${f}`,
+      );
+    } catch {
+      return [];
+    }
+  }),
+].filter((f) => f.endsWith('.svg'));
 
 describe('the front page is drawn from the console', () => {
   const drawn = drawTheFrontPage(THE_BLOCKS);
@@ -116,6 +145,117 @@ describe('the front page is drawn from the console', () => {
   });
 });
 
+/** The text of every `<text>` of a picture, as a reader sees it. */
+function wordsOf(svg: string): string[] {
+  const texts = [...svg.matchAll(/<text\b[^>]*>([^<]*)<\/text>/g)].map((m) =>
+    (m[1] as string)
+      .replaceAll('&lt;', '<')
+      .replaceAll('&gt;', '>')
+      .replaceAll('&quot;', '"')
+      .replaceAll('&amp;', '&'),
+  );
+  // A text this does not read (one with a `<tspan>` inside) would pass unread.
+  expect(texts.length).toBe(svg.match(/<text\b/g)?.length ?? 0);
+  return texts;
+}
+
+describe('every package draws what it is, in its own words', () => {
+  const drawn = drawThePackages(THE_BLOCKS);
+  const manifest = (dir: string): { name: string; version: string } =>
+    JSON.parse(read(`packages/${dir}/package.json`)) as { name: string; version: string };
+
+  it('draws the five published packages, dark and light', () => {
+    expect(Object.keys(drawn).sort()).toEqual(
+      ['chain', 'code', 'context', 'core', 'stacks'].flatMap((p) => [
+        `packages/${p}/assets/${p}-dark.svg`,
+        `packages/${p}/assets/${p}-light.svg`,
+      ]),
+    );
+  });
+
+  it.each(Object.keys(drawn))('%s is what the script draws today', (path) => {
+    expect(read(path)).toBe(drawn[path]);
+  });
+
+  it.each(Object.keys(drawn))('%s moves by keyframes it defines', (path) => {
+    // A name with no keyframes leaves its element still, in the last frame, and the picture
+    // reads as drawn: one was written before the story that names the keyframes had run.
+    const svg = drawn[path] ?? '';
+    const named = [...svg.matchAll(/animation-name:([^"]+)"/g)].flatMap((m) =>
+      (m[1] as string).split(','),
+    );
+    const defined = new Set([...svg.matchAll(/@keyframes (\w+)\{/g)].map((m) => m[1]));
+    expect(named.length).toBeGreaterThan(10);
+    expect(named.filter((name) => !defined.has(name))).toEqual([]);
+  });
+
+  it.each(PACKAGE_PICTURES.map((p) => p.dir))(
+    'packages/%s/README.md opens with the picture of the version its manifest says',
+    (dir) => {
+      const { name, version } = manifest(dir);
+      const readme = read(`packages/${dir}/README.md`);
+      expect(readme.startsWith(`# ${name}\n\n${pictureBlock(dir)}\n`)).toBe(true);
+      // Said here again by hand, so a script that wrote the wrong version would not agree with
+      // itself and pass.
+      const urls = [...readme.matchAll(/https:\/\/cdn\.jsdelivr\.net\/npm\/[^"\s)]+/g)].map(
+        (m) => m[0],
+      );
+      expect(urls).toEqual([
+        `https://cdn.jsdelivr.net/npm/${name}@${version}/assets/${dir}-dark.svg`,
+        `https://cdn.jsdelivr.net/npm/${name}@${version}/assets/${dir}-light.svg`,
+      ]);
+    },
+  );
+
+  const anchors = PACKAGE_PICTURES.flatMap(({ dir, lines }) =>
+    Object.values(lines).flatMap((line) =>
+      line.flatMap((piece) => (typeof piece === 'string' ? [] : [{ dir, ...piece }])),
+    ),
+  );
+
+  it.each(anchors.map((a) => [a.dir, a.said, a.where] as const))(
+    '%s says %j, as %s does',
+    (_dir, literal, where) => {
+      expect(read(where)).toContain(literal);
+    },
+  );
+
+  it.each(PACKAGE_PICTURES.map((p) => [p.dir, p.lines] as const))(
+    '%s joins its pieces with nothing but a separator',
+    (_dir, lines) => {
+      const joins = Object.values(lines).flatMap((line) =>
+        line.filter((piece): piece is string => typeof piece === 'string'),
+      );
+      expect(joins.filter((j) => !SEPARATORS.includes(j))).toEqual([]);
+    },
+  );
+
+  it.each(PACKAGE_PICTURES.map((p) => p.dir))(
+    '%s puts no text on its picture but its lines',
+    (dir) => {
+      const lines = PACKAGE_PICTURES.find((p) => p.dir === dir)?.lines ?? {};
+      const said = new Set(Object.values(lines).map((line) => textOf(line)));
+      for (const theme of ['dark', 'light']) {
+        const words = wordsOf(drawn[`packages/${dir}/assets/${dir}-${theme}.svg`] ?? '');
+        expect(words.length).toBeGreaterThan(5);
+        expect(words.filter((w) => !said.has(w))).toEqual([]);
+      }
+    },
+  );
+
+  it.each(PACKAGE_PICTURES.map((p) => p.dir))(
+    '%s draws no host, no count that changes and no promise the package does not make',
+    (dir) => {
+      const words = wordsOf(drawn[`packages/${dir}/assets/${dir}-light.svg`] ?? '').join('\n');
+      const hosts = Object.entries(HOSTS).flatMap(([key, host]) => [key, host.title]);
+      expect(hosts.length).toBeGreaterThan(10);
+      expect(hosts.filter((h) => words.toLowerCase().includes(h.toLowerCase()))).toEqual([]);
+      expect(words).not.toMatch(/\b\d+\s+(?:kinds?|hosts?|tools?|events?)\b/i);
+      expect(words).not.toMatch(/tamper-proof|secure|safe|guarantee|proves|trusted/i);
+    },
+  );
+});
+
 // A badge sets its colour in the query (`color=` / `colorB=`, after `?`, `&` or the `;` of an
 // escaped `&amp;`) or, for a static badge, as the last segment of `/badge/<label>-<msg>-<colour>`
 // (where `--` is an escaped hyphen).
@@ -133,8 +273,12 @@ describe('the front page has one accent', () => {
     expect(svgs.length).toBeGreaterThanOrEqual(4);
   });
 
+  it('reads the pictures of the packages too', () => {
+    expect(svgs.filter((f) => f.startsWith('packages/')).length).toBe(10);
+  });
+
   it.each(svgs)('%s uses no hue but the accent of its theme', (file) => {
-    const svg = read(`${ASSETS}/${file}`);
+    const svg = read(file);
     const accent = accentFor(file);
     const wrong = coloursIn(svg)
       .map((c) => whyNot(c, accent))

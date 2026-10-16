@@ -282,6 +282,25 @@ describe('nothing travels that is a fact about this machine', () => {
       .map(([name]) => name);
     expect(empty, 'a package packed no dist/ — is the workspace built?').toEqual([]);
   });
+
+  it('carries every picture its page shows from inside its own tarball', () => {
+    // The README of a package points at its picture through the copy published inside the
+    // tarball of the same version (`cdn.jsdelivr.net/npm/<name>@<version>/<path>`). A page whose
+    // package does not carry that path shows a broken image on the registry, and nothing else
+    // would say so before the publish.
+    const shown = PUBLISHABLE.flatMap((m) =>
+      [
+        ...readFileSync(join(m.dir, 'README.md'), 'utf-8').matchAll(
+          /https:\/\/cdn\.jsdelivr\.net\/npm\/(@[^/@]+\/[^/@]+)@[^/]+\/([^"\s)]+)/g,
+        ),
+      ].map((u) => ({ name: m.name, of: u[1] as string, path: u[2] as string })),
+    );
+    expect(shown.length).toBe(2 * PUBLISHABLE.length);
+    const missing = shown
+      .filter(({ name, of, path }) => of !== name || !carried(name).includes(path))
+      .map(({ name, of, path }) => `${name}: ${of}/${path}`);
+    expect(missing).toEqual([]);
+  });
 });
 
 /**
@@ -514,6 +533,7 @@ describe('the second reader runs out of what the package publishes', () => {
       'LICENSE',
       'NOTICE',
       'README.md',
+      'assets',
       'canonical-vectors.json',
       'dist',
       'event-schema.json',
