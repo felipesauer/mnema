@@ -49,12 +49,12 @@ installing this.
 
 ## Why
 
-When someone asks who decided this and whether the record was touched since, the answer is in the repository and one
-command checks it ([Where it fits](docs/where-it-fits.md)). Handing the decision to the session as it opened took an
-agent from 33.3% to 100.0% conformance (one round on 21 August 2026, 160 cells, Claude Haiku 4.5), as far as the
-host's own memory took it. In one real project, from 10 to 22 September 2026, the agent sent 6 of 9,448 tool calls to
-this server: it did not reach for the record. The plugin hands the record over through the hooks instead of waiting to
-be asked ([How each claim is held](docs/evidence.md#historical)).
+Your agents settle choices all day: a library, an approach, an option turned down. Those choices usually live in a chat
+that ends, in one tool's memory or in somebody's head, where nobody can check who decided them or whether they were
+changed since. mnema writes them down in the repository, next to the code, with their reasons and what was turned down.
+The record is signed and only grows: a change of mind is a new entry that supersedes the old one, never an edit. Where
+the host runs hooks, each session opens with the decisions in force, and anyone can check offline that the record was
+not altered. What is measured, and what is not, is on [the evidence page](docs/evidence.md).
 
 ## Status
 
