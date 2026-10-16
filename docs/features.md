@@ -10,9 +10,13 @@ Each line says what it does and what it leaves unproven; the page it points to h
   fact. [The plugin's page](../plugin/README.md#what-it-does--and-what-it-does-not). The refusal
   is a gate, and a gate that cannot answer lets the write through: with no `mnema` on the PATH
   ([held by a test](../packages/code/tests/host-contract/without-mnema-the-hooks-fail-open.test.ts)),
-  or, where the hook is a command, when a line of the record is not JSON
-  ([held by a test](../packages/code/tests/a-rule-that-refuses-a-write.test.ts)): the command
-  fails with no reply, and a host that lets a failed hook go on lets the write go.
+  or, where the hook is a command, when a line of the record is one the reader cannot read: not
+  JSON, or a kind this version does not know, as a newer mnema's line is
+  ([held by a test](../packages/code/tests/a-rule-that-refuses-a-write.test.ts)). The command
+  fails with no reply, and a host that lets a failed hook go on lets the write go. The format
+  refuses such a line and never skips it, so on a team with two versions a line of a kind only the
+  newer knows opens the refusals of the older. By the MCP route of the same question the line
+  comes back as an error with a prose reason; that was not probed in a host.
 - **Another run on the same path.** When a rule refused a write or asked for a person at a path in
   another run of this machine's identity, an edit there is told so ("Another run (codex) consulted
   this path 12 min ago"). It is read from facts the record already holds and writes nothing; it

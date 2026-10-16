@@ -379,10 +379,11 @@ describe('the verb a command host runs', () => {
     expect(waited).toBeLessThan(A_CHARGE_WAITS_MS + 500);
   });
 
-  it('answers no refusal when a stored line of the record does not parse: the gate fails, and the docs say the refusal opens', () => {
+  it('answers no refusal when a stored line of the record cannot be read: the gate fails, and the docs say the refusal opens', () => {
     // THE LIMIT THE PAGES DECLARE (`docs/features.md`, `docs/evidence.md`). The refusal is decided
-    // by reading the record; a line that is not JSON makes the reading throw, so the verb gives
-    // no `deny` and the host, which lets a hook that failed go on, lets the write through.
+    // by reading the record; a line the reader refuses (one that is not JSON, or a kind it does not
+    // know, as a newer mnema's line is) makes the reading throw, so the verb gives no `deny` and
+    // the host, which lets a hook that failed go on, lets the write through.
     const root = resolveTrees(repo, env).projectPublic as string;
     const tails = readdirSync(join(root, 'tails'));
     expect(tails).toHaveLength(1);
@@ -390,6 +391,10 @@ describe('the verb a command host runs', () => {
     const sound = readFileSync(segment, 'utf-8');
     expect(decided(verb('gemini', 'src/billing/invoice.ts').reply).value).toBe('deny');
     writeFileSync(segment, `${sound}not json at all\n`);
+    expect(() => verb('gemini', 'src/billing/invoice.ts')).toThrow(/unreadable stored line/);
+    const last = sound.trimEnd().split('\n').at(-1) as string;
+    expect(last).toContain('"kind":"');
+    writeFileSync(segment, `${sound}${last.replace(/"kind":"[a-z.]+"/, '"kind":"bogus.kind"')}\n`);
     expect(() => verb('gemini', 'src/billing/invoice.ts')).toThrow(/unreadable stored line/);
     writeFileSync(segment, sound);
     expect(decided(verb('gemini', 'src/billing/invoice.ts').reply).value).toBe('deny');

@@ -1874,9 +1874,7 @@ function registerTools(tool: ToolRegistrar, ensureSession: () => Promise<Session
       // contract for it was measured against the real binary:
       // anything that is not the reply JSON is
       // DISCARDED IN SILENCE — no error, no warning, nothing reaching the model. A
-      // notice spliced in here would therefore never be read by anybody, while being
-      // added to the request at each edit (`the-rules-arrive-beside-the-write.test.ts`
-      // holds that the host puts a hook's text there). It is listed in
+      // notice spliced in here would therefore never be read by anybody. It is listed in
       // `TOOLS_SERVING_NO_RECORD_CONTENT` with that reason, and `governing_rules` — the same
       // answer asked for rather than pushed — does carry it.
       return { content: [block(JSON.stringify(result.value))] };
