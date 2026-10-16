@@ -146,7 +146,7 @@ witnesses do different halves of that, and neither does the other's:
 npm i @mnema/chain
 ```
 
-Nothing is on npm yet, so that answers 404 until the first publication; the [install page](../../docs/install.md) has the install from the source.
+Nothing is on npm yet, so that answers 404 until the first publication; the [install page](https://github.com/felipesauer/mnema/blob/main/docs/install.md) has the install from the source.
 
 **This package is released on its own, and that is the point of it.** This section
 used to say it was internal and never published, and the channel it named — the
@@ -270,7 +270,7 @@ reading `hash.ts` and `verify.ts` is the place to start.
 
 ## The format, written down
 
-[`FORMAT.md`](./FORMAT.md) specifies the bytes: canonicalization, the framed
+[`FORMAT.md`](https://github.com/felipesauer/mnema/blob/main/packages/chain/FORMAT.md) specifies the bytes: canonicalization, the framed
 hashing, the entry hash, the stored line, the content root, and the signed
 checkpoint; and the rules by which a reader decides what it applies: which key may
 sign (enrolment), who may take a note back, which moves of a workflow stand, and what
@@ -287,7 +287,7 @@ required field and an optional one that happens to be present look identical. It
 not a description of the reader — it is the reader's own table, serialized, and a
 guard holds the two byte for byte.
 
-[`verifier/`](./verifier/) is the other half of the same idea, and it is what stops
+[`verifier/`](https://github.com/felipesauer/mnema/tree/main/packages/chain/verifier) is the other half of the same idea, and it is what stops
 the paragraph above from being a claim about a document nobody ever implemented: a
 verifier in Python, written **from** `FORMAT.md`, importing nothing of this package.
 It reproduces the 38 vectors and the four aggregate digests, checks T1, T2/T4 and T3
@@ -316,7 +316,7 @@ and not in the **social** one (same author, same repository).
 
 This is for someone who keeps a record across upgrades of the tool. It lives on this page
 because it is a statement about the format, and the format travels with this package. It
-promises what [`FORMAT.md`](./FORMAT.md) and its tests already hold, and nothing more.
+promises what [`FORMAT.md`](https://github.com/felipesauer/mnema/blob/main/packages/chain/FORMAT.md) and its tests already hold, and nothing more.
 
 **What can change.** A new kind of event can be added to the catalog, and a kind can gain a
 second version. A reader picks the contract for a line by its `kind` and `v` together, so
