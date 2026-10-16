@@ -37,7 +37,7 @@ command-line agent opens with the ones in force, a rule can refuse or pause the 
 <tr>
 <td align="center" width="33%">With the plugin, each agent session opens with the decisions in force, by name and id.</td>
 <td align="center" width="33%">A rule addressed at a path can refuse an agent's write there, or hold it for a person where the host allows.</td>
-<td align="center" width="33%">Every write is signed and hash-chained; anyone can verify it, even in a browser.</td>
+<td align="center" width="33%">Every write the product makes ends in a signed checkpoint and is hash-chained; anyone can verify it, even in a browser, and a reader's guarantee runs up to the last checkpoint.</td>
 </tr>
 </table>
 
@@ -84,7 +84,7 @@ The whole install, the other hosts and the first record, line by line, are in
 1. **Record.** An agent over MCP, or you at the command line, writes a decision with its reasoning and the options turned down.
 2. **Rule.** A person accepts it, and `mnema link` addresses it at a path. The rule can govern that path, ask for a person there, or refuse a write.
 3. **Hand over.** With the plugin, each session opens with what is in force, and each edit meets the rules for its file.
-4. **Verify.** Every fact is signed and hash-chained. `mnema verify`, a second reader in Python, or the page `mnema site` writes checks it.
+4. **Verify.** Every write ends in a signed checkpoint and is hash-chained; a reader's guarantee runs up to the last checkpoint. `mnema verify`, a second reader in Python, or the page `mnema site` writes checks it.
 
 More in [`docs/how-it-works.md`](docs/how-it-works.md); what a session is handed, word for word, is in
 [`docs/agent-hosts.md`](docs/agent-hosts.md), and how far each host goes is under [Hosts](#hosts).

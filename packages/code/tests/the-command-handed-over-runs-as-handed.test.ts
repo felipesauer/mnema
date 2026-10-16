@@ -682,6 +682,7 @@ export const HANDED_OVER: Readonly<
   'README.md': { line: 2, name: 10 },
   'SECURITY.md': { name: 2 },
   'docs/agent-hosts.md': { line: 4, name: 3 },
+  'docs/convergence.md': { line: 4, name: 4 },
   'docs/evidence.md': { line: 1, flag: 1 },
   'docs/features.md': { line: 7, name: 11 },
   'docs/first-record.md': { line: 1, name: 4 },
