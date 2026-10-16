@@ -1,6 +1,8 @@
 // Draws the front page's pictures: `docs/assets/banner-{dark,light}.svg`,
 // `docs/assets/how-it-works-{dark,light}.svg` and the animated
-// `docs/assets/how-mnema-fits-{dark,light}.svg`.
+// `docs/assets/how-mnema-fits-{dark,light}.svg`; and one animated picture per published package,
+// `packages/<p>/assets/<p>-{dark,light}.svg`, with the block that opens the package's README and
+// points at the copy of the picture inside that version's tarball.
 //
 // THE BANNER IS THE CONSOLE'S WORDMARK. Its rows are read from `THE_BLOCKS`
 // (`packages/code/src/presentation/banner.ts`, through the build) and each glyph is drawn as
@@ -18,7 +20,7 @@
 // `drawTheFrontPage` over the rows the console draws today and holds each committed picture to
 // what it returns.
 
-import { readFileSync, writeFileSync } from 'node:fs';
+import { mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { pathToFileURL } from 'node:url';
 import { ACCENT } from './accent.mjs';
 
@@ -358,9 +360,10 @@ const HERO_STEPS = [
  * @param {string} name
  * @param {string} property
  * @param {[number, string][]} stops
+ * @param {number} [loop]
  */
-function keyframes(name, property, stops) {
-  const at = stops.map(([t, v]) => `${n((t / LOOP) * 100)}%{${property}:${v}}`).join('');
+function keyframes(name, property, stops, loop = LOOP) {
+  const at = stops.map(([t, v]) => `${n((t / loop) * 100)}%{${property}:${v}}`).join('');
   return `@keyframes ${name}{${at}}`;
 }
 
@@ -369,16 +372,17 @@ function keyframes(name, property, stops) {
  * @param {number} from
  * @param {number} to
  * @param {number} [fade]
+ * @param {number} [loop]
  * @returns {[number, string][]}
  */
-function shown(from, to, fade = 0.3) {
+function shown(from, to, fade = 0.3, loop = LOOP) {
   return [
     [0, '0'],
     [from, '0'],
     [from + fade, '1'],
     [to - fade, '1'],
     [to, '0'],
-    [LOOP, '0'],
+    [loop, '0'],
   ];
 }
 
@@ -607,6 +611,834 @@ function howMnemaFits(blocks, theme) {
 }
 
 // ---------------------------------------------------------------------------------------------
+// The packages: one animated picture per published package, `packages/<p>/assets/<p>-{dark,light}.svg`
+//
+// The grammar of the picture above: one loop of CSS keyframes, every element that moves carrying
+// the last frame as its own attributes, and the accent as the only hue. Each picture opens with
+// the package's name on the left and the wordmark on the right.
+//
+// EVERY WORD ON A PACKAGE'S PICTURE IS A WORD OF THE PRODUCT. A line is written as pieces, each
+// the literal it puts on the picture and the file of the repository that says it (`said`),
+// joined by one of `SEPARATORS`, or `ELIDED` where a line of output prints a record's id. The
+// test finds every literal in its file, and finds no text on a picture that is not one of these
+// lines. A text inside a box is put there by `sayIn` and by nothing else. The example of the
+// front page (`ADR-2`, `Keep money as integer cents`, `src/billing/total.ts`, `ADR-3`) is
+// anchored on the front page's own picture. No count that changes (kinds, hosts, tools) and no host's name is drawn.
+
+/** The front page's picture, where the example every picture below repeats is told first. */
+const HERO = 'docs/assets/how-mnema-fits-light.svg';
+
+/** What may join two pieces of a line. */
+export const SEPARATORS = Object.freeze([' · ', ' → ', ' ']);
+
+/**
+ * A literal of the product, and the file that says it, from the repository's root.
+ * @param {string} literal
+ * @param {string} where
+ */
+const said = (literal, where) => ({ said: literal, where });
+
+/** @typedef {{ said: string, where: string }} Said */
+/** @typedef {readonly (Said | string)[]} Line */
+
+/**
+ * What a line puts on the picture.
+ * @param {Line} line
+ */
+export const textOf = (line) => line.map((p) => (typeof p === 'string' ? p : p.said)).join('');
+
+const WORKFLOW = 'packages/chain/src/events/workflow.ts';
+const W_PKG = 720;
+const H_PKG = 240;
+
+/**
+ * The page of each theme. A package's picture carries its own, so the dark one, shown on a light
+ * page, still reads; on a dark page it is the page.
+ */
+const PAGE = Object.freeze({ dark: '#0d1117', light: '#ffffff' });
+
+/**
+ * One size for each role a text plays, on every package's picture: the package's name, the name
+ * on a box, a grey caption beside a thing, a literal of code or of output, and a row of a list or
+ * of a table. A text is drawn by its role and by nothing else. `centre` is how far below the
+ * middle of a box the baseline of a line of that size goes for its ink to sit on the middle: a
+ * line with no descender and one with, in the monospace face, land within a unit of it.
+ */
+export const TYPE = Object.freeze({
+  heading: { size: 15, weight: '600', centre: 4.7 },
+  label: { size: 13, weight: '600', centre: 4 },
+  caption: { size: 12, weight: '', centre: 3.7 },
+  code: { size: 12, weight: '', centre: 3.7 },
+  value: { size: 12, weight: '', centre: 3.7 },
+});
+
+/** @typedef {keyof typeof TYPE} Role */
+
+/** How far a text sits inside its box. */
+const PAD = 14;
+/** Half the distance between two rows of text inside a box. */
+export const HALF_ROW = 10;
+/**
+ * What stands for a record's id in a line of output: the command line prints a new one on every
+ * run, so the picture draws none.
+ */
+export const ELIDED = '(…)';
+/** The baseline of the band at the foot of every package's picture. */
+const FOOT = 220;
+/** The advance of one character of the monospace face, as a share of its size. */
+const ADVANCE = 0.6;
+
+/**
+ * The width a line takes in a role.
+ * @param {Line} line
+ * @param {Role} role
+ */
+const widthOf = (line, role) => [...textOf(line)].length * TYPE[role].size * ADVANCE;
+
+/**
+ * The baseline of a line of a role inside a box, `row` half rows off its middle.
+ * @param {{ y: number, h: number }} frame
+ * @param {Role} role
+ * @param {number} [row]
+ */
+const inside = (frame, role, row = 0) => frame.y + frame.h / 2 + TYPE[role].centre + row * HALF_ROW;
+
+/**
+ * The paint of one theme, and the helpers that give an element its keyframes over a package's
+ * own loop. An element that `stays` is there in the last frame and carries no opacity of its
+ * own; one that `passes` is not, and carries `opacity="0"`. Everything there in the last frame
+ * leaves at once, at `ends` (`leaves`), so nothing is left alone on the page at the end of a loop.
+ * @param {number} loop
+ * @param {'dark' | 'light'} theme
+ */
+function scene(loop, theme) {
+  const accent = ACCENT[theme];
+  const { text, muted, border } = NEUTRAL[theme];
+  /** @type {string[]} */
+  const css = [];
+  let count = 0;
+  /**
+   * @param {string} property
+   * @param {[number, string][]} stops
+   */
+  const animate = (property, stops) => {
+    const name = `k${count++}`;
+    css.push(keyframes(name, property, stops, loop));
+    return name;
+  };
+  const ends = loop - 0.7;
+  /**
+   * The stops of an element there in the last frame, closed the way every such element closes.
+   * @param {[number, string][]} stops
+   * @returns {[number, string][]}
+   */
+  const leaves = (stops) => [...stops, [ends - 0.3, '1'], [ends, '0'], [loop, '0']];
+  /**
+   * @param {[number, string][]} stops
+   * @param {string} last the opacity of the last frame
+   */
+  const goes = (stops, last) =>
+    `class="a" style="animation-name:${animate('opacity', stops)}"${last === '1' ? '' : ` opacity="${last}"`}`;
+  /**
+   * A line as a text element, in the size of its role.
+   * @param {Line} line
+   * @param {number} x
+   * @param {number} y
+   * @param {Role} role
+   * @param {{ fill?: string, anchor?: string, attrs?: string }} [o]
+   */
+  const say = (line, x, y, role, o = {}) =>
+    `<text${o.attrs ? ` ${o.attrs}` : ''} x="${n(x)}" y="${n(y)}" font-family="${MONO}" font-size="${TYPE[role].size}"${TYPE[role].weight ? ` font-weight="${TYPE[role].weight}"` : ''} fill="${o.fill ?? (role === 'caption' ? muted : text)}"${o.anchor ? ` text-anchor="${o.anchor}"` : ''}>${escaped(textOf(line))}</text>`;
+  return {
+    accent,
+    text,
+    muted,
+    border,
+    css,
+    loop,
+    ends,
+    animate,
+    goes,
+    leaves,
+    /** @param {number} from */
+    stays: (from) =>
+      goes(
+        leaves([
+          [0, '0'],
+          [from, '0'],
+          [from + 0.3, '1'],
+        ]),
+        '1',
+      ),
+    /** @param {number} from @param {number} to */
+    passes: (from, to) => goes(shown(from, to, 0.3, loop), '0'),
+    say,
+    /**
+     * A line inside a box, the only way a text is put in one: on the box's middle, or `row` half
+     * rows above (negative) or below it.
+     * @param {Line} line
+     * @param {number} x
+     * @param {{ y: number, h: number }} frame
+     * @param {Role} role
+     * @param {{ fill?: string, anchor?: string, attrs?: string }} [o]
+     * @param {number} [row]
+     */
+    sayIn: (line, x, frame, role, o = {}, row = 0) =>
+      say(line, x, inside(frame, role, row), role, o),
+  };
+}
+
+/** @typedef {ReturnType<typeof scene>} Scene */
+
+/**
+ * The outline of a cube, as path data, for a glow laid over it.
+ * @param {number} x
+ * @param {number} cy
+ * @param {number} a
+ */
+function hexagon(x, cy, a) {
+  const dx = a * COS30;
+  return `M${n(x)} ${n(cy - a)}L${n(x + dx)} ${n(cy - a / 2)}L${n(x + dx)} ${n(cy + a / 2)}L${n(x)} ${n(cy + a)}L${n(x - dx)} ${n(cy + a / 2)}L${n(x - dx)} ${n(cy - a / 2)}z`;
+}
+
+/**
+ * The width of a row of `count` cubes of edge `a`, `link` apart.
+ * @param {number} count
+ * @param {number} a
+ * @param {number} [link]
+ */
+const rowWidth = (count, a, link = 12) => count * 2 * a * COS30 + (count - 1) * link;
+
+/**
+ * A row of cubes, each linked to the one before; `arrive[i]` is when cube i comes in, or
+ * undefined for one that is there from the start.
+ * @param {Scene} s
+ * @param {number} x0
+ * @param {number} cy
+ * @param {number} a
+ * @param {readonly (number | undefined)[]} arrive
+ * @param {number} [link]
+ */
+function cubes(s, x0, cy, a, arrive, link = 12) {
+  const dx = a * COS30;
+  const at = (/** @type {number} */ i) => x0 + dx + i * (2 * dx + link);
+  /** @type {string[]} */
+  const out = [];
+  arrive.forEach((when, i) => {
+    const x = at(i);
+    /** @type {string[]} */
+    const parts = [];
+    if (i > 0)
+      parts.push(
+        `<path d="M${n(x - dx - link + 2)} ${n(cy)}H${n(x - dx - 2)}" stroke="${s.muted}" stroke-width="1.5" stroke-linecap="round"/>`,
+      );
+    parts.push(...cube(x, cy, a, s.accent, [0.3, 0.16, 0.06]));
+    if (when === undefined) out.push(...parts);
+    else out.push(`<g ${s.stays(when)}>`, ...parts, '</g>');
+  });
+  return { out, at, dx };
+}
+
+/**
+ * A rounded box in the muted grey, or lit in the accent.
+ * @param {Scene} s
+ * @param {number} x
+ * @param {number} y
+ * @param {number} w
+ * @param {number} h
+ * @param {string} [attrs] given, the box is lit and moves by them
+ */
+const box = (s, x, y, w, h, attrs) =>
+  attrs === undefined
+    ? `<rect x="${n(x + 0.5)}" y="${n(y + 0.5)}" width="${n(w - 1)}" height="${n(h - 1)}" rx="8" fill="none" stroke="${s.muted}"/>`
+    : `<rect ${attrs} x="${n(x + 0.5)}" y="${n(y + 0.5)}" width="${n(w - 1)}" height="${n(h - 1)}" rx="8" fill="${s.accent}" fill-opacity="0.1" stroke="${s.accent}" stroke-width="1.5"/>`;
+
+/**
+ * An arrow from (x1, y1) to (x2, y2), its head at the second, in the muted grey or the colour
+ * given.
+ * @param {Scene} s
+ * @param {number} x1
+ * @param {number} y1
+ * @param {number} x2
+ * @param {number} y2
+ * @param {string} [attrs]
+ * @param {string} [stroke]
+ */
+function arrow(s, x1, y1, x2, y2, attrs, stroke = s.muted) {
+  const angle = Math.atan2(y2 - y1, x2 - x1);
+  const head = (/** @type {number} */ turn) =>
+    `${n(x2 - 7 * Math.cos(angle + turn))} ${n(y2 - 7 * Math.sin(angle + turn))}`;
+  return `<path${attrs ? ` ${attrs}` : ''} d="M${n(x1)} ${n(y1)}L${n(x2)} ${n(y2)}M${head(0.5)}L${n(x2)} ${n(y2)}L${head(-0.5)}" fill="none" stroke="${stroke}" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>`;
+}
+
+// @mnema/chain: the chain, and who reads it.
+const CHAIN_LINES = {
+  name: [said('@mnema/chain', 'packages/chain/package.json')],
+  event: [said('decision.recorded', 'packages/chain/src/events/catalog.ts')],
+  link: [
+    said('seq', 'packages/chain/src/chain/entry.ts'),
+    ' · ',
+    said('prev', 'packages/chain/src/chain/entry.ts'),
+    ' · ',
+    said('hash', 'packages/chain/src/chain/entry.ts'),
+  ],
+  checkpoint: [
+    said('checkpoint', 'packages/chain/README.md'),
+    ' · ',
+    said('Ed25519', 'packages/chain/README.md'),
+  ],
+  altered: [
+    said('entry hash mismatch: content or link was altered', 'packages/chain/src/chain/verify.ts'),
+  ],
+  verify: [said('verify', 'packages/chain/README.md')],
+  verified: [said('local integrity verified (T1/T2/T4)', 'packages/chain/src/chain/level.ts')],
+  python: [said('mnema_verify.py', 'packages/chain/README.md')],
+  VERIFIED: [said('VERIFIED', 'packages/chain/verifier/mnemaverify/verdict.py')],
+};
+
+/** @param {Scene} s */
+function chainStory(s) {
+  const L = CHAIN_LINES;
+  const a = 16;
+  const between = 34;
+  // The seal of the checkpoint, flush with the left edge, and the three blocks in its middle.
+  const seal = { x: 0, y: 100, w: 180, h: 64 };
+  const cy = seal.y + seal.h / 2;
+  const row = cubes(
+    s,
+    seal.x + (seal.w - rowWidth(3, a, between)) / 2,
+    cy,
+    a,
+    [1.6, 2.2, 2.8],
+    between,
+  );
+  /** @type {string[]} */
+  const out = [];
+  // An event comes in as a card, and the first block takes its place.
+  const card = { y: 52, h: 26 };
+  out.push(
+    `<g ${s.passes(0.2, 1.9)}>`,
+    `<rect x="0.5" y="${card.y + 0.5}" width="${Math.ceil(widthOf(L.event, 'code') + 2 * PAD) - 1}" height="${card.h - 1}" rx="6" fill="${s.accent}" fill-opacity="0.12" stroke="${s.accent}"/>`,
+    s.sayIn(L.event, PAD, card, 'code'),
+    '</g>',
+    ...row.out,
+  );
+  // Each link closes in the accent; the one after the altered block opens while it is altered.
+  const link = (/** @type {number} */ i) =>
+    `M${n(row.at(i - 1) + row.dx + 2)} ${cy}H${n(row.at(i) - row.dx - 2)}`;
+  out.push(
+    `<path ${s.stays(2.5)} d="${link(1)}" stroke="${s.accent}" stroke-width="2" stroke-linecap="round"/>`,
+    `<path ${s.goes(
+      s.leaves([
+        [0, '0'],
+        [3.0, '0'],
+        [3.3, '1'],
+        [5.2, '1'],
+        [5.4, '0'],
+        [7.6, '0'],
+        [7.9, '1'],
+      ]),
+      '1',
+    )} d="${link(2)}" stroke="${s.accent}" stroke-width="2" stroke-linecap="round"/>`,
+    `<path ${s.passes(5.2, 7.8)} d="${link(2)}" stroke="${s.muted}" stroke-width="2" stroke-dasharray="3 4" stroke-linecap="round"/>`,
+    `<path ${s.goes(
+      [
+        [0, '0'],
+        // Each swing takes half a second, so no second holds more than two flashes.
+        [5.0, '0'],
+        [5.3, '0.9'],
+        [5.8, '0.2'],
+        [6.3, '0.9'],
+        [6.8, '0.2'],
+        [7.3, '0.9'],
+        [7.4, '0.9'],
+        [7.7, '0'],
+        [s.loop, '0'],
+      ],
+      '0',
+    )} d="${hexagon(row.at(1), cy, a)}" fill="${s.muted}"/>`,
+    s.say(L.link, seal.x, seal.y + seal.h + 16, 'caption', { attrs: s.stays(2.4) }),
+  );
+  // The checkpoint signs over all three.
+  out.push(
+    `<rect ${s.stays(3.5)} x="${n(seal.x + 0.5)}" y="${n(seal.y + 0.5)}" width="${seal.w - 1}" height="${seal.h - 1}" rx="10" fill="${s.accent}" fill-opacity="0.06" stroke="${s.accent}" stroke-width="1.5"/>`,
+    s.say(L.checkpoint, seal.x, seal.y - 10, 'caption', { attrs: s.stays(3.7) }),
+    s.say(L.altered, 0, FOOT, 'code', { attrs: s.passes(5.4, 7.6) }),
+  );
+  // Two readers of the same tail, each in its own words for the same verdict; each arrow points
+  // at the middle of its reader's two lines.
+  const rx = 420;
+  const right = seal.x + seal.w;
+  out.push(
+    arrow(s, right + 8, cy - 8, rx - 14, 106, s.stays(8.8)),
+    arrow(s, right + 8, cy + 8, rx - 14, 156, s.stays(8.8)),
+    s.say(L.verify, rx, 100, 'code', { attrs: s.stays(9.0) }),
+    s.say(L.verified, rx, 120, 'code', { attrs: s.stays(9.4) }),
+    s.say(L.python, rx, 150, 'code', { attrs: s.stays(9.2) }),
+    s.say(L.VERIFIED, rx, 170, 'code', { attrs: s.stays(9.6) }),
+  );
+  return out;
+}
+
+// @mnema/core: the gate that judges a move before it is written.
+const CORE_LINES = {
+  name: [said('@mnema/core', 'packages/core/package.json')],
+  proposed: [said('proposed', WORKFLOW)],
+  accepted: [said('accepted', WORKFLOW)],
+  rejected: [said('rejected', WORKFLOW)],
+  superseded: [said('superseded', WORKFLOW)],
+  request: [said('accept', WORKFLOW), ' · ', said('note', WORKFLOW)],
+  again: [said('accept', WORKFLOW)],
+  refused: [
+    said(
+      'cannot "accept" a decision in rejected',
+      'packages/core/src/workflow/the-gates-refuse-in-words-and-hand-back-what-was-proved.test.ts',
+    ),
+  ],
+  fold: [said('projectDecisions', 'packages/core/src/projections/decision.ts')],
+  row: [
+    said('ADR-2', HERO),
+    ' · ',
+    said('Keep money as integer cents', HERO),
+    ' · ',
+    said('accepted', WORKFLOW),
+  ],
+  rebuild: [said('rebuild', 'packages/core/src/projections/rebuild.ts')],
+};
+
+/** @param {Scene} s */
+function coreStory(s) {
+  const L = CORE_LINES;
+  /** @type {string[]} */
+  const out = [];
+  // The states on three rows; every move of the table is an arrow with its head.
+  const node = { w: 108, h: 28 };
+  const col = 160;
+  const [top, middle, bottom] = [52, 112, 172];
+  const mid = (/** @type {number} */ y) => y + node.h / 2;
+  /** @type {[Line, number, number][]} */
+  const nodes = [
+    [L.proposed, 0, middle],
+    [L.accepted, col, top],
+    [L.superseded, col, middle],
+    [L.rejected, col, bottom],
+  ];
+  for (const [line, x, y] of nodes) {
+    out.push(box(s, x, y, node.w, node.h), s.sayIn(line, x + PAD, { y, h: node.h }, 'label'));
+  }
+  // A move the table allows: the edge lights, head and all, then the state, and a block goes
+  // down to the chain. The edge is one arrow whose stroke turns to the accent.
+  const lit = `class="a" style="animation-name:${s.animate('stroke', [
+    [0, s.muted],
+    [2.4, s.muted],
+    [2.7, s.accent],
+    [s.ends - 0.3, s.accent],
+    [s.ends, s.muted],
+    [s.loop, s.muted],
+  ])}"`;
+  for (const y of [middle, bottom]) out.push(arrow(s, node.w + 2, mid(middle), col - 3, mid(y)));
+  out.push(arrow(s, node.w + 2, mid(middle), col - 3, mid(top), lit, s.accent));
+  const axis = col + node.w / 2;
+  out.push(arrow(s, axis, top + node.h + 3, axis, middle - 3));
+  out.push(
+    s.say(L.request, 0, 100, 'code', { attrs: s.passes(1.8, 4.2) }),
+    box(s, col, top, node.w, node.h, s.stays(2.8)),
+  );
+  // The table, flush with the right edge; the chain above it starts where it starts, and the fold
+  // comes down the axis of the middle block.
+  const tableW = Math.ceil(widthOf(L.row, 'value') + 2 * PAD);
+  const x0 = W_PKG - tableW;
+  const chain = cubes(s, x0, mid(top), 12, [undefined, undefined, 3.4]);
+  out.push(...chain.out);
+  // A move it does not allow: asked of `rejected`, the gate hands it back in words, and nothing
+  // goes down.
+  const reach = col + node.w + 3;
+  out.push(
+    arrow(s, reach + 48, mid(bottom), reach, mid(bottom), s.passes(4.2, 6.4), s.accent),
+    s.say(L.again, reach + 56, inside({ y: bottom, h: node.h }, 'code'), 'code', {
+      attrs: s.passes(4.2, 6.4),
+    }),
+    `<rect ${s.passes(4.4, 6.4)} x="${col + 0.5}" y="${bottom + 0.5}" width="${node.w - 1}" height="${node.h - 1}" rx="8" fill="none" stroke="${s.accent}" stroke-width="1.5" stroke-dasharray="4 3"/>`,
+    s.say(L.refused, 0, FOOT, 'code', { attrs: s.stays(4.8) }),
+  );
+  // The chain folded into a table, which is thrown away and folded again the same.
+  const down = chain.at(1);
+  out.push(
+    arrow(s, down, mid(top) + 16, down, middle - 3, s.stays(6.6)),
+    s.say(L.fold, down + 12, 100, 'caption', { attrs: s.stays(6.6) }),
+    `<g ${s.goes(
+      s.leaves([
+        [0, '0'],
+        [7.0, '0'],
+        [7.3, '1'],
+        [8.6, '1'],
+        [8.9, '0'],
+        [9.3, '0'],
+        [9.6, '1'],
+      ]),
+      '1',
+    )}>`,
+    box(s, x0, middle, tableW, node.h),
+    s.sayIn(L.row, x0 + PAD, { y: middle, h: node.h }, 'value'),
+    '</g>',
+    s.say(L.rebuild, x0, 160, 'caption', { attrs: s.stays(9.0) }),
+  );
+  return out;
+}
+
+// @mnema/context: what a session is handed when it opens.
+const CONTEXT_LINES = {
+  name: [said('@mnema/context', 'packages/context/package.json')],
+  one: [
+    said('ADR-1', 'packages/code/src/cli.writes.golden.txt'),
+    ' ',
+    said('superseded', WORKFLOW),
+  ],
+  two: [said('ADR-2', HERO), ' ', said('accepted', WORKFLOW)],
+  three: [said('ADR-3', HERO), ' ', said('proposed', WORKFLOW)],
+  bootstrap: [said('bootstrap', 'packages/context/src/context/bootstrap.ts')],
+  decisions: [said('decisions', 'packages/context/src/context/bootstrap.ts')],
+  inForce: [said('ADR-2', HERO), ' · ', said('Keep money as integer cents', HERO)],
+  awaiting: [said('awaitingJudgement', 'packages/context/src/context/bootstrap.ts')],
+  waits: [said('ADR-3', HERO), ' · ', said('proposed', WORKFLOW)],
+  asks: [said('refusesAWriteAt', 'packages/context/src/intelligence/governance.ts')],
+  path: [said('src/billing/total.ts', HERO), ' → ', said('ADR-2', HERO)],
+  only: [said('only READS and COMPOSES', 'packages/context/README.md')],
+};
+
+/** @param {Scene} s */
+function contextStory(s) {
+  const L = CONTEXT_LINES;
+  /** @type {string[]} */
+  const out = [];
+  // The two panels share their rows: ADR-2 and ADR-3 sit on the same line on both sides.
+  // Five rows, the third on the panel's middle; a row is two half rows from the next.
+  const panel = { y: 52, h: 124 };
+  const [r1, r2, r3, r4, r5] = [-4, -2, 0, 2, 4];
+  out.push(box(s, 0, panel.y, 180, panel.h));
+  /** @type {[Line, number][]} */
+  const chain = [
+    [L.one, r1],
+    [L.two, r3],
+    [L.three, r5],
+  ];
+  chain.forEach(([line, row], i) => {
+    out.push(
+      s.sayIn(line, PAD, panel, 'value', { fill: s.muted, attrs: s.stays(0.2 + i * 0.3) }, row),
+    );
+  });
+  // The pill around the one in force sits on the panel's middle, and so does its line.
+  const pill = { y: panel.y + panel.h / 2 - 13, h: 26 };
+  const axis = pill.y + pill.h / 2;
+  out.push(box(s, 6, pill.y, 168, pill.h, s.stays(2.6)));
+  // bootstrap lets the ones in force through, and puts what waits on a person apart.
+  out.push(
+    arrow(s, 190, axis, 394, axis, s.stays(2.0)),
+    s.say(L.bootstrap, 292, inside(panel, 'caption', r2), 'caption', {
+      anchor: 'middle',
+      attrs: s.stays(2.0),
+    }),
+    box(s, 404, panel.y, W_PKG - 404, panel.h),
+    s.sayIn(L.decisions, 404 + PAD, panel, 'caption', { attrs: s.stays(2.4) }, r2),
+    s.sayIn(L.inForce, 404 + PAD, panel, 'value', { attrs: s.stays(3.0) }, r3),
+    s.sayIn(L.awaiting, 404 + PAD, panel, 'caption', { attrs: s.stays(4.6) }, r4),
+    s.sayIn(L.waits, 404 + PAD, panel, 'value', { attrs: s.stays(5.0) }, r5),
+  );
+  // Asked for a path, it names the rule that refuses a write there.
+  out.push(
+    s.say(L.asks, 0, FOOT - 20, 'caption', { attrs: s.stays(6.6) }),
+    s.say(L.path, 0, FOOT, 'value', { attrs: s.stays(7.4) }),
+  );
+  // And it writes nothing back: the struck arrow runs on the middle of the foot's line.
+  const lane = FOOT - 4;
+  out.push(
+    `<g ${s.stays(9.0)}>`,
+    `<path d="M394 ${lane}H254" stroke="${s.muted}" stroke-width="1.5" stroke-dasharray="3 5" stroke-linecap="round"/>`,
+    `<path d="M260 ${lane - 6}L254 ${lane}L260 ${lane + 6}" fill="none" stroke="${s.muted}" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>`,
+    `<path d="M317 ${lane - 8}L331 ${lane + 8}M331 ${lane - 8}L317 ${lane + 8}" stroke="${s.accent}" stroke-width="2" stroke-linecap="round"/>`,
+    '</g>',
+    s.say(L.only, 404, FOOT, 'code', { attrs: s.stays(9.4) }),
+  );
+  return out;
+}
+
+// @mnema/stacks: the contract, the validator and the digest.
+const STACK_FILES = 'packages/stacks/tests/an-archive-is-read-never-unpacked.test.ts';
+/** The digest of the example stack, as the package's README states it. */
+export const DIGEST = 'df9d8d71cdc13bd89b45af349e677ecfcbe98949805278bd42f16e6c0498f9ed';
+const STACKS_LINES = {
+  name: [said('@mnema/stacks', 'packages/stacks/package.json')],
+  manifest: [said('stack.json', STACK_FILES)],
+  skill: [said('skills/hello/SKILL.md', STACK_FILES)],
+  agent: [said('agents/greeter.md', STACK_FILES)],
+  licence: [said('LICENSE', STACK_FILES)],
+  mcp: [said('.mcp.json', 'packages/stacks/src/validate.ts')],
+  validate: [said('validateStack', 'packages/stacks/src/index.ts')],
+  refused: [said('mcp-server', 'packages/stacks/src/problem.ts')],
+  line: [said('path NUL sha256(file) LF', 'packages/stacks/README.md')],
+  // The digest whole, in two halves of one line each.
+  digest: [said(DIGEST.slice(0, 32), 'packages/stacks/README.md')],
+  digestEnd: [said(DIGEST.slice(32), 'packages/stacks/README.md')],
+};
+
+/** @param {Scene} s */
+function stacksStory(s) {
+  const L = STACKS_LINES;
+  /** @type {string[]} */
+  const out = [];
+  // The directory, line by line, and under it the validator, as wide.
+  // Five rows, the third on the folder's middle; a row is two half rows from the next.
+  const folder = { w: 240, y: 52, h: 124 };
+  const rows = [-4, -2, 0, 2];
+  out.push(box(s, 0, folder.y, folder.w, folder.h));
+  [L.manifest, L.skill, L.agent, L.licence].forEach((line, i) => {
+    out.push(s.sayIn(line, PAD, folder, 'value', { attrs: s.stays(0.3 + i * 0.4) }, rows[i] ?? 0));
+  });
+  out.push(s.sayIn(L.mcp, PAD, folder, 'value', { attrs: s.passes(2.0, 4.6) }, 4));
+  // The validator bars the server, and passes the directory once it is gone.
+  const gate = { y: 186, h: 40 };
+  const verdict = 130;
+  const gy = gate.y + gate.h / 2;
+  out.push(
+    box(s, 0, gate.y, folder.w, gate.h),
+    s.sayIn(L.validate, PAD, gate, 'label', { attrs: s.stays(1.8) }),
+    s.sayIn(L.refused, verdict, gate, 'code', { attrs: s.passes(2.6, 4.6) }),
+    `<path ${s.stays(4.8)} d="M${verdict} ${gy - 2}L${verdict + 6} ${gy + 4}L${verdict + 18} ${gy - 8}" fill="none" stroke="${s.accent}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>`,
+  );
+  // Each file becomes a line, and the lines become the digest, all on one axis.
+  const axis = 482;
+  const into = axis - widthOf(L.line, 'caption') / 2 - 8;
+  const meet = 106;
+  const bend = (folder.w + into) / 2;
+  out.push(`<g ${s.stays(5.6)}>`);
+  for (const row of rows) {
+    const y = folder.y + folder.h / 2 + row * HALF_ROW;
+    out.push(
+      `<path d="M${folder.w + 4} ${y}C${n(bend)} ${y} ${n(bend)} ${meet} ${n(into)} ${meet}" fill="none" stroke="${s.muted}" stroke-width="1.25"/>`,
+    );
+  }
+  out.push(
+    '</g>',
+    s.say(L.line, axis, meet + 4, 'caption', { anchor: 'middle', attrs: s.stays(6.0) }),
+    arrow(s, axis, meet + 14, axis, FOOT - 36, s.stays(7.0)),
+    s.say(L.digest, axis, FOOT - 20, 'code', { anchor: 'middle', attrs: s.stays(7.6) }),
+    s.say(L.digestEnd, axis, FOOT, 'code', { anchor: 'middle', attrs: s.stays(7.6) }),
+  );
+  return out;
+}
+
+// @mnema/code: the command line, the MCP server and the plugin, one record behind all three.
+const GOLDEN_WRITES = 'packages/code/src/cli.writes.golden.txt';
+const GOLDEN_READS = 'packages/code/src/cli.reads.golden.txt';
+const CODE_LINES = {
+  name: [said('@mnema/code', 'packages/code/package.json')],
+  cli: [said('mnema', 'packages/code/package.json')],
+  mcp: [said('MCP', 'packages/code/README.md')],
+  plugin: [said('plugin', 'packages/code/README.md')],
+  record: [said('record_decision', 'packages/code/src/mcp/server.ts')],
+  // The two lines of output are lines of the golden, cut before the id the command line prints
+  // and with the id elided: it is a new one on every run.
+  recorded: [said('Recorded decision ADR-1', GOLDEN_WRITES), ' ', ELIDED],
+  accept: [said('mnema decision move accept', GOLDEN_WRITES)],
+  accepted: [
+    said('Decision ADR-1', GOLDEN_WRITES),
+    ' ',
+    ELIDED,
+    ' → ',
+    said('accepted', GOLDEN_WRITES),
+  ],
+  hooks: [
+    said('SessionStart', 'plugin/hooks/hooks.json'),
+    ' · ',
+    said('PreToolUse', 'plugin/hooks/hooks.json'),
+  ],
+  deny: [
+    said('deny', 'packages/code/src/host-hook.ts'),
+    ' · ',
+    said('refuses-a-write', 'packages/chain/src/events/catalog.ts'),
+  ],
+  verify: [said('mnema verify', GOLDEN_READS)],
+  verified: [said('local integrity verified (T1/T2/T4)', GOLDEN_READS)],
+};
+
+/** @param {Scene} s */
+function codeStory(s) {
+  const L = CODE_LINES;
+  /** @type {string[]} */
+  const out = [];
+  // Each door is a box with its name and what goes through it; a dashed line runs from each
+  // door's edge to the one record, flush with the right edge.
+  const door = { w: 424, h: 44 };
+  const [cli, mcp, hooks] = [56, 116, 176];
+  const tx = 80;
+  const cy = mcp + door.h / 2;
+  const a = 13;
+  const record = cubes(s, W_PKG - rowWidth(4, a) - 1, cy, a, [undefined, undefined, 3.6, 5.4]);
+  /** @type {[Line, number][]} */
+  const doors = [
+    [L.cli, cli],
+    [L.mcp, mcp],
+    [L.plugin, hooks],
+  ];
+  // A door's name sits on its middle; what goes through it, two lines, half a row above and
+  // below it.
+  const at = (/** @type {number} */ y) => ({ y, h: door.h });
+  for (const [line, y] of doors) {
+    out.push(
+      box(s, 0, y, door.w, door.h),
+      s.sayIn(line, PAD, at(y), 'label'),
+      `<path d="M${door.w + 4} ${y + door.h / 2}L${n(record.at(0) - record.dx - 6)} ${cy}" stroke="${s.muted}" stroke-width="1.5" stroke-dasharray="3 5" stroke-linecap="round"/>`,
+    );
+  }
+  out.push(...record.out);
+  // An agent records through the MCP server.
+  out.push(
+    box(s, 0, mcp, door.w, door.h, s.stays(2.0)),
+    s.sayIn(L.record, tx, at(mcp), 'code', { attrs: s.stays(2.2) }, -1),
+    s.sayIn(L.recorded, tx, at(mcp), 'code', { attrs: s.stays(3.0) }, 1),
+  );
+  // A person accepts at the command line.
+  out.push(
+    box(s, 0, cli, door.w, door.h, s.stays(4.0)),
+    s.sayIn(L.accept, tx, at(cli), 'code', { attrs: s.passes(4.2, 8.4) }, -1),
+    s.sayIn(L.accepted, tx, at(cli), 'code', { attrs: s.passes(4.8, 8.4) }, 1),
+  );
+  // Through the plugin's hooks the session opens with the rule, and a write under it is denied.
+  out.push(
+    box(s, 0, hooks, door.w, door.h, s.stays(6.0)),
+    s.sayIn(L.hooks, tx, at(hooks), 'code', { attrs: s.stays(6.2) }, -1),
+    s.sayIn(L.deny, tx, at(hooks), 'code', { attrs: s.stays(7.0) }, 1),
+  );
+  // The command line verifies the record; the seal lights the blocks one after the other, and
+  // they go out with the rest of the picture.
+  out.push(
+    s.sayIn(L.verify, tx, at(cli), 'code', { attrs: s.stays(8.6) }, -1),
+    s.sayIn(L.verified, tx, at(cli), 'code', { attrs: s.stays(9.4) }, 1),
+  );
+  for (let i = 0; i < 4; i++) {
+    out.push(
+      `<path ${s.stays(9.0 + i * 0.2)} d="${hexagon(record.at(i), cy, a)}" fill="${s.accent}"/>`,
+    );
+  }
+  return out;
+}
+
+/**
+ * The five published packages: the directory, the loop, the lines each says and the story that
+ * draws them.
+ */
+export const PACKAGE_PICTURES = Object.freeze([
+  { dir: 'chain', loop: 11, lines: CHAIN_LINES, story: chainStory },
+  { dir: 'core', loop: 11, lines: CORE_LINES, story: coreStory },
+  { dir: 'context', loop: 11, lines: CONTEXT_LINES, story: contextStory },
+  { dir: 'stacks', loop: 10.5, lines: STACKS_LINES, story: stacksStory },
+  { dir: 'code', loop: 11, lines: CODE_LINES, story: codeStory },
+]);
+
+/**
+ * What a package's manifest says that its picture and its README use.
+ * @param {string} dir
+ * @returns {{ name: string, version: string, description: string }}
+ */
+function manifestOf(dir) {
+  return JSON.parse(
+    readFileSync(new URL(`../../packages/${dir}/package.json`, import.meta.url), 'utf8'),
+  );
+}
+
+/** @param {string} text */
+const attribute = (text) => escaped(text).replaceAll('"', '&quot;');
+
+/**
+ * One package's picture in one theme.
+ * @param {(typeof PACKAGE_PICTURES)[number]} pkg
+ * @param {readonly string[]} blocks
+ * @param {'dark' | 'light'} theme
+ */
+function packagePicture(pkg, blocks, theme) {
+  const s = scene(pkg.loop, theme);
+  const scale = 0.2;
+  const markW = Math.max(...blocks.map((row) => [...row].length)) * CELL.w * scale;
+  // Drawn before the style is written, because drawing is what names the keyframes.
+  const story = pkg.story(s);
+  return [
+    `<svg xmlns="http://www.w3.org/2000/svg" width="100%" viewBox="0 0 ${W_PKG} ${H_PKG}" role="img" aria-label="${attribute(manifestOf(pkg.dir).description)}">`,
+    `<title>${escaped(textOf(pkg.lines.name))}</title>`,
+    '<style>',
+    `.a{animation-duration:${pkg.loop}s;animation-iteration-count:infinite;animation-timing-function:ease-in-out}`,
+    ...s.css,
+    '@media (prefers-reduced-motion: reduce){.a{animation:none!important}}',
+    '</style>',
+    `<rect width="${W_PKG}" height="${H_PKG}" fill="${PAGE[theme]}"/>`,
+    s.say(pkg.lines.name, 0, 24, 'heading'),
+    `<g transform="translate(${n(W_PKG - markW)} 6) scale(${scale})">`,
+    ...wordmark(blocks, s.accent, 0, 0),
+    '</g>',
+    `<path d="M0 40.5H${W_PKG}" stroke="${s.border}"/>`,
+    ...story,
+    '</svg>',
+    '',
+  ].join('\n');
+}
+
+/**
+ * Where a published package's picture is served from: the copy inside the tarball of that very
+ * version, so the page of a version shows the picture that version carries.
+ * @param {string} name
+ * @param {string} version
+ * @param {string} file
+ */
+export const pictureUrl = (name, version, file) =>
+  `https://cdn.jsdelivr.net/npm/${name}@${version}/assets/${file}`;
+
+/**
+ * The block a package's README opens with, under its title, for the version its manifest says.
+ * @param {string} dir
+ */
+export function pictureBlock(dir) {
+  const { name, version, description } = manifestOf(dir);
+  return [
+    '<picture>',
+    `  <source media="(prefers-color-scheme: dark)" srcset="${pictureUrl(name, version, `${dir}-dark.svg`)}">`,
+    `  <img src="${pictureUrl(name, version, `${dir}-light.svg`)}" alt="${attribute(description)}" width="720">`,
+    '</picture>',
+  ].join('\n');
+}
+
+/**
+ * Every package's picture, by its path from the repository's root.
+ * @param {readonly string[]} blocks
+ * @returns {Record<string, string>}
+ */
+export function drawThePackages(blocks) {
+  /** @type {Record<string, string>} */
+  const out = {};
+  for (const pkg of PACKAGE_PICTURES) {
+    for (const theme of /** @type {const} */ (['dark', 'light'])) {
+      out[`packages/${pkg.dir}/assets/${pkg.dir}-${theme}.svg`] = packagePicture(
+        pkg,
+        blocks,
+        theme,
+      );
+    }
+  }
+  return out;
+}
+
+/**
+ * A package's README with its picture block in place: replacing the one there is, or set under
+ * the title where there is none.
+ * @param {string} readme
+ * @param {string} block
+ */
+export function withPicture(readme, block) {
+  const at = /<picture>[\s\S]*?<\/picture>/;
+  if (at.test(readme)) return readme.replace(at, block);
+  const title = readme.indexOf('\n');
+  return `${readme.slice(0, title + 1)}\n${block}\n${readme.slice(title + 1)}`;
+}
+
+// ---------------------------------------------------------------------------------------------
 
 /**
  * Every picture, by its file name under `docs/assets/`, drawn from the console's rows.
@@ -628,21 +1460,35 @@ if (process.argv[1] !== undefined && import.meta.url === pathToFileURL(process.a
   const built = new URL('../../packages/code/dist/presentation/banner.js', import.meta.url);
   const { THE_BLOCKS } = await import(built.href);
   const check = process.argv.includes('--check');
+  /** @param {string} path */
+  const committedAt = (path) => {
+    try {
+      return readFileSync(new URL(`../../${path}`, import.meta.url), 'utf8');
+    } catch {
+      return '';
+    }
+  };
+  /** @type {Record<string, string>} */
+  const drawn = {};
+  for (const [file, svg] of Object.entries(drawTheFrontPage(THE_BLOCKS)))
+    drawn[`docs/assets/${file}`] = svg;
+  Object.assign(drawn, drawThePackages(THE_BLOCKS));
+  for (const { dir } of PACKAGE_PICTURES) {
+    const readme = `packages/${dir}/README.md`;
+    drawn[readme] = withPicture(committedAt(readme), pictureBlock(dir));
+  }
   let differs = 0;
-  for (const [file, svg] of Object.entries(drawTheFrontPage(THE_BLOCKS))) {
-    const at = new URL(`../../docs/assets/${file}`, import.meta.url);
+  for (const [path, content] of Object.entries(drawn)) {
+    const at = new URL(`../../${path}`, import.meta.url);
     if (check) {
-      let committed = '';
-      try {
-        committed = readFileSync(at, 'utf8');
-      } catch {}
-      if (committed !== svg) {
+      if (committedAt(path) !== content) {
         differs++;
-        console.error(`docs/assets/${file} is not what the console draws today`);
+        console.error(`${path} is not what the console draws today`);
       }
-    } else {
-      writeFileSync(at, svg);
-      console.log(`wrote docs/assets/${file}`);
+    } else if (committedAt(path) !== content) {
+      mkdirSync(new URL('.', at), { recursive: true });
+      writeFileSync(at, content);
+      console.log(`wrote ${path}`);
     }
   }
   if (differs > 0) process.exit(1);
