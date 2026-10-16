@@ -1562,17 +1562,20 @@ function family(blocks, theme) {
   const rows = [10, 100, 190];
   /** @type {string[]} */
   const out = [];
+  // The glow and the tint of the cards, in the accent alone. On a light page they stay faint
+  // enough that the accent's own lines over them keep three to one.
+  const [glow, tint] = theme === 'light' ? [[0.08, 0.03], [0.07, 0.02]] : [[0.16, 0.06], [0.12, 0.04]];
   const defs = [
     '<defs>',
-    `<radialGradient id="glow" cx="0.5" cy="0.5" r="0.5"><stop offset="0" stop-color="${s.accent}" stop-opacity="0.14"/><stop offset="0.6" stop-color="${s.accent}" stop-opacity="0.05"/><stop offset="1" stop-color="${s.accent}" stop-opacity="0"/></radialGradient>`,
-    `<linearGradient id="tint" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="${s.accent}" stop-opacity="0.1"/><stop offset="1" stop-color="${s.accent}" stop-opacity="0.03"/></linearGradient>`,
+    `<radialGradient id="glow" cx="0.5" cy="0.5" r="0.5"><stop offset="0" stop-color="${s.accent}" stop-opacity="${glow[0]}"/><stop offset="0.6" stop-color="${s.accent}" stop-opacity="${glow[1]}"/><stop offset="1" stop-color="${s.accent}" stop-opacity="0"/></radialGradient>`,
+    `<linearGradient id="tint" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="${s.accent}" stop-opacity="${tint[0]}"/><stop offset="1" stop-color="${s.accent}" stop-opacity="${tint[1]}"/></linearGradient>`,
     '</defs>',
   ];
 
-  // Scene 0: the hub — its card on a glow, the wordmark, the chain one cube after the other, the
-  // two surfaces over it, and what they are.
+  // Scene 0: the hub — its card on a glow around the wordmark, the wordmark, the chain one cube
+  // after the other, the two surfaces under it, and what they are.
   out.push(
-    `<ellipse ${s.stays(0.2)} cx="${mid}" cy="${hub.y + hub.h / 2}" rx="180" ry="135" fill="url(#glow)"/>`,
+    `<ellipse ${s.stays(0.2)} cx="${mid}" cy="86" rx="180" ry="120" fill="url(#glow)"/>`,
     `<rect ${s.stays(0.2)} x="${n(hub.x + 0.5)}" y="${n(hub.y + 0.5)}" width="${n(hub.w - 1)}" height="${n(hub.h - 1)}" rx="14" fill="url(#tint)" stroke="${s.accent}" stroke-width="1.5"/>`,
     s.sayIn(L.name, mid, hub, 'label', { anchor: 'middle', attrs: s.stays(0.4) }, -9),
   );
@@ -1752,7 +1755,7 @@ function family(blocks, theme) {
             [LOOP, '0'],
           ],
           '0',
-        )} x="${n(x + 0.5)}" y="${n(y + 0.5)}" width="${card.w - 1}" height="${card.h - 1}" rx="10" fill="${s.accent}" fill-opacity="0.14" stroke="${s.accent}" stroke-width="1.5"/>`,
+        )} x="${n(x + 0.5)}" y="${n(y + 0.5)}" width="${card.w - 1}" height="${card.h - 1}" rx="10" fill="none" stroke="${s.accent}" stroke-width="3"/>`,
       );
     }
   });
