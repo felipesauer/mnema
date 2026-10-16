@@ -379,6 +379,22 @@ describe('the verb a command host runs', () => {
     expect(waited).toBeLessThan(A_CHARGE_WAITS_MS + 500);
   });
 
+  it('answers no refusal when a stored line of the record does not parse: the gate fails, and the docs say the refusal opens', () => {
+    // THE LIMIT THE PAGES DECLARE (`docs/features.md`, `docs/evidence.md`). The refusal is decided
+    // by reading the record; a line that is not JSON makes the reading throw, so the verb gives
+    // no `deny` and the host, which lets a hook that failed go on, lets the write through.
+    const root = resolveTrees(repo, env).projectPublic as string;
+    const tails = readdirSync(join(root, 'tails'));
+    expect(tails).toHaveLength(1);
+    const segment = join(root, 'tails', tails[0] as string, '000001.jsonl');
+    const sound = readFileSync(segment, 'utf-8');
+    expect(decided(verb('gemini', 'src/billing/invoice.ts').reply).value).toBe('deny');
+    writeFileSync(segment, `${sound}not json at all\n`);
+    expect(() => verb('gemini', 'src/billing/invoice.ts')).toThrow(/unreadable stored line/);
+    writeFileSync(segment, sound);
+    expect(decided(verb('gemini', 'src/billing/invoice.ts').reply).value).toBe('deny');
+  });
+
   it('asks while a live process holds the record, and says the fact is missing', {
     timeout: 30_000,
   }, () => {
