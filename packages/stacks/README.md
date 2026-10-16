@@ -89,7 +89,7 @@ carry, or not a bundle at all) is refused.
 
 ## Examples, and the index
 
-[`examples/`](examples/) holds two stacks to read and to try, both in English and neither of any one domain:
+[`examples/`](https://github.com/felipesauer/mnema/tree/main/packages/stacks/examples) holds two stacks to read and to try, both in English and neither of any one domain:
 
 - `evidence-first`: an `investigator` agent that answers with `path:line` findings and says what it did not search,
   and a `claim-checking` skill on what a search that finds nothing does and does not prove;
@@ -101,7 +101,7 @@ validator the Agent Skills specification publishes, installs both with the built
 makes for the purpose, checks that the record still verifies, and has `skills-ref` read the installed skill
 folders.
 
-[`stack-index/`](../../stack-index/) is a list of stacks: for each, a name, a version, a link and the digest.
+[`stack-index/`](https://github.com/felipesauer/mnema/tree/main/stack-index) is a list of stacks: for each, a name, a version, a link and the digest.
 It holds no stack. The two examples are its first entries, and the suite recomputes their digests from the
 folders. A stack listed from somewhere else is held to nothing here: the link may move and the digest is what the
 proposer wrote, so compare it with the digest the install plan shows. `mnema stack index <folder>` prints the
@@ -136,7 +136,7 @@ entries of an index folder, and `--json` gives them to a program; it reads the f
 npm i @mnema/stacks
 ```
 
-Nothing is on npm yet, so that answers 404 until the first publication; the [install page](../../docs/install.md) has the install from the source.
+Nothing is on npm yet, so that answers 404 until the first publication; the [install page](https://github.com/felipesauer/mnema/blob/main/docs/install.md) has the install from the source.
 
 **It is released because `@mnema/code` depends on it**: `mnema stack add` validates and digests a stack with this
 library before it writes anything. The exports are the surface that verb needed and move when it moves; the part

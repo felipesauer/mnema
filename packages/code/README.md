@@ -22,7 +22,7 @@ without installing this.
 
 This is the package you install: the `mnema` command line and the MCP server of
 [mnema](https://github.com/felipesauer/mnema), two surfaces over one record. The agent writes
-through MCP while it works, and the plugin in [`plugin/`](../../plugin/) hands the record to a
+through MCP while it works, and the plugin in [`plugin/`](https://github.com/felipesauer/mnema/tree/main/plugin) hands the record to a
 session as it opens; you read, audit and verify from the terminal. It holds no domain logic of
 its own: the workflow rules and the proof live in `@mnema/core` and `@mnema/chain`.
 
@@ -38,7 +38,7 @@ its own: the workflow rules and the proof live in `@mnema/core` and `@mnema/chai
 - **A brief and a plugin** that hand the decisions in force to an agent's session, and the rules
   addressed at a file beside a write to it.
 
-[The reference](../../docs/cli-reference.md) has every verb and tool, and what each one leaves
+[The reference](https://github.com/felipesauer/mnema/blob/main/docs/cli-reference.md) has every verb and tool, and what each one leaves
 unproven.
 
 ## What it proves — and what it does not
@@ -58,13 +58,13 @@ no private key and no network, and prints each verdict verbatim.
 - It does not make the agent named on a fact the one that did the work, and it is not access
   control: anyone who can run the command line writes as this machine's identity.
 
-The whole table, claim by claim, is in [What it proves](../../docs/what-it-proves.md), and the
-long form of each row is in [the reference](../../docs/cli-reference.md#what-it-proves--and-what-it-does-not).
+The whole table, claim by claim, is in [What it proves](https://github.com/felipesauer/mnema/blob/main/docs/what-it-proves.md), and the
+long form of each row is in [the reference](https://github.com/felipesauer/mnema/blob/main/docs/cli-reference.md#what-it-proves--and-what-it-does-not).
 
 ## Install
 
 **Nothing is on npm yet**, so `npm i -g @mnema/code` answers 404 until the first
-publication. Until then, it is built from the source: [the install page](../../docs/install.md)
+publication. Until then, it is built from the source: [the install page](https://github.com/felipesauer/mnema/blob/main/docs/install.md)
 has the steps. Requires Node 24.15.0 or a later 24, or 26.0.0 or later; the package is
 ESM-only.
 
@@ -78,13 +78,13 @@ mnema decision record "Use SQLite for the projection cache" \
 mnema verify
 ```
 
-[Your first record](../../docs/first-record.md) shows what each of them prints, line by line.
+[Your first record](https://github.com/felipesauer/mnema/blob/main/docs/first-record.md) shows what each of them prints, line by line.
 
 ## Where to go next
 
-[The reference](../../docs/cli-reference.md) · [Each host](../../docs/agent-hosts.md) ·
-[How it works](../../docs/how-it-works.md) · [The plugin](../../plugin/README.md) ·
-[Where it fits](../../docs/where-it-fits.md) · [Evidence](../../docs/evidence.md)
+[The reference](https://github.com/felipesauer/mnema/blob/main/docs/cli-reference.md) · [Each host](https://github.com/felipesauer/mnema/blob/main/docs/agent-hosts.md) ·
+[How it works](https://github.com/felipesauer/mnema/blob/main/docs/how-it-works.md) · [The plugin](https://github.com/felipesauer/mnema/blob/main/plugin/README.md) ·
+[Where it fits](https://github.com/felipesauer/mnema/blob/main/docs/where-it-fits.md) · [Evidence](https://github.com/felipesauer/mnema/blob/main/docs/evidence.md)
 
 ## License
 

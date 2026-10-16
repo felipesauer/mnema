@@ -88,7 +88,7 @@ describe('the install from the source', () => {
 
   it('is not spelled by the package README either', () => {
     const readme = readFileSync(join(REPO, 'packages', 'code', 'README.md'), 'utf-8');
-    expect(readme).toContain('(../../docs/install.md)');
+    expect(readme).toContain('(https://github.com/felipesauer/mnema/blob/main/docs/install.md)');
     expect(readme).not.toMatch(RELEASE_URL);
   });
 

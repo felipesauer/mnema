@@ -149,6 +149,16 @@ with its own changelog.
 
 ### Changed
 
+- **Every link in the body of a published package's README is a full address on `main`.** The five pages
+  (`@mnema/chain`, `@mnema/core`, `@mnema/context`, `@mnema/stacks` and `@mnema/code`) had 22 relative links, such as
+  `../../docs/install.md` and `./FORMAT.md`, that land on GitHub from the package's directory; the npm page resolves
+  them against the root of the repository and, read from the code of its renderer and not measured on the site, drops
+  the `blob/` and the directory, which leaves a missing page or the wrong directory. They are now
+  `https://github.com/felipesauer/mnema/blob/main/<path>` (`tree/main` for a directory). The price: a click on GitHub
+  now leads to `main`, not to the commit or the branch the page is read on. A test holds that no destination on those
+  pages is relative, and that each address of this repository on `main` names a tracked file (`blob`) or directory
+  (`tree`) and a heading that exists.
+
 - **A record the gate cannot read refuses the write, where it used to let it through.** When a line of the record is one
   the reader refuses (not JSON, a kind or a field this version does not know, as a newer mnema's line is, or bytes that
   are not canonical), the per-edit gate answered nothing: the command hook exited 1 with an empty reply and the MCP route

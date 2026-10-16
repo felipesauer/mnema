@@ -18,7 +18,18 @@
  *   - a line anchor (`#L12`, `#L12-L20`) on a file that is not a page is asked of that file's
  *     length, because that is what GitHub makes of it;
  *   - a destination with a scheme (`https:`, `mailto:`) or none at all but `//` is left out
- *     by construction: whether it answers is a question for the network.
+ *     by construction: whether it answers is a question for the network. The exception is the
+ *     repository's own address on `main` (`github.com/<owner>/<repo>/blob|tree/main/<path>`
+ *     and `raw.githubusercontent.com/<owner>/<repo>/main/<path>`, the owner and the repository
+ *     the manifest names): it is read as the path it names, so it lands, anchor and line
+ *     anchor included, exactly as a relative link would, and `blob` and `raw` ask for a file
+ *     and `tree` for a directory.
+ *
+ * THE PACKAGE PAGES CARRY NO RELATIVE LINK AT ALL. A registry resolves a relative link of a
+ * package's page against the repository root, not against the package's directory, and lands
+ * it somewhere else or nowhere. So the five published packages' pages say every destination by
+ * the address of the repository on `main`, and {@link relativeOnPackagePages} accuses any
+ * other.
  *
  * WHAT IT DOES NOT CHECK:
  *   - the external links, above;
@@ -163,6 +174,37 @@ interface Corpus {
   readonly pages: readonly string[];
   readonly tracked: ReadonlySet<string>;
   readonly read: (path: string) => string;
+  /** `<owner>/<repo>` of the repository, as the manifest names it. */
+  readonly repo: string;
+  /** Whether a page may name this repository only on `main` (a package's page, not the changelog). */
+  readonly onMainOnly: (page: string) => boolean;
+  /** The tracked files alone, apart from the directories in `tracked`. */
+  readonly files: ReadonlySet<string>;
+}
+
+/**
+ * The repository path a destination names when it is the repository's own address on `main`,
+ * with the kind of path the address claims, or `null`. `rest` is the anchor, if any.
+ */
+function ownAddress(
+  dest: string,
+  repo: string,
+): { path: string; rest: string; kind: 'blob' | 'tree' | 'raw' } | null {
+  const escaped = repo.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  const github = new RegExp(`^https://github\\.com/${escaped}/(blob|tree)/main/([^#?]*)(.*)$`).exec(
+    dest,
+  );
+  if (github !== null) {
+    return {
+      path: github[2] as string,
+      rest: github[3] as string,
+      kind: github[1] as 'blob' | 'tree',
+    };
+  }
+  const raw = new RegExp(
+    `^https://raw\\.githubusercontent\\.com/${escaped}/main/([^#?]*)(.*)$`,
+  ).exec(dest);
+  return raw === null ? null : { path: raw[1] as string, rest: raw[2] as string, kind: 'raw' };
 }
 
 /** Every path the repository tracks, and every directory one of them sits in. */
@@ -189,9 +231,33 @@ function unlanded(corpus: Corpus): { key: string; why: string }[] {
   };
   const found: { key: string; why: string }[] = [];
   for (const page of corpus.pages) {
-    for (const { at, dest } of destinationsOf(corpus.read(page))) {
-      if (/^[a-z][a-z0-9+.-]*:/i.test(dest) || dest.startsWith('//')) continue;
-      const key = `${page} → ${dest}`;
+    for (const { at, dest: written } of destinationsOf(corpus.read(page))) {
+      const key = `${page} → ${written}`;
+      const own = ownAddress(written, corpus.repo);
+      if (
+        own === null &&
+        corpus.onMainOnly(page) &&
+        new RegExp(`^https://github\\.com/${corpus.repo}/(?:blob|tree)/(?!main/)`).test(written)
+      ) {
+        found.push({ key, why: `${page}:${at}: an address of this repository not on main` });
+        continue;
+      }
+      if (own === null && (/^[a-z][a-z0-9+.-]*:/i.test(written) || written.startsWith('//'))) {
+        continue;
+      }
+      if (own !== null) {
+        const named = own.path.replace(/\/$/, '');
+        if (!corpus.tracked.has(named)) {
+          found.push({ key, why: `${page}:${at}: no tracked path ${named}` });
+          continue;
+        }
+        if (own.kind === 'tree' ? corpus.files.has(named) : !corpus.files.has(named)) {
+          const wants = own.kind === 'tree' ? 'a directory' : 'a file';
+          found.push({ key, why: `${page}:${at}: ${own.kind} wants ${wants}, ${named} is not` });
+          continue;
+        }
+      }
+      const dest = own === null ? written : `/${own.path}${own.rest}`;
       const hash = dest.indexOf('#');
       const path = (hash < 0 ? dest : dest.slice(0, hash)).replace(/\?.*$/, '');
       const anchor = hash < 0 ? '' : decodeURIComponent(dest.slice(hash + 1));
@@ -231,17 +297,56 @@ function unlanded(corpus: Corpus): { key: string; why: string }[] {
 // The guard
 // ---------------------------------------------------------------------------
 
+const trackedFiles = execFileSync('git', ['ls-files', '-z'], { cwd: ROOT, encoding: 'utf8' })
+  .split('\0')
+  .filter(Boolean);
+
+/** The five packages a registry publishes; the three private ones have no page there. */
+const PUBLISHED = ['chain', 'core', 'context', 'stacks', 'code'] as const;
+
+const repoOf = (dir: string): string => {
+  const manifest = JSON.parse(readFileSync(join(ROOT, 'packages', dir, 'package.json'), 'utf8'));
+  const repo = /github\.com\/([^/]+\/[^/]+?)(?:\.git)?$/.exec(manifest.repository.url)?.[1];
+  if (repo === undefined) throw new Error(`packages/${dir} names no GitHub repository`);
+  return repo;
+};
+
 const corpus: Corpus = {
   pages: trackedPages(),
-  tracked: trackedAndTheirDirectories(
-    execFileSync('git', ['ls-files', '-z'], { cwd: ROOT, encoding: 'utf8' })
-      .split('\0')
-      .filter(Boolean),
-  ),
+  tracked: trackedAndTheirDirectories(trackedFiles),
+  files: new Set(trackedFiles),
+  repo: repoOf('code'),
+  onMainOnly: (page) => PUBLISHED.some((dir) => page === `packages/${dir}/README.md`),
   read: (path) => readFileSync(join(ROOT, path), 'utf8'),
 };
 
+/**
+ * Every destination of a package's page that is neither a full address nor an anchor on the
+ * page itself: a registry resolves such a destination against the repository root.
+ */
+function relativeOnPackagePages(
+  read: (path: string) => string,
+  pages: readonly string[],
+): string[] {
+  return pages.flatMap((page) =>
+    destinationsOf(read(page))
+      .filter(({ dest }) => !dest.startsWith('#') && !/^https:\/\//.test(dest))
+      .map(({ at, dest }) => `${page}:${at}: ${dest}`),
+  );
+}
+
 describe('every link a page carries lands', () => {
+  it.each(PUBLISHED)('says every destination of packages/%s/README.md by a full address', (dir) => {
+    const page = `packages/${dir}/README.md`;
+    expect(relativeOnPackagePages(corpus.read, [page])).toEqual([]);
+    expect(repoOf(dir)).toBe(corpus.repo);
+    // NON-VACUITY. The page does carry addresses of the repository, and they are asked.
+    const own = destinationsOf(corpus.read(page)).filter(
+      ({ dest }) => ownAddress(dest, corpus.repo) !== null,
+    );
+    expect(own.length).toBeGreaterThan(0);
+  });
+
   it('lands every relative link on a tracked path, and every anchor on a heading', () => {
     const found = unlanded(corpus);
     expect(found.map((one) => one.why)).toEqual([]);
@@ -298,6 +403,9 @@ describe('the reading, on pages of its own', () => {
     return {
       pages: Object.keys(all).filter((path) => path.endsWith('.md')),
       tracked: trackedAndTheirDirectories(Object.keys(all)),
+      files: new Set(Object.keys(all)),
+      repo: 'owner/repo',
+      onMainOnly: (page) => page === 'docs/c.md',
       read: (path) => all[path] ?? '',
     };
   };
@@ -319,6 +427,49 @@ describe('the reading, on pages of its own', () => {
       'docs/c.md:1: docs/b.md has no heading #the-other',
       'docs/c.md:1: #top on docs/code.ts, which is not a page',
       'docs/c.md:1: docs/code.ts has 2 lines',
+    ]);
+  });
+
+  it('reads the repository own address on main as the path it names', () => {
+    const own = 'https://github.com/owner/repo';
+    const good = at({
+      'docs/c.md': `[a](${own}/blob/main/docs/b.md#the-other-one) [d](${own}/tree/main/docs/img) ![i](https://raw.githubusercontent.com/owner/repo/main/docs/img/logo.png)`,
+    });
+    expect(unlanded(good)).toEqual([]);
+    const broken = at({
+      'docs/c.md': [
+        `[gone](${own}/blob/main/docs/d.md) [head](${own}/blob/main/docs/b.md#the-other)`,
+        `[dir as file](${own}/blob/main/docs/img) [file as dir](${own}/tree/main/docs/b.md)`,
+        `![raw dir](https://raw.githubusercontent.com/owner/repo/main/docs/img)`,
+        `[elsewhere](https://github.com/other/repo/blob/main/nothing.md)`,
+        `[branch](${own}/blob/master/docs/b.md)`,
+      ].join('\n'),
+    });
+    expect(unlanded(broken).map((one) => one.why)).toEqual([
+      'docs/c.md:1: no tracked path docs/d.md',
+      'docs/c.md:1: docs/b.md has no heading #the-other',
+      'docs/c.md:2: blob wants a file, docs/img is not',
+      'docs/c.md:2: tree wants a directory, docs/b.md is not',
+      'docs/c.md:3: raw wants a file, docs/img is not',
+      'docs/c.md:5: an address of this repository not on main',
+    ]);
+  });
+
+  it('accuses a relative destination on a package page, and only that', () => {
+    const pages: Record<string, string> = {
+      'p/README.md': [
+        '[a](./x.md) [b](../y.md) [c](z/) ![i](pic.svg) <a href="w.md">w</a>',
+        '[ok](https://github.com/owner/repo/blob/main/x.md) [here](#top)',
+        '[ref]: ./r.md',
+      ].join('\n'),
+    };
+    expect(relativeOnPackagePages((path) => pages[path] ?? '', ['p/README.md'])).toEqual([
+      'p/README.md:1: ./x.md',
+      'p/README.md:1: ../y.md',
+      'p/README.md:1: z/',
+      'p/README.md:1: pic.svg',
+      'p/README.md:1: w.md',
+      'p/README.md:3: ./r.md',
     ]);
   });
 
