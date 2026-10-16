@@ -1848,7 +1848,7 @@ function family(blocks, theme) {
     const box = { x, y, w: size.w, h: size.h };
     out.push(
       `<g ${s.stays(T)}>`,
-      card(s, box, { apart: sat.apart }),
+      card(s, box, { apart: sat.apart === true }),
       `<path transform="translate(${x + 12} ${y + 19})" d="${GLYPHS[/** @type {keyof typeof GLYPHS} */ (sat.glyph)]}" fill="none" stroke="${tone}" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>`,
       s.sayIn(L[/** @type {keyof typeof L} */ (sat.name)], x + 44, frame, 'label', {}, -1),
       '</g>',
