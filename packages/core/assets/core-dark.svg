@@ -29,7 +29,7 @@
 @keyframes k24{0%{opacity:0}57.27%{opacity:0}59.09%{opacity:1}63.64%{opacity:1}65.45%{opacity:0}100%{opacity:0}}
 @keyframes k25{0%{opacity:0}60%{opacity:0}62.73%{opacity:1}90.91%{opacity:1}93.64%{opacity:0}100%{opacity:0}}
 @keyframes k26{0%{opacity:0}64.55%{opacity:0}67.27%{opacity:1}78.18%{opacity:1}80.91%{opacity:0}84.55%{opacity:0}87.27%{opacity:1}90.91%{opacity:1}93.64%{opacity:0}100%{opacity:0}}
-@keyframes k27{0%{opacity:0}86.82%{opacity:0}88.18%{opacity:1}92.73%{opacity:0}100%{opacity:0}}
+@keyframes k27{0%{opacity:0}66.82%{opacity:0}68.18%{opacity:1}72.73%{opacity:0}100%{opacity:0}}
 @keyframes k28{0%{opacity:0}81.82%{opacity:0}84.55%{opacity:1}90.91%{opacity:1}93.64%{opacity:0}100%{opacity:0}}
 @media (prefers-reduced-motion: reduce){.a{animation:none!important}}
 </style>
@@ -64,7 +64,7 @@
 <path class="a" style="animation-name:k4,k5" opacity="0" d="M110 126L157 66" fill="none" stroke="#c4a0f5" stroke-width="2" stroke-linecap="round" stroke-dasharray="76.22 76.22"/>
 <g class="a" style="animation-name:k2,k3" opacity="0"><circle r="8" fill="#c4a0f5" fill-opacity="0.22"/><circle r="4" fill="#c4a0f5"/></g>
 <text class="a" style="animation-name:k6" opacity="0" x="0" y="100" font-family="ui-monospace,SFMono-Regular,'SF Mono',Menlo,Consolas,'Liberation Mono',monospace" font-size="12" fill="#f0f6fc">accept · note</text>
-<rect class="a" style="animation-name:k7" x="160.5" y="52.5" width="107" height="27" rx="10" fill="#c4a0f5" fill-opacity="0.12" stroke="#c4a0f5" stroke-width="1.5"/>
+<rect class="a" style="animation-name:k7" x="160.5" y="52.5" width="107" height="27" rx="10" fill="none" stroke="#c4a0f5" stroke-width="1.5"/>
 <path d="M370.39 54L380.78 60L370.39 66L360 60z" fill="#c4a0f5" fill-opacity="0.3"/>
 <path d="M360 60L370.39 66L370.39 78L360 72z" fill="#c4a0f5" fill-opacity="0.16"/>
 <path d="M370.39 66L380.78 60L380.78 72L370.39 78z" fill="#c4a0f5" fill-opacity="0.06"/>

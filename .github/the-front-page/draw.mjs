@@ -613,11 +613,15 @@ function howMnemaFits(blocks, theme) {
 }
 
 // ---------------------------------------------------------------------------------------------
-// The packages: one animated picture per published package, `packages/<p>/assets/<p>-{dark,light}.svg`
+// The packages: one animated picture per published package but `@mnema/code`, whose page shows
+// the family, `packages/<p>/assets/<p>-{dark,light}.svg`
 //
 // The grammar of the picture above: one loop of CSS keyframes, every element that moves carrying
 // the last frame as its own attributes, and the accent as the only hue. Each picture opens with
-// the package's name on the left and the wordmark on the right.
+// the package's name on the left and the wordmark on the right, and draws under them with the
+// family's vocabulary (below the family's picture): its glow on the middle of the frame, tonal
+// cards, connections a dot runs, the pulse of a card's edge and a cube lit as it lands. What is
+// drawn sits on the middle of the frame.
 //
 // EVERY WORD ON A PACKAGE'S PICTURE IS A WORD OF THE PRODUCT. A line is written as pieces, each
 // the literal it puts on the picture and the file of the repository that says it (`said`),
@@ -846,13 +850,14 @@ function cubes(s, x0, cy, a, arrive, link = 12) {
 
 /**
  * A card that is lit and stays lit from where its attributes say: laid on the card, the same
- * box, with a heavier edge and a faint fill in the accent.
+ * box, with the hub's heavier edge. Nothing fills it: a fill over the card's tint would take a
+ * grey text inside it under four and a half to one on a dark page.
  * @param {Scene} s
  * @param {Frame} c
  * @param {string} attrs
  */
 const lit = (s, c, attrs) =>
-  `<rect ${attrs} x="${n(c.x + 0.5)}" y="${n(c.y + 0.5)}" width="${n(c.w - 1)}" height="${n(c.h - 1)}" rx="10" fill="${s.accent}" fill-opacity="${s.paint.tab}" stroke="${s.accent}" stroke-width="1.5"/>`;
+  `<rect ${attrs} x="${n(c.x + 0.5)}" y="${n(c.y + 0.5)}" width="${n(c.w - 1)}" height="${n(c.h - 1)}" rx="10" fill="none" stroke="${s.accent}" stroke-width="1.5"/>`;
 
 /**
  * The ends of an arrow from one point to another, as `connection` and `dot` take them: the
@@ -958,7 +963,7 @@ function chainStory(s) {
   );
   // Two readers of the same tail, each in its own words for the same verdict: a read leaves the
   // seal as a ring, and a dot runs each line to its reader's card, which lights as it lands.
-  const T = 8.2;
+  const T = 7.8;
   /** @type {[Line, Line, number][]} */
   const readers = [
     [L.verify, L.verified, cy - 28],
@@ -1111,7 +1116,7 @@ function coreStory(s) {
     card(s, table),
     s.sayIn(L.row, x0 + PAD, table, 'value'),
     '</g>',
-    pulse(s, table, 9.6),
+    pulse(s, table, folds.last),
     s.say(L.rebuild, x0, 160, 'caption', { attrs: s.stays(9.0) }),
   );
   return out;
