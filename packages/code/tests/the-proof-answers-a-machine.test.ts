@@ -219,7 +219,10 @@ describe('the proof answers a machine', () => {
     // because "one site the README says the same thing from" is the reason the constant
     // exists. The phrase per row is that hole's DISCRIMINANT and nothing else.
     expect(said.json.notAnswered).toHaveLength(2);
-    const readme = readFileSync(new URL('../README.md', import.meta.url), 'utf-8');
+    const readme = readFileSync(
+      new URL('../../../docs/cli-reference.md', import.meta.url),
+      'utf-8',
+    );
     for (const discriminant of [
       // the tail taken out together with its key — reported nowhere
       'indistinguishable from a fresh one',
