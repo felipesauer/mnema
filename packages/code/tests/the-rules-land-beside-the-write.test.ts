@@ -204,7 +204,7 @@ describe('every text that says what the per-edit push hands over says when', () 
     ['plugin/README.md', '| **It is a snapshot** |'],
     ['plugin/README.md', 'The rules it reports as governing that path'],
     ['plugin/README.md', '| **The rules at each edit** |'],
-    ['packages/code/README.md', 'A `PreToolUse` hook on'],
+    ['docs/cli-reference.md', 'A `PreToolUse` hook on'],
   ])('on %s, where it says "%s"', (page, anchor) => {
     expect(passageAt(page, anchor)).toContain(WHEN);
   });
