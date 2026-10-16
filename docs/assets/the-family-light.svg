@@ -75,8 +75,7 @@
 @keyframes k70{0%{opacity:0}73.57%{opacity:0}75%{opacity:1}78.57%{opacity:1}80%{opacity:0}100%{opacity:0}}
 @keyframes k71{0%{transform:translate(562px,180px)}76.43%{transform:translate(562px,180px)}81.43%{transform:translate(620px,220px)}82.14%{transform:translate(620px,220px)}82.86%{transform:translate(562px,180px)}100%{transform:translate(562px,180px)}}
 @keyframes k72{0%{opacity:0}76.43%{opacity:0}77.29%{opacity:1}80.57%{opacity:1}81.79%{opacity:0}100%{opacity:0}}
-@keyframes k73{0%{opacity:0}76.43%{opacity:0}77.5%{opacity:1}81.79%{opacity:0}100%{opacity:0}}
-@keyframes k74{0%{opacity:0}81.07%{opacity:0}82.14%{opacity:1}85.71%{opacity:0}100%{opacity:0}}
+@keyframes k73{0%{opacity:0}81.07%{opacity:0}82.14%{opacity:1}85.71%{opacity:0}100%{opacity:0}}
 @media (prefers-reduced-motion: reduce){.a{animation:none!important}}
 </style>
 <defs>
@@ -84,7 +83,7 @@
 <linearGradient id="tint" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#997dbf" stop-opacity="0.07"/><stop offset="1" stop-color="#997dbf" stop-opacity="0.02"/></linearGradient>
 </defs>
 <rect width="880" height="260" fill="#ffffff"/>
-<ellipse class="a" style="animation-name:k0" cx="440" cy="86" rx="180" ry="120" fill="url(#glow)"/>
+<ellipse class="a" style="animation-name:k0" cx="440" cy="86" rx="180" ry="86" fill="url(#glow)"/>
 <rect class="a" style="animation-name:k1" x="322.5" y="10.5" width="235" height="239" rx="14" fill="url(#tint)" stroke="#997dbf" stroke-width="1.5"/>
 <text class="a" style="animation-name:k2" x="440" y="44" font-family="ui-monospace,SFMono-Regular,'SF Mono',Menlo,Consolas,'Liberation Mono',monospace" font-size="13" font-weight="600" fill="#1f2328" text-anchor="middle">@mnema/code</text>
 <g class="a" style="animation-name:k3"><g transform="translate(336.32 60) scale(0.36)">
@@ -139,19 +138,19 @@
 <path d="M521.96 140L530.62 135L530.62 145L521.96 150z" fill="#997dbf" fill-opacity="0.06"/>
 <path d="M521.96 130L530.62 135L530.62 145L521.96 150L513.3 145L513.3 135zM513.3 135L521.96 140L530.62 135M521.96 140V150" fill="none" stroke="#997dbf" stroke-width="1.75" stroke-linejoin="round"/>
 </g>
-<path class="a" style="animation-name:k11" opacity="0" d="M440 130L448.66 135L448.66 145L440 150L431.34 145L431.34 135z" fill="#997dbf" fill-opacity="0.85"/>
-<path class="a" style="animation-name:k12" opacity="0" d="M467.32 130L475.98 135L475.98 145L467.32 150L458.66 145L458.66 135z" fill="#997dbf" fill-opacity="0.85"/>
-<path class="a" style="animation-name:k13" opacity="0" d="M494.64 130L503.3 135L503.3 145L494.64 150L485.98 145L485.98 135z" fill="#997dbf" fill-opacity="0.85"/>
-<path class="a" style="animation-name:k14" opacity="0" d="M521.96 130L530.62 135L530.62 145L521.96 150L513.3 145L513.3 135z" fill="#997dbf" fill-opacity="0.85"/>
+<path class="a" style="animation-name:k11" opacity="0" d="M440 130L448.66 135L448.66 145L440 150L431.34 145L431.34 135z" fill="#997dbf" fill-opacity="1"/>
+<path class="a" style="animation-name:k12" opacity="0" d="M467.32 130L475.98 135L475.98 145L467.32 150L458.66 145L458.66 135z" fill="#997dbf" fill-opacity="1"/>
+<path class="a" style="animation-name:k13" opacity="0" d="M494.64 130L503.3 135L503.3 145L494.64 150L485.98 145L485.98 135z" fill="#997dbf" fill-opacity="1"/>
+<path class="a" style="animation-name:k14" opacity="0" d="M521.96 130L530.62 135L530.62 145L521.96 150L513.3 145L513.3 135z" fill="#997dbf" fill-opacity="1"/>
 <path class="a" style="animation-name:k15" d="M349.38 157H530.62" stroke="#59636e" stroke-width="1.5" stroke-linecap="round"/>
 <g class="a" style="animation-name:k16">
 <path d="M400 171V157" stroke="#59636e" stroke-width="1.5" stroke-linecap="round"/>
-<rect x="368.5" y="172.5" width="63" height="23" rx="6" fill="#997dbf" fill-opacity="0.12" stroke="#997dbf"/>
+<rect x="368.5" y="172.5" width="63" height="23" rx="6" fill="#997dbf" fill-opacity="0.05" stroke="#997dbf"/>
 <text x="400" y="188" font-family="ui-monospace,SFMono-Regular,'SF Mono',Menlo,Consolas,'Liberation Mono',monospace" font-size="13" font-weight="600" fill="#1f2328" text-anchor="middle">mnema</text>
 </g>
 <g class="a" style="animation-name:k17">
 <path d="M480 171V157" stroke="#59636e" stroke-width="1.5" stroke-linecap="round"/>
-<rect x="448.5" y="172.5" width="63" height="23" rx="6" fill="#997dbf" fill-opacity="0.12" stroke="#997dbf"/>
+<rect x="448.5" y="172.5" width="63" height="23" rx="6" fill="#997dbf" fill-opacity="0.05" stroke="#997dbf"/>
 <text x="480" y="188" font-family="ui-monospace,SFMono-Regular,'SF Mono',Menlo,Consolas,'Liberation Mono',monospace" font-size="13" font-weight="600" fill="#1f2328" text-anchor="middle">MCP</text>
 </g>
 <text class="a" style="animation-name:k18" x="440" y="223.7" font-family="ui-monospace,SFMono-Regular,'SF Mono',Menlo,Consolas,'Liberation Mono',monospace" font-size="12" fill="#59636e" text-anchor="middle">two surfaces over one record</text>
@@ -165,7 +164,7 @@
 <path class="a" style="animation-name:k22" d="M314.85 73.75L318 80L311.04 79.28M263.15 46.25L260 40L266.96 40.72" fill="none" stroke="#997dbf" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
 <path class="a" style="animation-name:k23,k24" opacity="0" d="M260 40L318 80" fill="none" stroke="#997dbf" stroke-width="2" stroke-linecap="round" stroke-dasharray="70.46 70.46"/>
 <g class="a" style="animation-name:k25,k26" opacity="0"><circle r="8" fill="#997dbf" fill-opacity="0.22"/><circle r="4" fill="#997dbf"/></g>
-<rect class="a" style="animation-name:k27" opacity="0" x="0.5" y="10.5" width="255" height="59" rx="10" fill="none" stroke="#997dbf" stroke-width="3"/>
+<rect class="a" style="animation-name:k27" opacity="0" x="1.5" y="11.5" width="253" height="57" rx="9" fill="none" stroke="#997dbf" stroke-width="3"/>
 <g class="a" style="animation-name:k28">
 <rect x="0.5" y="100.5" width="255" height="59" rx="10" fill="url(#tint)" stroke="#997dbf"/>
 <path transform="translate(12 119)" d="M3 3.5H19A1.5 1.5 0 0 1 20.5 5V17A1.5 1.5 0 0 1 19 18.5H3A1.5 1.5 0 0 1 1.5 17V5A1.5 1.5 0 0 1 3 3.5ZM1.5 7.5H20.5M8 7.5V18.5" fill="none" stroke="#997dbf" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
@@ -176,10 +175,10 @@
 <path class="a" style="animation-name:k31" d="M311.86 126.64L318 130L311.86 133.36M266.14 133.36L260 130L266.14 126.64" fill="none" stroke="#997dbf" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
 <path class="a" style="animation-name:k32,k33" opacity="0" d="M260 130L318 130" fill="none" stroke="#997dbf" stroke-width="2" stroke-linecap="round" stroke-dasharray="58 58"/>
 <g class="a" style="animation-name:k34,k35" opacity="0"><circle r="8" fill="#997dbf" fill-opacity="0.22"/><circle r="4" fill="#997dbf"/></g>
-<rect class="a" style="animation-name:k36" opacity="0" x="0.5" y="100.5" width="255" height="59" rx="10" fill="none" stroke="#997dbf" stroke-width="3"/>
+<rect class="a" style="animation-name:k36" opacity="0" x="1.5" y="101.5" width="253" height="57" rx="9" fill="none" stroke="#997dbf" stroke-width="3"/>
 <g class="a" style="animation-name:k37">
 <rect x="0.5" y="190.5" width="255" height="59" rx="10" fill="url(#tint)" stroke="#997dbf"/>
-<path transform="translate(12 209)" d="M18 11A7 7 0 1 1 15.5 5.64M15.5 1.6V5.64H19.5" fill="none" stroke="#997dbf" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+<path transform="translate(12 209)" d="M17.25 12.2A7 7 0 1 1 14.75 6.84M14.75 2.8V6.84H18.75" fill="none" stroke="#997dbf" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
 <text x="44" y="214" font-family="ui-monospace,SFMono-Regular,'SF Mono',Menlo,Consolas,'Liberation Mono',monospace" font-size="13" font-weight="600" fill="#1f2328">An agent in CI</text>
 </g>
 <text class="a" style="animation-name:k38" x="44" y="233.7" font-family="ui-monospace,SFMono-Regular,'SF Mono',Menlo,Consolas,'Liberation Mono',monospace" font-size="12" fill="#1f2328">mnema key restore --agent ci</text>
@@ -198,10 +197,10 @@
 <path class="a" style="animation-name:k49,k50" opacity="0" d="M562 80L620 40" fill="none" stroke="#997dbf" stroke-width="2" stroke-linecap="round" stroke-dasharray="70.46 70.46"/>
 <g class="a" style="animation-name:k51,k52" opacity="0"><circle r="8" fill="#997dbf" fill-opacity="0.22"/><circle r="4" fill="#997dbf"/></g>
 <rect class="a" style="animation-name:k53" opacity="0" x="316.5" y="4.5" width="247" height="251" rx="19" fill="none" stroke="#997dbf" stroke-width="2"/>
-<rect class="a" style="animation-name:k54" opacity="0" x="624.5" y="10.5" width="255" height="59" rx="10" fill="none" stroke="#997dbf" stroke-width="3"/>
+<rect class="a" style="animation-name:k54" opacity="0" x="625.5" y="11.5" width="253" height="57" rx="9" fill="none" stroke="#997dbf" stroke-width="3"/>
 <g class="a" style="animation-name:k55">
 <rect x="624.5" y="100.5" width="255" height="59" rx="10" fill="url(#tint)" stroke="#997dbf"/>
-<path transform="translate(636 119)" d="M5 1.5H13L18 6.5V20.5H5ZM13 1.5V6.5H18M8 11H15M8 14.5H15" fill="none" stroke="#997dbf" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+<path transform="translate(636 119)" d="M4.5 1.5H12.5L17.5 6.5V20.5H4.5ZM12.5 1.5V6.5H17.5M7.5 11H14.5M7.5 14.5H14.5" fill="none" stroke="#997dbf" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
 <text x="668" y="124" font-family="ui-monospace,SFMono-Regular,'SF Mono',Menlo,Consolas,'Liberation Mono',monospace" font-size="13" font-weight="600" fill="#1f2328">mnema site</text>
 </g>
 <text class="a" style="animation-name:k56" x="668" y="143.7" font-family="ui-monospace,SFMono-Regular,'SF Mono',Menlo,Consolas,'Liberation Mono',monospace" font-size="12" fill="#59636e">A page that verifies itself</text>
@@ -210,10 +209,10 @@
 <path class="a" style="animation-name:k59,k60" opacity="0" d="M562 130L620 130" fill="none" stroke="#997dbf" stroke-width="2" stroke-linecap="round" stroke-dasharray="58 58"/>
 <g class="a" style="animation-name:k61,k62" opacity="0"><circle r="8" fill="#997dbf" fill-opacity="0.22"/><circle r="4" fill="#997dbf"/></g>
 <rect class="a" style="animation-name:k63" opacity="0" x="316.5" y="4.5" width="247" height="251" rx="19" fill="none" stroke="#997dbf" stroke-width="2"/>
-<rect class="a" style="animation-name:k64" opacity="0" x="624.5" y="100.5" width="255" height="59" rx="10" fill="none" stroke="#997dbf" stroke-width="3"/>
+<rect class="a" style="animation-name:k64" opacity="0" x="625.5" y="101.5" width="253" height="57" rx="9" fill="none" stroke="#997dbf" stroke-width="3"/>
 <g class="a" style="animation-name:k65">
 <rect x="624.5" y="190.5" width="255" height="59" rx="10" fill="none" stroke="#59636e" stroke-dasharray="5 4"/>
-<path transform="translate(636 209)" d="M11 3L20 7.5L11 12L2 7.5ZM2 11.5L11 16L20 11.5M2 15.5L11 20L20 15.5" fill="none" stroke="#59636e" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+<path transform="translate(636 209)" d="M11 2.5L20 7L11 11.5L2 7ZM2 11L11 15.5L20 11M2 15L11 19.5L20 15" fill="none" stroke="#59636e" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
 <text x="668" y="214" font-family="ui-monospace,SFMono-Regular,'SF Mono',Menlo,Consolas,'Liberation Mono',monospace" font-size="13" font-weight="600" fill="#1f2328">Stacks</text>
 </g>
 <text class="a" style="animation-name:k66" x="668" y="233.7" font-family="ui-monospace,SFMono-Regular,'SF Mono',Menlo,Consolas,'Liberation Mono',monospace" font-size="12" fill="#1f2328">mnema stack add</text>
@@ -221,6 +220,5 @@
 <path class="a" style="animation-name:k68" d="M616.85 213.75L620 220L613.04 219.28" fill="none" stroke="#59636e" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
 <path class="a" style="animation-name:k69,k70" opacity="0" d="M562 180L620 220" fill="none" stroke="#997dbf" stroke-width="2" stroke-linecap="round" stroke-dasharray="70.46 70.46"/>
 <g class="a" style="animation-name:k71,k72" opacity="0"><circle r="8" fill="#997dbf" fill-opacity="0.22"/><circle r="4" fill="#997dbf"/></g>
-<rect class="a" style="animation-name:k73" opacity="0" x="316.5" y="4.5" width="247" height="251" rx="19" fill="none" stroke="#997dbf" stroke-width="2"/>
-<rect class="a" style="animation-name:k74" opacity="0" x="624.5" y="190.5" width="255" height="59" rx="10" fill="none" stroke="#997dbf" stroke-width="3"/>
+<rect class="a" style="animation-name:k73" opacity="0" x="625" y="191" width="254" height="58" rx="9.5" fill="none" stroke="#59636e" stroke-width="2" stroke-dasharray="5 4"/>
 </svg>

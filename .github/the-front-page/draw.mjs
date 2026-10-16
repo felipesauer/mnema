@@ -1497,16 +1497,17 @@ const FAMILY_ALT =
 
 /**
  * The glyph of each card, as path data in a box of 22 units: the SDK's brackets, the editor's
- * window and its panel, the loop of a run in CI, the Action's check, a page, and layers.
+ * window and its panel, the loop of a run in CI, the Action's check, a page, and layers. Each is
+ * centred in the box by what it draws, so all six sit on the middle of their cards.
  */
 const GLYPHS = Object.freeze({
   sdk: 'M7 2H4V9L2 11L4 13V20H7M15 2H18V9L20 11L18 13V20H15',
   vscode:
     'M3 3.5H19A1.5 1.5 0 0 1 20.5 5V17A1.5 1.5 0 0 1 19 18.5H3A1.5 1.5 0 0 1 1.5 17V5A1.5 1.5 0 0 1 3 3.5ZM1.5 7.5H20.5M8 7.5V18.5',
-  ci: 'M18 11A7 7 0 1 1 15.5 5.64M15.5 1.6V5.64H19.5',
+  ci: 'M17.25 12.2A7 7 0 1 1 14.75 6.84M14.75 2.8V6.84H18.75',
   action: 'M11 2A9 9 0 1 1 11 20A9 9 0 1 1 11 2ZM6.5 11.5L9.5 14.5L15.5 8',
-  site: 'M5 1.5H13L18 6.5V20.5H5ZM13 1.5V6.5H18M8 11H15M8 14.5H15',
-  stacks: 'M11 3L20 7.5L11 12L2 7.5ZM2 11.5L11 16L20 11.5M2 15.5L11 20L20 15.5',
+  site: 'M4.5 1.5H12.5L17.5 6.5V20.5H4.5ZM12.5 1.5V6.5H17.5M7.5 11H14.5M7.5 14.5H14.5',
+  stacks: 'M11 2.5L20 7L11 11.5L2 7ZM2 11L11 15.5L20 11M2 15L11 19.5L20 15',
 });
 
 /**
@@ -1592,8 +1593,9 @@ function family(blocks, theme) {
 
   // Scene 0: the hub — its card on a glow around the wordmark, the wordmark, the chain one cube
   // after the other, the two surfaces under it, and what they are.
+  // The glow reaches the top of the frame and stops there: none of it is cut off.
   out.push(
-    `<ellipse ${s.stays(0.2)} cx="${mid}" cy="86" rx="180" ry="120" fill="url(#glow)"/>`,
+    `<ellipse ${s.stays(0.2)} cx="${mid}" cy="86" rx="180" ry="86" fill="url(#glow)"/>`,
     `<rect ${s.stays(0.2)} x="${n(hub.x + 0.5)}" y="${n(hub.y + 0.5)}" width="${n(hub.w - 1)}" height="${n(hub.h - 1)}" rx="14" fill="url(#tint)" stroke="${s.accent}" stroke-width="1.5"/>`,
     s.sayIn(L.name, mid, hub, 'label', { anchor: 'middle', attrs: s.stays(0.4) }, -9),
   );
@@ -1610,6 +1612,9 @@ function family(blocks, theme) {
   const link = 10;
   const cy = 140;
   const landed = [3.1, 4.7, 6.6, 11.4];
+  // On a light page the cube lights in the accent itself: anything fainter is under three to one
+  // against the glow behind it.
+  const lit = theme === 'light' ? '1' : '0.85';
   const record = cubes(s, mid - rowWidth(7, a, link) / 2, cy, a, [0.8, 1.0, 1.2, ...landed], link);
   out.push(...record.out);
   landed.forEach((t, i) => {
@@ -1623,11 +1628,13 @@ function family(blocks, theme) {
           [LOOP, '0'],
         ],
         '0',
-      )} d="${hexagon(record.at(3 + i), cy, a)}" fill="${s.accent}" fill-opacity="0.85"/>`,
+      )} d="${hexagon(record.at(3 + i), cy, a)}" fill="${s.accent}" fill-opacity="${lit}"/>`,
     );
   });
   // The two surfaces, each a tab hung from a rail under the one record.
   const tab = { w: 64, h: 24, y: 172 };
+  // A tab's edge keeps three to one against its own inside: on a light page, a fainter inside.
+  const tabFill = theme === 'light' ? '0.05' : '0.12';
   const rail = cy + a + 7;
   out.push(
     `<path ${s.stays(1.4)} d="M${n(record.at(0) - record.dx)} ${rail}H${n(record.at(6) + record.dx)}" stroke="${s.muted}" stroke-width="1.5" stroke-linecap="round"/>`,
@@ -1641,7 +1648,7 @@ function family(blocks, theme) {
     out.push(
       `<g ${s.stays(1.5 + i * 0.15)}>`,
       `<path d="M${n(at)} ${tab.y - 1}V${rail}" stroke="${s.muted}" stroke-width="1.5" stroke-linecap="round"/>`,
-      `<rect x="${n(/** @type {number} */ (x) + 0.5)}" y="${n(tab.y + 0.5)}" width="${tab.w - 1}" height="${tab.h - 1}" rx="6" fill="${s.accent}" fill-opacity="0.12" stroke="${s.accent}"/>`,
+      `<rect x="${n(/** @type {number} */ (x) + 0.5)}" y="${n(tab.y + 0.5)}" width="${tab.w - 1}" height="${tab.h - 1}" rx="6" fill="${s.accent}" fill-opacity="${tabFill}" stroke="${s.accent}"/>`,
       s.sayIn(/** @type {Line} */ (line), at, frame, 'label', { anchor: 'middle' }),
       '</g>',
     );
@@ -1760,20 +1767,25 @@ function family(blocks, theme) {
     out.push(
       `<g class="a" style="animation-name:${glides},${fades}" opacity="0"><circle r="8" fill="${s.accent}" fill-opacity="0.22"/><circle r="4" fill="${s.accent}"/></g>`,
     );
-    // A read leaves the hub as a ring, and lights the card it reaches.
-    if (sat.flow === 'out') out.push(ring(T + 0.5));
+    // A read leaves the hub as a ring, and lights the card it reaches. Stacks are not a read: the
+    // hub installs them and signs the adoption, a cube on the chain; their card lights in its own
+    // grey, dashed as it is. Each light stays inside the card's edge, and so inside the frame.
+    if (sat.flow === 'out' && !sat.apart) out.push(ring(T + 0.5));
     if (sat.flow !== 'in') {
+      const lights = s.goes(
+        [
+          [0, '0'],
+          [last - 0.05, '0'],
+          [last + 0.1, '1'],
+          [last + 0.6, '0'],
+          [LOOP, '0'],
+        ],
+        '0',
+      );
       out.push(
-        `<rect ${s.goes(
-          [
-            [0, '0'],
-            [last - 0.05, '0'],
-            [last + 0.1, '1'],
-            [last + 0.6, '0'],
-            [LOOP, '0'],
-          ],
-          '0',
-        )} x="${n(x + 0.5)}" y="${n(y + 0.5)}" width="${card.w - 1}" height="${card.h - 1}" rx="10" fill="none" stroke="${s.accent}" stroke-width="3"/>`,
+        sat.apart
+          ? `<rect ${lights} x="${n(x + 1)}" y="${n(y + 1)}" width="${card.w - 2}" height="${card.h - 2}" rx="9.5" fill="none" stroke="${s.muted}" stroke-width="2" stroke-dasharray="5 4"/>`
+          : `<rect ${lights} x="${n(x + 1.5)}" y="${n(y + 1.5)}" width="${card.w - 3}" height="${card.h - 3}" rx="9" fill="none" stroke="${s.accent}" stroke-width="3"/>`,
       );
     }
   });

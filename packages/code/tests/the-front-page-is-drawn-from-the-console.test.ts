@@ -462,6 +462,419 @@ describe('every package, and the family, draws what it is, in its own words', ()
   );
 });
 
+/** An element of a picture: its tag, its attributes, its text, and the attributes of each group it is in. */
+type Node = {
+  tag: string;
+  at: Readonly<Record<string, string>>;
+  text: string;
+  groups: readonly Readonly<Record<string, string>>[];
+};
+
+/** The attributes written in an opening tag. */
+function attributesOf(written: string): Record<string, string> {
+  return Object.fromEntries(
+    [...written.matchAll(/([\w:-]+)="([^"]*)"/g)].map((m) => [m[1] as string, m[2] as string]),
+  );
+}
+
+/** Every shape and text of a picture, in the order it draws them. */
+function nodesOf(svg: string): Node[] {
+  const nodes: Node[] = [];
+  const groups: Record<string, string>[] = [];
+  const body = svg.slice(svg.indexOf('</defs>'));
+  for (const m of body.matchAll(
+    /<(\/?)(g|rect|path|ellipse|circle|text)\b([^>]*?)(\/?)>(?:([^<]*)<\/text>)?/g,
+  )) {
+    const [, closing, tag = '', written = '', selfClosing, text = ''] = m;
+    if (tag === 'g') {
+      if (closing) groups.pop();
+      else if (!selfClosing) groups.push(attributesOf(written));
+      continue;
+    }
+    nodes.push({ tag, at: attributesOf(written), text, groups: [...groups] });
+  }
+  return nodes;
+}
+
+/** The stops of every keyframes of a picture, by name: each offset with its declarations. */
+function keyframesOf(svg: string): Map<string, { at: number; value: string }[]> {
+  const out = new Map<string, { at: number; value: string }[]>();
+  for (const m of svg.matchAll(/@keyframes (\w+)\{((?:[\d.]+%\{[^}]*\})+)\}/g))
+    out.set(
+      m[1] as string,
+      [...(m[2] as string).matchAll(/([\d.]+)%\{([^}]*)\}/g)].map((s) => ({
+        at: Number(s[1]),
+        value: s[2] as string,
+      })),
+    );
+  return out;
+}
+
+type Box = [number, number, number, number];
+
+/** The points a path's data reaches, with each arc's whole circle: the box holds the path. */
+function pathPoints(d: string): [number, number][] {
+  const points: [number, number][] = [];
+  const tokens = [...d.matchAll(/[MmLlHhVvAaZz]|-?\d*\.?\d+(?:e-?\d+)?/g)].map((m) => m[0]);
+  let x = 0;
+  let y = 0;
+  let start: [number, number] = [0, 0];
+  let command = '';
+  let i = 0;
+  const next = (): number => Number(tokens[i++]);
+  while (i < tokens.length) {
+    if (/[A-Za-z]/.test(tokens[i] as string)) command = tokens[i++] as string;
+    const relative = command === command.toLowerCase();
+    const ox = relative ? x : 0;
+    const oy = relative ? y : 0;
+    switch (command.toUpperCase()) {
+      case 'M':
+      case 'L':
+        x = ox + next();
+        y = oy + next();
+        if (command.toUpperCase() === 'M') {
+          start = [x, y];
+          command = relative ? 'l' : 'L';
+        }
+        break;
+      case 'H':
+        x = ox + next();
+        break;
+      case 'V':
+        y = oy + next();
+        break;
+      case 'A': {
+        const r = next();
+        next(); // ry, the same as rx in every arc drawn here
+        next(); // rotation
+        const large = next();
+        const sweep = next();
+        const [x1, y1] = [x, y];
+        x = ox + next();
+        y = oy + next();
+        // The centre of a circular arc from its two ends (SVG 1.1, F.6.5), and its whole circle.
+        const [mx, my] = [(x1 - x) / 2, (y1 - y) / 2];
+        const half = Math.hypot(mx, my);
+        const radius = Math.max(r, half);
+        const k =
+          (large === sweep ? -1 : 1) *
+          Math.sqrt(Math.max(0, radius * radius - half * half) / (half * half || 1));
+        const [cx, cy] = [(x1 + x) / 2 + k * my, (y1 + y) / 2 - k * mx];
+        points.push([cx - radius, cy - radius], [cx + radius, cy + radius]);
+        break;
+      }
+      case 'Z':
+        [x, y] = start;
+        break;
+      default:
+        throw new Error(`a path command this does not read: ${command}`);
+    }
+    points.push([x, y]);
+  }
+  return points;
+}
+
+/** The numbers of a `translate(…)` and a `scale(…)` written in a transform. */
+function transformOf(written: string | undefined): { dx: number; dy: number; k: number } {
+  const t = /translate\(\s*(-?[\d.]+)(?:px)?[\s,]+(-?[\d.]+)(?:px)?\s*\)/.exec(written ?? '');
+  const s = /scale\(\s*([\d.]+)\s*\)/.exec(written ?? '');
+  return { dx: Number(t?.[1] ?? 0), dy: Number(t?.[2] ?? 0), k: Number(s?.[1] ?? 1) };
+}
+
+/**
+ * The box of every place a shape is ever painted, its stroke's half-width included: a dot is
+ * boxed at every place its keyframes move it to.
+ */
+function boxesOf(node: Node, frames: Map<string, { at: number; value: string }[]>): Box[] {
+  const { at } = node;
+  const stroked = at.stroke !== undefined && at.stroke !== 'none';
+  const half = stroked ? Number(at['stroke-width'] ?? 1) / 2 : 0;
+  let box: Box;
+  if (node.tag === 'rect') {
+    const [x, y] = [Number(at.x ?? 0), Number(at.y ?? 0)];
+    box = [x, y, x + Number(at.width), y + Number(at.height)];
+  } else if (node.tag === 'ellipse' || node.tag === 'circle') {
+    const [cx, cy] = [Number(at.cx ?? 0), Number(at.cy ?? 0)];
+    const [rx, ry] =
+      node.tag === 'circle' ? [Number(at.r), Number(at.r)] : [Number(at.rx), Number(at.ry)];
+    box = [cx - rx, cy - ry, cx + rx, cy + ry];
+  } else {
+    const points = pathPoints(at.d ?? '');
+    const xs = points.map((p) => p[0]);
+    const ys = points.map((p) => p[1]);
+    box = [Math.min(...xs), Math.min(...ys), Math.max(...xs), Math.max(...ys)];
+  }
+  box = [box[0] - half, box[1] - half, box[2] + half, box[3] + half];
+  // Its own transform first, then each group's from the innermost out.
+  for (const written of [at.transform, ...[...node.groups].reverse().map((g) => g.transform)]) {
+    const { dx, dy, k } = transformOf(written);
+    box = [box[0] * k + dx, box[1] * k + dy, box[2] * k + dx, box[3] * k + dy];
+  }
+  const moved = node.groups
+    .flatMap((g) => /animation-name:([^"]+)/.exec(g.style ?? '')?.[1]?.split(',') ?? [])
+    .flatMap((name) => frames.get(name) ?? [])
+    .filter((stop) => stop.value.startsWith('transform:'))
+    .map((stop) => transformOf(stop.value));
+  if (moved.length === 0) return [box];
+  return moved.map(({ dx, dy }) => [box[0] + dx, box[1] + dy, box[2] + dx, box[3] + dy]);
+}
+
+/** Which way the record goes on each card's line, said here by hand, apart from the script. */
+const RELATIONS = [
+  { card: 'SDK', goes: 'both', apart: false },
+  { card: 'A VS Code extension', goes: 'both', apart: false },
+  { card: 'An agent in CI', goes: 'in', apart: false },
+  { card: 'The Action', goes: 'out', apart: false },
+  { card: 'mnema site', goes: 'out', apart: false },
+  { card: 'Stacks', goes: 'out', apart: true },
+] as const;
+
+describe('the family draws which way the record goes', () => {
+  const pictures = drawTheFrontPage(THE_BLOCKS);
+  const themes = (['dark', 'light'] as const).map((theme) => ({
+    theme,
+    svg: pictures[`the-family-${theme}.svg`] ?? '',
+  }));
+
+  /** Everything the guards below read of one theme's picture. */
+  function layout(svg: string) {
+    const nodes = nodesOf(svg);
+    const frames = keyframesOf(svg);
+    const named = (n: Node): string[] =>
+      [n.at.style, ...n.groups.map((g) => g.style)].flatMap(
+        (s) => /animation-name:([^"]+)/.exec(s ?? '')?.[1]?.split(',') ?? [],
+      );
+    const rects = nodes.filter((n) => n.tag === 'rect' && n.at.width !== '880');
+    const centre = (r: Node): [number, number] => [
+      Number(r.at.x) + Number(r.at.width) / 2,
+      Number(r.at.y) + Number(r.at.height) / 2,
+    ];
+    const boxOf = (r: Node): Box => [
+      Number(r.at.x),
+      Number(r.at.y),
+      Number(r.at.x) + Number(r.at.width),
+      Number(r.at.y) + Number(r.at.height),
+    ];
+    const pulses = rects.filter((r) => r.at.opacity === '0' && r.at.fill === 'none');
+    const holding = (text: string): Node => {
+      const t = nodes.find((n) => n.tag === 'text' && n.text === text);
+      expect(t, `no text ${text}`).toBeDefined();
+      const [x, y] = [Number(t?.at.x), Number(t?.at.y)];
+      const found = rects.filter((r) => {
+        const [x0, y0, x1, y1] = boxOf(r);
+        return r.at.opacity !== '0' && x >= x0 && x <= x1 && y >= y0 && y <= y1;
+      });
+      expect(found, `the box around ${text}`).toHaveLength(1);
+      return found[0] as Node;
+    };
+    const hub = holding('@mnema/code');
+    // Each line from a card to the hub: two points, dashed, in the width of a line.
+    const lines = nodes
+      .filter((n) => n.tag === 'path' && n.at['stroke-width'] === '1.5' && n.at['stroke-dasharray'])
+      .flatMap((n) => {
+        const m = /^M(-?[\d.]+) (-?[\d.]+)L(-?[\d.]+) (-?[\d.]+)$/.exec(n.at.d ?? '');
+        const [x1, y1, x2, y2] = (m ?? []).slice(1).map(Number);
+        return m
+          ? [
+              {
+                node: n,
+                ends: [
+                  [x1, y1],
+                  [x2, y2],
+                ] as [number, number][],
+              },
+            ]
+          : [];
+      });
+    // The heads: each a point with two strokes back from it.
+    const tips = nodes
+      .filter((n) => n.tag === 'path' && /^(?:M[-\d. ]+L[-\d. ]+L[-\d. ]+)+$/.test(n.at.d ?? ''))
+      .flatMap((n) =>
+        [...(n.at.d ?? '').matchAll(/M[-\d. ]+L(-?[\d.]+) (-?[\d.]+)L/g)].map(
+          (m) => [Number(m[1]), Number(m[2])] as [number, number],
+        ),
+      );
+    const near = (p: [number, number], q: [number, number], within = 0.01) =>
+      Math.hypot(p[0] - q[0], p[1] - q[1]) <= within;
+    const distance = (p: [number, number], b: Box) =>
+      Math.hypot(Math.max(b[0] - p[0], 0, p[0] - b[2]), Math.max(b[1] - p[1], 0, p[1] - b[3]));
+    /** When an animation's opacity first rises above nothing, as a percentage of the loop. */
+    const rises = (names: string[]): number | undefined => {
+      for (const name of names) {
+        const stops = (frames.get(name) ?? []).filter((s) => s.value.startsWith('opacity:'));
+        const i = stops.findIndex((s) => Number(s.value.slice(8)) > 0);
+        if (i > 0) return stops[i - 1]?.at;
+      }
+      return undefined;
+    };
+    const dots = nodes
+      .filter((n) => n.tag === 'circle' && n.at['fill-opacity'] === undefined)
+      .map((n) => {
+        const names = named(n);
+        const moves = names
+          .flatMap((name) => frames.get(name) ?? [])
+          .filter((s) => s.value.startsWith('transform:'))
+          .map((s) => ({ at: s.at, ...transformOf(s.value) }));
+        const opacity = names
+          .flatMap((name) => frames.get(name) ?? [])
+          .filter((s) => s.value.startsWith('opacity:'))
+          .map((s) => ({ at: s.at, o: Number(s.value.slice(8)) }));
+        return { moves, opacity, rise: rises(names) };
+      });
+    const cards = RELATIONS.map((relation) => {
+      const card = holding(relation.card);
+      const line = lines.find(({ ends }) => ends.some((e) => distance(e, boxOf(card)) <= 6));
+      expect(line, `the line of ${relation.card}`).toBeDefined();
+      const [a = [0, 0], b = [0, 0]] = line?.ends ?? [];
+      const [atCard, atHub] =
+        distance(a, boxOf(card)) <= distance(b, boxOf(card)) ? [a, b] : [b, a];
+      // The dot whose way runs from one end of this line to the other.
+      const dot = dots.find(
+        ({ moves }) =>
+          moves.some((m) => near([m.dx, m.dy], atCard)) &&
+          moves.some((m) => near([m.dx, m.dy], atHub)),
+      );
+      // The places the dot is at while it shows, in order, each named by the end it is at.
+      const where = (p: [number, number]) =>
+        near(p, atCard, 0.5) ? 'card' : near(p, atHub, 0.5) ? 'hub' : 'between';
+      const visible = dot?.opacity.filter((s) => s.o > 0) ?? [];
+      const from = dot?.opacity[dot.opacity.findIndex((s) => s.o > 0) - 1]?.at ?? 0;
+      const until =
+        dot?.opacity.find((s, i) => i > 0 && s.o === 0 && (dot.opacity[i - 1]?.o ?? 0) > 0)?.at ??
+        100;
+      const position = (t: number): [number, number] => {
+        const moves = dot?.moves ?? [];
+        const j = moves.findIndex((m) => m.at >= t);
+        const after = moves[Math.max(j, 0)];
+        const before = moves[Math.max(j - 1, 0)];
+        if (!after || !before || after.at === before.at) return [after?.dx ?? 0, after?.dy ?? 0];
+        const f = (t - before.at) / (after.at - before.at);
+        return [before.dx + f * (after.dx - before.dx), before.dy + f * (after.dy - before.dy)];
+      };
+      const way = [
+        from,
+        ...(dot?.moves ?? []).map((m) => m.at).filter((t) => t > from && t < until),
+        until,
+      ]
+        .map((t) => where(position(t)))
+        .filter((p, i, all) => i === 0 || p !== all[i - 1]);
+      return {
+        ...relation,
+        box: card,
+        line: line?.node,
+        heads: [tips.some((t) => near(t, atCard)), tips.some((t) => near(t, atHub))],
+        way: visible.length > 0 ? way : [],
+        rise: dot?.rise,
+      };
+    });
+    return { nodes, frames, hub, cards, pulses, centre, boxOf };
+  }
+
+  it.each(themes)('paints every shape of the $theme picture inside its frame', ({ svg }) => {
+    // A stroke past the edge of the frame is cut off: half of it is not drawn.
+    const frames = keyframesOf(svg);
+    const shapes = nodesOf(svg).filter((n) => n.tag !== 'text' && n.at.width !== '880');
+    expect(shapes.length).toBeGreaterThan(90);
+    const outside = shapes.flatMap((n) =>
+      boxesOf(n, frames)
+        .filter(([x0, y0, x1, y1]) => x0 < 0 || y0 < 0 || x1 > 880 || y1 > 260)
+        .map(
+          (b) =>
+            `${n.tag} ${(n.at.d ?? `${n.at.x},${n.at.y}`).slice(0, 24)}: ${b.map((v) => +v.toFixed(2)).join(' ')}`,
+        ),
+    );
+    expect(outside).toEqual([]);
+  });
+
+  it.each(themes)(
+    'puts the head of each line of the $theme picture where the record goes',
+    ({ svg }) => {
+      const { cards } = layout(svg);
+      expect(cards.map(({ card, heads }) => [card, heads[0], heads[1]])).toEqual(
+        cards.map(({ card, goes }) => [card, goes !== 'in', goes !== 'out']),
+      );
+    },
+  );
+
+  it.each(themes)(
+    'runs the dot of each line of the $theme picture the way the record goes',
+    ({ svg }) => {
+      const { cards } = layout(svg);
+      const ways = { both: ['card', 'hub', 'card'], in: ['card', 'hub'], out: ['hub', 'card'] };
+      expect(cards.map(({ card, way }) => [card, way])).toEqual(
+        cards.map(({ card, goes }) => [card, ways[goes]]),
+      );
+    },
+  );
+
+  it.each(themes)(
+    'draws Stacks apart in the $theme picture, in grey and dashed',
+    ({ theme, svg }) => {
+      const { cards, pulses, centre } = layout(svg);
+      const accent = ACCENT[theme];
+      const dashes = new Set(
+        cards.filter((c) => !c.apart).map((c) => c.line?.at['stroke-dasharray']),
+      );
+      expect(dashes.size).toBe(1);
+      for (const c of cards) {
+        expect(c.box.at.stroke === accent, c.card).toBe(!c.apart);
+        expect(c.box.at['stroke-dasharray'] !== undefined, `${c.card} dashed`).toBe(c.apart);
+        expect(c.line?.at.stroke === accent).toBe(!c.apart);
+        expect(dashes.has(c.line?.at['stroke-dasharray'])).toBe(!c.apart);
+        // The card lights when what goes out reaches it: in the accent, or in its own grey.
+        const lit = pulses.filter((p) => {
+          const [x, y] = centre(p);
+          const [cx, cy] = centre(c.box);
+          return Math.abs(x - cx) <= 0.5 && Math.abs(y - cy) <= 0.5;
+        });
+        expect(lit.map((p) => p.at.stroke)).toEqual(
+          c.goes === 'in' ? [] : [c.apart ? c.box.at.stroke : accent],
+        );
+      }
+    },
+  );
+
+  it.each(themes)(
+    'rings the hub of the $theme picture, around it, as a read leaves it',
+    ({ svg }) => {
+      const { cards, pulses, hub, centre, boxOf } = layout(svg);
+      const onCards = (p: Node) =>
+        cards.some((c) => {
+          const [x, y] = centre(p);
+          const [cx, cy] = centre(c.box);
+          return Math.abs(x - cx) <= 0.5 && Math.abs(y - cy) <= 0.5;
+        });
+      const rings = pulses.filter((p) => !onCards(p));
+      expect(rings.length).toBeGreaterThan(0);
+      const [hx0, hy0, hx1, hy1] = boxOf(hub);
+      for (const ring of rings) {
+        // Centred on the hub, and close around its edge.
+        const [x0, y0, x1, y1] = boxOf(ring);
+        const gaps = [hx0 - x0, hy0 - y0, x1 - hx1, y1 - hy1];
+        expect(
+          gaps.every((g) => g >= 0 && g <= 8),
+          `ring at ${x0},${y0}`,
+        ).toBe(true);
+        const [left = 0, top = 0, right = 0, bottom = 0] = gaps;
+        expect(Math.abs(left - right) + Math.abs(top - bottom)).toBeLessThanOrEqual(0.5);
+      }
+      // One ring for each read, as its dot leaves the hub; none for what writes, and none for
+      // Stacks, which the hub installs and does not read out.
+      const frames = keyframesOf(svg);
+      const ringRises = rings.map((r) => {
+        const stops = frames.get(/animation-name:(\w+)/.exec(r.at.style ?? '')?.[1] ?? '') ?? [];
+        return stops[stops.findIndex((s) => Number(s.value.slice(8)) > 0) - 1]?.at;
+      });
+      expect(ringRises.sort((x = 0, y = 0) => x - y)).toEqual(
+        cards
+          .filter((c) => c.goes === 'out' && !c.apart)
+          .map((c) => c.rise)
+          .sort((x = 0, y = 0) => x - y),
+      );
+    },
+  );
+});
+
 // A badge sets its colour in the query (`color=` / `colorB=`, after `?`, `&` or the `;` of an
 // escaped `&amp;`) or, for a static badge, as the last segment of `/badge/<label>-<msg>-<colour>`
 // (where `--` is an escaped hyphen).
