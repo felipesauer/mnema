@@ -2,8 +2,8 @@
 
 <p align="center">
 <picture>
-  <source media="(prefers-color-scheme: dark)" srcset="https://raw.githubusercontent.com/felipesauer/mnema/main/packages/code/assets/code-dark.svg">
-  <img src="https://raw.githubusercontent.com/felipesauer/mnema/main/packages/code/assets/code-light.svg" alt="Your decisions, handed to your agents' sessions and held at the edits they govern — append-only and signed in the repository, and checkable by anyone." width="720">
+  <source media="(prefers-color-scheme: dark)" srcset="https://raw.githubusercontent.com/felipesauer/mnema/main/docs/assets/the-family-dark.svg">
+  <img src="https://raw.githubusercontent.com/felipesauer/mnema/main/docs/assets/the-family-light.svg" alt="The mnema family: @mnema/code, the command line and the MCP server over one record, with the SDK, a VS Code extension, an agent in CI, the GitHub Action, mnema site and Stacks around it" width="880">
 </picture>
 </p>
 

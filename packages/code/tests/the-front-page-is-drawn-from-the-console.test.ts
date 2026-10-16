@@ -12,8 +12,9 @@
  *     grey, whose channels lie within {@link NEUTRAL_SPREAD} of each other — or the accent of the
  *     theme the file is named for. Any other hue fails, and so does a colour written in a form
  *     this does not read (a name, `rgb()`, `hsl()`), rather than pass unread.
- *   - THE PACKAGES: each published package has its own picture, drawn by the same script into
- *     `packages/<p>/assets/`, held byte for byte here and painted in the same accent. Every word
+ *   - THE PACKAGES: each published package but `@mnema/code` has its own picture, drawn by the
+ *     same script into `packages/<p>/assets/` in the family's paint and motion, held byte for
+ *     byte here and painted in the same accent; `@mnema/code`'s README shows the family. Every word
  *     on it is a literal of the product, found here in the file the script names for it; no
  *     text on it is anything else, and none is a host's name, a count that changes, or a
  *     promise the package does not make. The id a line of output prints is drawn elided, and a
@@ -62,6 +63,8 @@ const {
   HALF_ROW,
   textOf,
   pictureBlock,
+  PICTURED_PAGES,
+  FAMILY_PAGE,
 } = (await import(pathToFileURL(DRAW).href)) as {
   drawTheFrontPage: (blocks: readonly string[]) => Record<string, string>;
   drawThePackages: (blocks: readonly string[]) => Record<string, string>;
@@ -69,16 +72,22 @@ const {
   FAMILY_LINES: Readonly<Record<string, Line>>;
   SEPARATORS: readonly string[];
   ELIDED: string;
-  TYPE: Readonly<Record<string, { size: number; centre: number }>>;
+  TYPE: Readonly<Record<string, { size: number; weight: string; centre: number }>>;
   HALF_ROW: number;
   textOf: (line: Line) => string;
   pictureBlock: (dir: string) => string;
+  PICTURED_PAGES: readonly string[];
+  FAMILY_PAGE: string;
 };
 const { ACCENT } = (await import(pathToFileURL(ACCENT_FILE).href)) as {
   ACCENT: { dark: string; light: string };
 };
 
 const ASSETS = 'docs/assets';
+
+/** The family's text alternative, said here by hand, apart from the script that writes it. */
+const FAMILY_ALT =
+  'The mnema family: @mnema/code, the command line and the MCP server over one record, with the SDK, a VS Code extension, an agent in CI, the GitHub Action, mnema site and Stacks around it';
 
 /** The most two channels of a grey may differ by, out of 255. GitHub's own greys spread by 9 to 21. */
 const NEUTRAL_SPREAD = 24;
@@ -154,8 +163,7 @@ describe('the front page is drawn from the console', () => {
   });
 
   it('names the family in its text alternative, dark and light', () => {
-    const alt =
-      'The mnema family: @mnema/code, the command line and the MCP server over one record, with the SDK, a VS Code extension, an agent in CI, the GitHub Action, mnema site and Stacks around it';
+    const alt = FAMILY_ALT;
     for (const theme of ['dark', 'light']) {
       const svg = drawn[`the-family-${theme}.svg`] ?? '';
       expect(svg).toContain(` aria-label="${alt}"`);
@@ -201,7 +209,9 @@ function wordsOf(svg: string): string[] {
 
 /**
  * Every picture whose words are lines of the product: each package's, and the family's, by the
- * path of each theme from the repository's root.
+ * path of each theme from the repository's root, with its frame, said here by hand: its width,
+ * its height, where the band at its head ends (nothing under it is part of the drawing), and the
+ * fewest shapes it draws.
  */
 const LINED = [
   ...PACKAGE_PICTURES.map(({ dir, lines }) => ({
@@ -209,12 +219,14 @@ const LINED = [
     lines,
     dark: `packages/${dir}/assets/${dir}-dark.svg`,
     light: `packages/${dir}/assets/${dir}-light.svg`,
+    frame: { w: 720, h: 240, band: 41, shapes: 12 },
   })),
   {
     id: 'family',
     lines: FAMILY_LINES,
     dark: `${ASSETS}/the-family-dark.svg`,
     light: `${ASSETS}/the-family-light.svg`,
+    frame: { w: 880, h: 260, band: 0, shapes: 90 },
   },
 ];
 
@@ -234,9 +246,9 @@ describe('every package, and the family, draws what it is, in its own words', ()
       repository: { url: string };
     };
 
-  it('draws the five published packages, dark and light', () => {
+  it('draws the four published packages but @mnema/code, dark and light', () => {
     expect(Object.keys(packages).sort()).toEqual(
-      ['chain', 'code', 'context', 'core', 'stacks'].flatMap((p) => [
+      ['chain', 'context', 'core', 'stacks'].flatMap((p) => [
         `packages/${p}/assets/${p}-dark.svg`,
         `packages/${p}/assets/${p}-light.svg`,
       ]),
@@ -288,26 +300,6 @@ describe('every package, and the family, draws what it is, in its own words', ()
     }
   });
 
-  it('draws the output of the command line as lines of its golden, the id elided', () => {
-    // The command line prints a record's id in the parentheses, a new one on every run; the
-    // golden stands a placeholder there that no one ever sees. The picture draws neither: it
-    // draws the line up to the id, the id as a visible `(…)`, and the rest of the line.
-    const golden = read('packages/code/src/cli.writes.golden.txt').split('\n');
-    const words = wordsOf(read('packages/code/assets/code-light.svg'));
-    const output = words.filter((w) => /^(?:Recorded decision|Decision) /.test(w));
-    expect(output).toHaveLength(2);
-    for (const line of output) {
-      const [before, after, ...more] = line.split(` ${ELIDED}`);
-      expect(more).toEqual([]);
-      expect(after).toBeDefined();
-      const cut = `| ${before} (`;
-      const matches = golden.filter(
-        (g) => g.startsWith(cut) && /^<[a-z-]+>\)/.test(g.slice(cut.length)),
-      );
-      expect(matches.map((g) => g.slice(cut.length).replace(/^<[a-z-]+>\)/, ''))).toContain(after);
-    }
-  });
-
   it.each(lined)('%s centres every text in its box by its role', (path) => {
     // A text inside a box sits where one rule puts it: its baseline is the middle of the box,
     // plus how far the middle of a line's ink sits above its baseline in that size, plus a whole
@@ -345,7 +337,12 @@ describe('every package, and the family, draws what it is, in its own words', ()
     expect(single.filter(([, rows]) => !rows.has(0)).map(([key]) => key)).toEqual([]);
   });
 
-  it.each(PACKAGE_PICTURES.map((p) => p.dir))(
+  it('opens the README of every published package with a picture, and @mnema/code with the family', () => {
+    expect([...PICTURED_PAGES].sort()).toEqual(['chain', 'code', 'context', 'core', 'stacks']);
+    expect(FAMILY_PAGE).toBe('code');
+  });
+
+  it.each(PICTURED_PAGES)(
     'packages/%s/README.md opens with exactly the block the script writes',
     (dir) => {
       const { name } = manifest(dir);
@@ -358,14 +355,30 @@ describe('every package, and the family, draws what it is, in its own words', ()
       const urls = [...readme.matchAll(/https:\/\/raw\.githubusercontent\.com\/[^"\s)]+/g)].map(
         (m) => m[0],
       );
-      const base = `https://raw.githubusercontent.com/felipesauer/mnema/main/packages/${dir}/assets`;
-      expect(urls).toEqual([`${base}/${dir}-dark.svg`, `${base}/${dir}-light.svg`]);
+      const base = 'https://raw.githubusercontent.com/felipesauer/mnema/main';
+      expect(urls).toEqual(
+        dir === 'code'
+          ? [`${base}/docs/assets/the-family-dark.svg`, `${base}/docs/assets/the-family-light.svg`]
+          : [
+              `${base}/packages/${dir}/assets/${dir}-dark.svg`,
+              `${base}/packages/${dir}/assets/${dir}-light.svg`,
+            ],
+      );
+      // @mnema/code shows the family at the family's width, described as the family describes
+      // itself; every other package its own picture, described by its manifest.
+      const img = /<img src="[^"]+" alt="([^"]*)" width="(\d+)">/.exec(readme);
+      const description = (
+        JSON.parse(read(`packages/${dir}/package.json`)) as { description: string }
+      ).description;
+      expect([img?.[1]?.replaceAll('&quot;', '"'), img?.[2]]).toEqual(
+        dir === 'code' ? [FAMILY_ALT, '880'] : [description, '720'],
+      );
     },
   );
 
   // The npm page keeps `align` on a paragraph and on an image but strips it from a `div`, so the
   // centre is set on `<p>` and said here by hand, apart from the script that writes the block.
-  it.each(PACKAGE_PICTURES.map((p) => p.dir))(
+  it.each(PICTURED_PAGES)(
     'packages/%s/README.md centres its title, its picture and its badges',
     (dir) => {
       const { name } = manifest(dir);
@@ -405,7 +418,7 @@ describe('every package, and the family, draws what it is, in its own words', ()
     },
   );
 
-  it.each(PACKAGE_PICTURES.map((p) => p.dir))(
+  it.each(PICTURED_PAGES)(
     'packages/%s/README.md names no version in the address of an image',
     (dir) => {
       const readme = read(`packages/${dir}/README.md`);
@@ -515,7 +528,7 @@ type Box = [number, number, number, number];
 /** The points a path's data reaches, with each arc's whole circle: the box holds the path. */
 function pathPoints(d: string): [number, number][] {
   const points: [number, number][] = [];
-  const tokens = [...d.matchAll(/[MmLlHhVvAaZz]|-?\d*\.?\d+(?:e-?\d+)?/g)].map((m) => m[0]);
+  const tokens = [...d.matchAll(/[MmLlHhVvCcAaZz]|-?\d*\.?\d+(?:e-?\d+)?/g)].map((m) => m[0]);
   let x = 0;
   let y = 0;
   let start: [number, number] = [0, 0];
@@ -541,6 +554,12 @@ function pathPoints(d: string): [number, number][] {
         x = ox + next();
         break;
       case 'V':
+        y = oy + next();
+        break;
+      case 'C':
+        // A cubic curve lies inside the hull of its four points, so its two controls box it.
+        for (let c = 0; c < 2; c++) points.push([ox + next(), oy + next()]);
+        x = ox + next();
         y = oy + next();
         break;
       case 'A': {
@@ -604,7 +623,13 @@ function boxesOf(node: Node, frames: Map<string, { at: number; value: string }[]
     const ys = points.map((p) => p[1]);
     box = [Math.min(...xs), Math.min(...ys), Math.max(...xs), Math.max(...ys)];
   }
-  box = [box[0] - half, box[1] - half, box[2] + half, box[3] + half];
+  // A straight line across, or straight down, with its ends cut square reaches no further than
+  // its ends along its length: only across it does its stroke spread.
+  const capped = at['stroke-linecap'] === undefined || at['stroke-linecap'] === 'butt';
+  const across = capped && /^M-?[\d.]+ -?[\d.]+H-?[\d.]+$/.test(at.d ?? '');
+  const down = capped && /^M-?[\d.]+ -?[\d.]+V-?[\d.]+$/.test(at.d ?? '');
+  const [hx, hy] = [across ? 0 : half, down ? 0 : half];
+  box = [box[0] - hx, box[1] - hy, box[2] + hx, box[3] + hy];
   // Its own transform first, then each group's from the innermost out.
   for (const written of [at.transform, ...[...node.groups].reverse().map((g) => g.transform)]) {
     const { dx, dy, k } = transformOf(written);
@@ -629,155 +654,247 @@ const RELATIONS = [
   { card: 'Stacks', goes: 'out', apart: true },
 ] as const;
 
-describe('the family draws which way the record goes', () => {
-  const pictures = drawTheFrontPage(THE_BLOCKS);
-  const themes = (['dark', 'light'] as const).map((theme) => ({
-    theme,
-    svg: pictures[`the-family-${theme}.svg`] ?? '',
-  }));
+/**
+ * Every arrow of each package's picture, said here by hand, apart from the script: what it runs
+ * from and what its head points at, each named by a text of the thing at that end (a text a box
+ * holds, the caption over a box that holds none, or a text standing alone); whether a dot runs it,
+ * and whether it stands apart, in grey and dashed long. The line back from what `@mnema/context`
+ * composes stands apart and is struck: it writes nothing back.
+ */
+const ARROWS: Readonly<
+  Record<string, readonly { from: string; to: string; dot: boolean; apart?: boolean }[]>
+> = {
+  chain: [
+    { from: 'checkpoint · Ed25519', to: 'verify', dot: true },
+    { from: 'checkpoint · Ed25519', to: 'mnema_verify.py', dot: true },
+  ],
+  core: [
+    { from: 'proposed', to: 'accepted', dot: true },
+    { from: 'proposed', to: 'superseded', dot: false },
+    { from: 'proposed', to: 'rejected', dot: false },
+    { from: 'accepted', to: 'superseded', dot: false },
+    { from: 'accept', to: 'rejected', dot: true },
+    { from: 'projectDecisions', to: 'ADR-2 · Keep money as integer cents · accepted', dot: true },
+  ],
+  context: [
+    { from: 'ADR-2 accepted', to: 'decisions', dot: true },
+    {
+      from: 'only READS and COMPOSES',
+      to: 'src/billing/total.ts → ADR-2',
+      dot: false,
+      apart: true,
+    },
+  ],
+  stacks: [{ from: 'path NUL sha256(file) LF', to: 'df9d8d71cdc13bd89b45af349e677ecf', dot: true }],
+};
 
-  /** Everything the guards below read of one theme's picture. */
-  function layout(svg: string) {
-    const nodes = nodesOf(svg);
-    const frames = keyframesOf(svg);
-    const named = (n: Node): string[] =>
-      [n.at.style, ...n.groups.map((g) => g.style)].flatMap(
-        (s) => /animation-name:([^"]+)/.exec(s ?? '')?.[1]?.split(',') ?? [],
-      );
-    const rects = nodes.filter((n) => n.tag === 'rect' && n.at.width !== '880');
-    const centre = (r: Node): [number, number] => [
-      Number(r.at.x) + Number(r.at.width) / 2,
-      Number(r.at.y) + Number(r.at.height) / 2,
-    ];
-    const boxOf = (r: Node): Box => [
-      Number(r.at.x),
-      Number(r.at.y),
-      Number(r.at.x) + Number(r.at.width),
-      Number(r.at.y) + Number(r.at.height),
-    ];
-    const pulses = rects.filter((r) => r.at.opacity === '0' && r.at.fill === 'none');
-    const holding = (text: string): Node => {
-      const t = nodes.find((n) => n.tag === 'text' && n.text === text);
-      expect(t, `no text ${text}`).toBeDefined();
-      const [x, y] = [Number(t?.at.x), Number(t?.at.y)];
-      const found = rects.filter((r) => {
-        const [x0, y0, x1, y1] = boxOf(r);
-        return r.at.opacity !== '0' && x >= x0 && x <= x1 && y >= y0 && y <= y1;
-      });
-      expect(found, `the box around ${text}`).toHaveLength(1);
-      return found[0] as Node;
-    };
-    const hub = holding('@mnema/code');
-    // Each line from a card to the hub: two points, dashed, in the width of a line.
-    const lines = nodes
-      .filter((n) => n.tag === 'path' && n.at['stroke-width'] === '1.5' && n.at['stroke-dasharray'])
-      .flatMap((n) => {
-        const m = /^M(-?[\d.]+) (-?[\d.]+)L(-?[\d.]+) (-?[\d.]+)$/.exec(n.at.d ?? '');
-        const [x1, y1, x2, y2] = (m ?? []).slice(1).map(Number);
-        return m
-          ? [
-              {
-                node: n,
-                ends: [
-                  [x1, y1],
-                  [x2, y2],
-                ] as [number, number][],
-              },
-            ]
-          : [];
-      });
-    // The heads: each a point with two strokes back from it.
-    const tips = nodes
-      .filter((n) => n.tag === 'path' && /^(?:M[-\d. ]+L[-\d. ]+L[-\d. ]+)+$/.test(n.at.d ?? ''))
-      .flatMap((n) =>
-        [...(n.at.d ?? '').matchAll(/M[-\d. ]+L(-?[\d.]+) (-?[\d.]+)L/g)].map(
-          (m) => [Number(m[1]), Number(m[2])] as [number, number],
-        ),
-      );
-    const near = (p: [number, number], q: [number, number], within = 0.01) =>
-      Math.hypot(p[0] - q[0], p[1] - q[1]) <= within;
-    const distance = (p: [number, number], b: Box) =>
-      Math.hypot(Math.max(b[0] - p[0], 0, p[0] - b[2]), Math.max(b[1] - p[1], 0, p[1] - b[3]));
-    /** When an animation's opacity first rises above nothing, as a percentage of the loop. */
-    const rises = (names: string[]): number | undefined => {
-      for (const name of names) {
-        const stops = (frames.get(name) ?? []).filter((s) => s.value.startsWith('opacity:'));
-        const i = stops.findIndex((s) => Number(s.value.slice(8)) > 0);
-        if (i > 0) return stops[i - 1]?.at;
-      }
-      return undefined;
-    };
-    const dots = nodes
-      .filter((n) => n.tag === 'circle' && n.at['fill-opacity'] === undefined)
-      .map((n) => {
-        const names = named(n);
-        const moves = names
-          .flatMap((name) => frames.get(name) ?? [])
-          .filter((s) => s.value.startsWith('transform:'))
-          .map((s) => ({ at: s.at, ...transformOf(s.value) }));
-        const opacity = names
-          .flatMap((name) => frames.get(name) ?? [])
-          .filter((s) => s.value.startsWith('opacity:'))
-          .map((s) => ({ at: s.at, o: Number(s.value.slice(8)) }));
-        return { moves, opacity, rise: rises(names) };
-      });
-    const cards = RELATIONS.map((relation) => {
-      const card = holding(relation.card);
-      const line = lines.find(({ ends }) => ends.some((e) => distance(e, boxOf(card)) <= 6));
-      expect(line, `the line of ${relation.card}`).toBeDefined();
-      const [a = [0, 0], b = [0, 0]] = line?.ends ?? [];
-      const [atCard, atHub] =
-        distance(a, boxOf(card)) <= distance(b, boxOf(card)) ? [a, b] : [b, a];
-      // The dot whose way runs from one end of this line to the other.
-      const dot = dots.find(
-        ({ moves }) =>
-          moves.some((m) => near([m.dx, m.dy], atCard)) &&
-          moves.some((m) => near([m.dx, m.dy], atHub)),
-      );
-      // The places the dot is at while it shows, in order, each named by the end it is at.
-      const where = (p: [number, number]) =>
-        near(p, atCard, 0.5) ? 'card' : near(p, atHub, 0.5) ? 'hub' : 'between';
-      const visible = dot?.opacity.filter((s) => s.o > 0) ?? [];
-      const from = dot?.opacity[dot.opacity.findIndex((s) => s.o > 0) - 1]?.at ?? 0;
-      const until =
-        dot?.opacity.find((s, i) => i > 0 && s.o === 0 && (dot.opacity[i - 1]?.o ?? 0) > 0)?.at ??
-        100;
-      const position = (t: number): [number, number] => {
-        const moves = dot?.moves ?? [];
-        const j = moves.findIndex((m) => m.at >= t);
-        const after = moves[Math.max(j, 0)];
-        const before = moves[Math.max(j - 1, 0)];
-        if (!after || !before || after.at === before.at) return [after?.dx ?? 0, after?.dy ?? 0];
-        const f = (t - before.at) / (after.at - before.at);
-        return [before.dx + f * (after.dx - before.dx), before.dy + f * (after.dy - before.dy)];
-      };
-      const way = [
-        from,
-        ...(dot?.moves ?? []).map((m) => m.at).filter((t) => t > from && t < until),
-        until,
-      ]
-        .map((t) => where(position(t)))
-        .filter((p, i, all) => i === 0 || p !== all[i - 1]);
-      return {
-        ...relation,
-        box: card,
-        line: line?.node,
-        heads: [tips.some((t) => near(t, atCard)), tips.some((t) => near(t, atHub))],
-        way: visible.length > 0 ? way : [],
-        rise: dot?.rise,
-      };
+/** The advance of a character of the monospace face every picture writes in, as a share of its size. */
+const ADVANCE = 0.6;
+
+/** Everything the guards below read of one picture. */
+function drawing(svg: string) {
+  const nodes = nodesOf(svg);
+  const frames = keyframesOf(svg);
+  const named = (n: Node): string[] =>
+    [n.at.style, ...n.groups.map((g) => g.style)].flatMap(
+      (s) => /animation-name:([^"]+)/.exec(s ?? '')?.[1]?.split(',') ?? [],
+    );
+  // Every box but the page, which is the one rect with no place of its own.
+  const rects = nodes.filter((n) => n.tag === 'rect' && n.at.x !== undefined);
+  const centre = (r: Node): [number, number] => [
+    Number(r.at.x) + Number(r.at.width) / 2,
+    Number(r.at.y) + Number(r.at.height) / 2,
+  ];
+  const boxOf = (r: Node): Box => [
+    Number(r.at.x),
+    Number(r.at.y),
+    Number(r.at.x) + Number(r.at.width),
+    Number(r.at.y) + Number(r.at.height),
+  ];
+  const pulses = rects.filter((r) => r.at.opacity === '0' && r.at.fill === 'none');
+  const within = ([x, y]: [number, number], [x0, y0, x1, y1]: Box) =>
+    x >= x0 && x <= x1 && y >= y0 && y <= y1;
+  /** The boxes there in the last frame, each once: a card and the light laid on it are one box. */
+  const resting = rects
+    .filter((r) => r.at.opacity !== '0' && !r.groups.some((g) => g.opacity === '0'))
+    .filter((r, i, all) => all.findIndex((o) => boxOf(o).join() === boxOf(r).join()) === i);
+  const texts = nodes.filter((n) => n.tag === 'text');
+  const anchor = (t: Node): [number, number] => [Number(t.at.x), Number(t.at.y)];
+  const holding = (text: string): Node => {
+    const t = texts.find((n) => n.text === text);
+    expect(t, `no text ${text}`).toBeDefined();
+    const found = resting.filter((r) => t !== undefined && within(anchor(t), boxOf(r)));
+    expect(found, `the box around ${text}`).toHaveLength(1);
+    return found[0] as Node;
+  };
+  /** Where a text's ink lies, from its size, its anchor and the advance of the face. */
+  const inkOf = (t: Node): Box => {
+    const size = Number(t.at['font-size']);
+    const width =
+      [...t.text.replaceAll('&amp;', '&').replaceAll('&quot;', '"')].length * size * ADVANCE;
+    const x = Number(t.at.x) - (t.at['text-anchor'] === 'middle' ? width / 2 : 0);
+    const y = Number(t.at.y);
+    return [x, y - size * 0.75, x + width, y + size * 0.25];
+  };
+  // Each line from one thing to another: two points, dashed, in the width of a line.
+  const lines = nodes
+    .filter((n) => n.tag === 'path' && n.at['stroke-width'] === '1.5' && n.at['stroke-dasharray'])
+    .flatMap((n) => {
+      const m = /^M(-?[\d.]+) (-?[\d.]+)L(-?[\d.]+) (-?[\d.]+)$/.exec(n.at.d ?? '');
+      const [x1, y1, x2, y2] = (m ?? []).slice(1).map(Number);
+      return m
+        ? [
+            {
+              node: n,
+              ends: [
+                [x1, y1],
+                [x2, y2],
+              ] as [number, number][],
+            },
+          ]
+        : [];
     });
-    return { nodes, frames, hub, cards, pulses, centre, boxOf };
-  }
+  // The heads: each a point with two strokes back from it.
+  const tips = nodes
+    .filter((n) => n.tag === 'path' && /^(?:M[-\d. ]+L[-\d. ]+L[-\d. ]+)+$/.test(n.at.d ?? ''))
+    .flatMap((n) =>
+      [...(n.at.d ?? '').matchAll(/M[-\d. ]+L(-?[\d.]+) (-?[\d.]+)L/g)].map(
+        (m) => [Number(m[1]), Number(m[2])] as [number, number],
+      ),
+    );
+  const near = (p: [number, number], q: [number, number], within = 0.01) =>
+    Math.hypot(p[0] - q[0], p[1] - q[1]) <= within;
+  const distance = (p: [number, number], b: Box) =>
+    Math.hypot(Math.max(b[0] - p[0], 0, p[0] - b[2]), Math.max(b[1] - p[1], 0, p[1] - b[3]));
+  /** When an animation's opacity first rises above nothing, as a percentage of the loop. */
+  const rises = (names: string[]): number | undefined => {
+    for (const name of names) {
+      const stops = (frames.get(name) ?? []).filter((s) => s.value.startsWith('opacity:'));
+      const i = stops.findIndex((s) => Number(s.value.slice(8)) > 0);
+      if (i > 0) return stops[i - 1]?.at;
+    }
+    return undefined;
+  };
+  const dots = nodes
+    .filter((n) => n.tag === 'circle' && n.at['fill-opacity'] === undefined)
+    .map((n) => {
+      const names = named(n);
+      const moves = names
+        .flatMap((name) => frames.get(name) ?? [])
+        .filter((s) => s.value.startsWith('transform:'))
+        .map((s) => ({ at: s.at, ...transformOf(s.value) }));
+      const opacity = names
+        .flatMap((name) => frames.get(name) ?? [])
+        .filter((s) => s.value.startsWith('opacity:'))
+        .map((s) => ({ at: s.at, o: Number(s.value.slice(8)) }));
+      return { moves, opacity, rise: rises(names) };
+    });
+  type Dot = (typeof dots)[number];
+  /** The dot whose way runs from one point to the other. */
+  const dotOn = (a: [number, number], b: [number, number]) =>
+    dots.find(
+      ({ moves }) =>
+        moves.some((m) => near([m.dx, m.dy], a)) && moves.some((m) => near([m.dx, m.dy], b)),
+    );
+  /** The places a dot is at while it shows, in order, each named by the end it is at. */
+  const wayOf = (
+    dot: Dot | undefined,
+    [a, an]: [[number, number], string],
+    [b, bn]: [[number, number], string],
+  ): string[] => {
+    const where = (p: [number, number]) =>
+      near(p, a, 0.5) ? an : near(p, b, 0.5) ? bn : 'between';
+    const visible = dot?.opacity.filter((s) => s.o > 0) ?? [];
+    const from = dot?.opacity[dot.opacity.findIndex((s) => s.o > 0) - 1]?.at ?? 0;
+    const until =
+      dot?.opacity.find((s, i) => i > 0 && s.o === 0 && (dot.opacity[i - 1]?.o ?? 0) > 0)?.at ??
+      100;
+    const position = (t: number): [number, number] => {
+      const moves = dot?.moves ?? [];
+      const j = moves.findIndex((m) => m.at >= t);
+      const after = moves[Math.max(j, 0)];
+      const before = moves[Math.max(j - 1, 0)];
+      if (!after || !before || after.at === before.at) return [after?.dx ?? 0, after?.dy ?? 0];
+      const f = (t - before.at) / (after.at - before.at);
+      return [before.dx + f * (after.dx - before.dx), before.dy + f * (after.dy - before.dy)];
+    };
+    const way = [
+      from,
+      ...(dot?.moves ?? []).map((m) => m.at).filter((t) => t > from && t < until),
+      until,
+    ]
+      .map((t) => where(position(t)))
+      .filter((p, i, all) => i === 0 || p !== all[i - 1]);
+    return visible.length > 0 ? way : [];
+  };
+  /**
+   * The texts that name the thing nearest a point: the texts of the nearest box there in the last
+   * frame (or, for a box that holds none, the caption just over it), or a text standing alone.
+   */
+  const namesNear = (p: [number, number]): string[] => {
+    const free = texts.filter((t) => !resting.some((r) => within(anchor(t), boxOf(r))));
+    const things = [
+      ...resting.map((r) => {
+        const b = boxOf(r);
+        const inside = texts.filter((t) => within(anchor(t), b)).map((t) => t.text);
+        const over = free
+          .filter((t) => {
+            const [x, y] = anchor(t);
+            return y >= b[1] - 20 && y <= b[1] && x >= b[0] - 1 && x <= b[2];
+          })
+          .map((t) => t.text);
+        return { names: inside.length > 0 ? inside : over, at: distance(p, b) };
+      }),
+      ...free.map((t) => ({ names: [t.text], at: distance(p, inkOf(t)) })),
+    ].sort((x, y) => x.at - y.at);
+    return things[0]?.names ?? [];
+  };
+  return {
+    nodes,
+    frames,
+    rects,
+    resting,
+    texts,
+    inkOf,
+    holding,
+    lines,
+    tips,
+    near,
+    distance,
+    dotOn,
+    wayOf,
+    namesNear,
+    pulses,
+    centre,
+    boxOf,
+  };
+}
 
-  it.each(themes)('paints every shape of the $theme picture inside its frame', ({ svg }) => {
+describe('every package, and the family, is drawn inside its frame, on its middle, in its roles', () => {
+  const drawn: Record<string, string> = {
+    ...drawThePackages(THE_BLOCKS),
+    ...Object.fromEntries(
+      Object.entries(drawTheFrontPage(THE_BLOCKS)).map(([file, svg]) => [`${ASSETS}/${file}`, svg]),
+    ),
+  };
+  const pictures = LINED.flatMap((p) =>
+    (['dark', 'light'] as const).map((theme) => ({
+      path: p[theme],
+      frame: p.frame,
+      svg: drawn[p[theme]] ?? '',
+    })),
+  );
+
+  it.each(pictures)('$path paints every shape inside its frame', ({ svg, frame }) => {
     // A stroke past the edge of the frame is cut off: half of it is not drawn.
     const frames = keyframesOf(svg);
-    const shapes = nodesOf(svg).filter((n) => n.tag !== 'text' && n.at.width !== '880');
-    expect(shapes.length).toBeGreaterThan(90);
+    const shapes = nodesOf(svg).filter(
+      (n) => n.tag !== 'text' && !(n.tag === 'rect' && n.at.x === undefined),
+    );
+    expect(shapes.length).toBeGreaterThan(frame.shapes);
     const outside = shapes.flatMap((n) =>
       boxesOf(n, frames)
-        .filter(([x0, y0, x1, y1]) => x0 < 0 || y0 < 0 || x1 > 880 || y1 > 260)
+        .filter(([x0, y0, x1, y1]) => x0 < 0 || y0 < 0 || x1 > frame.w || y1 > frame.h)
         .map(
           (b) =>
             `${n.tag} ${(n.at.d ?? `${n.at.x},${n.at.y}`).slice(0, 24)}: ${b.map((v) => +v.toFixed(2)).join(' ')}`,
@@ -785,6 +902,126 @@ describe('the family draws which way the record goes', () => {
     );
     expect(outside).toEqual([]);
   });
+
+  it.each(pictures)('$path sets what it draws on the middle of its frame', ({ svg, frame }) => {
+    // What is there in the last frame under the band at the head, shapes and the ink of each
+    // text, spans as far from the left edge as from the right. The glow behind it is not counted:
+    // it is centred by itself, and as wide as it is it would hide a drawing set off the middle.
+    const d = drawing(svg);
+    const frames = keyframesOf(svg);
+    const still = d.nodes.filter(
+      (n) =>
+        n.at.opacity !== '0' &&
+        !n.groups.some((g) => g.opacity === '0') &&
+        !(n.tag === 'rect' && n.at.x === undefined) &&
+        !(n.at.fill ?? '').startsWith('url(#glow'),
+    );
+    const boxes = still
+      .flatMap((n) => (n.tag === 'text' ? [d.inkOf(n)] : boxesOf(n, frames)))
+      .filter((b) => b[3] > frame.band);
+    expect(boxes.length).toBeGreaterThan(10);
+    const left = Math.min(...boxes.map((b) => b[0]));
+    const right = Math.max(...boxes.map((b) => b[2]));
+    expect(Math.abs(left + right - frame.w) / 2, `${left}..${right}`).toBeLessThanOrEqual(0.5);
+  });
+
+  it.each(pictures)('$path writes every text in the size and weight of a role', ({ svg }) => {
+    const roles = new Set(Object.values(TYPE).map((r) => `${r.size}/${r.weight}`));
+    const written = drawing(svg).texts.map(
+      (t) => `${t.at['font-size']}/${t.at['font-weight'] ?? ''}`,
+    );
+    expect(written.length).toBeGreaterThan(5);
+    expect(written.filter((w) => !roles.has(w))).toEqual([]);
+  });
+});
+
+describe('every package draws which way each of its arrows goes', () => {
+  const packages = drawThePackages(THE_BLOCKS);
+
+  it('says the arrows of every package it draws', () => {
+    expect(Object.keys(ARROWS).sort()).toEqual(PACKAGE_PICTURES.map((p) => p.dir).sort());
+  });
+
+  const cases = PACKAGE_PICTURES.flatMap(({ dir }) =>
+    (['dark', 'light'] as const).map((theme) => ({
+      dir,
+      theme,
+      svg: packages[`packages/${dir}/assets/${dir}-${theme}.svg`] ?? '',
+    })),
+  );
+
+  it.each(cases)(
+    '$dir ($theme) draws each arrow from where it runs to where it points',
+    ({ dir, theme, svg }) => {
+      const d = drawing(svg);
+      const said = ARROWS[dir] ?? [];
+      // No arrow on the picture that is not said here, and none said that is not on it.
+      expect(d.lines).toHaveLength(said.length);
+      const found = said.map((arrow) => {
+        const line = d.lines.filter(({ ends }) => {
+          const [a = [0, 0], b = [0, 0]] = ends;
+          const [na, nb] = [d.namesNear(a), d.namesNear(b)];
+          return (
+            (na.includes(arrow.from) && nb.includes(arrow.to)) ||
+            (na.includes(arrow.to) && nb.includes(arrow.from))
+          );
+        });
+        expect(line, `the line from ${arrow.from} to ${arrow.to}`).toHaveLength(1);
+        const [a = [0, 0], b = [0, 0]] = line[0]?.ends ?? [];
+        const [tail, head] = d.namesNear(a).includes(arrow.from) ? [a, b] : [b, a];
+        const dot = d.dotOn(tail, head);
+        return {
+          arrow: `${arrow.from} → ${arrow.to}`,
+          heads: [d.tips.some((t) => d.near(t, tail)), d.tips.some((t) => d.near(t, head))],
+          way: d.wayOf(dot, [tail, 'from'], [head, 'to']),
+          apart:
+            line[0]?.node.at['stroke-dasharray'] === '8 5' &&
+            line[0]?.node.at.stroke !== ACCENT[theme],
+        };
+      });
+      expect(found).toEqual(
+        said.map((arrow) => ({
+          arrow: `${arrow.from} → ${arrow.to}`,
+          heads: [false, true],
+          way: arrow.dot ? ['from', 'to'] : [],
+          apart: arrow.apart === true,
+        })),
+      );
+    },
+  );
+});
+
+describe('the family draws which way the record goes', () => {
+  const pictures = drawTheFrontPage(THE_BLOCKS);
+  const themes = (['dark', 'light'] as const).map((theme) => ({
+    theme,
+    svg: pictures[`the-family-${theme}.svg`] ?? '',
+  }));
+
+  /** Everything the guards below read of one theme's picture: the hub, and each card around it. */
+  function layout(svg: string) {
+    const d = drawing(svg);
+    const hub = d.holding('@mnema/code');
+    const cards = RELATIONS.map((relation) => {
+      const card = d.holding(relation.card);
+      const line = d.lines.find(({ ends }) => ends.some((e) => d.distance(e, d.boxOf(card)) <= 6));
+      expect(line, `the line of ${relation.card}`).toBeDefined();
+      const [a = [0, 0], b = [0, 0]] = line?.ends ?? [];
+      const [atCard, atHub] =
+        d.distance(a, d.boxOf(card)) <= d.distance(b, d.boxOf(card)) ? [a, b] : [b, a];
+      // The dot whose way runs from one end of this line to the other.
+      const dot = d.dotOn(atCard, atHub);
+      return {
+        ...relation,
+        box: card,
+        line: line?.node,
+        heads: [d.tips.some((t) => d.near(t, atCard)), d.tips.some((t) => d.near(t, atHub))],
+        way: d.wayOf(dot, [atCard, 'card'], [atHub, 'hub']),
+        rise: dot?.rise,
+      };
+    });
+    return { ...d, hub, cards };
+  }
 
   it.each(themes)(
     'puts the head of each line of the $theme picture where the record goes',
@@ -893,7 +1130,7 @@ describe('the front page has one accent', () => {
   });
 
   it('reads the pictures of the packages too', () => {
-    expect(svgs.filter((f) => f.startsWith('packages/')).length).toBe(10);
+    expect(svgs.filter((f) => f.startsWith('packages/')).length).toBe(8);
   });
 
   it.each(svgs)('%s uses no hue but the accent of its theme', (file) => {

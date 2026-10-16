@@ -25,13 +25,19 @@ with its own changelog.
   it moves to. On the light page the tabs are fainter inside and a landing block lights in the accent itself, so each
   keeps three to one against what is behind it; the lines inside a block stay under that, as shading of a block whose
   outline keeps it. The words "A page that verifies itself" are held to the front page's README: a rewrite of that
-  section keeps them, or moves the picture's anchor with it. No page shows the picture yet.
+  section keeps them, or moves the picture's anchor with it. The README of `@mnema/code` opens with it, at the
+  family's width, described as the picture describes itself; the front page does not show it yet.
 - **Each published package opens its README with a picture of what it does.** `@mnema/chain`, `@mnema/core`,
-  `@mnema/context`, `@mnema/stacks` and `@mnema/code` each carry an animated picture, light and dark, in
-  `assets/`, drawn by `.github/the-front-page/draw.mjs` in the front page's one accent. Every word on a picture is a
-  literal of the package, held by a test to the file that says it; the id the command line prints, a new one on every
-  run, is drawn elided, as `(…)`. Each picture paints its own page, so the dark one
-  still reads where a page shows it on white. The README points at the file on the `main`
+  `@mnema/context` and `@mnema/stacks` each carry an animated picture, light and dark, in `assets/`, drawn by
+  `.github/the-front-page/draw.mjs` in the family's paint and motion: the same glow behind the drawing, tinted cards
+  edged in the accent, a dot that runs each arrow the way it points, the edge of a card pulsing as the dot lands, and
+  a block lit as it lands on the chain; each drawing sits on the middle of its frame. `@mnema/code` opens with the
+  picture of the family, which it stands in the middle of, and has no picture of its own. Every word on a picture is
+  a literal of the package, held by a test to the file that says it. Each picture paints its own page, so the dark
+  one still reads where a page shows it on white. Tables written in the test say where each arrow of each package
+  runs from and points to, and whether a dot runs it, and hold the drawing to them; others hold, for every package
+  and the family, every shape inside the frame, the drawing on the frame's middle, and every text in the size and
+  weight of one role. No test holds how strongly a colour stands out against what is behind it. The README points at the file on the `main`
   branch of the repository its `package.json` names, by `raw.githubusercontent.com`, with no version in the address:
   the picture loads before anything is published and is not in the tarball. The script writes the block, and a test
   holds each README to exactly that block and holds that no image address carries a version. The price of that
