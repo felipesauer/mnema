@@ -253,6 +253,10 @@ describe('every place that repeats the floor repeats this number', () => {
    * `_` for a space) and the URL's are undone.
    */
   const BADGE = /!\[([^\]]*)\]\((https:\/\/img\.shields\.io\/badge\/node-[^)\s]*)\)/g;
+  // The package READMEs centre their badges in a paragraph of HTML (npm strips `align` from a
+  // `div`, not from a `p`), so the badge is read in that form too. The root page draws its own
+  // in the same form and spells the range with `≥`, which is not the manifest's: it is skipped.
+  const HTML_BADGE = /<img alt="([^"]*)" src="(https:\/\/img\.shields\.io\/badge\/node-[^"\s]*)">/g;
   const RANGE = DECLARING[0]?.read.engines?.node ?? '';
   const messageOf = (url: string): string => {
     const path = new URL(url).pathname.slice('/badge/node-'.length);
@@ -270,16 +274,18 @@ describe('every place that repeats the floor repeats this number', () => {
   };
   const badges = TRACKED.filter((where) => where.endsWith('README.md')).flatMap((where) => {
     const text = readFileSync(join(ROOT, where), 'utf-8');
-    const found = [...text.matchAll(BADGE)].map((b) => ({
+    const html = where === 'README.md' ? [] : [...text.matchAll(HTML_BADGE)];
+    const found = [...text.matchAll(BADGE), ...html].map((b) => ({
       where,
       alt: b[1] ?? '',
       message: messageOf(b[2] ?? ''),
     }));
     // An image that calls itself a Node badge but is not drawn by the pattern above is a badge
     // this case would otherwise skip.
-    const named = [...text.matchAll(/!\[Node\b[^\]]*\]\(([^)]*)\)/g)].filter(
-      (n) => !(n[1] ?? '').startsWith('https://img.shields.io/badge/node-'),
-    );
+    const named = [
+      ...text.matchAll(/!\[Node\b[^\]]*\]\(([^)]*)\)/g),
+      ...(where === 'README.md' ? [] : text.matchAll(/<img alt="Node\b[^"]*" src="([^"]*)"/g)),
+    ].filter((n) => !(n[1] ?? '').startsWith('https://img.shields.io/badge/node-'));
     return [...found, ...named.map((n) => ({ where, alt: n[0], message: '(not read)' }))];
   });
 
