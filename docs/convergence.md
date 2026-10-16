@@ -130,13 +130,16 @@ one a machine's clock put last. Had Ana's clock run ahead of Bob's, the page abo
 both moves so that a person can read both and decide; a decision that settles it is a later move,
 or a decision that supersedes this one.
 
+In that case `show` still names both moves, on both machines. `brief` says nothing of them: a
+rejected decision is not in force, so it prints no rule to carry the line.
+
 ## A divergence is not an illegal move
 
 Two things look alike and are not the same.
 
 - **A divergence** is two moves out of one state, written by machines that had not read each other.
-  Each was legal where it was written. The readers apply both, in order, and `show` and `brief` say
-  it ([`divergent-moves.test.ts`](../packages/core/src/projections/divergent-moves.test.ts),
+  Each was legal where it was written. The readers apply both, in order; `show` says it, and `brief`
+  says it of a rule it prints, one left in force ([`divergent-moves.test.ts`](../packages/core/src/projections/divergent-moves.test.ts),
   "says the decision two machines moved out of `proposed`, with both moves as evidence").
 - **An illegal move** is one the workflow does not allow at its point in the merged order: a
   rejected decision accepted, a state that does not exist, a second birth, or a second move out of

@@ -212,7 +212,6 @@ describe('the two machines the convergence page shows', () => {
       'init',
       'decision move reject',
       'decision move accept',
-
       'show ADR-1',
       'brief',
       'verify',
