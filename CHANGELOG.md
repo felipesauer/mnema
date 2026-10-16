@@ -239,6 +239,11 @@ with its own changelog.
 
 ### Fixed
 
+- **The second reader breaks a tie between two tails by UTF-16 code unit, as `FORMAT.md` §6.2 says and `verify`
+  does.** It compared tail ids by code point, which puts a character above U+FFFF after one from U+E000 to U+FFFF where
+  the format puts it before. With two heads at one `at` on tails whose ids differ there, it took them in the other order
+  and named another move under §6.7 (a second birth on the other tail). Tail ids this product writes end in a hex
+  installation id, so their order does not move.
 - **A clone that rewrites line ends no longer turns an honest record red, and when it happens anyway the refusal
   says CRLF.** A `git clone` with `core.autocrlf=true` (the Git for Windows default) put a carriage return at the
   end of every line of the record, and both `verify` and the second reader refused it whole with the sentence a

@@ -160,6 +160,19 @@ def _number(v: int | float) -> str:
     return _double(v)
 
 
+def utf16_order(text: str) -> bytes:
+    """The sort key that compares two strings by UTF-16 code unit, as the format does.
+
+    The format compares text the way JavaScript's `<` and `.sort()` do: an object's keys
+    (Rule 1) and a tail id when two heads tie on `at` (Section 6.2). Python's `<` compares code
+    points, and the two disagree above U+FFFF, because a surrogate pair starts at 0xD800 while
+    U+FFFD is above it. The UTF-16-BE encoding compares byte for byte as the code units do.
+    `surrogatepass` is here only so the encode cannot raise: a lone surrogate has no
+    well-formed encoding, and a reader that has one in hand has already refused it.
+    """
+    return text.encode("utf-16-be", errors="surrogatepass")
+
+
 def _sorted_pairs(obj: dict[Any, Any]) -> list[tuple[str, Any]]:
     """Rules 1 and 3, and the fourth refusal.
 
@@ -178,7 +191,7 @@ def _sorted_pairs(obj: dict[Any, Any]) -> list[tuple[str, Any]]:
             raise Refusal("1", f"two keys normalize to the same string: {key!r}")
         seen[key] = None
         pairs.append((key, value))
-    pairs.sort(key=lambda kv: kv[0].encode("utf-16-be", errors="surrogatepass"))
+    pairs.sort(key=lambda kv: utf16_order(kv[0]))
     return pairs
 
 

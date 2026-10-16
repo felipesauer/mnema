@@ -23,6 +23,7 @@ from __future__ import annotations
 import json
 from typing import NamedTuple
 
+from .canonical import utf16_order
 from .entry import Entry
 
 NOTE_KINDS = ("memory.captured", "observation.recorded")
@@ -41,7 +42,7 @@ def _shown(value: object) -> str:
 
 def foreign_retractions(entries_by_tail: dict[str, list[Entry]]) -> list[Foreign]:
     """Every retraction that is not applied, in tail order and then `seq` order."""
-    tails = sorted(entries_by_tail)
+    tails = sorted(entries_by_tail, key=utf16_order)
     authors: dict[str, object] = {}
     asserters: dict[str, list[object]] = {}
     for tail in tails:

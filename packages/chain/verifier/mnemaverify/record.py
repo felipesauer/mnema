@@ -46,7 +46,7 @@ import re
 from typing import NamedTuple
 
 from . import bitcoin, enrolment, gaps, ots, retraction, schema, workflow
-from .canonical import CRLF, ends_in_crlf_only
+from .canonical import CRLF, ends_in_crlf_only, utf16_order
 from .checkpoint import Checkpoint, binding_break, read_checkpoint, read_tailproof
 from .ed25519 import verify as ed25519_verify
 from .entry import Entry, entry_hash, read_line
@@ -871,7 +871,8 @@ def verify_record(root: str, report: Report, require: str = "chained") -> None:
         report.break_out(f"there is no tails/ directory under {root}")
         return
     tail_ids = sorted(
-        name for name in os.listdir(tails_dir) if os.path.isdir(os.path.join(tails_dir, name))
+        (name for name in os.listdir(tails_dir) if os.path.isdir(os.path.join(tails_dir, name))),
+        key=utf16_order,
     )
     if not tail_ids:
         report.break_out(f"there are no tails under {tails_dir}")
