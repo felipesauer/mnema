@@ -158,8 +158,9 @@ CLI and the MCP tools behave identically, because they are the same call.
 
 ## What it proves — and what it does not
 
-The record is **tamper-evident, not tamper-proof**: it does not stop an edit, it
-makes one impossible to hide. `mnema verify` reads the events and public keys of
+The record is **tamper-evident, not tamper-proof**: it does not stop an edit, and
+`mnema verify` shows when what is in the record has changed since it was
+signed; it cannot show that something was cut off the end. It reads the events and public keys of
 this project's trees — no private key, no network — and prints each verdict
 verbatim. The surfaces never upgrade a verdict into a stronger claim.
 
