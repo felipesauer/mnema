@@ -1478,7 +1478,7 @@ export const FAMILY_LINES = Object.freeze({
   cli: [said('mnema', 'packages/code/package.json')],
   mcp: [said('MCP', 'packages/code/README.md')],
   surfaces: [said('two surfaces over one record', 'packages/code/README.md')],
-  sdk: [said('SDK', 'packages/sdk/README.md')],
+  sdk: [said('SDK', 'docs/features.md')],
   sdkSays: [said('A library door to the record', 'docs/packages.md')],
   vscode: [said('A VS Code extension', 'docs/packages.md')],
   vscodeSays: [said('through the command line', 'docs/packages.md')],
