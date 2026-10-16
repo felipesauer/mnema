@@ -12,6 +12,20 @@ with its own changelog.
 
 ### Added
 
+- **A picture of the mnema family.** `docs/assets/the-family-{light,dark}.svg`, drawn by
+  `.github/the-front-page/draw.mjs` in the front page's one accent and on its loop: `@mnema/code` in the middle (the
+  wordmark, the record's chain of blocks, and its two surfaces, `mnema` and `MCP`), with the SDK, a VS Code extension,
+  an agent in CI, the Action, the site page and Stacks around it. The head of each line says which way the record goes:
+  into the middle for what writes, out to the card for what reads, both for what does both; Stacks are drawn apart,
+  grey and dashed, and since the middle installs them and does not read them out, no ring leaves it for them and their
+  card lights in its own grey. Every word on it is a line of the product, held by the same tests as a package's
+  picture; the test of the one accent now reads a gradient by its stops. A table written in the test says which way
+  the record goes on each line, and holds to it, from the drawing alone, the heads, the way each dot runs, the ring
+  around the middle and Stacks' grey; another holds every shape, its stroke included, inside the frame at every place
+  it moves to. On the light page the tabs are fainter inside and a landing block lights in the accent itself, so each
+  keeps three to one against what is behind it; the lines inside a block stay under that, as shading of a block whose
+  outline keeps it. The words "A page that verifies itself" are held to the front page's README: a rewrite of that
+  section keeps them, or moves the picture's anchor with it. No page shows the picture yet.
 - **Each published package opens its README with a picture of what it does.** `@mnema/chain`, `@mnema/core`,
   `@mnema/context`, `@mnema/stacks` and `@mnema/code` each carry an animated picture, light and dark, in
   `assets/`, drawn by `.github/the-front-page/draw.mjs` in the front page's one accent. Every word on a picture is a

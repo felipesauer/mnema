@@ -1,0 +1,224 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="880" height="260" viewBox="0 0 880 260" role="img" aria-label="The mnema family: @mnema/code, the command line and the MCP server over one record, with the SDK, a VS Code extension, an agent in CI, the GitHub Action, mnema site and Stacks around it">
+<title>The mnema family: @mnema/code, the command line and the MCP server over one record, with the SDK, a VS Code extension, an agent in CI, the GitHub Action, mnema site and Stacks around it</title>
+<style>
+.a{animation-duration:14s;animation-iteration-count:infinite;animation-timing-function:ease-in-out}
+@keyframes k0{0%{opacity:0}1.43%{opacity:0}3.57%{opacity:1}92.86%{opacity:1}95%{opacity:0}100%{opacity:0}}
+@keyframes k1{0%{opacity:0}1.43%{opacity:0}3.57%{opacity:1}92.86%{opacity:1}95%{opacity:0}100%{opacity:0}}
+@keyframes k2{0%{opacity:0}2.86%{opacity:0}5%{opacity:1}92.86%{opacity:1}95%{opacity:0}100%{opacity:0}}
+@keyframes k3{0%{opacity:0}3.57%{opacity:0}5.71%{opacity:1}92.86%{opacity:1}95%{opacity:0}100%{opacity:0}}
+@keyframes k4{0%{opacity:0}5.71%{opacity:0}7.86%{opacity:1}92.86%{opacity:1}95%{opacity:0}100%{opacity:0}}
+@keyframes k5{0%{opacity:0}7.14%{opacity:0}9.29%{opacity:1}92.86%{opacity:1}95%{opacity:0}100%{opacity:0}}
+@keyframes k6{0%{opacity:0}8.57%{opacity:0}10.71%{opacity:1}92.86%{opacity:1}95%{opacity:0}100%{opacity:0}}
+@keyframes k7{0%{opacity:0}22.14%{opacity:0}24.29%{opacity:1}92.86%{opacity:1}95%{opacity:0}100%{opacity:0}}
+@keyframes k8{0%{opacity:0}33.57%{opacity:0}35.71%{opacity:1}92.86%{opacity:1}95%{opacity:0}100%{opacity:0}}
+@keyframes k9{0%{opacity:0}47.14%{opacity:0}49.29%{opacity:1}92.86%{opacity:1}95%{opacity:0}100%{opacity:0}}
+@keyframes k10{0%{opacity:0}81.43%{opacity:0}83.57%{opacity:1}92.86%{opacity:1}95%{opacity:0}100%{opacity:0}}
+@keyframes k11{0%{opacity:0}22.14%{opacity:0}23.21%{opacity:1}26.79%{opacity:0}100%{opacity:0}}
+@keyframes k12{0%{opacity:0}33.57%{opacity:0}34.64%{opacity:1}38.21%{opacity:0}100%{opacity:0}}
+@keyframes k13{0%{opacity:0}47.14%{opacity:0}48.21%{opacity:1}51.79%{opacity:0}100%{opacity:0}}
+@keyframes k14{0%{opacity:0}81.43%{opacity:0}82.5%{opacity:1}86.07%{opacity:0}100%{opacity:0}}
+@keyframes k15{0%{opacity:0}10%{opacity:0}12.14%{opacity:1}92.86%{opacity:1}95%{opacity:0}100%{opacity:0}}
+@keyframes k16{0%{opacity:0}10.71%{opacity:0}12.86%{opacity:1}92.86%{opacity:1}95%{opacity:0}100%{opacity:0}}
+@keyframes k17{0%{opacity:0}11.79%{opacity:0}13.93%{opacity:1}92.86%{opacity:1}95%{opacity:0}100%{opacity:0}}
+@keyframes k18{0%{opacity:0}12.86%{opacity:0}15%{opacity:1}92.86%{opacity:1}95%{opacity:0}100%{opacity:0}}
+@keyframes k19{0%{opacity:0}15.71%{opacity:0}17.86%{opacity:1}92.86%{opacity:1}95%{opacity:0}100%{opacity:0}}
+@keyframes k20{0%{opacity:0}17.14%{opacity:0}19.29%{opacity:1}92.86%{opacity:1}95%{opacity:0}100%{opacity:0}}
+@keyframes k21{0%{opacity:0}16.43%{opacity:0}18.57%{opacity:1}92.86%{opacity:1}95%{opacity:0}100%{opacity:0}}
+@keyframes k22{0%{opacity:0}19.29%{opacity:0}21.43%{opacity:1}92.86%{opacity:1}95%{opacity:0}100%{opacity:0}}
+@keyframes k23{0%{stroke-dashoffset:70.46}16.43%{stroke-dashoffset:70.46}20%{stroke-dashoffset:0}23.21%{stroke-dashoffset:0}23.93%{stroke-dashoffset:70.46}100%{stroke-dashoffset:70.46}}
+@keyframes k24{0%{opacity:0}16.43%{opacity:0}17.86%{opacity:1}21.43%{opacity:1}22.86%{opacity:0}100%{opacity:0}}
+@keyframes k25{0%{transform:translate(260px,40px)}18.57%{transform:translate(260px,40px)}22.14%{transform:translate(318px,80px)}25.71%{transform:translate(260px,40px)}100%{transform:translate(260px,40px)}}
+@keyframes k26{0%{opacity:0}18.57%{opacity:0}19.43%{opacity:1}24.86%{opacity:1}26.07%{opacity:0}100%{opacity:0}}
+@keyframes k27{0%{opacity:0}25.36%{opacity:0}26.43%{opacity:1}30%{opacity:0}100%{opacity:0}}
+@keyframes k28{0%{opacity:0}27.14%{opacity:0}29.29%{opacity:1}92.86%{opacity:1}95%{opacity:0}100%{opacity:0}}
+@keyframes k29{0%{opacity:0}28.57%{opacity:0}30.71%{opacity:1}92.86%{opacity:1}95%{opacity:0}100%{opacity:0}}
+@keyframes k30{0%{opacity:0}27.86%{opacity:0}30%{opacity:1}92.86%{opacity:1}95%{opacity:0}100%{opacity:0}}
+@keyframes k31{0%{opacity:0}30.71%{opacity:0}32.86%{opacity:1}92.86%{opacity:1}95%{opacity:0}100%{opacity:0}}
+@keyframes k32{0%{stroke-dashoffset:58}27.86%{stroke-dashoffset:58}31.43%{stroke-dashoffset:0}34.64%{stroke-dashoffset:0}35.36%{stroke-dashoffset:58}100%{stroke-dashoffset:58}}
+@keyframes k33{0%{opacity:0}27.86%{opacity:0}29.29%{opacity:1}32.86%{opacity:1}34.29%{opacity:0}100%{opacity:0}}
+@keyframes k34{0%{transform:translate(260px,130px)}30%{transform:translate(260px,130px)}33.57%{transform:translate(318px,130px)}37.14%{transform:translate(260px,130px)}100%{transform:translate(260px,130px)}}
+@keyframes k35{0%{opacity:0}30%{opacity:0}30.86%{opacity:1}36.29%{opacity:1}37.5%{opacity:0}100%{opacity:0}}
+@keyframes k36{0%{opacity:0}36.79%{opacity:0}37.86%{opacity:1}41.43%{opacity:0}100%{opacity:0}}
+@keyframes k37{0%{opacity:0}38.57%{opacity:0}40.71%{opacity:1}92.86%{opacity:1}95%{opacity:0}100%{opacity:0}}
+@keyframes k38{0%{opacity:0}40%{opacity:0}42.14%{opacity:1}92.86%{opacity:1}95%{opacity:0}100%{opacity:0}}
+@keyframes k39{0%{opacity:0}39.29%{opacity:0}41.43%{opacity:1}92.86%{opacity:1}95%{opacity:0}100%{opacity:0}}
+@keyframes k40{0%{opacity:0}42.14%{opacity:0}44.29%{opacity:1}92.86%{opacity:1}95%{opacity:0}100%{opacity:0}}
+@keyframes k41{0%{stroke-dashoffset:70.46}39.29%{stroke-dashoffset:70.46}42.86%{stroke-dashoffset:0}46.07%{stroke-dashoffset:0}46.79%{stroke-dashoffset:70.46}100%{stroke-dashoffset:70.46}}
+@keyframes k42{0%{opacity:0}39.29%{opacity:0}40.71%{opacity:1}44.29%{opacity:1}45.71%{opacity:0}100%{opacity:0}}
+@keyframes k43{0%{transform:translate(260px,220px)}42.14%{transform:translate(260px,220px)}47.14%{transform:translate(318px,180px)}47.86%{transform:translate(318px,180px)}48.57%{transform:translate(260px,220px)}100%{transform:translate(260px,220px)}}
+@keyframes k44{0%{opacity:0}42.14%{opacity:0}43%{opacity:1}46.29%{opacity:1}47.5%{opacity:0}100%{opacity:0}}
+@keyframes k45{0%{opacity:0}50%{opacity:0}52.14%{opacity:1}92.86%{opacity:1}95%{opacity:0}100%{opacity:0}}
+@keyframes k46{0%{opacity:0}51.43%{opacity:0}53.57%{opacity:1}92.86%{opacity:1}95%{opacity:0}100%{opacity:0}}
+@keyframes k47{0%{opacity:0}50.71%{opacity:0}52.86%{opacity:1}92.86%{opacity:1}95%{opacity:0}100%{opacity:0}}
+@keyframes k48{0%{opacity:0}53.57%{opacity:0}55.71%{opacity:1}92.86%{opacity:1}95%{opacity:0}100%{opacity:0}}
+@keyframes k49{0%{stroke-dashoffset:70.46}50.71%{stroke-dashoffset:70.46}54.29%{stroke-dashoffset:0}57.5%{stroke-dashoffset:0}58.21%{stroke-dashoffset:70.46}100%{stroke-dashoffset:70.46}}
+@keyframes k50{0%{opacity:0}50.71%{opacity:0}52.14%{opacity:1}55.71%{opacity:1}57.14%{opacity:0}100%{opacity:0}}
+@keyframes k51{0%{transform:translate(562px,80px)}53.57%{transform:translate(562px,80px)}58.57%{transform:translate(620px,40px)}59.29%{transform:translate(620px,40px)}60%{transform:translate(562px,80px)}100%{transform:translate(562px,80px)}}
+@keyframes k52{0%{opacity:0}53.57%{opacity:0}54.43%{opacity:1}57.71%{opacity:1}58.93%{opacity:0}100%{opacity:0}}
+@keyframes k53{0%{opacity:0}53.57%{opacity:0}54.64%{opacity:1}58.93%{opacity:0}100%{opacity:0}}
+@keyframes k54{0%{opacity:0}58.21%{opacity:0}59.29%{opacity:1}62.86%{opacity:0}100%{opacity:0}}
+@keyframes k55{0%{opacity:0}61.43%{opacity:0}63.57%{opacity:1}92.86%{opacity:1}95%{opacity:0}100%{opacity:0}}
+@keyframes k56{0%{opacity:0}62.86%{opacity:0}65%{opacity:1}92.86%{opacity:1}95%{opacity:0}100%{opacity:0}}
+@keyframes k57{0%{opacity:0}62.14%{opacity:0}64.29%{opacity:1}92.86%{opacity:1}95%{opacity:0}100%{opacity:0}}
+@keyframes k58{0%{opacity:0}65%{opacity:0}67.14%{opacity:1}92.86%{opacity:1}95%{opacity:0}100%{opacity:0}}
+@keyframes k59{0%{stroke-dashoffset:58}62.14%{stroke-dashoffset:58}65.71%{stroke-dashoffset:0}68.93%{stroke-dashoffset:0}69.64%{stroke-dashoffset:58}100%{stroke-dashoffset:58}}
+@keyframes k60{0%{opacity:0}62.14%{opacity:0}63.57%{opacity:1}67.14%{opacity:1}68.57%{opacity:0}100%{opacity:0}}
+@keyframes k61{0%{transform:translate(562px,130px)}65%{transform:translate(562px,130px)}70%{transform:translate(620px,130px)}70.71%{transform:translate(620px,130px)}71.43%{transform:translate(562px,130px)}100%{transform:translate(562px,130px)}}
+@keyframes k62{0%{opacity:0}65%{opacity:0}65.86%{opacity:1}69.14%{opacity:1}70.36%{opacity:0}100%{opacity:0}}
+@keyframes k63{0%{opacity:0}65%{opacity:0}66.07%{opacity:1}70.36%{opacity:0}100%{opacity:0}}
+@keyframes k64{0%{opacity:0}69.64%{opacity:0}70.71%{opacity:1}74.29%{opacity:0}100%{opacity:0}}
+@keyframes k65{0%{opacity:0}72.86%{opacity:0}75%{opacity:1}92.86%{opacity:1}95%{opacity:0}100%{opacity:0}}
+@keyframes k66{0%{opacity:0}74.29%{opacity:0}76.43%{opacity:1}92.86%{opacity:1}95%{opacity:0}100%{opacity:0}}
+@keyframes k67{0%{opacity:0}73.57%{opacity:0}75.71%{opacity:1}92.86%{opacity:1}95%{opacity:0}100%{opacity:0}}
+@keyframes k68{0%{opacity:0}76.43%{opacity:0}78.57%{opacity:1}92.86%{opacity:1}95%{opacity:0}100%{opacity:0}}
+@keyframes k69{0%{stroke-dashoffset:70.46}73.57%{stroke-dashoffset:70.46}77.14%{stroke-dashoffset:0}80.36%{stroke-dashoffset:0}81.07%{stroke-dashoffset:70.46}100%{stroke-dashoffset:70.46}}
+@keyframes k70{0%{opacity:0}73.57%{opacity:0}75%{opacity:1}78.57%{opacity:1}80%{opacity:0}100%{opacity:0}}
+@keyframes k71{0%{transform:translate(562px,180px)}76.43%{transform:translate(562px,180px)}81.43%{transform:translate(620px,220px)}82.14%{transform:translate(620px,220px)}82.86%{transform:translate(562px,180px)}100%{transform:translate(562px,180px)}}
+@keyframes k72{0%{opacity:0}76.43%{opacity:0}77.29%{opacity:1}80.57%{opacity:1}81.79%{opacity:0}100%{opacity:0}}
+@keyframes k73{0%{opacity:0}81.07%{opacity:0}82.14%{opacity:1}85.71%{opacity:0}100%{opacity:0}}
+@media (prefers-reduced-motion: reduce){.a{animation:none!important}}
+</style>
+<defs>
+<radialGradient id="glow" cx="0.5" cy="0.5" r="0.5"><stop offset="0" stop-color="#c4a0f5" stop-opacity="0.16"/><stop offset="0.6" stop-color="#c4a0f5" stop-opacity="0.06"/><stop offset="1" stop-color="#c4a0f5" stop-opacity="0"/></radialGradient>
+<linearGradient id="tint" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#c4a0f5" stop-opacity="0.12"/><stop offset="1" stop-color="#c4a0f5" stop-opacity="0.04"/></linearGradient>
+</defs>
+<rect width="880" height="260" fill="#0d1117"/>
+<ellipse class="a" style="animation-name:k0" cx="440" cy="86" rx="180" ry="86" fill="url(#glow)"/>
+<rect class="a" style="animation-name:k1" x="322.5" y="10.5" width="235" height="239" rx="14" fill="url(#tint)" stroke="#c4a0f5" stroke-width="1.5"/>
+<text class="a" style="animation-name:k2" x="440" y="44" font-family="ui-monospace,SFMono-Regular,'SF Mono',Menlo,Consolas,'Liberation Mono',monospace" font-size="13" font-weight="600" fill="#f0f6fc" text-anchor="middle">@mnema/code</text>
+<g class="a" style="animation-name:k3"><g transform="translate(336.32 60) scale(0.36)">
+<path data-of="blocks" fill="#c4a0f5" d="M0 0h12.5v24.5h-12.5zM12 0h12.5v24.5h-12.5zM24 0h12v24.5h-12zM84 0h12.5v24.5h-12.5zM96 0h12.5v24.5h-12.5zM108 0h12v24.5h-12zM132 0h12.5v24.5h-12.5zM144 0h12.5v24.5h-12.5zM156 0h12v24.5h-12zM216 0h12.5v24.5h-12.5zM228 0h12v24.5h-12zM252 0h12.5v24.5h-12.5zM264 0h12.5v24.5h-12.5zM276 0h12.5v24h-12.5zM288 0h12.5v24h-12.5zM300 0h12.5v24h-12.5zM312 0h12.5v24h-12.5zM324 0h12v24h-12zM348 0h12.5v24.5h-12.5zM360 0h12.5v24.5h-12.5zM372 0h12v24.5h-12zM432 0h12.5v24.5h-12.5zM444 0h12.5v24.5h-12.5zM456 0h12v24.5h-12zM492 0h12.5v24.5h-12.5zM504 0h12.5v24h-12.5zM516 0h12.5v24h-12.5zM528 0h12.5v24h-12.5zM540 0h12v24.5h-12zM0 24h12.5v24.5h-12.5zM12 24h12.5v24.5h-12.5zM24 24h12.5v24h-12.5zM36 24h12v24.5h-12zM72 24h12.5v24.5h-12.5zM84 24h12.5v24h-12.5zM96 24h12.5v24.5h-12.5zM108 24h12v24.5h-12zM132 24h12.5v24.5h-12.5zM144 24h12.5v24.5h-12.5zM156 24h12.5v24h-12.5zM168 24h12v24.5h-12zM216 24h12.5v24.5h-12.5zM228 24h12v24.5h-12zM252 24h12.5v24.5h-12.5zM264 24h12v24.5h-12zM348 24h12.5v24.5h-12.5zM360 24h12.5v24.5h-12.5zM372 24h12.5v24h-12.5zM384 24h12v24.5h-12zM420 24h12.5v24.5h-12.5zM432 24h12.5v24h-12.5zM444 24h12.5v24.5h-12.5zM456 24h12v24.5h-12zM480 24h12.5v24.5h-12.5zM492 24h12v24.5h-12zM540 24h12.5v24.5h-12.5zM552 24h12v24.5h-12zM0 48h12.5v24.5h-12.5zM12 48h12v24.5h-12zM36 48h12.5v24h-12.5zM48 48h12.5v24.5h-12.5zM60 48h12.5v24.5h-12.5zM72 48h12v24h-12zM96 48h12.5v24.5h-12.5zM108 48h12v24.5h-12zM132 48h12.5v24.5h-12.5zM144 48h12v24.5h-12zM168 48h12.5v24h-12.5zM180 48h12v24.5h-12zM216 48h12.5v24.5h-12.5zM228 48h12v24.5h-12zM252 48h12.5v24.5h-12.5zM264 48h12.5v24.5h-12.5zM276 48h12.5v24h-12.5zM288 48h12.5v24h-12.5zM300 48h12v24h-12zM348 48h12.5v24.5h-12.5zM360 48h12v24.5h-12zM384 48h12.5v24h-12.5zM396 48h12.5v24.5h-12.5zM408 48h12.5v24.5h-12.5zM420 48h12v24h-12zM444 48h12.5v24.5h-12.5zM456 48h12v24.5h-12zM480 48h12.5v24.5h-12.5zM492 48h12.5v24.5h-12.5zM504 48h12.5v24h-12.5zM516 48h12.5v24h-12.5zM528 48h12.5v24h-12.5zM540 48h12.5v24.5h-12.5zM552 48h12v24.5h-12zM0 72h12.5v24.5h-12.5zM12 72h12v24.5h-12zM48 72h12.5v24h-12.5zM60 72h12v24h-12zM96 72h12.5v24.5h-12.5zM108 72h12v24.5h-12zM132 72h12.5v24.5h-12.5zM144 72h12v24.5h-12zM180 72h12.5v24h-12.5zM192 72h12v24.5h-12zM216 72h12.5v24.5h-12.5zM228 72h12v24.5h-12zM252 72h12.5v24.5h-12.5zM264 72h12v24.5h-12zM348 72h12.5v24.5h-12.5zM360 72h12v24.5h-12zM396 72h12.5v24h-12.5zM408 72h12v24h-12zM444 72h12.5v24.5h-12.5zM456 72h12v24.5h-12zM480 72h12.5v24.5h-12.5zM492 72h12v24.5h-12zM540 72h12.5v24.5h-12.5zM552 72h12v24.5h-12zM0 96h12.5v24h-12.5zM12 96h12v24h-12zM96 96h12.5v24h-12.5zM108 96h12v24h-12zM132 96h12.5v24h-12.5zM144 96h12v24h-12zM192 96h12.5v24h-12.5zM204 96h12.5v24h-12.5zM216 96h12.5v24h-12.5zM228 96h12v24h-12zM252 96h12.5v24h-12.5zM264 96h12.5v24h-12.5zM276 96h12.5v24h-12.5zM288 96h12.5v24h-12.5zM300 96h12.5v24h-12.5zM312 96h12.5v24h-12.5zM324 96h12v24h-12zM348 96h12.5v24h-12.5zM360 96h12v24h-12zM444 96h12.5v24h-12.5zM456 96h12v24h-12zM480 96h12.5v24h-12.5zM492 96h12v24h-12zM540 96h12.5v24h-12.5zM552 96h12v24h-12z"/>
+<path data-of="lines" fill="none" stroke="#c4a0f5" stroke-opacity="0.55" stroke-width="1.5" stroke-linejoin="miter" d="M36 9.25L44.75 9.25L44.75 24M36 14.75L39.25 14.75L39.25 24M120 9.25L128.75 9.25L128.75 24M120 14.75L123.25 14.75L123.25 24M168 9.25L176.75 9.25L176.75 24M168 14.75L171.25 14.75L171.25 24M240 9.25L248.75 9.25L248.75 24M240 14.75L243.25 14.75L243.25 24M336 9.25L344.75 9.25L344.75 24M336 14.75L339.25 14.75L339.25 24M384 9.25L392.75 9.25L392.75 24M384 14.75L387.25 14.75L387.25 24M468 9.25L476.75 9.25L476.75 24M468 14.75L471.25 14.75L471.25 24M552 9.25L560.75 9.25L560.75 24M552 14.75L555.25 14.75L555.25 24M48 33.25L56.75 33.25L56.75 48M48 38.75L51.25 38.75L51.25 48M123.25 24L123.25 48M128.75 24L128.75 48M180 33.25L188.75 33.25L188.75 48M180 38.75L183.25 38.75L183.25 48M243.25 24L243.25 48M248.75 24L248.75 48M288 33.25L279.25 33.25L279.25 48M288 38.75L284.75 38.75L284.75 48M288 33.25L300 33.25M288 38.75L300 38.75M300 33.25L312 33.25M300 38.75L312 38.75M312 33.25L324 33.25M312 38.75L324 38.75M324 33.25L336 33.25M324 38.75L336 38.75M344.75 24L344.75 38.75L336 38.75M339.25 24L339.25 33.25L336 33.25M396 33.25L404.75 33.25L404.75 48M396 38.75L399.25 38.75L399.25 48M471.25 24L471.25 48M476.75 24L476.75 48M516 33.25L507.25 33.25L507.25 48M516 38.75L512.75 38.75L512.75 48M516 33.25L528 33.25M516 38.75L528 38.75M528 33.25L540 33.25M528 38.75L540 38.75M564 33.25L572.75 33.25L572.75 48M564 38.75L567.25 38.75L567.25 48M36 57.25L27.25 57.25L27.25 72M36 62.75L32.75 62.75L32.75 72M96 57.25L87.25 57.25L87.25 72M96 62.75L92.75 62.75L92.75 72M123.25 48L123.25 72M128.75 48L128.75 72M168 57.25L159.25 57.25L159.25 72M168 62.75L164.75 62.75L164.75 72M192 57.25L200.75 57.25L200.75 72M192 62.75L195.25 62.75L195.25 72M243.25 48L243.25 72M248.75 48L248.75 72M312 57.25L320.75 57.25L320.75 72M312 62.75L315.25 62.75L315.25 72M384 57.25L375.25 57.25L375.25 72M384 62.75L380.75 62.75L380.75 72M444 57.25L435.25 57.25L435.25 72M444 62.75L440.75 62.75L440.75 72M471.25 48L471.25 72M476.75 48L476.75 72M567.25 48L567.25 72M572.75 48L572.75 72M27.25 72L27.25 96M32.75 72L32.75 96M39.25 72L39.25 86.75L48 86.75M44.75 72L44.75 81.25L48 81.25M84 81.25L75.25 81.25L75.25 96M84 86.75L80.75 86.75L80.75 96M92.75 72L92.75 86.75L84 86.75M87.25 72L87.25 81.25L84 81.25M123.25 72L123.25 96M128.75 72L128.75 96M159.25 72L159.25 96M164.75 72L164.75 96M171.25 72L171.25 86.75L180 86.75M176.75 72L176.75 81.25L180 81.25M204 81.25L212.75 81.25L212.75 96M204 86.75L207.25 86.75L207.25 96M243.25 72L243.25 96M248.75 72L248.75 96M288 81.25L279.25 81.25L279.25 96M288 86.75L284.75 86.75L284.75 96M288 81.25L300 81.25M288 86.75L300 86.75M300 81.25L312 81.25M300 86.75L312 86.75M320.75 72L320.75 86.75L312 86.75M315.25 72L315.25 81.25L312 81.25M375.25 72L375.25 96M380.75 72L380.75 96M387.25 72L387.25 86.75L396 86.75M392.75 72L392.75 81.25L396 81.25M432 81.25L423.25 81.25L423.25 96M432 86.75L428.75 86.75L428.75 96M440.75 72L440.75 86.75L432 86.75M435.25 72L435.25 81.25L432 81.25M471.25 72L471.25 96M476.75 72L476.75 96M516 81.25L507.25 81.25L507.25 96M516 86.75L512.75 86.75L512.75 96M516 81.25L528 81.25M516 86.75L528 86.75M528 81.25L540 81.25M528 86.75L540 86.75M567.25 72L567.25 96M572.75 72L572.75 96M27.25 96L27.25 120M32.75 96L32.75 120M51.25 96L51.25 110.75L60 110.75M56.75 96L56.75 105.25L60 105.25M60 105.25L72 105.25M60 110.75L72 110.75M80.75 96L80.75 110.75L72 110.75M75.25 96L75.25 105.25L72 105.25M123.25 96L123.25 120M128.75 96L128.75 120M159.25 96L159.25 120M164.75 96L164.75 120M183.25 96L183.25 110.75L192 110.75M188.75 96L188.75 105.25L192 105.25M243.25 96L243.25 120M248.75 96L248.75 120M336 105.25L344.75 105.25L344.75 120M336 110.75L339.25 110.75L339.25 120M375.25 96L375.25 120M380.75 96L380.75 120M399.25 96L399.25 110.75L408 110.75M404.75 96L404.75 105.25L408 105.25M408 105.25L420 105.25M408 110.75L420 110.75M428.75 96L428.75 110.75L420 110.75M423.25 96L423.25 105.25L420 105.25M471.25 96L471.25 120M476.75 96L476.75 120M507.25 96L507.25 120M512.75 96L512.75 120M567.25 96L567.25 120M572.75 96L572.75 120M3.25 120L3.25 134.75L12 134.75M8.75 120L8.75 129.25L12 129.25M12 129.25L24 129.25M12 134.75L24 134.75M32.75 120L32.75 134.75L24 134.75M27.25 120L27.25 129.25L24 129.25M99.25 120L99.25 134.75L108 134.75M104.75 120L104.75 129.25L108 129.25M108 129.25L120 129.25M108 134.75L120 134.75M128.75 120L128.75 134.75L120 134.75M123.25 120L123.25 129.25L120 129.25M135.25 120L135.25 134.75L144 134.75M140.75 120L140.75 129.25L144 129.25M144 129.25L156 129.25M144 134.75L156 134.75M164.75 120L164.75 134.75L156 134.75M159.25 120L159.25 129.25L156 129.25M195.25 120L195.25 134.75L204 134.75M200.75 120L200.75 129.25L204 129.25M204 129.25L216 129.25M204 134.75L216 134.75M216 129.25L228 129.25M216 134.75L228 134.75M228 129.25L240 129.25M228 134.75L240 134.75M248.75 120L248.75 134.75L240 134.75M243.25 120L243.25 129.25L240 129.25M255.25 120L255.25 134.75L264 134.75M260.75 120L260.75 129.25L264 129.25M264 129.25L276 129.25M264 134.75L276 134.75M276 129.25L288 129.25M276 134.75L288 134.75M288 129.25L300 129.25M288 134.75L300 134.75M300 129.25L312 129.25M300 134.75L312 134.75M312 129.25L324 129.25M312 134.75L324 134.75M324 129.25L336 129.25M324 134.75L336 134.75M344.75 120L344.75 134.75L336 134.75M339.25 120L339.25 129.25L336 129.25M351.25 120L351.25 134.75L360 134.75M356.75 120L356.75 129.25L360 129.25M360 129.25L372 129.25M360 134.75L372 134.75M380.75 120L380.75 134.75L372 134.75M375.25 120L375.25 129.25L372 129.25M447.25 120L447.25 134.75L456 134.75M452.75 120L452.75 129.25L456 129.25M456 129.25L468 129.25M456 134.75L468 134.75M476.75 120L476.75 134.75L468 134.75M471.25 120L471.25 129.25L468 129.25M483.25 120L483.25 134.75L492 134.75M488.75 120L488.75 129.25L492 129.25M492 129.25L504 129.25M492 134.75L504 134.75M512.75 120L512.75 134.75L504 134.75M507.25 120L507.25 129.25L504 129.25M543.25 120L543.25 134.75L552 134.75M548.75 120L548.75 129.25L552 129.25M552 129.25L564 129.25M552 134.75L564 134.75M572.75 120L572.75 134.75L564 134.75M567.25 120L567.25 129.25L564 129.25"/>
+</g></g>
+<g class="a" style="animation-name:k4">
+<path d="M358.04 130L366.7 135L358.04 140L349.38 135z" fill="#c4a0f5" fill-opacity="0.3"/>
+<path d="M349.38 135L358.04 140L358.04 150L349.38 145z" fill="#c4a0f5" fill-opacity="0.16"/>
+<path d="M358.04 140L366.7 135L366.7 145L358.04 150z" fill="#c4a0f5" fill-opacity="0.06"/>
+<path d="M358.04 130L366.7 135L366.7 145L358.04 150L349.38 145L349.38 135zM349.38 135L358.04 140L366.7 135M358.04 140V150" fill="none" stroke="#c4a0f5" stroke-width="1.75" stroke-linejoin="round"/>
+</g>
+<g class="a" style="animation-name:k5">
+<path d="M368.7 140H374.7" stroke="#9198a1" stroke-width="1.5" stroke-linecap="round"/>
+<path d="M385.36 130L394.02 135L385.36 140L376.7 135z" fill="#c4a0f5" fill-opacity="0.3"/>
+<path d="M376.7 135L385.36 140L385.36 150L376.7 145z" fill="#c4a0f5" fill-opacity="0.16"/>
+<path d="M385.36 140L394.02 135L394.02 145L385.36 150z" fill="#c4a0f5" fill-opacity="0.06"/>
+<path d="M385.36 130L394.02 135L394.02 145L385.36 150L376.7 145L376.7 135zM376.7 135L385.36 140L394.02 135M385.36 140V150" fill="none" stroke="#c4a0f5" stroke-width="1.75" stroke-linejoin="round"/>
+</g>
+<g class="a" style="animation-name:k6">
+<path d="M396.02 140H402.02" stroke="#9198a1" stroke-width="1.5" stroke-linecap="round"/>
+<path d="M412.68 130L421.34 135L412.68 140L404.02 135z" fill="#c4a0f5" fill-opacity="0.3"/>
+<path d="M404.02 135L412.68 140L412.68 150L404.02 145z" fill="#c4a0f5" fill-opacity="0.16"/>
+<path d="M412.68 140L421.34 135L421.34 145L412.68 150z" fill="#c4a0f5" fill-opacity="0.06"/>
+<path d="M412.68 130L421.34 135L421.34 145L412.68 150L404.02 145L404.02 135zM404.02 135L412.68 140L421.34 135M412.68 140V150" fill="none" stroke="#c4a0f5" stroke-width="1.75" stroke-linejoin="round"/>
+</g>
+<g class="a" style="animation-name:k7">
+<path d="M423.34 140H429.34" stroke="#9198a1" stroke-width="1.5" stroke-linecap="round"/>
+<path d="M440 130L448.66 135L440 140L431.34 135z" fill="#c4a0f5" fill-opacity="0.3"/>
+<path d="M431.34 135L440 140L440 150L431.34 145z" fill="#c4a0f5" fill-opacity="0.16"/>
+<path d="M440 140L448.66 135L448.66 145L440 150z" fill="#c4a0f5" fill-opacity="0.06"/>
+<path d="M440 130L448.66 135L448.66 145L440 150L431.34 145L431.34 135zM431.34 135L440 140L448.66 135M440 140V150" fill="none" stroke="#c4a0f5" stroke-width="1.75" stroke-linejoin="round"/>
+</g>
+<g class="a" style="animation-name:k8">
+<path d="M450.66 140H456.66" stroke="#9198a1" stroke-width="1.5" stroke-linecap="round"/>
+<path d="M467.32 130L475.98 135L467.32 140L458.66 135z" fill="#c4a0f5" fill-opacity="0.3"/>
+<path d="M458.66 135L467.32 140L467.32 150L458.66 145z" fill="#c4a0f5" fill-opacity="0.16"/>
+<path d="M467.32 140L475.98 135L475.98 145L467.32 150z" fill="#c4a0f5" fill-opacity="0.06"/>
+<path d="M467.32 130L475.98 135L475.98 145L467.32 150L458.66 145L458.66 135zM458.66 135L467.32 140L475.98 135M467.32 140V150" fill="none" stroke="#c4a0f5" stroke-width="1.75" stroke-linejoin="round"/>
+</g>
+<g class="a" style="animation-name:k9">
+<path d="M477.98 140H483.98" stroke="#9198a1" stroke-width="1.5" stroke-linecap="round"/>
+<path d="M494.64 130L503.3 135L494.64 140L485.98 135z" fill="#c4a0f5" fill-opacity="0.3"/>
+<path d="M485.98 135L494.64 140L494.64 150L485.98 145z" fill="#c4a0f5" fill-opacity="0.16"/>
+<path d="M494.64 140L503.3 135L503.3 145L494.64 150z" fill="#c4a0f5" fill-opacity="0.06"/>
+<path d="M494.64 130L503.3 135L503.3 145L494.64 150L485.98 145L485.98 135zM485.98 135L494.64 140L503.3 135M494.64 140V150" fill="none" stroke="#c4a0f5" stroke-width="1.75" stroke-linejoin="round"/>
+</g>
+<g class="a" style="animation-name:k10">
+<path d="M505.3 140H511.3" stroke="#9198a1" stroke-width="1.5" stroke-linecap="round"/>
+<path d="M521.96 130L530.62 135L521.96 140L513.3 135z" fill="#c4a0f5" fill-opacity="0.3"/>
+<path d="M513.3 135L521.96 140L521.96 150L513.3 145z" fill="#c4a0f5" fill-opacity="0.16"/>
+<path d="M521.96 140L530.62 135L530.62 145L521.96 150z" fill="#c4a0f5" fill-opacity="0.06"/>
+<path d="M521.96 130L530.62 135L530.62 145L521.96 150L513.3 145L513.3 135zM513.3 135L521.96 140L530.62 135M521.96 140V150" fill="none" stroke="#c4a0f5" stroke-width="1.75" stroke-linejoin="round"/>
+</g>
+<path class="a" style="animation-name:k11" opacity="0" d="M440 130L448.66 135L448.66 145L440 150L431.34 145L431.34 135z" fill="#c4a0f5" fill-opacity="0.85"/>
+<path class="a" style="animation-name:k12" opacity="0" d="M467.32 130L475.98 135L475.98 145L467.32 150L458.66 145L458.66 135z" fill="#c4a0f5" fill-opacity="0.85"/>
+<path class="a" style="animation-name:k13" opacity="0" d="M494.64 130L503.3 135L503.3 145L494.64 150L485.98 145L485.98 135z" fill="#c4a0f5" fill-opacity="0.85"/>
+<path class="a" style="animation-name:k14" opacity="0" d="M521.96 130L530.62 135L530.62 145L521.96 150L513.3 145L513.3 135z" fill="#c4a0f5" fill-opacity="0.85"/>
+<path class="a" style="animation-name:k15" d="M349.38 157H530.62" stroke="#9198a1" stroke-width="1.5" stroke-linecap="round"/>
+<g class="a" style="animation-name:k16">
+<path d="M400 171V157" stroke="#9198a1" stroke-width="1.5" stroke-linecap="round"/>
+<rect x="368.5" y="172.5" width="63" height="23" rx="6" fill="#c4a0f5" fill-opacity="0.12" stroke="#c4a0f5"/>
+<text x="400" y="188" font-family="ui-monospace,SFMono-Regular,'SF Mono',Menlo,Consolas,'Liberation Mono',monospace" font-size="13" font-weight="600" fill="#f0f6fc" text-anchor="middle">mnema</text>
+</g>
+<g class="a" style="animation-name:k17">
+<path d="M480 171V157" stroke="#9198a1" stroke-width="1.5" stroke-linecap="round"/>
+<rect x="448.5" y="172.5" width="63" height="23" rx="6" fill="#c4a0f5" fill-opacity="0.12" stroke="#c4a0f5"/>
+<text x="480" y="188" font-family="ui-monospace,SFMono-Regular,'SF Mono',Menlo,Consolas,'Liberation Mono',monospace" font-size="13" font-weight="600" fill="#f0f6fc" text-anchor="middle">MCP</text>
+</g>
+<text class="a" style="animation-name:k18" x="440" y="223.7" font-family="ui-monospace,SFMono-Regular,'SF Mono',Menlo,Consolas,'Liberation Mono',monospace" font-size="12" fill="#9198a1" text-anchor="middle">two surfaces over one record</text>
+<g class="a" style="animation-name:k19">
+<rect x="0.5" y="10.5" width="255" height="59" rx="10" fill="url(#tint)" stroke="#c4a0f5"/>
+<path transform="translate(12 29)" d="M7 2H4V9L2 11L4 13V20H7M15 2H18V9L20 11L18 13V20H15" fill="none" stroke="#c4a0f5" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+<text x="44" y="34" font-family="ui-monospace,SFMono-Regular,'SF Mono',Menlo,Consolas,'Liberation Mono',monospace" font-size="13" font-weight="600" fill="#f0f6fc">SDK</text>
+</g>
+<text class="a" style="animation-name:k20" x="44" y="53.7" font-family="ui-monospace,SFMono-Regular,'SF Mono',Menlo,Consolas,'Liberation Mono',monospace" font-size="12" fill="#9198a1">A library door to the record</text>
+<path class="a" style="animation-name:k21" d="M260 40L318 80" fill="none" stroke="#c4a0f5" stroke-dasharray="3 5" stroke-linecap="round" stroke-width="1.5"/>
+<path class="a" style="animation-name:k22" d="M314.85 73.75L318 80L311.04 79.28M263.15 46.25L260 40L266.96 40.72" fill="none" stroke="#c4a0f5" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+<path class="a" style="animation-name:k23,k24" opacity="0" d="M260 40L318 80" fill="none" stroke="#c4a0f5" stroke-width="2" stroke-linecap="round" stroke-dasharray="70.46 70.46"/>
+<g class="a" style="animation-name:k25,k26" opacity="0"><circle r="8" fill="#c4a0f5" fill-opacity="0.22"/><circle r="4" fill="#c4a0f5"/></g>
+<rect class="a" style="animation-name:k27" opacity="0" x="1.5" y="11.5" width="253" height="57" rx="9" fill="none" stroke="#c4a0f5" stroke-width="3"/>
+<g class="a" style="animation-name:k28">
+<rect x="0.5" y="100.5" width="255" height="59" rx="10" fill="url(#tint)" stroke="#c4a0f5"/>
+<path transform="translate(12 119)" d="M3 3.5H19A1.5 1.5 0 0 1 20.5 5V17A1.5 1.5 0 0 1 19 18.5H3A1.5 1.5 0 0 1 1.5 17V5A1.5 1.5 0 0 1 3 3.5ZM1.5 7.5H20.5M8 7.5V18.5" fill="none" stroke="#c4a0f5" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+<text x="44" y="124" font-family="ui-monospace,SFMono-Regular,'SF Mono',Menlo,Consolas,'Liberation Mono',monospace" font-size="13" font-weight="600" fill="#f0f6fc">A VS Code extension</text>
+</g>
+<text class="a" style="animation-name:k29" x="44" y="143.7" font-family="ui-monospace,SFMono-Regular,'SF Mono',Menlo,Consolas,'Liberation Mono',monospace" font-size="12" fill="#9198a1">through the command line</text>
+<path class="a" style="animation-name:k30" d="M260 130L318 130" fill="none" stroke="#c4a0f5" stroke-dasharray="3 5" stroke-linecap="round" stroke-width="1.5"/>
+<path class="a" style="animation-name:k31" d="M311.86 126.64L318 130L311.86 133.36M266.14 133.36L260 130L266.14 126.64" fill="none" stroke="#c4a0f5" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+<path class="a" style="animation-name:k32,k33" opacity="0" d="M260 130L318 130" fill="none" stroke="#c4a0f5" stroke-width="2" stroke-linecap="round" stroke-dasharray="58 58"/>
+<g class="a" style="animation-name:k34,k35" opacity="0"><circle r="8" fill="#c4a0f5" fill-opacity="0.22"/><circle r="4" fill="#c4a0f5"/></g>
+<rect class="a" style="animation-name:k36" opacity="0" x="1.5" y="101.5" width="253" height="57" rx="9" fill="none" stroke="#c4a0f5" stroke-width="3"/>
+<g class="a" style="animation-name:k37">
+<rect x="0.5" y="190.5" width="255" height="59" rx="10" fill="url(#tint)" stroke="#c4a0f5"/>
+<path transform="translate(12 209)" d="M17.25 12.2A7 7 0 1 1 14.75 6.84M14.75 2.8V6.84H18.75" fill="none" stroke="#c4a0f5" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+<text x="44" y="214" font-family="ui-monospace,SFMono-Regular,'SF Mono',Menlo,Consolas,'Liberation Mono',monospace" font-size="13" font-weight="600" fill="#f0f6fc">An agent in CI</text>
+</g>
+<text class="a" style="animation-name:k38" x="44" y="233.7" font-family="ui-monospace,SFMono-Regular,'SF Mono',Menlo,Consolas,'Liberation Mono',monospace" font-size="12" fill="#f0f6fc">mnema key restore --agent ci</text>
+<path class="a" style="animation-name:k39" d="M260 220L318 180" fill="none" stroke="#c4a0f5" stroke-dasharray="3 5" stroke-linecap="round" stroke-width="1.5"/>
+<path class="a" style="animation-name:k40" d="M311.04 180.72L318 180L314.85 186.25" fill="none" stroke="#c4a0f5" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+<path class="a" style="animation-name:k41,k42" opacity="0" d="M260 220L318 180" fill="none" stroke="#c4a0f5" stroke-width="2" stroke-linecap="round" stroke-dasharray="70.46 70.46"/>
+<g class="a" style="animation-name:k43,k44" opacity="0"><circle r="8" fill="#c4a0f5" fill-opacity="0.22"/><circle r="4" fill="#c4a0f5"/></g>
+<g class="a" style="animation-name:k45">
+<rect x="624.5" y="10.5" width="255" height="59" rx="10" fill="url(#tint)" stroke="#c4a0f5"/>
+<path transform="translate(636 29)" d="M11 2A9 9 0 1 1 11 20A9 9 0 1 1 11 2ZM6.5 11.5L9.5 14.5L15.5 8" fill="none" stroke="#c4a0f5" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+<text x="668" y="34" font-family="ui-monospace,SFMono-Regular,'SF Mono',Menlo,Consolas,'Liberation Mono',monospace" font-size="13" font-weight="600" fill="#f0f6fc">The Action</text>
+</g>
+<text class="a" style="animation-name:k46" x="668" y="53.7" font-family="ui-monospace,SFMono-Regular,'SF Mono',Menlo,Consolas,'Liberation Mono',monospace" font-size="12" fill="#f0f6fc">--require=signed --since</text>
+<path class="a" style="animation-name:k47" d="M620 40L562 80" fill="none" stroke="#c4a0f5" stroke-dasharray="3 5" stroke-linecap="round" stroke-width="1.5"/>
+<path class="a" style="animation-name:k48" d="M613.04 40.72L620 40L616.85 46.25" fill="none" stroke="#c4a0f5" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+<path class="a" style="animation-name:k49,k50" opacity="0" d="M562 80L620 40" fill="none" stroke="#c4a0f5" stroke-width="2" stroke-linecap="round" stroke-dasharray="70.46 70.46"/>
+<g class="a" style="animation-name:k51,k52" opacity="0"><circle r="8" fill="#c4a0f5" fill-opacity="0.22"/><circle r="4" fill="#c4a0f5"/></g>
+<rect class="a" style="animation-name:k53" opacity="0" x="316.5" y="4.5" width="247" height="251" rx="19" fill="none" stroke="#c4a0f5" stroke-width="2"/>
+<rect class="a" style="animation-name:k54" opacity="0" x="625.5" y="11.5" width="253" height="57" rx="9" fill="none" stroke="#c4a0f5" stroke-width="3"/>
+<g class="a" style="animation-name:k55">
+<rect x="624.5" y="100.5" width="255" height="59" rx="10" fill="url(#tint)" stroke="#c4a0f5"/>
+<path transform="translate(636 119)" d="M4.5 1.5H12.5L17.5 6.5V20.5H4.5ZM12.5 1.5V6.5H17.5M7.5 11H14.5M7.5 14.5H14.5" fill="none" stroke="#c4a0f5" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+<text x="668" y="124" font-family="ui-monospace,SFMono-Regular,'SF Mono',Menlo,Consolas,'Liberation Mono',monospace" font-size="13" font-weight="600" fill="#f0f6fc">mnema site</text>
+</g>
+<text class="a" style="animation-name:k56" x="668" y="143.7" font-family="ui-monospace,SFMono-Regular,'SF Mono',Menlo,Consolas,'Liberation Mono',monospace" font-size="12" fill="#9198a1">A page that verifies itself</text>
+<path class="a" style="animation-name:k57" d="M620 130L562 130" fill="none" stroke="#c4a0f5" stroke-dasharray="3 5" stroke-linecap="round" stroke-width="1.5"/>
+<path class="a" style="animation-name:k58" d="M613.86 126.64L620 130L613.86 133.36" fill="none" stroke="#c4a0f5" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+<path class="a" style="animation-name:k59,k60" opacity="0" d="M562 130L620 130" fill="none" stroke="#c4a0f5" stroke-width="2" stroke-linecap="round" stroke-dasharray="58 58"/>
+<g class="a" style="animation-name:k61,k62" opacity="0"><circle r="8" fill="#c4a0f5" fill-opacity="0.22"/><circle r="4" fill="#c4a0f5"/></g>
+<rect class="a" style="animation-name:k63" opacity="0" x="316.5" y="4.5" width="247" height="251" rx="19" fill="none" stroke="#c4a0f5" stroke-width="2"/>
+<rect class="a" style="animation-name:k64" opacity="0" x="625.5" y="101.5" width="253" height="57" rx="9" fill="none" stroke="#c4a0f5" stroke-width="3"/>
+<g class="a" style="animation-name:k65">
+<rect x="624.5" y="190.5" width="255" height="59" rx="10" fill="none" stroke="#9198a1" stroke-dasharray="5 4"/>
+<path transform="translate(636 209)" d="M11 2.5L20 7L11 11.5L2 7ZM2 11L11 15.5L20 11M2 15L11 19.5L20 15" fill="none" stroke="#9198a1" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+<text x="668" y="214" font-family="ui-monospace,SFMono-Regular,'SF Mono',Menlo,Consolas,'Liberation Mono',monospace" font-size="13" font-weight="600" fill="#f0f6fc">Stacks</text>
+</g>
+<text class="a" style="animation-name:k66" x="668" y="233.7" font-family="ui-monospace,SFMono-Regular,'SF Mono',Menlo,Consolas,'Liberation Mono',monospace" font-size="12" fill="#f0f6fc">mnema stack add</text>
+<path class="a" style="animation-name:k67" d="M620 220L562 180" fill="none" stroke="#9198a1" stroke-dasharray="8 5" stroke-width="1.5"/>
+<path class="a" style="animation-name:k68" d="M616.85 213.75L620 220L613.04 219.28" fill="none" stroke="#9198a1" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+<path class="a" style="animation-name:k69,k70" opacity="0" d="M562 180L620 220" fill="none" stroke="#c4a0f5" stroke-width="2" stroke-linecap="round" stroke-dasharray="70.46 70.46"/>
+<g class="a" style="animation-name:k71,k72" opacity="0"><circle r="8" fill="#c4a0f5" fill-opacity="0.22"/><circle r="4" fill="#c4a0f5"/></g>
+<rect class="a" style="animation-name:k73" opacity="0" x="625" y="191" width="254" height="58" rx="9.5" fill="none" stroke="#9198a1" stroke-width="2" stroke-dasharray="5 4"/>
+</svg>

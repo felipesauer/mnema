@@ -1,6 +1,7 @@
 // Draws the front page's pictures: `docs/assets/banner-{dark,light}.svg`,
-// `docs/assets/how-it-works-{dark,light}.svg` and the animated
-// `docs/assets/how-mnema-fits-{dark,light}.svg`; and one animated picture per published package,
+// `docs/assets/how-it-works-{dark,light}.svg`, the animated
+// `docs/assets/how-mnema-fits-{dark,light}.svg` and the animated
+// `docs/assets/the-family-{dark,light}.svg`; and one animated picture per published package,
 // `packages/<p>/assets/<p>-{dark,light}.svg`, with the block that opens the package's README and
 // points at the file on the repository's `main` branch.
 //
@@ -1456,6 +1457,356 @@ export function withPicture(readme, block, title) {
 }
 
 // ---------------------------------------------------------------------------------------------
+// The family: `@mnema/code` in the middle, and what stands around it — animated
+//
+// The grammar of the pictures above, on the front page's width: the wordmark is the hub, the
+// record its chain of cubes, and the six around it are cards joined to it by a line whose head
+// says which way the record goes: into the hub for what writes, out to the card for what reads,
+// both for what does both. One at a time, each card comes in and a lit dot runs its line that
+// way; what a write brings is a new cube on the chain. Stacks are not part of what the record
+// promises, and are drawn apart: a grey card and a grey line, dashed long.
+//
+// Every word is a line of the product, as on a package's picture (`said`). No status, no
+// version, no count and no host is drawn; the plugin is not on it.
+
+const W_FAMILY = 880;
+const H_FAMILY = 260;
+
+/** The words of the family's picture. */
+export const FAMILY_LINES = Object.freeze({
+  name: [said('@mnema/code', 'packages/code/package.json')],
+  cli: [said('mnema', 'packages/code/package.json')],
+  mcp: [said('MCP', 'packages/code/README.md')],
+  surfaces: [said('two surfaces over one record', 'packages/code/README.md')],
+  sdk: [said('SDK', 'docs/features.md')],
+  sdkSays: [said('A library door to the record', 'docs/packages.md')],
+  vscode: [said('A VS Code extension', 'docs/packages.md')],
+  vscodeSays: [said('through the command line', 'docs/packages.md')],
+  ci: [said('An agent in CI', 'packages/action/README.md')],
+  ciSays: [said('mnema key restore --agent ci', 'packages/action/README.md')],
+  action: [said('The Action', 'packages/action/README.md')],
+  actionSays: [said('--require=signed --since', 'packages/action/README.md')],
+  site: [said('mnema site', 'docs/site.md')],
+  siteSays: [said('A page that verifies itself', 'README.md')],
+  stacks: [said('Stacks', 'docs/glossary.md')],
+  stacksSays: [said('mnema stack add', 'docs/cli-reference.md')],
+});
+
+const FAMILY_ALT =
+  'The mnema family: @mnema/code, the command line and the MCP server over one record, with the SDK, a VS Code extension, an agent in CI, the GitHub Action, mnema site and Stacks around it';
+
+/**
+ * The glyph of each card, as path data in a box of 22 units: the SDK's brackets, the editor's
+ * window and its panel, the loop of a run in CI, the Action's check, a page, and layers. Each is
+ * centred in the box by what it draws, so all six sit on the middle of their cards.
+ */
+const GLYPHS = Object.freeze({
+  sdk: 'M7 2H4V9L2 11L4 13V20H7M15 2H18V9L20 11L18 13V20H15',
+  vscode:
+    'M3 3.5H19A1.5 1.5 0 0 1 20.5 5V17A1.5 1.5 0 0 1 19 18.5H3A1.5 1.5 0 0 1 1.5 17V5A1.5 1.5 0 0 1 3 3.5ZM1.5 7.5H20.5M8 7.5V18.5',
+  ci: 'M17.25 12.2A7 7 0 1 1 14.75 6.84M14.75 2.8V6.84H18.75',
+  action: 'M11 2A9 9 0 1 1 11 20A9 9 0 1 1 11 2ZM6.5 11.5L9.5 14.5L15.5 8',
+  site: 'M4.5 1.5H12.5L17.5 6.5V20.5H4.5ZM12.5 1.5V6.5H17.5M7.5 11H14.5M7.5 14.5H14.5',
+  stacks: 'M11 2.5L20 7L11 11.5L2 7ZM2 11L11 15.5L20 11M2 15L11 19.5L20 15',
+});
+
+/**
+ * The six around the hub, in the order they come in: the side and the row of each, its two
+ * lines and the role of the second, and which way the record goes on its line (`in` to the
+ * hub, `out` to the card, `both`). A write brings a cube to the chain; so does an adoption, which
+ * the hub signs when it installs a stack.
+ */
+const SATELLITES = Object.freeze([
+  { glyph: 'sdk', name: 'sdk', says: 'sdkSays', role: 'caption', side: 0, row: 0, flow: 'both' },
+  {
+    glyph: 'vscode',
+    name: 'vscode',
+    says: 'vscodeSays',
+    role: 'caption',
+    side: 0,
+    row: 1,
+    flow: 'both',
+  },
+  { glyph: 'ci', name: 'ci', says: 'ciSays', role: 'code', side: 0, row: 2, flow: 'in' },
+  {
+    glyph: 'action',
+    name: 'action',
+    says: 'actionSays',
+    role: 'code',
+    side: 1,
+    row: 0,
+    flow: 'out',
+  },
+  { glyph: 'site', name: 'site', says: 'siteSays', role: 'caption', side: 1, row: 1, flow: 'out' },
+  {
+    glyph: 'stacks',
+    name: 'stacks',
+    says: 'stacksSays',
+    role: 'code',
+    side: 1,
+    row: 2,
+    flow: 'out',
+    apart: true,
+  },
+]);
+
+/**
+ * The heads of a line from (x1, y1) to (x2, y2), as path data: at its end, at its start, or both.
+ * @param {number} x1
+ * @param {number} y1
+ * @param {number} x2
+ * @param {number} y2
+ * @param {{ start: boolean, end: boolean }} at
+ */
+function heads(x1, y1, x2, y2, at) {
+  const angle = Math.atan2(y2 - y1, x2 - x1);
+  /** @param {number} x @param {number} y @param {number} a */
+  const head = (x, y, a) =>
+    `M${n(x - 7 * Math.cos(a + 0.5))} ${n(y - 7 * Math.sin(a + 0.5))}L${n(x)} ${n(y)}L${n(x - 7 * Math.cos(a - 0.5))} ${n(y - 7 * Math.sin(a - 0.5))}`;
+  return (at.end ? head(x2, y2, angle) : '') + (at.start ? head(x1, y1, angle + Math.PI) : '');
+}
+
+/**
+ * The family in one theme.
+ * @param {readonly string[]} blocks
+ * @param {'dark' | 'light'} theme
+ */
+function family(blocks, theme) {
+  const s = scene(LOOP, theme);
+  const L = FAMILY_LINES;
+  const card = { w: 256, h: 60 };
+  const hub = { x: 322, y: 10, w: 236, h: 240 };
+  const mid = hub.x + hub.w / 2;
+  const rows = [10, 100, 190];
+  /** @type {string[]} */
+  const out = [];
+  // The glow and the tint of the cards, in the accent alone. On a light page they stay faint
+  // enough that the accent's own lines over them keep three to one.
+  const glow = theme === 'light' ? [0.08, 0.03] : [0.16, 0.06];
+  const tint = theme === 'light' ? [0.07, 0.02] : [0.12, 0.04];
+  const defs = [
+    '<defs>',
+    `<radialGradient id="glow" cx="0.5" cy="0.5" r="0.5"><stop offset="0" stop-color="${s.accent}" stop-opacity="${glow[0]}"/><stop offset="0.6" stop-color="${s.accent}" stop-opacity="${glow[1]}"/><stop offset="1" stop-color="${s.accent}" stop-opacity="0"/></radialGradient>`,
+    `<linearGradient id="tint" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="${s.accent}" stop-opacity="${tint[0]}"/><stop offset="1" stop-color="${s.accent}" stop-opacity="${tint[1]}"/></linearGradient>`,
+    '</defs>',
+  ];
+
+  // Scene 0: the hub — its card on a glow around the wordmark, the wordmark, the chain one cube
+  // after the other, the two surfaces under it, and what they are.
+  // The glow reaches the top of the frame and stops there: none of it is cut off.
+  out.push(
+    `<ellipse ${s.stays(0.2)} cx="${mid}" cy="86" rx="180" ry="86" fill="url(#glow)"/>`,
+    `<rect ${s.stays(0.2)} x="${n(hub.x + 0.5)}" y="${n(hub.y + 0.5)}" width="${n(hub.w - 1)}" height="${n(hub.h - 1)}" rx="14" fill="url(#tint)" stroke="${s.accent}" stroke-width="1.5"/>`,
+    s.sayIn(L.name, mid, hub, 'label', { anchor: 'middle', attrs: s.stays(0.4) }, -9),
+  );
+  const scale = 0.36;
+  const markW = Math.max(...blocks.map((row) => [...row].length)) * CELL.w * scale;
+  out.push(
+    `<g ${s.stays(0.5)}><g transform="translate(${n(mid - markW / 2)} 60) scale(${scale})">`,
+    ...wordmark(blocks, s.accent, 0, 0),
+    '</g></g>',
+  );
+  // Three cubes are there when the hub comes in; each write, and the adoption of a stack, brings
+  // one more, lit as it lands.
+  const a = 10;
+  const link = 10;
+  const cy = 140;
+  const landed = [3.1, 4.7, 6.6, 11.4];
+  // On a light page the cube lights in the accent itself: anything fainter is under three to one
+  // against the glow behind it.
+  const lit = theme === 'light' ? '1' : '0.85';
+  const record = cubes(s, mid - rowWidth(7, a, link) / 2, cy, a, [0.8, 1.0, 1.2, ...landed], link);
+  out.push(...record.out);
+  landed.forEach((t, i) => {
+    out.push(
+      `<path ${s.goes(
+        [
+          [0, '0'],
+          [t, '0'],
+          [t + 0.15, '1'],
+          [t + 0.65, '0'],
+          [LOOP, '0'],
+        ],
+        '0',
+      )} d="${hexagon(record.at(3 + i), cy, a)}" fill="${s.accent}" fill-opacity="${lit}"/>`,
+    );
+  });
+  // The two surfaces, each a tab hung from a rail under the one record.
+  const tab = { w: 64, h: 24, y: 172 };
+  // A tab's edge keeps three to one against its own inside: on a light page, a fainter inside.
+  const tabFill = theme === 'light' ? '0.05' : '0.12';
+  const rail = cy + a + 7;
+  out.push(
+    `<path ${s.stays(1.4)} d="M${n(record.at(0) - record.dx)} ${rail}H${n(record.at(6) + record.dx)}" stroke="${s.muted}" stroke-width="1.5" stroke-linecap="round"/>`,
+  );
+  [
+    [L.cli, mid - 8 - tab.w],
+    [L.mcp, mid + 8],
+  ].forEach(([line, x], i) => {
+    const frame = { y: tab.y, h: tab.h };
+    const at = /** @type {number} */ (x) + tab.w / 2;
+    out.push(
+      `<g ${s.stays(1.5 + i * 0.15)}>`,
+      `<path d="M${n(at)} ${tab.y - 1}V${rail}" stroke="${s.muted}" stroke-width="1.5" stroke-linecap="round"/>`,
+      `<rect x="${n(/** @type {number} */ (x) + 0.5)}" y="${n(tab.y + 0.5)}" width="${tab.w - 1}" height="${tab.h - 1}" rx="6" fill="${s.accent}" fill-opacity="${tabFill}" stroke="${s.accent}"/>`,
+      s.sayIn(/** @type {Line} */ (line), at, frame, 'label', { anchor: 'middle' }),
+      '</g>',
+    );
+  });
+  out.push(s.sayIn(L.surfaces, mid, hub, 'caption', { anchor: 'middle', attrs: s.stays(1.8) }, 9));
+
+  // A ring that rises off the hub as a read leaves it.
+  /** @param {number} t */
+  const ring = (t) =>
+    `<rect ${s.goes(
+      [
+        [0, '0'],
+        [t, '0'],
+        [t + 0.15, '1'],
+        [t + 0.75, '0'],
+        [LOOP, '0'],
+      ],
+      '0',
+    )} x="${n(hub.x - 5.5)}" y="${n(hub.y - 5.5)}" width="${hub.w + 11}" height="${hub.h + 11}" rx="19" fill="none" stroke="${s.accent}" stroke-width="2"/>`;
+
+  // Scenes 1 to 6: each card comes in with its line, and a dot runs the line the way the record
+  // goes.
+  SATELLITES.forEach((sat, i) => {
+    const T = 2.2 + 1.6 * i;
+    const x = sat.side === 0 ? 0 : W_FAMILY - card.w;
+    const y = rows[sat.row] ?? 0;
+    const frame = { y, h: card.h };
+    const tone = sat.apart ? s.muted : s.accent;
+    // The card's edge on the hub's side, and the point of the hub's edge the line reaches.
+    const near = sat.side === 0 ? x + card.w + 4 : x - 4;
+    const far = sat.side === 0 ? hub.x - 4 : hub.x + hub.w + 4;
+    const cardY = y + card.h / 2;
+    const hubY = hub.y + hub.h / 2 + (sat.row - 1) * 50;
+    out.push(
+      `<g ${s.stays(T)}>`,
+      `<rect x="${n(x + 0.5)}" y="${n(y + 0.5)}" width="${card.w - 1}" height="${card.h - 1}" rx="10" fill="${sat.apart ? 'none' : 'url(#tint)'}" stroke="${tone}"${sat.apart ? ' stroke-dasharray="5 4"' : ''}/>`,
+      `<path transform="translate(${x + 12} ${y + 19})" d="${GLYPHS[/** @type {keyof typeof GLYPHS} */ (sat.glyph)]}" fill="none" stroke="${tone}" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>`,
+      s.sayIn(L[/** @type {keyof typeof L} */ (sat.name)], x + 44, frame, 'label', {}, -1),
+      '</g>',
+      s.sayIn(
+        L[/** @type {keyof typeof L} */ (sat.says)],
+        x + 44,
+        frame,
+        /** @type {Role} */ (sat.role),
+        { attrs: s.stays(T + 0.2) },
+        1,
+      ),
+    );
+    // The line, from the card to the hub, and its heads.
+    const [x1, y1, x2, y2] = [near, cardY, far, hubY];
+    const length = Math.hypot(x2 - x1, y2 - y1);
+    const dash = sat.apart
+      ? `stroke="${s.muted}" stroke-dasharray="8 5"`
+      : `stroke="${s.accent}" stroke-dasharray="3 5" stroke-linecap="round"`;
+    out.push(
+      `<path ${s.stays(T + 0.1)} d="M${n(x1)} ${n(y1)}L${n(x2)} ${n(y2)}" fill="none" ${dash} stroke-width="1.5"/>`,
+      `<path ${s.stays(T + 0.5)} d="${heads(x1, y1, x2, y2, { start: sat.flow !== 'in', end: sat.flow !== 'out' })}" fill="none" stroke="${tone}" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>`,
+    );
+    // The line draws itself from where the record starts, and leaves its dashes behind. Every
+    // property that moves comes back to where it opened while the element is out of sight, so the
+    // loop closes on itself.
+    const from = sat.flow === 'out' ? [x2, y2, x1, y1] : [x1, y1, x2, y2];
+    const draw = s.animate('stroke-dashoffset', [
+      [0, n(length)],
+      [T + 0.1, n(length)],
+      [T + 0.6, '0'],
+      [T + 1.05, '0'],
+      [T + 1.15, n(length)],
+      [LOOP, n(length)],
+    ]);
+    const shows = s.animate('opacity', shown(T + 0.1, T + 1.0, 0.2, LOOP));
+    out.push(
+      `<path class="a" style="animation-name:${draw},${shows}" opacity="0" d="M${n(from[0] ?? 0)} ${n(from[1] ?? 0)}L${n(from[2] ?? 0)} ${n(from[3] ?? 0)}" fill="none" stroke="${s.accent}" stroke-width="2" stroke-linecap="round" stroke-dasharray="${n(length)} ${n(length)}"/>`,
+    );
+    // The dot: to the hub and back for what reads and writes, one way for the rest.
+    const at = (/** @type {number} */ px, /** @type {number} */ py) =>
+      `translate(${n(px)}px,${n(py)}px)`;
+    const [sx, sy, hx, hy] = [x1, y1, x2, y2];
+    /** @type {[number, string][]} */
+    const move =
+      sat.flow === 'both'
+        ? [
+            [0, at(sx, sy)],
+            [T + 0.4, at(sx, sy)],
+            [T + 0.9, at(hx, hy)],
+            [T + 1.4, at(sx, sy)],
+            [LOOP, at(sx, sy)],
+          ]
+        : sat.flow === 'in'
+          ? [
+              [0, at(sx, sy)],
+              [T + 0.5, at(sx, sy)],
+              [T + 1.2, at(hx, hy)],
+              [T + 1.3, at(hx, hy)],
+              [T + 1.4, at(sx, sy)],
+              [LOOP, at(sx, sy)],
+            ]
+          : [
+              [0, at(hx, hy)],
+              [T + 0.5, at(hx, hy)],
+              [T + 1.2, at(sx, sy)],
+              [T + 1.3, at(sx, sy)],
+              [T + 1.4, at(hx, hy)],
+              [LOOP, at(hx, hy)],
+            ];
+    const last = sat.flow === 'both' ? T + 1.4 : T + 1.2;
+    const glides = s.animate('transform', move);
+    const fades = s.animate('opacity', [
+      [0, '0'],
+      [move[1]?.[0] ?? 0, '0'],
+      [(move[1]?.[0] ?? 0) + 0.12, '1'],
+      [last - 0.12, '1'],
+      [last + 0.05, '0'],
+      [LOOP, '0'],
+    ]);
+    out.push(
+      `<g class="a" style="animation-name:${glides},${fades}" opacity="0"><circle r="8" fill="${s.accent}" fill-opacity="0.22"/><circle r="4" fill="${s.accent}"/></g>`,
+    );
+    // A read leaves the hub as a ring, and lights the card it reaches. Stacks are not a read: the
+    // hub installs them and signs the adoption, a cube on the chain; their card lights in its own
+    // grey, dashed as it is. Each light stays inside the card's edge, and so inside the frame.
+    if (sat.flow === 'out' && !sat.apart) out.push(ring(T + 0.5));
+    if (sat.flow !== 'in') {
+      const lights = s.goes(
+        [
+          [0, '0'],
+          [last - 0.05, '0'],
+          [last + 0.1, '1'],
+          [last + 0.6, '0'],
+          [LOOP, '0'],
+        ],
+        '0',
+      );
+      out.push(
+        sat.apart
+          ? `<rect ${lights} x="${n(x + 1)}" y="${n(y + 1)}" width="${card.w - 2}" height="${card.h - 2}" rx="9.5" fill="none" stroke="${s.muted}" stroke-width="2" stroke-dasharray="5 4"/>`
+          : `<rect ${lights} x="${n(x + 1.5)}" y="${n(y + 1.5)}" width="${card.w - 3}" height="${card.h - 3}" rx="9" fill="none" stroke="${s.accent}" stroke-width="3"/>`,
+      );
+    }
+  });
+
+  return [
+    `<svg xmlns="http://www.w3.org/2000/svg" width="${W_FAMILY}" height="${H_FAMILY}" viewBox="0 0 ${W_FAMILY} ${H_FAMILY}" role="img" aria-label="${attribute(FAMILY_ALT)}">`,
+    `<title>${escaped(FAMILY_ALT)}</title>`,
+    '<style>',
+    `.a{animation-duration:${LOOP}s;animation-iteration-count:infinite;animation-timing-function:ease-in-out}`,
+    ...s.css,
+    '@media (prefers-reduced-motion: reduce){.a{animation:none!important}}',
+    '</style>',
+    ...defs,
+    `<rect width="${W_FAMILY}" height="${H_FAMILY}" fill="${PAGE[theme]}"/>`,
+    ...out,
+    '</svg>',
+    '',
+  ].join('\n');
+}
+
+// ---------------------------------------------------------------------------------------------
 
 /**
  * Every picture, by its file name under `docs/assets/`, drawn from the console's rows.
@@ -1470,6 +1821,8 @@ export function drawTheFrontPage(blocks) {
     'how-it-works-light.svg': howItWorks('light'),
     'how-mnema-fits-dark.svg': howMnemaFits(blocks, 'dark'),
     'how-mnema-fits-light.svg': howMnemaFits(blocks, 'light'),
+    'the-family-dark.svg': family(blocks, 'dark'),
+    'the-family-light.svg': family(blocks, 'light'),
   };
 }
 
