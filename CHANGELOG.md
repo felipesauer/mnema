@@ -135,6 +135,14 @@ with its own changelog.
   In `docs/what-it-proves.md`, the row on an agent key's signature is one short cell, and the rest of it is the section
   "An agent key, in full", below the table.
 
+- **The root README opens with what mnema is, why, and where it stands.** Under the banner, one line names the category
+  and the promise follows unchanged. A Why section gives the question the record answers and two results from
+  `docs/evidence.md`, each with its day: on 21 August 2026, handing the decision over took an agent from 33.3% to 100.0%
+  conformance, as far as the host's own memory took it; from 10 to 22 September 2026, in one real project, the agent sent
+  6 of 9,448 tool calls to the server. A Status section says, in one place, that nothing is on npm yet (with the install
+  page), the Node range, and that the GitHub Action, the SDK and the VS Code extension are not published; it replaces
+  the line under the opening and the comment at the top of the Quick start.
+
 - **`FORMAT.md` and the chain package's page say what the two readers do, not what they once did.** The format no
   longer says it leaves the workflow out (§6.7 is part of it), says the order of tails decides what §6.2 refuses and §6.7
   names, writes the tie-break once (`at`, then the tree, then the tail id by UTF-16 code unit, which both readers now

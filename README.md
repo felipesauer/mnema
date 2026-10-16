@@ -49,12 +49,12 @@ installing this.
 
 ## Why
 
-Somebody will ask who decided this, what was turned down and why, and whether the record was touched since; mnema
-answers from the repository, with a command anybody can run ([Where it fits](docs/where-it-fits.md)). In one round of
-160 cells with Claude Haiku 4.5, the decision handed to the session as it opened took the agent from following it
-33.3% of the time to 100.0%; the host's own memory did as well, so what mnema changes is where the decision lives. In
-one real project, 6 of 9,448 tool calls went to this server: the record reaches the agent through the plugin's hooks,
-not by the agent asking ([How each claim is held](docs/evidence.md#historical)).
+When someone asks who decided this and whether the record was touched since, the answer is in the repository and one
+command checks it ([Where it fits](docs/where-it-fits.md)). Handing the decision to the session as it opened took an
+agent from 33.3% to 100.0% conformance (one round on 21 August 2026, 160 cells, Claude Haiku 4.5), as far as the
+host's own memory took it. In one real project, from 10 to 22 September 2026, the agent sent 6 of 9,448 tool calls to
+this server: it did not reach for the record. The plugin hands the record over through the hooks instead of waiting to
+be asked ([How each claim is held](docs/evidence.md#historical)).
 
 ## Status
 
