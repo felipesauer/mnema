@@ -24,6 +24,8 @@ with its own changelog.
   address: the page of an old version on npm shows today's picture from `main`, not the one that version was
   published with. The title, the picture and the badges are centred, each in an element npm keeps `align` on (an
   `h1` and two `p`, not a `div`); the script writes the title and the picture, and a test holds the three.
+  The licence badge at the top of each of those pages points at the file on `main` by an absolute address, because npm
+  leaves a relative one written in HTML as it is; a test holds that address and that no address in the badges is relative.
 - **A glossary.** `docs/glossary.md` defines, in one sentence each and with a link to the page that holds the
   definition, the words the documentation uses in a sense of its own: record, tree (public, private and global),
   tail, checkpoint, run, rung, stack, agent key, census and witness. The README's list of pages links to it.
