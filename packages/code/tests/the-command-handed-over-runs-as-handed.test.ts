@@ -404,11 +404,11 @@ export const NAMES_THAT_NEED_MORE: Readonly<
     times: 2,
     why: 'the read named in prose, as what the Action asks about each changed file; the same page hands the whole line over, with its path and `--json`',
   },
-  'packages/code/README.md: mnema tail prune': {
+  'docs/cli-reference.md: mnema tail prune': {
     times: 3,
     why: 'the verb named in prose, as the one that cuts a tail (and, beside the CI recipe, as the cut that recipe fails on by design); its own section hands the line over',
   },
-  'packages/code/README.md: mnema key restore': {
+  'docs/cli-reference.md: mnema key restore': {
     times: 1,
     why: 'the verb named in the table row; the same row hands the whole restore over as a line',
   },
@@ -452,7 +452,7 @@ export const NAMES_THAT_NEED_MORE: Readonly<
     times: 1,
     why: 'the verb named in the same list, beside `commits`, `why` and `aging`; the package page hands the line over, with the decision',
   },
-  'packages/code/README.md: mnema site': {
+  'docs/cli-reference.md: mnema site': {
     times: 1,
     why: 'the verb named in the table row about the page\u2019s verdict; the bullet above it hands the line over, with its --out',
   },
@@ -484,15 +484,15 @@ export const NAMES_THAT_NEED_MORE: Readonly<
     times: 1,
     why: 'the verb named in the line on the skills and agents a project adopts; the package page hands the line over',
   },
-  'packages/code/README.md: mnema stack add': {
+  'docs/cli-reference.md: mnema stack add': {
     times: 1,
     why: 'the verb named in prose, as the one that reads a stack and shows its plan; the block above it hands the line over, with --dry-run',
   },
-  'packages/code/README.md: mnema stack remove': {
+  'docs/cli-reference.md: mnema stack remove': {
     times: 1,
     why: 'the verb named as the one that keeps every file changed since it was written; its `--help` hands the name it needs',
   },
-  'packages/code/README.md: mnema stack enable': {
+  'docs/cli-reference.md: mnema stack enable': {
     times: 1,
     why: 'the verb named as what turns a declared hook on, at a terminal; its `--help` hands the stack and the hook it needs',
   },
@@ -508,19 +508,19 @@ export const NAMES_THAT_NEED_MORE: Readonly<
     times: 2,
     why: 'the verb named on the package page as the caller of the library, and as the reader of a stack\u2019s signature; its `--help` hands the source and the --expect it needs',
   },
-  'packages/code/README.md: mnema skill export': {
+  'docs/cli-reference.md: mnema skill export': {
     times: 1,
     why: 'the verb named in the sentence about what leaves the record as a file',
   },
-  'packages/code/README.md: mnema show': {
+  'docs/cli-reference.md: mnema show': {
     times: 4,
     why: 'the read named in sentences about what it serves; its lines are in the reading section',
   },
-  'packages/code/README.md: mnema retract': {
+  'docs/cli-reference.md: mnema retract': {
     times: 1,
     why: 'the verb named in a sentence about taking a note back, with the id and the reason it takes',
   },
-  'packages/code/README.md: mnema observe': {
+  'docs/cli-reference.md: mnema observe': {
     times: 2,
     why: 'a verb named beside `mnema memory`, in the same list, and again where the pages say that both go to the private tree when an agent asked for by the environment writes without `--scope`',
   },
@@ -532,7 +532,7 @@ export const NAMES_THAT_NEED_MORE: Readonly<
     times: 1,
     why: 'the hook named in the entry that says it reads the agent from the environment, the flag winning; the package page hands the whole line over, with its host',
   },
-  'packages/code/README.md: mnema decision import': {
+  'docs/cli-reference.md: mnema decision import': {
     times: 1,
     why: 'the verb named in the sentence about reading decision files; its block has the line',
   },
@@ -698,7 +698,8 @@ export const HANDED_OVER: Readonly<
   'packages/chain/FORMAT.md': { line: 3 },
   'packages/chain/src/chain/key-protection.ts': { line: 3 },
   'packages/chain/src/chain/writer.ts': { name: 1 },
-  'packages/code/README.md': { line: 82, name: 105, flag: 2 },
+  'docs/cli-reference.md': { line: 82, name: 105, flag: 2 },
+  'packages/code/README.md': { line: 1, name: 5 },
   'packages/code/src/a-new-identity.ts': { line: 2, name: 1 },
   'packages/code/src/agent-accepts.ts': { line: 4 },
   'packages/code/src/commands/commit-hook.ts': { line: 1, name: 2 },
@@ -877,7 +878,7 @@ describe('the readings know what they read', () => {
   });
 
   it('the pages it reads are the documentation', () => {
-    expect(pages).toContain('packages/code/README.md');
+    expect(pages).toContain('docs/cli-reference.md');
   });
 
   it('every exemption carries a reason', () => {

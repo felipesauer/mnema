@@ -63,7 +63,7 @@ import {
 const CLI = fileURLToPath(new URL('../dist/cli.js', import.meta.url));
 
 /** The page, and the heading the block lives under. */
-const PAGE = 'packages/code/README.md';
+const PAGE = 'docs/cli-reference.md';
 const SECTION = '### From the terminal';
 
 /**

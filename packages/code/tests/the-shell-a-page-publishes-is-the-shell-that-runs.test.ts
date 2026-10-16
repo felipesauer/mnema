@@ -216,13 +216,14 @@ export const NOT_CHECKED: Readonly<Record<string, string>> = {
 export const PAGES: Readonly<Record<string, number>> = {
   'README.md': 4,
   'docs/agent-hosts.md': 3,
+  // 65 since the reference's blocks on stacks and on `mnema report`.
+  'docs/cli-reference.md': 68,
   'docs/first-record.md': 4,
   'docs/how-it-works.md': 1,
   'docs/site.md': 1,
   // The recipe for an agent in CI: the job whose steps call `mnema`.
   'packages/action/README.md': 1,
-  // 65 since the package page's blocks on stacks and on `mnema report`.
-  'packages/code/README.md': 68,
+  'packages/code/README.md': 3,
   'plugin/README.md': 6,
   'plugin/captures/antigravity-cli-script.md': 4,
   'plugin/captures/cursor-ide-script.md': 4,
