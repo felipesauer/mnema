@@ -151,7 +151,9 @@ with its own changelog.
 
 - **Pages stop promising more than verify and the Action do.** The "what it proves" paragraph in the CLI reference
   and in the `@mnema/code` README said an edit to the record is made "impossible to hide"; verify shows when what is
-  in the record has changed since it was signed, and cannot show that something was cut off the end. The page on packages
+  in the record has changed since it was signed, and a cut that leaves the last checkpoint in place, and does not catch
+  a cut off the end that takes the last checkpoint with it, or a whole tail deleted. The reference's line on cutting
+  part of a tail no longer says every such cut stays loud. The page on packages
   and the one on the site said the Action "only reads"; with a `checker-key` it also writes signed rule results to the
   working tree. The page on how it works no longer says an edit "cannot be made quietly".
 - **The `@mnema/code` page on npm fits one reading, and the reference is its own page.** The package README held 1,877
