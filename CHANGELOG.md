@@ -12,6 +12,15 @@ with its own changelog.
 
 ### Added
 
+- **The front page's Features table is now "The mnema family".** The section shows the family's picture, then a short
+  table: the product, what it is for, its status and a link. `@mnema/code` is the core; the Action, the SDK and the
+  VS Code extension are the three packages around it, each not published and run from a clone; Stacks are commands of
+  the mnema program; the agent in CI is a recipe on the Action's page, not a package; and the page that verifies itself
+  is a command of `@mnema/code`. The script that draws the front page writes the picture's block, at the family's
+  width, by an absolute address on `main` with no version, and a test holds the page to that block, the address, the
+  width and the text alternative (now one constant, shared by the script and the test). What the old table said
+  line by line is on `docs/features.md` and the pages it linked. The picture's own pixels, and how GitHub and npm
+  render the `picture` element, are not held by a test.
 - **A picture of the mnema family.** `docs/assets/the-family-{light,dark}.svg`, drawn by
   `.github/the-front-page/draw.mjs` in the front page's one accent and on its loop: `@mnema/code` in the middle (the
   wordmark, the record's chain of blocks, and its two surfaces, `mnema` and `MCP`), with the SDK, a VS Code extension,
@@ -26,7 +35,7 @@ with its own changelog.
   keeps three to one against what is behind it; the lines inside a block stay under that, as shading of a block whose
   outline keeps it. The words "A page that verifies itself" are held to the front page's README: a rewrite of that
   section keeps them, or moves the picture's anchor with it. The README of `@mnema/code` opens with it, at the
-  family's width, described as the picture describes itself; the front page does not show it yet.
+  family's width, described as the picture describes itself; the front page shows it too, under "The mnema family".
 - **Each published package opens its README with a picture of what it does.** `@mnema/chain`, `@mnema/core`,
   `@mnema/context` and `@mnema/stacks` each carry an animated picture, light and dark, in `assets/`, drawn by
   `.github/the-front-page/draw.mjs` in the family's paint and motion: the same glow behind the drawing, tinted cards
