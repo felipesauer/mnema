@@ -21,7 +21,7 @@ function aGitDir(dir: string): string {
   return dir;
 }
 
-describe('gitPlaceOf — read from the files git writes, without running git', () => {
+describe('gitPlaceOf: read from the files git writes, without running git', () => {
   it('takes a .git directory for its own common directory', () => {
     aGitDir(join(sandbox, 'repo', '.git'));
     mkdirSync(join(sandbox, 'repo', 'a', 'b'), { recursive: true });

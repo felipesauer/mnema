@@ -2,15 +2,15 @@
  * The skill gate: the pure function that decides whether a requested skill
  * transition is authorized, and turns it into the fact to record.
  *
- * It mirrors the TASK gate — authority, then legality, then proof — and NOT the
+ * It mirrors the TASK gate (authority, then legality, then proof) and NOT the
  * decision gate: a skill is not relational, so there is no `by` to shape-check.
  * That is the whole difference. The gate is pure (no clock, no I/O, no chain),
  * so it checks everything decidable from its inputs alone:
- *   1. AUTHORITY — a human `who` authorized it, and `who` is not the executing
+ *   1. AUTHORITY: a human `who` authorized it, and `who` is not the executing
  *      agent `which`. Checked first: the identity invariant holds regardless of
  *      the move, so a self-authorized illegal move reports the more fundamental
  *      fault.
- *   2. LEGALITY — the (from, action) pair is a transition the workflow allows.
+ *   2. LEGALITY: the (from, action) pair is a transition the workflow allows.
  *   3. PROOF — every field the action requires is present and non-empty, and every
  *      prose field given states something: no letter and no digit, or the `<why>` a
  *      recipe prints, is refused `NOT_A_REASON` (`a-reason-states-something.ts`).
@@ -21,7 +21,7 @@
  *
  * The gate never throws: its declared inputs are strings, but a surface at the
  * untrusted boundary may forward junk, so an invalid request comes back as a
- * typed refusal. Identities are compared in canonical form (trimmed, NFC — the
+ * typed refusal. Identities are compared in canonical form (trimmed, NFC: the
  * form the chain seals) so neither whitespace nor a decomposed lookalike can
  * defeat the who != which invariant.
  */
@@ -82,7 +82,7 @@ export type SkillGateErrorCode =
   | 'NOT_A_REASON'
   /** No human `who` authorized the move. */
   | 'MISSING_WHO'
-  /** `who` and `which` are the same identity — an agent cannot self-authorize. */
+  /** `who` and `which` are the same identity: an agent cannot self-authorize. */
   | 'WHO_IS_WHICH'
   /**
    * The agent name was over the size limit. It comes from the same door every
@@ -112,7 +112,7 @@ export type SkillGateResult = SkillGateOk | SkillGateErr;
 
 /**
  * Decides whether a requested skill transition is authorized. Pure: same inputs,
- * same verdict, always. Never throws — an invalid request is a typed
+ * same verdict, always. Never throws: an invalid request is a typed
  * {@link SkillGateErr}, not an exception, so a surface handles refusal as data.
  */
 export function skillGate(request: SkillGateRequest): SkillGateResult {
@@ -128,7 +128,7 @@ export function skillGate(request: SkillGateRequest): SkillGateResult {
   }
   // The one invariant that is not this workflow's own: the agent may not be the
   // identity that authorizes it. Shared with every other write, so a fact and a
-  // transition refuse it identically (see resolveExecutingAgent) — including its
+  // transition refuse it identically (see resolveExecutingAgent), including its
   // screen of the agent name, so a dry-run verdict is judged on the same string an
   // append would record. What the screen REPLACED is not reported here: a verdict
   // records nothing, so there is nothing yet to rotate; the operation that appends

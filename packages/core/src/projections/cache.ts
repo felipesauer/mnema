@@ -2,7 +2,7 @@
  * The projection cache: the read model over a chain.
  *
  * It owns a SQLite database of projections derived from the chain and answers
- * queries against them. The database is a pure cache — {@link ProjectionCache.rebuild}
+ * queries against them. The database is a pure cache: {@link ProjectionCache.rebuild}
  * drops it and replays the chain, and nothing else writes state into it. Open
  * it against a chain root, rebuild to populate, then query.
  *
@@ -108,8 +108,8 @@ function openMemory(): SqliteDatabase {
 /** Options for opening a cache. */
 export interface CacheOptions {
   /**
-   * Where to store the SQLite file, named outright. Defaults to in-memory — a cache that
-   * lives only for the process, rebuilt on open — unless {@link persist} says otherwise.
+   * Where to store the SQLite file, named outright. Defaults to in-memory (a cache that
+   * lives only for the process, rebuilt on open) unless {@link persist} says otherwise.
    *
    * A path named here is the CALLER'S and is used as given: a file that cannot be opened is
    * an error, where {@link persist} falls back to memory. It is what the tests that open a
@@ -124,20 +124,20 @@ export interface CacheOptions {
   readonly dbPath?: string;
   /**
    * Keep the cache in the tree it is built from (`projectionCachePath`), so that the next
-   * process to open it takes only what was appended since — the command line, whose every
+   * process to open it takes only what was appended since: the command line, whose every
    * read used to build the whole projection and throw it away.
    *
    * It is a cache and never the record, and four things say so in code rather than in prose:
    *
    *   - what is in it is brought forward by {@link refresh} only when the chain's own
    *     reading says the new events FOLLOW what the cache covers (`chainArrivals`); any other
-   *     change — a tail removed or cut, a fact stamped before something covered — replays;
+   *     change (a tail removed or cut, a fact stamped before something covered) replays;
    *   - it carries the stamp of the code that wrote it, and a stamp that is not this code's
    *     replays (`cache-meta.ts`);
    *   - a sealed segment whose size or modification time is not what the cache recorded
    *     replays, so a rewrite of what was already read is not served in silence;
-   *   - a file that cannot be had — the directory is read-only, the database is corrupt, a
-   *     writer held it past the wait — is not an error: the cache lives in memory for this
+   *   - a file that cannot be had (the directory is read-only, the database is corrupt, a
+   *     writer held it past the wait) is not an error: the cache lives in memory for this
    *     process and answers the same, slower. DELETING IT CHANGES NO ANSWER.
    *
    * What it does not promise is what a reading that resumes can never promise: that bytes the
@@ -150,7 +150,7 @@ export interface CacheOptions {
 }
 
 /**
- * A SQLite failure — a busy file, a corrupt one, a full disk — as opposed to one of the chain's.
+ * A SQLite failure (a busy file, a corrupt one, a full disk) as opposed to one of the chain's.
  *
  * `node:sqlite` raises every one of them as `ERR_SQLITE_ERROR` and puts SQLite's own result code
  * in `errcode`, a number. It is the `errcode` that says the failure came from the database: the
@@ -180,7 +180,7 @@ export class ProjectionCache {
    * The tails of this tree that do not chain, as of the last replay or advance.
    *
    * It is held HERE rather than asked for on demand because it is a by-product of the
-   * reading that already happened — asking again would mean reading the chain a second
+   * reading that already happened: asking again would mean reading the chain a second
    * time to learn something the first reading had in its hands. The reads that serve
    * this cache take it from {@link linkBreaks}.
    *
@@ -192,7 +192,7 @@ export class ProjectionCache {
    * last entry had been appended a second time, a fresh {@link rebuild} reported ONE
    * break and `refresh()` on a cache opened before it reported ZERO.
    *
-   * The refusal was never the hole — WHERE THE ARRIVALS WERE READ FROM was. A reading
+   * The refusal was never the hole, WHERE THE ARRIVALS WERE READ FROM was. A reading
    * resumed from the last `seq` asks the tail for the entries above it, and the walk
    * that answers stops at the first entry CARRYING that seq, which the duplicate
    * satisfies: nothing arrived, so there was no run of arrivals to find broken. The
@@ -209,7 +209,7 @@ export class ProjectionCache {
    * same seq, a fresh {@link rebuild} reported `prev-hash break` and `refresh()` on a
    * retained cache called the same bytes a sound suffix and advanced over them. The
    * frontier carries the boundary HASH now ({@link TailReach.lastHash}) and the refusal is
-   * `firstLinkBreakFrom`, the same function a whole-tail read asks — so the agreement is
+   * `firstLinkBreakFrom`, the same function a whole-tail read asks, so the agreement is
    * with the rule rather than with a list of shapes somebody thought of.
    *
    * WHAT IS STILL OUTSIDE IT is a break BELOW the boundary: bytes a previous reading
@@ -220,12 +220,12 @@ export class ProjectionCache {
    * segments' fingerprints are checked when one is loaded, so a connection that opens
    * after a rewrite of a sealed segment is still told — `cache-meta.ts`.)
    *
-   * AND IT REACHES ONLY THE SURFACE THAT READS — which was true of this field and is no
+   * AND IT REACHES ONLY THE SURFACE THAT READS: which was true of this field and is no
    * longer true of the class. It said *"a write does not refresh anything, so a connection
    * that writes without reading after the break is told nothing until its next read"*. The
    * write still refreshes nothing, and that is deliberate: a catch-up per write costs what
    * a reader pays once and grows with the history. What changed is that a write no longer
-   * has to read this field to be answered — {@link linkBreaksAsOfNow} asks the chain
+   * has to read this field to be answered: {@link linkBreaksAsOfNow} asks the chain
    * without advancing anything, at a price flat in the history, and
    * `code/tests/the-write-says-what-it-landed-on.test.ts` holds the new end-to-end.
    */
@@ -241,13 +241,13 @@ export class ProjectionCache {
     private db: SqliteDatabase,
     private readonly layout: ChainLayout,
     private readonly upcasters: UpcasterRegistry,
-    /** Whether the database is a file other processes share — false for memory, and after a fallback to it. */
+    /** Whether the database is a file other processes share: false for memory, and after a fallback to it. */
     private persisted: boolean,
   ) {}
 
   /**
    * Opens a cache over the chain rooted at `chainRoot`. Ensures the schema
-   * exists but does NOT rebuild — call {@link refresh} to bring it to the chain (taking
+   * exists but does NOT rebuild: call {@link refresh} to bring it to the chain (taking
    * what a file already holds when {@link CacheOptions.persist} is set), or {@link rebuild}
    * to replay it whole. An in-memory cache is empty until then.
    */
@@ -264,7 +264,7 @@ export class ProjectionCache {
       return new ProjectionCache(openMemory(), layout, upcasters, false);
     }
     // A named path is the caller's and fails loudly; the one this class chose is a cache and
-    // gives way to memory — see {@link CacheOptions.persist}.
+    // gives way to memory: see {@link CacheOptions.persist}.
     if (options.dbPath !== undefined) {
       const db = openDatabase(path);
       ensureSchema(db);
@@ -293,7 +293,7 @@ export class ProjectionCache {
   }
 
   /**
-   * Where this tree's record stops chaining — empty for every record the product
+   * Where this tree's record stops chaining: empty for every record the product
    * wrote on its own, and the one thing a READ can say about the proof without paying
    * for `verify`.
    *
@@ -312,7 +312,7 @@ export class ProjectionCache {
 
   /**
    * The same question as {@link linkBreaks}, asked of the chain AS IT IS NOW rather than
-   * as the last replay found it — and it brings nothing forward.
+   * as the last replay found it, and it brings nothing forward.
    *
    * WHY IT IS A SECOND QUESTION AND NOT A REFRESH. {@link linkBreaks} answers from the
    * replay this cache holds, so a surface that has not read since another process appended
@@ -333,7 +333,7 @@ export class ProjectionCache {
    * HISTORY, which is the property, where a whole refresh is 1.96 ms at 60 entries and
    * 4.78 ms at 400.
    *
-   * A COST STUDY PUT THIS AT 0.446 ms AND IT DID NOT REPRODUCE — it is five times smaller
+   * A COST STUDY PUT THIS AT 0.446 ms AND IT DID NOT REPRODUCE: it is five times smaller
    * here. The number is not corrected in place because the shape of the claim survived
    * intact and only the size moved: what that study measured, and what this asserts, is
    * that the price does not grow with the record.
@@ -369,15 +369,15 @@ export class ProjectionCache {
   }
 
   /**
-   * The keys the record counts for `anchor` in this tree AS THE CHAIN IS NOW — the answer a
+   * The keys the record counts for `anchor` in this tree AS THE CHAIN IS NOW: the answer a
    * replay gives, and it brings nothing forward.
    *
    * It is the question every write asks before it appends (`ensureFounded`, in the write
    * operations): does the identity this checkout recorded still count its key? A replay answers it
    * at a price linear in the record, and a session asks it on every write, so the session asks
    * HERE: the membership facts this cache holds are what a replay would have read of the record,
-   * and what arrived since is read the way {@link linkBreaksAsOfNow} reads it — one `readdir` per
-   * tail and the entries past each boundary — and folded behind them by the roster's own fold
+   * and what arrived since is read the way {@link linkBreaksAsOfNow} reads it, one `readdir` per
+   * tail and the entries past each boundary, and folded behind them by the roster's own fold
    * (`rosterIn`, the one `rosterOf` runs over a replay). The arrivals are taken only as a SUFFIX,
    * which is the merge's own comparison: where they are not one (a tail gone or cut, a fact
    * stamped before something already covered, a link that does not follow), the facts in hand are
@@ -398,13 +398,13 @@ export class ProjectionCache {
 
   /**
    * Brings the cache into agreement with the chain, doing the least work that is
-   * sound — and it is the call a reader wants, not {@link rebuild}.
+   * sound, and it is the call a reader wants, not {@link rebuild}.
    *
    * A chain that only GREW since the last replay is brought forward from what
    * arrived: the arrivals are read (their own entries, not the chain), folded from the
    * accumulators the tables hold, and written into the rows they touch. A chain that
-   * changed any other way — a tail pruned, a tail gone, a fact arriving stamped before
-   * something already covered — cannot be described as a suffix, and this replays the whole
+   * changed any other way (a tail pruned, a tail gone, a fact arriving stamped before
+   * something already covered) cannot be described as a suffix, and this replays the whole
    * thing. So does a file that was built by other code, or whose sealed segments are not the
    * ones it saw ({@link CacheOptions.persist}). And so does an arrival that is a move the state
    * held here cannot judge alone — a divergence, or a move the workflow does not allow (FORMAT.md
@@ -465,7 +465,7 @@ export class ProjectionCache {
     });
   }
 
-  /** Replays the chain whole into the tables — the one place a rebuild is written. */
+  /** Replays the chain whole into the tables: the one place a rebuild is written. */
   private replay(): void {
     const replay = chainReplay(this.layout, this.upcasters);
     this.generation = inTransaction(
@@ -495,8 +495,8 @@ export class ProjectionCache {
   }
 
   /**
-   * Takes the frontier the database carries when it is not the one this instance remembers —
-   * the first time a file is opened, and every time another process has written since — and
+   * Takes the frontier the database carries when it is not the one this instance remembers
+   * (the first time a file is opened, and every time another process has written since) and
    * leaves the frontier undefined when what the file carries is not a cache of THIS code over
    * THESE segments, which {@link refresh} reads as "replay".
    */
@@ -526,8 +526,8 @@ export class ProjectionCache {
   }
 
   /**
-   * Runs a step over the database, and if the DATABASE fails it — a file another process holds
-   * past the wait, a corrupt one, a full disk — leaves the file and goes on in memory: the
+   * Runs a step over the database, and if the DATABASE fails it (a file another process holds
+   * past the wait, a corrupt one, a full disk) leaves the file and goes on in memory: the
    * cache is rebuilt there from the chain, and the answer is the same. A failure of the CHAIN
    * (a line that does not parse) is not the database's and goes up as it always did.
    */
@@ -617,7 +617,7 @@ export class ProjectionCache {
 
   /**
    * Reports every `ADR-<n>` label carried by more than one decision of THIS
-   * chain — a label collision to reconcile, never an error. Empty when every
+   * chain: a label collision to reconcile, never an error. Empty when every
    * label is unique.
    *
    * A cache is opened over one chain root, which is exactly the unit an
@@ -629,7 +629,7 @@ export class ProjectionCache {
    * It reports EVERY decision of the chain, whatever state it is in: a label is
    * cited by a human, and a superseded or rejected decision still answers to the
    * one it was given. A reader that only wants the labels it is printing filters
-   * on those — which is what the brief does.
+   * on those, which is what the brief does.
    */
   adrCollisions(): AdrCollision[] {
     return adrCollisions(listDecisions(this.db));
@@ -680,7 +680,7 @@ export class ProjectionCache {
   }
 
   /**
-   * Whether `who`'s assertion of the edge still stands — false once that identity took the
+   * Whether `who`'s assertion of the edge still stands: false once that identity took the
    * link back (`link.retracted`) and did not link it again. The read a HISTORY of links needs,
    * to say which of the assertions it shows no longer act.
    */
@@ -710,7 +710,7 @@ export class ProjectionCache {
 
   /**
    * Where one of the product's own switches stands in this tree, or null when
-   * nothing in it ever switched that channel — which is the channel being ON (see
+   * nothing in it ever switched that channel, which is the channel being ON (see
    * {@link ChannelSwitchProjection}).
    */
   channelSwitch(channel: string): ChannelSwitchProjection | null {
@@ -724,8 +724,8 @@ export class ProjectionCache {
 
   /**
    * Searches this tree's record, or lists its most recent entries when the query
-   * carries no term. Returns an INDEX — an id, a kind, an instant and one line
-   * per hit — plus how many matched in all; the body of any one of them comes
+   * carries no term. Returns an INDEX (an id, a kind, an instant and one line
+   * per hit) plus how many matched in all; the body of any one of them comes
    * from the by-id read above.
    */
   search(query: SearchQuery = {}): SearchResult {
@@ -733,7 +733,7 @@ export class ProjectionCache {
   }
 
   /**
-   * The records of this tree that share any of `query.words`, best first — the index's
+   * The records of this tree that share any of `query.words`, best first: the index's
    * answer to "what here is near these", with the same line per hit a search serves.
    */
   searchPertinent(query: PertinenceQuery): SearchResult {
@@ -741,8 +741,8 @@ export class ProjectionCache {
   }
 
   /**
-   * Every event in this tree that touches `entityId` — as its subject, or by
-   * referring to it — in the tree's own order, one entry per event. The
+   * Every event in this tree that touches `entityId` (as its subject, or by
+   * referring to it) in the tree's own order, one entry per event. The
    * entity's history as this tree holds it.
    */
   references(entityId: string): ReferenceRow[] {
@@ -758,15 +758,15 @@ export class ProjectionCache {
   }
 
   /**
-   * The authorship tally over this tree — how many facts each author wrote, by
-   * kind and by executing agent — narrowed by the optional filter.
+   * The authorship tally over this tree (how many facts each author wrote, by
+   * kind and by executing agent) narrowed by the optional filter.
    */
   authorship(filter: AuthorshipFilter = {}): AuthorshipTally[] {
     return tallyAuthorship(this.db, filter);
   }
 
   /**
-   * Every identity that authorized a fact in this tree, once each — who this tree
+   * Every identity that authorized a fact in this tree, once each, who this tree
    * knows, without how much any of them wrote.
    */
   authors(): string[] {
@@ -795,7 +795,7 @@ export class ProjectionCache {
 
   /**
    * The agent keys this tree enrols, by fingerprint, each with the identity it speaks for and the
-   * name it was enrolled under — read off the membership facts this cache keeps, with the consent
+   * name it was enrolled under: read off the membership facts this cache keeps, with the consent
    * proven against the public halves the tree carries (`agentKeysIn`). A key a retirement took
    * out is still in it: it answers which facts an agent key signed, and those stay signed.
    */
@@ -804,8 +804,8 @@ export class ProjectionCache {
   }
 
   /**
-   * The anchors this tree enrolls as CHECKERS — machines whose key signs check results and
-   * nothing else — in record order, once each. Read off the membership facts this cache keeps;
+   * The anchors this tree enrolls as CHECKERS, machines whose key signs check results and
+   * nothing else, in record order, once each. Read off the membership facts this cache keeps;
    * whether each enrolment holds is `verify`'s to prove (FORMAT.md section 6.2).
    */
   checkers(): string[] {
@@ -833,7 +833,7 @@ export class ProjectionCache {
 
   /**
    * Every decision, skill and task of this tree that two machines moved out of one state
-   * without seeing each other (`divergentMoves`) — asked of the rows this cache keeps for the
+   * without seeing each other (`divergentMoves`): asked of the rows this cache keeps for the
    * entities that have one, which an advance maintains one entity at a time. The same answer
    * read off the disk is a second replay, and over the order it was a walk the cache no longer
    * holds the order for (see {@link foundedBeside}).

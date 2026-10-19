@@ -3,8 +3,8 @@
  * a tree.
  *
  * WHAT THE FACT IS. "This person adopted exactly these bytes, under this name, in this scope",
- * signed. The digest is the stack's identity — the SHA-256 over its file list that anybody can
- * recompute with three lines of shell — so the claim can be held against a disk without
+ * signed. The digest is the stack's identity (the SHA-256 over its file list that anybody can
+ * recompute with three lines of shell), so the claim can be held against a disk without
  * trusting the version or anybody's word.
  *
  * WHAT NEVER ENTERS IT, and why every field is a closed form rather than text. The record is
@@ -19,8 +19,8 @@
  *     person may install into (`--to`) governs nothing and is no scope here: the record does
  *     not affirm what it does not govern, so that install records no fact at all;
  *   - the version, the one field that is the author's label: a version's characters (ASCII
- *     letters, digits, `.`, `+`, `-`, starting with a letter or a digit, at most 64) — no
- *     separator, no `~`, no `:` or `@` an address needs — and, because a key id is spelled in
+ *     letters, digits, `.`, `+`, `-`, starting with a letter or a digit, at most 64) (no
+ *     separator, no `~`, no `:` or `@` an address needs) and, because a key id is spelled in
  *     exactly those characters, the content door first, which refuses a credential in a name.
  *
  * WHICH TREE. The scope is signed in the fact AND names the tree the fact is written in; the
@@ -45,7 +45,7 @@ import { authorizingAnchor } from './identity-operations.js';
 import type { WriteContext } from './operations.js';
 import { isStackName, isStackVersion } from './stack-form.js';
 
-/** The three trees a stack can be adopted into — the scopes that are a tree, and no other. */
+/** The three trees a stack can be adopted into: the scopes that are a tree, and no other. */
 export const STACK_SCOPES: readonly Scope[] = ['public', 'private', 'global'];
 
 /** The digest a stack is identified by: a SHA-256, in lower-case hex. */
@@ -69,7 +69,7 @@ export interface AdoptStackInput {
   readonly run?: string;
 }
 
-/** A field that is not the closed form it has to be, named — the value is not repeated. */
+/** A field that is not the closed form it has to be, named: the value is not repeated. */
 export interface StackFieldRefusal {
   readonly ok: false;
   readonly code: 'STACK_FIELD_REFUSED';
@@ -84,7 +84,7 @@ export type StackFactError = StackFieldRefusal | SelfAuthorizedErr | ScreenRefus
 /** A stack was adopted: the fact was appended. */
 export interface AdoptStackOk extends ScreenedWrite {
   readonly ok: true;
-  /** The name it is installed under — the fact's subject. */
+  /** The name it is installed under: the fact's subject. */
   readonly subject: string;
 }
 

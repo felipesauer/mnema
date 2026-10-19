@@ -21,7 +21,7 @@ function proofIn(required: readonly ProofField[]): { readonly fields?: Transitio
   return fields === undefined ? {} : { fields };
 }
 
-describe('gate — every legal transition passes with valid authority and proof', () => {
+describe('gate: every legal transition passes with valid authority and proof', () => {
   for (const t of TRANSITIONS) {
     it(`${t.from} --${t.action}--> ${t.to}`, () => {
       const result = gate({
@@ -40,7 +40,7 @@ describe('gate — every legal transition passes with valid authority and proof'
   }
 });
 
-describe('gate — legality', () => {
+describe('gate: legality', () => {
   it('rejects every (from, action) pair that is NOT a declared transition', () => {
     const legal = new Set(TRANSITIONS.map((t) => `${t.from}::${t.action}`));
     let illegalChecked = 0;
@@ -78,7 +78,7 @@ describe('gate — legality', () => {
   });
 });
 
-describe('gate — required proof', () => {
+describe('gate: required proof', () => {
   const withReq = TRANSITIONS.filter((t) => t.requires.length > 0);
 
   it('there are transitions that require proof (guards the suite is meaningful)', () => {
@@ -105,7 +105,7 @@ describe('gate — required proof', () => {
 
     it(`${t.action} from ${t.from} rejects proof present but under the WRONG key`, () => {
       // A note where a reason is required (or vice versa) must not satisfy the
-      // requirement — the gate checks the specific field, not "some field".
+      // requirement: the gate checks the specific field, not "some field".
       const wrong: Record<string, string> = {};
       const decoy: ProofField = t.requires.includes('reason') ? 'note' : 'reason';
       wrong[decoy] = 'decoy';
@@ -120,7 +120,7 @@ describe('gate — required proof', () => {
   }
 });
 
-describe('gate — optional fields', () => {
+describe('gate: optional fields', () => {
   it('a transition that requires nothing passes with no fields', () => {
     const result = gate({ from: 'DRAFT', action: 'submit', who: WHO });
     expect(result).toEqual({ ok: true, to: 'READY', action: 'submit' });
@@ -153,7 +153,7 @@ describe('gate — optional fields', () => {
   });
 });
 
-describe('gate — authority (who != which)', () => {
+describe('gate: authority (who != which)', () => {
   it('rejects a missing who', () => {
     const result = gate({ from: 'READY', action: 'start', who: '' });
     expect(result).toMatchObject({ ok: false, code: 'MISSING_WHO' });
@@ -211,9 +211,9 @@ describe('gate — authority (who != which)', () => {
   });
 });
 
-describe('gate — never throws on untrusted junk (the boundary it claims to own)', () => {
+describe('gate, never throws on untrusted junk (the boundary it claims to own)', () => {
   // The declared inputs are strings, but a surface may forward junk. The gate
-  // must return a typed refusal, never crash — and never let a value the chain
+  // must return a typed refusal, never crash, and never let a value the chain
   // parser will later reject (a non-string identity) pass as authorized.
   const junk: unknown[] = [undefined, null, 5, {}, [], true];
 
@@ -252,7 +252,7 @@ describe('gate — never throws on untrusted junk (the boundary it claims to own
   });
 });
 
-describe('gate — whitespace is not proof', () => {
+describe('gate: whitespace is not proof', () => {
   it('rejects a whitespace-only required field', () => {
     const result = gate({
       from: 'IN_PROGRESS',
@@ -264,7 +264,7 @@ describe('gate — whitespace is not proof', () => {
   });
 });
 
-describe('gate — purity', () => {
+describe('gate: purity', () => {
   it('returns the same verdict for the same input, and never mutates the request', () => {
     const req = { from: 'IN_PROGRESS', action: 'complete', fields: { note: 'x' }, who: WHO };
     const a = gate(req);

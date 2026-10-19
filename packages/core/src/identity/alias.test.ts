@@ -13,7 +13,7 @@ describe('deriveAlias', () => {
   it('prefixes by kind', () => {
     // Two lines used to stand here, one per other kind, and they were the whole
     // evidence that `epic` and `sprint` existed. Nothing in production ever passed
-    // either — the arms were a public option with no caller — so they are gone, and
+    // either (the arms were a public option with no caller), so they are gone, and
     // the enumeration below is what covers whatever kinds the map actually declares.
     expect(deriveAlias('task', 'x').startsWith('t-')).toBe(true);
   });
@@ -52,8 +52,8 @@ describe('the short form collides, and that is the accepted cost', () => {
   /**
    * There used to be a `disambiguate` here that lengthened the ambiguous aliases
    * of a set shown together. It was removed because nothing shows two aliases at
-   * once, so the set it needed never existed. This pair — which the deleted tests
-   * used as the fixture that made the lengthening observable — stays as the pin
+   * once, so the set it needed never existed. This pair, which the deleted tests
+   * used as the fixture that made the lengthening observable, stays as the pin
    * that the collision is REAL and accepted, rather than a sentence in a
    * docstring nobody can check.
    */

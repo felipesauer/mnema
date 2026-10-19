@@ -2,7 +2,7 @@
  * The skill transition table: the legal moves of the skill workflow, in typed
  * code.
  *
- * Each row is one legal move — a `from` state, an `action`, the `to` state it
+ * Each row is one legal move: a `from` state, an `action`, the `to` state it
  * reaches, and which proof fields that action must carry. This is the whole
  * workflow: fixed, opinionated, compiler-checked, never loaded from a project
  * file. It mirrors the task workflow's shape (from/action/to/requires) and,
@@ -20,7 +20,7 @@
  *   - `adopt` from `reviewed` makes it a live pattern;
  *   - `reject` is legal from BOTH `proposed` (dismissed without formal review)
  *     and `reviewed` (looked at and dismissed);
- *   - `deprecate` from `adopted` is the ONLY way out of `adopted` — a skill that
+ *   - `deprecate` from `adopted` is the ONLY way out of `adopted`: a skill that
  *     was adopted is never rejected retroactively (that would rewrite history);
  *     `deprecated` is the honest "do not use anymore".
  *   - `rejected` and `deprecated` are terminal.

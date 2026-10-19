@@ -48,8 +48,8 @@ import { createSkill, recordConsultation } from './skill-operations.js';
  *
  * The defect it closes was the widest one this codebase has had. The catalog's
  * shape rules lived only in the parser, which runs on the way OUT, so a write that
- * built an event the parser forbids — a task with an empty title, a link with an
- * empty relation, a session with an empty goal — was appended, SIGNED, and reported
+ * built an event the parser forbids (a task with an empty title, a link with an
+ * empty relation, a session with an empty goal) was appended, SIGNED, and reported
  * as a success. Every later read of that project then failed: not the one record,
  * the WHOLE tree, because a replay refuses the tail rather than the line. Eighteen
  * commands of the shipped CLI could do it with one empty argument, and the record is
@@ -58,12 +58,12 @@ import { createSkill, recordConsultation } from './skill-operations.js';
  * So the tests come in two halves, and neither is sufficient alone:
  *
  *   1. THE SOURCE GUARD. No module of the core may reach `writer.append` on its
- *      own — the door is the only way through. This is the half that catches a
+ *      own: the door is the only way through. This is the half that catches a
  *      write path added TOMORROW, which no behavioural test can, because a test
  *      cannot drive an operation nobody has written yet.
  *   2. THE BEHAVIOURAL SWEEP. Every operation that CAN be handed an empty value is
  *      handed one, in every field that reaches a required event field, and must come
- *      back with a typed refusal — never a throw — having appended nothing. And the
+ *      back with a typed refusal, never a throw, having appended nothing. And the
  *      set of operations swept is checked against the writing surface's own exports,
  *      so a new export must be classified or the test fails.
  *
@@ -94,7 +94,7 @@ describe('the door is the only way onto a tail', () => {
   /**
    * Where the core reaches a writer's own append, as `<file>:<count>`.
    *
-   * A structural guard, and structural guards go vacuous — a renamed method, a
+   * A structural guard, and structural guards go vacuous: a renamed method, a
    * moved directory, and it happily reports an empty set forever. So the assertion
    * below is not "the set is small": it is the EXACT set, counts included, which
    * fails just as loudly when the pattern stops matching anything as when a new
@@ -110,7 +110,7 @@ describe('the door is the only way onto a tail', () => {
   }
 
   it('has exactly two places that touch a writer, and both are accounted for', () => {
-    // `workflow/append.ts` IS the door — its two calls are the door's own.
+    // `workflow/append.ts` IS the door: its two calls are the door's own.
     // `identity-operations.ts` has ONE, the founding, and it is the single
     // deliberate exception: every field of a founding is derived from the local key,
     // no caller supplies anything, and the function returns the anchor rather than a
@@ -139,8 +139,8 @@ describe('every write refuses what no read could accept', () => {
     // Founded up front, as `mnema init` leaves every project it creates, so the sweep below
     // runs on a tree with a record to replay. THIS SAID it mattered for the count: "on a tree
     // nobody had ever written to the FIRST refused write would still leave that founding
-    // behind". It does not any more — the door refuses before anything is founded
-    // (`appendFact` in append.ts) — and the virgin-tree cases at the end of this file drive
+    // behind". It does not any more (the door refuses before anything is founded
+    // (`appendFact` in append.ts)) and the virgin-tree cases at the end of this file drive
     // every case with no setup on a tree nobody wrote to, and hold it at nothing.
     ensureFounded(ctx);
   });
@@ -151,7 +151,7 @@ describe('every write refuses what no read could accept', () => {
   });
 
   /**
-   * How many events the chain holds — which is also the proof the chain still
+   * How many events the chain holds, which is also the proof the chain still
    * READS: `orderedEvents` parses every line, so it throws on exactly the entry
    * this door exists to keep out.
    */
@@ -161,7 +161,7 @@ describe('every write refuses what no read could accept', () => {
 
   /** One refused write: what was driven, and the field the reader named. */
   interface Case {
-    /** The operation's exported name — checked against the surface's exports. */
+    /** The operation's exported name: checked against the surface's exports. */
     readonly op: string;
     /** The input field the empty value was put in. */
     readonly field: string;
@@ -171,7 +171,7 @@ describe('every write refuses what no read could accept', () => {
      * What the field can only be REACHED through, when anything is: the run a close
      * needs open, the second key a revocation needs in the roster. It is separate
      * from `drive` so the count around the refusal is EXACT rather than allowed a
-     * slack of "one or two events the setup happened to write" — a slack is where a
+     * slack of "one or two events the setup happened to write": a slack is where a
      * real append hides.
      */
     readonly prepare?: () => void;
@@ -190,7 +190,7 @@ describe('every write refuses what no read could accept', () => {
    * rows seen from the other end.
    */
   function cases(): readonly Case[] {
-    // Written by `prepare`, read by `drive` — the two halves of the cases that
+    // Written by `prepare`, read by `drive`: the two halves of the cases that
     // cannot reach their field from an empty record.
     let openRun = '';
     let secondKey = '';
@@ -345,7 +345,7 @@ describe('every write refuses what no read could accept', () => {
         drive: () => recordObservation(ctx, { about: 'x', topic: 'k', text: '' }),
       },
       {
-        // The handoff's task becomes the event's SUBJECT — the envelope, not a
+        // The handoff's task becomes the event's SUBJECT: the envelope, not a
         // payload, which is why a sweep over payload fields would have missed it.
         op: 'recordHandoff',
         field: 'task',
@@ -445,7 +445,7 @@ describe('every write refuses what no read could accept', () => {
       {
         // The two facts a channel writes about ITSELF carry the same subject and reach the
         // door the same way. Their caller is the push rather than a person, so an empty
-        // name here is a product defect and not a typo — which is exactly why it is swept
+        // name here is a product defect and not a typo, which is exactly why it is swept
         // like every other one: the sweep is over what the door refuses, never over who
         // was expected to hand it something good.
         op: 'recordChannelServed',
@@ -469,8 +469,8 @@ describe('every write refuses what no read could accept', () => {
       },
       {
         // THE CITATION, AND THE CASE THE MUTATION ASKED FOR. `rule` never goes through the
-        // content door — it is an identifier, so a scrubber would destroy the one field a
-        // charge is required to carry — and the first version of this sweep concluded from
+        // content door (it is an identifier, so a scrubber would destroy the one field a
+        // charge is required to carry) and the first version of this sweep concluded from
         // that it needed no case here at all. Removing the parser's `requireString` for it
         // left the whole battery green: an empty citation would have reached the chain, and
         // a signed accusation naming nothing is exactly what the axis's first tie forbids.
@@ -486,7 +486,7 @@ describe('every write refuses what no read could accept', () => {
           }),
       },
       {
-        // The refusal shares the asking's body, so each field it refuses is the asking's — and
+        // The refusal shares the asking's body, so each field it refuses is the asking's, and
         // is held here for the refusal too, since a second fact is a second chance to forget.
         op: 'recordChannelRefused',
         field: 'channel',
@@ -562,7 +562,7 @@ describe('every write refuses what no read could accept', () => {
       },
       {
         // The roster's retirement of an agent reaches the same fact through its own checks, so it
-        // needs a real agent first — the only way its `reason` is ever reached.
+        // needs a real agent first: the only way its `reason` is ever reached.
         op: 'retireAgentKey',
         field: 'reason',
         names: 'payload.reason',
@@ -581,7 +581,7 @@ describe('every write refuses what no read could accept', () => {
       },
       {
         // The roster's revoke reaches the same fact through its own checks, so it
-        // needs a real second member first — which is the only way its `reason` is
+        // needs a real second member first, which is the only way its `reason` is
         // ever reached, and therefore the only honest way to drive it.
         op: 'revokeMember',
         field: 'reason',
@@ -601,7 +601,7 @@ describe('every write refuses what no read could accept', () => {
         // there: the operation reads its claims off the disk and refuses UNKNOWN_TAIL
         // before it builds anything, so an empty reason driven over a tail nobody has
         // would be refused for the wrong thing and this row would prove nothing. The
-        // tail is a second machine's, merged the way an offline copy is — which is
+        // tail is a second machine's, merged the way an offline copy is, which is
         // also the only kind a waiver may ever name.
         op: 'authorizeTailPrune',
         field: 'reason',
@@ -663,7 +663,7 @@ describe('every write refuses what no read could accept', () => {
     }
   });
 
-  /** Every file under `dir`, as a path relative to it — the empty list for a virgin one. */
+  /** Every file under `dir`, as a path relative to it: the empty list for a virgin one. */
   function filesUnder(dir: string): string[] {
     return readdirSync(dir, { recursive: true, withFileTypes: true })
       .filter((entry) => entry.isFile())
@@ -690,11 +690,11 @@ describe('every write refuses what no read could accept', () => {
     return { tree, keys, ctx: fresh };
   }
 
-  it('leaves a virgin tree virgin — no founding, no key — and says the fact was not recorded', () => {
+  it('leaves a virgin tree virgin (no founding, no key) and says the fact was not recorded', () => {
     // THIS TEST WAS "leaves a virgin tree founded and otherwise empty, and says so", and it pinned
     // the founding a refusal left: an operation founded its anchor on its way in, before the door
     // saw the fact. Measured on the binary from an empty HOME, that founding was a key under the
-    // HOME, a public key, an anchor and a tail holding `identity.founded` and no checkpoint —
+    // HOME, a public key, an anchor and a tail holding `identity.founded` and no checkpoint:
     // enough for `verify --require=signed` to fail on the whole project. The door refuses before
     // the founding now, so the refusal leaves the tree and the key root as it found them.
     const virgin = virginTree();
@@ -718,8 +718,8 @@ describe('every write refuses what no read could accept', () => {
   it('founds nothing and keeps no key on a virgin tree, for every case that needs no setup', () => {
     // The guard that holds EVERY operation to the order, not one: each case the sweep can drive
     // with nothing written first is driven on its own tree nobody wrote to, with a key root that
-    // holds no key. An operation that founds before its fact is checked — a site that calls
-    // `ensureFounded` and then `appendEvent`, instead of `appendFact` — leaves the founding here.
+    // holds no key. An operation that founds before its fact is checked (a site that calls
+    // `ensureFounded` and then `appendEvent`, instead of `appendFact`) leaves the founding here.
     //
     // The cases with a `prepare` are not here, and cannot be: their setup writes, and a write
     // founds. They are `retractNote`, `retractLink`, `declareCheck`, `runRuleChecks`,
@@ -779,7 +779,7 @@ describe('every write refuses what no read could accept', () => {
   const NO_EMPTY_REACHES_A_FIELD: Readonly<Record<string, string>> = {
     // Every transition: `to` and `action` come from the gate's closed table, `from`
     // from the projection, and an empty proof field is dropped by the builder as
-    // absence — the same reading the parser gives it — so none can arrive empty.
+    // absence, the same reading the parser gives it, so none can arrive empty.
     transitionTask: 'gate-supplied states; empty proof fields are dropped as absence',
     acceptDecision: 'gate-supplied states; empty proof fields are dropped as absence',
     rejectDecision: 'gate-supplied states; empty proof fields are dropped as absence',

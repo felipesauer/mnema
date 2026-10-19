@@ -98,7 +98,7 @@ describe('searching the record', () => {
 
     const result = search();
 
-    // Newest first, across kinds — a listing is one stream, not one per table.
+    // Newest first, across kinds: a listing is one stream, not one per table.
     expect(ids(result.hits)).toEqual(['t1', 'd1', 'm1']);
     expect(result.total).toBe(3);
   });
@@ -140,7 +140,7 @@ describe('searching the record', () => {
     const [hit] = search({ term: 'rationale' }).hits;
 
     // The match was in the rationale; the line served is still the TITLE, and it
-    // is not marked derived — the body comes from the by-id read.
+    // is not marked derived: the body comes from the by-id read.
     expect(hit?.title).toBe('Keep the cache warm');
     expect(hit?.derived).toBe(false);
     expect(hit?.state).toBe('accepted');
@@ -157,7 +157,7 @@ describe('searching the record', () => {
 
   it('finds a decision by a word that exists only in its alternatives', () => {
     // THE test this field exists for. The value of recording what was turned down
-    // is answering "did we already reject this?", and that question IS a search —
+    // is answering "did we already reject this?", and that question IS a search,
     // so a field the index skipped would be write-only, and the whole field
     // pointless. `sqlite` appears in NO other column of this row.
     index({
@@ -175,7 +175,7 @@ describe('searching the record', () => {
 
     expect(ids(search({ term: 'sqlite' }).hits)).toEqual(['d1']);
     // And the line served is still the decision's own title, not the excerpt the
-    // match fell in — the index names a record, it does not quote it.
+    // match fell in: the index names a record, it does not quote it.
     expect(search({ term: 'sqlite' }).hits[0]?.title).toBe('Store the record as JSONL');
     expect(search({ term: 'sqlite' }).hits[0]?.derived).toBe(false);
   });
@@ -248,7 +248,7 @@ describe('searching the record', () => {
     expect(d1After).toBeGreaterThan(d1Before);
   });
 
-  it('does not index structure — an id or a state is not a search term', () => {
+  it('does not index structure: an id or a state is not a search term', () => {
     index({ tasks: [task('task-abc123', 'a title with no state word in it', 1, 'IN_REVIEW')] });
 
     expect(search({ term: 'task-abc123' }).hits).toEqual([]);
@@ -319,7 +319,7 @@ describe('reading a term as text, never as a query language', () => {
     expect(search({ term: '-- ' }).hits).toEqual([]);
   });
 
-  it('treats a blank term as no term at all — a listing', () => {
+  it('treats a blank term as no term at all: a listing', () => {
     index({ memories: [memory('m1', 'a thing', 1)], tasks: [task('t1', 'another', 2)] });
 
     expect(ids(search({ term: '   ' }).hits)).toEqual(['t1', 'm1']);
@@ -368,7 +368,7 @@ describe('bounding what comes back', () => {
     const result = search({ term: 'same', limit: 5 });
 
     expect(result.hits).toHaveLength(5);
-    // The count is the honest signal that the answer was cut — a capped list
+    // The count is the honest signal that the answer was cut: a capped list
     // that does not say so reads as "this is everything".
     expect(result.total).toBe(30);
   });
@@ -423,7 +423,7 @@ describe('the order', () => {
     // disagree with a one-tree answer for no reason.
     //
     // THE FIXTURE HAS TO HOLD A TIE. It gave every record its own instant, and on
-    // such a fixture the two writings agree however either of them breaks a tie —
+    // such a fixture the two writings agree however either of them breaks a tie,
     // so the case was green while both of them broke it the wrong way, and stayed
     // green when one of them was changed. Two records share instant 1 and two more
     // share instant 4 now, which is the only shape in which this compares anything.
@@ -446,7 +446,7 @@ describe('the order', () => {
     }
   });
 
-  it('breaks a tie in the instant by id DESCENDING — the newest of one millisecond', () => {
+  it('breaks a tie in the instant by id DESCENDING: the newest of one millisecond', () => {
     // THE CASE THIS REPLACES ASSERTED THE OPPOSITE, and it was the defect: it read
     // `['m1', 'm2']` and called it "so the pair never swaps", which is true of any
     // total order and says nothing about which of the two is the answer. `at DESC`
@@ -460,7 +460,7 @@ describe('the order', () => {
   });
 });
 
-describe('searchPertinent — the records that share any of several words', () => {
+describe('searchPertinent: the records that share any of several words', () => {
   beforeEach(() => {
     index({
       memories: [
@@ -506,7 +506,7 @@ describe('searchPertinent — the records that share any of several words', () =
   it('drops a word more than half the records hold, and keeps one half of them hold', () => {
     // `the` is in three of the four memories: no weight in bm25, so no match either.
     expect(searchPertinent(db, { words: ['the'], kind: 'memory' })).toEqual({ hits: [], total: 0 });
-    // `login` is in two of four — exactly half — and still tells them apart.
+    // `login` is in two of four, exactly half, and still tells them apart.
     expect(searchPertinent(db, { words: ['login'], kind: 'memory' }).total).toBe(2);
     // The count is per kind: `rounding` is in one decision of one, and one memory of four.
     expect(ids(searchPertinent(db, { words: ['rounding'], kind: 'decision' }).hits)).toEqual([]);

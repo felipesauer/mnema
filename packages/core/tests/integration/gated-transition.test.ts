@@ -1,6 +1,6 @@
 /**
  * The gated write operation end to end: a transition passes through the gate,
- * lands on the real chain, and the projection reflects it — and an illegal or
+ * lands on the real chain, and the projection reflects it, and an illegal or
  * unproven move writes nothing at all.
  *
  * This crosses packages (the core operation drives a real @mnema/chain tail on
@@ -99,7 +99,7 @@ describe('createTask', () => {
     const first = mustCreate({ title: 'a' });
     const second = mustCreate({ title: 'b' });
     expect(first).not.toBe(second);
-    // Two creates are two tasks — no false-merge from a shared caller id.
+    // Two creates are two tasks: no false-merge from a shared caller id.
     const tasks = projectTasks(orderedEvents(layout, upcasters));
     expect(tasks.size).toBe(2);
   });
@@ -124,11 +124,11 @@ describe('createTask', () => {
   it('births atomically: a failed write leaves NO orphan task.created', () => {
     // The birth pair must be all-or-nothing. If the write fails, the chain must
     // not carry a created-but-stateless task, which would burn the id forever.
-    // A writer whose batch append throws stands in for a disk/IO failure — it
+    // A writer whose batch append throws stands in for a disk/IO failure: it
     // still exposes an anchor so identity derivation happens before the write.
     //
     // FOUNDED FIRST, by the real writer. The stand-in used to claim a recorded anchor over a
-    // tree with no founding in it — a state no write produces, and one every write refuses now,
+    // tree with no founding in it: a state no write produces, and one every write refuses now,
     // because it asks whether the recorded identity counts the key before it appends
     // (`a-stale-anchor-writes-nothing.test.ts`). So the founding is real, the stand-in's anchor
     // is the one the record counts, and what fails is the birth's own append.
@@ -152,7 +152,7 @@ describe('createTask', () => {
   });
 });
 
-describe('transitionTask — authorized moves persist and project', () => {
+describe('transitionTask: authorized moves persist and project', () => {
   let taskId: string;
   beforeEach(() => {
     taskId = mustCreate({ title: 'task', which: 'claude' });
@@ -195,7 +195,7 @@ describe('transitionTask — authorized moves persist and project', () => {
   });
 });
 
-describe('transitionTask — refused moves write NOTHING', () => {
+describe('transitionTask: refused moves write NOTHING', () => {
   let taskId: string;
   beforeEach(() => {
     taskId = mustCreate({ title: 'task', which: 'claude' });
@@ -243,11 +243,11 @@ describe('transitionTask — refused moves write NOTHING', () => {
   });
 });
 
-describe('transitionTask — gated against the chain, not a stale cache', () => {
+describe('transitionTask: gated against the chain, not a stale cache', () => {
   it('reads current state from the chain so each move is judged against the truth', () => {
     const taskId = mustCreate({ title: 'task', which: 'claude' });
     // Walk DRAFT → READY → IN_PROGRESS → BLOCKED, then the only legal move is
-    // unblock. Completing from BLOCKED must be refused — proof the gate saw the
+    // unblock. Completing from BLOCKED must be refused: proof the gate saw the
     // real current state, BLOCKED, not the initial DRAFT.
     transitionTask(ctx(), { id: taskId, action: 'submit' });
     transitionTask(ctx(), { id: taskId, action: 'start', which: 'claude' });
@@ -267,7 +267,7 @@ describe('transitionTask — gated against the chain, not a stale cache', () => 
   });
 });
 
-describe('derived identity — who is the anchor, not a typed-in name', () => {
+describe('derived identity, who is the anchor, not a typed-in name', () => {
   /** The `who`/`which`/`signerFp` of the last event on the chain. */
   function lastActor(): { who: string; which?: string; signerFp: string } {
     const events = orderedEvents(layout, upcasters);

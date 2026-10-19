@@ -11,36 +11,36 @@
  *     from the record.
  *
  * `alternatives` is projected only when the record carries one. A decision that
- * recorded none has NO key for it — not an empty string — so "did this decision
+ * recorded none has NO key for it, not an empty string, so "did this decision
  * say what it turned down?" is answerable from the projection by the field's own
  * absence, which is the whole reason it is a named field rather than a convention
  * inside the rationale.
  *
  * A supersede is the one multi-entity fact: its subject is the SUPERSEDED
- * decision, and its `by` names the SUCCESSOR. The fold updates BOTH sides — the
+ * decision, and its `by` names the SUCCESSOR. The fold updates BOTH sides (the
  * subject records `supersededBy` (and moves to `superseded`), and the successor
- * records `supersedes` (the id it replaced) — so a query from either direction
+ * records `supersedes` (the id it replaced)), so a query from either direction
  * is answerable without walking the stream again.
  *
  * A dangling `supersededBy` is possible only in a PARTIAL clone. A supersede's
  * successor must exist at write time (the operation refuses a dangling `by`), so
  * a complete chain always resolves both sides. But a clone that carries the
  * subject's tail and not the successor's projects a `supersededBy` pointing at a
- * decision not present — honest (the shared chain still holds it; a partial
+ * decision not present: honest (the shared chain still holds it; a partial
  * checkout is a chosen local window, not a loss) but unsignalled. A consumer
  * that must resolve the link should verify it against the full chain rather than
  * trust a partial view.
  *
  * THE ADR LABEL IS NOT IDENTITY. The id is identity; `adr` is a citation label
  * frozen into the record at write time. Two clones working offline can mint the
- * same `ADR-7` for different decisions — the ids stay unique and the chain
+ * same `ADR-7` for different decisions: the ids stay unique and the chain
  * converges, but the label now points at two decisions. That is a label
  * collision, not corruption and not a fatal constraint: {@link adrCollisions}
  * detects and reports it so a human can reconcile the label, exactly as the
  * chain's verifier reports (rather than fails on) a census anomaly.
  *
- * ONE CHAIN IS THE UNIT the number is minted in — not one in which it is unique,
- * which is the whole reason this file has a detector — and everything that reports a
+ * ONE CHAIN IS THE UNIT the number is minted in (not one in which it is unique,
+ * which is the whole reason this file has a detector) and everything that reports a
  * collision has to be given exactly that. The number is minted from the writer's
  * view of ONE chain (`recordDecision`: `ADR-${decisions.size + 1}` over that
  * tree's projection), so two chains numbering their own first decision `ADR-1` is
@@ -79,11 +79,11 @@ export interface DecisionProjection {
   /** The citable `ADR-<n>` label, frozen at write time. NOT identity. */
   readonly adr: string;
   readonly title: string;
-  /** The why — the whole value of the record. */
+  /** The why: the whole value of the record. */
   readonly rationale: string;
   /**
    * What was considered and turned down, and why not. ABSENT when the decision
-   * recorded none — the absence is the fact, so it is never an empty string.
+   * recorded none: the absence is the fact, so it is never an empty string.
    */
   readonly alternatives?: string;
   /** The `to` of the last transition. */
@@ -97,19 +97,19 @@ export interface DecisionProjection {
   /** `at` of the last transition. */
   readonly updatedAt: string;
   /**
-   * What each move of this decision SAID, in the chain's own order — absent when no
+   * What each move of this decision SAID, in the chain's own order: absent when no
    * transition ever carried proof. See `projections/proof.ts` for why it is every
    * move and not the last one.
    */
   readonly proof?: readonly TransitionProof[];
   /**
-   * Who recorded it — the actor of the `decision.recorded` event. Present for every decision
+   * Who recorded it: the actor of the `decision.recorded` event. Present for every decision
    * the chain gave a birth event to; absent only for a projection built from a transition
    * with no birth in the stream, which is a decision that does not project at all.
    */
   readonly recordedBy?: DecisionActor;
   /**
-   * Who ruled it ACCEPTED — the actor of the transition that reached `accepted`, the latest if
+   * Who ruled it ACCEPTED: the actor of the transition that reached `accepted`, the latest if
    * more than one did. Absent for a decision that was never accepted. It is NOT cleared by a
    * later move (a superseded decision was accepted, and the record says by whom): whether it
    * still governs is the state's to say, and who ruled is the event's.
@@ -144,12 +144,12 @@ export interface DecisionAccumulator {
 /**
  * The decision fold. A decision is
  * projected only when it has BOTH a `decision.recorded` (existence) and at
- * least one transition (state) — birth emits the two together, so an intact
+ * least one transition (state): birth emits the two together, so an intact
  * chain always has both; the guard matters only for a truncated tail.
  *
  * A supersede updates two accumulators: the subject's `supersededBy` and the
  * successor's `supersedes`. The successor's own record/transitions still decide
- * whether IT is projected — a supersede that names a `by` with no
+ * whether IT is projected: a supersede that names a `by` with no
  * `decision.recorded` links nothing (a dangling `by` is refused at write time;
  * a truncated tail is the only way it arrives, and the missing successor is
  * simply not projected).
@@ -191,7 +191,7 @@ export const decisionFold: AccumulatorFold<DecisionAccumulator, DecisionProjecti
   },
   finish(id, entry) {
     // Existence needs the record; state needs a transition. A subject missing
-    // either is not a complete decision and is not projected — never given a
+    // either is not a complete decision and is not projected, never given a
     // fabricated state. (An accumulator that only holds `supersedes`, set by a
     // supersede naming it, has no record of its own and is correctly dropped.)
     if (
@@ -231,14 +231,14 @@ export function projectDecisions(events: readonly CatalogEvent[]): Map<string, D
 
 /**
  * Reports every `adr` label carried by more than one decision. The label is a
- * citation aid, not identity, so a collision is a signal to reconcile — never
+ * citation aid, not identity, so a collision is a signal to reconcile, never
  * an error that fails a read. Returns an empty array when every label is
  * unique. Only projected decisions are considered (a dropped, incomplete one
  * has no label to collide).
  *
  * FEED IT ONE CHAIN'S DECISIONS. It groups by label and says nothing about where
  * the decisions came from, so the caller decides what the labels are compared
- * within — and the only unit in which the number claims to be unique is one chain
+ * within, and the only unit in which the number claims to be unique is one chain
  * (see the module comment). Both readers of this pass exactly that:
  * {@link ProjectionCache.adrCollisions} is a cache over one chain, and the audit
  * folds each chain of a record on its own.
@@ -246,7 +246,7 @@ export function projectDecisions(events: readonly CatalogEvent[]): Map<string, D
  * THIS DOES NOT RENUMBER, and it is the only answer there is. Both labels were
  * frozen into signed events on two machines that could not see each other, so
  * there is no write that could have prevented them and no edit that could undo
- * one — the record treats changing one's mind as a new decision, never as a
+ * one: the record treats changing one's mind as a new decision, never as a
  * rewrite of an old one. Detecting and declaring is the whole of the response.
  */
 export function adrCollisions(decisions: Iterable<DecisionProjection>): AdrCollision[] {

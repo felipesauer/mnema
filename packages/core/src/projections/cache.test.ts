@@ -77,7 +77,7 @@ function writeTaskMovedTo(w: ChainWriter, id: string, to: 'READY' | 'CANCELED'):
   );
 }
 
-describe('ProjectionCache — rebuild materializes the chain', () => {
+describe('ProjectionCache: rebuild materializes the chain', () => {
   it('projects a task after rebuild', () => {
     const w = openChainForWriting(chainRoot, { keyRoot: chainRoot });
     writeTaskMovedTo(w, 't-1', 'READY');
@@ -116,7 +116,7 @@ describe('ProjectionCache — rebuild materializes the chain', () => {
   });
 });
 
-describe('ProjectionCache — the cache is NOT the source (drop and replay)', () => {
+describe('ProjectionCache: the cache is NOT the source (drop and replay)', () => {
   it('rebuilds identical state after the cache is wiped, from the chain alone', () => {
     const w = openChainForWriting(chainRoot, { keyRoot: chainRoot });
     writeTaskMovedTo(w, 't-1', 'READY');
@@ -129,7 +129,7 @@ describe('ProjectionCache — the cache is NOT the source (drop and replay)', ()
     first.close();
     caches = caches.filter((c) => c !== first);
 
-    // Delete the cache database entirely — the chain is untouched.
+    // Delete the cache database entirely: the chain is untouched.
     rmSync(dbPath, { force: true });
     rmSync(`${dbPath}-wal`, { force: true });
     rmSync(`${dbPath}-shm`, { force: true });
@@ -149,7 +149,7 @@ describe('ProjectionCache — the cache is NOT the source (drop and replay)', ()
     expect(cache.getTask('t-1')?.state).toBe('CANCELED');
 
     // A rebuild is defined entirely by the chain, so running it again from the
-    // same chain converges to the same answer — the cache never drifts from it.
+    // same chain converges to the same answer: the cache never drifts from it.
     cache.rebuild();
     expect(cache.getTask('t-1')?.state).toBe('CANCELED');
   });
@@ -184,7 +184,7 @@ describe('ProjectionCache — the cache is NOT the source (drop and replay)', ()
   });
 });
 
-describe('ProjectionCache — multi-tail materialization', () => {
+describe('ProjectionCache: multi-tail materialization', () => {
   it('projects tasks written across two merged tails', () => {
     const rootB = mkdtempSync(join(tmpdir(), 'mnema-cache-b-'));
     try {
@@ -207,7 +207,7 @@ describe('ProjectionCache — multi-tail materialization', () => {
   });
 });
 
-describe('ProjectionCache — runs', () => {
+describe('ProjectionCache: runs', () => {
   it('projects an open run, then reflects its close on the next rebuild', () => {
     const w = openChainForWriting(chainRoot, { keyRoot: chainRoot });
     w.append(runStarted(env('r-1', 0), { agent: 'claude', goal: 'ship' }));
@@ -269,7 +269,7 @@ describe('ProjectionCache — runs', () => {
   });
 });
 
-describe('ProjectionCache — decisions', () => {
+describe('ProjectionCache: decisions', () => {
   /** Records a decision and moves it to `to` via the given action. */
   function writeDecision(
     w: ChainWriter,
@@ -361,7 +361,7 @@ describe('ProjectionCache — decisions', () => {
   });
 });
 
-describe('ProjectionCache — memories', () => {
+describe('ProjectionCache: memories', () => {
   it('materializes a captured memory and reads it back by id', () => {
     const w = openChainForWriting(chainRoot, { keyRoot: chainRoot });
     w.append(memoryCaptured(env('m-1', 0), { content: 'a fact worth proving' }));
@@ -376,7 +376,7 @@ describe('ProjectionCache — memories', () => {
     });
   });
 
-  it('projects a LONE memory event — a point-in-time fact needs no birth pair', () => {
+  it('projects a LONE memory event: a point-in-time fact needs no birth pair', () => {
     // The very shape the task projection drops (a single event) is a whole memory.
     const w = openChainForWriting(chainRoot, { keyRoot: chainRoot });
     w.append(memoryCaptured(env('m-1', 0), { content: 'lone' }));
@@ -422,7 +422,7 @@ describe('ProjectionCache — memories', () => {
   });
 });
 
-describe('ProjectionCache — observations, handoffs, links (the three knowledge facts)', () => {
+describe('ProjectionCache: observations, handoffs, links (the three knowledge facts)', () => {
   it('materializes observations and lists them BY the observed entity', () => {
     const w = openChainForWriting(chainRoot, { keyRoot: chainRoot });
     w.append(observationRecorded(env('o-1', 0), { about: 't-1', topic: 'a', text: 'first' }));
@@ -450,7 +450,7 @@ describe('ProjectionCache — observations, handoffs, links (the three knowledge
   });
 
   it('orders two handoffs recorded in ONE millisecond by the chain, not by the plan', () => {
-    // A handoff row has no id of its own — it is a list entry, not an entity — so a
+    // A handoff row has no id of its own (it is a list entry, not an entity), so a
     // tie in `recorded_at` had no second column to break it and the order was the
     // query plan's. Two handoffs in one millisecond is not exotic: a batch script, or
     // a chat restarted twice. The order that has to come back is the one the chain
@@ -484,7 +484,7 @@ describe('ProjectionCache — observations, handoffs, links (the three knowledge
 
   it('collapses a duplicate link edge in the cache (idempotent primary key)', () => {
     const w = openChainForWriting(chainRoot, { keyRoot: chainRoot });
-    // The same (subject, target, rel) asserted twice folds to ONE row — the
+    // The same (subject, target, rel) asserted twice folds to ONE row: the
     // fold dedups before insert, so the primary key never clashes.
     w.append(knowledgeLinked(env('m-1', 0), { target: 't-1', rel: 'relates-to' }));
     w.append(knowledgeLinked(env('m-1', 1), { target: 't-1', rel: 'relates-to' }));
@@ -494,7 +494,7 @@ describe('ProjectionCache — observations, handoffs, links (the three knowledge
     expect(cache.listLinksFrom('m-1')).toHaveLength(1);
   });
 
-  it('keeps a dangling link in the cache — the target need not be materialized', () => {
+  it('keeps a dangling link in the cache: the target need not be materialized', () => {
     const w = openChainForWriting(chainRoot, { keyRoot: chainRoot });
     // A memory links to a task that is not in this chain: the edge still stands.
     w.append(memoryCaptured(env('m-1', 0), { content: 'a private note' }));
@@ -504,7 +504,7 @@ describe('ProjectionCache — observations, handoffs, links (the three knowledge
     cache.rebuild();
     expect(cache.getMemory('m-1')).not.toBeNull();
     expect(cache.listLinksFrom('m-1').map((e) => e.target)).toEqual(['t-elsewhere']);
-    // The dangling target has no memory row — resolved on read against the union.
+    // The dangling target has no memory row: resolved on read against the union.
     expect(cache.getMemory('t-elsewhere')).toBeNull();
   });
 
@@ -537,7 +537,7 @@ describe('ProjectionCache — observations, handoffs, links (the three knowledge
   });
 });
 
-describe('ProjectionCache — skills', () => {
+describe('ProjectionCache: skills', () => {
   /**
    * Writes a skill born proposed and moved to `to` via the given action, its last move at
    * instant 1. An adoption is reached the way the workflow reaches it (FORMAT.md §6.7): reviewed
@@ -586,7 +586,7 @@ describe('ProjectionCache — skills', () => {
       updatedAt: at(1),
       // The move this fixture writes carries a `note`, so the projection now carries
       // what it said. `sk-2` is born and never moved with proof, and the assertion
-      // below is over its id alone — the absence is covered where it is asserted, in
+      // below is over its id alone: the absence is covered where it is asserted, in
       // `the-moves-say-what-they-said.test.ts`.
       proof: [{ action: 'review', at: at(1), said: 'note: n' }],
     });
@@ -660,7 +660,7 @@ describe('ProjectionCache — skills', () => {
 });
 
 /**
- * Writes one of every kind into the chain — the fixture both the full-text index
+ * Writes one of every kind into the chain: the fixture both the full-text index
  * and the reference index are read against, so the two are never tested on
  * different records.
  */
@@ -703,7 +703,7 @@ function writeEverything(w: ChainWriter): void {
   w.append(runStarted(env('r-1', 8), { agent: 'claude', goal: 'pineapple' }));
 }
 
-describe('ProjectionCache — searching the record', () => {
+describe('ProjectionCache: searching the record', () => {
   /** Writes one of every recordable thing, so a search sees the whole record. */
   it('finds a decision by a word only its alternatives carry, from the chain', () => {
     // The whole path, not the index in isolation: chain → fold → FTS. `pineapple`
@@ -738,7 +738,7 @@ describe('ProjectionCache — searching the record', () => {
     expect(found.total).toBe(5);
   });
 
-  it('indexes no handoff, no link and no run — a run goal is not a record', () => {
+  it('indexes no handoff, no link and no run: a run goal is not a record', () => {
     const w = openChainForWriting(chainRoot, { keyRoot: chainRoot });
     writeEverything(w);
 
@@ -746,7 +746,7 @@ describe('ProjectionCache — searching the record', () => {
     cache.rebuild();
 
     // The run's goal is the word 'pineapple' too, and the handoff and link both
-    // name subjects that matched — none of them is a searchable record.
+    // name subjects that matched: none of them is a searchable record.
     for (const hit of cache.search({ term: 'pineapple' }).hits) {
       expect(['memory', 'observation', 'decision', 'task', 'skill']).toContain(hit.kind);
     }
@@ -762,7 +762,7 @@ describe('ProjectionCache — searching the record', () => {
     cache.rebuild();
     expect(cache.search({ term: 'first' }).hits.map((h) => h.id)).toEqual(['m-1']);
 
-    // A record appended after the rebuild is invisible until the next one — the
+    // A record appended after the rebuild is invisible until the next one: the
     // index is a projection, with exactly the projection's freshness.
     w.append(memoryCaptured(env('m-2', 1), { content: 'the second fact' }));
     expect(cache.search({ term: 'second' }).hits).toEqual([]);
@@ -816,7 +816,7 @@ describe('ProjectionCache — searching the record', () => {
   });
 });
 
-describe('ProjectionCache — the reference index', () => {
+describe('ProjectionCache: the reference index', () => {
   it('indexes every event and every referred entity from the same chain read', () => {
     const w = openChainForWriting(chainRoot, { keyRoot: chainRoot });
     writeEverything(w);
@@ -842,7 +842,7 @@ describe('ProjectionCache — the reference index', () => {
   it('names who this tree knows, and reads a kind’s events with their runs', () => {
     // The two questions the readable-identity work asks of a tree: who authorized
     // anything here, and how many sessions were served each pattern. Both are one
-    // query over the same index — no second table, no rebuild of their own.
+    // query over the same index: no second table, no rebuild of their own.
     const w = openChainForWriting(chainRoot, { keyRoot: chainRoot });
     writeEverything(w);
     w.append({
@@ -1006,12 +1006,12 @@ describe('ProjectionCache — the reference index', () => {
  * worth being a second one: it sees what the held replay cannot, and it leaves the cache
  * exactly where it found it.
  *
- * The first is what the MCP's write door needed — it appends without reading, so the replay
+ * The first is what the MCP's write door needed: it appends without reading, so the replay
  * it holds is as old as the connection's last read. The second is the whole price: a
  * refresh would ADVANCE the projections over the arrivals, which is the expensive half and
  * grows with the record, where reading them does not.
  */
-describe('ProjectionCache — the breaks as the chain stands now', () => {
+describe('ProjectionCache: the breaks as the chain stands now', () => {
   /** The tail's last line appended again: a duplicate of the boundary entry. */
   function duplicateLastEntry(): void {
     const tails = join(chainRoot, 'tails');
@@ -1031,7 +1031,7 @@ describe('ProjectionCache — the breaks as the chain stands now', () => {
 
     duplicateLastEntry();
 
-    // The field still answers from the replay it holds — that is what it is.
+    // The field still answers from the replay it holds, that is what it is.
     expect(cache.linkBreaks).toHaveLength(0);
     // The question asks the chain.
     const now = cache.linkBreaksAsOfNow();

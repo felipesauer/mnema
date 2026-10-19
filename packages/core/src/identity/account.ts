@@ -1,5 +1,5 @@
 /**
- * The account an identity names on a code host — what the `account.linked` fact carries, and
+ * The account an identity names on a code host: what the `account.linked` fact carries, and
  * the one rule both of its sides keep.
  *
  * TWO SERVICES. `github` is the host whose account publishes its SSH keys at an address anybody
@@ -15,7 +15,7 @@
  * a repository's, not a person's, and is kept as it is.
  *
  * ONE RULE, ASKED TWICE. The write refuses a name GitHub would not have issued, and the reading
- * asks the same thing again before it puts a recorded name into an address — the record can
+ * asks the same thing again before it puts a recorded name into an address: the record can
  * hold whatever a writer of the format put there, and a name with a `/` or a `?` in it would
  * send the question somewhere other than that account.
  */

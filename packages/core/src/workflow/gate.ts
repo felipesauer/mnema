@@ -5,19 +5,19 @@
  * This is where "what is a legal move" is enforced at write time, by the table
  * every reader judges a move by again when it reads (FORMAT.md §6.7: a move the
  * table does not allow is not applied). The gate is a pure
- * function of its inputs — no clock, no I/O, no chain — so it is exhaustively
+ * function of its inputs (no clock, no I/O, no chain), so it is exhaustively
  * testable and always agrees with itself. It answers one question: given the
  * task's current state and a requested action, may this move be recorded, and
  * if so, to which state and carrying which proof?
  *
  * It enforces three things, in the order it checks them:
- *   1. AUTHORITY — a human `who` authorized it, and `who` is not the agent
+ *   1. AUTHORITY: a human `who` authorized it, and `who` is not the agent
  *      `which` that executed it (a human authorizes; an agent executes; they
- *      are never the same identity). `which` may be absent — a human acting
- *      directly, with no agent — but when present it must differ from `who`.
+ *      are never the same identity). `which` may be absent (a human acting
+ *      directly, with no agent), but when present it must differ from `who`.
  *      Checked first: the identity invariant holds regardless of the move, so a
  *      self-authorized illegal move reports the more fundamental fault.
- *   2. LEGALITY — the (from, action) pair is a transition the workflow allows.
+ *   2. LEGALITY: the (from, action) pair is a transition the workflow allows.
  *   3. PROOF — every field the action requires is present and non-empty, and every
  *      prose field given states something: no letter and no digit, or the `<why>` a
  *      recipe prints, is refused `NOT_A_REASON` (`a-reason-states-something.ts`).
@@ -30,8 +30,8 @@
  * The gate never throws: its declared inputs are strings, but a surface at the
  * untrusted boundary may forward junk, and an invalid request must come back as
  * a typed refusal, not an exception. Non-string identities are refused (not
- * crashed on), and identities are compared in their canonical form — trimmed
- * and NFC-normalized, the same form the chain will seal — so neither a stray
+ * crashed on), and identities are compared in their canonical form (trimmed
+ * and NFC-normalized, the same form the chain will seal), so neither a stray
  * space nor a decomposed lookalike spelling can defeat the who != which
  * invariant. (It reads `fields` as plain data; a surface is responsible for
  * handing it a plain object, not one with active getters.)
@@ -88,7 +88,7 @@ export type GateErrorCode =
   | 'NOT_A_REASON'
   /** No human `who` authorized the move. */
   | 'MISSING_WHO'
-  /** `who` and `which` are the same identity — an agent cannot self-authorize. */
+  /** `who` and `which` are the same identity: an agent cannot self-authorize. */
   | 'WHO_IS_WHICH'
   /**
    * The agent name was over the size limit. It comes from the same door every
@@ -118,7 +118,7 @@ export type GateResult = GateOk | GateErr;
 
 /**
  * Decides whether a requested transition is authorized. Pure: same inputs, same
- * verdict, always. Never throws — an invalid request is a typed {@link GateErr},
+ * verdict, always. Never throws: an invalid request is a typed {@link GateErr},
  * not an exception, so a surface handles refusal as data.
  */
 export function gate(request: GateRequest): GateResult {
@@ -135,7 +135,7 @@ export function gate(request: GateRequest): GateResult {
   }
   // The one invariant that is not this workflow's own: the agent may not be the
   // identity that authorizes it. Shared with every other write, so a fact and a
-  // transition refuse it identically (see resolveExecutingAgent) — including its
+  // transition refuse it identically (see resolveExecutingAgent), including its
   // screen of the agent name, so a dry-run verdict is judged on the same string an
   // append would record. What the screen REPLACED is not reported here: a verdict
   // records nothing, so there is nothing yet to rotate; the operation that appends
@@ -184,7 +184,7 @@ function isTaskAction(action: string): action is TaskAction {
 /**
  * True when a required proof field is present and non-empty. Only the textual
  * fields are ever required (`links` is never a requirement), so a required
- * field is always a non-empty string — and whitespace is not proof, so a
+ * field is always a non-empty string, and whitespace is not proof, so a
  * blank-but-present value does not satisfy the requirement.
  */
 function hasProof(fields: TransitionFields | undefined, field: ProofField): boolean {

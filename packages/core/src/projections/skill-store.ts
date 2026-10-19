@@ -3,13 +3,13 @@
  *
  * The pure fold ({@link projectSkills}) produces skill state; this module writes
  * it into the `skills` table and reads it back. It is the simplest of the
- * workflow stores — a skill has no relational columns — mirroring the task store
+ * workflow stores (a skill has no relational columns) mirroring the task store
  * with a `body` and a state index for the by-state queries the context package leans on
  * (the `adopted` skills are the live patterns; `proposed`/`reviewed` are the
  * curation backlog).
  *
  * The three provenance columns bind as SQL NULL when absent, the same boundary
- * handling as the decision store's link columns — and `adopted_at` is what
+ * handling as the decision store's link columns, and `adopted_at` is what
  * carries the difference between "a person adopted it" (NULL `adopted_by`) and
  * "nobody has" (NULL on both) across the round trip.
  */
@@ -30,7 +30,7 @@ interface SkillRow {
   readonly adopted_by: string | null;
   readonly created_at: string;
   readonly updated_at: string;
-  /** What each move said, JSON-encoded — null when no move said anything. */
+  /** What each move said, JSON-encoded: null when no move said anything. */
   readonly proof: string | null;
 }
 

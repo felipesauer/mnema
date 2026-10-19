@@ -23,8 +23,8 @@ const env = (subject: string, n: number, who = 'mnid:aa') => ({
   subject,
 });
 
-describe('projectKnowledge — the existence-only rule', () => {
-  it('projects a memory from its SINGLE event — existence is the whole of it', () => {
+describe('projectKnowledge: the existence-only rule', () => {
+  it('projects a memory from its SINGLE event: existence is the whole of it', () => {
     const events = [memoryCaptured(env('m-1', 0), { content: 'the dist must be fresh' })];
     const memories = projectKnowledge(events);
     expect(memories.get('m-1')).toEqual({
@@ -39,7 +39,7 @@ describe('projectKnowledge — the existence-only rule', () => {
     // A lone `task.created` is a truncated tail and the task projection drops it
     // (state without a transition is not a task). A memory is a point-in-time
     // fact: the lone event IS the fact. The very shape the task rule rejects, the
-    // memory rule accepts — that difference is the point of a separate projection.
+    // memory rule accepts: that difference is the point of a separate projection.
     const lone = memoryCaptured(env('m-1', 0), { content: 'a lone fact' });
     expect(projectKnowledge([lone]).has('m-1')).toBe(true);
   });
@@ -54,7 +54,7 @@ describe('projectKnowledge — the existence-only rule', () => {
     expect(memories.get('m-bru')?.who).toBe('mnid:bru');
   });
 
-  it('keeps ONLY knowledge kinds — a task in the same stream is another domain', () => {
+  it('keeps ONLY knowledge kinds: a task in the same stream is another domain', () => {
     // Memories and tasks share one tail; the projection separates them by kind.
     // A task event must not leak into the knowledge view.
     const events: CatalogEvent[] = [
@@ -89,7 +89,7 @@ describe('projectKnowledge — the existence-only rule', () => {
   });
 });
 
-describe('projectObservations — a note about an entity, keyed by its OWN id', () => {
+describe('projectObservations: a note about an entity, keyed by its OWN id', () => {
   it('projects an observation from its single event', () => {
     const events = [
       observationRecorded(env('o-1', 0, 'mnid:ana'), {
@@ -108,7 +108,7 @@ describe('projectObservations — a note about an entity, keyed by its OWN id', 
     });
   });
 
-  it('two observations about the SAME entity do not collide — distinct own ids', () => {
+  it('two observations about the SAME entity do not collide: distinct own ids', () => {
     // The whole reason an observation mints its own id: were the subject the
     // observed entity, these two would fold onto one key and the first would be
     // lost. Keyed by their own ids, both survive; the shared entity is in `about`.
@@ -124,7 +124,7 @@ describe('projectObservations — a note about an entity, keyed by its OWN id', 
     expect([...obs.values()].every((o) => o.about === 't-1')).toBe(true);
   });
 
-  it('keeps ONLY observation events — memories and tasks are other domains', () => {
+  it('keeps ONLY observation events: memories and tasks are other domains', () => {
     const events: CatalogEvent[] = [
       memoryCaptured(env('m-1', 0), { content: 'a memory' }),
       observationRecorded(env('o-1', 1), { about: 'm-1', topic: 't', text: 'about the memory' }),
@@ -134,7 +134,7 @@ describe('projectObservations — a note about an entity, keyed by its OWN id', 
   });
 });
 
-describe('projectHandoffs — a list per task, never last-write', () => {
+describe('projectHandoffs: a list per task, never last-write', () => {
   it('accumulates multiple handoffs on one task in order', () => {
     const events = [
       handoffRecorded(env('t-1', 0), { fromAgent: 'claude', toAgent: 'felipe' }),
@@ -164,7 +164,7 @@ describe('projectHandoffs — a list per task, never last-write', () => {
   });
 });
 
-describe('projectLinks — the N:N relational edge set, both directions', () => {
+describe('projectLinks: the N:N relational edge set, both directions', () => {
   it('projects a link as a directed edge answerable from either side', () => {
     const events = [
       knowledgeLinked(env('m-1', 0, 'mnid:ana'), { target: 't-1', rel: 'relates-to' }),
@@ -189,7 +189,7 @@ describe('projectLinks — the N:N relational edge set, both directions', () => 
     expect(projectLinks(events)[0]?.rel).toBe('inspired-by');
   });
 
-  it('collapses a duplicate edge — the relation is idempotent', () => {
+  it('collapses a duplicate edge: the relation is idempotent', () => {
     // The same (subject, target, rel) asserted twice (e.g. two offline clones)
     // folds to ONE edge, keeping the first-seen envelope, so the union never
     // double-counts it.
@@ -223,7 +223,7 @@ describe('projectLinks — the N:N relational edge set, both directions', () => 
     expect(projectLinks(events)).toHaveLength(2);
   });
 
-  it('keeps a dangling edge verbatim — the target need not be present', () => {
+  it('keeps a dangling edge verbatim: the target need not be present', () => {
     // No entity for `t-absent` is in this stream, yet the edge stands: a
     // cross-tree link is an asserted fact resolved on read, never dropped here.
     const events = [knowledgeLinked(env('m-1', 0), { target: 't-absent', rel: 'relates-to' })];

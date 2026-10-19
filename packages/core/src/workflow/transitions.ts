@@ -1,11 +1,11 @@
 /**
  * The transition table: the legal moves of the task workflow, in typed code.
  *
- * Each row is one legal move — a `from` state, an `action`, the `to` state it
+ * Each row is one legal move: a `from` state, an `action`, the `to` state it
  * reaches, and which proof fields that action must carry. This is the whole
  * workflow: fixed, opinionated, compiler-checked. It is not loaded from a
  * project file, so "what is a legal transition" can never be untrusted runtime
- * data — it is code that is read and reviewed like any other. The rows are the
+ * data: it is code that is read and reviewed like any other. The rows are the
  * format's (`WORKFLOWS` in `@mnema/chain`, FORMAT.md §6.7): the gate that writes
  * a move and every reader that judges one read the same table.
  *
@@ -38,7 +38,7 @@ export const TASK_ACTIONS = [
   'reopen',
 ] as const;
 
-/** A workflow action — one a caller can request to move a task. */
+/** A workflow action: one a caller can request to move a task. */
 export type TaskAction = (typeof TASK_ACTIONS)[number];
 
 /** One legal move: from a state, an action reaches a state, requiring proof. */

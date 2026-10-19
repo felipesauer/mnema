@@ -57,7 +57,7 @@ import { FIELD_BYTE_LIMIT } from './screen.js';
 import { detectSecrets } from './secrets.js';
 
 /**
- * The content door is total over the FIELDS, not only over the write points —
+ * The content door is total over the FIELDS, not only over the write points,
  * and the driving that proves it is DERIVED from the field classification
  * rather than typed out.
  *
@@ -65,7 +65,7 @@ import { detectSecrets } from './secrets.js';
  * drives every write point and then reads the whole chain back with a sweep that
  * knows no field names. Only the READ half of that is generic: the drive half is a
  * list of calls with hand-written arguments, so a field no call passes is a field no
- * assertion can see. That was measured, not suspected — `alternatives` was added to
+ * assertion can see. That was measured, not suspected: `alternatives` was added to
  * `decision.recorded` with the screen deliberately bypassed and the entire suite
  * stayed green, that file included, ten of ten. The sweep proved the door ran on the
  * text it was GIVEN and could not prove the text reached it.
@@ -74,7 +74,7 @@ import { detectSecrets } from './secrets.js';
  * writes a literal into a text field: it asks for every value by the field's own
  * path, and the harness answers with a value carrying a marker unique to that
  * (kind, path). Which paths exist is read from the classification, which is read
- * from the catalog's declarations — so a text field added to any payload is:
+ * from the catalog's declarations, so a text field added to any payload is:
  *   1. required in `fields.ts` (the build fails until it is classified), and
  *   2. required to arrive here carrying its marker (this file fails until a driver
  *      passes it), and
@@ -87,8 +87,8 @@ import { detectSecrets } from './secrets.js';
  * redacts a BODY and refuses a NAME, and the two outcomes exclude each other: a
  * refused write leaves no body to inspect, and a landed one proves nothing about the
  * refusal. So one pass poisons every body and leaves the names carrying only their
- * marker — asserting that bodies come back clean AND that names come back
- * untouched — and a second pass poisons ONE name at a time and asserts the write was
+ * marker, asserting that bodies come back clean AND that names come back
+ * untouched, and a second pass poisons ONE name at a time and asserts the write was
  * refused with nothing of that kind on the chain. Which fields each pass poisons is
  * read from the same table, so a field that changes nature moves between the passes
  * without an edit here.
@@ -96,13 +96,13 @@ import { detectSecrets } from './secrets.js';
  * THE OTHER HALF IS THE IDENTIFIERS, and it is not a smaller version of the same
  * check. A fingerprint is compared, a reverse-signature is verified byte for byte,
  * an id is a lookup key: putting any of them through a scrubber would break the
- * record rather than defend it. So every identifier leaf is asserted UNTOUCHED —
+ * record rather than defend it. So every identifier leaf is asserted UNTOUCHED:
  * no marker (nothing poisoned it) and no placeholder (nothing cleaned it). That is
  * what keeps a total guard from becoming total damage.
  *
  * WHAT IS STILL A LIST HERE, said plainly. The DRIVERS are hand-written: one
  * function per kind, each knowing which operation writes it and what a legal setup for
- * it looks like. That cannot be derived — it is the surface itself — so what is
+ * it looks like. That cannot be derived (it is the surface itself), so what is
  * derived instead is the OBLIGATION on each: the totality over kinds is checked
  * against `LATEST_VERSION` at runtime, and the totality over each kind's fields is
  * checked against the classification. The compiler is not the guard for this one
@@ -112,7 +112,7 @@ import { detectSecrets } from './secrets.js';
 
 const upcasters = catalogUpcasters();
 
-/** Every kind the catalog can hold — the enumeration both axes are measured against. */
+/** Every kind the catalog can hold: the enumeration both axes are measured against. */
 const CATALOG = Object.keys(LATEST_VERSION) as EventKind[];
 
 /** The value a poisoned field is asked to carry. It must never be found. */
@@ -136,7 +136,7 @@ type WriteResult = { readonly ok: true } | { readonly ok: false; readonly code: 
 type Driver = (ctx: WriteContext, text: Poison) => WriteResult;
 
 /**
- * The marker a (kind, path) pair is poisoned with — what proves the driver actually
+ * The marker a (kind, path) pair is poisoned with: what proves the driver actually
  * reached the field, since the credential beside it is gone by the time the value is
  * read back. Only letters, digits, dots and dashes, so nothing in it can be mistaken
  * for a credential or be altered by canonicalization.
@@ -160,7 +160,7 @@ function dirty(kind: EventKind, path: string): string {
  *
  * This is the pass that can LAND, so it is the one that measures redaction. The names
  * carry the marker rather than nothing, which is what lets the same pass assert they
- * arrived UNTOUCHED — a name asserted only to be free of credentials would pass on a
+ * arrived UNTOUCHED: a name asserted only to be free of credentials would pass on a
  * door that silently dropped it.
  */
 function poisoningBodies(kind: EventKind): Poison {
@@ -205,7 +205,7 @@ function landed<T extends { readonly ok: boolean }>(result: T): Extract<T, { ok:
 
 /**
  * How each kind reaches the chain. One entry per kind, and the entry asks for every
- * text value by path — including the two the envelope carries (`which`, `run`) for
+ * text value by path, including the two the envelope carries (`which`, `run`) for
  * every operation that accepts them. The kinds that accept neither pass neither, and
  * the harness reads that from the events rather than from a list here.
  */
@@ -259,8 +259,8 @@ const DRIVERS: { readonly [K in EventKind]: Driver } = {
     });
   },
 
-  // Every field of a founding is derived — the anchor from a key, the fingerprint
-  // from that same key, `at` from the clock — so there is nothing for a caller to
+  // Every field of a founding is derived (the anchor from a key, the fingerprint
+  // from that same key, `at` from the clock), so there is nothing for a caller to
   // fill and nothing here to poison.
   'identity.founded': (ctx) => foundIdentity(ctx),
 
@@ -380,7 +380,7 @@ const DRIVERS: { readonly [K in EventKind]: Driver } = {
     // The only kind whose setup is another MACHINE: a waiver may not name the tail it
     // is written to, so this puts a second tail in the tree first. Its `tail`,
     // `throughHash` and subject are all read off that tail by the operation, so the
-    // only value this drives is the reason — and the sweep's other half is what
+    // only value this drives is the reason, and the sweep's other half is what
     // checks the three it did not touch came through untouched.
     authorizeTailPrune(ctx, {
       tail: aSecondTailIn(ctx.layout.root),
@@ -391,7 +391,7 @@ const DRIVERS: { readonly [K in EventKind]: Driver } = {
 
   'channel.switched': (ctx, text) =>
     // The CHANNEL is the subject and it is a caller's string, so it goes through the
-    // door like a consultation's skill — nothing in this package knows which channels
+    // door like a consultation's skill: nothing in this package knows which channels
     // this product pushes. `on` is a boolean and there is nothing textual in it to
     // drive, which is why the pair here is subject and reason.
     switchChannel(ctx, {
@@ -403,7 +403,7 @@ const DRIVERS: { readonly [K in EventKind]: Driver } = {
     }),
 
   'channel.served': (ctx, text) =>
-    // Subject and envelope, and nothing else — the payload is empty, so the pair here is
+    // Subject and envelope, and nothing else: the payload is empty, so the pair here is
     // the channel and the two envelope fields, exactly as a consultation's is.
     recordChannelServed(ctx, {
       channel: text('subject'),
@@ -413,14 +413,14 @@ const DRIVERS: { readonly [K in EventKind]: Driver } = {
 
   'channel.asked': (ctx, text) =>
     // The one kind in this table with a payload field the door must NOT touch. `rule` is
-    // classified as an identifier — it is an id the derivation of what is in force
+    // classified as an identifier (it is an id the derivation of what is in force
     // produced, and a scrubber would read a v7 as entropy and destroy the citation a
-    // charge is required to carry — so the sweep's other half is what checks it came
+    // charge is required to carry), so the sweep's other half is what checks it came
     // through untouched. `path` is a caller's string and is driven.
     recordChannelAsked(ctx, {
       channel: text('subject'),
       // NOT driven, and it is the second field in this table that must not be. `rule` is
-      // classified as an identifier, so the door does not run on it — poisoning it would
+      // classified as an identifier, so the door does not run on it: poisoning it would
       // make the sweep read the marker as "the door was here" and fail for the opposite
       // of the reason it exists. What is driven is what a caller supplies as text; the
       // sweep's other half is what checks this came through untouched, and the case that
@@ -489,7 +489,7 @@ const DRIVERS: { readonly [K in EventKind]: Driver } = {
       }),
     ),
 
-  // The key is proved against the record — a checker this driver enrolls first — so it is not
+  // The key is proved against the record, a checker this driver enrolls first, so it is not
   // poisoned; the reason is the one field a person writes.
   'checker.retired': (ctx, text) => {
     const { request, fingerprint } = landed(
@@ -517,7 +517,7 @@ const DRIVERS: { readonly [K in EventKind]: Driver } = {
 
   'link.retracted': (ctx, text) => {
     // The edge is proved against the record, so this driver records it first, with the very
-    // names and envelope the retraction then carries — a poisoned one refuses the link and the
+    // names and envelope the retraction then carries: a poisoned one refuses the link and the
     // retraction alike. The subject is an id the retraction proves, NOT poisoned.
     const edge = {
       subject: '0198f2a4-0000-7000-8000-0000000000aa',
@@ -542,7 +542,7 @@ function checkerKeyRoot(ctx: WriteContext): string {
 
 /**
  * Records a rule with a declared check, enrolls a checker key for it, and hands `run` the
- * checker's context — the way a result reaches the chain, which only a checker key may sign.
+ * checker's context: the way a result reaches the chain, which only a checker key may sign.
  */
 function asChecker(
   ctx: WriteContext,
@@ -568,7 +568,7 @@ function asChecker(
 }
 
 /**
- * A rule id in the shape the record mints them — the value the ONE identifier of
+ * A rule id in the shape the record mints them: the value the ONE identifier of
  * `channel.asked` is driven with.
  *
  * A literal rather than a mint, and deliberately without an era in it: an id whose prefix
@@ -613,7 +613,7 @@ interface Leaf {
 }
 
 /**
- * Every string anywhere in an event, with the path it sits at — the envelope's
+ * Every string anywhere in an event, with the path it sits at: the envelope's
  * fields at their bare names, the payload's under `payload.`, a nested proof field
  * at `payload.fields.<name>`, and each item of a list at the list's own path.
  *
@@ -647,7 +647,7 @@ interface Driven {
   readonly result: WriteResult;
   readonly events: readonly CatalogEvent[];
   /**
-   * Every path the driver asked a value for — the fields this kind's write actually
+   * Every path the driver asked a value for: the fields this kind's write actually
    * ACCEPTS, observed rather than listed. It is what the size pass runs over, so a
    * field filled indirectly (a run's agent, which becomes the envelope's `which`) is
    * measured where the caller hands it in and not twice.
@@ -656,7 +656,7 @@ interface Driven {
 }
 
 /**
- * The paths one drive of `kind` asked for that the classification calls NAMES — the
+ * The paths one drive of `kind` asked for that the classification calls NAMES: the
  * fields the refusal pass runs over, observed rather than listed.
  */
 function namesOf(kind: EventKind, driven: Driven): string[] {
@@ -670,7 +670,7 @@ function namesOf(kind: EventKind, driven: Driven): string[] {
  * that distinction was measured rather than assumed: a birth writes a PAIR, so
  * `createTask` leaves a `task.transitioned` of its own, and "no event of this kind"
  * is false for three kinds whose write under test was correctly refused. Only a
- * driver's poison ever carries a marker — every setup uses literals — so a chain
+ * driver's poison ever carries a marker, every setup uses literals, so a chain
  * holding none of them is a chain the refused write did not touch.
  *
  * One function, called from both refusal passes, because it is one claim: two
@@ -712,7 +712,7 @@ function drive(kind: EventKind, text: Poison): Driven {
 describe('the classification is total over the catalog, in both halves', () => {
   it('classifies every kind, and every text leaf every payload declares', () => {
     // The tables are keyed by the catalog's own declarations, so this asserts
-    // agreement at RUNTIME with what the compiler already forces at build time —
+    // agreement at RUNTIME with what the compiler already forces at build time:
     // the half a type cannot state is that nothing else crept in.
     expect(Object.keys(PAYLOAD_TEXT).sort()).toEqual([...CATALOG].sort());
     expect(Object.keys(SUBJECT_TEXT).sort()).toEqual([...CATALOG].sort());
@@ -727,7 +727,7 @@ describe('the classification is total over the catalog, in both halves', () => {
     }
   });
 
-  it('is not vacuous — each half holds fields, on every table', () => {
+  it('is not vacuous: each half holds fields, on every table', () => {
     // A classification with an empty half would pass every assertion in this file
     // while proving nothing about the half that is missing.
     const natures = (values: readonly FieldNature[]): Record<FieldNature, number> => ({
@@ -781,7 +781,7 @@ describe('every kind the catalog can hold is driven onto the chain', () => {
   it('has a driver for each, and no driver for a kind that does not exist', () => {
     // The by-kind axis. A kind added to the catalog fails here until it is driven,
     // and this is an assertion rather than a type because test files are excluded
-    // from `tsc -b` — a mapped type here would compile no matter what it omitted.
+    // from `tsc -b`: a mapped type here would compile no matter what it omitted.
     expect(Object.keys(DRIVERS).sort()).toEqual([...CATALOG].sort());
   });
 
@@ -884,7 +884,7 @@ describe('a name carrying a credential refuses the write, on every field of ever
         expect(driven.result.ok, `${kind} accepted a credential in "${path}"`).toBe(false);
         if (driven.result.ok) continue;
         expect(driven.result.code, `${kind}.${path}`).toBe('NAME_HOLDS_A_SECRET');
-        // And the refused write left nothing behind — a message can be right about a
+        // And the refused write left nothing behind: a message can be right about a
         // write that happened anyway.
         nothingLanded(kind, driven, path);
       }
@@ -897,7 +897,7 @@ describe('a name carrying a credential refuses the write, on every field of ever
     // counts what those loops WOULD run over, so a classification that quietly
     // stopped calling anything a name fails here rather than going green on twenty
     // empty loops. It re-drives rather than reading a counter the cases filled,
-    // because a counter makes every case above depend on the ones before it — and
+    // because a counter makes every case above depend on the ones before it, and
     // then running one of them alone reports a failure that is not there.
     const driven = CATALOG.flatMap((kind) =>
       namesOf(kind, drive(kind, poisoningBodies(kind))).map((path) => `${kind} ${path}`),
@@ -919,7 +919,7 @@ const EVERY_KIND_DRIVEN = 30_000;
 
 describe('the envelope’s own text goes through the door on every kind that carries it', () => {
   // `which` and `run` are the two fields a caller supplies on the ENVELOPE, so they
-  // are the same two on every kind rather than a property of any one payload — and
+  // are the same two on every kind rather than a property of any one payload, and
   // they are the worst place for a credential, being stamped on every event of a
   // session. They are driven on their own axis for that reason: per kind they would
   // prove the same thing once per kind and still say nothing about the surface.
@@ -995,8 +995,8 @@ const BOUNDED: ReadonlySet<string> = new Set([
 describe('the size ceiling holds on every field the door owes', () => {
   // The door is a limit and THEN a scrub, so a field that reaches it is under both
   // and a field that reaches neither is invisible to the pass above in the same way.
-  // What each kind is measured on is what its driver ASKED for — the fields the
-  // write accepts, observed in the clean pass — so nothing is listed here and a
+  // What each kind is measured on is what its driver ASKED for (the fields the
+  // write accepts, observed in the clean pass), so nothing is listed here and a
   // field filled indirectly is charged to the input the caller actually hands in.
   for (const kind of CATALOG) {
     it(`refuses an oversize value in any field ${kind} takes`, () => {
@@ -1027,7 +1027,7 @@ describe('an identifier is never screened, even when it looks like a credential'
   it('records a fingerprint and a signature verbatim while cleaning the body beside them', () => {
     // The half that keeps the guard from becoming the damage. `revokedFp`,
     // `newFp` and `reverseSig` are the identifiers a caller supplies, so they are
-    // the only ones that can be handed a value in a credential's shape — and the
+    // the only ones that can be handed a value in a credential's shape, and the
     // record has to keep them byte for byte, because a fingerprint is compared and
     // a reverse-signature is verified over exactly these bytes.
     //
@@ -1090,11 +1090,11 @@ describe('the door and the guard read one table, at the two addresses it is aske
   // because that is what an event is walked by; the door is handed KEYS, because that
   // is what a caller writes (`{ title, rationale }`). Something has to bridge the two,
   // and a second table listing name-fields by key would be a second enumeration of the
-  // catalog's fields — the exact shape of the defect `fields.ts` exists to prevent. So
+  // catalog's fields: the exact shape of the defect `fields.ts` exists to prevent. So
   // the bridge is a fold over the same tables, and this is what holds the fold to them.
   //
   // A conflict cannot even reach here: a key two kinds classify differently THROWS at
-  // load. What this catches is the other direction — a fold that answered a key the
+  // load. What this catches is the other direction: a fold that answered a key the
   // tables classify, and answered it wrong.
   it('answers by key exactly what it answers by path, for every field of every kind', () => {
     let checked = 0;
@@ -1119,8 +1119,8 @@ describe('the door and the guard read one table, at the two addresses it is aske
   });
 
   it('answers a key no table classifies with the side that refuses', () => {
-    // Unreachable from anything that compiles — `ScreenedKey` is a closed union built
-    // from these tables — so this is a test of the FALLBACK rather than of a path a
+    // Unreachable from anything that compiles (`ScreenedKey` is a closed union built
+    // from these tables), so this is a test of the FALLBACK rather than of a path a
     // caller can take. It is `name` because an unclassified field is one nobody has
     // decided about: declining to write it is recoverable, and writing a corrupted
     // name into an append-only log is not.

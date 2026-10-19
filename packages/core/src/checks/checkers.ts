@@ -1,5 +1,5 @@
 /**
- * Which keys a tree enrolls as CHECKERS — keys that sign check results and nothing else — read
+ * Which keys a tree enrolls as CHECKERS, keys that sign check results and nothing else, read
  * for the doors that must not let such a key write anything else, and for the checker's own
  * run. What the record CLAIMS, each consent checked against the committed key; `verify` is what
  * proves it (FORMAT.md section 6.2).
@@ -30,7 +30,7 @@ export function consentsToCheck(key: PublicHalf, anchor: string, reverseSig: str
 
 /**
  * The keys this tree enrolls as checkers, each one's consent checked against its committed
- * public half — a key since retired included, because a retired key still signs nothing but a
+ * public half: a key since retired included, because a retired key still signs nothing but a
  * result, and no result either ({@link retiredCheckersIn}). What the record CLAIMS, read for a
  * door; `verify` is what proves it.
  */
@@ -54,8 +54,8 @@ export interface CheckerRetirement {
 /**
  * The checker keys this tree retires (`checker.retired`), by fingerprint, with the first
  * retirement of each. What the record CLAIMS, read for a door: a retired key runs no check and
- * is never enrolled again. Whether a retirement took effect — signed by a key valid for its
- * `who`, and covered by a checkpoint — is `verify`'s to prove (FORMAT.md section 6.2).
+ * is never enrolled again. Whether a retirement took effect (signed by a key valid for its
+ * `who`, and covered by a checkpoint) is `verify`'s to prove (FORMAT.md section 6.2).
  */
 export function retiredCheckersIn(
   layout: ChainLayout,

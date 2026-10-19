@@ -5,7 +5,7 @@
  * `one-rule-for-newest-first.test.ts` proves the comparison is written in one place.
  * That is the half a source scan can prove, and it is not the half that was wrong:
  * six sites agreed with each other and were all wrong together. So the direction is
- * pinned here, on real minted ids — a hand-written pair of literals could be ordered
+ * pinned here, on real minted ids: a hand-written pair of literals could be ordered
  * the way an assertion wants for reasons `mintId` does not produce.
  */
 
@@ -22,7 +22,7 @@ describe('newestFirst', () => {
     //
     // The pair is SOUGHT rather than assumed. Two consecutive mints share a
     // millisecond about 99.3% of the time, and the first draft of this case simply
-    // asserted that they had — which made it a case that goes red one run in 150 for
+    // asserted that they had, which made it a case that goes red one run in 150 for
     // no defect at all, which is the shape of flake this whole slice exists to remove.
     const pairInOneMillisecond = (): readonly [string, string] => {
       for (let tries = 0; tries < 1000; tries += 1) {
@@ -48,7 +48,7 @@ describe('newestFirst', () => {
     ).toEqual([newer, older]);
   });
 
-  it('puts the instant above the id — a newer id does not outrank an older instant', () => {
+  it('puts the instant above the id: a newer id does not outrank an older instant', () => {
     // The clause order, which the tie-break case cannot see. Reversing the two would
     // still break ties the right way and would order the whole list by id.
     const earlier = { at: '2026-08-22T12:00:00.000Z', id: mintId() };

@@ -1,5 +1,5 @@
 /**
- * THE SKILL PROJECTION ACROSS SQLITE — the boundary, asked directly.
+ * THE SKILL PROJECTION ACROSS SQLITE: the boundary, asked directly.
  *
  * This module was at full line coverage with no test naming it. Two files execute it,
  * both one directory over: `cache.test.ts`, whose subject is the cache and which drives
@@ -16,11 +16,11 @@
  * so `ORDER BY id` is invisible — measured: dropping it from BOTH queries leaves 4227
  * tests green. It never asks for an id nothing projected. It never materializes one
  * twice. And it compares the adoption with `toEqual`, which cannot tell `{ at }` from
- * `{ at, by: undefined }` — the very distinction the module's own comment says the two
+ * `{ at, by: undefined }`: the very distinction the module's own comment says the two
  * NULL columns carry.
  *
  * THE FIXTURE IS THE FOLD'S. `projectSkills` is the only producer of a SkillProjection,
- * and the legal path into `adopted` is proposed to reviewed to adopted — a bare
+ * and the legal path into `adopted` is proposed to reviewed to adopted: a bare
  * proposed-to-adopted is a move the gate refuses, so writing one by hand would assert
  * over a skill that cannot exist. Ids are chosen, not minted, because `mintId` is
  * time-ordered: minted ids would make insertion order and id order coincide and the
@@ -56,7 +56,7 @@ const env = (subject: string, n: number, which?: string) => ({
   ...(which !== undefined ? { which } : {}),
 });
 
-/** The birth pair — a lone `skill.created` is not projected, so both events or none. */
+/** The birth pair: a lone `skill.created` is not projected, so both events or none. */
 function birth(id: string, n: number, which?: string): CatalogEvent[] {
   return [
     skillCreated(env(id, n, which), { name: `name ${id}`, body: `body ${id}` }),
@@ -87,9 +87,9 @@ function adopted(id: string, n: number, which?: string): CatalogEvent[] {
 const fold = (events: readonly CatalogEvent[]): Map<string, SkillProjection> =>
   projectSkills(events);
 
-describe('skill-store — the adoption survives the round trip', () => {
+describe('skill-store: the adoption survives the round trip', () => {
   it('tells a person’s adoption from an agent’s, and both from none', () => {
-    // Three skills, one of each shape, in one table — so a mutation that merged any two
+    // Three skills, one of each shape, in one table, so a mutation that merged any two
     // of them has nowhere to hide.
     const events: CatalogEvent[] = [
       ...adopted('sk-person', 0),
@@ -104,7 +104,7 @@ describe('skill-store — the adoption survives the round trip', () => {
     const nobody = getSkill(db, 'sk-nobody');
 
     // A PERSON acted: the adoption exists and carries an instant alone. The key set is
-    // asserted, not just the value — `{ at, by: undefined }` passes a toEqual against
+    // asserted, not just the value: `{ at, by: undefined }` passes a toEqual against
     // `{ at }`, and the module's own comment stakes the two columns on that difference.
     expect(Object.keys(person?.adoption ?? {})).toEqual(['at']);
     expect(person?.adoption?.at).toBe(at(2));
@@ -129,7 +129,7 @@ describe('skill-store — the adoption survives the round trip', () => {
   });
 });
 
-describe('skill-store — what the table answers', () => {
+describe('skill-store: what the table answers', () => {
   /** Two adopted and one proposed, written in DESCENDING id order. */
   function threeOutOfOrder(): Map<string, SkillProjection> {
     return fold([...adopted('sk-c', 0), ...adopted('sk-b', 3), ...birth('sk-a', 6)]);
@@ -143,7 +143,7 @@ describe('skill-store — what the table answers', () => {
     expect(listSkills(db).map((skill) => skill.id)).toEqual(['sk-a', 'sk-b', 'sk-c']);
   });
 
-  it('orders the by-state read by id too — it is a second query, not the same one', () => {
+  it('orders the by-state read by id too: it is a second query, not the same one', () => {
     materializeSkills(db, threeOutOfOrder().values());
     // Two skills in ONE state, so this says something the case above does not: the rule
     // is written twice in this module, in two SQL strings, and one test cannot cover both.
@@ -154,7 +154,7 @@ describe('skill-store — what the table answers', () => {
   it('matches a state literally, never as a pattern', () => {
     materializeSkills(db, threeOutOfOrder().values());
     // A `LIKE` here would make `%` return the whole table and `ADOPTED` return the
-    // adopted ones — the state a caller asks with comes from a closed set, and the
+    // adopted ones: the state a caller asks with comes from a closed set, and the
     // store's job is to answer that set and nothing near it.
     expect(listSkillsByState(db, '%')).toEqual([]);
     expect(listSkillsByState(db, 'ADOPTED')).toEqual([]);

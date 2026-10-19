@@ -1,6 +1,6 @@
 /**
  * The write operations for a run: opening a session and closing it. A run is
- * the session an agent works inside — the ROOT of authority for everything done
+ * the session an agent works inside: the ROOT of authority for everything done
  * within it, because every event of the session carries the run's `who` as the
  * human who authorized the work. So these two operations are where that root is
  * established and sealed.
@@ -11,7 +11,7 @@
  * ({@link projectRuns}) decides open-vs-closed; these operations never carry a
  * state table. So {@link startRun} runs the authority half of the gate (a human
  * `who`, never the executing agent) but no legality/proof half, and {@link
- * endRun} guards only that the run exists and is still open — never a transition
+ * endRun} guards only that the run exists and is still open, never a transition
  * verdict.
  *
  * The disciplines the other write operations rely on still hold, because they
@@ -29,7 +29,7 @@
  * agent. The catalog puts the executing agent in the payload (`agent`) because
  * the projection reads it as a first-class field; the envelope also carries it
  * as `which`, the uniform slot every other event uses for "the agent that
- * executed this" — so scope resolution and the read-model's actor attribution
+ * executed this", so scope resolution and the read-model's actor attribution
  * see a run the same way they see every other fact. {@link startRun} derives one
  * from the other and validates who != which against it: an agent must not open
  * the session that authorizes its own work, or the whole session would inherit a
@@ -44,16 +44,16 @@
  *
  * The close's agent lives on the ENVELOPE ONLY, and that is the difference from
  * the birth rather than an omission. `run.ended` has no payload field for it,
- * because the payload of a birth answers "who is this session FOR" — a property
- * of the run, true for its whole life — while the envelope answers "who did this"
+ * because the payload of a birth answers "who is this session FOR" (a property
+ * of the run, true for its whole life), while the envelope answers "who did this"
  * about one event. A close is executed by whoever executed it, which need not be
  * the agent the session was opened for (a person closing a session a killed
  * process left open), so the two questions have two different answers and only
  * one of them is the close's to record.
  *
  * The check is {@link resolveExecutingAgent} at BOTH ends, not two checks that
- * agree. `who != which` is a rule of the record — nothing outside the agent
- * stands behind a fact it authorized for itself — so it cannot hold at the birth
+ * agree. `who != which` is a rule of the record, nothing outside the agent
+ * stands behind a fact it authorized for itself, so it cannot hold at the birth
  * and lapse at the close, and a second copy of it here is how the two forms come
  * to disagree about what counts as the same identity (the comparison runs on the
  * form that is STORED, which is the whole reason that function bundles screening,
@@ -88,10 +88,10 @@ export interface StartRunOk extends ScreenedWrite {
   readonly ok: true;
   /** The new run's minted id (the event subject); the caller pins later work to it. */
   readonly id: string;
-  /** The agent label AS RECORDED — screened, so an echo shows what landed. */
+  /** The agent label AS RECORDED: screened, so an echo shows what landed. */
   readonly agent: string;
   /**
-   * The goal AS RECORDED — screened, absent when none was stated. Reported for the
+   * The goal AS RECORDED: screened, absent when none was stated. Reported for the
    * same reason the agent is: a caller that echoed the value it passed IN would
    * print a credential on the line above the one saying it had been replaced.
    */
@@ -102,7 +102,7 @@ export interface StartRunOk extends ScreenedWrite {
 export interface EndRunOk extends ScreenedWrite {
   readonly ok: true;
   /**
-   * The agent AS RECORDED on the envelope — screened and canonical, absent when
+   * The agent AS RECORDED on the envelope: screened and canonical, absent when
    * the caller named nobody. Reported for the reason {@link StartRunOk.agent} is:
    * a caller that echoed the value it passed IN would print a credential on the
    * line above the one saying it had been replaced.
@@ -117,7 +117,7 @@ export type StartRunError =
   /** A read would not have accepted the event (see {@link appendFact}). */
   | AppendRefusal
   /**
-   * The executing agent IS the authorizing anchor — an agent cannot open the
+   * The executing agent IS the authorizing anchor: an agent cannot open the
    * session that authorizes its own work.
    */
   | { readonly ok: false; readonly code: 'WHO_IS_WHICH'; readonly message: string };
@@ -129,14 +129,14 @@ export type EndRunError =
   /** A read would not have accepted the event (see {@link appendFact}). */
   | AppendRefusal
   /**
-   * The closing agent IS the authorizing anchor — the same refusal the birth
+   * The closing agent IS the authorizing anchor: the same refusal the birth
    * earns, from the same function, because it is a rule of the record and not of
    * either verb.
    */
   | SelfAuthorizedErr
-  /** No `run.started` for this id — there is no session to close. */
+  /** No `run.started` for this id: there is no session to close. */
   | { readonly ok: false; readonly code: 'UNKNOWN_RUN'; readonly message: string }
-  /** The run already has a `run.ended` — closing it again would be an orphan fact. */
+  /** The run already has a `run.ended`: closing it again would be an orphan fact. */
   | { readonly ok: false; readonly code: 'ALREADY_ENDED'; readonly message: string }
   /** Another close landed between the reading this one was judged on and its append. */
   | StateMovedErr;
@@ -195,7 +195,7 @@ export function startRun(ctx: WriteContext, input: StartRunInput): StartRunOk | 
 /** A run whose id is minted and whose refusals are behind it, and whose fact is not written yet. */
 export interface PreparedRun {
   readonly ok: true;
-  /** The id the run will have — what a write that opens it can pin itself to now. */
+  /** The id the run will have: what a write that opens it can pin itself to now. */
   readonly id: string;
   /** Founds where it must and appends the `run.started`: the half of {@link startRun} that writes. */
   readonly start: () => StartRunOk | StartRunError;
@@ -206,7 +206,7 @@ export interface PreparedRun {
 /**
  * {@link startRun} up to its first write: the screen, the authority check and the id. A caller
  * that opens a run ON THE WAY TO ANOTHER WRITE prepares it and starts it only once that write is
- * decided — the MCP session, so a first call the gate refuses leaves no run and no founding behind
+ * decided: the MCP session, so a first call the gate refuses leaves no run and no founding behind
  * it. The id is still minted here, never supplied.
  */
 export function prepareRun(ctx: WriteContext, input: StartRunInput): PreparedRun | StartRunError {
@@ -217,7 +217,7 @@ export function prepareRun(ctx: WriteContext, input: StartRunInput): PreparedRun
   if (!text.ok) return text;
 
   // `who` is derived from local material and the record, always a real anchor. The executing
-  // agent — which the catalog carries in the payload — is also the envelope's
+  // agent, which the catalog carries in the payload, is also the envelope's
   // `which`, so it is checked against `who` in canonical form: an agent must not
   // be the anchor that authorizes its own session.
   const who = authorizingAnchor(ctx);
@@ -240,7 +240,7 @@ export function prepareRun(ctx: WriteContext, input: StartRunInput): PreparedRun
   };
 }
 
-/** The `run.started` a prepared run appends — and, built with an instant no clock gave, the one the door is asked. */
+/** The `run.started` a prepared run appends, and, built with an instant no clock gave, the one the door is asked. */
 function runStartedOf(
   run: {
     readonly id: string;
@@ -259,11 +259,11 @@ function runStartedOf(
       signerFp: ctx.writer.signerFingerprint,
       subject: id,
       // The same agent lives in the payload (`agent`) and, canonicalized, on
-      // the envelope (`which`) — the uniform slot scope resolution and actor
+      // the envelope (`which`): the uniform slot scope resolution and actor
       // attribution read; omitted from the envelope only if it does not
       // canonicalize to an identity (the payload still carries the raw agent).
-      // No `run` on the envelope: this event IS the run's birth — its subject
-      // is the run — so it belongs to no parent run.
+      // No `run` on the envelope: this event IS the run's birth (its subject
+      // is the run), so it belongs to no parent run.
       ...(which !== undefined ? { which } : {}),
     },
     {
@@ -289,7 +289,7 @@ function appendRunStarted(
   // signer is a key valid for its anchor at verify (see `appendFact`).
   const appended = appendFact(ctx, ({ at }) => runStartedOf(run, at, ctx));
   if (!appended.ok) return appended;
-  // Both reports, merged like every other operation's — and the count is right
+  // Both reports, merged like every other operation's, and the count is right
   // rather than doubled because the screen is idempotent: this agent name went
   // through it above, so the resolution found nothing left to take out. Merging
   // anyway is what keeps this operation the same shape as the others.
@@ -305,18 +305,18 @@ function appendRunStarted(
 /**
  * Closes a run: reads the run from the chain (never the cache) to confirm it
  * exists and is still open, then appends one `run.ended`. The subject is the
- * EXISTING run's id, not a fresh one — the run was born in {@link startRun}. A
+ * EXISTING run's id, not a fresh one: the run was born in {@link startRun}. A
  * close is refused (nothing written) when the run is unknown or already ended,
  * because a `run.ended` with no open run to match would be a permanent orphan or
  * duplicate on an append-only log. `who` is the writer's anchor, but the run's
- * authorizer stays the one recorded at start — the projection keeps the opener's
+ * authorizer stays the one recorded at start: the projection keeps the opener's
  * `who`, not the closer's.
  *
  * The CLOSING agent is recorded as the envelope's `which`, resolved by the same
  * {@link resolveExecutingAgent} the birth uses and refused identically when it is
  * the authorizing anchor: a close an agent authorized for itself would put the
  * session's seal behind nothing but the agent's own word. It is resolved AFTER the
- * run is looked up, which is where every gated operation puts it — the existence
+ * run is looked up, which is where every gated operation puts it: the existence
  * of the subject is not a question about authority, and an id that names no run
  * should hear so whoever is asking.
  */
@@ -359,7 +359,7 @@ export function endRun(ctx: WriteContext, input: EndRunInput): EndRunOk | EndRun
       const who = authorizingAnchor(ctx);
 
       // The agent that is CLOSING, through the door the birth and the other eleven
-      // writes go through — screened, canonicalized and compared in one call, so the
+      // writes go through: screened, canonicalized and compared in one call, so the
       // string checked against `who` is the string the envelope stores. Not screened
       // by the block above: unlike the birth's agent, this value reaches no payload,
       // so passing it through a second cleaner would be two doors on one field.
@@ -379,7 +379,7 @@ export function endRun(ctx: WriteContext, input: EndRunInput): EndRunOk | EndRun
                 signerFp: ctx.writer.signerFingerprint,
                 subject: id,
                 // The agent that closed the session, in the uniform slot every other event
-                // uses — so a read credits the close to whoever did it, the way it credits
+                // uses, so a read credits the close to whoever did it, the way it credits
                 // every other fact. Omitted only if it does not canonicalize to an identity.
                 ...(which !== undefined ? { which } : {}),
                 // No `run` on the envelope: the subject already IS the run being closed.
@@ -388,7 +388,7 @@ export function endRun(ctx: WriteContext, input: EndRunInput): EndRunOk | EndRun
             ),
           );
           if (!appended.ok) return appended;
-          // The agent AS RECORDED, and both reports merged — the screen above saw the
+          // The agent AS RECORDED, and both reports merged: the screen above saw the
           // outcome, the resolution saw the agent, and a caller echoing either has to be
           // told what came out of it.
           return {

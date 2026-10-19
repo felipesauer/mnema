@@ -1,11 +1,11 @@
 /**
- * Which projection tables each event kind FEEDS — the table that lets a cache
+ * Which projection tables each event kind FEEDS: the table that lets a cache
  * bring itself forward over an arrival without redoing the work the arrival
  * cannot have changed.
  *
  * A projection is a function of the events of the kinds it reads, and of nothing
  * else. So a table no arrival feeds is IDENTICAL whether it is folded from the
- * order before the arrival or the order after it — that is the whole theorem this
+ * order before the arrival or the order after it, that is the whole theorem this
  * table stands on, and it is what keeps the invariant next door intact
  * (`advance.ts` writes what a replay (`rebuild.ts`) would have written, from the
  * accumulators the replay left). Nothing here computes a projection a second way; it
@@ -24,13 +24,13 @@
  *   - `runs` reads EVERY kind too, and by the ENVELOPE rather than by a `kind` test:
  *     `lastFactAt` is the latest `at` of any event whose envelope PINS it to the
  *     run, and `wrote` tallies those same events by kind (`run.ts`). A fold that
- *     reads the envelope reads every kind, whatever its `kind` switch says — and
+ *     reads the envelope reads every kind, whatever its `kind` switch says, and
  *     the second field made that literal, since the tally's own keys ARE the kinds.
  *
  * So no kind feeds nothing, and a design that had skipped work for one would have
  * served a stale index and a stale idleness. What is left is still worth the
  * table: the two universal entries are the two cheapest materializations there
- * are, and the expensive ones — the full-text index, and every entity table — are
+ * are, and the expensive ones (the full-text index, and every entity table) are
  * fed by their own kinds alone.
  *
  * IT IS NOT ON THE PACKAGE'S PUBLIC SURFACE, and that is checked rather than
@@ -43,8 +43,8 @@
  * TOTAL BY TYPE, IN `src`. A kind added to the catalog does not compile until it
  * is classified here, and a value that is not a projection table cannot be
  * spelled ({@link ProjectionTable} comes from the schema's own list). That is the
- * half a compiler can prove. The other half — that a row names every table the
- * folds ACTUALLY read — no type can prove, and a row that goes quietly wrong
+ * half a compiler can prove. The other half, that a row names every table the
+ * folds ACTUALLY read, no type can prove, and a row that goes quietly wrong
  * hands a reader a stale table rather than a slow one. What holds it is
  * `advance.test.ts`, which drives one event of EVERY kind into a record and
  * asserts that bringing the cache forward leaves every table byte-identical to a

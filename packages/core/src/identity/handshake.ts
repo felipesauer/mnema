@@ -4,7 +4,7 @@
  *
  * An identity is one anchor with several keys, and a key joins it by a fact that
  * needs two signatures nobody can make for anybody else. A MEMBER vouches (it
- * signs the `key.enrolled`), and the JOINING key proves it consents — its own
+ * signs the `key.enrolled`), and the JOINING key proves it consents: its own
  * signature over `enroll:<anchor>:<fp>`. The two live on different machines, so
  * something has to cross the gap between them. That something is this request.
  *
@@ -15,7 +15,7 @@
  *
  * The fingerprint does not travel: it is the hash of the public key, so it is
  * re-derived on arrival and cannot disagree with the key it names. The public
- * half MUST travel, because the vouching machine commits it into the tree — a
+ * half MUST travel, because the vouching machine commits it into the tree: a
  * verifier proves the consent signature against the committed key, and a tree
  * that never received the key has no way to check the enrollment it carries.
  *
@@ -23,7 +23,7 @@
  * public values, so it can be pasted into a chat, a ticket, or an email without
  * exposing anything: it proves consent to join ONE anchor, and it is worthless to
  * anyone who is not already a member of that anchor (only a member's vouch turns
- * it into a fact). What it is NOT is an authorization — a request nobody vouches
+ * it into a fact). What it is NOT is an authorization: a request nobody vouches
  * for changes nothing at all.
  *
  * The text form is one line, prefixed and base64url-encoded, so it survives a
@@ -61,14 +61,14 @@ import { isAnchorId } from './anchor.js';
 const REQUEST_PREFIX = 'mnema-key-request:1:';
 
 /**
- * The prefix of a request to be enrolled as a CHECKER — a key that signs check results and
+ * The prefix of a request to be enrolled as a CHECKER: a key that signs check results and
  * nothing else. A prefix of its own, so a person who enrolls a line can tell from the line
  * which power it asks for, and a door that expects one kind refuses the other.
  */
 export const CHECKER_REQUEST_PREFIX = 'mnema-checker-request:1:';
 
 /**
- * The prefix of a request to be enrolled as an AGENT — a key that speaks for the identity under a
+ * The prefix of a request to be enrolled as an AGENT: a key that speaks for the identity under a
  * name. Its own prefix, so a person enrolling a line can tell from it which power it asks for, and a
  * door that expects one kind refuses the other. The line carries the name, because the key's consent
  * covers it (`agent-enroll:<anchor>:<fp>:<name>`).
@@ -130,8 +130,8 @@ export function encodeKeyRequest(request: KeyRequest, prefix = REQUEST_PREFIX): 
  * Whitespace inside the payload is dropped before decoding, because a request
  * that travelled through a terminal or a chat window may come back wrapped across
  * lines; base64url has no whitespace of its own, so nothing meaningful is lost.
- * The fingerprint is derived from the public key here — the only place it is ever
- * decided — so the rest of the flow cannot be handed a key under a name that is
+ * The fingerprint is derived from the public key here (the only place it is ever
+ * decided), so the rest of the flow cannot be handed a key under a name that is
  * not its own.
  */
 export function decodeKeyRequest(text: string, prefix = REQUEST_PREFIX): KeyRequest | null {
@@ -161,7 +161,7 @@ export function decodeKeyRequest(text: string, prefix = REQUEST_PREFIX): KeyRequ
   return { key: { publicKey, fingerprint: fingerprintOf(publicKey) }, reverseSig: sig };
 }
 
-/** What making a request needs. Paths are absolute — the surface resolves them. */
+/** What making a request needs. Paths are absolute: the surface resolves them. */
 export interface RequestInput {
   /** The identity to join: the anchor of the machine that will vouch. */
   readonly anchor: string;
@@ -174,8 +174,8 @@ export interface RequestInput {
    */
   readonly privateKeyPath?: string;
   /**
-   * Ask to be enrolled as a CHECKER of the identity `anchor` names — to sign check results
-   * under this key's own anchor, and nothing else — instead of to join it. The consent is
+   * Ask to be enrolled as a CHECKER of the identity `anchor` names (to sign check results
+   * under this key's own anchor, and nothing else) instead of to join it. The consent is
    * over `check-enroll:<anchor>:<fp>` and the line carries {@link CHECKER_REQUEST_PREFIX}.
    */
   readonly asChecker?: boolean;
@@ -185,7 +185,7 @@ export interface RequestInput {
 export type RequestSource =
   /** This machine's own signing key, loaded (or minted) at the key root. */
   | 'machine'
-  /** A private key read from a file — a copy the person holds, left where it was. */
+  /** A private key read from a file: a copy the person holds, left where it was. */
   | 'file';
 
 /** A request was produced; nothing is a member yet. */
@@ -193,7 +193,7 @@ export interface RequestOk {
   readonly ok: true;
   /** The joining key's fingerprint, derived from the key itself. */
   readonly fingerprint: string;
-  /** The anchor the request consents to join — and only that one. */
+  /** The anchor the request consents to join, and only that one. */
   readonly anchor: string;
   /** The one line to hand to a machine that is already a member. */
   readonly request: string;
@@ -222,7 +222,7 @@ export interface RequestErr {
  *
  * The anchor is REQUIRED and never guessed. A shared repository holds as many
  * identities as it has contributors, and the machine joins the one belonging to
- * its person — which no local material can tell it. So the person names it, and a
+ * its person, which no local material can tell it. So the person names it, and a
  * value that is not an identity id is refused here rather than becoming a request
  * that could only ever be rejected on arrival.
  *
@@ -230,12 +230,12 @@ export interface RequestErr {
  * key at the key root there is nothing to ask with, so one is minted exactly as a
  * first write would mint it. It records NO anchor. A machine that recorded the
  * anchor it merely asked for would start signing as an identity no member has
- * vouched for yet, and every such event would fail verification — membership is
+ * vouched for yet, and every such event would fail verification: membership is
  * granted by the record, not by asking. The machine learns it was accepted by
  * reading the record (see the adoption in the identity operations).
  *
  * With `privateKeyPath` the request speaks for the key in that file instead. That
- * is what makes a request possible when the key root holds the WRONG key — a
+ * is what makes a request possible when the key root holds the WRONG key: a
  * machine that lost its key, minted another, and now needs to ask on behalf of the
  * cold copy it still has. The file is read and left exactly where it was.
  */
@@ -291,7 +291,7 @@ export function requestEnrollment(input: RequestInput): RequestOk | RequestErr {
   };
 }
 
-/** What making an agent's request needs. Paths are absolute — the surface resolves them. */
+/** What making an agent's request needs. Paths are absolute: the surface resolves them. */
 export interface AgentRequestInput {
   /** The identity the agent is for: the anchor of the person who will vouch. */
   readonly anchor: string;
@@ -322,7 +322,7 @@ export type AgentRequestErr =
   | {
       readonly ok: false;
       /**
-       * The name is no agent name, or the key named by file is protected by a passphrase — a
+       * The name is no agent name, or the key named by file is protected by a passphrase: a
        * host that signs for an agent has no terminal to ask it at.
        */
       readonly code: 'BAD_AGENT_NAME' | 'PROTECTED_AGENT_KEY';
@@ -332,8 +332,8 @@ export type AgentRequestErr =
 /**
  * Produces an agent key's request to be enrolled in an identity under a name.
  *
- * The key is made at the agent's own key root, IN THE CLEAR — the agent's host is never given a
- * passphrase, and a key that needs one is a key the host cannot sign with — and is never
+ * The key is made at the agent's own key root, IN THE CLEAR (the agent's host is never given a
+ * passphrase, and a key that needs one is a key the host cannot sign with) and is never
  * installed at the person's key root, where a second key would make WHICH key the person speaks as
  * depend on directory order. As for a person's request, the anchor is required and never guessed,
  * and nothing is recorded: the agent signs nothing until a member vouches for it.

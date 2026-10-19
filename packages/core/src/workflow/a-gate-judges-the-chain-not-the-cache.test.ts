@@ -4,8 +4,8 @@
  * The projection is a file on the disk beside the record, unsigned and rebuilt at will: "the
  * projection is not a tamper detector". Measured on the built binary before this, a row of it
  * edited by hand was enough for every one of the four state machines to append a move its own gate
- * refuses — a rejected decision accepted, a cancelled task started, a rejected skill adopted, a run
- * ended twice, a supersede naming a successor nobody recorded — signed, and passed by `verify`.
+ * refuses (a rejected decision accepted, a cancelled task started, a rejected skill adopted, a run
+ * ended twice, a supersede naming a successor nobody recorded) signed, and passed by `verify`.
  *
  * Each case below is one of those sites: it makes the record, edits the row the gate used to read,
  * and asks for the move. The refusal is the gate's own, and the chain holds nothing new. The last
@@ -74,7 +74,7 @@ function events(): CatalogEvent[] {
 }
 
 /**
- * Brings the kept projection up to the chain, then edits it with `sql` — the hand that wrote the
+ * Brings the kept projection up to the chain, then edits it with `sql`: the hand that wrote the
  * row a gate used to judge by. Brought up first so the edit is not undone by the arrivals the next
  * reading would fold over it.
  */

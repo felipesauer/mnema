@@ -1,5 +1,5 @@
 /**
- * The vertical proof of knowledge.linked — the first RELATIONAL fact, across the
+ * The vertical proof of knowledge.linked: the first RELATIONAL fact, across the
  * four publics of the study, with the cross-tree case as the crux.
  *
  * A link is written into one tree by a writer that sees only that tree, yet its
@@ -10,7 +10,7 @@
  *   - the link is written WITHOUT refusing the dangling target (the difference
  *     from a supersede), so a private memory can point at a public task;
  *   - the CLONE of the tree that holds the link reconstructs the edge from the
- *     events alone and verifies — even though the target is not in that clone.
+ *     events alone and verifies, even though the target is not in that clone.
  *
  * If a cross-tree link survives reconstruction and verification, the relational
  * fact serves every public exactly as a point-in-time fact does.
@@ -36,7 +36,7 @@ function ok<T extends { ok: boolean }>(result: T): Extract<T, { ok: true }> {
   return result as Extract<T, { ok: true }>;
 }
 
-describe('knowledge.linked — end to end, the four publics (cross-tree)', () => {
+describe('knowledge.linked: end to end, the four publics (cross-tree)', () => {
   let sandbox: string;
   let trees: ResolvedTrees;
 
@@ -87,7 +87,7 @@ describe('knowledge.linked — end to end, the four publics (cross-tree)', () =>
 
   it('the link is written WITHOUT refusing the dangling target (unlike a supersede)', () => {
     // The private writer records a link to a target it cannot see. Read on the
-    // PRIVATE tree alone, the edge stands but its target is not present — honest
+    // PRIVATE tree alone, the edge stands but its target is not present: honest
     // dangling, resolved on read against the union, never refused at write.
     const prv = ctxFor('private');
     const source = ok(captureMemory(prv.ctx, { content: 'note pointing outward' }));
@@ -101,7 +101,7 @@ describe('knowledge.linked — end to end, the four publics (cross-tree)', () =>
     const privateView = projectLinks(orderedEvents(layout(prv.root), upcasters));
     expect(privateView).toHaveLength(1);
     expect(privateView[0]?.target).toBe('not-in-this-tree');
-    // The target has no memory in this tree — dangling, but the edge is kept.
+    // The target has no memory in this tree: dangling, but the edge is kept.
     expect(
       projectKnowledge(orderedEvents(layout(prv.root), upcasters)).has('not-in-this-tree'),
     ).toBe(false);
@@ -125,7 +125,7 @@ describe('knowledge.linked — end to end, the four publics (cross-tree)', () =>
   it('the CLONE of the linking tree reconstructs the edge and verifies', () => {
     const prv = ctxFor('private');
     const source = ok(captureMemory(prv.ctx, { content: 'a note the clone recovers' }));
-    // Link to a target that will NOT be in the clone — the cross-tree case.
+    // Link to a target that will NOT be in the clone: the cross-tree case.
     linkKnowledge(prv.ctx, { subject: source.id, target: 'target-elsewhere', rel: 'derived-from' });
     prv.ctx.writer.checkpoint();
 
@@ -133,7 +133,7 @@ describe('knowledge.linked — end to end, the four publics (cross-tree)', () =>
     try {
       cpSync(prv.root, clone, { recursive: true });
 
-      // The edge reconstructs from the events alone — no cache was copied.
+      // The edge reconstructs from the events alone: no cache was copied.
       const edges = projectLinks(orderedEvents(layout(clone), upcasters));
       expect(edges).toHaveLength(1);
       expect(edges[0]).toMatchObject({

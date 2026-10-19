@@ -2,7 +2,7 @@
  * Searching and listing the record: the full-text index over one tree.
  *
  * Everything the record holds was, until now, write-only. The projections could
- * answer "this id" and "this state", never "where did we write about X" — so a
+ * answer "this id" and "this state", never "where did we write about X", so a
  * memory captured six months ago was, in practice, gone. This is the read that
  * gives the record back, and it is ONE read: the term is OPTIONAL, because with
  * an inverted index a listing is the same query without the match. "The ten most
@@ -18,8 +18,8 @@
  * Two indexed columns hold all of it, and the mapping is by ROLE rather than by
  * field name: the column `title` takes the one short line that NAMES a record (an
  * observation's topic, a skill's name), and `body` takes the prose, however many
- * fields of it a kind has. A decision has two — the argument for the call and what
- * it turned down — and both go in the body, because a word is looked for by what it
+ * fields of it a kind has. A decision has two, the argument for the call and what
+ * it turned down, and both go in the body, because a word is looked for by what it
  * MEANS and not by which field of a record happens to hold it. A searcher asking
  * "did we already reject this?" does not know, and must not have to know, that the
  * answer was typed into a second field. (`search-store.test.ts`, "finds a decision
@@ -32,7 +32,7 @@
  * ## What comes back
  *
  * An INDEX, never the bodies. Each hit is an id, its kind, when it was recorded,
- * and one line to recognize it by — the entity's own title, or, for a memory (the
+ * and one line to recognize it by: the entity's own title, or, for a memory (the
  * one kind that has none), an excerpt derived from the content. The full body is
  * a second call, by id, against the projection that already holds it. That is not
  * frugality for its own sake: the record this was measured against holds 43
@@ -40,7 +40,7 @@
  * agent's context, nearly all of it about something else. The index of the same
  * 43 is under 1 600.
  *
- * The order is relevance when there is a term and recency when there is not —
+ * The order is relevance when there is a term and recency when there is not:
  * without a term there is no relevance to speak of. A third question is served by the
  * same index and the same order: {@link searchPertinent} ranks the records that share
  * ANY of several words, which is how a session's notes are chosen by what it touches. Both are total orders (ties
@@ -64,19 +64,19 @@ import type { SkillProjection } from './skill.js';
 import type { TaskProjection } from './task.js';
 import { windowConditions } from './window.js';
 
-/** The entity kinds the index holds — the ones that carry text a person wrote. */
+/** The entity kinds the index holds: the ones that carry text a person wrote. */
 export const SEARCH_KINDS = ['memory', 'observation', 'decision', 'task', 'skill'] as const;
 
 /**
  * A searchable kind. Handoffs and links are absent on purpose: both are pure
  * relations (who handed what to whom, what points at what) with no prose of
  * their own, so there is nothing in them to match. Runs are absent for the same
- * reason plus one more — a run is session bookkeeping, and `focus`/`resume`
+ * reason plus one more: a run is session bookkeeping, and `focus`/`resume`
  * already serve it.
  */
 export type SearchKind = (typeof SEARCH_KINDS)[number];
 
-/** Whether `value` is one of the searchable kinds — the surfaces' guard. */
+/** Whether `value` is one of the searchable kinds: the surfaces' guard. */
 export function isSearchKind(value: string): value is SearchKind {
   return (SEARCH_KINDS as readonly string[]).includes(value);
 }
@@ -86,7 +86,7 @@ export interface SearchQuery {
   /**
    * The words to look for. ABSENT (or blank) means "no term": the query becomes
    * a listing of the most recent records. Present but containing no searchable
-   * character (`***`) is an intent to search that matches nothing — an empty
+   * character (`***`) is an intent to search that matches nothing: an empty
    * result, not a listing of everything.
    */
   readonly term?: string;
@@ -105,15 +105,15 @@ export interface SearchQuery {
   readonly limit?: number;
 }
 
-/** One record, named but not spelled out — what an index is made of. */
+/** One record, named but not spelled out: what an index is made of. */
 export interface SearchHit {
-  /** The record's id — the key that asks for the whole thing. */
+  /** The record's id: the key that asks for the whole thing. */
   readonly id: string;
   /** Which kind of record it is. */
   readonly kind: SearchKind;
   /**
    * When it was RECORDED (created/captured), never when it last moved. Uniform
-   * across kinds, and the only instant a memory or an observation has — a mixed
+   * across kinds, and the only instant a memory or an observation has: a mixed
    * key would make "the most recent" mean two different things in one list.
    */
   readonly at: string;
@@ -122,7 +122,7 @@ export interface SearchHit {
   /**
    * True when {@link title} is an EXCERPT of the content rather than a title
    * someone wrote. Only a memory has no title of its own, so only a memory
-   * carries this — and a reader must not present the excerpt as if it were a
+   * carries this, and a reader must not present the excerpt as if it were a
    * name the person chose.
    */
   readonly derived: boolean;
@@ -142,13 +142,13 @@ export interface SearchResult {
   readonly hits: readonly SearchHit[];
   /**
    * How many records matched in total. A count larger than `hits.length` is the
-   * honest signal that the limit truncated the answer — a capped list that does
+   * honest signal that the limit truncated the answer: a capped list that does
    * not say it was capped reads as "this is everything".
    */
   readonly total: number;
 }
 
-/** The projections an index is built from — the same folds the tables get. */
+/** The projections an index is built from: the same folds the tables get. */
 export interface SearchSources {
   readonly tasks: Iterable<TaskProjection>;
   readonly decisions: Iterable<DecisionProjection>;
@@ -166,7 +166,7 @@ export const SEARCH_MAX_LIMIT = 200;
 /**
  * How many hits a query actually returns: what it asked for, floored at zero and
  * capped at the maximum. Exported because a caller that MERGES several trees has
- * to cut the merged list to the same number this cut each tree to — computing it
+ * to cut the merged list to the same number this cut each tree to: computing it
  * twice by two rules is how a two-tree answer starts disagreeing with a one-tree
  * one.
  */
@@ -223,7 +223,7 @@ interface SearchParams {
  * Fills the full-text index from the projections. Called during a rebuild after
  * the virtual table has been recreated empty; the caller owns the transaction.
  *
- * It is fed by the SAME folds that fill the relational tables — not by a second
+ * It is fed by the SAME folds that fill the relational tables, not by a second
  * pass over the chain. That is what makes the index unable to disagree with the
  * rows it points at: one read of the chain, one fold, two materializations.
  */
@@ -244,7 +244,7 @@ export function materializeSearch(db: SqliteDatabase, sources: SearchSources): v
     },
   };
   // A NOTE THE RECORD TOOK BACK IS NOT INDEXED: every read that lists or searches the
-  // record — the opening of a session, the search, the counts of what is unread — reads this
+  // record (the opening of a session, the search, the counts of what is unread) reads this
   // index, so leaving it out here is what takes it out of all of them at once. It is still
   // served by id, from its own table, saying it was retracted.
   for (const memory of sources.memories) {
@@ -267,8 +267,8 @@ export function materializeSearch(db: SqliteDatabase, sources: SearchSources): v
     );
   }
   for (const decision of sources.decisions) {
-    // The reasoning — the WHY it was chosen and the why-not of what it turned
-    // down — is the body: it is where the words a later reader searches for
+    // The reasoning (the WHY it was chosen and the why-not of what it turned
+    // down) is the body: it is where the words a later reader searches for
     // actually live. Both halves, because the half that is only in `alternatives`
     // is the one that answers "did we already turn this down?", and a field the
     // index skipped would be write-only.
@@ -295,7 +295,7 @@ export function materializeSearch(db: SqliteDatabase, sources: SearchSources): v
     );
   }
   for (const skill of sources.skills) {
-    // The pattern, then what each ruling on it said — the review that sent it back is
+    // The pattern, then what each ruling on it said: the review that sent it back is
     // where the words about a pattern's fitness actually are.
     insert.run(
       row(
@@ -315,8 +315,8 @@ export function materializeSearch(db: SqliteDatabase, sources: SearchSources): v
  * removed by its rowid ({@link materializeSearch} remembered it), and the ones the fold
  * projects now are inserted by the same function that built the index.
  *
- * `touched` names the entities by kind and id, and an entity that is no longer projected —
- * which an arrival cannot cause, since a projection once complete stays so — would simply
+ * `touched` names the entities by kind and id, and an entity that is no longer projected
+ * (which an arrival cannot cause, since a projection once complete stays so) would simply
  * leave no row. The caller owns the transaction.
  */
 export function reindexSearch(
@@ -342,7 +342,7 @@ export function reindexSearch(
  * narrow either. `total` reports how many matched before the limit, so a caller
  * can tell a complete answer from a truncated one.
  *
- * A term nothing matches yields an empty list and a total of zero — an answer,
+ * A term nothing matches yields an empty list and a total of zero: an answer,
  * never an error. So does a term with no searchable character in it.
  */
 export function searchRecord(db: SqliteDatabase, query: SearchQuery): SearchResult {
@@ -368,7 +368,7 @@ export interface PertinenceQuery {
   readonly words: readonly string[];
   /** Only this kind of record. */
   readonly kind?: SearchKind;
-  /** How many hits to return — {@link effectiveLimit}, as for a search. */
+  /** How many hits to return: {@link effectiveLimit}, as for a search. */
   readonly limit?: number;
 }
 
@@ -383,7 +383,7 @@ export interface PertinenceQuery {
  * sums over the words a record holds, so a record sharing more of them, or rarer
  * ones, ranks above one sharing a single common word.
  *
- * No word at all — an empty list, or entries with nothing searchable in them — is
+ * No word at all (an empty list, or entries with nothing searchable in them) is
  * nothing to be near, and it answers with nothing rather than with a listing.
  */
 export function searchPertinent(db: SqliteDatabase, query: PertinenceQuery): SearchResult {
@@ -402,7 +402,7 @@ export function searchPertinent(db: SqliteDatabase, query: PertinenceQuery): Sea
  *
  * A WORD MORE THAN HALF OF THEM HOLD IS DROPPED, and the rule is bm25's own, made explicit.
  * FTS5 weighs a word by `log((N - n + 0.5) / (n + 0.5))`, which is not positive once `n`
- * passes `N / 2`, and it floors that weight at 1e-6 — so such a word moves no record's rank.
+ * passes `N / 2`, and it floors that weight at 1e-6, so such a word moves no record's rank.
  * But joined by OR it still MATCHES, and a caller counting what matched would count every
  * record that holds it as near. Measured on this repository, whose test files are named in
  * sentences: `the` came out of the paths of the last commits, and every one of a hundred
@@ -410,7 +410,7 @@ export function searchPertinent(db: SqliteDatabase, query: PertinenceQuery): Sea
  * was and makes "matched" mean "ranked by something".
  *
  * The consequence for a tiny record is declared rather than patched: in a tree holding one
- * record of the kind, any word it holds is held by all of it, so nothing there is near —
+ * record of the kind, any word it holds is held by all of it, so nothing there is near,
  * and nothing needs to be, since one record is served whole by any list.
  */
 function tellingWords(
@@ -461,7 +461,7 @@ function askTheIndex(
         `substr(body, 1, ${EXCERPT_CHARS * 3})`
       : `snippet(record_search, 1, '', '', '…', ${EXCERPT_TOKENS})`;
   const score = match === undefined ? 'NULL' : `bm25(record_search, ${TITLE_WEIGHT}, 1.0)`;
-  // ORDER BY mirrors compareSearchHits exactly — the same rule, once in SQL
+  // ORDER BY mirrors compareSearchHits exactly: the same rule, once in SQL
   // (because LIMIT needs it) and once in JS (because merging trees needs it). The
   // words are read off NEWEST_FIRST_SQL rather than typed, so the two writings cannot
   // drift apart in the tie-break, which is exactly where they were both wrong.
@@ -488,8 +488,8 @@ function askTheIndex(
  * merged, and doing that by a different rule than the SQL above would make a two-tree
  * answer disagree with a one-tree answer for no reason.
  *
- * The score is this read's own — it is the one ordering in the product with a clause
- * ABOVE the instant — and everything below it is the shared rule, asked rather than
+ * The score is this read's own (it is the one ordering in the product with a clause
+ * ABOVE the instant) and everything below it is the shared rule, asked rather than
  * repeated.
  *
  * Hits from one query either all carry a score or none do (a term is present or
@@ -508,7 +508,7 @@ export function compareSearchHits(a: SearchHit, b: SearchHit): number {
  * nothing searchable in it.
  *
  * The term is TEXT, never a query language. Raw input reaches FTS5's parser as
- * syntax — `AND`, a stray `"`, a bare `*` — and a search for `"the" quote` would
+ * syntax: `AND`, a stray `"`, a bare `*` — and a search for `"the" quote` would
  * come back as a SQL error rather than an answer. So the input is reduced to its
  * word characters ({@link wordsOf}), each word is quoted as a phrase
  * ({@link phraseOf}), and the phrases are joined by whitespace (FTS5 reads that as
@@ -521,7 +521,7 @@ function toMatchExpression(term: string): string | null {
 }
 
 /**
- * The same reduction for a list of words any of which will do — {@link searchPertinent}'s
+ * The same reduction for a list of words any of which will do: {@link searchPertinent}'s
  * expression. Every entry goes through {@link wordsOf}, so an entry is text however it
  * was spelled, and the phrases are joined by `OR`, which is the one operator this
  * module ever writes between them: it is typed here, never taken from an entry.
@@ -538,7 +538,7 @@ function toAnyMatchExpression(entries: readonly string[]): string | null {
  *
  * THE ONE READING OF "A TERM IS TEXT", exported because a caller that builds words out
  * of something that is not typed (a path, a branch name) has to cut them by this rule
- * and not by its own — a second tokenizer would be a second answer to which characters
+ * and not by its own: a second tokenizer would be a second answer to which characters
  * reach the index, and the answer that matters is that no operator does.
  */
 export function wordsOf(text: string): string[] {
@@ -547,12 +547,12 @@ export function wordsOf(text: string): string[] {
 
 /**
  * One word as an FTS5 phrase. The word is letters, digits and underscores only (it came
- * out of {@link wordsOf}), so nothing inside the quotes can end the phrase early — the
+ * out of {@link wordsOf}), so nothing inside the quotes can end the phrase early: the
  * quoting cannot be escaped through.
  *
  * Words of {@link PREFIX_MIN_LENGTH} characters or more get a trailing `*`. There
- * is no stemmer — one language's suffix rules applied to a record written in
- * another do more harm than good — and a prefix is the honest substitute: it
+ * is no stemmer (one language's suffix rules applied to a record written in
+ * another do more harm than good) and a prefix is the honest substitute: it
  * reaches the plural and the conjugation without pretending to know the grammar.
  */
 function phraseOf(word: string): string {
@@ -565,7 +565,7 @@ interface WhereClause {
   readonly params: Record<string, string>;
 }
 
-/** Builds the WHERE shared by the row query and the count — one rule, two uses. */
+/** Builds the WHERE shared by the row query and the count: one rule, two uses. */
 function whereClause(query: SearchQuery, match: string | undefined): WhereClause {
   const conditions: string[] = [];
   const params: Record<string, string> = {};
@@ -583,7 +583,7 @@ function whereClause(query: SearchQuery, match: string | undefined): WhereClause
   }
   // The window is not this query's own rule: it is `projections/window.ts`, the same
   // one the authorship tally and the audit feed ask. What differs is only what the
-  // window is OVER — here the instant a record was made, there the instant of a fact —
+  // window is OVER (here the instant a record was made, there the instant of a fact)
   // and that difference is declared rather than left to the flag's name.
   const window = windowConditions('at', query);
   conditions.push(...window.sql);
@@ -603,7 +603,7 @@ function whereClause(query: SearchQuery, match: string | undefined): WhereClause
  * so the same corpus indexed with `alternatives` as a third column produces the
  * identical score to the digit (-1.0471626704752035 -> -0.7484883353347788 either
  * way). What one column buys is that the two bm25 weights and the `snippet` column
- * argument below stay untouched — a third column changes the arity of both, and
+ * argument below stay untouched: a third column changes the arity of both, and
  * getting either wrong shifts the ranking of every kind, not just this one.
  *
  * The cost that IS real belongs to indexing the field at all, and it is not small:
@@ -611,7 +611,7 @@ function whereClause(query: SearchQuery, match: string | undefined): WhereClause
  * its rationale alone scores 28.5% less negative on the corpus measured in
  * `search-store.test.ts` ("costs a rationale-only term relevance, and does not move
  * the rank"). The rank did not move there, and the test asserts the rank rather
- * than the number — but on a record where a decision and a memory are close, this
+ * than the number, but on a record where a decision and a memory are close, this
  * is enough to swap them. It is the price of the field being findable, paid only by
  * decisions that carry one: a decision with no alternatives indexes byte-identically
  * to before.
@@ -628,7 +628,7 @@ function decisionBody(decision: DecisionProjection): string {
 }
 
 /**
- * A record's own body with what its MOVES said appended — the same separator, for the
+ * A record's own body with what its MOVES said appended: the same separator, for the
  * same reason, and one function so the three kinds that have moves cannot drift.
  *
  * The prose a transition carried (`note`, `reason`, `feedback`) is the only body a task
@@ -645,7 +645,7 @@ function decisionBody(decision: DecisionProjection): string {
  * that was a title alone used to rank as a very short document: in `cli.reads.golden.txt`
  * the task matching "runbook" fell from FIRST to THIRD of four hits the moment its four
  * moves' prose joined its body. That is the same price the `alternatives` half of a
- * decision already pays, written down for the same reason — it is paid only by records
+ * decision already pays, written down for the same reason: it is paid only by records
  * that carry the field, and it buys the record being findable by the words in it at all.
  */
 function withProof(body: string, proof: readonly TransitionProof[] | undefined): string {
@@ -688,7 +688,7 @@ function toHit(row: SearchRow): SearchHit {
  *
  * EXPORTED, AND IT HAS A SECOND CALLER FOR A REASON THE LISTING DOES NOT HAVE. The notes
  * a session opens with (`mnema recall`) serve an observation by its TOPIC, which this
- * index hands over raw because it is the record's name — and a name somebody typed has
+ * index hands over raw because it is the record's name, and a name somebody typed has
  * no length. Twenty long ones would carry that text past what a hook hands a model,
  * where a memory's line never could, because a memory's line is cut here. So the notes
  * cut the topic by THIS rule rather than by a copy of it, and "one line" and "how much of
@@ -696,7 +696,7 @@ function toHit(row: SearchRow): SearchHit {
  * `search` is asked for, and a name it shortened would be a name it changed.
  */
 export function excerptOf(text: string): string {
-  // The collapse is the rule of the line's, not this module's — one place decides what
+  // The collapse is the rule of the line's, not this module's: one place decides what
   // "one line" means, and an excerpt that disagreed with it would be a second answer.
   const collapsed = oneLine(text);
   if (collapsed.length <= EXCERPT_CHARS) return collapsed;

@@ -7,7 +7,7 @@ function ofBytes(bytes: number): string {
   return 'x'.repeat(bytes);
 }
 
-describe('screenContent — the size limit', () => {
+describe('screenContent: the size limit', () => {
   it('accepts a field exactly at the limit', () => {
     const result = screenContent({ content: ofBytes(FIELD_BYTE_LIMIT) });
 
@@ -27,7 +27,7 @@ describe('screenContent — the size limit', () => {
     expect(result.message).toContain(String(FIELD_BYTE_LIMIT));
   });
 
-  it('weighs BYTES, not characters — the form the chain stores', () => {
+  it('weighs BYTES, not characters: the form the chain stores', () => {
     // Each of these is 4 bytes of UTF-8 and one character, so a character count
     // would let four times the limit through.
     const emoji = '🔒'.repeat(FIELD_BYTE_LIMIT / 4 + 1);
@@ -58,7 +58,7 @@ describe('screenContent — the size limit', () => {
   });
 });
 
-describe('screenContent — the shape it returns', () => {
+describe('screenContent: the shape it returns', () => {
   it('keeps every key, with the screened text in place of the original', () => {
     const result = screenContent({ title: 'deploy', body: 'use AKIAIOSFODNN7EXAMPLE here' });
 
@@ -70,7 +70,7 @@ describe('screenContent — the shape it returns', () => {
     expect(result.replaced).toEqual(['aws-access-key']);
   });
 
-  it('leaves an absent field absent — there is nothing to weigh or clean', () => {
+  it('leaves an absent field absent: there is nothing to weigh or clean', () => {
     const result = screenContent({ agent: 'claude', goal: undefined });
 
     expect(result.ok).toBe(true);
@@ -103,7 +103,7 @@ describe('screenContent — the shape it returns', () => {
   });
 });
 
-describe('screened — absence means nothing was taken out', () => {
+describe('screened: absence means nothing was taken out', () => {
   it('omits the key entirely when nothing was replaced', () => {
     expect(screened([])).toEqual({});
     expect('replaced' in screened([])).toBe(false);
@@ -119,7 +119,7 @@ describe('screened — absence means nothing was taken out', () => {
  *
  * THE RISK THIS ANSWERS is the only way this rule can do harm: a class that stopped
  * being caught. The door's change is what happens AFTER a match, never whether there
- * is one, and that is a claim about a diff — `secrets.ts` is untouched — so it is held
+ * is one, and that is a claim about a diff (`secrets.ts` is untouched), so it is held
  * here as behaviour instead. Every class is driven through both a NAME and a BODY, and
  * neither may let the value through: the name refuses with the class named, the body
  * records the placeholder. A class that escaped either way lands in the differential
@@ -129,7 +129,7 @@ describe('screened — absence means nothing was taken out', () => {
  * own. That duplication is deliberate and it is self-checking: these are values, not a
  * rule, and a sample that drifted into no longer matching its class fails the very
  * case it is written for. What must NOT be duplicated is the enumeration, so the keys
- * are reconciled against `SECRET_CLASSES` in both directions — a class added to the
+ * are reconciled against `SECRET_CLASSES` in both directions: a class added to the
  * sieve with nothing here fails, and a key naming no class fails too.
  */
 const CLASS_SAMPLE: Readonly<Record<string, string>> = {
@@ -155,13 +155,13 @@ function mustNotSurvive(secret: string): string {
 }
 
 describe('every class the sieve knows is refused in a name and redacted in a body', () => {
-  it('carries one sample per recognized class — the ruler both loops below measure with', () => {
+  it('carries one sample per recognized class: the ruler both loops below measure with', () => {
     expect(Object.keys(CLASS_SAMPLE).sort()).toEqual([...SECRET_CLASSES].sort());
   });
 
   for (const secret of SECRET_CLASSES) {
     it(`refuses a name holding a ${secret}, naming the class and never the value`, () => {
-      // `title` is a name on every kind that has one. The whole write is refused —
+      // `title` is a name on every kind that has one. The whole write is refused:
       // there is no partial outcome where the name comes back redacted.
       const result = screenContent({ title: `deploy ${CLASS_SAMPLE[secret]}` });
 
@@ -185,14 +185,14 @@ describe('every class the sieve knows is refused in a name and redacted in a bod
       expect(recorded, `${secret} survived a body`).not.toContain(mustNotSurvive(secret));
       expect(recorded).toContain(secretPlaceholder(secret));
       expect(result.replaced).toContain(secret);
-      // The fact survives the redaction — that is the whole argument for redacting a
+      // The fact survives the redaction, that is the whole argument for redacting a
       // body rather than refusing it.
       expect(recorded).toContain('because ');
       expect(recorded).toContain(' expired');
     });
   }
 
-  it('lets NO class through on either side — the differential, counted', () => {
+  it('lets NO class through on either side: the differential, counted', () => {
     // The per-class cases above pass one at a time; this is the count, so a pass
     // where some cases never ran cannot read as coverage. Both columns must be the
     // full list, and the escape column must be empty.
@@ -220,7 +220,7 @@ describe('every class the sieve knows is refused in a name and redacted in a bod
   it('leaves a name a person chose alone, on both sides of the door', () => {
     // The limit this delivery must not move: the rule that keeps a sayable name out
     // of the sieve is `secrets.ts`'s and was decided with a measurement. A name that
-    // no longer reads as a credential is not refused here either — a door that
+    // no longer reads as a credential is not refused here either: a door that
     // refused every `sk-` would undo that work at the layer above it.
     const chosen = 'sk-check-the-tenant-scope-first';
     const asName = screenContent({ title: chosen });
@@ -231,7 +231,7 @@ describe('every class the sieve knows is refused in a name and redacted in a bod
   });
 });
 
-describe('screenContent — an email address in a body', () => {
+describe('screenContent: an email address in a body', () => {
   it('is replaced by the marker and reported, beside what was kept', () => {
     const result = screenContent({
       title: 'use tabs',

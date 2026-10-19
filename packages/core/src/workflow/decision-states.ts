@@ -2,7 +2,7 @@
  * The decision workflow's states, fixed in typed code.
  *
  * Like the task workflow, this is the product's one opinion about how a
- * decision moves — not data loaded from a project file. The states are part of
+ * decision moves, not data loaded from a project file. The states are part of
  * the format (`WORKFLOWS` in `@mnema/chain`, FORMAT.md §6.7), because every
  * reader judges a move by them; this module takes them from there and only
  * NAMES them for the domain. The legal moves live in the transition table.
@@ -19,7 +19,7 @@ import { WORKFLOWS } from '@mnema/chain';
 /** The four states a decision can be in. */
 export const DECISION_STATES = WORKFLOWS['decision.transitioned'].states;
 
-/** A decision's state — one of the four, as a literal string. */
+/** A decision's state: one of the four, as a literal string. */
 export type DecisionState = (typeof DECISION_STATES)[number];
 
 /** The state every decision is born into. */

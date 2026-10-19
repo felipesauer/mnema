@@ -2,7 +2,7 @@
  * The decision transition table: the legal moves of the decision workflow, in
  * typed code.
  *
- * Each row is one legal move — a `from` state, an `action`, the `to` state it
+ * Each row is one legal move: a `from` state, an `action`, the `to` state it
  * reaches, and which proof fields that action must carry. This is the whole
  * workflow: fixed, opinionated, compiler-checked, never loaded from a project
  * file. It mirrors the task workflow's shape; the difference is which proof a
@@ -14,13 +14,13 @@
  * universal textual WHY of the move, nothing that presumes a tool:
  *   - `accept`/`reject` require a `note` (why this verdict);
  *   - `supersede` requires a `reason` (why it is being replaced) AND, separately
- *     from proof, the `by` id of the successor — but `by` is a relational id on
+ *     from proof, the `by` id of the successor, but `by` is a relational id on
  *     the event, not a textual proof field, so it is enforced by the gate's
  *     supersede check, not listed in `requires`.
  *
  * `supersede` is legal from BOTH `proposed` and `accepted`: a decision can be
  * replaced whether it was merely on the table or already adopted. A `rejected`
- * decision is terminal — there is nothing to supersede — and a `superseded` one
+ * decision is terminal (there is nothing to supersede) and a `superseded` one
  * cannot be superseded again (the successor is the live decision now).
  */
 

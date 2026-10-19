@@ -1,10 +1,10 @@
 /**
- * Restoring a key — the only recovery mnema has, and the half of the backup
+ * Restoring a key: the only recovery mnema has, and the half of the backup
  * feature that decides whether the other half was worth anything.
  *
  * The one property everything here exists to protect: a restored key must speak
  * for the identity it PROTECTED, never for a new one. A private key installed
- * without the anchor its tree recorded founds a fresh identity on its next write —
+ * without the anchor its tree recorded founds a fresh identity on its next write:
  * a split, appended to a tree the team shares, unappendable-back. So the tests
  * below are mostly refusals, and the refusals are the point:
  *
@@ -12,7 +12,7 @@
  *   - a key nothing proves a member of is refused, even when the tree NAMES it;
  *   - a second private key is never left at the key root (the machine would then
  *     choose its identity by directory order);
- *   - a refusal writes nothing at all — a half-done restore is the split.
+ *   - a refusal writes nothing at all: a half-done restore is the split.
  */
 
 import { existsSync, mkdtempSync, readFileSync, rmSync, unlinkSync, writeFileSync } from 'node:fs';
@@ -109,14 +109,14 @@ function establishThenLoseTheKey(protectedWith?: string): {
   });
   rmSync(join(keyRoot, 'backup'), { recursive: true, force: true });
 
-  // The loss: the machine's own private key is gone. Everything else survives —
+  // The loss: the machine's own private key is gone. Everything else survives:
   // the committed tree (git) and the public material at the key root.
   unlinkSync(join(keyRoot, 'keys', `${primaryFp}.key`));
 
   return { anchorBefore: established.anchor, primaryFp, backupFp, vaultCopy };
 }
 
-describe('restoreKey — the identity after the loss is the identity from before it', () => {
+describe('restoreKey: the identity after the loss is the identity from before it', () => {
   it('adopts the anchor the tree proves, and the machine signs as it again', () => {
     const lost = establishThenLoseTheKey();
 
@@ -197,7 +197,7 @@ describe('restoreKey — the identity after the loss is the identity from before
     expect(memory?.who).toBe(lost.anchorBefore);
     expect(memory?.signerFp).toBe(lost.backupFp);
 
-    // The whole tree — two tails, two keys, one identity — still verifies, and
+    // The whole tree (two tails, two keys, one identity) still verifies, and
     // every event is signature-covered.
     const verdict = verify(tree, upcasters);
     expect(verdict.ok).toBe(true);
@@ -221,7 +221,7 @@ describe('restoreKey — the identity after the loss is the identity from before
     expect(readFileSync(installed, 'utf-8')).toBe(before);
   });
 
-  it('restores the PRIMARY key too — a founding proves membership like an enrollment', () => {
+  it('restores the PRIMARY key too: a founding proves membership like an enrollment', () => {
     const first = machine(tree, keyRoot);
     establishIdentity(first.ctx, { keyRoot });
     first.writer.checkpoint();
@@ -245,21 +245,21 @@ describe('restoreKey — the identity after the loss is the identity from before
     expect(machine(tree, keyRoot).writer.anchor).toBe(anchorBefore);
   });
 
-  it('is repeatable for the same key — a second project needs the anchor recorded too', () => {
+  it('is repeatable for the same key: a second project needs the anchor recorded too', () => {
     const lost = establishThenLoseTheKey();
     expect(restoreKey({ privateKeyPath: lost.vaultCopy, keyRoot, tree, upcasters }).ok).toBe(true);
 
     // The anchor is recorded per TREE (the writer reads it from the tree it writes
     // to), so recovery in a second project is a second restore. Refusing here
     // because "a key is already installed" would leave that project with no way
-    // to recover — while still leaving exactly ONE private key at the key root.
+    // to recover, while still leaving exactly ONE private key at the key root.
     const again = restoreKey({ privateKeyPath: lost.vaultCopy, keyRoot, tree, upcasters });
     expect(again).toMatchObject({ ok: true, anchor: lost.anchorBefore });
     expect(listPrivateKeyFingerprints({ root: keyRoot })).toEqual([lost.backupFp]);
   });
 });
 
-describe('restoreKey — refusals, each writing nothing', () => {
+describe('restoreKey: refusals, each writing nothing', () => {
   it('refuses UNREADABLE_KEY for a file that is not a private key, and for none at all', () => {
     const junk = join(vault, 'not-a-key.txt');
     writeFileSync(junk, 'BEGIN NOTHING\n', 'utf-8');
@@ -275,7 +275,7 @@ describe('restoreKey — refusals, each writing nothing', () => {
     expect(listPrivateKeyFingerprints({ root: keyRoot })).toEqual([]);
   });
 
-  it('refuses KEY_PRESENT while another private key is installed — never two in keys/', () => {
+  it('refuses KEY_PRESENT while another private key is installed, never two in keys/', () => {
     const first = machine(tree, keyRoot);
     const established = establishIdentity(first.ctx, { keyRoot });
     first.writer.checkpoint();
@@ -284,7 +284,7 @@ describe('restoreKey — refusals, each writing nothing', () => {
 
     // The key was NOT lost: the person restores the backup anyway. Two private
     // keys in keys/ would make the machine's identity depend on directory order,
-    // so this is refused — the ambiguity is never created.
+    // so this is refused: the ambiguity is never created.
     const refused = restoreKey({
       privateKeyPath: established.backup?.privateKeyPath as string,
       keyRoot,
@@ -312,11 +312,11 @@ describe('restoreKey — refusals, each writing nothing', () => {
     // would fail verification, and an event cannot be taken back.
     expect(listPrivateKeyFingerprints({ root: keyRoot })).toEqual([]);
     expect(existsSync(join(tree, 'keys', `${stranger.fingerprint}.anchor`))).toBe(false);
-    // The real backup still restores — the refusal was about the key, not the tree.
+    // The real backup still restores: the refusal was about the key, not the tree.
     expect(restoreKey({ privateKeyPath: lost.vaultCopy, keyRoot, tree, upcasters }).ok).toBe(true);
   });
 
-  it('refuses a key the tree merely NAMES — consent is proven by the key, not asserted', () => {
+  it('refuses a key the tree merely NAMES: consent is proven by the key, not asserted', () => {
     // The adversarial case: a tree that carries an enrollment naming a stranger's
     // fingerprint, with a reverse signature it could not have made. Accepting it
     // would let any repository hand a restored key an identity by writing its
@@ -327,7 +327,7 @@ describe('restoreKey — refusals, each writing nothing', () => {
     const impostor = generateKeyPair();
     enrollKey(first.ctx, {
       newFp: stranger.fingerprint,
-      // A well-formed signature over the right message — by the WRONG key.
+      // A well-formed signature over the right message: by the WRONG key.
       reverseSig: Buffer.from(
         sign(
           enrollmentMessage(first.writer.anchor, stranger.fingerprint),
@@ -351,7 +351,7 @@ describe('restoreKey — refusals, each writing nothing', () => {
     expect(refused).toMatchObject({ ok: false, code: 'NOT_A_MEMBER' });
     expect(existsSync(join(tree, 'keys', `${stranger.fingerprint}.anchor`))).toBe(false);
 
-    // The same holds for a reverse signature that is not even signature-shaped —
+    // The same holds for a reverse signature that is not even signature-shaped:
     // a corrupted payload is refused, never read as consent.
     const garbled = generateKeyPair();
     enrollKey(first.ctx, { newFp: garbled.fingerprint, reverseSig: 'not-hex-at-all' });
@@ -388,7 +388,7 @@ describe('restoreKey — refusals, each writing nothing', () => {
   });
 
   it('refuses AMBIGUOUS_MEMBERSHIP when two identities in one tree both proved the key', () => {
-    // Two machines write to the same tree — each founds its own anchor — and both
+    // Two machines write to the same tree, each founds its own anchor, and both
     // enroll the SAME key, each with that key's genuine consent. Which identity
     // the key should speak for here is the person's call, not a coin flip made on
     // their behalf, so the restore refuses and names both.
@@ -431,7 +431,7 @@ describe('restoreKey — refusals, each writing nothing', () => {
   });
 
   it('says why no revocation takes it out, over a tree that lost the key’s public half', () => {
-    // DAMAGED ON PURPOSE: both vouches are in the record and the key's committed half is not —
+    // DAMAGED ON PURPOSE: both vouches are in the record and the key's committed half is not,
     // which no write path produces and `verify` rejects. The consent still proves the key a
     // member of both (the restore holds the key itself), and no revocation can take it out of
     // either: the roster the revocation checks does not count a key whose half is missing, so it

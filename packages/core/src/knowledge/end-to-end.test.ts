@@ -1,5 +1,5 @@
 /**
- * The vertical proof of memory.captured — the four publics of the study, end to
+ * The vertical proof of memory.captured: the four publics of the study, end to
  * end. A capture is routed by scope through the merged tree topology, then:
  *   - the PERSON sees the union of all three trees, each memory attributed to
  *     its `who`;
@@ -26,7 +26,7 @@ import { captureMemory } from './operations.js';
 
 const upcasters = catalogUpcasters();
 
-describe('memory.captured — end to end, the four publics', () => {
+describe('memory.captured: end to end, the four publics', () => {
   let sandbox: string;
   let trees: ResolvedTrees;
 
@@ -96,7 +96,7 @@ describe('memory.captured — end to end, the four publics', () => {
     try {
       cpSync(pub.root, clone, { recursive: true });
 
-      // Reconstruct the memory from the chain alone — no cache was copied.
+      // Reconstruct the memory from the chain alone: no cache was copied.
       const memories = projectKnowledge(orderedEvents(layout(clone), upcasters));
       expect(memories.get(pub.id)?.content).toBe('a fact the team pulls');
 

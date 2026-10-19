@@ -55,7 +55,7 @@ describe('reading a directory of decision documents', () => {
 
   it('does not descend into subdirectories', () => {
     // A recursive walk pointed at a repository root would read every markdown file
-    // in it — a README, a changelog, an issue template — and propose whatever had
+    // in it (a README, a changelog, an issue template) and propose whatever had
     // a heading and a paragraph. The caller names the directory; nothing guesses.
     mkdirSync(join(base, 'archive'));
     writeFileSync(join(base, 'archive', '0009-buried.md'), decision('Buried'), 'utf8');
@@ -77,7 +77,7 @@ describe('reading a directory of decision documents', () => {
 
     const scan = scanAdrDirectory(base);
     expect(scan.read.map((d) => d.title)).toEqual(['A']);
-    // Furniture is not a REFUSAL either — it was never a candidate.
+    // Furniture is not a REFUSAL either: it was never a candidate.
     expect(scan.refused).toEqual([]);
   });
 
@@ -105,7 +105,7 @@ describe('reading a directory of decision documents', () => {
     // exists for, and the door SCRUBS and reports — right for a person typing one
     // fact, wrong for a bulk read: a placeholder recorded on a person's behalf, in a
     // document they did not write, is a permanent entry nobody chose. So the FILE is
-    // refused, by name, with the class named — and the value never travels.
+    // refused, by name, with the class named, and the value never travels.
     file('0001-clean.md', decision('Clean'));
     file(
       '0002-leaky.md',
@@ -126,7 +126,7 @@ describe('reading a directory of decision documents', () => {
     // share. A count cannot tell a right name from a wrong one, and the name is the
     // whole of what a person acts on.
     expect(refusal?.classes).toEqual(['anthropic-key']);
-    // The class travels and the value never does — the record's own posture.
+    // The class travels and the value never does: the record's own posture.
     expect(JSON.stringify(scan)).not.toContain('sk-ant-api03-ABCDEFGHIJ');
   });
 

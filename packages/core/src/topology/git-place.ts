@@ -1,5 +1,5 @@
 /**
- * Where git keeps a working tree's repository — read from the files git writes, without
+ * Where git keeps a working tree's repository: read from the files git writes, without
  * running git.
  *
  * THE PRIVATE TREE USED TO LIVE IN THE WORKING TREE, at `<project>/.mnema/private/`, kept out of
@@ -59,7 +59,7 @@ export function gitPlaceOf(dir: string): GitPlace | undefined {
 
 /**
  * Where a project's private tree lives, and where THIS working tree keeps its installation id
- * for it — or undefined when the project is in no repository, and the tree stays in
+ * for it, or undefined when the project is in no repository, and the tree stays in
  * `.mnema/private/`.
  *
  * The tree is `<common git dir>/mnema/<project, relative to the top, encoded>/private` ({@link
@@ -89,7 +89,7 @@ export function privateTreePlace(
  * top's `verify` read the nested tree's files as a tail of its own and failed. Encoded,
  * every project's tree is a sibling of every other's, and the encoding cannot be taken back to
  * two different paths (`encodeURIComponent` is one to one). The top itself, whose relative
- * path is empty, is `%2E` — an encoded `.`, which no relative path spells.
+ * path is empty, is `%2E`: an encoded `.`, which no relative path spells.
  */
 export function privateTreeUnder(gitDir: string, within: string): string {
   const component = encodeURIComponent(within.split(sep).join('/'));

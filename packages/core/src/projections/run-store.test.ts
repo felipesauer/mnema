@@ -1,5 +1,5 @@
 /**
- * THE RUN PROJECTION ACROSS SQLITE — the boundary, asked directly.
+ * THE RUN PROJECTION ACROSS SQLITE: the boundary, asked directly.
  *
  * This module was at full line coverage with no test naming it. What executes it is
  * `cache.test.ts` through `ProjectionCache`, and that file's subject is the cache: it
@@ -18,8 +18,8 @@
  * it. Every round-trip below is `toStrictEqual` for that reason.
  *
  * NOTHING HERE HAND-WRITES A PROJECTION. `projectRuns` is the only thing in the product
- * that makes one, and `open` and `endedAt` are the same fact stated twice — the fold sets
- * `open: endedAt === undefined` — so a literal could assert a run that cannot exist. The
+ * that makes one, and `open` and `endedAt` are the same fact stated twice (the fold sets
+ * `open: endedAt === undefined`), so a literal could assert a run that cannot exist. The
  * expectations compare against the fold's own values, which is also what keeps the two
  * sides from drifting together.
  */
@@ -50,7 +50,7 @@ const env = (subject: string, n: number, who = 'felipe') => ({
   signerFp: 'fp-1',
   subject,
 });
-/** A fact PINNED to a run — the envelope slot every event of a session carries. */
+/** A fact PINNED to a run: the envelope slot every event of a session carries. */
 const inRun = (subject: string, n: number, run: string) => ({ ...env(subject, n), run });
 
 /** The fold, which is the only producer of a RunProjection in this product. */
@@ -62,7 +62,7 @@ const fold = (events: readonly CatalogEvent[]): RunProjection[] => [
  * Three runs whose id order is not the order they are written in.
  *
  * `r-c` is born first and `r-a` last, so a query that returned rows in insertion order
- * would answer c, a, b — and the ordering case below would be vacuous if the fixture
+ * would answer c, a, b, and the ordering case below would be vacuous if the fixture
  * happened to write them alphabetically.
  */
 function threeOutOfOrder(): readonly CatalogEvent[] {
@@ -73,7 +73,7 @@ function threeOutOfOrder(): readonly CatalogEvent[] {
   ];
 }
 
-describe('run-store — what goes in comes back out', () => {
+describe('run-store: what goes in comes back out', () => {
   it('round-trips the fold exactly, absent optionals included', () => {
     const events: CatalogEvent[] = [
       runStarted(env('closed', 0), { agent: 'claude', goal: 'ship it' }),
@@ -108,7 +108,7 @@ describe('run-store — what goes in comes back out', () => {
     ];
     materializeRuns(db, fold(events));
 
-    // The greatest `at` of the facts pinned to it, not the run's own birth — this is
+    // The greatest `at` of the facts pinned to it, not the run's own birth: this is
     // what idleness is read from, one surface over.
     expect(getRun(db, 'busy')?.lastFactAt).toBe(at(3));
     // A run nothing was pinned to has NO such key. Not null, not undefined: absent.
@@ -151,7 +151,7 @@ describe('run-store — what goes in comes back out', () => {
       { id: 'a-closed', open: 0 },
       { id: 'b-open', open: 1 },
     ]);
-    // The two readings of "open" — the SQL filter and `row.open === 1` in the mapper —
+    // The two readings of "open", the SQL filter and `row.open === 1` in the mapper,
     // over a set holding one of each, so neither can be vacuously right.
     expect(listOpenRuns(db).map((run) => run.id)).toEqual(
       listRuns(db)
@@ -162,7 +162,7 @@ describe('run-store — what goes in comes back out', () => {
   });
 });
 
-describe('run-store — what the table answers', () => {
+describe('run-store: what the table answers', () => {
   it('orders by id, not by the order the rows were written', () => {
     const folded = fold(threeOutOfOrder());
     // Non-vacuity of the fixture: the fold really does hand them over out of id order.

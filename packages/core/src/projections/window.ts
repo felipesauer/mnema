@@ -1,5 +1,5 @@
 /**
- * THE WINDOW — one rule, and every reading of it asks HERE.
+ * THE WINDOW: one rule, and every reading of it asks HERE.
  *
  * Three reads of this product take `--from`/`--to`: `accountability` (a tally, in SQL
  * over the reference index), `export` (a stream of facts, as a predicate over events),
@@ -11,7 +11,7 @@
  * both over the same record with the same matrix of filters and asserts they select the
  * same set; a condition added to one and not the other is red there rather than in a
  * review."* There is no such file, and `grep` finds no test naming `matchesAuthorship`
- * at all. So the sentence was an intention written as a fact — and the count was wrong
+ * at all. So the sentence was an intention written as a fact, and the count was wrong
  * too: the readings are THREE, because the index's own window was never in that
  * paragraph's view.
  *
@@ -27,8 +27,8 @@
  *
  * WHAT THE WINDOW IS OVER IS **NOT** ONE, AND THAT IS THE PART THAT WAS SILENT. For
  * `accountability` and `export` a window selects FACTS: an event's `at`. For `search` it
- * selects RECORDS by the instant each was RECORDED — a decision's `createdAt`, a
- * memory's `capturedAt` — because the index holds records and not facts. Both are
+ * selects RECORDS by the instant each was RECORDED (a decision's `createdAt`, a
+ * memory's `capturedAt`), because the index holds records and not facts. Both are
  * honest; what was not honest is that one flag name covered two axes and no read said
  * so. {@link WINDOW_IS_OVER} is that declaration, and the surfaces gloss the flag from
  * it, so a reader is told which axis they are narrowing at the place they narrow it.
@@ -45,7 +45,7 @@ export type WindowSubject = 'fact' | 'record';
  * IT IS A LIST OF LINES AND NOT A STRING, and the reason is a rule of the surface rather
  * than a taste. The sentence is printed twice: flat, in a tool's field description, and
  * folded, under a verb's flags. Folding it at the door would put a decision about WIDTH
- * in a module that has no business making one — this workspace names the five modules
+ * in a module that has no business making one: this workspace names the five modules
  * that may choose a shape by the size of a terminal, and a vocabulary is not among them
  * (`a-floor-under-the-window.test.ts` accused exactly that the first time this was
  * written with a wrapper). So the breaks are AUTHORED here, at the clause boundaries,
@@ -72,7 +72,7 @@ export interface Window {
 }
 
 /**
- * Whether an instant falls in the window — the reading a stream of facts needs.
+ * Whether an instant falls in the window: the reading a stream of facts needs.
  *
  * An absent end is no bound, so an empty window admits everything. An INVERTED window
  * (`from` after `to`) admits nothing, and that is an answer rather than a refusal: the
@@ -87,7 +87,7 @@ export function withinWindow(at: string, window: Window): boolean {
 }
 
 /**
- * The same rule as SQL, over a column holding an ISO instant — the reading a query needs.
+ * The same rule as SQL, over a column holding an ISO instant: the reading a query needs.
  *
  * The column is named by the caller because the three tables spell it differently in
  * principle and identically today; what the caller may NOT decide is the comparison. The

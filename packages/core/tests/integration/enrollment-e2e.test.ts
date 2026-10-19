@@ -3,7 +3,7 @@
  *
  * The chain-level enrollment tests build events by hand; this drives the real
  * core operations (foundIdentity / enrollKey / revokeKey) across two machines
- * with DISTINCT keys, merges their tails offline, and runs `verify` — the whole
+ * with DISTINCT keys, merges their tails offline, and runs `verify`: the whole
  * mechanism the surface will sit on. It pins the flow the wave exists for: one
  * identity, several distinct keys, each proven by signature, with prospective
  * revocation.
@@ -36,7 +36,7 @@ import { createTask } from '../../src/workflow/operations.js';
 /**
  * A machine: its own chain root and writer (a distinct key). Its `keyPair` is
  * pulled off disk so the test can produce the reverse signature B must make to
- * be enrolled — the material the surface would exchange between machines.
+ * be enrolled: the material the surface would exchange between machines.
  */
 interface Machine {
   readonly root: string;
@@ -89,7 +89,7 @@ function reverseSigOf(anchor: string, machine: Machine): string {
 }
 
 /**
- * Commits B's public key into A's chain, without B's tail — the state right
+ * Commits B's public key into A's chain, without B's tail: the state right
  * after an enroll handshake, before B has written anything. The reverse
  * signature is provable only against the committed key it names, so this is the
  * material the handshake carries.
@@ -111,7 +111,7 @@ function mergeIntoA(): void {
   }
 }
 
-describe('enrollment e2e — a distinct second key joins one anchor', () => {
+describe('enrollment e2e: a distinct second key joins one anchor', () => {
   it('found → enroll B → B signs events under A’s anchor → verify green', () => {
     const ctxA = ctxOf(a);
     // A founds its anchor.
@@ -146,7 +146,7 @@ describe('enrollment e2e — a distinct second key joins one anchor', () => {
   });
 });
 
-describe('enrollment e2e — a legitimate enrollment proves itself at once', () => {
+describe('enrollment e2e: a legitimate enrollment proves itself at once', () => {
   it('leaves no residual window: after enrolling, the chain is fully signed', () => {
     const ctxA = ctxOf(a);
     const anchor = foundIdentity(ctxA).anchor;
@@ -158,7 +158,7 @@ describe('enrollment e2e — a legitimate enrollment proves itself at once', () 
     // The enrollment checkpoints itself, so both of A's events (the founding and
     // the enrollment) are signature-covered the moment the operation returns.
     // Without that, a membership change a machine made honestly would sit in the
-    // keyless residual window and read as unproven work — the same signal a
+    // keyless residual window and read as unproven work: the same signal a
     // truncation leaves.
     const r = verify(a.root);
     expect(r.ok).toBe(true);
@@ -167,7 +167,7 @@ describe('enrollment e2e — a legitimate enrollment proves itself at once', () 
   });
 });
 
-describe('enrollment e2e — prospective revocation', () => {
+describe('enrollment e2e: prospective revocation', () => {
   it('revoke B → B’s later events are rejected, its earlier ones stay valid', () => {
     const ctxA = ctxOf(a);
     const anchor = foundIdentity(ctxA).anchor;
@@ -185,7 +185,7 @@ describe('enrollment e2e — prospective revocation', () => {
     // A revokes B.
     revokeKey(ctxA, { revokedFp: b.fingerprint, reason: 'key rotated out' });
 
-    // B writes AGAIN, now revoked — this event must be rejected.
+    // B writes AGAIN, now revoked: this event must be rejected.
     b.writer.append(
       taskCreated(
         { at: clock(), who: anchor, signerFp: b.fingerprint, subject: 't-after' },
@@ -203,10 +203,10 @@ describe('enrollment e2e — prospective revocation', () => {
   });
 });
 
-describe('enrollment e2e — the core founds on first use', () => {
+describe('enrollment e2e: the core founds on first use', () => {
   it('a plain createTask founds the anchor implicitly and verifies green', () => {
     const ctxA = ctxOf(a);
-    // No explicit foundIdentity — createTask must found on first use.
+    // No explicit foundIdentity: createTask must found on first use.
     const created = createTask(ctxA, { title: 'ship', which: 'claude' });
     expect(created.ok).toBe(true);
     a.writer.checkpoint();

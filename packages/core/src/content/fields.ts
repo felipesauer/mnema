@@ -1,6 +1,6 @@
 /**
- * What every text field of the catalog IS — a name the record is addressed by, a body
- * the record states, or an identifier the record derived — and therefore which of them
+ * What every text field of the catalog IS (a name the record is addressed by, a body
+ * the record states, or an identifier the record derived) and therefore which of them
  * the content door owes a pass over, and what it owes each.
  *
  * WHY THIS EXISTS, MEASURED. The door is one function called from every write
@@ -9,14 +9,14 @@
  * it, because the CALLER picks which fields to hand over. The gap was measured, not
  * feared: `alternatives` was added to `decision.recorded` with the screen
  * deliberately bypassed and the whole suite stayed green, `every-door.test.ts`
- * included, ten of ten. A guard over POINTS cannot see a missing FIELD — the driving
+ * included, ten of ten. A guard over POINTS cannot see a missing FIELD: the driving
  * that would catch one was itself a hand-written list of arguments, so the test and
  * the production code forgot the same field together.
  *
  * So the guard has to be total over the fields, and a field-total guard needs one
  * thing that did not exist anywhere: a way to say which strings are text at all.
- * Not every string in a payload is something a person wrote — there are minted ids,
- * key fingerprints, workflow states, a frozen citation label, an instant — and
+ * Not every string in a payload is something a person wrote (there are minted ids,
+ * key fingerprints, workflow states, a frozen citation label, an instant) and
  * running any of those through a scrubber is not a weaker defense, it is DAMAGE.
  * That is the same finding the scrubber itself is built on: over a real archive of
  * 4,277 events an entropy rule flagged 13,094 values, of which 8,208 were
@@ -38,14 +38,14 @@
  *   - A name with the credential replaced IS NOT THE SAME ENTITY. `<SECRET:openai-key>`
  *     is not the skill the person created; it is something else wearing that skill's
  *     id. On an append-only log the name the person chose is then unrecoverable, and
- *     every reading that keys on it — `WHERE rel = ?`, the search index's title
- *     column, a lookup by `about` — now matches nothing or matches the wrong thing.
+ *     every reading that keys on it (`WHERE rel = ?`, the search index's title
+ *     column, a lookup by `about`) now matches nothing or matches the wrong thing.
  *     That is not redaction; it is corruption of identity.
  * So a name carrying a credential is REFUSED at the door and a body is redacted, and
  * which of the two a field is answered HERE, once, for the same reason the first rule
  * is: a second opinion about it would be a second place to be wrong.
  *
- * THE CUT IS NOT INVENTED HERE — the product had already drawn it, in another hand
+ * THE CUT IS NOT INVENTED HERE: the product had already drawn it, in another hand
  * and for another purpose. `search-store.ts` indexes the caller's text in two
  * columns "by ROLE rather than by field name": `title` takes "the one short line that
  * NAMES a record (an observation's topic, a skill's name)" and `body` takes the
@@ -57,7 +57,7 @@
  * The second half of that first sentence is what puts the REFERENCE fields on the
  * caller's side, which surprises until it is read twice. An observation's `about`, a link's
  * `target`, a handoff's task, a consultation's skill: each is an id BY CONTRACT and
- * none of them is validated — a dangling cross-tree reference is honest here — so in
+ * none of them is validated (a dangling cross-tree reference is honest here), so in
  * practice each holds whatever a caller sent, and each has gone through the door for
  * as long as the door has existed. A transition's subject is the opposite case in
  * the same shape: it is a caller's string too, but the operation refuses it unless
@@ -81,7 +81,7 @@
  * chain, a body is poisoned and the write must land with the marker and no
  * credential, an identifier must come back byte for byte.
  *
- * HOW TOTALITY IS OBTAINED — from the catalog's own declarations, never a list kept
+ * HOW TOTALITY IS OBTAINED: from the catalog's own declarations, never a list kept
  * in step by hand. {@link TextPath} reads the payload interfaces themselves, so the
  * keys of each table below are exactly the text-valued leaves the catalog declares,
  * nested ones included (a transition's `fields.reason` is a key here, at that
@@ -93,7 +93,7 @@
  * WHAT IT DOES NOT REACH, said out loud so a pass is not read as more than it is:
  * a payload field that is neither text nor an object of text (a number, a boolean)
  * is not classified, because there is nothing for a door to do to it. A list of
- * OBJECTS would not be addressed by a dotted path either — no payload has one, and
+ * OBJECTS would not be addressed by a dotted path either: no payload has one, and
  * the day one is declared this file stops compiling rather than skipping it in
  * silence, which is the failure mode worth having.
  *
@@ -123,7 +123,7 @@ export type FieldNature = 'name' | 'body' | 'identifier';
 
 /**
  * The two natures the door acts on. An identifier never reaches it, so a key the door
- * is handed is one of these — which is what makes {@link ScreenedKey} a closed union
+ * is handed is one of these, which is what makes {@link ScreenedKey} a closed union
  * rather than a string.
  */
 type ScreenedNature = Exclude<FieldNature, 'identifier'>;
@@ -132,7 +132,7 @@ type ScreenedNature = Exclude<FieldNature, 'identifier'>;
 type TextLeaf = string | readonly string[];
 
 /**
- * The dotted paths of every text-valued leaf a shape declares — the enumeration
+ * The dotted paths of every text-valued leaf a shape declares: the enumeration
  * the tables below are keyed by.
  *
  * It reads the TYPE, which is the catalog's source of truth, so it cannot fall out
@@ -140,7 +140,7 @@ type TextLeaf = string | readonly string[];
  * (both are what `screenContent` takes); an object is descended into and its
  * leaves come back prefixed (`fields.reason`); anything else contributes nothing.
  * Optionality is stripped first, so an optional field is enumerated exactly like a
- * required one — the door's obligation does not depend on whether the caller had to
+ * required one: the door's obligation does not depend on whether the caller had to
  * supply the value.
  */
 type TextPath<T> = {
@@ -161,7 +161,7 @@ type PayloadOf<K extends EventKind> = Extract<CatalogEvent, { readonly kind: K }
  * The guard on the left is what keeps `skill.consulted` honest: its payload is
  * `Record<string, never>`, whose `keyof` is `string` rather than a union of
  * literals, and a mapped type over it would collapse into an index signature that
- * accepts anything. Read as "declares no named field", it yields no keys — so the
+ * accepts anything. Read as "declares no named field", it yields no keys, so the
  * table entry must be empty, and the day that kind grows a real field the union
  * becomes literal and the field is required here like every other.
  */
@@ -170,7 +170,7 @@ type PayloadPath<K extends EventKind> = string extends keyof PayloadOf<K>
   : TextPath<PayloadOf<K>>;
 
 /**
- * The envelope's text fields, classified once — the envelope is the same on every
+ * The envelope's text fields, classified once: the envelope is the same on every
  * kind, which is the whole reason it is an envelope.
  *
  * `subject` is the exception and is excluded here rather than fudged: it is the one
@@ -180,7 +180,7 @@ type PayloadPath<K extends EventKind> = string extends keyof PayloadOf<K>
  * `which` is the caller's and has been screened since the day it was found unscreened.
  * `run` is the caller's for exactly the same reasons and is the one this classification FOUND: it
  * is a caller's string, this package proves nothing about it, it has no size ceiling
- * of its own, and — like `which` — it is stamped on EVERY event of a session, so one
+ * of its own, and, like `which`, it is stamped on EVERY event of a session, so one
  * bad value is as many disclosures as the session has facts. The surfaces do prove it
  * (the CLI resolves `MNEMA_RUN` against the record before any write, the MCP server
  * fills it from the session it opened itself), which is precisely the argument this
@@ -189,13 +189,13 @@ type PayloadPath<K extends EventKind> = string extends keyof PayloadOf<K>
  *
  * The other five are derived and must survive verbatim: `kind` comes from the
  * builder, `at` from the clock, `who` from the writing key, `signerFp` from that same
- * key, and `after` from the entry hashes the writer read off the other tails. `v` is a number and is no field of this table — there is nothing textual to
+ * key, and `after` from the entry hashes the writer read off the other tails. `v` is a number and is no field of this table: there is nothing textual to
  * screen.
  */
 /**
  * BOTH CALLER-SUPPLIED FIELDS HERE ARE NAMES, and neither is a close call. `which` is
- * WHO — every reading that asks what an agent did keys on it, and an agent recorded
- * as `<SECRET:slack-token>` did the work of nobody. `run` is WHERE — it is the
+ * WHO: every reading that asks what an agent did keys on it, and an agent recorded
+ * as `<SECRET:slack-token>` did the work of nobody. `run` is WHERE: it is the
  * session a fact is pinned to, so a replaced one pins every fact of that session to a
  * run no reader can find. Both are stamped on EVERY event of a session, so getting
  * this wrong is not one corrupt name but as many as the session has facts.
@@ -213,7 +213,7 @@ export const ENVELOPE_TEXT = {
 };
 
 /**
- * What the SUBJECT of each kind is — the one envelope field the kind decides.
+ * What the SUBJECT of each kind is: the one envelope field the kind decides.
  *
  * Three shapes, and the difference between them is where the stored value came
  * from, never what it is named:
@@ -232,20 +232,20 @@ export const ENVELOPE_TEXT = {
  * EVERY SUBJECT THAT REACHES THE DOOR IS A NAME, and that is a property of what a
  * subject IS rather than a coincidence of these six kinds: the subject is the thing
  * the fact is ABOUT, so every reading of it is a lookup by exact string. A replaced
- * subject does not make the fact vaguer — it makes the fact be about something else,
+ * subject does not make the fact vaguer: it makes the fact be about something else,
  * or about nothing. That is why the door can be handed the key `subject` and answer
  * without being told the kind: no subject is a body, and the ones that are
  * identifiers never reach the door at all.
  *
  * The last of those four is the one that reads wrong at first, and it is this file's own
  * rule applied honestly rather than an oversight. A channel name looks like a closed
- * vocabulary — there are two of them, and the verb refuses a third — but the vocabulary
+ * vocabulary (there are two of them, and the verb refuses a third), but the vocabulary
  * lives in the SURFACE that pushes those channels, three packages downstream, and nothing
  * this package can reach knows the names. So what is stored is whatever a caller sent,
  * and calling it an identifier because a command-line verb happens to check it is exactly
  * the reasoning this file rejects for `run` below: an invariant enforced only where
  * somebody remembered it is a habit, not a property. Screening it is also safe in the
- * direction that matters — the reading is a lookup by exact name, so a scrubbed channel
+ * direction that matters: the reading is a lookup by exact name, so a scrubbed channel
  * matches nothing and the switch simply does not apply, which is the failure that leaves
  * the product SPEAKING rather than the one that silences it.
  */
@@ -296,7 +296,7 @@ export const SUBJECT_TEXT = {
   // DERIVED: the anchor of the key that signs it — an identity declares only its own keys.
   'backup.declared': 'identifier',
   // PROVED here against the stack-name form (lower-case ASCII letters, digits and single
-  // hyphens, at most 64), a closed form that holds no path separator — the same form a stack's
+  // hyphens, at most 64), a closed form that holds no path separator: the same form a stack's
   // own name and a skill's are held to. A removal's is also proved against the record: only a
   // stack this tree holds as adopted is removed.
   'stack.adopted': 'identifier',
@@ -308,7 +308,7 @@ export const SUBJECT_TEXT = {
 } as const satisfies { readonly [K in EventKind]: FieldNature };
 
 /**
- * Every text leaf of every payload the catalog declares, classified — the table the
+ * Every text leaf of every payload the catalog declares, classified: the table the
  * guard next door derives its poisoning from.
  *
  * The identifiers here are worth reading as a group, because they are the reason the
@@ -366,7 +366,7 @@ export const PAYLOAD_TEXT = {
   'handoff.recorded': { fromAgent: 'name', toAgent: 'name' },
   // Both are names, and `rel` is the one that reads wrong until the reader is checked.
   // It is an OPEN label rather than a closed vocabulary, which is why it is the
-  // caller's — but `knowledge-store.ts` answers `SELECT * FROM links WHERE rel = ?`,
+  // caller's, but `knowledge-store.ts` answers `SELECT * FROM links WHERE rel = ?`,
   // so it is addressed by exact string like any id. A replaced `rel` is an edge whose
   // relation nothing can ever ask for again.
   'knowledge.linked': { target: 'name', rel: 'name' },
@@ -383,7 +383,7 @@ export const PAYLOAD_TEXT = {
   },
   // No payload field at all: a consultation is entirely envelope. The empty table
   // is the classification of a kind that declares nothing to classify, and it is
-  // not vacuous cover — the kind's SUBJECT is a name, and that is where its one
+  // not vacuous cover: the kind's SUBJECT is a name, and that is where its one
   // caller-supplied string is answered for.
   'skill.consulted': {},
   // The `tail` is a caller's string and it is still an IDENTIFIER, by the rule this
@@ -412,11 +412,11 @@ export const PAYLOAD_TEXT = {
   // caller's exactly as a link's target is.
   //
   // AND `path` IS A BODY, which is the one field of this table where the second rule was
-  // a real call rather than a reading. It looks like an address, and it is one — but
+  // a real call rather than a reading. It looks like an address, and it is one, but
   // nothing in this record is ADDRESSED by it: no projection keys on it, no reader looks a
   // charge up by the file it happened in (swept for, and the count is zero). It is the
   // circumstance a rule was charged in, not the identity of the thing charged, and the
-  // fact — this rule was in force where this edit was about to happen — survives its
+  // fact (this rule was in force where this edit was about to happen) survives its
   // redaction. Refusing it would make an automatic hook fail over a file NAME, which
   // trades a fact the record wants for nothing it protects.
   'channel.asked': { rule: 'identifier', path: 'body' },
@@ -456,8 +456,8 @@ export const PAYLOAD_TEXT = {
   'account.linked': { service: 'identifier', account: 'name' },
   // A fingerprint computed from the backup's own key, never typed by a caller.
   'backup.declared': { backupFp: 'identifier' },
-  // Three of the four are closed forms the write door proves before anything is appended — the
-  // stack-name form, 64 lower-case hex characters, one of the three scopes — so none of them is
+  // Three of the four are closed forms the write door proves before anything is appended (the
+  // stack-name form, 64 lower-case hex characters, one of the three scopes), so none of them is
   // text a door could clean, and a credential or a path does not fit in any of them. `version`
   // is the stack author's label, the caller's string and a NAME (a reading shows `name@version`
   // and compares it by exact string): the door refuses a credential in it, and the operation
@@ -484,7 +484,7 @@ export const PAYLOAD_TEXT = {
 /**
  * The nature of one field of one kind, addressed the way an event is walked:
  * `payload.<path>` for anything under the payload, the bare name for an envelope
- * field. Undefined means the catalog grew a text field nobody classified — which is
+ * field. Undefined means the catalog grew a text field nobody classified, which is
  * the answer the guard turns into a failure rather than a default.
  *
  * ONE function, asked by both halves of the proof: the half that poisons a field
@@ -503,7 +503,7 @@ export function fieldNature(kind: EventKind, path: string): FieldNature | undefi
 
 /**
  * Every field of one kind that carries text a caller supplied, as the paths an event
- * is walked by — the payload's own leaves plus the subject when the kind's subject
+ * is walked by: the payload's own leaves plus the subject when the kind's subject
  * is a caller's reference. Names and bodies alike: what this answers is which fields
  * the door OWES a pass over, and {@link fieldNature} is what says what it owes each.
  *
@@ -528,7 +528,7 @@ export function screenedFieldsOf(kind: EventKind): readonly string[] {
 }
 
 /**
- * The last segment of a dotted path — the spelling a caller hands the door.
+ * The last segment of a dotted path: the spelling a caller hands the door.
  *
  * A transition's proof is passed in as `{ reason, note }` and classified at
  * `fields.reason`, so the door and the table meet at the leaf. It is one function for
@@ -538,7 +538,7 @@ export function screenedFieldsOf(kind: EventKind): readonly string[] {
 type LeafKey<P extends string> = P extends `${string}.${infer Rest}` ? LeafKey<Rest> : P;
 
 /**
- * The same cut, at runtime — the ADDRESS where this table and the door meet.
+ * The same cut, at runtime: the ADDRESS where this table and the door meet.
  *
  * Exported because the proof of their agreement has to ask it rather than re-implement
  * it: a test that cut `fields.reason` down to `reason` with its own expression would be
@@ -561,7 +561,7 @@ type ScreenedKeysOf<T> = {
 }[keyof T];
 
 /**
- * Every field key the door may be handed — the closed union the catalog's own
+ * Every field key the door may be handed: the closed union the catalog's own
  * declarations produce.
  *
  * THIS IS WHERE THE DOOR'S TOTALITY LIVES, and it lives in `src` on purpose: a type
@@ -572,7 +572,7 @@ type ScreenedKeysOf<T> = {
  * door a key no table declares does not compile.
  *
  * It is derived from the tables' VALUES, not just their keys, which is why they are
- * written `as const satisfies` — the `satisfies` keeps the totality obligation the
+ * written `as const satisfies`: the `satisfies` keeps the totality obligation the
  * mapped types state, and the `as const` keeps each field's answer in the type so
  * the identifiers can be filtered out of this union.
  */
@@ -586,7 +586,7 @@ export type ScreenedKey =
   | { [K in EventKind]: ScreenedKeysOf<(typeof PAYLOAD_TEXT)[K]> }[EventKind];
 
 /**
- * What the door owes each key it can be handed — the by-KEY reading of the by-KIND
+ * What the door owes each key it can be handed: the by-KEY reading of the by-KIND
  * tables above.
  *
  * DERIVED, NEVER DECLARED, and that is the whole of the anti-divergence. The door is
@@ -595,12 +595,12 @@ export type ScreenedKey =
  * second place where fields are enumerated, which is exactly the shape that produced
  * the defect this file was written for. So the bridge is a fold over the tables,
  * computed once at load, and a key two kinds classify DIFFERENTLY is not resolved by
- * precedence — it THROWS, here, before anything can be written under the wrong answer.
+ * precedence: it THROWS, here, before anything can be written under the wrong answer.
  * A conflict is unrepresentable in the shipped product rather than merely untested.
  *
  * Identifiers are folded out rather than recorded, for the reason `ScreenedKey` drops
  * them: they never reach the door. That is also what keeps `subject` free of a
- * conflict it would otherwise always have — it is an identifier on fourteen kinds and
+ * conflict it would otherwise always have: it is an identifier on fourteen kinds and
  * a name on six, and only the six are a question for the door.
  */
 const NATURE_BY_KEY: ReadonlyMap<string, ScreenedNature> = ((): Map<string, ScreenedNature> => {
@@ -635,8 +635,8 @@ const NATURE_BY_KEY: ReadonlyMap<string, ScreenedNature> = ((): Map<string, Scre
  *
  * The door's one question, and the only reading of {@link NATURE_BY_KEY} there is.
  *
- * A key the map does not hold cannot arrive from anywhere that compiles — that is what
- * {@link ScreenedKey} is for — and is answered `true` rather than `false` if it ever
+ * A key the map does not hold cannot arrive from anywhere that compiles (that is what
+ * {@link ScreenedKey} is for) and is answered `true` rather than `false` if it ever
  * does. The fallback is the side that refuses: an unclassified field of unknown nature
  * is one nobody has decided about, and declining to write it is recoverable where
  * writing a corrupted name into an append-only log is not.

@@ -1,25 +1,25 @@
 /**
  * Identity operations: founding an anchor and moving keys in and out of it.
  *
- * These are the low-level mechanism behind mnema's identity — one anchor with N
+ * These are the low-level mechanism behind mnema's identity: one anchor with N
  * keys enrolled by signature. They emit the enrollment facts (`identity.founded`
  * / `key.enrolled` / `key.revoked`) that the chain verifier folds to decide WHO
- * a signer speaks for. The material a `key.enrolled` needs — the joining
- * machine's public key and its reverse signature — is produced elsewhere (the
+ * a signer speaks for. The material a `key.enrolled` needs, the joining
+ * machine's public key and its reverse signature, is produced elsewhere (the
  * handshake) and supplied here, so the mechanism is testable and complete on its
  * own.
  *
  * Founding is what makes the single identity rule hold for a fresh installation:
  * an event is authentic only if its signer is a key valid for its anchor, so a
  * machine's first fact must be its founding. `ensureFounded` seeds that once,
- * before the first gated write, so a caller never has to remember to — and it
+ * before the first gated write, so a caller never has to remember to, and it
  * founds only when the record proves no membership, because a key another machine
  * already enrolled must ADOPT that identity instead of minting a second one.
  *
  * On top of that mechanism sits one policy, `establishIdentity`: a tree that is
  * deliberately created is born knowing the identity's WHOLE key roster, not just
  * the key at hand. That is where "at least two keys, from the founding" is
- * enforced — the only protection mnema offers against a lost key, since it
+ * enforced: the only protection mnema offers against a lost key, since it
  * refuses central recovery by design.
  */
 
@@ -67,7 +67,7 @@ import { rosterAsTheChainIs } from './read-the-record.js';
 /**
  * What deciding an anchor reads: the key that would sign, and the tree it would sign in.
  *
- * A {@link WriteContext} is one — its writer is the key that WILL sign. So is a context whose
+ * A {@link WriteContext} is one: its writer is the key that WILL sign. So is a context whose
  * `writer` is the {@link ChainSigner} read without opening anything (`signerFor`), which is how a
  * question about who is writing, or a refusal decided before any write, gets the same answer the
  * write would get without opening a writer to ask.
@@ -90,15 +90,15 @@ export interface IdentityOk extends ScreenedWrite {
  * Settles which anchor this installation serves in a tree, WITHOUT writing
  * anything.
  *
- * With an anchor already recorded locally there is nothing to settle — that file
+ * With an anchor already recorded locally there is nothing to settle: that file
  * is the decision, and it is written only once the fact that settles it is on the
  * record. With none, the RECORD is asked first: a key another machine already
- * enrolled belongs to that machine's identity, and the tree carries the proof —
+ * enrolled belongs to that machine's identity, and the tree carries the proof,
  * as it does for a founding this key made itself, in a fresh clone or by a process
  * that died before recording its anchor (`adoption.test.ts`, *adopts a founding it
  * made itself*; `the-anchor-follows-the-founding.test.ts`, *dies after its founding
  * landed and before its anchor*). Only when the record proves nothing does the key
- * fall back to the anchor it derives from itself — the anchor it will found.
+ * fall back to the anchor it derives from itself: the anchor it will found.
  *
  * THIS SAID "that file is the decision, made once", and it was made one step too
  * early: {@link ensureFounded} wrote it BEFORE appending the founding it stood for,
@@ -122,14 +122,14 @@ export interface IdentityOk extends ScreenedWrite {
  * A RECORDED anchor is not asked that here, and is never decided again from the
  * record: that file is what makes the checkout that founded an identity the door out
  * of it, and re-deciding it mid-way out would find the key in two identities and shut
- * the door. Whether it still stands — whether its roster counts the key — is asked by
+ * the door. Whether it still stands, whether its roster counts the key, is asked by
  * the write, before it appends ({@link ensureFounded}), which refuses and says what
  * re-points the checkout; this, which reads, answers as the file says.
  */
 export function decideAnchor(ctx: AnchorContext): AnchorDecision {
   if (ctx.writer.hasAnchor) return { anchor: ctx.writer.anchor, source: 'recorded' };
 
-  // The key's own public half as the TREE carries it — materialized when a writer
+  // The key's own public half as the TREE carries it: materialized when a writer
   // for this key opened here, or by the member that enrolled it. Reading it from the
   // record rather than the key root keeps the decision to material an anonymous clone
   // could check, and binds the consent signature to the key it names. A tree that
@@ -146,8 +146,8 @@ export function decideAnchor(ctx: AnchorContext): AnchorDecision {
     if (proven.ok) {
       return { anchor: proven.anchor, source: 'adopted', membership: proven.membership };
     }
-    // NOT_A_MEMBER is the ordinary shape of a first write — a fresh installation,
-    // a new project — so it falls through to founding. The other two are
+    // NOT_A_MEMBER is the ordinary shape of a first write (a fresh installation,
+    // a new project), so it falls through to founding. The other two are
     // unanswerable, and an unanswerable identity does not write.
     if (proven.code !== 'NOT_A_MEMBER') {
       throw new IdentityUnavailableError(proven.code, proven.message);
@@ -161,11 +161,11 @@ export function decideAnchor(ctx: AnchorContext): AnchorDecision {
  * must carry, decided without writing anything.
  *
  * Every write operation reads this before it builds its event, and
- * {@link ensureFounded} settles the same question on the way to appending it —
+ * {@link ensureFounded} settles the same question on the way to appending it,
  * so both go through {@link decideAnchor} and cannot disagree. They once could:
  * reading the writer's anchor directly was harmless while the only answer was
  * "the anchor this key derives", because that is what founding recorded anyway.
- * With adoption it stopped being harmless — a key another machine had enrolled
+ * With adoption it stopped being harmless: a key another machine had enrolled
  * would build its FIRST event under its own derived anchor and then record the
  * adopted one, leaving exactly one event speaking for an identity that never
  * existed. One function, both moments.
@@ -178,7 +178,7 @@ export function decideAnchor(ctx: AnchorContext): AnchorDecision {
  * not, alone, who this machine writes as: in a checkout the key has left it answers the
  * identity the next write is refused as. `mnema init` said who this machine writes as in a
  * project that already exists from this alone, and printed that identity with exit 0 while
- * the write after it was refused — measured on the binary. The question is
+ * the write after it was refused: measured on the binary. The question is
  * {@link recordedAnchorOf}'s, and a caller that says who writes here asks it too.
  */
 export function authorizingAnchor(ctx: AnchorContext): string {
@@ -196,22 +196,22 @@ export type AnchorDecision =
 
 /**
  * The identity a checkout RECORDED in a tree, and whether that identity's roster in the record
- * still counts the key — the question every write asks before it appends ({@link ensureFounded}).
+ * still counts the key: the question every write asks before it appends ({@link ensureFounded}).
  *
  * `undefined` where no anchor is recorded yet: there is nothing to ask, and the write decides the
  * anchor on its way in, from the record ({@link decideAnchor}). Where one is recorded and the
- * roster no longer counts the key, `refusal` is what that write is refused with — never a second
+ * roster no longer counts the key, `refusal` is what that write is refused with, never a second
  * decision of the anchor ({@link staleAnchorRefusal} says why that would shut the door out).
  *
  * ONE FUNCTION FOR THE TWO PLACES THAT NEED THE ANSWER. The write refuses by it, and `mnema init`
- * in a project that already exists says by it who this machine writes as here — or, where the
+ * in a project that already exists says by it who this machine writes as here, or, where the
  * key has left the identity this checkout recorded, that a write is refused, in the refusal's own
  * words. It used to answer from {@link authorizingAnchor} alone, which does not ask the roster:
  * measured on the binary, it printed the recorded identity with exit 0 in a checkout whose next
  * write was refused `STALE_ANCHOR` (`code/tests/the-init-says-a-write-is-refused.test.ts`).
  *
- * It reads and writes nothing else: the recorded anchor, a roster — the one the caller hands
- * (`WriteContext.roster`), or the kept projection brought up to what arrived — and, on a refusal only, the replays the
+ * It reads and writes nothing else: the recorded anchor, a roster (the one the caller hands
+ * (`WriteContext.roster`), or the kept projection brought up to what arrived) and, on a refusal only, the replays the
  * refusal's words take.
  */
 export function recordedAnchorOf(
@@ -242,19 +242,19 @@ export type RecordedAnchor =
  * fact: appends the `identity.founded` when the anchor is its OWN to found, and
  * records which anchor it serves once the fact that settles it is on the record.
  * Once an anchor is recorded it appends nothing, and it REFUSES a recorded anchor
- * whose roster in this record no longer counts the key — so it is called before
+ * whose roster in this record no longer counts the key, so it is called before
  * every write, and it is the one place a write asks. The question itself is
  * {@link recordedAnchorOf}, which `mnema init` asks too, to say who writes here.
  *
  * THIS SAID "A no-op once an anchor is recorded", and the premise under it was that
- * a recorded anchor stays true. It does not: a key LEAVES an identity — the way out
+ * a recorded anchor stays true. It does not: a key LEAVES an identity (the way out
  * of a key two identities hold ends with this checkout's own `mnema key revoke`, and
- * another member can retire the key from its own checkout — and the checkout that
+ * another member can retire the key from its own checkout) and the checkout that
  * recorded the identity went on signing as it, with a key the record no longer
  * counted there. Every such write exited 0 and left `verify` failing on the whole
  * record for good (*"event signer <K> is not a key enrolled for <I>"*), measured on
  * the binary in both shapes, and in the second with no warning anywhere. The recorded
- * anchor is asked now — never decided again: the refusal names the command that
+ * anchor is asked now, never decided again: the refusal names the command that
  * points the checkout elsewhere ({@link staleAnchorRefusal}), because re-deciding it
  * here would shut the door the way out runs through
  * (`a-stale-anchor-writes-nothing.test.ts`, every write of the surface;
@@ -267,15 +267,15 @@ export type RecordedAnchor =
  * failed left an anchor claiming it, the next write took the no-op, signed as an
  * identity the record never admitted, and `verify` failed on that tree from then on
  * (`[T2/T4] … is not a key enrolled for … at this point`), the event appended for
- * good. Measured on the built binary with ordinary triggers — the tail's lock held
+ * good. Measured on the built binary with ordinary triggers: the tail's lock held
  * by another session writing the same project, a lock directory that is a link to
  * nothing, a tail that cannot be born (its birth lives inside this very append), and
  * a process killed inside it. The anchor is recorded AFTER the founding now, and a
  * first write that fails leaves nothing that says it founded: the next write founds
  * (`the-anchor-follows-the-founding.test.ts`, a case per trigger).
  *
- * The window left is the other side of the same two writes — a process that dies
- * after its founding landed and before its anchor — and it is harmless by
+ * The window left is the other side of the same two writes, a process that dies
+ * after its founding landed and before its anchor, and it is harmless by
  * construction: the next write finds no anchor, asks the record, and ADOPTS the
  * founding it finds there, so nothing is founded twice (*dies after its founding
  * landed and before its anchor*, in the same file).
@@ -288,23 +288,23 @@ export type RecordedAnchor =
  * needs the decision taken under the tail's lock, which the writer does not offer." The
  * writer offers it now (`ChainWriter.exclusively`), and the path that founds takes it:
  * the anchor is asked again under the lock, decided there, founded and recorded there,
- * so the second process finds the first one's anchor, or — if the first died between its
- * founding and its anchor — the founding itself, and adopts it
+ * so the second process finds the first one's anchor, or, if the first died between its
+ * founding and its anchor, the founding itself, and adopts it
  * (`the-second-move-sees-the-first.test.ts`, *a second session that decided to found
  * finds the first one's founding under the lock*). The record still takes a second
- * founding as the copy it is — `verify` adds a key to a set that already holds it, and
+ * founding as the copy it is (`verify` adds a key to a set that already holds it, and
  * `identitiesFoundedBeside` counts the anchor once (`founded-beside.test.ts`, *counts an
- * anchor founded twice once*) — which is what a record written before this keeps.
+ * anchor founded twice once*)), which is what a record written before this keeps.
  *
  * Two paths reach a recorded anchor, and only one of them founds. A key the
- * record already proves a member ADOPTS that identity — it must not found,
+ * record already proves a member ADOPTS that identity: it must not found,
  * because an anchor can only be founded by the key it derives from, and appending
  * a founding for its own anchor is exactly the second identity this avoids. A key
  * the record knows nothing about founds its own, as a first installation does.
  *
  * WHAT EACH WRITE READS. Deciding an anchor reads the record only on the path where
  * none is recorded yet, once per tree. THIS SAID the record was read on that path
- * ONLY, "and from then on the recorded anchor answers" — which is the premise the
+ * ONLY, "and from then on the recorded anchor answers", which is the premise the
  * trap above lived in. Every write reads the recorded anchor's ROSTER now, and that
  * is the cost this adds to the hot path: a replay of the tree where the caller holds
  * nothing (a command line, ~5.6 µs per event), or, where a session already holds the
@@ -390,9 +390,9 @@ function foundUnderTheLock(ctx: WriteContext): string {
  * already founded (or enrolled), it appends nothing and reports the anchor it
  * already serves.
  *
- * NOT on the writing surface. No surface ever founded on its own — `init`
+ * NOT on the writing surface. No surface ever founded on its own (`init`
  * establishes an identity whole, and every other write founds on its way in
- * through {@link ensureFounded} — so the wrapper is reached only by the
+ * through {@link ensureFounded}), so the wrapper is reached only by the
  * enrollment integration test, which uses it as the "machine A exists" step.
  */
 export function foundIdentity(ctx: WriteContext): IdentityOk {
@@ -412,7 +412,7 @@ export interface EstablishedIdentity {
   readonly anchor: string;
   /**
    * The identity's cold backup key, or null when one could not be established
-   * because a registration at the key root cannot be read — a state reported,
+   * because a registration at the key root cannot be read: a state reported,
    * never repaired behind the person (the fault appears in {@link declined}).
    */
   readonly backup: BackupKey | null;
@@ -428,7 +428,7 @@ export interface EstablishedIdentity {
  * registered at the key root into this tree.
  *
  * This is the policy behind "at least two keys, from the founding". Founding
- * alone would leave a tree knowing exactly one key — and if that key is lost,
+ * alone would leave a tree knowing exactly one key, and if that key is lost,
  * nothing can ever speak for the identity again, because mnema has no central
  * recovery (an entity able to restore an identity is an entity able to forge
  * one). So a tree is born knowing the backup too.
@@ -436,20 +436,20 @@ export interface EstablishedIdentity {
  * It runs per TREE because enrollment is a per-tree fact while the identity is
  * per-machine: two projects share one anchor and one key, but each carries its
  * own `identity.founded`. A backup enrolled in one project would be a stranger
- * in the next project created — silently, until the day it was needed. Replaying
+ * in the next project created: silently, until the day it was needed. Replaying
  * the registration into each tree is what closes that: the signature covers
  * fixed values, so it proves consent in every tree, forever.
  *
  * What this covers, stated plainly: the trees created DELIBERATELY, which today
  * means a project's public tree. The private and global trees are founded on the
  * way to a write (`ensureFounded`), which sees no key root, so they are born
- * knowing one key — and a key lost is a key lost for them. That is a smaller hole
+ * knowing one key, and a key lost is a key lost for them. That is a smaller hole
  * than it reads: both are local and uncommitted, so the disk that takes the key
  * takes them too, and no backup would have helped. What the backup does cover is
- * the case where the KEY is gone and the disk is not — and there the committed
+ * the case where the KEY is gone and the disk is not, and there the committed
  * tree, which survives in git, is exactly where the proof of membership is found.
  *
- * A key the tree has ALREADY decided about is skipped — enrolled, founded, or
+ * A key the tree has ALREADY decided about is skipped: enrolled, founded, or
  * REVOKED. Skipping the revoked ones is the point of reading the chain rather
  * than the key root's files: a key retired from this identity must not be
  * resurrected by a later `init` just because its registration is still on disk.
@@ -517,14 +517,14 @@ export function establishIdentity(
  * produces it); this only signs the vouch and appends the fact. Founds first, so
  * the local key is a member able to vouch.
  *
- * The enrollment is checkpointed immediately — for a different reason than a
+ * The enrollment is checkpointed immediately: for a different reason than a
  * revocation is. An ADDITION takes effect even while residual (the verifier gates
  * only the mutations that can alter signed history), so the checkpoint is not
  * what makes the membership valid; it is what keeps the chain fully signed.
  * A legitimate membership change proves itself at once instead of resting on the
  * hash chain alone, so `fullySigned` keeps discriminating: an unsigned residual
  * means unproven work, never "the owner just enrolled a key". It also covers the
- * one addition the verifier DOES gate — an enrollment that restores a key revoked
+ * one addition the verifier DOES gate: an enrollment that restores a key revoked
  * under coverage takes effect only when itself covered.
  */
 export function enrollKey(
@@ -538,7 +538,7 @@ export function enrollKey(
     // (a fingerprint computed from the joining key, a signature `decodeKeyRequest`
     // already rejected as absent). This is an EXPORT of the writing surface, so a
     // caller outside the two surfaces can hand it a value the real callers never
-    // produce, and it owes that caller a refusal it can read rather than a throw —
+    // produce, and it owes that caller a refusal it can read rather than a throw:
     // asked before the founding, so the refusal founds nothing (see `appendFact`).
     const appended = appendFact(ctx, ({ at, anchor }) => enrollment(ctx, at, anchor, input));
     if (!appended.ok) return appended;
@@ -626,11 +626,11 @@ export function declareBackup(
  * to remove a key only once it is signature-covered (a residual revoke is
  * forgeable and is ignored), so a revocation that stayed in the residual window
  * would have no effect. Signing a checkpoint over it makes it effective at once,
- * with this machine's own key — the honest path.
+ * with this machine's own key: the honest path.
  *
  * The `reason` is the only free text any identity fact carries (a founding and an
  * enrollment carry fingerprints and a signature, nothing a person typed), so it
- * goes through the same content door every other write does — screened before
+ * goes through the same content door every other write does: screened before
  * anything is founded, so an oversize reason costs nothing.
  */
 export function revokeKey(
@@ -655,15 +655,15 @@ export function revokeKey(
 
 /**
  * Enrolls a key as an AGENT of this installation's anchor, under `name`: the local key (a member)
- * vouches, and `reverseSig` — the agent key's signature over
- * `agent-enroll:<anchor>:<agentFp>:<name>` — proves the key consents to that name in that identity.
+ * vouches, and `reverseSig` (the agent key's signature over
+ * `agent-enroll:<anchor>:<agentFp>:<name>`) proves the key consents to that name in that identity.
  * The caller supplies the material, as for {@link enrollKey}; this signs the vouch, appends the
  * fact and checkpoints it, so the role is proven at once.
  *
  * The name goes through the content door as a NAME: every fact the key signs carries it as its
  * `which`, compared byte for byte, so a credential in it refuses the write rather than being
  * redacted into another agent's name. It is then held to the shape of a name this product enrols
- * ({@link agentNameRefusal}) — narrower than what a reader accepts, because the name is also the
+ * ({@link agentNameRefusal}): narrower than what a reader accepts, because the name is also the
  * folder the key lives in. What the reader holds the fact to is FORMAT.md section 6.2.
  */
 export function enrollAgent(
@@ -723,7 +723,7 @@ export interface AgentNameRefusal {
 /** The account was named: this identity now says it is that GitHub account. */
 export interface AccountLinkOk extends ScreenedWrite {
   readonly ok: true;
-  /** The identity that named it — the fact's subject and its `who`. */
+  /** The identity that named it: the fact's subject and its `who`. */
   readonly anchor: string;
   /** The account, as it was recorded. */
   readonly account: string;

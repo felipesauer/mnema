@@ -2,8 +2,8 @@
  * The write operations for skills: the only way the core records a skill, moves
  * one, or notes that one was read, and the seam every surface goes through.
  *
- * The LIFECYCLE writes mirror the TASK operations — read current state from the
- * chain (never the cache), run the gate, append only if authorized — and are the
+ * The LIFECYCLE writes mirror the TASK operations (read current state from the
+ * chain (never the cache), run the gate, append only if authorized) and are the
  * simplest of the three workflow entities: a skill is not relational, so there
  * is no supersede, no `by` existence check, and no frozen citation label. A
  * skill is born with a minted id and its `proposed` state; the four transitions
@@ -11,7 +11,7 @@
  * append a `skill.transitioned` only when the gate authorizes the move.
  *
  * {@link recordConsultation} is the one write here that is NOT a transition, and
- * so runs no gate. It records that a skill's body was served to someone — a
+ * so runs no gate. It records that a skill's body was served to someone: a
  * point-in-time fact about a skill, not a move of it. There is no prior state to
  * judge and nothing to authorize about a fact that will never move, which is
  * exactly the shape the knowledge facts have (`recordHandoff` is its twin: the
@@ -80,7 +80,7 @@ export interface SkillCreateOk extends ScreenedWrite {
   /** The new skill's id (the event subject). */
   readonly id: string;
   /**
-   * The name AS RECORDED — screened, so a surface that echoes it (a skill has no
+   * The name AS RECORDED: screened, so a surface that echoes it (a skill has no
    * alias, so the name is how a human is told which one landed) shows what the
    * chain holds rather than what was asked for.
    */
@@ -126,7 +126,7 @@ export interface SkillTransitionInput {
  * Creates a skill: mints its id, then appends the birth pair (`skill.created`
  * then the birth `skill.transitioned`, `from: null` → proposed) atomically. The
  * id is minted by the operation, never supplied (see {@link mintId}). Birth is
- * not a gated transition — there is no prior state to judge — but it still
+ * not a gated transition (there is no prior state to judge), but it still
  * requires a human `who` who is not the executing agent, the same authority
  * invariant the gate enforces.
  */
@@ -134,8 +134,8 @@ export function createSkill(
   ctx: SkillWriteContext,
   input: SkillCreateInput,
 ): SkillCreateOk | SkillWriteError {
-  // The body is the largest text any write here carries — a whole recipe or
-  // checklist — so it is both the field most likely to hold a worked example with
+  // The body is the largest text any write here carries, a whole recipe or
+  // checklist, so it is both the field most likely to hold a worked example with
   // real values in it and the one the size limit is really about.
   // The pinned run joins them: it is the envelope's second caller-supplied field
   // and nothing here proves it names a session, so it goes through the same door.
@@ -191,7 +191,7 @@ export interface ConsultationInput {
   readonly skill: string;
   /** The agent that read it, if any. `who` is derived from the writer's key. */
   readonly which?: string;
-  /** The run this belongs to, if any — what ties the consultation to a session. */
+  /** The run this belongs to, if any: what ties the consultation to a session. */
   readonly run?: string;
 }
 
@@ -199,15 +199,15 @@ export interface ConsultationInput {
  * Records that a skill was consulted: appends one `skill.consulted` fact whose
  * subject IS the skill. No id is minted (a consultation has no standalone
  * identity; it is an entry in the skill's history) and no gate runs (nothing
- * moved). The whole fact is the envelope — which skill, who authorized, which
- * agent read it, in what run, when — so there is no payload to build.
+ * moved). The whole fact is the envelope (which skill, who authorized, which
+ * agent read it, in what run, when), so there is no payload to build.
  *
  * The skill is NOT verified to exist, for the same two reasons the knowledge
  * facts forward their references unchecked. It is legitimately CROSS-TREE: a
  * private consultation may name a skill the team adopted in the public tree, and
  * this writer sees only its own tree, so a lookup here would refuse the common
- * case. And the caller that emits this has just READ the skill it names — the
- * body it served is the evidence the skill exists — so a re-projection of the
+ * case. And the caller that emits this has just READ the skill it names (the
+ * body it served is the evidence the skill exists), so a re-projection of the
  * chain would buy nothing but a full replay on a read path.
  *
  * What it does NOT record is whether the pattern was FOLLOWED. That is not
@@ -215,7 +215,7 @@ export interface ConsultationInput {
  * the record cannot back.
  *
  * It carries no body, but it does go through the content door, because the id it
- * names becomes the event's SUBJECT and is never validated — so it is a field
+ * names becomes the event's SUBJECT and is never validated, so it is a field
  * through which an unbounded value could reach the chain, and a fat event is what
  * the size limit exists to keep out. A subject is a NAME, so a credential in it
  * refuses the write rather than being replaced. The refusal is unreachable from any surface
@@ -230,7 +230,7 @@ export function recordConsultation(
 ): ConsultationOk | SelfAuthorizedErr | ScreenRefusal | AppendRefusal {
   // Both of its caller-supplied strings in one screen: the skill id that becomes
   // the SUBJECT, and the run that pins the fact to a session. Neither is proved
-  // here, so both are fields through which an unbounded — or dirty — value could
+  // here, so both are fields through which an unbounded, or dirty, value could
   // reach the chain.
   // The skill id is handed in as `subject`, which is what it becomes.
   const named = screenContent({ subject: input.skill, run: input.run });
@@ -350,7 +350,7 @@ function transition(
       const who = authorizingAnchor(ctx);
 
       // Resolved before the gate, and the RESOLVED value is both what the gate judges
-      // and what the envelope records — `which` is free text and goes through the same
+      // and what the envelope records: `which` is free text and goes through the same
       // door as the proof, so screening it and then recording something else would be
       // the very mismatch the resolution exists to prevent.
       const agent = resolveExecutingAgent(who, input.which);

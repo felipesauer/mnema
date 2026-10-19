@@ -1,12 +1,12 @@
 /**
- * The classification agrees with the machine — every row recomputed from the table of
+ * The classification agrees with the machine: every row recomputed from the table of
  * moves, never read back from the table under test.
  *
  * A disposition is a claim ABOUT the transition table ("this state has one exit and it
  * undoes the state"), so the only assertion worth making is the claim recomputed from
  * the rows. Comparing the table to a literal copy of itself would pin the letters and
- * prove nothing: the failure this file exists for is a state whose exits changed —
- * `unblock` given a `reason`, a second way out of `DONE` — while the classification kept
+ * prove nothing: the failure this file exists for is a state whose exits changed
+ * (`unblock` given a `reason`, a second way out of `DONE`), while the classification kept
  * saying what used to be true.
  *
  * THE DERIVATION IS THE FIVE DISCRIMINANTS, in order, and each one is a property of the
@@ -15,8 +15,8 @@
  * requires proof" would both be true of a single guarded move and they mean opposite
  * things.
  *
- * The vacuous form of the whole file is a bucket nobody lands in — a derivation that
- * classified everything as one thing would agree with a table that did too — so the
+ * The vacuous form of the whole file is a bucket nobody lands in (a derivation that
+ * classified everything as one thing would agree with a table that did too), so the
  * counts per bucket are asserted, and every one of the five is non-empty.
  */
 
@@ -25,12 +25,12 @@ import { TASK_DISPOSITION, type TaskDisposition } from './disposition.js';
 import { TASK_STATES, type TaskState } from './states.js';
 import { TRANSITIONS, type Transition } from './transitions.js';
 
-/** The rows that LEAVE a state — the whole of what a position's disposition is about. */
+/** The rows that LEAVE a state: the whole of what a position's disposition is about. */
 function exits(state: TaskState): readonly Transition[] {
   return TRANSITIONS.filter((row) => row.from === state);
 }
 
-/** The rows that REACH a state — how "the only way out undoes the position" is checked. */
+/** The rows that REACH a state: how "the only way out undoes the position" is checked. */
 function entries(state: TaskState): readonly Transition[] {
   return TRANSITIONS.filter((row) => row.to === state);
 }
@@ -67,7 +67,7 @@ describe('every state of the machine has a disposition', () => {
 
   it('agrees with the transition table, state by state', () => {
     // The rule. Recomputed from the rows, so the classification is a claim that can be
-    // false — and it is false the day a state's exits change and this table does not.
+    // false, and it is false the day a state's exits change and this table does not.
     const fromTheTable = Object.fromEntries(TASK_STATES.map((state) => [state, derived(state)]));
     expect(TASK_DISPOSITION).toEqual(fromTheTable);
   });
@@ -121,7 +121,7 @@ describe('and each discriminant is the property it claims to be', () => {
     }
   });
 
-  it('the settled one also has ONE exit that undoes it — and undoing COSTS', () => {
+  it('the settled one also has ONE exit that undoes it, and undoing COSTS', () => {
     // The pair the count of exits cannot tell apart, which is why the derivation asks
     // the price second. Both positions can only be undone; only one of them is free.
     for (const state of states('settled')) {
@@ -156,7 +156,7 @@ describe('and each discriminant is the property it claims to be', () => {
       const free = exits(state).filter((row) => row.requires.length === 0);
       expect(free.length, `${state} has no free exit`).toBeGreaterThan(0);
       // And more than one way out, which is what separates an advancing position from
-      // the stalled one — whose single free exit only undoes it.
+      // the stalled one, whose single free exit only undoes it.
       expect(exits(state).length, state).toBeGreaterThan(1);
     }
   });

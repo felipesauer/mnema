@@ -29,7 +29,7 @@ function adopt(id: string, n: number, which?: string): CatalogEvent {
   });
 }
 
-describe('projectSkills — the fold', () => {
+describe('projectSkills: the fold', () => {
   it('projects a created skill in its initial state', () => {
     const s = projectSkills(birth('sk-1'));
     expect(s.get('sk-1')).toEqual({
@@ -75,7 +75,7 @@ describe('projectSkills — the fold', () => {
     expect(projectSkills(events).has('sk-1')).toBe(false);
   });
 
-  it('is NOT relational — no supersededBy/supersedes field exists on the projection', () => {
+  it('is NOT relational: no supersededBy/supersedes field exists on the projection', () => {
     const s = projectSkills(birth('sk-1')).get('sk-1');
     expect(s).not.toHaveProperty('supersededBy');
     expect(s).not.toHaveProperty('supersedes');
@@ -130,7 +130,7 @@ describe('projectSkills — provenance: who proposed the pattern and who adopted
     expect(projectSkills(events).get('sk-1')).not.toHaveProperty('adoption');
   });
 
-  it('keeps the adoption after the pattern is deprecated — it WAS live, and by whom', () => {
+  it('keeps the adoption after the pattern is deprecated: it WAS live, and by whom', () => {
     const events = [
       ...birth('sk-1', 0, 'agent-A'),
       adopt('sk-1', 2, 'agent-A'),
@@ -147,7 +147,7 @@ describe('projectSkills — provenance: who proposed the pattern and who adopted
   });
 });
 
-describe('projectSkills — state is the literal `to`, never re-derived from a workflow', () => {
+describe('projectSkills: state is the literal `to`, never re-derived from a workflow', () => {
   it('replays a state this build has never seen', () => {
     // A future workflow might add a state the fold does not know; the projection
     // must still report the literal `to`, because state is read from the fact,

@@ -5,13 +5,13 @@
  * open THAT tree's chain"; the policy is the cascade that decides the scope
  * when the caller does not state one:
  *
- *   1. DEFAULT by KIND — what the fact IS decides who it is for. A declaration
+ *   1. DEFAULT by KIND: what the fact IS decides who it is for. A declaration
  *      about the project (a decision, a skill, a task, a handoff, a link between
  *      records) is the team's, so it defaults to PROJECT-PUBLIC and travels with
  *      the repository. Two kinds are the exception, and it is an OPEN QUESTION
  *      rather than an omission: see {@link BY_ORIGIN}.
- *   2. CONFIG by layer — a future surface setting; not here.
- *   3. OVERRIDE — an explicit scope wins over the default, always.
+ *   2. CONFIG by layer: a future surface setting; not here.
+ *   3. OVERRIDE: an explicit scope wins over the default, always.
  *
  * Precedence is EXPLICIT (override > default), never arbitrary: a capture never
  * leaks to the team without intent, and sharing (moving private → public) is
@@ -27,8 +27,8 @@
  * transitions, an observation and the links between them in the private tree, and a
  * public tree holding a founding and nothing else.
  *
- * The argument that had put an agent's writes private — "an agent appending to the
- * team's git unasked is presumptuous" — is answered elsewhere, and better: a
+ * The argument that had put an agent's writes private ("an agent appending to the
+ * team's git unasked is presumptuous") is answered elsewhere, and better: a
  * decision is BORN `proposed` and a skill is born `proposed`, so the workflow
  * already makes a fresh declaration a proposal rather than a fact. Routing by
  * author made the private tree do that job a second time, and charged
@@ -76,7 +76,7 @@ export interface Origin {
    *
    * "Present" is decided by {@link canonicalIdentity}, the same rule the write
    * operations apply to the `which` they RECORD. A blank or uncanonicalizable value
-   * is no agent at all — so it cannot route a capture to the private tree while the
+   * is no agent at all, so it cannot route a capture to the private tree while the
    * event it produces carries no agent, which is the one way the scope and the
    * envelope could disagree about who acted. Surfaces forward what the caller typed
    * (a `--which ""`, a client announcing an empty name) without pre-cleaning it, so
@@ -86,7 +86,7 @@ export interface Origin {
 }
 
 /**
- * The event kinds whose TREE the kind itself decides — every write that mints a
+ * The event kinds whose TREE the kind itself decides: every write that mints a
  * fact of its own.
  *
  * The other kinds of the catalog are routed by something else, and
@@ -110,7 +110,7 @@ export type RoutedKind =
   | 'channel.refused';
 
 /**
- * The two kinds whose tree the kind does NOT decide — a marker, not a scope.
+ * The two kinds whose tree the kind does NOT decide: a marker, not a scope.
  *
  * `memory.captured` and `observation.recorded` are where the criterion runs out: the
  * kind does not determine the audience, because the same kind holds both "the staging
@@ -119,7 +119,7 @@ export type RoutedKind =
  * something this product does.
  *
  * So they keep the ORIGIN rule until that question is settled: an agent's capture goes
- * private, a person's goes public. That rule is known to be wrong in a specific way —
+ * private, a person's goes public. That rule is known to be wrong in a specific way:
  * on the MCP surface a `which` is ALWAYS present, so it answers "an agent" even when
  * the person asked for the capture, which is exactly how the dogfood's ADR-1 ended up
  * private. Keeping a known-imperfect answer here is deliberate: the alternative under
@@ -129,7 +129,7 @@ export type RoutedKind =
 const BY_ORIGIN = Symbol('scope-by-origin');
 
 /**
- * The tree each routed kind defaults to — THE table, in one place, so eight call
+ * The tree each routed kind defaults to: THE table, in one place, so eight call
  * sites cannot come to disagree about where a decision belongs.
  *
  * PUBLIC is a declaration about the project: a decision and a skill state how the
@@ -146,14 +146,14 @@ const BY_ORIGIN = Symbol('scope-by-origin');
  * noise, and the default that answers that reading is the one this very table was
  * corrected for: a declaration routed away from the team is a declaration the team
  * never sees. The tie behind the kind says switching off is legitimate and switching
- * off in SILENCE is not — and a switch filed where only the machine that made it can
+ * off in SILENCE is not, and a switch filed where only the machine that made it can
  * read it is silent to everyone else, which would leave the tie holding for a single
  * reader. So the ordinary switch travels, says who made it, and is in the document the
  * next session opens with. `--scope private` is still there for a switch that means
  * this machine only, and it costs exactly what an override costs everywhere else: it
  * is deliberate, and it is a fact the committed record does not carry.
  *
- * The two knowledge kinds carry {@link BY_ORIGIN} instead of a tree — the exception
+ * The two knowledge kinds carry {@link BY_ORIGIN} instead of a tree: the exception
  * is IN the table rather than beside it, so the reader of the table sees the whole
  * rule and a kind cannot be silently absent from it.
  */
@@ -169,9 +169,9 @@ const TREE_BY_KIND: { readonly [K in RoutedKind]: Scope | typeof BY_ORIGIN } = {
   'channel.switched': 'public',
   // Both facts a channel produces travel, for the reason the consultation's entry gives:
   // the evidence is worth nothing on one machine. "This channel was live at an edit of that
-  // run" (the only service counted — the opening texts are reads and leave no fact) and
+  // run" (the only service counted (the opening texts are reads and leave no fact) and
   // "this rule stopped a write here" are read by a teammate asking why a rule did not
-  // arrive, or auditing what the record charged for — and filed where only the machine
+  // arrive, or auditing what the record charged for) and filed where only the machine
   // that produced them can read, neither question has an answer. `--scope private` is
   // still there for somebody who wants the fact on one machine only.
   'channel.served': 'public',
@@ -182,13 +182,13 @@ const TREE_BY_KIND: { readonly [K in RoutedKind]: Scope | typeof BY_ORIGIN } = {
 };
 
 /**
- * Every OTHER kind the catalog holds, and what decides its tree instead — one
+ * Every OTHER kind the catalog holds, and what decides its tree instead: one
  * sentence each, because "this one does not ask the rule" is a claim that has to
  * be answerable.
  *
  * Exported for the totality proof next door: `routing.test.ts` walks the catalog
  * against these two tables rather than against a list somebody keeps in step by
- * hand. It is deliberately NOT on the package's public surface — nothing outside
+ * hand. It is deliberately NOT on the package's public surface: nothing outside
  * asks why a kind is unrouted, and the type of this table is what forces a new
  * kind to be classified, so hiding it costs the proof nothing. That it stays off the
  * surface is checked rather than declared, by the same guard that keeps the two
@@ -226,7 +226,7 @@ export const UNROUTED_KINDS: { readonly [K in Exclude<EventKind, RoutedKind>]: s
 /**
  * Resolves the tree a write lands in: an explicit `override` wins; otherwise the
  * KIND decides (see {@link TREE_BY_KIND}), except for the two kinds it cannot, where
- * the ORIGIN still does (see {@link BY_ORIGIN}). There is no arbitrary tie — the
+ * the ORIGIN still does (see {@link BY_ORIGIN}). There is no arbitrary tie: the
  * inputs have a fixed precedence, and every kind has exactly one answer.
  *
  * ONE function, with the origin as a parameter rather than a second entry point. Two
@@ -268,7 +268,7 @@ export function chainRootForScope(trees: ResolvedTrees, scope: Scope): string | 
   }
 }
 
-/** Options for opening a tree, minus the key root — that comes from the trees. */
+/** Options for opening a tree, minus the key root: that comes from the trees. */
 export interface OpenTreeOptions {
   readonly maxSegmentBytes?: number;
   readonly maxUnsignedEvents?: number;
@@ -277,7 +277,7 @@ export interface OpenTreeOptions {
 /**
  * Opens the chain for a scope for writing, signing with the person's single key
  * root (referenced by all three trees, never copied). For EITHER project scope
- * it first ensures the PUBLIC tree owns its `.gitignore` — because that one file
+ * it first ensures the PUBLIC tree owns its `.gitignore`, because that one file
  * is what keeps the whole `private/` subtree out of git. Ensuring it before the
  * first write, even a first write that is PRIVATE, closes the gap where an early
  * private capture would leave `private/` unprotected until some later public
@@ -319,7 +319,7 @@ export function openTreeForWriting(
   // Every product write cites the heads of the other tails it had read (`after`), which is
   // what orders it after them whatever the clocks of two machines say.
   // The private tree of a repository is one for all its worktrees, and each keeps its own
-  // installation id in its own git directory — so each writes its own tail (`git-place.ts`).
+  // installation id in its own git directory, so each writes its own tail (`git-place.ts`).
   const installationRoot = scope === 'private' ? trees.projectPrivateInstallation : undefined;
   return openChainForWriting(chainRoot, {
     keyRoot,
@@ -331,7 +331,7 @@ export function openTreeForWriting(
 
 /**
  * The first tree this process reaches whose record RETIRED the key the configured agent holds on
- * this machine, with that key's fingerprint — or undefined when none did, no agent is configured,
+ * this machine, with that key's fingerprint, or undefined when none did, no agent is configured,
  * or the machine holds no key under its name. It is the question that makes `key request --agent`
  * a rotation: a key retired anywhere is retired for every tree ({@link keyRootFor}), so the agent
  * needs a new one, and the retired one is put aside rather than asked for again.
@@ -530,12 +530,12 @@ function thePersonsKeyOpens(trees: ResolvedTrees): 'opens' | 'absent' | 'protect
 
 /**
  * The key root a tree is signed from: the AGENT's where the record enrols the agent's key in that
- * tree under exactly the name it is configured as, and the person's everywhere else — when the
+ * tree under exactly the name it is configured as, and the person's everywhere else, when the
  * person's key can be opened there.
  *
  * Per tree, because enrolment is: an agent enrolled in the committed tree of a project is no
  * member of that project's private tree or of the machine's global one, and a key a tree never
- * admitted would found an identity of its own there — which an agent key never does (FORMAT.md
+ * admitted would found an identity of its own there, which an agent key never does (FORMAT.md
  * section 6.2: a key that signs for a person's identity is not an identity of its own). So the
  * agent key is only ever the key of a tree that names it, and a tree that does not is written
  * with the person's key, as it was before the agent had one, and the facts say so: their `which`
@@ -572,8 +572,8 @@ export function agentSignsIn(trees: ResolvedTrees, scope: Scope): AgentSigning |
 export type AgentStanding = 'enrolled' | 'retired' | 'ambiguous' | 'absent';
 
 /**
- * What the record of `scope`'s tree says of the agent configured in `trees` — read from the record
- * on every ask, never from a recorded anchor — or undefined when none is configured, the machine
+ * What the record of `scope`'s tree says of the agent configured in `trees` (read from the record
+ * on every ask, never from a recorded anchor) or undefined when none is configured, the machine
  * holds no key under its name, or the tree is not there. It is the question the choice of key asks
  * ({@link keyRootFor}) and the one `mnema doctor` answers a person with.
  */
@@ -614,13 +614,13 @@ function agentReadingIn(chainRoot: string, fingerprint: string, name: string): A
 }
 
 /**
- * Who would sign in a scope's tree — this machine's key, and the anchor it serves there — read
+ * Who would sign in a scope's tree (this machine's key, and the anchor it serves there) read
  * WITHOUT opening the tree for writing.
  *
  * {@link openTreeForWriting} touches the tree before anything is appended: the public tree's
- * `.gitignore` and an installation id. (It touched more — the key's public half, the tail's
- * directory and its proof — until those moved to the writer's first append.)
- * A caller whose answer may write nothing — a refusal the record decides — asks this instead of
+ * `.gitignore` and an installation id. (It touched more (the key's public half, the tail's
+ * directory and its proof) until those moved to the writer's first append.)
+ * A caller whose answer may write nothing, a refusal the record decides, asks this instead of
  * opening, and a tree it only asked about stays byte for byte as it was. Like opening, it answers
  * a machine with no key with the key this process would make, kept only by a writer's first append
  * (`keyToSignWith` in `@mnema/chain`): a signer is somebody. A caller that asks in order to READ
@@ -637,7 +637,7 @@ export function signerFor(trees: ResolvedTrees, scope: Scope): ChainSigner {
   const choice = chooseTheKey(trees, chainRoot);
   if (choice.signs === 'nobody') {
     // WHO WOULD SIGN, were the write not refused: the person's key, named by its file and not
-    // opened, so asking needs no passphrase. Where there is none to name, the refusal stands —
+    // opened, so asking needs no passphrase. Where there is none to name, the refusal stands:
     // a signer made here would be a key minted for a write that cannot happen.
     if (localKeyFingerprint({ root: trees.keyRoot }) === null) throw choice.refusal;
     return signerAt(chainRoot, { keyRoot: trees.keyRoot });
@@ -648,7 +648,7 @@ export function signerFor(trees: ResolvedTrees, scope: Scope): ChainSigner {
 /**
  * {@link signerFor}, for a caller that asks who WOULD sign in order to read: it never makes a key.
  *
- * Undefined where the answer would have to be minted — no agent is asked for and the person's key
+ * Undefined where the answer would have to be minted: no agent is asked for and the person's key
  * root holds no key, so signing here is a first use and a first use is a write. Everywhere else it
  * answers as {@link signerFor} does, and throws what it throws: where an agent is asked for, the
  * person's absent key is the refusal that says which verb puts it right, not a key to make. A session
@@ -675,13 +675,13 @@ export function signerHeldFor(trees: ResolvedTrees, scope: Scope): ChainSigner |
 export interface DeferredWrite extends DeferredWriteContext {
   /**
    * Signs what was written through the writer {@link DeferredWriteContext.open} gave, and does
-   * nothing when it was never opened — a refusal, or a vouch for a key already a member.
+   * nothing when it was never opened: a refusal, or a vouch for a key already a member.
    */
   checkpoint(): void;
 }
 
 /**
- * A write to a scope's tree that opens its writer only when the operation decides to write — the
+ * A write to a scope's tree that opens its writer only when the operation decides to write: the
  * signer and the opener of the SAME tree and key, so a caller cannot pair one with another.
  * The operations that take it (`enrollFromRequest`, `revokeMember`) decide with the signer and
  * call the opener after their last refusal; the writer is opened once however often it is asked

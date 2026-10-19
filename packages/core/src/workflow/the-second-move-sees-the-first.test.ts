@@ -5,15 +5,15 @@
  * together on a `proposed` decision both exited 0 in 19 of 20 rounds, and the record kept two
  * transitions out of `proposed` that `verify` passed; two concurrent `decision record` minted
  * the same `ADR-<n>` in 10 of 10 pairs. Each process replayed the record, judged the move, and
- * only then took the tail's lock to append — so both judged the same state.
+ * only then took the tail's lock to append, so both judged the same state.
  *
  * ## Why these cases are not a race
  *
  * The hazard is the STALE READING the concurrency produces, and two writers of one tail in one
  * process reproduce it every time (the reasoning `tail-lock.test.ts` gives for the lock's own
  * cases): the second session reads the record, and before it appends, the first session's
- * whole move runs. Here that is done at the one point every one of these operations shares —
- * right after the first reading of the record the move is judged on returns — by wrapping the
+ * whole move runs. Here that is done at the one point every one of these operations shares
+ * (right after the first reading of the record the move is judged on returns) by wrapping the
  * replay. It does not intercept a method of the operation, so it is not tied to the order of
  * the calls inside it, only to "the move was judged on a reading taken before the other move
  * landed", which is the defect. On the code before this, every case here records both moves.
@@ -157,7 +157,7 @@ describe('a decision moved by two sessions at once', () => {
     expect(second.ok === false && second.message).toContain('is accepted now');
 
     const moves = events().filter((e) => e.kind === 'decision.transitioned' && e.subject === id);
-    // The birth and ONE move out of `proposed` — not two.
+    // The birth and ONE move out of `proposed`, not two.
     expect(moves.map((e) => (e.kind === 'decision.transitioned' ? e.payload.to : ''))).toEqual([
       'proposed',
       'accepted',
@@ -251,8 +251,8 @@ describe('a run closed by two sessions at once', () => {
 });
 
 describe('what the second reading costs, and when it is paid', () => {
-  // A move replays the record more than once on its own — the state it is judged on, and the
-  // roster `ensureFounded` asks before every append — so each case compares against the same
+  // A move replays the record more than once on its own (the state it is judged on, and the
+  // roster `ensureFounded` asks before every append), so each case compares against the same
   // move with nothing landing in between, rather than against a number of replays.
   function readsOfAnUncontendedAccept(): number {
     const one = session();
@@ -269,7 +269,7 @@ describe('what the second reading costs, and when it is paid', () => {
     expect(readsOfAnUncontendedAccept()).toBe(1);
   });
 
-  it('reads it once more, under the lock, when another write landed — and goes ahead if that moved something else', () => {
+  it('reads it once more, under the lock, when another write landed, and goes ahead if that moved something else', () => {
     const control = readsOfAnUncontendedAccept();
     const one = session();
     const two = session();
@@ -300,7 +300,7 @@ describe('the first write of two sessions at once founds once', () => {
   it('a second session that decided to found finds the first one’s founding under the lock', () => {
     const one = session();
     const two = session();
-    // The first session has decided — no anchor recorded — and is about to found when the whole
+    // The first session has decided, no anchor recorded, and is about to found when the whole
     // of the second session's first write runs: the moment it asks for the tail's lock.
     let raced = false;
     const racing = new Proxy(one.writer, {

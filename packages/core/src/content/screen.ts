@@ -1,33 +1,33 @@
 /**
  * The door every piece of free text goes through on its way into the record: one
- * size limit, then one scrub — which REDACTS a body and REFUSES a name.
+ * size limit, then one scrub, which REDACTS a body and REFUSES a name.
  *
  * One function, for the reason the authority invariant is one function: the
- * shapes that need it are not alike — a birth's title, a transition's proof, a
- * fact's whole body, a session's goal, the ENVELOPE's executing agent — and
+ * shapes that need it are not alike (a birth's title, a transition's proof, a
+ * fact's whole body, a session's goal, the ENVELOPE's executing agent) and
  * spread across those shapes as a copied block a check is simply MISSING from
  * whichever one nobody remembered. On an append-only log that turns a refusable
  * input into a permanent entry, so failing at the door is the whole point: one
  * function makes "every append is screened" a property of the code instead of a
  * habit. The agent name is the case that proves it: the first cut of this door
  * read "every free-text field" as "every free-text field of the payload", and
- * `which` — the one on the envelope, stamped on every event of a session — went
+ * `which` (the one on the envelope, stamped on every event of a session) went
  * through unscreened while a payload-only sweep reported everything clean.
  *
  * WHICH FIELDS ARE HANDED IN IS THE CALLER'S CHOICE, and that is the one thing this
  * function cannot check. It screens what it is given; a field the caller never
  * passes is a field it never sees, and the test that drove every write point could
- * not tell the difference — measured, when an added `alternatives` bypassed this
+ * not tell the difference: measured, when an added `alternatives` bypassed this
  * door and the whole suite stayed green. What answers for the selection now is the
  * field classification (`fields.ts`) and the guard derived from it
  * (`every-field.test.ts`), which poison every field the catalog declares the caller's
  * and read the chain back. The selection stays the caller's; forgetting one no
- * longer passes in silence — and the KEYS are no longer the caller's at all, since a
+ * longer passes in silence, and the KEYS are no longer the caller's at all, since a
  * key the classification does not answer for does not compile (see `ScreenedKey`).
  *
  * THE LIMIT COMES FIRST, AND IT IS NOT A PREFERENCE. Nothing capped the size of
  * a text field before this, and a single 5 MB event was accepted in 321 ms and
- * then cost 116.9 ms of replay on every rebuild afterwards — against 35.2 ms for
+ * then cost 116.9 ms of replay on every rebuild afterwards: against 35.2 ms for
  * an entire archive of 3,508 events. Running the scrubber over that same field
  * costs 8.4 ms, three thousand times a typical append, so with no limit the
  * defense becomes the bottleneck it was added to survive. The limit runs first
@@ -41,13 +41,13 @@
  * REPLACING MEANS DIFFERENT THINGS IN DIFFERENT FIELDS, and this door used to treat
  * every field it was handed alike: refuse on size, replace on a credential. The
  * premise that made that right was that a screened field is still the field. A NAME
- * falsified it. A body with the credential replaced is still the fact — the decision
+ * falsified it. A body with the credential replaced is still the fact: the decision
  * still says what was decided, and the credential did not enter. A name with the
  * credential replaced is a DIFFERENT ENTITY wearing the same id: `<SECRET:slack-token>`
  * is not the skill somebody created, every reading that keys on the name now misses,
  * and on an append-only log the name is gone for good. So a credential in a name is
- * REFUSED before the fact is appended, and the person — who, unlike the author of an
- * imported document, is right here — is told the class and the field and can write it
+ * REFUSED before the fact is appended, and the person (who, unlike the author of an
+ * imported document, is right here) is told the class and the field and can write it
  * again under a name.
  *
  * WHICH FIELDS ARE WHICH IS NOT DECIDED HERE. This door asks `screensAsAName`, and
@@ -59,7 +59,7 @@
  * a field nobody classified cannot be handed in at all.
  *
  * AND THE VALUE NEVER TRAVELS. The refusal carries the class and the field and
- * nothing else — not the value, not a prefix of it, not a digest. A message is printed
+ * nothing else, not the value, not a prefix of it, not a digest. A message is printed
  * to a terminal, logged by a host and pasted into an issue; a refusal that quoted what
  * it refused would be the disclosure it exists to prevent.
  *
@@ -74,7 +74,7 @@ import { type ReplacedClass, scrubEmails } from './personal.js';
 import { type SecretClass, scrubSecrets } from './secrets.js';
 
 /**
- * The most any single free-text field may weigh, in bytes of UTF-8 — the form the
+ * The most any single free-text field may weigh, in bytes of UTF-8: the form the
  * chain stores, so the limit is measured in what it actually costs rather than in
  * characters (which would let a field of emoji weigh four times its count).
  */
@@ -95,7 +95,7 @@ export interface ContentTooLargeErr {
  * A write refused because a field the record is ADDRESSED by carried something shaped
  * like a credential; the fact was not appended.
  *
- * It is a refusal and not a scrub because the two are not interchangeable in a name —
+ * It is a refusal and not a scrub because the two are not interchangeable in a name:
  * see the module comment. The class and the field are in the MESSAGE and nowhere else:
  * the shape is `{ ok, code, message }` like every other refusal in the product, so a
  * surface reports it with the one line it already has. Carrying them as data too would
@@ -121,7 +121,7 @@ export interface ScreenedContent<T> {
   readonly ok: true;
   /**
    * The same fields, same keys, with every recognized credential replaced. This
-   * is what the caller must build its event from — the point of the screen is
+   * is what the caller must build its event from: the point of the screen is
    * that the ORIGINAL never reaches the chain.
    */
   readonly fields: T;
@@ -133,12 +133,12 @@ export interface ScreenedContent<T> {
 }
 
 /**
- * What a successful write reports about the text it screened — the half of every
+ * What a successful write reports about the text it screened: the half of every
  * write result that keeps a scrub from happening in silence.
  *
  * It travels on the SUCCESS, because a scrub is not a refusal: the fact WAS
  * recorded, with a placeholder where a credential used to be. The caller has to
- * be told, and told at the only moment it can still act — rotate the credential,
+ * be told, and told at the only moment it can still act: rotate the credential,
  * warn the person, record the thing again without it. Writing a different value
  * than the caller asked for and saying nothing would leave the next session
  * reading a placeholder with no idea why, and would leave a live credential
@@ -179,12 +179,12 @@ type Screenable = string | readonly string[] | undefined;
  * nobody classified is a compile error rather than a field silently treated as a
  * body. That is the link between the two: the classification decides name-or-body, and
  * the type is what stops a caller from asking under a key it never classified. The
- * transition proof meets it at the leaf — `fields.reason` is classified, `reason` is
- * handed in — and a subject is handed in AS `subject`, whatever the operation's own
+ * transition proof meets it at the leaf (`fields.reason` is classified, `reason` is
+ * handed in) and a subject is handed in AS `subject`, whatever the operation's own
  * input calls it, because that is the key the classification answers under.
  *
  * An absent field stays absent: it is not text, so there is nothing to weigh and
- * nothing to clean. A LIST is weighed whole and scrubbed per item — a thousand
+ * nothing to clean. A LIST is weighed whole and scrubbed per item: a thousand
  * short links cost the chain what one long field does, and weighing each
  * separately would let the total past the limit unnoticed.
  *
@@ -209,8 +209,8 @@ export function screenContent<
       if (oversize !== undefined) return oversize;
       const scrubbed = scrubSecrets(value);
       if (isName) {
-        // The name is carried through UNCHANGED when it is clean, byte for byte — the
-        // scrub's own contract when nothing matched — and the whole write is refused
+        // The name is carried through UNCHANGED when it is clean, byte for byte, the
+        // scrub's own contract when nothing matched, and the whole write is refused
         // when it is not. There is no third outcome: a partly-redacted name is the
         // corrupted identity this branch exists to prevent.
         if (scrubbed.replaced.length > 0) return refuseNamedSecret(field, scrubbed.replaced);
@@ -281,7 +281,7 @@ function refuseNamedSecret(field: string, found: readonly SecretClass[]): NameHo
  * a claim about the whole act where this door can only speak for the fact. It was true from
  * the command line; through the agent's server it was false on the one call that matters
  * most. A session opens its run in a tree before the operation decides, so a key's first
- * write there — refused here — had already founded its identity and started the run: three
+ * write there, refused here, had already founded its identity and started the run: three
  * signed events on the tail, measured over stdio, beside a reply that said nothing was
  * recorded. What the door knows is that THE FACT did not land, and that is true down both
  * roads, so it says that, in the words `append.ts` already used for the refusal a reader

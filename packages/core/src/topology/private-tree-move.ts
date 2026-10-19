@@ -1,6 +1,6 @@
 /**
  * The private trees left in working trees from before the private tree moved into the
- * repository's git directory (`git-place.ts`) — found, and moved there when a person asks.
+ * repository's git directory (`git-place.ts`): found, and moved there when a person asks.
  *
  * A project's private notes written before the move sit at `<worktree>/<project>/.mnema/private/`
  * in every worktree that wrote them. Nothing reads them there any more, and removing that
@@ -14,17 +14,17 @@
  *     bytes is left where it was, and said.
  *   - the installation id (`keys/<fingerprint>.inst`) goes to THIS worktree's own place for it,
  *     so the worktree goes on writing the tail it wrote before. Where that place already holds
- *     an id — the worktree wrote after the move — the old id is dropped, and the tail it named
+ *     an id, the worktree wrote after the move, the old id is dropped, and the tail it named
  *     is moved all the same, as a closed tail nobody appends to.
  *   - the other key files (`.pub`, `.anchor`) go to the shared tree's `keys/`. The same key has
  *     the same public half and serves the same anchor in every worktree of one machine, so one
  *     already there is the same bytes, and the old copy goes. One with other bytes is left, and
  *     said.
- *   - `locks/` — the writers' locks, the projection a reader built, the heads a tail cited — is
+ *   - `locks/` (the writers' locks, the projection a reader built, the heads a tail cited) is
  *     machinery and not record: it is discarded, and the next read rebuilds what it needs.
  *
  * Nothing in a tail is rewritten: a tail's files are moved as they are, under the name they had.
- * A file is never written over — a name already taken is compared, not replaced.
+ * A file is never written over: a name already taken is compared, not replaced.
  */
 
 import {
@@ -66,7 +66,7 @@ export interface PrivateTreesLeftBehind {
 
 /**
  * The old private trees of the project at `projectDir`, in every worktree of its repository that
- * this machine can find — or undefined when the project is in no repository, where the private
+ * this machine can find, or undefined when the project is in no repository, where the private
  * tree has not moved.
  *
  * The worktrees are the one `projectDir` is in, the main one when the git directory is a
@@ -119,7 +119,7 @@ export interface MovedTree {
   readonly emptied: boolean;
 }
 
-/** Moves one old tree into the shared one at `to` — see the module's comment for each entry. */
+/** Moves one old tree into the shared one at `to`: see the module's comment for each entry. */
 export function movePrivateTree(left: LeftBehind, to: string): MovedTree {
   const tails: string[] = [];
   const closed: string[] = [];

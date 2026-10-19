@@ -8,16 +8,16 @@
  *   - its STATE is the `to` of its last `skill.transitioned` (birth included);
  *   - its name and body are read literally from the record.
  *
- * A skill is NOT relational — there is no supersede, no `by`, none of the
+ * A skill is NOT relational: there is no supersede, no `by`, none of the
  * two-sided link a decision's supersede folds. It is the simplest of the three
  * workflow projections: existence plus state, nothing more. State is read from
  * the literal `to` of the moves the workflow allows (FORMAT.md §6.7).
  *
- * IT ALSO FOLDS PROVENANCE — who proposed the pattern and who adopted it — and
+ * IT ALSO FOLDS PROVENANCE: who proposed the pattern and who adopted it, and
  * that is the one thing it keeps beyond existence and state. A skill is the only
  * entity whose content comes back as INSTRUCTION: its body is served into the
  * prompt of every session that reaches the tree it was adopted in. For a task or
- * a decision, whoever consumes the fact can already see who moved it — both
+ * a decision, whoever consumes the fact can already see who moved it: both
  * `which` values ride the events a timeline shows. For a skill nobody could:
  * the body was served with no trace of the two acts that put it there. Folding
  * the two envelopes here is what makes the consumption visible, and the fold is
@@ -32,7 +32,7 @@ import type { CatalogEvent } from '@mnema/chain';
 import { type AccumulatorFold, accumulate, jsonEncoding } from './accumulate.js';
 import { proofOf, type TransitionProof } from './proof.js';
 
-/** The state whose transition marks a pattern as live — the one adoption. */
+/** The state whose transition marks a pattern as live: the one adoption. */
 const ADOPTED = 'adopted';
 
 /**
@@ -44,7 +44,7 @@ const ADOPTED = 'adopted';
  * pattern that is being served.
  *
  * It happens at most once. The workflow reaches `adopted` only from `reviewed`,
- * and leaves it only for the terminal `deprecated` — there is no reopen, so
+ * and leaves it only for the terminal `deprecated`: there is no reopen, so
  * there is no "latest adoption" to resolve. Should a later workflow ever allow
  * one, the fold takes the last, which is the rule `state` already follows.
  */
@@ -74,7 +74,7 @@ export interface SkillProjection {
   /** `at` of the last transition. */
   readonly updatedAt: string;
   /**
-   * What each move of this pattern SAID, in the chain's own order — absent when no
+   * What each move of this pattern SAID, in the chain's own order: absent when no
    * transition ever carried proof. See `projections/proof.ts` for why it is every
    * move and not the last one.
    */
@@ -96,12 +96,12 @@ export interface SkillAccumulator {
 /**
  * The skill fold. A skill is projected
  * only when it has BOTH a `skill.created` (existence) and at least one
- * transition (state) — birth emits the two together, so an intact chain always
+ * transition (state): birth emits the two together, so an intact chain always
  * has both; the guard matters only for a truncated tail.
  *
  * The two provenance fields come off the ENVELOPE of those same events: the
  * record's `which` proposed the pattern, and the `which` of the transition that
- * reached `adopted` adopted it. Nothing is derived from the workflow table — the
+ * reached `adopted` adopted it. Nothing is derived from the workflow table: the
  * fold recognizes the adoption by the literal `to`, exactly as it reads state.
  */
 export const skillFold: AccumulatorFold<SkillAccumulator, SkillProjection> = {
@@ -131,7 +131,7 @@ export const skillFold: AccumulatorFold<SkillAccumulator, SkillProjection> = {
   },
   finish(id, entry) {
     // Existence needs the record; state needs a transition. A subject missing
-    // either is not a complete skill and is not projected — never given a
+    // either is not a complete skill and is not projected, never given a
     // fabricated state.
     if (
       entry.name === undefined ||

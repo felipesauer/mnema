@@ -1,18 +1,18 @@
 /**
- * Whether a piece of text that carries the WHY of a fact says anything — the one rule, asked by
+ * Whether a piece of text that carries the WHY of a fact says anything: the one rule, asked by
  * the reader of decision files and by every door a reason is written through.
  *
  * THE READER ASKED IT FIRST. Pointed at this project's own decision documents, the reader of
  * decision files took the markdown rule `---` under a header block for a document's rationale,
  * 48 times; its answer was {@link statesSomething}, one letter or one digit in any script. The
- * write door kept asking an older question — is the string empty? — so `mnema decision record
+ * write door kept asking an older question (is the string empty?), so `mnema decision record
  * "Use UTC" "***"` was recorded as a decision's why, permanently, while the reader refused the
  * same three characters from a file. Two doors, two readings of one rule. The function moved here
  * so both ask the same one: `adr/read.ts` imports it, and so does the write side through
  * {@link reasonRefusal}.
  *
- * AND A MARKER IS NOT A REASON EITHER. The product prints recipes with markers in them —
- * `mnema key revoke <fingerprint> --reason "<why>"`, `--note "<why>"` — and a recipe pasted
+ * AND A MARKER IS NOT A REASON EITHER. The product prints recipes with markers in them
+ * (`mnema key revoke <fingerprint> --reason "<why>"`, `--note "<why>"`) and a recipe pasted
  * without filling the marker in used to record `<why>` as the reason, for good. `<why>` has
  * letters, so {@link statesSomething} cannot see it. {@link isMarker} is the SHAPE the product's
  * markers take (`<` a lowercase word `>`), not a list of today's: the guard over every command
@@ -20,7 +20,7 @@
  * this same pattern, so a marker a new page prints is one the write door already refuses.
  *
  * AND A MARKER IS NO TITLE. This module used to ask the marker question of the why alone, and
- * said so: `<title>` as a title was accepted. It was the same paste one field over —
+ * said so: `<title>` as a title was accepted. It was the same paste one field over:
  * `mnema decision record "<title>" "<rationale>"` recorded a decision named `<title>`, and a
  * decision file whose heading was `# <title>` was imported as one. {@link TITLES} is where each
  * kind keeps the one short line that names a record, and {@link titleRefusal} asks
@@ -28,16 +28,16 @@
  *
  * AND A TITLE OF PUNCTUATION IS NO TITLE EITHER. This said *"only the marker: a title is not asked
  * whether it states something here, so `***` as a title is still recorded (the reader of decision
- * files refuses that one on its own, `NO_TITLE`)"* — and that was the same two-doors defect the
+ * files refuses that one on its own, `NO_TITLE`)"*, and that was the same two-doors defect the
  * paragraph above tells of for the why, one field over: the reader refused `# ***` as `NO_TITLE`
  * while `mnema decision record '***' '…'` recorded a decision named `***`, permanently, and every
  * citation of it (`ADR-3 — ***`) read as nothing. {@link titleRefusal} asks
  * {@link statesSomething} of a title now, the function the reader asks, so a title with no letter
  * and no digit is refused at the door the reader refuses it at.
  *
- * AND A MARKER IS NO REFERENCE. The fields a reading looks up by exact string — a link's subject,
+ * AND A MARKER IS NO REFERENCE. The fields a reading looks up by exact string (a link's subject,
  * target and relation, the entity an observation is about, the agents of a handoff, a run's
- * agent — are not a line a person writes (that is {@link TITLES}) and not a why, and a recipe
+ * agent) are not a line a person writes (that is {@link TITLES}) and not a why, and a recipe
  * pastes a marker into them all the same: `mnema link <id> <path> --rel governs` recorded an
  * edge from the entity `<id>`, and `--rel '<rel>'` recorded a relation nothing can ever ask for.
  * {@link REFERENCES} is where each kind keeps them and {@link referenceRefusal} asks
@@ -54,8 +54,8 @@ import type { CatalogEvent, EventKind, TransitionFields } from '@mnema/chain';
 import { oneLine } from './one-line.js';
 
 /**
- * True when the text holds one letter or one digit, in any script. Markdown's furniture — rules,
- * emphasis, pipes, bullets — has neither by construction, so it falls out without being listed.
+ * True when the text holds one letter or one digit, in any script. Markdown's furniture (rules,
+ * emphasis, pipes, bullets) has neither by construction, so it falls out without being listed.
  */
 export function statesSomething(text: string): boolean {
   return /[\p{L}\p{N}]/u.test(text);
@@ -105,7 +105,7 @@ export function reasonRefusal(
  * The refusal a title earns, or undefined when it names something. `field` is the name the kind
  * gives it (`title`, `name`, `topic`), so the sentence names the value they typed and what goes
  * in its place. A marker is refused as a marker; a text with no letter and no digit in it
- * (`***`, `---`) is refused as naming nothing — the question the reader of decision files asks of
+ * (`***`, `---`) is refused as naming nothing: the question the reader of decision files asks of
  * a heading, by the same function.
  */
 export function titleRefusal(
@@ -150,7 +150,7 @@ type ReasonSite<K extends EventKind> =
   | (PayloadOf<K> extends { readonly fields?: TransitionFields } ? 'fields' : never);
 
 /**
- * Which part of each kind carries the WHY of the fact — the fields {@link reasonRefusal} is asked
+ * Which part of each kind carries the WHY of the fact: the fields {@link reasonRefusal} is asked
  * of on the way in. `fields` stands for a transition's proof, of which {@link REASON_PROOF_FIELDS}
  * are the ones that are prose.
  *
@@ -215,7 +215,7 @@ export function unstatedReason(event: CatalogEvent): string | undefined {
 }
 
 /**
- * Which field of each kind is its TITLE — the one short line that names a record — the field
+ * Which field of each kind is its TITLE, the one short line that names a record, the field
  * {@link titleRefusal} is asked of on the way in.
  *
  * The cut is the one the search index already draws (`projections/search-store.ts`): its `title`
@@ -290,8 +290,8 @@ type ReferenceSubject<K extends EventKind> = K extends
 type ReferenceSite<K extends EventKind> = TextField<K> | ReferenceSubject<K>;
 
 /**
- * Which part of each kind is a REFERENCE — a string a caller hands in that a later reading
- * looks up by exact match — the fields {@link referenceRefusal} is asked of on the way in.
+ * Which part of each kind is a REFERENCE, a string a caller hands in that a later reading
+ * looks up by exact match, the fields {@link referenceRefusal} is asked of on the way in.
  *
  * The cut is `content/fields.ts`'s: the payload fields it classifies as names and that are not a
  * title ({@link TITLES}), plus the subject of the four kinds it calls "the caller's REFERENCE,
@@ -374,7 +374,7 @@ export function unfilledReference(event: CatalogEvent): string | undefined {
 }
 
 /**
- * The refusal the first prose field of a transition's proof that says nothing earns — the
+ * The refusal the first prose field of a transition's proof that says nothing earns: the
  * question the gates put to a proof before they authorize it, so a dry run and the write it
  * previews give one verdict.
  */

@@ -19,39 +19,39 @@
  * A `run.ended` with no `run.started` is not a run and is not projected. A run
  * id is unique (a fresh id per session), so a run closes once and stays closed;
  * a second `run.started` for an id already ended is not a legal flow, and the
- * projection — which replays rather than polices — leaves the run closed.
+ * projection, which replays rather than polices, leaves the run closed.
  *
  * It also folds WHEN THE RUN LAST DID SOMETHING ({@link RunProjection.lastFactAt}),
  * and that is the one field here read off events the run is not the subject of: any
  * event whose envelope pins it to this run. The reads that report an open run need
- * it — a run's own `startedAt` says how long it has existed and nothing about
- * whether anything is still happening in it — and every other way of getting it
+ * it (a run's own `startedAt` says how long it has existed and nothing about
+ * whether anything is still happening in it) and every other way of getting it
  * would replay the stream a second time to learn something this pass already sees.
  * Absent when the run has recorded nothing, which is a real state: a session opens
  * its run on the first write, so a run with no fact pinned to it is one whose first
  * write did not land.
  *
  * AND WHAT WAS WRITTEN IN IT ({@link RunProjection.wrote}), off the SAME pass and the
- * same envelope slot. The two fields are one question asked along its two axes — an
- * instant says WHEN the last fact landed and can never say WHAT landed — and the
+ * same envelope slot. The two fields are one question asked along its two axes (an
+ * instant says WHEN the last fact landed and can never say WHAT landed) and the
  * measurement that asked for the second one put it plainly: every read that reports a
  * run reported the CONTAINER, never what was put in it. A reader shown `last recorded
  * 12s ago` learns that a session is alive and nothing whatever about what it did.
  *
  * It is a COUNT PER KIND and not a list of the facts, and that is a divergence from
  * the naming convention the opening context states for its own lists (names and ids,
- * cut, with the total beside the cut — see `context`'s `bootstrap.ts`). The reason is
+ * cut, with the total beside the cut: see `context`'s `bootstrap.ts`). The reason is
  * the ceiling: those lists are over entities, which a record holds without limit, so
  * they are cut and the cut declares itself; this one is over the event CATALOG, which
  * is a closed union, so its length is bounded by the number of kinds whatever the run
  * did. A bounded answer needs no cut, and a cut it does not need would be a second
  * observable decision to document for nothing. What a caller loses is the id of each
- * fact — which is the entity's own history, and `audit_timeline` answers it per
+ * fact, which is the entity's own history, and `audit_timeline` answers it per
  * entity, which is the question anyone actually asks next.
  *
  * SIGNATURE CAVEAT (shared by every projection). A projection reflects the facts
  * as written; it does not itself attest that they are signature-covered. The
- * fields it reads — `who` above all — carry only the assurance of the chain
+ * fields it reads, `who` above all, carry only the assurance of the chain
  * layer that covers them: an event past the last checkpoint rests on the keyless
  * hash chain alone (the declared residual window). So a `who` read from the read
  * model inherits that caveat: it is authenticated only once `verify(...)`
@@ -72,7 +72,7 @@ import { type AccumulatorFold, accumulate } from './accumulate.js';
 export interface WrittenInRun {
   /** The event kind, as the catalog spells it. */
   readonly kind: EventKind;
-  /** How many facts of that kind were pinned to the run. At least 1 — a zero is no row. */
+  /** How many facts of that kind were pinned to the run. At least 1: a zero is no row. */
   readonly count: number;
 }
 
@@ -80,9 +80,9 @@ export interface WrittenInRun {
 export interface RunProjection {
   /** The run's id (the event subject). */
   readonly id: string;
-  /** The agent the run is for — the `which` of its actions. */
+  /** The agent the run is for: the `which` of its actions. */
   readonly agent: string;
-  /** The human who authorized the session — the root of authority. */
+  /** The human who authorized the session: the root of authority. */
   readonly who: string;
   /** The stated goal, if the run declared one. */
   readonly goal?: string;
@@ -95,7 +95,7 @@ export interface RunProjection {
   /** `at` of `run.ended`, if it has ended. */
   readonly endedAt?: string;
   /**
-   * `at` of the most recent fact PINNED to this run — the latest event whose
+   * `at` of the most recent fact PINNED to this run: the latest event whose
    * envelope carries `run: <this id>`.
    *
    * Absent when nothing has been pinned to it. That is not a gap: neither
@@ -112,11 +112,11 @@ export interface RunProjection {
    * WHAT was written in this run: one entry per kind of fact pinned to it, with how
    * many of that kind there were.
    *
-   * ALWAYS PRESENT, and EMPTY is the answer for a run that wrote nothing — never
+   * ALWAYS PRESENT, and EMPTY is the answer for a run that wrote nothing, never
    * absent. That is the one deliberate difference from {@link RunProjection.lastFactAt}
    * beside it, which is absent in exactly the same case: an absent field is read as
    * "this reader does not know", and the two claims are not the same claim. Here the
-   * fold DOES know — it saw every event of the stream — so it says so with a list
+   * fold DOES know, it saw every event of the stream, so it says so with a list
    * whose length is zero.
    *
    * Read off the same envelope slot as `lastFactAt` (`run: <this id>`), so it counts
@@ -124,7 +124,7 @@ export interface RunProjection {
    * `run.started` nor `run.ended` carries a `run`, so a run that only opened and
    * closed reports `[]`.
    *
-   * Ordered by `count` DESCENDING, ties broken by `kind` ascending — a total order,
+   * Ordered by `count` DESCENDING, ties broken by `kind` ascending: a total order,
    * so the same events always fold to the same array and a caller may compare two
    * projections byte for byte. Commonest first because a reader scanning a session
    * asks what it mostly DID; the tie-break is the kind's own spelling because nothing
@@ -171,7 +171,7 @@ export const runFold: AccumulatorFold<RunAccumulator, RunProjection> = {
       entry.endedAt = event.at;
       if (event.payload.outcome !== undefined) entry.outcome = event.payload.outcome;
     }
-    // Every event, whatever its kind, may be pinned to a run — including one whose
+    // Every event, whatever its kind, may be pinned to a run, including one whose
     // `run.started` this stream does not hold (a fact written in a project whose run
     // lives in another tree). Such a run gets an accumulator and is dropped below
     // for having no birth, which is the same rule an ended-only subject meets: this

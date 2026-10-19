@@ -4,7 +4,7 @@
  *
  * The two-machine record is made the way two clones make it: one tree is copied, each copy
  * moves the same `proposed` decision with its own key, and one copy's tail is merged into the
- * other. Every event in it is one the product's own operations appended — no state, key or
+ * other. Every event in it is one the product's own operations appended: no state, key or
  * order in it that the product could not have written.
  */
 
@@ -99,7 +99,7 @@ function twoMachinesMovedOneDecision(): { tree: string; id: string } {
   a.writer.checkpoint();
   b.writer.checkpoint();
 
-  // The merge: B's tail and B's key arrive in A's tree. A's own tail is not touched — B's
+  // The merge: B's tail and B's key arrive in A's tree. A's own tail is not touched: B's
   // copy of it is the older prefix.
   cpSync(join(treeB, 'tails', b.writer.tail), join(treeA, 'tails', b.writer.tail), {
     recursive: true,
@@ -128,7 +128,7 @@ describe('divergentMoves', () => {
     expect(['accepted', 'rejected']).toContain(projectDecisions(eventsOf(tree)).get(id)?.state);
   });
 
-  it('reads a move repeated byte for byte as one move — a duplicated entry, not a divergence', () => {
+  it('reads a move repeated byte for byte as one move: a duplicated entry, not a divergence', () => {
     // What a tail whose last entry was duplicated holds; the link-break notice says that one.
     const tree = tmp('mnema-divergent-dup-');
     const a = machine(tree, tmp('mnema-divergent-key-'));
@@ -170,7 +170,7 @@ describe('the rule holds only where the machine has no cycle', () => {
     expect(hasCycle(SKILL_TRANSITIONS)).toBe(false);
   });
 
-  it('the task table has one — a reopened task leaves a state again — so tasks are read by their order', () => {
+  it('the task table has one, a reopened task leaves a state again, so tasks are read by their order', () => {
     expect(hasCycle(TRANSITIONS)).toBe(true);
   });
 });

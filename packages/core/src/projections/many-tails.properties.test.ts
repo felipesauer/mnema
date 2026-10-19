@@ -1,5 +1,5 @@
 /**
- * Reading many tails, held as PROPERTIES over generated chains — the rule `FORMAT.md` writes
+ * Reading many tails, held as PROPERTIES over generated chains: the rule `FORMAT.md` writes
  * under "Reading many tails" and `order.ts` implements, each case against a NAIVE MODEL that
  * restates the definition in a few lines inside this file.
  *
@@ -131,7 +131,7 @@ type Act =
   /** `decision` is superseded BY `by`: the subject is the superseded one. */
   | { readonly kind: 'supersede'; readonly decision: string; readonly by: string };
 
-/** One thing one machine does, at the instant ITS clock gives — which may run backwards. */
+/** One thing one machine does, at the instant ITS clock gives, which may run backwards. */
 interface Op {
   readonly slot: number;
   readonly at: number;
@@ -299,8 +299,8 @@ class Scribe {
 }
 
 /**
- * Appends a history to `root`. `open` is the order the machines first touch the directory —
- * what MR1 permutes — and only machines that have something to say are opened.
+ * Appends a history to `root`. `open` is the order the machines first touch the directory,
+ * what MR1 permutes, and only machines that have something to say are opened.
  */
 function write(
   root: string,
@@ -430,7 +430,7 @@ describe('the merge of many tails is its definition', () => {
         try {
           const { appended } = write(root, history);
           const merged = orderedEvents({ root }, upcasters);
-          // A tail's events in seq order — those a reader applies (see the module comment).
+          // A tail's events in seq order: those a reader applies (see the module comment).
           const kept = new Set(modelled(streamsOf(appended)));
           for (const [tail, events] of appended) {
             expect(subsequenceOf(merged, events), `tail ${tail}`).toEqual(
@@ -920,7 +920,7 @@ describe('clocks that disagree, with nothing cited: fixed and not endorsed', () 
             }));
             const { appended } = write(root, skewed);
             const merged = orderedEvents({ root }, upcasters);
-            // The order of a tail never changes, whatever the clocks say — of what is applied.
+            // The order of a tail never changes, whatever the clocks say: of what is applied.
             const kept = new Set(modelled(streamsOf(appended)));
             for (const [tail, events] of appended) {
               expect(subsequenceOf(merged, events), tail).toEqual(

@@ -21,7 +21,7 @@ function proofIn(required: readonly SkillProofField[]): { readonly fields?: Tran
   return fields === undefined ? {} : { fields };
 }
 
-describe('skillGate — every legal transition passes with valid authority and proof', () => {
+describe('skillGate: every legal transition passes with valid authority and proof', () => {
   for (const t of SKILL_TRANSITIONS) {
     it(`${t.from} --${t.action}--> ${t.to}`, () => {
       const result = skillGate({
@@ -40,7 +40,7 @@ describe('skillGate — every legal transition passes with valid authority and p
   }
 });
 
-describe('skillGate — legality (the forbidden moves are refused)', () => {
+describe('skillGate: legality (the forbidden moves are refused)', () => {
   it('rejects every (from, action) pair that is NOT a declared transition', () => {
     const legal = new Set(SKILL_TRANSITIONS.map((t) => `${t.from}::${t.action}`));
     let illegalChecked = 0;
@@ -95,7 +95,7 @@ describe('skillGate — legality (the forbidden moves are refused)', () => {
       ok: false,
       code: 'UNKNOWN_ACTION',
     });
-    // `supersede` is a decision action, never a skill's — replacement is a link.
+    // `supersede` is a decision action, never a skill's: replacement is a link.
     expect(skillGate({ from: 'adopted', action: 'supersede', who: WHO })).toMatchObject({
       ok: false,
       code: 'UNKNOWN_ACTION',
@@ -108,7 +108,7 @@ describe('skillGate — legality (the forbidden moves are refused)', () => {
   });
 });
 
-describe('skillGate — required proof', () => {
+describe('skillGate: required proof', () => {
   const withReq = SKILL_TRANSITIONS.filter((t) => t.requires.length > 0);
 
   it('every skill move requires a why (guards the suite is meaningful)', () => {
@@ -148,7 +148,7 @@ describe('skillGate — required proof', () => {
   }
 });
 
-describe('skillGate — authority (who != which)', () => {
+describe('skillGate: authority (who != which)', () => {
   it('rejects a missing who', () => {
     const result = skillGate({ from: 'proposed', action: 'review', who: '' });
     expect(result).toMatchObject({ ok: false, code: 'MISSING_WHO' });
@@ -192,7 +192,7 @@ describe('skillGate — authority (who != which)', () => {
   });
 });
 
-describe('skillGate — never throws on untrusted junk', () => {
+describe('skillGate, never throws on untrusted junk', () => {
   const junk: unknown[] = [undefined, null, 5, {}, [], true];
 
   it('refuses a non-string who without throwing', () => {
@@ -218,7 +218,7 @@ describe('skillGate — never throws on untrusted junk', () => {
   });
 });
 
-describe('skillGate — purity', () => {
+describe('skillGate: purity', () => {
   it('returns the same verdict for the same input, and never mutates the request', () => {
     const req = { from: 'reviewed' as const, action: 'adopt', fields: { note: 'yes' }, who: WHO };
     const a = skillGate(req);

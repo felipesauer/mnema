@@ -1,9 +1,9 @@
 /**
  * Every move a state machine's gate authorizes is judged on the record as it stands under the
- * tail's lock — the structural half of `the-second-move-sees-the-first.test.ts`.
+ * tail's lock: the structural half of `the-second-move-sees-the-first.test.ts`.
  *
  * The behavioural cases there race one operation of each machine. This one asks the SOURCE: a
- * call of one of the three gates — anywhere under `packages/`, tests included — that is not inside an
+ * call of one of the three gates (anywhere under `packages/`, tests included) that is not inside an
  * {@link onTheRecordAsItStands} call judges a reading the lock does not vouch for, which is the
  * shape that let two sessions both move a `proposed` decision. A gate called from a new place
  * fails here until it is put inside one, or named below with the reason it appends nothing.
@@ -22,8 +22,8 @@ const REPO = fileURLToPath(new URL('../../../../', import.meta.url));
 const GATES = ['gate', 'decisionGate', 'skillGate'] as const;
 
 /**
- * Gate calls no second session can race, each with the reason. Tests are scanned too — a
- * fixture that judges and appends is a site of the rule like any other — and named here when
+ * Gate calls no second session can race, each with the reason. Tests are scanned too (a
+ * fixture that judges and appends is a site of the rule like any other) and named here when
  * the reason holds.
  */
 const EXEMPT: Readonly<Record<string, string>> = {

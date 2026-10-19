@@ -4,7 +4,7 @@
  * `key enroll --agent` writes the same key into up to three trees, and a key that holds a name in
  * one of them cannot be enrolled under another in the rest: the record keeps a key to its name, and
  * a refusal found in the middle of the writes would leave the first trees written. So the trees are
- * read apart, before anything is written, by `agentKeyConflictIn` — which names the tree that holds
+ * read apart, before anything is written, by `agentKeyConflictIn`, which names the tree that holds
  * the name, and which decides nothing about a request that holds up.
  */
 
