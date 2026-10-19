@@ -3,14 +3,14 @@
  * to do.
  *
  * These are the only place a line's SHAPE is decided for a person reading output,
- * so the properties worth pinning are the ones a reader relies on without knowing it
- * — that columns are separated the same way everywhere, that a nested line is nested
+ * so the properties worth pinning are the ones a reader relies on without knowing it:
+ * that columns are separated the same way everywhere, that a nested line is nested
  * by exactly one level, and that a column that does not fit pushes the line out
  * rather than losing a character.
  *
  * The primitives no longer hand back the bytes; they hand back the line's PARTS, and
  * `plain.ts` turns those into bytes. So every case here reads through
- * {@link renderPlain} — the shape is still what is asserted, and the assertion is
+ * {@link renderPlain}: the shape is still what is asserted, and the assertion is
  * still on the text a person would see, which is the only thing worth pinning about
  * a shape. Where the two used to be one function this file had to assert that a fact
  * and an item AGREED on the depth; they now share one constant, and the case that
@@ -21,9 +21,9 @@
  * There is a fourth form and it has no primitives here: the DOCUMENT `mnema brief`
  * prints (`brief.ts`) is markdown for a file an agent host reads, not a line for an
  * eye scanning a terminal, so the columns and indentation below mean nothing to its
- * reader. What it composes is a whole document, and its properties — the same bytes
+ * reader. What it composes is a whole document, and its properties (the same bytes
  * for the same record, one line per rule, a skeleton that holds when nothing was
- * decided — are asserted in `brief.test.ts` and `one-line-per-item.test.ts`.
+ * decided) are asserted in `brief.test.ts` and `one-line-per-item.test.ts`.
  */
 
 import { describe, expect, it } from 'vitest';
@@ -33,13 +33,13 @@ import { renderPlain } from './plain.js';
 import { asState } from './state.js';
 import { clauseStatement, statement } from './verdict.js';
 
-describe('form A — the item line', () => {
+describe('form A: the item line', () => {
   it('indents the item and separates its columns by two spaces', () => {
     expect(renderPlain(itemLine(['an-id', 'public', 'a title']))).toBe('  an-id  public  a title');
   });
 
   it('puts every item at the same depth, whatever it holds', () => {
-    // There is no second level to ask for any more — the one reading that used
+    // There is no second level to ask for any more: the one reading that used
     // indentation to mean "this belongs to the group above" names its groups.
     for (const fields of [['a'], ['a', 'b'], ['a → b'], ['']]) {
       expect(renderPlain(itemLine(fields))).toMatch(/^ {2}(?! )/);
@@ -53,15 +53,15 @@ describe('form A — the item line', () => {
   it('joins a state to the field it rides by ONE space, not by a column', () => {
     // The byte this delivery may not move. A task's position used to be concatenated
     // into the title (`${title} (${state})`), and it is a part of its own now so that it
-    // can be painted while the title is not — which is worth nothing if the line a
+    // can be painted while the title is not, which is worth nothing if the line a
     // reader sees changed. Two spaces here would make it a column of the table; the
     // state is not one, it belongs to the title beside it.
     expect(renderPlain(itemLine(['a title', asState('DRAFT')]))).toBe('  a title (DRAFT)');
     expect(renderPlain(itemLine(['an-id', 'public', 'a title', asState('IN_REVIEW')]))).toBe(
       '  an-id  public  a title (IN_REVIEW)',
     );
-    // And it is the same line the concatenation produced, composed rather than asserted
-    // — so this case cannot agree with a shape that drifted.
+    // And it is the same line the concatenation produced, composed rather than asserted,
+    // so this case cannot agree with a shape that drifted.
     expect(renderPlain(itemLine(['a title', asState('DONE')]))).toBe(
       renderPlain(itemLine(['a title (DONE)'])),
     );
@@ -73,7 +73,7 @@ describe('form A — the item line', () => {
   });
 });
 
-describe('form B — the subject and its facts', () => {
+describe('form B: the subject and its facts', () => {
   it('separates the parts of a subject so they read as one heading', () => {
     expect(renderPlain(subjectLine('task the-id', 'public'))).toBe('task the-id  ·  public');
   });
@@ -101,20 +101,20 @@ describe('form B — the subject and its facts', () => {
   it('puts an aside where a fact goes, because the two are read together', () => {
     // An aside says what the reader can DO and a fact says what is true, and a session's
     // opening prints both. A different depth would say one of them belongs to the other,
-    // so the shape is the fact's exactly — what differs is the weight, and weight is the
+    // so the shape is the fact's exactly: what differs is the weight, and weight is the
     // styled renderer's (`styled.test.ts`).
     expect(renderPlain(aside('`/exit` or Ctrl-D leaves'))).toBe('  `/exit` or Ctrl-D leaves');
     expect(renderPlain(aside('x'))).toBe(renderPlain(fact('x')));
   });
 
   it('indents a fact exactly as deep as an item, so the two never disagree', () => {
-    // A report that mixes them — a list under a subject — would otherwise step in
+    // A report that mixes them, a list under a subject, would otherwise step in
     // and out by a space for no reason a reader could name.
     expect(renderPlain(fact('x'))).toBe(renderPlain(itemLine(['x'])));
   });
 });
 
-describe('form C — the verdict', () => {
+describe('form C: the verdict', () => {
   it('leads with the label, so a reader scanning finds it first', () => {
     expect(renderPlain(statement('ALLOWED', 'submit t-1 → READY'))).toBe(
       'ALLOWED: submit t-1 → READY',
@@ -138,7 +138,7 @@ describe('form C — the verdict', () => {
   it('separates the clauses of a verdict that arrived in several', () => {
     // `verify` does not word its verdict: the chain hands over the clauses of its own
     // one-line sentence, and this is where they are laid out. The bytes are the reason
-    // it can be done at all — the label, a colon, and the chain's sentence — so a reader
+    // it can be done at all (the label, a colon, and the chain's sentence), so a reader
     // of a terminal and a reader of the structured `summary` are reading one thing.
     expect(
       renderPlain(
@@ -162,7 +162,7 @@ describe('form C — the verdict', () => {
   it('sits at the left edge, and one level in when a caller asks for one', () => {
     // A verdict is the answer, so nothing is under it and zero is the default. The one
     // caller that asks for a level is the console's opening panel, where a tree's verdict
-    // is written under a heading that names the section — which is form B's nesting, so it
+    // is written under a heading that names the section, which is form B's nesting, so it
     // is form B's depth: exactly as deep as a fact, by the renderer's own constant, and
     // never a second idea of how far in one level is.
     expect(renderPlain(statement('public', 'no record here'))).toBe('public: no record here');

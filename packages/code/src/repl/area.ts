@@ -1,10 +1,10 @@
 /**
- * HOW MUCH OF THE INPUT AREA FITS — the arithmetic, and nothing about what it says.
+ * HOW MUCH OF THE INPUT AREA FITS: the arithmetic, and nothing about what it says.
  *
  * The row being typed used to be one row with two rows under it. It is an AREA now: the
  * palette of words a caller could type next, a badge in the corner saying what the record
  * proved, a rule across the terminal, the row itself, a second rule, and the hint. It is the
- * BOTTOM of the three regions the page is made of — always at the foot, never moving, and
+ * BOTTOM of the three regions the page is made of: always at the foot, never moving, and
  * redrawn on every frame like the other two (`region.ts`).
  *
  * AND THIS FILE USED TO BE ABOUT A BOUNDARY THAT NO LONGER EXISTS. Every number in it was
@@ -16,7 +16,7 @@
  * roll.
  *
  * THE CONSOLE OWNS THE SCREEN NOW, and the boundary went with the model. The frame is exactly
- * as tall as the terminal on every frame — that is what three fixed regions MEANS — so it is
+ * as tall as the terminal on every frame (that is what three fixed regions MEANS), so it is
  * fullscreen by construction and there is nothing to stay under. What the library does at that
  * height is measured rather than feared: a frame equal to the viewport is written in place,
  * and only a frame TALLER than it makes the library start the page over. The row that used to
@@ -30,8 +30,8 @@
  * session has always had.
  *
  * AND *A TERMINAL* MEANT ANY TERMINAL, which is the premise a floor under the window took
- * away. This file was written on the rule every ladder of this surface was written on — whatever
- * the size, there is a rung — and what that produced at the bottom was a prompt with the product's
+ * away. This file was written on the rule every ladder of this surface was written on (whatever
+ * the size, there is a rung) and what that produced at the bottom was a prompt with the product's
  * identity gone from the screen. Under the floor nothing is laid out at all now
  * (`floor.ts`), so the forms below `full` are reached by what is DRAWN rather than by how small a
  * window is: a list of words that grows, or a window too narrow for the badge to be one row.
@@ -40,7 +40,7 @@
  * and that is one rule where there used to be two. The top region is fixed: it is the same
  * height for a terminal of a given size whatever the session says, so an arrangement chosen
  * against what it leaves cannot come and go as lines land. What GROWS is the list of words, on
- * a keystroke, and it grows into the middle region — which costs nothing at all, because the
+ * a keystroke, and it grows into the middle region, which costs nothing at all, because the
  * middle is a WINDOW onto what the session said and not the saying of it (`scrolling.ts`). A
  * list that takes the whole middle gives the whole middle back on the next key, and nothing
  * scrolled away in between.
@@ -48,13 +48,13 @@
  * WHICH IS WHY THE PALETTE HAS ONE LIMIT WHERE IT USED TO HAVE THREE. It was a PREFERENCE
  * (what the page had left over), a FLOOR (one word, because a page with nothing to spare drew
  * the count of what had no room and not one word) and a CEILING (the library's boundary). The
- * preference and the floor were both about rows that were about to be lost — on a page whose
+ * preference and the floor were both about rows that were about to be lost: on a page whose
  * top scrolled into the caller's own history, taking a row was spending something. Nothing is
  * spent here. So the list takes what is left of the screen, and the only limit is that the
  * three regions together may not be taller than the terminal.
  *
  * WIDTH IS THE OTHER MEASUREMENT, AND IT WAS MISSING. The arithmetic counted a row per
- * thing to draw and the terminal counted two whenever a thing was wider than the screen —
+ * thing to draw and the terminal counted two whenever a thing was wider than the screen:
  * a hint of seventy columns on a window of sixty is two rows, and every number this file
  * answered with was one too few. So a row that would be FOLDED is not drawn, which is the
  * same rule the forms already are, turned on the other axis: the hint and the badge each
@@ -62,8 +62,8 @@
  *
  * AND THERE IS A ROW THAT COMES AND GOES WITH AN ANSWER, which is the palette's shape of row
  * turned on the roll rather than on a keystroke. An answer as tall as the window leaves the page
- * exactly as it was when its end is the end the page already showed — the same document asked
- * twice — and so does every answer asked by a reader who has walked back, whose page the roll
+ * exactly as it was when its end is the end the page already showed, the same document asked
+ * twice, and so does every answer asked by a reader who has walked back, whose page the roll
  * holds still on purpose. A page that does not move is an answer nobody saw land. So the area
  * says so, on a row of its own at the top, directly under the window it is about; the row exists
  * only while it is true and it takes its row out of the middle region, exactly as the list does.
@@ -71,22 +71,22 @@
  * ordinary frame, the opening included, is the area it always was ({@link AreaRequest.unmoved}).
  *
  * NOTHING HERE DRAWS AND NOTHING HERE COMPOSES. It receives what there is to show as
- * numbers — how wide each thing is, how many rows the palette wants, how many rows the region
- * above it takes — and answers with which arrangement there is room for, what is in it, and
+ * numbers (how wide each thing is, how many rows the palette wants, how many rows the region
+ * above it takes) and answers with which arrangement there is room for, what is in it, and
  * where the caret goes; the drawing is the layout's (`region.ts`) and the words are the
  * session's (`session.ts`).
  */
 
 /**
- * The three forms, tallest first — the same shape of choice the panel makes.
+ * The three forms, tallest first: the same shape of choice the panel makes.
  *
- *   - `full` — the badge in the corner, a rule, the row being typed, a rule, the hint.
+ *   - `full`: the badge in the corner, a rule, the row being typed, a rule, the hint.
  *     What the reference this was drawn from shows.
- *   - `ruled` — the same without the badge. A terminal that has room for the two rules
+ *   - `ruled`: the same without the badge. A terminal that has room for the two rules
  *     and not for the row above them, a terminal too narrow for the badge to be one row,
  *     and the arrangement a session outside a project gets at any size, because there is
  *     no record to name a level of.
- *   - `bare` — the row being typed and the hint, with nothing around them. What this
+ *   - `bare`: the row being typed and the hint, with nothing around them. What this
  *     console drew before the input had a place of its own, and the floor: it is
  *     answered whatever the height, because a terminal too short for it is a terminal
  *     too short for a prompt.
@@ -94,7 +94,7 @@
  * AND THE HEIGHT NO LONGER WALKS THIS LADDER, which is worth saying where the ladder is
  * defined rather than leaving a reader to work it out. There is a FLOOR under the window
  * (`floor.ts`): no page is laid out under the floor, the region above may hold at most
- * a third of the screen (`panel.ts`), and the whole of the `full` form is five rows — so on every
+ * a third of the screen (`panel.ts`), and the whole of the `full` form is five rows, so on every
  * window a caller can open, the height alone answers `full`. What still reaches the rungs under it
  * is the LIST of words growing into what is left ({@link roomForThePalette}) and a window too
  * narrow for the badge to be one row. The arithmetic is unchanged and it is still total; what
@@ -114,20 +114,20 @@ export interface AreaRequest {
    * A WIDTH RATHER THAN A YES, and the two are different questions: outside a project
    * there is no level to name, and on a window narrower than the badge there is a level
    * that would be drawn across two rows. Both end in the same absence and only one of
-   * them is about the record, so the caller answers what it knows — how wide the row it
-   * composed is — and the choice is made here.
+   * them is about the record, so the caller answers what it knows (how wide the row it
+   * composed is) and the choice is made here.
    */
   readonly badge: number;
   /** How wide the hint is, in columns, and zero when the console offers none. */
   readonly hint: number;
   /**
-   * HOW WIDE THE ROW SAYING THE LAST ANSWER LEFT THE PAGE AS IT WAS IS, in columns — and zero
+   * HOW WIDE THE ROW SAYING THE LAST ANSWER LEFT THE PAGE AS IT WAS IS, in columns, and zero
    * whenever there is nothing of the kind to say, which is every ordinary frame.
    *
    * ZERO IS WHAT THE OPENING IS BUDGETED WITH (`session.ts`), and that is the whole of why the
    * row costs the arrangement nothing: the page is chosen against the area as it stands on a frame
    * with no such row, and the row, while it stands, comes out of the middle region rather than out
-   * of anything the page was budgeted for — the list of words is budgeted the same way. What makes
+   * of anything the page was budgeted for; the list of words is budgeted the same way. What makes
    * it non-zero is the console's to say, once per answer, and so is which of the row's two
    * sentences it is the width of (`console.ts`, `theRowSays`).
    *
@@ -138,14 +138,14 @@ export interface AreaRequest {
   /** How many rows the palette would like. Zero when it is not open. */
   readonly palette: number;
   /**
-   * HOW MANY ROWS THE REGION ABOVE TAKES — the fixed top of the page, which is the opening
+   * HOW MANY ROWS THE REGION ABOVE TAKES: the fixed top of the page, which is the opening
    * (`panel.ts`).
    *
    * IT WAS THE FLOW ON THE SCREEN, and the two are opposites rather than variants. That one
    * was everything the session had said that a reader could still see: it GREW as lines landed,
    * it shrank when a window carried rows off the top, and it had to be followed from frame to
    * frame because scrolling cannot be undone. This one is a function of the terminal's size and
-   * of nothing else — it is the same number on the first frame and the ten-thousandth — because
+   * of nothing else (it is the same number on the first frame and the ten-thousandth), because
    * what the session says goes in the MIDDLE region now and never above.
    *
    * IT IS WHY THE ARRANGEMENT IS STABLE. An area budgeted against something that grows is an
@@ -165,7 +165,7 @@ export interface Area {
   /** The arrangement to draw. */
   readonly form: AreaForm;
   /**
-   * How many rows sit ABOVE the row being typed, inside the area — which is where the caret
+   * How many rows sit ABOVE the row being typed, inside the area, which is where the caret
    * goes, once the two regions over it have been counted.
    *
    * The layout puts the real caret at an offset into the frame it draws, and the row being
@@ -180,7 +180,7 @@ export interface Area {
   readonly hint: boolean;
   /** Whether the row saying the last answer left the page as it was is drawn, over it all. */
   readonly unmoved: boolean;
-  /** How many rows the palette gets — what it wanted, or what was left over. */
+  /** How many rows the palette gets: what it wanted, or what was left over. */
   readonly palette: number;
 }
 
@@ -193,7 +193,7 @@ const RULE = 1;
 /** The hint's row, under everything. */
 const HINT = 1;
 /**
- * THE BLANK ROW OVER THE PALETTE — what separates the list of words from whatever the
+ * THE BLANK ROW OVER THE PALETTE: what separates the list of words from whatever the
  * arrangement puts under it.
  *
  * It exists because the list read as part of what was above it: the palette is the console's
@@ -209,12 +209,12 @@ const HINT = 1;
 const ABOVE_THE_PALETTE = 1;
 
 /**
- * THE ROW SAYING THE LAST ANSWER LEFT THE PAGE AS IT WAS — at the top of the area, directly under
+ * THE ROW SAYING THE LAST ANSWER LEFT THE PAGE AS IT WAS: at the top of the area, directly under
  * the window it is about, and over the palette when both are there.
  *
  * IT IS COUNTED HERE AND DRAWN IN `region.ts`, for the reason the blank row over the palette is:
  * a row the layout draws and this file does not count is a frame one row taller than the screen
- * it is drawn on — and the row a frame like that loses is the foot of the window, which is the
+ * it is drawn on, and the row a frame like that loses is the foot of the window, which is the
  * newest line of the answer the row is about.
  */
 const UNMOVED = 1;
@@ -232,7 +232,7 @@ interface Drawing {
 }
 
 /**
- * How many rows the palette takes, its own blank row counted — and none at all when it is
+ * How many rows the palette takes, its own blank row counted, and none at all when it is
  * shut.
  *
  * ONE FUNCTION, READ BY BOTH ARITHMETICS below, because the height of the area and the depth
@@ -244,8 +244,8 @@ function paletteRows(drawing: Drawing): number {
 }
 
 /**
- * How many rows sit over what the form itself draws — the row saying the last answer left the
- * page as it was, and the palette with its blank row — and none when neither is there.
+ * How many rows sit over what the form itself draws (the row saying the last answer left the
+ * page as it was, and the palette with its blank row) and none when neither is there.
  *
  * ONE FUNCTION, READ BY BOTH ARITHMETICS below, for the reason {@link paletteRows} is one: the
  * height of the area and the depth of the caret are the same sum read from two ends, and a row
@@ -310,7 +310,7 @@ function formFor(request: AreaRequest, drawing: Drawing): AreaForm {
 /**
  * Whether something of a given width is drawn on one row of this terminal.
  *
- * Zero is nothing to draw, and wider than the window is something that would be FOLDED —
+ * Zero is nothing to draw, and wider than the window is something that would be FOLDED,
  * which costs a second row nothing counted. It said the TERMINAL would fold it, and the
  * renderer that folds took that over (`presentation/folded.ts`); the answer here is the
  * same either way, because what this rules on is whether one row is enough, and a row that
@@ -323,21 +323,21 @@ function onOneRow(width: number, columns: number): boolean {
 }
 
 /**
- * HOW MANY ROWS THE PALETTE MAY HAVE — what is left of the screen under the region above and
+ * HOW MANY ROWS THE PALETTE MAY HAVE: what is left of the screen under the region above and
  * over the area's own floor, and never more than the list asked for.
  *
  * IT WAS THREE LIMITS AND IT IS ONE, and what took the other two away is the model rather
  * than a simplification. The PREFERENCE was what the page had left over: taking more than that
  * carried the top of the page into the caller's scrollback, permanently, so the list was held
  * to the emptiness. The FLOOR was one word underneath it, because holding the list to a page
- * with nothing spare made it draw the count of what had no room and NOT ONE WORD — a console
+ * with nothing spare made it draw the count of what had no room and NOT ONE WORD: a console
  * answering *what can I type* with *nineteen things, none of them*. Both were about rows that
  * were about to be lost.
  *
  * NOTHING IS LOST NOW. The rows the list takes come out of the middle region, which is a WINDOW
  * onto what the session said: a list twenty rows tall hides twenty rows of the roll, and the
  * next keystroke shows them again, in the same order, having never gone anywhere
- * (`scrolling.ts`). So there is nothing to prefer and nothing to floor — the list shows what
+ * (`scrolling.ts`). So there is nothing to prefer and nothing to floor: the list shows what
  * fits, and what fits is everything the screen has under the opening.
  *
  * THE BLANK ROW COMES OFF FIRST, because the palette does not get to spend a row the drawing is
@@ -361,7 +361,7 @@ export function areaFor(request: AreaRequest): Area {
   const unmoved = onOneRow(request.unmoved, request.columns);
   // THE ROW SAYING THE LAST ANSWER LEFT THE PAGE AS IT WAS IS PART OF WHAT THE LIST MAY NOT TAKE,
   // with the row being typed and the hint. The list grows into whatever is left and the forms give
-  // way to make room for it, down to the bare one — and the bare form still draws this row, so a
+  // way to make room for it, down to the bare one, and the bare form still draws this row, so a
   // list that had counted it as room would make even the floor one row taller than the screen.
   const floor = TYPED + (hint ? HINT : 0) + (unmoved ? UNMOVED : 0);
   const drawing: Drawing = {

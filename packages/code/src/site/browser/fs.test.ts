@@ -1,8 +1,8 @@
 /**
  * The files a page carries, read through the names `node:fs` and `node:path` are imported by.
  *
- * What the chain asks of the disk is small and exact — which tails exist, a file whole, a file
- * backwards in chunks — so this pins exactly those, and that nothing that would write is
+ * What the chain asks of the disk is small and exact (which tails exist, a file whole, a file
+ * backwards in chunks), so this pins exactly those, and that nothing that would write is
  * available.
  */
 

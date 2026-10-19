@@ -74,7 +74,7 @@ const REKOR = 'https://rekor.sigstore.dev/api/v1/log/entries';
 const OAUTH_TOKEN = 'https://oauth2.sigstore.dev/auth/token';
 const EMAIL = 'felipe@example.com';
 
-/** An OpenID token with these claims — unsigned, which is all a double reads. */
+/** An OpenID token with these claims: unsigned, which is all a double reads. */
 function aToken(claims: Record<string, unknown>): string {
   const part = (value: unknown) => Buffer.from(JSON.stringify(value)).toString('base64url');
   return `${part({ alg: 'none' })}.${part(claims)}.c2ln`;
@@ -182,7 +182,7 @@ const certificateIn = (content: string): X509Certificate =>
   new X509Certificate(Buffer.from(content, 'base64').toString('utf-8'));
 
 describe('what leaves the machine', () => {
-  it('sends Fulcio the token, the key and its proof, and Rekor the digest — never the message', async () => {
+  it('sends Fulcio the token, the key and its proof, and Rekor the digest, never the message', async () => {
     const sigstore = await aSigstore();
     const key = P256();
     const token = aToken(LOCAL_CLAIMS);

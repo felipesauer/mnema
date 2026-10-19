@@ -1,5 +1,5 @@
 /**
- * FORM B — one thing in detail: a line naming the subject, then the facts about
+ * FORM B (one thing in detail): a line naming the subject, then the facts about
  * it, indented under it.
  *
  * Three of the CLI's readings are this form (`show`, `focus`, `resume`), and so is
@@ -7,7 +7,7 @@
  * `Initialized mnema project at …` followed by the identity and the keys. The
  * subject line answers "what is this", the indented lines answer "what is true
  * about it", and the indentation is what makes the second sort belong to the
- * first — a fact at column zero reads as a new subject.
+ * first: a fact at column zero reads as a new subject.
  *
  * The two halves are separate functions rather than one block builder because they
  * are used apart as often as together: a write prints its own headline (it is a
@@ -18,14 +18,14 @@
  * Nothing here collapses whitespace, and that is still the primitive's rule: a part's
  * text is TEXT, and what is in it is decided where the value enters the line.
  *
- * WHAT IT USED TO SAY WAS THAT FORM B IS EXEMPT — *a fact printed on a line of its OWN
+ * WHAT IT USED TO SAY WAS THAT FORM B IS EXEMPT: *a fact printed on a line of its OWN
  * is not in the one-line-per-item class; a newline in a record's title makes the output
  * ugly, and ugly is not forgery, because there is no list of one-line items around it
  * for the second half to imitate.* THE ARGUMENT SURVIVES FOR THE BODY AND NOT FOR THE
  * FACTS. A body really has no list around it, and `show` exists to serve it whole. The
  * facts above it are not a body: they are lines at ONE depth under a subject, so a
- * second line at that depth is a FACT the record does not hold — `about …`, `topic: …`,
- * `supersedes …` — which is the same forgery a list row is, with the subject standing in
+ * second line at that depth is a FACT the record does not hold (`about …`, `topic: …`,
+ * `supersedes …`), which is the same forgery a list row is, with the subject standing in
  * for the header. What was too broad was reading "no list" off the FORM when it is a
  * property of the one field that is a paragraph. See `record.ts`, which collapses its
  * facts and not its bodies, and
@@ -51,7 +51,7 @@ export function subjectLine(...parts: readonly string[]): Line {
 
 /**
  * One fact about the subject above, indented under it. It is also what form C's
- * EVIDENCE line is — an issue under a verdict is indented exactly like a fact
+ * EVIDENCE line is: an issue under a verdict is indented exactly like a fact
  * under a subject, and calling it two things would be inventing a distinction the
  * output does not make.
  *
@@ -59,14 +59,14 @@ export function subjectLine(...parts: readonly string[]): Line {
  * earns it in both places it is used: the command `key request` tells the person to
  * run on the OTHER machine, and the line `init` offers for the method file this
  * product did not write. Set off from the sentence that introduces it, either is
- * visibly a line to be TYPED rather than read — which is what a person scanning for
+ * visibly a line to be TYPED rather than read, which is what a person scanning for
  * the thing to copy is looking for. Flattened it becomes the third line of a
  * paragraph, and the one piece of that output the reader has to act on stops looking
  * different from the prose around it.
  *
  * THAT SENTENCE READ "IN EXACTLY ONE PLACE, AND IT EARNS IT", and it carried the count
  * as the argument: *one use is the honest count of how often output has something to be
- * typed verbatim.* The count was never the rule — the rule is the CLASS, and a second
+ * typed verbatim.* The count was never the rule: the rule is the CLASS, and a second
  * member of it arrived the day a verb had a second thing to be copied. What the old
  * wording would have bought is a delivery flattening a literal into prose to keep a
  * number true.
@@ -77,7 +77,7 @@ export function subjectLine(...parts: readonly string[]): Line {
  * LITERAL, not a rank, and what is at this depth is the honest inventory of what a
  * reader is expected to copy.
  *
- * Its text is one FIELD — the same role an item's column takes — because a fact and
+ * Its text is one FIELD, the same role an item's column takes, because a fact and
  * an item of one field are the same line, which is asserted rather than assumed
  * (`forms.test.ts`). The depth is the line's, so the two cannot disagree about how
  * far in one level is: there is one constant now, in the renderer.
@@ -90,7 +90,7 @@ export function fact(text: string, depth = 1): Line {
  * An ASIDE: a line about the SURFACE rather than about the record.
  *
  * It is {@link fact}'s sibling and the difference is what it is about. A fact is
- * about the record; an aside is about the surface — the words a session answers
+ * about the record; an aside is about the surface: the words a session answers
  * to, the key that leaves it, the directory it was opened in. Nothing about the
  * record is stated, so nothing here is a verdict, a count or a stored value, and
  * that is exactly what makes it the one line a reader should be able to skip past
@@ -101,19 +101,19 @@ export function fact(text: string, depth = 1): Line {
  * and the identity this installation recorded for it (`repl/standing.ts`). Neither
  * is something to do, both are about where the SESSION is standing rather than
  * about the record, and the whole of `standing.ts` is the argument that the record
- * is not consulted for either. What survived is the meaning — secondary, and you
- * may skip it — and what was too narrow was naming one KIND of such line as though
+ * is not consulted for either. What survived is the meaning (secondary, and you
+ * may skip it) and what was too narrow was naming one KIND of such line as though
  * it were the only one.
  *
  * Which is why it takes the `detail` role: DIM is what this surface already means
- * by "secondary, and you may skip it" (see `styled.ts` — it is what an id and an
+ * by "secondary, and you may skip it" (see `styled.ts`; it is what an id and an
  * instant take, for the same reason). No role and no hue was invented for it; the
  * plain renderer writes the words and nothing else, so a reader in a pipe or on a
  * monochrome terminal loses nothing, because there was nothing only the weight
  * said.
  *
- * It sits at the same depth a fact does. The two are read together — a session's
- * opening says what it runs and then what to type — and a different indent would
+ * It sits at the same depth a fact does. The two are read together, a session's
+ * opening says what it runs and then what to type, and a different indent would
  * say one of them belongs to the other.
  */
 export function aside(text: string): Line {
@@ -124,7 +124,7 @@ export function aside(text: string): Line {
  * One fact that ends in a workflow STATE: the fact, then the position as its own part.
  *
  * It is {@link fact} with the state taken out of the sentence, and the split is the whole
- * of it — `show` printed `` `${title} (${state})` `` as a single field, so nothing could
+ * of it: `show` printed `` `${title} (${state})` `` as a single field, so nothing could
  * paint the position without painting the title with it. The separator is the space the
  * concatenation already held (see `plain.ts`), which is why the bytes are unchanged and
  * the golden is the acceptance test for this.

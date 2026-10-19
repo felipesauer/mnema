@@ -3,12 +3,12 @@
  *
  * `verifyChain` is synchronous and so is every hash and signature check in it, and the
  * browser's own cryptography (WebCrypto) is asynchronous only. Rather than rewrite the
- * verifier around promises — a second verifier is the one thing this page must not carry —
+ * verifier around promises (a second verifier is the one thing this page must not carry)
  * the page gives the SAME verifier a synchronous SHA-256, SHA-512 and Ed25519 verification
  * in plain JavaScript. They are exact and slow, and a page that checks a few hundred
  * checkpoints pays seconds for them, not minutes.
  *
- * What a page cannot do — mint a key, sign, encrypt, draw randomness — is not here: those
+ * What a page cannot do (mint a key, sign, encrypt, draw randomness) is not here: those
  * names exist so the bundle links, and each one refuses when called.
  */
 

@@ -1,5 +1,5 @@
 /**
- * How a rule says WHO ACCEPTED IT — written once, for every place that tells a rule.
+ * How a rule says WHO ACCEPTED IT: written once, for every place that tells a rule.
  *
  * The opening document, the rules a push hands over at an edit and the answer to `governing_rules`
  * all carry the same reading of the same fact (`Acceptance`, `@mnema/context`), and the words for

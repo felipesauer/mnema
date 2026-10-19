@@ -1,9 +1,9 @@
 /**
  * The page's SHA-256 and Ed25519 against Node's own, over inputs Node produced.
  *
- * The verdict test proves the two agree on real records; this pins WHY they do — block
+ * The verdict test proves the two agree on real records; this pins WHY they do (block
  * boundaries of the hash, and a signature that is altered anywhere, or whose scalar is out of
- * range, being refused — so a break in the arithmetic is named here and not found as a verdict
+ * range, being refused), so a break in the arithmetic is named here and not found as a verdict
  * that differs.
  */
 

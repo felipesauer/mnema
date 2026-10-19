@@ -1,8 +1,8 @@
 /**
  * WHAT THE BARE NAME OFFERS, with no terminal in the case.
  *
- * The doors and the page they are drawn as are a function of two facts — what the program
- * declared, and whether there is a project here — so everything about WHAT is offered can be
+ * The doors and the page they are drawn as are a function of two facts (what the program
+ * declared, and whether there is a project here), so everything about WHAT is offered can be
  * asked without a device. What needs one is whether a key moves the mark and whether
  * choosing runs the line, and that is `tests/the-bare-name-asks.test.ts`.
  *
@@ -52,7 +52,7 @@ describe('the doors are a function of the directory', () => {
     expect(inAProject[0]).not.toEqual(outsideOne[0]);
   });
 
-  it('offers the console, not `init`, where no project can be founded — the home directory', () => {
+  it('offers the console, not `init`, where no project can be founded: the home directory', () => {
     // `init` refuses in the home (`whyNoProjectRootAt`, `@mnema/core`), and Return on this
     // page used to found a project there: the tree every folder under the home then belonged
     // to. A first door that is always refused is not a door, so there it is the console.
@@ -63,7 +63,7 @@ describe('the doors are a function of the directory', () => {
   });
 
   it('says what each door does in the words of the verb that declares it', () => {
-    // THE LINK. A verb renamed, or one whose description changed, moves this case — and a
+    // THE LINK. A verb renamed, or one whose description changed, moves this case, and a
     // door that carried its own copy of the sentence would go on advertising the old one.
     expect(inAProject[0]?.description).toBe(declares(REPL_VERB));
     expect(outsideOne[0]?.description).toBe(declares(INIT_VERB));
@@ -102,7 +102,7 @@ describe('the mark is on one row, and the arrows are the list of words’ arrows
 
   it('walks with the list of words’ own function, so the ends hold', () => {
     // NOT A SECOND REDUCER. The step, the ends and what a word means are `theNextPicked`'s,
-    // asked here with these doors — so a delivery that changed how the palette's arrows move
+    // asked here with these doors, so a delivery that changed how the palette's arrows move
     // moves these with them.
     const first = inAProject[0]?.word as string;
     const last = inAProject[1]?.word as string;
@@ -129,7 +129,7 @@ describe('the page is composed whole, and it asks a question', () => {
     expect(page[0], 'the page does not ask anything').toContain('?');
     for (const door of outsideOne) expect(text, door.word).toContain(door.word);
     // THE KEYS ROW IS THE PAGE'S LAST, asked of the function that composes it rather than
-    // retyped — a case that spelled the words would go stale the day they change.
+    // retyped: a case that spelled the words would go stale the day they change.
     expect(page.at(-1)).toBe(renderPlain(theKeys()));
     // AND IT NAMES ALL THREE KEYS, which is the whole of what a caller can do here.
     expect(page.at(-1)).toContain('Enter');

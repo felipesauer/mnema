@@ -1,11 +1,11 @@
 /**
- * A LINE IS AS WIDE AS THE COLUMNS IT TAKES — the authority, on the values that broke it.
+ * A LINE IS AS WIDE AS THE COLUMNS IT TAKES: the authority, on the values that broke it.
  *
  * IT WAS A COUNT OF CODE POINTS. The debt this closes was written down as *East Asian Ambiguous
  * glyphs counted as one column (7 of them)*, with the note *none of which appears in the
  * vocabulary*, and measuring it found the note false and the debt aimed at the smaller half:
  * there are fifteen Ambiguous characters in this product's own source, the em dash appears 1625
- * times, the banner's full block 140 — and under all of it, East Asian WIDE, which is not
+ * times, the banner's full block 140, and under all of it, East Asian WIDE, which is not
  * ambiguous at all. Measured on the built binary before `width.ts` existed:
  *
  *   | line              | widthOf | columns |
@@ -21,12 +21,12 @@
  *
  * WHAT IS ASSERTED HERE, and why each case is here rather than covered by the one above it:
  *
- *   - WIDE IS TWO, on the value the measurement was made on, and glyph by glyph as well — so
+ *   - WIDE IS TWO, on the value the measurement was made on, and glyph by glyph as well, so
  *     the number is a property of each character and not an accident of one string.
  *   - AND THE ZERO, both of its kinds. A combining mark adds no cell (the half a naive
  *     implementation gets wrong in the OTHER direction, by counting code points), and a control
  *     sequence adds none either (the half that was already right and had to stay).
- *   - THE CONVENTION FOR AMBIGUOUS, DECLARED — one column, on the glyphs this surface really
+ *   - THE CONVENTION FOR AMBIGUOUS, DECLARED: one column, on the glyphs this surface really
  *     writes, read from where they are written. It is the authority's choice and not this
  *     product's, and it is asserted so that the day the authority changes its default, this
  *     surface is told rather than redrawn. The banner's seven glyphs have their own house
@@ -64,7 +64,7 @@ import {
 /** One escape byte, written as an escape so no control byte enters a source file. */
 const ESC = '\u001b';
 
-/** A sequence a FIELD may hold — magenta, which the styled renderer never writes. */
+/** A sequence a FIELD may hold: magenta, which the styled renderer never writes. */
 const A_SEQUENCE = `${ESC}[35m`;
 
 /**
@@ -72,7 +72,7 @@ const A_SEQUENCE = `${ESC}[35m`;
  *
  * Seven characters, seven code points, fourteen cells: `決定を記録する` is *record the decision*
  * in Japanese. Every one of its glyphs is East Asian WIDE, which is a property of the character
- * rather than of a terminal — so fourteen is the answer everywhere, and it was seven.
+ * rather than of a terminal, so fourteen is the answer everywhere, and it was seven.
  */
 const A_CJK_TITLE = '決定を記録する';
 
@@ -80,7 +80,7 @@ const A_CJK_TITLE = '決定を記録する';
 const FOURTEEN = 14;
 
 /**
- * `e` FOLLOWED BY COMBINING ACUTE ACCENT — one thing on a screen, two code points.
+ * `e` FOLLOWED BY COMBINING ACUTE ACCENT: one thing on a screen, two code points.
  *
  * Spelled as a pair rather than typed as `é`, because the precomposed character is one code
  * point and would pass a count of code points: what this is for is the decomposed form, which
@@ -89,7 +89,7 @@ const FOURTEEN = 14;
 const A_COMBINED_E = 'e\u0301';
 
 /**
- * THE RECORDED TRANSCRIPTS — every line this CLI writes for a person, pinned byte for byte.
+ * THE RECORDED TRANSCRIPTS: every line this CLI writes for a person, pinned byte for byte.
  *
  * Read as the corpus of the non-regression rather than retyped, for the reason the whole bench
  * runs on: a line reworded next month travels into the case, and a copy would be a fixture
@@ -101,7 +101,7 @@ const THE_TRANSCRIPTS = [
   '../cli.writes.golden.txt',
 ];
 
-/** One line holding nothing but this text — the shape the width of a LINE is asked about. */
+/** One line holding nothing but this text: the shape the width of a LINE is asked about. */
 function lineOf(text: string): Line {
   return { indent: 0, parts: [{ role: 'field', text }] };
 }
@@ -149,7 +149,7 @@ describe('East Asian Wide is two columns, which is a property of the character',
   });
 });
 
-describe('and the zero — the half a naive count gets wrong the other way', () => {
+describe('and the zero: the half a naive count gets wrong the other way', () => {
   it('gives a combining mark no cell of its own', () => {
     // TWO CODE POINTS, ONE CELL. The old count answered 2, which is a page laid out around an
     // accent nobody draws in a column of its own.
@@ -175,7 +175,7 @@ describe('and the zero — the half a naive count gets wrong the other way', () 
   it('tells a sequence from a break, which is the distinction the console rests on', () => {
     // A NEWLINE OCCUPIES NO COLUMN EITHER, and it is not an escape: a first draft of the
     // authority inferred "is a sequence" from "is no columns wide" and dropped every break out
-    // of what a screen shows — measured, in two cases of `folded.test.ts`. So the two questions
+    // of what a screen shows (measured, in two cases of `folded.test.ts`). So the two questions
     // are separate, and a caller reading rows still gets their rows.
     expect(withoutSequences(`a${A_SEQUENCE}\nb`)).toBe('a\nb');
     expect(glyphsOf('\n').map((glyph) => glyph.sequence)).toEqual([false]);
@@ -189,7 +189,7 @@ describe('the convention for Ambiguous is the authority’s, and it is declared'
     // locale and font, and this product cannot know which; the authority treats them as NARROW,
     // on the recommendation of the standard that defines the class (UAX #11: if the context
     // cannot be established reliably, they should be treated as narrow characters by default).
-    // So the day that default changes, this surface is TOLD rather than quietly redrawn — the
+    // So the day that default changes, this surface is TOLD rather than quietly redrawn: the
     // risk is unchanged by the delivery and it is now the whole of the remaining debt.
     const glyphs = theGlyphsItWrites();
     // Read, rather than absent: a scan that found no glyph passes this saying nothing.
@@ -202,7 +202,7 @@ describe('the convention for Ambiguous is the authority’s, and it is declared'
   it('would tell this surface if the authority started counting them as two', () => {
     // NOT VACUOUS: the case above is about a CHOICE, so it has to be able to see the other one.
     // The em dash is Ambiguous and this asserts what the surface would look like under the wide
-    // convention — one glyph, two cells — by asking about a character that is Wide outright.
+    // convention (one glyph, two cells) by asking about a character that is Wide outright.
     expect(widthOfText('—')).toBe(1);
     expect(widthOfText('決')).toBe(2);
   });
@@ -233,7 +233,7 @@ describe('a column is padded in columns, and cut in columns', () => {
     // THE DEFECT PADDING HAD. `padEnd` pads to a count of code UNITS, so a value two cells per
     // glyph was padded as though it were one and every column to the right of it started two
     // cells further along on that row than on the rows around it. One column of this surface
-    // holds a value a caller wrote — the agent a run's cost is attributed to.
+    // holds a value a caller wrote: the agent a run's cost is attributed to.
     expect(widthOfText(padTo(A_CJK_TITLE, 20))).toBe(20);
     expect(padTo('決定', 6)).toBe('決定  ');
     // AND IT NEVER CUTS: a value wider than the column pushes the rest of the line right, which
@@ -262,7 +262,7 @@ describe('not one line this surface writes changed width', () => {
     // THE NON-REGRESSION AS A PROPERTY RATHER THAN AS A HOPE. The goldens hold every line the CLI
     // writes for a person, byte for byte (`cli.golden.test.ts`), so they are the corpus: for each
     // of them the new count and the count of code points this delivery replaced are the same
-    // number. That is WHY the goldens stayed green without being regenerated — every line of them
+    // number. That is WHY the goldens stayed green without being regenerated: every line of them
     // is printable ASCII or a punctuation this surface chose from the Ambiguous class, which the
     // authority takes as one column.
     //
@@ -288,7 +288,7 @@ describe('not one line this surface writes changed width', () => {
 describe('the fast path and the segmenter answer the same thing', () => {
   it('agrees with a segmentation done independently, over text of every kind', () => {
     // THE SHORTCUT IS NOT TRUSTED. Printable ASCII is answered without segmenting, because
-    // segmentation is what measuring costs (`width.ts`, `theGlyphsOfPlainText`) — so this walks
+    // segmentation is what measuring costs (`width.ts`, `theGlyphsOfPlainText`), so this walks
     // the same corpus the slow way, here, and refuses a disagreement. A shortcut that stopped
     // being true of ASCII goes red rather than quiet.
     //
@@ -322,7 +322,7 @@ describe('what has been measured is remembered, and the memory is bounded', () =
   it('answers the same on both sides of the ceiling being emptied', () => {
     // THE POLICY, AS A CASE. A record's content is a caller's, so the set of strings this can be
     // asked about is unbounded; the map is emptied at a ceiling rather than grown for ever, and
-    // what has to survive that is the ANSWER. The ceiling is not read from the module — what is
+    // what has to survive that is the ANSWER. The ceiling is not read from the module: what is
     // asserted is that however many texts go through, the count stays bounded and every answer
     // is the one the authority gives.
     const before = widthOfText(A_CJK_TITLE);

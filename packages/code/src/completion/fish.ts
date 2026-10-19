@@ -1,14 +1,14 @@
 /**
- * THE TREE, RENDERED FOR FISH — one declaration per candidate, which is fish's idiom.
+ * THE TREE, RENDERED FOR FISH: one declaration per candidate, which is fish's idiom.
  *
  * fish has no completion FUNCTION to write: a candidate is declared to the shell with
  * `complete`, guarded by a condition, and fish does the matching. So this rendering is
- * not the bash script with different plumbing — it is the same tree turned inside out,
+ * not the bash script with different plumbing: it is the same tree turned inside out,
  * one line per word instead of one table per level. Two small functions carry the only
  * thing fish cannot express as a condition: WHERE on the tree the line already is.
  *
  * IT USES FISH'S QUOTES, WHICH ARE NOT POSIX'S. Inside single quotes fish honours `\'`
- * and `\\` and nothing else, where bash and zsh honour nothing at all — so the escaping
+ * and `\\` and nothing else, where bash and zsh honour nothing at all, so the escaping
  * lives in `fishQuoted` and every description goes through it. The five descriptions
  * this program declares with an apostrophe are what makes that not hypothetical.
  *
@@ -17,7 +17,7 @@
  * absent. A completion that hangs the terminal would be a worse defect than the one this
  * file exists to fix.
  *
- * `-f` ON EVERY LINE: this surface takes no filenames anywhere — an id is not a path —
+ * `-f` ON EVERY LINE: this surface takes no filenames anywhere (an id is not a path)
  * so offering the current directory after `--note` would be noise in every menu. `-r`
  * says a flag takes a value and `-x` says it takes one of an enumerated set; both are
  * read off the declaration.
@@ -134,7 +134,7 @@ function candidatesOf(command: string, fn: string, node: CompletionNode): readon
 /**
  * What fish is told about a flag's value: the enumerated set, or that there is one.
  *
- * `-x` is both halves at once (it takes a value, and only these) — which is why an
+ * `-x` is both halves at once (it takes a value, and only these), which is why an
  * enumerated flag does not also carry `-r`.
  */
 function valueSpecOf(flag: CompletionFlag): string {
