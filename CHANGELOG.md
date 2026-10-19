@@ -30,20 +30,23 @@ with its own changelog.
 - **Each published package opens its README with a picture of what it does.** `@mnema/chain`, `@mnema/core`,
   `@mnema/context` and `@mnema/stacks` each carry an animated picture, light and dark, in `assets/`, drawn by
   `.github/the-front-page/draw.mjs` in the family's paint and motion: the same glow behind the drawing, tinted cards
-  edged in the accent, a dot that runs each arrow the way it points, the edge of a card pulsing as the dot lands, and
-  a block lit as it lands on the chain; each drawing sits on the middle of its frame. `@mnema/code` opens with the
+  edged in the accent, a dot that runs the way it points each arrow a record travels (the moves `@mnema/core`'s table
+  only allows, in grey, and the struck line `@mnema/context` does not write back have none), the edge of a card
+  pulsing as the dot lands, and a block lit as it lands on the chain. Each drawing sits on the middle of its frame,
+  24 units or more in from each side, and what a card holds sits on the card's middle. `@mnema/code` opens with the
   picture of the family, which it stands in the middle of, and has no picture of its own. Every word on a picture is
   a literal of the package, held by a test to the file that says it. Each picture paints its own page, so the dark
   one still reads where a page shows it on white. Tables written in the test say where each arrow of each package
   runs from and points to, and whether a dot runs it, and hold the drawing to them; others hold, for every package
   and the family, every shape inside the frame, the drawing on the frame's middle, and every text in the size and
-  weight of one role. No test holds how strongly a colour stands out against what is behind it. The README points at the file on the `main`
-  branch of the repository its `package.json` names, by `raw.githubusercontent.com`, with no version in the address:
-  the picture loads before anything is published and is not in the tarball. The script writes the block, and a test
-  holds each README to exactly that block and holds that no image address carries a version. The price of that
-  address: the page of an old version on npm shows today's picture from `main`, not the one that version was
-  published with. The title, the picture and the badges are centred, each in an element npm keeps `align` on (an
-  `h1` and two `p`, not a `div`); the script writes the title and the picture, and a test holds the three.
+  weight of one role, and, for every package, the room at each side and the text of each card on its middle, at
+  rest. No test holds how strongly a colour stands out against what is behind it. The README points at the file on
+  the `main` branch of the repository its `package.json` names, by `raw.githubusercontent.com`, with no version in
+  the address: the picture loads before anything is published and is not in the tarball. The script writes the block,
+  and a test holds each README to exactly that block and holds that no image address carries a version. The price of
+  that address: the page of an old version on npm shows today's picture from `main`, not the one that version was
+  published with. The title, the picture and the badges are centred, each in an element npm keeps `align` on (an `h1`
+  and two `p`, not a `div`); the script writes the title and the picture, and a test holds the three.
   The licence badge at the top of each of those pages points at the file on `main` by an absolute address, because npm
   leaves a relative one written in HTML as it is; a test holds that address and that no address in the badges is relative.
 - **The page says where the refusal of a write stops holding, and a test holds it.** A rule that refuses a write

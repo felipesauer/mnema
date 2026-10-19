@@ -626,8 +626,8 @@ function howMnemaFits(blocks, theme) {
 //
 // EVERY WORD ON A PACKAGE'S PICTURE IS A WORD OF THE PRODUCT. A line is written as pieces, each
 // the literal it puts on the picture and the file of the repository that says it (`said`),
-// joined by one of `SEPARATORS`, or `ELIDED` where a line of output prints a record's id. The
-// test finds every literal in its file, and finds no text on a picture that is
+// joined by one of `SEPARATORS`. No line draws a record's id, which the command line prints new
+// on every run. The test finds every literal in its file, and finds no text on a picture that is
 // not one of these lines. A text inside a box is put there by `sayIn` and by nothing else. The
 // example of the front page (`ADR-2`, `Keep money as integer cents`, `src/billing/total.ts`,
 // `ADR-3`) is anchored on the front page's own picture. No count that changes (kinds, hosts,
@@ -686,11 +686,6 @@ export const TYPE = Object.freeze({
 const PAD = 14;
 /** Half the distance between two rows of text inside a box. */
 export const HALF_ROW = 10;
-/**
- * What stands for a record's id in a line of output: the command line prints a new one on every
- * run, so the picture draws none.
- */
-export const ELIDED = '(…)';
 /** The baseline of the band at the foot of every package's picture. */
 const FOOT = 220;
 /** Where the band at the head of every package's picture, its name and the wordmark, ends. */

@@ -58,7 +58,6 @@ const {
   PACKAGE_PICTURES,
   FAMILY_LINES,
   SEPARATORS,
-  ELIDED,
   TYPE,
   HALF_ROW,
   textOf,
@@ -71,7 +70,6 @@ const {
   PACKAGE_PICTURES: readonly { dir: string; lines: Readonly<Record<string, Line>> }[];
   FAMILY_LINES: Readonly<Record<string, Line>>;
   SEPARATORS: readonly string[];
-  ELIDED: string;
   TYPE: Readonly<Record<string, { size: number; weight: string; centre: number }>>;
   HALF_ROW: number;
   textOf: (line: Line) => string;
@@ -445,12 +443,12 @@ describe('every package, and the family, draws what it is, in its own words', ()
   );
 
   it.each(LINED.map((p) => [p.id, p.lines] as const))(
-    '%s joins its pieces with nothing but a separator or the elided id',
+    '%s joins its pieces with nothing but a separator',
     (_dir, lines) => {
       const joins = Object.values(lines).flatMap((line) =>
         line.filter((piece): piece is string => typeof piece === 'string'),
       );
-      expect(joins.filter((j) => !SEPARATORS.includes(j) && j !== ELIDED)).toEqual([]);
+      expect(joins.filter((j) => !SEPARATORS.includes(j))).toEqual([]);
     },
   );
 
@@ -947,7 +945,7 @@ describe('every package, and the family, is drawn inside its frame, on its middl
   );
 
   it.each(pictures.filter((p) => p.path.startsWith('packages/')))(
-    '$path sets the text of each card on the card\'s middle, from its top to its foot',
+    "$path sets the text of each card on the card's middle, from its top to its foot",
     ({ svg }) => {
       // The ink of what a card holds in the last frame, from the top of its first line to the foot
       // of its last, lies as far from the card's top edge as from its bottom one. A line that comes
