@@ -3,7 +3,7 @@ import { checkName, namesAnMcpServer, validateManifest } from '../src/manifest.j
 
 const minimal = {
   name: 'a-stack',
-  version: '0.1.0',
+  version: '3.2.1',
   description: 'A stack.',
   author: { name: 'Someone' },
   license: 'MIT',

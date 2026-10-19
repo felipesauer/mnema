@@ -29,10 +29,17 @@ Said as scope, because each of these is a choice with a reason behind it:
   prompt is the host's: mnema composes the text a host puts in front of its model,
   and records what the agent decides.
 - **Not a copy somewhere else.** The committed record travels with the repository,
-  to every clone, and what you record privately stays on the machine that wrote it:
-  with `mnema witness stamp` the most that leaves that machine is a checkpoint's digest;
-  with Sigstore the identity leaves by design, into a public log (see
-  [what it proves](what-it-proves.md): "Only the digest leaves the machine, with Sigstore too").
+  to every clone, and what you record privately stays on this machine, apart from the
+  notes your agent's host receives, when a session opens through the plugin and when the
+  agent asks for them, which the host sends to its model (what the plugin hands over when
+  a session opens reads every tree this machine holds, the private one included, and has a
+  switch of its own: see [the plugin](../plugin/README.md); what the agent asks for, with
+  `search` and `read_record` or with the `mnema` command it runs, reads the private tree
+  too). The witness verbs send something out only when you run them: `mnema witness stamp`
+  (and its return visit) hands the public OpenTimestamps calendars a hash of a checkpoint's
+  digest joined to a random nonce, and nothing else of the record; the Sigstore
+  countersignature, when you run it, sends the digest itself and the identity too, by
+  design, into a public log (see [what it proves](what-it-proves.md)).
 - **Not access control.** The gate refuses an illegal move; it does not decide who
   may write.
 
