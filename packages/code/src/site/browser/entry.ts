@@ -47,7 +47,7 @@ export function verifyRecord(files: Readonly<Record<string, string>>): RecordVer
     summary: result.summary,
     clauses: result.clauses.map((clause) => clause.text),
     issues: result.issues.map(
-      (issue) => `${issue.tail} #${issue.seq} [${issue.layer}] ${issue.detail}`,
+      (issue) => `${issue.tail ?? 'the record'} #${issue.seq} [${issue.layer}] ${issue.detail}`,
     ),
     census: result.census.map((note) => note.detail),
   };

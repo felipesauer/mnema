@@ -1106,7 +1106,12 @@ function headline(result: VerifyResult): readonly [Clause, ...Clause[]] {
  * asking for one is asking the record a question it cannot answer. Those printed as
  * `<tail>#undefined`, which is the shape of a verdict that lost a number, not of one
  * that never had it.
+ *
+ * Nor does every finding have a tail. A record in which no tail holds anything is refused as a
+ * whole, and has no tail to name: it is said to be about `the record`, not about a tail that is
+ * not on the disk.
  */
-function at(tail: string, seq: number | undefined): string {
+function at(tail: string | undefined, seq: number | undefined): string {
+  if (tail === undefined) return 'the record';
   return seq === undefined ? tail : `${tail}#${seq}`;
 }

@@ -114,7 +114,7 @@ import { type Checkpoint, checkpointHash, verifyCheckpoint } from './checkpoint.
 import { type IdentityResolution, resolveIdentity } from './enrollment.js';
 import { describeLinkBreak, type Entry, linkBreakAt } from './entry.js';
 import { entryHash } from './hash.js';
-import { type ChainLayout, tailFingerprint, tailProofPath } from './layout.js';
+import { type ChainLayout, tailFingerprint, tailProofPath, tailsDir } from './layout.js';
 import {
   levelHeadline,
   type ProvenFacts,
@@ -144,9 +144,15 @@ import {
 
 export type { WitnessStatus } from './level.js';
 
-/** A problem found while verifying one tail. */
+/**
+ * A problem found while verifying one tail — or the record as a whole.
+ *
+ * `tail` is absent on exactly one issue: the record in which no tail holds an event or a
+ * checkpoint ({@link NO_TAIL_HELD}). That record has no tail to blame, and naming a tail
+ * there would send a reader to a directory that is not on the disk.
+ */
 export interface TailIssue {
-  readonly tail: string;
+  readonly tail?: string;
   readonly layer: 'T1' | 'T2/T4';
   readonly seq?: number;
   readonly detail: string;
@@ -778,7 +784,11 @@ export function verifyChain(
   }));
   // Every tail's issues, the uncounted ones included: an empty tail whose ownership proof
   // fails is a refusal like any other, and leaving it out of the count must not hide it.
-  const allIssues: TailIssue[] = tails.flatMap((tail) => issuesByTail.get(tail) ?? []);
+  // And, when no tail is counted at all, the one issue about the record as a whole.
+  const allIssues: TailIssue[] = [
+    ...(counted.length === 0 ? [noTailHeld(layout, tails)] : []),
+    ...tails.flatMap((tail) => issuesByTail.get(tail) ?? []),
+  ];
 
   // The waivers the record holds, taken from the entries already read. A waiver
   // about a tail that is still HERE is collected and never consulted: the census
@@ -844,6 +854,43 @@ export function verifyChain(
     witness,
     clauses,
     summary: verdictSentence(clauses),
+  };
+}
+
+/**
+ * How a record in which no tail holds anything is named — the words both readers refuse it by
+ * (FORMAT.md section 4; the second reader beside FORMAT.md says the same sentence).
+ */
+export const NO_TAIL_HELD = 'no tail in this record holds an event or a checkpoint';
+
+/**
+ * THE RECORD IN WHICH NO TAIL HOLDS ANYTHING, refused by name (FORMAT.md section 4).
+ *
+ * A record with no counted tail — no `tails/` directory, no tail directory in it, or only tails
+ * that hold no event and no checkpoint — asserts no fact. It used to read
+ * `verified (T1 only); 0 tail(s); no events yet` and exit 0, over a record whose one tail had
+ * been deleted as much as over a directory nothing was ever written to, while the second reader
+ * said BROKEN over the first and VERIFIED over the same record with its tail proof left behind.
+ * "Verified" over nothing is the sentence `--require signed` already refused to say over
+ * nothing signed, so this is a refusal at every requirement, with the exit of any other.
+ *
+ * A record `mnema init` founded is never this: init writes the founding and a checkpoint before
+ * it returns. The census still runs over it — each committed key with no tail is named — and a
+ * record with ANOTHER tail still standing is not this case: a tail removed whole beside it stays
+ * a census note.
+ *
+ * The reason is said as the code found it, in the words the second reader uses for the same three
+ * shapes, so the two verdicts can be compared by their text.
+ */
+function noTailHeld(layout: ChainLayout, tails: readonly string[]): TailIssue {
+  const why = !existsSync(tailsDir(layout))
+    ? 'there is no tails/ directory'
+    : tails.length === 0
+      ? 'there are no tails'
+      : 'every tail in it holds no event and no checkpoint';
+  return {
+    layer: 'T1',
+    detail: `NO TAIL: ${NO_TAIL_HELD} — ${why} — so the record asserts no fact, and nothing verifies over nothing`,
   };
 }
 

@@ -1633,3 +1633,213 @@ describe('a tail that holds no event, to both readers', () => {
     ]);
   });
 });
+
+/**
+ * A RECORD IN WHICH NO TAIL HOLDS ANYTHING ASSERTS NO FACT (FORMAT.md section 4), and both
+ * readers refuse it by name, with the exit of any other refusal.
+ *
+ * Before this the two parted on the same bytes: with the one tail of a record deleted, the
+ * product said `verified (T1 only); 0 tail(s); no events yet` and exited 0, and the second
+ * reader said BROKEN, exit 3, without reaching its section 6.5 notes — and VERIFIED when the
+ * tail's proof alone had been left behind. Section 6.5 still runs here: each committed key with
+ * no tail is named, the same keys by both. And a record with ANOTHER tail still standing is not
+ * this case: a tail removed whole beside it stays a note in both, `--require signed` included.
+ */
+describe('a record in which no tail holds anything, to both readers', () => {
+  /** What the product names it by, and what the second reader names it by: one sentence. */
+  const NO_TAIL = 'no tail in this record holds an event or a checkpoint';
+
+  function secondReadingRequiring(record: string, require: string): SecondReading {
+    const run = python([VERIFIER, '--json', 'record', record, '--require', require]);
+    if (run.stdout === '') throw new Error(`no verdict. stderr: ${run.stderr}`);
+    return { ...(JSON.parse(run.stdout) as Omit<SecondReading, 'exit'>), exit: run.status ?? -1 };
+  }
+
+  /** The witnessed record's one tail directory. */
+  function theTail(record: string): string {
+    const tails = join(record, 'tails');
+    return join(tails, readdirSync(tails)[0] as string);
+  }
+
+  /** Each key the product says has no tail, as `<reading> <fingerprint>`, sorted. */
+  function keysWithoutTailHere(record: string): string[] {
+    return verify(record, catalogUpcasters())
+      .census.flatMap((note) =>
+        note.kind === 'key-without-tail'
+          ? [`gone ${note.fingerprint}`]
+          : note.kind === 'backup-key'
+            ? [`backup ${note.fingerprint}`]
+            : [],
+      )
+      .sort();
+  }
+
+  /** Each key the second reader says has no tail (section 6.5), in the same form. */
+  function keysWithoutTailThere(reading: SecondReading): string[] {
+    return reading.findings
+      .filter((finding) => finding.level === 'note' && finding.section === '6.5')
+      .map((finding) => {
+        const fingerprint = /\b[0-9a-f]{64}\b/.exec(finding.what)?.[0] ?? '?';
+        return `${/declares it the backup/.test(finding.what) ? 'backup' : 'gone'} ${fingerprint}`;
+      })
+      .sort();
+  }
+
+  /** The cuts that leave no tail holding anything, each with the reason both readers give. */
+  const CUTS: readonly {
+    readonly name: string;
+    readonly why: string;
+    readonly cut: (record: string) => void;
+  }[] = [
+    {
+      name: 'c1: its one tail directory deleted',
+      why: 'there are no tails',
+      cut: (record) => rmSync(theTail(record), { recursive: true, force: true }),
+    },
+    {
+      name: 'c1b: the tails/ directory deleted',
+      why: 'there is no tails/ directory',
+      cut: (record) => rmSync(join(record, 'tails'), { recursive: true, force: true }),
+    },
+    {
+      name: 'c2: its segments, checkpoints and witness deleted, its tail proof kept',
+      why: 'every tail in it holds no event and no checkpoint',
+      cut: (record) => {
+        const tail = theTail(record);
+        for (const name of readdirSync(tail)) {
+          if (name !== 'tailproof.json') rmSync(join(tail, name), { recursive: true, force: true });
+        }
+      },
+    },
+    {
+      name: 'c6: its segment and checkpoints emptied, its witness deleted',
+      why: 'every tail in it holds no event and no checkpoint',
+      cut: (record) => {
+        const tail = theTail(record);
+        rmSync(join(tail, 'witness'), { recursive: true, force: true });
+        writeFileSync(join(tail, '000001.jsonl'), '');
+        writeFileSync(join(tail, 'checkpoints.jsonl'), '');
+      },
+    },
+    {
+      name: 'S: every tail and every public key deleted',
+      why: 'there is no tails/ directory',
+      cut: (record) => {
+        rmSync(join(record, 'tails'), { recursive: true, force: true });
+        for (const name of readdirSync(join(record, 'keys'))) rmSync(join(record, 'keys', name));
+      },
+    },
+    {
+      name: 'a .mnema/ holding only what an interrupted init leaves: .gitignore and .gitattributes',
+      why: 'there is no tails/ directory',
+      cut: (record) => {
+        rmSync(record, { recursive: true, force: true });
+        mkdirSync(record);
+        writeFileSync(join(record, '.gitignore'), 'locks/\n');
+        writeFileSync(join(record, '.gitattributes'), '*.jsonl -text\n');
+      },
+    },
+  ];
+
+  it.each(CUTS)('$name: the product refuses it, by name, with no tail to blame', ({ cut, why }) => {
+    const record = copyOf('witnessed-record');
+    cut(record);
+    const here = verify(record, catalogUpcasters());
+    expect(here.ok).toBe(false);
+    expect(here.level).toBe('broken');
+    for (const requirement of ['chained', 'signed', 'witnessed'] as const) {
+      expect(meetsRequirement(here.level, requirement), requirement).toBe(false);
+    }
+    const named = here.issues.filter((issue) => issue.detail.includes(NO_TAIL));
+    expect(named).toHaveLength(1);
+    expect(named[0]?.detail).toContain(why);
+    // An issue about the record as a whole: there is no tail to name.
+    expect(named[0]?.tail).toBeUndefined();
+    expect(here.tails).toEqual([]);
+  });
+
+  it.each(CUTS)('$name: the second reader refuses it under section 4, exit 1, at every --require', ({
+    cut,
+    why,
+  }) => {
+    const record = copyOf('witnessed-record');
+    cut(record);
+    for (const there of [
+      secondReading(record),
+      secondReadingRequiring(record, 'chained'),
+      secondReadingRequiring(record, 'signed'),
+    ]) {
+      expect(there.verdict).toBe('REFUSED');
+      expect(there.exit).toBe(1);
+      const named = refusals(there).filter((finding) => finding.what.includes(NO_TAIL));
+      expect(named.map((finding) => finding.section)).toEqual(['4']);
+      expect(named[0]?.what).toContain(why);
+    }
+  });
+
+  it.each(CUTS)('$name: both readers still name every committed key with no tail, the same keys', ({
+    cut,
+  }) => {
+    const record = copyOf('witnessed-record');
+    cut(record);
+    const here = keysWithoutTailHere(record);
+    expect(keysWithoutTailThere(secondReading(record))).toEqual(here);
+  });
+
+  it('names the keys at all where the keys are left: section 6.5 runs, it is not skipped', () => {
+    // NON-VACUITY for the case above: two equal lists of nothing would pass it.
+    const record = copyOf('witnessed-record');
+    rmSync(theTail(record), { recursive: true, force: true });
+    const named = keysWithoutTailHere(record);
+    expect(named).toHaveLength(2);
+    expect(keysWithoutTailThere(secondReading(record))).toEqual(named);
+  });
+
+  it('keeps BROKEN, exit 3, for a path with no directory at it', () => {
+    const there = secondReading(join(root, 'nowhere'));
+    expect(there.verdict).toBe('BROKEN');
+    expect(there.exit).toBe(3);
+  });
+
+  /**
+   * M: two tails, each its own identity's and each signed, and one of them deleted whole with
+   * its key left. Another tail still holds events, so this is not a record with no tail: the
+   * key is a section 6.5 note in both, and both verify it, `--require signed` included. A
+   * reader that refused every committed key with no tail would refuse this, and every machine
+   * enrolled before its first write with it.
+   */
+  function twoTailsOneDeleted(): { readonly record: string; readonly gone: string } {
+    const record = join(root, 'two-tails');
+    const written: string[] = [];
+    for (const name of ['one', 'two']) {
+      const writer = openChainForWriting(record, { keyRoot: join(root, `keys-${name}`) });
+      const fp = writer.signerFingerprint;
+      const anchor = deriveAnchor(fp);
+      const at = '2026-10-19T00:00:00.000Z';
+      writer.append(identityFounded({ at, who: anchor, signerFp: fp, subject: anchor }, { foundingFp: fp }));
+      writer.checkpoint();
+      written.push(fp);
+    }
+    const gone = written[1] as string;
+    const tails = join(record, 'tails');
+    const dir = readdirSync(tails).find((name) => name.startsWith(gone));
+    if (dir === undefined) throw new Error('setup: the second tail was not written');
+    rmSync(join(tails, dir), { recursive: true, force: true });
+    return { record, gone };
+  }
+
+  it('M: verifies one tail deleted whole beside another, in both, --require signed included', () => {
+    const { record, gone } = twoTailsOneDeleted();
+    const here = verify(record, catalogUpcasters());
+    expect(here.issues).toEqual([]);
+    expect(here.level).toBe('fully-signed');
+    expect(meetsRequirement(here.level, 'signed')).toBe(true);
+    expect(keysWithoutTailHere(record)).toEqual([`gone ${gone}`]);
+    for (const there of [secondReading(record), secondReadingRequiring(record, 'signed')]) {
+      expect(refusals(there)).toEqual([]);
+      expect(there.verdict).toBe('VERIFIED');
+      expect(there.exit).toBe(0);
+      expect(keysWithoutTailThere(there)).toEqual([`gone ${gone}`]);
+    }
+  });
+});

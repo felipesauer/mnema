@@ -1238,8 +1238,15 @@ describe('chain — whether a root holds a record at all', () => {
 
     expect(listTails({ root })).toEqual([]);
     expect(holdsRecord({ root })).toBe(true);
-    // And the verdict over it is the one that carries the signal.
-    expect(verify(root).census.some((note) => note.kind === 'key-without-tail')).toBe(true);
+    // And the verdict over it is the one that carries the signal: the census names the key,
+    // and a record in which no tail holds anything is refused by name (FORMAT.md section 4).
+    const verdict = verify(root);
+    expect(verdict.census.some((note) => note.kind === 'key-without-tail')).toBe(true);
+    expect(verdict.ok).toBe(false);
+    expect(verdict.level).toBe('broken');
+    expect(verdict.issues.map((issue) => issue.detail)).toEqual([
+      expect.stringContaining('no tail in this record holds an event or a checkpoint'),
+    ]);
   });
 });
 
