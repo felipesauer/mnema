@@ -200,6 +200,14 @@ describe('the two machines the convergence page shows', () => {
     expect(second).toEqual(first);
   });
 
+  it('reads a move time the page cut the same on any day the binary prints it', () => {
+    // The page shows the day it was written; the binary prints the day it runs. The reading must
+    // not tell them apart, and must still tell a timestamp from another shape.
+    const shown = ['reject · 2026-10-16T…'].map(asMinted);
+    expect(accountsFor(shown, ['reject · 2031-01-02T03:04:05.678Z'].map(asMinted))).toBe(true);
+    expect(accountsFor(shown, ['reject · 02/01/2031 03:04'].map(asMinted))).toBe(false);
+  });
+
   it('read the block it holds the page to', () => {
     // NON-VACUITY. A page whose blocks stopped being found would make the case above hold over
     // no command at all.
