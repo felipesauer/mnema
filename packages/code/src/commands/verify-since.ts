@@ -6,7 +6,7 @@
  * the checkpoint that covered them, every tail deleted with every key, the record erased and
  * founded again, a key holder rewriting the middle and signing it again. Nothing inside the
  * directory remembers what it replaced, so no reading of the record alone can tell (the
- * fundamental limit `FORMAT.md` section 3 states) — save that every tail deleted leaves a
+ * fundamental limit `FORMAT.md` section 3 states), save that every tail deleted leaves a
  * record in which no tail holds anything, which the bare verdict refuses (section 4); one
  * tail deleted beside another still needs this. What does remember is the history the
  * project already keeps: the commit a change started from. This reads that commit's record

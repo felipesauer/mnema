@@ -940,12 +940,12 @@ const CLASSIFIED: Readonly<Record<string, { verdict: Verdict; why: string }>> = 
       verdict: 'collapsed',
       why: 'the head of a hash a stored citation names; the rule `hashes?` makes it hex, and it is collapsed anyway',
     },
-  '@mnema/chain chain/verify.ts «NO TAIL: {} — {} — so the record asserts no fact, and nothing verifies over nothing» NO_TAIL_HELD #1':
+  '@mnema/chain chain/verify.ts «NO TAIL: {}: {}, so the record asserts no fact, and nothing verifies over nothing» NO_TAIL_HELD #1':
     {
       verdict: 'minted',
       why: 'the words a record no tail holds anything in is refused by, a constant of the module',
     },
-  '@mnema/chain chain/verify.ts «NO TAIL: {} — {} — so the record asserts no fact, and nothing verifies over nothing» why #1':
+  '@mnema/chain chain/verify.ts «NO TAIL: {}: {}, so the record asserts no fact, and nothing verifies over nothing» why #1':
     {
       verdict: 'minted',
       why: 'one of three constants of the module, chosen by what the disk holds',

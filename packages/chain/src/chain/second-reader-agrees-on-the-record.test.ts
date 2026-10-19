@@ -1640,7 +1640,7 @@ describe('a tail that holds no event, to both readers', () => {
  *
  * Before this the two parted on the same bytes: with the one tail of a record deleted, the
  * product said `verified (T1 only); 0 tail(s); no events yet` and exited 0, and the second
- * reader said BROKEN, exit 3, without reaching its section 6.5 notes — and VERIFIED when the
+ * reader said BROKEN, exit 3, without reaching its section 6.5 notes, and VERIFIED when the
  * tail's proof alone had been left behind. Section 6.5 still runs here: each committed key with
  * no tail is named, the same keys by both. And a record with ANOTHER tail still standing is not
  * this case: a tail removed whole beside it stays a note in both, `--require signed` included.

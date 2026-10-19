@@ -137,7 +137,7 @@ export interface ProvenFacts {
  * `signedEvents === 0` is a record whose events rest on the hash chain alone. It no
  * longer covers the record in which no tail holds anything: that one asserts no fact,
  * and the verifier refuses it as an issue before this is asked (FORMAT.md section 4),
- * so it reads `broken` — "T1 only" over nothing was a pass over nothing.
+ * so it reads `broken`: "T1 only" over nothing was a pass over nothing.
  */
 export function provenLevel(facts: ProvenFacts): ProvenLevel {
   if (facts.unreadable) return 'unreadable';
@@ -164,7 +164,7 @@ export const LEVEL_REQUIREMENTS = ['chained', 'signed', 'witnessed'] as const;
  *     reported, as a census note, and is not a break; with its key removed too it may
  *     leave nothing to report. Both readers verify that record, `--require signed`
  *     included. (A record in which NO tail holds anything any more is not this: it is
- *     refused, by name, at every requirement — FORMAT.md section 4. That used to read
+ *     refused, by name, at every requirement (FORMAT.md section 4). That used to read
  *     `0 tail(s); no events yet` with exit 0, and was said here to be indistinguishable
  *     from a fresh record, which it never was: `init` founds with events.)
  *   - the newest events cut together with the checkpoint that covered them, and
@@ -174,7 +174,7 @@ export const LEVEL_REQUIREMENTS = ['chained', 'signed', 'witnessed'] as const;
  *     that revision no longer holds the files, so nothing is found gone. (The same removal
  *     of EVERY tail is refused by the default verdict, whatever `--since` reads.)
  *
- * Only a copy of the record from before — `--since <rev>`, a git remote — shows those. The
+ * Only a copy of the record from before (`--since <rev>`, a git remote) shows those. The
  * external witness dates a checkpoint and keeps no copy, so it does not.
  *
  * IT IS A CONSTANT AND NOT A PARAGRAPH, because it is printed in two places that must
@@ -187,7 +187,7 @@ export const LEVEL_REQUIREMENTS = ['chained', 'signed', 'witnessed'] as const;
  * than beside any one of them.
  */
 export const NOT_ANSWERED_BY_ANY_REQUIREMENT: readonly string[] = [
-  'One tail removed whole while another remains is not a break: with its committed key left it IS reported — as a census note, informational, not a break, so the exit stays 0 — and with its key removed too it may leave nothing to report. A record in which no tail holds anything is refused.',
+  'One tail removed whole while another remains is not a break: with its committed key left it IS reported, as a census note (informational, not a break, so the exit stays 0), and with its key removed too it may leave nothing to report. A record in which no tail holds anything is refused.',
   'The newest events cut together with their checkpoint read as an honest record, under --require signed too.',
   'A record erased and founded again reads as an honest record, under --require signed too.',
   'One tail removed whole in a commit older than the revision --since compares with is not found by it. Only a copy of the record from before (--since <rev>, a git remote) shows any of these; the external witness dates a checkpoint and keeps no copy.',

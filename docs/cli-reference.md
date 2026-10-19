@@ -357,13 +357,13 @@ was taken out.
 
 **A record in which no tail holds anything is refused.** No `tails/` directory, no tail
 directory in it, or only tails that hold nothing: such a record asserts no fact, and `verify`
-fails it by name at every `--require`, exit 1 — the one-line verdict says `local integrity
+fails it by name at every `--require`, exit 1: the one-line verdict says `local integrity
 FAILED`, and the issue reads `issue [T1] public the record: NO TAIL: no tail in this record
-holds an event or a checkpoint — there are no tails — …`, with the reason as it found it. The
+holds an event or a checkpoint: there are no tails, …`, with the reason as it found it. The
 census still names each committed key with no tail, so a record whose one tail was deleted
 says whose. A record is never in that shape by being founded: `init` writes the founding and a
 checkpoint before it returns; it is in it when every tail was removed, by a merge, a sparse
-checkout or a commit — whether or not the keys went with them — and when `.mnema/` was left
+checkout or a commit (whether or not the keys went with them), and when `.mnema/` was left
 half made: an `init` that failed after creating the directory leaves `.gitignore` and
 `.gitattributes` and nothing else, and that project fails `verify` until a first write to the
 public tree founds it (a second `init` answers that there is nothing to found, and does not).
@@ -377,7 +377,7 @@ again, and one tail removed whole while another remains. Each
 leaves a record honest in every byte, and each changes files that the commit the change
 started from already held. So `--since <rev>` asks git: every file of the committed
 record at `<rev>` must still be on disk, and every segment and `checkpoints.jsonl` must
-still begin with exactly the bytes it held there — a record only ever grows at the end. A
+still begin with exactly the bytes it held there: a record only ever grows at the end. A
 tail removed in a commit older than the revision `--since` compares with is in neither, so
 `--since` does not find it; every tail removed that way still fails the default `verify`. It
 reads git and never the network, and changes nothing when it is not asked for. In CI,

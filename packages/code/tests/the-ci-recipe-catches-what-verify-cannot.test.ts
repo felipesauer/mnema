@@ -262,9 +262,9 @@ describe('the CI recipe the page publishes', () => {
   });
 
   it.each([
-    ['the newest events cut with their checkpoint', alignedCut, 0, 0, ': rewritten — '],
-    ['every tail deleted with every key', tailsAndKeysDeleted, 1, 1, ': gone — '],
-    ['the record erased and founded again', refounded, 0, 0, ': gone — '],
+    ['the newest events cut with their checkpoint', alignedCut, 0, 0, ': rewritten \u2014 '],
+    ['every tail deleted with every key', tailsAndKeysDeleted, 1, 1, ': gone \u2014 '],
+    ['the record erased and founded again', refounded, 0, 0, ': gone \u2014 '],
     [
       'the middle rewritten and signed again by the key holder',
       rewrittenBySigner,

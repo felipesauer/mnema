@@ -229,13 +229,13 @@ one. A line of whitespace is not canonical (§1.6), so a segment holding one is 
 empty; it is read, and refused. The cost, said: a tail
 whose segments and checkpoints were deleted with its tail proof kept reads as one
 that never held anything. That is no new blindness — the same tail deleted whole,
-with its key, beside another tail, already leaves nothing for a reader to cross — and
+with its key, beside another tail, already leaves nothing for a reader to cross, and
 only a copy of the record from before can testify to either. Where it was the only tail
 holding anything, the record is refused, by the rule below.
 
 **A record in which no tail holds anything asserts no fact, and is refused.** When no
-tail is counted — there is no `tails/` directory, there is no tail directory in it, or
-every tail directory in it holds no event and no checkpoint — a reader refuses the record
+tail is counted (there is no `tails/` directory, there is no tail directory in it, or
+every tail directory in it holds no event and no checkpoint), a reader refuses the record
 by name, whatever level the caller requires of it, and with the same refusal as any other,
 not a verdict of its own. It still says what §6.5 says of each committed key with no tail,
 so a record whose one tail was deleted says whose key it was. A record is never in this

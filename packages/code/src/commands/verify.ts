@@ -219,7 +219,7 @@ function coverProject(
 ): { readonly trees: readonly TreeReport[]; readonly record: RecordVerdict } {
   // The committed tree is the project — `resolveTrees` found the project BY the
   // directory it was resolved from — so it is the one tree whose presence is already
-  // established, and the one the fold below always has a verdict from — ALWAYS, even
+  // established, and the one the fold below always has a verdict from, ALWAYS, even
   // when nothing is in it. A committed tree in which no tail holds an event or a
   // checkpoint used to get `T1 only` here and a bare `verify` exited zero on it; the
   // chain refuses that record by name now (FORMAT.md section 4), and this tree is where

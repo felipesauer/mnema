@@ -1,5 +1,5 @@
 /**
- * A RECORD IN WHICH NO TAIL HOLDS ANYTHING IS REFUSED, BY NAME — at the binary a person runs.
+ * A RECORD IN WHICH NO TAIL HOLDS ANYTHING IS REFUSED, BY NAME, at the binary a person runs.
  *
  * Measured before this, on a record of one tail with that tail's directory deleted: `mnema verify`
  * said `verified (T1 only); 0 tail(s); no events yet`, named each committed key in the census, and
@@ -10,7 +10,7 @@
  *   - the deleted tail fails the bare `verify`, and says why by name, not by a tail it cannot name;
  *   - the shapes that are NOT this stay green: a fresh `init` (it founds with events before it
  *     returns), a clone on another machine (the committed tree is all it gets), and a machine
- *     enrolled that has not written yet beside a tail that has — the case a reader that refused
+ *     enrolled that has not written yet beside a tail that has: the case a reader that refused
  *     every committed key with no tail would break;
  *   - an `init` that failed half way leaves `.mnema/` with nothing in it: refused until a first
  *     public write founds the record, and a second `init` does not.
@@ -31,7 +31,7 @@ import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 
-/** The built binary — what a person runs. */
+/** The built binary: what a person runs. */
 const CLI = fileURLToPath(new URL('../dist/cli.js', import.meta.url));
 
 /** The words both readers refuse it by. */

@@ -220,14 +220,14 @@ describe('the proof answers a machine', () => {
     // exists. The phrase per row is that hole's DISCRIMINANT and nothing else. (There
     // were two, and the first said a tail removed with its key read as a fresh record:
     // a fresh record holds the founding, and a record with no tail holding anything is
-    // refused now — FORMAT.md section 4.)
+    // refused now: FORMAT.md section 4.)
     expect(said.json.notAnswered).toHaveLength(4);
     const readme = readFileSync(
       new URL('../../../docs/cli-reference.md', import.meta.url),
       'utf-8',
     );
     for (const discriminant of [
-      // one tail taken out whole while another remains — not a break
+      // one tail taken out whole while another remains, not a break
       'tail removed whole while another remains',
       // the newest events taken with the checkpoint that covered them
       'newest events cut together with their checkpoint',

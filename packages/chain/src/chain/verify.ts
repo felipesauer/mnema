@@ -145,7 +145,7 @@ import {
 export type { WitnessStatus } from './level.js';
 
 /**
- * A problem found while verifying one tail — or the record as a whole.
+ * A problem found while verifying one tail, or the record as a whole.
  *
  * `tail` is absent on exactly one issue: the record in which no tail holds an event or a
  * checkpoint ({@link NO_TAIL_HELD}). That record has no tail to blame, and naming a tail
@@ -860,7 +860,7 @@ export function verifyChain(
 }
 
 /**
- * How a record in which no tail holds anything is named — the words both readers refuse it by
+ * How a record in which no tail holds anything is named: the words both readers refuse it by
  * (FORMAT.md section 4; the second reader beside FORMAT.md says the same sentence).
  */
 export const NO_TAIL_HELD = 'no tail in this record holds an event or a checkpoint';
@@ -868,8 +868,8 @@ export const NO_TAIL_HELD = 'no tail in this record holds an event or a checkpoi
 /**
  * THE RECORD IN WHICH NO TAIL HOLDS ANYTHING, refused by name (FORMAT.md section 4).
  *
- * A record with no counted tail — no `tails/` directory, no tail directory in it, or only tails
- * that hold no event and no checkpoint — asserts no fact. It used to read
+ * A record with no counted tail (no `tails/` directory, no tail directory in it, or only tails
+ * that hold no event and no checkpoint) asserts no fact. It used to read
  * `verified (T1 only); 0 tail(s); no events yet` and exit 0, over a record whose one tail had
  * been deleted as much as over a directory nothing was ever written to, while the second reader
  * said BROKEN over the first and VERIFIED over the same record with its tail proof left behind.
@@ -877,7 +877,7 @@ export const NO_TAIL_HELD = 'no tail in this record holds an event or a checkpoi
  * nothing signed, so this is a refusal at every requirement, with the exit of any other.
  *
  * A record `mnema init` founded is never this: init writes the founding and a checkpoint before
- * it returns. The census still runs over it — each committed key with no tail is named — and a
+ * it returns. The census still runs over it (each committed key with no tail is named), and a
  * record with ANOTHER tail still standing is not this case: a tail removed whole beside it stays
  * a census note.
  *
@@ -892,7 +892,7 @@ function noTailHeld(layout: ChainLayout, tails: readonly string[]): TailIssue {
       : 'every tail in it holds no event and no checkpoint';
   return {
     layer: 'T1',
-    detail: `NO TAIL: ${NO_TAIL_HELD} — ${why} — so the record asserts no fact, and nothing verifies over nothing`,
+    detail: `NO TAIL: ${NO_TAIL_HELD}: ${why}, so the record asserts no fact, and nothing verifies over nothing`,
   };
 }
 

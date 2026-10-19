@@ -933,7 +933,7 @@ def _refuse_a_record_no_tail_holds(
         why = "every tail in it holds no event and no checkpoint"
     report.fail(
         "4",
-        f"{NO_TAIL_HELD} - {why} - so the record asserts no fact, and nothing verifies over "
+        f"{NO_TAIL_HELD}: {why}, so the record asserts no fact, and nothing verifies over "
         "nothing",
         "tails/",
     )

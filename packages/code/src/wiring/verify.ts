@@ -774,9 +774,9 @@ function githubLine(author: GithubAuthor): string {
  * recomputed here — the same value the prose path acts on, from the command.
  *
  * IT CARRIES `notAnswered`, AND THAT IS THE POINT OF THE FIELD RATHER THAN A NOTE.
- * The verdict this makes machine-readable is knowingly insufficient — one tail removed
+ * The verdict this makes machine-readable is knowingly insufficient (one tail removed
  * whole while another remains is a census note with exit 0, or nothing with its key
- * removed too, and the newest events cut with their checkpoint read as honest — and a reader who has to find the README to learn that is a reader
+ * removed too, and the newest events cut with their checkpoint read as honest), and a reader who has to find the README to learn that is a reader
  * who will not. It is {@link NOT_ANSWERED_BY_ANY_REQUIREMENT}, the one site the README
  * says the same thing from, so the two cannot drift.
  *
