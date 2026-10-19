@@ -565,6 +565,11 @@ with its own changelog.
   that only goes down; where the character is data, its escape is allowed only in the files it lists, with the
   reason. The escapes that stood in comments as punctuation are rewritten, and `AGENTS.md` and `CONTRIBUTING.md`
   state the rule.
+- **The version the program says is the one that will reach npm, `0.1.0`.** The repository declared `0.2.0-beta`, a
+  withdrawn pre-release that was never published to npm, and the console's recording on the front page showed it. Every
+  manifest, the two version constants, the plugin manifests and the golden of `--version` now say `0.1.0`, and the
+  console's recording was made again from the built binary. The records of the withdrawn pre-releases below stay as
+  they were.
 
 ## [0.2.0-beta] - 2026-10-11
 
