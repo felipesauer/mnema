@@ -600,12 +600,14 @@ function howMnemaFits(blocks, theme) {
 
   // The two lanes: the record goes both ways between the session and mnema, and from mnema to the
   // repository only.
+  /** @type {{ far: [number, number], near: [number, number] }} */
   const left = { far: [agentRight + 4, lane], near: [hub.x - 4, lane] };
+  /** @type {{ far: [number, number], near: [number, number] }} */
   const right = { far: [repoLeft - 4, lane], near: [hub.x + hub.w + 4, lane] };
   const still = { attrs: /** @type {[string, string]} */ (['', '']), draws: false };
   body.push(
-    ...connection(s, [...left.far, ...left.near], 'both', 0, false, still),
-    ...connection(s, [...right.far, ...right.near], 'out', 0, false, still),
+    ...connection(s, along(...left.far, ...left.near), 'both', 0, false, still),
+    ...connection(s, along(...right.far, ...right.near), 'out', 0, false, still),
   );
 
   // The session's transcript: each entry appears when its packet arrives, and all of them leave
