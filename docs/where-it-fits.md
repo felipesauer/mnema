@@ -30,15 +30,16 @@ Said as scope, because each of these is a choice with a reason behind it:
   and records what the agent decides.
 - **Not a copy somewhere else.** The committed record travels with the repository,
   to every clone, and what you record privately stays on this machine, apart from the
-  notes the plugin hands your agent's host when a session opens, which the host sends
-  to its model (the plugin's second opening hook hands over the notes out of every tree
-  this machine holds, the private one included, and it has a switch of its own: see
-  [the plugin](../plugin/README.md)). The witness verbs send something out only when you run them: `mnema witness stamp`
+  notes your agent's host receives, when a session opens through the plugin and when the
+  agent asks for them, which the host sends to its model (what the plugin hands over when
+  a session opens reads every tree this machine holds, the private one included, and has a
+  switch of its own: see [the plugin](../plugin/README.md); what the agent asks for, with
+  `search` and `read_record` or with the `mnema` command it runs, reads the private tree
+  too). The witness verbs send something out only when you run them: `mnema witness stamp`
   (and its return visit) hands the public OpenTimestamps calendars a hash of a checkpoint's
   digest joined to a random nonce, and nothing else of the record; the Sigstore
-  countersignature, when you run it, sends the identity too, by design, into a public log
-  (see [what it proves](what-it-proves.md): "Only the digest leaves the machine, with
-  Sigstore too").
+  countersignature, when you run it, sends the digest itself and the identity too, by
+  design, into a public log (see [what it proves](what-it-proves.md)).
 - **Not access control.** The gate refuses an illegal move; it does not decide who
   may write.
 

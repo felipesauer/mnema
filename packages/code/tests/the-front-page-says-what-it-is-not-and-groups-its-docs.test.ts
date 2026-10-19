@@ -68,7 +68,7 @@ const LINES: readonly { label: string; rests: readonly string[] }[] = [
   {
     label: 'Not a copy somewhere else.',
     rests: [
-      "what you record privately stays on this machine, apart from the notes the plugin hands your agent's host when a session opens, which the host sends to its model",
+      "what you record privately stays on this machine, apart from the notes your agent's host receives, when a session opens through the plugin and when the agent asks for them, which the host sends to its model",
       'only when you run them',
     ],
   },
@@ -102,8 +102,18 @@ describe('"What it is not" on the front page', () => {
   );
 
   it('keeps each line short, and sends the reader to the page that gives the reasons', () => {
-    for (const line of mine) expect(line.length).toBeLessThan(400);
-    expect(sectionOf(README, 'What it is not')).toContain('(docs/where-it-fits.md#what-it-is-not)');
+    // Short is held against the page the line summarises, not against a number: the front page
+    // says no more than the page says, and each line is one source line, so none wraps into a block.
+    mine.forEach((line, at) => {
+      expect(
+        line.length,
+        `the front page says more than the page on line ${at + 1}`,
+      ).toBeLessThanOrEqual(theirs[at]?.length ?? 0);
+    });
+    const section = sectionOf(README, 'What it is not');
+    const written = section.split('\n').filter((l) => l.trim() !== '');
+    expect(written.filter((l) => !l.startsWith('- ')).length).toBe(1);
+    expect(section).toContain('(docs/where-it-fits.md#what-it-is-not)');
   });
 });
 
