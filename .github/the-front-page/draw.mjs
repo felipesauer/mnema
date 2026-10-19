@@ -219,28 +219,94 @@ function chain(accent, muted, x0, cy) {
   return { parts, width: shades.length * 2 * dx + (shades.length - 1) * link };
 }
 
+/** The banner's loop, in seconds: long, for a light that is barely there. */
+const BANNER_LOOP = 12;
+/** How many columns of the wordmark one band of the light that passes over the letters covers. */
+const BAND_COLUMNS = 4;
+
 /**
+ * The banner, in the family's paint: its own page and the glow behind it, and a light that is
+ * barely there. A band of light passes over the letters from left to right, then the four cubes
+ * light one after the other, and all four go dark together; nothing moves. Every light is laid
+ * over the drawing and is out in the last frame, so a reader who asked for less motion sees the
+ * banner as it is drawn.
  * @param {readonly string[]} blocks
  * @param {'dark' | 'light'} theme
  */
 function banner(blocks, theme) {
+  const s = scene(BANNER_LOOP, theme);
   const accent = ACCENT[theme];
-  const { muted } = NEUTRAL[theme];
+  const { muted, text } = NEUTRAL[theme];
   const columns = Math.max(...blocks.map((row) => [...row].length));
   const markWidth = columns * CELL.w;
   const markHeight = blocks.length * CELL.h;
   const gap = 56;
+  const pad = 4;
+  // The drawing on the middle of the frame: the cubes' outer stroke reaches past their row by half
+  // its width, so the wordmark starts in from the left edge by half of what is left.
+  const x0 = (pad - 1.75 / 2) / 2;
   // The chain sits on the middle of the letters' faces: the last row is shadow only.
   const middle = ((blocks.length - 1) * CELL.h) / 2;
-  const { parts, width } = chain(accent, muted, markWidth + gap, middle);
-  const pad = 4;
+  const { parts, width } = chain(accent, muted, x0 + markWidth + gap, middle);
   const w = markWidth + gap + width + pad;
   const h = markHeight;
+  const [blockPath, linePath] = wordmark(blocks, accent, x0, 0);
+  const letters = /\bd="([^"]*)"/.exec(blockPath ?? '')?.[1] ?? '';
+  /** @type {string[]} */
+  const light = [];
+  // The light over the letters: a band of columns at a time, each up and down once, the next a
+  // little after, in the deepest grey of the theme over the accent, faint.
+  const bands = Math.ceil(columns / BAND_COLUMNS);
+  for (let k = 0; k < bands; k++) {
+    const t = 0.8 + 0.15 * k;
+    light.push(
+      `<rect ${s.goes(
+        [
+          [0, '0'],
+          [t, '0'],
+          [t + 0.6, '1'],
+          [t + 1.4, '0'],
+          [s.loop, '0'],
+        ],
+        '0',
+      )} x="${n(x0 + k * BAND_COLUMNS * CELL.w)}" y="0" width="${BAND_COLUMNS * CELL.w}" height="${h}" fill="${text}" fill-opacity="0.16" clip-path="url(#letters)"/>`,
+    );
+  }
+  // The cubes light one after the other, faintly, and go dark together.
+  const a = 30;
+  const step = 2 * a * COS30 + 18;
+  for (let i = 0; i < 4; i++) {
+    const t = 4.2 + 0.5 * i;
+    light.push(
+      `<path ${s.goes(
+        [
+          [0, '0'],
+          [t, '0'],
+          [t + 0.8, '1'],
+          [9.0, '1'],
+          [9.8, '0'],
+          [s.loop, '0'],
+        ],
+        '0',
+      )} d="${hexagon(x0 + markWidth + gap + a * COS30 + i * step, middle, a)}" fill="${accent}" fill-opacity="0.3"/>`,
+    );
+  }
   return [
     `<svg xmlns="http://www.w3.org/2000/svg" width="${n(w)}" height="${n(h)}" viewBox="0 0 ${n(w)} ${n(h)}" role="img" aria-label="mnema">`,
     '<title>mnema</title>',
-    ...wordmark(blocks, accent, 0, 0),
+    '<style>',
+    `.a{animation-duration:${BANNER_LOOP}s;animation-iteration-count:infinite;animation-timing-function:ease-in-out}`,
+    ...s.css,
+    '@media (prefers-reduced-motion: reduce){.a{animation:none!important}}',
+    '</style>',
+    `<defs><clipPath id="letters"><path d="${letters}"/></clipPath></defs>`,
+    ...s.paint.defs,
+    `<rect width="${n(w)}" height="${n(h)}" fill="${PAGE[theme]}"/>`,
+    `<ellipse cx="${n(w / 2)}" cy="${n(h / 2)}" rx="${n(w / 2 - 8)}" ry="${n(h / 2)}" fill="url(#glow)"/>`,
+    blockPath,
+    linePath,
     ...parts,
+    ...light,
     '</svg>',
     '',
   ].join('\n');
@@ -276,47 +342,114 @@ const STEPS = [
 const escaped = (text) =>
   text.replaceAll('&', '&amp;').replaceAll('<', '&lt;').replaceAll('>', '&gt;');
 
-/** @param {'dark' | 'light'} theme */
+/**
+ * A text in the front page's sans face, in the size and weight of its role.
+ * @param {Scene} s
+ * @param {string} text
+ * @param {number} x
+ * @param {number} y
+ * @param {Role} role
+ * @param {{ fill?: string, anchor?: string, attrs?: string, preserve?: boolean }} [o]
+ */
+const sans = (s, text, x, y, role, o = {}) =>
+  `<text${o.attrs ? ` ${o.attrs}` : ''} x="${n(x)}" y="${n(y)}" font-family="${SANS}" font-size="${TYPE[role].size}"${TYPE[role].weight ? ` font-weight="${TYPE[role].weight}"` : ''} fill="${o.fill ?? (role === 'caption' ? s.muted : s.text)}"${o.anchor ? ` text-anchor="${o.anchor}"` : ''}${o.preserve ? ' xml:space="preserve"' : ''}>${escaped(text)}</text>`;
+
+/**
+ * The opening of a front page picture: its frame, its title, the style that moves it, the paint,
+ * its page and the glow behind what it draws.
+ * @param {Scene} s
+ * @param {number} w
+ * @param {number} h
+ * @param {string} label
+ * @param {string} title
+ * @param {string} glow the glow's ellipse
+ */
+const opening = (s, w, h, label, title, glow) => [
+  `<svg xmlns="http://www.w3.org/2000/svg" width="${n(w)}" height="${n(h)}" viewBox="0 0 ${n(w)} ${n(h)}" role="img" aria-label="${label}">`,
+  `<title>${title}</title>`,
+  '<style>',
+  `.a{animation-duration:${s.loop}s;animation-iteration-count:infinite;animation-timing-function:ease-in-out}`,
+  ...s.css,
+  '@media (prefers-reduced-motion: reduce){.a{animation:none!important}}',
+  '</style>',
+  ...s.paint.defs,
+  `<rect width="${n(w)}" height="${n(h)}" fill="${PAGE[s.theme]}"/>`,
+  glow,
+];
+
+/** The loop of the steps, in seconds. */
+const STEPS_LOOP = 9;
+
+/**
+ * The four steps, as tonal cards in a row, and the arrow from each to the next. The number of the
+ * first lights, a dot runs the arrow to the next step, whose card pulses as it arrives and whose
+ * number lights; and so on to the fourth. The numbers and the arrows stay lit to the end of the
+ * loop and go out together, so the last frame, the one a reader who asked for less motion sees,
+ * has all of them.
+ * @param {'dark' | 'light'} theme
+ */
 function howItWorks(theme) {
-  const accent = ACCENT[theme];
-  const { text, muted, border } = NEUTRAL[theme];
-  const card = { w: 196, h: 196 };
+  const s = scene(STEPS_LOOP, theme);
+  const size = { w: 196, h: 196 };
   const gap = 32;
-  const w = STEPS.length * card.w + (STEPS.length - 1) * gap;
-  const h = card.h + 2;
-  const out = [
-    `<svg xmlns="http://www.w3.org/2000/svg" width="${w}" height="${h}" viewBox="0 0 ${w} ${h}" role="img" aria-label="How mnema works: record, rule, hand over, verify">`,
-    '<title>How mnema works</title>',
-  ];
+  const w = STEPS.length * size.w + (STEPS.length - 1) * gap;
+  const h = size.h + 2;
+  const top = 1;
+  const mid = top + size.h / 2;
+  // What a card holds sits on its middle: the number and the title on the row six half rows above
+  // it, the three lines on the rows around it, the chip under them.
+  const head = mid - 6 * HALF_ROW;
+  /** When each step's number lights: the first at the start, each next one as the dot arrives. */
+  const lights = STEPS.map((_, i) => (i === 0 ? 0.4 : 1.0 + 1.6 * (i - 1) + 1.2));
+  /** @type {string[]} */
+  const out = [];
   STEPS.forEach((step, i) => {
-    const x = i * (card.w + gap);
-    const y = 1;
+    const x = i * (size.w + gap);
+    const box = { x, y: top, w: size.w, h: size.h };
+    const badge = { x: x + 20, y: head - 14, w: 28, h: 28 };
+    const lit = lights[i] ?? 0;
+    const chip = {
+      x: x + 20,
+      y: mid + 6 * HALF_ROW - 14,
+      w: Math.ceil(widthOf([step.chip], 'code') + 2 * PAD),
+      h: 28,
+    };
     out.push(
-      `<rect x="${x + 0.5}" y="${y}" width="${card.w - 1}" height="${card.h}" rx="12" fill="none" stroke="${border}"/>`,
-      `<circle cx="${x + 34}" cy="${y + 36}" r="14" fill="none" stroke="${accent}" stroke-width="2"/>`,
-      `<text x="${x + 34}" y="${y + 41}" font-family="${SANS}" font-size="14" font-weight="700" fill="${accent}" text-anchor="middle">${i + 1}</text>`,
-      `<text x="${x + 58}" y="${y + 42}" font-family="${SANS}" font-size="17" font-weight="600" fill="${text}">${escaped(step.title)}</text>`,
-    );
-    step.lines.forEach((line, j) => {
-      out.push(
-        `<text x="${x + 20}" y="${y + 82 + j * 20}" font-family="${SANS}" font-size="13" fill="${muted}">${escaped(line)}</text>`,
-      );
-    });
-    const chipWidth = step.chip.length * 7.3 + 20;
-    out.push(
-      `<rect x="${x + 20}" y="${y + 148}" width="${n(chipWidth)}" height="28" rx="6" fill="${accent}" fill-opacity="0.12" stroke="${accent}" stroke-opacity="0.6"/>`,
-      `<text x="${x + 30}" y="${y + 166.5}" font-family="${MONO}" font-size="12" fill="${text}">${escaped(step.chip)}</text>`,
+      card(s, box),
+      pulse(s, box, lit),
+      `<rect ${flash(s, lit, 0.6)} x="${badge.x - 4}" y="${badge.y - 4}" width="${badge.w + 8}" height="${badge.h + 8}" rx="${(badge.w + 8) / 2}" fill="none" stroke="${s.accent}" stroke-width="2"/>`,
+      `<rect x="${badge.x}" y="${badge.y}" width="${badge.w}" height="${badge.h}" rx="${badge.w / 2}" fill="none" stroke="${s.accent}" stroke-width="2"/>`,
+      `<rect ${s.stays(lit)} x="${badge.x}" y="${badge.y}" width="${badge.w}" height="${badge.h}" rx="${badge.w / 2}" fill="${s.accent}" fill-opacity="0.22" stroke="${s.accent}" stroke-width="2"/>`,
+      sans(s, String(i + 1), badge.x + badge.w / 2, inside(badge, 'label'), 'label', {
+        anchor: 'middle',
+      }),
+      sans(s, step.title, x + 58, head + TYPE.heading.centre, 'heading'),
+      ...step.lines.map((line, j) =>
+        sans(s, line, x + 20, mid + TYPE.caption.centre + (j - 1) * 2 * HALF_ROW, 'caption'),
+      ),
+      `<rect x="${chip.x + 0.5}" y="${chip.y + 0.5}" width="${chip.w - 1}" height="${chip.h - 1}" rx="6" fill="${s.accent}" fill-opacity="${s.paint.tab}" stroke="${s.accent}"/>`,
+      s.sayIn([step.chip], chip.x + PAD, chip, 'code'),
     );
     if (i < STEPS.length - 1) {
-      const ax = x + card.w + gap / 2;
-      const ay = y + card.h / 2;
-      out.push(
-        `<path d="M${ax - 8} ${ay}H${ax + 6}M${ax + 1} ${ay - 5}L${ax + 6} ${ay}L${ax + 1} ${ay + 5}" fill="none" stroke="${muted}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>`,
-      );
+      const T = 1.0 + 1.6 * i;
+      const ends = along(x + size.w + 4, mid, x + size.w + gap - 4, mid);
+      const runs = dot(s, ends, 'in', T);
+      out.push(...connection(s, ends, 'in', T), runs.out);
     }
   });
-  out.push('</svg>', '');
-  return out.join('\n');
+  return [
+    ...opening(
+      s,
+      w,
+      h,
+      'How mnema works: record, rule, hand over, verify',
+      'How mnema works',
+      `<ellipse cx="${w / 2}" cy="${mid}" rx="${w / 2 - 20}" ry="${mid - top}" fill="url(#glow)"/>`,
+    ),
+    ...out,
+    '</svg>',
+    '',
+  ].join('\n');
 }
 
 // ---------------------------------------------------------------------------------------------
@@ -389,30 +522,34 @@ function shown(from, to, fade = 0.3, loop = LOOP) {
 }
 
 /**
- * A packet's travel along the lane: hidden, then from x `a` to x `b` over [from, to].
+ * A packet that runs a lane from one end to the other over [from, to], as a dot of the family:
+ * lit from just before it leaves to just after it arrives, and back at the end it left from while
+ * no one sees it, so the loop closes on itself.
+ * @param {Scene} s
  * @param {number} from
  * @param {number} to
- * @param {number} a
- * @param {number} b
- * @returns {{ move: [number, string][], fade: [number, string][] }}
+ * @param {[number, number]} a where it leaves
+ * @param {[number, number]} b where it arrives
  */
-function travel(from, to, a, b) {
-  return {
-    move: [
-      [0, `translateX(${a}px)`],
-      [from, `translateX(${a}px)`],
-      [to, `translateX(${b}px)`],
-      [LOOP, `translateX(${b}px)`],
-    ],
-    fade: [
-      [0, '0'],
-      [from - 0.05, '0'],
-      [from + 0.1, '1'],
-      [to - 0.1, '1'],
-      [to + 0.05, '0'],
-      [LOOP, '0'],
-    ],
-  };
+function packet(s, from, to, a, b) {
+  const at = (/** @type {[number, number]} */ [px, py]) => `translate(${n(px)}px,${n(py)}px)`;
+  const glides = s.animate('transform', [
+    [0, at(a)],
+    [from, at(a)],
+    [to, at(b)],
+    [to + 0.1, at(b)],
+    [to + 0.2, at(a)],
+    [s.loop, at(a)],
+  ]);
+  const fades = s.animate('opacity', [
+    [0, '0'],
+    [from - 0.05, '0'],
+    [from + 0.1, '1'],
+    [to - 0.1, '1'],
+    [to + 0.05, '0'],
+    [s.loop, '0'],
+  ]);
+  return `<g class="a" style="animation-name:${glides},${fades}" opacity="0"><circle r="8" fill="${s.accent}" fill-opacity="0.22"/><circle r="4" fill="${s.accent}"/></g>`;
 }
 
 /**
@@ -420,72 +557,53 @@ function travel(from, to, a, b) {
  * @param {'dark' | 'light'} theme
  */
 function howMnemaFits(blocks, theme) {
-  const accent = ACCENT[theme];
-  const { text, muted, border } = NEUTRAL[theme];
+  const s = scene(LOOP, theme);
   const W = 880;
   const H = 302;
   const box = { top: 8, h: 238, w: 260 };
-  const lane = 127;
+  const lane = box.top + box.h / 2;
   const agentRight = box.w;
   const repoLeft = W - box.w;
   const hub = { x: 360, w: 160, y: 84, h: 86 };
-  /** @type {string[]} */
-  const css = [];
+  const session = { x: 0, y: box.top, w: box.w, h: box.h };
+  const repository = { x: repoLeft, y: box.top, w: box.w, h: box.h };
   /** @type {string[]} */
   const body = [];
-  let count = 0;
-  /**
-   * Gives an element a name and the keyframes that move it.
-   * @param {string} property
-   * @param {[number, string][]} stops
-   */
-  const animate = (property, stops) => {
-    const name = `k${count++}`;
-    css.push(keyframes(name, property, stops));
-    return name;
-  };
-  /** @param {string[]} names */
-  const style = (names) => `style="animation-name:${names.join(',')}"`;
 
-  // The two panels and the hub.
-  const panel = (/** @type {number} */ x, /** @type {string} */ title) => [
-    `<rect x="${x + 0.5}" y="${box.top + 0.5}" width="${box.w - 1}" height="${box.h}" rx="12" fill="none" stroke="${border}"/>`,
-    `<text x="${x + 18}" y="${box.top + 26}" font-family="${SANS}" font-size="14" font-weight="600" fill="${text}">${title}</text>`,
-    `<path d="M${x + 0.5} ${box.top + 40.5}H${x + box.w - 0.5}" stroke="${border}"/>`,
+  // The two panels, tonal cards with a title over a rule, and the hub, the wordmark on its card.
+  const panel = (/** @type {Frame} */ c, /** @type {string} */ title) => [
+    card(s, c),
+    sans(s, title, c.x + 18, c.y + 26, 'label'),
+    `<path d="M${c.x + 0.5} ${c.y + 40.5}H${c.x + c.w - 0.5}" stroke="${s.border}"/>`,
   ];
-  body.push(...panel(0, 'agent session'), ...panel(repoLeft, 'repository'));
+  body.push(...panel(session, 'agent session'), ...panel(repository, 'repository'));
   body.push(
-    `<text x="${box.w / 2}" y="${box.top + box.h + 24}" font-family="${SANS}" font-size="12" fill="${muted}" text-anchor="middle">Claude Code · VS Code · Cursor CLI</text>`,
-    `<path d="M${agentRight + 4} ${lane}H${hub.x - 4}M${hub.x + hub.w + 4} ${lane}H${repoLeft - 4}" stroke="${border}" stroke-width="1.5" stroke-dasharray="3 5" stroke-linecap="round"/>`,
-    `<rect x="${hub.x + 0.5}" y="${hub.y + 0.5}" width="${hub.w - 1}" height="${hub.h}" rx="12" fill="none" stroke="${border}"/>`,
+    sans(s, 'Claude Code · VS Code · Cursor CLI', box.w / 2, box.top + box.h + 24, 'caption', {
+      anchor: 'middle',
+    }),
+    hubFrame(s, hub, ''),
   );
   const scale = 0.25;
   const markW = Math.max(...blocks.map((row) => [...row].length)) * CELL.w * scale;
   const markH = blocks.length * CELL.h * scale;
   body.push(
     `<g transform="translate(${n(hub.x + (hub.w - markW) / 2)} ${n(hub.y + (hub.h - markH) / 2)}) scale(${scale})">`,
-    ...wordmark(blocks, accent, 0, 0),
+    ...wordmark(blocks, s.accent, 0, 0),
     '</g>',
   );
-  const pulse = (/** @type {number} */ at) => [
-    [at - 0.05, '0'],
-    [at + 0.15, '1'],
-    [at + 0.6, '0'],
-  ];
-  const hubPulse = animate('opacity', [
-    [0, '0'],
-    .../** @type {[number, string][]} */ (pulse(3.6)),
-    .../** @type {[number, string][]} */ (pulse(6.75)),
-    .../** @type {[number, string][]} */ (pulse(9.8)),
-    [LOOP, '0'],
-  ]);
+
+  // The two lanes: the record goes both ways between the session and mnema, and from mnema to the
+  // repository only.
+  const left = { far: [agentRight + 4, lane], near: [hub.x - 4, lane] };
+  const right = { far: [repoLeft - 4, lane], near: [hub.x + hub.w + 4, lane] };
+  const still = { attrs: /** @type {[string, string]} */ (['', '']), draws: false };
   body.push(
-    `<rect class="a" ${style([hubPulse])} opacity="0" x="${hub.x + 0.5}" y="${hub.y + 0.5}" width="${hub.w - 1}" height="${hub.h}" rx="12" fill="${accent}" fill-opacity="0.08" stroke="${accent}" stroke-width="1.5"/>`,
+    ...connection(s, [...left.far, ...left.near], 'both', 0, false, still),
+    ...connection(s, [...right.far, ...right.near], 'out', 0, false, still),
   );
 
   // The session's transcript: each entry appears when its packet arrives, and all of them leave
   // together at the end of the loop.
-  const ends = LOOP - 0.7;
   /** @type {[number, number][]} */
   const entryTimes = [
     [1.2, 1.2],
@@ -496,83 +614,61 @@ function howMnemaFits(blocks, theme) {
   HERO_STORY.forEach((entry, i) => {
     const y = box.top + 68 + i * 44;
     const [first, second] = entryTimes[i] ?? [0, 0];
-    const a = animate('opacity', shown(first, ends));
-    const b = animate('opacity', shown(second, ends));
-    const [verb, ...rest] = entry.title.split('  ');
+    const [verb = '', ...rest] = entry.title.split('  ');
     body.push(
-      `<text class="a" ${style([a])} x="18" y="${y}" font-family="${MONO}" font-size="11.5"><tspan fill="${muted}">${escaped(verb ?? '')}</tspan><tspan fill="${text}" dx="7">${escaped(rest.join(' '))}</tspan></text>`,
-      `<text class="a" ${style([b])} x="30" y="${y + 18}" font-family="${MONO}" font-size="11.5" fill="${entry.tone === 'accent' ? accent : muted}">${escaped(entry.detail)}</text>`,
+      s.say([verb], 18, y, 'code', { fill: s.muted, attrs: s.stays(first) }),
+      s.say([rest.join(' ')], 18 + (verb.length + 1) * TYPE.code.size * ADVANCE, y, 'code', {
+        attrs: s.stays(first),
+      }),
+      s.say([entry.detail], 30, y + 18, 'code', {
+        fill: entry.tone === 'accent' ? s.text : s.muted,
+        attrs: s.stays(second),
+      }),
     );
   });
 
-  // The repository: the two files, the rule addressed at the first, and the record.
+  // The repository: the two files, the rule addressed at the first, and the record, its last row
+  // on the transcript's last.
   const rx = repoLeft + 18;
-  const pricePulse = animate('opacity', shown(7.8, 8.8));
+  const price = box.top + 132;
   body.push(
-    `<text x="${rx}" y="${box.top + 68}" font-family="${MONO}" font-size="11.5" fill="${text}">src/billing/total.ts</text>`,
-    `<text x="${rx + 12}" y="${box.top + 86}" font-family="${MONO}" font-size="10.5" fill="${muted}">refuses-a-write · ADR-2</text>`,
-    `<rect class="a" ${style([pricePulse])} opacity="0" x="${rx - 8}" y="${box.top + 98}" width="${box.w - 20}" height="24" rx="6" fill="${accent}" fill-opacity="0.16" stroke="${accent}" stroke-opacity="0.7"/>`,
-    `<text x="${rx}" y="${box.top + 114}" font-family="${MONO}" font-size="11.5" fill="${text}">src/cart/price.ts</text>`,
-    `<text x="${rx}" y="${box.top + 152}" font-family="${MONO}" font-size="11.5" fill="${muted}">.mnema/</text>`,
+    s.say(['src/billing/total.ts'], rx, box.top + 68, 'code'),
+    s.say(['refuses-a-write · ADR-2'], rx + 12, box.top + 86, 'code', { fill: s.muted }),
+    `<rect ${s.passes(7.8, 8.8)} x="${rx - 8}" y="${price - 16}" width="${box.w - 20}" height="24" rx="6" fill="${s.accent}" fill-opacity="0.16" stroke="${s.accent}" stroke-opacity="0.7"/>`,
+    s.say(['src/cart/price.ts'], rx, price, 'code'),
+    s.say(['.mnema/'], rx, box.top + 184, 'code', { fill: s.muted }),
   );
   const a = 12;
-  const dx = a * COS30;
-  const link = 10;
-  const cy = box.top + 186;
-  const cubeAt = (/** @type {number} */ i) => rx + dx + i * (2 * dx + link);
-  const arrivals = [undefined, undefined, undefined, 5.0, 11.0];
-  for (let i = 0; i < 5; i++) {
-    const x = cubeAt(i);
-    const arrives = arrivals[i];
-    const glow = animate('opacity', [
-      [0, '0'],
-      [11.6 + i * 0.22, '0'],
-      [11.8 + i * 0.22, '1'],
-      [12.3 + i * 0.22, '0'],
-      [LOOP, '0'],
-    ]);
-    /** @type {string[]} */
-    const parts = [];
-    if (i > 0) {
-      parts.push(
-        `<path d="M${n(x - 2 * dx - link + dx + 2)} ${cy}H${n(x - dx - 2)}" stroke="${muted}" stroke-width="1.5" stroke-linecap="round"/>`,
-      );
-    }
-    parts.push(...cube(x, cy, a, accent, [0.3, 0.16, 0.06]));
-    parts.push(
-      `<path class="a" ${style([glow])} opacity="0" d="M${n(x)} ${n(cy - a)}L${n(x + dx)} ${n(cy - a / 2)}L${n(x + dx)} ${n(cy + a / 2)}L${n(x)} ${n(cy + a)}L${n(x - dx)} ${n(cy + a / 2)}L${n(x - dx)} ${n(cy - a / 2)}z" fill="${accent}" fill-opacity="0.85"/>`,
-    );
-    if (arrives === undefined) body.push(...parts);
-    else {
-      const enter = animate('opacity', shown(arrives, ends, 0.4));
-      body.push(`<g class="a" ${style([enter])}>`, ...parts, '</g>');
-    }
-  }
-  const verified = animate('opacity', shown(12.8, ends));
+  const cy = box.top + 214;
+  const record = cubes(s, rx, cy, a, [undefined, undefined, undefined, 5.0, 11.0], 10);
+  body.push(...record.out);
+  for (const t of [5.0, 11.0]) body.push(landing(s, record.at(t === 5.0 ? 3 : 4), cy, a, t, s.paint.lit));
+  // mnema verify reads the chain, one cube after the other, and says so.
+  for (let i = 0; i < 5; i++) body.push(landing(s, record.at(i), cy, a, 11.6 + i * 0.22, s.paint.lit));
   body.push(
-    `<text class="a" ${style([verified])} x="${n(cubeAt(4) + dx + 14)}" y="${cy + 4}" font-family="${SANS}" font-size="13" font-weight="600" fill="${accent}">verified</text>`,
+    sans(s, 'verified', record.at(4) + record.dx + 14, cy + 4, 'label', { attrs: s.stays(12.8) }),
   );
 
-  // The packets, each a dot that runs along the lane.
+  // The packets, each a dot that runs its lane, and the edge each lights as it arrives.
+  /** @type {[number, number, [number, number], [number, number]][]} */
   const legs = [
-    travel(0.4, 1.2, hub.x - 6, agentRight + 6),
-    travel(2.8, 3.6, agentRight + 6, hub.x - 6),
-    travel(4.2, 5.0, hub.x - 6, agentRight + 6),
-    travel(4.2, 5.0, hub.x + hub.w + 6, repoLeft - 6),
-    travel(6.0, 6.75, agentRight + 6, hub.x - 6),
-    travel(7.0, 7.8, hub.x + hub.w + 6, repoLeft - 6),
-    travel(9.0, 9.8, agentRight + 6, hub.x - 6),
-    travel(10.2, 11.0, hub.x + hub.w + 6, repoLeft - 6),
+    [0.4, 1.2, left.near, left.far],
+    [2.8, 3.6, left.far, left.near],
+    [4.2, 5.0, left.near, left.far],
+    [4.2, 5.0, right.near, right.far],
+    [6.0, 6.75, left.far, left.near],
+    [7.0, 7.8, right.near, right.far],
+    [9.0, 9.8, left.far, left.near],
+    [10.2, 11.0, right.near, right.far],
   ];
-  for (const leg of legs) {
-    const move = animate('transform', leg.move);
-    const fade = animate('opacity', leg.fade);
-    body.push(
-      `<g class="a" ${style([move, fade])} opacity="0"><circle cx="0" cy="${lane}" r="9" fill="${accent}" fill-opacity="0.22"/><circle cx="0" cy="${lane}" r="4.5" fill="${accent}"/></g>`,
-    );
+  for (const [from, to, a0, b0] of legs) {
+    body.push(packet(s, from, to, a0, b0));
+    if (b0 === left.far) body.push(pulse(s, session, to));
+    else if (b0 === right.far) body.push(pulse(s, repository, to));
+    else body.push(ring(s, hub, to));
   }
 
-  // The five steps, the one under way lit.
+  // The five steps, the one under way lit by a tab behind it.
   /** @type {[number, number][]} */
   const stepTimes = [
     [0.2, 2.6],
@@ -582,30 +678,27 @@ function howMnemaFits(blocks, theme) {
     [11.6, 13.3],
   ];
   const stepW = W / HERO_STEPS.length;
+  const tab = { y: 280, h: 22 };
   HERO_STEPS.forEach((step, i) => {
     const cx = stepW * i + stepW / 2;
     const [from, to] = stepTimes[i] ?? [0, 0];
-    const lit = animate('opacity', shown(from, to));
-    // The grey label steps aside while the lit one stands in its place, so the two never overlap.
-    const unlit = animate(
-      'opacity',
-      shown(from, to).map(([t, v]) => /** @type {[number, string]} */ ([t, v === '1' ? '0' : '1'])),
-    );
     const label = `${i + 1}  ${step}`;
+    const tw = 2 * Math.ceil((label.length * TYPE.caption.size * 0.55 + 24) / 2);
     body.push(
-      `<text class="a" ${style([unlit])} x="${n(cx)}" y="${H - 6}" font-family="${SANS}" font-size="12" fill="${muted}" text-anchor="middle" xml:space="preserve">${escaped(label)}</text>`,
-      `<text class="a" ${style([lit])} opacity="0" x="${n(cx)}" y="${H - 6}" font-family="${SANS}" font-size="12" font-weight="600" fill="${accent}" text-anchor="middle" xml:space="preserve">${escaped(label)}</text>`,
+      `<rect ${s.passes(from, to)} x="${n(cx - tw / 2 + 0.5)}" y="${tab.y + 0.5}" width="${tw - 1}" height="${tab.h - 1}" rx="6" fill="${s.accent}" fill-opacity="${s.paint.tab}" stroke="${s.accent}"/>`,
+      sans(s, label, cx, inside(tab, 'caption'), 'caption', { anchor: 'middle', preserve: true }),
     );
   });
 
   return [
-    `<svg xmlns="http://www.w3.org/2000/svg" width="${W}" height="${H}" viewBox="0 0 ${W} ${H}" role="img" aria-label="How mnema fits: a session opens with the decisions in force, a write under a refusing rule is denied, a write elsewhere lands, a recorded decision is signed into the chain, and mnema verify checks it">`,
-    '<title>How mnema fits between an agent session and the repository</title>',
-    '<style>',
-    `.a{animation-duration:${LOOP}s;animation-iteration-count:infinite;animation-timing-function:ease-in-out}`,
-    ...css,
-    '@media (prefers-reduced-motion: reduce){.a{animation:none!important}}',
-    '</style>',
+    ...opening(
+      s,
+      W,
+      H,
+      'How mnema fits: a session opens with the decisions in force, a write under a refusing rule is denied, a write elsewhere lands, a recorded decision is signed into the chain, and mnema verify checks it',
+      'How mnema fits between an agent session and the repository',
+      `<ellipse cx="${W / 2}" cy="${lane}" rx="${W / 2 - 60}" ry="${lane - box.top}" fill="url(#glow)"/>`,
+    ),
     ...body,
     '</svg>',
     '',

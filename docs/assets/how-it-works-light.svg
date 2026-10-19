@@ -1,42 +1,103 @@
 <svg xmlns="http://www.w3.org/2000/svg" width="880" height="198" viewBox="0 0 880 198" role="img" aria-label="How mnema works: record, rule, hand over, verify">
 <title>How mnema works</title>
-<rect x="0.5" y="1" width="195" height="196" rx="12" fill="none" stroke="#d1d9e0"/>
-<circle cx="34" cy="37" r="14" fill="none" stroke="#997dbf" stroke-width="2"/>
-<text x="34" y="42" font-family="-apple-system,BlinkMacSystemFont,'Segoe UI','Noto Sans',Helvetica,Arial,sans-serif" font-size="14" font-weight="700" fill="#997dbf" text-anchor="middle">1</text>
-<text x="58" y="43" font-family="-apple-system,BlinkMacSystemFont,'Segoe UI','Noto Sans',Helvetica,Arial,sans-serif" font-size="17" font-weight="600" fill="#1f2328">Record</text>
-<text x="20" y="83" font-family="-apple-system,BlinkMacSystemFont,'Segoe UI','Noto Sans',Helvetica,Arial,sans-serif" font-size="13" fill="#59636e">A decision, why it was</text>
-<text x="20" y="103" font-family="-apple-system,BlinkMacSystemFont,'Segoe UI','Noto Sans',Helvetica,Arial,sans-serif" font-size="13" fill="#59636e">made, and the options</text>
-<text x="20" y="123" font-family="-apple-system,BlinkMacSystemFont,'Segoe UI','Noto Sans',Helvetica,Arial,sans-serif" font-size="13" fill="#59636e">turned down.</text>
-<rect x="20" y="149" width="122.2" height="28" rx="6" fill="#997dbf" fill-opacity="0.12" stroke="#997dbf" stroke-opacity="0.6"/>
-<text x="30" y="167.5" font-family="ui-monospace,SFMono-Regular,'SF Mono',Menlo,Consolas,'Liberation Mono',monospace" font-size="12" fill="#1f2328">mnema decision</text>
-<path d="M204 99H218M213 94L218 99L213 104" fill="none" stroke="#59636e" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-<rect x="228.5" y="1" width="195" height="196" rx="12" fill="none" stroke="#d1d9e0"/>
-<circle cx="262" cy="37" r="14" fill="none" stroke="#997dbf" stroke-width="2"/>
-<text x="262" y="42" font-family="-apple-system,BlinkMacSystemFont,'Segoe UI','Noto Sans',Helvetica,Arial,sans-serif" font-size="14" font-weight="700" fill="#997dbf" text-anchor="middle">2</text>
-<text x="286" y="43" font-family="-apple-system,BlinkMacSystemFont,'Segoe UI','Noto Sans',Helvetica,Arial,sans-serif" font-size="17" font-weight="600" fill="#1f2328">Rule</text>
-<text x="248" y="83" font-family="-apple-system,BlinkMacSystemFont,'Segoe UI','Noto Sans',Helvetica,Arial,sans-serif" font-size="13" fill="#59636e">Accepted by a person,</text>
-<text x="248" y="103" font-family="-apple-system,BlinkMacSystemFont,'Segoe UI','Noto Sans',Helvetica,Arial,sans-serif" font-size="13" fill="#59636e">then linked to the paths</text>
-<text x="248" y="123" font-family="-apple-system,BlinkMacSystemFont,'Segoe UI','Noto Sans',Helvetica,Arial,sans-serif" font-size="13" fill="#59636e">it governs.</text>
-<rect x="248" y="149" width="93" height="28" rx="6" fill="#997dbf" fill-opacity="0.12" stroke="#997dbf" stroke-opacity="0.6"/>
-<text x="258" y="167.5" font-family="ui-monospace,SFMono-Regular,'SF Mono',Menlo,Consolas,'Liberation Mono',monospace" font-size="12" fill="#1f2328">mnema link</text>
-<path d="M432 99H446M441 94L446 99L441 104" fill="none" stroke="#59636e" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-<rect x="456.5" y="1" width="195" height="196" rx="12" fill="none" stroke="#d1d9e0"/>
-<circle cx="490" cy="37" r="14" fill="none" stroke="#997dbf" stroke-width="2"/>
-<text x="490" y="42" font-family="-apple-system,BlinkMacSystemFont,'Segoe UI','Noto Sans',Helvetica,Arial,sans-serif" font-size="14" font-weight="700" fill="#997dbf" text-anchor="middle">3</text>
-<text x="514" y="43" font-family="-apple-system,BlinkMacSystemFont,'Segoe UI','Noto Sans',Helvetica,Arial,sans-serif" font-size="17" font-weight="600" fill="#1f2328">Hand over</text>
-<text x="476" y="83" font-family="-apple-system,BlinkMacSystemFont,'Segoe UI','Noto Sans',Helvetica,Arial,sans-serif" font-size="13" fill="#59636e">The plugin opens every</text>
-<text x="476" y="103" font-family="-apple-system,BlinkMacSystemFont,'Segoe UI','Noto Sans',Helvetica,Arial,sans-serif" font-size="13" fill="#59636e">session with it, and each</text>
-<text x="476" y="123" font-family="-apple-system,BlinkMacSystemFont,'Segoe UI','Noto Sans',Helvetica,Arial,sans-serif" font-size="13" fill="#59636e">edit meets its rules.</text>
-<rect x="476" y="149" width="129.5" height="28" rx="6" fill="#997dbf" fill-opacity="0.12" stroke="#997dbf" stroke-opacity="0.6"/>
-<text x="486" y="167.5" font-family="ui-monospace,SFMono-Regular,'SF Mono',Menlo,Consolas,'Liberation Mono',monospace" font-size="12" fill="#1f2328">refuses-a-write</text>
-<path d="M660 99H674M669 94L674 99L669 104" fill="none" stroke="#59636e" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-<rect x="684.5" y="1" width="195" height="196" rx="12" fill="none" stroke="#d1d9e0"/>
-<circle cx="718" cy="37" r="14" fill="none" stroke="#997dbf" stroke-width="2"/>
-<text x="718" y="42" font-family="-apple-system,BlinkMacSystemFont,'Segoe UI','Noto Sans',Helvetica,Arial,sans-serif" font-size="14" font-weight="700" fill="#997dbf" text-anchor="middle">4</text>
-<text x="742" y="43" font-family="-apple-system,BlinkMacSystemFont,'Segoe UI','Noto Sans',Helvetica,Arial,sans-serif" font-size="17" font-weight="600" fill="#1f2328">Verify</text>
-<text x="704" y="83" font-family="-apple-system,BlinkMacSystemFont,'Segoe UI','Noto Sans',Helvetica,Arial,sans-serif" font-size="13" fill="#59636e">Every fact is signed and</text>
-<text x="704" y="103" font-family="-apple-system,BlinkMacSystemFont,'Segoe UI','Noto Sans',Helvetica,Arial,sans-serif" font-size="13" fill="#59636e">hash-chained; anyone can</text>
-<text x="704" y="123" font-family="-apple-system,BlinkMacSystemFont,'Segoe UI','Noto Sans',Helvetica,Arial,sans-serif" font-size="13" fill="#59636e">check it.</text>
-<rect x="704" y="149" width="107.6" height="28" rx="6" fill="#997dbf" fill-opacity="0.12" stroke="#997dbf" stroke-opacity="0.6"/>
-<text x="714" y="167.5" font-family="ui-monospace,SFMono-Regular,'SF Mono',Menlo,Consolas,'Liberation Mono',monospace" font-size="12" fill="#1f2328">mnema verify</text>
+<style>
+.a{animation-duration:9s;animation-iteration-count:infinite;animation-timing-function:ease-in-out}
+@keyframes k0{0%{opacity:0}3.89%{opacity:0}5.56%{opacity:1}11.11%{opacity:0}100%{opacity:0}}
+@keyframes k1{0%{opacity:0}4.44%{opacity:0}6.11%{opacity:1}12.78%{opacity:0}100%{opacity:0}}
+@keyframes k2{0%{opacity:0}4.44%{opacity:0}7.78%{opacity:1}88.89%{opacity:1}92.22%{opacity:0}100%{opacity:0}}
+@keyframes k3{0%{transform:translate(200px,99px)}16.67%{transform:translate(200px,99px)}24.44%{transform:translate(224px,99px)}25.56%{transform:translate(224px,99px)}26.67%{transform:translate(200px,99px)}100%{transform:translate(200px,99px)}}
+@keyframes k4{0%{opacity:0}16.67%{opacity:0}18%{opacity:1}23.11%{opacity:1}25%{opacity:0}100%{opacity:0}}
+@keyframes k5{0%{opacity:0}12.22%{opacity:0}15.56%{opacity:1}88.89%{opacity:1}92.22%{opacity:0}100%{opacity:0}}
+@keyframes k6{0%{opacity:0}16.67%{opacity:0}20%{opacity:1}88.89%{opacity:1}92.22%{opacity:0}100%{opacity:0}}
+@keyframes k7{0%{stroke-dashoffset:24}12.22%{stroke-dashoffset:24}17.78%{stroke-dashoffset:0}22.78%{stroke-dashoffset:0}23.89%{stroke-dashoffset:24}100%{stroke-dashoffset:24}}
+@keyframes k8{0%{opacity:0}12.22%{opacity:0}14.44%{opacity:1}20%{opacity:1}22.22%{opacity:0}100%{opacity:0}}
+@keyframes k9{0%{opacity:0}23.89%{opacity:0}25.56%{opacity:1}31.11%{opacity:0}100%{opacity:0}}
+@keyframes k10{0%{opacity:0}24.44%{opacity:0}26.11%{opacity:1}32.78%{opacity:0}100%{opacity:0}}
+@keyframes k11{0%{opacity:0}24.44%{opacity:0}27.78%{opacity:1}88.89%{opacity:1}92.22%{opacity:0}100%{opacity:0}}
+@keyframes k12{0%{transform:translate(428px,99px)}34.44%{transform:translate(428px,99px)}42.22%{transform:translate(452px,99px)}43.33%{transform:translate(452px,99px)}44.44%{transform:translate(428px,99px)}100%{transform:translate(428px,99px)}}
+@keyframes k13{0%{opacity:0}34.44%{opacity:0}35.78%{opacity:1}40.89%{opacity:1}42.78%{opacity:0}100%{opacity:0}}
+@keyframes k14{0%{opacity:0}30%{opacity:0}33.33%{opacity:1}88.89%{opacity:1}92.22%{opacity:0}100%{opacity:0}}
+@keyframes k15{0%{opacity:0}34.44%{opacity:0}37.78%{opacity:1}88.89%{opacity:1}92.22%{opacity:0}100%{opacity:0}}
+@keyframes k16{0%{stroke-dashoffset:24}30%{stroke-dashoffset:24}35.56%{stroke-dashoffset:0}40.56%{stroke-dashoffset:0}41.67%{stroke-dashoffset:24}100%{stroke-dashoffset:24}}
+@keyframes k17{0%{opacity:0}30%{opacity:0}32.22%{opacity:1}37.78%{opacity:1}40%{opacity:0}100%{opacity:0}}
+@keyframes k18{0%{opacity:0}41.67%{opacity:0}43.33%{opacity:1}48.89%{opacity:0}100%{opacity:0}}
+@keyframes k19{0%{opacity:0}42.22%{opacity:0}43.89%{opacity:1}50.56%{opacity:0}100%{opacity:0}}
+@keyframes k20{0%{opacity:0}42.22%{opacity:0}45.56%{opacity:1}88.89%{opacity:1}92.22%{opacity:0}100%{opacity:0}}
+@keyframes k21{0%{transform:translate(656px,99px)}52.22%{transform:translate(656px,99px)}60%{transform:translate(680px,99px)}61.11%{transform:translate(680px,99px)}62.22%{transform:translate(656px,99px)}100%{transform:translate(656px,99px)}}
+@keyframes k22{0%{opacity:0}52.22%{opacity:0}53.56%{opacity:1}58.67%{opacity:1}60.56%{opacity:0}100%{opacity:0}}
+@keyframes k23{0%{opacity:0}47.78%{opacity:0}51.11%{opacity:1}88.89%{opacity:1}92.22%{opacity:0}100%{opacity:0}}
+@keyframes k24{0%{opacity:0}52.22%{opacity:0}55.56%{opacity:1}88.89%{opacity:1}92.22%{opacity:0}100%{opacity:0}}
+@keyframes k25{0%{stroke-dashoffset:24}47.78%{stroke-dashoffset:24}53.33%{stroke-dashoffset:0}58.33%{stroke-dashoffset:0}59.44%{stroke-dashoffset:24}100%{stroke-dashoffset:24}}
+@keyframes k26{0%{opacity:0}47.78%{opacity:0}50%{opacity:1}55.56%{opacity:1}57.78%{opacity:0}100%{opacity:0}}
+@keyframes k27{0%{opacity:0}59.44%{opacity:0}61.11%{opacity:1}66.67%{opacity:0}100%{opacity:0}}
+@keyframes k28{0%{opacity:0}60%{opacity:0}61.67%{opacity:1}68.33%{opacity:0}100%{opacity:0}}
+@keyframes k29{0%{opacity:0}60%{opacity:0}63.33%{opacity:1}88.89%{opacity:1}92.22%{opacity:0}100%{opacity:0}}
+@media (prefers-reduced-motion: reduce){.a{animation:none!important}}
+</style>
+<defs>
+<radialGradient id="glow" cx="0.5" cy="0.5" r="0.5"><stop offset="0" stop-color="#997dbf" stop-opacity="0.08"/><stop offset="0.6" stop-color="#997dbf" stop-opacity="0.03"/><stop offset="1" stop-color="#997dbf" stop-opacity="0"/></radialGradient>
+<linearGradient id="tint" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#997dbf" stop-opacity="0.07"/><stop offset="1" stop-color="#997dbf" stop-opacity="0.02"/></linearGradient>
+</defs>
+<rect width="880" height="198" fill="#ffffff"/>
+<ellipse cx="440" cy="99" rx="420" ry="98" fill="url(#glow)"/>
+<rect x="0.5" y="1.5" width="195" height="195" rx="10" fill="url(#tint)" stroke="#997dbf"/>
+<rect class="a" style="animation-name:k0" opacity="0" x="1.5" y="2.5" width="193" height="193" rx="9" fill="none" stroke="#997dbf" stroke-width="3"/>
+<rect class="a" style="animation-name:k1" opacity="0" x="16" y="21" width="36" height="36" rx="18" fill="none" stroke="#997dbf" stroke-width="2"/>
+<rect x="20" y="25" width="28" height="28" rx="14" fill="none" stroke="#997dbf" stroke-width="2"/>
+<rect class="a" style="animation-name:k2" x="20" y="25" width="28" height="28" rx="14" fill="#997dbf" fill-opacity="0.22" stroke="#997dbf" stroke-width="2"/>
+<text x="34" y="43" font-family="-apple-system,BlinkMacSystemFont,'Segoe UI','Noto Sans',Helvetica,Arial,sans-serif" font-size="13" font-weight="600" fill="#1f2328" text-anchor="middle">1</text>
+<text x="58" y="43.7" font-family="-apple-system,BlinkMacSystemFont,'Segoe UI','Noto Sans',Helvetica,Arial,sans-serif" font-size="15" font-weight="600" fill="#1f2328">Record</text>
+<text x="20" y="82.7" font-family="-apple-system,BlinkMacSystemFont,'Segoe UI','Noto Sans',Helvetica,Arial,sans-serif" font-size="12" fill="#59636e">A decision, why it was</text>
+<text x="20" y="102.7" font-family="-apple-system,BlinkMacSystemFont,'Segoe UI','Noto Sans',Helvetica,Arial,sans-serif" font-size="12" fill="#59636e">made, and the options</text>
+<text x="20" y="122.7" font-family="-apple-system,BlinkMacSystemFont,'Segoe UI','Noto Sans',Helvetica,Arial,sans-serif" font-size="12" fill="#59636e">turned down.</text>
+<rect x="20.5" y="145.5" width="128" height="27" rx="6" fill="#997dbf" fill-opacity="0.05" stroke="#997dbf"/>
+<text x="34" y="162.7" font-family="ui-monospace,SFMono-Regular,'SF Mono',Menlo,Consolas,'Liberation Mono',monospace" font-size="12" fill="#1f2328">mnema decision</text>
+<path class="a" style="animation-name:k5" d="M200 99L224 99" fill="none" stroke="#997dbf" stroke-dasharray="3 5" stroke-linecap="round" stroke-width="1.5"/>
+<path class="a" style="animation-name:k6" d="M217.86 95.64L224 99L217.86 102.36" fill="none" stroke="#997dbf" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+<path class="a" style="animation-name:k7,k8" opacity="0" d="M200 99L224 99" fill="none" stroke="#997dbf" stroke-width="2" stroke-linecap="round" stroke-dasharray="24 24"/>
+<g class="a" style="animation-name:k3,k4" opacity="0"><circle r="8" fill="#997dbf" fill-opacity="0.22"/><circle r="4" fill="#997dbf"/></g>
+<rect x="228.5" y="1.5" width="195" height="195" rx="10" fill="url(#tint)" stroke="#997dbf"/>
+<rect class="a" style="animation-name:k9" opacity="0" x="229.5" y="2.5" width="193" height="193" rx="9" fill="none" stroke="#997dbf" stroke-width="3"/>
+<rect class="a" style="animation-name:k10" opacity="0" x="244" y="21" width="36" height="36" rx="18" fill="none" stroke="#997dbf" stroke-width="2"/>
+<rect x="248" y="25" width="28" height="28" rx="14" fill="none" stroke="#997dbf" stroke-width="2"/>
+<rect class="a" style="animation-name:k11" x="248" y="25" width="28" height="28" rx="14" fill="#997dbf" fill-opacity="0.22" stroke="#997dbf" stroke-width="2"/>
+<text x="262" y="43" font-family="-apple-system,BlinkMacSystemFont,'Segoe UI','Noto Sans',Helvetica,Arial,sans-serif" font-size="13" font-weight="600" fill="#1f2328" text-anchor="middle">2</text>
+<text x="286" y="43.7" font-family="-apple-system,BlinkMacSystemFont,'Segoe UI','Noto Sans',Helvetica,Arial,sans-serif" font-size="15" font-weight="600" fill="#1f2328">Rule</text>
+<text x="248" y="82.7" font-family="-apple-system,BlinkMacSystemFont,'Segoe UI','Noto Sans',Helvetica,Arial,sans-serif" font-size="12" fill="#59636e">Accepted by a person,</text>
+<text x="248" y="102.7" font-family="-apple-system,BlinkMacSystemFont,'Segoe UI','Noto Sans',Helvetica,Arial,sans-serif" font-size="12" fill="#59636e">then linked to the paths</text>
+<text x="248" y="122.7" font-family="-apple-system,BlinkMacSystemFont,'Segoe UI','Noto Sans',Helvetica,Arial,sans-serif" font-size="12" fill="#59636e">it governs.</text>
+<rect x="248.5" y="145.5" width="99" height="27" rx="6" fill="#997dbf" fill-opacity="0.05" stroke="#997dbf"/>
+<text x="262" y="162.7" font-family="ui-monospace,SFMono-Regular,'SF Mono',Menlo,Consolas,'Liberation Mono',monospace" font-size="12" fill="#1f2328">mnema link</text>
+<path class="a" style="animation-name:k14" d="M428 99L452 99" fill="none" stroke="#997dbf" stroke-dasharray="3 5" stroke-linecap="round" stroke-width="1.5"/>
+<path class="a" style="animation-name:k15" d="M445.86 95.64L452 99L445.86 102.36" fill="none" stroke="#997dbf" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+<path class="a" style="animation-name:k16,k17" opacity="0" d="M428 99L452 99" fill="none" stroke="#997dbf" stroke-width="2" stroke-linecap="round" stroke-dasharray="24 24"/>
+<g class="a" style="animation-name:k12,k13" opacity="0"><circle r="8" fill="#997dbf" fill-opacity="0.22"/><circle r="4" fill="#997dbf"/></g>
+<rect x="456.5" y="1.5" width="195" height="195" rx="10" fill="url(#tint)" stroke="#997dbf"/>
+<rect class="a" style="animation-name:k18" opacity="0" x="457.5" y="2.5" width="193" height="193" rx="9" fill="none" stroke="#997dbf" stroke-width="3"/>
+<rect class="a" style="animation-name:k19" opacity="0" x="472" y="21" width="36" height="36" rx="18" fill="none" stroke="#997dbf" stroke-width="2"/>
+<rect x="476" y="25" width="28" height="28" rx="14" fill="none" stroke="#997dbf" stroke-width="2"/>
+<rect class="a" style="animation-name:k20" x="476" y="25" width="28" height="28" rx="14" fill="#997dbf" fill-opacity="0.22" stroke="#997dbf" stroke-width="2"/>
+<text x="490" y="43" font-family="-apple-system,BlinkMacSystemFont,'Segoe UI','Noto Sans',Helvetica,Arial,sans-serif" font-size="13" font-weight="600" fill="#1f2328" text-anchor="middle">3</text>
+<text x="514" y="43.7" font-family="-apple-system,BlinkMacSystemFont,'Segoe UI','Noto Sans',Helvetica,Arial,sans-serif" font-size="15" font-weight="600" fill="#1f2328">Hand over</text>
+<text x="476" y="82.7" font-family="-apple-system,BlinkMacSystemFont,'Segoe UI','Noto Sans',Helvetica,Arial,sans-serif" font-size="12" fill="#59636e">The plugin opens every</text>
+<text x="476" y="102.7" font-family="-apple-system,BlinkMacSystemFont,'Segoe UI','Noto Sans',Helvetica,Arial,sans-serif" font-size="12" fill="#59636e">session with it, and each</text>
+<text x="476" y="122.7" font-family="-apple-system,BlinkMacSystemFont,'Segoe UI','Noto Sans',Helvetica,Arial,sans-serif" font-size="12" fill="#59636e">edit meets its rules.</text>
+<rect x="476.5" y="145.5" width="135" height="27" rx="6" fill="#997dbf" fill-opacity="0.05" stroke="#997dbf"/>
+<text x="490" y="162.7" font-family="ui-monospace,SFMono-Regular,'SF Mono',Menlo,Consolas,'Liberation Mono',monospace" font-size="12" fill="#1f2328">refuses-a-write</text>
+<path class="a" style="animation-name:k23" d="M656 99L680 99" fill="none" stroke="#997dbf" stroke-dasharray="3 5" stroke-linecap="round" stroke-width="1.5"/>
+<path class="a" style="animation-name:k24" d="M673.86 95.64L680 99L673.86 102.36" fill="none" stroke="#997dbf" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+<path class="a" style="animation-name:k25,k26" opacity="0" d="M656 99L680 99" fill="none" stroke="#997dbf" stroke-width="2" stroke-linecap="round" stroke-dasharray="24 24"/>
+<g class="a" style="animation-name:k21,k22" opacity="0"><circle r="8" fill="#997dbf" fill-opacity="0.22"/><circle r="4" fill="#997dbf"/></g>
+<rect x="684.5" y="1.5" width="195" height="195" rx="10" fill="url(#tint)" stroke="#997dbf"/>
+<rect class="a" style="animation-name:k27" opacity="0" x="685.5" y="2.5" width="193" height="193" rx="9" fill="none" stroke="#997dbf" stroke-width="3"/>
+<rect class="a" style="animation-name:k28" opacity="0" x="700" y="21" width="36" height="36" rx="18" fill="none" stroke="#997dbf" stroke-width="2"/>
+<rect x="704" y="25" width="28" height="28" rx="14" fill="none" stroke="#997dbf" stroke-width="2"/>
+<rect class="a" style="animation-name:k29" x="704" y="25" width="28" height="28" rx="14" fill="#997dbf" fill-opacity="0.22" stroke="#997dbf" stroke-width="2"/>
+<text x="718" y="43" font-family="-apple-system,BlinkMacSystemFont,'Segoe UI','Noto Sans',Helvetica,Arial,sans-serif" font-size="13" font-weight="600" fill="#1f2328" text-anchor="middle">4</text>
+<text x="742" y="43.7" font-family="-apple-system,BlinkMacSystemFont,'Segoe UI','Noto Sans',Helvetica,Arial,sans-serif" font-size="15" font-weight="600" fill="#1f2328">Verify</text>
+<text x="704" y="82.7" font-family="-apple-system,BlinkMacSystemFont,'Segoe UI','Noto Sans',Helvetica,Arial,sans-serif" font-size="12" fill="#59636e">Every fact is signed and</text>
+<text x="704" y="102.7" font-family="-apple-system,BlinkMacSystemFont,'Segoe UI','Noto Sans',Helvetica,Arial,sans-serif" font-size="12" fill="#59636e">hash-chained; anyone can</text>
+<text x="704" y="122.7" font-family="-apple-system,BlinkMacSystemFont,'Segoe UI','Noto Sans',Helvetica,Arial,sans-serif" font-size="12" fill="#59636e">check it.</text>
+<rect x="704.5" y="145.5" width="114" height="27" rx="6" fill="#997dbf" fill-opacity="0.05" stroke="#997dbf"/>
+<text x="718" y="162.7" font-family="ui-monospace,SFMono-Regular,'SF Mono',Menlo,Consolas,'Liberation Mono',monospace" font-size="12" fill="#1f2328">mnema verify</text>
 </svg>
