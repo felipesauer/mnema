@@ -30,8 +30,8 @@
  */
 
 /**
- * WHICH channels of the product's framing this handler carries — the names `record-framing.ts`
- * knows them by, joined by `+`: the reason it hands back is the asking's or the refusal's,
+ * WHICH channels of the product's framing this handler carries (the names `record-framing.ts`
+ * knows them by, joined by `+`): the reason it hands back is the asking's or the refusal's,
  * whichever the write met. Read from this SOURCE by the channel guard, never imported: importing this module
  * would run it.
  */

@@ -123,8 +123,8 @@ import { appendFileSync, readFileSync, writeFileSync } from 'node:fs';
  * THE GENERATED-WITH RULE READS THE TOOL'S NAME OR ITS URL. `Generated with [Release Please]`
  * appears in six dependabot bodies on this trunk and is not this product's footer; the bracketed
  * name is what separates them. The URL is checked too and separately, because the emoji, the
- * spacing and the bracket text are all cosmetic and the link is the thing that must not come back
- * — which is what this delivery is named after.
+ * spacing and the bracket text are all cosmetic and the link is the thing that must not come back,
+ * which is what this delivery is named after.
  *
  * BOTH ARE ANCHORED RATHER THAN SUBSTRING-MATCHED, AND THAT IS THE HALF THAT CAN GO WRONG. A
  * guard that refuses too much is switched off by the first person it blocks, which on this

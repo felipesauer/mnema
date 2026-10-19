@@ -18,7 +18,7 @@
  *      variable writes it.
  *   2. Every process this one starts is asked, before it starts, what home it will resolve: its
  *      `HOME` when that is an absolute path, and otherwise the account's home from the password
- *      database — what `os.homedir()` answers in a process whose `HOME` is missing or empty, and
+ *      database: what `os.homedir()` answers in a process whose `HOME` is missing or empty, and
  *      what the product falls back to for a relative one. A child that would resolve the machine's
  *      home, or whose `MNEMA_HOME` points into it or is the value this suite was started with, is
  *      started with this process's `HOME` instead and without the variable (so it cannot write
@@ -69,7 +69,7 @@ try {
 const STARTED_WITH = process.env[THE_VARIABLE];
 
 /**
- * This process's home, for the one file it runs — a path no other process can have, and NOT
+ * This process's home, for the one file it runs: a path no other process can have, and NOT
  * created here: it comes into being the first time something writes under it (the product makes
  * `~/.mnema` with a recursive `mkdir`), and it goes when the file is done.
  *

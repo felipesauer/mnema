@@ -4,7 +4,7 @@
  * WHY IT IS NOT A TEST. `packages/code/tests/every-sandbox-is-removed-where-it-was-made.test.ts`
  * reads source and follows the created name to its removal; that answers what one file says, and
  * it cannot answer what the machine holds afterwards. The one case that does ask the filesystem
- * — `packages/context/tests/the-bench-leaves-nothing-behind.test.ts` — covers ONE prefix of the
+ * (`packages/context/tests/the-bench-leaves-nothing-behind.test.ts`) covers ONE prefix of the
  * 187 this workspace builds under, and it covers that one only because `makeBench` hands back a
  * root it can derive the sandbox from. There is no root to derive for the other 186.
  *

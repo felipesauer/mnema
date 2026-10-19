@@ -12,9 +12,9 @@
  * NO MODEL IS CALLED, and nothing is written to the record: the line is a count, in the words the
  * other handlers use for a fact (what was counted, and from where) and not an instruction.
  *
- * IT NEVER BLOCKS BY FAILING. Every outcome that is not an answer is silence and exit 0 — no
+ * IT NEVER BLOCKS BY FAILING. Every outcome that is not an answer is silence and exit 0: no
  * `mnema` on the PATH, no project, a transcript it could not read, the channel switched off
- * (`mnema switch off session-tally`) — and silence is no output at all, which a host reads as
+ * (`mnema switch off session-tally`). Silence is no output at all, which a host reads as
  * nothing to say.
  */
 

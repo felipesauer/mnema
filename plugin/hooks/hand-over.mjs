@@ -60,7 +60,7 @@
  * "No `mnema` on the PATH" was the one way the PATH could be wrong that this module knew, and it
  * is silence. Measured with Claude Code 2.1.281: a program NAMED `mnema` placed before the real
  * one was run at all three points the plugin declares (`brief --hook`, `recall --hook`, `mcp`),
- * the session opened without the record, and nothing said so — the silence above, earned by a
+ * the session opened without the record, and nothing said so: the silence above, earned by a
  * program that is not this product. So the handler that hands over the document asks first,
  * and a program that does not answer as this product is not run and is NAMED to the session,
  * with what it answered and where the right one comes from. The notes handler asks too and
@@ -218,7 +218,7 @@ export function aStranger(stranger) {
  * @param {string} cwd Where to run it: the host's project directory, or this process's own
  *   when the host announced none.
  * @param {{ readonly namesAStranger?: boolean }} [options] Whether a `mnema` that is another
- *   program is named to the session ({@link aStranger}) rather than met with silence — the one
+ *   program is named to the session ({@link aStranger}) rather than met with silence: the one
  *   handler that hands over the document says it, so a session is told once.
  * @param {readonly string[]} [handed] The handler's own arguments, from the hooks file: a
  *   `--host <name>` there is passed on, so the verb cuts to that host's ceiling rather than
@@ -320,9 +320,9 @@ function answerOf(ran) {
  * THE HOOKS FILE SAYS IT, AND THE HANDLER DOES NOT GUESS. The file is generated from the host
  * table, and each command line names its host (`--host`) and one of two things that start it:
  * `--where <VARIABLE>`, for a host that applies the matcher Claude Code applies too and sets a
- * variable no other host sets — the gate starts nothing where it is unset, and reads no stdin
- * there — or `--tools <a,b,…>`, for a host that runs a plugin's command on every tool whatever
- * the matcher says — the gate starts nothing for a tool the host does not write through. Either
+ * variable no other host sets (the gate starts nothing where it is unset, and reads no stdin
+ * there), or `--tools <a,b,…>`, for a host that runs a plugin's command on every tool whatever
+ * the matcher says (the gate starts nothing for a tool the host does not write through). Either
  * way no `mnema` runs. It is the SECOND line: the hooks file puts a shell generated from the same
  * row in front of the handler, so where that shell turns a call away no process starts at all,
  * and this check holds only for a handler run some other way. Everything else is

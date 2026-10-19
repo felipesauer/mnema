@@ -436,7 +436,7 @@ jobs:
       # of the canary; but a guard whose normal state is RULER BROKEN is a guard nobody reads.
       # Measured on this repository: 16.43 MiB packed and 601 commits on the trunk, a full clone
       # against a depth-1 one is 0.59 s against 0.25 s and 13 MB against 4 MB of `.git`, with no
-      # network in either — the runner adds the transfer of the difference.
+      # network in either. The runner adds the transfer of the difference.
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           fetch-depth: 0

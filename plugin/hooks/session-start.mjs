@@ -21,7 +21,7 @@
  * will not read) and asserted in `packages/code/tests/the-record-arrives-unasked.test.ts`
  * ("says nothing at all where there is no project"). Save one, which this handler alone says: a
  * `mnema` on the PATH that is another program is not run, and the session is told which program
- * answered (`hand-over.mjs`, `whoAnswers`) — exit 0 still, and a fact rather than an error.
+ * answered (`hand-over.mjs`, `whoAnswers`): exit 0 still, and a fact rather than an error.
  *
  * THE REASON UNDER THAT USED TO BE WIDER THAN THE MEASUREMENT IT CAME FROM, and it is
  * narrowed rather than dropped. It read: *"A hook is not a place to diagnose: the
@@ -35,8 +35,8 @@
  * `hand-over.mjs` for the three outcomes that separate the two, measured on the binary.
  *
  * THE REASON THAT USED TO STAND HERE IS FALSE: rewritten rather than deleted, because
- * it was read as doctrine and became one. It said: "`PreToolUse` — the one surface of
- * this host that can refuse — is deliberately not used by this plugin at all",
+ * it was read as doctrine and became one. It said: "`PreToolUse` (the one surface of
+ * this host that can refuse) is deliberately not used by this plugin at all",
  * offered as a property of the PRODUCT rather than a fact about this file. Three
  * things falsified it on 18 Aug 2026: mnema's own foundation never said it and says
  * the opposite (the agents "execute behind workflow gates"); the product already

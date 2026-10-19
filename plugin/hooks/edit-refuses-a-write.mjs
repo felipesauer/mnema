@@ -5,7 +5,7 @@
  *
  * CODEX RUNS IT TOO, from a hooks file of its own (`hooks/codex.json`, `--host codex`), on
  * `apply_patch`: Codex rejects an `ask` as unsupported and lets the patch through, so it is a
- * host that refuses alone, like Cursor, and needs no variable to say so — nobody else reads that
+ * host that refuses alone, like Cursor, and needs no variable to say so. Nobody else reads that
  * file.
  *
  * WHY THIS IS A FILE OF ITS OWN AND NOT `edit-asks-a-person.mjs`. Cursor's command-line agent

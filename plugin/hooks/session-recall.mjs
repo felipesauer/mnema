@@ -22,7 +22,7 @@
  * (`hand-over.mjs`): outside a project, with no `mnema` on the PATH, over a record that will
  * not read, or with this channel switched off, nothing is added. And where nothing is noted
  * the verb prints nothing, so a session in a project with no notes is handed no text at all
- * — the rule the per-edit push keeps: nothing arrives where there is nothing to say.
+ * (the rule the per-edit push keeps: nothing arrives where there is nothing to say).
  *
  * IT IS A CHANNEL, AND THE CHANNEL IS DECLARED: {@link MODEL_CHANNEL}, framed in the words
  * `packages/code/src/record-framing.ts` gives every channel that puts record text in front
