@@ -525,6 +525,14 @@ with its own changelog.
   2.1.285, 2.1.287 and 2.1.296 each keep, and the pin moves to 2.1.296. The product's own ceiling does not change and
   stays safe: it is the lower of the two. What it does not know is how a host reads a description of a tool past 2,048
   on 2.1.296; the pages that said "2,048" of the host now say up to which version.
+- **The front page says what mnema is not, and groups the docs by who reads them.** `README.md` carries the four
+  lines of `docs/where-it-fits.md` ("Not a semantic memory", "Not an agent runner", "Not a copy somewhere else", "Not
+  access control") and lists the docs under use, verify, integrate and contribute; a case holds each line to the
+  sentences of the page it comes from, and every page of `docs/` to one group. Two sentences said more than the code
+  holds, and now say less: the front page said "what each one does, line by line, is in Features" of products
+  Features does not describe (the page that verifies itself, the agent in CI), and `docs/where-it-fits.md` said "the most that leaves
+  that machine" is a digest without saying that it leaves only when you run the witness verb, and that Sigstore
+  sends the identity too; `docs/what-it-proves.md` now says Sigstore's leaving is where somebody ran it.
 
 ## [0.2.0-beta] - 2026-10-11
 
