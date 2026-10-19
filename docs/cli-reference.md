@@ -160,7 +160,7 @@ CLI and the MCP tools behave identically, because they are the same call.
 
 The record is **tamper-evident, not tamper-proof**: it does not stop an edit, and
 `mnema verify` shows when what is in the record has changed since it was
-signed, and a cut that leaves the last checkpoint in place; it does not catch a cut off the end that takes the last checkpoint with it, or a whole tail deleted (a key left without a tail is noted, not failed). It reads the events and public keys of
+signed, and a cut that leaves the last checkpoint in place; by default it does not catch a cut off the end that takes the last checkpoint with it, or a whole tail deleted (a key left without a tail is noted, not failed). With `--require signed` a record whose tails are all gone exits 1, as any record with no signed event does; `--since <rev>` exits 1 when files the revision held are gone. It reads the events and public keys of
 this project's trees — no private key, no network — and prints each verdict
 verbatim. The surfaces never upgrade a verdict into a stronger claim.
 
@@ -352,7 +352,8 @@ the witness. A tail emptied of its events with its proof kept reads the same way
 A tail removed *together with its key* is not reported at all — that record reads
 `0 tail(s); no events yet`, indistinguishable from a fresh one, and only a history
 outside this record (the one a git remote keeps) can testify to what was taken
-out. No value of `--require` closes that; it changes which forgery goes green.
+out. `--require signed` exits 1 on it, as it does on a record with no signed event at all, so it
+names no removal; it changes which forgery goes green.
 
 **What closes it in CI is the history git already keeps.** Three records exit 0 even
 under `--require=signed`: the newest events cut together with their checkpoint, the

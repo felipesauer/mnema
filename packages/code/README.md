@@ -45,7 +45,7 @@ unproven.
 
 The record is **tamper-evident, not tamper-proof**: it does not stop an edit, and `mnema verify`
 shows when what is in the record has changed since it was signed, and a cut that leaves the last
-checkpoint in place; it does not catch a cut off the end that takes the last checkpoint with it, or a whole tail deleted (a key left without a tail is noted, not failed). It reads the events and public keys of the project's trees, with
+checkpoint in place; by default it does not catch a cut off the end that takes the last checkpoint with it, or a whole tail deleted (a key left without a tail is noted, not failed). With `--require signed` a record whose tails are all gone exits 1, as any record with no signed event does; `--since <rev>` exits 1 when files the revision held are gone. It reads the events and public keys of the project's trees, with
 no private key and no network, and prints each verdict verbatim.
 
 - It does not say every event is signed: the verdict names the level it reached, and only

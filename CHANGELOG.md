@@ -207,7 +207,7 @@ with its own changelog.
   `mnema` on the PATH the gate still says nothing. `UnreadableLineError` is now exported by `@mnema/chain`.
 - **Pages stop promising more than verify and the Action do.** The "what it proves" paragraph in the CLI reference
   and in the `@mnema/code` README said an edit to the record is made "impossible to hide"; verify shows when what is
-  in the record has changed since it was signed, and a cut that leaves the last checkpoint in place, and does not catch
+  in the record has changed since it was signed, and a cut that leaves the last checkpoint in place, and by default does not catch
   a cut off the end that takes the last checkpoint with it, or a whole tail deleted. The reference's line on cutting
   part of a tail no longer says every such cut stays loud. The page on packages
   and the one on the site said the Action "only reads"; with a `checker-key` it also writes signed rule results to the
@@ -535,8 +535,13 @@ with its own changelog.
   cutting part of a tail (which said such a cut reads "up to the last checkpoint"; it reads as fully signed) now say
   what was read. The second reader's page also no longer says every mutation of its tool is refused: three are
   accepted by both readers and two read INCOMPLETE, and no mutation is accepted by one reader alone. It now names a
-  third place the two verdicts differ: with every tail deleted and the keys left, the product says verified with a
-  note per key and exits 0, and the second reader says BROKEN and exits 3.
+  third place the two verdicts differ: with every tail deleted and the keys left, the product at its default level
+  says verified with a note per key and exits 0 (it exits 1 with `--require signed`, and with `--since` over a copy
+  from before), and the second reader says BROKEN and exits 3 at its default level and with `--require signed`. The
+  other pages that said every mutation is refused (the page on verifying without installing, `@mnema/chain`'s
+  README, the second reader's README and a test's comment) now say the same five. The lines in the CLI reference
+  and the `@mnema/code` README that said verify does not catch a whole tail deleted now say that is the default, and
+  what `--require signed` and `--since` do.
 
 ## [0.2.0-beta] - 2026-10-11
 

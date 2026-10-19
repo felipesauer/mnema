@@ -11,7 +11,7 @@ python3 mnema_verify.py self-test                      # RFC 8032, section 1, se
 python3 mnema_verify.py all --record <dir>             # all three
 python3 mnema_verify.py gaps                           # where FORMAT.md did not suffice
 python3 mnema_verify.py --json gaps                    # the same registry as data
-python3 mutate.py list                                 # the inputs it has to refuse
+python3 mutate.py list                                 # the named mutations (most are refused; five are not)
 ```
 
 Python 3.9 or later. **No third-party packages** — Ed25519 is RFC 8032 by hand, checked
@@ -183,8 +183,9 @@ derived from the findings rather than written beside them.
 
 ## The refusals, and how to earn one
 
-`mutate.py` builds the inputs the format refuses, one named mutation at a time, in a copy
-of a record you give it. It ships here rather than beside a test: a guard and the mutation
+`mutate.py` builds one named mutation at a time, in a copy
+of a record you give it; most are inputs the format refuses, and five are not (see the
+honest guarantee below). It ships here rather than beside a test: a guard and the mutation
 that lights it are one artifact.
 
 ```
@@ -229,9 +230,10 @@ and stop. Both readings are faithful to the document. The same file pins one mor
 two verdicts differ, and it is wording rather than disagreement: with the public keys gone,
 the product says broken over a signature it cannot verify, and this reader, unable to ask,
 says INCOMPLETE. One more place the two differ is pinned by no test: with every tail deleted
-and the keys left, the product says verified (T1 only), with a note for each key that has
-no tail, and exits 0, while this reader says BROKEN, "there are no tails", having checked
-nothing, and exits 3. The disagreement that was closed was
+and the keys left, the product at its default level says verified (T1 only), with a note for
+each key that has no tail, and exits 0 (with `--require signed`, or `--since <rev>` over a
+copy from before, it exits 1), while this reader says BROKEN, "there are no tails", having
+checked nothing, and exits 3 at its default level and with `--require signed`. The disagreement that was closed was
 not an ambiguity of the document — §8 named the rule and the product did not follow it, so
 the product changed and the readers now date the same record from the same block.
 

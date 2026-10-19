@@ -23,8 +23,9 @@ being right about a path with nothing behind it rather than about your record.
 
 Python 3.9 or later, no third-party packages, nothing to install: Ed25519 is
 RFC 8032 by hand, checked against the RFC's own vectors. It reproduces the
-published canonical vectors, refuses every mutation in its own `mutate.py`, and
-prints what it does **not** check before it prints a verdict. Writing it found
+published canonical vectors, refuses all but five of the mutations in its own
+`mutate.py` (three both readers accept and two it reads as incomplete; its README
+says which), and prints what it does **not** check before it prints a verdict. Writing it found
 twenty-seven points where the specification was not enough to work from, and those
 are the deliverable half of it — `mnema_verify.py gaps` lists them.
 

@@ -292,17 +292,19 @@ the paragraph above from being a claim about a document nobody ever implemented:
 verifier in Python, written **from** `FORMAT.md`, importing nothing of this package.
 It reproduces the 38 vectors and the four aggregate digests, checks T1, T2/T4 and T3
 over real records, judges enrolment, retractions and the moves of a workflow as the
-product does, and refuses every mutation in `verifier/mutate.py`. It found
+product does, and refuses the mutations in `verifier/mutate.py` except five: three that
+both readers accept and two it reads as incomplete. It found
 twenty-seven points where the document was not enough to write it from; the list says
 which are fixed and which are still open (`python3 verifier/mnema_verify.py gaps`).
 
-*Refuses every mutation* is a sentence this page carried while it was not quite true.
-One mutation was **accepted** — an event appended above the last checkpoint carrying a
+*Refuses every mutation* is a sentence this page carried while it was not true, and it is
+not true now: five are not refusals (see the second reader's page). One mutation was **accepted** — an event appended above the last checkpoint carrying a
 field no kind declares, which a party with no key can produce — because the per-kind
 declarations were published nowhere; and one *honest* input was **refused**, an event
 carrying `which`, because the envelope could only be guessed at from the intersection
-of the vectors. `event-schema.json` and the enrolment rule (§4.1, §6.2) closed both,
-and the sentence is now the assertion of a test rather than a summary.
+of the vectors. `event-schema.json` and the enrolment rule (§4.1, §6.2) closed both.
+Which five, and that no mutation is accepted by one reader alone, is asserted by a test;
+the sentence about the mutations that are refused is not.
 
 What that does **not** buy is stated in the document itself, in the same terms as
 the table above: it is not an open standard, and publishing the format adds no

@@ -46,8 +46,9 @@
  * the quieter failure of the two: an acceptance is found by building an attack, and an
  * over-refusal is found only by building an honest input, which is not where anybody looks.
  *
- * So every input `mutate.py` builds is now refused by BOTH readers, and the case that says
- * so is the count in `leaves exactly FIVE rows out of the refusal loop`.
+ * So no input `mutate.py` builds is accepted by ONE reader alone: the case that says so is
+ * the count in `leaves exactly FIVE rows out of the refusal loop`, which names the five that
+ * are not refusals (three accepted by both readers, two read as incomplete).
  *
  * IT NEEDS `python3`, AND IT FAILS RATHER THAN SKIPS WITHOUT IT. A second reader nobody
  * runs is prose again, and a skipped case is a case nobody reads. Python 3 is on the runner
@@ -97,7 +98,7 @@ import { readTailCheckpoints } from './store.js';
 import { serializeTailProof, signTailProof } from './tailproof.js';
 import { canonicalIdentityForm } from './verify.js';
 
-/** The second reader, and the tool that builds the inputs it has to refuse. */
+/** The second reader, and the tool that builds the mutations it is asked about. */
 const VERIFIER = fileURLToPath(new URL('../../verifier/mnema_verify.py', import.meta.url));
 const MUTATE = fileURLToPath(new URL('../../verifier/mutate.py', import.meta.url));
 const FIXTURES = fileURLToPath(new URL('./__fixtures__/', import.meta.url));
