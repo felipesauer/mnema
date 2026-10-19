@@ -2,8 +2,8 @@
  * Two changes of one roster, by two sessions of one installation: the second judges the roster
  * the first left.
  *
- * `key revoke` and `key enroll` decide on the roster — the last key may not go, a retired key
- * may not vouch, a member is not enrolled twice — and they read it before the tail's lock was
+ * `key revoke` and `key enroll` decide on the roster (the last key may not go, a retired key
+ * may not vouch, a member is not enrolled twice) and they read it before the tail's lock was
  * taken. Two revocations of the two keys of a two-key identity, run together, each read two
  * keys, each passed the last-key refusal, and the identity was left with none: the one state of
  * the roster with no way back.
@@ -133,7 +133,7 @@ describe('two revocations of one roster', () => {
 });
 
 describe('an enrollment beside a change of the roster', () => {
-  it('a key enrolled a moment ago by another session is a member already — one vouch, not two', () => {
+  it('a key enrolled a moment ago by another session is a member already: one vouch, not two', () => {
     const a = tmp('mnema-roster-race-a-');
     const anchor = ensureFounded(session(a));
     const bRoot = tmp('mnema-roster-race-b-');
@@ -162,8 +162,8 @@ describe('an enrollment beside a change of the roster', () => {
     });
     // Refused the way a retired key is refused whenever it writes: the record no longer counts
     // it, and a vouch it signed would leave the record failing verification for good. This one
-    // held before the roster was judged under the lock too — every write asks whether its
-    // identity still counts its key — so it is a witness that the lock left it as it was, not
+    // held before the roster was judged under the lock too, every write asks whether its
+    // identity still counts its key, so it is a witness that the lock left it as it was, not
     // a case the lock made pass.
     expect(() => enrollFromRequest(session(bRoot), { request: request.request })).toThrow(
       IdentityUnavailableError,

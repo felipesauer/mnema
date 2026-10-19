@@ -4,12 +4,12 @@
  *
  * Three operations, one per fact a person or a machine adds:
  *
- *   - {@link declareCheck} — a person says what program checks a rule (`check.declared`).
- *   - {@link enrollChecker} — a person vouches for a key that will sign check results and
+ *   - {@link declareCheck}: a person says what program checks a rule (`check.declared`).
+ *   - {@link enrollChecker}: a person vouches for a key that will sign check results and
  *     nothing else, from the line that key's machine printed (`checker.enrolled`).
- *   - {@link runRuleChecks} — the checker runs every declared check of a rule in force and
+ *   - {@link runRuleChecks}: the checker runs every declared check of a rule in force and
  *     records each result under its OWN anchor (`check.passed` / `check.failed`).
- *   - {@link retireChecker} — a person takes the role away from a checker key, for good
+ *   - {@link retireChecker}: a person takes the role away from a checker key, for good
  *     (`checker.retired`): the answer to a leaked runner secret.
  *
  * WHAT RUNS A CHECK IS HANDED IN. This module decides which checks run, refuses a key that is
@@ -69,7 +69,7 @@ export const OUTPUT_LIMIT = 4000;
 
 /** What a person asks to declare. */
 export interface DeclareCheckInput {
-  /** The rule — a decision's id in this tree. */
+  /** The rule: a decision's id in this tree. */
   readonly rule: string;
   /** The program to run. */
   readonly command: string;
@@ -123,7 +123,7 @@ export function declareCheck(
 
   // `who` is decided before anything is founded, by the function the founding asks
   // (`authorizingAnchor`), so the agent is judged and the fact asked at the door before the
-  // founding — which the door does only once both have passed (see `appendFact`).
+  // founding, which the door does only once both have passed (see `appendFact`).
   const who = authorizingAnchor(ctx);
   const agent = resolveExecutingAgent(who, input.which);
   if (!agent.ok) return agent;
@@ -155,9 +155,9 @@ export interface EnrollCheckerOk {
   readonly ok: true;
   /** The checker key's fingerprint, derived from the key the request carried. */
   readonly fingerprint: string;
-  /** The anchor the checker speaks under — its own. */
+  /** The anchor the checker speaks under: its own. */
   readonly checker: string;
-  /** The identity that vouched for it — this machine's. */
+  /** The identity that vouched for it: this machine's. */
   readonly vouchedBy: string;
   /** True when the record already enrolled it, so nothing was appended. */
   readonly alreadyChecker: boolean;
@@ -284,7 +284,7 @@ export type CheckOutcome =
 
 /** What the checker is asked to do. */
 export interface RunChecksInput {
-  /** The commit the working tree stands at — the full object name. */
+  /** The commit the working tree stands at: the full object name. */
   readonly commit: string;
   /** The rules in force. A declared check of any other rule is not run. */
   readonly rulesInForce: ReadonlySet<string>;
@@ -303,7 +303,7 @@ export interface CheckResult {
 /** Every check of a rule in force ran, and each result is on the record. */
 export interface RunChecksOk extends ScreenedWrite {
   readonly ok: true;
-  /** The anchor the results were signed under — the checker's own. */
+  /** The anchor the results were signed under: the checker's own. */
   readonly checker: string;
   readonly results: readonly CheckResult[];
 }
@@ -323,7 +323,7 @@ const COMMIT = /^(?:[0-9a-f]{40}|[0-9a-f]{64})$/;
 
 /**
  * Runs the declared check of every rule in force and records each result, signed by this
- * machine's key under ITS OWN anchor — never founding an identity, which a checker key may
+ * machine's key under ITS OWN anchor, never founding an identity, which a checker key may
  * not sign.
  *
  * Refused before anything runs: a commit that is not a full object name, and a key this
@@ -411,7 +411,7 @@ export function runRuleChecks(
 
 /**
  * The check each rule's LATEST declaration names, in the order the rules were first given
- * one — the order a person reads them back in.
+ * one: the order a person reads them back in.
  */
 export function declaredChecks(events: readonly CatalogEvent[]): DeclaredCheck[] {
   const latest = new Map<string, DeclaredCheck>();
@@ -457,7 +457,7 @@ function retiredRefusal(
 export interface RetireCheckerInput {
   /** The full fingerprint of the checker key. */
   readonly fingerprint: string;
-  /** Why — recorded in the fact. */
+  /** Why: recorded in the fact. */
   readonly reason: string;
 }
 
@@ -465,9 +465,9 @@ export interface RetireCheckerInput {
 export interface RetireCheckerOk extends ScreenedWrite {
   readonly ok: true;
   readonly fingerprint: string;
-  /** The anchor its results were signed under — its own. */
+  /** The anchor its results were signed under: its own. */
   readonly checker: string;
-  /** The identity that retired it — this machine's, or the one that did it first. */
+  /** The identity that retired it: this machine's, or the one that did it first. */
   readonly retiredBy: string;
   /** True when the record already retired it, so nothing was appended. */
   readonly alreadyRetired: boolean;
@@ -488,7 +488,7 @@ export type RetireCheckerErr =
  * at once, because the reader honours a retirement only when a checkpoint covers it.
  *
  * Who may retire is who may enrol: a key valid for its identity now. Any identity, not only the
- * one that vouched — the person who most needs to retire a leaked key may not be the one who
+ * one that vouched: the person who most needs to retire a leaked key may not be the one who
  * enrolled it, and the worst a retirement does is stop a machine's results from counting, in a
  * fact that names who did it. The checker key is not asked.
  *

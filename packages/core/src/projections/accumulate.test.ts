@@ -1,5 +1,5 @@
 /**
- * The shape every entity fold has — and the property it exists for: stepping the arrivals over a
+ * The shape every entity fold has, and the property it exists for: stepping the arrivals over a
  * stored accumulator is the same as folding the whole stream.
  *
  * `advance.test.ts` proves it for one event of every kind, over every table. This is the property
@@ -52,7 +52,7 @@ describe('an entity fold', () => {
   });
 
   it('stepping the arrivals over a stored accumulator is folding the whole stream', () => {
-    // The transition comes FIRST in the order, the birth after it — an entity two tails wrote.
+    // The transition comes FIRST in the order, the birth after it: an entity two tails wrote.
     const all = [
       moved('a', '2026-01-01T00:00:01.000Z', 'DRAFT'),
       created('a', '2026-01-01T00:00:02.000Z'),

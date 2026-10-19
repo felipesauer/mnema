@@ -3,7 +3,7 @@
  *
  * A link was a fact nobody could take back: the record only grows, and a `governs` recorded on
  * the wrong path went on refusing edits there. A `link.retracted` now withdraws its identity's
- * assertion of the edge it names — the note's retraction, for an edge — under one comparison,
+ * assertion of the edge it names (the note's retraction, for an edge) under one comparison,
  * the retraction's `who` against the link's `who`, asked from three sides:
  *   - the write refuses an identity that did not record the link, and says whose it is;
  *   - the read does not apply a retraction by another identity, so the edge still stands;
@@ -82,7 +82,7 @@ function link(ctx: WriteContext): void {
   ctx.writer.checkpoint();
 }
 
-/** The `governs` edges a cache serves, as (who) of each — what every reader of rules reads. */
+/** The `governs` edges a cache serves, as (who) of each: what every reader of rules reads. */
 function governing(cache: ProjectionCache): string[] {
   return cache.linksByRelation('governs').map((edge) => edge.who);
 }

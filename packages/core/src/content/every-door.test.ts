@@ -26,18 +26,18 @@ import { detectSecrets } from './secrets.js';
  * The invariant this file exists for: EVERY write goes through the content door.
  *
  * Not "the ones the author remembered". The authority invariant taught this lesson
- * once already — as a copied block it was simply MISSING from the four knowledge
+ * once already, as a copied block it was simply MISSING from the four knowledge
  * facts, and a self-authorized capture reached the chain before anyone noticed. So
  * these tests drive every operation that appends free text, then read the WHOLE
  * chain back and scan every payload generically.
  *
- * WHAT IS GENERIC HERE, AND WHAT IS A LIST — because the two halves of this file
+ * WHAT IS GENERIC HERE, AND WHAT IS A LIST: because the two halves of this file
  * are not the same kind of thing, and two doc-comments that said otherwise are what
  * this paragraph replaces. The first claimed that "a field a future operation adds
  * and forgets to screen fails here, without anyone having to remember to extend a
  * list". That was false, and measured false: `alternatives` was added to
  * `decision.recorded` with the screen deliberately bypassed, and the whole suite of
- * 2,059 tests stayed green — this file included, ten of ten. Only the READ half is
+ * 2,059 tests stayed green, this file included, ten of ten. Only the READ half is
  * generic (the sweep below walks every string of every event and knows no field
  * names); the WRITE half is a hand-written list of calls with hand-written
  * arguments, so a field no call below passes is a field no assertion can see. That
@@ -48,7 +48,7 @@ import { detectSecrets } from './secrets.js';
  * "extending the lists below is a step a field-adding change owes by hand". That
  * slice happened. `every-field.test.ts` next door drives every kind with every value
  * asked for BY FIELD PATH, from a classification (`fields.ts`) the compiler forces
- * to stay total over the catalog's declarations — so a text field added to any
+ * to stay total over the catalog's declarations, so a text field added to any
  * payload fails the build until it is classified, fails that file until a driver
  * passes it, and fails it again until the operation screens it. What this file
  * covers is the axis that one does not: the WRITE POINTS, driven the way a caller
@@ -59,8 +59,8 @@ import { detectSecrets } from './secrets.js';
  * appended. Never that a counter moved (see `secrets.test.ts` for why).
  *
  * THE SWEEP READS THE WHOLE EVENT, envelope included. It used to read payloads
- * only, and that is precisely how `which` — the envelope's one free-text field, and
- * the one stamped on EVERY event of a session — reached the chain unscreened while
+ * only, and that is precisely how `which` (the envelope's one free-text field, and
+ * the one stamped on EVERY event of a session) reached the chain unscreened while
  * this file stayed green. A sweep that knows which half of an event to look at is a
  * list, and a list is what nobody remembers to extend.
  */
@@ -87,7 +87,7 @@ describe('the content door runs at every write point', () => {
     rmSync(root, { recursive: true, force: true });
   });
 
-  /** Every string anywhere in every appended event — the generic sweep. */
+  /** Every string anywhere in every appended event: the generic sweep. */
   function recordedText(): string[] {
     const found: string[] = [];
     const collect = (value: unknown): void => {
@@ -184,8 +184,8 @@ describe('the content door runs at every write point', () => {
     expect(captureMemory(ctx, { content: `remember ${SECRET}`, which: 'agent' }).ok).toBe(true);
     expect(
       recordObservation(ctx, {
-        // `about` and `topic` are NAMES — the entity the note is about, and the label
-        // it is filed under — so they are clean here and refused in the case below.
+        // `about` and `topic` are NAMES (the entity the note is about, and the label
+        // it is filed under), so they are clean here and refused in the case below.
         about: 'the deploy',
         topic: 'flakiness',
         text: `text ${PASSWORD_URL}`,
@@ -193,8 +193,8 @@ describe('the content door runs at every write point', () => {
       }).ok,
     ).toBe(true);
     expect(
-      // Every text field a handoff carries is a name — who it came from, who it goes
-      // to, and the task it is about — so this kind has no body at all and appears
+      // Every text field a handoff carries is a name (who it came from, who it goes
+      // to, and the task it is about), so this kind has no body at all and appears
       // only in the refusal case below. It is driven clean here so the chain holds one.
       recordHandoff(ctx, {
         task: 'the deploy task',
@@ -227,7 +227,7 @@ describe('the content door runs at every write point', () => {
     );
 
     // THE assertion, over the whole chain: nothing appended holds either value,
-    // and no string anywhere — envelope or payload — reads as a credential.
+    // and no string anywhere, envelope or payload, reads as a credential.
     const text = recordedText();
     expect(text.length).toBeGreaterThan(0);
     for (const value of text) {
@@ -241,7 +241,7 @@ describe('the content door runs at every write point', () => {
     // The other half of the same sweep, driven at the same write points: the credential
     // is in a NAME this time, every body is clean, and each write must be refused with
     // nothing appended. Two passes rather than one because the outcomes exclude each
-    // other — a refused write records no body to inspect.
+    // other: a refused write records no body to inspect.
     //
     // It is by WRITE POINT, which is the axis this file owns; `every-field.test.ts` runs
     // the same rule by FIELD, derived from the classification. Both, because a point
@@ -274,7 +274,7 @@ describe('the content door runs at every write point', () => {
 
     // Nothing was appended by any of them. The founding is the one event a first
     // write leaves, so this counts what a refusal cannot add rather than asserting
-    // an empty chain — and the count is taken after fourteen attempts.
+    // an empty chain, and the count is taken after fourteen attempts.
     expect(recordedText().join('\n')).not.toContain(SECRET);
     expect(
       orderedEvents(ctx.layout, upcasters).some((event) => event.kind !== 'identity.founded'),
@@ -284,7 +284,7 @@ describe('the content door runs at every write point', () => {
   it('reports what it replaced on every operation that replaced something', () => {
     // The scrub is never silent (the caller has to be able to rotate), so every
     // operation carries the report back. Absence of the report is what says
-    // "nothing was taken out" — asserted on the clean write below.
+    // "nothing was taken out": asserted on the clean write below.
     const task = createTask(ctx, { title: 'open the deploy' });
     expect(task.ok).toBe(true);
     if (!task.ok) return;
@@ -303,11 +303,11 @@ describe('the content door runs at every write point', () => {
       rationale: `because ${PASSWORD_URL}`,
       alternatives: `we turned down ${SECRET}`,
     });
-    // Both fields, both classes, one report — in the order the fields were handed in.
+    // Both fields, both classes, one report: in the order the fields were handed in.
     expect(decision.ok && decision.replaced).toEqual(['url-password', 'aws-access-key']);
 
     // The third text field a decision carries reports through the same one screen,
-    // in field order — so a credential typed into what was TURNED DOWN is named in
+    // in field order, so a credential typed into what was TURNED DOWN is named in
     // the reply exactly as one typed into the reason it was chosen.
     const alternatives = recordDecision(ctx, {
       title: 'clean',
@@ -327,15 +327,15 @@ describe('the content door runs at every write point', () => {
  * The envelope's executing agent, which the sweep above used to miss.
  *
  * `which` is the agent that executed a fact, and it is one of the two envelope
- * fields a CALLER supplies — `who` and `signerFp` come from a key, `at` from a
+ * fields a CALLER supplies: `who` and `signerFp` come from a key, `at` from a
  * clock, and `subject` from a mint on most of the kinds there are. It is the worst
  * of them for a credential: it is stamped on EVERY event of a session, so one dirty
  * value is as many disclosures as the session has facts, and over MCP it comes from
- * the client's announced name — nobody types it and nobody reads it.
+ * the client's announced name: nobody types it and nobody reads it.
  *
  * The other one is `run`, and the sentence this replaces called it a mint: "`subject`
  * and `run` [come] from a mint". A run id is minted, but not by the write that
- * stamps it — the caller hands it back in, and no operation here proves it names a
+ * stamps it: the caller hands it back in, and no operation here proves it names a
  * session. It goes through the same door now, and the field classification is what
  * found it.
  */
@@ -372,16 +372,16 @@ describe('the executing agent goes through the same door', () => {
     return found;
   }
 
-  /** An agent name carrying a credential — the value that must never be recorded. */
+  /** An agent name carrying a credential: the value that must never be recorded. */
   const DIRTY = `agent-${SECRET}`;
 
   it('refuses at every write point when the agent name carries one', () => {
     // The whole writing surface again, but with the secret in `which` ONLY and
     // every payload field clean. A payload-only sweep passes this while the chain
-    // holds the credential on every one of these events — which is what happened.
+    // holds the credential on every one of these events, which is what happened.
     //
     // WHAT THIS CASE USED TO ASSERT. It drove the same points and then checked that
-    // the record had kept `agent-<SECRET:aws-access-key>` — the credential gone and
+    // the record had kept `agent-<SECRET:aws-access-key>`: the credential gone and
     // the agent, as it put it, "surviving as an agent". That last clause was the
     // premise, and it is false: `agent-<SECRET:aws-access-key>` is not an agent that
     // exists, no reading of who did what can key on it, and the session it labels can
@@ -420,7 +420,7 @@ describe('the executing agent goes through the same door', () => {
     }
 
     // Nothing landed, and the count is against the three setup writes rather than
-    // against zero — an empty chain would also satisfy "holds no credential".
+    // against zero: an empty chain would also satisfy "holds no credential".
     expect(orderedEvents(ctx.layout, upcasters).length).toBe(before);
     for (const value of recorded()) {
       expect(value).not.toContain(SECRET);
@@ -439,7 +439,7 @@ describe('the executing agent goes through the same door', () => {
     const memory = captureMemory(ctx, { content: `db at ${PASSWORD_URL}`, which: 'a clean agent' });
     expect(memory.ok && memory.replaced).toEqual(['url-password']);
 
-    // A gated move reports it too — its own screen only ever saw the proof fields.
+    // A gated move reports it too: its own screen only ever saw the proof fields.
     const task = createTask(ctx, { title: 'a task to move', which: 'a clean agent' });
     expect(task.ok).toBe(true);
     if (!task.ok) return;
@@ -458,8 +458,8 @@ describe('the executing agent goes through the same door', () => {
 
   it('refuses an all-credential agent name, and appends nothing', () => {
     // The degenerate case, and the one whose OLD answer this delivery reversed. It
-    // used to record a `which` that is entirely a credential as the bare placeholder
-    // — "odd to read, but honest", the comment said, "and strictly better than
+    // used to record a `which` that is entirely a credential as the bare placeholder:
+    // "odd to read, but honest", the comment said, "and strictly better than
     // stamping the key itself on every event of a session". The second half of that
     // is still true; the first was not honest, it was unattributable. An event whose
     // agent is `<SECRET:aws-access-key>` names nobody, and it is stamped on every
@@ -546,7 +546,7 @@ describe('the size limit refuses without appending anything', () => {
   }
 
   it('refuses every birth and every fact, leaving the chain untouched', () => {
-    // Nothing has been written yet, so the chain is empty — which makes "appended
+    // Nothing has been written yet, so the chain is empty, which makes "appended
     // nothing" checkable as an absolute, not only as a delta.
     expect(eventCount()).toBe(0);
 
@@ -585,7 +585,7 @@ describe('the size limit refuses without appending anything', () => {
       expect(refusal.code).toBe('CONTENT_TOO_LARGE');
     }
 
-    // Not one event — not even the `identity.founded` a write seeds on its way in.
+    // Not one event, not even the `identity.founded` a write seeds on its way in.
     // That is what makes the refusal free: the caller can fix the input and retry
     // into a chain that never heard about the attempt.
     expect(eventCount()).toBe(0);
@@ -626,7 +626,7 @@ describe('the size limit refuses without appending anything', () => {
     if (!task.ok) return;
 
     // `start` is not legal from DRAFT, so the gate would refuse this move on its
-    // own. The content door answers first — which is the ordering that makes an
+    // own. The content door answers first, which is the ordering that makes an
     // oversize field cost nothing at all, not even reading the task's state.
     const refused = transitionTask(ctx, {
       id: task.id,

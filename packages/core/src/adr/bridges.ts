@@ -7,15 +7,15 @@
  *
  * THE FORMATS READ, and nothing else:
  *
- *   - `ecc-vault` — a directory of `*.json` files, each ONE memory object with `kind`,
+ *   - `ecc-vault`: a directory of `*.json` files, each ONE memory object with `kind`,
  *     `state`, `title` and `body`. Only `kind: "decision"` is read; any other kind is
  *     reported as not a decision, and a `rejected` or `superseded` state is reported as
  *     retired (the vault's own state says it is no longer in force). The `trust` field is
  *     not read: everything arrives `proposed` whatever the vault calls it.
- *   - `rulings` — ONE markdown file; every line that starts with `Ruling:` (optionally behind
+ *   - `rulings`: ONE markdown file; every line that starts with `Ruling:` (optionally behind
  *     a list marker) is one entry whose text is both its title (cut at 120 characters) and its
  *     reason. The line number is the provenance.
- *   - `claude-memory` — a directory of `*.md` files with a `---` frontmatter holding `name:`
+ *   - `claude-memory`: a directory of `*.md` files with a `---` frontmatter holding `name:`
  *     and a body, the shape the host writes under `~/.claude/projects/<project>/memory/`.
  *     `MEMORY.md`, the index, is skipped. The name is the title, the body the reason.
  *
@@ -193,7 +193,7 @@ function fromLedger(file: string): AdrScan {
 }
 
 /**
- * Reads `target` — a directory for `ecc-vault` and `claude-memory`, a file for `rulings` —
+ * Reads `target` (a directory for `ecc-vault` and `claude-memory`, a file for `rulings`)
  * as the decisions it holds. Paths in the result are `target`-based, so the caller decides how
  * the origin is cited.
  */

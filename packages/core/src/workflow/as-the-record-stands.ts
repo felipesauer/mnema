@@ -6,11 +6,11 @@
  * writer already holds the tail's lock across reading its END and appending to it,
  * so two sessions can no longer write one `seq` twice. But a gated write reads more
  * than the end: it replays the record to learn what state a decision is in, judges
- * the move against that state, and only then appends — and the replay ran before
+ * the move against that state, and only then appends, and the replay ran before
  * the lock was taken. Measured on the built binary, on a `proposed` decision:
  * `mnema decision move accept` and `… reject` run together both exited 0 in 19 of
  * 20 rounds, the record held two transitions out of `proposed`, `verify` passed,
- * and `show` called the decision accepted while listing both notes — a rejected
+ * and `show` called the decision accepted while listing both notes, a rejected
  * decision the governance would count in force, past a gate that declares
  * `rejected` terminal. Two concurrent `decision record` minted the same `ADR-<n>`
  * in 10 of 10 pairs, for the same reason: the count was read outside the lock.
@@ -28,16 +28,16 @@
  * the extent is taken again. Equal, nothing was appended anywhere in this tree
  * since the read began, so what was judged is what the record says and the write
  * goes ahead with no second read. Different, the record is read again, under the
- * lock, and judged again against what it says NOW — the only case that pays twice,
+ * lock, and judged again against what it says NOW: the only case that pays twice,
  * and only when another write landed in between.
  *
- * WHAT THE SECOND READING COSTS, and what it cost: it was a whole replay, held under the lock —
- * 1.35 s at 100 thousand events, and the roster the write checks before it appends was a second
- * one (2.2 s) — so a third session waiting behind two such holds ran out of the lock's 2 s:
+ * WHAT THE SECOND READING COSTS, and what it cost: it was a whole replay, held under the lock
+ * (1.35 s at 100 thousand events, and the roster the write checks before it appends was a second
+ * one, 2.2 s), so a third session waiting behind two such holds ran out of the lock's 2 s:
  * measured on the binary, three moves of three different decisions at once refused
  * `TAIL_BUSY` in 1 of 3 tries at 50 thousand events and in 3 of 3 at 75 and at 100 thousand.
  * Both reads were then taken from the projection the tree keeps, which made the hold the
- * arrivals and the append — and made the gate judge a file nothing signs: a row of it edited by
+ * arrivals and the append, and made the gate judge a file nothing signs: a row of it edited by
  * hand let every machine append a move its own gate refuses. The subject a gate judges is read
  * off the chain now, by the lines that name it (`read-the-record.ts`, `subjectEvents`), which
  * costs one reading of the segments' bytes rather than a replay; the roster is still the
@@ -52,7 +52,7 @@
  * ## What it does not cover
  *
  * The lock is the TAIL's, so it binds the sessions that share one: one key, one
- * installation, one tree — which is every case measured (two windows, a command
+ * installation, one tree, which is every case measured (two windows, a command
  * line beside an agent). Two keys writing one tree on one machine take two locks;
  * the extent still catches a write of the other that landed before this one's
  * lock, but not one that lands after. Between machines nothing coordinates at all,
@@ -73,7 +73,7 @@ export interface RecordAndWriter {
 }
 
 /**
- * Reads the record, judges it, and — if the judgement is to write — writes under the
+ * Reads the record, judges it, and (if the judgement is to write) writes under the
  * tail's lock, against the record as it stands at that moment rather than as it stood
  * when it was read.
  *
@@ -84,7 +84,7 @@ export interface RecordAndWriter {
  * the answer. `write` runs only under the lock, and only from the judgement of the
  * reading the lock vouches for.
  *
- * `read` must read the record from the chain — never from a cache that could be older
+ * `read` must read the record from the chain, never from a cache that could be older
  * than the extent this takes.
  */
 export function onTheRecordAsItStands<V, R>(
@@ -109,7 +109,7 @@ export function onTheRecordAsItStands<V, R>(
  *
  * Its own code, NOT the gate's, because the caller's next move differs. A gate refusal
  * says the move is illegal from where the subject stands; this says the subject did not
- * stand where the caller saw it, and names where it stands now — which is what to read
+ * stand where the caller saw it, and names where it stands now, which is what to read
  * before asking again.
  */
 export interface StateMovedErr {

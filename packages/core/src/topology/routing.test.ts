@@ -55,12 +55,12 @@ const BY_KIND = ROUTED.filter((kind) => EXPECTED[kind] !== 'by-origin');
 /** The kinds the table still answers from the author. */
 const BY_ORIGIN = ROUTED.filter((kind) => EXPECTED[kind] === 'by-origin');
 
-/** A capture with no executing agent — a person acting directly. */
+/** A capture with no executing agent: a person acting directly. */
 const PERSON = {};
 /** A capture an agent made. */
 const AGENT = { which: 'agent-x' };
 
-describe('resolveScope — the scope cascade, now by KIND', () => {
+describe('resolveScope: the scope cascade, now by KIND', () => {
   it('routes each kind by the kind, whoever wrote it', () => {
     for (const kind of BY_KIND) {
       expect(resolveScope(kind, PERSON)).toBe(EXPECTED[kind]);
@@ -114,7 +114,7 @@ describe('resolveScope — the scope cascade, now by KIND', () => {
   });
 });
 
-describe('resolveScope — the classification is TOTAL over the catalog', () => {
+describe('resolveScope: the classification is TOTAL over the catalog', () => {
   const catalog = Object.keys(LATEST_VERSION) as EventKind[];
 
   it('classifies every kind the chain may hold exactly once', () => {
@@ -129,7 +129,7 @@ describe('resolveScope — the classification is TOTAL over the catalog', () => 
     expect(routed.size + unrouted.size).toBe(catalog.length);
   });
 
-  it('is not vacuous — every half holds kinds, and the catalog is not empty', () => {
+  it('is not vacuous: every half holds kinds, and the catalog is not empty', () => {
     expect(catalog.length).toBeGreaterThan(10);
     expect(BY_KIND.length).toBe(10);
     expect(BY_ORIGIN.length).toBe(2);
@@ -167,7 +167,7 @@ describe('chainRootForScope', () => {
   });
 });
 
-describe('openTreeForWriting — routing a write to the right tree', () => {
+describe('openTreeForWriting: routing a write to the right tree', () => {
   let sandbox: string;
   let trees: ResolvedTrees;
 
@@ -212,12 +212,12 @@ describe('openTreeForWriting — routing a write to the right tree', () => {
 
     expect(root).toBe(trees.projectPrivate);
     expect(orderedEvents({ root }, upcasters).some((e) => e.kind === 'memory.captured')).toBe(true);
-    // The team's public tree holds no tail of its own — only the `.gitignore`
+    // The team's public tree holds no tail of its own, only the `.gitignore`
     // hygiene the private write ensures.
     expect(existsSync(join(trees.projectPublic as string, 'tails'))).toBe(false);
   });
 
-  it('routes an AGENT’s task to the tree that travels — the author no longer decides', () => {
+  it('routes an AGENT’s task to the tree that travels: the author no longer decides', () => {
     const scope = resolveScope('task.created', { which: 'agent-x' }); // → 'public' either way
     const { ctx, root } = contextFor(scope);
     const created = createTask(ctx, { title: 'auto', which: 'agent-x' });
@@ -259,7 +259,7 @@ describe('openTreeForWriting — routing a write to the right tree', () => {
   });
 });
 
-describe('openTreeForWriting — .gitignore protects private/ before any public write', () => {
+describe('openTreeForWriting: .gitignore protects private/ before any public write', () => {
   let sandbox: string;
   let trees: ResolvedTrees;
 
@@ -283,7 +283,7 @@ describe('openTreeForWriting — .gitignore protects private/ before any public 
     expect(existsSync(ignore)).toBe(true);
   });
 
-  it('NEUTRALIZATION — without the .gitignore, private/ would sit unignored in the public tree', () => {
+  it('NEUTRALIZATION: without the .gitignore, private/ would sit unignored in the public tree', () => {
     // Prove the guard matters: the private tree is a subdirectory of the public
     // tree, so absent the ignore rule its tails would be tracked by the project.
     // (We assert the geometry that makes the guard necessary, then that the guard
@@ -296,7 +296,7 @@ describe('openTreeForWriting — .gitignore protects private/ before any public 
   });
 });
 
-describe('signerFor and deferredWrite — deciding before a writer exists', () => {
+describe('signerFor and deferredWrite: deciding before a writer exists', () => {
   let sandbox: string;
   let trees: ResolvedTrees;
 

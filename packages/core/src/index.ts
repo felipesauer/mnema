@@ -1,13 +1,13 @@
 /**
- * @mnema/core — the work domain.
+ * @mnema/core: the work domain.
  *
  * Built on @mnema/chain (the source of truth), it holds: the projections that
  * replay chain events into a queryable SQLite cache without re-validating them;
- * the workflow and its write-time gate; and identity — how an entity is named
+ * the workflow and its write-time gate; and identity: how an entity is named
  * for a human without that name ever becoming its identity.
  *
  * The projection cache is pure: it is derived from the chain, never committed,
- * and rebuilt by dropping and replaying — there are no data migrations.
+ * and rebuilt by dropping and replaying; there are no data migrations.
  */
 
 // The relation labels a READER has to know by name, and the set of them. It read
@@ -15,13 +15,13 @@
 // that, `refuses-a-write` made the pair a set of three, and `ADDRESS_RELATIONS` is the
 // set itself, so a reader asks whether a label carries an address without spelling out
 // any of them. They are the chain's constants and
-// are re-exported here for one reason — the context package may not name `@mnema/chain` (its
+// are re-exported here for one reason: the context package may not name `@mnema/chain` (its
 // boundary test bans the specifier, because that package holds writers), and a reader
 // that typed a literal instead would be the second place a label lives.
 //
 // The proof a MOVE carried is not among them, and the absence is deliberate:
 // `transitionProse`, `proofFields` and `PROOF_FIELDS` also live in the chain, and their
-// consumers name that package directly — this package's own fold
+// consumers name that package directly: this package's own fold
 // (`projections/proof.ts`) and the command line's presentation layer, neither of which
 // is banned from the specifier. A re-export nobody imported would be a public value
 // with no production caller, which is a defect however harmless it looks.
@@ -33,14 +33,14 @@ export {
   REFUSES_A_WRITE_RELATION,
 } from '@mnema/chain';
 export { type BridgeFormat, scanBridge } from './adr/bridges.js';
-// Reading a directory of decision documents somebody else already wrote — the
+// Reading a directory of decision documents somebody else already wrote: the
 // market's ADR form, turned into the four things this product records. It is a pure
 // READ of text and of a directory: no writer, no key, no event, and no model. What it
 // produces is input to a write the caller still has to ask for.
 //
 // ONLY THE DIRECTORY WALK COMES OUT. The reader of a single document, the status rule
 // and the four label tables stay inside the package: nothing outside it consumes them,
-// and a value exported with no consumer is published surface nobody is holding up —
+// and a value exported with no consumer is published surface nobody is holding up;
 // the shape `every-public-value-has-a-caller.test.ts` exists for. The package's own
 // modules and its own cases import them from `./adr/read.js` directly.
 export type {
@@ -56,7 +56,7 @@ export {
   scanAdrDirectory,
 } from './adr/scan.js';
 // What a credential looks like, and how much text a field may hold. Detecting is
-// a READ — a pure question about a string — so it belongs here, and the audit of
+// a READ, a pure question about a string, so it belongs here, and the audit of
 // an existing record reaches it through this barrel. Only SCREENING (refusing and
 // rewriting on the way to an append) lives on the writing side.
 export { EMAIL_PLACEHOLDER, type ReplacedClass, scrubEmails } from './content/personal.js';
@@ -78,7 +78,7 @@ export {
 } from './identity/account.js';
 // The shape of a name an agent key is enrolled under, asked before a name becomes a folder.
 export { AGENT_NAME, agentNameRefusal } from './identity/agent-name.js';
-// An identity founded where others already were — the one reading every surface asks, at the
+// An identity founded where others already were: the one reading every surface asks, at the
 // moment of a write and when the record is audited afterwards.
 export {
   type FoundedBeside,
@@ -105,7 +105,7 @@ export { nameOfAKeyKind } from './identity/key-kind.js';
 // The refusal a write earns when the record does not name ONE identity for this
 // machine's key. It is thrown, not returned (the decision sits below every write),
 // so a surface needs to be able to name the class to report it as the refusal it
-// is — the same reason `TreeUnavailableError` lives on the read surface.
+// is: the same reason `TreeUnavailableError` lives on the read surface.
 export {
   agentKeysIn,
   agentsOf,
@@ -163,8 +163,8 @@ export { orderedEvents, orderedEventsOfRecord, type RecordOrder } from './projec
 // shape for the three state machines that have moves, so the three folds and the
 // three reads cannot come to disagree about what a move's proof is.
 // Only the SHAPE crosses the boundary: the command line's `show` prints a proof and
-// needs to name its type. The four functions around it — the fold's reader, the index's
-// text, and the two halves of the column encoding — have callers inside this package
+// needs to name its type. The four functions around it (the fold's reader, the index's
+// text, and the two halves of the column encoding) have callers inside this package
 // and nowhere else, so they stay internal rather than becoming public values whose only
 // callers are their own package.
 export type { TransitionProof } from './projections/proof.js';
@@ -217,7 +217,7 @@ export {
 export { getSkill, listSkills, listSkillsByState } from './projections/skill-store.js';
 export { projectTasks, type TaskProjection } from './projections/task.js';
 export { getTask, listTasks, listTasksByState } from './projections/task-store.js';
-// The window every read that takes `--from`/`--to` asks — one boundary rule in two
+// The window every read that takes `--from`/`--to` asks: one boundary rule in two
 // readings (a predicate and a `WHERE`), plus the declaration of what a given read's
 // window is OVER, which is the half that was silent.
 export {

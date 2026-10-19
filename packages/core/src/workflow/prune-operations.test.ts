@@ -6,7 +6,7 @@
  * claims. The input carries WHICH tail and WHY; the head hash, the event count and
  * the anchor the tail served all come off the disk, through the same function the
  * writer's own door checks them with. That is what makes the door unreachable from
- * this path — and what makes a waiver evidence rather than an assertion.
+ * this path, and what makes a waiver evidence rather than an assertion.
  */
 
 import { mkdirSync, mkdtempSync, readdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
@@ -75,7 +75,7 @@ function waiverOn(ctx: WriteContext) {
 }
 
 describe('authorizing a cut reads its claims off the record', () => {
-  it('writes the head, the count and the anchor the record holds — none of them supplied', () => {
+  it('writes the head, the count and the anchor the record holds: none of them supplied', () => {
     const ctx = contextIn(root);
     const other = secondMachine();
 
@@ -139,7 +139,7 @@ describe('what it refuses, in words rather than by throwing', () => {
     expect(refused.code).toBe('UNKNOWN_TAIL');
   });
 
-  it('refuses an empty tail — the one an older writer left behind at open', () => {
+  it('refuses an empty tail: the one an older writer left behind at open', () => {
     // The state that must never be waivable: a tail directory with an ownership
     // proof and no event. There is nothing to account for, and a waiver over it would
     // put "pruned under authorization" on the most innocent shape there is. THIS CASE
@@ -174,7 +174,7 @@ describe('what it refuses, in words rather than by throwing', () => {
     });
     expect(refused.ok).toBe(false);
     if (refused.ok) return;
-    // The size check runs first, so the refusal names the SIZE and not the tail —
+    // The size check runs first, so the refusal names the SIZE and not the tail,
     // which is what makes an oversize write cost nothing and touch nothing.
     expect(refused.code).toBe('CONTENT_TOO_LARGE');
   });

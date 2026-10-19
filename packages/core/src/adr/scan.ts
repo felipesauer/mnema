@@ -1,12 +1,12 @@
 /**
- * Reading a DIRECTORY of decision documents — the walk, the triage, and the two
+ * Reading a DIRECTORY of decision documents: the walk, the triage, and the two
  * refusals that are about this product rather than about the document's shape.
  *
  * IT IS NOT RECURSIVE, and that is a decision rather than a shortcut. An ADR base
  * is a flat directory by every convention that publishes one (`docs/adr/`,
  * `doc/adr/`, `docs/decisions/`), and a recursive walk pointed at a repository
- * root would read every markdown file in it — a README, a changelog, an issue
- * template — and propose whatever happened to have a heading and a paragraph. The
+ * root would read every markdown file in it (a README, a changelog, an issue
+ * template) and propose whatever happened to have a heading and a paragraph. The
  * caller names the directory holding the decisions; nothing here guesses which one
  * that is.
  *
@@ -17,18 +17,18 @@
  * TWO REFUSALS ARE THIS PRODUCT'S AND NOT THE DOCUMENT'S, and they are applied here
  * rather than in the reader because they are about what may enter the record:
  *
- *   - `HOLDS_A_SECRET` — a field carries something shaped like a credential. Text
+ *   - `HOLDS_A_SECRET`: a field carries something shaped like a credential. Text
  *     from somebody else's file is exactly the untrusted input the content door
  *     exists for, and the door SCRUBS and reports. That is right for a person
  *     typing one fact and wrong for a bulk read of forty files: a placeholder
  *     recorded on a person's behalf, in a document they did not write, is a
  *     permanent entry nobody chose. So this refuses the FILE, by name, with the
- *     class named — and the door still runs on everything that does get written,
+ *     class named, and the door still runs on everything that does get written,
  *     because the screen lives inside the write and this triage cannot skip it.
  *     Detection here is the SAME function the door uses (`detectSecrets`), so
  *     there is one idea of what a credential looks like and not two.
  *
- *   - `FIELD_TOO_LARGE` — a field is over {@link FIELD_BYTE_LIMIT}. The door would
+ *   - `FIELD_TOO_LARGE`: a field is over {@link FIELD_BYTE_LIMIT}. The door would
  *     refuse this append anyway; refusing it here means the caller learns it while
  *     nothing has been written, instead of halfway through a directory.
  *
@@ -61,12 +61,12 @@ export type ScanRefusalCode =
 
 /** One document that WOULD become a decision, and the file it came from. */
 export interface ScannedDecision extends AdrDocument {
-  /** The file's path as the caller will record it — the provenance of the proposal. */
+  /** The file's path as the caller will record it: the provenance of the proposal. */
   readonly path: string;
   /** The line it was read from, for a source that holds many entries per file. */
   readonly line?: number;
   /**
-   * A short hash of the content read — the file, or the one entry of a file that holds many —
+   * A short hash of the content read (the file, or the one entry of a file that holds many)
    * for a source cited by its name alone, where two directories can hold the same name.
    */
   readonly digest?: string;
@@ -81,7 +81,7 @@ export interface ScanRefusal {
   readonly line?: number;
   /**
    * The credential classes found, on `HOLDS_A_SECRET` and nothing else. The CLASS
-   * travels and the value never does — the same posture the record's own exposure
+   * travels and the value never does: the same posture the record's own exposure
    * reading takes.
    */
   readonly classes?: readonly SecretClass[];
@@ -99,7 +99,7 @@ export interface AdrScan {
 const MARKDOWN = /\.(?:md|markdown)$/i;
 
 /**
- * File names that are a decision base's own furniture rather than a decision —
+ * File names that are a decision base's own furniture rather than a decision:
  * the index page and the template every ADR tool drops beside the records.
  *
  * They are excluded by NAME and not by shape, because both usually parse: a
@@ -122,7 +122,7 @@ function relative(directory: string, file: string): string {
   return `${directory.replace(/\/+$/, '')}/${file}`;
 }
 
-/** The bytes a field would weigh in the record — UTF-8, the form the chain stores. */
+/** The bytes a field would weigh in the record: UTF-8, the form the chain stores. */
 function weight(text: string): number {
   return Buffer.byteLength(text, 'utf8');
 }
@@ -138,7 +138,7 @@ function fieldsOf(document: AdrDocument): readonly string[] {
 
 /**
  * The two refusals that are this product's and not the document's, applied to a document
- * already read — whatever file shape it came out of. One function, so a bridge from another
+ * already read: whatever file shape it came out of. One function, so a bridge from another
  * tool's notes is screened by the same size limit and the same idea of a credential as an ADR.
  */
 export function triage(
@@ -161,8 +161,8 @@ export function triage(
 }
 
 /**
- * The names in `directory` that are DECISION DOCUMENTS by their file name alone —
- * markdown, minus the furniture — in file-name order.
+ * The names in `directory` that are DECISION DOCUMENTS by their file name alone
+ * (markdown, minus the furniture) in file-name order.
  *
  * IT IS SPLIT OUT BECAUSE A SECOND READER ASKS THE NAME QUESTION WITHOUT ASKING THE
  * CONTENT ONE. `mnema status` reports how many documents of a base the record has no
@@ -170,16 +170,16 @@ export function triage(
  * file to triage its fields would pay the whole import's cost on an opening read, to
  * decide a question the names already settle. A second `readdirSync` with a second
  * copy of the extension test and of {@link NOT_A_DECISION} is how the two readers
- * would come to disagree about what counts as a document — one of them counting a
- * `README.md` the other never proposes — so there is one function and two callers.
+ * would come to disagree about what counts as a document, one of them counting a
+ * `README.md` the other never proposes, so there is one function and two callers.
  *
  * A directory that does not exist, or that cannot be listed, comes back EMPTY rather
  * than throwing, for {@link scanAdrDirectory}'s reason: a typo in a path must not look
  * like a failure of the product.
  *
  * IT ANSWERS ABOUT NAMES AND NEVER ABOUT CONTENT, which is the limit a caller has to
- * carry. A file named here can still be refused by the scan — retired, over the field
- * limit, or holding something shaped like a credential — so a caller counting these is
+ * carry. A file named here can still be refused by the scan (retired, over the field
+ * limit, or holding something shaped like a credential), so a caller counting these is
  * counting files a person may look at, not proposals the record would accept.
  */
 export function adrFileNames(directory: string): string[] {

@@ -68,7 +68,7 @@ function skillsOf(r: string) {
   return projectSkills(orderedEvents({ root: r }, upcasters));
 }
 
-describe('createSkill — birth', () => {
+describe('createSkill: birth', () => {
   it('mints an id the caller never supplies, and starts proposed', () => {
     const w = openChainForWriting(root, { keyRoot: root });
     const { clock } = fixedClock();
@@ -164,7 +164,7 @@ describe('the skill transitions are gated against the chain', () => {
     const id = mustCreate(ctx, { name: 't', body: 'b' });
     tick();
     expect(reviewSkill(ctx, { id })).toMatchObject({ ok: false, code: 'MISSING_PROOF' });
-    // Nothing was written — the skill is still proposed.
+    // Nothing was written: the skill is still proposed.
     expect(skillsOf(root).get(id)?.state).toBe('proposed');
   });
 
@@ -204,7 +204,7 @@ describe('the skill transitions are gated against the chain', () => {
       ok: false,
       code: 'ILLEGAL_TRANSITION',
     });
-    // Still adopted — the illegal move wrote nothing.
+    // Still adopted: the illegal move wrote nothing.
     expect(skillsOf(root).get(id)?.state).toBe('adopted');
   });
 
@@ -227,7 +227,7 @@ describe('the skill transitions are gated against the chain', () => {
   });
 });
 
-describe('recordConsultation — a fact about a skill, not a move of it', () => {
+describe('recordConsultation: a fact about a skill, not a move of it', () => {
   it('appends one skill.consulted whose subject IS the skill, with an empty payload', () => {
     const w = openChainForWriting(root, { keyRoot: root });
     const { clock, tick } = fixedClock();
@@ -259,7 +259,7 @@ describe('recordConsultation — a fact about a skill, not a move of it', () => 
 
     recordConsultation(ctx, { skill: id, which: WHICH, run: 'r-1' });
 
-    // Same state, same updatedAt — a consultation is not a transition.
+    // Same state, same updatedAt: a consultation is not a transition.
     expect(skillsOf(root).get(id)).toEqual(before);
   });
 
@@ -334,7 +334,7 @@ describe('rebuild is byte-identical: replaying the events reproduces the project
   });
 });
 
-describe('skill — end to end: a clone reconstructs and verifies from events alone', () => {
+describe('skill, end to end: a clone reconstructs and verifies from events alone', () => {
   it('the CLONE reconstructs the adopted skill from the chain, and verifies', () => {
     const w = openChainForWriting(root, { keyRoot: root });
     const { clock, tick } = fixedClock();
@@ -351,7 +351,7 @@ describe('skill — end to end: a clone reconstructs and verifies from events al
     roots.push(clone);
     cpSync(root, clone, { recursive: true });
 
-    // Reconstruct from the chain alone — no cache copied.
+    // Reconstruct from the chain alone: no cache copied.
     const s = projectSkills(orderedEvents({ root: clone }, upcasters)).get(id);
     expect(s?.state).toBe('adopted');
     expect(s?.name).toBe('Small PRs');

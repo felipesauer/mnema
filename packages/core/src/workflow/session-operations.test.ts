@@ -64,7 +64,7 @@ function runsOf(r: string) {
   return projectRuns(orderedEvents({ root: r }, upcasters));
 }
 
-describe('startRun — opening a session', () => {
+describe('startRun: opening a session', () => {
   it('mints a run id the caller never supplies, and the run is open', () => {
     const w = openChainForWriting(root, { keyRoot: root });
     const { clock } = fixedClock();
@@ -118,14 +118,14 @@ describe('startRun — opening a session', () => {
     const { clock } = fixedClock();
     const result = startRun(contextFor(w, root, clock), { agent: w.anchor });
     expect(result).toMatchObject({ ok: false, code: 'WHO_IS_WHICH' });
-    // Nothing was written — the self-authorized session never opened.
+    // Nothing was written: the self-authorized session never opened.
     expect(runsOf(root).size).toBe(0);
   });
 
-  it('NEUTRALIZATION — the guard, not the projection, is what blocks a self-authored run', () => {
+  it('NEUTRALIZATION: the guard, not the projection, is what blocks a self-authored run', () => {
     // The projection replays facts without judging authority: it happily accepts
     // a run whose agent equals its authorizer. Emitting run.started with
-    // `agent = who` directly (bypassing startRun's guard) proves that — so the
+    // `agent = who` directly (bypassing startRun's guard) proves that, so the
     // guard, not the read model, is the only thing defending the root of
     // authority. Remove the guard and the self-authored session goes through.
     const w = openChainForWriting(root, { keyRoot: root });
@@ -137,7 +137,7 @@ describe('startRun — opening a session', () => {
     expect(runsOf(root).size).toBe(0);
 
     // But the raw event the guard would have blocked IS accepted by the
-    // projection — the same `agent == who` the guard refused.
+    // projection: the same `agent == who` the guard refused.
     ensureFounded(ctx);
     w.append(
       runStarted(
@@ -151,7 +151,7 @@ describe('startRun — opening a session', () => {
   });
 });
 
-describe('endRun — closing a session', () => {
+describe('endRun: closing a session', () => {
   it('closes an open run, carrying the outcome, and the projection sees open → closed', () => {
     const w = openChainForWriting(root, { keyRoot: root });
     const { clock, tick } = fixedClock();
@@ -167,7 +167,7 @@ describe('endRun — closing a session', () => {
     expect(run?.outcome).toBe('shipped');
   });
 
-  it('closes the EXISTING run — the run.ended subject is the run id, no new id', () => {
+  it('closes the EXISTING run: the run.ended subject is the run id, no new id', () => {
     const w = openChainForWriting(root, { keyRoot: root });
     const { clock, tick } = fixedClock();
     const ctx = contextFor(w, root, clock);
@@ -199,7 +199,7 @@ describe('endRun — closing a session', () => {
     tick();
     const again = endRun(ctx, { run: id, which: AGENT, outcome: 'second' });
     expect(again).toMatchObject({ ok: false, code: 'ALREADY_ENDED' });
-    // The first outcome stands — the refused close wrote nothing.
+    // The first outcome stands: the refused close wrote nothing.
     expect(runsOf(root).get(id)?.outcome).toBe('first');
   });
 
@@ -211,7 +211,7 @@ describe('endRun — closing a session', () => {
     tick();
 
     // A non-canonical spelling (stray whitespace) is normalized on the envelope, the
-    // same reading the birth gives it — a close is a fact like any other.
+    // same reading the birth gives it: a close is a fact like any other.
     const ended = endRun(ctx, { run: id, which: '  claude  ' });
     expect(ended).toMatchObject({ ok: true, agent: 'claude' });
     const closed = orderedEvents({ root }, upcasters).find((e) => e.kind === 'run.ended');
@@ -221,7 +221,7 @@ describe('endRun — closing a session', () => {
     expect(closed?.kind === 'run.ended' && Object.keys(closed.payload)).toEqual([]);
   });
 
-  it('a complete pair names ONE agent — the close says what the birth said', () => {
+  it('a complete pair names ONE agent: the close says what the birth said', () => {
     const w = openChainForWriting(root, { keyRoot: root });
     const { clock, tick } = fixedClock();
     const ctx = contextFor(w, root, clock);
@@ -236,7 +236,7 @@ describe('endRun — closing a session', () => {
     const session = orderedEvents({ root }, upcasters).filter((e) => e.kind.startsWith('run.'));
     expect(session.map((e) => e.kind)).toEqual(['run.started', 'run.ended']);
     expect(session.map((e) => e.which)).toEqual([AGENT, AGENT]);
-    // And the `who` is the SAME anchor on both — the closer did not become the
+    // And the `who` is the SAME anchor on both: the closer did not become the
     // authorizer by closing.
     expect(new Set(session.map((e) => e.who))).toEqual(new Set([w.anchor]));
   });
@@ -256,11 +256,11 @@ describe('endRun — closing a session', () => {
     expect(runsOf(root).get(id)?.open).toBe(true);
   });
 
-  it('refuses it in the form the chain would STORE — trailing space is the same identity', () => {
+  it('refuses it in the form the chain would STORE: trailing space is the same identity', () => {
     // The discriminating case, and the reason the birth and the close must share ONE
     // function rather than two that agree. A check written as a plain comparison of
     // the given strings passes this: `"mnid:… "` !== `"mnid:…"`. The envelope would
-    // then store the canonical form, which IS `who` — a self-authorized close that
+    // then store the canonical form, which IS `who`: a self-authorized close that
     // "differed" at the check and is byte-identical in the signed event.
     const w = openChainForWriting(root, { keyRoot: root });
     const { clock, tick } = fixedClock();
@@ -272,7 +272,7 @@ describe('endRun — closing a session', () => {
       ok: false,
       code: 'WHO_IS_WHICH',
     });
-    // The BIRTH refuses the same spelling — one rule, both ends of the pair. A
+    // The BIRTH refuses the same spelling: one rule, both ends of the pair. A
     // version of this that held at only one end is the defect this closes.
     const other = openChainForWriting(root, { keyRoot: root });
     expect(startRun(contextFor(other, root, clock), { agent: `${w.anchor} ` })).toMatchObject({
@@ -282,10 +282,10 @@ describe('endRun — closing a session', () => {
     expect(runsOf(root).get(id)?.open).toBe(true);
   });
 
-  it('a blank agent is read as NO agent — the SAME residual the birth has, not a new one', () => {
+  it('a blank agent is read as NO agent: the SAME residual the birth has, not a new one', () => {
     // The honest limit of a required field, pinned rather than claimed. The type stops
     // a caller LEAVING IT OUT; it cannot stop one filling it with nothing, and what
-    // happens then is what the birth has always done — `canonicalIdentity` reads the
+    // happens then is what the birth has always done: `canonicalIdentity` reads the
     // value as no identity and the envelope carries no `which`. So there is ONE
     // residual across the pair, reachable only by a direct programmatic caller: both
     // surfaces close it, the CLI by refusing `NO_AGENT` and the MCP by defaulting the
@@ -298,14 +298,14 @@ describe('endRun — closing a session', () => {
     const ended = endRun(ctx, { run: id, which: '   ' });
     expect(ended).toMatchObject({ ok: true });
     // The close reports no agent either, so a surface echoing it cannot print one the
-    // record does not hold — the reason the report exists rather than the input.
+    // record does not hold: the reason the report exists rather than the input.
     expect(ended).not.toHaveProperty('agent');
 
     const session = orderedEvents({ root }, upcasters).filter((e) => e.kind.startsWith('run.'));
     expect(session.map((e) => e.which)).toEqual([undefined, undefined]);
   });
 
-  it('and BOTH ends resolve the agent through the shared function — never a comparison here', () => {
+  it('and BOTH ends resolve the agent through the shared function, never a comparison here', () => {
     // The structural half of the claim above. The rule is `resolveExecutingAgent`'s,
     // and it holds because this module has no reading of its own to drift from it: a
     // copy of the comparison added later would be a second answer to "is this the
@@ -315,7 +315,7 @@ describe('endRun — closing a session', () => {
       fileURLToPath(new URL('./session-operations.ts', import.meta.url)),
       'utf-8',
     );
-    // Both call it — the ban below is not over an empty file.
+    // Both call it: the ban below is not over an empty file.
     expect(source.match(/resolveExecutingAgent\(who, /g)).toHaveLength(2);
     // And nothing here compares `who` to anything itself.
     expect(source).not.toMatch(/\bwho\s*[!=]==/);
@@ -339,7 +339,7 @@ describe('rebuild is byte-identical: replaying the events reproduces the project
   });
 });
 
-describe('session — end to end: a clone reconstructs and verifies from events alone', () => {
+describe('session, end to end: a clone reconstructs and verifies from events alone', () => {
   it('the CLONE reconstructs the closed run from the chain, and verifies', () => {
     const w = openChainForWriting(root, { keyRoot: root });
     const { clock, tick } = fixedClock();
@@ -354,7 +354,7 @@ describe('session — end to end: a clone reconstructs and verifies from events 
     roots.push(clone);
     cpSync(root, clone, { recursive: true });
 
-    // Reconstruct from the chain alone — no cache copied.
+    // Reconstruct from the chain alone: no cache copied.
     const run = projectRuns(orderedEvents({ root: clone }, upcasters)).get(id);
     expect(run?.open).toBe(false);
     expect(run?.agent).toBe('claude');
@@ -368,7 +368,7 @@ describe('session — end to end: a clone reconstructs and verifies from events 
   });
 });
 
-describe('session — routable through the three-tree topology', () => {
+describe('session: routable through the three-tree topology', () => {
   let sandbox: string;
   let trees: ResolvedTrees;
 

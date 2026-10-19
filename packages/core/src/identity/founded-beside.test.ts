@@ -1,6 +1,6 @@
 /**
  * An identity founded where others already were, read off events the product's own writers
- * stored — never off events written by hand, so every case below is a record the product can
+ * stored, never off events written by hand, so every case below is a record the product can
  * produce.
  */
 
@@ -72,7 +72,7 @@ function writes(m: { ctx: WriteContext }, note: string): void {
   if (!captured.ok) throw new Error(`setup: ${captured.message}`);
 }
 
-describe('identitiesFoundedBeside — read off the record', () => {
+describe('identitiesFoundedBeside: read off the record', () => {
   it('is empty for a tree one identity founded, however much it wrote', () => {
     const a = machine();
     writes(a, 'one');
@@ -80,7 +80,7 @@ describe('identitiesFoundedBeside — read off the record', () => {
     expect(identitiesFoundedBeside(orderedEvents({ root: tree }, upcasters))).toEqual([]);
   });
 
-  it('names the second identity, beside the first — and when, and by which key', () => {
+  it('names the second identity, beside the first, and when, and by which key', () => {
     const a = machine();
     writes(a, 'first');
     const b = machine();
@@ -131,7 +131,7 @@ describe('identitiesFoundedBeside — read off the record', () => {
     expect(foundedBesideBy(tree, b.fingerprint, upcasters)).toBeUndefined();
   });
 
-  it('counts an anchor founded twice once, at its first founding — what two sessions of one installation leave', () => {
+  it('counts an anchor founded twice once, at its first founding: what two sessions of one installation leave', () => {
     const a = machine();
     writes(a, 'first');
     const anchorA = ensureFounded(a.ctx);
@@ -151,7 +151,7 @@ describe('identitiesFoundedBeside — read off the record', () => {
     // THIS CASE RAN THE RACE ITSELF: the whole of the second session's first write ran inside
     // the first write the first one made after deciding, and both founded. The founding is
     // decided under the tail's lock now (`ensureFounded`), so that interleaving waits on the
-    // lock instead of founding — and a record written before the change still holds the copy.
+    // lock instead of founding, and a record written before the change still holds the copy.
     // So the copy is PLANTED, with the builder and the key a session of B uses, which is the
     // record that version of the product left: B founded, then founded again.
     writes(one, 'session one');
@@ -181,7 +181,7 @@ describe('identitiesFoundedBeside — read off the record', () => {
   });
 });
 
-describe('foundedBesideBy — the question a surface asks right after a write', () => {
+describe('foundedBesideBy: the question a surface asks right after a write', () => {
   it('answers for the key that founded beside others, and for no other key', () => {
     const a = machine();
     writes(a, 'first');
@@ -193,7 +193,7 @@ describe('foundedBesideBy — the question a surface asks right after a write', 
   });
 });
 
-describe('ProjectionCache.foundedBeside — the same reading, off the order a cache holds', () => {
+describe('ProjectionCache.foundedBeside: the same reading, off the order a cache holds', () => {
   it('equals the reading off the chain, after a rebuild and after a refresh that brought one forward', () => {
     const a = machine();
     writes(a, 'first');

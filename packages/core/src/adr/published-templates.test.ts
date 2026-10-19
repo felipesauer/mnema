@@ -12,12 +12,12 @@
  * Every fixture below keeps the structure of the template it cites and fills the placeholders the
  * way the template tells its author to. Sources, all read on 2026-09-30:
  *
- *   - MADR 4.0.0 — `template/adr-template.md` and the project's own first record,
+ *   - MADR 4.0.0: `template/adr-template.md` and the project's own first record,
  *     `docs/decisions/0000-use-markdown-architectural-decision-records.md`, in
  *     https://github.com/adr/madr (tag 4.0.0).
- *   - MADR 3.0.0 — `template/adr-template.md`, same repository (tag 3.0.0).
- *   - MADR 2.1.2 — `template/template.md`, same repository (tag 2.1.2).
- *   - Nygard — "Documenting Architecture Decisions" (cognitect.com, 2011-11-15), and the first
+ *   - MADR 3.0.0: `template/adr-template.md`, same repository (tag 3.0.0).
+ *   - MADR 2.1.2: `template/template.md`, same repository (tag 2.1.2).
+ *   - Nygard: "Documenting Architecture Decisions" (cognitect.com, 2011-11-15), and the first
  *     record `adr init` writes in https://github.com/npryce/adr-tools.
  */
 

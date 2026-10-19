@@ -2,8 +2,8 @@
  * A projection kept on disk is a CACHE: it may answer faster than a replay, and it may never
  * answer differently, and deleting it must change nothing but the time.
  *
- * Each case states one property of that sentence and is read off the real thing — a file in a
- * tree, opened by a second cache the way a second process opens it — rather than off the
+ * Each case states one property of that sentence and is read off the real thing (a file in a
+ * tree, opened by a second cache the way a second process opens it) rather than off the
  * functions that make it:
  *
  *   - IT IS NOT BUILT AGAIN. A row planted in the file that no replay would write survives the
@@ -135,7 +135,7 @@ function answersOf(cache: ProjectionCache): Record<string, unknown> {
   };
 }
 
-/** Every row of every projection table of a database file, sorted — what a replay would hold. */
+/** Every row of every projection table of a database file, sorted: what a replay would hold. */
 function rowsOf(path: string): Record<string, string[]> {
   const db = openDatabase(path);
   try {
@@ -214,7 +214,7 @@ describe('a cache kept in the tree is brought forward, not built again', () => {
     landed(captureMemory(ctx, { content: 'one more memory' }));
     // A colleague's tail moves the same decision out of the same state: the one thing the
     // reading of diverged moves exists to say. The colleague had read the decision's birth and
-    // not the acceptance, and says so by citing the birth — a move from what its writer saw is
+    // not the acceptance, and says so by citing the birth: a move from what its writer saw is
     // a divergence, where one from a state nothing says it saw is a move no reader applies
     // (FORMAT.md §6.7).
     const born = readTail({ root }, ctx.writer.tail, upcasters).entries.find(
@@ -255,7 +255,7 @@ describe('a cache kept in the tree is brought forward, not built again', () => {
   it('a move the workflow does not allow arrives, and the next read applies it no more than a replay does', () => {
     // The move written by hand with the machine's own key, past every gate: `rejected → accepted`.
     // The cache holds the decision rejected; the move arrives as a suffix of the order, and
-    // what is brought forward over it has to be what a replay folds — the decision rejected
+    // what is brought forward over it has to be what a replay folds: the decision rejected
     // (FORMAT.md §6.7).
     const ctx = writing();
     const { decision } = aRecord(ctx);
@@ -405,7 +405,7 @@ describe('a cache that cannot be vouched for is replaced, never trusted', () => 
   it('a segment put back to a shorter file than the cache had read', () => {
     // What restoring an earlier copy of a segment does: the last line of the shorter file
     // starts before the boundary the cache holds, which a resumed reading used to take for "no
-    // arrival" — so it went on serving the entries the file no longer held.
+    // arrival", so it went on serving the entries the file no longer held.
     const ctx = aWarmFile();
     const file = join(tailDir({ root }, ctx.writer.tail), '000001.jsonl');
     const held = readFileSync(file, 'utf-8');

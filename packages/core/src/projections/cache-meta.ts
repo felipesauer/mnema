@@ -4,7 +4,7 @@
  *
  * A database that is only ever in memory needs none of this: the process that built it is the
  * process that reads it. A database on disk is read by a process that did not build it, and
- * the only safe question to ask of it is "is this still the chain's projection?" — which this
+ * the only safe question to ask of it is "is this still the chain's projection?", which this
  * module answers from three things, each of which a stale cache fails differently:
  *
  *   - THE STAMP. What produced the rows: the code that folds and stores them, the schema, and
@@ -13,12 +13,12 @@
  *     only repair is to build it again. The stamp is a digest of the projection modules'
  *     own bytes, so a change to a fold invalidates every cache on the machine without
  *     anybody remembering to bump a number.
- *   - THE FRONTIER. How far into the chain the rows reach — per tail, the byte the reading
- *     stopped at and the hash it ended on — which is exactly what `chainArrivals` needs to
+ *   - THE FRONTIER. How far into the chain the rows reach (per tail, the byte the reading
+ *     stopped at and the hash it ended on), which is exactly what `chainArrivals` needs to
  *     say what arrived since, and to say that nothing describes it as a suffix.
  *   - THE FINGERPRINTS. What the frontier cannot see: the bytes BELOW it. A reading that
  *     resumes from a byte never reads what is before it, so a segment rewritten after the
- *     cache was built would be served in silence for as long as the cache lasted — where a
+ *     cache was built would be served in silence for as long as the cache lasted, where a
  *     replay reads every line and is told. A sealed segment is never written again, so its
  *     size and modification time are what a rewrite cannot keep; any difference sends the
  *     cache back to a full replay.
@@ -119,7 +119,7 @@ export function readMeta(db: SqliteDatabase): CacheMeta | undefined {
   };
 }
 
-/** The counter alone — what a writer asks, inside its transaction, before it writes. */
+/** The counter alone: what a writer asks, inside its transaction, before it writes. */
 export function readGeneration(db: SqliteDatabase): number {
   const row = db.prepare("SELECT value FROM cache_meta WHERE key = 'generation'").get() as
     | { value: string }
@@ -159,8 +159,8 @@ function decodeFrontier(stored: string): ChainFrontier {
 }
 
 /**
- * The fingerprint of every SEALED segment the frontier covers — every segment of a tail but
- * the one it was last appending to — as `<size>:<mtimeMs>`, by path.
+ * The fingerprint of every SEALED segment the frontier covers (every segment of a tail but
+ * the one it was last appending to) as `<size>:<mtimeMs>`, by path.
  *
  * A segment that cannot be stat'ed is recorded as such rather than skipped, so that it is
  * a difference the day it can.

@@ -3,7 +3,7 @@
  *
  * `agentKeysIn` keeps the first enrolment of a key whose consent holds up; a fact whose consent
  * the key never gave for that name is not one, and it must not make the key "taken" so that the
- * valid fact after it is skipped — `verify` would then lose the name of the agent behind the key.
+ * valid fact after it is skipped: `verify` would then lose the name of the agent behind the key.
  */
 
 import { mkdtempSync, rmSync } from 'node:fs';

@@ -8,8 +8,8 @@
  * leave an identity that can never sign anything again, including its own repair.
  * Each of those costs one refusal here and cannot be undone there.
  *
- * The whole flow is driven the way the surface drives it — the joining machine
- * makes a real request, a member reads it — so nothing is asserted about material
+ * The whole flow is driven the way the surface drives it (the joining machine
+ * makes a real request, a member reads it), so nothing is asserted about material
  * assembled by the test that the real path would not produce.
  */
 
@@ -83,7 +83,7 @@ function open(keyRoot: string): Machine {
   };
 }
 
-/** The request a joining machine hands over — produced by the real operation. */
+/** The request a joining machine hands over: produced by the real operation. */
 function requestOf(m: Machine, anchor: string): string {
   const made = requestEnrollment({ anchor, keyRoot: m.keyRoot });
   if (!made.ok) throw new Error(`the test could not make a request: ${made.code}`);
@@ -95,12 +95,12 @@ function count(kind: string): number {
   return orderedEvents({ root: tree }, upcasters).filter((e) => e.kind === kind).length;
 }
 
-describe('enrollFromRequest — a key joins by a member vouching for it', () => {
+describe('enrollFromRequest: a key joins by a member vouching for it', () => {
   it('commits the public half and appends the vouch, and the joining key then writes as the identity', () => {
     const a = machine('mnema-roster-a-');
     const anchor = ensureFounded(a.ctx);
     const b = machine('mnema-roster-b-');
-    // B has never written here, so nothing of B is in the tree — its public half
+    // B has never written here, so nothing of B is in the tree: its public half
     // included. This case used to REMOVE that half, because B's writer materialized it
     // on open; a writer publishes nothing before its first append now, so the state it
     // planted is the one opening leaves, and the enrollment is what puts the proof
@@ -115,7 +115,7 @@ describe('enrollFromRequest — a key joins by a member vouching for it', () => 
       anchor,
       alreadyMember: false,
     });
-    // The public half is committed — without it the verifier cannot prove the
+    // The public half is committed: without it the verifier cannot prove the
     // consent the fact rests on, and the enrollment would be permanently rejected.
     expect(existsSync(join(tree, 'keys', `${b.fingerprint}.pub`))).toBe(true);
     expect(count('key.enrolled')).toBe(1);
@@ -138,7 +138,7 @@ describe('enrollFromRequest — a key joins by a member vouching for it', () => 
     // The refusal that matters most: the consent covers `enroll:<anchor>:<fp>`, so a
     // request made for someone else is not consent to join this identity. Appending
     // it would leave the tree carrying an enrollment its own verifier rejects, for
-    // good — so it is refused while refusing is still free.
+    // good, so it is refused while refusing is still free.
     const a = machine('mnema-roster-a-');
     const anchor = ensureFounded(a.ctx);
     const b = machine('mnema-roster-b-');
@@ -203,7 +203,7 @@ describe('enrollFromRequest — a key joins by a member vouching for it', () => 
     expect(enrollFromRequest(bMember.ctx, { request: requestOf(c, anchor) }).ok).toBe(true);
   });
 
-  it('vouches from a tree with no founding yet — the first write founds and enrolls', () => {
+  it('vouches from a tree with no founding yet: the first write founds and enrolls', () => {
     // A machine may enroll into an identity it is about to found: it becomes that
     // identity's only member in the same breath, so the vouch is sound.
     const a = machine('mnema-roster-a-');
@@ -219,7 +219,7 @@ describe('enrollFromRequest — a key joins by a member vouching for it', () => 
   });
 });
 
-describe('revokeMember — a key leaves, and the last one cannot', () => {
+describe('revokeMember: a key leaves, and the last one cannot', () => {
   it('retires a peer, prospectively: its earlier facts stay, its later ones do not', () => {
     const a = machine('mnema-roster-a-');
     const anchor = ensureFounded(a.ctx);
@@ -246,7 +246,7 @@ describe('revokeMember — a key leaves, and the last one cannot', () => {
 
   it('retires the key of the very machine running it, and the tree stays verifiable', () => {
     // Decommissioning this machine while another member remains. The record stays
-    // green — the revocation is prospective and its own checkpoint covers it — and
+    // green (the revocation is prospective and its own checkpoint covers it) and
     // the caller is told it was its own key so it can stop writing here.
     const a = machine('mnema-roster-a-');
     const anchor = ensureFounded(a.ctx);
@@ -269,7 +269,7 @@ describe('revokeMember — a key leaves, and the last one cannot', () => {
     expect(verify(tree, upcasters)).toMatchObject({ ok: true, fullySigned: true });
   });
 
-  it('refuses LAST_KEY — an identity with no keys can never be repaired', () => {
+  it('refuses LAST_KEY: an identity with no keys can never be repaired', () => {
     const a = machine('mnema-roster-a-');
     const anchor = ensureFounded(a.ctx);
 
@@ -309,7 +309,7 @@ describe('revokeMember — a key leaves, and the last one cannot', () => {
     expect(count('key.revoked')).toBe(1);
   });
 
-  it('refuses CANNOT_VOUCH from a retired machine — a revocation it signed would not take', () => {
+  it('refuses CANNOT_VOUCH from a retired machine: a revocation it signed would not take', () => {
     const a = machine('mnema-roster-a-');
     const anchor = ensureFounded(a.ctx);
     const b = machine('mnema-roster-b-');
@@ -324,7 +324,7 @@ describe('revokeMember — a key leaves, and the last one cannot', () => {
   });
 });
 
-describe('rosterOf — the count that LAST_KEY rests on', () => {
+describe('rosterOf: the count that LAST_KEY rests on', () => {
   it('does not count an enrollment the verifier would reject', () => {
     // An enrollment whose public half never reached the tree cannot be proven, so
     // the verifier rejects it. Counting it here would let the last REAL key be
@@ -345,13 +345,13 @@ describe('rosterOf — the count that LAST_KEY rests on', () => {
   });
 });
 
-describe('a retired key coming back — the one addition the verifier gates', () => {
+describe('a retired key coming back: the one addition the verifier gates', () => {
   it('re-enrolls it under coverage, so the record takes it back instead of ignoring it', () => {
     // The verifier treats an addition that RESTORES a key revoked under signature
     // coverage exactly as it treats the revoke: it takes effect only when it is
     // itself covered, or a keyless party could plant a residual re-enroll and
     // silently undo a signed removal. A legitimate re-enrollment therefore has to
-    // prove itself at once — which is why the operation checkpoints. Without that,
+    // prove itself at once, which is why the operation checkpoints. Without that,
     // this would leave the key named as a member and NOT valid: an issue in the
     // record and a machine that cannot write.
     const a = machine('mnema-roster-a-');
@@ -365,7 +365,7 @@ describe('a retired key coming back — the one addition the verifier gates', ()
 
     expect(back).toMatchObject({ ok: true, alreadyMember: false });
     expect(rosterOf({ tree, upcasters }, anchor).has(b.fingerprint)).toBe(true);
-    // The verifier agrees — no residual, no issue: the key writes again as the same
+    // The verifier agrees (no residual, no issue): the key writes again as the same
     // identity, and the whole record still verifies.
     const bMember = open(b.keyRoot);
     expect(captureMemory(bMember.ctx, { content: 'found it again' }).ok).toBe(true);

@@ -16,10 +16,10 @@ const env = (subject: string, n: number, who = 'felipe') => ({
   signerFp: 'fp-1',
   subject,
 });
-/** A fact PINNED to a run — the envelope slot every event of a session carries. */
+/** A fact PINNED to a run: the envelope slot every event of a session carries. */
 const inRun = (subject: string, n: number, run: string) => ({ ...env(subject, n), run });
 
-describe('projectRuns — the reader rule', () => {
+describe('projectRuns: the reader rule', () => {
   it('projects an open run from run.started with its agent, authorizer, and goal', () => {
     const events = [runStarted(env('r-1', 0), { agent: 'claude', goal: 'ship the thing' })];
     expect(projectRuns(events).get('r-1')).toEqual({
@@ -29,7 +29,7 @@ describe('projectRuns — the reader rule', () => {
       goal: 'ship the thing',
       open: true,
       startedAt: at(0),
-      // Present and EMPTY on a run that has written nothing — the whole point of the
+      // Present and EMPTY on a run that has written nothing: the whole point of the
       // field being non-optional. This is an exact-shape assertion, so it is also what
       // fails if the fold ever stops attaching it.
       wrote: [],
@@ -93,7 +93,7 @@ describe('projectRuns — the reader rule', () => {
   });
 });
 
-describe('projectRuns — when the run last did something', () => {
+describe('projectRuns, when the run last did something', () => {
   it('folds the `at` of the most recent fact PINNED to the run', () => {
     const events: CatalogEvent[] = [
       runStarted(env('r-1', 0), { agent: 'claude' }),
@@ -112,7 +112,7 @@ describe('projectRuns — when the run last did something', () => {
   });
 
   it('does not count the run’s OWN birth or end as a fact recorded in it', () => {
-    // Neither event carries a `run` — their subject IS the run — so a run that only
+    // Neither event carries a `run`, their subject IS the run, so a run that only
     // started and ended has recorded nothing, and the projection must say so rather
     // than reporting its own bookkeeping as work.
     const events: CatalogEvent[] = [
@@ -125,7 +125,7 @@ describe('projectRuns — when the run last did something', () => {
   it('takes the greatest `at`, not the last event seen', () => {
     // The stream is interleaved ACROSS tails, and a run's facts can come from more
     // than one of them. Last-seen would let a tail read later hand back an earlier
-    // instant — which reads as a run that went idle and then un-idled.
+    // instant, which reads as a run that went idle and then un-idled.
     const events: CatalogEvent[] = [
       runStarted(env('r-1', 0), { agent: 'claude' }),
       memoryCaptured(inRun('m-late', 4, 'r-1'), { content: 'later' }),
@@ -155,7 +155,7 @@ describe('projectRuns — when the run last did something', () => {
   });
 });
 
-describe('projectRuns — WHAT was written in the run', () => {
+describe('projectRuns: WHAT was written in the run', () => {
   it('tallies the facts pinned to it, per kind, and says how many of each', () => {
     // The complaint this answers, in one line: the reads reported the CONTAINER. A run
     // that recorded three different sorts of fact and one that recorded a single note
@@ -178,7 +178,7 @@ describe('projectRuns — WHAT was written in the run', () => {
     ]);
   });
 
-  it('answers EMPTY for a run that wrote nothing — never absent', () => {
+  it('answers EMPTY for a run that wrote nothing, never absent', () => {
     // Distinguishable from "I do not know", which is what an absent field claims. The
     // fold saw the whole stream, so it knows the answer is none, and a zero-length list
     // is how it says so. `lastFactAt` beside it IS absent in this same case, and the
@@ -191,7 +191,7 @@ describe('projectRuns — WHAT was written in the run', () => {
   });
 
   it('does not count the run’s OWN birth or end as something written in it', () => {
-    // Neither carries a `run` — their subject IS the run — so a session's own
+    // Neither carries a `run`, their subject IS the run, so a session's own
     // bookkeeping is not work it did. Same rule `lastFactAt` follows, off the same slot.
     const events: CatalogEvent[] = [
       runStarted(env('r-1', 0), { agent: 'claude', goal: 'g' }),
@@ -237,7 +237,7 @@ describe('projectRuns — WHAT was written in the run', () => {
     expect(projectRuns(backward).get('r-1')?.wrote).toEqual(projectRuns(forward).get('r-1')?.wrote);
   });
 
-  it('tallies a fact pinned to a run this stream never opened — and drops the run', () => {
+  it('tallies a fact pinned to a run this stream never opened, and drops the run', () => {
     // The rule the module already states, met by the new field: an accumulator is
     // created for any `run` seen on an envelope, and one with no birth is not projected.
     // The tally must not resurrect it.

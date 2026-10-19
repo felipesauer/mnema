@@ -23,7 +23,7 @@ function home(): string {
   return h;
 }
 
-describe('resolveTrees — global tree and key root', () => {
+describe('resolveTrees: global tree and key root', () => {
   it('keeps them in ~/.mnema, under HOME', () => {
     const h = home();
     const trees = resolveTrees(sandbox, { home: h });
@@ -31,7 +31,7 @@ describe('resolveTrees — global tree and key root', () => {
     expect(trees.keyRoot).toBe(join(h, '.mnema', 'identity'));
   });
 
-  it('keeps them in $MNEMA_HOME itself when it is set — the directory, not a parent of one', () => {
+  it('keeps them in $MNEMA_HOME itself when it is set: the directory, not a parent of one', () => {
     const relocated = join(sandbox, 'elsewhere', 'keys');
     const trees = resolveTrees(sandbox, { home: home(), mnemaHome: relocated });
     expect(trees.global).toBe(join(relocated, 'global'));
@@ -47,7 +47,7 @@ describe('resolveTrees — global tree and key root', () => {
     }
   });
 
-  it('reads an empty $MNEMA_HOME as unset — the shell’s way of clearing a variable', () => {
+  it('reads an empty $MNEMA_HOME as unset: the shell’s way of clearing a variable', () => {
     const h = home();
     expect(resolveTrees(sandbox, { home: h, mnemaHome: '' }).keyRoot).toBe(
       join(h, '.mnema', 'identity'),
@@ -65,9 +65,9 @@ describe('resolveTrees — global tree and key root', () => {
     }
   });
 
-  it('keeps them under the account’s home when HOME names no directory — never under the working directory', () => {
+  it('keeps them under the account’s home when HOME names no directory, never under the working directory', () => {
     // The case that was measured: an empty `HOME` used to give `join('', '.mnema')`, which is
-    // `.mnema`, relative — one key minted in every folder the process ran from.
+    // `.mnema`, relative; one key minted in every folder the process ran from.
     const account = join(sandbox, 'account');
     for (const h of ['', 'relative/home', '.']) {
       const trees = resolveTrees(sandbox, { home: h, accountHome: account });
@@ -81,7 +81,7 @@ describe('resolveTrees — global tree and key root', () => {
     expect(trees.keyRoot).toBe(join(h, '.mnema', 'identity'));
   });
 
-  it('refuses when there is no home at all — no absolute HOME, no account home, no MNEMA_HOME', () => {
+  it('refuses when there is no home at all: no absolute HOME, no account home, no MNEMA_HOME', () => {
     for (const accountHome of [undefined, '', 'relative/account']) {
       expect(() => resolveTrees(sandbox, { home: '', accountHome })).toThrow(
         /no home to keep the key root in/,
@@ -95,7 +95,7 @@ describe('resolveTrees — global tree and key root', () => {
   });
 });
 
-describe('resolveTrees — project discovery', () => {
+describe('resolveTrees: project discovery', () => {
   it('finds .mnema in the cwd itself', () => {
     mkdirSync(join(sandbox, '.mnema'), { recursive: true });
     const trees = resolveTrees(sandbox, { home: home() });
@@ -128,7 +128,7 @@ describe('resolveTrees — project discovery', () => {
     const trees = resolveTrees(sandbox, { home: home() });
     expect(trees.projectPublic).toBeUndefined();
     expect(trees.projectPrivate).toBeUndefined();
-    // The global tree and key root still resolve — a person can capture with no project.
+    // The global tree and key root still resolve: a person can capture with no project.
     expect(trees.global).toBeDefined();
     expect(trees.keyRoot).toBeDefined();
   });
@@ -184,7 +184,7 @@ function repoWithACommit(dir: string): string {
  * `git worktree remove` deletes: `<git common dir>/mnema/<project, relative to the top of
  * the working tree>/private`. Without git it stays where it was.
  */
-describe('resolveTrees — the private tree lives in the repository, not in a working tree', () => {
+describe('resolveTrees: the private tree lives in the repository, not in a working tree', () => {
   it('puts it under .git/mnema/%2E/private for a project at the top of a repository', () => {
     const repo = repoWithACommit(join(realpathSync(sandbox), 'repo'));
     mkdirSync(join(repo, '.mnema'));
@@ -276,28 +276,28 @@ describe('resolveTrees — the private tree lives in the repository, not in a wo
 });
 
 /**
- * The two kinds of `.mnema/` the walk passes over — and the directories it still finds.
+ * The two kinds of `.mnema/` the walk passes over, and the directories it still finds.
  *
  * Each rule is asserted beside the case that would pass if the rule refused too much: a
  * walk that took no project anywhere under the home would pass every "is not taken" case
  * below by serving nothing, so every one of them has a neighbour that must still find one.
  */
-describe('resolveTrees — the home directory is never a project’s root', () => {
-  it('does not take the home’s own `.mnema/` — from the home, or from a folder under it', () => {
+describe('resolveTrees: the home directory is never a project’s root', () => {
+  it('does not take the home’s own `.mnema/`: from the home, or from a folder under it', () => {
     const h = home();
     mkdirSync(join(h, '.mnema', 'tails'), { recursive: true });
     const folder = join(h, 'Downloads', 'x');
     mkdirSync(folder, { recursive: true });
     for (const cwd of [h, folder]) {
       // The data directory elsewhere, so the home's `.mnema/` stays the shape a walk from before
-      // left it in — a project's tails and no key root.
+      // left it in: a project's tails and no key root.
       const trees = resolveTrees(cwd, { home: h, mnemaHome: join(sandbox, 'data') });
       expect(trees.projectPublic, `from ${cwd}`).toBeUndefined();
       expect(trees.projectPrivate, `from ${cwd}`).toBeUndefined();
     }
   });
 
-  it('does not take this machine’s data directory either — `~/.mnema`, which holds the key root', () => {
+  it('does not take this machine’s data directory either: `~/.mnema`, which holds the key root', () => {
     // The case the data directory makes: it IS `~/.mnema`, named exactly what the walk looks
     // for, and it holds the key root.
     const h = home();
@@ -310,7 +310,7 @@ describe('resolveTrees — the home directory is never a project’s root', () =
     expect(trees.global).toBe(join(h, '.mnema', 'global'));
   });
 
-  it('does not look ABOVE the home — anything there would contain it', () => {
+  it('does not look ABOVE the home: anything there would contain it', () => {
     const h = home();
     mkdirSync(join(sandbox, '.mnema'), { recursive: true });
     const folder = join(h, 'work');
@@ -322,7 +322,7 @@ describe('resolveTrees — the home directory is never a project’s root', () =
     expect(resolveTrees(outside, { home: h }).projectPublic).toBe(join(sandbox, '.mnema'));
   });
 
-  it('still finds a project UNDER the home — the rule is about the home, not what is in it', () => {
+  it('still finds a project UNDER the home: the rule is about the home, not what is in it', () => {
     const h = home();
     mkdirSync(join(h, '.mnema', 'tails'), { recursive: true });
     const app = join(h, 'code', 'app');
@@ -332,7 +332,7 @@ describe('resolveTrees — the home directory is never a project’s root', () =
     expect(resolveTrees(deep, { home: h }).projectPublic).toBe(join(app, '.mnema'));
   });
 
-  it('knows the home through a symlink — the walk climbs resolved paths, `HOME` may not be one', () => {
+  it('knows the home through a symlink: the walk climbs resolved paths, `HOME` may not be one', () => {
     const real = join(sandbox, 'disk', 'someone');
     mkdirSync(join(real, '.mnema', 'tails'), { recursive: true });
     mkdirSync(join(real, 'work'), { recursive: true });
@@ -341,12 +341,12 @@ describe('resolveTrees — the home directory is never a project’s root', () =
     expect(resolveTrees(join(real, 'work'), { home: link }).projectPublic).toBeUndefined();
   });
 
-  it('reads a relative or empty home as no home at all — it names no directory', () => {
+  it('reads a relative or empty home as no home at all: it names no directory', () => {
     // A relative home resolved against the working directory would make whatever directory
-    // the process stands in "the home" — so the case stands IN the project: there, an empty or
+    // the process stands in "the home", so the case stands IN the project: there, an empty or
     // `.` home read that way is the project itself, and its `.mnema/` would be passed over as a
     // home's. The data directory reads such a home the same way, as no home, and goes under the
-    // account's instead — which is why the case hands it one.
+    // account's instead, which is why the case hands it one.
     const repo = join(sandbox, 'repo');
     mkdirSync(join(repo, '.mnema'), { recursive: true });
     const before = process.cwd();
@@ -364,8 +364,8 @@ describe('resolveTrees — the home directory is never a project’s root', () =
   });
 });
 
-describe('resolveTrees — a machine’s data directory is never a project’s tree', () => {
-  it('passes over a `.mnema/` holding a key root that is NOT this home’s — and walks on', () => {
+describe('resolveTrees: a machine’s data directory is never a project’s tree', () => {
+  it('passes over a `.mnema/` holding a key root that is NOT this home’s, and walks on', () => {
     // Another environment's data directory: a sandboxed `HOME` standing under a real one,
     // `sudo`, a data directory left from before `$MNEMA_HOME` was set. It holds no
     // project, so whatever lies above it is still the nearest project.
@@ -380,14 +380,14 @@ describe('resolveTrees — a machine’s data directory is never a project’s t
     expect(found.passedOver).toEqual([{ tree: join(theirs, '.mnema'), why: 'data-directory' }]);
   });
 
-  it('is found as a project when it holds no key root — the reading is the key root, not the name', () => {
+  it('is found as a project when it holds no key root: the reading is the key root, not the name', () => {
     const repo = join(sandbox, 'repo');
     mkdirSync(join(repo, '.mnema', 'tails'), { recursive: true });
     expect(resolveTrees(repo, { home: home() }).projectPublic).toBe(join(repo, '.mnema'));
   });
 });
 
-describe('discover — what the walk passed over, from the same walk', () => {
+describe('discover: what the walk passed over, from the same walk', () => {
   it('names the home’s `.mnema/` it passed over, and why', () => {
     const h = home();
     mkdirSync(join(h, '.mnema'), { recursive: true });
@@ -398,7 +398,7 @@ describe('discover — what the walk passed over, from the same walk', () => {
     ]);
   });
 
-  it('names nothing when the walk met no `.mnema/` it refused — the ordinary case', () => {
+  it('names nothing when the walk met no `.mnema/` it refused: the ordinary case', () => {
     const h = home();
     const folder = join(h, 'a');
     mkdirSync(folder, { recursive: true });
@@ -408,7 +408,7 @@ describe('discover — what the walk passed over, from the same walk', () => {
     expect(discover(repo, { home: h }).passedOver).toEqual([]);
   });
 
-  it('answers the trees resolveTrees answers — one walk, not two', () => {
+  it('answers the trees resolveTrees answers: one walk, not two', () => {
     const h = home();
     mkdirSync(join(h, '.mnema'), { recursive: true });
     const repo = join(h, 'repo');
@@ -420,7 +420,7 @@ describe('discover — what the walk passed over, from the same walk', () => {
   });
 });
 
-describe('whyNoProjectRootAt — the rule `mnema init` asks before founding', () => {
+describe('whyNoProjectRootAt: the rule `mnema init` asks before founding', () => {
   it('answers `home` for the home, `data-directory` for a key root, and nothing elsewhere', () => {
     const h = home();
     const theirs = join(sandbox, 'theirs');

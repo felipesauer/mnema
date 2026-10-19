@@ -1,5 +1,5 @@
 /**
- * What a task's STATE means to whoever is reading it — the position's disposition.
+ * What a task's STATE means to whoever is reading it: the position's disposition.
  *
  * A state answers "where is this task"; a disposition answers what the reader does
  * about it. The two are not the same question, and a task's seven states are not seven
@@ -8,23 +8,23 @@
  * this module classifies, so every row below is a property of `TRANSITIONS` and
  * not a taste.
  *
- * READ AGAINST THE TABLE OF MOVES, state by state — this is the derivation, and
+ * READ AGAINST THE TABLE OF MOVES, state by state: this is the derivation, and
  * `disposition.test.ts` recomputes it from the table rather than trusting the prose:
- *   - `DRAFT`, `READY`, `IN_PROGRESS` — several exits, and at least one of them asks
+ *   - `DRAFT`, `READY`, `IN_PROGRESS`: several exits, and at least one of them asks
  *     for no proof at all: `submit`, `start`, `submit_review`. There is a way FORWARD
  *     that costs nothing but the move. That is `advancing`.
- *   - `BLOCKED` — ONE exit, `unblock`, and it requires nothing. The single way out
+ *   - `BLOCKED`: ONE exit, `unblock`, and it requires nothing. The single way out
  *     leads back to `IN_PROGRESS`, the state that reached here, so nothing can be
  *     progressed from this position: the only move undoes the position itself, and it
  *     is free because a block was never an achievement. That is `stalled`.
- *   - `IN_REVIEW` — two exits, `approve` and `request_changes`, and BOTH require a
+ *   - `IN_REVIEW`: two exits, `approve` and `request_changes`, and BOTH require a
  *     proof field (`note`, `feedback`). Every way out of this position is a verdict
  *     somebody owes. That is `awaiting-judgement`.
- *   - `DONE` — ONE exit, `reopen`, and it requires a `reason`. Like `BLOCKED` the only
+ *   - `DONE`: ONE exit, `reopen`, and it requires a `reason`. Like `BLOCKED` the only
  *     move undoes the position, and unlike `BLOCKED` undoing it COSTS AN EXPLANATION,
  *     which is the whole difference between a task that cannot move and a task that
  *     has arrived. That is `settled`.
- *   - `CANCELED` — no row leaves it. Nothing is pending and nothing can be done. That
+ *   - `CANCELED`: no row leaves it. Nothing is pending and nothing can be done. That
  *     is `closed`.
  *
  * WHY A TABLE AND NOT THAT DERIVATION AS CODE. The five paragraphs above ARE an
@@ -35,7 +35,7 @@
  * the test is what keeps the said thing honest against the table it claims to read.
  *
  * IT IS A CLASSIFICATION AND NOT A SECOND VOCABULARY OF POSITIONS. The five names say
- * what a reader does — nothing here is a state, nothing here is storable, and no event
+ * what a reader does: nothing here is a state, nothing here is storable, and no event
  * ever carries one. The decision and skill machines have their own classification, in
  * their own words, in the module that owns their reads (`context`): they answer "does
  * this govern", which a task does not have, while a task answers "can this move", which
@@ -43,20 +43,20 @@
  * questions, and every reader of it would then meet values that cannot occur.
  *
  * A READER NOW HOLDS BOTH UNIONS IN ONE TABLE, and it does not overturn the paragraph
- * above — it is what the paragraph leaves room for. `@mnema/code`'s `presentation/
+ * above: it is what the paragraph leaves room for. `@mnema/code`'s `presentation/
  * state.ts` paints a position by what a reader has to do about it, so it maps BOTH
  * vocabularies onto its own three-value scale in a single table keyed by their union.
  * That table is a SCALE and not a classification: it invents no position, it is not
  * asked "where is this record", and the two words the unions share (`awaiting-judgement`,
  * `closed`) get one row each precisely because the mapping is one reading of one rule.
- * Nothing there re-derives what a state means; it asks — `taskDisposition` here,
- * `decisionDisposition` and `skillDisposition` in `context` — which is the distinction
+ * Nothing there re-derives what a state means; it asks (`taskDisposition` here,
+ * `decisionDisposition` and `skillDisposition` in `context`), which is the distinction
  * this paragraph is about.
  *
  * {@link TASK_DISPOSITION} is exported so the claims above are CHECKABLE against the
  * table they are read from, rather than asserted in prose. It is not on the package's
- * public surface — a consumer gets {@link taskDisposition}, the question, never the
- * classification behind it — and that it stays off it is checked rather than declared:
+ * public surface (a consumer gets {@link taskDisposition}, the question, never the
+ * classification behind it) and that it stays off it is checked rather than declared:
  * `no-classification-table-reaches-the-surface.test.ts` walks every entry point's
  * runtime exports.
  */
@@ -82,7 +82,7 @@ export type TaskDisposition =
   | 'closed';
 
 /**
- * What each of the seven states means to a reader — TOTAL, so an eighth state cannot
+ * What each of the seven states means to a reader: TOTAL, so an eighth state cannot
  * be added to the machine without being classified here.
  *
  * Every row is derived from `TRANSITIONS`; the module doc reads the table state
@@ -100,7 +100,7 @@ export const TASK_DISPOSITION: Readonly<Record<TaskState, TaskDisposition>> = {
 };
 
 /**
- * What a state means to a reader — the table asked, never a second opinion.
+ * What a state means to a reader: the table asked, never a second opinion.
  *
  * This is the whole of what crosses the package boundary: a surface asks what a
  * position means and is answered, so the classification is written once. A consumer

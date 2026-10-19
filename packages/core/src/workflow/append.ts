@@ -4,15 +4,15 @@
  *
  * It exists because the answer used to be nobody's job. The catalog's shape rules
  * lived in the parser, which only ever ran on the way OUT, so a write that built an
- * event the parser forbids — an empty title, an empty relation, an empty agent name
- * on a session — was appended, signed, and reported as a success. The read then
+ * event the parser forbids (an empty title, an empty relation, an empty agent name
+ * on a session) was appended, signed, and reported as a success. The read then
  * refused it, and refused the whole tail with it: one such entry left every later
  * `search`, `show`, `timeline` and `resume` of that project failing, permanently,
  * because a tail is append-only and nothing can take the line back out.
  *
  * THE RULE IS THE READER'S, NOT A COPY OF IT. {@link unreadableReason} runs the
- * validator {@link parseEvent} runs, so this cannot drift from what reading accepts
- * — there is one rule and both sides ask it. A second "non-empty" check written on
+ * validator {@link parseEvent} runs, so this cannot drift from what reading accepts:
+ * there is one rule and both sides ask it. A second "non-empty" check written on
  * the writing side would have closed the case of the day and re-opened it the first
  * time somebody added a field to one copy; this codebase has caught that class of
  * defect more than once, which is why the fix is a shared function and not a
@@ -21,8 +21,8 @@
  * ONE PLACE IN THE CORE, FOR THE REASON THE CONTENT DOOR IS ONE PLACE. Fourteen
  * appends across five modules is fourteen chances to forget, and the forgotten one
  * is the one that corrupts a project. Every core write funnels its event through
- * here, and what it gets back is DATA — a typed refusal a surface reports as
- * `Refused (UNREADABLE_EVENT)` — because an empty argument is an ordinary bad input
+ * here, and what it gets back is DATA, a typed refusal a surface reports as
+ * `Refused (UNREADABLE_EVENT)`, because an empty argument is an ordinary bad input
  * and an agent has to be able to read it and retry, not receive a stack trace.
  * An operation's first fact comes through {@link appendFact} (or {@link appendFacts}),
  * which asks this door BEFORE the founding the fact needs, so a refused first write leaves
@@ -33,7 +33,7 @@
  * AND IT IS NOT THE ONLY GUARD. The writer itself refuses the same events before
  * sealing (`refuseUnreadable`), which is what makes "no unreadable entry can be
  * written" a property of the code rather than of this module's adoption: a write
- * path added tomorrow that skips this door still cannot corrupt a tree — it fails
+ * path added tomorrow that skips this door still cannot corrupt a tree; it fails
  * loudly instead. This door is what turns that floor into a refusal somebody can
  * act on.
  */
@@ -60,7 +60,7 @@ export interface UnreadableEventErr {
 }
 
 /**
- * A write refused because a text that carries the why of the fact says nothing — no letter and
+ * A write refused because a text that carries the why of the fact says nothing: no letter and
  * no digit (`***`), or the marker a recipe prints where the why goes (`<why>`). Nothing was
  * appended.
  *
@@ -77,8 +77,8 @@ export interface NotAReasonErr {
 }
 
 /**
- * A write refused because the line that names the fact — a task's or a decision's title, a
- * skill's name, an observation's topic — is the marker a recipe prints where the words go
+ * A write refused because the line that names the fact (a task's or a decision's title, a
+ * skill's name, an observation's topic) is the marker a recipe prints where the words go
  * (`<title>`). Nothing was appended.
  *
  * NOT {@link NotAReasonErr}, although the rule is the same function: a title is not a reason, and
@@ -91,8 +91,8 @@ export interface NotATitleErr {
 }
 
 /**
- * A write refused because a field a later reading looks the fact up by — a link's target or
- * relation, the entity an observation is about, a handoff's agents — is the marker a recipe
+ * A write refused because a field a later reading looks the fact up by (a link's target or
+ * relation, the entity an observation is about, a handoff's agents) is the marker a recipe
  * prints where the value goes (`<id>`). Nothing was appended.
  *
  * NOT {@link NotATitleErr}: a reference is not a line that names the fact, and the code is what a
@@ -153,8 +153,8 @@ export function appendEvent(writer: ChainWriter, event: CatalogEvent): AppendedE
 /**
  * Appends several events as one atom, after checking a read would accept EVERY one
  * of them. Checking the whole batch first is what keeps a birth pair all-or-nothing
- * under refusal too: an unreadable second event must not leave the first — a
- * `task.created` with no state — on the tail, which would burn the id permanently.
+ * under refusal too: an unreadable second event must not leave the first, a
+ * `task.created` with no state, on the tail, which would burn the id permanently.
  */
 export function appendEvents(writer: ChainWriter, events: readonly CatalogEvent[]): AppendedEvents {
   for (const event of events) {
@@ -171,7 +171,7 @@ export function appendEvents(writer: ChainWriter, events: readonly CatalogEvent[
  * `build` makes the event from a {@link FactStamp}, and it is called twice. First with the anchor
  * the founding would serve (`authorizingAnchor`) and an instant no clock gave, and the event it
  * returns is put to this door's four questions ({@link refuse}): a refusal returns here, and
- * nothing — no founding, no key, no session run — has been written. Then the anchor is founded
+ * nothing (no founding, no key, no session run) has been written. Then the anchor is founded
  * (`ensureFounded`, which also writes what the caller owes before its first fact:
  * `WriteContext.beforeTheFirstFact`), the clock is read, and the event is built again with both
  * and appended through {@link appendEvent}, which asks the same questions once more. None of them
@@ -180,11 +180,11 @@ export function appendEvents(writer: ChainWriter, events: readonly CatalogEvent[
  * was before this function existed.
  *
  * WHY THE EVENT IS BUILT TWICE AND NOT ONCE. Reusing the first build would put on the tail an
- * event stamped before the founding it follows — a shape no writer of this record produces, and
+ * event stamped before the founding it follows: a shape no writer of this record produces, and
  * one the ordering of the tails reads (`at` across tails). The second build is the fact as the
  * founding leaves it to be.
  *
- * `build` must not write, and must not mint anything the caller hands back — it runs once for a
+ * `build` must not write, and must not mint anything the caller hands back: it runs once for a
  * refusal that never lands. `every-append.test.ts` drives every operation that needs no setup on
  * a tree nobody wrote to, with a key root that holds no key, and holds both at nothing.
  */
@@ -199,7 +199,7 @@ export function appendFact(
 }
 
 /**
- * {@link appendFact} for facts that are one atom — a birth pair — appended through
+ * {@link appendFact} for facts that are one atom, a birth pair, appended through
  * {@link appendEvents}: every one is asked before the founding, and none lands unless all do.
  */
 export function appendFacts(
@@ -219,7 +219,7 @@ export function appendFacts(
 const ASKED_ONLY = new Date(0).toISOString();
 
 /**
- * What the door would say of a fact nothing is appending yet — built as {@link appendFact} builds
+ * What the door would say of a fact nothing is appending yet, built as {@link appendFact} builds
  * it for the asking, with no clock read and no founding: the refusal it earns, or undefined.
  */
 export function askTheDoor(
@@ -253,7 +253,7 @@ function foundedThenBuilt(
  * The message says THE FACT was not recorded, and not "nothing was". THIS SAID that "nothing"
  * would be a shade untrue: an operation founded this installation's anchor on its way in
  * (`ensureFounded`), and on a tree never written to that founding landed before the fact was
- * built, so a refusal here left "a freshly founded and otherwise empty tree behind" — called a
+ * built, so a refusal here left "a freshly founded and otherwise empty tree behind", called a
  * legitimate fact the next write would have needed anyway. Measured on the binary from an empty
  * HOME it was more than that: the refusal also made the machine's key, and the founding sat on a
  * tail with no checkpoint, so `verify --require=signed` failed for the whole project; through the

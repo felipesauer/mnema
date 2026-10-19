@@ -4,8 +4,8 @@
  * The pure folds produce the knowledge projections; this module writes them into
  * their tables and reads them back: captured memories into `memories`,
  * observations into `observations`, handoffs into `handoffs`, and link edges
- * into `links`. Like every projection store, it is a CACHE of the chain —
- * dropped and replayed on a rebuild, never authored directly — so nothing here
+ * into `links`. Like every projection store, it is a CACHE of the chain
+ * (dropped and replayed on a rebuild, never authored directly), so nothing here
  * is a source of truth.
  */
 
@@ -63,7 +63,7 @@ function retractionOf(row: RetractionColumns): { retracted?: NoteRetraction } {
 
 /**
  * The one condition every read that LISTS notes carries: a note the record took back is
- * not offered as standing knowledge. The reads by id do not carry it — they still serve the
+ * not offered as standing knowledge. The reads by id do not carry it: they still serve the
  * note, saying it was retracted.
  */
 const STANDING = 'retracted_at IS NULL';
@@ -232,13 +232,13 @@ export function materializeHandoffs(
 }
 
 /**
- * Lists the handoffs on the given task, oldest first — a TOTAL order, which
+ * Lists the handoffs on the given task, oldest first: a TOTAL order, which
  * `ORDER BY recorded_at` alone was not.
  *
  * A handoff row is the one row in this schema with no id of its own: it is a list
  * entry rather than an entity (see the table's comment), so the tie between two
- * handoffs recorded in the same millisecond — one batch script, or a chat restarted
- * twice — cannot be broken the way every other read here breaks it. With no second
+ * handoffs recorded in the same millisecond (one batch script, or a chat restarted
+ * twice) cannot be broken the way every other read here breaks it. With no second
  * column to name, the order was whatever the query plan happened to produce, and a
  * plan is not a contract: the index scan this read gets today returns insertion
  * order, and a plan that sorted into a temp b-tree would not have to.
@@ -248,8 +248,8 @@ export function materializeHandoffs(
  * total and deterministic for a tree. That makes the answer the record's order rather
  * than SQLite's, which is the same reason the other reads name `id`.
  *
- * Not `id DESC` like the newest-first reads, because this list is oldest first — a
- * handoff chain is read forwards — and an ascending tie-break is the one that agrees
+ * Not `id DESC` like the newest-first reads, because this list is oldest first (a
+ * handoff chain is read forwards) and an ascending tie-break is the one that agrees
  * with an ascending instant. See `newest-first.ts` for the sites where it does not.
  */
 export function listHandoffs(db: SqliteDatabase, task: string): HandoffProjection[] {
@@ -304,7 +304,7 @@ export function materializeLinks(db: SqliteDatabase, links: Iterable<LinkEdge>):
 }
 
 /**
- * Inserts the standing assertions of edges, in the order they came to stand — the order
+ * Inserts the standing assertions of edges, in the order they came to stand: the order
  * `rowid` keeps, and the one {@link advanceLinks} reads an edge's origin by. Called during a
  * rebuild after the table has been recreated empty. The caller owns the transaction.
  */
@@ -323,7 +323,7 @@ export function materializeLinkAssertions(
  * Brings `links` and `link_assertions` forward over events appended to the order they were
  * built from, ONE EVENT AT A TIME and in that order, applying the rule the replay applies: an
  * assertion stands from where it is made ({@link linkOf}), a retraction withdraws the ones of
- * its edge it {@link withdraws}, and an edge's row is the lowest of its assertions standing —
+ * its edge it {@link withdraws}, and an edge's row is the lowest of its assertions standing,
  * or no row at all, when none does. The caller owns the transaction.
  */
 export function advanceLinks(db: SqliteDatabase, arrived: readonly CatalogEvent[]): void {

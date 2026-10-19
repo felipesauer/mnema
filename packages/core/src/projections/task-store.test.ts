@@ -1,9 +1,9 @@
 /**
- * THE TASK PROJECTION ACROSS SQLITE — the boundary, asked directly.
+ * THE TASK PROJECTION ACROSS SQLITE: the boundary, asked directly.
  *
  * This module was at full line coverage with no test naming it. Three files execute it:
  * `cache.test.ts`, whose subject is that the cache is not the source; `advance.test.ts`,
- * which compares an advanced database against a replayed one — both sides running
+ * which compares an advanced database against a replayed one: both sides running
  * through this same code; and `tests/integration/cross-entity.test.ts`, which asks for
  * one field of one task. What crosses the boundary was never the subject of any of them.
  *
@@ -15,7 +15,7 @@
  * this file exists.
  *
  * THE STATES ARE THE WORKFLOW'S. `cache.test.ts` writes lowercase `'done'` and
- * `'in-progress'`, which the gate never produces — harmless there, because nothing it
+ * `'in-progress'`, which the gate never produces: harmless there, because nothing it
  * asserts is about a state's spelling, and fatal here, because the literal-match case
  * below is exactly about the spelling. Every state in this file comes from
  * `INITIAL_STATE` and from a row of `TRANSITIONS`, so a fixture cannot describe a task
@@ -23,7 +23,7 @@
  *
  * IDS ARE CHOSEN, NOT MINTED. `mintId` is time-ordered, so minted ids would make
  * insertion order and id order coincide and the ordering case would pass on the wrong
- * thing — which is the hole `cache.test.ts` fell into by writing `t-1` before `t-2`.
+ * thing, which is the hole `cache.test.ts` fell into by writing `t-1` before `t-2`.
  */
 
 import { DatabaseSync } from 'node:sqlite';
@@ -83,14 +83,14 @@ function threeOutOfOrder(): Map<string, TaskProjection> {
   return fold([...moved('t-c', 0), ...moved('t-b', 2), ...born('t-a', 4)]);
 }
 
-describe('task-store — what goes in comes back out', () => {
+describe('task-store: what goes in comes back out', () => {
   it('round-trips the fold exactly, with the two instants kept apart', () => {
     const folded = fold(moved('t-1', 0));
     materializeTasks(db, folded.values());
     // Against the fold's own object, so the two sides cannot drift together.
     expect(getTask(db, 't-1')).toStrictEqual(folded.get('t-1'));
     // The fixture MOVES the task, so birth time and last-moved time are different
-    // instants — a swap of the two columns is invisible over a task that never moved.
+    // instants: a swap of the two columns is invisible over a task that never moved.
     expect(getTask(db, 't-1')?.createdAt).toBe(at(0));
     expect(getTask(db, 't-1')?.updatedAt).toBe(at(1));
     expect(getTask(db, 't-1')?.state).toBe(READY);
@@ -107,7 +107,7 @@ describe('task-store — what goes in comes back out', () => {
   });
 });
 
-describe('task-store — what the table answers', () => {
+describe('task-store: what the table answers', () => {
   it('orders by id, not by the order the rows were written', () => {
     const folded = threeOutOfOrder();
     // Non-vacuity of the fixture: insertion order really is not id order.
@@ -116,7 +116,7 @@ describe('task-store — what the table answers', () => {
     expect(listTasks(db).map((task) => task.id)).toEqual(['t-a', 't-b', 't-c']);
   });
 
-  it('orders the by-state read by id too — it is a second query, not the same one', () => {
+  it('orders the by-state read by id too: it is a second query, not the same one', () => {
     materializeTasks(db, threeOutOfOrder().values());
     // Two tasks in ONE state, written in reverse id order. The rule is spelled twice in
     // this module, in two SQL strings, and the case above reaches only the first.
@@ -136,7 +136,7 @@ describe('task-store — what the table answers', () => {
     expect(listTasksByState(db, READY as string)).toHaveLength(2);
   });
 
-  it('answers an id nothing projected with null — the absent row, never the nearest', () => {
+  it('answers an id nothing projected with null: the absent row, never the nearest', () => {
     materializeTasks(db, threeOutOfOrder().values());
     // `t-0` sorts BELOW every stored id, so a lookup that became `id >= ?` would hand
     // back `t-a` instead of nothing. Downstream, `locate.ts` decides an id is a known
@@ -161,7 +161,7 @@ describe('task-store — what the table answers', () => {
 describe('the fixture describes a task the workflow could have written', () => {
   it('takes both states off the workflow rather than typing them', () => {
     // A state this product never produces would leave the literal-match case above
-    // asserting over a world that cannot exist — the defect a lowercase `'done'` in a
+    // asserting over a world that cannot exist: the defect a lowercase `'done'` in a
     // fixture already hid once in this directory.
     expect(INITIAL_STATE).toBe('DRAFT');
     expect(READY).toBe('READY');

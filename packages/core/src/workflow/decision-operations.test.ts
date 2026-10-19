@@ -69,7 +69,7 @@ function decisionsOf(r: string) {
   return projectDecisions(orderedEvents({ root: r }, upcasters));
 }
 
-describe('recordDecision — the frozen ADR label', () => {
+describe('recordDecision: the frozen ADR label', () => {
   it('assigns ADR-1 to the first decision and freezes it in the event', () => {
     const w = openChainForWriting(root, { keyRoot: root });
     const { clock } = fixedClock();
@@ -103,7 +103,7 @@ describe('recordDecision — the frozen ADR label', () => {
     tick();
     const second = mustRecord(ctx, { title: 'b', rationale: 'r' });
     // Two records are two decisions: the ids differ by construction, so the
-    // old reused-id refusal has nothing to guard — there is no way to name an
+    // old reused-id refusal has nothing to guard; there is no way to name an
     // existing id. Both are present, each with its own frozen label.
     expect(first.id).not.toBe(second.id);
     const d = decisionsOf(root);
@@ -137,7 +137,7 @@ describe('recordDecision — the frozen ADR label', () => {
   });
 });
 
-describe('recordDecision — what the decision turned down', () => {
+describe('recordDecision: what the decision turned down', () => {
   it('records the alternatives it was given, and projects them', () => {
     const w = openChainForWriting(root, { keyRoot: root });
     const { clock } = fixedClock();
@@ -173,7 +173,7 @@ describe('recordDecision — what the decision turned down', () => {
 
   it('refuses a blank alternatives rather than recording an empty field', () => {
     // The write asks what a READ would accept, and a read refuses a blank optional
-    // string — so the surface's own emptiness check is not the only thing standing
+    // string, so the surface's own emptiness check is not the only thing standing
     // between a blank value and the chain.
     const w = openChainForWriting(root, { keyRoot: root });
     const { clock } = fixedClock();
@@ -195,7 +195,7 @@ describe('the frozen number does not slip when a concurrent decision merges in',
   // Two clones work offline. Clone A records d-aaa then
   // d-ccc and cites "ADR-2" (d-ccc). Clone B records d-bbb concurrently. After
   // the offline merge, a number DERIVED on read would renumber d-ccc to ADR-3
-  // and make "ADR-2" point at d-bbb — the citation would lie. Because the
+  // and make "ADR-2" point at d-bbb: the citation would lie. Because the
   // number is FROZEN at write time, d-ccc stays ADR-2 forever.
   it('a citation stays pointed at the decision it was written for', () => {
     const rootB = mkdtempSync(join(tmpdir(), 'mnema-decision-b-'));
@@ -219,7 +219,7 @@ describe('the frozen number does not slip when a concurrent decision merges in',
     cpSync(join(rootB, 'tails'), join(root, 'tails'), { recursive: true });
     cpSync(join(rootB, 'keys'), join(root, 'keys'), { recursive: true });
 
-    // After the merge the cited decision is STILL ADR-2 — the citation did not
+    // After the merge the cited decision is STILL ADR-2: the citation did not
     // slip, even though B's concurrent decision also carries ADR-1.
     const merged = decisionsOf(root);
     expect(merged.get(cited.id)?.adr).toBe('ADR-2');
@@ -294,7 +294,7 @@ describe('the decision transitions are gated against the chain', () => {
   });
 });
 
-describe('supersede — the multi-entity move, with existence enforced', () => {
+describe('supersede: the multi-entity move, with existence enforced', () => {
   /** Two recorded decisions; returns their minted ids (old, new) and the ctx. */
   function twoDecisions(): {
     ctx: DecisionWriteContext;
@@ -346,7 +346,7 @@ describe('supersede — the multi-entity move, with existence enforced', () => {
       fields: { reason: 'r' },
     });
     expect(result).toMatchObject({ ok: false, code: 'UNKNOWN_BY' });
-    // Nothing was written — the subject is still proposed.
+    // Nothing was written: the subject is still proposed.
     expect(decisionsOf(root).get(oldId)?.state).toBe('proposed');
   });
 

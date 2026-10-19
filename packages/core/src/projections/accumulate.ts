@@ -6,7 +6,7 @@
  * that name it, and between events it holds an ACCUMULATOR that is not yet a projection:
  * a task whose `task.created` has not been seen has no title, and is not projected until it
  * has all it needs (see each fold's `finish`). That in-between state is what a cache that
- * persists its tables has to persist too — a transition that arrives before the birth it
+ * persists its tables has to persist too: a transition that arrives before the birth it
  * belongs to (two tails, one entity) finds an accumulator, not a row. The step is therefore
  * the whole of the rule, and everything that differs between a replay and an advance is
  * where the accumulator comes from:
@@ -29,7 +29,7 @@ export interface AccumulatorFold<A, P> {
   create(): A;
   /**
    * Applies one event. `of(id)` hands back the accumulator of ANY entity the event
-   * touches — a supersede touches two — creating it when the entity is new.
+   * touches, a supersede touches two, creating it when the entity is new.
    */
   step(of: (id: string) => A, event: CatalogEvent): void;
   /** The projection an accumulator amounts to, or undefined while the entity is incomplete. */
@@ -46,7 +46,7 @@ export interface Accumulated<A, P> {
   readonly projections: Map<string, P>;
 }
 
-/** Folds a whole ordered stream — the replay's way, every accumulator starting empty. */
+/** Folds a whole ordered stream: the replay's way, every accumulator starting empty. */
 export function accumulate<A, P>(
   fold: AccumulatorFold<A, P>,
   events: readonly CatalogEvent[],
@@ -69,7 +69,7 @@ export function accumulate<A, P>(
   return { accumulators, projections };
 }
 
-/** The encoding of an accumulator that is plain JSON — every fold's but the run's. */
+/** The encoding of an accumulator that is plain JSON: every fold's but the run's. */
 export function jsonEncoding<A>(): {
   encode(acc: A): string;
   decode(stored: string): A;

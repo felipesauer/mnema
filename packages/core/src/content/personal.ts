@@ -2,7 +2,7 @@
  * Personal data that leaves the text before the text is recorded: an email address.
  *
  * The record is append-only and, in the public tree, committed and cloned. A person's address is
- * not a credential, so it is not rotated — but it cannot be taken back either, and nothing in a
+ * not a credential, so it is not rotated, but it cannot be taken back either, and nothing in a
  * decision needs it: the `mnid` already says who wrote. So the address is replaced by a marker and
  * the write says so, the way a credential is.
  *

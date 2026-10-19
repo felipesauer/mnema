@@ -2,8 +2,8 @@
  * An agent key, through the doors that make one: a request made where the agent's key lives, a
  * member's vouch, and what the record then does with it.
  *
- * Driven the way the surface drives it — the agent's machine makes a real request at its own key
- * root, a member reads it — so nothing is asserted about material the real path would not produce.
+ * Driven the way the surface drives it (the agent's machine makes a real request at its own key
+ * root, a member reads it), so nothing is asserted about material the real path would not produce.
  * What the FORMAT holds the facts to is `second-reader-agrees-on-enrolment.test.ts`; what is held
  * here is what the product's doors do before a fact exists, and what the roster, the adoption of an
  * identity and the choice of a key per tree make of the facts afterwards.
@@ -134,7 +134,7 @@ function count(kind: string): number {
 
 const query = () => ({ tree, upcasters });
 
-describe('requestAgentEnrollment — the agent asks, at its own key root', () => {
+describe('requestAgentEnrollment: the agent asks, at its own key root', () => {
   it('makes the key at the agent root, in the clear, and nothing at the person root', () => {
     const { anchor } = person();
     const keyRoot = tmp('mnema-agents-key-');
@@ -178,7 +178,7 @@ describe('requestAgentEnrollment — the agent asks, at its own key root', () =>
   });
 });
 
-describe('enrollAgent — the name is held to what this product enrols', () => {
+describe('enrollAgent: the name is held to what this product enrols', () => {
   it('refuses a name outside the set, with nothing appended', () => {
     const { m, anchor } = person();
     const request = agentRequest(anchor, 'claude');
@@ -197,7 +197,7 @@ describe('enrollAgent — the name is held to what this product enrols', () => {
   });
 });
 
-describe('enrollAgentFromRequest — a member vouches for an agent', () => {
+describe('enrollAgentFromRequest: a member vouches for an agent', () => {
   it('appends the vouch, commits the half, and the agent then writes as the identity under its name', () => {
     const { m, anchor } = person();
     const agent = agentRequest(anchor, 'claude');
@@ -495,7 +495,7 @@ describe('the last key of an identity is the last that is not an agent’s', () 
   });
 });
 
-describe('retireAgentKey — the agent signs nothing from then on', () => {
+describe('retireAgentKey: the agent signs nothing from then on', () => {
   it('retires an agent, checkpoints it, and the verdict holds; the agent is refused a write after', () => {
     const { m, anchor } = person();
     const claude = agentRequest(anchor, 'claude');

@@ -1,5 +1,5 @@
 /**
- * The projection cache schema — one flat baseline, never a chain of migrations.
+ * The projection cache schema: one flat baseline, never a chain of migrations.
  *
  * Because the cache is derived from the chain and thrown away when its shape
  * changes, the schema is an implementation detail, not a durable contract.
@@ -8,7 +8,7 @@
  * column means editing the CREATE below and rebuilding. A cache kept on disk
  * finds out that its shape is not this code's from the stamp it carries
  * (`cache_meta`, `projections/cache-meta.ts`), which is a digest of the code and
- * this schema — so there is still no number to remember to bump.
+ * this schema, so there is still no number to remember to bump.
  *
  * Every table here is a PROJECTION of events. It holds current state for fast
  * relational queries; the events remain the source of truth in the chain.
@@ -41,7 +41,7 @@ export const PROJECTION_TABLES = [
   // ever switched, and no row at all for one that never was.
   'channel_switches',
   // What a cache needs in order to be brought forward over what arrived without
-  // reading the record again — each is derived like every table above, and each is
+  // reading the record again: each is derived like every table above, and each is
   // dropped and rebuilt with them. See the notes on the tables below.
   'fold_state',
   'search_rows',
@@ -51,7 +51,7 @@ export const PROJECTION_TABLES = [
 
 /**
  * One of the projection tables, by name. It is derived from the list above rather
- * than written twice, so a table added there is immediately a legal value here —
+ * than written twice, so a table added there is immediately a legal value here,
  * and a name that is NOT a table cannot be spelled.
  */
 export type ProjectionTable = (typeof PROJECTION_TABLES)[number];
@@ -478,7 +478,7 @@ export function ensureSchema(db: SqliteDatabase): void {
  *
  * With no argument it drops them ALL, which is what a rebuild wants. Given a set it
  * drops just those, which is what bringing a cache forward over events that feed
- * only some of them wants — and the DROP order is still this module's own (the
+ * only some of them wants, and the DROP order is still this module's own (the
  * reverse of creation), never the caller's, so a subset cannot be dropped in an
  * order the schema does not allow.
  */

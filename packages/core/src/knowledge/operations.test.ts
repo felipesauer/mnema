@@ -28,7 +28,7 @@ function ok<T extends { ok: boolean }>(result: T): Extract<T, { ok: true }> {
   return result as Extract<T, { ok: true }>;
 }
 
-describe('captureMemory — the operation', () => {
+describe('captureMemory: the operation', () => {
   let chainRoot: string;
 
   beforeEach(() => {
@@ -46,7 +46,7 @@ describe('captureMemory — the operation', () => {
     return { writer, layout: { root }, upcasters };
   }
 
-  it('mints the memory id — the caller never supplies it', () => {
+  it('mints the memory id: the caller never supplies it', () => {
     const ctx = ctxFor(chainRoot);
     const a = ok(captureMemory(ctx, { content: 'first' }));
     const b = ok(captureMemory(ctx, { content: 'second' }));
@@ -58,7 +58,7 @@ describe('captureMemory — the operation', () => {
     expect(a.id).toMatch(/^[0-9a-f]{8}-[0-9a-f]{4}-7[0-9a-f]{3}-[0-9a-f]{4}-[0-9a-f]{12}$/);
   });
 
-  it('appends exactly ONE event — a point-in-time fact, no birth pair, no state', () => {
+  it('appends exactly ONE event: a point-in-time fact, no birth pair, no state', () => {
     const ctx = ctxFor(chainRoot);
     const captured = captureMemory(ctx, { content: 'a lone fact' });
     if (!captured.ok) throw new Error('capture failed');
@@ -84,7 +84,7 @@ describe('captureMemory — the operation', () => {
   });
 });
 
-describe('recordObservation — the operation', () => {
+describe('recordObservation: the operation', () => {
   let chainRoot: string;
   beforeEach(() => {
     chainRoot = mkdtempSync(join(tmpdir(), 'mnema-obs-'));
@@ -97,7 +97,7 @@ describe('recordObservation — the operation', () => {
     return { writer, layout: { root }, upcasters };
   }
 
-  it('mints the observation id — the caller never supplies it', () => {
+  it('mints the observation id: the caller never supplies it', () => {
     const ctx = ctxFor(chainRoot);
     const a = ok(recordObservation(ctx, { about: 't-1', topic: 'x', text: 'first' }));
     const b = ok(recordObservation(ctx, { about: 't-1', topic: 'y', text: 'second' }));
@@ -122,7 +122,7 @@ describe('recordObservation — the operation', () => {
     expect(obs?.who).not.toBe('claude');
   });
 
-  it('does NOT refuse an absent `about` — a cross-tree assertion is honest', () => {
+  it('does NOT refuse an absent `about`: a cross-tree assertion is honest', () => {
     const ctx = ctxFor(chainRoot);
     // Nothing named `t-nowhere` exists in this tree, yet the observation stands.
     const rec = ok(
@@ -135,7 +135,7 @@ describe('recordObservation — the operation', () => {
   });
 });
 
-describe('recordHandoff — the operation', () => {
+describe('recordHandoff: the operation', () => {
   let chainRoot: string;
   beforeEach(() => {
     chainRoot = mkdtempSync(join(tmpdir(), 'mnema-handoff-'));
@@ -167,7 +167,7 @@ describe('recordHandoff — the operation', () => {
   });
 });
 
-describe('linkKnowledge — the relational operation', () => {
+describe('linkKnowledge: the relational operation', () => {
   let chainRoot: string;
   beforeEach(() => {
     chainRoot = mkdtempSync(join(tmpdir(), 'mnema-link-'));
@@ -189,7 +189,7 @@ describe('linkKnowledge — the relational operation', () => {
     expect(edges.filter((e) => e.target === 't-1')).toHaveLength(1);
   });
 
-  it('does NOT refuse a dangling target — unlike a supersede', () => {
+  it('does NOT refuse a dangling target: unlike a supersede', () => {
     const ctx = ctxFor(chainRoot);
     // `t-absent` has no record in this tree; the link is still written. This is
     // the one behavior that MUST differ from supersedeDecision's UNKNOWN_BY.
@@ -205,7 +205,7 @@ describe('linkKnowledge — the relational operation', () => {
   });
 });
 
-describe('knowledge facts — the authority invariant refuses at the door', () => {
+describe('knowledge facts: the authority invariant refuses at the door', () => {
   let chainRoot: string;
 
   beforeEach(() => {
@@ -224,8 +224,8 @@ describe('knowledge facts — the authority invariant refuses at the door', () =
   /**
    * A fact whose executing agent IS the authorizing anchor has nothing outside
    * the agent behind it. The verifier applies that rule to every kind, so a fact
-   * like this entering the chain would be a permanent break in an append-only log
-   * — there is no later repair. The write must refuse instead, and refuse the
+   * like this entering the chain would be a permanent break in an append-only log:
+   * there is no later repair. The write must refuse instead, and refuse the
    * same way a transition does.
    */
   it('refuses all four facts when the executing agent IS the authorizing anchor', () => {
@@ -245,7 +245,7 @@ describe('knowledge facts — the authority invariant refuses at the door', () =
     }
   });
 
-  it('appends NOTHING when it refuses — not even the founding', () => {
+  it('appends NOTHING when it refuses, not even the founding', () => {
     const ctx = ctxFor(chainRoot);
     captureMemory(ctx, { content: 'x', which: ctx.writer.anchor });
     // The check runs before the id is minted and before the anchor is founded, so
@@ -269,7 +269,7 @@ describe('knowledge facts — the authority invariant refuses at the door', () =
   });
 });
 
-describe('captureMemory — routing across the three trees (PoC)', () => {
+describe('captureMemory: routing across the three trees (PoC)', () => {
   let sandbox: string;
   let trees: ResolvedTrees;
 
@@ -309,7 +309,7 @@ describe('captureMemory — routing across the three trees (PoC)', () => {
 
     expect(root).toBe(trees.projectPrivate);
     expect(projectKnowledge(orderedEvents({ root }, upcasters)).has(captured.id)).toBe(true);
-    // The team's public tree stays clean — a private capture never leaks.
+    // The team's public tree stays clean: a private capture never leaks.
     expect(existsSync(join(trees.projectPublic as string, 'tails'))).toBe(false);
   });
 

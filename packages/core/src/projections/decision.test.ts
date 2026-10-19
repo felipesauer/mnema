@@ -23,7 +23,7 @@ function birth(id: string, adr: string, n = 0, alternatives?: string): CatalogEv
   ];
 }
 
-describe('projectDecisions — the fold', () => {
+describe('projectDecisions: the fold', () => {
   it('projects a recorded decision in its initial state', () => {
     const d = projectDecisions(birth('d-1', 'ADR-1'));
     expect(d.get('d-1')).toEqual({
@@ -125,7 +125,7 @@ describe('projectDecisions — the fold', () => {
   });
 });
 
-describe('projectDecisions — supersede updates both sides', () => {
+describe('projectDecisions: supersede updates both sides', () => {
   it('marks the subject superseded and links both directions', () => {
     const events = [
       ...birth('d-1', 'ADR-1', 0),
@@ -170,7 +170,7 @@ describe('projectDecisions — supersede updates both sides', () => {
   });
 });
 
-describe('adrCollisions — the label collision detector', () => {
+describe('adrCollisions: the label collision detector', () => {
   const mk = (id: string, adr: string): DecisionProjection => ({
     id,
     adr,
@@ -191,7 +191,7 @@ describe('adrCollisions — the label collision detector', () => {
   });
 
   it('reports THREE holders as one finding of three ids, never as a pair', () => {
-    // Three clones is not an exotic case — it is three people. The finding is keyed by
+    // Three clones is not an exotic case: it is three people. The finding is keyed by
     // the LABEL, so the answer grows an id rather than splitting into pairs: a reader
     // told `ADR-7` is held twice, when a third rule holds it, would reconcile two of
     // three and believe they were done.

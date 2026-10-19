@@ -19,7 +19,7 @@ interface TaskRow {
   readonly state: string;
   readonly created_at: string;
   readonly updated_at: string;
-  /** What each move said, JSON-encoded — null when no move said anything. */
+  /** What each move said, JSON-encoded: null when no move said anything. */
   readonly proof: string | null;
 }
 

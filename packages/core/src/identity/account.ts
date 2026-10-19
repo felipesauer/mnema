@@ -1,10 +1,10 @@
 /**
- * The account an identity names on a code host — what the `account.linked` fact carries, and
+ * The account an identity names on a code host: what the `account.linked` fact carries, and
  * the one rule both of its sides keep.
  *
  * TWO SERVICES. `github` is the host whose account publishes its SSH keys at an address anybody
  * can ask (`github.com/<name>.keys`). `sigstore` is the identity a Sigstore certificate names: an
- * e-mail address, or the workflow of a repository in GitHub Actions — what a bundle in `witness/`
+ * e-mail address, or the workflow of a repository in GitHub Actions; what a bundle in `witness/`
  * says signed, which speaks for this identity only where this identity named the same one. The
  * format takes any service name; this product writes and reads these two.
  *
@@ -15,7 +15,7 @@
  * a repository's, not a person's, and is kept as it is.
  *
  * ONE RULE, ASKED TWICE. The write refuses a name GitHub would not have issued, and the reading
- * asks the same thing again before it puts a recorded name into an address — the record can
+ * asks the same thing again before it puts a recorded name into an address: the record can
  * hold whatever a writer of the format put there, and a name with a `/` or a `?` in it would
  * send the question somewhere other than that account.
  */

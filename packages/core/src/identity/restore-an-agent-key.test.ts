@@ -1,6 +1,6 @@
 /**
  * `restoreAgentKey` puts the key of an agent into the agent's own folder on the machine it will
- * sign from — a CI runner that has no home to keep it in — and nowhere else.
+ * sign from (a CI runner that has no home to keep it in) and nowhere else.
  *
  * The folder is the one the agent's host reads (`agentKeyRoot`), so the key lands there and the
  * person's key root, the tree's anchors and the record stay exactly as they were: the restore

@@ -3,13 +3,13 @@
  *
  * `enrollAgentFromRequest` judges on a reading of the record and then asks the record once more
  * whether the key is a member of an identity in it. When another `key enroll --agent` lands
- * between the two, the second question finds the key proven — in the ROLE OF AN AGENT, which is
- * what the other enrolment just made it — and answered that the key "is already a member of an
+ * between the two, the second question finds the key proven (in the ROLE OF AN AGENT, which is
+ * what the other enrolment just made it) and answered that the key "is already a member of an
  * identity in this record" and refused, naming a different power than the one asked for. The key
  * is what was asked to be enrolled, as the name it was asked for: said so, with nothing appended.
  *
  * The moment between is made by the test, deterministically: the other enrolment is written when the
- * signer is asked who it is for the Nth time, the one after the first reading — N found by a run
+ * signer is asked who it is for the Nth time, the one after the first reading, N found by a run
  * that makes no other write, so the test does not depend on how many times the core asks.
  */
 

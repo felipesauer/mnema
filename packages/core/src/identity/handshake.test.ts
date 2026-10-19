@@ -45,12 +45,12 @@ function tmp(prefix: string): string {
   return dir;
 }
 
-describe('the request text — a round trip, and what it refuses', () => {
+describe('the request text: a round trip, and what it refuses', () => {
   it('carries the public key and the signature, and derives the fingerprint on arrival', () => {
     const key = generateKeyPair();
     const line = encodeKeyRequest({ key, reverseSig: 'ab12' });
 
-    // One line, prefixed and version-tagged, with no whitespace of its own — so it
+    // One line, prefixed and version-tagged, with no whitespace of its own, so it
     // survives a copy-paste that would mangle raw PEM newlines.
     expect(line.startsWith('mnema-key-request:1:')).toBe(true);
     expect(line).not.toMatch(/\s/);
@@ -93,12 +93,12 @@ describe('the request text — a round trip, and what it refuses', () => {
   });
 });
 
-/** A request line whose payload is exactly the given object — for the refusals. */
+/** A request line whose payload is exactly the given object: for the refusals. */
 function payload(body: Record<string, unknown>): string {
   return `mnema-key-request:1:${Buffer.from(JSON.stringify(body), 'utf-8').toString('base64url')}`;
 }
 
-describe('requestEnrollment — what a joining machine produces', () => {
+describe('requestEnrollment: what a joining machine produces', () => {
   it("mints this machine's key on first use, and the signature proves consent", () => {
     expect(listPrivateKeyFingerprints({ root: keyRoot })).toEqual([]);
 
@@ -109,7 +109,7 @@ describe('requestEnrollment — what a joining machine produces', () => {
     const fingerprint = (made as { fingerprint: string }).fingerprint;
     expect(request?.key.fingerprint).toBe(fingerprint);
     // The signature is over `enroll:<anchor>:<fp>` and verifies against the very
-    // key the request carries — the part only this machine could have produced.
+    // key the request carries: the part only this machine could have produced.
     expect(
       verifySignature(
         enrollmentMessage(ANCHOR, fingerprint),
@@ -126,7 +126,7 @@ describe('requestEnrollment — what a joining machine produces', () => {
     });
   });
 
-  it('records NO anchor — asking is not being accepted', () => {
+  it('records NO anchor: asking is not being accepted', () => {
     const made = requestEnrollment({ anchor: ANCHOR, keyRoot });
     const fingerprint = (made as { fingerprint: string }).fingerprint;
 

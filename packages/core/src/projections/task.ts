@@ -1,7 +1,7 @@
 /**
  * The task projection: fold an ordered event stream into current task state.
  *
- * This is a PURE, deterministic replay. It does not validate — the workflow
+ * This is a PURE, deterministic replay. It does not validate: the workflow
  * gate ran at write time, and every reader leaves out of the stream it hands a
  * fold any move the workflow does not allow (`order.ts`, FORMAT.md §6.7); a
  * projection replays what is left. Given the same ordered
@@ -14,7 +14,7 @@
  *   - its TITLE is from `task.created`.
  *
  * A subject with transitions but no `task.created` does not exist and is not
- * projected — state without existence is not a task. State is read from the
+ * projected: state without existence is not a task. State is read from the
  * literal `to` of the moves the workflow allows; the workflow is part of the
  * format (FORMAT.md §6.7), so a fact written long ago is judged by the tables a
  * record of its version is judged by, not by rules a product changed on its own.
@@ -36,7 +36,7 @@ export interface TaskProjection {
   /** `at` of the last transition. */
   readonly updatedAt: string;
   /**
-   * What each move of this task SAID, in the chain's own order — absent when no
+   * What each move of this task SAID, in the chain's own order: absent when no
    * transition ever carried proof. See `projections/proof.ts` for why it is every
    * move and not the last one.
    */
@@ -81,7 +81,7 @@ export const taskFold: AccumulatorFold<TaskAccumulator, TaskProjection> = {
   },
   finish(id, entry) {
     // Existence needs the created event; state needs a transition. A subject
-    // missing either is not a complete task and is not projected — never given
+    // missing either is not a complete task and is not projected, never given
     // a fabricated state.
     if (
       entry.title === undefined ||

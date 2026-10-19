@@ -3,7 +3,7 @@
  * `advance.ts`, which brings a cache forward over what ARRIVED and leaves the rest alone.
  *
  * This is the operation that PROVES the SQLite database is a cache and not a
- * source. Nothing in it is authored directly — every row comes from replaying
+ * source. Nothing in it is authored directly: every row comes from replaying
  * events. Drop the tables, recreate the empty schema, fold the chain's ordered
  * events into projections, and materialize them. Run it any time the cache is
  * suspect, stale, or its shape changed: the result is defined entirely by the
@@ -11,7 +11,7 @@
  *
  * Two things keep it all-or-nothing. The chain is read and folded BEFORE the
  * transaction opens, so an unreadable chain (a corrupt line) throws without
- * touching the cache — the previous cache stays intact. Then the drop, recreate,
+ * touching the cache: the previous cache stays intact. Then the drop, recreate,
  * and materialize run in one transaction; SQLite's DDL is transactional, so a
  * failure mid-write rolls back to the old cache rather than leaving a
  * half-rebuilt one.
@@ -20,7 +20,7 @@
  *
  * The advance exists because of a measurement, and the measurement said the folds are not
  * the cost. On a realistic record (207 events, 148 KB) a rebuild is 4.8 ms and its nine
- * folds are 0.06 ms of that — 1%. The cost is READING the chain (1.4 ms) and WRITING the
+ * folds are 0.06 ms of that: 1%. The cost is READING the chain (1.4 ms) and WRITING the
  * rows (2.5 ms, of which the reference index alone is 1.1 ms and the full-text index
  * 0.55 ms), plus 0.9 ms of DDL that is flat in the record. So the lever is not folding
  * less: it is not re-reading a chain the cache already holds, and not rewriting rows the
@@ -74,7 +74,7 @@ import {
 import { taskFold } from './task.js';
 import { materializeTasks } from './task-store.js';
 
-/** Every projection of one ordered stream, folded — and the accumulators the entity folds left. */
+/** Every projection of one ordered stream, folded, and the accumulators the entity folds left. */
 interface Folded {
   readonly events: readonly CatalogEvent[];
   readonly tasks: Accumulated<ReturnType<typeof taskFold.create>, ProjectionOf<typeof taskFold>>;
@@ -97,7 +97,7 @@ type ProjectionOf<F> = F extends { finish(id: string, acc: never): infer P }
 /**
  * Folds every projection from one ordered stream. THE fold block of a replay: every
  * projection folds the same ordered stream once, so they always agree on what the chain
- * says. It folds all of them even when only some will be written — a rebuild writes them all.
+ * says. It folds all of them even when only some will be written: a rebuild writes them all.
  */
 function foldAll(events: readonly CatalogEvent[]): Folded {
   // The edges and who still asserts them, by one rule: `projectLinks` is the edges of the second.
@@ -157,7 +157,7 @@ function materialize(
       return;
     case 'record_search':
       // The full-text index is filled from the projections just folded, not from a
-      // second pass over the chain: one read, one fold, two views — so the index and
+      // second pass over the chain: one read, one fold, two views, so the index and
       // the tables cannot come to disagree about what the chain says.
       materializeSearch(db, {
         tasks: folded.tasks.projections.values(),
@@ -217,7 +217,7 @@ const FOLDED_TABLES: readonly Exclude<ProjectionTable, 'refs'>[] = [
  * Drops and replays EVERY projection from an ordered stream, transactionally.
  *
  * The stream is the caller's: whoever holds the order holds the whole input, and
- * a chain that failed to read never reaches here — which is what leaves the
+ * a chain that failed to read never reaches here, which is what leaves the
  * existing cache untouched when a line is corrupt.
  */
 export function rebuild(db: SqliteDatabase, events: readonly CatalogEvent[]): void {
@@ -228,7 +228,7 @@ export function rebuild(db: SqliteDatabase, events: readonly CatalogEvent[]): vo
     for (const table of FOLDED_TABLES) materialize(db, table, folded);
     // The reference index is the one materialization fed by the STREAM rather
     // than by a fold: it is one row per appearance, not one per entity, so the
-    // events themselves are its source. Same read, same order — an index built
+    // events themselves are its source. Same read, same order: an index built
     // from a second pass could disagree with the tables about both.
     materializeReferences(db, events);
   });

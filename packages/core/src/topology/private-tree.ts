@@ -1,5 +1,5 @@
 /**
- * Whether git would STAGE the private tree — asked of git, and not of a file a third party
+ * Whether git would STAGE the private tree: asked of git, and not of a file a third party
  * controls.
  *
  * THE PREMISE THIS REPLACES. A write into the private tree answered *"it is not committed and
@@ -15,12 +15,12 @@
  * parent's, `.git/info/exclude`, the user's global file), which a read of one file never did.
  *
  * INSIDE A REPOSITORY THE TREE IS NO LONGER IN THE WORKING TREE: discovery puts it under the
- * repository's common git directory (`git-place.ts`), and no `git add` stages a path there — when
+ * repository's common git directory (`git-place.ts`), and no `git add` stages a path there, when
  * that directory is the top's own `.git`, or lies outside the working tree as the file system
  * resolves it. A tree found there is answered `outside-the-worktree` without asking git, and the
  * write goes on. A git directory a `.git` file or a link places INSIDE the working tree is not
  * out of reach of `git add`, and is asked of git like any other path.
- * Anywhere else — the old `.mnema/private/`, or any private tree inside a working tree — git is
+ * Anywhere else (the old `.mnema/private/`, or any private tree inside a working tree) git is
  * asked as before, and a tree it would stage is still refused.
  *
  * WITHOUT GIT, NOTHING CHANGES. Outside a repository, with git absent, or when git cannot
@@ -28,7 +28,7 @@
  * it did: there is no commit to leak into when there is no repository, and a refusal on a
  * guess would stop everyone whose git is merely unusual. `a-private-write-asks-git.test.ts`
  * holds all four. ONE EXCEPTION FAILS CLOSED: where the tree is under a git directory already
- * known to be inside the working tree, any answer but "ignored" — 128, a timeout, no git — is
+ * known to be inside the working tree, any answer but "ignored" (128, a timeout, no git) is
  * `visible`, because the tree is then where `git add` reaches. Git is asked about the path as
  * the file system resolves it, since it refuses a path spelled through a `.git` link.
  *
@@ -64,7 +64,7 @@ const GIT_BUDGET_MS = 5_000;
  *
  * Asked about a PATH INSIDE the tree, not the directory, because `/private/` is a directory
  * pattern: git matches it against a path under it, and against a directory only when it can
- * tell it is one — which it cannot for a tree that has not been written yet.
+ * tell it is one, which it cannot for a tree that has not been written yet.
  */
 export function privateTreeVisibility(trees: ResolvedTrees): PrivateTreeVisibility {
   if (trees.projectPublic === undefined || trees.projectPrivate === undefined) {
