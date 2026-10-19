@@ -6,13 +6,13 @@
  * pattern's NAME was closed in `served-patterns.ts`, a project's DIRECTORY in
  * `verify --workspace`, and the id in a REFUSAL in `no-such-record.ts`. What was left is
  * the line a verb prints when it FOUND what it was asked for, and it is the worst of the
- * four rather than the mildest: `next-actions` writes `Task <id> EM_DASH 2 legal move(s):`
+ * four rather than the mildest: `next-actions` writes `Task <id> <em dash> 2 legal move(s):`
  * and then one line per move UNDER it, which is exactly the shape `oneLine`'s own doc names
  * as the one a reader mis-attributes. A break in that id does not produce a stray line:
  * it produces a HEADING with items beneath it, about a task nobody named.
  *
  * THE DISCRIMINANT IS THE ORIGIN OF THE VALUE, NEVER THE PHRASE. This family has no
- * sentence in common: `Linked a EM_DASH rel→ b`, `Recorded observation <id> about <x>`,
+ * sentence in common: `Linked a <em dash>rel→ b`, `Recorded observation <id> about <x>`,
  * `Initialized mnema project at <path>` share nothing but the question: CAN THIS VALUE
  * HOLD A NEWLINE? A value this product minted cannot: a uuid, an alias
  * (`<prefix>-<hex>`), an `ADR-<n>`, a fingerprint, an anchor (`mnid:` and 64 hex, which
@@ -35,11 +35,11 @@
  *
  * THE LITERAL CHUNKS ARE THE PRODUCT'S WORDS, AND THE SPACES IN THEM MATTER. `oneLine`
  * trims, so a fragment composed before it reaches an interpolation loses the space it
- * opens with: `for ${agent}${goal === undefined ? '' : ` EM_DASH ${goal}`}` printed
- * `for a EM_DASH g` and would print `for aEM_DASH g`. The rule that follows is the one the call
+ * opens with: `for ${agent}${goal === undefined ? '' : ` <em dash> ${goal}`}` printed
+ * `for a <em dash> g` and would print `for a<em dash> g`. The rule that follows is the one the call
  * sites now hold (INTERPOLATE THE VALUE, never a fragment that carries its own
  * punctuation) and the two sites that used to (`run start`, `focus`) were rewritten so
- * the ` EM_DASH ` is a chunk of a template rather than the head of a value. Those two are the
+ * the ` <em dash> ` is a chunk of a template rather than the head of a value. Those two are the
  * ones `tests/a-line-of-success-is-one-line.test.ts` compares byte for byte against the
  * literal they printed before; every OTHER line of every touched verb is held by the
  * suite it already had, and by the goldens, which were not regenerated.
@@ -79,7 +79,7 @@ import { oneLine } from '../one-line.js';
  * The line, with every value on it collapsed to one line and every word of it left
  * exactly as this surface wrote it.
  *
- * Used as a template tag (``onOneLine`Task ${id} EM_DASH ${n} legal move(s):` ``), so the two
+ * Used as a template tag (``onOneLine`Task ${id} <em dash> ${n} legal move(s):` ``), so the two
  * halves are told apart by the syntax itself: what is between the interpolations is the
  * product speaking, and what is inside them came from somewhere else.
  *
