@@ -970,6 +970,7 @@ const CLAUSES_PER_FILE: Readonly<Record<string, number>> = {
   'packages/code/tests/a-read-asked-again-draws-what-changed.test.ts': 19,
   'packages/code/tests/a-read-by-path-finds-the-link.test.ts': 16,
   'packages/code/tests/a-read-by-path-in-a-workspace-of-two-roots.test.ts': 10,
+  'packages/code/tests/a-record-no-tail-holds-is-refused.test.ts': 6,
   'packages/code/tests/a-refresh-landing-in-a-project-signs-as-the-agent.test.ts': 10,
   'packages/code/tests/a-refusal-is-one-line.test.ts': 7,
   'packages/code/tests/a-refusal-leaves-nothing.test.ts': 13,
