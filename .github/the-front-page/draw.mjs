@@ -445,7 +445,9 @@ function howItWorks(theme) {
       h,
       'How mnema works: record, rule, hand over, verify',
       'How mnema works',
-      `<ellipse cx="${w / 2}" cy="${mid}" rx="${w / 2 - 20}" ry="${mid - top}" fill="url(#glow)"/>`,
+      // Half the family's glow: the grey lines of each card lie over it, and keep four and a half
+      // to one on a dark page.
+      `<ellipse cx="${w / 2}" cy="${mid}" rx="${w / 2 - 20}" ry="${mid - top}" fill="url(#glow)" opacity="0.5"/>`,
     ),
     ...out,
     '</svg>',
@@ -573,11 +575,12 @@ function howMnemaFits(blocks, theme) {
   /** @type {string[]} */
   const body = [];
 
-  // The two panels, tonal cards with a title over a rule, and the hub, the wordmark on its card.
+  // The two panels, tonal cards with a title over a rule in the card's own edge, and the hub, the
+  // wordmark on its card.
   const panel = (/** @type {Frame} */ c, /** @type {string} */ title) => [
     card(s, c),
     sans(s, title, c.x + 18, c.y + 26, 'label'),
-    `<path d="M${c.x + 0.5} ${c.y + 40.5}H${c.x + c.w - 0.5}" stroke="${s.border}"/>`,
+    `<path d="M${c.x + 0.5} ${c.y + 40.5}H${c.x + c.w - 0.5}" stroke="${s.accent}"/>`,
   ];
   body.push(...panel(session, 'agent session'), ...panel(repository, 'repository'));
   body.push(
@@ -633,7 +636,8 @@ function howMnemaFits(blocks, theme) {
   // The repository: the two files, the rule addressed at the first, and the record, its last row
   // on the transcript's last.
   const rx = repoLeft + 18;
-  const price = box.top + 132;
+  // The file the write lands in sits on the row of the refusal before it, across the lanes.
+  const price = box.top + 130;
   body.push(
     s.say(['src/billing/total.ts'], rx, box.top + 68, 'code'),
     s.say(['refuses-a-write · ADR-2'], rx + 12, box.top + 86, 'code', { fill: s.muted }),
@@ -650,9 +654,9 @@ function howMnemaFits(blocks, theme) {
   // mnema verify reads the chain, one cube after the other, and says so; the last light is out
   // before the end holds still, so the last frame is the one a reader who asked for less motion sees.
   for (let i = 0; i < 5; i++)
-    body.push(landing(s, record.at(i), cy, a, 11.4 + i * 0.15, s.paint.lit));
+    body.push(landing(s, record.at(i), cy, a, 11.15 + i * 0.1, s.paint.lit));
   body.push(
-    sans(s, 'verified', record.at(4) + record.dx + 14, cy + 4, 'label', { attrs: s.stays(12.3) }),
+    sans(s, 'verified', record.at(4) + record.dx + 14, cy + 4, 'label', { attrs: s.stays(12.0) }),
   );
 
   // The packets, each a dot that runs its lane, and the edge each lights as it arrives.

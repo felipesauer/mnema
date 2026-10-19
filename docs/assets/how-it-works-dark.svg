@@ -39,7 +39,7 @@
 <linearGradient id="tint" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#c4a0f5" stop-opacity="0.12"/><stop offset="1" stop-color="#c4a0f5" stop-opacity="0.04"/></linearGradient>
 </defs>
 <rect width="880" height="198" fill="#0d1117"/>
-<ellipse cx="440" cy="99" rx="420" ry="98" fill="url(#glow)"/>
+<ellipse cx="440" cy="99" rx="420" ry="98" fill="url(#glow)" opacity="0.5"/>
 <rect x="0.5" y="1.5" width="195" height="195" rx="10" fill="url(#tint)" stroke="#c4a0f5"/>
 <rect class="a" style="animation-name:k0" opacity="0" x="1.5" y="2.5" width="193" height="193" rx="9" fill="none" stroke="#c4a0f5" stroke-width="3"/>
 <rect class="a" style="animation-name:k1" opacity="0" x="16" y="21" width="36" height="36" rx="18" fill="none" stroke="#c4a0f5" stroke-width="2"/>

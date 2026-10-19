@@ -929,10 +929,10 @@ const HERO_PACKETS = [
 const ADVANCE = 0.6;
 /**
  * The sans face the steps and how mnema fits write their prose in is not monospace: a share of its
- * size no line of theirs is wider than per character, on average (the widest measured in Chromium
- * is 0.52).
+ * size no line of theirs is wider than per character, on average (the widest measured in Chromium,
+ * a digit alone, is 0.572).
  */
-const SANS_ADVANCE = 0.55;
+const SANS_ADVANCE = 0.58;
 
 /** Everything the guards below read of one picture. */
 function drawing(svg: string) {

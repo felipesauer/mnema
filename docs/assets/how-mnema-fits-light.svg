@@ -19,12 +19,12 @@
 @keyframes k14{0%{opacity:0}78.57%{opacity:0}80.71%{opacity:1}92.86%{opacity:1}95%{opacity:0}100%{opacity:0}}
 @keyframes k15{0%{opacity:0}35.71%{opacity:0}36.79%{opacity:1}40.36%{opacity:0}100%{opacity:0}}
 @keyframes k16{0%{opacity:0}78.57%{opacity:0}79.64%{opacity:1}83.21%{opacity:0}100%{opacity:0}}
-@keyframes k17{0%{opacity:0}81.43%{opacity:0}82.5%{opacity:1}86.07%{opacity:0}100%{opacity:0}}
-@keyframes k18{0%{opacity:0}82.5%{opacity:0}83.57%{opacity:1}87.14%{opacity:0}100%{opacity:0}}
-@keyframes k19{0%{opacity:0}83.57%{opacity:0}84.64%{opacity:1}88.21%{opacity:0}100%{opacity:0}}
-@keyframes k20{0%{opacity:0}84.64%{opacity:0}85.71%{opacity:1}89.29%{opacity:0}100%{opacity:0}}
-@keyframes k21{0%{opacity:0}85.71%{opacity:0}86.79%{opacity:1}90.36%{opacity:0}100%{opacity:0}}
-@keyframes k22{0%{opacity:0}87.86%{opacity:0}90%{opacity:1}92.86%{opacity:1}95%{opacity:0}100%{opacity:0}}
+@keyframes k17{0%{opacity:0}79.64%{opacity:0}80.71%{opacity:1}84.29%{opacity:0}100%{opacity:0}}
+@keyframes k18{0%{opacity:0}80.36%{opacity:0}81.43%{opacity:1}85%{opacity:0}100%{opacity:0}}
+@keyframes k19{0%{opacity:0}81.07%{opacity:0}82.14%{opacity:1}85.71%{opacity:0}100%{opacity:0}}
+@keyframes k20{0%{opacity:0}81.79%{opacity:0}82.86%{opacity:1}86.43%{opacity:0}100%{opacity:0}}
+@keyframes k21{0%{opacity:0}82.5%{opacity:0}83.57%{opacity:1}87.14%{opacity:0}100%{opacity:0}}
+@keyframes k22{0%{opacity:0}85.71%{opacity:0}87.86%{opacity:1}92.86%{opacity:1}95%{opacity:0}100%{opacity:0}}
 @keyframes k23{0%{transform:translate(356px,127px)}2.86%{transform:translate(356px,127px)}8.57%{transform:translate(264px,127px)}9.29%{transform:translate(264px,127px)}10%{transform:translate(356px,127px)}100%{transform:translate(356px,127px)}}
 @keyframes k24{0%{opacity:0}2.5%{opacity:0}3.57%{opacity:1}7.86%{opacity:1}8.93%{opacity:0}100%{opacity:0}}
 @keyframes k25{0%{opacity:0}8.21%{opacity:0}9.29%{opacity:1}12.86%{opacity:0}100%{opacity:0}}
@@ -64,10 +64,10 @@
 <ellipse cx="440" cy="127" rx="380" ry="119" fill="url(#glow)"/>
 <rect x="0.5" y="8.5" width="259" height="237" rx="10" fill="url(#tint)" stroke="#997dbf"/>
 <text x="18" y="34" font-family="-apple-system,BlinkMacSystemFont,'Segoe UI','Noto Sans',Helvetica,Arial,sans-serif" font-size="13" font-weight="600" fill="#1f2328">agent session</text>
-<path d="M0.5 48.5H259.5" stroke="#d1d9e0"/>
+<path d="M0.5 48.5H259.5" stroke="#997dbf"/>
 <rect x="620.5" y="8.5" width="259" height="237" rx="10" fill="url(#tint)" stroke="#997dbf"/>
 <text x="638" y="34" font-family="-apple-system,BlinkMacSystemFont,'Segoe UI','Noto Sans',Helvetica,Arial,sans-serif" font-size="13" font-weight="600" fill="#1f2328">repository</text>
-<path d="M620.5 48.5H879.5" stroke="#d1d9e0"/>
+<path d="M620.5 48.5H879.5" stroke="#997dbf"/>
 <text x="130" y="270" font-family="-apple-system,BlinkMacSystemFont,'Segoe UI','Noto Sans',Helvetica,Arial,sans-serif" font-size="12" fill="#59636e" text-anchor="middle">Claude Code · VS Code · Cursor CLI</text>
 <rect  x="360.5" y="84.5" width="159" height="85" rx="14" fill="url(#tint)" stroke="#997dbf" stroke-width="1.5"/>
 <g transform="translate(368 109) scale(0.25)">
@@ -92,8 +92,8 @@
 <text class="a" style="animation-name:k11" x="30" y="226" font-family="ui-monospace,SFMono-Regular,'SF Mono',Menlo,Consolas,'Liberation Mono',monospace" font-size="12" fill="#1f2328">signed · proposed</text>
 <text x="638" y="76" font-family="ui-monospace,SFMono-Regular,'SF Mono',Menlo,Consolas,'Liberation Mono',monospace" font-size="12" fill="#1f2328">src/billing/total.ts</text>
 <text x="650" y="94" font-family="ui-monospace,SFMono-Regular,'SF Mono',Menlo,Consolas,'Liberation Mono',monospace" font-size="12" fill="#59636e">refuses-a-write · ADR-2</text>
-<rect class="a" style="animation-name:k12" opacity="0" x="630" y="124" width="240" height="24" rx="6" fill="#997dbf" fill-opacity="0.16" stroke="#997dbf" stroke-opacity="0.7"/>
-<text x="638" y="140" font-family="ui-monospace,SFMono-Regular,'SF Mono',Menlo,Consolas,'Liberation Mono',monospace" font-size="12" fill="#1f2328">src/cart/price.ts</text>
+<rect class="a" style="animation-name:k12" opacity="0" x="630" y="122" width="240" height="24" rx="6" fill="#997dbf" fill-opacity="0.16" stroke="#997dbf" stroke-opacity="0.7"/>
+<text x="638" y="138" font-family="ui-monospace,SFMono-Regular,'SF Mono',Menlo,Consolas,'Liberation Mono',monospace" font-size="12" fill="#1f2328">src/cart/price.ts</text>
 <text x="638" y="192" font-family="ui-monospace,SFMono-Regular,'SF Mono',Menlo,Consolas,'Liberation Mono',monospace" font-size="12" fill="#59636e">.mnema/</text>
 <path d="M648.39 210L658.78 216L648.39 222L638 216z" fill="#997dbf" fill-opacity="0.3"/>
 <path d="M638 216L648.39 222L648.39 234L638 228z" fill="#997dbf" fill-opacity="0.16"/>
