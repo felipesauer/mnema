@@ -12,18 +12,41 @@ with its own changelog.
 
 ### Added
 
+- **A picture of the mnema family.** `docs/assets/the-family-{light,dark}.svg`, drawn by
+  `.github/the-front-page/draw.mjs` in the front page's one accent and on its loop: `@mnema/code` in the middle (the
+  wordmark, the record's chain of blocks, and its two surfaces, `mnema` and `MCP`), with the SDK, a VS Code extension,
+  an agent in CI, the Action, the site page and Stacks around it. The head of each line says which way the record goes:
+  into the middle for what writes, out to the card for what reads, both for what does both; Stacks are drawn apart,
+  grey and dashed, and since the middle installs them and does not read them out, no ring leaves it for them and their
+  card lights in its own grey. Every word on it is a line of the product, held by the same tests as a package's
+  picture; the test of the one accent now reads a gradient by its stops. A table written in the test says which way
+  the record goes on each line, and holds to it, from the drawing alone, the heads, the way each dot runs, the ring
+  around the middle and Stacks' grey; another holds every shape, its stroke included, inside the frame at every place
+  it moves to. On the light page the tabs are fainter inside and a landing block lights in the accent itself, so each
+  keeps three to one against what is behind it; the lines inside a block stay under that, as shading of a block whose
+  outline keeps it. The words "A page that verifies itself" are held to the front page's README: a rewrite of that
+  section keeps them, or moves the picture's anchor with it. The README of `@mnema/code` opens with it, at the
+  family's width, described as the picture describes itself; the front page does not show it yet.
 - **Each published package opens its README with a picture of what it does.** `@mnema/chain`, `@mnema/core`,
-  `@mnema/context`, `@mnema/stacks` and `@mnema/code` each carry an animated picture, light and dark, in
-  `assets/`, drawn by `.github/the-front-page/draw.mjs` in the front page's one accent. Every word on a picture is a
-  literal of the package, held by a test to the file that says it; the id the command line prints, a new one on every
-  run, is drawn elided, as `(…)`. Each picture paints its own page, so the dark one
-  still reads where a page shows it on white. The README points at the file on the `main`
-  branch of the repository its `package.json` names, by `raw.githubusercontent.com`, with no version in the address:
-  the picture loads before anything is published and is not in the tarball. The script writes the block, and a test
-  holds each README to exactly that block and holds that no image address carries a version. The price of that
-  address: the page of an old version on npm shows today's picture from `main`, not the one that version was
-  published with. The title, the picture and the badges are centred, each in an element npm keeps `align` on (an
-  `h1` and two `p`, not a `div`); the script writes the title and the picture, and a test holds the three.
+  `@mnema/context` and `@mnema/stacks` each carry an animated picture, light and dark, in `assets/`, drawn by
+  `.github/the-front-page/draw.mjs` in the family's paint and motion: the same glow behind the drawing, tinted cards
+  edged in the accent, a dot that runs the way it points each arrow a record travels (the moves `@mnema/core`'s table
+  only allows, in grey, and the struck line `@mnema/context` does not write back have none), the edge of a card
+  pulsing as the dot lands, and a block lit as it lands on the chain. Each drawing sits on the middle of its frame,
+  24 units or more in from each side, and what a card holds sits on the card's middle. `@mnema/code` opens with the
+  picture of the family, which it stands in the middle of, and has no picture of its own. Every word on a picture is
+  a literal of the package, held by a test to the file that says it. Each picture paints its own page, so the dark
+  one still reads where a page shows it on white. Tables written in the test say where each arrow of each package
+  runs from and points to, and whether a dot runs it, and hold the drawing to them; others hold, for every package
+  and the family, every shape inside the frame, the drawing on the frame's middle, and every text in the size and
+  weight of one role, and, for every package, the room at each side and the text of each card on its middle, at
+  rest. No test holds how strongly a colour stands out against what is behind it. The README points at the file on
+  the `main` branch of the repository its `package.json` names, by `raw.githubusercontent.com`, with no version in
+  the address: the picture loads before anything is published and is not in the tarball. The script writes the block,
+  and a test holds each README to exactly that block and holds that no image address carries a version. The price of
+  that address: the page of an old version on npm shows today's picture from `main`, not the one that version was
+  published with. The title, the picture and the badges are centred, each in an element npm keeps `align` on (an `h1`
+  and two `p`, not a `div`); the script writes the title and the picture, and a test holds the three.
   The licence badge at the top of each of those pages points at the file on `main` by an absolute address, because npm
   leaves a relative one written in HTML as it is; a test holds that address and that no address in the badges is relative.
 - **A glossary.** `docs/glossary.md` defines, in one sentence each and with a link to the page that holds the
@@ -315,6 +338,9 @@ with its own changelog.
 
 ### Fixed
 
+- **The convergence page's test no longer depends on the day it runs.** The page shows the time of each move
+  with the day it was written; the test read a bare date as minted but not the same date ahead of the `T` of a
+  timestamp, so it passed only on the day the page was written. Both are read as a date now.
 - **The second reader breaks a tie between two tails by UTF-16 code unit, as `FORMAT.md` §6.2 says and `verify`
   does.** It compared tail ids by code point, which puts a character above U+FFFF after one from U+E000 to U+FFFF where
   the format puts it before. With two heads at one `at` on tails whose ids differ there, it took them in the other order
