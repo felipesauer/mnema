@@ -1454,6 +1454,39 @@ export function pictureBlock(dir) {
 }
 
 /**
+ * What the front page's README holds under the heading of the family, in place of its own
+ * picture: the family's, centred like the pictures above it, at the family's width, by the
+ * address of the repository `@mnema/code`'s manifest names, with no version in it.
+ */
+export function familyBlock() {
+  const file = (/** @type {string} */ theme) => `docs/assets/the-family-${theme}.svg`;
+  return [
+    '<div align="center">',
+    '',
+    '<picture>',
+    `  <source media="(prefers-color-scheme: dark)" srcset="${pictureUrl(FAMILY_PAGE, file('dark'))}">`,
+    `  <img src="${pictureUrl(FAMILY_PAGE, file('light'))}" alt="${attribute(FAMILY_ALT)}" width="${W_FAMILY}">`,
+    '</picture>',
+    '',
+    '</div>',
+  ].join('\n');
+}
+
+/** The heading the front page's family picture sits under. */
+export const FAMILY_HEADING = '## The mnema family';
+
+/**
+ * The front page's README with the family's block in place: the one under the family's heading
+ * is replaced, and a README with no such block is returned as it is, for the test to refuse.
+ * @param {string} readme
+ * @param {string} block
+ */
+export function withFamilyBlock(readme, block) {
+  const at = new RegExp(`(${FAMILY_HEADING}\\n\\n)<div align="center">\\n[\\s\\S]*?\\n</div>`);
+  return readme.replace(at, (_all, head) => `${head}${block}`);
+}
+
+/**
  * Every package's picture, by its path from the repository's root.
  * @param {readonly string[]} blocks
  * @returns {Record<string, string>}
@@ -1524,7 +1557,8 @@ export const FAMILY_LINES = Object.freeze({
   stacksSays: [said('mnema stack add', 'docs/cli-reference.md')],
 });
 
-const FAMILY_ALT =
+/** The family's text alternative: on the picture itself and on every page that shows it. */
+export const FAMILY_ALT =
   'The mnema family: @mnema/code, the command line and the MCP server over one record, with the SDK, a VS Code extension, an agent in CI, the GitHub Action, mnema site and Stacks around it';
 
 /**
@@ -1976,6 +2010,7 @@ if (process.argv[1] !== undefined && import.meta.url === pathToFileURL(process.a
     const readme = `packages/${dir}/README.md`;
     drawn[readme] = withPicture(committedAt(readme), pictureBlock(dir), titleLine(dir));
   }
+  drawn['README.md'] = withFamilyBlock(committedAt('README.md'), familyBlock());
   let differs = 0;
   for (const [path, content] of Object.entries(drawn)) {
     const at = new URL(`../../${path}`, import.meta.url);

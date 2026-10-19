@@ -44,7 +44,7 @@ installing this.
 </p>
 
 <p align="center">
-<a href="#why">Why</a> · <a href="#status">Status</a> · <a href="#quick-start">Quick start</a> · <a href="#how-it-works">How it works</a> · <a href="#hosts">Hosts</a> · <a href="#features">Features</a> · <a href="#watch-it">Watch it</a> · <a href="#what-it-proves--and-what-it-does-not">What it proves</a> · <a href="#docs">Docs</a>
+<a href="#why">Why</a> · <a href="#status">Status</a> · <a href="#quick-start">Quick start</a> · <a href="#how-it-works">How it works</a> · <a href="#hosts">Hosts</a> · <a href="#the-mnema-family">Family</a> · <a href="#watch-it">Watch it</a> · <a href="#what-it-proves--and-what-it-does-not">What it proves</a> · <a href="#docs">Docs</a>
 </p>
 
 ## Why
@@ -124,23 +124,29 @@ Each cell of the full table, how each one is known — held by a test, read once
 documented and not measured — and the notes on each host are in
 [How each claim is held](docs/evidence.md#each-hosts-rung).
 
-## Features
+## The mnema family
 
-| Feature | What it does |
-|---|---|
-| **Opens every session** | With the plugin, the decisions in force, the adopted patterns and the notes near the work. [What a session is handed](docs/agent-hosts.md) |
-| **Rules at each edit** | In Claude Code, the rules for a file land beside the write. [What a session is handed](docs/agent-hosts.md) |
-| **Refuses a write** | `refuses-a-write` stops an agent's write there, on every host from rung (c) up. [Features](docs/features.md) |
-| **Asks for a person** | `asks-for-a-person` holds the write until someone decides, on the hosts of rung (d): Claude Code, VS Code and Copilot CLI. [Features](docs/features.md) |
-| **Supersede, never edit** | A change of mind is a new decision. The old one leaves the opening and stays in the record. [How it works](docs/how-it-works.md) |
-| **Take a note back** | `mnema retract` appends a signed retraction, and nothing is erased. [Features](docs/features.md) |
-| **Every write signed** | The command line and the MCP server sign each write before they return. [How it works](docs/how-it-works.md) |
-| **`mnema verify`** | No key, no network. It names the level it reached, not yes or no. [What it proves](docs/what-it-proves.md) |
-| **A second reader** | A dependency-free Python verifier, written from the format's spec alone. [Verify without installing](docs/verify-without-installing.md) |
-| **A page that verifies itself** | `mnema site` writes one HTML file, and the reader's browser checks it. [The page](docs/site.md) |
-| **A pull-request check** | The Action comments what a PR does to the record and fails when it is not signed. [Packages](docs/packages.md) |
-| **The git log, read against it** | `trailer`, `commits`, `why` and `aging` tie commits to decisions. [Features](docs/features.md) |
-| **Stacks** | `mnema stack add` installs a set of skills and agents where the hosts that read them look, from a plan shown whole, and records the adoption as a signed fact. [Stacks](packages/stacks/README.md) |
+<div align="center">
+
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="https://raw.githubusercontent.com/felipesauer/mnema/main/docs/assets/the-family-dark.svg">
+  <img src="https://raw.githubusercontent.com/felipesauer/mnema/main/docs/assets/the-family-light.svg" alt="The mnema family: @mnema/code, the command line and the MCP server over one record, with the SDK, a VS Code extension, an agent in CI, the GitHub Action, mnema site and Stacks around it" width="880">
+</picture>
+
+</div>
+
+`@mnema/code` holds the record, and the command line and the MCP server that read and write it. The rest stand around
+it. What each one does, line by line, is in [Features](docs/features.md).
+
+| Product | What it is for | Status | Link |
+|---|---|---|---|
+| **`@mnema/code`**<br><sub>the core</sub> | The signed, append-only record, with the command line and the MCP server over it. | Not on npm yet; runs from the source ([Status](#status)). | [Package](packages/code/README.md) |
+| **GitHub Action** | On a pull request, comments what the change does to the record and fails the check when it is not signed. | Not published; runs from a clone of this repository. | [Package](packages/action/README.md) |
+| **SDK** | A library door to the record, for a program that records, reads and verifies. | Not published; runs from a clone of this repository. | [Package](packages/sdk/README.md) |
+| **VS Code extension** | Shows the rules in force over the open file and the decisions waiting for a judgment. | Not published; runs from a clone of this repository. | [Package](packages/vscode/README.md) |
+| **Stacks** | Installs a set of skills and agents from a plan shown whole, and records the adoption as a signed fact. | Commands of `mnema`, not a package of their own; the contract they check against, `@mnema/stacks`, ships with `@mnema/code`. | [Stacks](packages/stacks/README.md) |
+| **An agent in CI** | A pipeline's agent records with a key of its own, so what it records is signed as that agent. | A recipe, not a package. | [The recipe](packages/action/README.md#an-agent-in-ci) |
+| **A page that verifies itself** | `mnema site` writes one HTML file, and the reader's browser checks it. | A command of `@mnema/code`, not a package. | [The page](docs/site.md) |
 
 ## Watch it
 

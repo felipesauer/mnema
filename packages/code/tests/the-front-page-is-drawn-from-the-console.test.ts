@@ -22,6 +22,8 @@
  *   - THE FAMILY: the picture of `@mnema/code` and what stands around it, drawn into
  *     `docs/assets/`, is held to the same rules as a package's: its words are lines of the
  *     product, found in the files the script names, and nothing else.
+ *   - THE FAMILY ON THE FRONT PAGE: `README.md` holds, under "The mnema family", the block the script
+ *     writes, byte for byte, at 880, by an absolute address on `main` with no version.
  *   - THE URL OF A PACKAGE'S PICTURE: the README of a package opens, under its title, with the
  *     block the script writes, pointing at the file on the repository's `main` branch by the
  *     address of the repository its `package.json` says, with no version in it, because a
@@ -64,6 +66,10 @@ const {
   pictureBlock,
   PICTURED_PAGES,
   FAMILY_PAGE,
+  FAMILY_ALT,
+  FAMILY_HEADING,
+  familyBlock,
+  withFamilyBlock,
 } = (await import(pathToFileURL(DRAW).href)) as {
   drawTheFrontPage: (blocks: readonly string[]) => Record<string, string>;
   drawThePackages: (blocks: readonly string[]) => Record<string, string>;
@@ -76,16 +82,16 @@ const {
   pictureBlock: (dir: string) => string;
   PICTURED_PAGES: readonly string[];
   FAMILY_PAGE: string;
+  FAMILY_ALT: string;
+  FAMILY_HEADING: string;
+  familyBlock: () => string;
+  withFamilyBlock: (readme: string, block: string) => string;
 };
 const { ACCENT } = (await import(pathToFileURL(ACCENT_FILE).href)) as {
   ACCENT: { dark: string; light: string };
 };
 
 const ASSETS = 'docs/assets';
-
-/** The family's text alternative, said here by hand, apart from the script that writes it. */
-const FAMILY_ALT =
-  'The mnema family: @mnema/code, the command line and the MCP server over one record, with the SDK, a VS Code extension, an agent in CI, the GitHub Action, mnema site and Stacks around it';
 
 /** The most two channels of a grey may differ by, out of 255. GitHub's own greys spread by 9 to 21. */
 const NEUTRAL_SPREAD = 24;
@@ -334,6 +340,41 @@ describe('every package, and the family, draws what it is, in its own words', ()
     const single = [...columns].filter(([, rows]) => rows.size === 1);
     expect(single.length).toBeGreaterThan(0);
     expect(single.filter(([, rows]) => !rows.has(0)).map(([key]) => key)).toEqual([]);
+  });
+
+  it('shows the family on the front page, under its heading, with exactly the block the script writes', () => {
+    const readme = read('README.md');
+    expect(readme).toContain(`${FAMILY_HEADING}\n\n${familyBlock()}\n`);
+    expect(withFamilyBlock(readme, familyBlock())).toBe(readme);
+    // The block is set by the heading it sits under: a page without it is refused here, not skipped.
+    expect(FAMILY_HEADING).toBe('## The mnema family');
+    expect(readme.split(FAMILY_HEADING)).toHaveLength(2);
+  });
+
+  it('points the front page at the family by an absolute address on main, at 880, without a version', () => {
+    const readme = read('README.md');
+    const block = /## The mnema family\n\n([\s\S]*?<\/div>)\n/.exec(readme)?.[1] ?? '';
+    // Said here by hand, apart from the script that writes it.
+    const base = 'https://raw.githubusercontent.com/felipesauer/mnema/main/docs/assets';
+    expect(block).toContain(
+      `<source media="(prefers-color-scheme: dark)" srcset="${base}/the-family-dark.svg">`,
+    );
+    const img = /<img src="([^"]+)" alt="([^"]*)" width="(\d+)">/.exec(block);
+    expect([img?.[1], img?.[2]?.replaceAll('&quot;', '"'), img?.[3]]).toEqual([
+      `${base}/the-family-light.svg`,
+      FAMILY_ALT,
+      '880',
+    ]);
+    expect(/@v?\d/.test(block)).toBe(false);
+  });
+
+  it('keeps the top of the front page centred, and the family centred under its heading', () => {
+    const readme = read('README.md');
+    expect(readme.startsWith('<div align="center">\n\n<picture>\n')).toBe(true);
+    expect(readme).toContain(
+      `${FAMILY_HEADING}\n\n<div align="center">\n\n<picture>\n  <source media="(prefers-color-scheme: dark)" srcset="https://`,
+    );
+    expect(readme).toContain('</picture>\n\n</div>\n');
   });
 
   it('opens the README of every published package with a picture, and @mnema/code with the family', () => {
