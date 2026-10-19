@@ -282,7 +282,8 @@ export const HOSTS = {
       'The refusal fails open, as on every host: a gate that cannot answer — no `mnema` on the ' +
       'PATH (held by its test) or a hook that errors (read in ' +
       `[\`pre_tool_use.rs\`](${CODEX_SOURCE}/codex-rs/hooks/src/events/pre_tool_use.rs#L205-L288)) — ` +
-      'lets the patch through. The opening is cut to Codex’s own ceiling, 2,500 tokens of 4 ' +
+      'lets the patch through. A record the gate cannot read is not a hook that errors: it is a ' +
+      '`deny` (held by its test). The opening is cut to Codex’s own ceiling, 2,500 tokens of 4 ' +
       `UTF-8 bytes ([\`output_spill.rs\`](${CODEX_SOURCE}/codex-rs/hooks/src/output_spill.rs#L12)), ` +
       'at a whole rule, held by the same test.',
     // `events/stop.rs` fires a `SubagentStop` command hook and takes exit 2 with a continuation

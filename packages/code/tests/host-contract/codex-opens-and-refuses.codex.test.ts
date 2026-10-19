@@ -26,7 +26,13 @@ import {
   theToolSearchSays,
 } from './support/the-codex.js';
 import { A_HOOK_THAT_SAYS_EXACTLY } from './support/the-host.js';
-import { decide, ruleAt, theChannelFactsOf } from './support/the-record-to-stand-on.js';
+import {
+  aLineTheReaderRefuses,
+  decide,
+  ruleAt,
+  theChannelFactsOf,
+  theSegmentOf,
+} from './support/the-record-to-stand-on.js';
 
 describe('codex opens with the record and refuses the write', () => {
   const start = aCodexForEachCase();
@@ -124,6 +130,23 @@ describe('codex opens with the record and refuses the write', () => {
       'channel.refused': 1,
       'channel.asked': 0,
     });
+  }, 180_000);
+
+  it('a record with a line the reader refuses: a patch no rule addresses is not applied, and the model reads why', async () => {
+    let bytes = '';
+    const session = await start({
+      project: (project) => {
+        ruleAt(project, 'Billing is frozen', 'src/frozen', 'refuses-a-write');
+        bytes = aLineTheReaderRefuses(project);
+      },
+      patch: aPatchAdding('src/free/notes.ts'),
+    });
+    expect(existsSync(join(session.project, 'src/free/notes.ts'))).toBe(false);
+    const handed = theResultOfTheCall(session);
+    expect(handed, 'Codex never handed the model a result').toBeDefined();
+    expect(handed).toContain('The write is refused');
+    expect(handed).toContain('If a newer mnema wrote the line, read the record with it.');
+    expect(theSegmentOf(session.project)).toBe(bytes);
   }, 180_000);
 
   it('fails open: with no `mnema` on the PATH the gate says nothing, and the patch is applied', async () => {

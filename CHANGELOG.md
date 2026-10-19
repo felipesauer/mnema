@@ -49,12 +49,6 @@ with its own changelog.
   and two `p`, not a `div`); the script writes the title and the picture, and a test holds the three.
   The licence badge at the top of each of those pages points at the file on `main` by an absolute address, because npm
   leaves a relative one written in HTML as it is; a test holds that address and that no address in the badges is relative.
-- **The page says where the refusal of a write stops holding, and a test holds it.** A rule that refuses a write
-  opens when the hook cannot read the record: a line that is not JSON, or one of a kind this version does not know (a
-  newer mnema's line), makes the hook before a write fail with no reply, and the write goes where the host lets a failed
-  hook go on. `docs/features.md`, `docs/evidence.md` and the plugin's README say it, and the case that refused a line
-  that is not JSON now refuses one of an unknown kind too.
-
 - **A glossary.** `docs/glossary.md` defines, in one sentence each and with a link to the page that holds the
   definition, the words the documentation uses in a sense of its own: record, tree (public, private and global),
   tail, checkpoint, run, rung, stack, agent key, census and witness. The README's list of pages links to it.
@@ -188,6 +182,20 @@ with its own changelog.
   pages is relative, and that each address of this repository on `main` names a tracked file (`blob`) or directory
   (`tree`) and a heading that exists.
 
+- **A record the gate cannot read refuses the write, where it used to let it through.** When a line of the record is one
+  the reader refuses (not JSON, a kind or a field this version does not know, as a newer mnema's line is, or bytes that
+  are not canonical), the per-edit gate answered nothing: the command hook exited 1 with an empty reply and the MCP route
+  answered a tool error, and every host this plugin wires read either as leave to write. Both now answer `deny`, exit 0,
+  in each host's shape, for every write the gate is asked about, with the tree (public, private or global) and the line
+  named in the reader's words, and the ways out: update mnema, or restore the line, from the repository's history for
+  the public tree and, for the private and the global tree, which are not versioned, from a copy or by repairing or
+  removing that line. Nothing is recorded, and a note goes to the second stream. Only that line is caught: a busy tail
+  or a fault of the product is not turned into a refusal, and a last line a crash cut short is still dropped and
+  refuses nothing. The cost: a line of the project's public or private tree refuses every write in that project, and a
+  line of the machine's global tree, which every project reads, refuses every write in every project of the machine;
+  on a team with two versions, a line only the newer can read refuses every write of the older in that project until
+  it is updated; and switching the refusal off is no way out, because the switch reads the same record. With no
+  `mnema` on the PATH the gate still says nothing. `UnreadableLineError` is now exported by `@mnema/chain`.
 - **Pages stop promising more than verify and the Action do.** The "what it proves" paragraph in the CLI reference
   and in the `@mnema/code` README said an edit to the record is made "impossible to hide"; verify shows when what is
   in the record has changed since it was signed, and a cut that leaves the last checkpoint in place, and does not catch

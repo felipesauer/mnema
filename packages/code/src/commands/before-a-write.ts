@@ -37,6 +37,11 @@
  * project here, the channels switched off (`mnema switch off edit-asks-a-person`, `mnema switch
  * off edit-refuses-a-write`), no rule asking or refusing at the path. The notes beside it are for a person who ran the verb by hand and
  * for the host's own log; nothing reads them to decide.
+ *
+ * A RECORD THAT CANNOT BE READ IS A REFUSAL, NOT A SILENCE: a stored line the reader refuses
+ * means which rules apply cannot be known, so every write that reads that tree is answered `deny`
+ * (the project's, or every project's for the machine-global tree), with the tree and the reader's
+ * refusal in the reason and nothing recorded ({@link refusalOfAnUnreadableRecord}).
  */
 
 import { dirname } from 'node:path';
@@ -63,12 +68,15 @@ import {
 import { anchorsBefore, foundingsSince, treesOf } from '../a-new-identity.js';
 import { asksAPerson, pathsOfAWrite, replyFor } from '../host-hook.js';
 import { type HookHost, hookTextOf } from '../host-names.js';
+import { recordTrees } from '../intelligence-source.js';
 import type { HookSaid } from '../mcp/hook-reply.js';
 import { type HookCeiling, hookCeilingOf } from '../presentation/within-a-hook.js';
 import { ASKS_A_PERSON_CHANNEL, REFUSES_A_WRITE_CHANNEL } from '../record-framing.js';
 import { caches, withScopedCaches } from '../tree-sources.js';
 import {
   recordTheCharge,
+  refusalOfAnUnreadableRecord,
+  UNREADABLE_RECORD_NOTE,
   unrecordedCharge,
   type WriteVerdict,
   whatAWriteMeets,
@@ -94,7 +102,8 @@ export interface BeforeAWriteContext {
  *
  * There is no failure arm, and that is the contract rather than an omission: this runs inside
  * somebody else's session, on every tool call of it, and every way of not asking or refusing
- * answers the same empty reply. What went wrong, when something did, is a note.
+ * answers the same empty reply — except a record that cannot be read, which refuses. What went
+ * wrong, when something did, is a note.
  */
 export interface BeforeAWriteDone {
   readonly ok: true;
@@ -147,17 +156,31 @@ export function runBeforeAWrite(
  * caller can hold a write for a person (where it cannot, an asking is silence, and nothing is
  * recorded as if a person had been asked).
  */
-export function runBeforeAPath(
-  ctx: BeforeAWriteContext,
-  input: {
-    readonly which: string;
-    readonly paths: readonly string[];
-    readonly asks: boolean;
-    /** What the host keeps of a hook's text; Claude Code's where omitted. */
-    readonly ceiling?: HookCeiling;
-    readonly reply: (said: HookSaid) => object;
-  },
-): BeforeAWriteDone {
+export function runBeforeAPath(ctx: BeforeAWriteContext, input: APathAsked): BeforeAWriteDone {
+  // A RECORD THAT CANNOT BE READ REFUSES THE WRITE: which rules apply is what cannot be known, and
+  // silence would be read by the host as leave to write. Nothing is recorded, because a fact of
+  // refusal cites a rule. Only the unreadable line is caught; anything else is thrown on.
+  try {
+    return whatAPathMeets(ctx, input);
+  } catch (error) {
+    const read = recordTrees(resolveTrees(ctx.cwd, ctx.env), undefined);
+    const refusal = refusalOfAnUnreadableRecord(error, read);
+    if (refusal === undefined) throw error;
+    return { ok: true, reply: input.reply({ refuse: refusal }), notes: [UNREADABLE_RECORD_NOTE] };
+  }
+}
+
+/** What {@link runBeforeAPath} is asked. */
+interface APathAsked {
+  readonly which: string;
+  readonly paths: readonly string[];
+  readonly asks: boolean;
+  /** What the host keeps of a hook's text; Claude Code's where omitted. */
+  readonly ceiling?: HookCeiling;
+  readonly reply: (said: HookSaid) => object;
+}
+
+function whatAPathMeets(ctx: BeforeAWriteContext, input: APathAsked): BeforeAWriteDone {
   const { paths } = input;
   const resolved = resolveTrees(ctx.cwd, ctx.env);
   // A name this product does not enrol still asks for an agent: its trees refuse what the hook would

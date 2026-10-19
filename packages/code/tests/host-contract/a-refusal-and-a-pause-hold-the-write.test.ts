@@ -17,7 +17,7 @@
  * not read as a refusal.
  */
 
-import { existsSync } from 'node:fs';
+import { existsSync, mkdirSync } from 'node:fs';
 import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
 import {
@@ -25,7 +25,13 @@ import {
   thePermissionDecisionsOf,
   theResultOfTheCall,
 } from './support/the-host.js';
-import { alsoAt, decide, ruleAt } from './support/the-record-to-stand-on.js';
+import {
+  aLineTheReaderRefuses,
+  alsoAt,
+  decide,
+  ruleAt,
+  theSegmentOf,
+} from './support/the-record-to-stand-on.js';
 import { writeTo } from './support/the-stand-in-api.js';
 
 describe('a refusal and a pause hold the write', () => {
@@ -91,5 +97,24 @@ describe('a refusal and a pause hold the write', () => {
     expect(thePermissionDecisionsOf(session, 'PreToolUse')).toEqual(['deny']);
     // And the host took it as a hook that stopped the call, which a pause does not read as.
     expect(result?.text).toContain('PreToolUse:Write hook error');
+  }, 120_000);
+
+  it('a record with a line the reader refuses: a write no rule addresses is not written, and the model reads why', async () => {
+    let bytes = '';
+    const session = await start({
+      project: (project) => {
+        ruleAt(project, 'Billing is frozen', 'src/billing', 'refuses-a-write');
+        mkdirSync(join(project.dir, 'src/free'), { recursive: true });
+        bytes = aLineTheReaderRefuses(project);
+      },
+      call: writeTo('src/free/notes.ts'),
+    });
+    expect(existsSync(join(session.project, 'src/free/notes.ts'))).toBe(false);
+    const result = theResultOfTheCall(session);
+    expect(result?.isError).toBe(true);
+    expect(result?.text).toContain('The write is refused');
+    expect(result?.text).toContain('If a newer mnema wrote the line, read the record with it.');
+    expect(thePermissionDecisionsOf(session, 'PreToolUse')).toEqual(['deny']);
+    expect(theSegmentOf(session.project)).toBe(bytes);
   }, 120_000);
 });
