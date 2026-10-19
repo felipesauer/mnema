@@ -1758,33 +1758,34 @@ describe('a record in which no tail holds anything, to both readers', () => {
     expect(here.tails).toEqual([]);
   });
 
-  it.each(CUTS)('$name: the second reader refuses it under section 4, exit 1, at every --require', ({
-    cut,
-    why,
-  }) => {
-    const record = copyOf('witnessed-record');
-    cut(record);
-    for (const there of [
-      secondReading(record),
-      secondReadingRequiring(record, 'chained'),
-      secondReadingRequiring(record, 'signed'),
-    ]) {
-      expect(there.verdict).toBe('REFUSED');
-      expect(there.exit).toBe(1);
-      const named = refusals(there).filter((finding) => finding.what.includes(NO_TAIL));
-      expect(named.map((finding) => finding.section)).toEqual(['4']);
-      expect(named[0]?.what).toContain(why);
-    }
-  });
+  it.each(CUTS)(
+    '$name: the second reader refuses it under section 4, exit 1, at every --require',
+    ({ cut, why }) => {
+      const record = copyOf('witnessed-record');
+      cut(record);
+      for (const there of [
+        secondReading(record),
+        secondReadingRequiring(record, 'chained'),
+        secondReadingRequiring(record, 'signed'),
+      ]) {
+        expect(there.verdict).toBe('REFUSED');
+        expect(there.exit).toBe(1);
+        const named = refusals(there).filter((finding) => finding.what.includes(NO_TAIL));
+        expect(named.map((finding) => finding.section)).toEqual(['4']);
+        expect(named[0]?.what).toContain(why);
+      }
+    },
+  );
 
-  it.each(CUTS)('$name: both readers still name every committed key with no tail, the same keys', ({
-    cut,
-  }) => {
-    const record = copyOf('witnessed-record');
-    cut(record);
-    const here = keysWithoutTailHere(record);
-    expect(keysWithoutTailThere(secondReading(record))).toEqual(here);
-  });
+  it.each(CUTS)(
+    '$name: both readers still name every committed key with no tail, the same keys',
+    ({ cut }) => {
+      const record = copyOf('witnessed-record');
+      cut(record);
+      const here = keysWithoutTailHere(record);
+      expect(keysWithoutTailThere(secondReading(record))).toEqual(here);
+    },
+  );
 
   it('names the keys at all where the keys are left: section 6.5 runs, it is not skipped', () => {
     // NON-VACUITY for the case above: two equal lists of nothing would pass it.
@@ -1816,7 +1817,9 @@ describe('a record in which no tail holds anything, to both readers', () => {
       const fp = writer.signerFingerprint;
       const anchor = deriveAnchor(fp);
       const at = '2026-10-19T00:00:00.000Z';
-      writer.append(identityFounded({ at, who: anchor, signerFp: fp, subject: anchor }, { foundingFp: fp }));
+      writer.append(
+        identityFounded({ at, who: anchor, signerFp: fp, subject: anchor }, { foundingFp: fp }),
+      );
       writer.checkpoint();
       written.push(fp);
     }
