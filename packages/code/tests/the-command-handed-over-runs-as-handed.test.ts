@@ -444,10 +444,6 @@ export const NAMES_THAT_NEED_MORE: Readonly<
     times: 1,
     why: 'the verb named in the same list, as what takes a note back; the package page names the id and the reason it takes',
   },
-  'README.md: mnema retract': {
-    times: 1,
-    why: 'the verb named in the feature grid, as what takes a note back; the package page names the id and the reason it takes',
-  },
   'docs/features.md: mnema trailer': {
     times: 1,
     why: 'the verb named in the same list, beside `commits`, `why` and `aging`; the package page hands the line over, with the decision',
@@ -475,10 +471,6 @@ export const NAMES_THAT_NEED_MORE: Readonly<
   'SECURITY.md: mnema site': {
     times: 1,
     why: 'the verb named as what writes the page whose reader is in scope; the page about it hands the line over',
-  },
-  'README.md: mnema stack add': {
-    times: 1,
-    why: 'the verb named in the row of the features table on stacks; the package page hands the line over, with --dry-run',
   },
   'docs/features.md: mnema stack add': {
     times: 1,
@@ -679,7 +671,7 @@ export const HANDED_OVER: Readonly<
   Record<string, Readonly<Partial<Record<Reading['kind'], number>>>>
 > = {
   'CHANGELOG.md': { line: 29, name: 39, flag: 1 },
-  'README.md': { line: 2, name: 10 },
+  'README.md': { line: 2, name: 7 },
   'SECURITY.md': { name: 2 },
   'docs/agent-hosts.md': { line: 4, name: 3 },
   'docs/convergence.md': { line: 4, name: 4 },

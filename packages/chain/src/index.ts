@@ -129,6 +129,7 @@ export {
   requiredLevel,
   weakerLevel,
 } from './chain/level.js';
+export { UnreadableLineError } from './chain/lines.js';
 export { illegalMoves, type PlacedEvent } from './chain/moves.js';
 export {
   firstLinkBreakFrom,

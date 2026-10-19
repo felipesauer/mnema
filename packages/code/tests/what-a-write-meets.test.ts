@@ -14,6 +14,7 @@
 import { mkdirSync, mkdtempSync, rmSync, symlinkSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
+import { TailBusyError, UnreadableLineError } from '@mnema/chain';
 import { type DiscoveryEnv, resolveTrees } from '@mnema/core';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { whatAWriteAsks } from '../src/edit-asks-a-person.js';
@@ -21,7 +22,11 @@ import { ourWordsInRefusing } from '../src/edit-refuses-a-write.js';
 import { type CliIo, run } from '../src/program.js';
 import { tellsWhatToDo } from '../src/record-framing.js';
 import { withScopedCaches } from '../src/tree-sources.js';
-import { type WriteVerdict, whatAWriteMeets } from '../src/what-a-write-meets.js';
+import {
+  refusalOfAnUnreadableRecord,
+  type WriteVerdict,
+  whatAWriteMeets,
+} from '../src/what-a-write-meets.js';
 
 let sandbox: string;
 let repo: string;
@@ -307,5 +312,72 @@ describe('a link does not step around a rule', () => {
     symlinkSync(join(outside, 'src', 'ledger'), join(repo, 'src', 'billing', 'away'));
 
     expect(meets('src/billing/away/posting.ts')).toBeUndefined();
+  });
+});
+
+describe('a record that cannot be read refuses the write, and nothing else does', () => {
+  // The three trees as a door resolves them outside a repository, where the private tree sits
+  // INSIDE the public one: the line belongs to the tree whose chain holds its file.
+  const trees = [
+    { scope: 'public', chainRoot: '/w/.mnema' },
+    { scope: 'private', chainRoot: '/w/.mnema/private' },
+    { scope: 'global', chainRoot: '/h/.mnema/global' },
+  ] as const;
+  const reader =
+    'mnema 0.2.0 does not read "bogus.kind" at v1: it reads no version of that kind. If a newer mnema wrote the line, read the record with it.';
+  const lineIn = (file: string) => new UnreadableLineError(`${file} byte offset 2104`, reader);
+
+  it('names the public tree, the line, the reader’s own words, and the repository’s history', () => {
+    const reason = refusalOfAnUnreadableRecord(lineIn('/w/.mnema/tails/t/000001.jsonl'), trees);
+    expect(reason).toBe(
+      [
+        'The write is refused: a line of the project’s public record cannot be read by this mnema, so which rules apply to this path cannot be known.',
+        `unreadable stored line at /w/.mnema/tails/t/000001.jsonl byte offset 2104: ${reader}`,
+        'Every write in the project is refused until the line reads: update mnema if a newer one wrote the line, or restore the line from the repository’s history.',
+      ].join('\n\n'),
+    );
+  });
+
+  it('names the private tree, which no repository keeps, and the ways out of it', () => {
+    const reason = refusalOfAnUnreadableRecord(
+      lineIn('/w/.mnema/private/tails/t/000001.jsonl'),
+      trees,
+    );
+    expect(reason).toBe(
+      [
+        'The write is refused: a line of the project’s private record on this machine cannot be read by this mnema, so which rules apply to this path cannot be known.',
+        `unreadable stored line at /w/.mnema/private/tails/t/000001.jsonl byte offset 2104: ${reader}`,
+        'Every write in the project is refused until the line reads. This record is not versioned: update mnema if a newer one wrote the line, restore the file from a copy, or repair or remove the line named above.',
+      ].join('\n\n'),
+    );
+  });
+
+  it('names the global tree, and says it closes every project on the machine', () => {
+    const reason = refusalOfAnUnreadableRecord(lineIn('/h/.mnema/global/checkpoints.jsonl'), trees);
+    expect(reason).toBe(
+      [
+        'The write is refused: a line of this machine’s global record cannot be read by this mnema, so which rules apply to this path cannot be known.',
+        `unreadable stored line at /h/.mnema/global/checkpoints.jsonl byte offset 2104: ${reader}`,
+        'This closes every project on this machine: every write in each is refused until the line reads. This record is not versioned: update mnema if a newer one wrote the line, restore the file from a copy, or repair or remove the line named above.',
+      ].join('\n\n'),
+    );
+  });
+
+  it('still refuses a line under no tree it read, naming no tree it cannot tell', () => {
+    const reason = refusalOfAnUnreadableRecord(lineIn('/elsewhere/000001.jsonl'), trees);
+    expect(reason).toContain('a line of the record cannot be read');
+    expect(reason).toContain('unreadable stored line at /elsewhere/000001.jsonl');
+    expect(reason).not.toContain('switch');
+  });
+
+  it('answers nothing for an error of the product, a busy tail, or anything that is not that line', () => {
+    expect(refusalOfAnUnreadableRecord(new TypeError('x is undefined'), trees)).toBeUndefined();
+    expect(
+      refusalOfAnUnreadableRecord(new TailBusyError('/w/lock', 42, 2000), trees),
+    ).toBeUndefined();
+    expect(
+      refusalOfAnUnreadableRecord(new Error('unreadable stored line at x: y'), trees),
+    ).toBeUndefined();
+    expect(refusalOfAnUnreadableRecord('unreadable stored line', trees)).toBeUndefined();
   });
 });

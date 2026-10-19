@@ -9,14 +9,22 @@ Each line says what it does and what it leaves unproven; the page it points to h
   editor, and `mnema switch off edit-refuses-a-write` is the way out — recorded, as a signed
   fact. [The plugin's page](../plugin/README.md#what-it-does--and-what-it-does-not). The refusal
   is a gate, and a gate that cannot answer lets the write through: with no `mnema` on the PATH
-  ([held by a test](../packages/code/tests/host-contract/without-mnema-the-hooks-fail-open.test.ts)),
-  or, where the hook is a command, when a line of the record is one the reader cannot read: not
-  JSON, or a kind this version does not know, as a newer mnema's line is
-  ([held by a test](../packages/code/tests/a-rule-that-refuses-a-write.test.ts)). The command
-  fails with no reply, and a host that lets a failed hook go on lets the write go. The format
-  refuses such a line and never skips it, so on a team with two versions a line of a kind only the
-  newer knows opens the refusals of the older. By the MCP route of the same question the line
-  comes back as an error with a prose reason; that was not probed in a host.
+  ([held by a test](../packages/code/tests/host-contract/without-mnema-the-hooks-fail-open.test.ts)).
+  A record the gate cannot read is not that case: it refuses. Where a line of the record is one
+  the reader refuses (not JSON, a kind or a field this version does not know, as a newer mnema's
+  line is, or bytes that are not canonical), every write the gate is asked about is answered
+  `deny`, by the command and by the MCP route alike, with the tree and the line named in the
+  reader's own words. The reach is the tree's: a line of the project's public or private tree refuses
+  every write in that project, and a line of the machine's global tree, which every project reads,
+  refuses every write in every project of the machine. The ways out are said with it: update mnema,
+  or restore the line — from the repository's history for the public tree, and for the private and
+  the global tree, which are not versioned, from a copy, or by repairing or removing that line
+  ([held by a test](../packages/code/tests/a-rule-that-refuses-a-write.test.ts), and in Claude
+  Code, Gemini CLI and Codex by the host contract). Nothing is recorded, because a refusal fact
+  cites a rule and no rule could be read. The cost is declared: on a team with two versions, a line
+  of a kind only the newer knows refuses every write of the older in that project until it is
+  updated, and the switch is no way out there, because switching reads the same record and is
+  refused too. A last line a crash cut short is dropped by the reader and refuses nothing.
 - **Another run on the same path.** When a rule refused a write or asked for a person at a path in
   another run of this machine's identity, an edit there is told so ("Another run (codex) consulted
   this path 12 min ago"). It is read from facts the record already holds and writes nothing; it
